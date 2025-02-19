@@ -1,0 +1,9 @@
+npm create vite@6.1.0
+type (y) to proceed if needed 
+choose project name
+choose package name if needed
+choose react framework with arrow buttons and enter
+choose Typescript variant
+cd folder-name
+npm install
+npm run dev
