@@ -1,0 +1,23 @@
+{
+  "development": {
+    "username": "postgres", // Default username for PostgreSQL
+    "password": null,       // No password if not set
+    "database": "timesheet_db", // Database name
+    "host": "127.0.0.1",    // Localhost
+    "dialect": "postgres"
+  },
+  "test": {
+    "username": "postgres",
+    "password": null,
+    "database": "timesheet_db_test",
+    "host": "127.0.0.1",
+    "dialect": "postgres"
+  },
+  "production": {
+    "username": "postgres",
+    "password": null,
+    "database": "timesheet_db_production",
+    "host": "127.0.0.1",
+    "dialect": "postgres"
+  }
+}

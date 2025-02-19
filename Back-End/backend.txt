@@ -1,0 +1,11 @@
+npm init -y
+
+npm install express pg sequelize bcrypt jsonwebtoken socket.io dotenv
+
+npm fund
+npm dedupe
+
+npm init -y
+
+npm install sequelize-cli pg pg-hstore
+npx sequelize-cli init
