@@ -9,6 +9,10 @@ npm dedupe
 npm init -y
 
 npm install sequelize-cli pg pg-hstore
+npm install -g sequelize-cli
+npm install -g sequelize-auto
 npx sequelize-cli init
+
+sequelize-auto -h <host> -d <database> -u <user> -x <password> -p <port> --dialect postgres -o ./models
 
 npx sequelize-cli model:generate 

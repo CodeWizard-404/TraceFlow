@@ -16,3 +16,4 @@ const Agent = sequelize.define('Agent', {
 });
 
 module.exports = Agent;
+
