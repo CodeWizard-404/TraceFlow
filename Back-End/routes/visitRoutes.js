@@ -1,8 +1,11 @@
 const express = require('express');
 const router = express.Router();
-const { logVisit, validateChecklist } = require('../controllers/visitController');
+const VisitController = require('../controllers/visitController');
 
-router.post('/log-visit', logVisit);
-router.post('/validate-checklist/:visitID', validateChecklist);
+// Create a new visit
+router.post('/visits', VisitController.createVisit);
+
+// Log details for an existing visit (e.g., checklist, photos, comments)
+router.put('/visits/:id/log', VisitController.logVisit);
 
 module.exports = router;

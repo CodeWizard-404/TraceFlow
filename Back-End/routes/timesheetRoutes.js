@@ -1,9 +1,17 @@
 const express = require('express');
 const router = express.Router();
-const { createTimesheet, viewTimesheet, validateTimesheet } = require('../controllers/timesheetController');
+const TimesheetController = require('../controllers/timesheetController');
 
-router.post('/create-timesheet', createTimesheet);
-router.get('/view-timesheet/:timesheetID', viewTimesheet);
-router.post('/validate-timesheet/:timesheetID', validateTimesheet);
+// Create a new timesheet or add visits to an existing one
+router.post('/timesheets', TimesheetController.createTimesheet);
+
+// View all timesheets (for managers or HR)
+router.get('/timesheets', TimesheetController.getAllTimesheets);
+
+// View a specific timesheet by ID
+router.get('/timesheets/:id', TimesheetController.getTimesheetById);
+
+// Validate a timesheet (fully or partially)
+router.put('/timesheets/:id/validate', TimesheetController.validateTimesheet);
 
 module.exports = router;
