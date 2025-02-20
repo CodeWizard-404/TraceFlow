@@ -1,49 +1,35 @@
-const fs = require('fs');
-const path = require('path');
-const Sequelize = require('sequelize');
-const basename = path.basename(__filename);
-const env = process.env.NODE_ENV || 'development';
-const config = require(__dirname + '/../config/config.json')[env];
-const db = {};
+const { sequelize } = require('../config/db');
+const DataTypes = require('sequelize').DataTypes;
 
-let sequelize;
-if (config.use_env_variable) {
-    sequelize = new Sequelize(process.env[config.use_env_variable], config);
-} else {
-    sequelize = new Sequelize(config.database, config.username, config.password, config);
-}
+const Agent = require('./agent')(sequelize, DataTypes);
+const User = require('./user')(sequelize, DataTypes);
+const Visit = require('./visit')(sequelize, DataTypes);
+const Timesheet = require('./timesheet')(sequelize, DataTypes);
 
-// Load all models
-fs.readdirSync(__dirname)
-    .filter(file => {
-        return (file.indexOf('.') !== 0) && (file !== basename) && (file.slice(-3) === '.js');
-    })
-    .forEach(file => {
-        const model = require(path.join(__dirname, file))(sequelize, Sequelize.DataTypes);
-        db[model.name] = model;
-    });
+// Define associations
+const setupAssociations = () => {
+  // User-Visit relations
+  User.hasMany(Visit, { foreignKey: 'supervisorID' });
+  Visit.belongsTo(User, { foreignKey: 'supervisorID' });
 
-// Define relationships
-Object.keys(db).forEach(modelName => {
-    if (db[modelName].associate) {
-        db[modelName].associate(db);
-    }
-});
+  // Agent-Visit relations
+  Agent.hasMany(Visit, { foreignKey: 'agentID' });
+  Visit.belongsTo(Agent, { foreignKey: 'agentID' });
 
-// Explicitly define relationships
-db.User.hasMany(db.Visit, { foreignKey: 'supervisorID' });
-db.Visit.belongsTo(db.User, { foreignKey: 'supervisorID' });
+  // Timesheet-Visit relations
+  Timesheet.hasMany(Visit, { foreignKey: 'timesheetID' });
+  Visit.belongsTo(Timesheet, { foreignKey: 'timesheetID' });
 
-db.Agent.hasMany(db.Visit, { foreignKey: 'agentID' });
-db.Visit.belongsTo(db.Agent, { foreignKey: 'agentID' });
+  // User-Timesheet relations
+  User.hasMany(Timesheet, { foreignKey: 'supervisorID' });
+  Timesheet.belongsTo(User, { foreignKey: 'supervisorID' });
+};
 
-db.Timesheet.hasMany(db.Visit, { foreignKey: 'timesheetID' });
-db.Visit.belongsTo(db.Timesheet, { foreignKey: 'timesheetID' });
-
-db.User.hasMany(db.Timesheet, { foreignKey: 'supervisorID' });
-db.Timesheet.belongsTo(db.User, { foreignKey: 'supervisorID' });
-
-db.sequelize = sequelize;
-db.Sequelize = Sequelize;
-
-module.exports = db;
+module.exports = {
+  sequelize,
+  Agent,
+  User,
+  Visit,
+  Timesheet,
+  setupAssociations
+};

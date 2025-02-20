@@ -1,6 +1,5 @@
-const Timesheet = require('../models/timesheet');
-const Visit = require('../models/visit');
-const Agent = require('../models/agent');
+const { Visit, Agent, Timesheet } = require('../models'); 
+
 
 class TimesheetService {
 

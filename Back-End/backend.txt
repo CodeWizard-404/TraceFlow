@@ -1,18 +1,17 @@
 npm init -y
 
 npm install express pg sequelize bcrypt jsonwebtoken socket.io dotenv
-npm install --save-dev nodemon
-
-npm fund
-npm dedupe
-
-npm init -y
-
 npm install sequelize-cli pg pg-hstore
 npm install -g sequelize-cli
 npm install -g sequelize-auto
+npm install sequelize-auto-migrations
 npx sequelize-cli init
+npm install --save-dev nodemon
+npm install nanoid
 
-sequelize-auto -h <host> -d <database> -u <user> -x <password> -p <port> --dialect postgres -o ./models
+npm init -y
 
-npx sequelize-cli model:generate 
+npx sequelize-cli db:create
+npx sequelize-auto-migrations --run
+
+npm install --save-dev sequelize-migration-generator

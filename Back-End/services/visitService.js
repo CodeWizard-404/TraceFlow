@@ -1,5 +1,5 @@
-const Visit = require('../models/visit');
-const Agent = require('../models/agent');
+const { Visit, Agent } = require('../models'); 
+
 
 class VisitService {
     async createVisit(data) {

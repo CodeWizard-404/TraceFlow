@@ -1,8 +1,7 @@
-const { DataTypes } = require('sequelize');
 const { nanoid } = require('nanoid');
-const sequelize = require('../config/db');
 
-const Timesheet = sequelize.define('Timesheet', {
+module.exports = (sequelize, DataTypes) => {
+    return sequelize.define('Timesheet', {
     timesheetID: { 
         type: DataTypes.STRING,     
         primaryKey: true,
@@ -14,4 +13,4 @@ const Timesheet = sequelize.define('Timesheet', {
     supervisorID: { type: DataTypes.STRING, allowNull: false }, 
 });
 
-module.exports = Timesheet;
+};

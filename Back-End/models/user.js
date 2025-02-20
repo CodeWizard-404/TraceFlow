@@ -1,8 +1,7 @@
-const { DataTypes } = require('sequelize');
 const { nanoid } = require('nanoid');
-const sequelize = require('../config/db');
 
-const User = sequelize.define('User', {
+module.exports = (sequelize, DataTypes) => {
+    return sequelize.define('User', {
     userID: { 
         type: DataTypes.STRING,     
         primaryKey: true,
@@ -16,4 +15,4 @@ const User = sequelize.define('User', {
     role: { type: DataTypes.STRING, allowNull: true },
 });
 
-module.exports = User;
+};
