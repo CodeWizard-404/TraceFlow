@@ -8,9 +8,6 @@ const Timesheet = require('./timesheet')(sequelize, DataTypes);
 
 // Define associations
 const setupAssociations = () => {
-  // User-Visit relations
-  User.hasMany(Visit, { foreignKey: 'supervisorID' });
-  Visit.belongsTo(User, { foreignKey: 'supervisorID' });
 
   // Agent-Visit relations
   Agent.hasMany(Visit, { foreignKey: 'agentID' });

@@ -1,0 +1,103 @@
+-- Insert sample Agents
+INSERT INTO "Agents" (
+    "agentID", 
+    "name", 
+    "lastname", 
+    "cin", 
+    "email", 
+    "phone", 
+    "location",
+    "createdAt",
+    "updatedAt"
+)
+VALUES
+    ('AGT001', 'John', 'Doe', 'AB123456', 'john.doe@example.com', '+212612345678', 'Casablanca', CURRENT_TIMESTAMP, CURRENT_TIMESTAMP),
+    ('AGT002', 'Jane', 'Smith', 'CD789012', 'jane.smith@example.com', '+212698765432', 'Rabat', CURRENT_TIMESTAMP, CURRENT_TIMESTAMP),
+    ('AGT003', 'Ali', 'Benali', 'EF345678', 'ali.benali@example.com', '+212622334455', 'Marrakech', CURRENT_TIMESTAMP, CURRENT_TIMESTAMP)
+ON CONFLICT DO NOTHING;
+
+
+
+
+-- Insert sample Users (with all required columns)
+INSERT INTO "Users" (
+    "userID", 
+    "name", 
+    "lastname", 
+    "email", 
+    "phone", 
+    "role",
+    "createdAt",
+    "updatedAt"
+)
+VALUES
+    (1, 'Supervisor1', 'Smith', 'super1@company.com', '+212600000001', 'supervisor', CURRENT_TIMESTAMP, CURRENT_TIMESTAMP),
+    (2, 'Supervisor2', 'Johnson', 'super2@company.com', '+212600000002', 'supervisor', CURRENT_TIMESTAMP, CURRENT_TIMESTAMP)
+ON CONFLICT DO NOTHING;
+
+
+INSERT INTO "Timesheets" (
+    "timesheetID", 
+    "weekNumber", 
+    "year", 
+    "supervisorID", 
+    "status",
+    "createdAt",
+    "updatedAt"
+)
+VALUES
+    (1, 24, 2024, 1, 'pending', CURRENT_TIMESTAMP, CURRENT_TIMESTAMP),
+    (2, 25, 2024, 2, 'validated', CURRENT_TIMESTAMP, CURRENT_TIMESTAMP)
+ON CONFLICT DO NOTHING;
+
+
+
+
+-- Insert sample Visits with proper array syntax
+INSERT INTO "Visits" (
+    "visitID", 
+    "date", 
+    "time", 
+    "duration",
+    "location", 
+    "reason", 
+    "checklist", 
+    "photos", 
+    "comment", 
+    "status",
+    "agentID", 
+    "timesheetID", 
+    "createdAt",
+    "updatedAt"
+)
+VALUES
+    (1, '2024-06-10', '09:00:00', 60, 'Casablanca',
+     '{"Routine check"}',  -- Single text value
+     '{"safety_check","equipment_inspection"}',  -- Proper array syntax
+     '{"photo1.jpg","photo2.jpg"}',  -- Proper array syntax
+     'Everything in order', 'pending', 
+     'AGT001', 1, CURRENT_TIMESTAMP, CURRENT_TIMESTAMP),
+    
+    (2, '2024-06-11', '14:30:00', 45, 'Rabat',
+     '{"Client follow-up"}',
+     '{"client_feedback","document_verification"}',
+     '{"photo3.jpg"}',
+     'Issue resolved', 'pending', 
+     'AGT002', 1, CURRENT_TIMESTAMP, CURRENT_TIMESTAMP),
+    
+    (3, '2024-06-12', '11:00:00', 90, 'Marrakech',
+     '{"Training session"}',
+     '{"attendance","material_coverage"}',
+     '{}',
+     'Completed module 1', 'validated', 
+     'AGT003', 2, CURRENT_TIMESTAMP, CURRENT_TIMESTAMP),
+    
+    (4, '2024-06-13', '16:45:00', 30, 'Casablanca',
+     '{"Quality check"}',
+     '{"equipment_status","safety_protocols"}',
+     '{"photo4.jpg"}',
+     'All protocols followed', 'validated', 
+     'AGT001', 2, CURRENT_TIMESTAMP, CURRENT_TIMESTAMP)
+ON CONFLICT DO NOTHING;
+
+

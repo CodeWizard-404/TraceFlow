@@ -30,15 +30,13 @@ const TimesheetController = {
         try {
             const { id } = req.params;
             const { visitIDs = [], status } = req.body;
-
-            // Validate required fields
-            if (!status || (Array.isArray(visitIDs) && visitIDs.some(id => typeof id !== 'number'))) {
+    
+            // ✅ Correct validation for strings
+            if (!status || (Array.isArray(visitIDs) && visitIDs.some(id => typeof id !== 'string')) ){
                 return res.status(400).json({ error: 'Invalid input data' });
             }
-
-            // Call the TimesheetService to validate the timesheet
-            const timesheet = await TimesheetService.validateTimesheet(parseInt(id), visitIDs, status);
-
+    
+            const timesheet = await TimesheetService.validateTimesheet(id, visitIDs, status);
             res.status(200).json(timesheet);
         } catch (error) {
             res.status(500).json({ error: error.message });
@@ -64,7 +62,7 @@ const TimesheetController = {
             const { id } = req.params;
 
             // Fetch the timesheet by ID
-            const timesheet = await TimesheetService.viewTimesheet(parseInt(id));
+            const timesheet = await TimesheetService.viewTimesheet(id);
             if (!timesheet) return res.status(404).json({ error: 'Timesheet not found' });
 
             res.status(200).json(timesheet);

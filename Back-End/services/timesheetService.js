@@ -1,4 +1,4 @@
-const { Visit, Agent, Timesheet } = require('../models'); 
+const { Visit, Agent, Timesheet } = require('../models');
 
 
 class TimesheetService {
@@ -55,44 +55,47 @@ class TimesheetService {
         }
     }
 
+    // services/timesheetService.js
     async validateTimesheet(timesheetID, visitIDs = [], status) {
         try {
-            // Find the timesheet
             const timesheet = await Timesheet.findByPk(timesheetID);
             if (!timesheet) throw new Error('Timesheet not found');
 
-            // Fetch all visits associated with the timesheet
-            const visits = await Visit.findAll({ where: { timesheetID } });
+            // Get all visits for this timesheet
+            const visits = await Visit.findAll({
+                where: { timesheetID }
+            });
 
-            // If no specific visit IDs are provided, validate the entire timesheet
-            if (visitIDs.length === 0) {
-                for (const visit of visits) {
+            // Convert to Set for faster lookup
+            const visitIdSet = new Set(visitIDs);
+
+            // Validate matching visits
+            const visitsToUpdate = visits.filter(visit =>
+                visitIdSet.has(visit.visitID)
+            );
+
+            if (visitsToUpdate.length !== visitIDs.length) {
+                throw new Error('One or more visit IDs not found in this timesheet');
+            }
+
+            // Update visits
+            await Promise.all(
+                visitsToUpdate.map(visit => {
                     visit.status = status;
-                    await visit.save();
-                }
-                timesheet.status = status;
-                await timesheet.save();
-                return timesheet;
-            }
+                    return visit.save();
+                })
+            );
 
-            // Otherwise, validate only the specified visits
-            for (const visitID of visitIDs) {
-                const visit = visits.find((v) => v.visitID === visitID);
-                if (!visit) throw new Error(`Visit with ID ${visitID} not found`);
-                visit.status = status;
-                await visit.save();
-            }
-
-            // Check if all visits in the timesheet are now validated
-            const allVisitsValidated = visits.every((visit) => visit.status === 'validated');
-            if (allVisitsValidated) {
+            // Update timesheet status if all visits validated
+            const allValidated = visits.every(v => v.status === 'validated');
+            if (allValidated) {
                 timesheet.status = 'validated';
                 await timesheet.save();
             }
 
             return timesheet;
         } catch (error) {
-            throw new Error('Failed to validate timesheet: ' + error.message);
+            throw new Error('Validation failed: ' + error.message);
         }
     }
 
@@ -100,7 +103,7 @@ class TimesheetService {
         try {
             // Fetch all timesheets with associated visits
             const timesheets = await Timesheet.findAll({
-                include: [Visit], 
+                include: [Visit],
             });
 
             return timesheets;
@@ -113,7 +116,7 @@ class TimesheetService {
         try {
             // Find the timesheet by ID
             const timesheet = await Timesheet.findByPk(timesheetID, {
-                include: [Visit], 
+                include: [Visit],
             });
             return timesheet;
         } catch (error) {

@@ -13,5 +13,6 @@ module.exports = (sequelize, DataTypes) => {
         cin: { type: DataTypes.STRING, unique: true, allowNull: false },
         email: { type: DataTypes.STRING, unique: true, allowNull: false },
         phone: { type: DataTypes.STRING, allowNull: false },
+        location: { type: DataTypes.STRING, unique: true, allowNull: false },
     });
 };
