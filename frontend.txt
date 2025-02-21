@@ -7,3 +7,13 @@ choose Typescript variant
 cd folder-name
 npm install
 npm run dev
+
+
+
+npm install html5-qrcode
+
+
+
+npm install react-router-dom
+
+
