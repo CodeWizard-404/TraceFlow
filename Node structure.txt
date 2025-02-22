@@ -1,0 +1,43 @@
+backend/
+├── src/
+│   ├── index.js               # Server entry point
+│   ├── config/                # Configuration files
+│   │   ├── db.js             # PostgreSQL connection setup
+│   │   ├── env.js            # Environment variables
+│   ├── controllers/           # Request handlers
+│   │   ├── authController.js  # Authentication logic
+│   │   ├── visitController.js # Visit CRUD operations
+│   │   ├── timesheetController.js # Timesheet CRUD and validation
+│   │   ├── reportController.js    # Report generation
+│   │   ├── notificationController.js # Notification handling
+│   │   ├── userController.js      # User management
+│   ├── models/                # Database schemas
+│   │   ├── User.js            # User schema
+│   │   ├── Visit.js           # Visit schema
+│   │   ├── Timesheet.js       # Timesheet schema
+│   │   ├── Notification.js    # Notification schema
+│   │   ├── Report.js          # Report schema
+│   ├── routes/                # API routes
+│   │   ├── authRoutes.js      # /api/auth endpoints
+│   │   ├── visitRoutes.js     # /api/visits endpoints
+│   │   ├── timesheetRoutes.js # /api/timesheets endpoints
+│   │   ├── reportRoutes.js    # /api/reports endpoints
+│   │   ├── notificationRoutes.js # /api/notifications endpoints
+│   │   ├── userRoutes.js      # /api/users endpoints
+│   ├── middleware/            # Custom middleware
+│   │   ├── authMiddleware.js  # JWT authentication
+│   │   ├── roleMiddleware.js  # Role-based access control
+│   │   ├── errorHandler.js    # Global error handling
+│   ├── services/              # Business logic and external integrations
+│   │   ├── dbService.js       # Database operations
+│   │   ├── aiService.js       # Phi-4 AI/ML integration
+│   │   ├── notificationService.js # Socket.IO and SMTP notifications
+│   │   ├── fileService.js     # PDF/Excel export handling
+│   ├── utils/                 # Utility functions
+│   │   ├── constants.js       # App constants
+│   │   ├── helpers.js         # Helper functions
+│   └── socket/                # Real-time communication
+│       ├── socket.js          # Socket.IO setup
+├── .env                       # Environment variables (e.g., DB credentials)
+├── package.json               # Dependencies and scripts
+└── README.md                  # Project documentation

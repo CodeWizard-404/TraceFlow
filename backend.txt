@@ -15,3 +15,6 @@ npx sequelize-cli db:create
 npx sequelize-auto-migrations --run
 
 npm install --save-dev sequelize-migration-generator
+
+
+node app.js

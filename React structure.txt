@@ -1,0 +1,51 @@
+web-app/
+├── public/
+│   ├── index.html             # HTML entry point
+│   ├── favicon.ico            # App favicon
+│   └── manifest.json          # Web app manifest
+├── src/
+│   ├── index.js               # App entry point
+│   ├── App.js                 # Root component
+│   ├── assets/                # Static assets (images, fonts)
+│   │   ├── logo.png           # App logo
+│   ├── components/            # Reusable UI components
+│   │   ├── Navbar.js          # Navigation bar
+│   │   ├── Sidebar.js         # Sidebar for role-based navigation
+│   │   ├── CustomButton.js    # Custom button
+│   │   ├── DataTable.js       # Table for lists (visits, timesheets)
+│   │   ├── Chart.js           # KPI charts (using Chart.js)
+│   ├── pages/                 # Main screens
+│   │   ├── auth/
+│   │   │   ├── Login.js       # Login page
+│   │   │   ├── ForgotPassword.js # Password reset page
+│   │   ├── dashboard/
+│   │   │   ├── ManagerDashboard.js # Manager KPI dashboard
+│   │   │   ├── HRDashboard.js     # HR overview dashboard
+│   │   ├── visit/
+│   │   │   ├── VisitList.js       # List of visits
+│   │   │   ├── VisitDetails.js    # View visit details
+│   │   ├── timesheet/
+│   │   │   ├── TimesheetList.js   # List of timesheets
+│   │   │   ├── TimesheetReview.js # Review and validate timesheets
+│   │   ├── reports/
+│   │   │   ├── ReportGenerator.js # Generate and export reports
+│   │   ├── notifications/
+│   │   │   ├── NotificationPanel.js # Real-time notifications
+│   │   ├── admin/
+│   │   │   ├── UserManagement.js  # Manage users and roles
+│   ├── redux/                 # State management with Redux
+│   │   ├── store.js           # Redux store configuration
+│   │   ├── slices/
+│   │   │   ├── authSlice.js   # Authentication state
+│   │   │   ├── visitSlice.js  # Visit state
+│   │   │   ├── timesheetSlice.js # Timesheet state
+│   │   │   ├── notificationSlice.js # Notification state
+│   ├── services/              # API and external services
+│   │   ├── api.js             # Axios-based HTTP client
+│   │   ├── socket.js          # Socket.IO client for real-time
+│   ├── utils/                 # Utility functions
+│   │   ├── constants.js       # App constants
+│   │   ├── helpers.js         # Helper functions
+│   └── routes.js              # React Router configuration
+├── package.json               # Dependencies and scripts
+└── README.md                  # Project documentation

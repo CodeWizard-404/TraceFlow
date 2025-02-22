@@ -1,0 +1,41 @@
+lib/
+├── main.dart                # Entry point of the application
+├── blocs/                  # Business logic components for state management
+│   ├── auth_bloc.dart      # Handles authentication states and events
+│   ├── visit_bloc.dart     # Manages visit-related states and events
+│   ├── timesheet_bloc.dart # Manages timesheet-related states and events
+│   ├── notification_bloc.dart # Manages notification states and events
+├── models/                 # Data models
+│   ├── user.dart           # User model (supervisor details)
+│   ├── visit.dart          # Visit model (date, time, agent, etc.)
+│   ├── timesheet.dart      # Timesheet model (week, visits, status)
+│   ├── notification.dart   # Notification model
+├── services/               # API and local storage services
+│   ├── api_service.dart    # Handles HTTP requests to the backend
+│   ├── local_storage.dart  # Manages SQLite for offline functionality
+│   ├── notification_service.dart # Handles push and real-time notifications
+├── screens/                # UI screens
+│   ├── auth/
+│   │   ├── login_screen.dart       # Login screen
+│   │   ├── forgot_password_screen.dart # Password reset screen
+│   ├── home/
+│   │   ├── home_screen.dart        # Supervisor’s home screen
+│   ├── visit/
+│   │   ├── visit_logging_screen.dart # QR code scanning and visit input
+│   │   ├── visit_details_screen.dart # View/edit past visit logs
+│   │   ├── checklist_screen.dart    # Checklist validation
+│   ├── timesheet/
+│   │   ├── timesheet_create_screen.dart # Create/update timesheets
+│   │   ├── timesheet_list_screen.dart   # View past timesheets
+│   │   ├── timesheet_details_screen.dart # Detailed timesheet view
+│   ├── notifications/
+│   │   ├── notification_list_screen.dart # List of notifications
+├── widgets/                # Reusable UI components
+│   ├── custom_button.dart  # Custom button widget
+│   ├── text_field.dart     # Custom text field widget
+│   ├── visit_card.dart     # Card for displaying visit summaries
+│   ├── timesheet_card.dart # Card for displaying timesheet summaries
+├── utils/                  # Utility functions and constants
+│   ├── constants.dart      # App-wide constants (colors, sizes, etc.)
+│   ├── helpers.dart        # Helper functions (e.g., date formatting)
+└── routes.dart             # App navigation routes
