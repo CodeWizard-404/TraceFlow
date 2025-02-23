@@ -30,9 +30,9 @@ class Timesheet {
       supervisorID: json['supervisorID'],
       visits: json['Visits'] != null && json['Visits'] is List
           ? (json['Visits'] as List).map((v) => Visit.fromJson(v)).toList()
-          : [],
-      createdAt: DateTime.parse(json['createdAt']),
-      updatedAt: DateTime.parse(json['updatedAt']),
+          : [], // Default to empty list if Visits is null
+      createdAt: json['createdAt'] != null ? DateTime.parse(json['createdAt']) : null,
+      updatedAt: json['updatedAt'] != null ? DateTime.parse(json['updatedAt']) : null,
     );
   }
 

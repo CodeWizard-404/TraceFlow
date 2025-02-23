@@ -2,8 +2,8 @@ import 'package:flutter/material.dart';
 import '../models/timesheet.dart';
 import '../widgets/visit_item.dart';
 
-class TimesheetDetailsScreen extends StatelessWidget {
-  const TimesheetDetailsScreen({super.key});
+class TimesheetDetails extends StatelessWidget {
+  const TimesheetDetails({super.key});
 
   @override
   Widget build(BuildContext context) {

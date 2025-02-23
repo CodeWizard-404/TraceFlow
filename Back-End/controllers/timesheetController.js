@@ -69,6 +69,25 @@ const TimesheetController = {
         } catch (error) {
             res.status(500).json({ error: error.message });
         }
+    },
+
+    // controllers/timesheetController.js
+    async getTimesheetsBySupervisor(req, res) {
+        try {
+            const { supervisorID } = req.params;
+
+            // Validate that supervisorID is provided
+            if (!supervisorID) {
+                return res.status(400).json({ error: 'Invalid supervisorID' });
+            }
+
+            // Call the TimesheetService to fetch timesheets by supervisorID
+            const timesheets = await TimesheetService.getTimesheetsBySupervisor(supervisorID);
+
+            res.status(200).json(timesheets);
+        } catch (error) {
+            res.status(500).json({ error: error.message });
+        }
     }
 };
 

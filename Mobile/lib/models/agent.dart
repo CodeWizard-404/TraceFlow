@@ -1,32 +1,46 @@
+// models/agent.dart
 class Agent {
   final String? agentID;
   final String? name;
   final String? lastname;
+  final String? cin;
   final String? email;
   final String? phone;
-  final String? cin;
   final String? location;
 
   Agent({
     this.agentID,
     this.name,
     this.lastname,
-    this.location,
+    this.cin,
     this.email,
     this.phone,
-    this.cin,
+    this.location,
   });
 
+  // Convert JSON to Agent object
   factory Agent.fromJson(Map<String, dynamic> json) {
     return Agent(
       agentID: json['agentID'],
       name: json['name'],
       lastname: json['lastname'],
-      location: json['location'],
+      cin: json['cin'],
       email: json['email'],
       phone: json['phone'],
-      cin: json['cin'],
-
+      location: json['location'],
     );
+  }
+
+  // Convert Agent object to JSON
+  Map<String, dynamic> toJson() {
+    return {
+      'agentID': agentID,
+      'name': name,
+      'lastname': lastname,
+      'cin': cin,
+      'email': email,
+      'phone': phone,
+      'location': location,
+    };
   }
 }

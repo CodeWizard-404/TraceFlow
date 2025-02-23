@@ -28,12 +28,12 @@ class Visit {
   factory Visit.fromJson(Map<String, dynamic> json) {
     return Visit(
       visitID: json['visitID'],
-      date: DateTime.parse(json['date']),
+      date: json['date'] != null ? DateTime.parse(json['date']) : null,
       time: json['time'],
       location: json['location'],
       duration: json['duration'],
-      reasons: List<String>.from(json['reason']),
-      checklist: List<String>.from(json['checklist']),
+      reasons: json['reason'] != null ? List<String>.from(json['reason']) : [],
+      checklist: json['checklist'] != null ? List<String>.from(json['checklist']) : [],
       agentID: json['agentID'],
       timesheetID: json['timesheetID'],
       status: json['status'],

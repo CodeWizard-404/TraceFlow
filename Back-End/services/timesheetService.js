@@ -1,4 +1,5 @@
 const { Visit, Agent, Timesheet } = require('../models');
+const VisitService = require('./visitService');
 
 
 class TimesheetService {
@@ -22,25 +23,18 @@ class TimesheetService {
                 });
             }
 
-            // Add each visit to the timesheet
+            // Add each visit to the timesheet using the VisitService
             for (const visitData of visits) {
-                const { date, time, agentID } = visitData;
+                const { date, time, location, agentID } = visitData;
 
-                // Validate agent exists and retrieve the agent's location
-                const agent = await Agent.findByPk(agentID);
-                if (!agent) throw new Error(`Agent with ID ${agentID} not found`);
-
-                // Use the agent's location from the Agent table
-                const location = agent.location;
-
-                // Create the visit and associate it with the timesheet
-                await Visit.create({
+                // Call the VisitService to create the visit
+                await VisitService.createVisit({
                     date,
                     time,
                     location,
                     agentID,
+                    supervisorID,
                     timesheetID: timesheet.timesheetID,
-                    status: 'pending',
                 });
             }
 
@@ -55,7 +49,6 @@ class TimesheetService {
         }
     }
 
-    // services/timesheetService.js
     async validateTimesheet(timesheetID, visitIDs = [], status) {
         try {
             const timesheet = await Timesheet.findByPk(timesheetID);
@@ -121,6 +114,20 @@ class TimesheetService {
             return timesheet;
         } catch (error) {
             throw new Error('Failed to get timesheet: ' + error.message);
+        }
+    }
+
+    async getTimesheetsBySupervisor(supervisorID) {
+        try {
+            // Fetch all timesheets for the given supervisorID with associated visits
+            const timesheets = await Timesheet.findAll({
+                where: { supervisorID },
+                include: [Visit], // Include associated visits
+            });
+
+            return timesheets;
+        } catch (error) {
+            throw new Error('Failed to get timesheets by supervisorID: ' + error.message);
         }
     }
 }

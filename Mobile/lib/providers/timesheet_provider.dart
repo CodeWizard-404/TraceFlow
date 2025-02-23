@@ -1,7 +1,7 @@
+import 'dart:convert';
 import 'package:flutter/foundation.dart';
 import '../models/timesheet.dart';
-import '../models/visit.dart';
-import '../services/api_service.dart';
+import '../services/timesheet_service.dart';
 
 class TimesheetProvider with ChangeNotifier {
   List<Timesheet> _timesheets = [];
@@ -13,77 +13,58 @@ class TimesheetProvider with ChangeNotifier {
   // Fetch all timesheets
   Future<void> fetchTimesheets() async {
     try {
-      final response = await ApiService.getTimesheets();
-      _timesheets = (response).map((json) => Timesheet.fromJson(json)).toList();
+      // Fetch timesheets using the service
+      final timesheets = await TimesheetService.fetchAllTimesheets();
+      _timesheets = timesheets;
       notifyListeners();
-    } catch (error) {
-      throw Exception('Failed to fetch timesheets: $error');
+    } catch (e) {
+      print('Error fetching timesheets: $e');
+      throw Exception('Failed to fetch timesheets');
     }
   }
 
   // Create a new timesheet or add visits to an existing one
-  Future<void> createTimesheet(int weekNumber, int year, String supervisorID, List<Map<String, dynamic>> visitsData) async {
+  Future<void> createTimesheet(int weekNumber, int year, String supervisorID, List<Map<String, dynamic>> visits) async {
     try {
-      // Prepare the timesheet data for the API call
-      final timesheetData = {
+      final response = await TimesheetService.createTimesheet({
         'weekNumber': weekNumber,
         'year': year,
         'supervisorID': supervisorID,
-        'visits': visitsData, // Pass visitsData as-is for the API
-      };
+        'visits': visits,
+      });
 
-      // Call the API to create the timesheet
-      await ApiService.postTimesheet(timesheetData);
+      if (response.statusCode != 200 && response.statusCode != 201) {
+        throw Exception('Failed to create timesheet: ${response.body}');
+      }
 
-      // Convert visitsData to List<Visit> for the Timesheet model
-      final visits = visitsData.map((v) => Visit.fromJson(v)).toList();
-
-      // Create a new Timesheet object
-      final newTimesheet = Timesheet(
-        timesheetID: DateTime.now().millisecondsSinceEpoch.toString(),
-        weekNumber: weekNumber,
-        year: year,
-        status: 'pending',
-        supervisorID: supervisorID,
-        visits: visits, // Pass the converted List<Visit>
-      );
-
-      // Update the state
-      _timesheets.add(newTimesheet);
-      _currentTimesheet = newTimesheet;
+      // Parse the response and update the local state
+      final responseData = jsonDecode(response.body);
+      print('Timesheet created successfully: $responseData');
       notifyListeners();
-    } catch (error) {
-      throw Exception('Failed to create timesheet: $error');
+    } catch (e) {
+      print('Error creating timesheet: $e');
+      throw Exception('Failed to create timesheet');
     }
   }
+
   // Fetch a specific timesheet by ID
   Future<void> fetchTimesheetById(String id) async {
     try {
-      final response = await ApiService.getTimesheetById(id);
-      final timesheet = Timesheet.fromJson(response);
-      _currentTimesheet = timesheet;
+      _currentTimesheet = await TimesheetService.fetchTimesheetById(id);
       notifyListeners();
     } catch (error) {
       throw Exception('Failed to fetch timesheet: $error');
     }
   }
 
-  // Validate a timesheet (fully or partially)
-  Future<void> validateTimesheet(String id, List<String> visitIDs, String status) async {
+  // Fetch timesheets by supervisor
+  Future<void> fetchTimesheetsBySupervisor(String supervisorID) async {
     try {
-      final validationData = {
-        'visitIDs': visitIDs,
-        'status': status,
-      };
-      await ApiService.validateTimesheet(id, validationData);
-
-      final timesheetIndex = _timesheets.indexWhere((t) => t.timesheetID == id);
-      if (timesheetIndex != -1) {
-        _timesheets[timesheetIndex].status = status;
-        notifyListeners();
-      }
+      final timesheets = await TimesheetService.fetchTimesheetsBySupervisor(supervisorID);
+      _timesheets = timesheets;
+      notifyListeners();
     } catch (error) {
-      throw Exception('Failed to validate timesheet: $error');
+      throw Exception('Failed to fetch timesheets by supervisor: $error');
     }
   }
 

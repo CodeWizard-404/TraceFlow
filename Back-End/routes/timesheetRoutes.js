@@ -6,5 +6,6 @@ router.post('/', TimesheetController.createTimesheet);
 router.get('/', TimesheetController.getAllTimesheets);
 router.get('/:id', TimesheetController.getTimesheetById);
 router.put('/:id/validate', TimesheetController.validateTimesheet);
+router.get('/supervisor/:supervisorID', TimesheetController.getTimesheetsBySupervisor);
 
 module.exports = router;
