@@ -22,6 +22,8 @@ class LogVisitScreen extends StatefulWidget {
 
 class LogVisitScreenState extends State<LogVisitScreen> {
   String? _agentPhone;
+  String? _agentName;
+  String? _agentLastname;
   String? _agentID;
   final List<String> _selectedReasons = [];
   final List<String> _checklist = [];
@@ -76,7 +78,7 @@ class LogVisitScreenState extends State<LogVisitScreen> {
             SizedBox(height: 20),
 
             if (_agentPhone == null) ...[
-              // Agent Verification Card
+              // Agent Phone Input Card
               _buildInputCard(
                 title: 'Agent Verification',
                 icon: Icons.person,
@@ -123,7 +125,8 @@ class LogVisitScreenState extends State<LogVisitScreen> {
                             // Verify if the agent ID matches the visit's agent ID.
                             if (agent['agentID'] == visit.agentID) {
                               setState(() {
-                                _agentID = agent['agentID'];
+                                _agentName = agent['name']; // Store the agent's name
+                                _agentLastname = agent['lastname']; // Store the agent's lastname
                                 _isAgentVerified = true;
                                 visitProvider.startVisitTimer();
                               });
@@ -140,7 +143,9 @@ class LogVisitScreenState extends State<LogVisitScreen> {
                         }
                       },
                       icon: Icon(Icons.qr_code_scanner, color: Colors.white),
-                      label: Text('Scan QR Code or Use Manual Input'),
+                      label: Text(
+                        _agentPhone != null ? 'Agent Verified' : 'Scan QR Code or Use Manual Input',
+                        style: TextStyle(color: Colors.white)),
                       style: ElevatedButton.styleFrom(
                         backgroundColor: Color(0xFF4CB1C7),
                         padding: EdgeInsets.symmetric(horizontal: 24, vertical: 12),
@@ -156,19 +161,47 @@ class LogVisitScreenState extends State<LogVisitScreen> {
               // Agent Details Card
               _buildInputCard(
                 title: 'Agent Details',
-                icon: Icons.person,
+                icon: Icons.account_tree,
                 child: Column(
                   crossAxisAlignment: CrossAxisAlignment.start,
                   children: [
-                    Text(
-                      'Agent ID: $_agentID',
-                      style: TextStyle(fontSize: 16, fontWeight: FontWeight.w500, color: Colors.grey[700]),
+                    // Agent Name with Icon
+                    Row(
+                      children: [
+                        Icon(Icons.person,color: Colors.grey[700], size: 15),
+                        SizedBox(width: 8),
+                        Text(
+                          '${_agentName ?? ''} ${_agentLastname ?? ''}', // Display name and lastname
+                          style: TextStyle(fontSize: 16, fontWeight: FontWeight.w500, color: Colors.grey[700]),
+                        ),
+                      ],
                     ),
-                    SizedBox(height: 12),
-                    Text(
-                      'Select Reasons for Visit',
-                      style: TextStyle(fontSize: 16, fontWeight: FontWeight.bold, color: Color(0xFF4CB1C7)),
+                    SizedBox(height: 8),
+
+                    // Agent Phone with Icon
+                    Row(
+                      children: [
+                        Icon(Icons.phone,color: Colors.grey[700],  size: 15),
+                        SizedBox(width: 8),
+                        Text(
+                          '$_agentPhone', // Display phone number
+                          style: TextStyle(fontSize: 16, fontWeight: FontWeight.w500, color: Colors.grey[700]),
+                        ),
+                      ],
                     ),
+                    SizedBox(height: 25),
+
+                    Row(
+                      children: [
+                        Icon(Icons.list_alt, color: Color(0xFF4CB1C7), size: 20), // Add an icon
+                        SizedBox(width: 8), // Add spacing between the icon and text
+                        Text(
+                          'Reasons for Visit',
+                          style: TextStyle(fontSize: 16, fontWeight: FontWeight.bold, color: Color(0xFF4CB1C7)),
+                        ),
+                      ],
+                    ),
+
                     Wrap(
                       spacing: 8.0,
                       children: _reasons.map((reason) {
@@ -190,9 +223,15 @@ class LogVisitScreenState extends State<LogVisitScreen> {
                       }).toList(),
                     ),
                     SizedBox(height: 16),
-                    Text(
-                      'Checklist',
-                      style: TextStyle(fontSize: 16, fontWeight: FontWeight.bold, color: Color(0xFF4CB1C7)),
+                    Row(
+                      children: [
+                        Icon(Icons.list_alt, color: Color(0xFF4CB1C7), size: 20), // Add an icon
+                        SizedBox(width: 8), // Add spacing between the icon and text
+                        Text(
+                          'Checklist',
+                          style: TextStyle(fontSize: 16, fontWeight: FontWeight.bold, color: Color(0xFF4CB1C7)),
+                        ),
+                      ],
                     ),
                     CheckboxListTile(
                       title: Text('Task 1 Completed'),
@@ -220,47 +259,50 @@ class LogVisitScreenState extends State<LogVisitScreen> {
                       controlAffinity: ListTileControlAffinity.leading,
                       activeColor: Color(0xFF4CB1C7),
                     ),
+                    CheckboxListTile(
+                      title: Text('Task 3 Completed'),
+                      value: _checklist.contains('Task 3'),
+                      onChanged: (value) => setState(() {
+                        if (value!) {
+                          _checklist.add('Task 3');
+                        } else {
+                          _checklist.remove('Task 3');
+                        }
+                      }),
+                      controlAffinity: ListTileControlAffinity.leading,
+                      activeColor: Color(0xFF4CB1C7),
+                    ),
+                    CheckboxListTile(
+                      title: Text('Task 4 Completed'),
+                      value: _checklist.contains('Task 4'),
+                      onChanged: (value) => setState(() {
+                        if (value!) {
+                          _checklist.add('Task 4');
+                        } else {
+                          _checklist.remove('Task 4');
+                        }
+                      }),
+                      controlAffinity: ListTileControlAffinity.leading,
+                      activeColor: Color(0xFF4CB1C7),
+                    ),
+                    CheckboxListTile(
+                      title: Text('Task 5 Completed'),
+                      value: _checklist.contains('Task 5'),
+                      onChanged: (value) => setState(() {
+                        if (value!) {
+                          _checklist.add('Task 5');
+                        } else {
+                          _checklist.remove('Task 5');
+                        }
+                      }),
+                      controlAffinity: ListTileControlAffinity.leading,
+                      activeColor: Color(0xFF4CB1C7),
+                    ),
+
                   ],
                 ),
               ),
-
-              SizedBox(height: 24),
-
-              // Validate Visit Button
-              Center(
-                child: ElevatedButton.icon(
-                  onPressed: () async {
-                    final duration = visitProvider.stopVisitTimer();
-
-                    final visitData = {
-                      'duration': duration,
-                      'reason': List<String>.from(_selectedReasons),
-                      'checklist': List<String>.from(_checklist),
-                      'status': 'Visited',
-                    };
-
-                    print('Logging visit with data: $visitData'); // Debug print
-
-                    try {
-                      await visitProvider.logVisit(widget.visitID, visitData);
-                      Navigator.pop(context);
-                    } catch (error) {
-                      ScaffoldMessenger.of(context).showSnackBar(
-                        SnackBar(content: Text('Failed to log visit: $error')),
-                      );
-                    }
-                  },
-                  icon: Icon(Icons.check_circle, color: Colors.white),
-                  label: Text('Validate Visit'),
-                  style: ElevatedButton.styleFrom(
-                    backgroundColor: Color(0xFFE81F76),
-                    padding: EdgeInsets.symmetric(horizontal: 24, vertical: 12),
-                    shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(12)),
-                  ),
-                ),
-              ),
-            ],
-          ],
+            ],          ],
         ),
       ),
     );
