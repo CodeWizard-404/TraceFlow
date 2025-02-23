@@ -302,7 +302,45 @@ class LogVisitScreenState extends State<LogVisitScreen> {
                   ],
                 ),
               ),
-            ],          ],
+            ],
+            SizedBox(height: 24),
+
+            // Validate Visit Button
+            Center(
+              child: ElevatedButton.icon(
+                onPressed: () async {
+                  final duration = visitProvider.stopVisitTimer();
+
+                  final visitData = {
+                    'duration': duration,
+                    'reason': List<String>.from(_selectedReasons),
+                    'checklist': List<String>.from(_checklist),
+                    'status': 'Visited',
+                  };
+
+                  print('Logging visit with data: $visitData'); // Debug print
+
+                  try {
+                    await visitProvider.logVisit(widget.visitID, visitData);
+                    Navigator.pop(context);
+                  } catch (error) {
+                    ScaffoldMessenger.of(context).showSnackBar(
+                      SnackBar(content: Text('Failed to log visit: $error')),
+                    );
+                  }
+                },
+                icon: Icon(Icons.check_circle, color: Colors.white),
+                label: Text(
+                    'Validate Visit',
+                    style: TextStyle(color: Colors.white)),
+                style: ElevatedButton.styleFrom(
+                  backgroundColor: Color(0xFFE81F76),
+                  padding: EdgeInsets.symmetric(horizontal: 24, vertical: 12),
+                  shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(12)),
+                ),
+              ),
+            ),
+          ],
         ),
       ),
     );
