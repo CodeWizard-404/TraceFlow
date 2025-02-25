@@ -1,10 +1,11 @@
 import { useEffect, useState, useRef } from "react";
 import { Html5QrcodeScanner } from "html5-qrcode";
 import { useNavigate } from "react-router-dom";
-import validateAgent from "../apis/api";
+import { scanQR } from "../apis/agentAPI";
 
 function QRScan() {
   const [qrValue, setQrValue] = useState("");
+  const [errorMessage, setErrorMessage] = useState("");
   const scannerRef = useRef<Html5QrcodeScanner | null>(null);
   const navigate = useNavigate();
 
@@ -24,13 +25,14 @@ function QRScan() {
 
       scannerRef.current.render(success, error);
     }
-    function success(result: string) {
-      scannerRef.current?.clear();
+    async function success(result: string) {
       setQrValue(result);
-      if (validateAgent(qrValue)) {
+      const validateAgent = await scanQR(result);
+      if (validateAgent) {
+        scannerRef.current?.clear();
         navigate(`/visit/idVisit/reason`);
       } else {
-        alert("Invalid Agent, please try again");
+        setErrorMessage("Invalid Agent, please try again");
       }
     }
     function error(e: string) {
@@ -44,7 +46,12 @@ function QRScan() {
     }
   }, []);
 
-  return <div id="reader"></div>;
+  return (
+    <>
+      {errorMessage && <p>{errorMessage}</p>}
+      <div id="reader"></div>
+    </>
+  );
 }
 
 export default QRScan;

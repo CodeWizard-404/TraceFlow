@@ -1,11 +1,14 @@
 import { useState } from "react";
+import { useNavigate } from "react-router-dom";
 
 function Reason() {
   const [selectedReasons, setSelectedReasons] = useState<string[]>([]);
+  const navigate = useNavigate();
 
   function handleSubmit(event: React.FormEvent<HTMLFormElement>) {
     event.preventDefault();
     console.log(selectedReasons);
+    navigate(`/visit/idVisit/checklist`);
   }
 
   function handleChange(event: React.ChangeEvent<HTMLInputElement>) {
