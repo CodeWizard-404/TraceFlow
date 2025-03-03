@@ -27,39 +27,35 @@ class VisitService {
         }
     }
 
-    async verifyQRCode(qrData, visitId) {
-        try {
-            // Parse QR data
-            const parsedQR = parseTLV(qrData);
-            const agentPhoneFromQR = parsedQR?.['02'] 
-              || parsedQR['02'] 
+// In visitService.js
+async verifyQRCode(qrData, visitId) {
+    try {
+        const parsedQR = parseTLV(qrData);
+        console.log('Parsed QR Structure:', JSON.stringify(parsedQR, null, 2)); // Pretty-print parsed data
 
+        // Correct phone number extraction path
+        const agentPhoneFromQR = parsedQR['29']?.['03'] 
+            || parsedQR['02']?.replace(/[^0-9+]/g, ''); // Fallback for simple values
 
-            if (!agentPhoneFromQR) {
-                throw new Error('Invalid QR code - missing agent phone number');
-            }
-
-            // Get visit details
-            const visit = await Visit.findByPk(visitId);
-            if (!visit) throw new Error('Visit not found');
-
-            // Get agent details
-            const agent = await Agent.findByPk(visit.agentID);
-            if (!agent) throw new Error('Agent not found');
-
-            // Compare phone numbers
-            if (agent.phone !== agentPhoneFromQR) {
-                throw new Error('Phone number mismatch');
-            }
-
-            return { 
-                valid: true, 
-                message: 'QR code verified successfully',
-                agentPhone: agentPhoneFromQR               };
-        } catch (error) {
-            return { valid: false, message: error.message };
+        if (!agentPhoneFromQR) {
+            throw new Error('Invalid QR code - missing agent phone number');
         }
+
+        // Get visit and agent details
+        const visit = await Visit.findByPk(visitId);
+        const agent = await Agent.findByPk(visit.agentID);
+
+        // Compare phone numbers
+        if (agent.phone !== agentPhoneFromQR) {
+            throw new Error(`Phone mismatch:\nQR: ${agentPhoneFromQR}\nVisit: ${agent.phone}`);
+        }
+
+        return { valid: true, message: 'Verification successful' };
+    } catch (error) {
+        console.error('Verification Failed:', error.message);
+        return { valid: false, message: error.message };
     }
+}
 
     async logVisit(visitID, data) {
         try {

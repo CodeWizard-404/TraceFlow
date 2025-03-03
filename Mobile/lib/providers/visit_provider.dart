@@ -21,9 +21,6 @@ class VisitProvider with ChangeNotifier {
   // Log visit details
   Future<void> logVisit(String visitId, Map<String, dynamic> logData) async {
     try {
-      if (visitId == null) throw Exception('Missing visit ID');
-
-
       await VisitService.logVisit(visitId, logData);
       notifyListeners();
     } catch (error) {
@@ -38,7 +35,7 @@ class VisitProvider with ChangeNotifier {
 
   int stopVisitTimer() {
     final endTime = DateTime.now();
-    final duration = endTime.difference(_startTime).inSeconds;
+    final duration = endTime.difference(_startTime).inMinutes;
     _startTime = DateTime.now();
     return duration;
   }

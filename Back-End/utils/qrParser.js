@@ -1,4 +1,3 @@
-// utils/qrParser.js (BACKEND)
 function parseTLV(data) {
     let index = 0;
     const result = {};
@@ -7,15 +6,23 @@ function parseTLV(data) {
         const tag = data.substr(index, 2);
         index += 2;
 
-        const length = parseInt(data.substr(index, 2), 10);
+        const lengthStr = data.substr(index, 2);
+        const length = parseInt(lengthStr, 10);
         index += 2;
 
         const value = data.substr(index, length);
         index += length;
 
-        // Recursively parse nested TLV structures
-        if (value.length >= 4 && !isNaN(parseInt(value.substr(2, 2)))) {
-            result[tag] = parseTLV(value);
+        // Check if the value could be a nested TLV
+        if (value.length >= 4) {
+            const subTag = value.substr(0, 2);
+            const subLengthStr = value.substr(2, 2);
+            const subLength = parseInt(subLengthStr, 10);
+            if (!isNaN(subLength) && subLength <= value.length - 4) {
+                result[tag] = parseTLV(value);
+            } else {
+                result[tag] = value;
+            }
         } else {
             result[tag] = value;
         }
