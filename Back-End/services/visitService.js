@@ -1,6 +1,7 @@
-// services/visitService.js
 const { Visit } = require('../models');
 const { Agent } = require('../models');
+const { parseTLV } = require('../utils/qrParser');
+
 
 class VisitService {
     async createVisit(data) {
@@ -23,6 +24,40 @@ class VisitService {
             return visit;
         } catch (error) {
             throw new Error('Failed to create visit: ' + error.message);
+        }
+    }
+
+    async verifyQRCode(qrData, visitId) {
+        try {
+            // Parse QR data
+            const parsedQR = parseTLV(qrData);
+            const agentPhoneFromQR = parsedQR?.['02'] 
+              || parsedQR['02'] 
+
+
+            if (!agentPhoneFromQR) {
+                throw new Error('Invalid QR code - missing agent phone number');
+            }
+
+            // Get visit details
+            const visit = await Visit.findByPk(visitId);
+            if (!visit) throw new Error('Visit not found');
+
+            // Get agent details
+            const agent = await Agent.findByPk(visit.agentID);
+            if (!agent) throw new Error('Agent not found');
+
+            // Compare phone numbers
+            if (agent.phone !== agentPhoneFromQR) {
+                throw new Error('Phone number mismatch');
+            }
+
+            return { 
+                valid: true, 
+                message: 'QR code verified successfully',
+                agentPhone: agentPhoneFromQR               };
+        } catch (error) {
+            return { valid: false, message: error.message };
         }
     }
 

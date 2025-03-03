@@ -1,7 +1,12 @@
+import 'dart:convert';
+
 import 'package:flutter/material.dart';
+import 'package:http/http.dart' as http;
 import 'package:provider/provider.dart';
+import 'package:visit_management/services/visits_service.dart';
 import '../providers/visit_provider.dart';
 import '../providers/agent_provider.dart';
+import '../utils/constants.dart';
 import '../widgets/qr_scanner_widget.dart';
 
 class LogVisitScreen extends StatefulWidget {
@@ -24,7 +29,6 @@ class LogVisitScreenState extends State<LogVisitScreen> {
   String? _agentPhone;
   String? _agentName;
   String? _agentLastname;
-  String? _agentID;
   final List<String> _selectedReasons = [];
   final List<String> _checklist = [];
   final List<String> _reasons = ['Inspection', 'Training', 'Other'];
@@ -96,56 +100,69 @@ class LogVisitScreenState extends State<LogVisitScreen> {
                     ),
                     SizedBox(height: 16),
                     ElevatedButton.icon(
+                      // In LogVisitScreen's ElevatedButton onPressed:
                       onPressed: () async {
                         final manualInput = _manualInputController.text.trim();
+                        String? scannedData;
+
                         if (manualInput.isNotEmpty) {
-                          setState(() {
-                            _agentPhone = manualInput;
-                          });
+                          scannedData = manualInput;
                         } else {
-                          final result = await Navigator.push(
+                          scannedData = await Navigator.push(
                             context,
                             MaterialPageRoute(builder: (_) => QRScannerWidget()),
                           );
-                          if (result != null) {
-                            setState(() {
-                              _agentPhone = result;
-                            });
-                          }
                         }
 
-                        if (_agentPhone != null) {
-                          try {
-                            // Fetch agent details using the phone number.
-                            final agent = await agentProvider.fetchAgentByPhone(_agentPhone!);
+                        if (scannedData == null) return;
 
-                            // Fetch the visit details using the visitID.
+                        try {
+                          // Verify QR code with backend
+                          final verificationResult = await VisitService.verifyQRCode(
+                            qrData: scannedData,
+                            visitId: widget.visitID,
+                          );
+
+                          // In LogVisitScreen's QR scan onPressed:
+                          // In LogVisitScreen's QR scan onPressed:
+                          if (verificationResult['valid']) {
+                            final qrAgentPhone = verificationResult['agentPhone'];
+                            if (qrAgentPhone == null) throw Exception('QR code missing phone number');
+
+                            // Get visit details
                             final visit = await visitProvider.fetchVisitByID(widget.visitID);
+                            final visitAgentID = visit.agentID; // Get agent ID from visit
 
-                            // Verify if the agent ID matches the visit's agent ID.
-                            if (agent['agentID'] == visit.agentID) {
-                              setState(() {
-                                _agentName = agent['name']; // Store the agent's name
-                                _agentLastname = agent['lastname']; // Store the agent's lastname
-                                _isAgentVerified = true;
-                                visitProvider.startVisitTimer();
-                              });
+                            // Fetch agent details using ID
+                            final agentData = await agentProvider.fetchAgentById(visitAgentID!);
+                            final visitAgentPhone = agentData.phone; // Get phone from agent data
+
+                            // Compare phone numbers
+                            if (qrAgentPhone == visitAgentPhone) {
+                              // Proceed with verification
                             } else {
                               ScaffoldMessenger.of(context).showSnackBar(
-                                SnackBar(content: Text('Agent ID mismatch!')),
+                                SnackBar(
+                                  content: Text(
+                                    'Phone Mismatch!\nQR: $qrAgentPhone\nVisit: $visitAgentPhone',
+                                    style: TextStyle(color: Colors.white),
+                                  ),
+                                  backgroundColor: Colors.red,
+                                ),
                               );
                             }
-                          } catch (error) {
-                            ScaffoldMessenger.of(context).showSnackBar(
-                              SnackBar(content: Text('Failed to fetch details: $error')),
-                            );
                           }
+                        } catch (error) {
+                          ScaffoldMessenger.of(context).showSnackBar(
+                            SnackBar(content: Text('Verification error: $error')),
+                          );
                         }
                       },
                       icon: Icon(Icons.qr_code_scanner, color: Colors.white),
                       label: Text(
                         _agentPhone != null ? 'Agent Verified' : 'Scan QR Code or Use Manual Input',
-                        style: TextStyle(color: Colors.white)),
+                        style: TextStyle(color: Colors.white),
+                      ),
                       style: ElevatedButton.styleFrom(
                         backgroundColor: Color(0xFF4CB1C7),
                         padding: EdgeInsets.symmetric(horizontal: 24, vertical: 12),

@@ -1,6 +1,5 @@
 import 'package:http/http.dart' as http;
 import 'dart:convert';
-import '../models/visit.dart';
 import '../utils/constants.dart';
 
 class VisitService {
@@ -25,6 +24,31 @@ class VisitService {
       throw Exception('Failed to fetch visit');
     }
   }
+
+  // Add new verification method
+    static Future<Map<String, dynamic>> verifyQRCode({
+      required String qrData,
+      required String visitId,
+    }) async {
+      try {
+        final response = await http.post(
+          Uri.parse('$baseUrl/visits/verify-qr'),
+          headers: {'Content-Type': 'application/json'},
+          body: json.encode({
+            'qrData': qrData,
+            'visitId': visitId,
+          }),
+        );
+
+        if (response.statusCode == 200) {
+          return json.decode(response.body);
+        } else {
+          throw Exception('Verification failed: ${response.body}');
+        }
+      } catch (error) {
+        throw Exception('Verification error: $error');
+      }
+    }
 
   // Log visit details
   static Future<void> logVisit(String visitId, Map<String, dynamic> logData) async {

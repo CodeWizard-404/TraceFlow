@@ -1,4 +1,3 @@
-import 'dart:io';
 import 'package:flutter/material.dart';
 import 'package:camera/camera.dart';
 import 'package:flutter/services.dart';
@@ -47,22 +46,18 @@ class _QRScannerWidgetState extends State<QRScannerWidget> {
     if (!_isInitialized) {
       return Scaffold(
         appBar: AppBar(
-          title: Text('Scan QR Code'),
-          backgroundColor: Color(0xFF4CB1C7),
+          title: const Text('Scan QR Code'),
+          backgroundColor: const Color(0xFF4CB1C7),
         ),
-        body: Center(child: CircularProgressIndicator(color: Color(0xFF4CB1C7))),
+        body: const Center(child: CircularProgressIndicator(color: Color(0xFF4CB1C7))),
       );
     }
 
-    final cameraAspectRatio = _cameraController.value.aspectRatio;
-    final screenSize = MediaQuery.of(context).size;
-    final rotationAngle = _getRotationAngle(MediaQuery.of(context).orientation);
-
     return Scaffold(
       appBar: PreferredSize(
-        preferredSize: Size.fromHeight(80),
+        preferredSize: const Size.fromHeight(80),
         child: Container(
-          decoration: BoxDecoration(
+          decoration: const BoxDecoration(
             gradient: LinearGradient(
               colors: [Color(0xFF4CB1C7), Color(0xFF64C9D1)],
               begin: Alignment.topLeft,
@@ -73,7 +68,7 @@ class _QRScannerWidgetState extends State<QRScannerWidget> {
           child: AppBar(
             backgroundColor: Colors.transparent,
             elevation: 0,
-            title: Text(
+            title: const Text(
               'Scan QR Code',
               style: TextStyle(fontSize: 24, fontWeight: FontWeight.bold, color: Colors.white),
             ),
@@ -83,21 +78,11 @@ class _QRScannerWidgetState extends State<QRScannerWidget> {
       ),
       body: Stack(
         children: [
-          // Full-screen camera preview with rotation
+          // Camera preview with correct aspect ratio
           Positioned.fill(
-            child: FittedBox(
-              fit: BoxFit.cover,
-              child: SizedBox(
-                width: screenSize.width,
-                height: screenSize.width / cameraAspectRatio,
-                child: Transform.rotate(
-                  angle: rotationAngle,
-                  child: AspectRatio(
-                    aspectRatio: cameraAspectRatio,
-                    child: CameraPreview(_cameraController),
-                  ),
-                ),
-              ),
+            child: AspectRatio(
+              aspectRatio: _cameraController.value.aspectRatio,
+              child: CameraPreview(_cameraController),
             ),
           ),
 
@@ -116,7 +101,7 @@ class _QRScannerWidgetState extends State<QRScannerWidget> {
                         borderRadius: BorderRadius.circular(12),
                       ),
                       child: AnimatedContainer(
-                        duration: Duration(milliseconds: 500),
+                        duration: const Duration(milliseconds: 500),
                         decoration: BoxDecoration(
                           border: Border.all(color: Colors.green, width: 4),
                           borderRadius: BorderRadius.circular(12),
@@ -125,12 +110,12 @@ class _QRScannerWidgetState extends State<QRScannerWidget> {
                     ),
                   ),
                 ),
-                SizedBox(height: 20),
-                Text(
+                const SizedBox(height: 20),
+                const Text(
                   'Align the QR code within the frame',
                   style: TextStyle(fontSize: 16, fontWeight: FontWeight.w500, color: Colors.white),
                 ),
-                SizedBox(height: 20),
+                const SizedBox(height: 20),
               ],
             ),
           ),
@@ -145,12 +130,12 @@ class _QRScannerWidgetState extends State<QRScannerWidget> {
                   final barcodes = await _barcodeScanner.processImage(inputImage);
                   for (final barcode in barcodes) {
                     if (barcode.rawValue != null) {
-                      Navigator.pop(context, barcode.rawValue);
+                      Navigator.pop(context, barcode.rawValue); // Return full QR data
                       return;
                     }
                   }
                   ScaffoldMessenger.of(context).showSnackBar(
-                    SnackBar(content: Text('No valid QR code found')),
+                    const SnackBar(content: Text('No valid QR code found')),
                   );
                 } catch (e) {
                   ScaffoldMessenger.of(context).showSnackBar(
@@ -163,17 +148,5 @@ class _QRScannerWidgetState extends State<QRScannerWidget> {
         ],
       ),
     );
-  }
-
-  // Helper method to calculate the rotation angle
-  double _getRotationAngle(Orientation orientation) {
-    final sensorOrientation = _cameraController.description.sensorOrientation;
-    if (sensorOrientation == 90) {
-      // Most devices have a sensor orientation of 90 degrees
-      return orientation == Orientation.portrait ? 90 * (3.141592653589793 / 180) : 0;
-    } else {
-      // Handle other sensor orientations if needed
-      return 0;
-    }
   }
 }

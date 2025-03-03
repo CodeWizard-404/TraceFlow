@@ -1,4 +1,3 @@
-import 'dart:convert';
 import 'package:flutter/foundation.dart';
 import '../models/visit.dart';
 import '../services/visits_service.dart';
@@ -22,6 +21,9 @@ class VisitProvider with ChangeNotifier {
   // Log visit details
   Future<void> logVisit(String visitId, Map<String, dynamic> logData) async {
     try {
+      if (visitId == null) throw Exception('Missing visit ID');
+
+
       await VisitService.logVisit(visitId, logData);
       notifyListeners();
     } catch (error) {

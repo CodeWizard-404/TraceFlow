@@ -12,11 +12,12 @@ class AgentProvider with ChangeNotifier {
   List<String> get uniqueLocations => _uniqueLocations;
 
   // Fetch an agent by ID
-  Future<void> fetchAgentById(String id) async {
+  Future<Agent> fetchAgentById(String id) async {
     try {
       final agent = await AgentService.fetchAgentById(id);
-      _agents = [agent]; // Update the list with the fetched agent
+      _agents = [agent];
       notifyListeners();
+      return agent; // Return the agent data
     } catch (error) {
       throw Exception('Failed to fetch agent: $error');
     }

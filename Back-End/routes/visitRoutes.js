@@ -6,6 +6,9 @@ const VisitController = require('../controllers/visitController');
 // Create a new visit
 router.post('/', VisitController.createVisit);
 
+// Verify QR code
+router.post('/verify-qr', VisitController.verifyQRCode);
+
 // Log visit details
 router.put('/:id/log', VisitController.logVisit);
 

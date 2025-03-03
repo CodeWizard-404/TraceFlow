@@ -1,5 +1,3 @@
-import 'package:flutter/material.dart';
-
 class Visit {
   final String? visitID;
   final DateTime? date;
