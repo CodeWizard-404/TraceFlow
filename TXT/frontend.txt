@@ -17,3 +17,10 @@ npm install html5-qrcode
 npm install react-router-dom
 
 
+npm install dayjs
+
+npm install --save-dev @types/dayjs
+
+npm install date-fns
+
+npm install @types/date-fns

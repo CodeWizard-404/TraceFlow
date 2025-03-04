@@ -21,7 +21,7 @@ function App() {
       <Header />
       <Router>
         <Routes>
-          <Route path="/" element={<Navigate to="/visit/idVisit" replace />} />
+          <Route path="/" element={<Navigate to="/timesheet" replace />} />
           <Route path="/visit/idVisit" element={<QRScan />} />
           <Route path="/visit/idVisit/reason" element={<Reason />} />
           <Route path="/visit/idVisit/checklist" element={<Checklist />} />

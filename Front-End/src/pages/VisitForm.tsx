@@ -1,13 +1,17 @@
+// VisitForm.jsx
 import { ChangeEvent, useEffect, useState } from "react";
 import { getAgentsByLocation, getLocations } from "../apis/agentAPI";
 import Agent from "../models/Agent";
 import Visit from "../models/Visit";
 import Timesheet from "../models/Timesheet";
 import { addVisit } from "../apis/timesheetAPI";
-import { useNavigate } from "react-router-dom";
+import { useNavigate, useLocation } from "react-router-dom";
 
 function VisitForm() {
   const navigate = useNavigate();
+  const location = useLocation();
+  const { weekNumber, year } = location.state || {};
+  
   const [locations, setLocations] = useState<Array<string>>([]);
   const [agents, setAgents] = useState<Array<Agent>>([]);
 
@@ -24,8 +28,8 @@ function VisitForm() {
     };
 
     const timesheetData: Partial<Timesheet> = {
-      weekNumber: "24",
-      year: 2024,
+      weekNumber: weekNumber?.toString() || "1",
+      year: year || new Date().getFullYear(),
       supervisorID: "2",
     };
 
@@ -57,11 +61,13 @@ function VisitForm() {
   }
 
   return (
-    <div>
-      <h1>Visit Form</h1>
+    <div className="form-container">
+      <h1>Create New Visit</h1>
       <form onSubmit={handleSubmit}>
-        <label htmlFor="date">Date of Visit:</label>
-        <input type="date" id="date" name="date" required />
+        <div className="form-group">
+          <label htmlFor="date">Date of Visit:</label>
+          <input type="date" id="date" name="date" required />
+        </div>
 
         <label htmlFor="time">Time:</label>
         <input type="time" id="time" name="time" required />
@@ -87,7 +93,9 @@ function VisitForm() {
           ))}
         </select>
 
-        <button type="submit">Submit</button>
+        <div className="form-group">
+          <button type="submit">Submit Visit</button>
+        </div>
       </form>
     </div>
   );
