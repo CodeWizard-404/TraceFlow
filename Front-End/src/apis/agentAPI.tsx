@@ -63,4 +63,22 @@ async function getLocations() {
   }
 }
 
-export { scanQR, getLocations };
+async function getAgentsByLocation(location: string) {
+  try {
+    const response = await fetch(
+      `http://localhost:5000/api/agents/location?location=${location}`
+    );
+    if (response.status === 200) {
+      const data = await response.json();
+      return data;
+    }
+    return [];
+  } catch (error) {
+    if (error instanceof Error) {
+      console.error("There was a problem with the fetch operation!");
+    }
+    return [];
+  }
+}
+
+export { scanQR, getLocations, getAgentsByLocation };

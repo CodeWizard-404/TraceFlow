@@ -1,6 +1,6 @@
 import { useEffect, useState } from "react";
 import Timesheet from "../models/Timesheet";
-import getTimesheets from "../apis/timesheetAPI";
+import { getTimesheets } from "../apis/timesheetAPI";
 import { useNavigate } from "react-router-dom";
 
 function Timesheets() {
