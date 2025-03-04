@@ -12,7 +12,8 @@ import Reason from "./pages/Reason";
 import Checklist from "./pages/Checklist";
 import Timesheets from "./pages/Timesheets";
 import PageNotFound from "./pages/PageNotFound";
-import VisitForm from "./pages/visitForm";
+import VisitValidation from "./pages/VisitValidation";
+import VisitForm from "./pages/VisitForm";
 
 function App() {
   return (
@@ -26,6 +27,7 @@ function App() {
           <Route path="/visit/idVisit/checklist" element={<Checklist />} />
           <Route path="/timesheet" element={<Timesheets />} />
           <Route path="/visitForm" element={<VisitForm />} />
+          <Route path="/validateVisit" element={<VisitValidation />} />
           <Route path="*" element={<PageNotFound />} />
         </Routes>
       </Router>

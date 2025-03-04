@@ -19,3 +19,8 @@
 #html5-qrcode-anchor-scan-type-change{    
     display: none !important;
 }
+
+.customTable td, .customTable th {
+    padding: 10px 40px;
+    text-align: center;
+}
