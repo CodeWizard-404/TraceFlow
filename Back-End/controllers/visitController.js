@@ -1,4 +1,3 @@
-// controllers/visitController.js
 const VisitService = require('../services/visitService');
 
 const VisitController = {
@@ -23,11 +22,25 @@ const VisitController = {
         }
     },
 
+    async verifyQRCode(req, res) {
+        try {
+            const { qrData, visitId } = req.body;
+            if (!qrData || !visitId) {
+                return res.status(400).json({ error: 'Missing required parameters' });
+            }
+
+            const result = await VisitService.verifyQRCode(qrData, visitId);
+            return res.status(result.valid ? 200 : 400).json(result);
+        } catch (error) {
+            res.status(500).json({ error: error.message });
+        }
+    },
+
     async logVisit(req, res) {
         try {
             const { id } = req.params;
             const { duration, reason, checklist } = req.body;
-            if (!reason || !checklist ) {
+            if (!reason || !checklist) {
                 return res.status(400).json({ error: 'Invalid input data' });
             }
             const visit = await VisitService.logVisit(id, {

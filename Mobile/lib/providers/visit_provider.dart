@@ -1,4 +1,3 @@
-import 'dart:convert';
 import 'package:flutter/foundation.dart';
 import '../models/visit.dart';
 import '../services/visits_service.dart';
@@ -36,7 +35,7 @@ class VisitProvider with ChangeNotifier {
 
   int stopVisitTimer() {
     final endTime = DateTime.now();
-    final duration = endTime.difference(_startTime).inSeconds;
+    final duration = endTime.difference(_startTime).inMinutes;
     _startTime = DateTime.now();
     return duration;
   }

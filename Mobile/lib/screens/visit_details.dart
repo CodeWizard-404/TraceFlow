@@ -91,7 +91,7 @@ class VisitDetailsScreen extends StatelessWidget {
                   SizedBox(height: 16),
 
                   // Visit Details Card
-                  if (visit.duration != null && visit.duration! > 0)
+                  if (visit.status == "visited")
                   _buildInfoCard(
                     title: 'Visit Details',
                     icon: Icons.info,
