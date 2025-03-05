@@ -9,7 +9,7 @@ module.exports = (sequelize, DataTypes) => {
     },
     weekNumber: { type: DataTypes.INTEGER, allowNull: false },
     year: { type: DataTypes.INTEGER, allowNull: false },
-    status: { type: DataTypes.STRING, defaultValue: 'pending' },
+    status: { type: DataTypes.STRING, allowNull: false },
     supervisorID: { type: DataTypes.STRING, allowNull: false }, 
 });
 

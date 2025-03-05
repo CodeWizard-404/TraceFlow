@@ -6,6 +6,8 @@ const { setupAssociations } = require('./models');
 const visitRoutes = require('./routes/visitRoutes');
 const timesheetRoutes = require('./routes/timesheetRoutes');
 const agentRoutes = require('./routes/agentRoutes');
+const checlistRoutes = require('./routes/checklistRoutes');
+const reasonRoutes = require('./routes/reasonRoutes');
 
 // Create Express app (moved outside the async function)
 const app = express();
@@ -16,11 +18,13 @@ app.use(express.json());
 
 // Routes
 app.use('/api/visits', visitRoutes);
+app.use('/api/checklists', checlistRoutes);
+app.use('/api/reasons', reasonRoutes);
 app.use('/api/timesheets', timesheetRoutes);
 app.use('/api/agents', agentRoutes);
 
 // Error handling middleware
-app.use((err, req, res, next) => { // Added req and next parameters
+app.use((err, res) => {
     console.error(err.stack);
     res.status(500).json({ error: 'Something went wrong!' });
 });
@@ -34,7 +38,7 @@ async function initializeApp() {
         setupAssociations();
         
         // 3. Sync models with the database
-        await sequelize.sync({ alter: true }); // Or remove sync entirely for production
+        await sequelize.sync({ alter: true }); // remove sync entirely for production
         
         console.log('Database & tables synchronized!');
         

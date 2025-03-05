@@ -11,7 +11,20 @@ const TimesheetController = {
                 return res.status(400).json({ error: 'Invalid input data' });
             }
 
-            // Call the TimesheetService to create or update the timesheet
+            // Validate each visit structure
+            for (const visit of visits) {
+                if (
+                    !visit.date ||
+                    !visit.time ||
+                    !visit.agentID ||
+                    !Array.isArray(visit.reasons) || // Validate reasons
+                    !Array.isArray(visit.checklistItems) // Validate checklist items
+                ) {
+                    return res.status(400).json({ error: 'Invalid visit data structure' });
+                }
+            }
+
+            // Create timesheet with visits
             const timesheet = await TimesheetService.CreateTimesheet({
                 weekNumber,
                 year,
@@ -30,12 +43,12 @@ const TimesheetController = {
         try {
             const { id } = req.params;
             const { visitIDs = [], status } = req.body;
-    
-            // ✅ Correct validation for strings
-            if (!status || (Array.isArray(visitIDs) && visitIDs.some(id => typeof id !== 'string')) ){
+
+            // Correct validation for strings
+            if (!status || (Array.isArray(visitIDs) && visitIDs.some(id => typeof id !== 'string'))) {
                 return res.status(400).json({ error: 'Invalid input data' });
             }
-    
+
             const timesheet = await TimesheetService.validateTimesheet(id, visitIDs, status);
             res.status(200).json(timesheet);
         } catch (error) {

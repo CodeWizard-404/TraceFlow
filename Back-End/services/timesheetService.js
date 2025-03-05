@@ -1,4 +1,4 @@
-const { Visit, Agent, Timesheet } = require('../models');
+const { Visit, Reason, Checklist, Timesheet } = require('../models');
 const VisitService = require('./visitService');
 
 
@@ -23,27 +23,34 @@ class TimesheetService {
                 });
             }
 
-            // Add each visit to the timesheet using the VisitService
+            // Process each visit with reasons/checklists
             for (const visitData of visits) {
-                const { date, time, location, agentID } = visitData;
+                const {
+                date,
+                time,
+                location,
+                agentID,
+                reasons = [],      // Added for visit reasons
+                checklistItems = [], // Added for checklist items
+                } = visitData;
 
-                // Call the VisitService to create the visit
+                // Create visit with associations
                 await VisitService.createVisit({
-                    date,
-                    time,
-                    location,
-                    agentID,
-                    supervisorID,
-                    timesheetID: timesheet.timesheetID,
+                date,
+                time,
+                location,
+                agentID,
+                supervisorID,
+                timesheetID: timesheet.timesheetID,
+                reasons,          // Pass reasons
+                checklistItems,   // Pass checklist items
                 });
             }
 
-            // Fetch the updated timesheet with all visits included
-            const updatedTimesheet = await Timesheet.findByPk(timesheet.timesheetID, {
-                include: [Visit], // Include associated visits
+            // Return updated timesheet with visits
+            return Timesheet.findByPk(timesheet.timesheetID, {
+                include: [Visit, Reason, Checklist], // Include all associations
             });
-
-            return updatedTimesheet;
         } catch (error) {
             throw new Error('Failed to add visits to timesheet: ' + error.message);
         }
