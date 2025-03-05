@@ -1,0 +1,3534 @@
+1st sprint product backmlog :
+
+ID	US	Description	Function	BV	Priority	Effort	Sprints
+1	As a Supervisor, I want to record visits by scanning QR codes to retrieve and validate agent information, so that I can log my interactions accurately.	QR Code Scanning	Visits	High	1	8	1
+2	As a Supervisor, I want to complete checklists for each visit, so that I can ensure all required tasks are addressed.	Checklist Completion	Visits	High	2	5	1
+9	As a Supervisor, I want to add my timesheets, so that I can record my working hours.	Timesheet Creation	Timesheet	High	3	8	1
+10	As a Supervisor, I want to specify visit reasons during timesheet creation so that their purpose is documented clearly.	Visit Purpose 	Timesheet	High	4	5	1
+11	As a Supervisor, I want to specify visit checklist during timesheet creation so that their purpose is documented clearly.	Visit checlist 	Timesheet	High	5	3	1
+13	As a Supervisor, I want to view my timesheets, so that I can track my recorded hours.	Timesheet Review	Timesheet	High	6	3	1
+22	As a Manager, I want to validate timesheets submitted by Supervisors, so that I can approve their working hours.	Timesheet Validation	Timesheet	High	7	5	1
+
+
+1st sprint use cas :
+
+@startuml
+left to right direction
+skinparam shadowing false
+
+actor Supervisor
+actor Manager
+
+usecase "Record Supervised Visit" as UC_LogVisit
+usecase "Provide visit Reasons" as UC_ProvideReason
+usecase "Provide visit Checklist" as UC_ProvideChecklist
+usecase "Validate Checklist" as UC_ValidateChecklist
+usecase "Scan QR Code" as UC_ScanQRCode
+usecase "Add Timesheet" as UC_CreateTimesheet
+usecase "View Timesheet" as UC_ViewTimesheet
+usecase "Manage Timesheet" as UC_ManageTimesheet
+usecase "Validate Timesheet" as US_ValidateTimesheet
+
+
+
+Supervisor --> UC_LogVisit
+Supervisor --> UC_ManageTimesheet
+Manager --> UC_ManageTimesheet
+
+UC_LogVisit ..> UC_ValidateChecklist : <<include>>
+UC_LogVisit ..> UC_ScanQRCode : <<include>>
+UC_ManageTimesheet <|-- UC_CreateTimesheet 
+UC_ManageTimesheet <|-- UC_ViewTimesheet 
+UC_ManageTimesheet ..> US_ValidateTimesheet : <<include>>
+UC_ManageTimesheet <|-- UC_ProvideChecklist
+UC_ManageTimesheet <|-- UC_ProvideReason
+
+@enduml
+
+
+1st sprint class :
+
+@startuml
+' Define Classes
+class User {
+    + UserID: String
+    + firstname: String
+    + lastname: String
+    + phone: String
+    + email: String
+    + wallet: String
+    + password: String
+}
+
+
+class Agent {
+    + agentID: String
+    + name: String
+    + lastname: String
+    + wallet: String
+    + email: String
+    + phone: String
+    + location: String
+    + ViewAgent(agentID): Object
+}
+
+class Visit {
+    + visitID: String
+    + date: Date
+    + time: Time
+    + duration: int
+    + location: String
+    + status: String
+    + Photos: List<String>
+    + comment: String
+    + LogVisit(visitDetails): void
+    + ViewVisit(visitID): Object
+    + listVisits(): Array<Object>
+}
+
+class Timesheet {
+    + TimesheetID: String
+    + WeekNumber: int
+    + year: int
+    + Status: String
+    + CreateTimesheet(timesheetDetails): void
+    + ValidateTimesheet(timesheetID, managerID): void
+    + ViewTimesheet(timesheetID): Object
+    + ListTimesheets(): Array<Object>
+}
+
+
+class Checklist {
+    + ChecklistID: String
+    + item: String
+    + CreateItem(itemDetails): void
+    + ListChecklistByVisit(VisitID): Array<Object>
+}
+
+class Reason {
+    + ReasonID: String
+    + item: String
+    + CreateReason(reasonDetails): void
+    + ListReasonsByVisit(VisitID): Array<Object>
+}
+
+' Relationships
+User "1" -- "0..*" Timesheet : manages
+Timesheet "1" *- "1..*" Visit : contains
+Visit "0..*" - "1" Agent : assigned
+Visit "0..*" -- "1..*" Checklist : includes
+Visit "0..*" -- "1..*" Reason : includes
+@enduml
+
+
+
+1st sprint database :
+Database Tables
+Users
+Represents users in the system, including those with admin privileges (handled via roles).
+•	Columns: 
+o	UserID (String, Primary Key, NanoID)
+o	firstname (String)
+o	lastname (String)
+o	phone (String)
+o	email (String)
+o	wallet (String)
+o	password (String)
+ Agents
+Represents agents interacting with visits and receipt books.
+•	Columns: 
+o	AgentID (String, Primary Key)
+o	name (String)
+o	lastname (String)
+o	wallet (String)
+o	email (String)
+o	phone (String)
+o	location(String)
+
+ Visits
+Stores visit records, contained within timesheets and associated with users, agents, checklists, and reasons.
+•	Columns: 
+o	VisitID (String, Primary Key)
+o	date (Date)
+o	time (Time)
+o	duration (int)
+o	location (String)
+o	status (String)
+o	Photos (Text JSON)
+o	comment (TEXT)
+o	TimesheetID (String, Foreign Key to Timesheets.TimesheetID)
+Each Visit belongs to one Timesheet.
+o	AgentID (String, Foreign Key to Agent.AgentID)
+Each Visit has one Agent.
+
+
+Timesheets
+Stores timesheet records managed by users and monitored by AI models.
+•	Columns: 
+o	TimesheetID (String, Primary Key)
+o	WeekNumber (int)
+o	year (int)
+o	Status (String)
+o	SupervisorID (String, Foreign Key to Users.UserID)
+Each Timesheet Belongs to One User.
+
+Checklists
+Stores checklist items associated with visits.
+•	Columns: 
+o	ChecklistID (String, Primary Key)
+o	item (String)
+
+Reasons
+Stores reasons associated with visits.
+•	Columns: 
+o	ReasonID (String, Primary Key)
+o	item (String)
+
+ VisitChecklists
+Represents the many-to-many relationship between Visits and Checklists.
+•	Columns: 
+o	VisitID (String, Foreign Key to Visits.VisitID)
+o	ChecklistID (String, Foreign Key to Checklists.ChecklistID)
+o	Checked (Boolean)
+
+VisitReasons
+Represents the many-to-many relationship between Visits and Reasons.
+•	Columns: 
+o	VisitID (String, Foreign Key to Visits.VisitID)
+o	ReasonID (String, Foreign Key to Reasons.ReasonID)
+
+
+
+
+
+1st sprint backend code :
+
+
+
+
+
+
+const express = require('express');
+const cors = require('cors');
+const mdns = require('mdns-js');
+const { sequelize, initializeDatabase } = require('./config/db');
+const { setupAssociations } = require('./models');
+const visitRoutes = require('./routes/visitRoutes');
+const timesheetRoutes = require('./routes/timesheetRoutes');
+const agentRoutes = require('./routes/agentRoutes');
+const checlistRoutes = require('./routes/checklistRoutes');
+const reasonRoutes = require('./routes/reasonRoutes');
+
+// Create Express app (moved outside the async function)
+const app = express();
+
+// Middleware
+app.use(cors());
+app.use(express.json());
+
+// Routes
+app.use('/api/visits', visitRoutes);
+app.use('/api/checklists', checlistRoutes);
+app.use('/api/reasons', reasonRoutes);
+app.use('/api/timesheets', timesheetRoutes);
+app.use('/api/agents', agentRoutes);
+
+// Error handling middleware
+app.use((err, res) => {
+    console.error(err.stack);
+    res.status(500).json({ error: 'Something went wrong!' });
+});
+
+async function initializeApp() {
+    try {
+        // 1. Create database if needed
+        await initializeDatabase();
+        
+        // 2. Set up model relationships
+        setupAssociations();
+        
+        // 3. Sync models with the database
+        await sequelize.sync({ alter: true }); // remove sync entirely for production
+        
+        console.log('Database & tables synchronized!');
+        
+        // 4. Start Express server
+        const PORT = process.env.PORT || 5000;
+        const server = app.listen(PORT, '0.0.0.0', () => {
+            console.log(`Server running on port ${PORT}`);
+        });
+
+        // 5. Advertise the service via mDNS
+        const service = mdns.createAdvertisement(mdns.tcp('http'), PORT, {
+            name: 'visit-management-backend', // Unique service name
+            txt: { path: '/api' }
+        });
+        service.start();
+        console.log('mDNS service advertised as visit-management-backend');
+    } catch (error) {
+        console.error('Application initialization failed:', error);
+        process.exit(1);
+    }
+}
+
+// Start the application
+initializeApp();
+
+
+
+const { sequelize } = require('../config/db');
+const DataTypes = require('sequelize').DataTypes;
+
+const Agent = require('./agent')(sequelize, DataTypes);
+const User = require('./user')(sequelize, DataTypes);
+const Visit = require('./visit')(sequelize, DataTypes);
+const Timesheet = require('./timesheet')(sequelize, DataTypes);
+const Checklist = require('./checklist')(sequelize, DataTypes);
+const Reason = require('./reason')(sequelize, DataTypes);
+
+// Define associations
+const setupAssociations = () => {
+
+    // Agent-Visit relations
+    Agent.hasMany(Visit, { foreignKey: 'agentID' });
+    Visit.belongsTo(Agent, { foreignKey: 'agentID' });
+
+    // Timesheet-Visit relations
+    Timesheet.hasMany(Visit, { foreignKey: 'timesheetID' });
+    Visit.belongsTo(Timesheet, { foreignKey: 'timesheetID' });
+
+    // User-Timesheet relations
+    User.hasMany(Timesheet, { foreignKey: 'supervisorID' });
+    Timesheet.belongsTo(User, { foreignKey: 'supervisorID' });
+
+    // Visit-checklist relations
+    Visit.belongsToMany(Checklist, {
+        through: 'VisitChecklists',
+        foreignKey: 'visitID',
+        otherKey: 'checklistID'
+    });
+    Checklist.belongsToMany(Visit, {
+        through: 'VisitChecklists',
+        foreignKey: 'checklistID',
+        otherKey: 'visitID'
+    });
+
+    // Visit-reason relations
+    Visit.belongsToMany(Reason, {
+        through: 'VisitReasons',
+        foreignKey: 'visitID',
+        otherKey: 'reasonID'
+    });
+    Reason.belongsToMany(Visit, {
+        through: 'VisitReasons',
+        foreignKey: 'reasonID',
+        otherKey: 'visitID'
+    });
+
+};
+
+module.exports = {
+    sequelize,
+    User, Agent, Visit, Timesheet, Checklist, Reason,
+    setupAssociations
+};
+
+
+
+const { nanoid } = require('nanoid');
+
+module.exports = (sequelize, DataTypes) => {
+    return sequelize.define('User', {
+    userID: { 
+        type: DataTypes.STRING,     
+        primaryKey: true,
+        defaultValue: () => nanoid(), 
+    },
+    firstname: { type: DataTypes.STRING, allowNull: false },
+    lastname: { type: DataTypes.STRING, allowNull: false },
+    phone: { type: DataTypes.STRING, unique: true, allowNull: false },
+    email: { type: DataTypes.STRING, unique: true, allowNull: false },
+    wallet: { type: DataTypes.STRING, unique: true, allowNull: false },
+    password: { type: DataTypes.STRING, allowNull: true },
+});
+
+};
+
+const { nanoid } = require('nanoid');
+
+module.exports = (sequelize, DataTypes) => {
+    return sequelize.define('Timesheet', {
+    timesheetID: { 
+        type: DataTypes.STRING,     
+        primaryKey: true,
+        defaultValue: () => nanoid(), 
+    },
+    weekNumber: { type: DataTypes.INTEGER, allowNull: false },
+    year: { type: DataTypes.INTEGER, allowNull: false },
+    status: { type: DataTypes.STRING, allowNull: false },
+    supervisorID: { type: DataTypes.STRING, allowNull: false }, 
+});
+
+};
+
+
+const { nanoid } = require('nanoid');
+
+module.exports = (sequelize, DataTypes) => {
+    return sequelize.define('Visit', {
+    visitID: { 
+        type: DataTypes.STRING,     
+        primaryKey: true,
+        defaultValue: () => nanoid(), 
+    },
+    date: { type: DataTypes.DATE, allowNull: false },
+    time: { type: DataTypes.TIME, allowNull: false },
+    duration: { type: DataTypes.INTEGER}, 
+    location: { type: DataTypes.STRING},
+    status: { type: DataTypes.STRING,allowNull: false },
+    photos: { type: DataTypes.ARRAY(DataTypes.STRING), defaultValue: []},
+    comment: { type: DataTypes.TEXT},
+    agentID: { type: DataTypes.STRING, allowNull: false }, 
+    timesheetID: { type: DataTypes.STRING, allowNull: false }, 
+});
+
+};
+
+
+
+const { nanoid } = require('nanoid');
+
+module.exports = (sequelize, DataTypes) => {
+    return sequelize.define('Agent', {
+        agentID: {
+            type: DataTypes.STRING,
+            primaryKey: true,
+            defaultValue: () => nanoid(),
+        },
+        name: { type: DataTypes.STRING, allowNull: false },
+        lastname: { type: DataTypes.STRING, allowNull: false },
+        wallet: { type: DataTypes.STRING, allowNull: false },
+        cin: { type: DataTypes.STRING, unique: true, allowNull: false },
+        email: { type: DataTypes.STRING, unique: true, allowNull: false },
+        phone: { type: DataTypes.STRING, allowNull: false },
+        location: { type: DataTypes.STRING, unique: true, allowNull: false },
+    });
+};
+
+
+
+
+
+const { nanoid } = require('nanoid');
+
+module.exports = (sequelize, DataTypes) => {
+    return sequelize.define('Checklist', {
+    checklistID: { 
+        type: DataTypes.STRING,     
+        primaryKey: true,
+        defaultValue: () => nanoid(), 
+    },
+    item: { type: DataTypes.STRING, allowNull: false },
+    checked: { type: DataTypes.BOOLEAN, defaultValue: false, defaultValue: false } 
+
+});
+
+};
+
+
+const { nanoid } = require('nanoid');
+
+module.exports = (sequelize, DataTypes) => {
+    return sequelize.define('Reason', {
+    reasonID: { 
+        type: DataTypes.STRING,     
+        primaryKey: true,
+        defaultValue: () => nanoid(), 
+    },
+    item: { type: DataTypes.STRING, allowNull: false },
+
+});
+
+};
+
+
+
+
+
+const { Agent } = require('../models');
+
+class AgentService {
+    static async findAgentById(id) {
+        return Agent.findByPk(id);
+    }
+
+    static async findAgentsByLocation(location) {
+        return Agent.findAll({ where: { location } });
+    }
+
+    static async findUniqueLocations() {
+        const locations = await Agent.findAll({
+            attributes: ['location'],
+            group: ['location'],
+        });
+        return locations.map((loc) => loc.location);
+    }
+
+    static async findAgentByPhone(phone) {
+        return Agent.findOne({ where: { phone } });
+    }
+    
+}
+
+module.exports = AgentService;
+
+
+
+const { Visit, Reason, Checklist, Timesheet } = require('../models');
+const VisitService = require('./visitService');
+
+
+class TimesheetService {
+
+    async CreateTimesheet(data) {
+        try {
+            const { weekNumber, year, supervisorID, visits } = data;
+
+            // Check if a timesheet for the given week and year already exists
+            let timesheet = await Timesheet.findOne({
+                where: { weekNumber, year, supervisorID },
+            });
+
+            // If no timesheet exists, create one
+            if (!timesheet) {
+                timesheet = await Timesheet.create({
+                    weekNumber,
+                    year,
+                    supervisorID,
+                    status: 'pending',
+                });
+            }
+
+            // Process each visit with reasons/checklists
+            for (const visitData of visits) {
+                const {
+                date,
+                time,
+                location,
+                agentID,
+                reasons = [],      // Added for visit reasons
+                checklistItems = [], // Added for checklist items
+                } = visitData;
+
+                // Create visit with associations
+                await VisitService.createVisit({
+                date,
+                time,
+                location,
+                agentID,
+                supervisorID,
+                timesheetID: timesheet.timesheetID,
+                reasons,          // Pass reasons
+                checklistItems,   // Pass checklist items
+                });
+            }
+
+            // Return updated timesheet with visits
+            return Timesheet.findByPk(timesheet.timesheetID, {
+                include: [Visit, Reason, Checklist], // Include all associations
+            });
+        } catch (error) {
+            throw new Error('Failed to add visits to timesheet: ' + error.message);
+        }
+    }
+
+    async validateTimesheet(timesheetID, visitIDs = [], status) {
+        try {
+            const timesheet = await Timesheet.findByPk(timesheetID);
+            if (!timesheet) throw new Error('Timesheet not found');
+
+            // Get all visits for this timesheet
+            const visits = await Visit.findAll({
+                where: { timesheetID }
+            });
+
+            // Convert to Set for faster lookup
+            const visitIdSet = new Set(visitIDs);
+
+            // Validate matching visits
+            const visitsToUpdate = visits.filter(visit =>
+                visitIdSet.has(visit.visitID)
+            );
+
+            if (visitsToUpdate.length !== visitIDs.length) {
+                throw new Error('One or more visit IDs not found in this timesheet');
+            }
+
+            // Update visits
+            await Promise.all(
+                visitsToUpdate.map(visit => {
+                    visit.status = status;
+                    return visit.save();
+                })
+            );
+
+            // Update timesheet status if all visits validated
+            const allValidated = visits.every(v => v.status === 'validated');
+            if (allValidated) {
+                timesheet.status = 'validated';
+                await timesheet.save();
+            }
+
+            return timesheet;
+        } catch (error) {
+            throw new Error('Validation failed: ' + error.message);
+        }
+    }
+
+    async listTimesheets() {
+        try {
+            // Fetch all timesheets with associated visits
+            const timesheets = await Timesheet.findAll({
+                include: [Visit],
+            });
+
+            return timesheets;
+        } catch (error) {
+            throw new Error('Failed to get timesheets: ' + error.message);
+        }
+    }
+
+    async viewTimesheet(timesheetID) {
+        try {
+            // Find the timesheet by ID
+            const timesheet = await Timesheet.findByPk(timesheetID, {
+                include: [Visit],
+            });
+            return timesheet;
+        } catch (error) {
+            throw new Error('Failed to get timesheet: ' + error.message);
+        }
+    }
+
+    async getTimesheetsBySupervisor(supervisorID) {
+        try {
+            // Fetch all timesheets for the given supervisorID with associated visits
+            const timesheets = await Timesheet.findAll({
+                where: { supervisorID },
+                include: [Visit], // Include associated visits
+            });
+
+            return timesheets;
+        } catch (error) {
+            throw new Error('Failed to get timesheets by supervisorID: ' + error.message);
+        }
+    }
+}
+
+module.exports = new TimesheetService();
+
+
+
+const { Visit } = require('../models');
+const { Agent } = require('../models');
+const { Reason } = require('../models');
+const { Checklist } = require('../models');
+const ReasonService = require('./reasonService');
+const ChecklistService = require('./checklistService');
+const { parseTLV } = require('../utils/qrParser');
+
+
+class VisitService {
+    async createVisit(data) {
+        try {
+            const { date, time, agentID, timesheetID, reasons, checklist } = data;
+            
+            // Validate agent exists
+            const agent = await Agent.findByPk(agentID);
+            if (!agent) throw new Error('Agent not found');
+            const location = agent.location;
+
+            // Create visit
+            const visit = await Visit.create({ 
+                date, time, location, agentID, timesheetID,
+                status: 'pending'
+            });
+            
+            // Associate reasons
+            const createdReasons = await ReasonService.findOrCreateItems(reasons);
+            await visit.setReasons(createdReasons);
+
+            // Associate checklist items
+            const createdChecklists = await ChecklistService.findOrCreateItems(checklist);
+            await visit.setChecklists(createdChecklists);
+
+            return visit.reload({ include: [Reason, Checklist] });
+        } catch (error) {
+            throw new Error('Failed to create visit: ' + error.message);
+        }
+    }
+
+    async verifyQRCode(qrData, visitId) {
+        try {
+            const parsedQR = parseTLV(qrData);
+            console.log('Parsed QR Structure:', JSON.stringify(parsedQR, null, 2)); // Pretty-print parsed data
+
+            // Correct phone number extraction path
+            const agentPhoneFromQR = parsedQR['29']?.['03'] 
+                || parsedQR['02']?.replace(/[^0-9+]/g, ''); // Fallback for simple values
+
+            if (!agentPhoneFromQR) {
+                throw new Error('Invalid QR code - missing agent phone number');
+            }
+
+            // Get visit and agent details
+            const visit = await Visit.findByPk(visitId);
+            const agent = await Agent.findByPk(visit.agentID);
+
+            // Compare phone numbers
+            if (agent.phone !== agentPhoneFromQR) {
+                throw new Error(`Phone mismatch:\nQR: ${agentPhoneFromQR}\nVisit: ${agent.phone}`);
+            }
+
+            return { valid: true, message: 'Verification successful' };
+        } catch (error) {
+            console.error('Verification Failed:', error.message);
+            return { valid: false, message: error.message };
+        }
+    }
+
+    async logVisit(visitID, data) {
+        try {
+            const { duration, checklistUpdates, photos, comment } = data;
+
+            // Find the visit
+            const visit = await Visit.findByPk(visitID, { include: [Checklist] });
+            if (!visit) throw new Error('Visit not found');
+
+            // Update checklist validation status
+            const updatePromises = visit.Checklists.map(async (item) => {
+                const updatedStatus = checklistUpdates[item.checklistID];
+                if (updatedStatus !== undefined) {
+                item.checked = updatedStatus;
+                await item.save();
+                }
+            });
+            await Promise.all(updatePromises);
+
+            // Update the visit details
+            visit.duration = duration;
+            visit.photos = photos;
+            visit.comment = comment;
+            visit.status = 'visited';
+            await visit.save();
+            return visit.reload({ include: [Checklist, Reason] });
+
+        } catch (error) {
+            throw new Error('Failed to log visit: ' + error.message);
+        }
+    }
+
+    async getVisitByID(visitID) {
+        try {
+            const visit = await Visit.findByPk(visitID);
+            if (!visit) throw new Error('Visit not found');
+            return visit;
+        } catch (error) {
+            throw new Error('Failed to fetch visit: ' + error.message);
+        }
+    }
+}
+
+module.exports = new VisitService();
+
+
+// services/checklistService.js
+const { Checklist, Visit } = require('../models');
+
+class ChecklistService {
+    static async createItem(text) {
+        return Checklist.create({ item: text });
+    }
+
+    static async findOrCreateItems(items) {
+        const created = [];
+        for (const item of items) {
+            if (item.id) {
+                created.push(await Checklist.findByPk(item.id));
+            } else {
+                created.push(await this.createItem(item.text));
+            }
+        }
+        return created;
+    }
+
+    static async getChecklistsByVisitId(visitId) {
+        const visit = await Visit.findByPk(visitId, { include: Checklist });
+        return visit.Checklists;
+    }
+}
+
+module.exports = ChecklistService;
+
+
+const { Reason, Visit } = require('../models');
+
+class ReasonService {
+    static async createItem(text) {
+        return Reason.create({ item: text });
+    }
+
+    static async findOrCreateItems(items) {
+        const created = [];
+        for (const item of items) {
+            if (item.id) {
+                created.push(await Reason.findByPk(item.id));
+            } else {
+                created.push(await this.createItem(item.text));
+            }
+        }
+        return created;
+    }
+
+    static async getReasonsByVisitId(visitId) {
+        const visit = await Visit.findByPk(visitId, { include: Reason });
+        return visit.Reasons;
+    }
+}
+
+module.exports = ReasonService;
+
+
+
+// controllers/agentController.js
+const { Agent } = require('../models');
+
+class AgentController {
+    // Fetch an agent by ID
+    static async getAgentById(req, res) {
+        try {
+            const { id } = req.params;
+            const agent = await Agent.findByPk(id);
+            if (!agent) {
+                return res.status(404).json({ error: 'Agent not found' });
+            }
+            res.json(agent);
+        } catch (error) {
+            console.error(error);
+            res.status(500).json({ error: 'Internal server error' });
+        }
+    }
+
+    // Fetch an agent by phone number
+    static async getAgentByPhone(req, res) {
+        try {
+            const { phone } = req.params; // Expect phone number as a URL parameter
+            const agent = await Agent.findOne({ where: { phone } });
+            if (!agent) {
+                return res.status(404).json({ error: 'Agent not found' });
+            }
+            res.json(agent);
+        } catch (error) {
+            console.error(error);
+            res.status(500).json({ error: 'Internal server error' });
+        }
+    }
+
+    // Fetch agents by location
+    static async getAgentsByLocation(req, res) {
+        try {
+            const { location } = req.query;
+            if (!location) {
+                return res.status(400).json({ error: 'Location is required' });
+            }
+            const agents = await Agent.findAll({ where: { location } });
+            res.json(agents);
+        } catch (error) {
+            console.error(error);
+            res.status(500).json({ error: 'Internal server error' });
+        }
+    }
+
+    // Fetch all unique agent locations
+    static async getAllUniqueLocations(req, res) {
+        try {
+            const locations = await Agent.findAll({
+                attributes: ['location'], // Select only the 'location' column
+                group: ['location'],     // Group by 'location' to ensure uniqueness
+            });
+            const uniqueLocations = locations.map((loc) => loc.location); // Extract location values
+            res.json(uniqueLocations); // Return the array of unique locations
+        } catch (error) {
+            console.error(error);
+            res.status(500).json({ error: 'Internal server error' });
+        }
+    }
+}
+
+module.exports = AgentController;
+
+const TimesheetService = require('../services/timesheetService');
+
+// Create a new timesheet or add visits to an existing one
+const TimesheetController = {
+    async createTimesheet(req, res) {
+        try {
+            const { weekNumber, year, supervisorID, visits } = req.body;
+
+            // Validate required fields
+            if (!weekNumber || !year || !supervisorID || !Array.isArray(visits)) {
+                return res.status(400).json({ error: 'Invalid input data' });
+            }
+
+            // Validate each visit structure
+            for (const visit of visits) {
+                if (
+                    !visit.date ||
+                    !visit.time ||
+                    !visit.agentID ||
+                    !Array.isArray(visit.reasons) || // Validate reasons
+                    !Array.isArray(visit.checklistItems) // Validate checklist items
+                ) {
+                    return res.status(400).json({ error: 'Invalid visit data structure' });
+                }
+            }
+
+            // Create timesheet with visits
+            const timesheet = await TimesheetService.CreateTimesheet({
+                weekNumber,
+                year,
+                supervisorID,
+                visits,
+            });
+
+            res.status(201).json(timesheet);
+        } catch (error) {
+            res.status(500).json({ error: error.message });
+        }
+    },
+
+    // Validate a timesheet (fully or partially)
+    async validateTimesheet(req, res) {
+        try {
+            const { id } = req.params;
+            const { visitIDs = [], status } = req.body;
+
+            // Correct validation for strings
+            if (!status || (Array.isArray(visitIDs) && visitIDs.some(id => typeof id !== 'string'))) {
+                return res.status(400).json({ error: 'Invalid input data' });
+            }
+
+            const timesheet = await TimesheetService.validateTimesheet(id, visitIDs, status);
+            res.status(200).json(timesheet);
+        } catch (error) {
+            res.status(500).json({ error: error.message });
+        }
+    },
+
+    // View all timesheets (for managers or HR)
+    async getAllTimesheets(req, res) {
+        try {
+            // Call the TimesheetService to get all timesheets
+            const timesheets = await TimesheetService.listTimesheets();
+
+            res.status(200).json(timesheets);
+        } catch (error) {
+            res.status(500).json({ error: error.message });
+        }
+
+    },
+
+    // View a specific timesheet by ID
+    async getTimesheetById(req, res) {
+        try {
+            const { id } = req.params;
+
+            // Fetch the timesheet by ID
+            const timesheet = await TimesheetService.viewTimesheet(id);
+            if (!timesheet) return res.status(404).json({ error: 'Timesheet not found' });
+
+            res.status(200).json(timesheet);
+        } catch (error) {
+            res.status(500).json({ error: error.message });
+        }
+    },
+
+    // controllers/timesheetController.js
+    async getTimesheetsBySupervisor(req, res) {
+        try {
+            const { supervisorID } = req.params;
+
+            // Validate that supervisorID is provided
+            if (!supervisorID) {
+                return res.status(400).json({ error: 'Invalid supervisorID' });
+            }
+
+            // Call the TimesheetService to fetch timesheets by supervisorID
+            const timesheets = await TimesheetService.getTimesheetsBySupervisor(supervisorID);
+
+            res.status(200).json(timesheets);
+        } catch (error) {
+            res.status(500).json({ error: error.message });
+        }
+    }
+};
+
+
+module.exports = TimesheetController;
+
+const VisitService = require('../services/visitService');
+
+const VisitController = {
+    async createVisit(req, res) {
+        try {
+            const {
+                date,
+                time,
+                location,
+                agentID,
+                supervisorID,
+                timesheetID,
+                reasons,
+                checklist
+            } = req.body;
+
+            // Validate required fields
+            if (!date || !time || !location || !agentID || !supervisorID || !timesheetID) {
+                return res.status(400).json({ error: 'Missing required fields' });
+            }
+
+            // Create visit with associations
+            const visit = await VisitService.createVisit({
+                date,
+                time,
+                location,
+                agentID,
+                supervisorID,
+                timesheetID,
+                reasons,
+                checklist
+            });
+
+            res.status(201).json(visit);
+        } catch (error) {
+            res.status(500).json({ error: error.message });
+        }
+    },
+
+    async verifyQRCode(req, res) {
+        try {
+            const { qrData, visitId } = req.body;
+            if (!qrData || !visitId) {
+                return res.status(400).json({ error: 'Missing required parameters' });
+            }
+
+            const result = await VisitService.verifyQRCode(qrData, visitId);
+            return res.status(result.valid ? 200 : 400).json(result);
+        } catch (error) {
+            res.status(500).json({ error: error.message });
+        }
+    },
+
+    async logVisit(req, res) {
+        try {
+            const { id } = req.params;
+            const { duration, checklistUpdates, photos, comment } = req.body;
+            const visit = await VisitService.logVisit(id, {
+                duration,
+                checklistUpdates,
+                photos,
+                comment
+            });
+            res.status(200).json(visit);
+        } catch (error) {
+            res.status(500).json({ error: error.message });
+        }
+    },
+
+    async getVisitByID(req, res) {
+        try {
+            const { id } = req.params;
+            const visit = await VisitService.getVisitByID(id);
+            res.status(200).json(visit);
+        } catch (error) {
+            res.status(500).json({ error: error.message });
+        }
+    },
+};
+
+module.exports = VisitController;
+
+
+const ChecklistService = require('../services/checklistService');
+
+class ChecklistController {
+    static async createChecklist(req, res) {
+        try {
+            const { text } = req.body;
+            const checklist = await ChecklistService.createItem(text);
+            res.status(201).json(checklist);
+        } catch (error) {
+            res.status(500).json({ error: error.message });
+        }
+    }
+
+    static async getChecklistsByVisitID(req, res) {
+        try {
+            const { visitID } = req.params;
+            const checklists = await ChecklistService.getChecklistsByVisitId(visitID);
+            res.status(200).json(checklists);
+        } catch (error) {
+            res.status(500).json({ error: error.message });
+        }
+    }
+}
+
+module.exports = ChecklistController; 
+
+
+
+
+const ReasonService = require('../services/reasonService');
+
+class ReasonController {
+    static async createReason(req, res) {
+        try {
+            const { text } = req.body;
+            const reason = await ReasonService.createItem(text);
+            res.status(201).json(reason);
+        } catch (error) {
+            res.status(500).json({ error: error.message });
+        }
+    }
+
+    static async getReasonsByVisitID(req, res) {
+        try {
+            const { visitID } = req.params;
+            const reasons = await ReasonService.getReasonsByVisitId(visitID);
+            res.status(200).json(reasons);
+        } catch (error) {
+            res.status(500).json({ error: error.message });
+        }
+    }
+}
+
+module.exports = ReasonController;
+
+
+// routes/agentRoutes.js
+const express = require('express');
+const router = express.Router();
+const AgentController = require('../controllers/agentController');
+
+
+
+// Fetch agents by location
+router.get('/location', AgentController.getAgentsByLocation);
+
+// Fetch all unique agent locations
+router.get('/locations', AgentController.getAllUniqueLocations);
+
+
+// Fetch an agent by phone number
+router.get('/phone/:phone', AgentController.getAgentByPhone);
+
+
+// Fetch an agent by ID
+router.get('/:id', AgentController.getAgentById);
+
+module.exports = router;
+
+
+const express = require('express');
+const router = express.Router();
+const TimesheetController = require('../controllers/timesheetController');
+
+router.post('/', TimesheetController.createTimesheet);
+router.get('/', TimesheetController.getAllTimesheets);
+router.get('/:id', TimesheetController.getTimesheetById);
+router.put('/:id/validate', TimesheetController.validateTimesheet);
+router.get('/supervisor/:supervisorID', TimesheetController.getTimesheetsBySupervisor);
+
+module.exports = router;
+
+// visitRoutes.js
+const express = require('express');
+const router = express.Router();
+const VisitController = require('../controllers/visitController');
+
+// Create a new visit
+router.post('/', VisitController.createVisit);
+
+// Verify QR code
+router.post('/verify-qr', VisitController.verifyQRCode);
+
+// Log visit details
+router.put('/:id/log', VisitController.logVisit);
+
+// Fetch a visit by ID
+router.get('/:id', VisitController.getVisitByID);
+
+module.exports = router;
+
+
+
+const express = require('express');
+const router = express.Router();
+const ChecklistController = require('../controllers/checklistController');
+
+// Create a new Checklist Item
+router.post('/', ChecklistController.createChecklist);
+
+// Fetch a Checklists Items by visitID
+router.get('/:id', ChecklistController.getChecklistsByVisitID);
+
+module.exports = router;
+
+
+
+// visitRoutes.js
+const express = require('express');
+const router = express.Router();
+const ReasonController = require('../controllers/reasonController');
+
+// Create a new Reason
+router.post('/', ReasonController.createReason);
+
+// Fetch a Reason by visitID
+router.get('/:id', ReasonController.getReasonsByVisitID);
+
+module.exports = router;
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+1st sprint frontend code :
+
+
+
+import 'package:flutter/material.dart';
+import 'package:provider/provider.dart';
+import 'package:visit_management/providers/agent_provider.dart';
+import 'package:visit_management/screens/Error.dart';
+
+import 'package:visit_management/screens/timesheet_details.dart';
+import 'providers/timesheet_provider.dart';
+import 'providers/visit_provider.dart';
+import 'screens/home_screen.dart';
+
+void main() {
+  runApp(
+    MultiProvider(
+      providers: [
+        ChangeNotifierProvider(create: (_) => TimesheetProvider()),
+        ChangeNotifierProvider(create: (_) => VisitProvider()),
+        ChangeNotifierProvider(create: (_) => AgentProvider()),
+
+      ],
+      child: MyApp(),
+    ),
+  );
+}
+
+class MyApp extends StatelessWidget {
+  const MyApp({super.key});
+
+  @override
+  Widget build(BuildContext context) {
+    return MaterialApp(
+      title: 'Timesheet App',
+      home: HomeScreen(),
+      routes: {
+        '/timesheet-details': (_) => TimesheetDetails(),
+        '/log-visit': (_) {
+          throw Exception('LogVisitScreen requires weekNumber and year parameters.');
+        },
+
+      },
+      onUnknownRoute: (settings) {
+        return MaterialPageRoute(
+          builder: (context) => ErrorPage(
+            errorMessage: 'Page not found. Please try again.',
+            onRetry: () {
+              Navigator.pop(context);
+            },
+          ),
+        );
+      },
+    );
+  }
+}
+
+
+
+// providers/agent_provider.dart
+import 'dart:convert';
+import 'package:flutter/foundation.dart';
+import '../models/agent.dart';
+import '../services/agent_service.dart';
+
+class AgentProvider with ChangeNotifier {
+  List<Agent> _agents = [];
+  List<String> _uniqueLocations = [];
+
+  List<Agent> get agents => _agents;
+  List<String> get uniqueLocations => _uniqueLocations;
+
+  // Fetch an agent by ID
+  Future<Agent> fetchAgentById(String id) async {
+    try {
+      final agent = await AgentService.fetchAgentById(id);
+      _agents = [agent];
+      notifyListeners();
+      return agent; // Return the agent data
+    } catch (error) {
+      throw Exception('Failed to fetch agent: $error');
+    }
+  }
+
+  Future<Map<String, dynamic>> fetchAgentByPhone(String phone) async {
+    final response = await AgentService.fetchAgentByPhone(phone);
+
+    if (response.statusCode == 200) {
+      return json.decode(response.body);
+    } else {
+      throw Exception('Failed to load agent');
+    }
+  }
+
+  // Fetch agents by location
+  Future<void> fetchAgentsByLocation(String location) async {
+    try {
+      final agents = await AgentService.fetchAgentsByLocation(location);
+      _agents = agents; // Update the agents list
+      notifyListeners(); // Notify listeners to update the UI
+    } catch (error) {
+      throw Exception('Failed to fetch agents by location: $error');
+    }
+  }
+
+  // Fetch all unique agent locations
+  Future<void> fetchUniqueLocations() async {
+    try {
+      final locations = await AgentService.fetchUniqueLocations();
+      _uniqueLocations = locations; // Update the list with unique locations
+      notifyListeners();
+    } catch (error) {
+      throw Exception('Failed to fetch unique locations: $error');
+    }
+  }
+}
+
+import 'dart:convert';
+import 'package:flutter/foundation.dart';
+import '../models/timesheet.dart';
+import '../services/timesheet_service.dart';
+
+class TimesheetProvider with ChangeNotifier {
+  List<Timesheet> _timesheets = [];
+  Timesheet? _currentTimesheet;
+
+  List<Timesheet> get timesheets => _timesheets;
+  Timesheet? get currentTimesheet => _currentTimesheet;
+
+  // Fetch all timesheets
+  Future<void> fetchTimesheets() async {
+    try {
+      // Fetch timesheets using the service
+      final timesheets = await TimesheetService.fetchAllTimesheets();
+      _timesheets = timesheets;
+      notifyListeners();
+    } catch (e) {
+      print('Error fetching timesheets: $e');
+      throw Exception('Failed to fetch timesheets');
+    }
+  }
+
+  // Create a new timesheet or add visits to an existing one
+  Future<void> createTimesheet(int weekNumber, int year, String supervisorID, List<Map<String, dynamic>> visits) async {
+    try {
+      final response = await TimesheetService.createTimesheet({
+        'weekNumber': weekNumber,
+        'year': year,
+        'supervisorID': supervisorID,
+        'visits': visits,
+      });
+
+      if (response.statusCode != 200 && response.statusCode != 201) {
+        throw Exception('Failed to create timesheet: ${response.body}');
+      }
+
+      // Parse the response and update the local state
+      final responseData = jsonDecode(response.body);
+      print('Timesheet created successfully: $responseData');
+      notifyListeners();
+    } catch (e) {
+      print('Error creating timesheet: $e');
+      throw Exception('Failed to create timesheet');
+    }
+  }
+
+  // Fetch a specific timesheet by ID
+  Future<void> fetchTimesheetById(String id) async {
+    try {
+      _currentTimesheet = await TimesheetService.fetchTimesheetById(id);
+      notifyListeners();
+    } catch (error) {
+      throw Exception('Failed to fetch timesheet: $error');
+    }
+  }
+
+  // Fetch timesheets by supervisor
+  Future<void> fetchTimesheetsBySupervisor(String supervisorID) async {
+    try {
+      final timesheets = await TimesheetService.fetchTimesheetsBySupervisor(supervisorID);
+      _timesheets = timesheets;
+      notifyListeners();
+    } catch (error) {
+      throw Exception('Failed to fetch timesheets by supervisor: $error');
+    }
+  }
+
+  void setCurrentTimesheet(Timesheet timesheet) {
+    _currentTimesheet = timesheet;
+    notifyListeners();
+  }
+}
+
+
+
+import 'package:flutter/foundation.dart';
+import '../models/visit.dart';
+import '../services/visits_service.dart';
+
+class VisitProvider with ChangeNotifier {
+  final List<Visit> _visits = [];
+  late DateTime _startTime;
+
+  List<Visit> get visits => _visits;
+
+  // Fetch a visit by its ID from the backend
+  Future<Visit> fetchVisitByID(String visitID) async {
+    try {
+      final visitData = await VisitService.fetchVisitByID(visitID);
+      return Visit.fromJson(visitData);
+    } catch (error) {
+      throw Exception('Failed to fetch visit: $error');
+    }
+  }
+
+  // Log visit details
+  Future<void> logVisit(String visitId, Map<String, dynamic> logData) async {
+    try {
+      await VisitService.logVisit(visitId, logData);
+      notifyListeners();
+    } catch (error) {
+      throw Exception('Failed to log visit: $error');
+    }
+  }
+
+  // Start and stop visit timer
+  void startVisitTimer() {
+    _startTime = DateTime.now();
+  }
+
+  int stopVisitTimer() {
+    final endTime = DateTime.now();
+    final duration = endTime.difference(_startTime).inMinutes;
+    _startTime = DateTime.now();
+    return duration;
+  }
+}
+
+
+
+
+
+
+
+// models/agent.dart
+class Agent {
+  final String? agentID;
+  final String? name;
+  final String? lastname;
+  final String? cin;
+  final String? email;
+  final String? phone;
+  final String? location;
+
+  Agent({
+    this.agentID,
+    this.name,
+    this.lastname,
+    this.cin,
+    this.email,
+    this.phone,
+    this.location,
+  });
+
+  // Convert JSON to Agent object
+  factory Agent.fromJson(Map<String, dynamic> json) {
+    return Agent(
+      agentID: json['agentID'],
+      name: json['name'],
+      lastname: json['lastname'],
+      cin: json['cin'],
+      email: json['email'],
+      phone: json['phone'],
+      location: json['location'],
+    );
+  }
+
+  // Convert Agent object to JSON
+  Map<String, dynamic> toJson() {
+    return {
+      'agentID': agentID,
+      'name': name,
+      'lastname': lastname,
+      'cin': cin,
+      'email': email,
+      'phone': phone,
+      'location': location,
+    };
+  }
+}
+import 'package:visit_management/models/visit.dart';
+
+class Timesheet {
+  final String? timesheetID;
+  final int? weekNumber;
+  final int? year;
+  late final String? status;
+  final String? supervisorID;
+  final List<Visit>? visits;
+  final DateTime? createdAt;
+  final DateTime? updatedAt;
+
+  Timesheet({
+    this.timesheetID,
+    this.weekNumber,
+    this.year,
+    this.status,
+    this.supervisorID,
+    this.visits,
+    this.createdAt,
+    this.updatedAt,
+  });
+
+  factory Timesheet.fromJson(Map<String, dynamic> json) {
+    return Timesheet(
+      timesheetID: json['timesheetID'],
+      weekNumber: json['weekNumber'],
+      year: json['year'],
+      status: json['status'],
+      supervisorID: json['supervisorID'],
+      visits: json['Visits'] != null && json['Visits'] is List
+          ? (json['Visits'] as List).map((v) => Visit.fromJson(v)).toList()
+          : [], // Default to empty list if Visits is null
+      createdAt: json['createdAt'] != null ? DateTime.parse(json['createdAt']) : null,
+      updatedAt: json['updatedAt'] != null ? DateTime.parse(json['updatedAt']) : null,
+    );
+  }
+
+  Map<String, dynamic> toJson() {
+    return {
+      'timesheetID': timesheetID,
+      'weekNumber': weekNumber,
+      'year': year,
+      'status': status,
+      'supervisorID': supervisorID,
+      'visits': visits?.map((v) => v.toJson()).toList(),
+      'createdAt': createdAt?.toIso8601String(),
+      'updatedAt': updatedAt?.toIso8601String(),
+    };
+  }
+}
+
+class Visit {
+  final String? visitID;
+  final DateTime? date;
+  final String? time;
+  final String? location;
+  final int? duration;
+  final List<String>? reasons;
+  final List<String>? checklist;
+  final String? agentID;
+  final String? timesheetID;
+  final String? status;
+
+  Visit({
+    this.visitID,
+    this.date,
+    this.time,
+    this.location,
+    this.duration,
+    this.reasons,
+    this.checklist,
+    this.agentID,
+    this.timesheetID,
+    this.status,
+  });
+
+  factory Visit.fromJson(Map<String, dynamic> json) {
+    return Visit(
+      visitID: json['visitID'],
+      date: json['date'] != null ? DateTime.parse(json['date']) : null,
+      time: json['time'],
+      location: json['location'],
+      duration: json['duration'],
+      reasons: json['reason'] != null ? List<String>.from(json['reason']) : [],
+      checklist: json['checklist'] != null ? List<String>.from(json['checklist']) : [],
+      agentID: json['agentID'],
+      timesheetID: json['timesheetID'],
+      status: json['status'],
+    );
+  }
+
+  Map<String, dynamic> toJson() => {
+    'visitID': visitID,
+    'date': date?.toIso8601String(),
+    'time': time,
+    'location': location,
+    'duration': duration,
+    'reason': reasons,
+    'checklist': checklist,
+    'agentID': agentID,
+    'timesheetID': timesheetID,
+    'status': status,
+  };
+}
+
+
+
+
+
+
+// services/agent_service.dart
+import 'dart:convert';
+import 'package:http/http.dart' as http;
+import '../models/agent.dart';
+import '../utils/constants.dart';
+
+class AgentService {
+  // Fetch an agent by ID
+  static Future<Agent> fetchAgentById(String id) async {
+    try {
+      final response = await http.get(Uri.parse('$baseUrl/agents/$id'));
+      if (response.statusCode == 200) {
+        return Agent.fromJson(json.decode(response.body));
+      } else {
+        throw Exception('Failed to load agent: ${response.statusCode}');
+      }
+    } catch (e) {
+      rethrow;
+    }
+  }
+
+  // Fetch an agent by phone
+  static Future<http.Response> fetchAgentByPhone(String phone) async {
+    try {
+      return await http.get(Uri.parse('$baseUrl/agents/phone/$phone'));
+    } catch (e) {
+      rethrow;
+    }
+  }
+
+  // Fetch agents by location
+  static Future<List<Agent>> fetchAgentsByLocation(String location) async {
+    try {
+      final response = await http.get(Uri.parse('$baseUrl/agents/location?location=$location'));
+      if (response.statusCode == 200) {
+        final List<dynamic> decodedData = json.decode(response.body);
+        return decodedData.map((json) => Agent.fromJson(json)).toList();
+      } else {
+        throw Exception('Failed to load agents by location: ${response.statusCode}');
+      }
+    } catch (e) {
+      rethrow;
+    }
+  }
+
+  // Fetch all unique agent locations
+  static Future<List<String>> fetchUniqueLocations() async {
+    try {
+      final response = await http.get(Uri.parse('$baseUrl/agents/locations'));
+      if (response.statusCode == 200) {
+        final List<dynamic> decodedData = json.decode(response.body);
+        return decodedData.cast<String>();
+      } else {
+        throw Exception('Failed to load unique locations: ${response.statusCode}');
+      }
+    } catch (e) {
+      rethrow;
+    }
+  }
+}
+
+import 'package:http/http.dart' as http;
+import 'dart:convert';
+import '../models/timesheet.dart';
+import '../utils/constants.dart';
+
+class TimesheetService {
+  // Fetch all timesheets
+  static Future<List<Timesheet>> fetchAllTimesheets() async {
+    try {
+      final response = await http.get(Uri.parse('$baseUrl/timesheets'));
+      if (response.statusCode == 200) {
+        final List<dynamic> decodedData = json.decode(response.body);
+        return decodedData.map((json) => Timesheet.fromJson(json)).toList();
+      } else {
+        throw Exception('Failed to load timesheets: ${response.statusCode}');
+      }
+    } catch (e) {
+      rethrow;
+    }
+  }
+
+  // Create a new timesheet or add visits to an existing one
+  static Future<http.Response> createTimesheet(Map<String, dynamic> payload) async {
+    final response = await http.post(
+      Uri.parse('$baseUrl/timesheets'),
+      headers: {'Content-Type': 'application/json'},
+      body: json.encode(payload),
+    );
+    return response;
+  }
+
+  // Fetch a specific timesheet by ID
+  static Future<Timesheet> fetchTimesheetById(String id) async {
+    final response = await http.get(Uri.parse('$baseUrl/timesheets/$id'));
+    if (response.statusCode == 200) {
+      return Timesheet.fromJson(json.decode(response.body));
+    } else {
+      throw Exception('Failed to fetch timesheet');
+    }
+  }
+
+  // Validate a timesheet (fully or partially)
+  static Future<void> validateTimesheet(String id, Map<String, dynamic> validationData) async {
+    final response = await http.put(
+      Uri.parse('$baseUrl/timesheets/$id/validate'),
+      headers: {'Content-Type': 'application/json'},
+      body: json.encode(validationData),
+    );
+    if (response.statusCode != 200) {
+      throw Exception('Failed to validate timesheet');
+    }
+  }
+
+  // Fetch timesheets by supervisor
+  static Future<List<Timesheet>> fetchTimesheetsBySupervisor(String supervisorID) async {
+    try {
+      final response = await http.get(Uri.parse('$baseUrl/timesheets/supervisor/$supervisorID'));
+      if (response.statusCode == 200) {
+        final List<dynamic> decodedData = json.decode(response.body);
+        return decodedData.map((json) => Timesheet.fromJson(json)).toList();
+      } else {
+        throw Exception('Failed to fetch timesheets by supervisor: ${response.statusCode}');
+      }
+    } catch (e) {
+      rethrow;
+    }
+  }
+}
+
+
+
+
+
+import 'package:http/http.dart' as http;
+import 'dart:convert';
+import '../utils/constants.dart';
+
+class VisitService {
+  // Create a new visit
+  static Future<void> createVisit(Map<String, dynamic> visitData) async {
+    final response = await http.post(
+      Uri.parse('$baseUrl/visits'),
+      headers: {'Content-Type': 'application/json'},
+      body: json.encode(visitData),
+    );
+    if (response.statusCode != 201) {
+      throw Exception('Failed to create visit');
+    }
+  }
+
+  // Fetch a visit by its ID
+  static Future<Map<String, dynamic>> fetchVisitByID(String visitID) async {
+    final response = await http.get(Uri.parse('$baseUrl/visits/$visitID'));
+    if (response.statusCode == 200) {
+      return json.decode(response.body);
+    } else {
+      throw Exception('Failed to fetch visit');
+    }
+  }
+
+  // Add new verification method
+    static Future<Map<String, dynamic>> verifyQRCode({
+      required String qrData,
+      required String visitId,
+    }) async {
+      try {
+        final response = await http.post(
+          Uri.parse('$baseUrl/visits/verify-qr'),
+          headers: {'Content-Type': 'application/json'},
+          body: json.encode({
+            'qrData': qrData,
+            'visitId': visitId,
+          }),
+        );
+
+        if (response.statusCode == 200) {
+          return json.decode(response.body);
+        } else {
+          throw Exception('Verification failed: ${response.body}');
+        }
+      } catch (error) {
+        throw Exception('Verification error: $error');
+      }
+    }
+
+  // Log visit details
+  static Future<void> logVisit(String visitId, Map<String, dynamic> logData) async {
+    try {
+      final response = await http.put(
+        Uri.parse('$baseUrl/visits/$visitId/log'),
+        headers: {'Content-Type': 'application/json'},
+        body: json.encode(logData),
+      );
+
+      if (response.statusCode != 200) {
+        // Log the response body for debugging
+        print('Error logging visit: ${response.body}');
+        throw Exception('Failed to log visit: ${response.body}');
+      }
+    } catch (error) {
+      // Log any exceptions
+      print('Exception in logVisit: $error');
+      rethrow;
+    }
+  }
+}
+
+
+import 'package:flutter/material.dart';
+import '../widgets/day_view.dart';
+import '../widgets/week_view.dart';
+import 'create_visit.dart';
+
+class HomeScreen extends StatefulWidget {
+  const HomeScreen({super.key});
+
+  @override
+  _HomeScreenState createState() => _HomeScreenState();
+}
+
+class _HomeScreenState extends State<HomeScreen> {
+  DateTime _currentDate = DateTime.now();
+  late PageController _pageController;
+  bool _isWeekView = true;
+
+  @override
+  void initState() {
+    super.initState();
+    _pageController = PageController(initialPage: _getOffset(_currentDate));
+  }
+
+  int _getOffset(DateTime date) {
+    if (_isWeekView) {
+      DateTime monday = _getStartOfWeek(date);
+      final startOfYear = DateTime(monday.year, 1, 1);
+      return monday.difference(startOfYear).inDays ~/ 7;
+    } else {
+      final startOfYear = DateTime(date.year, 1, 1);
+      return date.difference(startOfYear).inDays;
+    }
+  }
+
+  void _navigateToDate(int offset) {
+    setState(() {
+      if (_isWeekView) {
+        _currentDate = _getStartOfWeek(DateTime(_currentDate.year, 1, 1).add(Duration(days: offset * 7)));
+      } else {
+        _currentDate = DateTime(_currentDate.year, 1, 1).add(Duration(days: offset));
+      }
+    });
+  }
+
+  void _toggleView() {
+    setState(() {
+      _isWeekView = !_isWeekView;
+      _currentDate = _isWeekView ? _getStartOfWeek(DateTime.now()) : DateTime.now();
+      _pageController.jumpToPage(_getOffset(_currentDate));
+    });
+  }
+
+  void _goToTodayOrThisWeek() {
+    setState(() {
+      _currentDate = _isWeekView ? _getStartOfWeek(DateTime.now()) : DateTime.now();
+      _pageController.jumpToPage(_getOffset(_currentDate));
+    });
+  }
+
+  DateTime _getStartOfWeek(DateTime date) {
+    return date.subtract(Duration(days: date.weekday - 1));
+  }
+
+  @override
+  Widget build(BuildContext context) {
+    return Scaffold(
+      appBar: PreferredSize(
+        preferredSize: Size.fromHeight(80),
+        child: Container(
+          decoration: BoxDecoration(
+            gradient: LinearGradient(
+              colors: [Color(0xFF4CB1C7), Color(0xFF64C9D1)],
+              begin: Alignment.topLeft,
+              end: Alignment.bottomRight,
+            ),
+            borderRadius: BorderRadius.vertical(bottom: Radius.circular(20)),
+          ),
+          child: AppBar(
+            backgroundColor: Colors.transparent,
+            elevation: 0,
+            title: Text(
+              "Visit Mangements",
+              style: TextStyle(fontSize: 22, fontWeight: FontWeight.bold, color: Colors.white),
+            ),
+            centerTitle: true,
+            actions: [
+
+              IconButton(
+                icon: Icon(_isWeekView ? Icons.view_week : Icons.view_day, color: Colors.white, size: 28),
+                onPressed: _toggleView,
+              ),
+              IconButton(
+                icon: Icon(Icons.today, color: Colors.white, size: 28),
+                onPressed: _goToTodayOrThisWeek,
+              ),
+            ],
+          ),
+        ),
+      ),
+      body: Column(
+        children: [
+          Padding(
+            padding: const EdgeInsets.symmetric(horizontal: 16.0, vertical: 16.0),
+            child: Row(
+              mainAxisAlignment: MainAxisAlignment.spaceBetween,
+              children: [
+                IconButton(
+                  icon: Icon(Icons.arrow_back_ios, color: Color(0xFF4CB1C7), size: 24),
+                  onPressed: () {
+                    _pageController.previousPage(duration: Duration(milliseconds: 300), curve: Curves.easeInOut);
+                  },
+                ),
+                Text(
+                  _isWeekView
+                      ? 'Week ${_getWeekNumber(_currentDate)}, ${_currentDate.year}'
+                      : 'Day ${_currentDate.day}, ${_currentDate.month}/${_currentDate.year}',
+                  style: TextStyle(fontSize: 18, fontWeight: FontWeight.w600, color: Color(0xFF4CB1C7)),
+                ),
+                IconButton(
+                  icon: Icon(Icons.arrow_forward_ios, color: Color(0xFF4CB1C7), size: 24),
+                  onPressed: () {
+                    _pageController.nextPage(duration: Duration(milliseconds: 300), curve: Curves.easeInOut);
+                  },
+                ),
+              ],
+            ),
+          ),
+          Expanded(
+            child: PageView.builder(
+              controller: _pageController,
+              onPageChanged: (index) => _navigateToDate(index),
+              itemBuilder: (context, index) {
+                final date = DateTime(_currentDate.year, 1, 1).add(Duration(days: _isWeekView ? index * 7 : index));
+                return _isWeekView ? WeekView(date) : DayView(date);
+              },
+            ),
+          ),
+        ],
+      ),
+      floatingActionButton: FloatingActionButton(
+        onPressed: () {
+          Navigator.push(
+            context,
+            MaterialPageRoute(
+              builder: (_) => CreateVisitScreen(
+                weekNumber: _getWeekNumber(_currentDate),
+                year: _currentDate.year,
+              ),
+            ),
+          );
+        },
+        backgroundColor: Color(0xFF4CB1C7),
+        child: Icon(Icons.add, color: Colors.white, size: 32),
+      ),
+    );
+  }
+
+  int _getWeekNumber(DateTime date) {
+    final startOfYear = DateTime(date.year, 1, 1);
+    return (date.difference(startOfYear).inDays / 7).ceil();
+  }
+}
+
+
+
+
+
+
+
+
+import 'package:flutter/material.dart';
+import 'package:provider/provider.dart';
+import 'package:visit_management/services/visits_service.dart';
+import '../providers/visit_provider.dart';
+import '../providers/agent_provider.dart';
+import '../widgets/qr_scanner_widget.dart';
+
+// Screen for logging a visit after verifying an agent's identity via QR code or manual input
+class LogVisitScreen extends StatefulWidget {
+  final int weekNumber;
+  final int year;
+  final String visitID;
+
+  // Constructor with required parameters for week, year, and visit ID
+  const LogVisitScreen({
+    required this.weekNumber,
+    required this.year,
+    required this.visitID,
+    super.key,
+  });
+
+  @override
+  // Creates the state object for this stateful widget
+  LogVisitScreenState createState() => LogVisitScreenState();
+}
+
+// State class for LogVisitScreen, managing dynamic data and UI updates
+class LogVisitScreenState extends State<LogVisitScreen> {
+  String? _agentPhone;
+  String? _agentName;
+  String? _agentLastname;
+
+  final List<String> _selectedReasons = [];
+  final List<String> _checklist = [];
+  final List<String> _checklistItems = ['Task 1', 'Task 2', 'Task 3'];
+  final List<String> _reasons = ['Inspection', 'Training', 'Other'];
+  bool _isAgentVerified = false;
+
+  // Controller for the text field where the agent's phone number can be manually entered
+  final TextEditingController _manualInputController = TextEditingController();
+
+  // Formats a phone number into TLV (Tag-Length-Value) format for tag 02
+  // Used when verifying manually entered phone numbers
+  // Example: Input "123456789" becomes "0209123456789" (tag 02, length 09, value 123456789)
+  String formatPhoneAsTLV(String phone) {
+    final length = phone.length;
+    final lengthStr = length.toString().padLeft(2, '0');
+    return '02$lengthStr$phone';
+  }
+
+  @override
+  // Builds the UI for the LogVisitScreen
+  Widget build(BuildContext context) {
+    final visitProvider = Provider.of<VisitProvider>(context);
+    final agentProvider = Provider.of<AgentProvider>(context);
+
+    // Main scaffold widget providing the app structure
+    return Scaffold(
+      appBar: PreferredSize(
+        preferredSize: Size.fromHeight(80),
+        child: Container(
+          decoration: BoxDecoration(
+            gradient: LinearGradient(
+              colors: [Color(0xFF4CB1C7), Color(0xFF64C9D1)],
+              begin: Alignment.topLeft,
+              end: Alignment.bottomRight,
+            ),
+            borderRadius: BorderRadius.vertical(bottom: Radius.circular(20)),
+          ),
+          child: AppBar(
+            backgroundColor: Colors.transparent,
+            elevation: 0,
+            title: Text(
+              'Log Visit',
+              style: TextStyle(fontSize: 24, fontWeight: FontWeight.bold, color: Colors.white),
+            ),
+            centerTitle: true,
+          ),
+        ),
+      ),
+      body: SingleChildScrollView(
+        padding: const EdgeInsets.all(16.0),
+        child: Column(
+          crossAxisAlignment: CrossAxisAlignment.start,
+          children: [
+            Text(
+              'Log a New Visit',
+              style: TextStyle(fontSize: 28, fontWeight: FontWeight.bold, color: Color(0xFF4CB1C7)),
+            ),
+            SizedBox(height: 20),
+
+            // Display agent verification card if the agent hasn't been verified yet
+            if (!_isAgentVerified) ...[
+              // Helper method to build a styled card
+              _buildInputCard(
+                title: 'Agent Verification',
+                icon: Icons.person,
+                child: Column(
+                  children: [
+                    // agent's phone number manually
+                    TextField(
+                      // Link to the controller for managing input
+                      controller: _manualInputController,
+                      decoration: InputDecoration(
+                        labelText: 'Enter Agent Phone Number',
+                        labelStyle: TextStyle(fontSize: 16, fontWeight: FontWeight.w500, color: Color(0xFF4CB1C7)),
+                        border: OutlineInputBorder(borderRadius: BorderRadius.circular(12)),
+                        contentPadding: EdgeInsets.symmetric(horizontal: 12, vertical: 8),
+                      ),
+                      keyboardType: TextInputType.phone,
+                    ),
+                    SizedBox(height: 16),
+                    // Button to initiate QR scanning or manual verification
+                    ElevatedButton.icon(
+                      onPressed: () async {
+                        final manualInput = _manualInputController.text.trim();
+                        String? scannedData;
+
+                        // Check if there's manual input to process
+                        if (manualInput.isNotEmpty) {
+                          scannedData = formatPhoneAsTLV(manualInput);
+                        } else {
+                          // Launch the QR scanner screen and await the result
+                          scannedData = await Navigator.push(
+                            context,
+                            MaterialPageRoute(builder: (_) => QRScannerWidget()),
+                          );
+                        }
+                        if (scannedData == null) return;
+
+                        try {
+                          // Attempt to verify the QR code or manual input with the backend
+                          final verificationResult = await VisitService.verifyQRCode(
+                            // Data from QR scan or formatted manual input
+                            qrData: scannedData,
+                            // Visit ID from the widget's properties
+                            visitId: widget.visitID,
+                          );
+
+                          // Check if verification was successful
+                          if (verificationResult['valid']) {
+                            // Fetch visit details using the visit ID
+                            final visit = await visitProvider.fetchVisitByID(widget.visitID);
+                            // Fetch agent details using the agent ID from the visit
+                            final agentData = await agentProvider.fetchAgentById(visit.agentID!);
+
+                            // Update the state with fetched data and mark agent as verified
+                            setState(() {
+                              _agentPhone = agentData.phone;
+                              _agentName = agentData.name;
+                              _agentLastname = agentData.lastname;
+                              _isAgentVerified = true;
+                              visitProvider.startVisitTimer();
+
+                            });
+                          } else {
+                            // Display an error message if verification fails
+                            ScaffoldMessenger.of(context).showSnackBar(
+                              SnackBar(
+                                // Error message from the backend or a default message
+                                content: Text(
+                                  verificationResult['message'] ?? 'Verification failed',
+                                  style: TextStyle(color: Colors.white),
+                                ),
+                                backgroundColor: Colors.red,
+                              ),
+                            );
+                          }
+                        } catch (error) {
+                          // Handle any exceptions during verification process
+                          ScaffoldMessenger.of(context).showSnackBar(
+                            SnackBar(content: Text('Verification error: $error')),
+                          );
+                        }
+                      },
+                      // Icon for the button
+                      icon: Icon(Icons.qr_code_scanner, color: Colors.white),
+                      // Button label
+                      label: Text(
+                        'Scan QR Code or Verify Manually',
+                        style: TextStyle(color: Colors.white),
+                      ),
+                      // Styling for the button
+                      style: ElevatedButton.styleFrom(
+                        backgroundColor: Color(0xFF4CB1C7),
+                        padding: EdgeInsets.symmetric(horizontal: 24, vertical: 12),
+                        shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(12)),
+                      ),
+                    ),
+                  ],
+                ),
+              ),
+            ],
+
+            // Display agent details and visit logging options if verified
+            if (_isAgentVerified) ...[
+              _buildInputCard(
+                title: 'Agent Details',
+                icon: Icons.account_tree,
+                child: Column(
+                  crossAxisAlignment: CrossAxisAlignment.start,
+                  children: [
+                    Row(
+                      children: [
+                        Icon(Icons.person, color: Colors.grey[700], size: 15),
+                        SizedBox(width: 8),
+                        Text(
+                          '${_agentName ?? ''} ${_agentLastname ?? ''}',
+                          style: TextStyle(fontSize: 16, fontWeight: FontWeight.w500, color: Colors.grey[700]),
+                        ),
+                      ],
+                    ),
+                    SizedBox(height: 8),
+                    Row(
+                      children: [
+                        Icon(Icons.phone, color: Colors.grey[700], size: 15),
+                        SizedBox(width: 8),
+                        Text(
+                          '$_agentPhone',
+                          style: TextStyle(fontSize: 16, fontWeight: FontWeight.w500, color: Colors.grey[700]),
+                        ),
+                      ],
+                    ),
+                    SizedBox(height: 25),
+                    Row(
+                      children: [
+                        Icon(Icons.list_alt, color: Color(0xFF4CB1C7), size: 20),
+                        SizedBox(width: 8),
+                        Text(
+                          'Reasons for Visit',
+                          style: TextStyle(fontSize: 16, fontWeight: FontWeight.bold, color: Color(0xFF4CB1C7)),
+                        ),
+                      ],
+                    ),
+                    Wrap(
+                      spacing: 8.0,
+                      children: _reasons.map((reason) {
+                        return FilterChip(
+                          label: Text(reason),
+                          selected: _selectedReasons.contains(reason),
+                          onSelected: (isSelected) {
+                            setState(() {
+                              if (isSelected) {
+                                _selectedReasons.add(reason);
+                              } else {
+                                _selectedReasons.remove(reason);
+                              }
+                            });
+                          },
+                          selectedColor: Color(0xFFE8F5F9),
+                          checkmarkColor: Color(0xFF4CB1C7),
+                        );
+                      }).toList(),
+                    ),
+                    SizedBox(height: 16),
+                    Row(
+                      children: [
+                        Icon(Icons.list_alt, color: Color(0xFF4CB1C7), size: 20),
+                        SizedBox(width: 8),
+                        Text(
+                          'Checklist',
+                          style: TextStyle(fontSize: 16, fontWeight: FontWeight.bold, color: Color(0xFF4CB1C7)),
+                        ),
+                      ],
+                    ),
+                    Column(
+                      children: _checklistItems.map((item) {
+                        return CheckboxListTile(
+                          title: Text(item),
+                          value: _checklist.contains(item),
+                          onChanged: (value) {
+                            setState(() {
+                              if (value!) {
+                                _checklist.add(item);
+                              } else {
+                                _checklist.remove(item);
+                              }
+                            });
+                          },
+                          controlAffinity: ListTileControlAffinity.leading,
+                          activeColor: Color(0xFF4CB1C7),
+                        );
+                      }).toList(),
+                    ),
+                  ],
+                ),
+              ),
+            ],
+            SizedBox(height: 24),
+
+            Center(
+              child: ElevatedButton.icon(
+                onPressed: _isAgentVerified
+                    ? () async {
+                  final duration = visitProvider.stopVisitTimer();
+
+                  final visitData = {
+                    'duration': duration,
+                    'reason': List<String>.from(_selectedReasons),
+                    'checklist': List<String>.from(_checklistItems),
+                    'status': 'Visited',
+                  };
+
+                  try {
+                    // Attempt to log the visit with the backend
+                    await visitProvider.logVisit(widget.visitID, visitData);
+                    // Navigate back to the previous screen on success
+                    Navigator.pop(context);
+                  } catch (error) {
+                    // Show an error message if logging fails
+                    ScaffoldMessenger.of(context).showSnackBar(
+                      SnackBar(content: Text('Failed to log visit: $error')),
+                    );
+                  }
+                }
+                    : null, // Disable the button if agent isn't verified
+                icon: Icon(Icons.check_circle, color: Colors.white),
+                label: Text(
+                  'Validate Visit',
+                  style: TextStyle(color: Colors.white),
+                ),
+                style: ElevatedButton.styleFrom(
+                  backgroundColor: Color(0xFFE81F76),
+                  padding: EdgeInsets.symmetric(horizontal: 24, vertical: 12),
+                  shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(12)),
+                ),
+              ),
+            ),
+          ],
+        ),
+      ),
+    );
+  }
+
+  // Helper method to create a consistently styled card for input sections
+  // Takes a title, icon, and child widget as parameters
+  Widget _buildInputCard({required String title, required IconData icon, required Widget child}) {
+    return Card(
+      elevation: 4,
+      shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(12)),
+      child: Padding(
+        padding: const EdgeInsets.all(16.0),
+        child: Column(
+          crossAxisAlignment: CrossAxisAlignment.start,
+          children: [
+            Row(
+              children: [
+                Icon(icon, color: Color(0xFF4CB1C7), size: 20),
+                SizedBox(width: 8),
+                Text(
+                  title,
+                  style: TextStyle(fontSize: 18, fontWeight: FontWeight.bold, color: Color(0xFF4CB1C7)),
+                ),
+              ],
+            ),
+            SizedBox(height: 12),
+            child,
+          ],
+        ),
+      ),
+    );
+  }
+}
+
+
+import 'package:flutter/material.dart';
+import '../models/timesheet.dart';
+import '../widgets/visit_item.dart';
+
+class TimesheetDetails extends StatelessWidget {
+  const TimesheetDetails({super.key});
+
+  @override
+  Widget build(BuildContext context) {
+    final timesheet = ModalRoute.of(context)?.settings.arguments as Timesheet;
+
+    return Scaffold(
+      appBar: PreferredSize(
+        preferredSize: Size.fromHeight(80),
+        child: Container(
+          decoration: BoxDecoration(
+            gradient: LinearGradient(
+              colors: [Color(0xFF4CB1C7), Color(0xFF64C9D1)],
+              begin: Alignment.topLeft,
+              end: Alignment.bottomRight,
+            ),
+            borderRadius: BorderRadius.vertical(bottom: Radius.circular(20)),
+          ),
+          child: AppBar(
+            backgroundColor: Colors.transparent,
+            elevation: 0,
+            title: Text(
+              'Timesheet Visits',
+              style: TextStyle(fontSize: 24, fontWeight: FontWeight.bold, color: Colors.white),
+            ),
+            centerTitle: true,
+          ),
+        ),
+      ),
+      body: Padding(
+        padding: const EdgeInsets.all(16.0),
+        child: Column(
+          crossAxisAlignment: CrossAxisAlignment.start,
+          children: [
+            // Section Title
+            Text(
+              'Week ${timesheet.weekNumber}, ${timesheet.year}',
+              style: TextStyle(fontSize: 28, fontWeight: FontWeight.bold, color: Color(0xFF4CB1C7)),
+            ),
+            SizedBox(height: 20),
+
+            // Visits List
+            Expanded(
+              child: timesheet.visits!.isEmpty
+                  ? Center(
+                child: Column(
+                  mainAxisAlignment: MainAxisAlignment.center,
+                  children: [
+                    Icon(
+                      Icons.event_busy,
+                      size: 80,
+                      color: Colors.grey[400],
+                    ),
+                    SizedBox(height: 16),
+                    Text(
+                      'No Visits Found',
+                      style: TextStyle(fontSize: 18, fontWeight: FontWeight.w500, color: Colors.grey[600]),
+                      textAlign: TextAlign.center,
+                    ),
+                  ],
+                ),
+              )
+                  : ListView.builder(
+                itemCount: timesheet.visits?.length,
+                itemBuilder: (ctx, index) {
+                  final visit = timesheet.visits?[index];
+                  return VisitItem(visit!);
+                },
+              ),
+            ),
+          ],
+        ),
+      ),
+    );
+  }
+}
+
+
+
+
+import 'package:flutter/material.dart';
+import '../models/visit.dart';
+import 'Error.dart';
+import 'log_visit_screen.dart';
+
+class VisitDetailsScreen extends StatelessWidget {
+  final Visit visit;
+
+  const VisitDetailsScreen({required this.visit, super.key});
+
+  @override
+  Widget build(BuildContext context) {
+    return Scaffold(
+      appBar: AppBar(
+        backgroundColor: Color(0xFF4CB1C7),
+        elevation: 0,
+        title: Text(
+          'Visit Details',
+          style: TextStyle(fontSize: 20, fontWeight: FontWeight.bold, color: Colors.white),
+        ),
+        centerTitle: true,
+      ),
+      body: SingleChildScrollView(
+        child: Column(
+          crossAxisAlignment: CrossAxisAlignment.start,
+          children: [
+            // Header Section with Gradient Background
+            Container(
+              height: 150,
+              decoration: BoxDecoration(
+                gradient: LinearGradient(
+                  colors: [Color(0xFF4CB1C7), Color(0xFF4CB1C7)],
+                  begin: Alignment.topLeft,
+                  end: Alignment.bottomRight,
+                ),
+                borderRadius: BorderRadius.vertical(bottom: Radius.circular(20)),
+              ),
+              child: Padding(
+                padding: const EdgeInsets.all(16.0),
+                child: Column(
+                  mainAxisAlignment: MainAxisAlignment.center,
+                  crossAxisAlignment: CrossAxisAlignment.start,
+                  children: [
+                    Text(
+                      'Visit Overview',
+                      style: TextStyle(fontSize: 24, fontWeight: FontWeight.bold, color: Colors.white),
+                    ),
+                    SizedBox(height: 8),
+                    Row(
+                      children: [
+                        Icon(Icons.location_on, color: Colors.white, size: 16),
+                        SizedBox(width: 4),
+                        Text(
+                          visit.location ?? 'N/A',
+                          style: TextStyle(fontSize: 16, color: Colors.white),
+                        ),
+                      ],
+                    ),
+                    SizedBox(height: 4),
+                    Row(
+                      children: [
+                        Icon(Icons.access_time, color: Colors.white, size: 16),
+                        SizedBox(width: 4),
+                        Text(
+                          '${visit.date?.day}/${visit.date?.month}/${visit.date?.year} - ${visit.time}',
+                          style: TextStyle(fontSize: 16, color: Colors.white),
+                        ),
+                      ],
+                    ),
+                  ],
+                ),
+              ),
+            ),
+
+            // Main Content Section
+            Padding(
+              padding: const EdgeInsets.all(16.0),
+              child: Column(
+                crossAxisAlignment: CrossAxisAlignment.start,
+                children: [
+                  // Agent Information Card
+                  _buildInfoCard(
+                    title: 'Agent Information',
+                    icon: Icons.person,
+                    content: [
+                      _buildDetailRow('Agent ID:', visit.agentID!),
+                      _buildDetailRow('Status:', visit.status!),
+                    ],
+                  ),
+
+                  SizedBox(height: 16),
+
+                  // Visit Details Card
+                  if (visit.status == "visited")
+                  _buildInfoCard(
+                    title: 'Visit Details',
+                    icon: Icons.info,
+                    content: [
+                        _buildDetailRow('Duration:', '${visit.duration} minutes'),
+                        _buildDetailRow('Reasons:', visit.reasons!.join(', ')),
+                        _buildDetailRow('Checklist:', visit.checklist!.join(', ')),
+                    ],
+                  ),
+
+                  SizedBox(height: 16),
+
+                  // Action Buttons
+                  Row(
+                    mainAxisAlignment: MainAxisAlignment.spaceEvenly,
+                    children: [
+                      ElevatedButton.icon(
+                        onPressed: () {
+                          Navigator.push(
+                            context,
+                            MaterialPageRoute(
+                              builder: (_) => ErrorPage(errorMessage: 'Page not available yet'),
+                            ),
+                          );
+                        },
+                        icon: Icon(Icons.edit, color: Colors.white),
+                        label: Text('Edit Visit', style: TextStyle(color: Colors.white)),
+                        style: ElevatedButton.styleFrom(
+                          backgroundColor: Color(0xFF4CB1C7),
+                          shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(8)),
+                          padding: EdgeInsets.symmetric(horizontal: 20, vertical: 12),
+                        ),
+                      ),
+                      ElevatedButton.icon(
+                        onPressed: () {
+                          Navigator.push(
+                            context,
+                            MaterialPageRoute(
+                              builder: (_) => LogVisitScreen(
+                                weekNumber: _getWeekNumber(visit.date!),
+                                year: visit.date!.year,
+                                visitID: visit.visitID!,
+                              ),
+                            ),
+                          );
+                        },
+                        icon: Icon(Icons.check_circle, color: Colors.white),
+                        label: Text('Log Visit', style: TextStyle(color: Colors.white)),
+                        style: ElevatedButton.styleFrom(
+                          backgroundColor: Color(0xFFE81F76),
+                          shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(8)),
+                          padding: EdgeInsets.symmetric(horizontal: 20, vertical: 12),
+                        ),
+                      ),
+                    ],
+                  ),
+                ],
+              ),
+            ),
+          ],
+        ),
+      ),
+    );
+  }
+
+  Widget _buildInfoCard({required String title, required IconData icon, required List<Widget> content}) {
+    return Card(
+      elevation: 4,
+      shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(12)),
+      child: Padding(
+        padding: const EdgeInsets.all(16.0),
+        child: Column(
+          crossAxisAlignment: CrossAxisAlignment.start,
+          children: [
+            Row(
+              children: [
+                Icon(icon, color: Color(0xFF4CB1C7), size: 20),
+                SizedBox(width: 8),
+                Text(
+                  title,
+                  style: TextStyle(fontSize: 18, fontWeight: FontWeight.bold, color: Color(0xFF4CB1C7)),
+                ),
+              ],
+            ),
+            SizedBox(height: 12),
+            ...content,
+          ],
+        ),
+      ),
+    );
+  }
+
+  Widget _buildDetailRow(String label, String value) {
+    return Padding(
+      padding: const EdgeInsets.symmetric(vertical: 4),
+      child: Row(
+        children: [
+          Text(
+            label,
+            style: TextStyle(fontWeight: FontWeight.w500, color: Colors.grey[700]),
+          ),
+          SizedBox(width: 8),
+          Expanded(
+            child: Text(
+              value,
+              style: TextStyle(fontSize: 14, color: Colors.black87),
+            ),
+          ),
+        ],
+      ),
+    );
+  }
+
+  int _getWeekNumber(DateTime date) {
+    final startOfYear = DateTime(date.year, 1, 1);
+    final daysSinceStart = date.difference(startOfYear).inDays;
+    return (daysSinceStart / 7).ceil();
+  }
+}
+
+
+
+import 'package:flutter/material.dart';
+import 'package:provider/provider.dart';
+import 'package:dropdown_search/dropdown_search.dart'; // For searchable dropdowns
+import '../providers/timesheet_provider.dart';
+import '../providers/agent_provider.dart';
+
+class CreateVisitScreen extends StatefulWidget {
+  final int weekNumber;
+  final int year;
+
+  const CreateVisitScreen({
+    required this.weekNumber,
+    required this.year,
+    super.key,
+  });
+
+  @override
+  _CreateVisitScreenState createState() => _CreateVisitScreenState();
+}
+
+class _CreateVisitScreenState extends State<CreateVisitScreen> {
+  final _formKey = GlobalKey<FormState>();
+  DateTime? _selectedDate; // Stores the selected date
+  TimeOfDay? _selectedTime; // Stores the selected time
+  String? _selectedLocation; // Stores the selected location
+  String? _selectedAgentID; // Stores the selected agent ID
+  bool _isAdding = false;
+
+  @override
+  void initState() {
+    super.initState();
+    // Fetch unique locations when the screen initializes
+    final agentProvider = Provider.of<AgentProvider>(context, listen: false);
+    agentProvider.fetchUniqueLocations();
+  }
+
+  @override
+  Widget build(BuildContext context) {
+    final timesheetProvider = Provider.of<TimesheetProvider>(context);
+    final agentProvider = Provider.of<AgentProvider>(context);
+
+    return Scaffold(
+      appBar: PreferredSize(
+        preferredSize: Size.fromHeight(80),
+        child: Container(
+          decoration: BoxDecoration(
+            gradient: LinearGradient(
+              colors: [Color(0xFF4CB1C7), Color(0xFF64C9D1)],
+              begin: Alignment.topLeft,
+              end: Alignment.bottomRight,
+            ),
+            borderRadius: BorderRadius.vertical(bottom: Radius.circular(20)),
+          ),
+          child: AppBar(
+            backgroundColor: Colors.transparent,
+            elevation: 0,
+            title: Text(
+              'Create Visit',
+              style: TextStyle(fontSize: 24, fontWeight: FontWeight.bold, color: Colors.white),
+            ),
+            centerTitle: true,
+          ),
+        ),
+      ),
+      body: SingleChildScrollView(
+        padding: const EdgeInsets.all(16.0),
+        child: Form(
+          key: _formKey,
+          child: Column(
+            crossAxisAlignment: CrossAxisAlignment.start,
+            children: [
+              // Section Title
+              Text(
+                'Schedule a New Visit',
+                style: TextStyle(fontSize: 28, fontWeight: FontWeight.bold, color: Color(0xFF4CB1C7)),
+              ),
+              SizedBox(height: 20),
+
+              // Date Picker Card
+              _buildInputCard(
+                title: 'Select Date',
+                icon: Icons.calendar_today,
+                child: InkWell(
+                  onTap: () async {
+                    final pickedDate = await showDatePicker(
+                      context: context,
+                      initialDate: DateTime.now(),
+                      firstDate: DateTime(2000),
+                      lastDate: DateTime(2100),
+                    );
+                    if (pickedDate != null) {
+                      setState(() {
+                        _selectedDate = pickedDate;
+                      });
+                    }
+                  },
+                  child: AnimatedContainer(
+                    duration: Duration(milliseconds: 300),
+                    padding: EdgeInsets.symmetric(horizontal: 16, vertical: 12),
+                    decoration: BoxDecoration(
+                      border: Border.all(color: Color(0xFF4CB1C7), width: 2),
+                      borderRadius: BorderRadius.circular(12),
+                      color: _selectedDate == null ? Colors.transparent : Color(0xFFE8F5F9),
+                    ),
+                    child: Row(
+                      mainAxisAlignment: MainAxisAlignment.spaceBetween,
+                      children: [
+                        Text(
+                          _selectedDate == null
+                              ? 'Select a date'
+                              : '${_selectedDate!.year}-${_selectedDate!.month.toString().padLeft(2, '0')}-${_selectedDate!.day.toString().padLeft(2, '0')}',
+                          style: TextStyle(fontSize: 16, color: Colors.grey[700]),
+                        ),
+                        Icon(Icons.calendar_today, color: Color(0xFF4CB1C7)),
+                      ],
+                    ),
+                  ),
+                ),
+              ),
+
+              SizedBox(height: 16),
+
+              // Time Picker Card
+              _buildInputCard(
+                title: 'Select Time',
+                icon: Icons.access_time,
+                child: InkWell(
+                  onTap: () async {
+                    final pickedTime = await showTimePicker(
+                      context: context,
+                      initialTime: TimeOfDay.now(),
+                    );
+                    if (pickedTime != null) {
+                      setState(() {
+                        _selectedTime = pickedTime;
+                      });
+                    }
+                  },
+                  child: AnimatedContainer(
+                    duration: Duration(milliseconds: 300),
+                    padding: EdgeInsets.symmetric(horizontal: 16, vertical: 12),
+                    decoration: BoxDecoration(
+                      border: Border.all(color: Color(0xFF4CB1C7), width: 2),
+                      borderRadius: BorderRadius.circular(12),
+                      color: _selectedTime == null ? Colors.transparent : Color(0xFFE8F5F9),
+                    ),
+                    child: Row(
+                      mainAxisAlignment: MainAxisAlignment.spaceBetween,
+                      children: [
+                        Text(
+                          _selectedTime == null
+                              ? 'Select a time'
+                              : '${_selectedTime!.hour.toString().padLeft(2, '0')}:${_selectedTime!.minute.toString().padLeft(2, '0')}',
+                          style: TextStyle(fontSize: 16, color: Colors.grey[700]),
+                        ),
+                        Icon(Icons.access_time, color: Color(0xFF4CB1C7)),
+                      ],
+                    ),
+                  ),
+                ),
+              ),
+
+              SizedBox(height: 16),
+
+              // Location Dropdown Card
+              _buildInputCard(
+                title: 'Select Location',
+                icon: Icons.location_on,
+                child: DropdownSearch<String>(
+                  popupProps: PopupProps.menu(
+                    showSelectedItems: true,
+                    searchFieldProps: TextFieldProps(
+                      decoration: InputDecoration(
+                        labelText: 'Search Location',
+                        border: OutlineInputBorder(borderRadius: BorderRadius.circular(12)),
+                      ),
+                    ),
+                  ),
+                  items: (String filter, _) {
+                    return agentProvider.uniqueLocations
+                        .where((location) => location.toLowerCase().contains(filter.toLowerCase()))
+                        .toList();
+                  },
+                  dropdownBuilder: (context, selectedItem) {
+                    return AnimatedContainer(
+                      duration: Duration(milliseconds: 300),
+                      padding: EdgeInsets.symmetric(horizontal: 16, vertical: 12),
+                      decoration: BoxDecoration(
+                        border: Border.all(color: Color(0xFF4CB1C7), width: 2),
+                        borderRadius: BorderRadius.circular(12),
+                        color: selectedItem == null ? Colors.transparent : Color(0xFFE8F5F9),
+                      ),
+                      child: Row(
+                        mainAxisAlignment: MainAxisAlignment.spaceBetween,
+                        children: [
+                          Text(
+                            selectedItem ?? 'Select a location',
+                            style: TextStyle(fontSize: 16, color: Colors.grey[700]),
+                          ),
+                          Icon(Icons.location_on, color: Color(0xFF4CB1C7)),
+                        ],
+                      ),
+                    );
+                  },
+                  onChanged: (String? value) async {
+                    setState(() {
+                      _selectedLocation = value;
+                      _selectedAgentID = null;
+                    });
+                    if (_selectedLocation != null) {
+                      await agentProvider.fetchAgentsByLocation(_selectedLocation!);
+                    }
+                  },
+                  validator: (value) => _selectedLocation == null ? 'Please select a location' : null,
+                ),
+              ),
+
+              SizedBox(height: 16),
+
+              // Agent Dropdown Card
+              _buildInputCard(
+                title: 'Select Agent',
+                icon: Icons.person,
+                child: DropdownSearch<String>(
+                  popupProps: PopupProps.menu(
+                    showSelectedItems: true,
+                    searchFieldProps: TextFieldProps(
+                      decoration: InputDecoration(
+                        labelText: 'Search Agent',
+                        border: OutlineInputBorder(borderRadius: BorderRadius.circular(12)),
+                      ),
+                    ),
+                  ),
+                  items: (String filter, _) {
+                    return agentProvider.agents
+                        .map((agent) => '${agent.name} ${agent.lastname}')
+                        .where((agentName) => agentName.toLowerCase().contains(filter.toLowerCase()))
+                        .toList();
+                  },
+                  dropdownBuilder: (context, selectedItem) {
+                    return AnimatedContainer(
+                      duration: Duration(milliseconds: 300),
+                      padding: EdgeInsets.symmetric(horizontal: 16, vertical: 12),
+                      decoration: BoxDecoration(
+                        border: Border.all(color: Color(0xFF4CB1C7), width: 2),
+                        borderRadius: BorderRadius.circular(12),
+                        color: selectedItem == null ? Colors.transparent : Color(0xFFE8F5F9),
+                      ),
+                      child: Row(
+                        mainAxisAlignment: MainAxisAlignment.spaceBetween,
+                        children: [
+                          Text(
+                            selectedItem ?? 'Select an agent',
+                            style: TextStyle(fontSize: 16, color: Colors.grey[700]),
+                          ),
+                          Icon(Icons.person, color: Color(0xFF4CB1C7)),
+                        ],
+                      ),
+                    );
+                  },
+                  onChanged: (String? value) {
+                    if (value != null) {
+                      final selectedAgent = agentProvider.agents.firstWhere(
+                            (agent) => '${agent.name} ${agent.lastname}' == value,
+                      );
+                      setState(() {
+                        _selectedAgentID = selectedAgent.agentID;
+                      });
+                    }
+                  },
+                  validator: (value) => _selectedAgentID == null ? 'Please select an agent' : null,
+                ),
+              ),
+
+              SizedBox(height: 24),
+
+              // Save Visit Button
+              Center(
+                child: ElevatedButton.icon(
+                  onPressed: () async {
+                    if (_formKey.currentState!.validate()) {
+                      _formKey.currentState?.save();
+                      setState(() {
+                        _isAdding = true;
+                      });
+                      try {
+                        // Prepare visit data
+                        final visitData = {
+                          'date': _selectedDate?.toIso8601String(), // Format date as ISO 8601
+                          'time': '${_selectedTime?.hour}:${_selectedTime?.minute}', // Format time as HH:mm
+                          'agentID': _selectedAgentID!,
+                        };
+                        // Add visit to the current timesheet
+                        final supervisorID = '1'; // Hardcoded for now
+                        await timesheetProvider.createTimesheet(
+                          widget.weekNumber,
+                          widget.year,
+                          supervisorID,
+                          [visitData],
+                        );
+                        if (mounted) {
+                          Navigator.pop(context);
+                        }
+                      } catch (e) {
+                        ScaffoldMessenger.of(context).showSnackBar(
+                          SnackBar(content: Text('Failed to create timesheet: $e')),
+                        );
+                      } finally {
+                        setState(() {
+                          _isAdding = false;
+                        });
+                      }
+                    }
+                  },
+                  icon: _isAdding ? CircularProgressIndicator(color: Colors.white) : Icon(color: Color(0xFFFFFFFF),Icons.save),
+                  label: Text(
+                    style: TextStyle(color: Colors.white),
+                      _isAdding ? 'Saving...' : 'Save Visit'),
+                  style: ElevatedButton.styleFrom(
+                    backgroundColor: Color(0xFF4CB1C7),
+                    padding: EdgeInsets.symmetric(horizontal: 24, vertical: 12),
+                    shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(12)),
+                  ),
+                ),
+              ),
+            ],
+          ),
+        ),
+      ),
+    );
+  }
+
+  Widget _buildInputCard({required String title, required IconData icon, required Widget child}) {
+    return Card(
+      elevation: 4,
+      shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(12)),
+      child: Padding(
+        padding: const EdgeInsets.all(16.0),
+        child: Column(
+          crossAxisAlignment: CrossAxisAlignment.start,
+          children: [
+            Row(
+              children: [
+                Icon(icon, color: Color(0xFF4CB1C7), size: 20),
+                SizedBox(width: 8),
+                Text(
+                  title,
+                  style: TextStyle(fontSize: 18, fontWeight: FontWeight.bold, color: Color(0xFF4CB1C7)),
+                ),
+              ],
+            ),
+            SizedBox(height: 12),
+            child,
+          ],
+        ),
+      ),
+    );
+  }
+}
+
+
+
+import 'package:flutter/material.dart';
+import 'package:camera/camera.dart';
+import 'package:flutter/services.dart';
+import 'package:google_mlkit_barcode_scanning/google_mlkit_barcode_scanning.dart';
+
+class QRScannerWidget extends StatefulWidget {
+  const QRScannerWidget({super.key});
+
+  @override
+  _QRScannerWidgetState createState() => _QRScannerWidgetState();
+}
+
+class _QRScannerWidgetState extends State<QRScannerWidget> {
+  late CameraController _cameraController;
+  final BarcodeScanner _barcodeScanner = BarcodeScanner(formats: [BarcodeFormat.qrCode]);
+  bool _isInitialized = false;
+
+  @override
+  void initState() {
+    super.initState();
+    _initializeCamera();
+  }
+
+  Future<void> _initializeCamera() async {
+    final cameras = await availableCameras();
+    _cameraController = CameraController(
+      cameras.first,
+      ResolutionPreset.high,
+      enableAudio: false,
+      imageFormatGroup: ImageFormatGroup.yuv420,
+    );
+    await _cameraController.initialize();
+    await _cameraController.lockCaptureOrientation(DeviceOrientation.portraitUp);
+    setState(() => _isInitialized = true);
+  }
+
+  @override
+  void dispose() {
+    _cameraController.dispose();
+    _barcodeScanner.close();
+    super.dispose();
+  }
+
+  @override
+  Widget build(BuildContext context) {
+    if (!_isInitialized) {
+      return Scaffold(
+        appBar: AppBar(
+          title: const Text('Scan QR Code'),
+          backgroundColor: const Color(0xFF4CB1C7),
+        ),
+        body: const Center(child: CircularProgressIndicator(color: Color(0xFF4CB1C7))),
+      );
+    }
+
+    return Scaffold(
+      appBar: PreferredSize(
+        preferredSize: const Size.fromHeight(80),
+        child: Container(
+          decoration: const BoxDecoration(
+            gradient: LinearGradient(
+              colors: [Color(0xFF4CB1C7), Color(0xFF64C9D1)],
+              begin: Alignment.topLeft,
+              end: Alignment.bottomRight,
+            ),
+            borderRadius: BorderRadius.vertical(bottom: Radius.circular(20)),
+          ),
+          child: AppBar(
+            backgroundColor: Colors.transparent,
+            elevation: 0,
+            title: const Text(
+              'Scan QR Code',
+              style: TextStyle(fontSize: 24, fontWeight: FontWeight.bold, color: Colors.white),
+            ),
+            centerTitle: true,
+          ),
+        ),
+      ),
+      body: Stack(
+        children: [
+          // Camera preview with correct aspect ratio
+          Positioned.fill(
+            child: AspectRatio(
+              aspectRatio: _cameraController.value.aspectRatio,
+              child: CameraPreview(_cameraController),
+            ),
+          ),
+
+          // Custom overlay
+          Positioned.fill(
+            child: Column(
+              mainAxisAlignment: MainAxisAlignment.center,
+              children: [
+                Expanded(
+                  child: Center(
+                    child: Container(
+                      width: 250,
+                      height: 250,
+                      decoration: BoxDecoration(
+                        border: Border.all(color: Colors.white, width: 2),
+                        borderRadius: BorderRadius.circular(12),
+                      ),
+                      child: AnimatedContainer(
+                        duration: const Duration(milliseconds: 500),
+                        decoration: BoxDecoration(
+                          border: Border.all(color: Colors.green, width: 4),
+                          borderRadius: BorderRadius.circular(12),
+                        ),
+                      ),
+                    ),
+                  ),
+                ),
+                const SizedBox(height: 20),
+                const Text(
+                  'Align the QR code within the frame',
+                  style: TextStyle(fontSize: 16, fontWeight: FontWeight.w500, color: Colors.white),
+                ),
+                const SizedBox(height: 20),
+              ],
+            ),
+          ),
+
+          // Tap-to-scan overlay
+          Positioned.fill(
+            child: GestureDetector(
+              onTap: () async {
+                try {
+                  final image = await _cameraController.takePicture();
+                  final inputImage = InputImage.fromFilePath(image.path);
+                  final barcodes = await _barcodeScanner.processImage(inputImage);
+                  for (final barcode in barcodes) {
+                    if (barcode.rawValue != null) {
+                      Navigator.pop(context, barcode.rawValue); // Return full QR data
+                      return;
+                    }
+                  }
+                  ScaffoldMessenger.of(context).showSnackBar(
+                    const SnackBar(content: Text('No valid QR code found')),
+                  );
+                } catch (e) {
+                  ScaffoldMessenger.of(context).showSnackBar(
+                    SnackBar(content: Text('Failed to scan QR code: $e')),
+                  );
+                }
+              },
+            ),
+          ),
+        ],
+      ),
+    );
+  }
+}
+import 'package:flutter/material.dart';
+import '../models/timesheet.dart';
+
+class TimesheetItem extends StatelessWidget {
+  final Timesheet timesheet;
+
+  const TimesheetItem(this.timesheet, {super.key});
+
+  @override
+  Widget build(BuildContext context) {
+    return Card(
+      elevation: 4,
+      shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(12)),
+      child: InkWell(
+        onTap: () => Navigator.pushNamed(context, '/timesheet-details', arguments: timesheet),
+        borderRadius: BorderRadius.circular(12),
+        child: Padding(
+          padding: const EdgeInsets.all(16.0),
+          child: Row(
+            mainAxisAlignment: MainAxisAlignment.spaceBetween,
+            children: [
+              Expanded(
+                child: Column(
+                  crossAxisAlignment: CrossAxisAlignment.start,
+                  children: [
+                    Text(
+                      'Week ${timesheet.weekNumber}, ${timesheet.year}',
+                      style: TextStyle(fontSize: 18, fontWeight: FontWeight.bold, color: Color(0xFF4CB1C7)),
+                    ),
+                    SizedBox(height: 8),
+                    Text(
+                      'Status: ${timesheet.status ?? 'Unknown'}',
+                      style: TextStyle(fontSize: 14, color: Colors.grey[700]),
+                    ),
+                  ],
+                ),
+              ),
+              Chip(
+                label: Text(
+                  timesheet.status?.toUpperCase() ?? 'UNKNOWN',
+                  style: TextStyle(fontSize: 12, fontWeight: FontWeight.bold, color: _getStatusColor(timesheet.status)),
+                ),
+                backgroundColor: _getStatusColor(timesheet.status)?.withOpacity(0.2),
+                padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 6),
+              ),
+            ],
+          ),
+        ),
+      ),
+    );
+  }
+
+  Color? _getStatusColor(String? status) {
+    switch (status?.toLowerCase()) {
+      case 'completed':
+        return Colors.green;
+      case 'pending':
+        return Colors.orange;
+      case 'cancelled':
+        return Colors.red;
+      default:
+        return Colors.grey;
+    }
+  }
+}
+
+import 'package:flutter/material.dart';
+import '../models/visit.dart';
+import '../screens/visit_details.dart';
+
+class VisitItem extends StatelessWidget {
+  final Visit visit;
+
+  const VisitItem(this.visit, {super.key});
+
+  @override
+  Widget build(BuildContext context) {
+    // Format the date and time
+    String formattedDate = visit.date != null
+        ? '${visit.date!.day}/${visit.date!.month}/${visit.date!.year}'
+        : 'N/A';
+    String formattedTime = visit.time != null
+        ? visit.time!.split(':').take(2).join(':') // Remove seconds
+        : 'N/A';
+
+    return Card(
+      margin: const EdgeInsets.symmetric(vertical: 6, horizontal: 12),
+      elevation: 3,
+      shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(12)),
+      child: InkWell(
+        onTap: () {
+          Navigator.push(
+            context,
+            MaterialPageRoute(
+              builder: (_) => VisitDetailsScreen(visit: visit),
+            ),
+          );
+        },
+        borderRadius: BorderRadius.circular(12),
+        child: Container(
+          decoration: BoxDecoration(
+            gradient: LinearGradient(
+              begin: Alignment.topLeft,
+              end: Alignment.bottomRight,
+              colors: [Colors.white, Color(0xFFF5F5F5)],
+            ),
+            borderRadius: BorderRadius.circular(12),
+          ),
+          child: Padding(
+            padding: const EdgeInsets.all(12.0),
+            child: Column(
+              crossAxisAlignment: CrossAxisAlignment.start,
+              children: [
+                Row(
+                  mainAxisAlignment: MainAxisAlignment.spaceBetween,
+                  children: [
+                    Text(
+                      'Visit Details',
+                      style: TextStyle(fontSize: 16, fontWeight: FontWeight.bold, color: Color(0xFF4CB1C7)),
+                    ),
+                    Chip(
+                      label: Text(
+                        visit.status ?? 'Unknown',
+                        style: TextStyle(fontSize: 12, color: _getStatusColor(visit.status), fontWeight: FontWeight.bold),
+                      ),
+                      backgroundColor: _getStatusColor(visit.status)?.withOpacity(0.2),
+                      shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(8)),
+                    ),
+                  ],
+                ),
+                SizedBox(height: 8),
+                Row(
+                  children: [
+                    Icon(Icons.location_on, size: 16, color: Colors.grey),
+                    SizedBox(width: 4),
+                    Text(
+                      'Location: ${visit.location ?? 'N/A'}',
+                      style: TextStyle(fontSize: 14, color: Colors.grey[700]),
+                    ),
+                  ],
+                ),
+
+                SizedBox(height: 8),
+                Row(
+                  children: [
+                    Icon(Icons.access_time, size: 16, color: Colors.grey),
+                    SizedBox(width: 4),
+                    Text(
+                      'Time: $formattedTime',
+                      style: TextStyle(fontSize: 14, color: Colors.grey[700]),
+                    ),
+                  ],
+                ),
+                SizedBox(height: 8),
+                Wrap(
+                  spacing: 8,
+                  runSpacing: 4,
+                  children: (visit.reasons ?? []).map((reason) {
+                    return Chip(
+                      label: Text(reason, style: TextStyle(fontSize: 12, color: Colors.blue)),
+                      backgroundColor: Colors.blue.withOpacity(0.2),
+                      shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(8)),
+                    );
+                  }).toList(),
+                ),
+              ],
+            ),
+          ),
+        ),
+      ),
+    );
+  }
+
+  Color? _getStatusColor(String? status) {
+    switch (status?.toLowerCase()) {
+      case 'completed':
+        return Colors.green;
+      case 'pending':
+        return Colors.orange;
+      case 'cancelled':
+        return Colors.red;
+      default:
+        return Colors.grey;
+    }
+  }
+}
+
+
+import 'package:flutter/material.dart';
+import 'package:intl/intl.dart';
+import 'day_view.dart';
+
+class WeekView extends StatelessWidget {
+  final DateTime weekStartDate;
+
+  const WeekView(this.weekStartDate, {super.key});
+
+  List<DateTime> getWeekDays(DateTime startDate) {
+    DateTime monday = startDate.subtract(Duration(days: startDate.weekday - 1));
+    return List.generate(5, (index) => monday.add(Duration(days: index)));
+  }
+
+  @override
+  Widget build(BuildContext context) {
+    final weekDays = getWeekDays(weekStartDate);
+
+    return ListView.builder(
+      itemCount: weekDays.length,
+      itemBuilder: (context, index) {
+        final day = weekDays[index];
+        return Card(
+          margin: EdgeInsets.symmetric(vertical: 8, horizontal: 16),
+          elevation: 3,
+          shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(12)),
+          child: InkWell(
+            onTap: () {
+              // Navigate to Day View or Details
+            },
+            borderRadius: BorderRadius.circular(12),
+            child: Container(
+              decoration: BoxDecoration(
+                gradient: LinearGradient(
+                  begin: Alignment.topLeft,
+                  end: Alignment.bottomRight,
+                  colors: [Colors.white, Color(0xFFFFFFFF)],
+                ),
+                borderRadius: BorderRadius.circular(12),
+              ),
+              child: Padding(
+                padding: const EdgeInsets.all(16.0),
+                child: Column(
+                  crossAxisAlignment: CrossAxisAlignment.start,
+                  children: [
+                    Text(
+                      DateFormat('EEEE').format(day),
+                      style: TextStyle(fontSize: 16, fontWeight: FontWeight.bold, color: Color(0xFF4CB1C7)),
+                    ),
+                    SizedBox(height: 8),
+                    Text(
+                      DateFormat('MMMM d').format(day),
+                      style: TextStyle(fontSize: 14, color: Colors.grey[700]),
+                    ),
+                    SizedBox(height: 12),
+                    Divider(color: Colors.grey[300]),
+                    SizedBox(height: 12),
+                    DayView(day),
+                  ],
+                ),
+              ),
+            ),
+          ),
+        );
+      },
+    );
+  }
+}
+
+
+import 'package:flutter/material.dart';
+import 'package:provider/provider.dart';
+import 'package:visit_management/widgets/visit_item.dart';
+import '../models/visit.dart';
+import '../providers/timesheet_provider.dart';
+
+class DayView extends StatefulWidget {
+  final DateTime day;
+
+  const DayView(this.day, {super.key});
+
+  @override
+  _DayViewState createState() => _DayViewState();
+}
+
+class _DayViewState extends State<DayView> {
+  Future<List<Visit>>? _visitsFuture;
+
+  @override
+  void initState() {
+    super.initState();
+    _visitsFuture = fetchVisitsForDay(widget.day);
+  }
+
+  Future<List<Visit>> fetchVisitsForDay(DateTime day) async {
+    final timesheetProvider = Provider.of<TimesheetProvider>(context, listen: false);
+
+    // Fetch all timesheets
+    await timesheetProvider.fetchTimesheets();
+
+    // Convert the input day to local time (start of the day)
+    final localDayStart = DateTime(day.year, day.month, day.day);
+
+    // Filter visits for the given day
+    final allVisits = timesheetProvider.timesheets
+        .expand((timesheet) => timesheet.visits ?? [])
+        .where((visit) {
+      // Normalize visit.date to local time (start of the day)
+      final visitDate = DateTime(
+        visit.date!.toLocal().year,
+        visit.date!.toLocal().month,
+        visit.date!.toLocal().day,
+      );
+      return visitDate.isAtSameMomentAs(localDayStart);
+    })
+        .toList()
+        .cast<Visit>();
+
+    // Sort visits by time
+    allVisits.sort((a, b) => a.time!.compareTo(b.time!));
+
+    return allVisits;
+  }
+
+  @override
+  Widget build(BuildContext context) {
+    return Column(
+      crossAxisAlignment: CrossAxisAlignment.start,
+      children: [
+        FutureBuilder<List<Visit>>(
+          future: _visitsFuture,
+          builder: (context, snapshot) {
+            if (snapshot.connectionState == ConnectionState.waiting) {
+              return Center(child: CircularProgressIndicator());
+            } else if (snapshot.hasError) {
+              return Center(child: Text('Failed to load visits'));
+            } else if (snapshot.data!.isEmpty) {
+              return Center(child: Text('No visits scheduled for this day'));
+            } else {
+              return ListView.builder(
+                shrinkWrap: true,
+                physics: NeverScrollableScrollPhysics(),
+                itemCount: snapshot.data!.length,
+                itemBuilder: (context, index) {
+                  final visit = snapshot.data![index];
+                  return VisitItem(visit);
+                },
+              );
+            }
+          },
+        ),
+      ],
+    );
+  }
+}
+
+
+
+
+
+
+
+
+
+
+
+
+
+
