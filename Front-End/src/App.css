@@ -34,7 +34,7 @@ body {
   }
   
   .container {
-    max-width: 1200px;
+    max-width: 200px;
     margin: 0 auto;
     padding: 20px;
   }
@@ -181,7 +181,7 @@ body {
   
   .day-scroller {
     display: grid;
-    grid-template-columns: repeat(auto-fill, minmax(300px, 1fr));
+    grid-template-columns: repeat(auto-fill, minmax(200px, 1fr));
     gap: 20px;
   }
   
@@ -218,3 +218,5 @@ body {
       padding: 15px;
     }
   }
+
+  
