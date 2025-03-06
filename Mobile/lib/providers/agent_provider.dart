@@ -23,16 +23,14 @@ class AgentProvider with ChangeNotifier {
     }
   }
 
-  Future<Map<String, dynamic>> fetchAgentByPhone(String phone) async {
-    final response = await AgentService.fetchAgentByPhone(phone);
-
-    if (response.statusCode == 200) {
-      return json.decode(response.body);
-    } else {
-      throw Exception('Failed to load agent');
+  Future<Agent> fetchAgentByPhone(String phone) async {
+    try {
+      final agent = await AgentService.fetchAgentByPhone(phone);
+      return agent;
+    } catch (error) {
+      throw Exception('Failed to fetch agent by phone: $error');
     }
   }
-
   // Fetch agents by location
   Future<void> fetchAgentsByLocation(String location) async {
     try {

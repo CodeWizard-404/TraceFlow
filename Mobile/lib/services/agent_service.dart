@@ -7,24 +7,22 @@ import '../utils/constants.dart';
 class AgentService {
   // Fetch an agent by ID
   static Future<Agent> fetchAgentById(String id) async {
-    try {
       final response = await http.get(Uri.parse('$baseUrl/agents/$id'));
       if (response.statusCode == 200) {
         return Agent.fromJson(json.decode(response.body));
       } else {
         throw Exception('Failed to load agent: ${response.statusCode}');
       }
-    } catch (e) {
-      rethrow;
-    }
+
   }
 
   // Fetch an agent by phone
-  static Future<http.Response> fetchAgentByPhone(String phone) async {
-    try {
-      return await http.get(Uri.parse('$baseUrl/agents/phone/$phone'));
-    } catch (e) {
-      rethrow;
+  static Future<Agent> fetchAgentByPhone(String phone) async {
+    final response = await http.get(Uri.parse('$baseUrl/agents/phone/$phone'));
+    if (response.statusCode == 200) {
+      return Agent.fromJson(json.decode(response.body));
+    } else {
+      throw Exception('Failed to fetch agent by phone');
     }
   }
 

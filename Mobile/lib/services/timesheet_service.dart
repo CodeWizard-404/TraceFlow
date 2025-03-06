@@ -6,7 +6,6 @@ import '../utils/constants.dart';
 class TimesheetService {
   // Fetch all timesheets
   static Future<List<Timesheet>> fetchAllTimesheets() async {
-    try {
       final response = await http.get(Uri.parse('$baseUrl/timesheets'));
       if (response.statusCode == 200) {
         final List<dynamic> decodedData = json.decode(response.body);
@@ -14,13 +13,16 @@ class TimesheetService {
       } else {
         throw Exception('Failed to load timesheets: ${response.statusCode}');
       }
-    } catch (e) {
-      rethrow;
-    }
+
   }
 
   // Create a new timesheet or add visits to an existing one
   static Future<http.Response> createTimesheet(Map<String, dynamic> payload) async {
+    for (var visit in payload['visits']) {
+      visit['checklist'] = visit['checklistItems'];
+      visit.remove('checklistItems');
+    }
+
     final response = await http.post(
       Uri.parse('$baseUrl/timesheets'),
       headers: {'Content-Type': 'application/json'},
@@ -32,6 +34,7 @@ class TimesheetService {
   // Fetch a specific timesheet by ID
   static Future<Timesheet> fetchTimesheetById(String id) async {
     final response = await http.get(Uri.parse('$baseUrl/timesheets/$id'));
+    print('API Response: ${response.body}'); // Add this line
     if (response.statusCode == 200) {
       return Timesheet.fromJson(json.decode(response.body));
     } else {
@@ -40,11 +43,14 @@ class TimesheetService {
   }
 
   // Validate a timesheet (fully or partially)
-  static Future<void> validateTimesheet(String id, Map<String, dynamic> validationData) async {
+  static Future<void> validateTimesheet(String id, List<String> visitIDs, String status) async {
     final response = await http.put(
       Uri.parse('$baseUrl/timesheets/$id/validate'),
       headers: {'Content-Type': 'application/json'},
-      body: json.encode(validationData),
+      body: json.encode({
+        'visitIDs': visitIDs,
+        'status': status,
+      }),
     );
     if (response.statusCode != 200) {
       throw Exception('Failed to validate timesheet');
@@ -53,7 +59,6 @@ class TimesheetService {
 
   // Fetch timesheets by supervisor
   static Future<List<Timesheet>> fetchTimesheetsBySupervisor(String supervisorID) async {
-    try {
       final response = await http.get(Uri.parse('$baseUrl/timesheets/supervisor/$supervisorID'));
       if (response.statusCode == 200) {
         final List<dynamic> decodedData = json.decode(response.body);
@@ -61,8 +66,6 @@ class TimesheetService {
       } else {
         throw Exception('Failed to fetch timesheets by supervisor: ${response.statusCode}');
       }
-    } catch (e) {
-      rethrow;
-    }
+
   }
 }

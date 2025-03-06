@@ -11,18 +11,18 @@ class VisitService {
     async createVisit(data) {
         try {
             const { date, time, agentID, timesheetID, reasons, checklist } = data;
-            
+
             // Validate agent exists
             const agent = await Agent.findByPk(agentID);
             if (!agent) throw new Error('Agent not found');
             const location = agent.location;
 
             // Create visit
-            const visit = await Visit.create({ 
+            const visit = await Visit.create({
                 date, time, location, agentID, timesheetID,
                 status: 'pending'
             });
-            
+
             // Associate reasons
             const createdReasons = await ReasonService.findOrCreateItems(reasons);
             await visit.setReasons(createdReasons);
@@ -43,7 +43,7 @@ class VisitService {
             console.log('Parsed QR Structure:', JSON.stringify(parsedQR, null, 2)); // Pretty-print parsed data
 
             // Correct phone number extraction path
-            const agentPhoneFromQR = parsedQR['29']?.['03'] 
+            const agentPhoneFromQR = parsedQR['29']?.['03']
                 || parsedQR['02']?.replace(/[^0-9+]/g, ''); // Fallback for simple values
 
             if (!agentPhoneFromQR) {
@@ -70,42 +70,45 @@ class VisitService {
         try {
             const { duration, checklistUpdates, photos, comment } = data;
 
+
             // Find the visit
             const visit = await Visit.findByPk(visitID, { include: [Checklist] });
             if (!visit) throw new Error('Visit not found');
 
             // Update checklist validation status
-            const updatePromises = visit.Checklists.map(async (item) => {
-                const updatedStatus = checklistUpdates[item.checklistID];
+            for (const checklist of visit.Checklists) {
+                const updatedStatus = checklistUpdates[checklist.checklistID];
                 if (updatedStatus !== undefined) {
-                item.checked = updatedStatus;
-                await item.save();
+                    await ChecklistService.updateChecklistStatus(
+                        visitID,
+                        checklist.checklistID,
+                        updatedStatus
+                    );
                 }
-            });
-            await Promise.all(updatePromises);
+            }
 
-            // Update the visit details
-            visit.duration = duration;
-            visit.photos = photos;
-            visit.comment = comment;
-            visit.status = 'visited';
-            await visit.save();
-            return visit.reload({ include: [Checklist, Reason] });
+                // Update the visit details
+                visit.duration = duration;
+                visit.photos = photos;
+                visit.comment = comment;
+                visit.status = 'visited';
+                await visit.save();
+                return visit.reload({ include: [Checklist, Reason] });
 
-        } catch (error) {
-            throw new Error('Failed to log visit: ' + error.message);
+            } catch (error) {
+                throw new Error('Failed to log visit: ' + error.message);
+            }
         }
-    }
 
     async getVisitByID(visitID) {
-        try {
-            const visit = await Visit.findByPk(visitID);
-            if (!visit) throw new Error('Visit not found');
-            return visit;
-        } catch (error) {
-            throw new Error('Failed to fetch visit: ' + error.message);
+            try {
+                const visit = await Visit.findByPk(visitID);
+                if (!visit) throw new Error('Visit not found');
+                return visit;
+            } catch (error) {
+                throw new Error('Failed to fetch visit: ' + error.message);
+            }
         }
     }
-}
 
 module.exports = new VisitService();

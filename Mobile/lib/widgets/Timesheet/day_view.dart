@@ -1,9 +1,9 @@
 
 import 'package:flutter/material.dart';
 import 'package:provider/provider.dart';
-import 'package:visit_management/widgets/visit_item.dart';
-import '../models/visit.dart';
-import '../providers/timesheet_provider.dart';
+import 'package:visit_management/widgets/Visit/visit_item.dart';
+import '../../models/visit.dart';
+import '../../providers/timesheet_provider.dart';
 
 class DayView extends StatefulWidget {
   final DateTime day;
@@ -66,7 +66,7 @@ class _DayViewState extends State<DayView> {
             } else if (snapshot.hasError) {
               return Center(child: Text('Failed to load visits'));
             } else if (snapshot.data!.isEmpty) {
-              return Center(child: Text('No visits scheduled for this day'));
+              return Center(child: Text('No visits scheduled for this day !!!'));
             } else {
               return ListView.builder(
                 shrinkWrap: true,

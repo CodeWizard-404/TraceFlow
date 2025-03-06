@@ -1,103 +1,56 @@
--- Insert sample Agents
-INSERT INTO "Agents" (
-    "agentID", 
-    "name", 
-    "lastname", 
-    "cin", 
-    "email", 
-    "phone", 
-    "location",
-    "createdAt",
-    "updatedAt"
-)
+-- Users Table Sample Data
+INSERT INTO "Users" ("userID", "firstname", "lastname", "phone", "email", "wallet", "password", "createdAt", "updatedAt")
 VALUES
-    ('AGT001', 'John', 'Doe', 'AB123456', 'john.doe@example.com', '+212612345678', 'Casablanca', CURRENT_TIMESTAMP, CURRENT_TIMESTAMP),
-    ('AGT002', 'Jane', 'Smith', 'CD789012', 'jane.smith@example.com', '+212698765432', 'Rabat', CURRENT_TIMESTAMP, CURRENT_TIMESTAMP),
-    ('AGT003', 'Ali', 'Benali', 'EF345678', 'ali.benali@example.com', '+212622334455', 'Marrakech', CURRENT_TIMESTAMP, CURRENT_TIMESTAMP)
-ON CONFLICT DO NOTHING;
+('user_001', 'John', 'Doe', '+1234567890', 'john.doe@example.com', '0x123...', '$2b$10$hashedpassword1', NOW(), NOW()),
+('user_002', 'Jane', 'Smith', '+0987654321', 'jane.smith@example.com', '0x456...', '$2b$10$hashedpassword2', NOW(), NOW()),
+('user_003', 'Manager', 'Admin', '+1122334455', 'manager@example.com', '0x789...', '$2b$10$hashedpassword3', NOW(), NOW());
 
-
-
-
--- Insert sample Users (with all required columns)
-INSERT INTO "Users" (
-    "userID", 
-    "name", 
-    "lastname", 
-    "email", 
-    "phone", 
-    "role",
-    "createdAt",
-    "updatedAt"
-)
+-- Agents Table Sample Data
+INSERT INTO "Agents" ("agentID", "name", "lastname", "wallet", "cin", "email", "phone", "location", "createdAt", "updatedAt")
 VALUES
-    (1, 'Supervisor1', 'Smith', 'super1@company.com', '+212600000001', 'supervisor', CURRENT_TIMESTAMP, CURRENT_TIMESTAMP),
-    (2, 'Supervisor2', 'Johnson', 'super2@company.com', '+212600000002', 'supervisor', CURRENT_TIMESTAMP, CURRENT_TIMESTAMP)
-ON CONFLICT DO NOTHING;
+('agent_001', 'Alice', 'Brown', '0xabc...', 'CIN123', 'alice.brown@example.com', '+212612345678', 'Casablanca', NOW(), NOW()),
+('agent_002', 'Bob', 'Green', '0xdef...', 'CIN456', 'bob.green@example.com', '+212623456789', 'Rabat', NOW(), NOW()),
+('agent_003', 'Charlie', 'White', '0xghi...', 'CIN789', 'charlie.white@example.com', '+212634567890', 'Marrakech', NOW(), NOW());
 
-
-INSERT INTO "Timesheets" (
-    "timesheetID", 
-    "weekNumber", 
-    "year", 
-    "supervisorID", 
-    "status",
-    "createdAt",
-    "updatedAt"
-)
+-- Timesheets Table Sample Data
+INSERT INTO "Timesheets" ("timesheetID", "weekNumber", "year", "status", "supervisorID", "createdAt", "updatedAt")
 VALUES
-    (1, 24, 2024, 1, 'pending', CURRENT_TIMESTAMP, CURRENT_TIMESTAMP),
-    (2, 25, 2024, 2, 'validated', CURRENT_TIMESTAMP, CURRENT_TIMESTAMP)
-ON CONFLICT DO NOTHING;
+('ts_001', 1, 2024, 'pending', 'user_001', NOW(), NOW()),
+('ts_002', 2, 2024, 'validated', 'user_002', NOW(), NOW()),
+('ts_003', 3, 2024, 'pending', 'user_001', NOW(), NOW());
 
-
-
-
--- Insert sample Visits with proper array syntax
-INSERT INTO "Visits" (
-    "visitID", 
-    "date", 
-    "time", 
-    "duration",
-    "location", 
-    "reason", 
-    "checklist", 
-    "photos", 
-    "comment", 
-    "status",
-    "agentID", 
-    "timesheetID", 
-    "createdAt",
-    "updatedAt"
-)
+-- Checklists Table Sample Data
+INSERT INTO "Checklists" ("checklistID", "item", "createdAt", "updatedAt")
 VALUES
-    (1, '2024-06-10', '09:00:00', 60, 'Casablanca',
-     '{"Routine check"}',  -- Single text value
-     '{"safety_check","equipment_inspection"}',  -- Proper array syntax
-     '{"photo1.jpg","photo2.jpg"}',  -- Proper array syntax
-     'Everything in order', 'pending', 
-     'AGT001', 1, CURRENT_TIMESTAMP, CURRENT_TIMESTAMP),
-    
-    (2, '2024-06-11', '14:30:00', 45, 'Rabat',
-     '{"Client follow-up"}',
-     '{"client_feedback","document_verification"}',
-     '{"photo3.jpg"}',
-     'Issue resolved', 'pending', 
-     'AGT002', 1, CURRENT_TIMESTAMP, CURRENT_TIMESTAMP),
-    
-    (3, '2024-06-12', '11:00:00', 90, 'Marrakech',
-     '{"Training session"}',
-     '{"attendance","material_coverage"}',
-     '{}',
-     'Completed module 1', 'validated', 
-     'AGT003', 2, CURRENT_TIMESTAMP, CURRENT_TIMESTAMP),
-    
-    (4, '2024-06-13', '16:45:00', 30, 'Casablanca',
-     '{"Quality check"}',
-     '{"equipment_status","safety_protocols"}',
-     '{"photo4.jpg"}',
-     'All protocols followed', 'validated', 
-     'AGT001', 2, CURRENT_TIMESTAMP, CURRENT_TIMESTAMP)
-ON CONFLICT DO NOTHING;
+('chk_001', 'Verify store inventory', NOW(), NOW()),
+('chk_002', 'Check security cameras', NOW(), NOW()),
+('chk_003', 'Confirm staff presence', NOW(), NOW());
 
+-- Reasons Table Sample Data
+INSERT INTO "Reasons" ("reasonID", "item", "createdAt", "updatedAt")
+VALUES
+('rea_001', 'Routine inspection', NOW(), NOW()),
+('rea_002', 'Complaint investigation', NOW(), NOW()),
+('rea_003', 'Training session', NOW(), NOW());
 
+-- Visits Table Sample Data
+INSERT INTO "Visits" ("visitID", "date", "time", "duration", "location", "status", "photos", "comment", "timesheetID", "agentID", "createdAt", "updatedAt")
+VALUES
+('vis_001', '2024-01-15', '09:00:00', 45, 'Casablanca', 'visited', ARRAY['photo1.jpg', 'photo2.jpg'], 'Routine check completed', 'ts_001', 'agent_001', NOW(), NOW()),
+('vis_002', '2024-01-16', '10:30:00', 30, 'Rabat', 'validated', ARRAY['photo3.jpg'], 'Security check passed', 'ts_002', 'agent_002', NOW(), NOW()),
+('vis_003', '2024-01-17', '14:00:00', 60, 'Marrakech', 'pending', '{}', 'Training session scheduled', 'ts_003', 'agent_003', NOW(), NOW());
+
+-- VisitChecklists Junction Table
+INSERT INTO "VisitChecklists" ("visitID", "checklistID", "checked", "createdAt", "updatedAt")
+VALUES
+('vis_001', 'chk_001', true, NOW(), NOW()),
+('vis_001', 'chk_002', false, NOW(), NOW()),
+('vis_002', 'chk_003', true, NOW(), NOW()),
+('vis_003', 'chk_001', false, NOW(), NOW());
+
+-- VisitReasons Junction Table
+INSERT INTO "VisitReasons" ("visitID", "reasonID", "createdAt", "updatedAt")
+VALUES
+('vis_001', 'rea_001', NOW(), NOW()),
+('vis_002', 'rea_002', NOW(), NOW()),
+('vis_003', 'rea_003', NOW(), NOW());

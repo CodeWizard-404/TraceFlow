@@ -6,6 +6,7 @@ const User = require('./user')(sequelize, DataTypes);
 const Visit = require('./visit')(sequelize, DataTypes);
 const Timesheet = require('./timesheet')(sequelize, DataTypes);
 const Checklist = require('./checklist')(sequelize, DataTypes);
+const VisitChecklist = require('./VisitChecklists')(sequelize, DataTypes);
 const Reason = require('./reason')(sequelize, DataTypes);
 
 // Define associations
@@ -25,12 +26,12 @@ const setupAssociations = () => {
 
     // Visit-checklist relations
     Visit.belongsToMany(Checklist, {
-        through: 'VisitChecklists',
+        through: { model: VisitChecklist, unique: false },
         foreignKey: 'visitID',
         otherKey: 'checklistID'
     });
     Checklist.belongsToMany(Visit, {
-        through: 'VisitChecklists',
+        through: { model: VisitChecklist, unique: false },
         foreignKey: 'checklistID',
         otherKey: 'visitID'
     });

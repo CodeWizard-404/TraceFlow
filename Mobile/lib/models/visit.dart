@@ -1,11 +1,14 @@
+import 'package:visit_management/models/visit_checklist.dart';
+import 'package:visit_management/models/visit_reason.dart';
+
 class Visit {
   final String? visitID;
   final DateTime? date;
   final String? time;
   final String? location;
   final int? duration;
-  final List<String>? reasons;
-  final List<String>? checklist;
+  final List<VisitChecklist>? checklist;
+  final List<VisitReason>? reasons;
   final String? agentID;
   final String? timesheetID;
   final String? status;
@@ -16,8 +19,8 @@ class Visit {
     this.time,
     this.location,
     this.duration,
-    this.reasons,
     this.checklist,
+    this.reasons,
     this.agentID,
     this.timesheetID,
     this.status,
@@ -30,8 +33,12 @@ class Visit {
       time: json['time'],
       location: json['location'],
       duration: json['duration'],
-      reasons: json['reason'] != null ? List<String>.from(json['reason']) : [],
-      checklist: json['checklist'] != null ? List<String>.from(json['checklist']) : [],
+      checklist: (json['checklist'] as List?)
+          ?.map((item) => VisitChecklist.fromJson(item))
+          .toList(),
+      reasons: (json['reasons'] as List?)
+          ?.map((item) => VisitReason.fromJson(item))
+          .toList(),
       agentID: json['agentID'],
       timesheetID: json['timesheetID'],
       status: json['status'],
@@ -40,12 +47,12 @@ class Visit {
 
   Map<String, dynamic> toJson() => {
     'visitID': visitID,
-    'date': date?.toIso8601String(),
+    'date': date?.toIso8601String().split('T')[0],
     'time': time,
     'location': location,
     'duration': duration,
-    'reason': reasons,
-    'checklist': checklist,
+    'reasons': reasons?.map((r) => r.reasonID).toList(),
+    'checklist': checklist?.map((c) => c.checklistID).toList(), // Send only IDs for creation
     'agentID': agentID,
     'timesheetID': timesheetID,
     'status': status,

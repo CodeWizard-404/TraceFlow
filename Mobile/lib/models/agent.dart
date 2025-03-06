@@ -6,6 +6,7 @@ class Agent {
   final String? cin;
   final String? email;
   final String? phone;
+  final String? wallet;
   final String? location;
 
   Agent({
@@ -15,6 +16,7 @@ class Agent {
     this.cin,
     this.email,
     this.phone,
+    this.wallet,
     this.location,
   });
 
@@ -27,6 +29,7 @@ class Agent {
       cin: json['cin'],
       email: json['email'],
       phone: json['phone'],
+      wallet: json['wallet'],
       location: json['location'],
     );
   }
@@ -40,6 +43,7 @@ class Agent {
       'cin': cin,
       'email': email,
       'phone': phone,
+      'wallet': wallet,
       'location': location,
     };
   }

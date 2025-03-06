@@ -1,6 +1,6 @@
 import 'package:flutter/material.dart';
-import '../models/visit.dart';
-import 'Error.dart';
+import '../../models/visit.dart';
+import '../Error.dart';
 import 'log_visit_screen.dart';
 
 class VisitDetailsScreen extends StatelessWidget {
@@ -97,8 +97,8 @@ class VisitDetailsScreen extends StatelessWidget {
                     icon: Icons.info,
                     content: [
                         _buildDetailRow('Duration:', '${visit.duration} minutes'),
-                        _buildDetailRow('Reasons:', visit.reasons!.join(', ')),
-                        _buildDetailRow('Checklist:', visit.checklist!.join(', ')),
+                    //    _buildDetailRow('Reasons:', visit.reasons!.join(', ')),
+                    //    _buildDetailRow('Checklist:', visit.checklist!.join(', ')),
                     ],
                   ),
 
@@ -127,6 +127,12 @@ class VisitDetailsScreen extends StatelessWidget {
                       ),
                       ElevatedButton.icon(
                         onPressed: () {
+                          if (visit.date == null) {
+                            ScaffoldMessenger.of(context).showSnackBar(
+                              SnackBar(content: Text('Visit date is missing. Cannot log visit.')),
+                            );
+                            return;
+                          }
                           Navigator.push(
                             context,
                             MaterialPageRoute(
