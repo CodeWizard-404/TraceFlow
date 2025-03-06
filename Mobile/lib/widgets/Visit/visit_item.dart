@@ -1,6 +1,6 @@
 import 'package:flutter/material.dart';
-import '../models/visit.dart';
-import '../screens/visit_details.dart';
+import '../../models/visit.dart';
+import '../../screens/Visit/visit_details.dart';
 
 class VisitItem extends StatelessWidget {
   final Visit visit;
@@ -91,7 +91,7 @@ class VisitItem extends StatelessWidget {
                   runSpacing: 4,
                   children: (visit.reasons ?? []).map((reason) {
                     return Chip(
-                      label: Text(reason, style: TextStyle(fontSize: 12, color: Colors.blue)),
+                      label: Text(reason as String, style: TextStyle(fontSize: 12, color: Colors.blue)),
                       backgroundColor: Colors.blue.withOpacity(0.2),
                       shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(8)),
                     );

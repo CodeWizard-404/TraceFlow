@@ -1,12 +1,14 @@
 import 'package:flutter/material.dart';
 import 'package:provider/provider.dart';
 import 'package:visit_management/providers/agent_provider.dart';
+import 'package:visit_management/providers/checklist_provider.dart';
+import 'package:visit_management/providers/reason_provider.dart';
 import 'package:visit_management/screens/Error.dart';
 
-import 'package:visit_management/screens/timesheet_details.dart';
+import 'package:visit_management/screens/Timesheet/timesheet_details.dart';
 import 'providers/timesheet_provider.dart';
 import 'providers/visit_provider.dart';
-import 'screens/home_screen.dart';
+import 'screens/Home/home_screen.dart';
 
 void main() {
   runApp(
@@ -15,7 +17,8 @@ void main() {
         ChangeNotifierProvider(create: (_) => TimesheetProvider()),
         ChangeNotifierProvider(create: (_) => VisitProvider()),
         ChangeNotifierProvider(create: (_) => AgentProvider()),
-
+        ChangeNotifierProvider(create: (_) => ChecklistProvider()),
+        ChangeNotifierProvider(create: (_) => ReasonProvider()),
       ],
       child: MyApp(),
     ),

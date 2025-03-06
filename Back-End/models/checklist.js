@@ -8,7 +8,6 @@ module.exports = (sequelize, DataTypes) => {
         defaultValue: () => nanoid(), 
     },
     item: { type: DataTypes.STRING, allowNull: false },
-    checked: { type: DataTypes.BOOLEAN, defaultValue: false, defaultValue: false } 
 
 });
 

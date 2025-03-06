@@ -1,6 +1,6 @@
 import 'package:flutter/material.dart';
-import '../models/timesheet.dart';
-import '../widgets/visit_item.dart';
+import '../../models/timesheet.dart';
+import '../../widgets/Visit/visit_item.dart';
 
 class TimesheetDetails extends StatelessWidget {
   const TimesheetDetails({super.key});

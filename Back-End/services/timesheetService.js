@@ -26,24 +26,24 @@ class TimesheetService {
             // Process each visit with reasons/checklists
             for (const visitData of visits) {
                 const {
-                date,
-                time,
-                location,
-                agentID,
-                reasons = [],      // Added for visit reasons
-                checklistItems = [], // Added for checklist items
+                    date,
+                    time,
+                    location,
+                    agentID,
+                    reasons = [],      // Added for visit reasons
+                    checklistItems = [], // Added for checklist items
                 } = visitData;
 
                 // Create visit with associations
                 await VisitService.createVisit({
-                date,
-                time,
-                location,
-                agentID,
-                supervisorID,
-                timesheetID: timesheet.timesheetID,
-                reasons,          // Pass reasons
-                checklistItems,   // Pass checklist items
+                    date,
+                    time,
+                    location,
+                    agentID,
+                    supervisorID,
+                    timesheetID: timesheet.timesheetID,
+                    reasons,          // Pass reasons
+                    checklistItems,   // Pass checklist items
                 });
             }
 
@@ -103,7 +103,13 @@ class TimesheetService {
         try {
             // Fetch all timesheets with associated visits
             const timesheets = await Timesheet.findAll({
-                include: [Visit],
+                include: [
+                    {   model: Visit,
+                        include: [
+                            { model: Checklist, through: { attributes: ["checked"] }, attributes: ["item"]},
+                            { model: Reason, through: { attributes: [] },attributes: ["item"] } ]
+                    }
+                ],
             });
 
             return timesheets;
@@ -116,7 +122,13 @@ class TimesheetService {
         try {
             // Find the timesheet by ID
             const timesheet = await Timesheet.findByPk(timesheetID, {
-                include: [Visit],
+                include: [
+                    {   model: Visit,
+                        include: [
+                            { model: Checklist, through: { attributes: ["checked"] }, attributes: ["item"]},
+                            { model: Reason, through: { attributes: [] },attributes: ["item"] } ]
+                    }
+                ],
             });
             return timesheet;
         } catch (error) {
@@ -129,7 +141,13 @@ class TimesheetService {
             // Fetch all timesheets for the given supervisorID with associated visits
             const timesheets = await Timesheet.findAll({
                 where: { supervisorID },
-                include: [Visit], // Include associated visits
+                include: [
+                    {   model: Visit,
+                        include: [
+                            { model: Checklist, through: { attributes: ["checked"] }, attributes: ["item"]},
+                            { model: Reason, through: { attributes: [] },attributes: ["item"] } ]
+                    }
+                ],
             });
 
             return timesheets;

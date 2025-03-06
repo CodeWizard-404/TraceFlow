@@ -1,8 +1,8 @@
 import 'package:flutter/material.dart';
 import 'package:provider/provider.dart';
 import 'package:dropdown_search/dropdown_search.dart'; // For searchable dropdowns
-import '../providers/timesheet_provider.dart';
-import '../providers/agent_provider.dart';
+import '../../providers/timesheet_provider.dart';
+import '../../providers/agent_provider.dart';
 
 class CreateVisitScreen extends StatefulWidget {
   final int weekNumber;

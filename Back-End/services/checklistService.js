@@ -1,5 +1,5 @@
 // services/checklistService.js
-const { Checklist, Visit } = require('../models');
+const { Checklist, Visit, VisitChecklist } = require('../models');
 
 class ChecklistService {
     static async createItem(text) {
@@ -21,6 +21,17 @@ class ChecklistService {
     static async getChecklistsByVisitId(visitId) {
         const visit = await Visit.findByPk(visitId, { include: Checklist });
         return visit.Checklists;
+    }
+
+    static async updateChecklistStatus(visitId, checklistId, checked) {
+        const visitChecklist = await VisitChecklist.findOne({
+            where: { visitID: visitId, checklistID: checklistId }
+        });
+        if (visitChecklist) {
+            visitChecklist.checked = checked;
+            await visitChecklist.save();
+        }
+        return visitChecklist;
     }
 }
 

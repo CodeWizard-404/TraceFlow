@@ -30,7 +30,14 @@ class TimesheetProvider with ChangeNotifier {
         'weekNumber': weekNumber,
         'year': year,
         'supervisorID': supervisorID,
-        'visits': visits,
+        'visits': visits.map((visit) => {
+          'date': visit['date'],
+          'time': visit['time'],
+          'location': visit['location'],
+          'agentID': visit['agentID'],
+          'reasons': visit['reasons'],
+          'checklists': visit['checklist'],
+        }).toList(),
       });
 
       if (response.statusCode != 200 && response.statusCode != 201) {

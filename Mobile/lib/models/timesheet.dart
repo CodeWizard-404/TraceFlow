@@ -7,8 +7,6 @@ class Timesheet {
   late final String? status;
   final String? supervisorID;
   final List<Visit>? visits;
-  final DateTime? createdAt;
-  final DateTime? updatedAt;
 
   Timesheet({
     this.timesheetID,
@@ -17,8 +15,6 @@ class Timesheet {
     this.status,
     this.supervisorID,
     this.visits,
-    this.createdAt,
-    this.updatedAt,
   });
 
   factory Timesheet.fromJson(Map<String, dynamic> json) {
@@ -28,11 +24,9 @@ class Timesheet {
       year: json['year'],
       status: json['status'],
       supervisorID: json['supervisorID'],
-      visits: json['Visits'] != null && json['Visits'] is List
-          ? (json['Visits'] as List).map((v) => Visit.fromJson(v)).toList()
-          : [], // Default to empty list if Visits is null
-      createdAt: json['createdAt'] != null ? DateTime.parse(json['createdAt']) : null,
-      updatedAt: json['updatedAt'] != null ? DateTime.parse(json['updatedAt']) : null,
+      visits: (json['Visits'] as List?) // Fixed key name here
+          ?.map((v) => Visit.fromJson(v))
+          .toList() ?? [],
     );
   }
 
@@ -43,9 +37,7 @@ class Timesheet {
       'year': year,
       'status': status,
       'supervisorID': supervisorID,
-      'visits': visits?.map((v) => v.toJson()).toList(),
-      'createdAt': createdAt?.toIso8601String(),
-      'updatedAt': updatedAt?.toIso8601String(),
+      'Visits': visits?.map((v) => v.toJson()).toList(),
     };
   }
 }
