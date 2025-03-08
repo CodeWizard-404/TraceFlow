@@ -5,11 +5,11 @@ import '../services/reason_service.dart';
 class ReasonProvider with ChangeNotifier {
   Future<List<Reason>> getReasonsByVisit(String visitID) async {
     final response = await ReasonService.getReasonsByVisitId(visitID);
-    return response.map((reason) => Reason.fromJson(reason as Map<String, dynamic>)).toList();
+    return response; // Already a List<Reason>
   }
 
   Future<List<Reason>> getAllReasons() async {
     final response = await ReasonService.getAllReasons();
-    return response.map((reason) => Reason.fromJson(reason as Map<String, dynamic>)).toList();
+    return response; // Already a List<Reason>
   }
 }

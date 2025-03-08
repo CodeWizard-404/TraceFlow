@@ -5,12 +5,19 @@ import 'package:visit_management/providers/checklist_provider.dart';
 import 'package:visit_management/providers/reason_provider.dart';
 import 'package:visit_management/screens/Error.dart';
 
-import 'package:visit_management/screens/Timesheet/timesheet_details.dart';
 import 'providers/timesheet_provider.dart';
 import 'providers/visit_provider.dart';
-import 'screens/Home/home_screen.dart';
+import 'screens/Timesheet/Timesheet_details.dart';
 
 void main() {
+  debugPrint = (String? message, {int? wrapWidth}) {
+    if (message != null &&
+        (message.contains("EGL_emulation") || message.contains("libEGL"))) {
+      return;
+    }
+    print(message);
+  };
+
   runApp(
     MultiProvider(
       providers: [
@@ -34,7 +41,6 @@ class MyApp extends StatelessWidget {
       title: 'Timesheet App',
       home: HomeScreen(),
       routes: {
-        '/timesheet-details': (_) => TimesheetDetails(),
         '/log-visit': (_) {
           throw Exception('LogVisitScreen requires weekNumber and year parameters.');
         },

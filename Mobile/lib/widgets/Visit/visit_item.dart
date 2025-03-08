@@ -9,10 +9,6 @@ class VisitItem extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
-    // Format the date and time
-    String formattedDate = visit.date != null
-        ? '${visit.date!.day}/${visit.date!.month}/${visit.date!.year}'
-        : 'N/A';
     String formattedTime = visit.time != null
         ? visit.time!.split(':').take(2).join(':') // Remove seconds
         : 'N/A';

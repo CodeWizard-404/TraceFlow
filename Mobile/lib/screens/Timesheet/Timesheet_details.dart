@@ -21,7 +21,6 @@ class HomeScreenState extends State<HomeScreen> {
   void initState() {
     super.initState();
     _pageController = PageController(initialPage: _getOffset(_currentDate));
-    // Fetch timesheets when the screen initializes
     final timesheetProvider = Provider.of<TimesheetProvider>(context, listen: false);
     timesheetProvider.fetchTimesheets().catchError((error) {
       ScaffoldMessenger.of(context).showSnackBar(

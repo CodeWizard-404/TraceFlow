@@ -1,5 +1,8 @@
 import 'package:flutter/material.dart';
+import 'package:provider/provider.dart';
+import '../../models/agent.dart';
 import '../../models/visit.dart';
+import '../../providers/agent_provider.dart';
 import '../Error.dart';
 import 'log_visit_screen.dart';
 
@@ -13,11 +16,24 @@ class VisitDetailsScreen extends StatelessWidget {
     Future.microtask(() {
       debugPrint("Visit Details: ${visit.toJson()}"); // Ensure async safe execution
     });
+
+    // Fetch agent details using AgentProvider
+    final agentProvider = Provider.of<AgentProvider>(context, listen: false);
+    final agent = agentProvider.agents.firstWhere(
+          (agent) => agent.agentID == visit.agentID,
+      orElse: () => Agent(
+        agentID: visit.agentID,
+        name: 'Unknown',
+        lastname: '',
+        phone: 'N/A',
+      ),
+    );
+
     return Scaffold(
       appBar: AppBar(
-        backgroundColor: Color(0xFF4CB1C7),
+        backgroundColor: const Color(0xFF4CB1C7),
         elevation: 0,
-        title: Text(
+        title: const Text(
           'Visit Details',
           style: TextStyle(fontSize: 20, fontWeight: FontWeight.bold, color: Colors.white),
         ),
@@ -30,7 +46,7 @@ class VisitDetailsScreen extends StatelessWidget {
             // Header Section with Gradient Background
             Container(
               height: 150,
-              decoration: BoxDecoration(
+              decoration: const BoxDecoration(
                 gradient: LinearGradient(
                   colors: [Color(0xFF4CB1C7), Color(0xFF4CB1C7)],
                   begin: Alignment.topLeft,
@@ -44,29 +60,29 @@ class VisitDetailsScreen extends StatelessWidget {
                   mainAxisAlignment: MainAxisAlignment.center,
                   crossAxisAlignment: CrossAxisAlignment.start,
                   children: [
-                    Text(
+                    const Text(
                       'Visit Overview',
                       style: TextStyle(fontSize: 24, fontWeight: FontWeight.bold, color: Colors.white),
                     ),
-                    SizedBox(height: 8),
+                    const SizedBox(height: 8),
                     Row(
                       children: [
-                        Icon(Icons.location_on, color: Colors.white, size: 16),
-                        SizedBox(width: 4),
+                        const Icon(Icons.location_on, color: Colors.white, size: 16),
+                        const SizedBox(width: 4),
                         Text(
                           visit.location ?? 'N/A',
-                          style: TextStyle(fontSize: 16, color: Colors.white),
+                          style: const TextStyle(fontSize: 16, color: Colors.white),
                         ),
                       ],
                     ),
-                    SizedBox(height: 4),
+                    const SizedBox(height: 4),
                     Row(
                       children: [
-                        Icon(Icons.access_time, color: Colors.white, size: 16),
-                        SizedBox(width: 4),
+                        const Icon(Icons.access_time, color: Colors.white, size: 16),
+                        const SizedBox(width: 4),
                         Text(
                           '${visit.date?.day}/${visit.date?.month}/${visit.date?.year} - ${visit.time}',
-                          style: TextStyle(fontSize: 16, color: Colors.white),
+                          style: const TextStyle(fontSize: 16, color: Colors.white),
                         ),
                       ],
                     ),
@@ -86,55 +102,56 @@ class VisitDetailsScreen extends StatelessWidget {
                     title: 'Agent Information',
                     icon: Icons.person,
                     content: [
-                      _buildDetailRow('Agent ID:', visit.agentID!),
+                      _buildDetailRow('Name:', '${agent.name} ${agent.lastname}'),
+                      _buildDetailRow('Phone:', agent.phone ?? 'N/A'),
                       _buildDetailRow('Status:', visit.status!),
                     ],
                   ),
 
-                  SizedBox(height: 16),
+                  const SizedBox(height: 16),
 
-                  // Checklists Card (always visible)
-                    _buildInfoCard(
-                      title: 'Checklists',
-                      icon: Icons.checklist,
-                      content: [
-                        if (visit.checklists == null || visit.checklists!.isEmpty)
-                          Text(
-                            'No checklists available',
-                            style: TextStyle(fontSize: 14, color: Colors.grey[600]),
-                          )
-                        else
-                          ...visit.checklists!.map(
-                                (checklist) => _buildChecklistRow(
-                              checklist.item ?? 'N/A',
-                              checklist.visitChecklist?.checked ?? false,
-                            ),
+                  // Checklists Card
+                  _buildInfoCard(
+                    title: 'Checklists',
+                    icon: Icons.checklist,
+                    content: [
+                      if (visit.checklists == null || visit.checklists!.isEmpty)
+                        Text(
+                          'No checklists available',
+                          style: TextStyle(fontSize: 14, color: Colors.grey[600]),
+                        )
+                      else
+                        ...visit.checklists!.map(
+                              (checklist) => _buildChecklistRow(
+                            checklist.item ?? 'N/A',
+                            checklist.visitChecklist?.checked ?? false,
                           ),
-                      ],
-                    ),
+                        ),
+                    ],
+                  ),
 
-                  SizedBox(height: 16),
+                  const SizedBox(height: 16),
 
-                  // Reasons Card (always visible)
-                    _buildInfoCard(
-                      title: 'Reasons',
-                      icon: Icons.notes,
-                      content: [
-                        if (visit.reasons == null || visit.reasons!.isEmpty)
-                          Text(
-                            'No reasons provided',
-                            style: TextStyle(fontSize: 14, color: Colors.grey[600]),
-                          )
-                        else
-                          ...visit.reasons!.map(
-                                (reason) => _buildDetailRow('•', reason.item ?? 'N/A'),
-                          ),
-                      ],
-                    ),
+                  // Reasons Card
+                  _buildInfoCard(
+                    title: 'Reasons',
+                    icon: Icons.notes,
+                    content: [
+                      if (visit.reasons == null || visit.reasons!.isEmpty)
+                        Text(
+                          'No reasons provided',
+                          style: TextStyle(fontSize: 14, color: Colors.grey[600]),
+                        )
+                      else
+                        ...visit.reasons!.map(
+                              (reason) => _buildDetailRow('•', reason.item ?? 'N/A'),
+                        ),
+                    ],
+                  ),
 
-                  SizedBox(height: 16),
+                  const SizedBox(height: 16),
 
-                  // Visit Details Card (only basic info)
+                  // Visit Details Card (only for visited status)
                   if (visit.status == "visited")
                     _buildInfoCard(
                       title: 'Visit Details',
@@ -153,23 +170,23 @@ class VisitDetailsScreen extends StatelessWidget {
                           Navigator.push(
                             context,
                             MaterialPageRoute(
-                              builder: (_) => ErrorPage(errorMessage: 'Page not available yet'),
+                              builder: (_) => const ErrorPage(errorMessage: 'Page not available yet'),
                             ),
                           );
                         },
-                        icon: Icon(Icons.edit, color: Colors.white),
-                        label: Text('Edit Visit', style: TextStyle(color: Colors.white)),
+                        icon: const Icon(Icons.edit, color: Colors.white),
+                        label: const Text('Edit Visit', style: TextStyle(color: Colors.white)),
                         style: ElevatedButton.styleFrom(
-                          backgroundColor: Color(0xFF4CB1C7),
+                          backgroundColor: const Color(0xFF4CB1C7),
                           shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(8)),
-                          padding: EdgeInsets.symmetric(horizontal: 20, vertical: 12),
+                          padding: const EdgeInsets.symmetric(horizontal: 20, vertical: 12),
                         ),
                       ),
                       ElevatedButton.icon(
                         onPressed: () {
                           if (visit.date == null) {
                             ScaffoldMessenger.of(context).showSnackBar(
-                              SnackBar(content: Text('Visit date is missing. Cannot log visit.')),
+                              const SnackBar(content: Text('Visit date is missing. Cannot log visit.')),
                             );
                             return;
                           }
@@ -184,12 +201,12 @@ class VisitDetailsScreen extends StatelessWidget {
                             ),
                           );
                         },
-                        icon: Icon(Icons.check_circle, color: Colors.white),
-                        label: Text('Log Visit', style: TextStyle(color: Colors.white)),
+                        icon: const Icon(Icons.check_circle, color: Colors.white),
+                        label: const Text('Log Visit', style: TextStyle(color: Colors.white)),
                         style: ElevatedButton.styleFrom(
-                          backgroundColor: Color(0xFFE81F76),
+                          backgroundColor: const Color(0xFFE81F76),
                           shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(8)),
-                          padding: EdgeInsets.symmetric(horizontal: 20, vertical: 12),
+                          padding: const EdgeInsets.symmetric(horizontal: 20, vertical: 12),
                         ),
                       ),
                     ],
@@ -214,15 +231,15 @@ class VisitDetailsScreen extends StatelessWidget {
           children: [
             Row(
               children: [
-                Icon(icon, color: Color(0xFF4CB1C7), size: 20),
-                SizedBox(width: 8),
+                Icon(icon, color: const Color(0xFF4CB1C7), size: 20),
+                const SizedBox(width: 8),
                 Text(
                   title,
-                  style: TextStyle(fontSize: 18, fontWeight: FontWeight.bold, color: Color(0xFF4CB1C7)),
+                  style: const TextStyle(fontSize: 18, fontWeight: FontWeight.bold, color: Color(0xFF4CB1C7)),
                 ),
               ],
             ),
-            SizedBox(height: 12),
+            const SizedBox(height: 12),
             ...content,
           ],
         ),
@@ -239,11 +256,11 @@ class VisitDetailsScreen extends StatelessWidget {
             label,
             style: TextStyle(fontWeight: FontWeight.w500, color: Colors.grey[700]),
           ),
-          SizedBox(width: 8),
+          const SizedBox(width: 8),
           Expanded(
             child: Text(
               value,
-              style: TextStyle(fontSize: 14, color: Colors.black87),
+              style: const TextStyle(fontSize: 14, color: Colors.black87),
             ),
           ),
         ],
@@ -261,11 +278,11 @@ class VisitDetailsScreen extends StatelessWidget {
             color: isChecked ? Colors.green : Colors.grey,
             size: 16,
           ),
-          SizedBox(width: 8),
+          const SizedBox(width: 8),
           Expanded(
             child: Text(
               item,
-              style: TextStyle(fontSize: 14, color: Colors.black87),
+              style: const TextStyle(fontSize: 14, color: Colors.black87),
             ),
           ),
         ],
