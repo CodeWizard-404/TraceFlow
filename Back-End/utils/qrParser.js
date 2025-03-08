@@ -15,7 +15,6 @@ function parseTLV(data) {
 
         // Check if the value could be a nested TLV
         if (value.length >= 4) {
-            const subTag = value.substr(0, 2);
             const subLengthStr = value.substr(2, 2);
             const subLength = parseInt(subLengthStr, 10);
             if (!isNaN(subLength) && subLength <= value.length - 4) {

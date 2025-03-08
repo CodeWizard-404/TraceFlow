@@ -19,10 +19,13 @@ class VisitService {
   }
 
   // Fetch a visit by its ID
-  static Future<Map<String, dynamic>> fetchVisitByID(String visitID) async {
+  static Future<Visit> fetchVisitByID(String visitID) async {
     final response = await http.get(Uri.parse('$baseUrl/visits/$visitID'));
-      return json.decode(response.body);
-  }
+    if (response.statusCode == 200) {
+      return Visit.fromJson(jsonDecode(response.body));
+    } else {
+      throw Exception('Failed to load visit details');
+    }  }
 
   // Add new verification method
   static Future<Map<String, dynamic>> verifyQRCode({required String qrData,required String visitId}) async {
@@ -38,7 +41,6 @@ class VisitService {
   }
 
   // Log visit details
-// services/visit_service.dart
   static Future<Visit> logVisit(String visitId, Map<String, dynamic> logData) async {
     try {
       final response = await http.put(

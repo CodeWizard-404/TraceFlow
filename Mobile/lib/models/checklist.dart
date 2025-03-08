@@ -1,16 +1,23 @@
+import 'package:visit_management/models/visit_checklist.dart';
+
 class Checklist {
-  final String checklistID;
-  final String item;
+  final String? checklistID;
+  final String? item;
+  final VisitChecklist? visitChecklist;
 
   Checklist({
-    required this.checklistID,
-    required this.item,
+    this.checklistID,
+    this.item,
+    this.visitChecklist,
   });
 
   factory Checklist.fromJson(Map<String, dynamic> json) {
     return Checklist(
       checklistID: json['checklistID'],
       item: json['item'],
+      visitChecklist: json['VisitChecklist'] != null
+          ? VisitChecklist.fromJson(json['VisitChecklist'])
+          : null,
     );
   }
 }

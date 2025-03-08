@@ -1,5 +1,8 @@
+import 'package:visit_management/models/reason.dart';
 import 'package:visit_management/models/visit_checklist.dart';
 import 'package:visit_management/models/visit_reason.dart';
+
+import 'checklist.dart';
 
 class Visit {
   final String? visitID;
@@ -7,8 +10,8 @@ class Visit {
   final String? time;
   final String? location;
   final int? duration;
-  final List<VisitChecklist>? checklist;
-  final List<VisitReason>? reasons;
+  final List<Checklist>? checklists;
+  final List<Reason>? reasons;
   final String? agentID;
   final String? timesheetID;
   final String? status;
@@ -19,7 +22,7 @@ class Visit {
     this.time,
     this.location,
     this.duration,
-    this.checklist,
+    this.checklists,
     this.reasons,
     this.agentID,
     this.timesheetID,
@@ -33,13 +36,13 @@ class Visit {
       time: json['time'],
       location: json['location'],
       duration: json['duration'],
-      checklist: (json['checklist'] as List?)
-          ?.map((item) => VisitChecklist.fromJson(item))
+      checklists: (json['Checklists'] as List?)
+          ?.map((e) => Checklist.fromJson(e)) // Convert to Checklist objects
           .toList(),
-      reasons: (json['reasons'] as List?)
-          ?.map((item) => VisitReason.fromJson(item))
+      reasons: (json['Reasons'] as List?)
+          ?.map((e) => Reason.fromJson(e)) // Convert to Reason objects
           .toList(),
-      agentID: json['agentID'],
+      agentID: json['agentID'] as String?,
       timesheetID: json['timesheetID'],
       status: json['status'],
     );
@@ -47,12 +50,12 @@ class Visit {
 
   Map<String, dynamic> toJson() => {
     'visitID': visitID,
-    'date': date?.toIso8601String().split('T')[0],
+    'date': date?.toIso8601String(),
     'time': time,
     'location': location,
     'duration': duration,
-    'reasons': reasons?.map((r) => r.reasonID).toList(),
-    'checklist': checklist?.map((c) => c.checklistID).toList(), // Send only IDs for creation
+    'Checklists': checklists?.map((c) => c.checklistID).toList(),
+    'Reasons': reasons?.map((r) => r.reasonID).toList(),
     'agentID': agentID,
     'timesheetID': timesheetID,
     'status': status,

@@ -40,7 +40,7 @@ class VisitProvider with ChangeNotifier {
   Future<Visit> fetchVisitByID(String visitID) async {
     try {
       final visitData = await VisitService.fetchVisitByID(visitID);
-      return Visit.fromJson(visitData);
+      return Visit.fromJson(visitData as Map<String, dynamic>);
     } catch (error) {
       throw Exception('Failed to fetch visit: $error');
     }

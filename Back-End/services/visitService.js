@@ -104,7 +104,7 @@ class VisitService {
             try {
                 const visit = await Visit.findByPk(visitID);
                 if (!visit) throw new Error('Visit not found');
-                return visit;
+                return visit.reload({ include: [Checklist, Reason] })    ;
             } catch (error) {
                 throw new Error('Failed to fetch visit: ' + error.message);
             }

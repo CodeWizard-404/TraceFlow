@@ -91,7 +91,7 @@ class VisitItem extends StatelessWidget {
                   runSpacing: 4,
                   children: (visit.reasons ?? []).map((reason) {
                     return Chip(
-                      label: Text(reason as String, style: TextStyle(fontSize: 12, color: Colors.blue)),
+                      label: Text(reason.item!, style: TextStyle(fontSize: 12, color: Colors.blue)),
                       backgroundColor: Colors.blue.withOpacity(0.2),
                       shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(8)),
                     );
@@ -107,11 +107,11 @@ class VisitItem extends StatelessWidget {
 
   Color? _getStatusColor(String? status) {
     switch (status?.toLowerCase()) {
-      case 'completed':
+      case 'visited':
         return Colors.green;
       case 'pending':
         return Colors.orange;
-      case 'cancelled':
+      case 'rejected':
         return Colors.red;
       default:
         return Colors.grey;

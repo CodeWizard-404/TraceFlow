@@ -15,9 +15,9 @@ VALUES
 -- Timesheets Table Sample Data
 INSERT INTO "Timesheets" ("timesheetID", "weekNumber", "year", "status", "supervisorID", "createdAt", "updatedAt")
 VALUES
-('ts_001', 1, 2024, 'pending', 'user_001', NOW(), NOW()),
-('ts_002', 2, 2024, 'validated', 'user_002', NOW(), NOW()),
-('ts_003', 3, 2024, 'pending', 'user_001', NOW(), NOW());
+('ts_001', 9, 2025, 'pending', 'user_001', NOW(), NOW()),
+('ts_002', 9, 2025, 'validated', 'user_002', NOW(), NOW()),
+('ts_003', 9, 2025, 'pending', 'user_001', NOW(), NOW());
 
 -- Checklists Table Sample Data
 INSERT INTO "Checklists" ("checklistID", "item", "createdAt", "updatedAt")
@@ -36,9 +36,9 @@ VALUES
 -- Visits Table Sample Data
 INSERT INTO "Visits" ("visitID", "date", "time", "duration", "location", "status", "photos", "comment", "timesheetID", "agentID", "createdAt", "updatedAt")
 VALUES
-('vis_001', '2024-01-15', '09:00:00', 45, 'Casablanca', 'visited', ARRAY['photo1.jpg', 'photo2.jpg'], 'Routine check completed', 'ts_001', 'agent_001', NOW(), NOW()),
-('vis_002', '2024-01-16', '10:30:00', 30, 'Rabat', 'validated', ARRAY['photo3.jpg'], 'Security check passed', 'ts_002', 'agent_002', NOW(), NOW()),
-('vis_003', '2024-01-17', '14:00:00', 60, 'Marrakech', 'pending', '{}', 'Training session scheduled', 'ts_003', 'agent_003', NOW(), NOW());
+('vis_001', '2025-03-06', '09:00:00', 45, 'Casablanca', 'visited', ARRAY['photo1.jpg', 'photo2.jpg'], 'Routine check completed', 'ts_001', 'agent_001', NOW(), NOW()),
+('vis_002', '2025-03-06', '10:30:00', 30, 'Rabat', 'validated', ARRAY['photo3.jpg'], 'Security check passed', 'ts_002', 'agent_002', NOW(), NOW()),
+('vis_003', '2025-03-06', '14:00:00', 60, 'Marrakech', 'pending', '{}', 'Training session scheduled', 'ts_003', 'agent_003', NOW(), NOW());
 
 -- VisitChecklists Junction Table
 INSERT INTO "VisitChecklists" ("visitID", "checklistID", "checked", "createdAt", "updatedAt")

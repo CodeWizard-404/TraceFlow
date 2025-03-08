@@ -171,13 +171,13 @@ class LogVisitScreenState extends State<LogVisitScreen> {
         const Text('Checklist'),
         ..._checklistItems.map((item) {
           return CheckboxListTile(
-            title: Text(item.item),
+            title: Text(item.item as String),
             value: Provider.of<VisitProvider>(context, listen: false)
                 .checklistStatus[item.checklistID] ?? false,
             onChanged: (value) {
               Provider.of<VisitProvider>(context, listen: false)
                   .updateChecklistStatus(
-                item.checklistID,
+                item.item as String,
                 value ?? false,
               );
             },
@@ -198,7 +198,7 @@ class LogVisitScreenState extends State<LogVisitScreen> {
                 .any((r) => r.reasonID == reason.reasonID);
 
             return FilterChip(
-              label: Text(reason.item),
+              label: Text(reason.item as String),
               selected: isSelected,
               onSelected: (selected) {
                 Provider.of<VisitProvider>(context, listen: false)

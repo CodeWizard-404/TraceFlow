@@ -7,7 +7,7 @@ module.exports = (sequelize, DataTypes) => {
         primaryKey: true,
         defaultValue: () => nanoid(), 
     },
-    date: { type: DataTypes.DATE, allowNull: false },
+    date: { type: DataTypes.DATEONLY, allowNull: false },
     time: { type: DataTypes.TIME, allowNull: false },
     duration: { type: DataTypes.INTEGER}, 
     location: { type: DataTypes.STRING},
