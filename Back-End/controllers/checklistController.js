@@ -13,7 +13,7 @@ class ChecklistController {
 
     static async getChecklistsByVisitID(req, res) {
         try {
-            const { visitID } = req.params;
+            const { id: visitID } = req.params;
             const checklists = await ChecklistService.getChecklistsByVisitId(visitID);
             res.status(200).json(checklists);
         } catch (error) {

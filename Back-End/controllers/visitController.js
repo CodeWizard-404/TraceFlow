@@ -6,7 +6,6 @@ const VisitController = {
             const {
                 date,
                 time,
-                location,
                 agentID,
                 supervisorID,
                 timesheetID,
@@ -15,7 +14,7 @@ const VisitController = {
             } = req.body;
 
             // Validate required fields
-            if (!date || !time || !location || !agentID || !supervisorID || !timesheetID) {
+            if (!date || !time || !agentID || !supervisorID || !timesheetID) {
                 return res.status(400).json({ error: 'Missing required fields' });
             }
 
@@ -23,7 +22,6 @@ const VisitController = {
             const visit = await VisitService.createVisit({
                 date,
                 time,
-                location,
                 agentID,
                 supervisorID,
                 timesheetID,

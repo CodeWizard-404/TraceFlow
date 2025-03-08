@@ -13,7 +13,7 @@ class ReasonController {
 
     static async getReasonsByVisitID(req, res) {
         try {
-            const { visitID } = req.params;
+            const { id: visitID } = req.params;
             const reasons = await ReasonService.getReasonsByVisitId(visitID);
             res.status(200).json(reasons);
         } catch (error) {
