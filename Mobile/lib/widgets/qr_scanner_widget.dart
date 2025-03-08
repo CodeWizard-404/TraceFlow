@@ -7,10 +7,10 @@ class QRScannerWidget extends StatefulWidget {
   const QRScannerWidget({super.key});
 
   @override
-  _QRScannerWidgetState createState() => _QRScannerWidgetState();
+  QRScannerWidgetState createState() => QRScannerWidgetState();
 }
 
-class _QRScannerWidgetState extends State<QRScannerWidget> {
+class QRScannerWidgetState extends State<QRScannerWidget> {
   late CameraController _cameraController;
   final BarcodeScanner _barcodeScanner = BarcodeScanner(formats: [BarcodeFormat.qrCode]);
   bool _isInitialized = false;

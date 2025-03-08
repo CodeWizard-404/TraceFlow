@@ -4,43 +4,43 @@ import '../models/visit.dart';
 import '../utils/constants.dart';
 
 class VisitService {
-  // Create a new visit
   static Future<void> createVisit(Map<String, dynamic> visitData) async {
-
-    visitData['checklist'] = visitData['checklistItems'];
-    visitData.remove('checklistItems');
-
     final response = await http.post(
       Uri.parse('$baseUrl/visits'),
       headers: {'Content-Type': 'application/json'},
       body: json.encode(visitData),
     );
-  return json.decode(response.body);
+
+    if (response.statusCode != 201) {
+      throw Exception('Failed to create visit: ${response.body}');
+    }
+    return json.decode(response.body);
   }
 
-  // Fetch a visit by its ID
   static Future<Visit> fetchVisitByID(String visitID) async {
     final response = await http.get(Uri.parse('$baseUrl/visits/$visitID'));
     if (response.statusCode == 200) {
       return Visit.fromJson(jsonDecode(response.body));
     } else {
       throw Exception('Failed to load visit details');
-    }  }
-
-  // Add new verification method
-  static Future<Map<String, dynamic>> verifyQRCode({required String qrData,required String visitId}) async {
-        final response = await http.post(
-          Uri.parse('$baseUrl/visits/verify-qr'),
-          headers: {'Content-Type': 'application/json'},
-          body: json.encode({
-            'qrData': qrData,
-            'visitId': visitId,
-          }),
-        );
-        return json.decode(response.body);
+    }
   }
 
-  // Log visit details
+  static Future<Map<String, dynamic>> verifyQRCode({
+    required String qrData,
+    required String visitId,
+  }) async {
+    final response = await http.post(
+      Uri.parse('$baseUrl/visits/verify-qr'),
+      headers: {'Content-Type': 'application/json'},
+      body: json.encode({
+        'qrData': qrData,
+        'visitId': visitId,
+      }),
+    );
+    return json.decode(response.body);
+  }
+
   static Future<Visit> logVisit(String visitId, Map<String, dynamic> logData) async {
     try {
       final response = await http.put(
@@ -50,7 +50,7 @@ class VisitService {
       );
 
       if (response.statusCode == 200) {
-        return Visit.fromJson(json.decode(response.body)); // Return parsed Visit
+        return Visit.fromJson(json.decode(response.body));
       } else {
         throw Exception('Failed to log visit: ${response.body}');
       }

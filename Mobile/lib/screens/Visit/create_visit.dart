@@ -15,10 +15,10 @@ class CreateVisitScreen extends StatefulWidget {
   });
 
   @override
-  _CreateVisitScreenState createState() => _CreateVisitScreenState();
+  CreateVisitScreenState createState() => CreateVisitScreenState();
 }
 
-class _CreateVisitScreenState extends State<CreateVisitScreen> {
+class CreateVisitScreenState extends State<CreateVisitScreen> {
   final _formKey = GlobalKey<FormState>();
   DateTime? _selectedDate; // Stores the selected date
   TimeOfDay? _selectedTime; // Stores the selected time

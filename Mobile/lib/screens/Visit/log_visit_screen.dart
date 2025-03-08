@@ -9,7 +9,6 @@ import '../../providers/reason_provider.dart';
 import '../../providers/visit_provider.dart';
 import '../../services/visits_service.dart';
 import '../../widgets/qr_scanner_widget.dart';
-import '../../models/visit.dart';
 
 class LogVisitScreen extends StatefulWidget {
   final String visitID;
@@ -23,7 +22,6 @@ class LogVisitScreen extends StatefulWidget {
 class LogVisitScreenState extends State<LogVisitScreen> {
   bool _isAgentVerified = false;
   Agent? _agent;
-  Visit? _visit;
   List<Checklist> _checklistItems = [];
   List<Reason> _reasonItems = [];
   final TextEditingController _manualInputController = TextEditingController();
@@ -61,7 +59,6 @@ class LogVisitScreenState extends State<LogVisitScreen> {
             .getReasonsByVisit(widget.visitID);
 
         setState(() {
-          _visit = visit;
           _agent = agent;
           _checklistItems = checklist;
           _reasonItems = reasons;
@@ -182,7 +179,7 @@ class LogVisitScreenState extends State<LogVisitScreen> {
               );
             },
           );
-        }).toList(),
+        }),
       ],
     );
   }

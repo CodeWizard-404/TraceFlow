@@ -9,7 +9,6 @@ class Reason {
     this.reasonID,
     this.item,
     this.visitReason,
-
   });
 
   factory Reason.fromJson(Map<String, dynamic> json) {
@@ -20,5 +19,13 @@ class Reason {
           ? VisitReason.fromJson(json['VisitReasons'])
           : null,
     );
+  }
+
+  Map<String, dynamic> toJson() {
+    return {
+      'reasonID': reasonID,
+      'item': item,
+      'VisitReasons': visitReason?.toJson(),
+    };
   }
 }

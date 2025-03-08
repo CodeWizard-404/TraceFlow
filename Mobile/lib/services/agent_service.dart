@@ -1,11 +1,9 @@
-// services/agent_service.dart
 import 'dart:convert';
 import 'package:http/http.dart' as http;
 import '../models/agent.dart';
 import '../utils/constants.dart';
 
 class AgentService {
-  // Fetch an agent by ID
   static Future<Agent> fetchAgentById(String id) async {
       final response = await http.get(Uri.parse('$baseUrl/agents/$id'));
       if (response.statusCode == 200) {
@@ -16,7 +14,6 @@ class AgentService {
 
   }
 
-  // Fetch an agent by phone
   static Future<Agent> fetchAgentByPhone(String phone) async {
     final response = await http.get(Uri.parse('$baseUrl/agents/phone/$phone'));
     if (response.statusCode == 200) {
@@ -26,7 +23,6 @@ class AgentService {
     }
   }
 
-  // Fetch agents by location
   static Future<List<Agent>> fetchAgentsByLocation(String location) async {
     try {
       final response = await http.get(Uri.parse('$baseUrl/agents/location?location=$location'));
@@ -41,7 +37,6 @@ class AgentService {
     }
   }
 
-  // Fetch all unique agent locations
   static Future<List<String>> fetchUniqueLocations() async {
     try {
       final response = await http.get(Uri.parse('$baseUrl/agents/locations'));

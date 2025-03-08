@@ -20,4 +20,12 @@ class Checklist {
           : null,
     );
   }
+
+  Map<String, dynamic> toJson() {
+    return {
+      'checklistID': checklistID,
+      'item': item,
+      'VisitChecklist': visitChecklist?.toJson(),
+    };
+  }
 }

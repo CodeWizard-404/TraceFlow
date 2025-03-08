@@ -1,8 +1,5 @@
 import 'package:visit_management/models/reason.dart';
-import 'package:visit_management/models/visit_checklist.dart';
-import 'package:visit_management/models/visit_reason.dart';
-
-import 'checklist.dart';
+import 'package:visit_management/models/checklist.dart';
 
 class Visit {
   final String? visitID;
@@ -37,27 +34,29 @@ class Visit {
       location: json['location'],
       duration: json['duration'],
       checklists: (json['Checklists'] as List?)
-          ?.map((e) => Checklist.fromJson(e)) // Convert to Checklist objects
+          ?.map((e) => Checklist.fromJson(e))
           .toList(),
       reasons: (json['Reasons'] as List?)
-          ?.map((e) => Reason.fromJson(e)) // Convert to Reason objects
+          ?.map((e) => Reason.fromJson(e))
           .toList(),
-      agentID: json['agentID'] as String?,
+      agentID: json['agentID'],
       timesheetID: json['timesheetID'],
       status: json['status'],
     );
   }
 
-  Map<String, dynamic> toJson() => {
-    'visitID': visitID,
-    'date': date?.toIso8601String(),
-    'time': time,
-    'location': location,
-    'duration': duration,
-    'Checklists': checklists?.map((c) => c.checklistID).toList(),
-    'Reasons': reasons?.map((r) => r.reasonID).toList(),
-    'agentID': agentID,
-    'timesheetID': timesheetID,
-    'status': status,
-  };
+  Map<String, dynamic> toJson() {
+    return {
+      'visitID': visitID,
+      'date': date?.toIso8601String(),
+      'time': time,
+      'location': location,
+      'duration': duration,
+      'Checklists': checklists?.map((e) => e.toJson()).toList(),
+      'Reasons': reasons?.map((e) => e.toJson()).toList(),
+      'agentID': agentID,
+      'timesheetID': timesheetID,
+      'status': status,
+    };
+  }
 }

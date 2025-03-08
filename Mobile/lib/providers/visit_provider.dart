@@ -1,12 +1,10 @@
-import 'dart:convert';
-
 import 'package:flutter/foundation.dart';
 import '../models/reason.dart';
 import '../models/visit.dart';
 import '../services/visits_service.dart';
 
 class VisitProvider with ChangeNotifier {
-  Map<String, bool> _checklistStatus = {};
+  final Map<String, bool> _checklistStatus = {};
   List<Reason> _selectedReasons = [];
   final List<Visit> _visits = [];
   late DateTime _startTime;
@@ -32,8 +30,7 @@ class VisitProvider with ChangeNotifier {
   }
 
   Duration? getElapsedTime() {
-    if (_startTime == null) return null;
-    return DateTime.now().difference(_startTime!);
+    return DateTime.now().difference(_startTime);
   }
 
   // Fetch a visit by its ID from the backend

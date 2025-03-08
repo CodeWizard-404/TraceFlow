@@ -9,10 +9,15 @@ class VisitReason {
 
   factory VisitReason.fromJson(Map<String, dynamic> json) {
     return VisitReason(
-      visitID: json['VisitID'],
-      reasonID: json['ReasonID'],
+      visitID: json['visitID'],
+      reasonID: json['reasonID'],
     );
   }
+
+  Map<String, dynamic> toJson() {
+    return {
+      'visitID': visitID,
+      'reasonID': reasonID,
+    };
+  }
 }
-
-

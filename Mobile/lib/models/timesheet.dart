@@ -24,9 +24,9 @@ class Timesheet {
       year: json['year'],
       status: json['status'],
       supervisorID: json['supervisorID'],
-      visits: (json['Visits'] as List?) // Fixed key name here
-          ?.map((v) => Visit.fromJson(v))
-          .toList() ?? [],
+      visits: (json['Visits'] as List?)
+          ?.map((e) => Visit.fromJson(e))
+          .toList(),
     );
   }
 
@@ -37,7 +37,7 @@ class Timesheet {
       'year': year,
       'status': status,
       'supervisorID': supervisorID,
-      'Visits': visits?.map((v) => v.toJson()).toList(),
+      'Visits': visits?.map((e) => e.toJson()).toList(),
     };
   }
 }
