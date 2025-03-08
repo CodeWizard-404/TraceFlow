@@ -1,6 +1,8 @@
 import 'package:flutter/material.dart';
 import '../../models/visit.dart';
 import '../../screens/Visit/visit_details.dart';
+import '../Glass_Effect/GlassChip.dart';
+import '../Glass_Effect/GlassStatusChip.dart';
 
 class VisitItem extends StatelessWidget {
   final Visit visit;
@@ -9,15 +11,11 @@ class VisitItem extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
-    String formattedTime = visit.time != null
-        ? visit.time!.split(':').take(2).join(':') // Remove seconds
-        : 'N/A';
+    String formattedTime = visit.time?.split(':').take(2).join(':') ?? 'N/A';
 
-    return Card(
-      margin: const EdgeInsets.symmetric(vertical: 6, horizontal: 12),
-      elevation: 3,
-      shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(12)),
-      child: InkWell(
+    return Padding(
+      padding: EdgeInsets.symmetric(vertical: 8, horizontal: 16),
+      child: GestureDetector(
         onTap: () {
           Navigator.push(
             context,
@@ -26,78 +24,97 @@ class VisitItem extends StatelessWidget {
             ),
           );
         },
-        borderRadius: BorderRadius.circular(12),
-        child: Container(
+        child: AnimatedContainer(
+          duration: Duration(milliseconds: 300),
+          curve: Curves.easeInOut,
           decoration: BoxDecoration(
+            borderRadius: BorderRadius.circular(20),
             gradient: LinearGradient(
               begin: Alignment.topLeft,
               end: Alignment.bottomRight,
-              colors: [Colors.white, Color(0xFFF5F5F5)],
+              colors: [
+                Colors.white.withOpacity(0.9),
+                Colors.grey[50]!.withOpacity(0.9),
+              ],
             ),
-            borderRadius: BorderRadius.circular(12),
+            boxShadow: [
+              BoxShadow(
+                color: Color(0xFF4CB1C7).withOpacity(0.1),
+                blurRadius: 12,
+                offset: Offset(0, 4),
+              ),
+            ],
           ),
           child: Padding(
-            padding: const EdgeInsets.all(12.0),
+            padding: EdgeInsets.all(16),
             child: Column(
               crossAxisAlignment: CrossAxisAlignment.start,
               children: [
                 Row(
                   mainAxisAlignment: MainAxisAlignment.spaceBetween,
                   children: [
-                    Text(
-                      'Visit Details',
-                      style: TextStyle(fontSize: 16, fontWeight: FontWeight.bold, color: Color(0xFF4CB1C7)),
-                    ),
-                    Chip(
-                      label: Text(
-                        visit.status ?? 'Unknown',
-                        style: TextStyle(fontSize: 12, color: _getStatusColor(visit.status), fontWeight: FontWeight.bold),
+                    Flexible(
+                      child: Text(
+                        'Visit Details',
+                        style: TextStyle(
+                          fontSize: 20,
+                          fontWeight: FontWeight.bold,
+                          color: Color(0xFF4CB1C7),
+                          shadows: [Shadow(color: Colors.black12, blurRadius: 2)],
+                        ),
                       ),
-                      backgroundColor: _getStatusColor(visit.status)?.withOpacity(0.2),
-                      shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(8)),
+                    ),
+                    GlassStatusChip(
+                      status: visit.status ?? 'Unknown',
+                      color: _getStatusColor(visit.status),
                     ),
                   ],
                 ),
-                SizedBox(height: 8),
-                Row(
-                  children: [
-                    Icon(Icons.location_on, size: 16, color: Colors.grey),
-                    SizedBox(width: 4),
-                    Text(
-                      'Location: ${visit.location ?? 'N/A'}',
-                      style: TextStyle(fontSize: 14, color: Colors.grey[700]),
-                    ),
-                  ],
-                ),
-
-                SizedBox(height: 8),
-                Row(
-                  children: [
-                    Icon(Icons.access_time, size: 16, color: Colors.grey),
-                    SizedBox(width: 4),
-                    Text(
-                      'Time: $formattedTime',
-                      style: TextStyle(fontSize: 14, color: Colors.grey[700]),
-                    ),
-                  ],
-                ),
-                SizedBox(height: 8),
+                SizedBox(height: 16),
+                _buildInfoRow(Icons.location_on, 'Location: ${visit.location ?? 'N/A'}'),
+                SizedBox(height: 12),
+                _buildInfoRow(Icons.access_time, 'Time: $formattedTime'),
+                SizedBox(height: 16),
                 Wrap(
                   spacing: 8,
-                  runSpacing: 4,
-                  children: (visit.reasons ?? []).map((reason) {
-                    return Chip(
-                      label: Text(reason.item!, style: TextStyle(fontSize: 12, color: Colors.blue)),
-                      backgroundColor: Colors.blue.withOpacity(0.2),
-                      shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(8)),
-                    );
-                  }).toList(),
+                  runSpacing: 8,
+                  children: (visit.reasons ?? [])
+                      .map((reason) => GlassChip(
+                    label: reason.item ?? 'N/A',
+                  ))
+                      .toList(),
                 ),
               ],
             ),
           ),
         ),
       ),
+    );
+  }
+
+  Widget _buildInfoRow(IconData icon, String text) {
+    return Row(
+      children: [
+        Container(
+          padding: EdgeInsets.all(6),
+          decoration: BoxDecoration(
+            shape: BoxShape.circle,
+            color: Color(0xFF4CB1C7).withOpacity(0.1),
+          ),
+          child: Icon(icon, size: 18, color: Color(0xFF4CB1C7)),
+        ),
+        SizedBox(width: 12),
+        Expanded(
+          child: Text(
+            text,
+            style: TextStyle(
+              fontSize: 15,
+              color: Colors.grey[800],
+              fontWeight: FontWeight.w500,
+            ),
+          ),
+        ),
+      ],
     );
   }
 

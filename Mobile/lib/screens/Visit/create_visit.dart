@@ -521,7 +521,7 @@ class _CreateVisitScreenState extends State<CreateVisitScreen> {
             ),
             centerTitle: true,
             leading: IconButton(
-              icon: const Icon(Icons.arrow_back_ios, color: Colors.white, size: 24),
+              icon: const Icon(Icons.arrow_back_ios_rounded, color: Colors.white, size: 24),
               onPressed: () => Navigator.pop(context),
             ),
           ),

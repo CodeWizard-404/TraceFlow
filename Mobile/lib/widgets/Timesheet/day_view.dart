@@ -3,7 +3,7 @@ import 'package:provider/provider.dart';
 import '../../models/timesheet.dart';
 import '../../models/visit.dart';
 import '../../providers/timesheet_provider.dart';
-import '../../widgets/Visit/visit_item.dart';
+import '../Visit/visit_item.dart';
 
 class DayView extends StatelessWidget {
   final DateTime day;
@@ -42,20 +42,46 @@ class DayView extends StatelessWidget {
     return Consumer<TimesheetProvider>(
       builder: (context, provider, child) {
         final visits = getVisitsForDay(day, provider.timesheets);
-        if (visits.isEmpty) {
-          return Center(child: Text('No visits scheduled for this day'));
-        }
-        return ListView.builder(
-          shrinkWrap: true,
-          physics: NeverScrollableScrollPhysics(),
-          itemCount: visits.length,
-          itemBuilder: (context, index) {
-            final visit = visits[index];
-            return VisitItem(
-              visit,
-              key: ValueKey(visit.visitID),
-            );
-          },
+        return SingleChildScrollView( // Added scroll view
+          child: Padding(
+            padding: const EdgeInsets.symmetric(vertical: 16), // Adjusted padding
+            child: Column(
+              crossAxisAlignment: CrossAxisAlignment.start,
+              children: [
+                if (visits.isEmpty)
+                  Padding(
+                    padding: const EdgeInsets.symmetric(vertical: 16),
+                    child: Row(
+                      mainAxisAlignment: MainAxisAlignment.center,
+                      children: [
+                        Container(
+                          padding: const EdgeInsets.all(8),
+                          decoration: BoxDecoration(
+                            shape: BoxShape.circle,
+                            color: const Color(0xFF4CB1C7).withOpacity(0.1),
+                          ),
+                          child: const Icon(
+                            Icons.event_busy,
+                            size: 20,
+                            color: Color(0xFF4CB1C7),
+                          ),
+                        ),
+                        Text(
+                          'No visits scheduled',
+                          style: TextStyle(
+                            fontSize: 14,
+                            color: Colors.grey[600],
+                            fontWeight: FontWeight.w500,
+                          ),
+                        ),
+                      ],
+                    ),
+                  )
+                else
+                  ...visits.map((visit) => VisitItem(visit)).toList(),
+              ],
+            ),
+          ),
         );
       },
     );

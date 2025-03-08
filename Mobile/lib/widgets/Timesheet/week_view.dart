@@ -1,7 +1,7 @@
 import 'package:flutter/material.dart';
 import 'package:intl/intl.dart';
+import '../Glass_Effect/GlassChip.dart';
 import 'day_view.dart';
-
 class WeekView extends StatelessWidget {
   final DateTime weekStartDate;
 
@@ -17,48 +17,58 @@ class WeekView extends StatelessWidget {
     final weekDays = getWeekDays(weekStartDate);
 
     return ListView.builder(
+      padding: EdgeInsets.symmetric(vertical: 8),
       itemCount: weekDays.length,
       itemBuilder: (context, index) {
         final day = weekDays[index];
-        return Card(
-          key: ValueKey(day), // Unique key based on the day
-          margin: EdgeInsets.symmetric(vertical: 8, horizontal: 16),
-          elevation: 3,
-          shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(12)),
-          child: InkWell(
-            onTap: () {
-              // Navigate to Day View or Details
-            },
-            borderRadius: BorderRadius.circular(12),
-            child: Container(
-              decoration: BoxDecoration(
-                gradient: LinearGradient(
-                  begin: Alignment.topLeft,
-                  end: Alignment.bottomRight,
-                  colors: [Colors.white, Color(0xFFFFFFFF)],
-                ),
-                borderRadius: BorderRadius.circular(12),
+        return Padding(
+          padding: EdgeInsets.symmetric(vertical: 8, horizontal: 16),
+          child: AnimatedContainer(
+            duration: Duration(milliseconds: 300),
+            curve: Curves.easeInOut,
+            decoration: BoxDecoration(
+              borderRadius: BorderRadius.circular(20),
+              gradient: LinearGradient(
+                begin: Alignment.topLeft,
+                end: Alignment.bottomRight,
+                colors: [
+                  Colors.white.withOpacity(0.9),
+                  Colors.grey[50]!.withOpacity(0.9),
+                ],
               ),
-              child: Padding(
-                padding: const EdgeInsets.all(16.0),
-                child: Column(
-                  crossAxisAlignment: CrossAxisAlignment.start,
-                  children: [
-                    Text(
-                      DateFormat('EEEE').format(day),
-                      style: TextStyle(fontSize: 16, fontWeight: FontWeight.bold, color: Color(0xFF4CB1C7)),
-                    ),
-                    SizedBox(height: 8),
-                    Text(
-                      DateFormat('MMMM d').format(day),
-                      style: TextStyle(fontSize: 14, color: Colors.grey[700]),
-                    ),
-                    SizedBox(height: 12),
-                    Divider(color: Colors.grey[300]),
-                    SizedBox(height: 12),
-                    DayView(day),
-                  ],
+              boxShadow: [
+                BoxShadow(
+                  color: Color(0xFF4CB1C7).withOpacity(0.1),
+                  blurRadius: 12,
+                  offset: Offset(0, 4),
                 ),
+              ],
+            ),
+            child: Padding(
+              padding: EdgeInsets.all(16),
+              child: Column(
+                crossAxisAlignment: CrossAxisAlignment.start,
+                children: [
+                  Row(
+                    mainAxisAlignment: MainAxisAlignment.spaceBetween,
+                    children: [
+                      Text(
+                        DateFormat('EEEE').format(day),
+                        style: TextStyle(
+                          fontSize: 20,
+                          fontWeight: FontWeight.bold,
+                          color: Color(0xFF4CB1C7),
+                          shadows: [Shadow(color: Colors.black12, blurRadius: 2)],
+                        ),
+                      ),
+                      GlassChip(
+                        label: DateFormat('MMM d').format(day),
+                      ),
+                    ],
+                  ),
+                  SizedBox(height: 16),
+                  DayView(day),
+                ],
               ),
             ),
           ),
