@@ -1,10 +1,10 @@
 class VisitReason {
-  final String visitID;
-  final String reasonID;
+  final String? visitID;
+  final String? reasonID;
 
   VisitReason({
-    required this.visitID,
-    required this.reasonID,
+    this.visitID,
+    this.reasonID,
   });
 
   factory VisitReason.fromJson(Map<String, dynamic> json) {

@@ -10,68 +10,62 @@ class TimesheetProvider with ChangeNotifier {
   List<Timesheet> get timesheets => _timesheets;
   Timesheet? get currentTimesheet => _currentTimesheet;
 
-  // Fetch all timesheets
   Future<void> fetchTimesheets() async {
     try {
-      // Fetch timesheets using the service
-      final timesheets = await TimesheetService.fetchAllTimesheets();
-      _timesheets = timesheets;
+      _timesheets = await TimesheetService.fetchAllTimesheets();
       notifyListeners();
     } catch (e) {
-      print('Error fetching timesheets: $e');
-      throw Exception('Failed to fetch timesheets');
+      throw Exception('Failed to fetch timesheets: $e');
     }
   }
 
-  // Create a new timesheet or add visits to an existing one
-  Future<void> createTimesheet(int weekNumber, int year, String supervisorID, List<Map<String, dynamic>> visits) async {
+  Future<void> createTimesheet({
+    required int weekNumber,
+    required int year,
+    required String supervisorID,
+    required List<Map<String, dynamic>> visits,
+  }) async {
     try {
       final response = await TimesheetService.createTimesheet({
         'weekNumber': weekNumber,
         'year': year,
         'supervisorID': supervisorID,
-        'visits': visits.map((visit) => {
-          'date': visit['date'],
-          'time': visit['time'],
-          'location': visit['location'],
-          'agentID': visit['agentID'],
-          'reasons': visit['reasons'],
-          'checklists': visit['checklist'],
+        'visits': visits.map((v) => {
+          'date': v['date'],
+          'time': v['time'],
+          'agentID': v['agentID'],
+          'location': v['location'],
+          'reasons': v['reasons'],
+          'checklists': v['checklists'],
         }).toList(),
       });
 
-      if (response.statusCode != 200 && response.statusCode != 201) {
-        throw Exception('Failed to create timesheet: ${response.body}');
+      if (response.statusCode == 201) {
+        // Refresh the timesheets list to include the new timesheet and its visits
+        await fetchTimesheets();
+      } else {
+        throw Exception('Failed to create timesheet: ${json.decode(response.body)}');
       }
-
-      // Parse the response and update the local state
-      final responseData = jsonDecode(response.body);
-      print('Timesheet created successfully: $responseData');
-      notifyListeners();
     } catch (e) {
-      print('Error creating timesheet: $e');
-      throw Exception('Failed to create timesheet');
+      throw Exception('Error creating timesheet: $e');
     }
   }
 
-  // Fetch a specific timesheet by ID
   Future<void> fetchTimesheetById(String id) async {
     try {
       _currentTimesheet = await TimesheetService.fetchTimesheetById(id);
       notifyListeners();
-    } catch (error) {
-      throw Exception('Failed to fetch timesheet: $error');
+    } catch (e) {
+      throw Exception('Failed to fetch timesheet: $e');
     }
   }
 
-  // Fetch timesheets by supervisor
   Future<void> fetchTimesheetsBySupervisor(String supervisorID) async {
     try {
-      final timesheets = await TimesheetService.fetchTimesheetsBySupervisor(supervisorID);
-      _timesheets = timesheets;
+      _timesheets = await TimesheetService.fetchTimesheetsBySupervisor(supervisorID);
       notifyListeners();
-    } catch (error) {
-      throw Exception('Failed to fetch timesheets by supervisor: $error');
+    } catch (e) {
+      throw Exception('Failed to fetch timesheets by supervisor: $e');
     }
   }
 

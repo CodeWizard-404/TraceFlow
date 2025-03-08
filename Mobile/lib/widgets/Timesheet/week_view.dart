@@ -21,6 +21,7 @@ class WeekView extends StatelessWidget {
       itemBuilder: (context, index) {
         final day = weekDays[index];
         return Card(
+          key: ValueKey(day), // Unique key based on the day
           margin: EdgeInsets.symmetric(vertical: 8, horizontal: 16),
           elevation: 3,
           shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(12)),

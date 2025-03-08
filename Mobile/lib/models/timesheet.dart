@@ -4,7 +4,7 @@ class Timesheet {
   final String? timesheetID;
   final int? weekNumber;
   final int? year;
-  late final String? status;
+  final String? status;
   final String? supervisorID;
   final List<Visit>? visits;
 

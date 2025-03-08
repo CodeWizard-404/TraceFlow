@@ -6,9 +6,7 @@ import 'log_visit_screen.dart';
 class VisitDetailsScreen extends StatelessWidget {
   final Visit visit;
 
-
   const VisitDetailsScreen({required this.visit, super.key});
-
 
   @override
   Widget build(BuildContext context) {
@@ -95,40 +93,56 @@ class VisitDetailsScreen extends StatelessWidget {
 
                   SizedBox(height: 16),
 
-                  // Visit Details Card
+                  // Checklists Card (always visible)
+                    _buildInfoCard(
+                      title: 'Checklists',
+                      icon: Icons.checklist,
+                      content: [
+                        if (visit.checklists == null || visit.checklists!.isEmpty)
+                          Text(
+                            'No checklists available',
+                            style: TextStyle(fontSize: 14, color: Colors.grey[600]),
+                          )
+                        else
+                          ...visit.checklists!.map(
+                                (checklist) => _buildChecklistRow(
+                              checklist.item ?? 'N/A',
+                              checklist.visitChecklist?.checked ?? false,
+                            ),
+                          ),
+                      ],
+                    ),
+
+                  SizedBox(height: 16),
+
+                  // Reasons Card (always visible)
+                    _buildInfoCard(
+                      title: 'Reasons',
+                      icon: Icons.notes,
+                      content: [
+                        if (visit.reasons == null || visit.reasons!.isEmpty)
+                          Text(
+                            'No reasons provided',
+                            style: TextStyle(fontSize: 14, color: Colors.grey[600]),
+                          )
+                        else
+                          ...visit.reasons!.map(
+                                (reason) => _buildDetailRow('•', reason.item ?? 'N/A'),
+                          ),
+                      ],
+                    ),
+
+                  SizedBox(height: 16),
+
+                  // Visit Details Card (only basic info)
                   if (visit.status == "visited")
                     _buildInfoCard(
                       title: 'Visit Details',
                       icon: Icons.info,
                       content: [
                         _buildDetailRow('Duration:', '${visit.duration} minutes'),
-
-                        // Checklists Section
-                        if (visit.checklists != null && visit.checklists!.isNotEmpty)
-                          ...[
-                            const SizedBox(height: 8),
-                            _buildSectionHeader('Checklists'),
-                            ...visit.checklists!.map(
-                                  (checklist) => _buildChecklistRow(
-                                checklist.item ?? 'N/A',
-                                checklist.visitChecklist?.checked ?? false,
-                              ),
-                            ),
-                          ],
-
-                        // Reasons Section
-                        if (visit.reasons != null && visit.reasons!.isNotEmpty)
-                          ...[
-                            const SizedBox(height: 8),
-                            _buildSectionHeader('Reasons'),
-                            ...visit.reasons!.map(
-                                  (reason) => _buildDetailRow('•', reason.item ?? 'N/A'),
-                            ),
-                          ],
                       ],
                     ),
-
-                  SizedBox(height: 16),
 
                   // Action Buttons
                   Row(
@@ -237,23 +251,6 @@ class VisitDetailsScreen extends StatelessWidget {
     );
   }
 
-
-  // Helper for section headers
-  Widget _buildSectionHeader(String title) {
-    return Padding(
-      padding: const EdgeInsets.symmetric(vertical: 4),
-      child: Text(
-        title,
-        style: TextStyle(
-          fontWeight: FontWeight.bold,
-          color: Colors.grey[800],
-          fontSize: 14,
-        ),
-      ),
-    );
-  }
-
-// Special row for checklist items with check status
   Widget _buildChecklistRow(String item, bool isChecked) {
     return Padding(
       padding: const EdgeInsets.symmetric(vertical: 4),

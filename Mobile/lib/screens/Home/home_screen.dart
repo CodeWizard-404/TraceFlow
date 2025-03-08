@@ -1,4 +1,6 @@
 import 'package:flutter/material.dart';
+import 'package:provider/provider.dart';
+import '../../providers/timesheet_provider.dart';
 import '../../widgets/Timesheet/day_view.dart';
 import '../../widgets/Timesheet/week_view.dart';
 import '../Visit/create_visit.dart';
@@ -19,6 +21,13 @@ class HomeScreenState extends State<HomeScreen> {
   void initState() {
     super.initState();
     _pageController = PageController(initialPage: _getOffset(_currentDate));
+    // Fetch timesheets when the screen initializes
+    final timesheetProvider = Provider.of<TimesheetProvider>(context, listen: false);
+    timesheetProvider.fetchTimesheets().catchError((error) {
+      ScaffoldMessenger.of(context).showSnackBar(
+        SnackBar(content: Text('Failed to load timesheets: $error')),
+      );
+    });
   }
 
   int _getOffset(DateTime date) {
@@ -79,12 +88,11 @@ class HomeScreenState extends State<HomeScreen> {
             backgroundColor: Colors.transparent,
             elevation: 0,
             title: Text(
-              "Visit Mangements",
+              "Visit Management",
               style: TextStyle(fontSize: 22, fontWeight: FontWeight.bold, color: Colors.white),
             ),
             centerTitle: true,
             actions: [
-
               IconButton(
                 icon: Icon(_isWeekView ? Icons.view_week : Icons.view_day, color: Colors.white, size: 28),
                 onPressed: _toggleView,

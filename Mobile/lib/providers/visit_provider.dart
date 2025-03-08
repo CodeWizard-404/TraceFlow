@@ -1,4 +1,4 @@
-import 'package:flutter/foundation.dart';
+import 'package:flutter/cupertino.dart';
 import '../models/reason.dart';
 import '../models/visit.dart';
 import '../services/visits_service.dart';
@@ -6,10 +6,7 @@ import '../services/visits_service.dart';
 class VisitProvider with ChangeNotifier {
   final Map<String, bool> _checklistStatus = {};
   List<Reason> _selectedReasons = [];
-  final List<Visit> _visits = [];
-  late DateTime _startTime;
-
-  List<Visit> get visits => _visits;
+  DateTime? _startTime;
 
   Map<String, bool> get checklistStatus => _checklistStatus;
   List<Reason> get selectedReasons => _selectedReasons;
@@ -30,41 +27,55 @@ class VisitProvider with ChangeNotifier {
   }
 
   Duration? getElapsedTime() {
-    return DateTime.now().difference(_startTime);
+    return _startTime != null ? DateTime.now().difference(_startTime!) : null;
   }
 
-  // Fetch a visit by its ID from the backend
   Future<Visit> fetchVisitByID(String visitID) async {
     try {
-      final visitData = await VisitService.fetchVisitByID(visitID);
-      return Visit.fromJson(visitData as Map<String, dynamic>);
-    } catch (error) {
-      throw Exception('Failed to fetch visit: $error');
+      return await VisitService.fetchVisitByID(visitID);
+    } catch (e) {
+      throw Exception('Failed to fetch visit: $e');
     }
   }
 
-  // Log visit details
   Future<Visit> logVisit({
-    required String visitID, required Map<String, Object> logData,
-
+    required String visitId,
+    required List<Map<String, dynamic>> checklistUpdates, required String visitID, required Map<String, Object> logData,
   }) async {
-
     try {
-
-      final duration = getElapsedTime()?.inMinutes.toString() ?? '0';
-
-      // Service now returns Visit directly
-      final visit = await VisitService.logVisit(visitID, {
+      final duration = getElapsedTime()?.inMinutes ?? 0;
+      final response = await VisitService.logVisit(visitId, {
         'duration': duration,
-        'checklistUpdates': _checklistStatus,
+        'checklistUpdates': checklistUpdates,
       });
-
-      return visit;
-    } catch (error) {
-      throw Exception('Failed to log visit: $error');
+      return response;
+    } catch (e) {
+      throw Exception('Failed to log visit: $e');
     }
   }
 
-
-
+  Future<void> createVisit({
+    required String timesheetID,
+    required String supervisorID,
+    required DateTime date,
+    required String time,
+    required String agentID,
+    required List<dynamic> reasons,
+    required List<dynamic> checklists,
+  }) async {
+    try {
+      await VisitService.createVisit({
+        'timesheetID': timesheetID,
+        'supervisorID': supervisorID,
+        'date': date.toIso8601String(),
+        'time': time,
+        'agentID': agentID,
+        'reasons': reasons,
+        'checklists': checklists,
+      });
+      notifyListeners();
+    } catch (e) {
+      throw Exception('Failed to create visit: $e');
+    }
+  }
 }

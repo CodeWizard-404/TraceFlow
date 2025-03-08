@@ -146,7 +146,7 @@ class LogVisitScreenState extends State<LogVisitScreen> {
                   'selectedReasons': visitProvider.selectedReasons
                       .map((r) => r.reasonID)
                       .toList(),
-                },
+                }, visitId: '', checklistUpdates: [],
               );
 
               Navigator.pop(context);
