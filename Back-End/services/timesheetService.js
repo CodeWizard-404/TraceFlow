@@ -31,7 +31,7 @@ class TimesheetService {
                     location,
                     agentID,
                     reasons = [],      // Added for visit reasons
-                    checklistItems = [], // Added for checklist items
+                    checklists = [], // Added for checklist items
                 } = visitData;
 
                 // Create visit with associations
@@ -43,14 +43,23 @@ class TimesheetService {
                     supervisorID,
                     timesheetID: timesheet.timesheetID,
                     reasons,          // Pass reasons
-                    checklistItems,   // Pass checklist items
+                    checklists,   // Pass checklist items
                 });
             }
 
             // Return updated timesheet with visits
-            return Timesheet.findByPk(timesheet.timesheetID, {
-                include: [Visit, Reason, Checklist], // Include all associations
+            await Timesheet.findByPk(timesheet.timesheetID, {
+                include: [
+                    {model: Visit,include: [
+                            {model: Checklist, through: { attributes: ["checked"] },},
+                            {model: Reason,through: { attributes: [] },}]
+                    }
+                ]
             });
+            return {
+                message: 'Timesheet created successfully',
+                timesheet
+            };
         } catch (error) {
             throw new Error('Failed to add visits to timesheet: ' + error.message);
         }
@@ -60,42 +69,44 @@ class TimesheetService {
         try {
             const timesheet = await Timesheet.findByPk(timesheetID);
             if (!timesheet) throw new Error('Timesheet not found');
-
-            // Get all visits for this timesheet
-            const visits = await Visit.findAll({
-                where: { timesheetID }
-            });
-
-            // Convert to Set for faster lookup
-            const visitIdSet = new Set(visitIDs);
-
-            // Validate matching visits
-            const visitsToUpdate = visits.filter(visit =>
-                visitIdSet.has(visit.visitID)
-            );
-
-            if (visitsToUpdate.length !== visitIDs.length) {
-                throw new Error('One or more visit IDs not found in this timesheet');
+    
+            // Fetch all visits associated with the timesheet
+            const visits = await Visit.findAll({ where: { timesheetID } });
+    
+            let visitsToUpdate;
+            if (visitIDs.length === 0) {
+                // Validate all visits if no IDs are provided
+                visitsToUpdate = visits;
+            } else {
+                // Validate only specified visits
+                const visitIdSet = new Set(visitIDs);
+                visitsToUpdate = visits.filter(visit => visitIdSet.has(visit.visitID));
+    
+                // Ensure all provided visit IDs exist in the timesheet
+                if (visitsToUpdate.length !== visitIDs.length) {
+                    throw new Error('One or more visit IDs not found in this timesheet');
+                }
             }
-
-            // Update visits
-            await Promise.all(
-                visitsToUpdate.map(visit => {
-                    visit.status = status;
-                    return visit.save();
-                })
-            );
-
-            // Update timesheet status if all visits validated
-            const allValidated = visits.every(v => v.status === 'validated');
+    
+            // Update the status of selected visits
+            await Promise.all(visitsToUpdate.map(async (visit) => {
+                visit.status = status;
+                await visit.save();
+            }));
+    
+            // Refetch visits to check the latest status
+            const updatedVisits = await Visit.findAll({ where: { timesheetID } });
+            const allValidated = updatedVisits.every(v => v.status === 'validated');
+    
+            // Update timesheet status if all visits are validated
             if (allValidated) {
                 timesheet.status = 'validated';
                 await timesheet.save();
             }
-
+    
             return timesheet;
         } catch (error) {
-            throw new Error('Validation failed: ' + error.message);
+            throw new Error(`Validation failed: ${error.message}`);
         }
     }
 
@@ -104,10 +115,11 @@ class TimesheetService {
             // Fetch all timesheets with associated visits
             const timesheets = await Timesheet.findAll({
                 include: [
-                    {   model: Visit,
+                    {
+                        model: Visit,
                         include: [
-                            { model: Checklist, through: { attributes: ["checked"] }, attributes: ["item"]},
-                            { model: Reason, through: { attributes: [] },attributes: ["item"] } ]
+                            { model: Checklist, through: { attributes: ["checked"] }, attributes: ["item"] },
+                            { model: Reason, through: { attributes: [] }, attributes: ["item"] }]
                     }
                 ],
             });
@@ -123,10 +135,11 @@ class TimesheetService {
             // Find the timesheet by ID
             const timesheet = await Timesheet.findByPk(timesheetID, {
                 include: [
-                    {   model: Visit,
+                    {
+                        model: Visit,
                         include: [
-                            { model: Checklist, through: { attributes: ["checked"] }, attributes: ["item"]},
-                            { model: Reason, through: { attributes: [] },attributes: ["item"] } ]
+                            { model: Checklist, through: { attributes: ["checked"] }, attributes: ["item"] },
+                            { model: Reason, through: { attributes: [] }, attributes: ["item"] }]
                     }
                 ],
             });
@@ -142,10 +155,11 @@ class TimesheetService {
             const timesheets = await Timesheet.findAll({
                 where: { supervisorID },
                 include: [
-                    {   model: Visit,
+                    {
+                        model: Visit,
                         include: [
-                            { model: Checklist, through: { attributes: ["checked"] }, attributes: ["item"]},
-                            { model: Reason, through: { attributes: [] },attributes: ["item"] } ]
+                            { model: Checklist, through: { attributes: ["checked"] }, attributes: ["item"] },
+                            { model: Reason, through: { attributes: [] }, attributes: ["item"] }]
                     }
                 ],
             });

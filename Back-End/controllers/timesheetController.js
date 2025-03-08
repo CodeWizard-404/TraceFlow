@@ -16,10 +16,13 @@ const TimesheetController = {
                 if (
                     !visit.date ||
                     !visit.time ||
-                    !visit.agentID ||
-                    !Array.isArray(visit.reasons) || // Validate reasons
-                    !Array.isArray(visit.checklistItems) // Validate checklist items
+                    !visit.agentID
                 ) {
+                    if (
+                        !Array.isArray(visit.reasons) || 
+                        !Array.isArray(visit.checklists)) {
+                        return res.status(400).json({ error: 'Invalid reasons or checklist structure' });
+                    }
                     return res.status(400).json({ error: 'Invalid visit data structure' });
                 }
             }

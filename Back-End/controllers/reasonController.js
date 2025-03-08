@@ -20,6 +20,15 @@ class ReasonController {
             res.status(500).json({ error: error.message });
         }
     }
+
+    static async getAllChecklists(req, res) {
+        try {
+            const checklists = await ReasonService.getAllReasons();
+            res.status(200).json(checklists);
+        } catch (error) {
+            res.status(500).json({ error: error.message });
+        }
+    }
 }
 
 module.exports = ReasonController;

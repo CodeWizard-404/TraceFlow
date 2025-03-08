@@ -10,7 +10,7 @@ const { parseTLV } = require('../utils/qrParser');
 class VisitService {
     async createVisit(data) {
         try {
-            const { date, time, agentID, timesheetID, reasons, checklist } = data;
+            const { date, time, agentID, timesheetID, reasons, checklists } = data;
 
             // Validate agent exists
             const agent = await Agent.findByPk(agentID);
@@ -28,7 +28,7 @@ class VisitService {
             await visit.setReasons(createdReasons);
 
             // Associate checklist items
-            const createdChecklists = await ChecklistService.findOrCreateItems(checklist);
+            const createdChecklists = await ChecklistService.findOrCreateItems(checklists);
             await visit.setChecklists(createdChecklists);
 
             return visit.reload({ include: [Reason, Checklist] });
@@ -70,45 +70,43 @@ class VisitService {
         try {
             const { duration, checklistUpdates, photos, comment } = data;
 
-
             // Find the visit
             const visit = await Visit.findByPk(visitID, { include: [Checklist] });
             if (!visit) throw new Error('Visit not found');
 
             // Update checklist validation status
-            for (const checklist of visit.Checklists) {
-                const updatedStatus = checklistUpdates[checklist.checklistID];
-                if (updatedStatus !== undefined) {
+            if (checklistUpdates && Array.isArray(checklistUpdates)) {
+                for (const update of checklistUpdates) {
                     await ChecklistService.updateChecklistStatus(
                         visitID,
-                        checklist.checklistID,
-                        updatedStatus
+                        update.checklistID,
+                        update.checked
                     );
                 }
             }
 
-                // Update the visit details
-                visit.duration = duration;
-                visit.photos = photos;
-                visit.comment = comment;
-                visit.status = 'visited';
-                await visit.save();
-                return visit.reload({ include: [Checklist, Reason] });
+            // Update visit details
+            visit.duration = duration;
+            visit.photos = photos;
+            visit.comment = comment;
+            visit.status = 'visited';
+            await visit.save();
 
-            } catch (error) {
-                throw new Error('Failed to log visit: ' + error.message);
-            }
-        }
-
-    async getVisitByID(visitID) {
-            try {
-                const visit = await Visit.findByPk(visitID);
-                if (!visit) throw new Error('Visit not found');
-                return visit.reload({ include: [Checklist, Reason] })    ;
-            } catch (error) {
-                throw new Error('Failed to fetch visit: ' + error.message);
-            }
+            return visit.reload({ include: [Checklist] });
+        } catch (error) {
+            throw new Error('Failed to log visit: ' + error.message);
         }
     }
+
+    async getVisitByID(visitID) {
+        try {
+            const visit = await Visit.findByPk(visitID);
+            if (!visit) throw new Error('Visit not found');
+            return visit.reload({ include: [Checklist, Reason] });
+        } catch (error) {
+            throw new Error('Failed to fetch visit: ' + error.message);
+        }
+    }
+}
 
 module.exports = new VisitService();

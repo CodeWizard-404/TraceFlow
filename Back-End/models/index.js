@@ -52,6 +52,6 @@ const setupAssociations = () => {
 
 module.exports = {
     sequelize,
-    User, Agent, Visit, Timesheet, Checklist, Reason,
+    User, Agent, Visit, Timesheet, Checklist, Reason,VisitChecklist,
     setupAssociations
 };

@@ -1,4 +1,3 @@
-// services/checklistService.js
 const { Checklist, Visit, VisitChecklist } = require('../models');
 
 class ChecklistService {
@@ -24,14 +23,21 @@ class ChecklistService {
     }
 
     static async updateChecklistStatus(visitId, checklistId, checked) {
-        const visitChecklist = await VisitChecklist.findOne({
-            where: { visitID: visitId, checklistID: checklistId }
-        });
-        if (visitChecklist) {
+        try {
+            const visitChecklist = await VisitChecklist.findOne({
+                where: { visitID: visitId, checklistID: checklistId },
+            });
+            if (!visitChecklist) throw new Error('Checklist item not found');
             visitChecklist.checked = checked;
             await visitChecklist.save();
+            return visitChecklist;
+        } catch (error) {
+            throw new Error('Failed to update checklist: ' + error.message);
         }
-        return visitChecklist;
+    }
+
+    static async getAllChecklists() {
+        return Checklist.findAll();
     }
 }
 

@@ -20,6 +20,15 @@ class ChecklistController {
             res.status(500).json({ error: error.message });
         }
     }
+
+    static async getAllChecklists(req, res) {
+        try {
+            const checklists = await ChecklistService.getAllChecklists();
+            res.status(200).json(checklists);
+        } catch (error) {
+            res.status(500).json({ error: error.message });
+        }
+    }
 }
 
-module.exports = ChecklistController; 
+module.exports = ChecklistController;

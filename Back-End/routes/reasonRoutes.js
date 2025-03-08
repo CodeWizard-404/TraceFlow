@@ -9,4 +9,7 @@ router.post('/', ReasonController.createReason);
 // Fetch a Reason by visitID
 router.get('/:id', ReasonController.getReasonsByVisitID);
 
+// Fetch all Reasons
+router.get('/', ReasonController.getAllChecklists);
+
 module.exports = router;

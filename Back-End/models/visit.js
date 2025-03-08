@@ -5,7 +5,7 @@ module.exports = (sequelize, DataTypes) => {
     visitID: { 
         type: DataTypes.STRING,     
         primaryKey: true,
-        defaultValue: () => nanoid(), 
+        defaultValue: () => `vis_${nanoid()}`,
     },
     date: { type: DataTypes.DATEONLY, allowNull: false },
     time: { type: DataTypes.TIME, allowNull: false },

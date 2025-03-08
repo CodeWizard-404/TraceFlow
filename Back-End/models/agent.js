@@ -5,7 +5,7 @@ module.exports = (sequelize, DataTypes) => {
         agentID: {
             type: DataTypes.STRING,
             primaryKey: true,
-            defaultValue: () => nanoid(),
+            defaultValue: () => `agt_${nanoid()}`,
         },
         name: { type: DataTypes.STRING },
         lastname: { type: DataTypes.STRING},

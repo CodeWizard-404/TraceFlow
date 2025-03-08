@@ -5,7 +5,7 @@ module.exports = (sequelize, DataTypes) => {
     checklistID: { 
         type: DataTypes.STRING,     
         primaryKey: true,
-        defaultValue: () => nanoid(), 
+        defaultValue: () => `chk_${nanoid()}`, 
     },
     item: { type: DataTypes.STRING, allowNull: false },
 

@@ -5,7 +5,7 @@ module.exports = (sequelize, DataTypes) => {
     userID: { 
         type: DataTypes.STRING,     
         primaryKey: true,
-        defaultValue: () => nanoid(), 
+        defaultValue: () => `usr_${nanoid()}`,
     },
     firstname: { type: DataTypes.STRING, allowNull: false },
     lastname: { type: DataTypes.STRING, allowNull: false },

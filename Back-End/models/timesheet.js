@@ -5,7 +5,7 @@ module.exports = (sequelize, DataTypes) => {
     timesheetID: { 
         type: DataTypes.STRING,     
         primaryKey: true,
-        defaultValue: () => nanoid(), 
+        defaultValue: () => `ts_${nanoid()}`,
     },
     weekNumber: { type: DataTypes.INTEGER, allowNull: false },
     year: { type: DataTypes.INTEGER, allowNull: false },

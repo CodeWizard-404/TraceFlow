@@ -21,6 +21,11 @@ class ReasonService {
         const visit = await Visit.findByPk(visitId, { include: Reason });
         return visit.Reasons;
     }
+
+    static async getAllReasons() {
+        return Reason.findAll();
+    }
+    
 }
 
 module.exports = ReasonService;

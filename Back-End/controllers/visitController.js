@@ -11,7 +11,7 @@ const VisitController = {
                 supervisorID,
                 timesheetID,
                 reasons,
-                checklist
+                checklists
             } = req.body;
 
             // Validate required fields
@@ -28,7 +28,7 @@ const VisitController = {
                 supervisorID,
                 timesheetID,
                 reasons,
-                checklist
+                checklists
             });
 
             res.status(201).json(visit);
