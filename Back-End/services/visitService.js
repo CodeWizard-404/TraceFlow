@@ -39,26 +39,34 @@ class VisitService {
 
     async verifyQRCode(qrData, visitId) {
         try {
+            console.log('Raw QR Data:', qrData); // Log raw data for debugging
             const parsedQR = parseTLV(qrData);
-            console.log('Parsed QR Structure:', JSON.stringify(parsedQR, null, 2)); // Pretty-print parsed data
-
-            // Correct phone number extraction path
-            const agentPhoneFromQR = parsedQR['29']?.['03']
-                || parsedQR['02']?.replace(/[^0-9+]/g, ''); // Fallback for simple values
-
+            console.log('Parsed QR Structure:', JSON.stringify(parsedQR, null, 2));
+    
+            // Extract phone number with better handling
+            let agentPhoneFromQR = parsedQR['29']?.['03'] || parsedQR['02'];
+    
+            // If it's an object (fallback for malformed data), reconstruct it
+            if (typeof agentPhoneFromQR === 'object' && agentPhoneFromQR !== null) {
+                agentPhoneFromQR = Object.values(agentPhoneFromQR).join('').replace(/[^0-9+]/g, '');
+                console.warn('Phone number was parsed as object, reconstructed as:', agentPhoneFromQR);
+            } else {
+                agentPhoneFromQR = agentPhoneFromQR?.replace(/[^0-9+]/g, '');
+            }
+    
             if (!agentPhoneFromQR) {
                 throw new Error('Invalid QR code - missing agent phone number');
             }
-
+    
             // Get visit and agent details
             const visit = await Visit.findByPk(visitId);
             const agent = await Agent.findByPk(visit.agentID);
-
+    
             // Compare phone numbers
             if (agent.phone !== agentPhoneFromQR) {
                 throw new Error(`Phone mismatch:\nQR: ${agentPhoneFromQR}\nVisit: ${agent.phone}`);
             }
-
+    
             return { valid: true, message: 'Verification successful' };
         } catch (error) {
             console.error('Verification Failed:', error.message);

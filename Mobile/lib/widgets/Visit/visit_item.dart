@@ -14,7 +14,7 @@ class VisitItem extends StatelessWidget {
     String formattedTime = visit.time?.split(':').take(2).join(':') ?? 'N/A';
 
     return Padding(
-      padding: EdgeInsets.symmetric(vertical: 8, horizontal: 16),
+      padding: EdgeInsets.symmetric(vertical: 8, horizontal: 1),
       child: GestureDetector(
         onTap: () {
           Navigator.push(
@@ -36,6 +36,10 @@ class VisitItem extends StatelessWidget {
                 Colors.white.withOpacity(0.9),
                 Colors.grey[50]!.withOpacity(0.9),
               ],
+            ),
+            border: Border.all(
+              color: Color(0xFF4CB1C7).withOpacity(0.5), // Border color
+              width: 1, // Border width
             ),
             boxShadow: [
               BoxShadow(

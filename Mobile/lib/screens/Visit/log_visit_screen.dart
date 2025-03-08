@@ -291,9 +291,8 @@ class LogVisitScreenState extends State<LogVisitScreen> {
                           await visitProvider.logVisit(
                             visitID: widget.visitID,
                             logData: {
-                              'duration': duration.toString(),
+                              'duration': duration,
                               'checklistUpdates': checklistUpdates,
-                              'selectedReasons': <String>[], // Empty since we don't select reasons anymore
                             },
                             visitId: widget.visitID,
                             checklistUpdates: checklistUpdates,

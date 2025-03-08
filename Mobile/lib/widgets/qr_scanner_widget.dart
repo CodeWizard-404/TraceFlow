@@ -331,14 +331,11 @@ class QROverlayPainter extends CustomPainter {
   void paint(Canvas canvas, Size size) {
     final paint = Paint()..color = Colors.black.withOpacity(0.85);
 
-    const qrSize = 320.0;
+    const qrSize = 313.0;
     // Center the frame in the space below the app bar
     final availableHeight = size.height - appBarHeight;
     final qrRect = Rect.fromCenter(
-      center: Offset(
-        size.width / 2,
-        appBarHeight + (availableHeight - 48 - 24 - 72) / 2, // Adjust for button and text below
-      ),
+      center: Offset(size.width / 2, size.height / 1.87),
       width: qrSize,
       height: qrSize,
     );

@@ -13,8 +13,12 @@ function parseTLV(data) {
         const value = data.substr(index, length);
         index += length;
 
-        // Check if the value could be a nested TLV
-        if (value.length >= 4) {
+        // Special handling for known phone number tags ("03" or "02")
+        if (tag === "03" || tag === "02") {
+            result[tag] = value; // Treat as flat string, regardless of content
+        }
+        // Only parse as nested TLV if it strictly follows TLV format and isn't a phone number
+        else if (value.length >= 4 && /^[0-9]{2}[0-9]{2}/.test(value)) {
             const subLengthStr = value.substr(2, 2);
             const subLength = parseInt(subLengthStr, 10);
             if (!isNaN(subLength) && subLength <= value.length - 4) {
