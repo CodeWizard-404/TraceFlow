@@ -17,7 +17,7 @@ const QRScan: React.FC = () => {
   const [loading, setLoading] = useState<boolean>(false);
   const [error, setError] = useState<string | null>(null);
   const [stream, setStream] = useState<MediaStream | null>(null);
-  const [isScanning, setIsScanning] = useState<boolean>(false);
+  const [manualQrData, setManualQrData] = useState<string>(""); // Fallback input
 
   useEffect(() => {
     const visitFromState = (location.state as { visit?: Visit })?.visit;
@@ -33,85 +33,106 @@ const QRScan: React.FC = () => {
 
   const startCamera = async () => {
     try {
+      console.log("Starting camera...");
       const mediaStream = await navigator.mediaDevices.getUserMedia({
-        video: { facingMode: "environment" },
+        video: { facingMode: "environment", width: 640, height: 480 },
       });
       setStream(mediaStream);
       if (videoRef.current) {
         videoRef.current.srcObject = mediaStream;
         videoRef.current.onloadedmetadata = () => {
-          videoRef.current!.play();
-          setIsScanning(true);
-          requestAnimationFrame(scanQRCode);
+          console.log("Video metadata loaded, playing...");
+          videoRef.current!.play().catch((err) => console.error("Play error:", err));
+          startScanning();
         };
       }
     } catch (err) {
-      setError("Failed to access camera. Please ensure camera permission is granted.");
-      console.error("Camera Error:", err);
+      setError("Failed to access camera. Please grant permission and try again.");
+      console.error("Camera setup error:", err);
     }
   };
 
   const stopCamera = () => {
     if (stream) {
+      console.log("Stopping camera...");
       stream.getTracks().forEach((track) => track.stop());
       setStream(null);
-      setIsScanning(false);
     }
   };
 
-  const scanQRCode = () => {
-    if (!videoRef.current || !canvasRef.current || loading || !isScanning) {
-      if (isScanning) requestAnimationFrame(scanQRCode);
+  const startScanning = () => {
+    if (!videoRef.current || !canvasRef.current) {
+      console.error("Video or canvas ref not ready");
       return;
     }
 
-    const video = videoRef.current;
-    const canvas = canvasRef.current;
-    const context = canvas.getContext("2d");
+    const scanInterval = setInterval(() => {
+      if (loading) return; // Skip if verifying
 
-    if (!context || video.videoWidth === 0 || video.videoHeight === 0) {
-      console.log("Video not ready yet");
-      requestAnimationFrame(scanQRCode);
-      return;
-    }
+      const video = videoRef.current!;
+      const canvas = canvasRef.current!;
+      const context = canvas.getContext("2d");
 
-    canvas.width = video.videoWidth;
-    canvas.height = video.videoHeight;
-    context.drawImage(video, 0, 0, canvas.width, canvas.height);
-    const imageData = context.getImageData(0, 0, canvas.width, canvas.height);
+      if (!context) {
+        console.error("Canvas context not available");
+        clearInterval(scanInterval);
+        return;
+      }
 
-    const qrCode = jsQR(imageData.data, imageData.width, imageData.height);
+      if (video.videoWidth === 0 || video.videoHeight === 0) {
+        console.log("Video dimensions not ready yet");
+        return;
+      }
 
-    if (qrCode && qrCode.data && visit) {
-      console.log("QR Code Detected:", qrCode.data); // Debug log
-      verifyQR(qrCode.data, visit.visitID);
-    } else {
-      console.log("No QR Code Detected"); // Debug log
-      requestAnimationFrame(scanQRCode);
-    }
+      canvas.width = video.videoWidth;
+      canvas.height = video.videoHeight;
+      context.drawImage(video, 0, 0, canvas.width, canvas.height);
+
+      const imageData = context.getImageData(0, 0, canvas.width, canvas.height);
+      const qrCode = jsQR(imageData.data, imageData.width, imageData.height);
+
+      if (qrCode && qrCode.data) {
+        console.log("QR Code Detected:", qrCode.data);
+        clearInterval(scanInterval); // Stop scanning
+        verifyQR(qrCode.data, visit!.visitID);
+      } else {
+        console.log("Scanning... No QR code detected yet");
+      }
+    }, 500); // Scan every 500ms
+
+    // Cleanup interval on unmount or stop
+    return () => clearInterval(scanInterval);
   };
 
   const verifyQR = async (qrData: string, visitId: string) => {
     setLoading(true);
-    setError(null);
     setMessage(null);
+    setError(null);
 
     try {
+      console.log("Verifying QR:", { qrData, visitId });
       const response = await verifyQrCode({ qrData, visitId });
-      console.log("Verification Response:", response); // Debug log
+      console.log("API Response:", response);
       if (response.valid) {
         stopCamera();
         navigate("/timesheet");
       } else {
         setMessage(response.message || "QR code verification failed.");
         setLoading(false);
-        requestAnimationFrame(scanQRCode);
+        startScanning(); // Resume scanning
       }
     } catch (err) {
       setError("Failed to verify QR code.");
-      console.error("Verification Error:", err);
+      console.error("Verification error:", err);
       setLoading(false);
-      requestAnimationFrame(scanQRCode);
+      startScanning(); // Resume scanning
+    }
+  };
+
+  const handleManualSubmit = (e: React.FormEvent) => {
+    e.preventDefault();
+    if (manualQrData && visit) {
+      verifyQR(manualQrData, visit.visitID);
     }
   };
 
@@ -147,9 +168,7 @@ const QRScan: React.FC = () => {
           <div className="qr-overlay">
             <div className="qr-frame"></div>
           </div>
-          {isScanning && !loading && (
-            <div className="scanning-indicator">Scanning...</div>
-          )}
+          {!loading && <div className="scanning-indicator">Scanning...</div>}
         </div>
         {message && (
           <div className="message">
@@ -161,6 +180,20 @@ const QRScan: React.FC = () => {
             <span>Verifying...</span>
           </div>
         )}
+        {/* Fallback manual input */}
+        <form onSubmit={handleManualSubmit} className="manual-input">
+          <input
+            type="text"
+            value={manualQrData}
+            onChange={(e) => setManualQrData(e.target.value)}
+            placeholder="Enter QR data manually (for testing)"
+            className="qr-input"
+            disabled={loading}
+          />
+          <button type="submit" className="scan-btn" disabled={loading}>
+            Verify Manually
+          </button>
+        </form>
         <div className="qr-actions">
           <button className="back-btn" onClick={handleBack} disabled={loading}>
             <FaArrowLeft /> Back
