@@ -17,7 +17,7 @@ function Header() {
           {isMenuOpen ? "✕" : "☰"}
         </button>
         <nav className={`header-nav ${isMenuOpen ? "open" : ""}`}>
-          <a href="/timesheets" className="nav-link">Timesheets</a>
+          <a href="/timesheet" className="nav-link">Timesheets</a>
           <a href="/schedule" className="nav-link">Schedule</a>
           <a href="/about" className="nav-link">About</a>
         </nav>

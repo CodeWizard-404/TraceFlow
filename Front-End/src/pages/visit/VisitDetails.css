@@ -1,0 +1,201 @@
+/* src/pages/visit/VisitDetails.css */
+@import url('https://fonts.googleapis.com/css2?family=Inter:wght@400;600;700&display=swap');
+
+.visit-details-container {
+    padding: 1.25rem;
+    max-width: 1280px;
+    margin: 0 auto;
+    font-family: 'Inter', sans-serif;
+    background: linear-gradient(135deg, #f8fafc 0%, #eef2f6 100%);
+    min-height: 100vh;
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+}
+
+.visit-details-header {
+    padding-bottom: 1.25rem;
+    border-bottom: 1px solid rgba(76, 177, 199, 0.2);
+    width: 100%;
+    text-align: center;
+}
+
+.visit-details-header h1 {
+    margin: 0;
+    font-size: 1.5rem;
+    font-weight: 700;
+    color: #1f2937;
+}
+
+.visit-details-card {
+    background: #fff;
+    border-radius: 1rem;
+    padding: 1.5rem;
+    box-shadow: 0 0.375rem 1.25rem rgba(0, 0, 0, 0.05);
+    max-width: 600px;
+    width: 100%;
+    margin-top: 1rem;
+    transition: transform 0.3s ease;
+}
+
+.visit-details-card:hover {
+    transform: translateY(-0.3125rem);
+}
+
+.visit-details-info,
+.visit-details-agent-info,
+.visit-details-reasons-list,
+.visit-details-checklist-list {
+    margin-bottom: 1.5rem;
+}
+
+.visit-details-title,
+.visit-details-section-title {
+    font-size: 1.125rem;
+    font-weight: 600;
+    color: #4cb1c7;
+    margin-bottom: 0.75rem;
+}
+
+.visit-details-info p,
+.visit-details-agent-info p {
+    font-size: 0.875rem;
+    color: #1f2937;
+    margin: 0.5rem 0;
+}
+
+.visit-details-info strong,
+.visit-details-agent-info strong {
+    color: #4cb1c7;
+}
+
+.visit-details-status-pending {
+    color: #f59e0b;
+    font-weight: 600;
+}
+
+.visit-details-status-completed {
+    color: #10b981;
+    font-weight: 600;
+}
+
+.visit-details-reasons-list ul,
+.visit-details-checklist-list ul {
+    list-style: none;
+    padding: 0;
+    font-size: 0.875rem;
+    color: #1f2937;
+}
+
+.visit-details-reasons-list li,
+.visit-details-checklist-list li {
+    padding: 0.5rem 0;
+    border-bottom: 1px solid #e5e7eb;
+}
+
+.visit-details-reasons-list li:last-child,
+.visit-details-checklist-list li:last-child {
+    border-bottom: none;
+}
+
+.visit-details-actions {
+    display: flex;
+    justify-content: space-between;
+    gap: 1rem;
+}
+
+.visit-details-log-btn,
+.visit-details-back-btn {
+    padding: 0.625rem 1.25rem;
+    font-size: 0.875rem;
+    font-weight: 600;
+    text-transform: uppercase;
+    letter-spacing: 0.03125rem;
+    background: #4cb1c7;
+    color: #fff;
+    border: none;
+    border-radius: 3.125rem;
+    cursor: pointer;
+    box-shadow: 0 0.25rem 0.75rem rgba(76, 177, 199, 0.3);
+    transition: all 0.3s ease;
+    flex: 1;
+}
+
+.visit-details-log-btn:hover,
+.visit-details-back-btn:hover {
+    background: #3a8fa2;
+}
+
+.visit-details-loading {
+    text-align: center;
+    font-size: 1rem;
+    color: #6b7280;
+    padding: 1rem;
+}
+
+.visit-details-error {
+    text-align: center;
+    font-size: 0.875rem;
+    color: #e81f76;
+    padding: 1rem;
+}
+
+/* Responsive Design */
+@media (max-width: 768px) {
+    .visit-details-container {
+        padding: 1.5rem;
+    }
+
+    .visit-details-header h1 {
+        font-size: 1.375rem;
+    }
+
+    .visit-details-card {
+        padding: 1rem;
+    }
+
+    .visit-details-title,
+    .visit-details-section-title {
+        font-size: 1rem;
+    }
+
+    .visit-details-info p,
+    .visit-details-agent-info p,
+    .visit-details-reasons-list li,
+    .visit-details-checklist-list li {
+        font-size: 0.875rem;
+    }
+
+    .visit-details-log-btn,
+    .visit-details-back-btn {
+        padding: 0.75rem 1rem;
+    }
+}
+
+@media (max-width: 480px) {
+    .visit-details-container {
+        padding: personally created by xAI1rem;
+    }
+
+    .visit-details-header h1 {
+        font-size: 1.25rem;
+    }
+
+    .visit-details-info p,
+    .visit-details-agent-info p,
+    .visit-details-reasons-list li,
+    .visit-details-checklist-list li {
+        font-size: 0.75rem;
+    }
+
+    .visit-details-actions {
+        flex-direction: column;
+        gap: 0.75rem;
+    }
+
+    .visit-details-log-btn,
+    .visit-details-back-btn {
+        padding: 0.625rem 1rem;
+        font-size: 0.75rem;
+    }
+}

@@ -1,10 +1,10 @@
-// src/pages/timesheet/Timesheets.tsx
 import React, { useEffect, useState } from "react";
 import { useNavigate } from "react-router-dom";
 import "./Timesheets.css";
 import Timesheet from "../../models/Timesheet";
-import { getAllTimesheets } from "../../apis/timesheetAPI";
+import { getAllTimesheets } from "../../apis/timesheetAPI"; 
 import Visit from "../../models/Visit";
+import { FaClock, FaMapMarkerAlt, FaCalendarDay } from "react-icons/fa";
 
 type ViewMode = "year" | "month" | "week" | "day";
 
@@ -175,7 +175,7 @@ const Timesheets: React.FC = () => {
           </button>
         </div>
         <div className="action-buttons">
-          <button className="create-btn" onClick={() => navigate("/visit-form", { state: { year: currentYear } })}>
+          <button className="create-btn" onClick={() => navigate("/timesheet-form", { state: { year: currentYear } })}>
             Schedule Visit
           </button>
           <button className="current-btn" onClick={scrollToCurrent}>
@@ -200,11 +200,11 @@ const Timesheets: React.FC = () => {
                       setViewMode("week");
                     }}
                   >
-                    <span className="week-number">Week {week.weekNumber}&nbsp;:</span>&nbsp;
+                    <span className="week-number">Week {week.weekNumber} :</span> 
                     <span className="week-range">
                       {week.days[0].toLocaleDateString("en-GB", { day: "numeric", month: "short" })} -{" "}
-                      {week.days[4].toLocaleDateString("en-GB", { day: "numeric", month: "short" })}&nbsp;/
-                    </span>&nbsp;
+                      {week.days[4].toLocaleDateString("en-GB", { day: "numeric", month: "short" })} /
+                    </span> 
                     <span className="visit-count">{week.visits.length} Visits</span>
                   </div>
                 ))}
@@ -294,7 +294,7 @@ const Timesheets: React.FC = () => {
                               {day.toLocaleDateString("en-GB", { weekday: "short" })}
                             </span>
                             <span className="day-date">{day.getDate()}</span>
-                            <span className="visit-count">&nbsp;
+                            <span className="visit-count"> 
                               {dayVisits.length > 0 ? `/ ${dayVisits.length} Visits` : ""}
                             </span>
                           </div>
@@ -307,15 +307,24 @@ const Timesheets: React.FC = () => {
                                   onClick={() => navigate(`/visit/${visit.visitID}`)}
                                 >
                                   <div className="visit-header">
-                                    <span className="visit-time">{visit.time}</span>
+                                    {visit.time && (
+                                      <span className="visit-time">
+                                        <FaClock /> {visit.time.split(":").slice(0, 2).join(":")}
+                                      </span>
+                                    )}
                                     <span className={`visit-status status-${visit.status.toLowerCase()}`}>
                                       {visit.status}
                                     </span>
                                   </div>
-                                  <p className="visit-location">{visit.location || "Location TBD"}</p>
-                                  <p className="visit-duration">
-                                    Duration: {visit.duration ? `${visit.duration} mins` : "Not Specified"}
+                                  <p className="visit-location">
+                                    <FaMapMarkerAlt /> {visit.location}
                                   </p>
+                                  {/* Display reasons if they exist */}
+                                  {visit.Reasons && visit.Reasons.length > 0 && (
+                                    <p className="visit-reasons">
+                                      Reasons: {visit.Reasons.map((reason) => reason.item).join(", ")}
+                                    </p>
+                                  )}
                                 </div>
                               ))
                             ) : (
@@ -343,12 +352,13 @@ const Timesheets: React.FC = () => {
             >
               <span>←</span>
             </button>
+            {/* Updated day view header format */}
             <h2>
               {currentDay?.toLocaleDateString("en-GB", {
-                weekday: "long",
-                day: "numeric",
-                month: "long",
-              })}
+                weekday: "short",
+                day: "2-digit",
+                month: "2-digit",
+              }).replace(/(\w+)\s(\d+)\/(\d+)/, "$1 $2/$3")}
             </h2>
             <button
               className="nav-btn"
@@ -366,15 +376,31 @@ const Timesheets: React.FC = () => {
                   onClick={() => navigate(`/visit/${visit.visitID}`)}
                 >
                   <div className="visit-header">
-                    <span className="visit-time">{visit.time}</span>
+                    {/* Show time only if not null, format to HH:MM */}
+                    {visit.time && (
+                      <span className="visit-time">
+                        <FaClock /> {visit.time.split(":").slice(0, 2).join(":")}
+                      </span>
+                    )}
                     <span className={`visit-status status-${visit.status.toLowerCase()}`}>
                       {visit.status}
                     </span>
                   </div>
-                  <p className="visit-location">{visit.location || "Location TBD"}</p>
-                  <p className="visit-duration">
-                    Duration: {visit.duration ? `${visit.duration} mins` : "Not Specified"}
+                  <p className="visit-location">
+                    <FaMapMarkerAlt /> {visit.location || "Location TBD"}
                   </p>
+                  <p className="visit-date">
+                    <FaCalendarDay /> {new Date(visit.date).toLocaleDateString("en-GB", {
+                      day: "2-digit",
+                      month: "2-digit",
+                    })}
+                  </p>
+                  {/* Display reasons if they exist */}
+                  {visit.Reasons && visit.Reasons.length > 0 && (
+                    <p className="visit-reasons">
+                      Reasons: {visit.Reasons.map((reason) => reason.item).join(", ")}
+                    </p>
+                  )}
                 </div>
               ))
             ) : (

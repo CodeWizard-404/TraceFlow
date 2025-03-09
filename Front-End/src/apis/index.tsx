@@ -1,4 +1,4 @@
-import { Agent } from "http";
+import Agent from "../models/Agent";
 import { Checklist, VisitChecklist } from "../models/Checklist";
 import { Reason, VisitReason } from "../models/Reason";
 import Timesheet from "../models/Timesheet";

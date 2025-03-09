@@ -1,8 +1,13 @@
-/* src/pages/timesheet/Timesheets.css */
 @import url('https://fonts.googleapis.com/css2?family=Inter:wght@400;600;700&display=swap');
 
+/* Root font size for scalability */
+html {
+  font-size: 16px; /* Default for desktop */
+}
+
+/* Base container styles */
 .timesheets-container {
-  padding: 20px;
+  padding: 1.25rem; /* 20px at 16px base */
   max-width: 1280px;
   margin: 0 auto;
   font-family: 'Inter', sans-serif;
@@ -16,32 +21,32 @@
   justify-content: space-between;
   align-items: center;
   flex-wrap: wrap;
-  gap: 15px;
-  padding-bottom: 20px;
+  gap: 1rem;
+  padding-bottom: 1.25rem;
   border-bottom: 1px solid rgba(76, 177, 199, 0.2);
 }
 
 .view-toggle {
   display: flex;
-  gap: 8px;
+  gap: 0.5rem;
   background: #fff;
-  padding: 4px;
-  border-radius: 50px;
-  box-shadow: 0 4px 12px rgba(0, 0, 0, 0.05);
+  padding: 0.25rem;
+  border-radius: 3.125rem;
+  box-shadow: 0 0.25rem 0.75rem rgba(0, 0, 0, 0.05);
   flex-wrap: wrap;
   justify-content: center;
 }
 
 .toggle-btn {
-  padding: 8px 16px;
-  font-size: 12px;
+  padding: 0.5rem 1rem;
+  font-size: 0.875rem; /* 14px at 16px base */
   font-weight: 600;
   text-transform: uppercase;
-  letter-spacing: 0.5px;
+  letter-spacing: 0.03125rem;
   color: #6b7280;
   background: transparent;
   border: none;
-  border-radius: 50px;
+  border-radius: 3.125rem;
   cursor: pointer;
   transition: all 0.3s ease;
 }
@@ -49,18 +54,18 @@
 .toggle-btn.active {
   background: #4cb1c7;
   color: #fff;
-  box-shadow: 0 2px 6px rgba(76, 177, 199, 0.3);
+  box-shadow: 0 0.125rem 0.375rem rgba(76, 177, 199, 0.3);
 }
 
 .year-navigation {
   display: flex;
   align-items: center;
-  gap: 10px;
+  gap: 0.625rem;
 }
 
 .year-navigation h1 {
   margin: 0;
-  font-size: 24px;
+  font-size: 1.5rem; /* 24px at 16px base */
   font-weight: 700;
   color: #1f2937;
 }
@@ -68,14 +73,14 @@
 .nav-btn {
   display: flex;
   align-items: center;
-  gap: 5px;
-  padding: 8px 16px;
-  font-size: 12px;
+  gap: 0.3125rem;
+  padding: 0.5rem 1rem;
+  font-size: 0.875rem;
   font-weight: 600;
   color: #4cb1c7;
   background: #fff;
   border: 1px solid #4cb1c7;
-  border-radius: 50px;
+  border-radius: 3.125rem;
   cursor: pointer;
   transition: all 0.3s ease;
 }
@@ -87,20 +92,20 @@
 
 .action-buttons {
   display: flex;
-  gap: 10px;
+  gap: 0.625rem;
   flex-wrap: wrap;
   justify-content: center;
 }
 
 .create-btn,
 .current-btn {
-  padding: 10px 20px;
-  font-size: 12px;
+  padding: 0.625rem 1.25rem;
+  font-size: 0.875rem;
   font-weight: 600;
   text-transform: uppercase;
-  letter-spacing: 0.5px;
+  letter-spacing: 0.03125rem;
   border: none;
-  border-radius: 50px;
+  border-radius: 3.125rem;
   cursor: pointer;
   transition: all 0.3s ease;
 }
@@ -108,7 +113,7 @@
 .create-btn {
   background: #4cb1c7;
   color: #fff;
-  box-shadow: 0 4px 12px rgba(76, 177, 199, 0.3);
+  box-shadow: 0 0.25rem 0.75rem rgba(76, 177, 199, 0.3);
 }
 
 .create-btn:hover {
@@ -129,39 +134,39 @@
 /* Year View */
 .year-view {
   display: grid;
-  grid-template-columns: repeat(auto-fill, minmax(280px, 1fr));
-  gap: 15px;
-  padding: 15px 0;
+  grid-template-columns: repeat(auto-fill, minmax(17.5rem, 1fr));
+  gap: 1rem;
+  padding: 1rem 0;
 }
 
 .month-card {
   background: #fff;
-  border-radius: 16px;
-  padding: 15px;
-  box-shadow: 0 6px 20px rgba(0, 0, 0, 0.05);
+  border-radius: 1rem;
+  padding: 1rem;
+  box-shadow: 0 0.375rem 1.25rem rgba(0, 0, 0, 0.05);
   transition: transform 0.3s ease;
 }
 
 .month-card:hover {
-  transform: translateY(-5px);
+  transform: translateY(-0.3125rem);
 }
 
 .month-card h2 {
-  margin: 0 0 10px;
-  font-size: 18px;
+  margin: 0 0 0.625rem;
+  font-size: 1.125rem; /* 18px at 16px base */
   font-weight: 600;
   color: #1f2937;
 }
 
 .weeks-grid {
   display: grid;
-  gap: 8px;
+  gap: 0.5rem;
 }
 
 .week-tile {
-  padding: 10px;
+  padding: 0.625rem;
   background: #f8fafc;
-  border-radius: 12px;
+  border-radius: 0.75rem;
   cursor: pointer;
   transition: all 0.3s ease;
 }
@@ -173,12 +178,12 @@
 
 .week-number {
   font-weight: 600;
-  font-size: 14px;
+  font-size: 0.875rem;
 }
 
 .week-range,
 .visit-count {
-  font-size: 12px;
+  font-size: 0.75rem;
   color: #6b7280;
 }
 
@@ -189,108 +194,108 @@
 
 /* Month View */
 .month-view {
-  padding: 15px 0;
+  padding: 1rem 0;
 }
 
 .month-header {
   display: flex;
   align-items: center;
-  gap: 10px;
-  margin-bottom: 15px;
+  gap: 0.625rem;
+  margin-bottom: 1rem;
   flex-wrap: wrap;
   justify-content: center;
 }
 
 .month-header h2 {
   margin: 0;
-  font-size: 20px;
+  font-size: 1.25rem; /* 20px at 16px base */
   font-weight: 700;
   color: #1f2937;
 }
 
 .week-card {
   background: #fff;
-  border-radius: 16px;
-  padding: 12px;
-  margin-bottom: 10px;
-  box-shadow: 0 6px 20px rgba(0, 0, 0, 0.05);
+  border-radius: 1rem;
+  padding: 0.75rem;
+  margin-bottom: 0.625rem;
+  box-shadow: 0 0.375rem 1.25rem rgba(0, 0, 0, 0.05);
   cursor: pointer;
   transition: all 0.3s ease;
 }
 
 .week-card:hover {
-  transform: translateY(-5px);
-  box-shadow: 0 8px 24px rgba(76, 177, 199, 0.2);
+  transform: translateY(-0.3125rem);
+  box-shadow: 0 0.5rem 1.5rem rgba(76, 177, 199, 0.2);
 }
 
 .week-card h3 {
-  margin: 0 0 8px;
-  font-size: 16px;
+  margin: 0 0 0.5rem;
+  font-size: 1rem; /* 16px at 16px base */
   font-weight: 600;
   color: #1f2937;
 }
 
 .week-card p {
-  margin: 4px 0;
-  font-size: 12px;
+  margin: 0.25rem 0;
+  font-size: 0.875rem;
   color: #6b7280;
 }
 
 /* Week View */
 .week-view {
-  padding: 15px 0;
+  padding: 1rem 0;
 }
 
 .week-header {
   display: flex;
   align-items: center;
-  gap: 10px;
-  margin-bottom: 15px;
+  gap: 0.625rem;
+  margin-bottom: 1rem;
   flex-wrap: wrap;
   justify-content: center;
 }
 
 .week-header h2 {
   margin: 0;
-  font-size: 20px;
+  font-size: 1.25rem; /* 20px at 16px base */
   font-weight: 700;
   color: #1f2937;
 }
 
 .week-details {
   background: #fff;
-  border-radius: 16px;
-  padding: 15px;
-  box-shadow: 0 6px 20px rgba(0, 0, 0, 0.05);
+  border-radius: 1rem;
+  padding: 1rem;
+  box-shadow: 0 0.375rem 1.25rem rgba(0, 0, 0, 0.05);
 }
 
 .week-range,
 .week-status {
-  font-size: 12px;
+  font-size: 0.75rem;
   color: #6b7280;
-  margin: 4px 0;
+  margin: 0.25rem 0;
 }
 
 .days-grid {
   display: flex;
-  gap: 15px;
-  margin: 15px 0;
+  gap: 1rem;
+  margin: 1rem 0;
   flex-wrap: wrap;
   justify-content: space-between;
 }
 
 .day-column {
   flex: 1;
-  min-width: 180px;
+  min-width: 11.25rem; /* 180px at 16px base */
   display: flex;
   flex-direction: column;
-  gap: 10px;
+  gap: 0.625rem;
 }
 
 .day-tile {
-  padding: 10px;
+  padding: 0.75rem;
   background: #f8fafc;
-  border-radius: 12px;
+  border-radius: 0.75rem;
   text-align: center;
   cursor: pointer;
   transition: all 0.3s ease;
@@ -302,18 +307,18 @@
 }
 
 .day-name {
-  font-size: 10px;
+  font-size: 0.75rem;
   font-weight: 600;
   text-transform: uppercase;
 }
 
 .day-date {
-  font-size: 16px;
+  font-size: 1.125rem;
   font-weight: 700;
 }
 
 .visit-count {
-  font-size: 10px;
+  font-size: 0.75rem;
   color: #6b7280;
 }
 
@@ -323,143 +328,168 @@
 
 .visits-list {
   display: grid;
-  gap: 8px;
+  gap: 0.5rem;
 }
 
 .visit-card {
   background: #fff;
-  border-radius: 12px;
-  padding: 10px;
-  box-shadow: 0 4px 12px rgba(0, 0, 0, 0.05);
+  border-radius: 0.75rem;
+  padding: 0.625rem;
+  box-shadow: 0 0.25rem 0.75rem rgba(0, 0, 0, 0.05);
   cursor: pointer;
   transition: all 0.3s ease;
 }
 
 .visit-card:hover {
-  transform: translateY(-3px);
-  box-shadow: 0 6px 16px rgba(76, 177, 199, 0.2);
+  transform: translateY(-0.1875rem);
+  box-shadow: 0 0.375rem 1rem rgba(76, 177, 199, 0.2);
 }
 
 .visit-header {
   display: flex;
   justify-content: space-between;
   align-items: center;
-  margin-bottom: 6px;
+  margin-bottom: 0.375rem;
 }
 
 .visit-time {
-  font-size: 14px;
+  font-size: 0.875rem;
   font-weight: 600;
   color: #1f2937;
 }
 
 .visit-status {
-  font-size: 10px;
-  padding: 3px 6px;
-  border-radius: 20px;
+  font-size: 0.625rem; /* 10px at 16px base */
+  padding: 0.1875rem 0.375rem;
+  border-radius: 1.25rem;
   color: #fff;
 }
 
 /* Dynamic status colors */
 .status-visited {
-  background: #4cb1c7; /* Main color for "Visited" */
+  background: #4cb1c7;
 }
 
 .status-pending {
-  background: #f5a800; /* Third color for "Validated" */
-
+  background: #f5a800;
 }
 
 .status-validated {
-  background: #e81f76; /* Secondary color for "Pending" */
+  background: #e81f76;
 }
 
 .visit-location,
 .visit-duration {
-  font-size: 12px;
+  font-size: 0.75rem;
   color: #6b7280;
-  margin: 4px 0;
+  margin: 0.25rem 0;
+}
+
+
+/* Style for icons */
+.visit-time, .visit-location, .visit-date {
+  display: flex;
+  align-items: center;
+  gap: 0.5rem; /* Space between icon and text */
+}
+
+.visit-time svg, .visit-location svg, .visit-date svg {
+  color: #4cb1c7; /* Match your theme color */
+  font-size: 0.875rem; /* 14px at 16px base */
+}
+
+/* Style for reasons */
+.visit-reasons {
+  font-size: 0.75rem;
+  color: #6b7280;
+  margin: 0.25rem 0;
+  font-style: italic;
 }
 
 .no-visits {
   text-align: center;
-  padding: 10px;
-  font-size: 12px;
+  padding: 0.625rem;
+  font-size: 0.75rem;
   color: #6b7280;
   font-style: italic;
 }
 
 /* Day View */
 .day-view {
-  padding: 15px 0;
+  padding: 1rem 0;
 }
 
 .day-header {
   display: flex;
   align-items: center;
-  gap: 10px;
-  margin-bottom: 15px;
+  gap: 0.625rem;
+  margin-bottom: 1rem;
   flex-wrap: wrap;
   justify-content: center;
 }
 
 .day-header h2 {
   margin: 0;
-  font-size: 20px;
+  font-size: 1.25rem; /* 20px at 16px base */
   font-weight: 700;
   color: #1f2937;
 }
 
 /* Responsive Design */
 @media (max-width: 768px) {
+  html {
+    font-size: 18px; /* Larger base for tablets */
+  }
+
   .timesheets-container {
-    padding: 15px;
+    padding: 1.5rem;
   }
 
   .timesheets-header {
     flex-direction: column;
     align-items: stretch;
+    gap: 1.25rem;
   }
 
   .view-toggle {
-    margin-bottom: 10px;
+    margin-bottom: 0.9375rem;
+    padding: 0.375rem;
   }
 
   .toggle-btn {
-    padding: 6px 12px;
-    font-size: 10px;
+    padding: 0.625rem 1.125rem;
+    font-size: 0.875rem; /* 15.75px at 18px base */
   }
 
   .year-navigation h1 {
-    font-size: 20px;
+    font-size: 1.375rem; /* 24.75px at 18px */
   }
 
   .nav-btn {
-    padding: 6px 12px;
-    font-size: 10px;
+    padding: 0.625rem 1.125rem;
+    font-size: 0.875rem;
   }
 
   .action-buttons {
-    flex-direction: column;
-    align-items: stretch;
+    flex-direction: row;
+    gap: 1rem;
+    justify-content: center;
   }
 
   .create-btn,
   .current-btn {
-    padding: 8px 16px;
-    font-size: 10px;
+    padding: 0.75rem 1.5rem;
+    font-size: 0.875rem;
   }
 
   .year-view {
     grid-template-columns: 1fr;
   }
 
-
-
   .month-header h2,
   .week-header h2,
   .day-header h2 {
-    font-size: 18px;
+    font-size: 1.375rem; /* 24.75px at 18px */
     text-align: center;
   }
 
@@ -468,16 +498,17 @@
   }
 
   .week-card h3 {
-    font-size: 14px;
+    font-size: 1rem; /* 18px at 18px */
   }
 
   .week-card p {
-    font-size: 11px;
+    font-size: 0.875rem; /* 15.75px at 18px */
   }
 
   .days-grid {
     flex-direction: column;
     align-items: stretch;
+    gap: 1.25rem;
   }
 
   .day-column {
@@ -485,75 +516,85 @@
   }
 
   .day-tile {
-    padding: 8px;
+    padding: 1rem;
   }
 
   .day-name {
-    font-size: 9px;
+    font-size: 0.875rem; /* 15.75px at 18px */
   }
 
   .day-date {
-    font-size: 14px;
+    font-size: 1.25rem; /* 22.5px at 18px */
   }
 
   .visit-count {
-    font-size: 9px;
+    font-size: 0.875rem;
   }
 
   .visit-time {
-    font-size: 12px;
+    font-size: 0.875rem;
   }
 
   .visit-status {
-    font-size: 9px;
-    padding: 2px 5px;
+    font-size: 0.625rem; /* 11.25px at 18px */
+    padding: 0.1875rem 0.375rem;
   }
 
   .visit-location,
   .visit-duration {
-    font-size: 11px;
+    font-size: 0.75rem; /* 13.5px at 18px */
   }
 }
 
 @media (max-width: 480px) {
+  html {
+    font-size: 20px; /* Larger base for phones */
+  }
+
   .timesheets-container {
-    padding: 10px;
+    padding: 1rem;
   }
 
   .view-toggle {
-    padding: 2px;
+    padding: 0.25rem;
   }
 
   .toggle-btn {
-    padding: 5px 10px;
-    font-size: 9px;
+    padding: 0.5rem 1rem;
+    font-size: 0.75rem; /* 15px at 20px base */
   }
 
   .year-navigation h1 {
-    font-size: 18px;
+    font-size: 1.25rem; /* 25px at 20px */
   }
 
   .nav-btn {
-    padding: 5px 10px;
-    font-size: 9px;
+    padding: 0.5rem 1rem;
+    font-size: 0.75rem;
+  }
+
+  .action-buttons {
+    flex-direction: column;
+    align-items: stretch;
+    gap: 0.75rem;
   }
 
   .create-btn,
   .current-btn {
-    padding: 6px 12px;
-    font-size: 9px;
+    padding: 0.625rem 1.25rem;
+    font-size: 0.75rem; /* 15px at 20px */
   }
 
   .month-card h2 {
-    font-size: 16px;
+    font-size: 1.125rem; /* 22.5px at 20px */
   }
 
   .week-number {
-    font-size: 12px;
+    font-size: 0.875rem; /* 17.5px at 20px */
   }
 
   .week-range,
   .visit-count {
-    font-size: 10px;
+    font-size: 0.75rem; /* 15px at 20px */
   }
 }

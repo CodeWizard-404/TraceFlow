@@ -1,8 +1,18 @@
 /* src/components/Header.css */
+/* Root font size is assumed to be set in a global stylesheet (e.g., index.css or Timesheets.css) */
+/* If not, add: 
+html {
+  font-size: 16px;
+}
+@media (max-width: 768px) { html { font-size: 18px; } }
+@media (max-width: 480px) { html { font-size: 20px; } }
+*/
+
 .header {
     background: #fff;
-    padding: 15px 20px;
-    box-shadow: 0 4px 12px rgba(0, 0, 0, 0.05);
+    padding: 0.9375rem 1.25rem;
+    /* 15px 20px at 16px base */
+    box-shadow: 0 0.25rem 0.75rem rgba(0, 0, 0, 0.05);
     border-bottom: 1px solid rgba(76, 177, 199, 0.2);
     position: sticky;
     top: 0;
@@ -16,11 +26,13 @@
     justify-content: space-between;
     align-items: center;
     flex-wrap: wrap;
-    gap: 15px;
+    gap: 0.9375rem;
+    /* 15px at 16px base */
 }
 
 .logo {
-    height: 40px;
+    height: 2.5rem;
+    /* 40px at 16px base */
     width: auto;
     transition: transform 0.3s ease;
 }
@@ -32,7 +44,8 @@
 .menu-toggle {
     display: none;
     /* Hidden by default on desktop */
-    font-size: 24px;
+    font-size: 1.5rem;
+    /* 24px at 16px base */
     background: none;
     border: none;
     color: #4cb1c7;
@@ -47,19 +60,20 @@
 
 .header-nav {
     display: flex;
-    gap: 30px;
+    gap: 1.875rem;
+    /* 30px at 16px base */
     align-items: center;
 }
 
 .nav-link {
     font-family: 'Inter', sans-serif;
-    font-size: 16px;
+    font-size: 1rem;
+    /* 16px at 16px base */
     font-weight: 600;
-    /* Bolder for more presence */
     color: #1f2937;
-    /* Darker base color for contrast */
     text-decoration: none;
-    padding: 6px 12px;
+    padding: 0.375rem 0.75rem;
+    /* 6px 12px at 16px base */
     position: relative;
     transition: all 0.3s ease;
 }
@@ -68,7 +82,8 @@
     content: '';
     position: absolute;
     width: 0;
-    height: 2px;
+    height: 0.125rem;
+    /* 2px at 16px base */
     bottom: 0;
     left: 50%;
     background: #4cb1c7;
@@ -83,41 +98,47 @@
 .nav-link:hover {
     color: #4cb1c7;
     transform: scale(1.05);
-    /* Slight scale for interactivity */
 }
 
 /* Responsive Design */
 @media (max-width: 768px) {
     .header {
-        padding: 10px 15px;
+        padding: 0.625rem 0.9375rem;
+        /* 11.25px 16.875px at 18px base */
     }
 
     .header-container {
         flex-direction: row;
         justify-content: space-between;
         align-items: center;
+        gap: 1rem;
+        /* 18px at 18px base */
     }
 
     .logo {
-        height: 35px;
+        height: 2rem;
+        /* 36px at 18px base */
     }
 
     .menu-toggle {
         display: block;
+        font-size: 1.5rem;
+        /* 27px at 18px base */
     }
 
     .header-nav {
         display: none;
         /* Hidden by default on mobile */
         flex-direction: column;
-        gap: 20px;
+        gap: 1.25rem;
+        /* 22.5px at 18px base */
         width: 100%;
-        padding: 20px 0;
+        padding: 1.25rem 0;
         background: #fff;
         position: absolute;
         top: 100%;
         left: 0;
-        box-shadow: 0 4px 12px rgba(0, 0, 0, 0.05);
+        box-shadow: 0 0.25rem 0.75rem rgba(0, 0, 0, 0.05);
         border-top: 1px solid rgba(76, 177, 199, 0.2);
     }
 
@@ -126,50 +147,59 @@
     }
 
     .nav-link {
-        font-size: 14px;
-        padding: 8px 0;
+        font-size: 0.875rem;
+        /* 15.75px at 18px base */
+        padding: 0.5rem 0;
+        /* 9px at 18px base */
         text-align: center;
     }
 
     .nav-link::after {
-        height: 1px;
+        height: 0.0625rem;
+        /* 1.125px at 18px base */
     }
 
     .nav-link:hover::after {
         width: 50%;
-        /* Slightly shorter underline on mobile for balance */
     }
 
     .nav-link:hover {
         transform: none;
-        /* Remove scale on mobile to avoid overflow */
+        /* No scale on mobile */
     }
 }
 
 @media (max-width: 480px) {
     .header {
-        padding: 8px 10px;
+        padding: 0.5rem 0.625rem;
+        /* 10px 12.5px at 20px base */
     }
 
     .logo {
-        height: 30px;
+        height: 1.75rem;
+        /* 35px at 20px base */
     }
 
     .menu-toggle {
-        font-size: 20px;
+        font-size: 1.25rem;
+        /* 25px at 20px base */
     }
 
     .nav-link {
-        font-size: 12px;
+        font-size: 0.75rem;
+        /* 15px at 20px base */
+        padding: 0.625rem 0;
+        /* 12.5px at 20px base */
     }
 }
 
 /* src/components/Footer.css */
 .footer {
     background: #fff;
-    padding: 20px;
+    padding: 1.25rem;
+    /* 20px at 16px base */
     border-top: 1px solid rgba(76, 177, 199, 0.2);
-    box-shadow: 0 -4px 12px rgba(0, 0, 0, 0.05);
+    box-shadow: 0 -0.25rem 0.75rem rgba(0, 0, 0, 0.05);
 }
 
 .footer-container {
@@ -179,25 +209,29 @@
     justify-content: space-between;
     align-items: center;
     flex-wrap: wrap;
-    gap: 15px;
+    gap: 0.9375rem;
+    /* 15px at 16px base */
 }
 
 .footer-text {
     font-family: 'Inter', sans-serif;
-    font-size: 12px;
+    font-size: 0.75rem;
+    /* 12px at 16px base */
     color: #6b7280;
     margin: 0;
 }
 
 .footer-links {
     display: flex;
-    gap: 20px;
+    gap: 1.25rem;
+    /* 20px at 16px base */
     flex-wrap: wrap;
 }
 
 .footer-link {
     font-family: 'Inter', sans-serif;
-    font-size: 12px;
+    font-size: 0.75rem;
+    /* 12px at 16px base */
     font-weight: 600;
     color: #4cb1c7;
     text-decoration: none;
@@ -212,37 +246,45 @@
 /* Responsive Design */
 @media (max-width: 768px) {
     .footer {
-        padding: 15px;
+        padding: 0.9375rem;
+        /* 16.875px at 18px base */
     }
 
     .footer-container {
         flex-direction: column;
         align-items: center;
         text-align: center;
+        gap: 1rem;
+        /* 18px at 18px base */
     }
 
     .footer-links {
-        gap: 15px;
+        gap: 0.9375rem;
+        /* 16.875px at 18px base */
         justify-content: center;
     }
 
     .footer-text,
     .footer-link {
-        font-size: 11px;
+        font-size: 0.6875rem;
+        /* 12.375px at 18px base */
     }
 }
 
 @media (max-width: 480px) {
     .footer {
-        padding: 10px;
+        padding: 0.625rem;
+        /* 12.5px at 20px base */
     }
 
     .footer-text,
     .footer-link {
-        font-size: 10px;
+        font-size: 0.625rem;
+        /* 12.5px at 20px base */
     }
 
     .footer-links {
-        gap: 10px;
+        gap: 0.625rem;
+        /* 12.5px at 20px base */
     }
 }
