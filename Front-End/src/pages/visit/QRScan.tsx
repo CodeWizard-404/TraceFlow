@@ -11,6 +11,7 @@ const QRScan: React.FC = () => {
     const location = useLocation();
     const [error, setError] = useState<string | null>(null);
     const [loading, setLoading] = useState<boolean>(true);
+    const [isMounted, setIsMounted] = useState<boolean>(false);
     const qrRef = useRef<HTMLDivElement>(null);
     const qrCode = useRef<Html5Qrcode | null>(null);
 
@@ -18,13 +19,16 @@ const QRScan: React.FC = () => {
     const visit = (location.state as { visit?: Visit })?.visit;
 
     useEffect(() => {
+        setIsMounted(true); // Set mounted state when component mounts
+
         if (!visit || !visit.visitID) {
             setError("No visit data provided. Please go back and select a visit.");
             setLoading(false);
             return;
         }
 
-        if (!qrRef.current) {
+        if (!isMounted || !qrRef.current) {
+            console.log("Ref check:", qrRef.current); // Debug ref
             setError("Failed to initialize QR scanner. Element not found.");
             setLoading(false);
             return;
@@ -35,7 +39,7 @@ const QRScan: React.FC = () => {
         qrCode.current = html5QrCode;
 
         const config = { fps: 10, qrbox: { width: 250, height: 250 } };
-        const qrCodeSuccessCallback = async (decodedText: string, decodedResult: any) => {
+        const qrCodeSuccessCallback = async (decodedText: string) => {
             if (qrCode.current) {
                 qrCode.current.stop().catch((err) => console.error("Stop error:", err)); // Stop scanning
             }
@@ -92,8 +96,9 @@ const QRScan: React.FC = () => {
                     .then(() => qrCode.current?.clear())
                     .catch((err) => console.error("Cleanup error:", err));
             }
+            setIsMounted(false);
         };
-    }, [visit, navigate]);
+    }, [visit, navigate, isMounted]);
 
     const handleBack = () => {
         navigate(-1); // Go back to previous page (VisitDetails)
