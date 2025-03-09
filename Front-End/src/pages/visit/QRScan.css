@@ -108,16 +108,12 @@
   margin: 0;
 }
 
-.qr-error {
-  margin-top: 1rem;
-  text-align: center;
-  max-width: 100%;
-}
-
-.qr-error p {
+/* Error message style */
+.qr-error-message {
   font-size: 0.875rem;
   color: #e81f76;
-  margin: 0 0 0.75rem;
+  text-align: center;
+  margin-top: 1rem;
 }
 
 .qr-error-card {
@@ -150,8 +146,7 @@
   width: 100%;
 }
 
-.qr-back-btn,
-.qr-retry-btn {
+.qr-back-btn {
   padding: 0.625rem 1.25rem;
   font-size: 0.875rem;
   font-weight: 600;
@@ -167,8 +162,7 @@
   margin: 0 0.5rem;
 }
 
-.qr-back-btn:hover,
-.qr-retry-btn:hover {
+.qr-back-btn:hover {
   background: #3a8fa2;
 }
 
@@ -203,8 +197,7 @@
     max-width: 250px;
   }
 
-  .qr-back-btn,
-  .qr-retry-btn {
+  .qr-back-btn {
     padding: 0.5rem 1rem;
     font-size: 0.75rem;
   }
