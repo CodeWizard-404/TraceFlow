@@ -20,6 +20,7 @@
     "framer-motion": "^12.4.10",
     "front-end": "file:",
     "html5-qrcode": "^2.3.8",
+    "jsqr": "^1.4.0",
     "react": "^18.3.1",
     "react-datepicker": "^8.1.0",
     "react-dom": "^18.3.1",

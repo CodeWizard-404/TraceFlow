@@ -1,170 +1,163 @@
 // src/pages/visit/QRScan.tsx
 import React, { useState, useEffect, useRef } from "react";
 import { useNavigate, useLocation } from "react-router-dom";
-import { BrowserQRCodeReader } from "@zxing/library";
-import { FaArrowLeft, FaQrcode, FaSync } from "react-icons/fa";
-
+import { FaQrcode, FaArrowLeft } from "react-icons/fa";
+import jsQR from "jsqr";
+import Visit from "../../models/Visit";
 import "./QRScan.css";
 import { verifyQrCode } from "../../apis/visitAPI";
-import Visit from "../../models/Visit";
 
 const QRScan: React.FC = () => {
     const navigate = useNavigate();
     const location = useLocation();
     const videoRef = useRef<HTMLVideoElement>(null);
-    const codeReaderRef = useRef<BrowserQRCodeReader | null>(null);
+    const canvasRef = useRef<HTMLCanvasElement>(null);
     const [visit, setVisit] = useState<Visit | null>(null);
-    const [scanResult, setScanResult] = useState<string | null>(null);
-    const [error, setError] = useState<string | null>(null);
+    const [message, setMessage] = useState<string | null>(null);
     const [loading, setLoading] = useState<boolean>(false);
+    const [error, setError] = useState<string | null>(null);
+    const [stream, setStream] = useState<MediaStream | null>(null);
 
-    // Load visit from location state
+    // Extract visit from location state and start camera
     useEffect(() => {
-        const state = location.state as { visit: Visit } | undefined;
-        if (state?.visit) {
-            setVisit(state.visit);
+        const visitFromState = (location.state as { visit?: Visit })?.visit;
+        if (visitFromState) {
+            setVisit(visitFromState);
+            startCamera();
         } else {
-            setError("No visit selected. Please select a visit from the timesheet.");
+            setError("No visit data provided.");
         }
+
+        // Cleanup on unmount
+        return () => stopCamera();
     }, [location.state]);
 
-    // Setup QR scanner
-    useEffect(() => {
-        codeReaderRef.current = new BrowserQRCodeReader();
-        let isMounted = true;
-
-        const startScanning = async () => {
-            if (videoRef.current && !scanResult && !loading && isMounted) {
-                try {
-                    await codeReaderRef.current!.decodeFromVideoDevice(
-                        null,
-                        videoRef.current,
-                        async (result, err) => {
-                            if (result && isMounted && !scanResult && !loading) {
-                                await handleScan(result.getText());
-                            }
-                            if (err && !err.name.includes('NotFoundException')) {
-                                setError("Error scanning QR code. Please try again.");
-                                console.error(err);
-                            }
-                        }
-                    );
-                } catch (err) {
-                    setError("Camera access denied. Please grant permissions.");
-                    console.error(err);
-                }
-            }
-        };
-
-        startScanning();
-
-        return () => {
-            isMounted = false;
-            if (codeReaderRef.current) {
-                codeReaderRef.current.reset();
-                codeReaderRef.current = null;
-            }
-        };
-    }, [visit]); // Only re-run if visit changes
-
-    const handleScan = async (data: string) => {
-        if (!data || !visit || scanResult || loading) return; // Prevent re-entry
-
-        console.log("Scan initiated:", data);
-        setScanResult(data);
-        setLoading(true);
-        setError(null);
-
+    const startCamera = async () => {
         try {
-            console.log("Calling verifyQrCode with:", { qrData: data, visitId: visit.visitID });
-            const response = await verifyQrCode({
-                qrData: data,
-                visitId: visit.visitID,
+            const mediaStream = await navigator.mediaDevices.getUserMedia({
+                video: { facingMode: "environment" }, // Prefer rear camera
             });
-            console.log("API Response:", response);
-
-            if (response.valid) {
-                console.log("QR valid, navigating...");
-                navigate(`/timesheets`, { state: { visit } });
-            } else {
-                console.log("QR invalid");
-                setError("Invalid QR code. Phone number mismatch.");
-                setScanResult(null);
+            setStream(mediaStream);
+            if (videoRef.current) {
+                videoRef.current.srcObject = mediaStream;
+                videoRef.current.play();
+                requestAnimationFrame(scanQRCode);
             }
         } catch (err) {
-            console.error("Verification error:", err);
-            setError("QR verification failed. Please try again.");
-            setScanResult(null);
-        } finally {
-            console.log("Scan complete");
-            setLoading(false);
+            setError("Failed to access camera. Please ensure camera permission is granted.");
+            console.error(err);
         }
     };
 
-    const resetScan = () => {
-        setScanResult(null);
-        setError(null);
-        setLoading(false);
+    const stopCamera = () => {
+        if (stream) {
+            stream.getTracks().forEach((track) => track.stop());
+            setStream(null);
+        }
     };
 
-    if (!visit) {
-        return (
-            <div className="qr-scan-container">
-                <div className="qr-scan-error-card">
-                    <h2>Oops!</h2>
-                    <p>{error}</p>
-                    <button className="qr-scan-back-btn" onClick={() => navigate("/timesheet")}>
-                        <FaArrowLeft /> Back
-                    </button>
-                </div>
-            </div>
-        );
-    }
+    const scanQRCode = () => {
+        if (!videoRef.current || !canvasRef.current || loading) {
+            requestAnimationFrame(scanQRCode);
+            return;
+        }
 
-    return (
+        const video = videoRef.current;
+        const canvas = canvasRef.current;
+        const context = canvas.getContext("2d");
+
+        if (!context) return;
+
+        // Set canvas size to video size
+        canvas.width = video.videoWidth;
+        canvas.height = video.videoHeight;
+
+        // Draw video frame on canvas
+        context.drawImage(video, 0, 0, canvas.width, canvas.height);
+        const imageData = context.getImageData(0, 0, canvas.width, canvas.height);
+
+        // Scan for QR code
+        const qrCode = jsQR(imageData.data, imageData.width, imageData.height);
+
+        if (qrCode && qrCode.data && visit) {
+            verifyQR(qrCode.data, visit.visitID);
+        } else {
+            requestAnimationFrame(scanQRCode); // Continue scanning
+        }
+    };
+
+    const verifyQR = async (qrData: string, visitId: string) => {
+        setLoading(true);
+        setError(null);
+        setMessage(null);
+
+        try {
+            const response = await verifyQrCode({ qrData, visitId });
+            if (response.valid) {
+                stopCamera();
+                navigate("/timesheet");
+            } else {
+                setMessage(response.message || "QR code verification failed.");
+                setLoading(false);
+                requestAnimationFrame(scanQRCode); // Resume scanning
+            }
+        } catch (err) {
+            setError("Failed to verify QR code.");
+            console.error(err);
+            setLoading(false);
+            requestAnimationFrame(scanQRCode); // Resume scanning
+        }
+    };
+
+    const handleBack = () => {
+        stopCamera();
+        navigate("/timesheet");
+    };
+
+    if (!visit && !error) return <div className="loading">Loading visit data...</div>;
+    if (error) return (
         <div className="qr-scan-container">
-            <div className="qr-scan-hero">
-                <h1>
-                    <FaQrcode /> Scan QR
-                </h1>
-            </div>
-
-            <div className="qr-scan-card qr-scanner">
-                <div className="card-content">
-                    {!loading && !scanResult ? (
-                        <div className="video-wrapper">
-                            <video ref={videoRef} className="qr-video" />
-                            <div className="scan-overlay"></div>
-                        </div>
-                    ) : (
-                        <div className="scan-result">
-                            {loading ? (
-                                <div className="loading">
-                                    <div className="spinner"></div>
-                                    <p>Validating...</p>
-                                </div>
-                            ) : (
-                                <>
-                                    <p><strong>Result:</strong> {scanResult}</p>
-                                    {error && <p className="error">{error}</p>}
-                                    <button className="qr-scan-retry-btn" onClick={resetScan}>
-                                        <FaSync /> Retry
-                                    </button>
-                                </>
-                            )}
-                        </div>
-                    )}
-                </div>
-            </div>
-
-            <div className="qr-scan-actions">
-                <button
-                    className="qr-scan-back-btn"
-                    onClick={() => navigate(`/visit/${visit.visitID}`)}
-                >
+            <div className="error-card">
+                <h2>Oops!</h2>
+                <p>{error}</p>
+                <button className="back-btn" onClick={handleBack}>
                     <FaArrowLeft /> Back
                 </button>
             </div>
+        </div>
+    );
+
+    return (
+        <div className="qr-scan-container">
+            <header className="qr-header">
+                <h1>
+                    <FaQrcode /> Scan QR Code
+                </h1>
+            </header>
+            <section className="qr-card">
+                <div className="qr-scanner">
+                    <video ref={videoRef} className="qr-video" muted playsInline />
+                    <canvas ref={canvasRef} className="qr-canvas" style={{ display: "none" }} />
+                    <div className="qr-overlay">
+                        <div className="qr-frame"></div>
+                    </div>
+                </div>
+                {message && (
+                    <div className="message">
+                        <p>{message}</p>
+                    </div>
+                )}
+                {loading && (
+                    <div className="loading-overlay">
+                        <span>Verifying...</span>
+                    </div>
+                )}
+                <div className="qr-actions">
+                    <button className="back-btn" onClick={handleBack} disabled={loading}>
+                        <FaArrowLeft /> Back
+                    </button>
+                </div>
+            </section>
         </div>
     );
 };
