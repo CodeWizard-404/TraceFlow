@@ -12,11 +12,13 @@ const QRScan: React.FC = () => {
     const navigate = useNavigate();
     const location = useLocation();
     const videoRef = useRef<HTMLVideoElement>(null);
+    const codeReaderRef = useRef<BrowserQRCodeReader | null>(null);
     const [visit, setVisit] = useState<Visit | null>(null);
     const [scanResult, setScanResult] = useState<string | null>(null);
     const [error, setError] = useState<string | null>(null);
     const [loading, setLoading] = useState<boolean>(false);
 
+    // Load visit from location state
     useEffect(() => {
         const state = location.state as { visit: Visit } | undefined;
         if (state?.visit) {
@@ -26,18 +28,19 @@ const QRScan: React.FC = () => {
         }
     }, [location.state]);
 
+    // Setup QR scanner
     useEffect(() => {
-        const codeReader = new BrowserQRCodeReader();
+        codeReaderRef.current = new BrowserQRCodeReader();
         let isMounted = true;
-    
-        const scan = async () => {
+
+        const startScanning = async () => {
             if (videoRef.current && !scanResult && !loading && isMounted) {
                 try {
-                    const result = await codeReader.decodeFromVideoDevice(
+                    await codeReaderRef.current!.decodeFromVideoDevice(
                         null,
                         videoRef.current,
                         async (result, err) => {
-                            if (result && isMounted) {
+                            if (result && isMounted && !scanResult && !loading) {
                                 await handleScan(result.getText());
                             }
                             if (err && !err.name.includes('NotFoundException')) {
@@ -52,52 +55,56 @@ const QRScan: React.FC = () => {
                 }
             }
         };
-    
-        scan();
-    
+
+        startScanning();
+
         return () => {
             isMounted = false;
-            codeReader.reset();
+            if (codeReaderRef.current) {
+                codeReaderRef.current.reset();
+                codeReaderRef.current = null;
+            }
         };
-    }, [visit]);
+    }, [visit]); // Only re-run if visit changes
 
     const handleScan = async (data: string) => {
-        if (data && visit && !scanResult) {
-            console.log("Scan started:", data);
-            setScanResult(data);
-            setLoading(true);
-            setError(null);
-            
-            try {
-                console.log("Calling verifyQrCode with:", { qrData: data, visitId: visit.visitID });
-                const response = await verifyQrCode({
-                    qrData: data,
-                    visitId: visit.visitID,
-                });
-                console.log("API Response received:", response);
-                
-                if (response.valid) {
-                    console.log("QR valid, navigating...");
-                    navigate(`/timesheets`, { state: { visit } });
-                } else {
-                    console.log("QR invalid");
-                    setError("Invalid QR code. Phone number mismatch.");
-                    setScanResult(null);
-                }
-            } catch (err) {
-                console.error("Verification error:", err);
-                setError("QR verification failed. Please try again.");
+        if (!data || !visit || scanResult || loading) return; // Prevent re-entry
+
+        console.log("Scan initiated:", data);
+        setScanResult(data);
+        setLoading(true);
+        setError(null);
+
+        try {
+            console.log("Calling verifyQrCode with:", { qrData: data, visitId: visit.visitID });
+            const response = await verifyQrCode({
+                qrData: data,
+                visitId: visit.visitID,
+            });
+            console.log("API Response:", response);
+
+            if (response.valid) {
+                console.log("QR valid, navigating...");
+                navigate(`/timesheets`, { state: { visit } });
+            } else {
+                console.log("QR invalid");
+                setError("Invalid QR code. Phone number mismatch.");
                 setScanResult(null);
-            } finally {
-                console.log("Scan complete, setting loading to false");
-                setLoading(false);
             }
+        } catch (err) {
+            console.error("Verification error:", err);
+            setError("QR verification failed. Please try again.");
+            setScanResult(null);
+        } finally {
+            console.log("Scan complete");
+            setLoading(false);
         }
     };
 
     const resetScan = () => {
         setScanResult(null);
         setError(null);
+        setLoading(false);
     };
 
     if (!visit) {
@@ -124,7 +131,7 @@ const QRScan: React.FC = () => {
 
             <div className="qr-scan-card qr-scanner">
                 <div className="card-content">
-                    {!scanResult && !loading ? (
+                    {!loading && !scanResult ? (
                         <div className="video-wrapper">
                             <video ref={videoRef} className="qr-video" />
                             <div className="scan-overlay"></div>
@@ -134,7 +141,7 @@ const QRScan: React.FC = () => {
                             {loading ? (
                                 <div className="loading">
                                     <div className="spinner"></div>
-                                    Validating...
+                                    <p>Validating...</p>
                                 </div>
                             ) : (
                                 <>
