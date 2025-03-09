@@ -108,12 +108,17 @@
   margin: 0;
 }
 
-/* Error message style */
-.qr-error-message {
+/* Backend error message */
+.qr-error {
+  margin-top: 1rem;
+  text-align: center;
+  max-width: 100%;
+}
+
+.qr-error p {
   font-size: 0.875rem;
   color: #e81f76;
-  text-align: center;
-  margin-top: 1rem;
+  margin: 0;
 }
 
 .qr-error-card {
