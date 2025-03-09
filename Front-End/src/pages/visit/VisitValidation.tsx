@@ -1,12 +1,13 @@
 import React, { useState, useEffect } from "react";
 import { useParams, useNavigate } from "react-router-dom";
-import { FaUser, FaPhone, FaListUl, FaCheckCircle, FaArrowLeft } from "react-icons/fa";
+import { FaUser, FaPhone, FaListUl, FaCheckCircle, FaArrowLeft, FaCheck } from "react-icons/fa";
 
 import "./VisitValidation.css";
-import Agent from "../../models/Agent";
 import { getAgentById } from "../../apis/agentAPI";
 import { getVisitById, logVisitDetails } from "../../apis/visitAPI";
 import Visit from "../../models/Visit";
+import Agent from "../../models/Agent";
+
 
 const VisitValidation: React.FC = () => {
     const { idVisit } = useParams<{ idVisit: string }>();
@@ -14,9 +15,10 @@ const VisitValidation: React.FC = () => {
     const [visit, setVisit] = useState<Visit | null>(null);
     const [agent, setAgent] = useState<Agent | null>(null);
     const [checklist, setChecklist] = useState<Array<{ id: string; item: string; checked: boolean }>>([]);
-    const [entryTime, setEntryTime] = useState<number | null>(null); // Track entry time
+    const [entryTime, setEntryTime] = useState<number | null>(null);
     const [loading, setLoading] = useState<boolean>(true);
     const [error, setError] = useState<string | null>(null);
+    const [isSubmitting, setIsSubmitting] = useState<boolean>(false);
 
     useEffect(() => {
         const fetchVisitData = async () => {
@@ -36,7 +38,6 @@ const VisitValidation: React.FC = () => {
                     setAgent(agentData);
                 }
 
-                // Map checklists to state with checked status
                 const initialChecklist = visitData.Checklists?.map((cl) => ({
                     id: cl.checklistID,
                     item: cl.item,
@@ -44,7 +45,6 @@ const VisitValidation: React.FC = () => {
                 })) || [];
                 setChecklist(initialChecklist);
 
-                // Record entry time when page loads
                 setEntryTime(Date.now());
             } catch (err) {
                 setError("Failed to load visit or agent data.");
@@ -68,14 +68,13 @@ const VisitValidation: React.FC = () => {
     const handleValidate = async () => {
         if (!visit || !idVisit || !entryTime) return;
 
-        setLoading(true);
+        setIsSubmitting(true);
         setError(null);
 
         try {
-            // Calculate duration in minutes
             const currentTime = Date.now();
             const durationMs = currentTime - entryTime;
-            const durationMinutes = Math.floor(durationMs / (1000 * 60)); // Convert ms to minutes
+            const durationMinutes = Math.floor(durationMs / (1000 * 60));
 
             const checklistUpdates = checklist.map((item) => ({
                 checklistID: item.id,
@@ -83,20 +82,24 @@ const VisitValidation: React.FC = () => {
             }));
 
             const updatedVisitData = {
-                duration: durationMinutes, // Duration in minutes since page entry
+                duration: durationMinutes,
                 checklistUpdates,
-                status: "validated", // Update status to "validated"
+                status: "validated",
             };
 
             await logVisitDetails(idVisit, updatedVisitData);
+            await new Promise((resolve) => setTimeout(resolve, 500)); // Brief delay for animation
             navigate("/timesheet");
         } catch (err) {
             setError("Failed to validate visit.");
             console.error(err);
         } finally {
-            setLoading(false);
+            setIsSubmitting(false);
         }
     };
+
+    const completedItems = checklist.filter((item) => item.checked).length;
+    const totalItems = checklist.length;
 
     if (loading) return <div className="loading">Loading...</div>;
     if (error || !visit) return (
@@ -110,32 +113,24 @@ const VisitValidation: React.FC = () => {
 
     return (
         <div className="visit-validation-container">
-            <header className="form-header">
-                <h1>Validate Visit & Checklist</h1>
+            <header className="visit-header-0">
+                <h1>
+                    Validate Visit
+                    <span className={`status-dot status-${visit.status}`}></span>
+                </h1>
+                <p>Complete the checklist and validate the visit.</p>
             </header>
-            <section className="form-card">
+            <section className="visit-card">
                 {/* Visit Details */}
                 <div className="details-section">
                     <h2>Visit Details</h2>
                     <div className="detail-item">
-                        <span><FaUser /> Agent:</span>
+                        <span><FaUser /> Agent</span>
                         <p>{agent ? `${agent.name} ${agent.lastname}` : "N/A"}</p>
                     </div>
                     <div className="detail-item">
-                        <span><FaPhone /> Phone:</span>
+                        <span><FaPhone /> Phone</span>
                         <p>{agent?.phone || "N/A"}</p>
-                    </div>
-                    <div className="detail-item">
-                        <span>Date:</span>
-                        <p>{new Date(visit.date).toLocaleDateString("en-GB")}</p>
-                    </div>
-                    <div className="detail-item">
-                        <span>Time:</span>
-                        <p>{visit.time.split(":").slice(0, 2).join(":")}</p>
-                    </div>
-                    <div className="detail-item">
-                        <span>Location:</span>
-                        <p>{visit.location || "N/A"}</p>
                     </div>
                 </div>
 
@@ -149,39 +144,49 @@ const VisitValidation: React.FC = () => {
                             ))}
                         </ul>
                     ) : (
-                        <p>No reasons specified.</p>
+                        <p className="no-data">No reasons specified.</p>
                     )}
                 </div>
 
                 {/* Checklist */}
                 <div className="checklist-section">
-                    <h2><FaCheckCircle /> Checklist</h2>
+                    <h2><FaCheckCircle /> Checklist ({completedItems}/{totalItems})</h2>
                     {checklist.length > 0 ? (
-                        <ul className="checklist">
-                            {checklist.map((item) => (
-                                <li key={item.id}>
-                                    <input
-                                        type="checkbox"
-                                        checked={item.checked}
-                                        onChange={() => handleChecklistChange(item.id)}
-                                    />
-                                    <span>{item.item}</span>
-                                </li>
-                            ))}
-                        </ul>
+                        <>
+                            <ul className="checklist">
+                                {checklist.map((item) => (
+                                    <li key={item.id} className={item.checked ? "checked" : ""}>
+                                        <label>
+                                            <input
+                                                type="checkbox"
+                                                checked={item.checked}
+                                                onChange={() => handleChecklistChange(item.id)}
+                                            />
+                                            <span>{item.item}</span>
+                                        </label>
+                                    </li>
+                                ))}
+                            </ul>
+                            <div className="progress-bar">
+                                <div
+                                    className="progress-fill"
+                                    style={{ width: `${(completedItems / totalItems) * 100}%` }}
+                                ></div>
+                            </div>
+                        </>
                     ) : (
-                        <p>No checklist items available.</p>
+                        <p className="no-data">No checklist items available.</p>
                     )}
                 </div>
 
                 {/* Actions */}
-                <div className="form-actions">
+                <div className="visit-actions">
                     <button
-                        className="submit-btn"
+                        className={`validate-btn ${isSubmitting ? "submitting" : ""}`}
                         onClick={handleValidate}
-                        disabled={loading || checklist.every((item) => !item.checked)}
+                        disabled={isSubmitting || checklist.every((item) => !item.checked)}
                     >
-                        {loading ? "Validating..." : "Validate Visit"}
+                        <FaCheck /> {isSubmitting ? "Validating..." : "Validate Visit"}
                     </button>
                     <button className="back-btn" onClick={() => navigate("/timesheet")}>
                         <FaArrowLeft /> Back

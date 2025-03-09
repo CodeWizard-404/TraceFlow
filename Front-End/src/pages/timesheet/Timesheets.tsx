@@ -2,9 +2,9 @@ import React, { useEffect, useState } from "react";
 import { useNavigate } from "react-router-dom";
 import "./Timesheets.css";
 import Timesheet from "../../models/Timesheet";
-import { getAllTimesheets } from "../../apis/timesheetAPI"; 
+import { getTimesheetsBySupervisor } from "../../apis/timesheetAPI"; 
 import Visit from "../../models/Visit";
-import { FaClock, FaMapMarkerAlt, FaCalendarDay } from "react-icons/fa";
+import { FaClock, FaMapMarkerAlt } from "react-icons/fa";
 
 type ViewMode = "year" | "month" | "week" | "day";
 
@@ -21,12 +21,14 @@ const Timesheets: React.FC = () => {
   const [loading, setLoading] = useState<boolean>(true);
   const navigate = useNavigate();
 
+  const supervisorID = "user_001"; // Replace with desired supervisor ID
+
   // Fetch timesheets when the year changes
   useEffect(() => {
     const fetchTimesheets = async () => {
       try {
         setLoading(true);
-        const data = await getAllTimesheets();
+        const data = await getTimesheetsBySupervisor(supervisorID);
         setTimesheets(data.filter((ts) => ts.year === currentYear));
       } catch (error) {
         console.error("Failed to fetch timesheets:", error);
@@ -388,12 +390,6 @@ const Timesheets: React.FC = () => {
                   </div>
                   <p className="visit-location">
                     <FaMapMarkerAlt /> {visit.location || "Location TBD"}
-                  </p>
-                  <p className="visit-date">
-                    <FaCalendarDay /> {new Date(visit.date).toLocaleDateString("en-GB", {
-                      day: "2-digit",
-                      month: "2-digit",
-                    })}
                   </p>
                   {/* Display reasons if they exist */}
                   {visit.Reasons && visit.Reasons.length > 0 && (
