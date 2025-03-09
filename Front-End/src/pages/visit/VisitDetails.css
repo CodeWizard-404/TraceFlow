@@ -60,22 +60,14 @@
   background: #f59e0b;
 }
 
-.status-validated {
+.status-completed {
   background: #10b981;
-}
-
-.visit-details-content {
-  display: flex;
-  flex-direction: row;
-  gap: 1rem;
-  flex: 1;
 }
 
 .visit-details-grid {
   display: grid;
   grid-template-columns: 1fr;
   gap: 1rem;
-  flex: 1;
 }
 
 .visit-details-card {
@@ -141,68 +133,6 @@
   color: #6b7280;
   font-size: 0.85rem;
   font-style: italic;
-}
-
-/* Duration Clock */
-.duration-sidebar {
-  position: sticky;
-  top: 1rem;
-  align-self: flex-start;
-}
-
-.duration-clock {
-  display: flex;
-  flex-direction: column;
-  align-items: center;
-  gap: 0.5rem;
-}
-
-.clock-face {
-  position: relative;
-  width: 100px;
-  height: 100px;
-  background: #fff;
-  border: 2px solid #4cb1c7;
-  border-radius: 50%;
-  box-shadow: 0 4px 15px rgba(0, 0, 0, 0.05);
-}
-
-.hour-hand, .minute-hand {
-  position: absolute;
-  left: 50%;
-  top: 50%;
-  width: 2px;
-  transform-origin: bottom center;
-}
-
-.hour-hand {
-  height: 30px;
-  background: #4cb1c7;
-  transform: translateX(-50%);
-}
-
-.minute-hand {
-  height: 40px;
-  background: #3a8fa2;
-  transform: translateX(-50%);
-}
-
-.clock-center {
-  position: absolute;
-  width: 8px;
-  height: 8px;
-  background: #4cb1c7;
-  border-radius: 50%;
-  top: 50%;
-  left: 50%;
-  transform: translate(-50%, -50%);
-}
-
-.duration-clock p {
-  font-size: 0.875rem;
-  color: #1f2937;
-  margin: 0;
-  font-weight: 600;
 }
 
 .visit-details-actions {
@@ -309,19 +239,6 @@
   .card-content li {
     font-size: 1rem;
   }
-
-  .clock-face {
-    width: 120px;
-    height: 120px;
-  }
-
-  .hour-hand {
-    height: 35px;
-  }
-
-  .minute-hand {
-    height: 45px;
-  }
 }
 
 @media (min-width: 1024px) {
@@ -336,22 +253,7 @@
   .visit-details-card:hover {
     transform: translateY(-5px);
   }
-
-  .clock-face {
-    width: 150px;
-    height: 150px;
-  }
-
-  .hour-hand {
-    height: 45px;
-  }
-
-  .minute-hand {
-    height: 55px;
-  }
 }
-
-
 
 
 
