@@ -1,84 +1,28 @@
-function scanQR(qrCode: string) {
-  const phoneNumber = extractPhoneNumber(qrCode);
-  return validateAgent(phoneNumber);
-}
+import axios from "axios";
+import { BASE_URL, DEFAULT_TIMEOUT } from "../config";
+import { AgentsByLocationResponse, AgentLocationsResponse, AgentByPhoneResponse, AgentByIdResponse } from ".";
 
-function extractPhoneNumber(qrCode: string) {
-  const phoneNumber = extractTagValue(qrCode, "02");
-  if (phoneNumber.length === 0) {
-    throw new Error("Phone number not found in QR code");
-  }
-  return phoneNumber;
-}
+const agentApi = axios.create({
+  baseURL: `${BASE_URL}/agents`,
+  timeout: DEFAULT_TIMEOUT,
+});
 
-function extractTagValue(qrCode: string, tagNumber: string) {
-  for (let index = 0; index < qrCode.length; ) {
-    let tag = qrCode.substring(index, index + 2);
-    index += 2;
-    let tagLength = Number(qrCode.substring(index, index + 2));
-    index += 2;
-    let tagValue = qrCode.substring(index, index + tagLength);
-    index += tagLength;
+export const getAgentsByLocation = async (location: string): Promise<AgentsByLocationResponse> => {
+  const response = await agentApi.get<AgentsByLocationResponse>(`/location?location=${location}`);
+  return response.data;
+};
 
-    if (tag === tagNumber) {
-      return tagValue;
-    }
-  }
-  return "";
-}
+export const getAgentLocations = async (): Promise<AgentLocationsResponse> => {
+  const response = await agentApi.get<AgentLocationsResponse>("/locations");
+  return response.data;
+};
 
-async function validateAgent(phoneNumber: string) {
-  try {
-    const response = await fetch(
-      `http://localhost:5000/api/agents/phone/${phoneNumber}`
-    );
-    if (response.status === 404) {
-      return false;
-    }
-    if (response.status === 200) {
-      return true;
-    }
-    return false;
-  } catch (error) {
-    if (error instanceof Error) {
-      console.error("There was a problem with the fetch operation!");
-    }
-    return false;
-  }
-}
+export const getAgentByPhone = async (phone: string): Promise<AgentByPhoneResponse> => {
+  const response = await agentApi.get<AgentByPhoneResponse>(`/phone/${phone}`);
+  return response.data;
+};
 
-async function getLocations() {
-  try {
-    const response = await fetch(`http://localhost:5000/api/agents/locations`);
-    if (response.status === 200) {
-      const data = await response.json();
-      return data;
-    }
-    return [];
-  } catch (error) {
-    if (error instanceof Error) {
-      console.error("There was a problem with the fetch operation!");
-    }
-    return [];
-  }
-}
-
-async function getAgentsByLocation(location: string) {
-  try {
-    const response = await fetch(
-      `http://localhost:5000/api/agents/location?location=${location}`
-    );
-    if (response.status === 200) {
-      const data = await response.json();
-      return data;
-    }
-    return [];
-  } catch (error) {
-    if (error instanceof Error) {
-      console.error("There was a problem with the fetch operation!");
-    }
-    return [];
-  }
-}
-
-export { scanQR, getLocations, getAgentsByLocation };
+export const getAgentById = async (id: string): Promise<AgentByIdResponse> => {
+  const response = await agentApi.get<AgentByIdResponse>(`/${id}`);
+  return response.data;
+};

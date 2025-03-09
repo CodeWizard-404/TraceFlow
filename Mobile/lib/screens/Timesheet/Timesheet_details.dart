@@ -236,13 +236,16 @@ class HomeScreenState extends State<HomeScreen> with SingleTickerProviderStateMi
               itemBuilder: (context, index) {
                 final date = DateTime(_currentDate.year, 1, 1)
                     .add(Duration(days: _isWeekView ? index * 7 : index));
-                return AnimatedSwitcher(
-                  duration: const Duration(milliseconds: 400),
-                  transitionBuilder: (child, animation) => FadeTransition(
-                    opacity: animation,
-                    child: ScaleTransition(scale: animation, child: child),
+                return Padding(  // Add this Padding widget
+                  padding: EdgeInsets.symmetric(horizontal: 16), // Adjust padding value as needed
+                  child: AnimatedSwitcher(
+                    duration: const Duration(milliseconds: 400),
+                    transitionBuilder: (child, animation) => FadeTransition(
+                      opacity: animation,
+                      child: ScaleTransition(scale: animation, child: child),
+                    ),
+                    child: _isWeekView ? WeekView(date) : DayView(date),
                   ),
-                  child: _isWeekView ? WeekView(date) : DayView(date),
                 );
               },
             ),

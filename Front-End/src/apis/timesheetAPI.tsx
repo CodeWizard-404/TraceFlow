@@ -1,56 +1,47 @@
-import Timesheet from "../models/Timesheet";
-import Visit from "../models/Visit";
+import axios from "axios";
+import { CreateTimesheetResponse, ListTimesheetsResponse, TimesheetByIdResponse, ValidateTimesheetResponse, TimesheetsBySupervisorResponse } from ".";
+import { BASE_URL, DEFAULT_TIMEOUT } from "../config";
 
-async function getTimesheets() {
-  try {
-    const response = await fetch(`http://localhost:5000/api/timesheets`);
-    if (!response.ok) {
-      throw new Error("Network response was not ok");
-    }
-    const data = await response.json();
-    return data;
-  } catch (error) {
-    console.error("There was a problem with the fetch operation:", error);
-    throw error;
-  }
-}
+const timesheetApi = axios.create({
+  baseURL: `${BASE_URL}/timesheets`,
+  timeout: DEFAULT_TIMEOUT,
+});
 
-async function addVisit(
-  visitData: Partial<Visit>,
-  timesheetData: Partial<Timesheet>
-) {
-  try {
-    const response = await fetch(`http://localhost:5000/api/timesheets`, {
-      method: "POST",
-      headers: {
-        "Content-Type": "application/json",
-      },
-      body: JSON.stringify({ ...timesheetData, visits: [visitData] }),
-    });
-    if (!response.ok) {
-      throw new Error("Network response was not ok");
-    }
-    const data = await response.json();
-    return data;
-  } catch (error) {
-    console.error("There was a problem with the fetch operation:", error);
-    throw error;
-  }
-}
+export const createTimesheet = async (data: {
+  weekNumber: number;
+  year: number;
+  supervisorID: string;
+  visits: Array<{
+    date: string;
+    time: string;
+    agentID: string;
+    reasons: Array<{ text?: string; id?: string }>;
+    checklists: Array<{ text?: string; id?: string }>;
+  }>;
+}): Promise<CreateTimesheetResponse> => {
+  const response = await timesheetApi.post<CreateTimesheetResponse>("", data);
+  return response.data;
+};
 
-async function validateTimesheet(timesheetID: number) {
-  try {
-    const response = await fetch(
-      `http://localhost:5000/api/timesheets/${timesheetID}/validate`
-    );
-    if (!response.ok) {
-      throw new Error("Network response was not ok");
-    }
-    const data = await response.json();
-    return data;
-  } catch (error) {
-    console.error("There was a problem with the fetch operation:", error);
-    throw error;
-  }
-}
-export { getTimesheets, addVisit, validateTimesheet };
+export const getAllTimesheets = async (): Promise<ListTimesheetsResponse> => {
+  const response = await timesheetApi.get<ListTimesheetsResponse>("");
+  return response.data;
+};
+
+export const getTimesheetById = async (id: string): Promise<TimesheetByIdResponse> => {
+  const response = await timesheetApi.get<TimesheetByIdResponse>(`/${id}`);
+  return response.data;
+};
+
+export const validateTimesheet = async (
+  id: string,
+  data: { visitIDs: string[]; status: string }
+): Promise<ValidateTimesheetResponse> => {
+  const response = await timesheetApi.put<ValidateTimesheetResponse>(`/${id}/validate`, data);
+  return response.data;
+};
+
+export const getTimesheetsBySupervisor = async (supervisorID: string): Promise<TimesheetsBySupervisorResponse> => {
+  const response = await timesheetApi.get<TimesheetsBySupervisorResponse>(`/supervisor/${supervisorID}`);
+  return response.data;
+};

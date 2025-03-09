@@ -1,0 +1,559 @@
+/* src/pages/timesheet/Timesheets.css */
+@import url('https://fonts.googleapis.com/css2?family=Inter:wght@400;600;700&display=swap');
+
+.timesheets-container {
+  padding: 20px;
+  max-width: 1280px;
+  margin: 0 auto;
+  font-family: 'Inter', sans-serif;
+  background: linear-gradient(135deg, #f8fafc 0%, #eef2f6 100%);
+  min-height: 100vh;
+}
+
+/* Header Section */
+.timesheets-header {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  flex-wrap: wrap;
+  gap: 15px;
+  padding-bottom: 20px;
+  border-bottom: 1px solid rgba(76, 177, 199, 0.2);
+}
+
+.view-toggle {
+  display: flex;
+  gap: 8px;
+  background: #fff;
+  padding: 4px;
+  border-radius: 50px;
+  box-shadow: 0 4px 12px rgba(0, 0, 0, 0.05);
+  flex-wrap: wrap;
+  justify-content: center;
+}
+
+.toggle-btn {
+  padding: 8px 16px;
+  font-size: 12px;
+  font-weight: 600;
+  text-transform: uppercase;
+  letter-spacing: 0.5px;
+  color: #6b7280;
+  background: transparent;
+  border: none;
+  border-radius: 50px;
+  cursor: pointer;
+  transition: all 0.3s ease;
+}
+
+.toggle-btn.active {
+  background: #4cb1c7;
+  color: #fff;
+  box-shadow: 0 2px 6px rgba(76, 177, 199, 0.3);
+}
+
+.year-navigation {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+}
+
+.year-navigation h1 {
+  margin: 0;
+  font-size: 24px;
+  font-weight: 700;
+  color: #1f2937;
+}
+
+.nav-btn {
+  display: flex;
+  align-items: center;
+  gap: 5px;
+  padding: 8px 16px;
+  font-size: 12px;
+  font-weight: 600;
+  color: #4cb1c7;
+  background: #fff;
+  border: 1px solid #4cb1c7;
+  border-radius: 50px;
+  cursor: pointer;
+  transition: all 0.3s ease;
+}
+
+.nav-btn:hover {
+  background: #4cb1c7;
+  color: #fff;
+}
+
+.action-buttons {
+  display: flex;
+  gap: 10px;
+  flex-wrap: wrap;
+  justify-content: center;
+}
+
+.create-btn,
+.current-btn {
+  padding: 10px 20px;
+  font-size: 12px;
+  font-weight: 600;
+  text-transform: uppercase;
+  letter-spacing: 0.5px;
+  border: none;
+  border-radius: 50px;
+  cursor: pointer;
+  transition: all 0.3s ease;
+}
+
+.create-btn {
+  background: #4cb1c7;
+  color: #fff;
+  box-shadow: 0 4px 12px rgba(76, 177, 199, 0.3);
+}
+
+.create-btn:hover {
+  background: #3a8fa2;
+}
+
+.current-btn {
+  background: #fff;
+  color: #4cb1c7;
+  border: 1px solid #4cb1c7;
+}
+
+.current-btn:hover {
+  background: #4cb1c7;
+  color: #fff;
+}
+
+/* Year View */
+.year-view {
+  display: grid;
+  grid-template-columns: repeat(auto-fill, minmax(280px, 1fr));
+  gap: 15px;
+  padding: 15px 0;
+}
+
+.month-card {
+  background: #fff;
+  border-radius: 16px;
+  padding: 15px;
+  box-shadow: 0 6px 20px rgba(0, 0, 0, 0.05);
+  transition: transform 0.3s ease;
+}
+
+.month-card:hover {
+  transform: translateY(-5px);
+}
+
+.month-card h2 {
+  margin: 0 0 10px;
+  font-size: 18px;
+  font-weight: 600;
+  color: #1f2937;
+}
+
+.weeks-grid {
+  display: grid;
+  gap: 8px;
+}
+
+.week-tile {
+  padding: 10px;
+  background: #f8fafc;
+  border-radius: 12px;
+  cursor: pointer;
+  transition: all 0.3s ease;
+}
+
+.week-tile:hover {
+  background: #4cb1c7;
+  color: #fff;
+}
+
+.week-number {
+  font-weight: 600;
+  font-size: 14px;
+}
+
+.week-range,
+.visit-count {
+  font-size: 12px;
+  color: #6b7280;
+}
+
+.week-tile:hover .week-range,
+.week-tile:hover .visit-count {
+  color: #fff;
+}
+
+/* Month View */
+.month-view {
+  padding: 15px 0;
+}
+
+.month-header {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+  margin-bottom: 15px;
+  flex-wrap: wrap;
+  justify-content: center;
+}
+
+.month-header h2 {
+  margin: 0;
+  font-size: 20px;
+  font-weight: 700;
+  color: #1f2937;
+}
+
+.week-card {
+  background: #fff;
+  border-radius: 16px;
+  padding: 12px;
+  margin-bottom: 10px;
+  box-shadow: 0 6px 20px rgba(0, 0, 0, 0.05);
+  cursor: pointer;
+  transition: all 0.3s ease;
+}
+
+.week-card:hover {
+  transform: translateY(-5px);
+  box-shadow: 0 8px 24px rgba(76, 177, 199, 0.2);
+}
+
+.week-card h3 {
+  margin: 0 0 8px;
+  font-size: 16px;
+  font-weight: 600;
+  color: #1f2937;
+}
+
+.week-card p {
+  margin: 4px 0;
+  font-size: 12px;
+  color: #6b7280;
+}
+
+/* Week View */
+.week-view {
+  padding: 15px 0;
+}
+
+.week-header {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+  margin-bottom: 15px;
+  flex-wrap: wrap;
+  justify-content: center;
+}
+
+.week-header h2 {
+  margin: 0;
+  font-size: 20px;
+  font-weight: 700;
+  color: #1f2937;
+}
+
+.week-details {
+  background: #fff;
+  border-radius: 16px;
+  padding: 15px;
+  box-shadow: 0 6px 20px rgba(0, 0, 0, 0.05);
+}
+
+.week-range,
+.week-status {
+  font-size: 12px;
+  color: #6b7280;
+  margin: 4px 0;
+}
+
+.days-grid {
+  display: flex;
+  gap: 15px;
+  margin: 15px 0;
+  flex-wrap: wrap;
+  justify-content: space-between;
+}
+
+.day-column {
+  flex: 1;
+  min-width: 180px;
+  display: flex;
+  flex-direction: column;
+  gap: 10px;
+}
+
+.day-tile {
+  padding: 10px;
+  background: #f8fafc;
+  border-radius: 12px;
+  text-align: center;
+  cursor: pointer;
+  transition: all 0.3s ease;
+}
+
+.day-tile:hover {
+  background: #4cb1c7;
+  color: #fff;
+}
+
+.day-name {
+  font-size: 10px;
+  font-weight: 600;
+  text-transform: uppercase;
+}
+
+.day-date {
+  font-size: 16px;
+  font-weight: 700;
+}
+
+.visit-count {
+  font-size: 10px;
+  color: #6b7280;
+}
+
+.day-tile:hover .visit-count {
+  color: #fff;
+}
+
+.visits-list {
+  display: grid;
+  gap: 8px;
+}
+
+.visit-card {
+  background: #fff;
+  border-radius: 12px;
+  padding: 10px;
+  box-shadow: 0 4px 12px rgba(0, 0, 0, 0.05);
+  cursor: pointer;
+  transition: all 0.3s ease;
+}
+
+.visit-card:hover {
+  transform: translateY(-3px);
+  box-shadow: 0 6px 16px rgba(76, 177, 199, 0.2);
+}
+
+.visit-header {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  margin-bottom: 6px;
+}
+
+.visit-time {
+  font-size: 14px;
+  font-weight: 600;
+  color: #1f2937;
+}
+
+.visit-status {
+  font-size: 10px;
+  padding: 3px 6px;
+  border-radius: 20px;
+  color: #fff;
+}
+
+/* Dynamic status colors */
+.status-visited {
+  background: #4cb1c7; /* Main color for "Visited" */
+}
+
+.status-pending {
+  background: #f5a800; /* Third color for "Validated" */
+
+}
+
+.status-validated {
+  background: #e81f76; /* Secondary color for "Pending" */
+}
+
+.visit-location,
+.visit-duration {
+  font-size: 12px;
+  color: #6b7280;
+  margin: 4px 0;
+}
+
+.no-visits {
+  text-align: center;
+  padding: 10px;
+  font-size: 12px;
+  color: #6b7280;
+  font-style: italic;
+}
+
+/* Day View */
+.day-view {
+  padding: 15px 0;
+}
+
+.day-header {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+  margin-bottom: 15px;
+  flex-wrap: wrap;
+  justify-content: center;
+}
+
+.day-header h2 {
+  margin: 0;
+  font-size: 20px;
+  font-weight: 700;
+  color: #1f2937;
+}
+
+/* Responsive Design */
+@media (max-width: 768px) {
+  .timesheets-container {
+    padding: 15px;
+  }
+
+  .timesheets-header {
+    flex-direction: column;
+    align-items: stretch;
+  }
+
+  .view-toggle {
+    margin-bottom: 10px;
+  }
+
+  .toggle-btn {
+    padding: 6px 12px;
+    font-size: 10px;
+  }
+
+  .year-navigation h1 {
+    font-size: 20px;
+  }
+
+  .nav-btn {
+    padding: 6px 12px;
+    font-size: 10px;
+  }
+
+  .action-buttons {
+    flex-direction: column;
+    align-items: stretch;
+  }
+
+  .create-btn,
+  .current-btn {
+    padding: 8px 16px;
+    font-size: 10px;
+  }
+
+  .year-view {
+    grid-template-columns: 1fr;
+  }
+
+
+
+  .month-header h2,
+  .week-header h2,
+  .day-header h2 {
+    font-size: 18px;
+    text-align: center;
+  }
+
+  .weeks-grid {
+    grid-template-columns: 1fr;
+  }
+
+  .week-card h3 {
+    font-size: 14px;
+  }
+
+  .week-card p {
+    font-size: 11px;
+  }
+
+  .days-grid {
+    flex-direction: column;
+    align-items: stretch;
+  }
+
+  .day-column {
+    min-width: 100%;
+  }
+
+  .day-tile {
+    padding: 8px;
+  }
+
+  .day-name {
+    font-size: 9px;
+  }
+
+  .day-date {
+    font-size: 14px;
+  }
+
+  .visit-count {
+    font-size: 9px;
+  }
+
+  .visit-time {
+    font-size: 12px;
+  }
+
+  .visit-status {
+    font-size: 9px;
+    padding: 2px 5px;
+  }
+
+  .visit-location,
+  .visit-duration {
+    font-size: 11px;
+  }
+}
+
+@media (max-width: 480px) {
+  .timesheets-container {
+    padding: 10px;
+  }
+
+  .view-toggle {
+    padding: 2px;
+  }
+
+  .toggle-btn {
+    padding: 5px 10px;
+    font-size: 9px;
+  }
+
+  .year-navigation h1 {
+    font-size: 18px;
+  }
+
+  .nav-btn {
+    padding: 5px 10px;
+    font-size: 9px;
+  }
+
+  .create-btn,
+  .current-btn {
+    padding: 6px 12px;
+    font-size: 9px;
+  }
+
+  .month-card h2 {
+    font-size: 16px;
+  }
+
+  .week-number {
+    font-size: 12px;
+  }
+
+  .week-range,
+  .visit-count {
+    font-size: 10px;
+  }
+}

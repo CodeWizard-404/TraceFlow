@@ -37,10 +37,16 @@ class _CreateVisitScreenState extends State<CreateVisitScreen> {
   @override
   void initState() {
     super.initState();
+    // Set initial date based on weekNumber and year passed from HomeScreen
     _selectedDate = DateTime(widget.year, 1, 1).add(Duration(days: (widget.weekNumber - 1) * 7));
     Provider.of<AgentProvider>(context, listen: false).fetchUniqueLocations();
     Provider.of<ChecklistProvider>(context, listen: false).getAllChecklists();
     Provider.of<ReasonProvider>(context, listen: false).getAllReasons();
+  }
+
+  int _getWeekNumber(DateTime date) {
+    final startOfYear = DateTime(date.year, 1, 1);
+    return (date.difference(startOfYear).inDays / 7).ceil();
   }
 
   @override
@@ -440,6 +446,7 @@ class _CreateVisitScreenState extends State<CreateVisitScreen> {
     );
   }
 
+
   void _submitVisit() async {
     if (_formKey.currentState!.validate()) {
       if (_selectedDate == null || _selectedTime == null || _selectedAgentId == null) {
@@ -475,9 +482,10 @@ class _CreateVisitScreenState extends State<CreateVisitScreen> {
 
         print('Submitting visit payload: ${json.encode(visit)}');
 
+        // Use the week number calculated from _selectedDate instead of widget.weekNumber
         await timesheetProvider.createTimesheet(
-          weekNumber: widget.weekNumber,
-          year: widget.year,
+          weekNumber: _getWeekNumber(_selectedDate!), // Dynamically calculate week number
+          year: _selectedDate!.year, // Use the year from the selected date
           supervisorID: supervisorID,
           visits: [visit],
         );
@@ -493,7 +501,6 @@ class _CreateVisitScreenState extends State<CreateVisitScreen> {
       }
     }
   }
-
   @override
   Widget build(BuildContext context) {
     return Scaffold(

@@ -1,0 +1,248 @@
+/* src/components/Header.css */
+.header {
+    background: #fff;
+    padding: 15px 20px;
+    box-shadow: 0 4px 12px rgba(0, 0, 0, 0.05);
+    border-bottom: 1px solid rgba(76, 177, 199, 0.2);
+    position: sticky;
+    top: 0;
+    z-index: 1000;
+}
+
+.header-container {
+    max-width: 1280px;
+    margin: 0 auto;
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    flex-wrap: wrap;
+    gap: 15px;
+}
+
+.logo {
+    height: 40px;
+    width: auto;
+    transition: transform 0.3s ease;
+}
+
+.logo:hover {
+    transform: scale(1.05);
+}
+
+.menu-toggle {
+    display: none;
+    /* Hidden by default on desktop */
+    font-size: 24px;
+    background: none;
+    border: none;
+    color: #4cb1c7;
+    cursor: pointer;
+    padding: 0;
+    transition: color 0.3s ease;
+}
+
+.menu-toggle:hover {
+    color: #3a8fa2;
+}
+
+.header-nav {
+    display: flex;
+    gap: 30px;
+    align-items: center;
+}
+
+.nav-link {
+    font-family: 'Inter', sans-serif;
+    font-size: 16px;
+    font-weight: 600;
+    /* Bolder for more presence */
+    color: #1f2937;
+    /* Darker base color for contrast */
+    text-decoration: none;
+    padding: 6px 12px;
+    position: relative;
+    transition: all 0.3s ease;
+}
+
+.nav-link::after {
+    content: '';
+    position: absolute;
+    width: 0;
+    height: 2px;
+    bottom: 0;
+    left: 50%;
+    background: #4cb1c7;
+    transition: all 0.3s ease;
+    transform: translateX(-50%);
+}
+
+.nav-link:hover::after {
+    width: 100%;
+}
+
+.nav-link:hover {
+    color: #4cb1c7;
+    transform: scale(1.05);
+    /* Slight scale for interactivity */
+}
+
+/* Responsive Design */
+@media (max-width: 768px) {
+    .header {
+        padding: 10px 15px;
+    }
+
+    .header-container {
+        flex-direction: row;
+        justify-content: space-between;
+        align-items: center;
+    }
+
+    .logo {
+        height: 35px;
+    }
+
+    .menu-toggle {
+        display: block;
+    }
+
+    .header-nav {
+        display: none;
+        /* Hidden by default on mobile */
+        flex-direction: column;
+        gap: 20px;
+        width: 100%;
+        padding: 20px 0;
+        background: #fff;
+        position: absolute;
+        top: 100%;
+        left: 0;
+        box-shadow: 0 4px 12px rgba(0, 0, 0, 0.05);
+        border-top: 1px solid rgba(76, 177, 199, 0.2);
+    }
+
+    .header-nav.open {
+        display: flex;
+    }
+
+    .nav-link {
+        font-size: 14px;
+        padding: 8px 0;
+        text-align: center;
+    }
+
+    .nav-link::after {
+        height: 1px;
+    }
+
+    .nav-link:hover::after {
+        width: 50%;
+        /* Slightly shorter underline on mobile for balance */
+    }
+
+    .nav-link:hover {
+        transform: none;
+        /* Remove scale on mobile to avoid overflow */
+    }
+}
+
+@media (max-width: 480px) {
+    .header {
+        padding: 8px 10px;
+    }
+
+    .logo {
+        height: 30px;
+    }
+
+    .menu-toggle {
+        font-size: 20px;
+    }
+
+    .nav-link {
+        font-size: 12px;
+    }
+}
+
+/* src/components/Footer.css */
+.footer {
+    background: #fff;
+    padding: 20px;
+    border-top: 1px solid rgba(76, 177, 199, 0.2);
+    box-shadow: 0 -4px 12px rgba(0, 0, 0, 0.05);
+}
+
+.footer-container {
+    max-width: 1280px;
+    margin: 0 auto;
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    flex-wrap: wrap;
+    gap: 15px;
+}
+
+.footer-text {
+    font-family: 'Inter', sans-serif;
+    font-size: 12px;
+    color: #6b7280;
+    margin: 0;
+}
+
+.footer-links {
+    display: flex;
+    gap: 20px;
+    flex-wrap: wrap;
+}
+
+.footer-link {
+    font-family: 'Inter', sans-serif;
+    font-size: 12px;
+    font-weight: 600;
+    color: #4cb1c7;
+    text-decoration: none;
+    transition: all 0.3s ease;
+}
+
+.footer-link:hover {
+    color: #3a8fa2;
+    text-decoration: underline;
+}
+
+/* Responsive Design */
+@media (max-width: 768px) {
+    .footer {
+        padding: 15px;
+    }
+
+    .footer-container {
+        flex-direction: column;
+        align-items: center;
+        text-align: center;
+    }
+
+    .footer-links {
+        gap: 15px;
+        justify-content: center;
+    }
+
+    .footer-text,
+    .footer-link {
+        font-size: 11px;
+    }
+}
+
+@media (max-width: 480px) {
+    .footer {
+        padding: 10px;
+    }
+
+    .footer-text,
+    .footer-link {
+        font-size: 10px;
+    }
+
+    .footer-links {
+        gap: 10px;
+    }
+}

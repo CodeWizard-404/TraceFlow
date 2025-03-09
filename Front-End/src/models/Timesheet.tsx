@@ -1,10 +1,13 @@
+import TimesheetStatus from "./Enum/TimesheetStatus";
+import Visit from "./Visit";
+
 interface Timesheet {
-  timesheetID: number;
-  weekNumber: string;
+  timesheetID: string;
+  weekNumber: number;
   year: number;
-  status: string;
+  status: TimesheetStatus;
   supervisorID: string;
-  Visits: any[];
+  Visits?: Visit[];
 }
 
 export default Timesheet;
