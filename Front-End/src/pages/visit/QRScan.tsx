@@ -1,7 +1,7 @@
 // src/pages/visit/QRScan.tsx
-import React, { useEffect, useState } from "react";
+import React, { useEffect, useState, useRef } from "react";
 import { useLocation, useNavigate } from "react-router-dom";
-import { Html5QrcodeScanner } from "html5-qrcode";
+import { Html5Qrcode } from "html5-qrcode";
 import Visit from "../../models/Visit";
 import "./QRScan.css";
 import { verifyQrCode } from "../../apis/visitAPI";
@@ -9,9 +9,10 @@ import { verifyQrCode } from "../../apis/visitAPI";
 const QRScan: React.FC = () => {
     const navigate = useNavigate();
     const location = useLocation();
-    const [scanner, setScanner] = useState<Html5QrcodeScanner | null>(null);
     const [error, setError] = useState<string | null>(null);
-    const [isScanning, setIsScanning] = useState<boolean>(false);
+    const [loading, setLoading] = useState<boolean>(true);
+    const qrRef = useRef<HTMLDivElement>(null);
+    const qrCode = useRef<Html5Qrcode | null>(null);
 
     // Get visit from location state
     const visit = (location.state as { visit?: Visit })?.visit;
@@ -19,19 +20,25 @@ const QRScan: React.FC = () => {
     useEffect(() => {
         if (!visit || !visit.visitID) {
             setError("No visit data provided. Please go back and select a visit.");
+            setLoading(false);
             return;
         }
 
-        // Initialize QR scanner
-        const qrScanner = new Html5QrcodeScanner(
-            "qr-reader",
-            { fps: 10, qrbox: { width: 250, height: 250 } },
-            false // verbose
-        );
+        if (!qrRef.current) {
+            setError("Failed to initialize QR scanner. Element not found.");
+            setLoading(false);
+            return;
+        }
 
-        const onScanSuccess = async (decodedText: string) => {
-            setIsScanning(false);
-            qrScanner.clear(); // Stop scanning
+        // Initialize Html5Qrcode
+        const html5QrCode = new Html5Qrcode("qr-reader");
+        qrCode.current = html5QrCode;
+
+        const config = { fps: 10, qrbox: { width: 250, height: 250 } };
+        const qrCodeSuccessCallback = async (decodedText: string, decodedResult: any) => {
+            if (qrCode.current) {
+                qrCode.current.stop().catch((err) => console.error("Stop error:", err)); // Stop scanning
+            }
 
             try {
                 const response = await verifyQrCode({
@@ -46,22 +53,45 @@ const QRScan: React.FC = () => {
                 }
             } catch (err) {
                 setError("Failed to verify QR code. Please try again.");
-                console.error(err);
+                console.error("QR verification error:", err);
             }
         };
 
-        const onScanFailure = (error: string) => {
-            // Ignore continuous scan failures, only handle success
+        const qrCodeErrorCallback = (error: string) => {
             console.warn(`QR scan error: ${error}`);
+            if (error.includes("NotAllowedError")) {
+                setError("Camera access denied. Please allow camera access and try again.");
+            } else if (error.includes("NotFoundError")) {
+                setError("No camera found on this device.");
+            }
         };
 
-        qrScanner.render(onScanSuccess, onScanFailure);
-        setScanner(qrScanner);
-        setIsScanning(true);
+        // Start QR code scanning
+        html5QrCode
+            .start(
+                { facingMode: "environment" }, // Prefer rear camera
+                config,
+                qrCodeSuccessCallback,
+                qrCodeErrorCallback
+            )
+            .then(() => {
+                setLoading(false);
+                console.log("Camera started successfully");
+            })
+            .catch((err) => {
+                setError(`Failed to start camera: ${err.message}`);
+                setLoading(false);
+                console.error("Camera start error:", err);
+            });
 
         // Cleanup on unmount
         return () => {
-            qrScanner.clear().catch((err) => console.error("Failed to clear scanner", err));
+            if (qrCode.current) {
+                qrCode.current
+                    .stop()
+                    .then(() => qrCode.current?.clear())
+                    .catch((err) => console.error("Cleanup error:", err));
+            }
         };
     }, [visit, navigate]);
 
@@ -90,15 +120,22 @@ const QRScan: React.FC = () => {
                 <p>Align the QR code within the frame to validate the visit.</p>
             </header>
             <section className="qr-scan-card">
-                <div id="qr-reader" className="qr-reader"></div>
-                {isScanning && <p className="qr-status">Scanning...</p>}
-                {error && (
-                    <div className="qr-error">
-                        <p>{error}</p>
-                        <button className="qr-retry-btn" onClick={() => window.location.reload()}>
-                            Retry
-                        </button>
+                {loading ? (
+                    <div className="qr-loading">
+                        <p>Starting camera...</p>
                     </div>
+                ) : (
+                    <>
+                        <div id="qr-reader" className="qr-reader" ref={qrRef}></div>
+                        {error && (
+                            <div className="qr-error">
+                                <p>{error}</p>
+                                <button className="qr-retry-btn" onClick={() => window.location.reload()}>
+                                    Retry
+                                </button>
+                            </div>
+                        )}
+                    </>
                 )}
             </section>
             <div className="qr-actions">
