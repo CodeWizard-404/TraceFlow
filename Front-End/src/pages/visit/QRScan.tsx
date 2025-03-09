@@ -28,53 +28,68 @@ const QRScan: React.FC = () => {
 
     useEffect(() => {
         const codeReader = new BrowserQRCodeReader();
-        if (videoRef.current && !scanResult && !loading) {
-            codeReader
-                .decodeFromVideoDevice(null, videoRef.current, (result, err) => {
-                    if (result) {
-                        handleScan(result.getText());
-                    }
-                    if (err) {
-                        setError("Error scanning QR code. Please try again.");
-                        console.error(err);
-                    }
-                })
-                .catch((err) => {
+        let isMounted = true;
+    
+        const scan = async () => {
+            if (videoRef.current && !scanResult && !loading && isMounted) {
+                try {
+                    const result = await codeReader.decodeFromVideoDevice(
+                        null,
+                        videoRef.current,
+                        async (result, err) => {
+                            if (result && isMounted) {
+                                await handleScan(result.getText());
+                            }
+                            if (err && !err.name.includes('NotFoundException')) {
+                                setError("Error scanning QR code. Please try again.");
+                                console.error(err);
+                            }
+                        }
+                    );
+                } catch (err) {
                     setError("Camera access denied. Please grant permissions.");
                     console.error(err);
-                });
-
-            return () => {
-                codeReader.reset();
-            };
-        }
-        // eslint-disable-next-line react-hooks/exhaustive-deps
-    }, [visit, scanResult, loading]);
+                }
+            }
+        };
+    
+        scan();
+    
+        return () => {
+            isMounted = false;
+            codeReader.reset();
+        };
+    }, [visit]);
 
     const handleScan = async (data: string) => {
         if (data && visit && !scanResult) {
+            console.log("Scan started:", data);
             setScanResult(data);
             setLoading(true);
             setError(null);
-            console.log("Calling verifyQrCode with:", { qrData: data, visitId: visit.visitID });
+            
             try {
+                console.log("Calling verifyQrCode with:", { qrData: data, visitId: visit.visitID });
                 const response = await verifyQrCode({
                     qrData: data,
                     visitId: visit.visitID,
                 });
-                console.log("API Response:", response);
+                console.log("API Response received:", response);
+                
                 if (response.valid) {
+                    console.log("QR valid, navigating...");
                     navigate(`/timesheets`, { state: { visit } });
                 } else {
+                    console.log("QR invalid");
                     setError("Invalid QR code. Phone number mismatch.");
                     setScanResult(null);
                 }
             } catch (err) {
+                console.error("Verification error:", err);
                 setError("QR verification failed. Please try again.");
                 setScanResult(null);
-                console.error(err);
             } finally {
-                console.log("Finally block reached");
+                console.log("Scan complete, setting loading to false");
                 setLoading(false);
             }
         }
