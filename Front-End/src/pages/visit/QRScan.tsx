@@ -56,13 +56,13 @@ const QRScan: React.FC = () => {
             setScanResult(data);
             setLoading(true);
             setError(null);
-
+            console.log("Calling verifyQrCode with:", { qrData: data, visitId: visit.visitID });
             try {
                 const response = await verifyQrCode({
                     qrData: data,
                     visitId: visit.visitID,
                 });
-
+                console.log("API Response:", response);
                 if (response.valid) {
                     navigate(`/timesheets`, { state: { visit } });
                 } else {
@@ -74,6 +74,7 @@ const QRScan: React.FC = () => {
                 setScanResult(null);
                 console.error(err);
             } finally {
+                console.log("Finally block reached");
                 setLoading(false);
             }
         }
