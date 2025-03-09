@@ -6,7 +6,6 @@ import {
     FaPhone, FaListUl, FaCheckCircle, FaArrowLeft,
     FaCircle
 } from "react-icons/fa";
-
 import "./VisitDetails.css";
 import { getAgentById } from "../../apis/agentAPI";
 import { getVisitById } from "../../apis/visitAPI";
@@ -84,6 +83,21 @@ const VisitDetails: React.FC = () => {
                 <h1>
                     <FaListUl /> Visit {visit.status}
                     <span className={`status-dot status-${visit.status}`}></span>
+                    {visit.duration !== null && (
+                        <div className="duration-clock">
+                            <svg className="clock-circle" viewBox="0 0 36 36">
+                                <circle className="clock-base" cx="18" cy="18" r="16" />
+                                <circle
+                                    className="clock-progress"
+                                    cx="18"
+                                    cy="18"
+                                    r="16"
+                                    strokeDasharray={`${Math.min(visit.duration! / 60 * 100, 100)} 100`}
+                                />
+                            </svg>
+                            <span className="duration-text">{visit.duration}m</span>
+                        </div>
+                    )}
                 </h1>
             </div>
 
