@@ -64,7 +64,7 @@ const QRScan: React.FC = () => {
                 });
 
                 if (response.valid) {
-                    navigate(`/visit/${visit.visitID}/checklist`, { state: { visit } });
+                    navigate(`/timesheets`, { state: { visit } });
                 } else {
                     setError("Invalid QR code. Phone number mismatch.");
                     setScanResult(null);
