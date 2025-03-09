@@ -9,7 +9,8 @@ import { verifyQrCode } from "../../apis/visitAPI";
 const QRScan: React.FC = () => {
     const navigate = useNavigate();
     const location = useLocation();
-    const [backendError, setBackendError] = useState<string | null>(null); // Only for backend validation errors
+    const [backendError, setBackendError] = useState<string | null>(null); // For mismatch or validation errors
+    const [status, setStatus] = useState<string>("Scanning..."); // Track scanning status
     const [loading, setLoading] = useState<boolean>(true);
     const [isMounted, setIsMounted] = useState<boolean>(false);
     const qrRef = useRef<HTMLDivElement>(null);
@@ -24,6 +25,7 @@ const QRScan: React.FC = () => {
         if (!visit || !visit.visitID) {
             console.error("No visit data provided. Please go back and select a visit.");
             setLoading(false);
+            setStatus("");
             return;
         }
 
@@ -31,6 +33,7 @@ const QRScan: React.FC = () => {
             console.log("Ref check:", qrRef.current); // Debug ref
             console.error("Failed to initialize QR scanner. Element not found.");
             setLoading(false);
+            setStatus("");
             return;
         }
 
@@ -40,6 +43,7 @@ const QRScan: React.FC = () => {
 
         const config = { fps: 10, qrbox: { width: 250, height: 250 } };
         const qrCodeSuccessCallback = async (decodedText: string, decodedResult: any) => {
+            setStatus("Checking..."); // Update status when checking
             if (qrCode.current) {
                 qrCode.current.stop().catch((err) => console.error("Stop error:", err)); // Stop scanning
             }
@@ -53,10 +57,12 @@ const QRScan: React.FC = () => {
                 if (response.valid) {
                     navigate("/timesheet"); // Redirect on success
                 } else {
-                    setBackendError(response.message || "QR code validation failed."); // Display backend error
+                    setBackendError("Mismatch error"); // Display mismatch error if backend says invalid
+                    setStatus("Scanning..."); // Resume scanning
                 }
             } catch (err) {
-                setBackendError("Failed to verify QR code. Please try again."); // Fallback backend error
+                setBackendError("Mismatch error"); // Assume mismatch if backend fails to respond
+                setStatus("Scanning..."); // Resume scanning
                 console.error("QR verification error:", err);
             }
         };
@@ -86,6 +92,7 @@ const QRScan: React.FC = () => {
             .catch((err) => {
                 console.error("Failed to start camera:", err.message);
                 setLoading(false);
+                setStatus("");
             });
 
         // Cleanup on unmount
@@ -132,6 +139,9 @@ const QRScan: React.FC = () => {
                 ) : (
                     <>
                         <div id="qr-reader" className="qr-reader" ref={qrRef}></div>
+                        <div className="qr-status">
+                            <p>{status}</p>
+                        </div>
                         {backendError && (
                             <div className="qr-error">
                                 <p>{backendError}</p>
