@@ -12,10 +12,12 @@
   "dependencies": {
     "@hassanmojab/react-modern-calendar-datepicker": "^3.1.7",
     "@types/date-fns": "^2.5.3",
+    "@zxing/library": "^0.21.3",
     "axios": "^1.8.2",
     "bootstrap": "^5.3.3",
     "date-fns": "^4.1.0",
     "dayjs": "^1.11.13",
+    "framer-motion": "^12.4.10",
     "front-end": "file:",
     "html5-qrcode": "^2.3.8",
     "react": "^18.3.1",
@@ -23,8 +25,6 @@
     "react-dom": "^18.3.1",
     "react-icons": "^5.5.0",
     "react-modern-calendar-datepicker": "^3.1.6",
-    "react-qr-reader": "^3.0.0-beta-1",
-    "react-qr-scanner": "^1.0.0-alpha.11",
     "react-router-dom": "^7.2.0",
     "react-time-picker": "^7.0.0"
   },

@@ -37,3 +37,7 @@ npm install react-qr-reader --legacy-peer-deps
 npm install react-qr-scanner
 
 npm install react-qr-reader --legacy-peer-deps
+
+npm install framer-motion
+
+npm install --save-dev @types/framer-motion
