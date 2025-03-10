@@ -74,13 +74,14 @@ const TimesheetForm: React.FC = () => {
 
     const getWeekNumber = (dateStr: string): number => {
         const date = new Date(dateStr);
-        const yearStart = new Date(Date.UTC(date.getUTCFullYear(), 0, 1));
-        const targetDate = new Date(Date.UTC(date.getUTCFullYear(), date.getUTCMonth(), date.getUTCDate()));
+        const utcDate = new Date(Date.UTC(date.getUTCFullYear(), date.getUTCMonth(), date.getUTCDate()));
+        utcDate.setUTCDate(utcDate.getUTCDate() + 4 - (utcDate.getUTCDay() || 7));
+        const yearStart = new Date(Date.UTC(utcDate.getUTCFullYear(), 0, 1));
+        const diffMs = utcDate.getTime() - yearStart.getTime();
         const dayMs = 24 * 60 * 60 * 1000;
-        const daysDiff = Math.floor((targetDate.getTime() - yearStart.getTime()) / dayMs);
-        const dayOfWeek = yearStart.getUTCDay() || 7;
-        const weekOffset = (daysDiff + dayOfWeek - 1) / 7;
-        return Math.ceil(weekOffset);
+        const weekNum = Math.ceil(((diffMs / dayMs) + 1) / 7);
+        console.log(`getWeekNumber: dateStr=${dateStr}, utcDate=${utcDate}, yearStart=${yearStart}, weekNum=${weekNum}`);
+        return weekNum;
     };
 
     const handleReasonSelect = (reason: string | Reason) => {

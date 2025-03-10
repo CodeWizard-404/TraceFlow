@@ -1,14 +1,18 @@
-// src/pages/timesheet/TimesheetValidation.tsx
 import React, { useEffect, useState } from "react";
 import { useNavigate } from "react-router-dom";
 import "./TimesheetValidation.css";
 import Timesheet from "../../models/Timesheet";
 import Visit from "../../models/Visit";
-import { FaClock, FaMapMarkerAlt } from "react-icons/fa";
+import { FaClock, FaMapMarkerAlt, FaRegUser } from "react-icons/fa";
 import { getAllTimesheets, validateTimesheet } from "../../apis/timesheetAPI";
 import TimesheetStatus from "../../models/Enum/TimesheetStatus";
 
 type ViewMode = "year" | "month" | "week" | "day";
+
+// Extend Visit type to include supervisorID for display purposes
+interface VisitWithSupervisor extends Visit {
+    supervisorID?: string;
+}
 
 const TimesheetValidation: React.FC = () => {
     const [timesheets, setTimesheets] = useState<Timesheet[]>([]);
@@ -22,13 +26,12 @@ const TimesheetValidation: React.FC = () => {
     const [supervisorFilter, setSupervisorFilter] = useState<string>("all");
     const navigate = useNavigate();
 
-    // Fetch timesheets
     useEffect(() => {
         const fetchTimesheets = async () => {
             try {
                 setLoading(true);
                 const data = await getAllTimesheets();
-                setTimesheets(data.filter((ts) => ts.year === currentYear));
+                setTimesheets(data.filter((ts) => ts.year === currentYear || (ts.year === currentYear - 1 && ts.weekNumber >= 52)));
             } catch (error) {
                 console.error("Failed to fetch timesheets:", error);
             } finally {
@@ -39,7 +42,6 @@ const TimesheetValidation: React.FC = () => {
         updateCurrentWeekAndDay();
     }, [currentYear]);
 
-    // Filter timesheets based on supervisor
     useEffect(() => {
         if (supervisorFilter === "all") {
             setFilteredTimesheets(timesheets);
@@ -48,31 +50,65 @@ const TimesheetValidation: React.FC = () => {
         }
     }, [timesheets, supervisorFilter]);
 
-    // Update current week and day
-    const updateCurrentWeekAndDay = () => {
-        const today = new Date();
-        const firstDayOfYear = new Date(currentYear, 0, 1);
-        const pastDays = (today.getTime() - firstDayOfYear.getTime()) / 86400000;
-        const weekNum = Math.ceil((pastDays + firstDayOfYear.getDay() + 1) / 7);
-        setCurrentWeek(weekNum);
-        setCurrentDay(today.getDay() === 0 || today.getDay() === 6 ? new Date(today.setDate(today.getDate() - (today.getDay() || 7) + 1)) : today);
+    const getWeekNumber = (date: Date): number => {
+        const year = date.getFullYear();
+        const jan1 = new Date(year, 0, 1);
+        const firstFridayOffset = (5 - jan1.getDay() + 7) % 7;
+        const firstMonday = new Date(year, 0, 1 + firstFridayOffset - 4);
+
+        const diffMs = date.getTime() - firstMonday.getTime();
+        const diffDays = Math.floor(diffMs / (1000 * 60 * 60 * 24));
+        const weekNum = Math.floor(diffDays / 7) + 1;
+
+        const nextJan1 = new Date(year + 1, 0, 1);
+        const nextFirstFridayOffset = (5 - nextJan1.getDay() + 7) % 7;
+        const nextFirstMonday = new Date(year + 1, 0, 1 + nextFirstFridayOffset - 4);
+        if (date >= nextFirstMonday) {
+            return getWeekNumber(date);
+        }
+
+        return weekNum > 0 && weekNum <= getWeeksInYear(year) ? weekNum : 1;
     };
 
-    // Get unique supervisors for filter
+    const getWeeksInYear = (year: number): number => {
+        const jan1 = new Date(year, 0, 1);
+        const firstFridayOffset = (5 - jan1.getDay() + 7) % 7;
+        const firstMonday = new Date(year, 0, 1 + firstFridayOffset - 4);
+
+        const nextJan1 = new Date(year + 1, 0, 1);
+        const nextFirstFridayOffset = (5 - nextJan1.getDay() + 7) % 7;
+        const nextFirstMonday = new Date(year + 1, 0, 1 + nextFirstFridayOffset - 4);
+
+        const daysInYear = (nextFirstMonday.getTime() - firstMonday.getTime()) / (1000 * 60 * 60 * 24);
+        return Math.floor(daysInYear / 7);
+    };
+
+    const updateCurrentWeekAndDay = () => {
+        const today = new Date();
+        const weekNum = getWeekNumber(today);
+        setCurrentWeek(weekNum);
+        setCurrentDay(
+            today.getDay() === 0 || today.getDay() === 6
+                ? new Date(today.setDate(today.getDate() - (today.getDay() || 7) + 1))
+                : today
+        );
+    };
+
     const getSupervisors = () => {
         const supervisors = Array.from(new Set(timesheets.map((ts) => ts.supervisorID)));
         return ["all", ...supervisors];
     };
 
-    // Generate weekdays for a week
     const getWeekDays = (year: number, weekNumber: number): Date[] => {
-        const janFirst = new Date(year, 0, 1);
-        const dayOfWeek = janFirst.getDay();
-        const daysToFirstMonday = (dayOfWeek === 0 ? 1 : 8 - dayOfWeek) % 7;
-        const firstMonday = new Date(janFirst);
-        firstMonday.setDate(janFirst.getDate() + daysToFirstMonday);
+        const jan1 = new Date(year, 0, 1);
+        const firstFridayOffset = (5 - jan1.getDay() + 7) % 7;
+        const firstFriday = new Date(year, 0, 1 + firstFridayOffset);
+        const firstMonday = new Date(firstFriday);
+        firstMonday.setDate(firstFriday.getDate() - 4);
+
         const weekStart = new Date(firstMonday);
         weekStart.setDate(firstMonday.getDate() + (weekNumber - 1) * 7);
+
         return Array.from({ length: 5 }, (_, i) => {
             const day = new Date(weekStart);
             day.setDate(weekStart.getDate() + i);
@@ -81,64 +117,93 @@ const TimesheetValidation: React.FC = () => {
         });
     };
 
-    const sortVisitsByTime = (visits: Visit[]): Visit[] => {
+    const sortVisitsByTime = (visits: VisitWithSupervisor[]): VisitWithSupervisor[] => {
         return [...visits].sort((a, b) => a.time.localeCompare(b.time));
     };
 
-    // Data generation functions
     const generateYearData = () => {
-        return Array.from({ length: 12 }, (_, month) => {
-            const weeks = Array.from({ length: 5 }, (_, i) => {
-                const weekNumber = month * 4 + i + 1;
-                const timesheet = filteredTimesheets.find((ts) => ts.weekNumber === weekNumber);
-                return {
-                    weekNumber,
-                    days: getWeekDays(currentYear, weekNumber),
-                    visits: timesheet?.Visits || [],
-                    status: timesheet?.status || "Not Scheduled",
-                    supervisorID: timesheet?.supervisorID,
-                };
-            });
-            return { month, weeks };
-        });
-    };
+        const weeksInYear = getWeeksInYear(currentYear);
+        const months: { month: number; weeks: { weekNumber: number; days: Date[]; visits: Visit[]; status: string; supervisorID?: string }[] }[] = Array.from({ length: 12 }, (_, m) => ({ month: m, weeks: [] }));
 
-    const generateMonthData = () => {
-        const weeks = Array.from({ length: 5 }, (_, i) => {
-            const weekNumber = currentMonth * 4 + i + 1;
-            const timesheet = filteredTimesheets.find((ts) => ts.weekNumber === weekNumber);
-            return {
-                weekNumber,
-                days: getWeekDays(currentYear, weekNumber),
+        for (let week = 1; week <= weeksInYear; week++) {
+            const days = getWeekDays(currentYear, week);
+            let assignedMonth: number;
+
+            if (week === 1) {
+                assignedMonth = 0;
+            } else {
+                const monthCounts = days.reduce((acc, day) => {
+                    const month = day.getMonth();
+                    acc[month] = (acc[month] || 0) + 1;
+                    return acc;
+                }, {} as Record<number, number>);
+                assignedMonth = Number(
+                    Object.entries(monthCounts).reduce((a, b) => (b[1] > a[1] ? b : a))[0]
+                );
+            }
+
+            const timesheet = filteredTimesheets.find((ts) => ts.weekNumber === week && ts.year === currentYear);
+            months[assignedMonth].weeks.push({
+                weekNumber: week,
+                days,
                 visits: timesheet?.Visits || [],
                 status: timesheet?.status || "Not Scheduled",
                 supervisorID: timesheet?.supervisorID,
-            };
-        });
+            });
+        }
+        return months;
+    };
+
+    const generateMonthData = () => {
+        const weeksInYear = getWeeksInYear(currentYear);
+        const weeks: { weekNumber: number; days: Date[]; visits: Visit[]; status: string; supervisorID?: string }[] = [];
+
+        for (let week = 1; week <= weeksInYear; week++) {
+            const days = getWeekDays(currentYear, week);
+            const hasDaysInMonth = days.some((day) => day.getMonth() === currentMonth && day.getFullYear() === currentYear);
+            if (hasDaysInMonth) {
+                const timesheet = filteredTimesheets.find((ts) => ts.weekNumber === week && ts.year === currentYear);
+                weeks.push({
+                    weekNumber: week,
+                    days,
+                    visits: timesheet?.Visits || [],
+                    status: timesheet?.status || "Not Scheduled",
+                });
+            }
+        }
         return weeks;
     };
 
     const generateWeekData = () => {
-        const timesheet = filteredTimesheets.find((ts) => ts.weekNumber === currentWeek);
+        const matchingTimesheets = filteredTimesheets.filter((ts) => ts.weekNumber === currentWeek);
+        const allVisits: VisitWithSupervisor[] = matchingTimesheets.flatMap((ts) =>
+            (ts.Visits || []).map((visit) => ({ ...visit, supervisorID: ts.supervisorID }))
+        );
+        const status = matchingTimesheets.length > 0 ? matchingTimesheets[0].status : "Not Scheduled";
+        const supervisorID = matchingTimesheets.length > 0 ? matchingTimesheets[0].supervisorID : undefined;
         return {
             weekNumber: currentWeek,
             days: getWeekDays(currentYear, currentWeek),
-            visits: timesheet?.Visits || [],
-            status: timesheet?.status || "Not Scheduled",
-            supervisorID: timesheet?.supervisorID,
+            visits: allVisits,
+            status: status || "Not Scheduled",
+            supervisorID,
         };
     };
 
     const generateDayData = () => {
         if (!currentDay) return [];
         const dateStr = currentDay.toISOString().split("T")[0];
-        const visits = filteredTimesheets
-            .flatMap((ts) => ts.Visits || [])
-            .filter((visit) => visit.date === dateStr);
+        const visits: VisitWithSupervisor[] = filteredTimesheets
+            .flatMap((ts) =>
+                (ts.Visits || []).map((visit) => ({ ...visit, supervisorID: ts.supervisorID }))
+            )
+            .filter((visit) => {
+                const visitDateStr = visit.date.split("T")[0];
+                return visitDateStr === dateStr;
+            });
         return sortVisitsByTime(visits);
     };
 
-    // Scroll to current period
     const scrollToCurrent = () => {
         const today = new Date();
         setCurrentYear(today.getFullYear());
@@ -149,16 +214,15 @@ const TimesheetValidation: React.FC = () => {
                 viewMode === "year"
                     ? `month-${today.getMonth()}`
                     : viewMode === "month"
-                        ? `week-${currentWeek}`
-                        : viewMode === "week"
-                            ? `week-${currentWeek}`
-                            : `day-${today.toISOString().split("T")[0]}`;
+                    ? `week-${currentWeek}`
+                    : viewMode === "week"
+                    ? `week-${currentWeek}`
+                    : `day-${today.toISOString().split("T")[0]}`;
             const element = document.getElementById(id);
             if (element) element.scrollIntoView({ behavior: "smooth" });
         }, 0);
     };
 
-    // Validate entire timesheet
     const handleValidateTimesheet = async (timesheetID: string) => {
         try {
             const timesheet = filteredTimesheets.find((ts) => ts.timesheetID === timesheetID);
@@ -288,11 +352,17 @@ const TimesheetValidation: React.FC = () => {
             {viewMode === "week" && (
                 <section className="week-view">
                     <div className="week-header">
-                        <button className="nav-btn" onClick={() => setCurrentWeek((prev) => Math.max(1, prev - 1))}>
+                        <button
+                            className="nav-btn"
+                            onClick={() => setCurrentWeek((prev) => Math.max(1, prev - 1))}
+                        >
                             <span>←</span>
                         </button>
                         <h2>Week {currentWeek}</h2>
-                        <button className="nav-btn" onClick={() => setCurrentWeek((prev) => Math.min(52, prev + 1))}>
+                        <button
+                            className="nav-btn"
+                            onClick={() => setCurrentWeek((prev) => Math.min(getWeeksInYear(currentYear), prev + 1))}
+                        >
                             <span>→</span>
                         </button>
                     </div>
@@ -321,7 +391,11 @@ const TimesheetValidation: React.FC = () => {
                                         {weekData.days.map((day) => {
                                             const dayStr = day.toISOString().split("T")[0];
                                             const dayVisits = sortVisitsByTime(
-                                                weekData.visits.filter((v) => v.date === dayStr)
+                                                weekData.visits.filter((v) => {
+                                                    const visitDate = new Date(v.date);
+                                                    visitDate.setHours(0, 0, 0, 0);
+                                                    return visitDate.toISOString().split("T")[0] === dayStr;
+                                                })
                                             );
                                             return (
                                                 <div className="day-column" key={dayStr}>
@@ -348,15 +422,24 @@ const TimesheetValidation: React.FC = () => {
                                                                     className="visit-card"
                                                                     onClick={() => navigate(`/timesheet-validation/visit/${visit.visitID}`)}
                                                                 >
+
+                                                                    {visit.supervisorID && (
+                                                                        <p className="visit-supervisor">
+                                                                            <FaRegUser />{visit.supervisorID}
+                                                                        </p>
+                                                                    )}
                                                                     <div className="visit-header">
+                                                                        
                                                                         {visit.time && (
                                                                             <span className="visit-time">
                                                                                 <FaClock /> {visit.time.split(":").slice(0, 2).join(":")}
                                                                             </span>
                                                                         )}
+                                                                        
                                                                         <span className={`visit-status status-${visit.status.toLowerCase()}`}>
                                                                             {visit.status}
                                                                         </span>
+                                                                        
                                                                     </div>
                                                                     <p className="visit-location">
                                                                         <FaMapMarkerAlt /> {visit.location}
@@ -414,6 +497,11 @@ const TimesheetValidation: React.FC = () => {
                                     className="visit-card"
                                     onClick={() => navigate(`/timesheet-validation/visit/${visit.visitID}`)}
                                 >
+                                    {visit.supervisorID && (
+                                        <p className="visit-supervisor">
+                                            Supervisor: {visit.supervisorID}
+                                        </p>
+                                    )}
                                     <div className="visit-header">
                                         {visit.time && (
                                             <span className="visit-time">
@@ -427,6 +515,7 @@ const TimesheetValidation: React.FC = () => {
                                     <p className="visit-location">
                                         <FaMapMarkerAlt /> {visit.location || "Location TBD"}
                                     </p>
+
                                     {visit.Reasons && visit.Reasons.length > 0 && (
                                         <p className="visit-reasons">
                                             Reasons: {visit.Reasons.map((reason) => reason.item).join(", ")}

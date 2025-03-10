@@ -1,3 +1,4 @@
+/* eslint-disable react-hooks/exhaustive-deps */
 import React, { useEffect, useState } from "react";
 import { useNavigate } from "react-router-dom";
 import "./Timesheets.css";
@@ -29,7 +30,7 @@ const Timesheets: React.FC = () => {
       try {
         setLoading(true);
         const data = await getTimesheetsBySupervisor(supervisorID);
-        setTimesheets(data.filter((ts) => ts.year === currentYear));
+        setTimesheets(data.filter((ts) => ts.year === currentYear || (ts.year === currentYear - 1 && ts.weekNumber >= 52)));
       } catch (error) {
         console.error("Failed to fetch timesheets:", error);
       } finally {
@@ -38,7 +39,6 @@ const Timesheets: React.FC = () => {
     };
     fetchTimesheets();
     updateCurrentWeekAndDay();
-  // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [currentYear]);
 
   // Persist view mode to localStorage whenever it changes
@@ -46,27 +46,63 @@ const Timesheets: React.FC = () => {
     localStorage.setItem("lastViewMode", viewMode);
   }, [viewMode]);
 
+  // Utility to get ISO week number for a date
+  const getWeekNumber = (date: Date): number => {
+    const year = date.getFullYear();
+    const jan1 = new Date(year, 0, 1);
+    const firstFridayOffset = (5 - jan1.getDay() + 7) % 7;
+    const firstMonday = new Date(year, 0, 1 + firstFridayOffset - 4);
+  
+    const diffMs = date.getTime() - firstMonday.getTime();
+    const diffDays = Math.floor(diffMs / (1000 * 60 * 60 * 24));
+    const weekNum = Math.floor(diffDays / 7) + 1;
+  
+    // Check if the week belongs to the next year
+    const nextJan1 = new Date(year + 1, 0, 1);
+    const nextFirstFridayOffset = (5 - nextJan1.getDay() + 7) % 7;
+    const nextFirstMonday = new Date(year + 1, 0, 1 + nextFirstFridayOffset - 4);
+    if (date >= nextFirstMonday) {
+      return getWeekNumber(date); // Recalculate for next year (this could be optimized)
+    }
+  
+    return weekNum > 0 && weekNum <= getWeeksInYear(year) ? weekNum : 1; // Clamp to valid range
+  };
+  // Get total ISO weeks in a year
+  const getWeeksInYear = (year: number): number => {
+    const jan1 = new Date(year, 0, 1);
+    const firstFridayOffset = (5 - jan1.getDay() + 7) % 7;
+    const firstMonday = new Date(year, 0, 1 + firstFridayOffset - 4); // Monday of Week 1
+  
+    const nextJan1 = new Date(year + 1, 0, 1);
+    const nextFirstFridayOffset = (5 - nextJan1.getDay() + 7) % 7;
+    const nextFirstMonday = new Date(year + 1, 0, 1 + nextFirstFridayOffset - 4); // Monday of Week 1 of next year
+  
+    const daysInYear = (nextFirstMonday.getTime() - firstMonday.getTime()) / (1000 * 60 * 60 * 24);
+    return Math.floor(daysInYear / 7);
+  };
+
   // Update current week and day, ensuring day is a weekday (Monday-Friday)
   const updateCurrentWeekAndDay = () => {
     const today = new Date();
-    const firstDayOfYear = new Date(currentYear, 0, 1);
-    const pastDays = (today.getTime() - firstDayOfYear.getTime()) / 86400000;
-    const weekNum = Math.ceil((pastDays + firstDayOfYear.getDay() + 1) / 7);
+    const weekNum = getWeekNumber(today); // Now using getWeekNumber
     setCurrentWeek(weekNum);
-    setCurrentDay(today.getDay() === 0 || today.getDay() === 6 ? new Date(today.setDate(today.getDate() - (today.getDay() || 7) + 1)) : today);
+    setCurrentDay(
+      today.getDay() === 0 || today.getDay() === 6
+        ? new Date(today.setDate(today.getDate() - (today.getDay() || 7) + 1))
+        : today
+    );
   };
-
   // Generate array of weekdays (Monday-Friday) for a given week
   const getWeekDays = (year: number, weekNumber: number): Date[] => {
-    const janFirst = new Date(year, 0, 1);
-    const dayOfWeek = janFirst.getDay();
-    const daysToFirstMonday = (dayOfWeek === 0 ? 1 : 8 - dayOfWeek) % 7;
-    const firstMonday = new Date(janFirst);
-    firstMonday.setDate(janFirst.getDate() + daysToFirstMonday);
-    
+    const jan1 = new Date(year, 0, 1);
+    const firstFridayOffset = (5 - jan1.getDay() + 7) % 7; // Days from Jan 1 to first Friday (5 = Friday)
+    const firstFriday = new Date(year, 0, 1 + firstFridayOffset); // First Friday in January
+    const firstMonday = new Date(firstFriday);
+    firstMonday.setDate(firstFriday.getDate() - 4); // Monday of the week containing the first Friday
+  
     const weekStart = new Date(firstMonday);
     weekStart.setDate(firstMonday.getDate() + (weekNumber - 1) * 7);
-    
+  
     return Array.from({ length: 5 }, (_, i) => {
       const day = new Date(weekStart);
       day.setDate(weekStart.getDate() + i);
@@ -82,35 +118,57 @@ const Timesheets: React.FC = () => {
 
   // Data generation functions for each view
   const generateYearData = () => {
-    return Array.from({ length: 12 }, (_, month) => {
-      const weeks = Array.from({ length: 5 }, (_, i) => {
-        const weekNumber = month * 4 + i + 1;
-        const timesheet = timesheets.find((ts) => ts.weekNumber === weekNumber);
-        return {
-          weekNumber,
-          days: getWeekDays(currentYear, weekNumber),
-          visits: timesheet?.Visits || [],
-          status: timesheet?.status || "Not Scheduled",
-        };
-      });
-      return { month, weeks };
-    });
-  };
-
-  const generateMonthData = () => {
-    const weeks = Array.from({ length: 5 }, (_, i) => {
-      const weekNumber = currentMonth * 4 + i + 1;
-      const timesheet = timesheets.find((ts) => ts.weekNumber === weekNumber);
-      return {
-        weekNumber,
-        days: getWeekDays(currentYear, weekNumber),
+    const weeksInYear = getWeeksInYear(currentYear);
+    const months: { month: number; weeks: { weekNumber: number; days: Date[]; visits: Visit[]; status: string }[] }[] = Array.from({ length: 12 }, (_, m) => ({ month: m, weeks: [] }));
+  
+    for (let week = 1; week <= weeksInYear; week++) {
+      const days = getWeekDays(currentYear, week);
+      let assignedMonth: number;
+  
+      // Special case: Week 1 always belongs to January (month 0)
+      if (week === 1) {
+        assignedMonth = 0; // January
+      } else {
+        // For other weeks, use the dominant month based on day count
+        const monthCounts = days.reduce((acc, day) => {
+          const month = day.getMonth();
+          acc[month] = (acc[month] || 0) + 1;
+          return acc;
+        }, {} as Record<number, number>);
+        assignedMonth = Number(
+          Object.entries(monthCounts).reduce((a, b) => (b[1] > a[1] ? b : a))[0]
+        );
+      }
+  
+      const timesheet = timesheets.find((ts) => ts.weekNumber === week && ts.year === currentYear);
+      months[assignedMonth].weeks.push({
+        weekNumber: week,
+        days,
         visits: timesheet?.Visits || [],
         status: timesheet?.status || "Not Scheduled",
-      };
-    });
+      });
+    }
+    return months;
+  };
+  const generateMonthData = () => {
+    const weeksInYear = getWeeksInYear(currentYear);
+    const weeks: { weekNumber: number; days: Date[]; visits: Visit[]; status: string }[] = [];
+  
+    for (let week = 1; week <= weeksInYear; week++) {
+      const days = getWeekDays(currentYear, week);
+      const hasDaysInMonth = days.some((day) => day.getMonth() === currentMonth && day.getFullYear() === currentYear);
+      if (hasDaysInMonth) {
+        const timesheet = timesheets.find((ts) => ts.weekNumber === week && ts.year === currentYear);
+        weeks.push({
+          weekNumber: week,
+          days,
+          visits: timesheet?.Visits || [],
+          status: timesheet?.status || "Not Scheduled",
+        });
+      }
+    }
     return weeks;
   };
-
   const generateWeekData = () => {
     const timesheet = timesheets.find((ts) => ts.weekNumber === currentWeek);
     return {
@@ -120,7 +178,6 @@ const Timesheets: React.FC = () => {
       status: timesheet?.status || "Not Scheduled",
     };
   };
-
   const generateDayData = () => {
     if (!currentDay) return [];
     const dateStr = currentDay.toISOString().split("T")[0];
@@ -255,11 +312,17 @@ const Timesheets: React.FC = () => {
       {viewMode === "week" && (
         <section className="week-view">
           <div className="week-header">
-            <button className="nav-btn" onClick={() => setCurrentWeek((prev) => Math.max(1, prev - 1))}>
+          <button
+              className="nav-btn"
+              onClick={() => setCurrentWeek((prev) => Math.max(1, prev - 1))}
+            >
               <span>←</span>
             </button>
             <h2>Week {currentWeek}</h2>
-            <button className="nav-btn" onClick={() => setCurrentWeek((prev) => Math.min(52, prev + 1))}>
+            <button
+              className="nav-btn"
+              onClick={() => setCurrentWeek((prev) => Math.min(getWeeksInYear(currentYear), prev + 1))}
+            >
               <span>→</span>
             </button>
           </div>

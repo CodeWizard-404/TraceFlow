@@ -125,11 +125,13 @@ class VisitItem extends StatelessWidget {
   Color? _getStatusColor(String? status) {
     switch (status?.toLowerCase()) {
       case 'visited':
-        return Colors.green;
+        return Colors.lightBlue;
       case 'pending':
         return Colors.orange;
       case 'rejected':
         return Colors.red;
+      case 'validated':
+        return Colors.pink;
       default:
         return Colors.grey;
     }

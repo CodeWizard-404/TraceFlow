@@ -13,6 +13,6 @@ module.exports = (sequelize, DataTypes) => {
         cin: { type: DataTypes.STRING, unique: true},
         email: { type: DataTypes.STRING, unique: true },
         phone: { type: DataTypes.STRING },
-        location: { type: DataTypes.STRING, unique: true },
+        location: { type: DataTypes.STRING},
     });
 };
