@@ -156,13 +156,17 @@ const VisitValidation: React.FC = () => {
                             <ul className="checklist">
                                 {checklist.map((item) => (
                                     <li key={item.id} className={item.checked ? "checked" : ""}>
-                                        <label>
+                                        <label className="custom-checkbox-label">
                                             <input
                                                 type="checkbox"
                                                 checked={item.checked}
                                                 onChange={() => handleChecklistChange(item.id)}
+                                                className="custom-checkbox-input"
                                             />
-                                            <span>{item.item}</span>
+                                            <span className="custom-checkbox">
+                                                <FaCheck className="check-icon" />
+                                            </span>
+                                            <span className="checklist-text">{item.item}</span>
                                         </label>
                                     </li>
                                 ))}

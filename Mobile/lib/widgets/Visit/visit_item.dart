@@ -33,17 +33,17 @@ class VisitItem extends StatelessWidget {
               begin: Alignment.topLeft,
               end: Alignment.bottomRight,
               colors: [
-                Colors.white.withOpacity(0.9),
-                Colors.grey[50]!.withOpacity(0.9),
+                Theme.of(context).colorScheme.surface.withOpacity(0.9),
+                Theme.of(context).colorScheme.surface.withOpacity(0.7),
               ],
             ),
             border: Border.all(
-              color: Color(0xFF4CB1C7).withOpacity(0.5), // Border color
-              width: 1, // Border width
+              color: Theme.of(context).colorScheme.primary.withOpacity(0.5),
+              width: 1,
             ),
             boxShadow: [
               BoxShadow(
-                color: Color(0xFF4CB1C7).withOpacity(0.1),
+                color: Theme.of(context).colorScheme.primary.withOpacity(0.1),
                 blurRadius: 12,
                 offset: Offset(0, 4),
               ),
@@ -60,24 +60,19 @@ class VisitItem extends StatelessWidget {
                     Flexible(
                       child: Text(
                         'Visit Details',
-                        style: TextStyle(
-                          fontSize: 20,
-                          fontWeight: FontWeight.bold,
-                          color: Color(0xFF4CB1C7),
-                          shadows: [Shadow(color: Colors.black12, blurRadius: 2)],
-                        ),
+                        style: Theme.of(context).textTheme.headlineSmall,
                       ),
                     ),
                     GlassStatusChip(
                       status: visit.status ?? 'Unknown',
-                      color: _getStatusColor(visit.status),
+                      color: _getStatusColor(context, visit.status),
                     ),
                   ],
                 ),
                 SizedBox(height: 16),
-                _buildInfoRow(Icons.location_on, 'Location: ${visit.location ?? 'N/A'}'),
+                _buildInfoRow(context, Icons.location_on, 'Location: ${visit.location ?? 'N/A'}'),
                 SizedBox(height: 12),
-                _buildInfoRow(Icons.access_time, 'Time: $formattedTime'),
+                _buildInfoRow(context, Icons.access_time, 'Time: $formattedTime'),
                 SizedBox(height: 16),
                 Wrap(
                   spacing: 8,
@@ -96,33 +91,29 @@ class VisitItem extends StatelessWidget {
     );
   }
 
-  Widget _buildInfoRow(IconData icon, String text) {
+  Widget _buildInfoRow(BuildContext context, IconData icon, String text) {
     return Row(
       children: [
         Container(
           padding: EdgeInsets.all(6),
           decoration: BoxDecoration(
             shape: BoxShape.circle,
-            color: Color(0xFF4CB1C7).withOpacity(0.1),
+            color: Theme.of(context).colorScheme.primary.withOpacity(0.1),
           ),
-          child: Icon(icon, size: 18, color: Color(0xFF4CB1C7)),
+          child: Icon(icon, size: 18, color: Theme.of(context).colorScheme.primary),
         ),
         SizedBox(width: 12),
         Expanded(
           child: Text(
             text,
-            style: TextStyle(
-              fontSize: 15,
-              color: Colors.grey[800],
-              fontWeight: FontWeight.w500,
-            ),
+            style: Theme.of(context).textTheme.bodyMedium,
           ),
         ),
       ],
     );
   }
 
-  Color? _getStatusColor(String? status) {
+  Color? _getStatusColor(BuildContext context, String? status) {
     switch (status?.toLowerCase()) {
       case 'visited':
         return Colors.lightBlue;
@@ -133,7 +124,7 @@ class VisitItem extends StatelessWidget {
       case 'validated':
         return Colors.pink;
       default:
-        return Colors.grey;
+        return Theme.of(context).colorScheme.onSurface.withOpacity(0.6);
     }
   }
 }

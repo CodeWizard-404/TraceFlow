@@ -141,6 +141,26 @@
   border-bottom: none;
 }
 
+/* Replace the existing .checklist-section input[type="checkbox"] styles with the following */
+
+.checklist-section .custom-checkbox-label {
+  display: flex;
+  align-items: center;
+  gap: 0.75rem;
+  width: 100%;
+  cursor: pointer;
+  position: relative;
+  padding-left: 0.5rem;
+}
+
+.checklist-section .custom-checkbox-input {
+  position: absolute;
+  opacity: 0;
+  width: 0;
+  height: 0;
+}
+
+/* Ensure there's space between checklist items */
 .checklist-section ul.checklist {
   list-style: none;
   padding: 0;
@@ -150,44 +170,88 @@
 .checklist-section li {
   display: flex;
   align-items: center;
-  padding: 0.75rem 0;
+  padding: 0.5rem 0;
   border-bottom: 1px solid #e5e7eb;
   transition: background 0.2s ease;
-}
 
-.checklist-section li.checked {
-  background: rgba(76, 177, 199, 0.1);
 }
 
 .checklist-section li:last-child {
   border-bottom: none;
+  margin-bottom: 0; /* Remove margin from the last item to avoid extra space at the bottom */
 }
 
-.checklist-section label {
+.checklist-section li.checked {
+  background: rgba(76, 177, 199, 0.1);
+  border-radius: 0.5rem ;
+
+}
+
+/* Rest of the custom checkbox styles remain the same */
+.checklist-section .custom-checkbox-label {
   display: flex;
   align-items: center;
   gap: 0.75rem;
   width: 100%;
   cursor: pointer;
+  position: relative;
 }
 
-.checklist-section input[type="checkbox"] {
-  accent-color: #4cb1c7;
+.checklist-section .custom-checkbox-input {
+  position: absolute;
+  opacity: 0;
+  width: 0;
+  height: 0;
+}
+
+.checklist-section .custom-checkbox {
   width: 1.25rem;
   height: 1.25rem;
-  border-radius: 0.25rem;
-  transition: transform 0.2s ease;
+  border: 2px solid #4cb1c7;
+  border-radius: 0.375rem;
+  background: #fff;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  transition: all 0.3s ease;
+  position: relative;
 }
 
-.checklist-section input[type="checkbox"]:checked {
+.checklist-section .custom-checkbox .check-icon {
+  font-size: 0.875rem;
+  color: #fff;
+  opacity: 0;
+  transform: scale(0);
+  transition: all 0.2s ease;
+}
+
+.checklist-section .custom-checkbox-input:checked + .custom-checkbox {
+  background: #4cb1c7;
+  border-color: #4cb1c7;
   transform: scale(1.1);
 }
 
-.checklist-section span {
+.checklist-section .custom-checkbox-input:checked + .custom-checkbox .check-icon {
+  opacity: 1;
+  transform: scale(1);
+}
+
+.checklist-section .custom-checkbox-input:focus + .custom-checkbox {
+  box-shadow: 0 0 0 3px rgba(76, 177, 199, 0.3);
+}
+
+.checklist-section .checklist-text {
   font-size: 0.875rem;
   color: #1f2937;
   flex-grow: 1;
 }
+
+.checklist-section .custom-checkbox-label:hover .custom-checkbox {
+  border-color: #3a8fa2;
+}
+
+/* Rest of your CSS remains unchanged */
+/* Rest of your existing CSS remains unchanged */
 
 .progress-bar {
   height: 0.5rem;

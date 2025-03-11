@@ -42,9 +42,9 @@ class DayView extends StatelessWidget {
     return Consumer<TimesheetProvider>(
       builder: (context, provider, child) {
         final visits = getVisitsForDay(day, provider.timesheets);
-        return SingleChildScrollView( // Added scroll view
+        return SingleChildScrollView(
           child: Padding(
-            padding: const EdgeInsets.symmetric(vertical: 16), // Adjusted padding
+            padding: const EdgeInsets.symmetric(vertical: 16),
             child: Column(
               crossAxisAlignment: CrossAxisAlignment.start,
               children: [
@@ -58,20 +58,19 @@ class DayView extends StatelessWidget {
                           padding: const EdgeInsets.all(8),
                           decoration: BoxDecoration(
                             shape: BoxShape.circle,
-                            color: const Color(0xFF4CB1C7).withOpacity(0.1),
+                            color: Theme.of(context).colorScheme.primary.withOpacity(0.1),
                           ),
-                          child: const Icon(
+                          child: Icon(
                             Icons.event_busy,
                             size: 20,
-                            color: Color(0xFF4CB1C7),
+                            color: Theme.of(context).colorScheme.primary,
                           ),
                         ),
+                        SizedBox(width: 8),
                         Text(
                           'No visits scheduled',
-                          style: TextStyle(
-                            fontSize: 14,
-                            color: Colors.grey[600],
-                            fontWeight: FontWeight.w500,
+                          style: Theme.of(context).textTheme.bodyMedium?.copyWith(
+                            color: Theme.of(context).colorScheme.onSurface.withOpacity(0.6),
                           ),
                         ),
                       ],

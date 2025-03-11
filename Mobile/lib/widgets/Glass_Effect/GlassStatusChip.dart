@@ -1,4 +1,3 @@
-import 'package:flutter/cupertino.dart';
 import 'package:flutter/material.dart';
 
 class GlassStatusChip extends StatelessWidget {
@@ -9,21 +8,25 @@ class GlassStatusChip extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
+    final chipColor = color ?? Theme.of(context).colorScheme.onSurface.withOpacity(0.6); // Fallback to onSurface
+
     return Container(
-      padding: EdgeInsets.symmetric(horizontal: 12, vertical: 6),
+      padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 6),
       decoration: BoxDecoration(
         borderRadius: BorderRadius.circular(16),
         gradient: LinearGradient(
           colors: [
-            (color ?? Colors.grey).withOpacity(0.2),
-            (color ?? Colors.grey).withOpacity(0.1),
+            chipColor.withOpacity(0.2),
+            chipColor.withOpacity(0.1),
           ],
+          begin: Alignment.topLeft,
+          end: Alignment.bottomRight,
         ),
         boxShadow: [
           BoxShadow(
-            color: (color ?? Colors.grey).withOpacity(0.2),
+            color: chipColor.withOpacity(0.2),
             blurRadius: 8,
-            offset: Offset(0, 2),
+            offset: const Offset(0, 2),
           ),
         ],
       ),
@@ -31,7 +34,7 @@ class GlassStatusChip extends StatelessWidget {
         status,
         style: TextStyle(
           fontSize: 12,
-          color: color ?? Colors.grey,
+          color: chipColor, // Use the provided or fallback color
           fontWeight: FontWeight.bold,
         ),
       ),

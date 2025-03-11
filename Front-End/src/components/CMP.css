@@ -1,17 +1,48 @@
-/* src/components/Header.css */
-/* Root font size is assumed to be set in a global stylesheet (e.g., index.css or Timesheets.css) */
-/* If not, add: 
-html {
-  font-size: 16px;
+body.dark .header {
+    background: #2d3748;
+    color: #e2e8f0;
 }
-@media (max-width: 768px) { html { font-size: 18px; } }
-@media (max-width: 480px) { html { font-size: 20px; } }
-*/
+
+.header h1 {
+    margin: 0;
+    font-size: 1.5rem;
+    font-weight: 700;
+}
+
+.theme-toggle-btn {
+    display: flex;
+    align-items: center;
+    padding: 0.5rem 0.5rem;
+    font-size: 0.875rem;
+    font-weight: 600;
+    background: #4cb1c7;
+    color: #fff;
+    border: none;
+    border-radius: 3.125rem;
+    cursor: pointer;
+    transition: all 0.3s ease;
+}
+
+body.dark .theme-toggle-btn {
+    background: #63b3ed;
+}
+
+.theme-toggle-btn:hover {
+    background: #3a8fa2;
+}
+
+body.dark .theme-toggle-btn:hover {
+    background: #4299e1;
+}
+
+
+
+
+
 
 .header {
     background: #fff;
     padding: 0.9375rem 1.25rem;
-    /* 15px 20px at 16px base */
     box-shadow: 0 0.25rem 0.75rem rgba(0, 0, 0, 0.05);
     border-bottom: 1px solid rgba(76, 177, 199, 0.2);
     position: sticky;

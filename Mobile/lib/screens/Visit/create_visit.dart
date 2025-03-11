@@ -66,12 +66,12 @@ class _CreateVisitScreenState extends State<CreateVisitScreen> {
       lastDate: DateTime(widget.year + 1),
       builder: (context, child) {
         return Theme(
-          data: ThemeData.light().copyWith(
-            colorScheme: const ColorScheme.light(
-              primary: Color(0xFF4CB1C7),
-              onPrimary: Colors.white,
-              surface: Colors.white,
-              onSurface: Colors.black87,
+          data: Theme.of(context).copyWith(
+            colorScheme: Theme.of(context).colorScheme.copyWith(
+              primary: Theme.of(context).colorScheme.primary,
+              onPrimary: Theme.of(context).colorScheme.onPrimary,
+              surface: Theme.of(context).colorScheme.surface,
+              onSurface: Theme.of(context).colorScheme.onSurface,
             ),
           ),
           child: child!,
@@ -91,10 +91,10 @@ class _CreateVisitScreenState extends State<CreateVisitScreen> {
       initialTime: _selectedTime ?? TimeOfDay.now(),
       builder: (context, child) {
         return Theme(
-          data: ThemeData.light().copyWith(
-            colorScheme: const ColorScheme.light(
-              primary: Color(0xFF4CB1C7),
-              onPrimary: Colors.white,
+          data: Theme.of(context).copyWith(
+            colorScheme: Theme.of(context).colorScheme.copyWith(
+              primary: Theme.of(context).colorScheme.primary,
+              onPrimary: Theme.of(context).colorScheme.onPrimary,
             ),
           ),
           child: child!,
@@ -119,7 +119,7 @@ class _CreateVisitScreenState extends State<CreateVisitScreen> {
         return StatefulBuilder(
           builder: (context, setDialogState) {
             return AlertDialog(
-              title: const Text('Select Location'),
+              title: Text('Select Location', style: Theme.of(context).textTheme.headlineSmall),
               content: SizedBox(
                 width: double.maxFinite,
                 child: Column(
@@ -129,7 +129,7 @@ class _CreateVisitScreenState extends State<CreateVisitScreen> {
                       controller: searchController,
                       decoration: InputDecoration(
                         hintText: 'Search locations...',
-                        prefixIcon: const Icon(Icons.search, color: Color(0xFF4CB1C7)),
+                        prefixIcon: Icon(Icons.search, color: Theme.of(context).colorScheme.primary),
                         border: OutlineInputBorder(
                           borderRadius: BorderRadius.circular(12),
                         ),
@@ -164,7 +164,7 @@ class _CreateVisitScreenState extends State<CreateVisitScreen> {
                               agentProvider.fetchAgentsByLocation(value!);
                               Navigator.pop(context);
                             },
-                            activeColor: const Color(0xFF4CB1C7),
+                            activeColor: Theme.of(context).colorScheme.primary,
                           );
                         },
                       ),
@@ -175,7 +175,7 @@ class _CreateVisitScreenState extends State<CreateVisitScreen> {
               actions: [
                 TextButton(
                   onPressed: () => Navigator.pop(context),
-                  child: const Text('Cancel', style: TextStyle(color: Colors.grey)),
+                  child: Text('Cancel', style: TextStyle(color: Theme.of(context).colorScheme.onSurface.withOpacity(0.6))),
                 ),
               ],
             );
@@ -196,7 +196,7 @@ class _CreateVisitScreenState extends State<CreateVisitScreen> {
         return StatefulBuilder(
           builder: (context, setDialogState) {
             return AlertDialog(
-              title: const Text('Select Agent'),
+              title: Text('Select Agent', style: Theme.of(context).textTheme.headlineSmall),
               content: SizedBox(
                 width: double.maxFinite,
                 child: Column(
@@ -206,7 +206,7 @@ class _CreateVisitScreenState extends State<CreateVisitScreen> {
                       controller: searchController,
                       decoration: InputDecoration(
                         hintText: 'Search agents...',
-                        prefixIcon: const Icon(Icons.search, color: Color(0xFF4CB1C7)),
+                        prefixIcon: Icon(Icons.search, color: Theme.of(context).colorScheme.primary),
                         border: OutlineInputBorder(
                           borderRadius: BorderRadius.circular(12),
                         ),
@@ -241,7 +241,7 @@ class _CreateVisitScreenState extends State<CreateVisitScreen> {
                               });
                               Navigator.pop(context);
                             },
-                            activeColor: const Color(0xFF4CB1C7),
+                            activeColor: Theme.of(context).colorScheme.primary,
                           );
                         },
                       ),
@@ -252,7 +252,7 @@ class _CreateVisitScreenState extends State<CreateVisitScreen> {
               actions: [
                 TextButton(
                   onPressed: () => Navigator.pop(context),
-                  child: const Text('Cancel', style: TextStyle(color: Colors.grey)),
+                  child: Text('Cancel', style: TextStyle(color: Theme.of(context).colorScheme.onSurface.withOpacity(0.6))),
                 ),
               ],
             );
@@ -274,7 +274,7 @@ class _CreateVisitScreenState extends State<CreateVisitScreen> {
         return StatefulBuilder(
           builder: (context, setDialogState) {
             return AlertDialog(
-              title: const Text('Select Checklists'),
+              title: Text('Select Checklists', style: Theme.of(context).textTheme.headlineSmall),
               content: SizedBox(
                 width: double.maxFinite,
                 child: Column(
@@ -284,7 +284,7 @@ class _CreateVisitScreenState extends State<CreateVisitScreen> {
                       controller: searchController,
                       decoration: InputDecoration(
                         hintText: 'Search checklists...',
-                        prefixIcon: const Icon(Icons.search, color: Color(0xFF4CB1C7)),
+                        prefixIcon: Icon(Icons.search, color: Theme.of(context).colorScheme.primary),
                         border: OutlineInputBorder(
                           borderRadius: BorderRadius.circular(12),
                         ),
@@ -318,7 +318,7 @@ class _CreateVisitScreenState extends State<CreateVisitScreen> {
                                 }
                               });
                             },
-                            activeColor: const Color(0xFF4CB1C7),
+                            activeColor: Theme.of(context).colorScheme.primary,
                           );
                         },
                       ),
@@ -329,7 +329,7 @@ class _CreateVisitScreenState extends State<CreateVisitScreen> {
               actions: [
                 TextButton(
                   onPressed: () => Navigator.pop(context),
-                  child: const Text('Cancel', style: TextStyle(color: Colors.grey)),
+                  child: Text('Cancel', style: TextStyle(color: Theme.of(context).colorScheme.onSurface.withOpacity(0.6))),
                 ),
                 ElevatedButton(
                   onPressed: () {
@@ -338,10 +338,8 @@ class _CreateVisitScreenState extends State<CreateVisitScreen> {
                     });
                     Navigator.pop(context);
                   },
-                  style: ElevatedButton.styleFrom(
-                    backgroundColor: const Color(0xFF4CB1C7),
-                  ),
-                  child: const Text('Confirm', style: TextStyle(color: Colors.white)),
+                  style: Theme.of(context).elevatedButtonTheme.style,
+                  child: Text('Confirm', style: TextStyle(color: Theme.of(context).colorScheme.onPrimary)),
                 ),
               ],
             );
@@ -363,7 +361,7 @@ class _CreateVisitScreenState extends State<CreateVisitScreen> {
         return StatefulBuilder(
           builder: (context, setDialogState) {
             return AlertDialog(
-              title: const Text('Select Reasons'),
+              title: Text('Select Reasons', style: Theme.of(context).textTheme.headlineSmall),
               content: SizedBox(
                 width: double.maxFinite,
                 child: Column(
@@ -373,7 +371,7 @@ class _CreateVisitScreenState extends State<CreateVisitScreen> {
                       controller: searchController,
                       decoration: InputDecoration(
                         hintText: 'Search reasons...',
-                        prefixIcon: const Icon(Icons.search, color: Color(0xFF4CB1C7)),
+                        prefixIcon: Icon(Icons.search, color: Theme.of(context).colorScheme.primary),
                         border: OutlineInputBorder(
                           borderRadius: BorderRadius.circular(12),
                         ),
@@ -407,7 +405,7 @@ class _CreateVisitScreenState extends State<CreateVisitScreen> {
                                 }
                               });
                             },
-                            activeColor: const Color(0xFF4CB1C7),
+                            activeColor: Theme.of(context).colorScheme.primary,
                           );
                         },
                       ),
@@ -418,7 +416,7 @@ class _CreateVisitScreenState extends State<CreateVisitScreen> {
               actions: [
                 TextButton(
                   onPressed: () => Navigator.pop(context),
-                  child: const Text('Cancel', style: TextStyle(color: Colors.grey)),
+                  child: Text('Cancel', style: TextStyle(color: Theme.of(context).colorScheme.onSurface.withOpacity(0.6))),
                 ),
                 ElevatedButton(
                   onPressed: () {
@@ -427,10 +425,8 @@ class _CreateVisitScreenState extends State<CreateVisitScreen> {
                     });
                     Navigator.pop(context);
                   },
-                  style: ElevatedButton.styleFrom(
-                    backgroundColor: const Color(0xFF4CB1C7),
-                  ),
-                  child: const Text('Confirm', style: TextStyle(color: Colors.white)),
+                  style: Theme.of(context).elevatedButtonTheme.style,
+                  child: Text('Confirm', style: TextStyle(color: Theme.of(context).colorScheme.onPrimary)),
                 ),
               ],
             );
@@ -479,7 +475,7 @@ class _CreateVisitScreenState extends State<CreateVisitScreen> {
     if (_formKey.currentState!.validate()) {
       if (_selectedDate == null || _selectedTime == null || _selectedAgentId == null) {
         ScaffoldMessenger.of(context).showSnackBar(
-          const SnackBar(content: Text('Please fill all required fields')),
+          SnackBar(content: Text('Please fill all required fields'), backgroundColor: Theme.of(context).colorScheme.error),
         );
         return;
       }
@@ -512,11 +508,11 @@ class _CreateVisitScreenState extends State<CreateVisitScreen> {
 
         Navigator.pop(context);
         ScaffoldMessenger.of(context).showSnackBar(
-          const SnackBar(content: Text('Visit created successfully')),
+          SnackBar(content: Text('Visit created successfully'), backgroundColor: Theme.of(context).colorScheme.primary),
         );
       } catch (e) {
         ScaffoldMessenger.of(context).showSnackBar(
-          SnackBar(content: Text('Failed to create visit: $e')),
+          SnackBar(content: Text('Failed to create visit: $e'), backgroundColor: Theme.of(context).colorScheme.error),
         );
       }
     }
@@ -528,9 +524,12 @@ class _CreateVisitScreenState extends State<CreateVisitScreen> {
       appBar: PreferredSize(
         preferredSize: const Size.fromHeight(80),
         child: Container(
-          decoration: const BoxDecoration(
+          decoration: BoxDecoration(
             gradient: LinearGradient(
-              colors: [Color(0xFF4CB1C7), Color(0xFF64C9D1)],
+              colors: [
+                Theme.of(context).colorScheme.primary,
+                Theme.of(context).colorScheme.secondary,
+              ],
               begin: Alignment.topLeft,
               end: Alignment.bottomRight,
             ),
@@ -539,20 +538,20 @@ class _CreateVisitScreenState extends State<CreateVisitScreen> {
           child: AppBar(
             backgroundColor: Colors.transparent,
             elevation: 0,
-            title: const Text(
+            title: Text(
               'Create Visit',
-              style: TextStyle(fontSize: 22, fontWeight: FontWeight.bold, color: Colors.white),
+              style: Theme.of(context).appBarTheme.titleTextStyle,
             ),
             centerTitle: true,
             leading: IconButton(
-              icon: const Icon(Icons.arrow_back_ios_rounded, color: Colors.white, size: 24),
+              icon: Icon(Icons.arrow_back_ios_rounded, color: Theme.of(context).appBarTheme.iconTheme!.color, size: 24),
               onPressed: () => Navigator.pop(context),
             ),
           ),
         ),
       ),
       body: Container(
-        color: Colors.grey[100],
+        color: Theme.of(context).scaffoldBackgroundColor,
         child: Padding(
           padding: const EdgeInsets.all(16.0),
           child: Form(
@@ -590,26 +589,26 @@ class _CreateVisitScreenState extends State<CreateVisitScreen> {
                         crossAxisAlignment: CrossAxisAlignment.start,
                         children: [
                           Container(
-                            padding: const EdgeInsets.symmetric(vertical:0, horizontal: 16),
+                            padding: const EdgeInsets.symmetric(vertical: 0, horizontal: 16),
                             decoration: BoxDecoration(
-                              color: Colors.white,
+                              color: Theme.of(context).colorScheme.surface,
                               borderRadius: BorderRadius.circular(12),
-                              border: Border.all(color: Colors.grey[300]!),
+                              border: Border.all(color: Theme.of(context).colorScheme.onSurface.withOpacity(0.2)),
                             ),
                             child: Row(
                               children: [
-                                const Icon(Icons.phone, color: Color(0xFF4CB1C7), size: 24),
+                                Icon(Icons.phone, color: Theme.of(context).colorScheme.primary, size: 24),
                                 const SizedBox(width: 12),
                                 Expanded(
                                   child: TextField(
                                     controller: _phoneController,
                                     keyboardType: TextInputType.phone,
-                                    decoration: const InputDecoration(
+                                    decoration: InputDecoration(
                                       hintText: 'Enter agent\'s phone number',
                                       border: InputBorder.none,
-                                      hintStyle: TextStyle(color: Colors.grey),
+                                      hintStyle: TextStyle(color: Theme.of(context).colorScheme.onSurface.withOpacity(0.6)),
                                     ),
-                                    style: const TextStyle(fontSize: 16, color: Colors.black87),
+                                    style: TextStyle(fontSize: 16, color: Theme.of(context).colorScheme.onSurface),
                                     onChanged: (value) => _onPhoneChanged(value, agentProvider),
                                   ),
                                 ),
@@ -620,7 +619,7 @@ class _CreateVisitScreenState extends State<CreateVisitScreen> {
                             const SizedBox(height: 8),
                             Text(
                               _phoneError!,
-                              style: const TextStyle(color: Colors.red, fontSize: 12),
+                              style: TextStyle(color: Theme.of(context).colorScheme.error, fontSize: 12),
                             ),
                           ],
                           const SizedBox(height: 12),
@@ -629,29 +628,33 @@ class _CreateVisitScreenState extends State<CreateVisitScreen> {
                             child: Container(
                               padding: const EdgeInsets.all(12),
                               decoration: BoxDecoration(
-                                color: Colors.white,
+                                color: Theme.of(context).colorScheme.surface,
                                 borderRadius: BorderRadius.circular(12),
-                                border: Border.all(color: Colors.grey[300]!),
+                                border: Border.all(color: Theme.of(context).colorScheme.onSurface.withOpacity(0.2)),
                                 backgroundBlendMode: _agentPhone.isNotEmpty ? BlendMode.saturation : null,
                               ),
                               child: Row(
                                 children: [
                                   Icon(
                                     Icons.location_on,
-                                    color: _agentPhone.isNotEmpty ? Colors.grey : const Color(0xFF4CB1C7),
+                                    color: _agentPhone.isNotEmpty
+                                        ? Theme.of(context).colorScheme.onSurface.withOpacity(0.6)
+                                        : Theme.of(context).colorScheme.primary,
                                   ),
                                   const SizedBox(width: 12),
                                   Expanded(
                                     child: Text(
                                       _location ?? (_agentPhone.isNotEmpty ? 'Selected via phone' : 'Select Location'),
                                       style: TextStyle(
-                                        color: _agentPhone.isNotEmpty ? Colors.grey : Colors.black87,
+                                        color: _agentPhone.isNotEmpty
+                                            ? Theme.of(context).colorScheme.onSurface.withOpacity(0.6)
+                                            : Theme.of(context).colorScheme.onSurface,
                                       ),
                                     ),
                                   ),
                                   Icon(
                                     Icons.arrow_drop_down,
-                                    color: _agentPhone.isNotEmpty ? Colors.grey : Colors.grey,
+                                    color: Theme.of(context).colorScheme.onSurface.withOpacity(0.6),
                                   ),
                                 ],
                               ),
@@ -665,16 +668,18 @@ class _CreateVisitScreenState extends State<CreateVisitScreen> {
                             child: Container(
                               padding: const EdgeInsets.all(12),
                               decoration: BoxDecoration(
-                                color: Colors.white,
+                                color: Theme.of(context).colorScheme.surface,
                                 borderRadius: BorderRadius.circular(12),
-                                border: Border.all(color: Colors.grey[300]!),
+                                border: Border.all(color: Theme.of(context).colorScheme.onSurface.withOpacity(0.2)),
                                 backgroundBlendMode: _agentPhone.isNotEmpty || _location == null ? BlendMode.saturation : null,
                               ),
                               child: Row(
                                 children: [
                                   Icon(
                                     Icons.person,
-                                    color: _agentPhone.isNotEmpty || _location == null ? Colors.grey : const Color(0xFF4CB1C7),
+                                    color: _agentPhone.isNotEmpty || _location == null
+                                        ? Theme.of(context).colorScheme.onSurface.withOpacity(0.6)
+                                        : Theme.of(context).colorScheme.primary,
                                   ),
                                   const SizedBox(width: 12),
                                   Expanded(
@@ -687,13 +692,15 @@ class _CreateVisitScreenState extends State<CreateVisitScreen> {
                                           : 'Select Agent')
                                           : '${agentProvider.agents.firstWhere((agent) => agent.agentID == _selectedAgentId).name} ${agentProvider.agents.firstWhere((agent) => agent.agentID == _selectedAgentId).lastname}',
                                       style: TextStyle(
-                                        color: _agentPhone.isNotEmpty || _location == null ? Colors.grey : Colors.black87,
+                                        color: _agentPhone.isNotEmpty || _location == null
+                                            ? Theme.of(context).colorScheme.onSurface.withOpacity(0.6)
+                                            : Theme.of(context).colorScheme.onSurface,
                                       ),
                                     ),
                                   ),
                                   Icon(
                                     Icons.arrow_drop_down,
-                                    color: _agentPhone.isNotEmpty || _location == null ? Colors.grey : Colors.grey,
+                                    color: Theme.of(context).colorScheme.onSurface.withOpacity(0.6),
                                   ),
                                 ],
                               ),
@@ -723,23 +730,23 @@ class _CreateVisitScreenState extends State<CreateVisitScreen> {
                                 child: Container(
                                   padding: const EdgeInsets.all(12),
                                   decoration: BoxDecoration(
-                                    color: Colors.white,
+                                    color: Theme.of(context).colorScheme.surface,
                                     borderRadius: BorderRadius.circular(12),
-                                    border: Border.all(color: Colors.grey[300]!),
+                                    border: Border.all(color: Theme.of(context).colorScheme.onSurface.withOpacity(0.2)),
                                   ),
                                   child: Row(
                                     children: [
-                                      const Icon(Icons.checklist, color: Color(0xFF4CB1C7)),
+                                      Icon(Icons.checklist, color: Theme.of(context).colorScheme.primary),
                                       const SizedBox(width: 12),
                                       Expanded(
                                         child: Text(
                                           _selectedChecklistIds.isEmpty
                                               ? 'Select Checklists'
                                               : '${_selectedChecklistIds.length} selected',
-                                          style: const TextStyle(color: Colors.black87),
+                                          style: Theme.of(context).textTheme.bodyMedium,
                                         ),
                                       ),
-                                      const Icon(Icons.arrow_drop_down, color: Colors.grey),
+                                      Icon(Icons.arrow_drop_down, color: Theme.of(context).colorScheme.onSurface.withOpacity(0.6)),
                                     ],
                                   ),
                                 ),
@@ -759,8 +766,8 @@ class _CreateVisitScreenState extends State<CreateVisitScreen> {
                                           _selectedChecklistIds.remove(id);
                                         });
                                       },
-                                      backgroundColor: const Color(0xFF4CB1C7).withOpacity(0.1),
-                                      labelStyle: const TextStyle(color: Color(0xFF4CB1C7)),
+                                      backgroundColor: Theme.of(context).colorScheme.primary.withOpacity(0.1),
+                                      labelStyle: TextStyle(color: Theme.of(context).colorScheme.primary),
                                     );
                                   }).toList(),
                                 ),
@@ -791,23 +798,23 @@ class _CreateVisitScreenState extends State<CreateVisitScreen> {
                                 child: Container(
                                   padding: const EdgeInsets.all(12),
                                   decoration: BoxDecoration(
-                                    color: Colors.white,
+                                    color: Theme.of(context).colorScheme.surface,
                                     borderRadius: BorderRadius.circular(12),
-                                    border: Border.all(color: Colors.grey[300]!),
+                                    border: Border.all(color: Theme.of(context).colorScheme.onSurface.withOpacity(0.2)),
                                   ),
                                   child: Row(
                                     children: [
-                                      const Icon(Icons.list_alt, color: Color(0xFF4CB1C7)),
+                                      Icon(Icons.list_alt, color: Theme.of(context).colorScheme.primary),
                                       const SizedBox(width: 12),
                                       Expanded(
                                         child: Text(
                                           _selectedReasonIds.isEmpty
                                               ? 'Select Reasons'
                                               : '${_selectedReasonIds.length} selected',
-                                          style: const TextStyle(color: Colors.black87),
+                                          style: Theme.of(context).textTheme.bodyMedium,
                                         ),
                                       ),
-                                      const Icon(Icons.arrow_drop_down, color: Colors.grey),
+                                      Icon(Icons.arrow_drop_down, color: Theme.of(context).colorScheme.onSurface.withOpacity(0.6)),
                                     ],
                                   ),
                                 ),
@@ -827,8 +834,8 @@ class _CreateVisitScreenState extends State<CreateVisitScreen> {
                                           _selectedReasonIds.remove(id);
                                         });
                                       },
-                                      backgroundColor: const Color(0xFF4CB1C7).withOpacity(0.1),
-                                      labelStyle: const TextStyle(color: Color(0xFF4CB1C7)),
+                                      backgroundColor: Theme.of(context).colorScheme.primary.withOpacity(0.1),
+                                      labelStyle: TextStyle(color: Theme.of(context).colorScheme.primary),
                                     );
                                   }).toList(),
                                 ),
@@ -843,15 +850,10 @@ class _CreateVisitScreenState extends State<CreateVisitScreen> {
                 const SizedBox(height: 24),
                 ElevatedButton(
                   onPressed: _submitVisit,
-                  style: ElevatedButton.styleFrom(
-                    backgroundColor: const Color(0xFF4CB1C7),
-                    padding: const EdgeInsets.symmetric(vertical: 16, horizontal: 32),
-                    shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(12)),
-                    elevation: 4,
-                  ),
-                  child: const Text(
+                  style: Theme.of(context).elevatedButtonTheme.style,
+                  child: Text(
                     'Create Visit',
-                    style: TextStyle(fontSize: 18, fontWeight: FontWeight.w600, color: Colors.white),
+                    style: TextStyle(fontSize: 18, fontWeight: FontWeight.w600, color: Theme.of(context).colorScheme.onPrimary),
                   ),
                 ),
               ],
@@ -865,7 +867,8 @@ class _CreateVisitScreenState extends State<CreateVisitScreen> {
   Widget _buildSectionCard({required String title, required Widget child}) {
     return Card(
       elevation: 2,
-      shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(12)),
+      shape: Theme.of(context).cardTheme.shape,
+      color: Theme.of(context).cardTheme.color,
       child: Padding(
         padding: const EdgeInsets.all(16.0),
         child: Column(
@@ -873,7 +876,7 @@ class _CreateVisitScreenState extends State<CreateVisitScreen> {
           children: [
             Text(
               title,
-              style: const TextStyle(fontSize: 18, fontWeight: FontWeight.w600, color: Color(0xFF4CB1C7)),
+              style: Theme.of(context).textTheme.headlineSmall,
             ),
             const SizedBox(height: 12),
             child,
@@ -889,21 +892,21 @@ class _CreateVisitScreenState extends State<CreateVisitScreen> {
       child: Container(
         padding: const EdgeInsets.symmetric(vertical: 12, horizontal: 16),
         decoration: BoxDecoration(
-          color: Colors.white,
+          color: Theme.of(context).colorScheme.surface,
           borderRadius: BorderRadius.circular(12),
-          border: Border.all(color: Colors.grey[300]!),
+          border: Border.all(color: Theme.of(context).colorScheme.onSurface.withOpacity(0.2)),
         ),
         child: Row(
           children: [
-            Icon(icon, color: const Color(0xFF4CB1C7), size: 24),
+            Icon(icon, color: Theme.of(context).colorScheme.primary, size: 24),
             const SizedBox(width: 12),
             Expanded(
               child: Text(
                 title,
-                style: const TextStyle(fontSize: 16, color: Colors.black87),
+                style: Theme.of(context).textTheme.bodyMedium,
               ),
             ),
-            const Icon(Icons.arrow_drop_down, color: Colors.grey),
+            Icon(Icons.arrow_drop_down, color: Theme.of(context).colorScheme.onSurface.withOpacity(0.6)),
           ],
         ),
       ),

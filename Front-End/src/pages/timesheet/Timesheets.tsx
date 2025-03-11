@@ -259,10 +259,10 @@ const Timesheets: React.FC = () => {
                       setViewMode("week");
                     }}
                   >
-                    <span className="week-number">Week {week.weekNumber} :</span> 
+                    <span className="week-number">Week {week.weekNumber} :&nbsp;&nbsp;&nbsp;&nbsp;</span> 
                     <span className="week-range">
                       {week.days[0].toLocaleDateString("en-GB", { day: "numeric", month: "short" })} -{" "}
-                      {week.days[4].toLocaleDateString("en-GB", { day: "numeric", month: "short" })} /
+                      {week.days[4].toLocaleDateString("en-GB", { day: "numeric", month: "short" })} &nbsp;&nbsp;/&nbsp;
                     </span> 
                     <span className="visit-count">{week.visits.length} Visits</span>
                   </div>

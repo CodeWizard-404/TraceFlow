@@ -1,4 +1,3 @@
-import 'package:flutter/cupertino.dart';
 import 'package:flutter/material.dart';
 
 class GlassContainer extends StatelessWidget {
@@ -14,21 +13,21 @@ class GlassContainer extends StatelessWidget {
         borderRadius: BorderRadius.circular(20),
         gradient: LinearGradient(
           colors: [
-            Colors.white.withOpacity(0.7),
-            Colors.white.withOpacity(0.4),
+            Theme.of(context).colorScheme.surface.withOpacity(0.7),
+            Theme.of(context).colorScheme.surface.withOpacity(0.4),
           ],
           begin: Alignment.topLeft,
           end: Alignment.bottomRight,
         ),
         boxShadow: [
           BoxShadow(
-            color: Colors.black.withOpacity(0.05),
+            color: Theme.of(context).colorScheme.primary.withOpacity(0.05),
             blurRadius: 20,
             offset: Offset(0, 4),
           ),
         ],
         border: Border.all(
-          color: Colors.white.withOpacity(0.2),
+          color: Theme.of(context).colorScheme.onSurface.withOpacity(0.2),
           width: 1,
         ),
       ),

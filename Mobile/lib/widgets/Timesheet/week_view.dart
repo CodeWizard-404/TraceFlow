@@ -2,6 +2,7 @@ import 'package:flutter/material.dart';
 import 'package:intl/intl.dart';
 import '../Glass_Effect/GlassChip.dart';
 import 'day_view.dart';
+
 class WeekView extends StatelessWidget {
   final DateTime weekStartDate;
 
@@ -32,13 +33,13 @@ class WeekView extends StatelessWidget {
                 begin: Alignment.topLeft,
                 end: Alignment.bottomRight,
                 colors: [
-                  Colors.white.withOpacity(0.9),
-                  Colors.grey[50]!.withOpacity(0.9),
+                  Theme.of(context).colorScheme.surface.withOpacity(0.9),
+                  Theme.of(context).colorScheme.surface.withOpacity(0.7),
                 ],
               ),
               boxShadow: [
                 BoxShadow(
-                  color: Color(0xFF4CB1C7).withOpacity(0.1),
+                  color: Theme.of(context).colorScheme.primary.withOpacity(0.1),
                   blurRadius: 12,
                   offset: Offset(0, 4),
                 ),
@@ -54,12 +55,7 @@ class WeekView extends StatelessWidget {
                     children: [
                       Text(
                         DateFormat('EEEE').format(day),
-                        style: TextStyle(
-                          fontSize: 20,
-                          fontWeight: FontWeight.bold,
-                          color: Color(0xFF4CB1C7),
-                          shadows: [Shadow(color: Colors.black12, blurRadius: 2)],
-                        ),
+                        style: Theme.of(context).textTheme.headlineSmall,
                       ),
                       GlassChip(
                         label: DateFormat('MMM d').format(day),

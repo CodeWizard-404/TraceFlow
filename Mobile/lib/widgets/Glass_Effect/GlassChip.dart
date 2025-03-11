@@ -1,4 +1,4 @@
-import 'package:flutter/cupertino.dart';
+import 'package:flutter/material.dart';
 
 class GlassChip extends StatelessWidget {
   final String label;
@@ -8,20 +8,22 @@ class GlassChip extends StatelessWidget {
   @override
   Widget build(BuildContext context) {
     return Container(
-      padding: EdgeInsets.symmetric(horizontal: 12, vertical: 6),
+      padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 6),
       decoration: BoxDecoration(
         borderRadius: BorderRadius.circular(16),
         gradient: LinearGradient(
           colors: [
-            Color(0xFF4CB1C7).withOpacity(0.2),
-            Color(0xFF64C9D1).withOpacity(0.2),
+            Theme.of(context).colorScheme.primary.withOpacity(0.2),
+            Theme.of(context).colorScheme.secondary.withOpacity(0.2),
           ],
+          begin: Alignment.topLeft,
+          end: Alignment.bottomRight,
         ),
         boxShadow: [
           BoxShadow(
-            color: Color(0xFF4CB1C7).withOpacity(0.1),
+            color: Theme.of(context).colorScheme.primary.withOpacity(0.1),
             blurRadius: 8,
-            offset: Offset(0, 2),
+            offset: const Offset(0, 2),
           ),
         ],
       ),
@@ -29,7 +31,7 @@ class GlassChip extends StatelessWidget {
         label,
         style: TextStyle(
           fontSize: 12,
-          color: Color(0xFF4CB1C7),
+          color: Theme.of(context).colorScheme.primary, // Use primary color for text
           fontWeight: FontWeight.w600,
         ),
       ),

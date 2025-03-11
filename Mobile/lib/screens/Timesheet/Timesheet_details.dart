@@ -1,7 +1,9 @@
+// lib/screens/Timesheet/home_screen.dart
 import 'package:flutter/material.dart';
 import 'package:intl/intl.dart';
 import 'package:provider/provider.dart';
 import '../../providers/timesheet_provider.dart';
+import '../../providers/theme_provider.dart';
 import '../../widgets/Timesheet/day_view.dart';
 import '../../widgets/Timesheet/week_view.dart';
 import '../../widgets/Glass_Effect/GlassContainer.dart';
@@ -26,7 +28,7 @@ class HomeScreenState extends State<HomeScreen> with SingleTickerProviderStateMi
     _pageController = PageController(initialPage: _getOffset(_currentDate));
     _animationController = AnimationController(
       vsync: this,
-      duration: Duration(milliseconds: 600),
+      duration: const Duration(milliseconds: 600),
     );
     _fetchTimesheets();
   }
@@ -44,7 +46,7 @@ class HomeScreenState extends State<HomeScreen> with SingleTickerProviderStateMi
       ScaffoldMessenger.of(context).showSnackBar(
         SnackBar(
           content: Text('Failed to load timesheets: $error'),
-          backgroundColor: Colors.red.withOpacity(0.9),
+          backgroundColor: Theme.of(context).colorScheme.error.withOpacity(0.9),
           behavior: SnackBarBehavior.floating,
           shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(12)),
         ),
@@ -81,7 +83,7 @@ class HomeScreenState extends State<HomeScreen> with SingleTickerProviderStateMi
       _currentDate = _isWeekView ? _getStartOfWeek(DateTime.now()) : DateTime.now();
       _pageController.animateToPage(
         _getOffset(_currentDate),
-        duration: Duration(milliseconds: 600),
+        duration: const Duration(milliseconds: 600),
         curve: Curves.easeInOutCubic,
       );
     });
@@ -94,7 +96,7 @@ class HomeScreenState extends State<HomeScreen> with SingleTickerProviderStateMi
       _currentDate = _isWeekView ? _getStartOfWeek(DateTime.now()) : DateTime.now();
       _pageController.animateToPage(
         _getOffset(_currentDate),
-        duration: Duration(milliseconds: 600),
+        duration: const Duration(milliseconds: 600),
         curve: Curves.easeInOutCubic,
       );
     });
@@ -104,39 +106,55 @@ class HomeScreenState extends State<HomeScreen> with SingleTickerProviderStateMi
     return date.subtract(Duration(days: date.weekday - 1));
   }
 
+  void _showThemeNotification(String themeName) {
+    ScaffoldMessenger.of(context).showSnackBar(
+      SnackBar(
+        content: Text('Switched to $themeName theme'),
+        backgroundColor: Theme.of(context).colorScheme.primary.withOpacity(0.9),
+        behavior: SnackBarBehavior.floating,
+        shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(12)),
+        duration: const Duration(seconds: 2),
+      ),
+    );
+  }
+
   @override
   Widget build(BuildContext context) {
+    final themeProvider = Provider.of<ThemeProvider>(context);
     return Scaffold(
-      backgroundColor: Colors.grey[50],
+      backgroundColor: Theme.of(context).scaffoldBackgroundColor,
       body: CustomScrollView(
         slivers: [
           SliverAppBar(
-            expandedHeight: 140, // Increased to accommodate vertical layout
+            expandedHeight: 140,
             floating: true,
             pinned: false,
             flexibleSpace: FlexibleSpaceBar(
               background: Container(
                 decoration: BoxDecoration(
                   gradient: LinearGradient(
-                    colors: [Color(0xFF4CB1C7), Color(0xFF64C9D1)],
+                    colors: [
+                      Theme.of(context).colorScheme.primary,
+                      Theme.of(context).colorScheme.secondary,
+                    ],
                     begin: Alignment.topLeft,
                     end: Alignment.bottomRight,
                   ),
                   boxShadow: [
                     BoxShadow(
-                      color: Colors.black.withOpacity(0.2),
+                      color: Theme.of(context).colorScheme.onSurface.withOpacity(0.2),
                       blurRadius: 20,
-                      offset: Offset(0, 4),
+                      offset: const Offset(0, 4),
                     ),
                   ],
-                  borderRadius: BorderRadius.only(
+                  borderRadius: const BorderRadius.only(
                     bottomLeft: Radius.circular(30),
                     bottomRight: Radius.circular(30),
                   ),
                 ),
                 child: SafeArea(
                   child: Padding(
-                    padding: EdgeInsets.all(16),
+                    padding: const EdgeInsets.all(16),
                     child: Column(
                       crossAxisAlignment: CrossAxisAlignment.start,
                       children: [
@@ -144,18 +162,13 @@ class HomeScreenState extends State<HomeScreen> with SingleTickerProviderStateMi
                           mainAxisAlignment: MainAxisAlignment.spaceBetween,
                           children: [
                             Text(
-                              "Visit Management",
-                              style: TextStyle(
-                                fontSize: 28, // Original size restored
-                                fontWeight: FontWeight.bold,
-                                color: Colors.white,
-                                shadows: [Shadow(color: Colors.black26, blurRadius: 4, offset: Offset(0, 2))],
-                              ),
+                              "TraceFlow",
+                              style: Theme.of(context).appBarTheme.titleTextStyle,
                             ),
-                            SizedBox(width: 8), // To maintain some spacing
+                            const SizedBox(width: 8),
                           ],
                         ),
-                        SizedBox(height: 8),
+                        const SizedBox(height: 8),
                         Row(
                           mainAxisAlignment: MainAxisAlignment.end,
                           children: [
@@ -163,15 +176,36 @@ class HomeScreenState extends State<HomeScreen> with SingleTickerProviderStateMi
                               icon: Icons.refresh,
                               onPressed: _fetchTimesheets,
                             ),
-                            SizedBox(width: 8),
+                            const SizedBox(width: 8),
                             _buildAnimatedIconButton(
                               icon: _isWeekView ? Icons.view_week : Icons.view_day,
                               onPressed: _toggleView,
                             ),
-                            SizedBox(width: 8),
+                            const SizedBox(width: 8),
                             _buildAnimatedIconButton(
                               icon: Icons.today,
                               onPressed: _goToTodayOrThisWeek,
+                            ),
+                            const SizedBox(width: 8),
+                            _buildAnimatedIconButton(
+                              icon: themeProvider.themeMode == ThemeMode.system
+                                  ? Icons.brightness_auto
+                                  : themeProvider.isDarkMode
+                                  ? Icons.light_mode
+                                  : Icons.dark_mode,
+                              onPressed: () {
+                                // Cycle through system -> light -> dark and show notification
+                                if (themeProvider.themeMode == ThemeMode.system) {
+                                  themeProvider.setTheme(ThemeMode.light);
+                                  _showThemeNotification("Light");
+                                } else if (themeProvider.themeMode == ThemeMode.light) {
+                                  themeProvider.setTheme(ThemeMode.dark);
+                                  _showThemeNotification("Dark");
+                                } else {
+                                  themeProvider.setTheme(ThemeMode.system);
+                                  _showThemeNotification("System");
+                                }
+                              },
                             ),
                           ],
                         ),
@@ -184,7 +218,7 @@ class HomeScreenState extends State<HomeScreen> with SingleTickerProviderStateMi
           ),
           SliverToBoxAdapter(
             child: Padding(
-              padding: EdgeInsets.all(16),
+              padding: const EdgeInsets.all(16),
               child: ScaleTransition(
                 scale: Tween(begin: 0.95, end: 1.0).animate(
                   CurvedAnimation(parent: _animationController, curve: Curves.easeOutCubic),
@@ -195,12 +229,12 @@ class HomeScreenState extends State<HomeScreen> with SingleTickerProviderStateMi
                     children: [
                       _buildNavigationButton(Icons.arrow_back_ios, () {
                         _pageController.previousPage(
-                          duration: Duration(milliseconds: 600),
+                          duration: const Duration(milliseconds: 600),
                           curve: Curves.easeInOutCubic,
                         );
                       }),
                       AnimatedSwitcher(
-                        duration: Duration(milliseconds: 400),
+                        duration: const Duration(milliseconds: 400),
                         transitionBuilder: (child, animation) => FadeTransition(
                           opacity: animation,
                           child: ScaleTransition(scale: animation, child: child),
@@ -210,16 +244,12 @@ class HomeScreenState extends State<HomeScreen> with SingleTickerProviderStateMi
                               ? 'Week ${_getWeekNumber(_currentDate)}'
                               : ' ${_currentDate.day} ${DateFormat('MMMM').format(_currentDate)}',
                           key: ValueKey(_isWeekView),
-                          style: TextStyle(
-                            fontSize: 20,
-                            fontWeight: FontWeight.bold,
-                            color: Color(0xFF4CB1C7),
-                          ),
+                          style: Theme.of(context).textTheme.headlineSmall,
                         ),
                       ),
                       _buildNavigationButton(Icons.arrow_forward_ios, () {
                         _pageController.nextPage(
-                          duration: Duration(milliseconds: 600),
+                          duration: const Duration(milliseconds: 600),
                           curve: Curves.easeInOutCubic,
                         );
                       }),
@@ -236,8 +266,8 @@ class HomeScreenState extends State<HomeScreen> with SingleTickerProviderStateMi
               itemBuilder: (context, index) {
                 final date = DateTime(_currentDate.year, 1, 1)
                     .add(Duration(days: _isWeekView ? index * 7 : index));
-                return Padding(  // Add this Padding widget
-                  padding: EdgeInsets.symmetric(horizontal: 16), // Adjust padding value as needed
+                return Padding(
+                  padding: const EdgeInsets.symmetric(horizontal: 16),
                   child: AnimatedSwitcher(
                     duration: const Duration(milliseconds: 400),
                     transitionBuilder: (child, animation) => FadeTransition(
@@ -269,20 +299,23 @@ class HomeScreenState extends State<HomeScreen> with SingleTickerProviderStateMi
         child: Container(
           decoration: BoxDecoration(
             gradient: LinearGradient(
-              colors: [Color(0xFF4CB1C7), Color(0xFF64C9D1)],
+              colors: [
+                Theme.of(context).colorScheme.primary,
+                Theme.of(context).colorScheme.secondary,
+              ],
               begin: Alignment.topLeft,
               end: Alignment.bottomRight,
             ),
             shape: BoxShape.circle,
             boxShadow: [
               BoxShadow(
-                color: Color(0xFF4CB1C7).withOpacity(0.4),
+                color: Theme.of(context).colorScheme.primary.withOpacity(0.4),
                 blurRadius: 12,
-                offset: Offset(0, 4),
+                offset: const Offset(0, 4),
               ),
             ],
           ),
-          child: Icon(Icons.add, color: Colors.white, size: 32),
+          child: Icon(Icons.add, color: Theme.of(context).appBarTheme.iconTheme!.color, size: 32),
         ),
       ),
     );
@@ -292,21 +325,21 @@ class HomeScreenState extends State<HomeScreen> with SingleTickerProviderStateMi
     return GestureDetector(
       onTap: onPressed,
       child: AnimatedContainer(
-        duration: Duration(milliseconds: 300),
+        duration: const Duration(milliseconds: 300),
         curve: Curves.easeInOut,
-        padding: EdgeInsets.all(12),
+        padding: const EdgeInsets.all(12),
         decoration: BoxDecoration(
           shape: BoxShape.circle,
-          color: Colors.white.withOpacity(0.2),
+          color: Theme.of(context).colorScheme.onPrimary.withOpacity(0.2),
           boxShadow: [
             BoxShadow(
-              color: Colors.black.withOpacity(0.1),
+              color: Theme.of(context).colorScheme.onPrimary.withOpacity(0.1),
               blurRadius: 8,
-              offset: Offset(0, 2),
+              offset: const Offset(0, 2),
             ),
           ],
         ),
-        child: Icon(icon, color: Colors.white, size: 24),
+        child: Icon(icon, color: Theme.of(context).appBarTheme.iconTheme!.color, size: 24),
       ),
     );
   }
@@ -315,23 +348,26 @@ class HomeScreenState extends State<HomeScreen> with SingleTickerProviderStateMi
     return GestureDetector(
       onTap: onPressed,
       child: AnimatedContainer(
-        duration: Duration(milliseconds: 300),
+        duration: const Duration(milliseconds: 300),
         curve: Curves.easeInOut,
-        padding: EdgeInsets.all(12),
+        padding: const EdgeInsets.all(12),
         decoration: BoxDecoration(
           shape: BoxShape.circle,
           gradient: LinearGradient(
-            colors: [Color(0xFF4CB1C7).withOpacity(0.2), Color(0xFF64C9D1).withOpacity(0.2)],
+            colors: [
+              Theme.of(context).colorScheme.primary.withOpacity(0.2),
+              Theme.of(context).colorScheme.secondary.withOpacity(0.2),
+            ],
           ),
           boxShadow: [
             BoxShadow(
-              color: Color(0xFF4CB1C7).withOpacity(0.2),
+              color: Theme.of(context).colorScheme.primary.withOpacity(0.2),
               blurRadius: 8,
-              offset: Offset(0, 2),
+              offset: const Offset(0, 2),
             ),
           ],
         ),
-        child: Icon(icon, color: Colors.white, size: 20),
+        child: Icon(icon, color: Theme.of(context).appBarTheme.iconTheme!.color, size: 20),
       ),
     );
   }

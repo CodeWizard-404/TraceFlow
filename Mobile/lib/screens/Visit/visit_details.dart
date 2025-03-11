@@ -22,7 +22,7 @@ class VisitDetailsScreen extends StatelessWidget {
     final agentProvider = Provider.of<AgentProvider>(context, listen: false);
 
     return Scaffold(
-      backgroundColor: Colors.grey[50],
+      backgroundColor: Theme.of(context).scaffoldBackgroundColor,
       body: CustomScrollView(
         slivers: [
           SliverAppBar(
@@ -32,21 +32,28 @@ class VisitDetailsScreen extends StatelessWidget {
             leading: IconButton(
               icon: Icon(
                 Icons.arrow_back_ios_rounded,
-                color: Colors.white, // Set the color to white
+                color: Theme.of(context).appBarTheme.iconTheme!.color,
               ),
               onPressed: () => Navigator.of(context).pop(),
+            ),
+            title: Text(
+              'Visit Details',
+              style: Theme.of(context).appBarTheme.titleTextStyle,
             ),
             flexibleSpace: FlexibleSpaceBar(
               background: Container(
                 decoration: BoxDecoration(
                   gradient: LinearGradient(
-                    colors: [Color(0xFF4CB1C7), Color(0xFF64C9D1)],
+                    colors: [
+                      Theme.of(context).colorScheme.primary,
+                      Theme.of(context).colorScheme.secondary,
+                    ],
                     begin: Alignment.topLeft,
                     end: Alignment.bottomRight,
                   ),
                   boxShadow: [
                     BoxShadow(
-                      color: Colors.black.withOpacity(0.2),
+                      color: Theme.of(context).colorScheme.onSurface.withOpacity(0.2),
                       blurRadius: 20,
                       offset: Offset(0, 4),
                     ),
@@ -67,31 +74,29 @@ class VisitDetailsScreen extends StatelessWidget {
                             crossAxisAlignment: CrossAxisAlignment.start,
                             mainAxisAlignment: MainAxisAlignment.center,
                             children: [
-                              Text(
-                                'Visit Details',
-                                style: TextStyle(
-                                  fontSize: 28,
-                                  fontWeight: FontWeight.bold,
-                                  color: Colors.white,
-                                  shadows: [Shadow(color: Colors.black26, blurRadius: 4, offset: Offset(0, 2))],
-                                ),
-                              ),
-                              SizedBox(height: 16),
+                              SizedBox(height: 16), // Space to align with title
                               Row(
                                 children: [
                                   Container(
                                     padding: EdgeInsets.all(6),
                                     decoration: BoxDecoration(
                                       shape: BoxShape.circle,
-                                      color: Colors.white.withOpacity(0.2),
+                                      color: Theme.of(context).colorScheme.onPrimary.withOpacity(0.2),
                                     ),
-                                    child: Icon(Icons.location_on, color: Colors.white, size: 20),
+                                    child: Icon(
+                                      Icons.location_on,
+                                      color: Theme.of(context).appBarTheme.iconTheme!.color,
+                                      size: 20,
+                                    ),
                                   ),
                                   SizedBox(width: 12),
                                   Expanded(
                                     child: Text(
                                       visit.location ?? 'N/A',
-                                      style: TextStyle(fontSize: 16, color: Colors.white, fontWeight: FontWeight.w500),
+                                      style: Theme.of(context).textTheme.bodyMedium?.copyWith(
+                                        color: Theme.of(context).appBarTheme.iconTheme!.color,
+                                        fontWeight: FontWeight.w500,
+                                      ),
                                     ),
                                   ),
                                 ],
@@ -103,14 +108,21 @@ class VisitDetailsScreen extends StatelessWidget {
                                     padding: EdgeInsets.all(6),
                                     decoration: BoxDecoration(
                                       shape: BoxShape.circle,
-                                      color: Colors.white.withOpacity(0.2),
+                                      color: Theme.of(context).colorScheme.onPrimary.withOpacity(0.2),
                                     ),
-                                    child: Icon(Icons.access_time, color: Colors.white, size: 20),
+                                    child: Icon(
+                                      Icons.access_time,
+                                      color: Theme.of(context).appBarTheme.iconTheme!.color,
+                                      size: 20,
+                                    ),
                                   ),
                                   SizedBox(width: 12),
                                   Text(
                                     '${visit.date?.day}/${visit.date?.month}/${visit.date?.year} - ${visit.time}',
-                                    style: TextStyle(fontSize: 16, color: Colors.white, fontWeight: FontWeight.w500),
+                                    style: Theme.of(context).textTheme.bodyMedium?.copyWith(
+                                      color: Theme.of(context).appBarTheme.iconTheme!.color,
+                                      fontWeight: FontWeight.w500,
+                                    ),
                                   ),
                                 ],
                               ),
@@ -118,7 +130,7 @@ class VisitDetailsScreen extends StatelessWidget {
                           ),
                         ),
                         if (visit.status == "visited")
-                          _buildDurationClock(visit.duration ?? 0),
+                          _buildDurationClock(context, visit.duration ?? 0),
                       ],
                     ),
                   ),
@@ -138,18 +150,20 @@ class VisitDetailsScreen extends StatelessWidget {
                     }
                     if (snapshot.hasError) {
                       return _buildGlassCard(
+                        context,
                         title: 'Agent Information',
                         icon: Icons.person,
                         content: [
                           Text(
                             'Error loading agent data',
-                            style: TextStyle(color: Colors.red),
+                            style: TextStyle(color: Theme.of(context).colorScheme.error),
                           ),
                         ],
                       );
                     }
                     if (!snapshot.hasData) {
                       return _buildGlassCard(
+                        context,
                         title: 'Agent Information',
                         icon: Icons.person,
                         content: [
@@ -160,15 +174,17 @@ class VisitDetailsScreen extends StatelessWidget {
 
                     final agent = snapshot.data!;
                     return _buildGlassCard(
+                      context,
                       title: 'Agent Information',
                       icon: Icons.person,
                       content: [
-                        _buildDetailRow('Name:', '${agent.name} ${agent.lastname}'),
-                        _buildDetailRow('Phone:', agent.phone ?? 'N/A'),
+                        _buildDetailRow(context, 'Name:', '${agent.name} ${agent.lastname}'),
+                        _buildDetailRow(context, 'Phone:', agent.phone ?? 'N/A'),
                         _buildDetailRow(
+                          context,
                           'Status:',
                           visit.status ?? 'N/A',
-                          statusColor: _getStatusColor(visit.status),
+                          statusColor: _getStatusColor(context, visit.status),
                         ),
                       ],
                     );
@@ -176,17 +192,21 @@ class VisitDetailsScreen extends StatelessWidget {
                 ),
                 SizedBox(height: 16),
                 _buildGlassCard(
+                  context,
                   title: 'Checklists',
                   icon: Icons.checklist,
                   content: [
                     if (visit.checklists == null || visit.checklists!.isEmpty)
                       Text(
                         'No checklists available',
-                        style: TextStyle(fontSize: 14, color: Colors.grey[600], fontWeight: FontWeight.w500),
+                        style: Theme.of(context).textTheme.bodyMedium?.copyWith(
+                          color: Theme.of(context).colorScheme.onSurface.withOpacity(0.6),
+                        ),
                       )
                     else
                       ...visit.checklists!.map(
                             (checklist) => _buildChecklistRow(
+                          context,
                           checklist.item ?? 'N/A',
                           checklist.visitChecklist?.checked ?? false,
                         ),
@@ -195,17 +215,20 @@ class VisitDetailsScreen extends StatelessWidget {
                 ),
                 SizedBox(height: 16),
                 _buildGlassCard(
+                  context,
                   title: 'Reasons',
                   icon: Icons.notes,
                   content: [
                     if (visit.reasons == null || visit.reasons!.isEmpty)
                       Text(
                         'No reasons provided',
-                        style: TextStyle(fontSize: 14, color: Colors.grey[600], fontWeight: FontWeight.w500),
+                        style: Theme.of(context).textTheme.bodyMedium?.copyWith(
+                          color: Theme.of(context).colorScheme.onSurface.withOpacity(0.6),
+                        ),
                       )
                     else
                       ...visit.reasons!.map(
-                            (reason) => _buildDetailRow('•', reason.item ?? 'N/A'),
+                            (reason) => _buildDetailRow(context, '•', reason.item ?? 'N/A'),
                       ),
                   ],
                 ),
@@ -214,6 +237,7 @@ class VisitDetailsScreen extends StatelessWidget {
                   mainAxisAlignment: MainAxisAlignment.spaceEvenly,
                   children: [
                     _buildActionButton(
+                      context,
                       icon: Icons.edit,
                       label: 'Edit Visit',
                       onPressed: () {
@@ -226,15 +250,19 @@ class VisitDetailsScreen extends StatelessWidget {
                       },
                     ),
                     _buildActionButton(
+                      context,
                       icon: Icons.check_circle,
                       label: 'Log Visit',
-                      gradientColors: [Color(0xFFE81F76), Color(0xFFF06292)],
+                      gradientColors: [
+                        Theme.of(context).colorScheme.secondary,
+                        Theme.of(context).colorScheme.primary,
+                      ],
                       onPressed: () async {
                         if (visit.date == null) {
                           ScaffoldMessenger.of(context).showSnackBar(
                             SnackBar(
                               content: Text('Visit date is missing. Cannot log visit.'),
-                              backgroundColor: Colors.red.withOpacity(0.9),
+                              backgroundColor: Theme.of(context).colorScheme.error.withOpacity(0.9),
                               behavior: SnackBarBehavior.floating,
                               shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(12)),
                             ),
@@ -242,7 +270,6 @@ class VisitDetailsScreen extends StatelessWidget {
                           return;
                         }
 
-                        // Open QR Scanner
                         final scannedData = await Navigator.push(
                           context,
                           MaterialPageRoute(builder: (_) => QRScannerWidget()),
@@ -269,7 +296,7 @@ class VisitDetailsScreen extends StatelessWidget {
                             ScaffoldMessenger.of(context).showSnackBar(
                               SnackBar(
                                 content: Text(verificationResult['message'] ?? 'Invalid QR code'),
-                                backgroundColor: Colors.red.withOpacity(0.9),
+                                backgroundColor: Theme.of(context).colorScheme.error.withOpacity(0.9),
                               ),
                             );
                           }
@@ -286,7 +313,8 @@ class VisitDetailsScreen extends StatelessWidget {
     );
   }
 
-  Widget _buildDurationClock(int duration) {
+  // Helper methods remain unchanged below this point; included for completeness
+  Widget _buildDurationClock(BuildContext context, int duration) {
     return Container(
       padding: EdgeInsets.all(12),
       child: Column(
@@ -301,30 +329,26 @@ class VisitDetailsScreen extends StatelessWidget {
                 child: CircularProgressIndicator(
                   value: 1.0,
                   strokeWidth: 4,
-                  valueColor: AlwaysStoppedAnimation<Color>(Colors.white.withOpacity(0.2)),
+                  valueColor: AlwaysStoppedAnimation<Color>(Theme.of(context).colorScheme.onPrimary.withOpacity(0.2)),
                 ),
               ),
               Icon(
                 Icons.timer,
-                color: Colors.white,
+                color: Theme.of(context).colorScheme.onPrimary,
                 size: 28,
               ),
             ],
           ),
           Text(
             '$duration',
-            style: TextStyle(
-              fontSize: 20,
-              fontWeight: FontWeight.bold,
-              color: Colors.white,
+            style: Theme.of(context).textTheme.headlineSmall?.copyWith(
+              color: Theme.of(context).colorScheme.onPrimary,
             ),
           ),
           Text(
             'min',
-            style: TextStyle(
-              fontSize: 12,
-              color: Colors.white.withOpacity(0.8),
-              fontWeight: FontWeight.w500,
+            style: Theme.of(context).textTheme.bodySmall?.copyWith(
+              color: Theme.of(context).colorScheme.onPrimary.withOpacity(0.8),
             ),
           ),
         ],
@@ -332,7 +356,12 @@ class VisitDetailsScreen extends StatelessWidget {
     );
   }
 
-  Widget _buildGlassCard({required String title, required IconData icon, required List<Widget> content}) {
+  Widget _buildGlassCard(
+      BuildContext context, {
+        required String title,
+        required IconData icon,
+        required List<Widget> content,
+      }) {
     return AnimatedContainer(
       duration: Duration(milliseconds: 300),
       curve: Curves.easeInOut,
@@ -342,13 +371,13 @@ class VisitDetailsScreen extends StatelessWidget {
           begin: Alignment.topLeft,
           end: Alignment.bottomRight,
           colors: [
-            Colors.white.withOpacity(0.9),
-            Colors.grey[50]!.withOpacity(0.9),
+            Theme.of(context).colorScheme.surface.withOpacity(0.9),
+            Theme.of(context).colorScheme.surface.withOpacity(0.7),
           ],
         ),
         boxShadow: [
           BoxShadow(
-            color: Color(0xFF4CB1C7).withOpacity(0.1),
+            color: Theme.of(context).colorScheme.primary.withOpacity(0.1),
             blurRadius: 12,
             offset: Offset(0, 4),
           ),
@@ -365,19 +394,14 @@ class VisitDetailsScreen extends StatelessWidget {
                   padding: EdgeInsets.all(6),
                   decoration: BoxDecoration(
                     shape: BoxShape.circle,
-                    color: Color(0xFF4CB1C7).withOpacity(0.1),
+                    color: Theme.of(context).colorScheme.primary.withOpacity(0.1),
                   ),
-                  child: Icon(icon, color: Color(0xFF4CB1C7), size: 20),
+                  child: Icon(icon, color: Theme.of(context).colorScheme.primary, size: 20),
                 ),
                 SizedBox(width: 12),
                 Text(
                   title,
-                  style: TextStyle(
-                    fontSize: 20,
-                    fontWeight: FontWeight.bold,
-                    color: Color(0xFF4CB1C7),
-                    shadows: [Shadow(color: Colors.black12, blurRadius: 2)],
-                  ),
+                  style: Theme.of(context).textTheme.headlineSmall,
                 ),
               ],
             ),
@@ -389,7 +413,12 @@ class VisitDetailsScreen extends StatelessWidget {
     );
   }
 
-  Widget _buildDetailRow(String label, String value, {Color? statusColor}) {
+  Widget _buildDetailRow(
+      BuildContext context,
+      String label,
+      String value, {
+        Color? statusColor,
+      }) {
     return Padding(
       padding: EdgeInsets.symmetric(vertical: 6),
       child: Row(
@@ -397,10 +426,8 @@ class VisitDetailsScreen extends StatelessWidget {
         children: [
           Text(
             label,
-            style: TextStyle(
-              fontSize: 14,
-              fontWeight: FontWeight.w500,
-              color: Colors.grey[700],
+            style: Theme.of(context).textTheme.bodyMedium?.copyWith(
+              color: Theme.of(context).colorScheme.onSurface.withOpacity(0.7),
             ),
           ),
           SizedBox(width: 12),
@@ -426,8 +453,7 @@ class VisitDetailsScreen extends StatelessWidget {
               ),
               child: Text(
                 value,
-                style: TextStyle(
-                  fontSize: 14,
+                style: Theme.of(context).textTheme.bodyMedium?.copyWith(
                   color: statusColor,
                   fontWeight: FontWeight.bold,
                 ),
@@ -435,11 +461,7 @@ class VisitDetailsScreen extends StatelessWidget {
             )
                 : Text(
               value,
-              style: TextStyle(
-                fontSize: 14,
-                color: Colors.black87,
-                fontWeight: FontWeight.w500,
-              ),
+              style: Theme.of(context).textTheme.bodyMedium,
             ),
           ),
         ],
@@ -447,7 +469,7 @@ class VisitDetailsScreen extends StatelessWidget {
     );
   }
 
-  Widget _buildChecklistRow(String item, bool isChecked) {
+  Widget _buildChecklistRow(BuildContext context, String item, bool isChecked) {
     return Padding(
       padding: EdgeInsets.symmetric(vertical: 6),
       child: Row(
@@ -456,11 +478,13 @@ class VisitDetailsScreen extends StatelessWidget {
             padding: EdgeInsets.all(4),
             decoration: BoxDecoration(
               shape: BoxShape.circle,
-              color: isChecked ? Colors.green.withOpacity(0.1) : Colors.grey.withOpacity(0.1),
+              color: isChecked
+                  ? Theme.of(context).colorScheme.primary.withOpacity(0.1)
+                  : Theme.of(context).colorScheme.onSurface.withOpacity(0.1),
             ),
             child: Icon(
               isChecked ? Icons.check_circle : Icons.radio_button_unchecked,
-              color: isChecked ? Colors.green : Colors.grey,
+              color: isChecked ? Theme.of(context).colorScheme.primary : Theme.of(context).colorScheme.onSurface,
               size: 18,
             ),
           ),
@@ -468,11 +492,7 @@ class VisitDetailsScreen extends StatelessWidget {
           Expanded(
             child: Text(
               item,
-              style: TextStyle(
-                fontSize: 14,
-                color: Colors.black87,
-                fontWeight: FontWeight.w500,
-              ),
+              style: Theme.of(context).textTheme.bodyMedium,
             ),
           ),
         ],
@@ -480,12 +500,19 @@ class VisitDetailsScreen extends StatelessWidget {
     );
   }
 
-  Widget _buildActionButton({
-    required IconData icon,
-    required String label,
-    required VoidCallback onPressed,
-    List<Color> gradientColors = const [Color(0xFF4CB1C7), Color(0xFF64C9D1)],
-  }) {
+  Widget _buildActionButton(
+      BuildContext context, {
+        required IconData icon,
+        required String label,
+        required VoidCallback onPressed,
+        List<Color> gradientColors = const [],
+      }) {
+    final colors = gradientColors.isNotEmpty
+        ? gradientColors
+        : [
+      Theme.of(context).colorScheme.primary,
+      Theme.of(context).colorScheme.secondary,
+    ];
     return GestureDetector(
       onTap: onPressed,
       child: AnimatedContainer(
@@ -494,14 +521,14 @@ class VisitDetailsScreen extends StatelessWidget {
         padding: EdgeInsets.symmetric(horizontal: 20, vertical: 12),
         decoration: BoxDecoration(
           gradient: LinearGradient(
-            colors: gradientColors,
+            colors: colors,
             begin: Alignment.topLeft,
             end: Alignment.bottomRight,
           ),
           borderRadius: BorderRadius.circular(16),
           boxShadow: [
             BoxShadow(
-              color: gradientColors[0].withOpacity(0.4),
+              color: colors[0].withOpacity(0.4),
               blurRadius: 12,
               offset: Offset(0, 4),
             ),
@@ -510,13 +537,12 @@ class VisitDetailsScreen extends StatelessWidget {
         child: Row(
           mainAxisSize: MainAxisSize.min,
           children: [
-            Icon(icon, color: Colors.white, size: 20),
+            Icon(icon, color: Theme.of(context).colorScheme.onPrimary, size: 20),
             SizedBox(width: 8),
             Text(
               label,
-              style: TextStyle(
-                fontSize: 16,
-                color: Colors.white,
+              style: Theme.of(context).textTheme.bodyMedium?.copyWith(
+                color: Theme.of(context).colorScheme.onPrimary,
                 fontWeight: FontWeight.bold,
               ),
             ),
@@ -526,7 +552,7 @@ class VisitDetailsScreen extends StatelessWidget {
     );
   }
 
-  Color? _getStatusColor(String? status) {
+  Color? _getStatusColor(BuildContext context, String? status) {
     switch (status?.toLowerCase()) {
       case 'visited':
         return Colors.green;
@@ -535,7 +561,7 @@ class VisitDetailsScreen extends StatelessWidget {
       case 'rejected':
         return Colors.red;
       default:
-        return Colors.grey;
+        return Theme.of(context).colorScheme.onSurface.withOpacity(0.6);
     }
   }
 
