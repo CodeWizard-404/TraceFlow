@@ -23,12 +23,14 @@ class VisitService {
                 status: 'pending'
             });
 
-            // Associate reasons
-            const createdReasons = await ReasonService.findOrCreateItems(reasons);
+            // Associate reasons using IDs only
+            const reasonIds = reasons.map(r => r.id);
+            const createdReasons = await ReasonService.getItemsByIds(reasonIds);
             await visit.setReasons(createdReasons);
 
-            // Associate checklist items
-            const createdChecklists = await ChecklistService.findOrCreateItems(checklists);
+            // Associate checklist using IDs only
+            const checklistIds = checklists.map(c => c.id);
+            const createdChecklists = await ChecklistService.getItemsByIds(checklistIds);
             await visit.setChecklists(createdChecklists);
 
             return visit.reload({ include: [Reason, Checklist] });

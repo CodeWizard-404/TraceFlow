@@ -5,16 +5,12 @@ class ChecklistService {
         return Checklist.create({ item: text });
     }
 
-    static async findOrCreateItems(items) {
-        const created = [];
-        for (const item of items) {
-            if (item.id) {
-                created.push(await Checklist.findByPk(item.id));
-            } else {
-                created.push(await this.createItem(item.text));
-            }
+    static async getItemsByIds(ids) {
+        const items = await Checklist.findAll({ where: { checklistID: ids } });
+        if (items.length !== ids.length) {
+            throw new Error('One or more checklist IDs do not exist');
         }
-        return created;
+        return items;
     }
 
     static async getChecklistsByVisitId(visitId) {

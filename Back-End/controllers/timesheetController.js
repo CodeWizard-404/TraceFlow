@@ -13,17 +13,15 @@ const TimesheetController = {
 
             // Validate each visit structure
             for (const visit of visits) {
-                if (
-                    !visit.date ||
-                    !visit.time ||
-                    !visit.agentID
-                ) {
-                    if (
-                        !Array.isArray(visit.reasons) || 
-                        !Array.isArray(visit.checklists)) {
-                        return res.status(400).json({ error: 'Invalid reasons or checklist structure' });
-                    }
+                if (!visit.date || !visit.time || !visit.agentID) {
                     return res.status(400).json({ error: 'Invalid visit data structure' });
+                }
+                // Ensure there is at least one reason and one checklist item
+                if (!Array.isArray(visit.reasons) || visit.reasons.length === 0) {
+                    return res.status(400).json({ error: 'At least one reason must be provided' });
+                }
+                if (!Array.isArray(visit.checklists) || visit.checklists.length === 0) {
+                    return res.status(400).json({ error: 'At least one checklist item must be provided' });
                 }
             }
 

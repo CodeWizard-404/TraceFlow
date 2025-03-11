@@ -5,16 +5,12 @@ class ReasonService {
         return Reason.create({ item: text });
     }
 
-    static async findOrCreateItems(items) {
-        const created = [];
-        for (const item of items) {
-            if (item.id) {
-                created.push(await Reason.findByPk(item.id));
-            } else {
-                created.push(await this.createItem(item.text));
-            }
+    static async getItemsByIds(ids) {
+        const items = await Reason.findAll({ where: { reasonID: ids } });
+        if (items.length !== ids.length) {
+            throw new Error('One or more reason IDs do not exist');
         }
-        return created;
+        return items;
     }
 
     static async getReasonsByVisitId(visitId) {
@@ -25,7 +21,6 @@ class ReasonService {
     static async getAllReasons() {
         return Reason.findAll();
     }
-    
 }
 
 module.exports = ReasonService;

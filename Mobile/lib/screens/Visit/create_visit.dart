@@ -3,7 +3,7 @@ import 'package:flutter/material.dart';
 import 'package:provider/provider.dart';
 import 'package:visit_management/models/checklist.dart';
 import 'package:visit_management/models/reason.dart';
-import 'package:visit_management/models/agent.dart'; // Import the real Agent model
+import 'package:visit_management/models/agent.dart';
 import 'package:visit_management/providers/agent_provider.dart';
 import 'package:visit_management/providers/checklist_provider.dart';
 import 'package:visit_management/providers/reason_provider.dart';
@@ -30,14 +30,11 @@ class _CreateVisitScreenState extends State<CreateVisitScreen> {
   String? _selectedAgentId;
   List<String> _selectedChecklistIds = [];
   List<String> _selectedReasonIds = [];
-  final TextEditingController _customChecklistController = TextEditingController();
-  final TextEditingController _customReasonController = TextEditingController();
   String? _location;
 
   @override
   void initState() {
     super.initState();
-    // Set initial date based on weekNumber and year passed from HomeScreen
     _selectedDate = DateTime(widget.year, 1, 1).add(Duration(days: (widget.weekNumber - 1) * 7));
     Provider.of<AgentProvider>(context, listen: false).fetchUniqueLocations();
     Provider.of<ChecklistProvider>(context, listen: false).getAllChecklists();
@@ -47,13 +44,6 @@ class _CreateVisitScreenState extends State<CreateVisitScreen> {
   int _getWeekNumber(DateTime date) {
     final startOfYear = DateTime(date.year, 1, 1);
     return (date.difference(startOfYear).inDays / 7).ceil();
-  }
-
-  @override
-  void dispose() {
-    _customChecklistController.dispose();
-    _customReasonController.dispose();
-    super.dispose();
   }
 
   Future<void> _selectDate(BuildContext context) async {
@@ -135,9 +125,7 @@ class _CreateVisitScreenState extends State<CreateVisitScreen> {
                       onChanged: (value) {
                         setDialogState(() {
                           filteredLocations = locations
-                              .where((location) => location
-                              .toLowerCase()
-                              .contains(value.toLowerCase()))
+                              .where((location) => location.toLowerCase().contains(value.toLowerCase()))
                               .toList();
                         });
                       },
@@ -159,7 +147,7 @@ class _CreateVisitScreenState extends State<CreateVisitScreen> {
                               });
                               setState(() {
                                 _location = value;
-                                _selectedAgentId = null; // Reset agent when location changes
+                                _selectedAgentId = null;
                               });
                               agentProvider.fetchAgentsByLocation(value!);
                               Navigator.pop(context);
@@ -186,7 +174,7 @@ class _CreateVisitScreenState extends State<CreateVisitScreen> {
   }
 
   Future<void> _showAgentDialog(BuildContext context, AgentProvider agentProvider) async {
-    final agents = agentProvider.agents; // This should now be List<Agent> from models/agent.dart
+    final agents = agentProvider.agents;
     final TextEditingController searchController = TextEditingController();
     List<Agent> filteredAgents = List.from(agents);
 
@@ -215,12 +203,8 @@ class _CreateVisitScreenState extends State<CreateVisitScreen> {
                         setDialogState(() {
                           filteredAgents = agents
                               .where((agent) =>
-                          '${agent.name} ${agent.lastname}'
-                              .toLowerCase()
-                              .contains(value.toLowerCase()) ||
-                              agent.agentID!
-                                  .toLowerCase()
-                                  .contains(value.toLowerCase()))
+                          '${agent.name} ${agent.lastname}'.toLowerCase().contains(value.toLowerCase()) ||
+                              agent.agentID!.toLowerCase().contains(value.toLowerCase()))
                               .toList();
                         });
                       },
@@ -296,9 +280,8 @@ class _CreateVisitScreenState extends State<CreateVisitScreen> {
                       onChanged: (value) {
                         setDialogState(() {
                           filteredChecklists = allChecklists
-                              .where((checklist) => (checklist.item ?? '')
-                              .toLowerCase()
-                              .contains(value.toLowerCase()))
+                              .where((checklist) =>
+                              (checklist.item ?? '').toLowerCase().contains(value.toLowerCase()))
                               .toList();
                         });
                       },
@@ -386,9 +369,8 @@ class _CreateVisitScreenState extends State<CreateVisitScreen> {
                       onChanged: (value) {
                         setDialogState(() {
                           filteredReasons = allReasons
-                              .where((reason) => (reason.item ?? '')
-                              .toLowerCase()
-                              .contains(value.toLowerCase()))
+                              .where((reason) =>
+                              (reason.item ?? '').toLowerCase().contains(value.toLowerCase()))
                               .toList();
                         });
                       },
@@ -446,7 +428,6 @@ class _CreateVisitScreenState extends State<CreateVisitScreen> {
     );
   }
 
-
   void _submitVisit() async {
     if (_formKey.currentState!.validate()) {
       if (_selectedDate == null || _selectedTime == null || _selectedAgentId == null) {
@@ -460,14 +441,7 @@ class _CreateVisitScreenState extends State<CreateVisitScreen> {
 
       try {
         List<Map<String, String>> checklists = _selectedChecklistIds.map((id) => {'id': id}).toList();
-        if (_customChecklistController.text.isNotEmpty) {
-          checklists.add({'text': _customChecklistController.text});
-        }
-
         List<Map<String, String>> reasons = _selectedReasonIds.map((id) => {'id': id}).toList();
-        if (_customReasonController.text.isNotEmpty) {
-          reasons.add({'text': _customReasonController.text});
-        }
 
         const supervisorID = "user_001";
 
@@ -482,10 +456,9 @@ class _CreateVisitScreenState extends State<CreateVisitScreen> {
 
         print('Submitting visit payload: ${json.encode(visit)}');
 
-        // Use the week number calculated from _selectedDate instead of widget.weekNumber
         await timesheetProvider.createTimesheet(
-          weekNumber: _getWeekNumber(_selectedDate!), // Dynamically calculate week number
-          year: _selectedDate!.year, // Use the year from the selected date
+          weekNumber: _getWeekNumber(_selectedDate!),
+          year: _selectedDate!.year,
           supervisorID: supervisorID,
           visits: [visit],
         );
@@ -501,6 +474,7 @@ class _CreateVisitScreenState extends State<CreateVisitScreen> {
       }
     }
   }
+
   @override
   Widget build(BuildContext context) {
     return Scaffold(
@@ -612,28 +586,22 @@ class _CreateVisitScreenState extends State<CreateVisitScreen> {
                                 border: Border.all(
                                   color: _location == null ? Colors.grey[300]! : Colors.grey[300]!,
                                 ),
-                                backgroundBlendMode:
-                                _location == null ? BlendMode.saturation : null,
+                                backgroundBlendMode: _location == null ? BlendMode.saturation : null,
                               ),
                               child: Row(
                                 children: [
                                   Icon(
                                     Icons.person,
-                                    color: _location == null
-                                        ? Colors.grey
-                                        : const Color(0xFF4CB1C7),
+                                    color: _location == null ? Colors.grey : const Color(0xFF4CB1C7),
                                   ),
                                   const SizedBox(width: 12),
                                   Expanded(
                                     child: Text(
                                       _selectedAgentId == null
-                                          ? (_location == null
-                                          ? 'Select a location first'
-                                          : 'Select Agent')
+                                          ? (_location == null ? 'Select a location first' : 'Select Agent')
                                           : '${agentProvider.agents.firstWhere((agent) => agent.agentID == _selectedAgentId).name} ${agentProvider.agents.firstWhere((agent) => agent.agentID == _selectedAgentId).lastname}',
                                       style: TextStyle(
-                                        color:
-                                        _location == null ? Colors.grey : Colors.black87,
+                                        color: _location == null ? Colors.grey : Colors.black87,
                                       ),
                                     ),
                                   ),
@@ -653,159 +621,138 @@ class _CreateVisitScreenState extends State<CreateVisitScreen> {
                 const SizedBox(height: 16),
                 _buildSectionCard(
                   title: 'Checklists',
-                  child: Column(
-                    crossAxisAlignment: CrossAxisAlignment.start,
-                    children: [
-                      Consumer<ChecklistProvider>(
-                        builder: (context, checklistProvider, child) {
-                          return FutureBuilder<List<Checklist>>(
-                            future: checklistProvider.getAllChecklists(),
-                            builder: (context, snapshot) {
-                              if (!snapshot.hasData) {
-                                return const Center(child: CircularProgressIndicator());
-                              }
-                              return Column(
-                                crossAxisAlignment: CrossAxisAlignment.start,
-                                children: [
-                                  GestureDetector(
-                                    onTap: () => _showChecklistDialog(context, checklistProvider),
-                                    child: Container(
-                                      padding: const EdgeInsets.all(12),
-                                      decoration: BoxDecoration(
-                                        color: Colors.white,
-                                        borderRadius: BorderRadius.circular(12),
-                                        border: Border.all(color: Colors.grey[300]!),
-                                      ),
-                                      child: Row(
-                                        children: [
-                                          const Icon(Icons.checklist, color: Color(0xFF4CB1C7)),
-                                          const SizedBox(width: 12),
-                                          Expanded(
-                                            child: Text(
-                                              _selectedChecklistIds.isEmpty
-                                                  ? 'Select Checklists'
-                                                  : '${_selectedChecklistIds.length} selected',
-                                              style: const TextStyle(color: Colors.black87),
-                                            ),
-                                          ),
-                                          const Icon(Icons.arrow_drop_down, color: Colors.grey),
-                                        ],
-                                      ),
-                                    ),
+                  child: Consumer<ChecklistProvider>(
+                    builder: (context, checklistProvider, child) {
+                      return FutureBuilder<List<Checklist>>(
+                        future: checklistProvider.getAllChecklists(),
+                        builder: (context, snapshot) {
+                          if (!snapshot.hasData) {
+                            return const Center(child: CircularProgressIndicator());
+                          }
+                          return Column(
+                            crossAxisAlignment: CrossAxisAlignment.start,
+                            children: [
+                              GestureDetector(
+                                onTap: () => _showChecklistDialog(context, checklistProvider),
+                                child: Container(
+                                  padding: const EdgeInsets.all(12),
+                                  decoration: BoxDecoration(
+                                    color: Colors.white,
+                                    borderRadius: BorderRadius.circular(12),
+                                    border: Border.all(color: Colors.grey[300]!),
                                   ),
-                                  if (_selectedChecklistIds.isNotEmpty) ...[
-                                    const SizedBox(height: 8),
-                                    Wrap(
-                                      spacing: 8,
-                                      runSpacing: 8,
-                                      children: _selectedChecklistIds.map((id) {
-                                        final checklist = snapshot.data!
-                                            .firstWhere((c) => c.checklistID == id);
-                                        return Chip(
-                                          label: Text(checklist.item ?? ''),
-                                          deleteIcon: const Icon(Icons.close, size: 18),
-                                          onDeleted: () {
-                                            setState(() {
-                                              _selectedChecklistIds.remove(id);
-                                            });
-                                          },
-                                          backgroundColor: const Color(0xFF4CB1C7).withOpacity(0.1),
-                                          labelStyle: const TextStyle(color: Color(0xFF4CB1C7)),
-                                        );
-                                      }).toList(),
-                                    ),
-                                  ],
-                                ],
-                              );
-                            },
+                                  child: Row(
+                                    children: [
+                                      const Icon(Icons.checklist, color: Color(0xFF4CB1C7)),
+                                      const SizedBox(width: 12),
+                                      Expanded(
+                                        child: Text(
+                                          _selectedChecklistIds.isEmpty
+                                              ? 'Select Checklists'
+                                              : '${_selectedChecklistIds.length} selected',
+                                          style: const TextStyle(color: Colors.black87),
+                                        ),
+                                      ),
+                                      const Icon(Icons.arrow_drop_down, color: Colors.grey),
+                                    ],
+                                  ),
+                                ),
+                              ),
+                              if (_selectedChecklistIds.isNotEmpty) ...[
+                                const SizedBox(height: 8),
+                                Wrap(
+                                  spacing: 8,
+                                  runSpacing: 8,
+                                  children: _selectedChecklistIds.map((id) {
+                                    final checklist =
+                                    snapshot.data!.firstWhere((c) => c.checklistID == id);
+                                    return Chip(
+                                      label: Text(checklist.item ?? ''),
+                                      deleteIcon: const Icon(Icons.close, size: 18),
+                                      onDeleted: () {
+                                        setState(() {
+                                          _selectedChecklistIds.remove(id);
+                                        });
+                                      },
+                                      backgroundColor: const Color(0xFF4CB1C7).withOpacity(0.1),
+                                      labelStyle: const TextStyle(color: Color(0xFF4CB1C7)),
+                                    );
+                                  }).toList(),
+                                ),
+                              ],
+                            ],
                           );
                         },
-                      ),
-                      const SizedBox(height: 12),
-                      _buildTextField(
-                        controller: _customChecklistController,
-                        label: 'Add Custom Checklist',
-                      ),
-                    ],
+                      );
+                    },
                   ),
                 ),
                 const SizedBox(height: 16),
                 _buildSectionCard(
                   title: 'Reasons',
-                  child: Column(
-                    crossAxisAlignment: CrossAxisAlignment.start,
-                    children: [
-                      Consumer<ReasonProvider>(
-                        builder: (context, reasonProvider, child) {
-                          return FutureBuilder<List<Reason>>(
-                            future: reasonProvider.getAllReasons(),
-                            builder: (context, snapshot) {
-                              if (!snapshot.hasData) {
-                                return const Center(child: CircularProgressIndicator());
-                              }
-                              return Column(
-                                crossAxisAlignment: CrossAxisAlignment.start,
-                                children: [
-                                  GestureDetector(
-                                    onTap: () => _showReasonDialog(context, reasonProvider),
-                                    child: Container(
-                                      padding: const EdgeInsets.all(12),
-                                      decoration: BoxDecoration(
-                                        color: Colors.white,
-                                        borderRadius: BorderRadius.circular(12),
-                                        border: Border.all(color: Colors.grey[300]!),
-                                      ),
-                                      child: Row(
-                                        children: [
-                                          const Icon(Icons.list_alt, color: Color(0xFF4CB1C7)),
-                                          const SizedBox(width: 12),
-                                          Expanded(
-                                            child: Text(
-                                              _selectedReasonIds.isEmpty
-                                                  ? 'Select Reasons'
-                                                  : '${_selectedReasonIds.length} selected',
-                                              style: const TextStyle(color: Colors.black87),
-                                            ),
-                                          ),
-                                          const Icon(Icons.arrow_drop_down, color: Colors.grey),
-                                        ],
-                                      ),
-                                    ),
+                  child: Consumer<ReasonProvider>(
+                    builder: (context, reasonProvider, child) {
+                      return FutureBuilder<List<Reason>>(
+                        future: reasonProvider.getAllReasons(),
+                        builder: (context, snapshot) {
+                          if (!snapshot.hasData) {
+                            return const Center(child: CircularProgressIndicator());
+                          }
+                          return Column(
+                            crossAxisAlignment: CrossAxisAlignment.start,
+                            children: [
+                              GestureDetector(
+                                onTap: () => _showReasonDialog(context, reasonProvider),
+                                child: Container(
+                                  padding: const EdgeInsets.all(12),
+                                  decoration: BoxDecoration(
+                                    color: Colors.white,
+                                    borderRadius: BorderRadius.circular(12),
+                                    border: Border.all(color: Colors.grey[300]!),
                                   ),
-                                  if (_selectedReasonIds.isNotEmpty) ...[
-                                    const SizedBox(height: 8),
-                                    Wrap(
-                                      spacing: 8,
-                                      runSpacing: 8,
-                                      children: _selectedReasonIds.map((id) {
-                                        final reason = snapshot.data!
-                                            .firstWhere((r) => r.reasonID == id);
-                                        return Chip(
-                                          label: Text(reason.item ?? ''),
-                                          deleteIcon: const Icon(Icons.close, size: 18),
-                                          onDeleted: () {
-                                            setState(() {
-                                              _selectedReasonIds.remove(id);
-                                            });
-                                          },
-                                          backgroundColor: const Color(0xFF4CB1C7).withOpacity(0.1),
-                                          labelStyle: const TextStyle(color: Color(0xFF4CB1C7)),
-                                        );
-                                      }).toList(),
-                                    ),
-                                  ],
-                                ],
-                              );
-                            },
+                                  child: Row(
+                                    children: [
+                                      const Icon(Icons.list_alt, color: Color(0xFF4CB1C7)),
+                                      const SizedBox(width: 12),
+                                      Expanded(
+                                        child: Text(
+                                          _selectedReasonIds.isEmpty
+                                              ? 'Select Reasons'
+                                              : '${_selectedReasonIds.length} selected',
+                                          style: const TextStyle(color: Colors.black87),
+                                        ),
+                                      ),
+                                      const Icon(Icons.arrow_drop_down, color: Colors.grey),
+                                    ],
+                                  ),
+                                ),
+                              ),
+                              if (_selectedReasonIds.isNotEmpty) ...[
+                                const SizedBox(height: 8),
+                                Wrap(
+                                  spacing: 8,
+                                  runSpacing: 8,
+                                  children: _selectedReasonIds.map((id) {
+                                    final reason = snapshot.data!.firstWhere((r) => r.reasonID == id);
+                                    return Chip(
+                                      label: Text(reason.item ?? ''),
+                                      deleteIcon: const Icon(Icons.close, size: 18),
+                                      onDeleted: () {
+                                        setState(() {
+                                          _selectedReasonIds.remove(id);
+                                        });
+                                      },
+                                      backgroundColor: const Color(0xFF4CB1C7).withOpacity(0.1),
+                                      labelStyle: const TextStyle(color: Color(0xFF4CB1C7)),
+                                    );
+                                  }).toList(),
+                                ),
+                              ],
+                            ],
                           );
                         },
-                      ),
-                      const SizedBox(height: 12),
-                      _buildTextField(
-                        controller: _customReasonController,
-                        label: 'Add Custom Reason',
-                      ),
-                    ],
+                      );
+                    },
                   ),
                 ),
                 const SizedBox(height: 24),
@@ -881,30 +828,6 @@ class _CreateVisitScreenState extends State<CreateVisitScreen> {
             ),
             const Icon(Icons.arrow_drop_down, color: Colors.grey),
           ],
-        ),
-      ),
-    );
-  }
-
-  Widget _buildTextField({required TextEditingController controller, required String label}) {
-    return TextFormField(
-      controller: controller,
-      decoration: InputDecoration(
-        labelText: label,
-        labelStyle: const TextStyle(color: Color(0xFF4CB1C7)),
-        filled: true,
-        fillColor: Colors.white,
-        border: OutlineInputBorder(
-          borderRadius: BorderRadius.circular(12),
-          borderSide: BorderSide(color: Colors.grey[300]!),
-        ),
-        enabledBorder: OutlineInputBorder(
-          borderRadius: BorderRadius.circular(12),
-          borderSide: BorderSide(color: Colors.grey[300]!),
-        ),
-        focusedBorder: OutlineInputBorder(
-          borderRadius: BorderRadius.circular(12),
-          borderSide: const BorderSide(color: Color(0xFF4CB1C7)),
         ),
       ),
     );

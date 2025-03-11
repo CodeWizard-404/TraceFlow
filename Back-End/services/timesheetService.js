@@ -30,8 +30,8 @@ class TimesheetService {
                     time,
                     location,
                     agentID,
-                    reasons = [],      // Added for visit reasons
-                    checklists = [], // Added for checklist items
+                    reasons = [],      
+                    checklists = [], 
                 } = visitData;
 
                 // Create visit with associations
@@ -42,8 +42,8 @@ class TimesheetService {
                     agentID,
                     supervisorID,
                     timesheetID: timesheet.timesheetID,
-                    reasons,          // Pass reasons
-                    checklists,   // Pass checklist items
+                    reasons,          
+                    checklists,   
                 });
             }
 
