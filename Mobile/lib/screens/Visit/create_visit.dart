@@ -1,3 +1,4 @@
+import 'dart:async';
 import 'dart:convert';
 import 'package:flutter/material.dart';
 import 'package:provider/provider.dart';
@@ -31,6 +32,10 @@ class _CreateVisitScreenState extends State<CreateVisitScreen> {
   List<String> _selectedChecklistIds = [];
   List<String> _selectedReasonIds = [];
   String? _location;
+  String _agentPhone = '';
+  String? _phoneError;
+  Timer? _debounce;
+  final TextEditingController _phoneController = TextEditingController();
 
   @override
   void initState() {
@@ -39,6 +44,13 @@ class _CreateVisitScreenState extends State<CreateVisitScreen> {
     Provider.of<AgentProvider>(context, listen: false).fetchUniqueLocations();
     Provider.of<ChecklistProvider>(context, listen: false).getAllChecklists();
     Provider.of<ReasonProvider>(context, listen: false).getAllReasons();
+  }
+
+  @override
+  void dispose() {
+    _debounce?.cancel();
+    _phoneController.dispose();
+    super.dispose();
   }
 
   int _getWeekNumber(DateTime date) {
@@ -428,6 +440,41 @@ class _CreateVisitScreenState extends State<CreateVisitScreen> {
     );
   }
 
+  void _onPhoneChanged(String value, AgentProvider agentProvider) {
+    setState(() {
+      _agentPhone = value;
+      _phoneError = null;
+    });
+
+    if (_debounce?.isActive ?? false) _debounce!.cancel();
+    _debounce = Timer(const Duration(milliseconds: 500), () async {
+      if (value.isEmpty) {
+        setState(() {
+          _selectedAgentId = null;
+          _location = null;
+          agentProvider.agents.clear();
+        });
+      } else if (value.length >= 7) {
+        try {
+          final agent = await agentProvider.fetchAgentByPhone(value);
+          setState(() {
+            _selectedAgentId = agent.agentID;
+            _location = agent.location;
+            agentProvider.agents.clear();
+            agentProvider.agents.add(agent);
+          });
+        } catch (e) {
+          setState(() {
+            _phoneError = 'Agent not found with this phone number';
+            _selectedAgentId = null;
+            _location = null;
+            agentProvider.agents.clear();
+          });
+        }
+      }
+    });
+  }
+
   void _submitVisit() async {
     if (_formKey.currentState!.validate()) {
       if (_selectedDate == null || _selectedTime == null || _selectedAgentId == null) {
@@ -494,11 +541,7 @@ class _CreateVisitScreenState extends State<CreateVisitScreen> {
             elevation: 0,
             title: const Text(
               'Create Visit',
-              style: TextStyle(
-                fontSize: 22,
-                fontWeight: FontWeight.bold,
-                color: Colors.white,
-              ),
+              style: TextStyle(fontSize: 22, fontWeight: FontWeight.bold, color: Colors.white),
             ),
             centerTitle: true,
             leading: IconButton(
@@ -541,41 +584,82 @@ class _CreateVisitScreenState extends State<CreateVisitScreen> {
                 const SizedBox(height: 16),
                 _buildSectionCard(
                   title: 'Location & Agent',
-                  child: Column(
-                    children: [
-                      Consumer<AgentProvider>(
-                        builder: (context, agentProvider, child) {
-                          return GestureDetector(
-                            onTap: () => _showLocationDialog(context, agentProvider),
+                  child: Consumer<AgentProvider>(
+                    builder: (context, agentProvider, child) {
+                      return Column(
+                        crossAxisAlignment: CrossAxisAlignment.start,
+                        children: [
+                          Container(
+                            padding: const EdgeInsets.symmetric(vertical:0, horizontal: 16),
+                            decoration: BoxDecoration(
+                              color: Colors.white,
+                              borderRadius: BorderRadius.circular(12),
+                              border: Border.all(color: Colors.grey[300]!),
+                            ),
+                            child: Row(
+                              children: [
+                                const Icon(Icons.phone, color: Color(0xFF4CB1C7), size: 24),
+                                const SizedBox(width: 12),
+                                Expanded(
+                                  child: TextField(
+                                    controller: _phoneController,
+                                    keyboardType: TextInputType.phone,
+                                    decoration: const InputDecoration(
+                                      hintText: 'Enter agent\'s phone number',
+                                      border: InputBorder.none,
+                                      hintStyle: TextStyle(color: Colors.grey),
+                                    ),
+                                    style: const TextStyle(fontSize: 16, color: Colors.black87),
+                                    onChanged: (value) => _onPhoneChanged(value, agentProvider),
+                                  ),
+                                ),
+                              ],
+                            ),
+                          ),
+                          if (_phoneError != null) ...[
+                            const SizedBox(height: 8),
+                            Text(
+                              _phoneError!,
+                              style: const TextStyle(color: Colors.red, fontSize: 12),
+                            ),
+                          ],
+                          const SizedBox(height: 12),
+                          GestureDetector(
+                            onTap: _agentPhone.isNotEmpty ? null : () => _showLocationDialog(context, agentProvider),
                             child: Container(
                               padding: const EdgeInsets.all(12),
                               decoration: BoxDecoration(
                                 color: Colors.white,
                                 borderRadius: BorderRadius.circular(12),
                                 border: Border.all(color: Colors.grey[300]!),
+                                backgroundBlendMode: _agentPhone.isNotEmpty ? BlendMode.saturation : null,
                               ),
                               child: Row(
                                 children: [
-                                  const Icon(Icons.location_on, color: Color(0xFF4CB1C7)),
+                                  Icon(
+                                    Icons.location_on,
+                                    color: _agentPhone.isNotEmpty ? Colors.grey : const Color(0xFF4CB1C7),
+                                  ),
                                   const SizedBox(width: 12),
                                   Expanded(
                                     child: Text(
-                                      _location ?? 'Select Location',
-                                      style: const TextStyle(color: Colors.black87),
+                                      _location ?? (_agentPhone.isNotEmpty ? 'Selected via phone' : 'Select Location'),
+                                      style: TextStyle(
+                                        color: _agentPhone.isNotEmpty ? Colors.grey : Colors.black87,
+                                      ),
                                     ),
                                   ),
-                                  const Icon(Icons.arrow_drop_down, color: Colors.grey),
+                                  Icon(
+                                    Icons.arrow_drop_down,
+                                    color: _agentPhone.isNotEmpty ? Colors.grey : Colors.grey,
+                                  ),
                                 ],
                               ),
                             ),
-                          );
-                        },
-                      ),
-                      const SizedBox(height: 12),
-                      Consumer<AgentProvider>(
-                        builder: (context, agentProvider, child) {
-                          return GestureDetector(
-                            onTap: _location == null
+                          ),
+                          const SizedBox(height: 12),
+                          GestureDetector(
+                            onTap: _agentPhone.isNotEmpty || _location == null
                                 ? null
                                 : () => _showAgentDialog(context, agentProvider),
                             child: Container(
@@ -583,39 +667,41 @@ class _CreateVisitScreenState extends State<CreateVisitScreen> {
                               decoration: BoxDecoration(
                                 color: Colors.white,
                                 borderRadius: BorderRadius.circular(12),
-                                border: Border.all(
-                                  color: _location == null ? Colors.grey[300]! : Colors.grey[300]!,
-                                ),
-                                backgroundBlendMode: _location == null ? BlendMode.saturation : null,
+                                border: Border.all(color: Colors.grey[300]!),
+                                backgroundBlendMode: _agentPhone.isNotEmpty || _location == null ? BlendMode.saturation : null,
                               ),
                               child: Row(
                                 children: [
                                   Icon(
                                     Icons.person,
-                                    color: _location == null ? Colors.grey : const Color(0xFF4CB1C7),
+                                    color: _agentPhone.isNotEmpty || _location == null ? Colors.grey : const Color(0xFF4CB1C7),
                                   ),
                                   const SizedBox(width: 12),
                                   Expanded(
                                     child: Text(
                                       _selectedAgentId == null
-                                          ? (_location == null ? 'Select a location first' : 'Select Agent')
+                                          ? (_agentPhone.isNotEmpty
+                                          ? 'Selected via phone'
+                                          : _location == null
+                                          ? 'Select a location first'
+                                          : 'Select Agent')
                                           : '${agentProvider.agents.firstWhere((agent) => agent.agentID == _selectedAgentId).name} ${agentProvider.agents.firstWhere((agent) => agent.agentID == _selectedAgentId).lastname}',
                                       style: TextStyle(
-                                        color: _location == null ? Colors.grey : Colors.black87,
+                                        color: _agentPhone.isNotEmpty || _location == null ? Colors.grey : Colors.black87,
                                       ),
                                     ),
                                   ),
                                   Icon(
                                     Icons.arrow_drop_down,
-                                    color: _location == null ? Colors.grey : Colors.grey,
+                                    color: _agentPhone.isNotEmpty || _location == null ? Colors.grey : Colors.grey,
                                   ),
                                 ],
                               ),
                             ),
-                          );
-                        },
-                      ),
-                    ],
+                          ),
+                        ],
+                      );
+                    },
                   ),
                 ),
                 const SizedBox(height: 16),
@@ -664,8 +750,7 @@ class _CreateVisitScreenState extends State<CreateVisitScreen> {
                                   spacing: 8,
                                   runSpacing: 8,
                                   children: _selectedChecklistIds.map((id) {
-                                    final checklist =
-                                    snapshot.data!.firstWhere((c) => c.checklistID == id);
+                                    final checklist = snapshot.data!.firstWhere((c) => c.checklistID == id);
                                     return Chip(
                                       label: Text(checklist.item ?? ''),
                                       deleteIcon: const Icon(Icons.close, size: 18),
@@ -766,11 +851,7 @@ class _CreateVisitScreenState extends State<CreateVisitScreen> {
                   ),
                   child: const Text(
                     'Create Visit',
-                    style: TextStyle(
-                      fontSize: 18,
-                      fontWeight: FontWeight.w600,
-                      color: Colors.white,
-                    ),
+                    style: TextStyle(fontSize: 18, fontWeight: FontWeight.w600, color: Colors.white),
                   ),
                 ),
               ],
@@ -792,11 +873,7 @@ class _CreateVisitScreenState extends State<CreateVisitScreen> {
           children: [
             Text(
               title,
-              style: const TextStyle(
-                fontSize: 18,
-                fontWeight: FontWeight.w600,
-                color: Color(0xFF4CB1C7),
-              ),
+              style: const TextStyle(fontSize: 18, fontWeight: FontWeight.w600, color: Color(0xFF4CB1C7)),
             ),
             const SizedBox(height: 12),
             child,
