@@ -1,9 +1,12 @@
 import { useState } from "react";
+import { useTheme } from "../context/ThemeContext"; // Import useTheme from ThemeContext
+import { FaSun, FaMoon } from "react-icons/fa"; // Icons for theme toggle
 import logo from "../assets/Logo.png";
 import "./CMP.css";
 
 function Header() {
   const [isMenuOpen, setIsMenuOpen] = useState(false);
+  const { theme, toggleTheme } = useTheme(); // Access theme and toggle function
 
   const toggleMenu = () => {
     setIsMenuOpen((prev) => !prev);
@@ -20,6 +23,11 @@ function Header() {
           <a href="/timesheet" className="nav-link">Timesheets</a>
           <a href="/schedule" className="nav-link">Schedule</a>
           <a href="/about" className="nav-link">About</a>
+          {/* Theme Toggle Button */}
+          <button className="theme-toggle-btn" onClick={toggleTheme}>
+            {theme === "light" ? <FaMoon /> : <FaSun />}
+            
+          </button>
         </nav>
       </div>
     </header>
