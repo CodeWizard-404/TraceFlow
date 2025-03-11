@@ -1,10 +1,11 @@
+/* eslint-disable react-hooks/exhaustive-deps */
 // src/pages/timesheet/TimesheetForm.tsx
-import React, { useState, useEffect } from "react";
+import React, { useState, useEffect, useCallback } from "react";
 import { useNavigate } from "react-router-dom";
-
+import { debounce } from "lodash";
 import "./TimesheetForm.css";
 import Agent from "../../models/Agent";
-import { getAgentLocations, getAgentsByLocation } from "../../apis/agentAPI";
+import { getAgentLocations, getAgentsByLocation, getAgentByPhone } from "../../apis/agentAPI";
 import { getAllChecklists } from "../../apis/checklistAPI";
 import { getAllReasons } from "../../apis/reasonAPI";
 import { createTimesheet } from "../../apis/timesheetAPI";
@@ -21,17 +22,19 @@ const TimesheetForm: React.FC = () => {
     const [agents, setAgents] = useState<Agent[]>([]);
     const [selectedAgent, setSelectedAgent] = useState<string>("");
     const [agentSearch, setAgentSearch] = useState<string>("");
+    const [agentPhone, setAgentPhone] = useState<string>(""); // Phone input state
     const [reasons, setReasons] = useState<Reason[]>([]);
-    const [selectedReasons, setSelectedReasons] = useState<Array<{ id?: string; }>>([]);
+    const [selectedReasons, setSelectedReasons] = useState<Array<{ id?: string }>>([]);
     const [reasonSearch, setReasonSearch] = useState<string>("");
     const [checklists, setChecklists] = useState<Checklist[]>([]);
-    const [selectedChecklists, setSelectedChecklists] = useState<Array<{ id?: string; }>>([]);
+    const [selectedChecklists, setSelectedChecklists] = useState<Array<{ id?: string }>>([]);
     const [checklistSearch, setChecklistSearch] = useState<string>("");
     const [loading, setLoading] = useState<boolean>(false);
     const [error, setError] = useState<string | null>(null);
 
     const supervisorID = "user_001";
 
+    // Initial data fetching
     useEffect(() => {
         const fetchData = async () => {
             try {
@@ -54,8 +57,9 @@ const TimesheetForm: React.FC = () => {
         fetchData();
     }, []);
 
+    // Fetch agents by location (only if no phone is entered)
     useEffect(() => {
-        if (selectedLocation) {
+        if (selectedLocation && !agentPhone) {
             const fetchAgents = async () => {
                 try {
                     const agentsData = await getAgentsByLocation(selectedLocation);
@@ -66,11 +70,52 @@ const TimesheetForm: React.FC = () => {
                 }
             };
             fetchAgents();
-        } else {
+        } else if (!selectedLocation && !agentPhone) {
             setAgents([]);
             setSelectedAgent("");
         }
-    }, [selectedLocation]);
+    }, [selectedLocation, agentPhone]);
+
+    // Debounced function to fetch agent by phone
+    const fetchAgentByPhone = useCallback(
+        debounce(async (phone: string) => {
+            if (phone.length < 7) { // Adjust this based on your phone number length requirement
+                setError(null); // Clear error while typing incomplete number
+                return;
+            }
+            try {
+                const agentData = await getAgentByPhone(phone);
+                setSelectedAgent(agentData.agentID);
+                setSelectedLocation(agentData.location || "");
+                setAgents([agentData]);
+                setAgentSearch(`${agentData.name || ""} ${agentData.lastname || ""}`);
+                setError(null); // Clear any previous error
+            } catch (err) {
+                setError("Agent not found with this phone number");
+                setSelectedAgent("");
+                setAgents([]);
+                setSelectedLocation("");
+                console.error(err);
+            }
+        }, 500), // 500ms debounce delay
+        []
+    );
+
+    // Trigger fetchAgentByPhone when agentPhone changes
+    useEffect(() => {
+        if (agentPhone) {
+            fetchAgentByPhone(agentPhone);
+        } else {
+            setSelectedAgent("");
+            setAgents([]);
+            setSelectedLocation("");
+            setAgentSearch("");
+            setError(null); // Clear error when phone is cleared
+        }
+        return () => {
+            fetchAgentByPhone.cancel(); // Cancel debounce on cleanup
+        };
+    }, [agentPhone, fetchAgentByPhone]);
 
     const getWeekNumber = (dateStr: string): number => {
         const date = new Date(dateStr);
@@ -80,7 +125,6 @@ const TimesheetForm: React.FC = () => {
         const diffMs = utcDate.getTime() - yearStart.getTime();
         const dayMs = 24 * 60 * 60 * 1000;
         const weekNum = Math.ceil(((diffMs / dayMs) + 1) / 7);
-        console.log(`getWeekNumber: dateStr=${dateStr}, utcDate=${utcDate}, yearStart=${yearStart}, weekNum=${weekNum}`);
         return weekNum;
     };
 
@@ -135,7 +179,7 @@ const TimesheetForm: React.FC = () => {
     const isFormComplete = date && time && selectedAgent && selectedReasons.length > 0 && selectedChecklists.length > 0;
 
     if (loading && !error) return <div className="loading">Loading...</div>;
-    if (error) return <div className="error">{error}</div>;
+    if (error && !agentPhone) return <div className="error">{error}</div>; // Only show error if no phone is being typed
 
     return (
         <div className="timesheet-form-container">
@@ -165,6 +209,18 @@ const TimesheetForm: React.FC = () => {
                         />
                     </div>
                     <div className="form-group">
+                        <label htmlFor="agentPhone">Agent Phone (Optional)</label>
+                        <input
+                            type="tel"
+                            id="agentPhone"
+                            placeholder="Enter agent's phone number"
+                            value={agentPhone}
+                            onChange={(e) => setAgentPhone(e.target.value)}
+                            className="search-input"
+                        />
+                        {error && agentPhone && <span className="error-text">{error}</span>} {/* Show error only if phone is entered */}
+                    </div>
+                    <div className="form-group">
                         <label htmlFor="location">Location</label>
                         <input
                             type="text"
@@ -172,6 +228,7 @@ const TimesheetForm: React.FC = () => {
                             value={locationSearch}
                             onChange={(e) => setLocationSearch(e.target.value)}
                             className="search-input"
+                            disabled={!!agentPhone} // Disable if phone is used
                         />
                         <select
                             id="location"
@@ -179,6 +236,7 @@ const TimesheetForm: React.FC = () => {
                             onChange={(e) => setSelectedLocation(e.target.value)}
                             required
                             aria-label="Select a location"
+                            disabled={!!agentPhone} // Disable if phone is used
                         >
                             <option value="">Select a location</option>
                             {locations
@@ -197,27 +255,27 @@ const TimesheetForm: React.FC = () => {
                             placeholder="Search agents..."
                             value={agentSearch}
                             onChange={(e) => setAgentSearch(e.target.value)}
-                            disabled={!selectedLocation}
+                            disabled={!!agentPhone || !selectedLocation} // Disabled if phone is entered OR location is not selected
                             className="search-input"
                         />
                         <select
                             id="agent"
                             value={selectedAgent}
                             onChange={(e) => setSelectedAgent(e.target.value)}
-                            disabled={!selectedLocation}
+                            disabled={!!agentPhone || !selectedLocation} // Disabled if phone is entered OR location is not selected
                             required
                             aria-label="Select an agent"
                         >
                             <option value="">Select an agent</option>
                             {agents
                                 .filter((agent) =>
-                                    `${agent.name || ""} ${agent.lastname || ""}`
+                                    `${agent.name || ""} ${agent.lastname || ""} ${agent.phone || ""}`
                                         .toLowerCase()
                                         .includes(agentSearch.toLowerCase())
                                 )
                                 .map((agent) => (
                                     <option key={agent.agentID} value={agent.agentID}>
-                                        {agent.name} {agent.lastname}
+                                        {agent.name} {agent.lastname} {agent.phone}
                                     </option>
                                 ))}
                         </select>
@@ -234,14 +292,16 @@ const TimesheetForm: React.FC = () => {
                         <select
                             value=""
                             onChange={(e) => {
-                                const selectedReason = reasons.find((r) => r.reasonID === e.target.value);
-                                if (selectedReason) handleReasonSelect(selectedReason);
+                                const reason = reasons.find((r) => r.reasonID === e.target.value);
+                                if (reason) handleReasonSelect(reason);
                             }}
                             aria-label="Select a reason"
                         >
                             <option value="">Select a reason</option>
                             {reasons
-                                .filter((reason) => reason.item.toLowerCase().includes(reasonSearch.toLowerCase()))
+                                .filter((reason) =>
+                                    reason.item.toLowerCase().includes(reasonSearch.toLowerCase())
+                                )
                                 .map((reason) => (
                                     <option key={reason.reasonID} value={reason.reasonID}>
                                         {reason.item}
@@ -274,8 +334,8 @@ const TimesheetForm: React.FC = () => {
                         <select
                             value=""
                             onChange={(e) => {
-                                const selectedChecklist = checklists.find((c) => c.checklistID === e.target.value);
-                                if (selectedChecklist) handleChecklistSelect(selectedChecklist);
+                                const checklist = checklists.find((c) => c.checklistID === e.target.value);
+                                if (checklist) handleChecklistSelect(checklist);
                             }}
                             aria-label="Select a checklist"
                         >

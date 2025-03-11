@@ -209,3 +209,12 @@
         font-size: 0.75rem;
     }
 }
+
+.suggestion-item:hover {
+    background-color: #f0f0f0;
+}
+.error-text {
+    color: red;
+    font-size: 0.9em;
+    margin-top: 5px;
+}
