@@ -20,6 +20,7 @@
     "framer-motion": "^12.4.10",
     "front-end": "file:",
     "html5-qrcode": "^2.3.8",
+    "jsonwebtoken": "^9.0.2",
     "jsqr": "^1.4.0",
     "lodash": "^4.17.21",
     "react": "^18.3.1",
