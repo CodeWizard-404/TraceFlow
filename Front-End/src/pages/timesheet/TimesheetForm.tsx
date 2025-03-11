@@ -22,10 +22,10 @@ const TimesheetForm: React.FC = () => {
     const [selectedAgent, setSelectedAgent] = useState<string>("");
     const [agentSearch, setAgentSearch] = useState<string>("");
     const [reasons, setReasons] = useState<Reason[]>([]);
-    const [selectedReasons, setSelectedReasons] = useState<Array<{ id?: string; text?: string }>>([]);
+    const [selectedReasons, setSelectedReasons] = useState<Array<{ id?: string; }>>([]);
     const [reasonSearch, setReasonSearch] = useState<string>("");
     const [checklists, setChecklists] = useState<Checklist[]>([]);
-    const [selectedChecklists, setSelectedChecklists] = useState<Array<{ id?: string; text?: string }>>([]);
+    const [selectedChecklists, setSelectedChecklists] = useState<Array<{ id?: string; }>>([]);
     const [checklistSearch, setChecklistSearch] = useState<string>("");
     const [loading, setLoading] = useState<boolean>(false);
     const [error, setError] = useState<string | null>(null);
@@ -84,23 +84,15 @@ const TimesheetForm: React.FC = () => {
         return weekNum;
     };
 
-    const handleReasonSelect = (reason: string | Reason) => {
-        if (typeof reason === "string") {
-            if (reason.trim() && !selectedReasons.some((r) => r.text === reason)) {
-                setSelectedReasons([...selectedReasons, { text: reason }]);
-            }
-        } else if (!selectedReasons.some((r) => r.id === reason.reasonID)) {
+    const handleReasonSelect = (reason: Reason) => {
+        if (!selectedReasons.some((r) => r.id === reason.reasonID)) {
             setSelectedReasons([...selectedReasons, { id: reason.reasonID }]);
         }
         setReasonSearch("");
     };
 
-    const handleChecklistSelect = (checklist: string | Checklist) => {
-        if (typeof checklist === "string") {
-            if (checklist.trim() && !selectedChecklists.some((c) => c.text === checklist)) {
-                setSelectedChecklists([...selectedChecklists, { text: checklist }]);
-            }
-        } else if (!selectedChecklists.some((c) => c.id === checklist.checklistID)) {
+    const handleChecklistSelect = (checklist: Checklist) => {
+        if (!selectedChecklists.some((c) => c.id === checklist.checklistID)) {
             setSelectedChecklists([...selectedChecklists, { id: checklist.checklistID }]);
         }
         setChecklistSearch("");
@@ -234,10 +226,9 @@ const TimesheetForm: React.FC = () => {
                         <label>Reasons</label>
                         <input
                             type="text"
-                            placeholder="Search or type a custom reason"
+                            placeholder="Search reasons..."
                             value={reasonSearch}
                             onChange={(e) => setReasonSearch(e.target.value)}
-                            onKeyPress={(e) => e.key === "Enter" && handleReasonSelect(reasonSearch)}
                             className="search-input"
                         />
                         <select
@@ -266,7 +257,7 @@ const TimesheetForm: React.FC = () => {
                                         setSelectedReasons(selectedReasons.filter((_, i) => i !== index))
                                     }
                                 >
-                                    {reason.text || reasons.find((r) => r.reasonID === reason.id)?.item} ×
+                                    {reasons.find((r) => r.reasonID === reason.id)?.item} ×
                                 </span>
                             ))}
                         </div>
@@ -275,10 +266,9 @@ const TimesheetForm: React.FC = () => {
                         <label>Checklists</label>
                         <input
                             type="text"
-                            placeholder="Search or type a custom checklist"
+                            placeholder="Search checklists..."
                             value={checklistSearch}
                             onChange={(e) => setChecklistSearch(e.target.value)}
-                            onKeyPress={(e) => e.key === "Enter" && handleChecklistSelect(checklistSearch)}
                             className="search-input"
                         />
                         <select
@@ -309,7 +299,7 @@ const TimesheetForm: React.FC = () => {
                                         setSelectedChecklists(selectedChecklists.filter((_, i) => i !== index))
                                     }
                                 >
-                                    {checklist.text || checklists.find((c) => c.checklistID === checklist.id)?.item} ×
+                                    {checklists.find((c) => c.checklistID === checklist.id)?.item} ×
                                 </span>
                             ))}
                         </div>
