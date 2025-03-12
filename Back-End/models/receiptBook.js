@@ -18,27 +18,27 @@ module.exports = (sequelize, DataTypes) => {
         status: {
             type: DataTypes.STRING,
             allowNull: false,
-            defaultValue: 'initial', // e.g., 'initial', 'distributed', 'collected'
+            defaultValue: 'initial',
         },
         qrCode: {
             type: DataTypes.STRING,
             allowNull: false,
             unique: true,
         },
-        ownerID: {
-            type: DataTypes.STRING,
-            allowNull: true, // Can be null initially until assigned
-            references: {
-                model: 'Users',
-                key: 'userID',
-            },
-        },
         agentID: {
             type: DataTypes.STRING,
-            allowNull: true, // Assigned to an agent later
+            allowNull: true,
             references: {
                 model: 'Agents',
                 key: 'agentID',
+            },
+        },
+        ownerID: { 
+            type: DataTypes.STRING,
+            allowNull: true,
+            references: {
+                model: 'Users',
+                key: 'userID',
             },
         },
     });

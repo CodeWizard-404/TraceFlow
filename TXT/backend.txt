@@ -18,3 +18,7 @@ npm install --save-dev sequelize-migration-generator
 
 
 node app.js
+
+npm install express sequelize pg pg-hstore dotenv jsonwebtoken nodemailer twilio
+npm install express cors mdns-js sequelize pg pg-hstore dotenv jsonwebtoken nodemailer twilio
+npm install qrcode bcrypt jsonwebtoken nodemailer twilio express cors mdns-js sequelize pg pg-hstore dotenv

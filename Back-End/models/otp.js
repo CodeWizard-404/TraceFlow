@@ -20,7 +20,7 @@ module.exports = (sequelize, DataTypes) => {
             allowNull: false,
             defaultValue: DataTypes.NOW,
         },
-        userID: {
+        userID: { // Foreign key to User
             type: DataTypes.STRING,
             allowNull: false,
             references: {
@@ -29,6 +29,6 @@ module.exports = (sequelize, DataTypes) => {
             },
         },
     }, {
-        timestamps: false,
+        timestamps: false, // We manually handle createdAt
     });
 };

@@ -10,9 +10,9 @@ module.exports = (sequelize, DataTypes) => {
         status: {
             type: DataTypes.STRING,
             allowNull: false,
-            defaultValue: 'unused', 
+            defaultValue: 'pending',
         },
-        bookID: {
+        bookID: { 
             type: DataTypes.STRING,
             allowNull: false,
             references: {

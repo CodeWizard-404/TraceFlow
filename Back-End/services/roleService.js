@@ -1,66 +1,38 @@
-const { Role, User, Permission } = require('../models');
+const { Role } = require('../models');
 
-const roleService = {
-    // addRole(roleDetails): Create a new role with specific permissions (US 49)
-    async addRole(adminID, roleDetails) {
-        const { name, description, permissionIDs = [] } = roleDetails;
-
-        // Validate admin
-        const admin = await User.findByPk(adminID);
-        if (!admin) throw new Error('Admin not found');
-
-        // Check if role name is unique
-        const existingRole = await Role.findOne({ where: { name } });
-        if (existingRole) throw new Error('Role name already exists');
-
+class RoleService {
+    // Create a new role
+    static async createRole(name, description) {
         const role = await Role.create({ name, description });
-
-        // Assign permissions if provided
-        if (permissionIDs.length > 0) {
-            await role.setPermissions(permissionIDs); // Link permissions to role
-        }
-
         return role;
-    },
+    }
 
-    // viewRole(roleID): View a role’s details, including assigned permissions (US 52)
-    async viewRole(adminID, roleID) {
-        const admin = await User.findByPk(adminID);
-        if (!admin) throw new Error('Admin not found');
+    // Get all roles
+    static async getAllRoles() {
+        return await Role.findAll();
+    }
 
-        const role = await Role.findByPk(roleID, {
-            include: [{ model: Permission, attributes: ['permissionID', 'permission', 'description'] }],
-        });
-        if (!role) throw new Error('Role not found');
-
-        return role;
-    },
-
-    // listRoles(): List all roles with their permissions
-    async listRoles(adminID) {
-        const admin = await User.findByPk(adminID);
-        if (!admin) throw new Error('Admin not found');
-
-        const roles = await Role.findAll({
-            include: [{ model: Permission, attributes: ['permissionID', 'permission', 'description'] }],
-        });
-        return roles;
-    },
-
-    // assign(userID, roleID): Assign a role (and its permissions) to a user (US 53)
-    async assign(adminID, userID, roleID) {
-        const admin = await User.findByPk(adminID);
-        if (!admin) throw new Error('Admin not found');
-
-        const user = await User.findByPk(userID);
-        if (!user) throw new Error('User not found');
-
+    // Get a role by ID
+    static async getRoleById(roleID) {
         const role = await Role.findByPk(roleID);
         if (!role) throw new Error('Role not found');
+        return role;
+    }
 
-        await user.addRole(role); // Assign single role to user
-        return user;
-    },
-};
+    // Update a role
+    static async updateRole(roleID, updates) {
+        const role = await Role.findByPk(roleID);
+        if (!role) throw new Error('Role not found');
+        await role.update(updates);
+        return role;
+    }
 
-module.exports = roleService;
+    // Delete a role
+    static async deleteRole(roleID) {
+        const role = await Role.findByPk(roleID);
+        if (!role) throw new Error('Role not found');
+        await role.destroy();
+    }
+}
+
+module.exports = RoleService;

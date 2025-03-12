@@ -1,57 +1,95 @@
 const express = require('express');
 const cors = require('cors');
 const mdns = require('mdns-js');
+const https = require('https');
+const fs = require('fs');
 const { sequelize, initializeDatabase } = require('./config/db');
+const { transporter, initializeSMTP } = require('./config/smtp');
+const { sendSMS, initializeSMS } = require('./config/sms'); // Updated import
+const { authenticateJWT, restrictTo } = require('./config/security');
 const { setupAssociations } = require('./models');
 const visitRoutes = require('./routes/visitRoutes');
 const timesheetRoutes = require('./routes/timesheetRoutes');
 const agentRoutes = require('./routes/agentRoutes');
-const checlistRoutes = require('./routes/checklistRoutes');
+const checklistRoutes = require('./routes/checklistRoutes');
 const reasonRoutes = require('./routes/reasonRoutes');
+const authRoutes = require('./routes/authRoutes');
+const receiptBookRoutes = require('./routes/receiptBookRoutes');
+const receiptStubRoutes = require('./routes/receiptStubRoutes');
 
-// Create Express app (moved outside the async function)
+require('dotenv').config();
+
 const app = express();
 
 // Middleware
 app.use(cors());
 app.use(express.json());
+app.use((req, res, next) => {
+    if (req.user) {
+        sequelize.query(`SET jwt.claims.userID = '${req.user.userID}'`)
+            .catch(err => console.error('Failed to set RLS userID:', err));
+    }
+    next();
+});
 
 // Routes
 app.use('/api/visits', visitRoutes);
-app.use('/api/checklists', checlistRoutes);
+app.use('/api/checklists', checklistRoutes);
 app.use('/api/reasons', reasonRoutes);
 app.use('/api/timesheets', timesheetRoutes);
 app.use('/api/agents', agentRoutes);
+app.use('/api/auth', authRoutes);
+app.use('/api/receipt-books', receiptBookRoutes);
+app.use('/api/receipt-stubs', receiptStubRoutes);
+
+// Test secure endpoint
+app.get('/test', authenticateJWT, restrictTo('Super Admin', 'Manager'), (req, res) => {
+    res.json({ message: 'Secure endpoint accessed', user: req.user });
+});
 
 // Error handling middleware
-app.use((err, res) => {
+app.use((err, req, res, next) => {
     console.error(err.stack);
     res.status(500).json({ error: 'Something went wrong!' });
 });
 
+// Initialize application
 async function initializeApp() {
     try {
-        // 1. Create database if needed
         await initializeDatabase();
+        await initializeSMTP();
         
-        // 2. Set up model relationships
-        setupAssociations();
-        
-        // 3. Sync models with the database
-        await sequelize.sync({ alter: true }); // remove sync entirely for production
-        
-        console.log('Database & tables synchronized!');
-        
-        // 4. Start Express server
-        const PORT = process.env.PORT || 5000;
-        const server = app.listen(PORT, '0.0.0.0', () => {
-            console.log(`Server running on port ${PORT}`);
-        });
+        // Handle SMS initialization gracefully
+        try {
+            await initializeSMS();
+        } catch (smsError) {
+            console.warn('SMS initialization failed, proceeding without SMS:', smsError.message);
+        }
 
-        // 5. Advertise the service via mDNS
+        setupAssociations();
+        await sequelize.sync({ alter: true }); // Replace with migrations in production
+        console.log('Database & tables synchronized!');
+
+        const PORT = process.env.PORT || 5000; // Default to 5000 if PORT not set
+        let server;
+
+        if (process.env.NODE_ENV === 'production' && fs.existsSync('path/to/key.pem')) {
+            const options = {
+                key: fs.readFileSync('path/to/key.pem'),
+                cert: fs.readFileSync('path/to/cert.pem'),
+            };
+            server = https.createServer(options, app).listen(PORT, '0.0.0.0', () => {
+                console.log(`HTTPS Server running on port ${PORT}`);
+            });
+        } else {
+            server = app.listen(PORT, '0.0.0.0', () => {
+                console.log(`HTTP Server running on port ${PORT}`);
+            });
+        }
+
         const service = mdns.createAdvertisement(mdns.tcp('http'), PORT, {
-            name: 'visit-management-backend', // Unique service name
-            txt: { path: '/api' }
+            name: 'visit-management-backend',
+            txt: { path: '/api' },
         });
         service.start();
         console.log('mDNS service advertised as visit-management-backend');
@@ -61,5 +99,4 @@ async function initializeApp() {
     }
 }
 
-// Start the application
 initializeApp();

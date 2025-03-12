@@ -1,48 +1,46 @@
-const { Permission, Role, User } = require('../models');
+const { Permission, Role } = require('../models');
 
-const permissionService = {
-    // createPermission(permissionDetails): Create a new permission representing an app functionality
-    async createPermission(adminID, permissionDetails) {
-        const { permission, description } = permissionDetails; // e.g., permission: "create_timesheet"
+class PermissionService {
+    // Create a new permission
+    static async createPermission(permission, description) {
+        const perm = await Permission.create({ permission, description });
+        return perm;
+    }
 
-        // Validate admin (assuming adminID has full access)
-        const admin = await User.findByPk(adminID);
-        if (!admin) throw new Error('Admin not found');
+    // Get all permissions
+    static async getAllPermissions() {
+        return await Permission.findAll();
+    }
 
-        // Check if permission already exists
-        const existingPermission = await Permission.findOne({ where: { permission } });
-        if (existingPermission) throw new Error('Permission already exists');
+    // Get a permission by ID
+    static async getPermissionById(permissionID) {
+        const perm = await Permission.findByPk(permissionID);
+        if (!perm) throw new Error('Permission not found');
+        return perm;
+    }
 
-        const newPermission = await Permission.create({
-            permission, // Unique identifier for the functionality (e.g., "view_reports")
-            description, // Human-readable explanation (e.g., "Allows viewing dynamic reports")
-        });
+    // Update a permission
+    static async updatePermission(permissionID, updates) {
+        const perm = await Permission.findByPk(permissionID);
+        if (!perm) throw new Error('Permission not found');
+        await perm.update(updates);
+        return perm;
+    }
 
-        return newPermission;
-    },
+    // Delete a permission
+    static async deletePermission(permissionID) {
+        const perm = await Permission.findByPk(permissionID);
+        if (!perm) throw new Error('Permission not found');
+        await perm.destroy();
+    }
 
-    // listPermissions(): List all permissions (app functionalities) available
-    async listPermissions(adminID) {
-        const admin = await User.findByPk(adminID);
-        if (!admin) throw new Error('Admin not found');
-
-        const permissions = await Permission.findAll({
-            include: [{ model: Role, through: { attributes: [] }, attributes: ['roleID', 'name'] }],
-        });
-        return permissions;
-    },
-
-    // Helper method: Assign permissions to a role (used internally or by roleService)
-    async assignPermissionsToRole(adminID, roleID, permissionIDs) {
-        const admin = await User.findByPk(adminID);
-        if (!admin) throw new Error('Admin not found');
-
+    // Assign permission to role (many-to-many)
+    static async assignPermissionToRole(roleID, permissionID) {
         const role = await Role.findByPk(roleID);
-        if (!role) throw new Error('Role not found');
+        const perm = await Permission.findByPk(permissionID);
+        if (!role || !perm) throw new Error('Role or Permission not found');
+        await role.addPermission(perm); // Sequelize method for many-to-many
+    }
+}
 
-        await role.setPermissions(permissionIDs);
-        return role;
-    },
-};
-
-module.exports = permissionService;
+module.exports = PermissionService;
