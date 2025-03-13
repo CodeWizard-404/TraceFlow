@@ -1,10 +1,12 @@
 const express = require('express');
 const router = express.Router();
-const ReceiptStubController = require('../controllers/receiptStubController');
-const { authenticateJWT, restrictTo } = require('../config/security');
 
-router.post('/collect', authenticateJWT, restrictTo('Supervisor'), ReceiptStubController.collectStub);
-router.post('/validate-collection', authenticateJWT, restrictTo('Supervisor'), ReceiptStubController.validateStubCollection);
-router.post('/transmit', authenticateJWT, restrictTo('Supervisor', 'Regional Manager'), ReceiptStubController.transmitStub);
+const { authenticateJWT, requirePermission } = require('../config/security');
+const ReceiptStubController = require('../controllers/receiptStubController');
+
+router.post('/:bookID/collect', authenticateJWT, requirePermission('collect_receipt_stubs'), ReceiptStubController.collectStub);
+router.post('/:bookID/validate-collection', authenticateJWT, requirePermission('validate_receipt_stubs'), ReceiptStubController.validateStubCollection);
+router.post('/:bookID/transmit', authenticateJWT, requirePermission('transmit_receipt_stubs'), ReceiptStubController.transmitStub);
+router.post('/:bookID/archive', authenticateJWT, requirePermission('archive_receipt_stubs'), ReceiptStubController.archiveStub);
 
 module.exports = router;

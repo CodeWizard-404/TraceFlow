@@ -1,22 +1,11 @@
-// routes/agentRoutes.js
 const express = require('express');
 const router = express.Router();
+const { authenticateJWT, requirePermission } = require('../config/security');
 const AgentController = require('../controllers/agentController');
 
-
-
-// Fetch agents by location
-router.get('/location', AgentController.getAgentsByLocation);
-
-// Fetch all unique agent locations
-router.get('/locations', AgentController.getAllUniqueLocations);
-
-
-// Fetch an agent by phone number
-router.get('/phone/:phone', AgentController.getAgentByPhone);
-
-
-// Fetch an agent by ID
-router.get('/:id', AgentController.getAgentById);
+router.get('/location', authenticateJWT, requirePermission('read_agents'), AgentController.getAgentsByLocation);
+router.get('/locations', authenticateJWT, requirePermission('read_agents'), AgentController.getAllUniqueLocations);
+router.get('/phone/:phone', authenticateJWT, requirePermission('read_agents'), AgentController.getAgentByPhone);
+router.get('/:id', authenticateJWT, requirePermission('read_agents'), AgentController.getAgentById);
 
 module.exports = router;

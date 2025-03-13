@@ -4,20 +4,22 @@ require('dotenv').config();
 const transporter = nodemailer.createTransport({
     host: process.env.SMTP_HOST,
     port: process.env.SMTP_PORT,
-    secure: process.env.SMTP_PORT === '465', // Use SSL for port 465
+    secure: false,  
     auth: {
         user: process.env.SMTP_USER,
         pass: process.env.SMTP_PASS,
     },
 });
 
+// Verifies SMTP configuration and ensures the server is ready
 async function initializeSMTP() {
     try {
+        console.log(`${new Date().toISOString()} - Verifying SMTP connection to ${process.env.SMTP_HOST}:${process.env.SMTP_PORT}...`);
         await transporter.verify();
-        console.log('SMTP server ready.');
+        console.log(`${new Date().toISOString()} - SMTP server ready`);
     } catch (error) {
-        console.error('SMTP configuration error:', error);
-        throw error;
+        console.error(`${new Date().toISOString()} - SMTP configuration error:`, error);
+        throw error; // Re-throw to be caught by the caller
     }
 }
 

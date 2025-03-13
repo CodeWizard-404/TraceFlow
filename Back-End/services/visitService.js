@@ -1,7 +1,7 @@
 const { Visit, Agent, Reason, Checklist } = require('../models');
-const ReasonService = require('./reasonService');
-const ChecklistService = require('./checklistService');
 const { parseTLV } = require('../utils/qrParser');
+const ChecklistService = require('./checklistService');
+const ReasonService = require('./reasonService');
 
 class VisitService {
     async createVisit(data) {

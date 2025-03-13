@@ -1,18 +1,11 @@
-// visitRoutes.js
 const express = require('express');
 const router = express.Router();
+const { authenticateJWT, requirePermission } = require('../config/security');
 const VisitController = require('../controllers/visitController');
 
-// Create a new visit
-router.post('/', VisitController.createVisit);
-
-// Verify QR code
-router.post('/verify-qr', VisitController.verifyQRCode);
-
-// Log visit details
-router.put('/:id/log', VisitController.logVisit);
-
-// Fetch a visit by ID
-router.get('/:id', VisitController.getVisitByID);
+router.post('/', authenticateJWT, requirePermission('create_visits'), VisitController.createVisit);
+router.post('/verify-qr', authenticateJWT, requirePermission('validate_visits'), VisitController.verifyQRCode);
+router.put('/:id/log', authenticateJWT, requirePermission('log_visits'), VisitController.logVisit);
+router.get('/:id', authenticateJWT, requirePermission('access_visit_details'), VisitController.getVisitByID);
 
 module.exports = router;

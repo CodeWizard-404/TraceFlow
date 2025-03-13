@@ -21,7 +21,8 @@ class ReasonController {
         }
     }
 
-    static async getAllChecklists(req, res) {
+
+    static async getAllReasons(req, res) {
         try {
             const checklists = await ReasonService.getAllReasons();
             res.status(200).json(checklists);

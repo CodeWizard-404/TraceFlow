@@ -1,39 +1,39 @@
-const { ReceiptStub, ReceiptBook, Agent, OTP, User } = require('../models');
+// services/receiptStubService.js
+const { ReceiptStub, ReceiptBook, Agent, OTP, User, ReceiptBookTransfer} = require('../models');
 const { sendSMS } = require('../config/sms');
 const { transporter } = require('../config/smtp');
-const { Op } = require('sequelize');
+const { OTPService } = require('./otpService');
 
 class ReceiptStubService {
-    static async collectStub(bookID) {
-        const book = await ReceiptBook.findByPk(bookID, { include: [Agent] });
+    static async collectStub(bookID, supervisorID) {
+        const book = await ReceiptBook.findByPk(bookID, { include: [Agent, ReceiptStub] });
         if (!book || !book.agentID) throw new Error('ReceiptBook not assigned to an Agent');
+        if (book.ReceiptStub.status !== 'pending') throw new Error('Stub already collected or processed');
 
-        const stub = await ReceiptStub.findOne({ where: { bookID } }) || await ReceiptStub.create({ bookID });
-        if (stub.status === 'collected') throw new Error('Stub already collected');
-
-        const otpCode = Math.floor(100000 + Math.random() * 900000).toString();
-        const expiresAt = new Date(Date.now() + 10 * 60 * 1000);
-        await OTP.create({ code: otpCode, expiresAt, userID: book.agentID });
-
-        await sendSMS(book.Agent.phone, `Your OTP to confirm stub collection for Receipt Book #${book.number} is ${otpCode}`);
+        const otp = await OTPService.generateOTP(book.agentID);
+        await sendSMS(book.Agent.phone, `Your OTP to confirm stub collection for Receipt Book #${book.number} is ${otp.code}`);
 
         return { message: 'OTP sent to Agent' };
     }
 
     static async validateStubCollection(bookID, supervisorID, otpCode) {
-        const book = await ReceiptBook.findByPk(bookID, { include: [Agent] });
+        const book = await ReceiptBook.findByPk(bookID, { include: [Agent, ReceiptStub] });
         if (!book || !book.agentID) throw new Error('ReceiptBook not assigned to an Agent');
+        if (book.ReceiptStub.status !== 'pending') throw new Error('Stub already collected or processed');
 
-        const otp = await OTP.findOne({
-            where: { userID: book.agentID, code: otpCode, expiresAt: { [Op.gt]: new Date() } },
-        });
-        if (!otp) throw new Error('Invalid or expired OTP');
+        await OTPService.validateOTP(book.agentID, otpCode);
 
-        const stub = await ReceiptStub.findOne({ where: { bookID } });
-        await stub.update({ status: 'collected' });
-        await book.update({ status: 'Stub Collected', agentID: null });
-        await book.setUsers([supervisorID]); // Supervisor becomes the owner
-        await otp.destroy();
+        await Promise.all([
+            book.ReceiptStub.update({ status: 'collected' }),
+            book.update({ status: 'Stub Collected', agentID: null, currentHolderID: supervisorID }),
+            book.setUsers([supervisorID]),
+            ReceiptBookTransfer.create({
+                bookID,
+                fromAgentID: book.agentID,
+                toUserID: supervisorID,
+                status: 'Stub Collected',
+            }),
+        ]);
 
         const supervisor = await User.findByPk(supervisorID);
         await transporter.sendMail({
@@ -43,19 +43,45 @@ class ReceiptStubService {
             text: `Stub for Receipt Book #${book.number} has been collected.`,
         });
 
-        return stub;
+        return book.ReceiptStub;
     }
 
-    static async transmitStub(bookID, newOwnerID) {
-        const book = await ReceiptBook.findByPk(bookID, { include: [{ model: User, as: 'Users' }] });
-        const stub = await ReceiptStub.findOne({ where: { bookID } });
-        if (!stub || stub.status !== 'collected') throw new Error('Stub not collected yet');
+    static async transmitStub(bookID, newOwnerID, currentUserID) {
+        const book = await ReceiptBook.findByPk(bookID, { include: [ReceiptStub] });
+        if (!book.ReceiptStub || book.ReceiptStub.status !== 'collected') throw new Error('Stub not collected yet');
+        if (book.currentHolderID !== currentUserID) {
+            throw new Error('Only the current holder can transmit the stub');
+        }
 
         const newOwner = await User.findByPk(newOwnerID);
         if (!newOwner) throw new Error('User not found');
 
-        await book.setUsers([newOwnerID]); // Transfer ownership
-        await book.update({ status: 'With Regional Manager' });
+        const newOwnerRole = await newOwner.getRoles();
+        const roleName = newOwnerRole.length > 0 ? newOwnerRole[0].name : 'Unknown';
+
+        let newStatus;
+        switch (roleName) {
+            case 'Regional Manager':
+                newStatus = 'With Regional Manager';
+                break;
+            case 'Stock Manager':
+                newStatus = 'With Stock Manager';
+                break;
+            default:
+                newStatus = 'With Regional Manager'; // Default after stub collection
+        }
+
+        await Promise.all([
+            book.setUsers([newOwnerID]),
+            book.update({ status: newStatus, currentHolderID: newOwnerID }),
+            book.ReceiptStub.update({ status: 'transmitted' }),
+            ReceiptBookTransfer.create({
+                bookID,
+                fromUserID: currentUserID,
+                toUserID: newOwnerID,
+                status: newStatus,
+            }),
+        ]);
 
         await transporter.sendMail({
             from: process.env.SMTP_USER,
@@ -64,7 +90,27 @@ class ReceiptStubService {
             text: `Stub for Receipt Book #${book.number} has been transmitted to you.`,
         });
 
-        return stub;
+        return book.ReceiptStub;
+    }
+
+    // Optional: Archive stub when book is archived
+    static async archiveStub(bookID, stockManagerID) {
+        const book = await ReceiptBook.findByPk(bookID, { include: [ReceiptStub] });
+        if (book.currentHolderID !== stockManagerID) throw new Error('Only the current stock manager can archive');
+        if (book.ReceiptStub.status === 'archived') throw new Error('Stub already archived');
+
+        await Promise.all([
+            book.update({ status: 'Archived' }),
+            book.ReceiptStub.update({ status: 'archived' }),
+            ReceiptBookTransfer.create({
+                bookID,
+                fromUserID: stockManagerID,
+                toUserID: stockManagerID,
+                status: 'Archived',
+            }),
+        ]);
+
+        return book.ReceiptStub;
     }
 }
 

@@ -2,8 +2,8 @@ const { Permission, Role } = require('../models');
 
 class PermissionService {
     // Create a new permission
-    static async createPermission(permission, description) {
-        const perm = await Permission.create({ permission, description });
+    static async createPermission(name, type, className, description) {
+        const perm = await Permission.create({ name, type, className, description });
         return perm;
     }
 
@@ -14,7 +14,12 @@ class PermissionService {
 
     // Get a permission by ID
     static async getPermissionById(permissionID) {
-        const perm = await Permission.findByPk(permissionID);
+        const perm = await Permission.findByPk(permissionID, {
+            include: [{
+            model: Role,
+            attributes: ['roleID', 'name']
+            }]
+        });
         if (!perm) throw new Error('Permission not found');
         return perm;
     }
@@ -34,13 +39,6 @@ class PermissionService {
         await perm.destroy();
     }
 
-    // Assign permission to role (many-to-many)
-    static async assignPermissionToRole(roleID, permissionID) {
-        const role = await Role.findByPk(roleID);
-        const perm = await Permission.findByPk(permissionID);
-        if (!role || !perm) throw new Error('Role or Permission not found');
-        await role.addPermission(perm); // Sequelize method for many-to-many
-    }
 }
 
 module.exports = PermissionService;

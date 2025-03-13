@@ -1,6 +1,6 @@
-const { OTP } = require('../models');
 const crypto = require('crypto');
 const { Op } = require('sequelize');
+const { OTP } = require('../models');
 
 class OTPService {
     // Generate a new OTP for a user
@@ -15,6 +15,8 @@ class OTPService {
         });
         return otp;
     }
+
+    // Send an OTP via SMS
 
     // Validate an OTP
     static async validateOTP(userID, code) {

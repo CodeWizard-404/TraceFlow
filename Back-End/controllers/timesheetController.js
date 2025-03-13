@@ -1,3 +1,5 @@
+const { Op } = require('sequelize');
+const { Timesheet, User, Sequelize } = require('../models');
 const TimesheetService = require('../services/timesheetService');
 
 class TimesheetController {
@@ -31,7 +33,29 @@ class TimesheetController {
 
     static async getAllTimesheets(req, res) {
         try {
-            const timesheets = await TimesheetService.listTimesheets();
+            const user = req.user;
+            const userPermissions = user.Roles.flatMap(role => role.Permissions.map(perm => perm.permission));
+            let timesheets;
+
+            // Check if user has 'view_all_timesheets' (e.g., for Managers)
+            if (userPermissions.includes('view_all_timesheets')) {
+                // Fetch all timesheets for Managers, filtered by their Supervisors
+                const supervisorIDs = await User.findAll({
+                    where: { userID: { [Op.in]: user.Supervisors.map(s => s.userID) } },
+                    attributes: ['userID'],
+                }).then(supervisors => supervisors.map(s => s.userID));
+
+                timesheets = await Timesheet.findAll({
+                    where: { supervisorID: { [Op.in]: supervisorIDs } },
+                    include: ['Visits'],
+                });
+            } else {
+                // Default: Supervisors see only their own timesheets
+                timesheets = await Timesheet.findAll({
+                    where: { supervisorID: user.userID },
+                    include: ['Visits'],
+                });
+            }
             res.status(200).json(timesheets);
         } catch (error) {
             console.error(error);

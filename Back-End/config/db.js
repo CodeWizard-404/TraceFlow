@@ -1,56 +1,48 @@
 const { Sequelize } = require('sequelize');
 require('dotenv').config();
 
+const sequelize = new Sequelize(
+    process.env.DB_NAME,
+    process.env.DB_USER,
+    process.env.DB_PASSWORD,
+    {
+        host: process.env.DB_HOST,
+        port: process.env.DB_PORT,
+        dialect: 'postgres',
+        logging: false,
+    }
+);
+
+// Initializes the database by ensuring it exists and establishing a connection
 async function initializeDatabase() {
     const adminSequelize = new Sequelize('postgres', process.env.DB_USER, process.env.DB_PASSWORD, {
         host: process.env.DB_HOST,
         port: process.env.DB_PORT,
         dialect: 'postgres',
-        logging: false
+        logging: false,
     });
 
     try {
-        // Check if database exists
+        console.log(`${new Date().toISOString()} - Checking if database '${process.env.DB_NAME}' exists...`);
         const result = await adminSequelize.query(
             `SELECT 1 FROM pg_database WHERE datname = '${process.env.DB_NAME}'`
         );
 
-        // Create database only if it doesn't exist
         if (result[0].length === 0) {
+            console.log(`${new Date().toISOString()} - Database '${process.env.DB_NAME}' not found, creating...`);
             await adminSequelize.query(`CREATE DATABASE "${process.env.DB_NAME}"`);
-            console.log(`Database ${process.env.DB_NAME} created successfully`);
+            console.log(`${new Date().toISOString()} - Database '${process.env.DB_NAME}' created successfully`);
         } else {
-            console.log(`Database ${process.env.DB_NAME} already exists`);
+            console.log(`${new Date().toISOString()} - Database '${process.env.DB_NAME}' already exists`);
         }
 
-        // Connect to the newly created database
-        try {
-            await sequelize.authenticate();
-            console.log('Database connection established');
-        } catch (error) {
-            console.error('Database connection failed:', error);
-            throw error;
-        }
-
+        console.log(`${new Date().toISOString()} - Attempting to connect to database '${process.env.DB_NAME}'...`);
+        await sequelize.authenticate();
+        console.log(`${new Date().toISOString()} - Database connection established`);
     } catch (error) {
-        console.error('Error creating database:', error);
-    } finally {
-        await adminSequelize.close();
+        console.error(`${new Date().toISOString()} - Error initializing database:`, error);
+        throw error; // Re-throw to be caught by the caller
     }
 }
 
-const sequelize = new Sequelize(
-    process.env.DB_NAME,
-    process.env.DB_USER,
-    process.env.DB_PASSWORD, {
-    host: process.env.DB_HOST,
-    port: process.env.DB_PORT,
-    dialect: 'postgres',
-    logging: false
-}
-);
-
-module.exports = {
-    sequelize,
-    initializeDatabase
-};
+module.exports = { sequelize, initializeDatabase };

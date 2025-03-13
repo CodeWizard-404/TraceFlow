@@ -1,14 +1,10 @@
 const express = require('express');
 const router = express.Router();
+const { authenticateJWT, requirePermission } = require('../config/security');
 const ChecklistController = require('../controllers/checklistController');
 
-// Create a new Checklist Item
-router.post('/', ChecklistController.createChecklist);
-
-// Fetch a Checklists Items by visitID
-router.get('/:id', ChecklistController.getChecklistsByVisitID);
-
-// Fetch all Checklists Items
-router.get('/', ChecklistController.getAllChecklists);
+router.post('/', authenticateJWT, requirePermission('create_checklists_items'), ChecklistController.createChecklist);
+router.get('/', authenticateJWT, requirePermission('read_checklists_items'), ChecklistController.getAllChecklists);
+router.get('/:id', authenticateJWT, requirePermission('read_checklist_item_details'), ChecklistController.getChecklistsByVisitID);
 
 module.exports = router;
