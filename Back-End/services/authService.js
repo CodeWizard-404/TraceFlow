@@ -2,7 +2,7 @@ const { User, Role, OTP, Permission } = require('../models');
 const bcrypt = require('bcrypt');
 const jwt = require('jsonwebtoken');
 const { transporter } = require('../config/smtp');
-const { sendSMS } = require('../config/sms');
+//const { sendSMS } = require('../config/sms');
 const { Op } = require('sequelize');
 
 const JWT_SECRET = process.env.JWT_SECRET;
@@ -22,6 +22,9 @@ class AuthService {
 
         if (roleNames.length > 0) {
             const roles = await Role.findAll({ where: { name: roleNames } });
+            if (roles.length !== roleNames.length) {
+                throw new Error('One or more roles not found');
+            }
             await user.setRoles(roles);
         }
 
@@ -29,8 +32,8 @@ class AuthService {
         await transporter.sendMail({
             from: process.env.SMTP_USER,
             to: email,
-            subject: 'Welcome to SmartSync',
-            text: `Your account has been created. Email: ${email}, Phone: ${phone}`,
+            subject: 'Welcome to TraceFlow',
+            text: `Your account has been created. Email: ${email}, Password: ${password}, Phone: ${phone}, Role: ${roleNames.join(', ')}`,
         });
 
         return user;
@@ -39,7 +42,9 @@ class AuthService {
     // View all users (User Story 48)
     static async getAllUsers() {
         return await User.findAll({
-            include: [{ model: Role, through: { attributes: [] } }],
+            include: [
+            { model: Role, through: { attributes: [] } },
+            ],
             attributes: { exclude: ['password'] },
         });
     }
@@ -51,13 +56,22 @@ class AuthService {
             throw new Error('Invalid credentials');
         }
 
-        const otpCode = Math.floor(100000 + Math.random() * 900000).toString();
-        const expiresAt = new Date(Date.now() + 10 * 60 * 1000);
-        await OTP.create({ code: otpCode, expiresAt, userID: user.userID });
+        //const otpCode = Math.floor(100000 + Math.random() * 900000).toString();
+        //const expiresAt = new Date(Date.now() + 10 * 60 * 1000);
+        //await OTP.create({ code: otpCode, expiresAt, userID: user.userID });
 
-        await sendSMS(user.phone, `Your SmartSync 2FA code is ${otpCode}`);
+        //await sendSMS(user.phone, `Your TraceFlow 2FA code is ${otpCode}`);
 
-        return { userID: user.userID, message: 'OTP sent to your phone' };
+        //return { userID: user.userID, message: 'OTP sent to your phone' };
+
+        const token = jwt.sign(
+            { userID: user.userID, email: user.email },
+            JWT_SECRET,
+            { expiresIn: '12h' }
+        );
+        return { token };
+
+
     }
 
     // Verify 2FA OTP and issue JWT

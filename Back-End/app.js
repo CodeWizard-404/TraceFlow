@@ -5,7 +5,7 @@ const https = require('https');
 const fs = require('fs');
 const { sequelize, initializeDatabase } = require('./config/db');
 const { transporter, initializeSMTP } = require('./config/smtp');
-const { sendSMS, initializeSMS } = require('./config/sms'); // Updated import
+const { sendSMS, initializeSMS } = require('./config/sms');
 const { authenticateJWT, restrictTo } = require('./config/security');
 const { setupAssociations } = require('./models');
 const visitRoutes = require('./routes/visitRoutes');
@@ -59,7 +59,6 @@ async function initializeApp() {
         await initializeDatabase();
         await initializeSMTP();
         
-        // Handle SMS initialization gracefully
         try {
             await initializeSMS();
         } catch (smsError) {
@@ -70,7 +69,7 @@ async function initializeApp() {
         await sequelize.sync({ alter: true }); // Replace with migrations in production
         console.log('Database & tables synchronized!');
 
-        const PORT = process.env.PORT || 5000; // Default to 5000 if PORT not set
+        const PORT = process.env.PORT;
         let server;
 
         if (process.env.NODE_ENV === 'production' && fs.existsSync('path/to/key.pem')) {
@@ -87,12 +86,14 @@ async function initializeApp() {
             });
         }
 
+        // mDNS advertisement
         const service = mdns.createAdvertisement(mdns.tcp('http'), PORT, {
             name: 'visit-management-backend',
             txt: { path: '/api' },
         });
-        service.start();
+        service.start(); // Start broadcasting immediately
         console.log('mDNS service advertised as visit-management-backend');
+
     } catch (error) {
         console.error('Application initialization failed:', error);
         process.exit(1);

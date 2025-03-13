@@ -1,109 +1,65 @@
 const TimesheetService = require('../services/timesheetService');
 
-// Create a new timesheet or add visits to an existing one
-const TimesheetController = {
-    async createTimesheet(req, res) {
+class TimesheetController {
+    static async createTimesheet(req, res) {
         try {
             const { weekNumber, year, supervisorID, visits } = req.body;
-
-            // Validate required fields
-            if (!weekNumber || !year || !supervisorID || !Array.isArray(visits)) {
-                return res.status(400).json({ error: 'Invalid input data' });
-            }
-
-            // Validate each visit structure
-            for (const visit of visits) {
-                if (!visit.date || !visit.time || !visit.agentID) {
-                    return res.status(400).json({ error: 'Invalid visit data structure' });
-                }
-                // Ensure there is at least one reason and one checklist item
-                if (!Array.isArray(visit.reasons) || visit.reasons.length === 0) {
-                    return res.status(400).json({ error: 'At least one reason must be provided' });
-                }
-                if (!Array.isArray(visit.checklists) || visit.checklists.length === 0) {
-                    return res.status(400).json({ error: 'At least one checklist item must be provided' });
-                }
-            }
-
-            // Create timesheet with visits
-            const timesheet = await TimesheetService.CreateTimesheet({
+            const timesheet = await TimesheetService.createTimesheet({
                 weekNumber,
                 year,
                 supervisorID,
                 visits,
             });
-
             res.status(201).json(timesheet);
         } catch (error) {
-            res.status(500).json({ error: error.message });
+            console.error(error);
+            res.status(error.status || 500).json({ error: error.message || 'Internal server error' });
         }
-    },
+    }
 
-    // Validate a timesheet (fully or partially)
-    async validateTimesheet(req, res) {
+    static async validateTimesheet(req, res) {
         try {
             const { id } = req.params;
             const { visitIDs = [], status } = req.body;
-
-            // Correct validation for strings
-            if (!status || (Array.isArray(visitIDs) && visitIDs.some(id => typeof id !== 'string'))) {
-                return res.status(400).json({ error: 'Invalid input data' });
-            }
-
             const timesheet = await TimesheetService.validateTimesheet(id, visitIDs, status);
             res.status(200).json(timesheet);
         } catch (error) {
-            res.status(500).json({ error: error.message });
+            console.error(error);
+            res.status(error.status || 500).json({ error: error.message || 'Internal server error' });
         }
-    },
+    }
 
-    // View all timesheets (for managers or HR)
-    async getAllTimesheets(req, res) {
+    static async getAllTimesheets(req, res) {
         try {
-            // Call the TimesheetService to get all timesheets
             const timesheets = await TimesheetService.listTimesheets();
-
             res.status(200).json(timesheets);
         } catch (error) {
-            res.status(500).json({ error: error.message });
+            console.error(error);
+            res.status(error.status || 500).json({ error: error.message || 'Internal server error' });
         }
+    }
 
-    },
-
-    // View a specific timesheet by ID
-    async getTimesheetById(req, res) {
+    static async getTimesheetById(req, res) {
         try {
             const { id } = req.params;
-
-            // Fetch the timesheet by ID
             const timesheet = await TimesheetService.viewTimesheet(id);
-            if (!timesheet) return res.status(404).json({ error: 'Timesheet not found' });
-
             res.status(200).json(timesheet);
         } catch (error) {
-            res.status(500).json({ error: error.message });
+            console.error(error);
+            res.status(error.status || 500).json({ error: error.message || 'Internal server error' });
         }
-    },
+    }
 
-    // controllers/timesheetController.js
-    async getTimesheetsBySupervisor(req, res) {
+    static async getTimesheetsBySupervisor(req, res) {
         try {
             const { supervisorID } = req.params;
-
-            // Validate that supervisorID is provided
-            if (!supervisorID) {
-                return res.status(400).json({ error: 'Invalid supervisorID' });
-            }
-
-            // Call the TimesheetService to fetch timesheets by supervisorID
             const timesheets = await TimesheetService.getTimesheetsBySupervisor(supervisorID);
-
             res.status(200).json(timesheets);
         } catch (error) {
-            res.status(500).json({ error: error.message });
+            console.error(error);
+            res.status(error.status || 500).json({ error: error.message || 'Internal server error' });
         }
     }
 };
-
 
 module.exports = TimesheetController;

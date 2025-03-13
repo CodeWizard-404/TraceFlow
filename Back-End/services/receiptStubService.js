@@ -1,10 +1,9 @@
 const { ReceiptStub, ReceiptBook, Agent, OTP, User } = require('../models');
-const { client } = require('../config/sms');
+const { sendSMS } = require('../config/sms');
 const { transporter } = require('../config/smtp');
 const { Op } = require('sequelize');
 
 class ReceiptStubService {
-    // Collect stub from Agent with OTP (User Story 18)
     static async collectStub(bookID) {
         const book = await ReceiptBook.findByPk(bookID, { include: [Agent] });
         if (!book || !book.agentID) throw new Error('ReceiptBook not assigned to an Agent');
@@ -16,16 +15,11 @@ class ReceiptStubService {
         const expiresAt = new Date(Date.now() + 10 * 60 * 1000);
         await OTP.create({ code: otpCode, expiresAt, userID: book.agentID });
 
-        await client.messages.create({
-            body: `Your OTP to confirm stub collection for Receipt Book #${book.number} is ${otpCode}`,
-            from: process.env.TWILIO_FROM,
-            to: book.Agent.phone,
-        });
+        await sendSMS(book.Agent.phone, `Your OTP to confirm stub collection for Receipt Book #${book.number} is ${otpCode}`);
 
         return { message: 'OTP sent to Agent' };
     }
 
-    // Validate stub collection by User (e.g., Supervisor)
     static async validateStubCollection(bookID, supervisorID, otpCode) {
         const book = await ReceiptBook.findByPk(bookID, { include: [Agent] });
         if (!book || !book.agentID) throw new Error('ReceiptBook not assigned to an Agent');
@@ -37,10 +31,10 @@ class ReceiptStubService {
 
         const stub = await ReceiptStub.findOne({ where: { bookID } });
         await stub.update({ status: 'collected' });
-        await book.update({ status: 'Stub Collected', ownerID: supervisorID, agentID: null });
+        await book.update({ status: 'Stub Collected', agentID: null });
+        await book.setUsers([supervisorID]); // Supervisor becomes the owner
         await otp.destroy();
 
-        // Notify supervisor via email
         const supervisor = await User.findByPk(supervisorID);
         await transporter.sendMail({
             from: process.env.SMTP_USER,
@@ -52,18 +46,17 @@ class ReceiptStubService {
         return stub;
     }
 
-    // Transmit stub to another User (e.g., Supervisor to Regional Manager) (User Story 19)
     static async transmitStub(bookID, newOwnerID) {
-        const book = await ReceiptBook.findByPk(bookID);
+        const book = await ReceiptBook.findByPk(bookID, { include: [{ model: User, as: 'Users' }] });
         const stub = await ReceiptStub.findOne({ where: { bookID } });
         if (!stub || stub.status !== 'collected') throw new Error('Stub not collected yet');
 
         const newOwner = await User.findByPk(newOwnerID);
         if (!newOwner) throw new Error('User not found');
 
-        await book.update({ ownerID: newOwnerID, status: 'With Regional Manager' });
+        await book.setUsers([newOwnerID]); // Transfer ownership
+        await book.update({ status: 'With Regional Manager' });
 
-        // Notify new owner via email
         await transporter.sendMail({
             from: process.env.SMTP_USER,
             to: newOwner.email,

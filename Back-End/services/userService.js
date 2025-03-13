@@ -2,9 +2,9 @@ const { User, Role, OTP, Permission } = require('../models');
 const bcrypt = require('bcrypt');
 const { Op } = require('sequelize');
 
-const userService = {
+class userService {
     // createUser(userDetails): Create a new user with roles (US 45)
-    async createUser(adminID, userDetails) {
+    static async createUser(adminID, userDetails) {
         const { firstname, lastname, phone, email, password, roleIDs = [] } = userDetails;
 
         // Validate admin
@@ -30,10 +30,10 @@ const userService = {
         }
 
         return user;
-    },
+    }
 
     // viewUser(userID): View a specific user’s details, including roles and permissions
-    async viewUser(adminID, userID) {
+    static async viewUser(adminID, userID) {
         const admin = await User.findByPk(adminID);
         if (!admin) throw new Error('Admin not found');
 
@@ -47,10 +47,10 @@ const userService = {
         if (!user) throw new Error('User not found');
 
         return user;
-    },
+    }
 
     // listUsers(): List all users with their roles and permissions (US 48)
-    async listUsers(adminID) {
+    static async listUsers(adminID) {
         const admin = await User.findByPk(adminID);
         if (!admin) throw new Error('Admin not found');
 
@@ -62,10 +62,10 @@ const userService = {
             }],
         });
         return users;
-    },
+    }
 
     // validateOtp(otp): Validate an OTP for a user (used in receipt book workflows)
-    async validateOtp(userID, otpCode) {
+    static async validateOtp(userID, otpCode) {
         const otp = await OTP.findOne({
             where: {
                 userID,
@@ -77,7 +77,7 @@ const userService = {
 
         await otp.destroy(); // OTP is single-use
         return true;
-    },
+    }
 };
 
 module.exports = userService;

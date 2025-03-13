@@ -1,64 +1,46 @@
-// controllers/agentController.js
-const { Agent } = require('../models');
+const AgentService = require('../services/agentService');
 
 class AgentController {
-    // Fetch an agent by ID
     static async getAgentById(req, res) {
         try {
             const { id } = req.params;
-            const agent = await Agent.findByPk(id);
-            if (!agent) {
-                return res.status(404).json({ error: 'Agent not found' });
-            }
+            const agent = await AgentService.getAgentById(id);
             res.json(agent);
         } catch (error) {
             console.error(error);
-            res.status(500).json({ error: 'Internal server error' });
+            res.status(error.status || 500).json({ error: error.message || 'Internal server error' });
         }
     }
 
-    // Fetch an agent by phone number
     static async getAgentByPhone(req, res) {
         try {
-            const { phone } = req.params; // Expect phone number as a URL parameter
-            const agent = await Agent.findOne({ where: { phone } });
-            if (!agent) {
-                return res.status(404).json({ error: 'Agent not found' });
-            }
+            const { phone } = req.params;
+            const agent = await AgentService.getAgentByPhone(phone);
             res.json(agent);
         } catch (error) {
             console.error(error);
-            res.status(500).json({ error: 'Internal server error' });
+            res.status(error.status || 500).json({ error: error.message || 'Internal server error' });
         }
     }
 
-    // Fetch agents by location
     static async getAgentsByLocation(req, res) {
         try {
             const { location } = req.query;
-            if (!location) {
-                return res.status(400).json({ error: 'Location is required' });
-            }
-            const agents = await Agent.findAll({ where: { location } });
+            const agents = await AgentService.getAgentsByLocation(location);
             res.json(agents);
         } catch (error) {
             console.error(error);
-            res.status(500).json({ error: 'Internal server error' });
+            res.status(error.status || 500).json({ error: error.message || 'Internal server error' });
         }
     }
 
-    // Fetch all unique agent locations
     static async getAllUniqueLocations(req, res) {
         try {
-            const locations = await Agent.findAll({
-                attributes: ['location'], // Select only the 'location' column
-                group: ['location'],     // Group by 'location' to ensure uniqueness
-            });
-            const uniqueLocations = locations.map((loc) => loc.location); // Extract location values
-            res.json(uniqueLocations); // Return the array of unique locations
+            const locations = await AgentService.getAllUniqueLocations();
+            res.json(locations);
         } catch (error) {
             console.error(error);
-            res.status(500).json({ error: 'Internal server error' });
+            res.status(error.status || 500).json({ error: error.message || 'Internal server error' });
         }
     }
 }

@@ -25,7 +25,7 @@ android {
         targetSdk = flutter.targetSdkVersion
         versionCode = flutter.versionCode
         versionName = flutter.versionName
-        manifestPlaceholders.putAll(mapOf("visit_management" to "SmartSync"))
+        manifestPlaceholders.putAll(mapOf("visit_management" to "TraceFlow"))
     }
 
     buildTypes {

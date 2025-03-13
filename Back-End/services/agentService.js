@@ -1,26 +1,44 @@
 const { Agent } = require('../models');
 
 class AgentService {
-    static async findAgentById(id) {
-        return Agent.findByPk(id);
+    static async getAgentById(id) {
+        const agent = await Agent.findByPk(id);
+        if (!agent) {
+            const error = new Error('Agent not found');
+            error.status = 404;
+            throw error;
+        }
+        return agent;
     }
 
-    static async findAgentsByLocation(location) {
-        return Agent.findAll({ where: { location } });
+    static async getAgentByPhone(phone) {
+        const agent = await Agent.findOne({ where: { phone } });
+        if (!agent) {
+            const error = new Error('Agent not found');
+            error.status = 404;
+            throw error;
+        }
+        return agent;
     }
 
-    static async findUniqueLocations() {
+    static async getAgentsByLocation(location) {
+        if (!location) {
+            const error = new Error('Location is required');
+            error.status = 400;
+            throw error;
+        }
+        const agents = await Agent.findAll({ where: { location } });
+        return agents;
+    }
+
+    static async getAllUniqueLocations() {
         const locations = await Agent.findAll({
             attributes: ['location'],
             group: ['location'],
         });
-        return locations.map((loc) => loc.location);
+        const uniqueLocations = locations.map((loc) => loc.location);
+        return uniqueLocations;
     }
-
-    static async findAgentByPhone(phone) {
-        return Agent.findOne({ where: { phone } });
-    }
-    
 }
 
 module.exports = AgentService;

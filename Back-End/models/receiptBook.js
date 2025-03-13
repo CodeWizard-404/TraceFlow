@@ -32,14 +32,6 @@ module.exports = (sequelize, DataTypes) => {
                 model: 'Agents',
                 key: 'agentID',
             },
-        },
-        ownerID: { 
-            type: DataTypes.STRING,
-            allowNull: true,
-            references: {
-                model: 'Users',
-                key: 'userID',
-            },
-        },
+        }
     });
 };

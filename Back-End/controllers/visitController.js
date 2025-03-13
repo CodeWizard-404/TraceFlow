@@ -1,24 +1,9 @@
 const VisitService = require('../services/visitService');
 
-const VisitController = {
-    async createVisit(req, res) {
+class VisitController {
+    static async createVisit(req, res) {
         try {
-            const {
-                date,
-                time,
-                agentID,
-                supervisorID,
-                timesheetID,
-                reasons,
-                checklists
-            } = req.body;
-
-            // Validate required fields
-            if (!date || !time || !agentID || !supervisorID || !timesheetID) {
-                return res.status(400).json({ error: 'Missing required fields' });
-            }
-
-            // Create visit with associations
+            const { date, time, agentID, supervisorID, timesheetID, reasons, checklists } = req.body;
             const visit = await VisitService.createVisit({
                 date,
                 time,
@@ -26,54 +11,48 @@ const VisitController = {
                 supervisorID,
                 timesheetID,
                 reasons,
-                checklists
+                checklists,
             });
-
             res.status(201).json(visit);
         } catch (error) {
-            res.status(500).json({ error: error.message });
+            console.error(error);
+            res.status(error.status || 500).json({ error: error.message || 'Internal server error' });
         }
-    },
+    }
 
-    async verifyQRCode(req, res) {
+    static async verifyQRCode(req, res) {
         try {
             const { qrData, visitId } = req.body;
-            if (!qrData || !visitId) {
-                return res.status(400).json({ error: 'Missing required parameters' });
-            }
-
             const result = await VisitService.verifyQRCode(qrData, visitId);
-            return res.status(result.valid ? 200 : 400).json(result);
+            res.status(result.valid ? 200 : 400).json(result);
         } catch (error) {
-            res.status(500).json({ error: error.message });
+            console.error(error);
+            res.status(error.status || 500).json({ error: error.message || 'Internal server error' });
         }
-    },
+    }
 
-    async logVisit(req, res) {
+    static async logVisit(req, res) {
         try {
             const { id } = req.params;
             const { duration, checklistUpdates, photos, comment } = req.body;
-            const visit = await VisitService.logVisit(id, {
-                duration,
-                checklistUpdates,
-                photos,
-                comment
-            });
+            const visit = await VisitService.logVisit(id, { duration, checklistUpdates, photos, comment });
             res.status(200).json(visit);
         } catch (error) {
-            res.status(500).json({ error: error.message });
+            console.error(error);
+            res.status(error.status || 500).json({ error: error.message || 'Internal server error' });
         }
-    },
+    }
 
-    async getVisitByID(req, res) {
+    static async getVisitByID(req, res) {
         try {
             const { id } = req.params;
             const visit = await VisitService.getVisitByID(id);
             res.status(200).json(visit);
         } catch (error) {
-            res.status(500).json({ error: error.message });
+            console.error(error);
+            res.status(error.status || 500).json({ error: error.message || 'Internal server error' });
         }
-    },
+    }
 };
 
 module.exports = VisitController;

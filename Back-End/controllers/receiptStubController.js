@@ -1,7 +1,6 @@
 const ReceiptStubService = require('../services/receiptStubService');
 
 class ReceiptStubController {
-    // Collect Stub from Agent (User Story 18)
     static async collectStub(req, res) {
         try {
             const { bookID } = req.body;
@@ -12,7 +11,6 @@ class ReceiptStubController {
         }
     }
 
-    // Validate Stub Collection
     static async validateStubCollection(req, res) {
         try {
             const { bookID, supervisorID, otpCode } = req.body;
@@ -23,7 +21,6 @@ class ReceiptStubController {
         }
     }
 
-    // Transmit Stub to User (User Story 19)
     static async transmitStub(req, res) {
         try {
             const { bookID, newOwnerID } = req.body;

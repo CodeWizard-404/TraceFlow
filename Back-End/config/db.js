@@ -22,6 +22,16 @@ async function initializeDatabase() {
         } else {
             console.log(`Database ${process.env.DB_NAME} already exists`);
         }
+
+        // Connect to the newly created database
+        try {
+            await sequelize.authenticate();
+            console.log('Database connection established');
+        } catch (error) {
+            console.error('Database connection failed:', error);
+            throw error;
+        }
+
     } catch (error) {
         console.error('Error creating database:', error);
     } finally {

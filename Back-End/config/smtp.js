@@ -17,7 +17,7 @@ async function initializeSMTP() {
         console.log('SMTP server ready.');
     } catch (error) {
         console.error('SMTP configuration error:', error);
-        process.exit(1);
+        throw error;
     }
 }
 
