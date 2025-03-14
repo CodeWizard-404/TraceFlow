@@ -20,6 +20,23 @@ class UserController {
         }
     }
 
+    async getIdByPhoneNumber(req, res) {
+        try {
+            const { phone } = req.body;
+            const user = await UserService.getIdByPhoneNumber(phone);
+            if (user) {
+                res.status(200).json(user);
+            } else {
+                res.status(404).json({ error: 'User not found' });
+            }
+        } catch (error) {
+            console.log(error);
+            res.status(500).json({ error: error.message });
+        }
+    }
+
+    
+
     async getUserById(req, res) {
         try {
             const { userID } = req.params;

@@ -40,6 +40,22 @@ class UserService {
         }
     }
 
+    // Get a user ID by phone number
+    async getIdByPhoneNumber(phone) {
+        try {
+            const user = await User.findOne({
+                where: { phone },
+                attributes: ['userID'],
+            });
+            if (!user) throw new Error('User not found');
+            return user.userID;
+        } catch (error) {
+            throw new Error(`Failed to fetch user ID: ${error.message}`);
+        }
+    }
+
+    
+
     // Get a user by ID
     async getUserById(userID) {
         try {
