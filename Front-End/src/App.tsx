@@ -1,5 +1,10 @@
 import React, { useEffect } from "react";
-import { BrowserRouter as Router, Routes, Route, Navigate } from "react-router-dom";
+import {
+  BrowserRouter as Router,
+  Routes,
+  Route,
+  Navigate,
+} from "react-router-dom";
 import { ThemeProvider, useTheme } from "./context/ThemeContext";
 import Timesheets from "./pages/timesheet/Timesheets";
 import TimesheetForm from "./pages/timesheet/TimesheetForm";
@@ -28,11 +33,20 @@ const AppContent: React.FC = () => {
           <Route path="/" element={<Navigate to="/timesheet" replace />} />
           <Route path="/timesheet" element={<Timesheets />} />
           <Route path="/timesheet-form" element={<TimesheetForm />} />
-          <Route path="/timesheet-validation" element={<TimesheetValidation />} />
-          <Route path="/timesheet-validation/visit/:visitId" element={<VisitValidationDetail />} />
+          <Route
+            path="/timesheet-validation"
+            element={<TimesheetValidation />}
+          />
+          <Route
+            path="/timesheet-validation/visit/:visitId"
+            element={<VisitValidationDetail />}
+          />
           <Route path="/qr-scan" element={<QRScan />} />
           <Route path="/visit/:idVisit" element={<VisitDetails />} />
-          <Route path="/visit/:idVisit/validate-checklist" element={<VisitValidation />} />
+          <Route
+            path="/visit/:idVisit/validate-checklist"
+            element={<VisitValidation />}
+          />
           <Route path="*" element={<PageNotFound />} />
         </Routes>
       </main>

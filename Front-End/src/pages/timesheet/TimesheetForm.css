@@ -55,6 +55,7 @@
 }
 
 .form-group input[type="date"],
+.form-group input[type="text"],
 .form-group input[type="time"],
 .form-group .search-input,
 .form-group select {
