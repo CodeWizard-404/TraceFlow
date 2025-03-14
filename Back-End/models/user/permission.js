@@ -29,8 +29,7 @@ module.exports = (sequelize, DataTypes) => {
                 'ReceiptStub', // Permissions related to receipt stubs
                 'Agent',       // Permissions related to agents
                 'Auth',       // Permissions related to authentication
-                'Permission', // Permissions related to permissions
-                'Role',       // Permissions related to roles
+                'Permission' // Permissions related to permissions
             ),
             allowNull: false,
             defaultValue: 'User',
