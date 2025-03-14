@@ -27,8 +27,8 @@ const LoginPage: React.FC = () => {
             const userRoles = response.user.roles || [];
             if (userRoles.some((role) => role.name === "Admin")) {
                 navigate("/admin");
-            } else if (userRoles.some((role) => role.name === "Agent")) {
-                navigate("/agent-dashboard"); // Placeholder; adjust as needed
+            } else if (userRoles.some((role) => role.name === "Manager")) {
+                navigate("/manager-dashboard"); 
             } else if (userRoles.some((role) => role.name === "Supervisor")) {
                 navigate("/timesheet");
             } else {
