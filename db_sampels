@@ -28,7 +28,7 @@ VALUES
 ('chk_003', 'Inspect cleanliness of premises', NOW(), NOW()),
 ('chk_004', 'Confirm cash register balance', NOW(), NOW()),
 ('chk_005', 'Review employee attendance', NOW(), NOW()),
-('chk_006', 'Test security cameras', NOW(), NOW()),
+('chk_006', 'Test security cameras', NOW(), NOW());
 
 
 
@@ -39,4 +39,4 @@ VALUES
 ('rea_003', 'Inventory discrepancy', NOW(), NOW()),
 ('rea_004', 'Equipment malfunction', NOW(), NOW()),
 ('rea_005', 'Health and safety concern', NOW(), NOW()),
-('rea_006', 'Supplier delay', NOW(), NOW()),
+('rea_006', 'Supplier delay', NOW(), NOW());

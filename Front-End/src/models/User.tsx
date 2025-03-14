@@ -1,3 +1,4 @@
+import Role from './Role'; 
 interface User {
     userID: string;
     firstname: string;
@@ -6,6 +7,7 @@ interface User {
     email: string;
     wallet: string;
     password?: string; 
+    roles?: Role[]; 
 }
 
 export default User;

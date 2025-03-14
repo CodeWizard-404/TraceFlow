@@ -9,7 +9,7 @@ const SUPER_ADMIN_CONFIG = {
     firstname: 'Super', // Changed to lowercase 'firstname'
     lastname: 'Admin',  // Changed to lowercase 'lastname'
     phone: '000-000-0000', // Default value for required field
-    wallet: '0x000',         // Default value for required field (assuming it's a number)
+    wallet: '0x000',         // Default value for required field 
     roleName: 'Super Admin',
 };
 
