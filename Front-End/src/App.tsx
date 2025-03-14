@@ -1,6 +1,8 @@
+// src/App.tsx
 import React, { useEffect } from "react";
 import { BrowserRouter as Router, Routes, Route, Navigate } from "react-router-dom";
 import { ThemeProvider, useTheme } from "./context/ThemeContext";
+import { AuthProvider } from "./context/AuthContext"; // Add AuthProvider
 import Timesheets from "./pages/timesheet/Timesheets";
 import TimesheetForm from "./pages/timesheet/TimesheetForm";
 import QRScan from "./pages/visit/QRScan";
@@ -11,7 +13,10 @@ import VisitValidationDetail from "./pages/timesheet/TimesheetValidationDetail";
 import Footer from "./components/Footer";
 import Header from "./components/Header";
 import TimesheetValidation from "./pages/timesheet/TimesheetValidation";
+
 import "./App.css";
+import AdminDashboard from "./pages/Admin/AdminDashboard";
+import LoginPage from "./pages/auth/Login";
 
 const AppContent: React.FC = () => {
   const { theme } = useTheme();
@@ -25,7 +30,9 @@ const AppContent: React.FC = () => {
       <Header />
       <main>
         <Routes>
-          <Route path="/" element={<Navigate to="/timesheet" replace />} />
+          <Route path="/" element={<Navigate to="/login" replace />} /> {/* Default to login */}
+          <Route path="/login" element={<LoginPage />} />
+          <Route path="/admin" element={<AdminDashboard />} />
           <Route path="/timesheet" element={<Timesheets />} />
           <Route path="/timesheet-form" element={<TimesheetForm />} />
           <Route path="/timesheet-validation" element={<TimesheetValidation />} />
@@ -45,7 +52,9 @@ const App: React.FC = () => {
   return (
     <Router>
       <ThemeProvider>
-        <AppContent />
+        <AuthProvider> {/* Wrap with AuthProvider */}
+          <AppContent />
+        </AuthProvider>
       </ThemeProvider>
     </Router>
   );
