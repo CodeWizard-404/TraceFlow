@@ -2,8 +2,8 @@
 interface Permission {
     permissionID: string;
     name: string;
-    type: "page" | "feature"; // From your backend permission seeding
-    class: string; // e.g., "User", "ReceiptBook", etc.
+    type: "page" | "feature"; 
+    class: string; 
     description?: string;
 }
 
