@@ -48,3 +48,14 @@ export const getPermissionsByRole = async (roleID: string, token: string): Promi
     });
     return response.data;
 };
+
+export const revokePermissionsFromRole = async (
+    roleID: string,
+    permissionIDs: string[],
+    token: string
+): Promise<void> => {
+    await roleApi.delete(`/${roleID}/permissions`, {
+        headers: { Authorization: `Bearer ${token}` },
+        data: { permissionIDs }
+    });
+};

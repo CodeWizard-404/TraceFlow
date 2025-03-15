@@ -77,3 +77,13 @@ export const getRolesByUser = async (
   });
   return response.data;
 };
+
+
+export const updateUser = async (userID: string, userData: Partial<User>, token: string): Promise<User> => {
+  const response = await userApi.put<User>(`/${userID}`, userData, { headers: { Authorization: `Bearer ${token}` } });
+  return response.data;
+};
+
+export const deleteUser = async (userID: string, token: string): Promise<void> => {
+  await userApi.delete(`/${userID}`, { headers: { Authorization: `Bearer ${token}` } });
+};

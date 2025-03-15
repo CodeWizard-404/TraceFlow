@@ -28,7 +28,7 @@ body {
 
 /* Dark theme overrides */
 body.dark {
-  background: linear-gradient(135deg, #1a202c 0%, #2d3748 100%);
+  background: linear-gradient(135deg, #111111 0%, #424242 100%);
   color: #e2e8f0;
 }
 
@@ -51,7 +51,7 @@ body.dark .app-container {
 /* Header */
 body.dark .header,
 body.dark .footer {
-  background: #2d3748;
+  background: #26292e;
   box-shadow: 0 0.375rem 1.25rem rgba(0, 0, 0, 0.3);
   color: #e2e8f0;
 }
