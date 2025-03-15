@@ -2,7 +2,7 @@
 interface Permission {
     permissionID: string;
     name: string;
-    type: "page" | "feature"; 
+    type: "page" | "feature"; // From your backend permission seeding
     class: string; 
     description?: string;
 }

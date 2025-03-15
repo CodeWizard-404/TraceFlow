@@ -852,21 +852,23 @@ const AdminDashboard: React.FC = () => {
                         <div className="details-card">
                             <div className="card-header">
                                 <h2>User Details</h2>
-                                <div className="user-actions">
+                                {/* <div className="user-actions">
                                     <button className="edit-button" onClick={() => handleEditUser(selectedUser)}>
                                         <FaEdit /> Edit
                                     </button>
                                     <button className="delete-button" onClick={() => handleDeleteUser(selectedUser.userID)}>
                                         <FaTrash /> Delete
                                     </button>
-                                </div>
+                                </div> */}
                             </div>
+                            <hr />
+
                             <div className="form-section">
                                 <h3>Basic Information</h3>
                                 <div className="info-grid">
                                     <p><strong>Email:</strong> {selectedUser.email}</p>
-                                    <p><strong>Phone:</strong> {selectedUser.phone || 'Not provided'}</p>
-                                    <p><strong>Wallet:</strong> {selectedUser.wallet || '0.00'}</p>
+                                    <p><strong>Phone:</strong> {selectedUser.phone }</p>
+                                    <p><strong>Wallet:</strong> {selectedUser.wallet}</p>
                                 </div>
                             </div>
                             <div className="form-section">
