@@ -1,0 +1,3722 @@
+BACK-END PROJECT FILES
+Generated on: 1742144785.76597
+==================================================
+
+==================================================
+File contents: C:\Users\Kayto\Desktop\IT\Projects\Stage\Stage PFE\Visit_Management\Back-End\config\db.js
+==================================================
+const { Sequelize } = require('sequelize');
+require('dotenv').config();
+
+const sequelize = new Sequelize(
+    process.env.DB_NAME,
+    process.env.DB_USER,
+    process.env.DB_PASSWORD,
+    {
+        host: process.env.DB_HOST,
+        port: process.env.DB_PORT,
+        dialect: 'postgres',
+        logging: false,
+    }
+);
+
+// Initializes the database by ensuring it exists and establishing a connection
+async function initializeDatabase() {
+    const adminSequelize = new Sequelize('postgres', process.env.DB_USER, process.env.DB_PASSWORD, {
+        host: process.env.DB_HOST,
+        port: process.env.DB_PORT,
+        dialect: 'postgres',
+        logging: false,
+    });
+
+    try {
+        console.log(`${new Date().toISOString()} - Checking if database '${process.env.DB_NAME}' exists...`);
+        const result = await adminSequelize.query(
+            `SELECT 1 FROM pg_database WHERE datname = '${process.env.DB_NAME}'`
+        );
+
+        if (result[0].length === 0) {
+            console.log(`${new Date().toISOString()} - Database '${process.env.DB_NAME}' not found, creating...`);
+            await adminSequelize.query(`CREATE DATABASE "${process.env.DB_NAME}"`);
+            console.log(`${new Date().toISOString()} - Database '${process.env.DB_NAME}' created successfully`);
+        } else {
+            console.log(`${new Date().toISOString()} - Database '${process.env.DB_NAME}' already exists`);
+        }
+
+        console.log(`${new Date().toISOString()} - Attempting to connect to database '${process.env.DB_NAME}'...`);
+        await sequelize.authenticate();
+        console.log(`${new Date().toISOString()} - Database connection established`);
+    } catch (error) {
+        console.error(`${new Date().toISOString()} - Error initializing database:`, error);
+        throw error; // Re-throw to be caught by the caller
+    }
+}
+
+module.exports = { sequelize, initializeDatabase };
+
+==================================================
+File contents: C:\Users\Kayto\Desktop\IT\Projects\Stage\Stage PFE\Visit_Management\Back-End\config\index.js
+==================================================
+const { initializeDatabase, sequelize } = require('./db');
+const { initializeServer } = require('./server');
+const { initializeSMS } = require('./sms');
+const { initializeSMTP } = require('./smtp');
+
+module.exports = {
+    initializeDatabase,
+    initializeSMTP,
+    initializeSMS,
+    initializeServer,
+    sequelize,
+};
+
+==================================================
+File contents: C:\Users\Kayto\Desktop\IT\Projects\Stage\Stage PFE\Visit_Management\Back-End\config\security.js
+==================================================
+const jwt = require('jsonwebtoken');
+const { Role, User, Permission } = require('../models');
+const { sequelize } = require('./db');
+require('dotenv').config();
+
+const JWT_SECRET = process.env.JWT_SECRET;
+
+// Middleware to authenticate JWT tokens and attach user data to the request
+const authenticateJWT = async (req, res, next) => {
+    const token = req.headers.authorization?.split(' ')[1]; // Extract token from Authorization header
+    if (!token) return res.status(401).json({ error: 'No token provided' });
+
+    try {
+        // Verify the token and decode its payload
+        const decoded = jwt.verify(token, JWT_SECRET);
+
+        // Fetch the user with their roles and permissions
+        const user = await User.findByPk(decoded.userID, {
+            include: [
+                {
+                    model: Role,
+                    through: { attributes: [] },
+                    include: [{ model: Permission, through: { attributes: [] } }],
+                },
+            ],
+        });
+        if (!user) throw new Error('User not found');
+
+        // Attach user to the request object
+        req.user = user;
+
+        // Set RLS userID for database queries
+        await sequelize.query(`SET jwt.claims.userID = '${user.userID}'`);
+        next();
+    } catch (error) {
+        res.status(401).json({ error: 'Invalid token' });
+    }
+};
+
+// Middleware factory to check for a specific permission
+const requirePermission = (permissionName) => {
+    return async (req, res, next) => {
+        if (!req.user) {
+            return res.status(401).json({ error: 'Authentication required' });
+        }
+
+        // Extract all permissions from the user’s roles, using 'name' field
+        const userPermissions = req.user.Roles.flatMap(role =>
+            role.Permissions.map(perm => perm.name) // Change 'permission' to 'name'
+        );
+
+        // Check if the required permission is present
+        if (!userPermissions.includes(permissionName)) {
+            return res.status(403).json({
+                error: `Permission '${permissionName}' required`
+            });
+        }
+        next();
+    };
+};
+
+// Legacy middleware to restrict access based on role names
+const restrictTo = (...allowedRoles) => {
+    return (req, res, next) => {
+        const userRoles = req.user.Roles.map(role => role.name);
+        const hasPermission = allowedRoles.some(role => userRoles.includes(role));
+        if (!hasPermission) {
+            return res.status(403).json({ error: 'Insufficient role permissions' });
+        }
+        next();
+    };
+};
+
+module.exports = { authenticateJWT, requirePermission, restrictTo };
+
+==================================================
+File contents: C:\Users\Kayto\Desktop\IT\Projects\Stage\Stage PFE\Visit_Management\Back-End\config\seedPermissions.js
+==================================================
+const fs = require('fs').promises;
+const path = require('path');
+const { nanoid } = require('nanoid');
+const { Permission } = require('../models');
+require('dotenv').config();
+
+const directoriesToScan = [
+    path.join(__dirname, '../routes'),
+    path.join(__dirname, '../controllers'),
+];
+
+const permissionRegex = /requirePermission\(['"`]([^'`"]+)['"`]\)/g;
+const routePathRegex = /app\.use\(['"`]([^'`"]+)['"`],\s*[a-zA-Z0-9_]+Routes\)/g;
+
+// Maps route paths to their respective classes
+const getRouteClass = (routePath) => {
+    const basePath = routePath.toLowerCase().replace('/api/', '');
+    if (basePath.includes('timesheets')) return 'Timesheet';
+    if (basePath.includes('visits')) return 'Visit';
+    if (basePath.includes('agents')) return 'Agent';
+    if (basePath.includes('checklists')) return 'Checklist';
+    if (basePath.includes('reasons')) return 'Reason';
+    if (basePath.includes('receipt-books')) return 'ReceiptBook'; 
+    if (basePath.includes('receipt-stubs')) return 'ReceiptStub'; 
+    if (basePath.includes('auth')) return 'User';
+    if (basePath.includes('roles')) return 'Role';
+    if (basePath.includes('permissions')) return 'Permission';
+    if (basePath.includes('users')) return 'User';
+    return 'User'; // Fallback default
+};
+
+// Extracts permissions and their associated route classes
+async function extractPermissionsFromFiles() {
+    const permissionsMap = new Map();
+
+    console.log(`${new Date().toISOString()} - Starting permission extraction from files...`);
+
+    // Step 1: Get route paths from app.js
+    const appFilePath = path.join(__dirname, '../app.js');
+    console.log(`${new Date().toISOString()} - Reading app.js to extract route paths: ${appFilePath}`);
+    const appContent = await fs.readFile(appFilePath, 'utf8');
+    const routeClasses = new Map();
+    let routeMatch;
+
+    while ((routeMatch = routePathRegex.exec(appContent)) !== null) {
+        const routePath = routeMatch[1];
+        const routeClass = getRouteClass(routePath);
+        routeClasses.set(routePath, routeClass);
+        console.log(`${new Date().toISOString()} - Found route: ${routePath} (Class: ${routeClass})`);
+    }
+
+    // Step 2: Scan route files for permissions
+    for (const dir of directoriesToScan) {
+        console.log(`${new Date().toISOString()} - Scanning directory: ${dir}`);
+        const files = await fs.readdir(dir);
+        for (const file of files) {
+            const filePath = path.join(dir, file);
+            const stats = await fs.stat(filePath);
+
+            if (stats.isFile() && file.endsWith('.js')) {
+                console.log(`${new Date().toISOString()} - Reading file: ${filePath}`);
+                const content = await fs.readFile(filePath, 'utf8');
+                let permMatch;
+
+                // Determine the class based on the route file’s corresponding app.js route
+                let inferredClass = 'User'; // Default for controllers
+                if (dir.includes('routes')) {
+                    const routeName = file.replace('Routes.js', '').toLowerCase();
+                    const matchingRoute = Array.from(routeClasses.keys()).find(route => 
+                        route.toLowerCase().includes(routeName) || // Direct match
+                        (routeName.includes('receiptbook') && route.includes('receipt-books')) || // Handle receiptBook -> receipt-books
+                        (routeName.includes('receiptstub') && route.includes('receipt-stubs'))   // Handle receiptStub -> receipt-stubs
+                    );
+                    if (matchingRoute) {
+                        inferredClass = routeClasses.get(matchingRoute);
+                        console.log(`${new Date().toISOString()} - Assigned class ${inferredClass} to ${file} based on route ${matchingRoute}`);
+                    } else {
+                        console.warn(`${new Date().toISOString()} - No matching route found for ${file}, defaulting to 'User'`);
+                    }
+                }
+
+                while ((permMatch = permissionRegex.exec(content)) !== null) {
+                    const permission = permMatch[1];
+                    if (permission) {
+                        console.log(`${new Date().toISOString()} - Found permission: ${permission} in ${filePath}`);
+                        permissionsMap.set(permission, inferredClass);
+                    }
+                }
+            }
+        }
+    }
+
+    const permissions = Array.from(permissionsMap.entries()).map(([name, permClass]) => ({ name, class: permClass }));
+    console.log(`${new Date().toISOString()} - Extracted ${permissions.length} permissions from files`);
+    return permissions;
+}
+
+// Seeds missing permissions into the database with class assignment
+async function seedMissingPermissions() {
+    try {
+        console.log(`${new Date().toISOString()} - Starting permission seeding process...`);
+        const permissionsWithClasses = await extractPermissionsFromFiles();
+
+        console.log(`${new Date().toISOString()} - Fetching existing permissions from database...`);
+        const existingPermissions = await Permission.findAll({
+            attributes: ['name'],
+        }).then(perms => perms.map(p => p.name));
+        console.log(`${new Date().toISOString()} - Found ${existingPermissions.length} existing permissions`);
+
+        const missingPermissions = permissionsWithClasses.filter(
+            perm => !existingPermissions.includes(perm.name)
+        );
+        console.log(`${new Date().toISOString()} - Identified ${missingPermissions.length} missing permissions`);
+
+        if (missingPermissions.length > 0) {
+            console.log(`${new Date().toISOString()} - Preparing to seed ${missingPermissions.length} missing permissions...`);
+            const permissionObjects = missingPermissions.map(perm => ({
+                permissionID: `perm_${nanoid()}`,
+                name: perm.name,
+                type: perm.name.startsWith('access_') ? 'page' : 'feature',
+                class: perm.class,
+                description: `Auto-generated permission for ${perm.name} (Class: ${perm.class})`,
+            }));
+
+            let newPermissions = 0;
+            for (const perm of permissionObjects) {
+                const [instance, created] = await Permission.findOrCreate({
+                    where: { name: perm.name },
+                    defaults: perm,
+                });
+                if (created) {
+                    console.log(`${new Date().toISOString()} - Seeding new permission: ${perm.name} (Class: ${perm.class})`);
+                    newPermissions++;
+                }
+            }
+            console.log(`${new Date().toISOString()} - Successfully seeded ${newPermissions} new permissions`);
+        } else {
+            console.log(`${new Date().toISOString()} - No new permissions to seed; all permissions already exist`);
+        }
+    } catch (error) {
+        console.error(`${new Date().toISOString()} - Error seeding permissions:`, error);
+        throw error;
+    }
+}
+
+module.exports = { extractPermissionsFromFiles, seedMissingPermissions };
+
+if (require.main === module) {
+    const { sequelize } = require('../config/db');
+    seedMissingPermissions().then(() => {
+        console.log(`${new Date().toISOString()} - Closing database connection after manual seeding...`);
+        sequelize.close();
+    });
+}
+
+==================================================
+File contents: C:\Users\Kayto\Desktop\IT\Projects\Stage\Stage PFE\Visit_Management\Back-End\config\SeedSuperAdmin.js
+==================================================
+const bcrypt = require('bcrypt');
+const { sequelize, User, Role, Permission } = require('../models');
+require('dotenv').config();
+
+// Configuration for the Super Admin
+const SUPER_ADMIN_CONFIG = {
+    email: process.env.SUPER_ADMIN_EMAIL || 'superadmin@example.com',
+    password: process.env.SUPER_ADMIN_PASSWORD || 'SuperSecurePassword123!',
+    firstname: 'Super', // Changed to lowercase 'firstname'
+    lastname: 'Admin',  // Changed to lowercase 'lastname'
+    phone: '000-000-0000', // Default value for required field
+    wallet: '0x000',         // Default value for required field 
+    roleName: 'Super Admin',
+};
+
+async function seedSuperAdmin() {
+    try {
+        console.log(`${new Date().toISOString()} - Starting Super Admin seeding process...`);
+
+        console.log(`${new Date().toISOString()} - Syncing database schema...`);
+        await sequelize.sync({ alter: true });
+        console.log(`${new Date().toISOString()} - Database schema synced`);
+
+        // Step 1: Create or find the Super Admin role
+        console.log(`${new Date().toISOString()} - Checking for 'Super Admin' role...`);
+        const [superAdminRole, roleCreated] = await Role.findOrCreate({
+            where: { name: SUPER_ADMIN_CONFIG.roleName },
+            defaults: {
+                roleID: `role_${Math.random().toString(36).substr(2, 9)}`, // Replace with nanoid if preferred
+                name: SUPER_ADMIN_CONFIG.roleName,
+                description: 'Role with full administrative privileges',
+            },
+        });
+        console.log(`${new Date().toISOString()} - 'Super Admin' role ${roleCreated ? 'created' : 'already exists'} with ID: ${superAdminRole.roleID}`);
+
+        // Step 2: Fetch all permissions
+        console.log(`${new Date().toISOString()} - Fetching all permissions from database...`);
+        const allPermissions = await Permission.findAll();
+        console.log(`${new Date().toISOString()} - Found ${allPermissions.length} permissions`);
+
+        if (allPermissions.length === 0) {
+            console.warn(`${new Date().toISOString()} - No permissions found in the database. Run seedPermissions.js first.`);
+            return;
+        }
+
+        // Step 3: Assign all permissions to the Super Admin role
+        console.log(`${new Date().toISOString()} - Assigning permissions to 'Super Admin' role...`);
+        let newAssignments = 0;
+        const currentPermissions = await superAdminRole.getPermissions();
+        const currentPermissionIDs = currentPermissions.map(p => p.permissionID);
+
+        for (const permission of allPermissions) {
+            if (!currentPermissionIDs.includes(permission.permissionID)) {
+                await superAdminRole.addPermission(permission);
+                console.log(`${new Date().toISOString()} - Assigned new permission ${permission.name} to 'Super Admin' role`);
+                newAssignments++;
+            }
+        }
+        console.log(`${new Date().toISOString()} - Permissions assigned to 'Super Admin' role (${newAssignments} new assignments)`);
+
+        // Step 4: Create or find the Super Admin user
+        console.log(`${new Date().toISOString()} - Checking for Super Admin user with email: ${SUPER_ADMIN_CONFIG.email}...`);
+        const hashedPassword = await bcrypt.hash(SUPER_ADMIN_CONFIG.password, 10);
+        const [superAdminUser, userCreated] = await User.findOrCreate({
+            where: { email: SUPER_ADMIN_CONFIG.email },
+            defaults: {
+                userID: `user_${Math.random().toString(36).substr(2, 9)}`, // Replace with nanoid if preferred
+                email: SUPER_ADMIN_CONFIG.email,
+                password: hashedPassword,
+                firstname: SUPER_ADMIN_CONFIG.firstname, // Correct field name
+                lastname: SUPER_ADMIN_CONFIG.lastname,   // Correct field name
+                phone: SUPER_ADMIN_CONFIG.phone,         // Required field
+                wallet: SUPER_ADMIN_CONFIG.wallet,       // Required field
+            },
+        });
+        console.log(`${new Date().toISOString()} - Super Admin user ${userCreated ? 'created' : 'already exists'} with ID: ${superAdminUser.userID}`);
+
+        // Step 5: Assign the Super Admin role to the user
+        console.log(`${new Date().toISOString()} - Linking Super Admin user to 'Super Admin' role...`);
+        const currentRoles = await superAdminUser.getRoles();
+        const currentRoleIDs = currentRoles.map(r => r.roleID);
+        let userRoleCreated = false;
+
+        if (!currentRoleIDs.includes(superAdminRole.roleID)) {
+            await superAdminUser.addRole(superAdminRole);
+            userRoleCreated = true;
+        }
+        console.log(`${new Date().toISOString()} - 'Super Admin' role ${userRoleCreated ? 'assigned' : 'already assigned'} to user ${superAdminUser.email}`);
+
+        console.log(`${new Date().toISOString()} - Super Admin seeding completed successfully`);
+        console.log(`${new Date().toISOString()} - Super Admin Credentials:`);
+        console.log(`  Email: ${SUPER_ADMIN_CONFIG.email}`);
+        console.log(`  Password: ${SUPER_ADMIN_CONFIG.password}`);
+    } catch (error) {
+        console.error(`${new Date().toISOString()} - Error seeding Super Admin:`, error);
+        throw error;
+    }
+}
+
+module.exports = { seedSuperAdmin };
+
+if (require.main === module) {
+    seedSuperAdmin();
+}
+
+==================================================
+File contents: C:\Users\Kayto\Desktop\IT\Projects\Stage\Stage PFE\Visit_Management\Back-End\config\server.js
+==================================================
+const fs = require('fs');
+const https = require('https');
+const mdns = require('mdns-js');
+require('dotenv').config();
+
+// Sets up the HTTP/HTTPS server and advertises it via mDNS
+async function initializeServer(app) {
+    const PORT = process.env.PORT;
+    let server;
+
+    console.log(`${new Date().toISOString()} - Checking server environment...`);
+    if (process.env.NODE_ENV === 'production' && fs.existsSync('path/to/key.pem')) {
+        console.log(`${new Date().toISOString()} - Starting HTTPS server in production mode...`);
+        const options = {
+            key: fs.readFileSync('path/to/key.pem'),
+            cert: fs.readFileSync('path/to/cert.pem'),
+        };
+        server = https.createServer(options, app).listen(PORT, '0.0.0.0', () => {
+            console.log(`${new Date().toISOString()} - HTTPS Server running on port ${PORT}`);
+        });
+    } else {
+        console.log(`${new Date().toISOString()} - Starting HTTP server (development mode or no SSL certs)...`);
+        server = app.listen(PORT, '0.0.0.0', () => {
+            console.log(`${new Date().toISOString()} - HTTP Server running on port ${PORT}`);
+        });
+    }
+
+    console.log(`${new Date().toISOString()} - Setting up mDNS advertisement...`);
+    const service = mdns.createAdvertisement(mdns.tcp('http'), PORT, {
+        name: 'visit-management-backend',
+        txt: { path: '/api' },
+    });
+    service.start();
+    console.log(`${new Date().toISOString()} - mDNS service advertised as visit-management-backend`);
+
+    return server;
+}
+
+module.exports = { initializeServer };
+
+==================================================
+File contents: C:\Users\Kayto\Desktop\IT\Projects\Stage\Stage PFE\Visit_Management\Back-End\config\sms.js
+==================================================
+const axios = require('axios');
+const { User } = require('../models');
+const { transporter } = require('./smtp');
+require('dotenv').config();
+
+// Sends an SMS via the Traccar SMS Gateway with email fallback
+async function sendSMS(to, message) {
+    try {
+        console.log(`${new Date().toISOString()} - Sending SMS to ${to} via ${process.env.SMS_GATEWAY_URL}...`);
+        const response = await axios.post(`${process.env.SMS_GATEWAY_URL}/`, {
+            to,
+            message,
+        }, {
+            headers: {
+                'Authorization': process.env.SMS_GATEWAY_API_KEY_CLOUD,
+                'Content-Type': 'application/json',
+            },
+        });
+        console.log(`${new Date().toISOString()} - Traccar SMS Gateway sent:`, response.data);
+    } catch (error) {
+        console.error(`${new Date().toISOString()} - Traccar SMS Gateway error:`, error.response?.data || error.message);
+
+        try {
+            console.log(`${new Date().toISOString()} - Attempting email fallback for phone ${to}...`);
+            const email = await findUserEmailByPhone(to);
+            if (email) {
+                await transporter.sendMail({
+                    from: process.env.SMTP_USER,
+                    to: email,
+                    subject: 'TraceFlow Notification (SMS Failed)',
+                    text: `We couldn’t send you an SMS. Here’s your message:\n\n${message}\n\nPlease update your phone number if necessary.`,
+                });
+                console.log(`${new Date().toISOString()} - Fallback email sent to ${email}`);
+                return { success: true, method: 'Email', fallback: true };
+            }
+            throw new Error('SMS failed and no email fallback available');
+        } catch (emailError) {
+            console.error(`${new Date().toISOString()} - Email fallback failed:`, emailError.message);
+            throw new Error('Failed to send SMS and email fallback');
+        }
+    }
+}
+
+// Helper function to find a user’s email by phone number
+async function findUserEmailByPhone(phone) {
+    console.log(`${new Date().toISOString()} - Looking up email for phone ${phone}...`);
+    const user = await User.findOne({ where: { phone } });
+    console.log(`${new Date().toISOString()} - Email lookup result: ${user ? user.email : 'Not found'}`);
+    return user ? user.email : null;
+}
+
+// Initializes the SMS gateway (currently a placeholder)
+async function initializeSMS() {
+    try {
+        console.log(`${new Date().toISOString()} - Initializing Traccar SMS Gateway...`);
+        // Placeholder for actual initialization logic if needed
+        console.log(`${new Date().toISOString()} - Traccar SMS Gateway initialized`);
+        return true;
+    } catch (error) {
+        console.error(`${new Date().toISOString()} - SMS initialization error:`, error);
+        throw error; // Re-throw to be caught by the caller
+    }
+}
+
+module.exports = { sendSMS, initializeSMS };
+
+==================================================
+File contents: C:\Users\Kayto\Desktop\IT\Projects\Stage\Stage PFE\Visit_Management\Back-End\config\smtp.js
+==================================================
+const nodemailer = require('nodemailer');
+require('dotenv').config();
+
+const transporter = nodemailer.createTransport({
+    host: process.env.SMTP_HOST,
+    port: process.env.SMTP_PORT,
+    secure: false,  
+    auth: {
+        user: process.env.SMTP_USER,
+        pass: process.env.SMTP_PASS,
+    },
+});
+
+// Verifies SMTP configuration and ensures the server is ready
+async function initializeSMTP() {
+    try {
+        console.log(`${new Date().toISOString()} - Verifying SMTP connection to ${process.env.SMTP_HOST}:${process.env.SMTP_PORT}...`);
+        await transporter.verify();
+        console.log(`${new Date().toISOString()} - SMTP server ready`);
+    } catch (error) {
+        console.error(`${new Date().toISOString()} - SMTP configuration error:`, error);
+        throw error; // Re-throw to be caught by the caller
+    }
+}
+
+module.exports = { transporter, initializeSMTP };
+
+==================================================
+File contents: C:\Users\Kayto\Desktop\IT\Projects\Stage\Stage PFE\Visit_Management\Back-End\controllers\agentController.js
+==================================================
+const AgentService = require('../services/agentService');
+
+class AgentController {
+    static async getAgentById(req, res) {
+        try {
+            const { id } = req.params;
+            const agent = await AgentService.getAgentById(id);
+            res.json(agent);
+        } catch (error) {
+            console.error(error);
+            res.status(error.status || 500).json({ error: error.message || 'Internal server error' });
+        }
+    }
+
+    static async getAgentByPhone(req, res) {
+        try {
+            const { phone } = req.params;
+            const agent = await AgentService.getAgentByPhone(phone);
+            res.json(agent);
+        } catch (error) {
+            console.error(error);
+            res.status(error.status || 500).json({ error: error.message || 'Internal server error' });
+        }
+    }
+
+    static async getAgentsByLocation(req, res) {
+        try {
+            const { location } = req.query;
+            const agents = await AgentService.getAgentsByLocation(location);
+            res.json(agents);
+        } catch (error) {
+            console.error(error);
+            res.status(error.status || 500).json({ error: error.message || 'Internal server error' });
+        }
+    }
+
+    static async getAllUniqueLocations(req, res) {
+        try {
+            const locations = await AgentService.getAllUniqueLocations();
+            res.json(locations);
+        } catch (error) {
+            console.error(error);
+            res.status(error.status || 500).json({ error: error.message || 'Internal server error' });
+        }
+    }
+}
+
+module.exports = AgentController;
+
+==================================================
+File contents: C:\Users\Kayto\Desktop\IT\Projects\Stage\Stage PFE\Visit_Management\Back-End\controllers\authController.js
+==================================================
+const AuthService = require('../services/authService');
+
+class AuthController {
+    static async login(req, res) {
+        try {
+            const { identifier, password } = req.body; 
+            const result = await AuthService.login(identifier, password);
+            res.json(result);
+        } catch (error) {
+            res.status(401).json({ error: error.message });
+        }
+    }
+
+    static async verify2FA(req, res) {
+        try {
+            const { userID, otpCode } = req.body;
+            const result = await AuthService.verify2FA(userID, otpCode);
+            res.json(result);
+        } catch (error) {
+            res.status(401).json({ error: error.message });
+        }
+    }
+    
+    static async resend2FA(req, res) {
+        try {
+            const { userID } = req.body;
+            const result = await AuthService.resend2FA(userID);
+            res.json(result);
+        } catch (error) {
+            res.status(401).json({ error: error.message });
+        }
+    }
+
+}
+
+module.exports = AuthController;
+
+==================================================
+File contents: C:\Users\Kayto\Desktop\IT\Projects\Stage\Stage PFE\Visit_Management\Back-End\controllers\checklistController.js
+==================================================
+const ChecklistService = require('../services/checklistService');
+
+class ChecklistController {
+    static async createChecklist(req, res) {
+        try {
+            const { text } = req.body;
+            const checklist = await ChecklistService.createItem(text);
+            res.status(201).json(checklist);
+        } catch (error) {
+            res.status(500).json({ error: error.message });
+        }
+    }
+
+    static async getChecklistsByVisitID(req, res) {
+        try {
+            const { id: visitID } = req.params;
+            const checklists = await ChecklistService.getChecklistsByVisitId(visitID);
+            res.status(200).json(checklists);
+        } catch (error) {
+            res.status(500).json({ error: error.message });
+        }
+    }
+
+    static async getAllChecklists(req, res) {
+        try {
+            const checklists = await ChecklistService.getAllChecklists();
+            res.status(200).json(checklists);
+        } catch (error) {
+            res.status(500).json({ error: error.message });
+        }
+    }
+}
+
+module.exports = ChecklistController;
+
+==================================================
+File contents: C:\Users\Kayto\Desktop\IT\Projects\Stage\Stage PFE\Visit_Management\Back-End\controllers\permissionController.js
+==================================================
+const PermissionService = require('../services/permissionService');
+
+class PermissionController {
+    async getAllPermissions(req, res) {
+        try {
+            const permissions = await PermissionService.getAllPermissions();
+            res.status(200).json(permissions);
+        } catch (error) {
+            res.status(500).json({ error: error.message });
+        }
+    }
+
+    async getPermissionById(req, res) {
+        try {
+            const { permissionID } = req.params;
+            const permission = await PermissionService.getPermissionById(permissionID);
+            res.status(200).json(permission);
+        } catch (error) {
+            res.status(404).json({ error: error.message });
+        }
+    }
+
+    async createPermission(req, res) {
+        try {
+            const { name, type, className, description } = req.body;
+            const permission = await PermissionService.createPermission(name, type, className, description);
+            res.status(201).json(permission);
+        } catch (error) {
+            res.status(400).json({ error: error.message });
+        }
+    }
+
+    async updatePermission(req, res) {
+        try {
+            const { permissionID } = req.params;
+            const { name, type, className, description } = req.body;
+            const permission = await PermissionService.updatePermission(permissionID, name, type, className, description);
+            res.status(200).json(permission);
+        } catch (error) {
+            res.status(400).json({ error: error.message });
+        }
+    }
+
+    async deletePermission(req, res) {
+        try {
+            const { permissionID } = req.params;
+            const permission = await PermissionService.deletePermission(permissionID);
+            res.status(200).json(permission);
+        } catch (error) {
+            res.status(404).json({ error: error.message });
+        }
+    }
+
+}
+
+module.exports = new PermissionController();
+
+==================================================
+File contents: C:\Users\Kayto\Desktop\IT\Projects\Stage\Stage PFE\Visit_Management\Back-End\controllers\reasonController.js
+==================================================
+const ReasonService = require('../services/reasonService');
+
+class ReasonController {
+    static async createReason(req, res) {
+        try {
+            const { text } = req.body;
+            const reason = await ReasonService.createItem(text);
+            res.status(201).json(reason);
+        } catch (error) {
+            res.status(500).json({ error: error.message });
+        }
+    }
+
+    static async getReasonsByVisitID(req, res) {
+        try {
+            const { id: visitID } = req.params;
+            const reasons = await ReasonService.getReasonsByVisitId(visitID);
+            res.status(200).json(reasons);
+        } catch (error) {
+            res.status(500).json({ error: error.message });
+        }
+    }
+
+
+    static async getAllReasons(req, res) {
+        try {
+            const checklists = await ReasonService.getAllReasons();
+            res.status(200).json(checklists);
+        } catch (error) {
+            res.status(500).json({ error: error.message });
+        }
+    }
+}
+
+module.exports = ReasonController;
+
+==================================================
+File contents: C:\Users\Kayto\Desktop\IT\Projects\Stage\Stage PFE\Visit_Management\Back-End\controllers\receiptBookController.js
+==================================================
+const ReceiptBookService = require('../services/receiptBookService');
+
+class ReceiptBookController {
+    static async createReceiptBook(req, res) {
+        try {
+            const { number, type } = req.body;
+            const purchaseUserID = req.user.userID;
+            const receiptBook = await ReceiptBookService.createReceiptBook(number, type, purchaseUserID);
+            res.status(201).json(receiptBook);
+        } catch (error) {
+            console.error('Error creating receipt book:', error);
+            res.status(400).json({ error: error.message });
+        }
+    }
+
+    static async getAllReceiptBooks(req, res) {
+        try {
+            const receiptBooks = await ReceiptBookService.getAllReceiptBooks();
+            res.json(receiptBooks);
+        } catch (error) {
+            res.status(500).json({ error: error.message });
+        }
+    }
+
+    static async getReceiptBookById(req, res) {
+        try {
+            const { bookID } = req.params;
+            const receiptBook = await ReceiptBookService.getReceiptBookById(bookID);
+            res.json(receiptBook);
+        } catch (error) {
+            res.status(404).json({ error: error.message });
+        }
+    }
+
+    static async updateReceiptBook(req, res) {
+        try {
+            const { bookID } = req.params;
+            const updates = req.body; // { number, type }
+            const userID = req.user.userID;
+            const receiptBook = await ReceiptBookService.updateReceiptBook(bookID, updates, userID);
+            res.json(receiptBook);
+        } catch (error) {
+            res.status(400).json({ error: error.message });
+        }
+    }
+
+    static async deleteReceiptBook(req, res) {
+        try {
+            const { bookID } = req.params;
+            const userID = req.user.userID;
+            const result = await ReceiptBookService.deleteReceiptBook(bookID, userID);
+            res.status(200).json(result); // Returning 200 with message instead of 204 for consistency
+        } catch (error) {
+            res.status(400).json({ error: error.message });
+        }
+    }
+
+    static async sendToSupplier(req, res) {
+        try {
+            const { bookID, supplierEmail } = req.body;
+            const userID = req.user.userID;
+            const receiptBook = await ReceiptBookService.sendBookToSupplier(bookID, supplierEmail, userID);
+            res.json({ message: `Book ${receiptBook.number} has been sent to ${supplierEmail}` });
+        } catch (error) {
+            res.status(400).json({ error: error.message });
+        }
+    }
+
+    static async transferReceiptBookToUser(req, res) {
+        try {
+            const { bookID } = req.body;
+            const newOwnerID = req.user.userID; // Receiver scans QR, uses their own ID
+            const result = await ReceiptBookService.transferToUser(bookID, newOwnerID);
+            res.json(result);
+        } catch (error) {
+            res.status(400).json({ error: error.message });
+        }
+    }
+
+    static async validateTransferToUser(req, res) {
+        try {
+            const { otpCode, bookID } = req.body;
+            const newOwnerID = req.user.userID; // Receiver validates with their own ID
+            const receiptBook = await ReceiptBookService.validateTransferToUser(bookID, newOwnerID, otpCode);
+            res.json(receiptBook);
+        } catch (error) {
+            res.status(400).json({ error: error.message });
+        }
+    }
+
+    static async assignToAgent(req, res) {
+        try {
+            const { agentPhone, bookID } = req.body;
+            const supervisorID = req.user.userID; // Supervisor scans QR
+            const result = await ReceiptBookService.assignToAgent(bookID, agentPhone, supervisorID);
+            res.json(result);
+        } catch (error) {
+            res.status(400).json({ error: error.message });
+        }
+    }
+
+    static async validateAgentAssignment(req, res) {
+        try {
+            const { agentPhone, otpCode, bookID } = req.body;
+            const supervisorID = req.user.userID; // Supervisor validates
+            const receiptBook = await ReceiptBookService.validateAgentAssignment(bookID, agentPhone, otpCode, supervisorID);
+            res.json(receiptBook);
+        } catch (error) {
+            res.status(400).json({ error: error.message });
+        }
+    }
+
+    static async getTransferHistory(req, res) {
+        try {
+            const { bookID } = req.params;
+            const history = await ReceiptBookService.getTransferHistory(bookID);
+            res.json(history);
+        } catch (error) {
+            res.status(404).json({ error: error.message });
+        }
+    }
+}
+
+module.exports = ReceiptBookController;
+
+==================================================
+File contents: C:\Users\Kayto\Desktop\IT\Projects\Stage\Stage PFE\Visit_Management\Back-End\controllers\receiptStubController.js
+==================================================
+const ReceiptStubService = require('../services/receiptStubService');
+
+class ReceiptStubController {
+    static async collectStub(req, res) {
+        try {
+            const { bookID } = req.params;
+            const supervisorID = req.user.userID; // Any supervisor can collect
+            const result = await ReceiptStubService.collectStub(bookID, supervisorID);
+            res.json(result);
+        } catch (error) {
+            res.status(400).json({ error: error.message });
+        }
+    }
+
+    static async validateStubCollection(req, res) {
+        try {
+            const { bookID } = req.params;
+            const { otpCode } = req.body;
+            const supervisorID = req.user.userID;
+            const stub = await ReceiptStubService.validateStubCollection(bookID, supervisorID, otpCode);
+            res.json(stub);
+        } catch (error) {
+            res.status(400).json({ error: error.message });
+        }
+    }
+
+    static async transmitStub(req, res) {
+        try {
+            const { bookID } = req.params;
+            const { newOwnerID } = req.body; // New owner specified in request
+            const currentUserID = req.user.userID;
+            const result = await ReceiptStubService.transmitStub(bookID, newOwnerID, currentUserID);
+            res.json(result);
+        } catch (error) {
+            res.status(400).json({ error: error.message });
+        }
+    }
+
+    static async validateTransmitStub(req, res) {
+        try {
+            const { bookID } = req.params;
+            const { newOwnerID, otpCode } = req.body;
+            const currentUserID = req.user.userID;
+            const stub = await ReceiptStubService.validateTransmitStub(bookID, newOwnerID, currentUserID, otpCode);
+            res.json(stub);
+        } catch (error) {
+            res.status(400).json({ error: error.message });
+        }
+    }
+
+    static async archiveStub(req, res) {
+        try {
+            const { bookID } = req.params;
+            const stockManagerID = req.user.userID;
+            const stub = await ReceiptStubService.archiveStub(bookID, stockManagerID);
+            res.json(stub);
+        } catch (error) {
+            res.status(400).json({ error: error.message });
+        }
+    }
+}
+
+module.exports = ReceiptStubController;
+
+==================================================
+File contents: C:\Users\Kayto\Desktop\IT\Projects\Stage\Stage PFE\Visit_Management\Back-End\controllers\roleController.js
+==================================================
+const RoleService = require('../services/roleService');
+
+class RoleController {
+    async createRole(req, res) {
+        try {
+            const { name, description } = req.body;
+            const role = await RoleService.createRole(name, description);
+            res.status(201).json(role);
+        } catch (error) {
+            res.status(400).json({ error: error.message });
+        }
+    }
+
+    async getAllRoles(req, res) {
+        try {
+            const roles = await RoleService.getAllRoles();
+            res.status(200).json(roles);
+        } catch (error) {
+            res.status(500).json({ error: error.message });
+        }
+    }
+
+    async getRoleById(req, res) {
+        try {
+            const { roleID } = req.params;
+            const role = await RoleService.getRoleById(roleID);
+            res.status(200).json(role);
+        } catch (error) {
+            res.status(404).json({ error: error.message });
+        }
+    }
+
+    async updateRole(req, res) {
+        try {
+            const { roleID } = req.params;
+            const { name, description } = req.body;
+            const role = await RoleService.updateRole(roleID, name, description);
+            res.status(200).json(role);
+        } catch (error) {
+            res.status(400).json({ error: error.message });
+        }
+    }
+
+    async deleteRole(req, res) {
+        try {
+            const { roleID } = req.params;
+            const role = await RoleService.deleteRole(roleID);
+            res.status(200).json(role);
+        } catch (error) {
+            res.status(404).json({ error: error.message });
+        }
+    }
+
+    async assignPermissionsToRole(req, res) {
+        try {
+            const { roleID } = req.params;
+            const { permissionIDs } = req.body; // Array of permission IDs
+            const result = await RoleService.assignPermissionsToRole(roleID, permissionIDs);
+            res.status(200).json(result);
+        } catch (error) {
+            res.status(400).json({ error: error.message });
+        }
+    }
+
+    async getPermissionsByRole(req, res) {
+        try {
+            const { roleID } = req.params;
+            const permissions = await RoleService.getPermissionsByRole(roleID);
+            res.status(200).json(permissions);
+        } catch (error) {
+            res.status(404).json({ error: error.message });
+        }
+    }
+}
+
+module.exports = new RoleController();
+
+==================================================
+File contents: C:\Users\Kayto\Desktop\IT\Projects\Stage\Stage PFE\Visit_Management\Back-End\controllers\timesheetController.js
+==================================================
+const { Op } = require('sequelize');
+const { Timesheet, User, Sequelize } = require('../models');
+const TimesheetService = require('../services/timesheetService');
+
+class TimesheetController {
+    static async createTimesheet(req, res) {
+        try {
+            const { weekNumber, year, supervisorID, visits } = req.body;
+            const timesheet = await TimesheetService.createTimesheet({
+                weekNumber,
+                year,
+                supervisorID,
+                visits,
+            });
+            res.status(201).json(timesheet);
+        } catch (error) {
+            console.error(error);
+            res.status(error.status || 500).json({ error: error.message || 'Internal server error' });
+        }
+    }
+
+    static async validateTimesheet(req, res) {
+        try {
+            const { id } = req.params;
+            const { visitIDs = [], status } = req.body;
+            const timesheet = await TimesheetService.validateTimesheet(id, visitIDs, status);
+            res.status(200).json(timesheet);
+        } catch (error) {
+            console.error(error);
+            res.status(error.status || 500).json({ error: error.message || 'Internal server error' });
+        }
+    }
+
+    static async getAllTimesheets(req, res) {
+        try {
+            const user = req.user;
+            const userPermissions = user.Roles.flatMap(role => role.Permissions.map(perm => perm.permission));
+            let timesheets;
+
+            // Check if user has 'view_all_timesheets' (e.g., for Managers)
+            if (userPermissions.includes('view_all_timesheets')) {
+                // Fetch all timesheets for Managers, filtered by their Supervisors
+                const supervisorIDs = await User.findAll({
+                    where: { userID: { [Op.in]: user.Supervisors.map(s => s.userID) } },
+                    attributes: ['userID'],
+                }).then(supervisors => supervisors.map(s => s.userID));
+
+                timesheets = await Timesheet.findAll({
+                    where: { supervisorID: { [Op.in]: supervisorIDs } },
+                    include: ['Visits'],
+                });
+            } else {
+                // Default: Supervisors see only their own timesheets
+                timesheets = await Timesheet.findAll({
+                    where: { supervisorID: user.userID },
+                    include: ['Visits'],
+                });
+            }
+            res.status(200).json(timesheets);
+        } catch (error) {
+            console.error(error);
+            res.status(error.status || 500).json({ error: error.message || 'Internal server error' });
+        }
+    }
+
+    static async getTimesheetById(req, res) {
+        try {
+            const { id } = req.params;
+            const timesheet = await TimesheetService.viewTimesheet(id);
+            res.status(200).json(timesheet);
+        } catch (error) {
+            console.error(error);
+            res.status(error.status || 500).json({ error: error.message || 'Internal server error' });
+        }
+    }
+
+    static async getTimesheetsBySupervisor(req, res) {
+        try {
+            const { supervisorID } = req.params;
+            const timesheets = await TimesheetService.getTimesheetsBySupervisor(supervisorID);
+            res.status(200).json(timesheets);
+        } catch (error) {
+            console.error(error);
+            res.status(error.status || 500).json({ error: error.message || 'Internal server error' });
+        }
+    }
+};
+
+module.exports = TimesheetController;
+
+==================================================
+File contents: C:\Users\Kayto\Desktop\IT\Projects\Stage\Stage PFE\Visit_Management\Back-End\controllers\userController.js
+==================================================
+const UserService = require('../services/userService');
+
+class UserController {
+    async createUser(req, res) {
+        try {
+            const { email, password, firstname, lastname, phone, wallet } = req.body;
+            const user = await UserService.createUser(email, password, firstname, lastname, phone, wallet);
+            res.status(201).json(user);
+        } catch (error) {
+            res.status(400).json({ error: error.message });
+        }
+    }
+
+    async getAllUsers(req, res) {
+        try {
+            const users = await UserService.getAllUsers();
+            res.status(200).json(users);
+        } catch (error) {
+            res.status(500).json({ error: error.message });
+        }
+    }
+
+    async getIdByPhoneNumber(req, res) {
+        try {
+            const { phone } = req.body;
+            const user = await UserService.getIdByPhoneNumber(phone);
+            if (user) {
+                res.status(200).json(user);
+            } else {
+                res.status(404).json({ error: 'User not found' });
+            }
+        } catch (error) {
+            console.log(error);
+            res.status(500).json({ error: error.message });
+        }
+    }
+
+    
+
+    async getUserById(req, res) {
+        try {
+            const { userID } = req.params;
+            const user = await UserService.getUserById(userID);
+            res.status(200).json(user);
+        } catch (error) {
+            res.status(404).json({ error: error.message });
+        }
+    }
+
+    async updateUser(req, res) {
+        try {
+            const { userID } = req.params;
+            const userData = req.body;
+            const updatedUser = await UserService.updateUser(userID, userData);
+            res.status(200).json(updatedUser);
+        } catch (error) {
+            res.status(400).json({ error: error.message });
+        }
+    }
+
+    async deleteUser(req, res) {
+        try {
+            const { userID } = req.params;
+            const result = await UserService.deleteUser(userID);
+            res.status(200).json(result);
+        } catch (error) {
+            res.status(400).json({ error: error.message });
+        }
+    }
+
+    async assignRolesToUser(req, res) {
+        try {
+            const { userID } = req.params;
+            const { roleIDs } = req.body; // Array of role IDs
+            const result = await UserService.assignRolesToUser(userID, roleIDs);
+            res.status(200).json(result);
+        } catch (error) {
+            res.status(400).json({ error: error.message });
+        }
+    }
+
+    async getRolesByUser(req, res) {
+        try {
+            const { userID } = req.params;
+            const roles = await UserService.getRolesByUser(userID);
+            res.status(200).json(roles);
+        } catch (error) {
+            res.status(404).json({ error: error.message });
+        }
+    }
+}
+
+module.exports = new UserController();
+
+==================================================
+File contents: C:\Users\Kayto\Desktop\IT\Projects\Stage\Stage PFE\Visit_Management\Back-End\controllers\visitController.js
+==================================================
+const VisitService = require('../services/visitService');
+
+class VisitController {
+    static async createVisit(req, res) {
+        try {
+            const { date, time, agentID, supervisorID, timesheetID, reasons, checklists } = req.body;
+            const visit = await VisitService.createVisit({
+                date,
+                time,
+                agentID,
+                supervisorID,
+                timesheetID,
+                reasons,
+                checklists,
+            });
+            res.status(201).json(visit);
+        } catch (error) {
+            console.error(error);
+            res.status(error.status || 500).json({ error: error.message || 'Internal server error' });
+        }
+    }
+
+    static async verifyQRCode(req, res) {
+        try {
+            const { qrData, visitId } = req.body;
+            const result = await VisitService.verifyQRCode(qrData, visitId);
+            res.status(result.valid ? 200 : 400).json(result);
+        } catch (error) {
+            console.error(error);
+            res.status(error.status || 500).json({ error: error.message || 'Internal server error' });
+        }
+    }
+
+    static async logVisit(req, res) {
+        try {
+            const { id } = req.params;
+            const { duration, checklistUpdates, photos, comment } = req.body;
+            const visit = await VisitService.logVisit(id, { duration, checklistUpdates, photos, comment });
+            res.status(200).json(visit);
+        } catch (error) {
+            console.error(error);
+            res.status(error.status || 500).json({ error: error.message || 'Internal server error' });
+        }
+    }
+
+    static async getVisitByID(req, res) {
+        try {
+            const { id } = req.params;
+            const visit = await VisitService.getVisitByID(id);
+            res.status(200).json(visit);
+        } catch (error) {
+            console.error(error);
+            res.status(error.status || 500).json({ error: error.message || 'Internal server error' });
+        }
+    }
+};
+
+module.exports = VisitController;
+
+
+==================================================
+File contents: C:\Users\Kayto\Desktop\IT\Projects\Stage\Stage PFE\Visit_Management\Back-End\middleware\RBAC_Middleware.js
+==================================================
+const rbacMiddleware = (requiredPermission) => {
+    return async (req, res, next) => {
+        // authenticateJWT has already run and attached req.user
+        if (!req.user) {
+            return res.status(401).json({ error: 'Authentication required. Please log in.' });
+        }
+
+        try {
+            // Check if user has the required permission
+            const hasPermission = req.user.Roles.some(role =>
+                role.Permissions.some(perm => perm.permission === requiredPermission)
+            );
+
+            if (!hasPermission) {
+                return res.status(403).json({
+                    error: `Permission '${requiredPermission}' required for this action`
+                });
+            }
+
+            // User has permission, proceed
+            next();
+        } catch (error) {
+            console.error('RBAC Middleware Error:', error);
+            return res.status(500).json({ error: 'Internal server error during authorization' });
+        }
+    };
+};
+
+module.exports = rbacMiddleware;
+
+==================================================
+File contents: C:\Users\Kayto\Desktop\IT\Projects\Stage\Stage PFE\Visit_Management\Back-End\models\agent.js
+==================================================
+const { nanoid } = require('nanoid');
+
+module.exports = (sequelize, DataTypes) => {
+    return sequelize.define('Agent', {
+        agentID: {
+            type: DataTypes.STRING,
+            primaryKey: true,
+            defaultValue: () => `agt_${nanoid()}`,
+        },
+        name: { type: DataTypes.STRING },
+        lastname: { type: DataTypes.STRING},
+        wallet: { type: DataTypes.STRING },
+        cin: { type: DataTypes.STRING, unique: true},
+        email: { type: DataTypes.STRING, unique: true },
+        phone: { type: DataTypes.STRING },
+        location: { type: DataTypes.STRING},
+    });
+};
+
+==================================================
+File contents: C:\Users\Kayto\Desktop\IT\Projects\Stage\Stage PFE\Visit_Management\Back-End\models\index.js
+==================================================
+const { sequelize } = require("../config/db");
+const DataTypes = require("sequelize").DataTypes;
+
+const Agent = require("./agent")(sequelize, DataTypes);
+const ReceiptBook = require("./receipt/receiptBook")(sequelize, DataTypes);
+const ReceiptStub = require("./receipt/receiptStub")(sequelize, DataTypes);
+const ReceiptBookTransfer = require("./receipt/ReceiptBookTransfer")(sequelize, DataTypes);
+const Timesheet = require("./timesheet")(sequelize, DataTypes);
+const OTP = require("./user/otp")(sequelize, DataTypes);
+const Permission = require("./user/permission")(sequelize, DataTypes);
+const Role = require("./user/role")(sequelize, DataTypes);
+const User = require("./user/user")(sequelize, DataTypes);
+const Visit = require("./visit/visit")(sequelize, DataTypes);
+const Checklist = require("./visit/checklist")(sequelize, DataTypes);
+const VisitChecklist = require("./visit/VisitChecklists")(sequelize, DataTypes);
+const Reason = require("./visit/reason")(sequelize, DataTypes);
+
+const setupAssociations = () => {
+
+    // User - User (many to many): A User can have multiple Supervisors and Managers, and a User can be a Supervisor or Manager of multiple Users.
+    User.belongsToMany(User, {as: 'Supervisors', through: 'ManagerSupervisors', foreignKey: 'managerID', otherKey: 'supervisorID',});
+    User.belongsToMany(User, {as: 'Managers', through: 'ManagerSupervisors', foreignKey: 'supervisorID', otherKey: 'managerID',});
+
+    // Agent - Visit (1 to many): An Agent can have multiple Visits.
+    Agent.hasMany(Visit, { foreignKey: "agentID" });
+    Visit.belongsTo(Agent, { foreignKey: "agentID" });
+
+    // Timesheet - Visit (1 to many): A Timesheet tracks multiple Visits.
+    Timesheet.hasMany(Visit, { foreignKey: "timesheetID" });
+    Visit.belongsTo(Timesheet, { foreignKey: "timesheetID" });
+
+    // User - Timesheet (1 to many): A User can oversee multiple Timesheets.
+    User.hasMany(Timesheet, { foreignKey: "supervisorID" });
+    Timesheet.belongsTo(User, { foreignKey: "supervisorID" });
+
+    // Visit - Checklist (many to many): A Visit can have multiple Checklists, and a Checklist can apply to multiple Visits.
+    Visit.belongsToMany(Checklist, { through: { model: VisitChecklist, unique: false }, foreignKey: "visitID", otherKey: "checklistID",});
+    Checklist.belongsToMany(Visit, { through: { model: VisitChecklist, unique: false }, foreignKey: "checklistID", otherKey: "visitID",});
+
+    // Visit - Reason (many to many): A Visit can have multiple Reasons (e.g., cancellation), and a Reason can apply to multiple Visits.
+    Visit.belongsToMany(Reason, {through: "VisitReasons", foreignKey: "visitID", otherKey: "reasonID", });
+    Reason.belongsToMany(Visit, { through: "VisitReasons", foreignKey: "reasonID", otherKey: "visitID",});
+
+    // User - OTP (1 to many): A User can have multiple OTPs for secure actions (e.g., receipt book transfers).
+    User.hasMany(OTP, { foreignKey: "userID" });
+    OTP.belongsTo(User, { foreignKey: "userID" });
+
+    // User - Role (many to many): A User can have multiple Roles, and a Role can be assigned to multiple Users.
+    User.belongsToMany(Role, { through: "UserRoles", foreignKey: "userID", otherKey: "roleID",});
+    Role.belongsToMany(User, { through: "UserRoles", foreignKey: "roleID", otherKey: "userID",});
+
+    // Role - Permission (many to many): A Role can have multiple Permissions, and a Permission can belong to multiple Roles.
+    Role.belongsToMany(Permission, { through: "RolePermissions", foreignKey: "roleID", otherKey: "permissionID",});
+    Permission.belongsToMany(Role, { through: "RolePermissions", foreignKey: "permissionID", otherKey: "roleID",});
+
+    // User - ReceiptBook (many to many): A User can own or manage multiple ReceiptBooks, and a ReceiptBook can be linked to multiple Users.
+    User.belongsToMany(ReceiptBook, { through: "UserReceiptBooks", foreignKey: "userID", otherKey: "bookID",});
+    ReceiptBook.belongsToMany(User, { through: "UserReceiptBooks", foreignKey: "bookID", otherKey: "userID",});
+
+    ReceiptBook.hasMany(ReceiptBookTransfer, { foreignKey: "bookID" });
+    ReceiptBookTransfer.belongsTo(ReceiptBook, { foreignKey: "bookID" });
+
+    ReceiptBook.belongsTo(User, { as: 'CurrentHolder', foreignKey: 'currentHolderID' });
+    User.hasMany(ReceiptBook, { as: 'HeldBooks', foreignKey: 'currentHolderID' });
+
+    User.hasMany(ReceiptBookTransfer, { as: "SentTransfers", foreignKey: "fromUserID" });
+    ReceiptBookTransfer.belongsTo(User, { as: "FromUser", foreignKey: "fromUserID" });
+
+    User.hasMany(ReceiptBookTransfer, { as: "ReceivedTransfers", foreignKey: "toUserID" });
+    ReceiptBookTransfer.belongsTo(User, { as: "ToUser", foreignKey: "toUserID" });
+
+    Agent.hasMany(ReceiptBookTransfer, { foreignKey: "toAgentID" });
+    ReceiptBookTransfer.belongsTo(Agent, { foreignKey: "toAgentID" });
+
+    // ReceiptBook - Agent (many to one): A ReceiptBook is assigned to one Agent, but an Agent can have multiple ReceiptBooks.
+    ReceiptBook.belongsTo(Agent, { foreignKey: "agentID" });
+    Agent.hasMany(ReceiptBook, { foreignKey: "agentID" });
+
+    // ReceiptBook - ReceiptStub (1 to 1): A ReceiptBook has one ReceiptStub, and a ReceiptStub belongs to one ReceiptBook.
+    ReceiptBook.hasOne(ReceiptStub, { foreignKey: "bookID" });
+    ReceiptStub.belongsTo(ReceiptBook, { foreignKey: "bookID" });
+};
+
+module.exports = { sequelize, User, Agent, Visit, Timesheet, Checklist, Reason, VisitChecklist, OTP, Role, Permission, ReceiptBook, ReceiptStub, ReceiptBookTransfer, 
+    setupAssociations,
+};
+
+
+==================================================
+File contents: C:\Users\Kayto\Desktop\IT\Projects\Stage\Stage PFE\Visit_Management\Back-End\models\timesheet.js
+==================================================
+const { nanoid } = require('nanoid');
+
+module.exports = (sequelize, DataTypes) => {
+    return sequelize.define('Timesheet', {
+    timesheetID: { 
+        type: DataTypes.STRING,     
+        primaryKey: true,
+        defaultValue: () => `ts_${nanoid()}`,
+    },
+    weekNumber: { type: DataTypes.INTEGER, allowNull: false },
+    year: { type: DataTypes.INTEGER, allowNull: false },
+    status: { type: DataTypes.STRING, allowNull: false },
+    supervisorID: { type: DataTypes.STRING, allowNull: false }, 
+});
+
+};
+
+==================================================
+File contents: C:\Users\Kayto\Desktop\IT\Projects\Stage\Stage PFE\Visit_Management\Back-End\models\receipt\receiptBook.js
+==================================================
+// models/receipt/receiptBook.js
+const { nanoid } = require('nanoid');
+
+module.exports = (sequelize, DataTypes) => {
+    return sequelize.define('ReceiptBook', {
+        bookID: {
+            type: DataTypes.STRING,
+            primaryKey: true,
+            defaultValue: () => `book_${nanoid()}`,
+        },
+        number: {
+            type: DataTypes.STRING,
+            allowNull: false,
+        },
+        type: {
+            type: DataTypes.STRING,
+            allowNull: false,
+        },
+        status: {
+            type: DataTypes.ENUM(
+                'In Stock',              // Purchase team
+                'Sent to Supplier',      // Purchase team
+                'With Regional Manager', // Regional manager(s)
+                'With Supervisor',       // Supervisor(s)
+                'Assigned to Agent',     // Agent
+                'Stub Collected',        // Supervisor after collecting stub
+                'With Stock Manager',    // Stock manager
+                'Archived'               // Final state
+            ),
+            allowNull: false,
+            defaultValue: 'In Stock',
+        },
+        qrCode: {
+            type: DataTypes.TEXT,
+            allowNull: false,
+            unique: true,
+        },
+        agentID: {
+            type: DataTypes.STRING,
+            allowNull: true,
+            references: { model: 'Agents', key: 'agentID' },
+        },
+        currentHolderID: {
+            type: DataTypes.STRING,
+            allowNull: true, // Null when with agent or in stock initially
+            references: { model: 'Users', key: 'userID' },
+        },
+    });
+};
+
+==================================================
+File contents: C:\Users\Kayto\Desktop\IT\Projects\Stage\Stage PFE\Visit_Management\Back-End\models\receipt\ReceiptBookTransfer.js
+==================================================
+// models/receipt/receiptBookTransfer.js
+const { nanoid } = require('nanoid');
+
+module.exports = (sequelize, DataTypes) => {
+    return sequelize.define('ReceiptBookTransfer', {
+        transferID: {
+            type: DataTypes.STRING,
+            primaryKey: true,
+            defaultValue: () => `trans_${nanoid()}`,
+        },
+        bookID: {
+            type: DataTypes.STRING,
+            allowNull: false,
+            references: { model: 'ReceiptBooks', key: 'bookID' },
+        },
+        fromUserID: {
+            type: DataTypes.STRING,
+            allowNull: true, // Null if from agent or initial stock
+            references: { model: 'Users', key: 'userID' },
+        },
+        toUserID: {
+            type: DataTypes.STRING,
+            allowNull: true, // Null if to agent
+            references: { model: 'Users', key: 'userID' },
+        },
+        toAgentID: {
+            type: DataTypes.STRING,
+            allowNull: true, // Null if to user
+            references: { model: 'Agents', key: 'agentID' },
+        },
+        status: {
+            type: DataTypes.ENUM(
+                'In Stock', 'Sent to Supplier', 'With Regional Manager', 'With Supervisor', 
+                'Assigned to Agent', 'Stub Collected', 'With Stock Manager', 'Archived'
+            ),
+            allowNull: false,
+        },
+        transferDate: {
+            type: DataTypes.DATE,
+            allowNull: false,
+            defaultValue: DataTypes.NOW,
+        },
+    });
+};
+
+==================================================
+File contents: C:\Users\Kayto\Desktop\IT\Projects\Stage\Stage PFE\Visit_Management\Back-End\models\receipt\receiptStub.js
+==================================================
+// models/receipt/receiptStub.js
+const { nanoid } = require('nanoid');
+
+module.exports = (sequelize, DataTypes) => {
+    return sequelize.define('ReceiptStub', {
+        stubID: {
+            type: DataTypes.STRING,
+            primaryKey: true,
+            defaultValue: () => `stub_${nanoid()}`,
+        },
+        status: {
+            type: DataTypes.ENUM('pending', 'collected', 'transmitted', 'archived'),
+            allowNull: false,
+            defaultValue: 'pending',
+        },
+        bookID: {
+            type: DataTypes.STRING,
+            allowNull: false,
+            unique: true, // One stub per book
+            references: {
+                model: 'ReceiptBooks',
+                key: 'bookID',
+            },
+        },
+    });
+};
+
+==================================================
+File contents: C:\Users\Kayto\Desktop\IT\Projects\Stage\Stage PFE\Visit_Management\Back-End\models\user\otp.js
+==================================================
+const { nanoid } = require('nanoid');
+
+module.exports = (sequelize, DataTypes) => {
+    return sequelize.define('OTP', {
+        otpID: {
+            type: DataTypes.STRING,
+            primaryKey: true,
+            defaultValue: () => `otp_${nanoid()}`,
+        },
+        code: {
+            type: DataTypes.STRING,
+            allowNull: false,
+        },
+        expiresAt: {
+            type: DataTypes.DATE,
+            allowNull: false,
+        },
+        createdAt: {
+            type: DataTypes.DATE,
+            allowNull: false,
+            defaultValue: DataTypes.NOW,
+        },
+        userID: { // Foreign key to User
+            type: DataTypes.STRING,
+            allowNull: false,
+            references: {
+                model: 'Users',
+                key: 'userID',
+            },
+        },
+    }, {
+        timestamps: false, // We manually handle createdAt
+    });
+};
+
+==================================================
+File contents: C:\Users\Kayto\Desktop\IT\Projects\Stage\Stage PFE\Visit_Management\Back-End\models\user\permission.js
+==================================================
+const { nanoid } = require('nanoid');
+
+module.exports = (sequelize, DataTypes) => {
+    return sequelize.define('Permission', {
+        permissionID: {
+            type: DataTypes.STRING,
+            primaryKey: true,
+            defaultValue: () => `perm_${nanoid()}`,
+        },
+        name: { 
+            type: DataTypes.STRING,
+            allowNull: false,
+            unique: true, 
+        },
+        type: { 
+            type: DataTypes.ENUM('page', 'feature'),
+            allowNull: false,
+            defaultValue: 'feature',
+        },
+        class: {
+            type: DataTypes.ENUM(
+                'User',       // Permissions related to user management
+                'Role',       // Permissions related to roles
+                'Timesheet',  // Permissions related to timesheets
+                'Visit',      // Permissions related to visits
+                'Checklist',  // Permissions related to checklists
+                'Reason',     // Permissions related to reasons
+                'ReceiptBook', // Permissions related to receipt books
+                'ReceiptStub', // Permissions related to receipt stubs
+                'Agent',       // Permissions related to agents
+                'Auth',       // Permissions related to authentication
+                'Permission' // Permissions related to permissions
+            ),
+            allowNull: false,
+            defaultValue: 'User',
+        },
+        description: {
+            type: DataTypes.STRING,
+            allowNull: true,
+        },
+    });
+};
+
+==================================================
+File contents: C:\Users\Kayto\Desktop\IT\Projects\Stage\Stage PFE\Visit_Management\Back-End\models\user\role.js
+==================================================
+const { nanoid } = require('nanoid');
+
+module.exports = (sequelize, DataTypes) => {
+    return sequelize.define('Role', {
+        roleID: {
+            type: DataTypes.STRING,
+            primaryKey: true,
+            defaultValue: () => `rol_${nanoid()}`,
+        },
+        name: {
+            type: DataTypes.STRING,
+            allowNull: false,
+            unique: true,
+        },
+        description: {
+            type: DataTypes.STRING,
+            allowNull: true,
+        },
+    });
+};
+
+==================================================
+File contents: C:\Users\Kayto\Desktop\IT\Projects\Stage\Stage PFE\Visit_Management\Back-End\models\user\user.js
+==================================================
+const { nanoid } = require('nanoid');
+
+module.exports = (sequelize, DataTypes) => {
+    return sequelize.define('User', {
+    userID: { 
+        type: DataTypes.STRING,     
+        primaryKey: true,
+        defaultValue: () => `usr_${nanoid()}`,
+    },
+    firstname: { type: DataTypes.STRING, allowNull: false },
+    lastname: { type: DataTypes.STRING, allowNull: false },
+    phone: { type: DataTypes.STRING, unique: true, allowNull: false },
+    email: { type: DataTypes.STRING, unique: true, allowNull: false },
+    wallet: { type: DataTypes.STRING, unique: true, allowNull: false },
+    password: { type: DataTypes.STRING, allowNull: true },
+});
+
+};
+
+==================================================
+File contents: C:\Users\Kayto\Desktop\IT\Projects\Stage\Stage PFE\Visit_Management\Back-End\models\visit\checklist.js
+==================================================
+const { nanoid } = require('nanoid');
+
+module.exports = (sequelize, DataTypes) => {
+    return sequelize.define('Checklist', {
+    checklistID: { 
+        type: DataTypes.STRING,     
+        primaryKey: true,
+        defaultValue: () => `chk_${nanoid()}`, 
+    },
+    item: { type: DataTypes.STRING, allowNull: false },
+
+});
+
+};
+
+
+==================================================
+File contents: C:\Users\Kayto\Desktop\IT\Projects\Stage\Stage PFE\Visit_Management\Back-End\models\visit\reason.js
+==================================================
+const { nanoid } = require('nanoid');
+
+module.exports = (sequelize, DataTypes) => {
+    return sequelize.define('Reason', {
+    reasonID: { 
+        type: DataTypes.STRING,     
+        primaryKey: true,
+        defaultValue: () => `rea_${nanoid()}`,
+    },
+    item: { type: DataTypes.STRING, allowNull: false },
+
+});
+
+};
+
+
+==================================================
+File contents: C:\Users\Kayto\Desktop\IT\Projects\Stage\Stage PFE\Visit_Management\Back-End\models\visit\visit.js
+==================================================
+const { nanoid } = require('nanoid');
+
+module.exports = (sequelize, DataTypes) => {
+    return sequelize.define('Visit', {
+    visitID: { 
+        type: DataTypes.STRING,     
+        primaryKey: true,
+        defaultValue: () => `vis_${nanoid()}`,
+    },
+    date: { type: DataTypes.DATEONLY, allowNull: false },
+    time: { type: DataTypes.TIME, allowNull: false },
+    duration: { type: DataTypes.INTEGER}, 
+    location: { type: DataTypes.STRING},
+    status: { type: DataTypes.STRING,allowNull: false },
+    photos: { type: DataTypes.ARRAY(DataTypes.STRING), defaultValue: []},
+    comment: { type: DataTypes.TEXT},
+    agentID: { type: DataTypes.STRING, allowNull: false }, 
+    timesheetID: { type: DataTypes.STRING, allowNull: false }, 
+});
+
+};
+
+
+==================================================
+File contents: C:\Users\Kayto\Desktop\IT\Projects\Stage\Stage PFE\Visit_Management\Back-End\models\visit\VisitChecklists.js
+==================================================
+module.exports = (sequelize, DataTypes) => {
+    return sequelize.define('VisitChecklist', {
+        checked: { type: DataTypes.BOOLEAN, defaultValue: false}
+    });
+};
+
+==================================================
+File contents: C:\Users\Kayto\Desktop\IT\Projects\Stage\Stage PFE\Visit_Management\Back-End\routes\agentRoutes.js
+==================================================
+const express = require('express');
+const router = express.Router();
+const { authenticateJWT, requirePermission } = require('../config/security');
+const AgentController = require('../controllers/agentController');
+
+router.get('/location', authenticateJWT, requirePermission('read_agents'), AgentController.getAgentsByLocation);
+router.get('/locations', authenticateJWT, requirePermission('read_agents'), AgentController.getAllUniqueLocations);
+router.get('/phone/:phone', authenticateJWT, requirePermission('read_agents'), AgentController.getAgentByPhone);
+router.get('/:id', authenticateJWT, requirePermission('read_agents'), AgentController.getAgentById);
+
+module.exports = router;
+
+==================================================
+File contents: C:\Users\Kayto\Desktop\IT\Projects\Stage\Stage PFE\Visit_Management\Back-End\routes\authRoutes.js
+==================================================
+const express = require('express');
+const router = express.Router();
+const AuthController = require('../controllers/authController');
+const { authenticateJWT, requirePermission } = require('../config/security');
+
+router.post('/login', AuthController.login);
+router.post('/verify-2fa', AuthController.verify2FA);
+
+module.exports = router;
+
+==================================================
+File contents: C:\Users\Kayto\Desktop\IT\Projects\Stage\Stage PFE\Visit_Management\Back-End\routes\checklistRoutes.js
+==================================================
+const express = require('express');
+const router = express.Router();
+const { authenticateJWT, requirePermission } = require('../config/security');
+const ChecklistController = require('../controllers/checklistController');
+
+router.post('/', authenticateJWT, requirePermission('create_checklists_items'), ChecklistController.createChecklist);
+router.get('/', authenticateJWT, requirePermission('read_checklists_items'), ChecklistController.getAllChecklists);
+router.get('/:id', authenticateJWT, requirePermission('read_checklist_item_details'), ChecklistController.getChecklistsByVisitID);
+
+module.exports = router;
+
+==================================================
+File contents: C:\Users\Kayto\Desktop\IT\Projects\Stage\Stage PFE\Visit_Management\Back-End\routes\permissionRoutes.js
+==================================================
+const express = require('express');
+const router = express.Router();
+const PermissionController = require('../controllers/permissionController');
+const { authenticateJWT, requirePermission } = require('../config/security');
+
+router.get('/', authenticateJWT, requirePermission('read_permissions'), PermissionController.getAllPermissions);
+router.post('/', authenticateJWT, requirePermission('create_permissions'), PermissionController.createPermission);
+router.put('/:permissionID', authenticateJWT, requirePermission('update_permissions'), PermissionController.updatePermission);
+router.delete('/:permissionID', authenticateJWT, requirePermission('delete_permissions'), PermissionController.deletePermission);
+
+router.get('/:permissionID', authenticateJWT, requirePermission('read_permissions'), PermissionController.getPermissionById);
+
+module.exports = router;
+
+==================================================
+File contents: C:\Users\Kayto\Desktop\IT\Projects\Stage\Stage PFE\Visit_Management\Back-End\routes\reasonRoutes.js
+==================================================
+const express = require('express');
+const router = express.Router();
+const { authenticateJWT, requirePermission } = require('../config/security');
+const ReasonController = require('../controllers/reasonController');
+
+router.post('/', authenticateJWT, requirePermission('create_reason_items'), ReasonController.createReason);
+router.get('/', authenticateJWT, requirePermission('read_reason_items'), ReasonController.getAllReasons);
+router.get('/:id', authenticateJWT, requirePermission('read_reason_item_details'), ReasonController.getReasonsByVisitID);
+
+module.exports = router;
+
+==================================================
+File contents: C:\Users\Kayto\Desktop\IT\Projects\Stage\Stage PFE\Visit_Management\Back-End\routes\receiptBookRoutes.js
+==================================================
+// routes/receiptBookRoutes.js
+const express = require('express');
+const router = express.Router();
+const { authenticateJWT, requirePermission } = require('../config/security');
+const ReceiptBookController = require('../controllers/receiptBookController');
+
+
+
+// Other Routes
+router.post('/send', authenticateJWT, requirePermission('send_receipt_books'), ReceiptBookController.sendToSupplier);
+router.post('/transfer', authenticateJWT, requirePermission('transfer_receipt_books'), ReceiptBookController.transferReceiptBookToUser);
+router.post('/validate-transfer', authenticateJWT, requirePermission('validate_receipt_books'), ReceiptBookController.validateTransferToUser);
+router.post('/assign-agent', authenticateJWT, requirePermission('assign_receipt_books'), ReceiptBookController.assignToAgent);
+router.post('/validate-agent', authenticateJWT, requirePermission('validate_receipt_books'), ReceiptBookController.validateAgentAssignment);
+router.get('/:bookID/history', authenticateJWT, requirePermission('access_receipt_book_history'), ReceiptBookController.getTransferHistory);
+
+
+// CRUD Routes
+router.post('/', authenticateJWT, requirePermission('create_receipt_books'), ReceiptBookController.createReceiptBook);
+router.get('/', authenticateJWT, requirePermission('access_receipt_books'), ReceiptBookController.getAllReceiptBooks);
+router.get('/:bookID', authenticateJWT, requirePermission('access_receipt_book_details'), ReceiptBookController.getReceiptBookById);
+router.put('/:bookID', authenticateJWT, requirePermission('update_receipt_books'), ReceiptBookController.updateReceiptBook);
+router.delete('/:bookID', authenticateJWT, requirePermission('delete_receipt_books'), ReceiptBookController.deleteReceiptBook);
+
+
+
+module.exports = router;
+
+==================================================
+File contents: C:\Users\Kayto\Desktop\IT\Projects\Stage\Stage PFE\Visit_Management\Back-End\routes\receiptStubRoutes.js
+==================================================
+const express = require('express');
+const router = express.Router();
+const { authenticateJWT, requirePermission } = require('../config/security');
+const ReceiptStubController = require('../controllers/receiptStubController');
+
+router.post('/:bookID/collect', authenticateJWT, requirePermission('collect_receipt_stubs'), ReceiptStubController.collectStub);
+router.post('/:bookID/validate-collection', authenticateJWT, requirePermission('validate_receipt_stubs'), ReceiptStubController.validateStubCollection);
+router.post('/:bookID/transmit', authenticateJWT, requirePermission('transmit_receipt_stubs'), ReceiptStubController.transmitStub);
+router.post('/:bookID/validate-transmit', authenticateJWT, requirePermission('validate_receipt_stubs'), ReceiptStubController.validateTransmitStub);
+router.post('/:bookID/archive', authenticateJWT, requirePermission('archive_receipt_stubs'), ReceiptStubController.archiveStub);
+
+module.exports = router;
+
+==================================================
+File contents: C:\Users\Kayto\Desktop\IT\Projects\Stage\Stage PFE\Visit_Management\Back-End\routes\roleRoutes.js
+==================================================
+const express = require('express');
+const router = express.Router();
+const RoleController = require('../controllers/roleController');
+const { authenticateJWT, requirePermission } = require('../config/security');
+
+router.post('/:roleID/permissions', authenticateJWT, requirePermission('assign_permissions'), RoleController.assignPermissionsToRole);
+router.get('/:roleID/permissions',authenticateJWT, requirePermission('read_permissions'), RoleController.getPermissionsByRole);
+
+router.post('/', authenticateJWT, requirePermission('create_roles'), RoleController.createRole);
+router.get('/', authenticateJWT, requirePermission('read_roles'), RoleController.getAllRoles);
+router.get('/:roleID', authenticateJWT, requirePermission('read_role_details'), RoleController.getRoleById);
+router.put('/:roleID', authenticateJWT, requirePermission('update_roles'), RoleController.updateRole);
+router.delete('/:roleID', authenticateJWT, requirePermission('delete_roles'), RoleController.deleteRole);
+
+
+module.exports = router;
+
+==================================================
+File contents: C:\Users\Kayto\Desktop\IT\Projects\Stage\Stage PFE\Visit_Management\Back-End\routes\timesheetRoutes.js
+==================================================
+const express = require('express');
+const router = express.Router();
+const { authenticateJWT, requirePermission } = require('../config/security');
+const TimesheetController = require('../controllers/timesheetController');
+
+
+router.post('/', authenticateJWT, requirePermission('create_timesheets'), TimesheetController.createTimesheet);
+router.get('/', authenticateJWT, requirePermission('access_timesheets'), TimesheetController.getAllTimesheets);
+router.get('/:id', authenticateJWT, requirePermission('access_timesheet_details'), TimesheetController.getTimesheetById);
+router.put('/:id/validate', authenticateJWT, requirePermission('validate_timesheets'), TimesheetController.validateTimesheet);
+router.get('/supervisor/:supervisorID', authenticateJWT, requirePermission('access_Supervisor_timesheets'), TimesheetController.getTimesheetsBySupervisor);
+
+module.exports = router;
+
+==================================================
+File contents: C:\Users\Kayto\Desktop\IT\Projects\Stage\Stage PFE\Visit_Management\Back-End\routes\userRoutes.js
+==================================================
+const express = require('express');
+const router = express.Router();
+const UserController = require('../controllers/userController');
+const { authenticateJWT, requirePermission } = require('../config/security');
+
+
+router.post('/', authenticateJWT, requirePermission('create_users'), UserController.createUser);
+router.get('/', authenticateJWT, requirePermission('read_users'), UserController.getAllUsers);
+router.get('/phone', authenticateJWT, requirePermission('read_users'), UserController.getIdByPhoneNumber);
+router.get('/:userID', authenticateJWT, requirePermission('read_user_details'), UserController.getUserById);
+router.put('/:userID', authenticateJWT, requirePermission('update_users'), UserController.updateUser);
+router.delete('/:userID', authenticateJWT, requirePermission('delete_users'), UserController.deleteUser);
+
+
+router.post('/:userID/roles', authenticateJWT, requirePermission('assign_roles'), UserController.assignRolesToUser);
+router.get('/:userID/roles', authenticateJWT, requirePermission('read_roles'), UserController.getRolesByUser);
+
+module.exports = router;
+
+==================================================
+File contents: C:\Users\Kayto\Desktop\IT\Projects\Stage\Stage PFE\Visit_Management\Back-End\routes\visitRoutes.js
+==================================================
+const express = require('express');
+const router = express.Router();
+const { authenticateJWT, requirePermission } = require('../config/security');
+const VisitController = require('../controllers/visitController');
+
+router.post('/', authenticateJWT, requirePermission('create_visits'), VisitController.createVisit);
+router.post('/verify-qr', authenticateJWT, requirePermission('validate_visits'), VisitController.verifyQRCode);
+router.put('/:id/log', authenticateJWT, requirePermission('log_visits'), VisitController.logVisit);
+router.get('/:id', authenticateJWT, requirePermission('access_visit_details'), VisitController.getVisitByID);
+
+module.exports = router;
+
+==================================================
+File contents: C:\Users\Kayto\Desktop\IT\Projects\Stage\Stage PFE\Visit_Management\Back-End\services\agentService.js
+==================================================
+const { Agent } = require('../models');
+
+class AgentService {
+    static async getAgentById(id) {
+        const agent = await Agent.findByPk(id);
+        if (!agent) {
+            const error = new Error('Agent not found');
+            error.status = 404;
+            throw error;
+        }
+        return agent;
+    }
+
+    static async getAgentByPhone(phone) {
+        const agent = await Agent.findOne({ where: { phone } });
+        if (!agent) {
+            const error = new Error('Agent not found');
+            error.status = 404;
+            throw error;
+        }
+        return agent;
+    }
+
+    static async getAgentsByLocation(location) {
+        if (!location) {
+            const error = new Error('Location is required');
+            error.status = 400;
+            throw error;
+        }
+        const agents = await Agent.findAll({ where: { location } });
+        return agents;
+    }
+
+    static async getAllUniqueLocations() {
+        const locations = await Agent.findAll({
+            attributes: ['location'],
+            group: ['location'],
+        });
+        const uniqueLocations = locations.map((loc) => loc.location);
+        return uniqueLocations;
+    }
+}
+
+module.exports = AgentService;
+
+==================================================
+File contents: C:\Users\Kayto\Desktop\IT\Projects\Stage\Stage PFE\Visit_Management\Back-End\services\authService.js
+==================================================
+const bcrypt = require('bcrypt');
+const jwt = require('jsonwebtoken');
+const { Op } = require('sequelize');
+const { sendSMS } = require('../config/sms');
+const { transporter } = require('../config/smtp');
+const { User, Role, OTP, Permission } = require('../models');
+const otpService = require('./otpService');
+
+const JWT_SECRET = process.env.JWT_SECRET;
+
+class AuthService {
+
+    // Login with email/password
+    static async login(identifier, password) { 
+        try {
+            const user = await User.findOne({
+                where: {
+                    [Op.or]: [ 
+                        { email: identifier },
+                        { phone: identifier }
+                    ]
+                },
+                include: [{
+                    model: Role,
+                    through: { attributes: [] },
+                    include: [{
+                        model: Permission,
+                        through: { attributes: [] },
+                        attributes: ['name', 'type', 'class'],
+                    }],
+                }],
+            });
+
+            if (!user) throw new Error('Invalid credentials');
+
+            const isMatch = await bcrypt.compare(password, user.password);
+            if (!isMatch) throw new Error('Invalid credentials');
+
+            const roles = user.Roles.map(role => ({
+                name: role.name,
+                permissions: role.Permissions.map(p => p.name),
+            }));
+
+            const token = jwt.sign(
+                { userID: user.userID, email: user.email, phone: user.phone, roles },  // Added phone to token
+                process.env.JWT_SECRET || 'your-secret-key',
+                { expiresIn: '1h' }
+            );
+
+            return { 
+                token, 
+                user: { 
+                    userID: user.userID, 
+                    email: user.email, 
+                    phone: user.phone,  // Added phone to response
+                    roles 
+                } 
+            };
+        } catch (error) {
+            throw new Error(`Login failed: ${error.message}`);
+        }
+    }
+
+    // Add a helper method to determine login type
+    static isEmail(identifier) {
+        // Basic email validation regex
+        const emailRegex = /^[^\s@]+@[^\s@]+\.[^\s@]+$/;
+        return emailRegex.test(identifier);
+    }
+
+    // Verify 2FA OTP and issue JWT
+    static async verify2FA(userID, otpCode) {
+        const otp = await otpService.validateOTP(userID, otpCode);
+        if (!otp) throw new Error('Invalid or expired OTP');
+        const user = await User.findByPk(userID);
+        const token = jwt.sign(
+            { userID: user.userID, email: user.email },
+            JWT_SECRET,
+            { expiresIn: '1h' }
+        );
+        return { token };
+    }
+
+    // Resend 2FA OTP
+    static async resend2FA(userID) {
+        const user = await User.findByPk(userID);
+        if (!user) throw new Error('User not found');
+
+        const otpCode = Math.floor(100000 + Math.random() * 900000).toString();
+        const expiresAt = new Date(Date.now() + 10 * 60 * 1000);
+        await OTP.create({ code: otpCode, expiresAt, userID: user.userID });
+
+        await sendSMS(user.phone, `Your TraceFlow 2FA code is ${otpCode}`);
+
+        return { userID: user.userID, message: 'OTP sent to your phone' };
+    }
+
+
+}
+
+module.exports = AuthService;
+
+==================================================
+File contents: C:\Users\Kayto\Desktop\IT\Projects\Stage\Stage PFE\Visit_Management\Back-End\services\checklistService.js
+==================================================
+const { Checklist, Visit, VisitChecklist } = require('../models');
+
+class ChecklistService {
+    static async createItem(text) {
+        return Checklist.create({ item: text });
+    }
+
+    static async getItemsByIds(ids) {
+        const items = await Checklist.findAll({ where: { checklistID: ids } });
+        if (items.length !== ids.length) {
+            throw new Error('One or more checklist IDs do not exist');
+        }
+        return items;
+    }
+
+    static async getChecklistsByVisitId(visitId) {
+        const visit = await Visit.findByPk(visitId, { include: Checklist });
+        return visit.Checklists;
+    }
+
+    static async updateChecklistStatus(visitId, checklistId, checked) {
+        try {
+            const visitChecklist = await VisitChecklist.findOne({
+                where: { visitID: visitId, checklistID: checklistId },
+            });
+            if (!visitChecklist) throw new Error('Checklist item not found');
+            visitChecklist.checked = checked;
+            await visitChecklist.save();
+            return visitChecklist;
+        } catch (error) {
+            throw new Error('Failed to update checklist: ' + error.message);
+        }
+    }
+
+    static async getAllChecklists() {
+        return Checklist.findAll();
+    }
+}
+
+module.exports = ChecklistService;
+
+==================================================
+File contents: C:\Users\Kayto\Desktop\IT\Projects\Stage\Stage PFE\Visit_Management\Back-End\services\otpService.js
+==================================================
+const crypto = require('crypto');
+const { Op } = require('sequelize');
+const { OTP } = require('../models');
+
+class OTPService {
+    // Generate a new OTP for a user
+    static async generateOTP(userID) {
+        const code = crypto.randomInt(100000, 999999).toString(); // 6-digit OTP
+        const expiresAt = new Date(Date.now() + 10 * 60 * 1000); // Expires in 10 minutes
+
+        const otp = await OTP.create({
+            code,
+            expiresAt,
+            userID,
+        });
+        return otp;
+    }
+
+    // Send an OTP via SMS
+
+    // Validate an OTP
+    static async validateOTP(userID, code) {
+        const otp = await OTP.findOne({
+            where: {
+                userID,
+                code,
+                expiresAt: { [Op.gt]: new Date() }, // Check if not expired
+            },
+        });
+
+        if (!otp) {
+            throw new Error('Invalid or expired OTP');
+        }
+
+        // Optionally delete the OTP after validation
+        await otp.destroy();
+        return true;
+    }
+
+    // Delete expired OTPs (cleanup)
+    static async cleanupExpiredOTPs() {
+        await OTP.destroy({
+            where: {
+                expiresAt: { [Op.lt]: new Date() },
+            },
+        });
+    }
+}
+
+module.exports = OTPService;
+
+==================================================
+File contents: C:\Users\Kayto\Desktop\IT\Projects\Stage\Stage PFE\Visit_Management\Back-End\services\permissionService.js
+==================================================
+const { Permission, Role } = require('../models');
+
+class PermissionService {
+    // Create a new permission
+    static async createPermission(name, type, className, description) {
+        const perm = await Permission.create({ name, type, className, description });
+        return perm;
+    }
+
+    // Get all permissions
+    static async getAllPermissions() {
+        return await Permission.findAll();
+    }
+
+    // Get a permission by ID
+    static async getPermissionById(permissionID) {
+        const perm = await Permission.findByPk(permissionID, {
+            include: [{
+            model: Role,
+            attributes: ['roleID', 'name']
+            }]
+        });
+        if (!perm) throw new Error('Permission not found');
+        return perm;
+    }
+
+    // Update a permission
+    static async updatePermission(permissionID, updates) {
+        const perm = await Permission.findByPk(permissionID);
+        if (!perm) throw new Error('Permission not found');
+        await perm.update(updates);
+        return perm;
+    }
+
+    // Delete a permission
+    static async deletePermission(permissionID) {
+        const perm = await Permission.findByPk(permissionID);
+        if (!perm) throw new Error('Permission not found');
+        await perm.destroy();
+    }
+
+}
+
+module.exports = PermissionService;
+
+==================================================
+File contents: C:\Users\Kayto\Desktop\IT\Projects\Stage\Stage PFE\Visit_Management\Back-End\services\reasonService.js
+==================================================
+const { Reason, Visit } = require('../models');
+
+class ReasonService {
+    static async createItem(text) {
+        return Reason.create({ item: text });
+    }
+
+    static async getItemsByIds(ids) {
+        const items = await Reason.findAll({ where: { reasonID: ids } });
+        if (items.length !== ids.length) {
+            throw new Error('One or more reason IDs do not exist');
+        }
+        return items;
+    }
+
+    static async getReasonsByVisitId(visitId) {
+        const visit = await Visit.findByPk(visitId, { include: Reason });
+        return visit.Reasons;
+    }
+
+    static async getAllReasons() {
+        return Reason.findAll();
+    }
+}
+
+module.exports = ReasonService;
+
+==================================================
+File contents: C:\Users\Kayto\Desktop\IT\Projects\Stage\Stage PFE\Visit_Management\Back-End\services\receiptBookService.js
+==================================================
+const QRCode = require('qrcode');
+const { Op } = require('sequelize');
+const { sendSMS } = require('../config/sms');
+const { transporter } = require('../config/smtp');
+const { ReceiptBook, User, Agent, OTP, ReceiptBookTransfer, ReceiptStub } = require('../models');
+const OTPService = require('../services/otpService');
+
+class ReceiptBookService {
+
+
+    static async createReceiptBook(number, type, purchaseUserID) {
+        const tlvData = [
+            this.formatTLV('01', number.toString()),
+            this.formatTLV('02', type),
+        ].join('');
+        const qrCode = await QRCode.toDataURL(tlvData);
+
+        const receiptBook = await ReceiptBook.create({
+            number,
+            type,
+            qrCode,
+            status: 'In Stock',
+            currentHolderID: purchaseUserID,
+        });
+
+        // Create the stub at the same time as the book
+        await ReceiptStub.create({
+            bookID: receiptBook.bookID,
+            status: 'pending',
+        });
+
+        await ReceiptBookTransfer.create({
+            bookID: receiptBook.bookID,
+            fromUserID: purchaseUserID,
+            status: 'In Stock',
+        });
+
+        return receiptBook;
+    }
+
+    static async sendBookToSupplier(bookID, supplierEmail, userID) {
+        const book = await this.getReceiptBookById(bookID);
+        if (book.status !== 'In Stock') throw new Error('Book must be in stock');
+
+        await book.update({ status: 'Sent to Supplier', currentHolderID: null });
+        await ReceiptBookTransfer.create({
+            bookID,
+            fromUserID: userID,
+            status: 'Sent to Supplier',
+        });
+
+        const user = await User.findByPk(userID);
+
+        // Notify via email
+        await transporter.sendMail({
+            from: user.email,
+            to: supplierEmail,
+            subject: `Receipt Book #${book.number} Assignment Notification`,
+            text: `Receipt Book #${book.number}. Below are the details of the receipt book:
+
+                    - Number: ${book.number}
+                    - Type: ${book.type}
+
+                    Please find the QR code attached for your reference.
+
+                    Thank you for your cooperation.
+
+                    Best regards,
+                    [Your Company Name]`,
+                            attachments: [
+                                {
+                                    filename: 'qrcode.png',
+                                    content: book.qrCode.split("base64,")[1],
+                                    encoding: 'base64',
+                                },
+                            ],
+                        });
+
+        return book;
+    }
+
+
+
+    static async transferToUser(bookID, newOwnerID) {
+        const book = await ReceiptBook.findByPk(bookID);
+        const newOwner = await User.findByPk(newOwnerID);
+        if (!newOwner) throw new Error('User not found');
+
+        const otp = await OTPService.generateOTP(newOwnerID);
+        await sendSMS(newOwner.phone, `Your OTP to receive Receipt Book #${book.number} is ${otp.code}`);
+
+        return { message: `OTP sent to user ${newOwnerID}` };
+    }
+
+    static async validateTransferToUser(bookID, newOwnerID, otpCode) {
+        const book = await this.getReceiptBookById(bookID);
+        const newOwner = await User.findByPk(newOwnerID);
+        if (!newOwner) throw new Error('User not found');
+
+        await OTPService.validateOTP(newOwnerID, otpCode);
+
+        const newOwnerRole = await newOwner.getRoles();
+        const roleName = newOwnerRole.length > 0 ? newOwnerRole[0].name : 'Unknown';
+
+        let newStatus;
+        switch (roleName) {
+            case 'Regional Manager':
+                newStatus = 'With Regional Manager';
+                break;
+            case 'Supervisor':
+                newStatus = 'With Supervisor';
+                break;
+            case 'Stock Manager':
+                newStatus = 'With Stock Manager';
+                break;
+            default:
+                const statusMap = {
+                    'In Stock': 'With Regional Manager',
+                    'Sent to Supplier': 'With Regional Manager',
+                    'With Regional Manager': 'With Supervisor',
+                    'With Supervisor': 'With Supervisor',
+                    'Stub Collected': 'With Regional Manager',
+                    'With Regional Manager': 'With Stock Manager',
+                    'With Supervisor': 'With Stock Manager',
+                };
+                newStatus = statusMap[book.status] || book.status;
+        }
+
+        const previousHolderID = book.currentHolderID;
+
+        await Promise.all([
+            book.setUsers([newOwnerID]),
+            book.update({ status: newStatus, currentHolderID: newOwnerID }),
+            ReceiptBookTransfer.create({
+                bookID,
+                fromUserID: previousHolderID,
+                toUserID: newOwnerID,
+                status: newStatus,
+            }),
+        ]);
+
+        await transporter.sendMail({
+            from: process.env.SMTP_USER,
+            to: newOwner.email,
+            subject: `Receipt Book #${book.number} Transferred`,
+            text: `You are now the holder of Receipt Book #${book.number}. Status: ${newStatus}`,
+        });
+
+        return book;
+    }
+
+
+
+
+    static async assignToAgent(bookID, agentPhone, supervisorID) {
+        const book = await this.getReceiptBookById(bookID);
+        if (book.status !== 'With Supervisor') throw new Error('Book must be with Supervisor');
+        if (book.currentHolderID !== supervisorID) {
+            throw new Error('Only the current supervisor can assign to an agent');
+        }
+
+        const agent = await Agent.findOne({ where: { phone: agentPhone } });
+        if (!agent) throw new Error('Agent not found');
+
+        const otp = await OTPService.generateOTP(agent.agentID);
+        await sendSMS(agentPhone, `Your OTP to receive Receipt Book #${book.number} is ${otp.code}`);
+
+        return { message: `OTP sent to Agent with phone ${agentPhone}` };
+    }
+
+    static async validateAgentAssignment(bookID, agentPhone, otpCode, supervisorID) {
+        const book = await this.getReceiptBookById(bookID);
+        if (book.currentHolderID !== supervisorID) {
+            throw new Error('Only the current supervisor can validate assignment');
+        }
+
+        const agent = await Agent.findOne({ where: { phone: agentPhone } });
+        if (!agent) throw new Error('Agent not found');
+
+        await OTPService.validateOTP(agent.agentID, otpCode);
+
+        await Promise.all([
+            book.update({ agentID: agent.agentID, status: 'Assigned to Agent', currentHolderID: null }),
+            ReceiptBookTransfer.create({
+                bookID,
+                fromUserID: supervisorID,
+                toAgentID: agent.agentID,
+                status: 'Assigned to Agent',
+            }),
+        ]);
+
+        await transporter.sendMail({
+            from: process.env.SMTP_USER,
+            to: (await User.findByPk(supervisorID)).email,
+            subject: `Receipt Book #${book.number} Assigned`,
+            text: `Receipt Book #${book.number} assigned to Agent with phone ${agentPhone}.`,
+        });
+
+        return book;
+    }
+
+
+
+
+    static async getTransferHistory(bookID) {
+        return await ReceiptBookTransfer.findAll({
+            where: { bookID },
+            include: [
+                { model: User, as: 'FromUser' },
+                { model: User, as: 'ToUser' },
+                { model: Agent },
+            ],
+            order: [['transferDate', 'ASC']],
+        });
+    }
+
+
+
+    static async getReceiptBookById(bookID) {
+        const book = await ReceiptBook.findByPk(bookID, {
+            include: [{ model: User, as: 'CurrentHolder' },{ model: ReceiptBookTransfer},  { model: Agent }, { model: ReceiptStub }],
+        });
+        if (!book) throw new Error('ReceiptBook not found');
+        return book;
+    }
+
+    static async getAllReceiptBooks() {
+        return await ReceiptBook.findAll({
+            include: [{ model: User, as: 'CurrentHolder' },{ model: ReceiptBookTransfer},  { model: Agent }, { model: ReceiptStub }],
+        });
+    }
+
+
+
+    static async updateReceiptBook(bookID, updates, userID) {
+        const book = await this.getReceiptBookById(bookID);
+
+        // Ensure the user has permission (e.g., current holder or specific role)
+        if (book.currentHolderID !== userID) {
+            throw new Error('Only the current holder can update this receipt book');
+        }
+
+        // Restrict which fields can be updated
+        const allowedUpdates = ['number', 'type'];
+        const updateData = {};
+        for (const key of allowedUpdates) {
+            if (updates[key] !== undefined) {
+                updateData[key] = updates[key];
+            }
+        }
+
+        // If number or type changes, regenerate QR code
+        if (updateData.number || updateData.type) {
+            const tlvData = [
+                this.formatTLV('01', (updateData.number || book.number).toString()),
+                this.formatTLV('02', updateData.type || book.type),
+            ].join('');
+            updateData.qrCode = await QRCode.toDataURL(tlvData);
+        }
+
+        await book.update(updateData);
+        return book;
+    }
+
+    static async deleteReceiptBook(bookID, userID) {
+        const book = await this.getReceiptBookById(bookID);
+
+        // Only allow deletion if the book is in 'In Stock' or 'With Stock Manager' status
+        if (!['In Stock', 'With Stock Manager'].includes(book.status)) {
+            throw new Error('Receipt book can only be deleted if In Stock or With Stock Manager');
+        }
+
+        if (book.currentHolderID !== userID) {
+            throw new Error('Only the current holder can delete this receipt book');
+        }
+
+        await Promise.all([
+            ReceiptStub.destroy({ where: { bookID } }),
+            ReceiptBookTransfer.destroy({ where: { bookID } }),
+            book.destroy(),
+        ]);
+
+        return { message: `Receipt Book #${book.number} deleted successfully` };
+    }
+
+
+
+    
+
+    static formatTLV(tag, value) {
+        const length = value.length.toString().padStart(2, '0');
+        return `${tag}${length}${value}`;
+    }
+}
+
+module.exports = ReceiptBookService;
+
+==================================================
+File contents: C:\Users\Kayto\Desktop\IT\Projects\Stage\Stage PFE\Visit_Management\Back-End\services\receiptStubService.js
+==================================================
+const { ReceiptStub, ReceiptBook, Agent, OTP, User, ReceiptBookTransfer} = require('../models');
+const { sendSMS } = require('../config/sms');
+const { transporter } = require('../config/smtp');
+const { OTPService } = require('./otpService');
+
+class ReceiptStubService {
+
+
+
+    static async collectStub(bookID, supervisorID) {
+        const book = await ReceiptBook.findByPk(bookID, { include: [Agent, ReceiptStub] });
+        if (!book || !book.agentID) throw new Error('ReceiptBook not assigned to an Agent');
+        if (book.ReceiptStub.status !== 'pending') throw new Error('Stub already collected or processed');
+
+        const otp = await OTPService.generateOTP(book.agentID);
+        await sendSMS(book.Agent.phone, `Your OTP to confirm stub collection for Receipt Book #${book.number} is ${otp.code}`);
+
+        return { message: 'OTP sent to Agent' };
+    }
+
+    static async validateStubCollection(bookID, supervisorID, otpCode) {
+        const book = await ReceiptBook.findByPk(bookID, { include: [Agent, ReceiptStub] });
+        if (!book || !book.agentID) throw new Error('ReceiptBook not assigned to an Agent');
+        if (book.ReceiptStub.status !== 'pending') throw new Error('Stub already collected or processed');
+
+        await OTPService.validateOTP(book.agentID, otpCode);
+
+        await Promise.all([
+            book.ReceiptStub.update({ status: 'collected' }),
+            book.update({ status: 'Stub Collected', agentID: null, currentHolderID: supervisorID }),
+            book.setUsers([supervisorID]),
+            ReceiptBookTransfer.create({
+                bookID,
+                fromAgentID: book.agentID,
+                toUserID: supervisorID,
+                status: 'Stub Collected',
+            }),
+        ]);
+
+        const supervisor = await User.findByPk(supervisorID);
+        await transporter.sendMail({
+            from: process.env.SMTP_USER,
+            to: supervisor.email,
+            subject: `Stub Collected for Receipt Book #${book.number}`,
+            text: `Stub for Receipt Book #${book.number} has been collected.`,
+        });
+
+        return book.ReceiptStub;
+    }
+
+
+
+    static async transmitStub(bookID, newOwnerID, currentUserID) {
+        const book = await ReceiptBook.findByPk(bookID, { include: [ReceiptStub] });
+        if (!book.ReceiptStub || book.ReceiptStub.status !== 'collected') {
+            throw new Error('Stub not collected yet');
+        }
+        if (book.currentHolderID !== currentUserID) {
+            throw new Error('Only the current holder can transmit the stub');
+        }
+
+        const newOwner = await User.findByPk(newOwnerID);
+        if (!newOwner) throw new Error('User not found');
+
+        // Generate OTP for the new owner
+        const otp = await OTPService.generateOTP(newOwnerID);
+        await sendSMS(newOwner.phone, `Your OTP to receive stub for Receipt Book #${book.number} is ${otp.code}`);
+
+        return { message: `OTP sent to user ${newOwnerID} for stub transmission` };
+    }
+
+    static async validateTransmitStub(bookID, newOwnerID, currentUserID, otpCode) {
+        const book = await ReceiptBook.findByPk(bookID, { include: [ReceiptStub] });
+        if (!book.ReceiptStub || book.ReceiptStub.status !== 'collected') {
+            throw new Error('Stub not collected yet');
+        }
+        if (book.currentHolderID !== currentUserID) {
+            throw new Error('Only the current holder can transmit the stub');
+        }
+
+        const newOwner = await User.findByPk(newOwnerID);
+        if (!newOwner) throw new Error('User not found');
+
+        // Validate OTP
+        await OTPService.validateOTP(newOwnerID, otpCode);
+
+        const newOwnerRole = await newOwner.getRoles();
+        const roleName = newOwnerRole.length > 0 ? newOwnerRole[0].name : 'Unknown';
+
+        let newStatus;
+        switch (roleName) {
+            case 'Regional Manager':
+                newStatus = 'With Regional Manager';
+                break;
+            case 'Stock Manager':
+                newStatus = 'With Stock Manager';
+                break;
+            default:
+                newStatus = 'With Regional Manager';
+        }
+
+        await Promise.all([
+            book.setUsers([newOwnerID]),
+            book.update({ status: newStatus, currentHolderID: newOwnerID }),
+            book.ReceiptStub.update({ status: 'transmitted' }),
+            ReceiptBookTransfer.create({
+                bookID,
+                fromUserID: currentUserID,
+                toUserID: newOwnerID,
+                status: newStatus,
+            }),
+        ]);
+
+        await transporter.sendMail({
+            from: process.env.SMTP_USER,
+            to: newOwner.email,
+            subject: `Stub Transmitted for Receipt Book #${book.number}`,
+            text: `Stub for Receipt Book #${book.number} has been transmitted to you.`,
+        });
+
+        return book.ReceiptStub;
+    }
+
+
+    
+    static async archiveStub(bookID, stockManagerID) {
+        const book = await ReceiptBook.findByPk(bookID, { include: [ReceiptStub] });
+        if (book.currentHolderID !== stockManagerID) throw new Error('Only the current stock manager can archive');
+        if (book.ReceiptStub.status === 'archived') throw new Error('Stub already archived');
+
+        await Promise.all([
+            book.update({ status: 'Archived' }),
+            book.ReceiptStub.update({ status: 'archived' }),
+            ReceiptBookTransfer.create({
+                bookID,
+                fromUserID: stockManagerID,
+                toUserID: stockManagerID,
+                status: 'Archived',
+            }),
+        ]);
+
+        return book.ReceiptStub;
+    }
+
+
+}
+
+module.exports = ReceiptStubService;
+
+==================================================
+File contents: C:\Users\Kayto\Desktop\IT\Projects\Stage\Stage PFE\Visit_Management\Back-End\services\roleService.js
+==================================================
+const { Role, Permission } = require('../models');
+
+class RoleService {
+    // Create a new role
+    async createRole(name, description) {
+        try {
+            const [role, created] = await Role.findOrCreate({
+                where: { name },
+                defaults: {
+                    roleID: `role_${Math.random().toString(36).substr(2, 9)}`, // Replace with nanoid if preferred
+                    name,
+                    description,
+                },
+            });
+            if (!created) throw new Error('Role already exists');
+            return role;
+        } catch (error) {
+            throw new Error(`Failed to create role: ${error.message}`);
+        }
+    }
+
+    // Get all roles
+    async getAllRoles() {
+        try {
+            return await Role.findAll({
+                attributes: ['roleID', 'name', 'description'],
+            });
+        } catch (error) {
+            throw new Error(`Failed to fetch roles: ${error.message}`);
+        }
+    }
+
+    // Get role by ID
+    async getRoleById(roleID) {
+        try {
+            const role = await Role.findByPk(roleID);
+            if (!role) throw new Error('Role not found');
+            return role;
+        } catch (error) {
+            throw new Error(`Failed to fetch role: ${error.message}`);
+        }
+    }
+
+    // Delete a role
+    async deleteRole(roleID) {
+        try {
+            const role = await Role.findByPk(roleID);
+            if (!role) throw new Error('Role not found');
+            await role.destroy();
+            return role;
+        } catch (error) {
+            throw new Error(`Failed to delete role: ${error.message}`);
+        }
+    }
+
+    // Update a role    
+    async updateRole(roleID, updates) {
+        try {
+            const role = await Role.findByPk(roleID);
+            if (!role) throw new Error('Role not found');
+            await role.update(updates);
+            return role;
+        } catch (error) {
+            throw new Error(`Failed to update role: ${error.message}`);
+        }
+    }
+
+    // Assign permissions to a role
+    async assignPermissionsToRole(roleID, permissionIDs) {
+        try {
+            const role = await Role.findByPk(roleID);
+            if (!role) throw new Error('Role not found');
+
+            const permissions = await Permission.findAll({
+                where: { permissionID: permissionIDs },
+            });
+            if (permissions.length !== permissionIDs.length) {
+                throw new Error('One or more permissions not found');
+            }
+
+            const currentPermissions = await role.getPermissions();
+            const currentPermissionIDs = currentPermissions.map(p => p.permissionID);
+            const newPermissions = permissions.filter(p => !currentPermissionIDs.includes(p.permissionID));
+
+            if (newPermissions.length > 0) {
+                await role.addPermissions(newPermissions);
+            }
+
+            return {
+                roleID,
+                assignedPermissions: newPermissions.map(p => p.name),
+                totalAssigned: (await role.getPermissions()).length,
+            };
+        } catch (error) {
+            throw new Error(`Failed to assign permissions: ${error.message}`);
+        }
+    }
+
+    // Get permissions by role
+    async getPermissionsByRole(roleID) {
+        try {
+            const role = await Role.findByPk(roleID, {
+                include: [{
+                    model: Permission,
+                    through: { attributes: [] }, // Exclude junction table attributes
+                    attributes: ['permissionID', 'name', 'type', 'class', 'description'],
+                }],
+            });
+            if (!role) throw new Error('Role not found');
+            return role.Permissions;
+        } catch (error) {
+            throw new Error(`Failed to fetch permissions for role: ${error.message}`);
+        }
+    }
+}
+
+module.exports = new RoleService();
+
+==================================================
+File contents: C:\Users\Kayto\Desktop\IT\Projects\Stage\Stage PFE\Visit_Management\Back-End\services\timesheetService.js
+==================================================
+const { Visit, Reason, Checklist, Timesheet } = require('../models');
+const VisitService = require('./visitService');
+
+class TimesheetService {
+    async createTimesheet(data) {
+        const { weekNumber, year, supervisorID, visits } = data;
+
+        // Validate required fields
+        if (!weekNumber || !year || !supervisorID || !Array.isArray(visits)) {
+            const error = new Error('Invalid input data');
+            error.status = 400;
+            throw error;
+        }
+
+        // Validate each visit structure
+        for (const visit of visits) {
+            if (!visit.date || !visit.time || !visit.agentID) {
+                const error = new Error('Invalid visit data structure');
+                error.status = 400;
+                throw error;
+            }
+            if (!Array.isArray(visit.reasons) || visit.reasons.length === 0) {
+                const error = new Error('At least one reason must be provided');
+                error.status = 400;
+                throw error;
+            }
+            if (!Array.isArray(visit.checklists) || visit.checklists.length === 0) {
+                const error = new Error('At least one checklist item must be provided');
+                error.status = 400;
+                throw error;
+            }
+        }
+
+        try {
+            let timesheet = await Timesheet.findOne({ where: { weekNumber, year, supervisorID } });
+            if (!timesheet) {
+                timesheet = await Timesheet.create({ weekNumber, year, supervisorID, status: 'pending' });
+            }
+
+            for (const visitData of visits) {
+                await VisitService.createVisit({
+                    date: visitData.date,
+                    time: visitData.time,
+                    location: visitData.location,
+                    agentID: visitData.agentID,
+                    supervisorID,
+                    timesheetID: timesheet.timesheetID,
+                    reasons: visitData.reasons,
+                    checklists: visitData.checklists,
+                });
+            }
+
+            return await Timesheet.findByPk(timesheet.timesheetID, {
+                include: [
+                    {
+                        model: Visit,
+                        include: [
+                            { model: Checklist, through: { attributes: ["checked"] } },
+                            { model: Reason, through: { attributes: [] } },
+                        ],
+                    },
+                ],
+            });
+        } catch (error) {
+            const err = new Error('Failed to create timesheet: ' + error.message);
+            err.status = 500;
+            throw err;
+        }
+    }
+
+    async validateTimesheet(timesheetID, visitIDs = [], status) {
+        if (!status || (Array.isArray(visitIDs) && visitIDs.some(id => typeof id !== 'string'))) {
+            const error = new Error('Invalid input data');
+            error.status = 400;
+            throw error;
+        }
+
+        try {
+            const timesheet = await Timesheet.findByPk(timesheetID);
+            if (!timesheet) {
+                const error = new Error('Timesheet not found');
+                error.status = 404;
+                throw error;
+            }
+            // ... (rest of the logic remains the same, just add status to errors)
+            const visits = await Visit.findAll({ where: { timesheetID } });
+            let visitsToUpdate;
+            if (visitIDs.length === 0) {
+                visitsToUpdate = visits;
+            } else {
+                const visitIdSet = new Set(visitIDs);
+                visitsToUpdate = visits.filter(visit => visitIdSet.has(visit.visitID));
+                if (visitsToUpdate.length !== visitIDs.length) {
+                    const error = new Error('One or more visit IDs not found in this timesheet');
+                    error.status = 404;
+                    throw error;
+                }
+            }
+            await Promise.all(visitsToUpdate.map(async visit => {
+                visit.status = status;
+                await visit.save();
+            }));
+            const updatedVisits = await Visit.findAll({ where: { timesheetID } });
+            if (updatedVisits.every(v => v.status === 'validated')) {
+                timesheet.status = 'validated';
+                await timesheet.save();
+            }
+            return timesheet;
+        } catch (error) {
+            const err = new Error('Validation failed: ' + error.message);
+            err.status = error.status || 500;
+            throw err;
+        }
+    }
+
+    async listTimesheets() {
+        try {
+            return await Timesheet.findAll({
+                include: [
+                    {
+                        model: Visit,
+                        include: [
+                            { model: Checklist, through: { attributes: ["checked"] }, attributes: ["item"] },
+                            { model: Reason, through: { attributes: [] }, attributes: ["item"] },
+                        ],
+                    },
+                ],
+            });
+        } catch (error) {
+            const err = new Error('Failed to get timesheets: ' + error.message);
+            err.status = 500;
+            throw err;
+        }
+    }
+
+    async viewTimesheet(timesheetID) {
+        try {
+            const timesheet = await Timesheet.findByPk(timesheetID, {
+                include: [
+                    {
+                        model: Visit,
+                        include: [
+                            { model: Checklist, through: { attributes: ["checked"] }, attributes: ["item"] },
+                            { model: Reason, through: { attributes: [] }, attributes: ["item"] },
+                        ],
+                    },
+                ],
+            });
+            if (!timesheet) {
+                const error = new Error('Timesheet not found');
+                error.status = 404;
+                throw error;
+            }
+            return timesheet;
+        } catch (error) {
+            const err = new Error('Failed to get timesheet: ' + error.message);
+            err.status = error.status || 500;
+            throw err;
+        }
+    }
+
+    async getTimesheetsBySupervisor(supervisorID) {
+        if (!supervisorID) {
+            const error = new Error('Invalid supervisorID');
+            error.status = 400;
+            throw error;
+        }
+        try {
+            return await Timesheet.findAll({
+                where: { supervisorID },
+                include: [
+                    {
+                        model: Visit,
+                        include: [
+                            { model: Checklist, through: { attributes: ["checked"] }, attributes: ["item"] },
+                            { model: Reason, through: { attributes: [] }, attributes: ["item"] },
+                        ],
+                    },
+                ],
+            });
+        } catch (error) {
+            const err = new Error('Failed to get timesheets by supervisorID: ' + error.message);
+            err.status = 500;
+            throw err;
+        }
+    }
+}
+
+module.exports = new TimesheetService();
+
+==================================================
+File contents: C:\Users\Kayto\Desktop\IT\Projects\Stage\Stage PFE\Visit_Management\Back-End\services\userService.js
+==================================================
+const bcrypt = require('bcrypt');
+const { Op } = require('sequelize');
+const { User, Role, OTP, Permission } = require('../models');
+
+class UserService {
+    // Create a user (simplified for this example)
+    async createUser(email, password, firstname, lastname, phone, wallet) {
+        try {
+            const hashedPassword = await bcrypt.hash(password, 10);
+            const [user, created] = await User.findOrCreate({
+                where: { phone },
+                defaults: {
+                    email,
+                    password: hashedPassword,
+                    firstname,
+                    lastname,
+                    phone,
+                    wallet,
+                },
+            });
+            if (!created) throw new Error('User already exists');
+            return user;
+        } catch (error) {
+            throw new Error(`Failed to create user: ${error.message}`);
+        }
+    }
+
+    // Get all users
+    async getAllUsers() {
+        try {
+            return await User.findAll({
+                include: [{
+                    model: Role,
+                    through: { attributes: [] },
+                    attributes: ['name'],
+                }],
+            });
+        } catch (error) {
+            throw new Error(`Failed to fetch users: ${error.message}`);
+        }
+    }
+
+    // Get a user ID by phone number
+    async getIdByPhoneNumber(phone) {
+        try {
+            const user = await User.findOne({
+                where: { phone },
+                attributes: ['userID'],
+            });
+            if (!user) throw new Error('User not found');
+            return user.userID;
+        } catch (error) {
+            throw new Error(`Failed to fetch user ID: ${error.message}`);
+        }
+    }
+
+    
+
+    // Get a user by ID
+    async getUserById(userID) {
+        try {
+            const user = await User.findByPk(userID);
+            if (!user) throw new Error('User not found');
+            return user;
+        } catch (error) {
+            throw new Error(`Failed to fetch user: ${error.message}`);
+        }
+    }
+    // Update a user
+    async updateUser(userID, userData) {
+        try {
+            const user = await User.findByPk(userID);
+            if (!user) throw new Error('User not found');
+            await user.update(userData);
+            return user;
+        } catch (error) {
+            throw new Error(`Failed to update user: ${error.message}`);
+        }
+    }
+    // Delete a user
+    async deleteUser(userID) {
+        try {
+            const user = await User.findByPk(userID);
+            if (!user) throw new Error('User not found');
+            await user.destroy();
+            return { message: 'User deleted successfully' };
+        } catch (error) {
+            throw new Error(`Failed to delete user: ${error.message}`);
+        }
+    }
+
+    // Assign roles to a user
+    async assignRolesToUser(userID, roleIDs) {
+        try {
+            const user = await User.findByPk(userID);
+            if (!user) throw new Error('User not found');
+
+            const roles = await Role.findAll({
+                where: { roleID: roleIDs },
+            });
+            if (roles.length !== roleIDs.length) {
+                throw new Error('One or more roles not found');
+            }
+
+            const currentRoles = await user.getRoles();
+            const currentRoleIDs = currentRoles.map(r => r.roleID);
+            const newRoles = roles.filter(r => !currentRoleIDs.includes(r.roleID));
+
+            if (newRoles.length > 0) {
+                await user.addRoles(newRoles);
+            }
+
+            return {
+                userID,
+                assignedRoles: newRoles.map(r => r.name),
+                totalAssigned: (await user.getRoles()).length,
+            };
+        } catch (error) {
+            throw new Error(`Failed to assign roles: ${error.message}`);
+        }
+    }
+
+    // Get roles by user
+    async getRolesByUser(userID) {
+        try {
+            const user = await User.findByPk(userID, {
+                include: [{
+                    model: Role,
+                    through: { attributes: [] },
+                    attributes: ['roleID', 'name', 'description'],
+                    include: [{
+                        model: Permission,
+                        through: { attributes: [] },
+                        attributes: ['name', 'description'],
+                    }],
+                }],
+            });
+            if (!user) throw new Error('User not found');
+            return user.Roles;
+        } catch (error) {
+            throw new Error(`Failed to fetch roles for user: ${error.message}`);
+        }
+    }
+}
+
+module.exports = new UserService();
+
+==================================================
+File contents: C:\Users\Kayto\Desktop\IT\Projects\Stage\Stage PFE\Visit_Management\Back-End\services\visitService.js
+==================================================
+const { Visit, Agent, Reason, Checklist } = require('../models');
+const { parseTLV } = require('../utils/qrParser');
+const ChecklistService = require('./checklistService');
+const ReasonService = require('./reasonService');
+
+class VisitService {
+    async createVisit(data) {
+        const { date, time, agentID, supervisorID, timesheetID, reasons, checklists } = data;
+        if (!date || !time || !agentID || !supervisorID || !timesheetID) {
+            const error = new Error('Missing required fields');
+            error.status = 400;
+            throw error;
+        }
+        try {
+            const agent = await Agent.findByPk(agentID);
+            if (!agent) {
+                const error = new Error('Agent not found');
+                error.status = 404;
+                throw error;
+            }
+            const visit = await Visit.create({
+                date,
+                time,
+                location: agent.location,
+                agentID,
+                timesheetID,
+                status: 'pending',
+            });
+            const reasonIds = reasons.map(r => r.id);
+            const createdReasons = await ReasonService.getItemsByIds(reasonIds);
+            await visit.setReasons(createdReasons);
+            const checklistIds = checklists.map(c => c.id);
+            const createdChecklists = await ChecklistService.getItemsByIds(checklistIds);
+            await visit.setChecklists(createdChecklists);
+            return visit.reload({ include: [Reason, Checklist] });
+        } catch (error) {
+            const err = new Error('Failed to create visit: ' + error.message);
+            err.status = error.status || 500;
+            throw err;
+        }
+    }
+
+    async verifyQRCode(qrData, visitId) {
+        if (!qrData || !visitId) {
+            const error = new Error('Missing required parameters');
+            error.status = 400;
+            throw error;
+        }
+        try {
+            const parsedQR = parseTLV(qrData);
+            let agentPhoneFromQR = parsedQR['29']?.['03'] || parsedQR['02'];
+            if (typeof agentPhoneFromQR === 'object' && agentPhoneFromQR !== null) {
+                agentPhoneFromQR = Object.values(agentPhoneFromQR).join('').replace(/[^0-9+]/g, '');
+            } else {
+                agentPhoneFromQR = agentPhoneFromQR?.replace(/[^0-9+]/g, '');
+            }
+            if (!agentPhoneFromQR) {
+                const error = new Error('Invalid QR code - missing agent phone number');
+                error.status = 400;
+                throw error;
+            }
+            const visit = await Visit.findByPk(visitId);
+            if (!visit) {
+                const error = new Error('Visit not found');
+                error.status = 404;
+                throw error;
+            }
+            const agent = await Agent.findByPk(visit.agentID);
+            if (agent.phone !== agentPhoneFromQR) {
+                const error = new Error(`Phone mismatch:\nQR: ${agentPhoneFromQR}\nVisit: ${agent.phone}`);
+                error.status = 400;
+                throw error;
+            }
+            return { valid: true, message: 'Verification successful' };
+        } catch (error) {
+            const err = new Error(error.message);
+            err.status = error.status || 500;
+            throw err;
+        }
+    }
+
+    async logVisit(visitID, data) {
+        try {
+            const { duration, checklistUpdates, photos, comment } = data;
+            const visit = await Visit.findByPk(visitID, { include: [Checklist] });
+            if (!visit) {
+                const error = new Error('Visit not found');
+                error.status = 404;
+                throw error;
+            }
+            if (checklistUpdates && Array.isArray(checklistUpdates)) {
+                for (const update of checklistUpdates) {
+                    await ChecklistService.updateChecklistStatus(visitID, update.checklistID, update.checked);
+                }
+            }
+            visit.duration = duration;
+            visit.photos = photos;
+            visit.comment = comment;
+            visit.status = 'visited';
+            await visit.save();
+            return visit.reload({ include: [Checklist] });
+        } catch (error) {
+            const err = new Error('Failed to log visit: ' + error.message);
+            err.status = error.status || 500;
+            throw err;
+        }
+    }
+
+    async getVisitByID(visitID) {
+        try {
+            const visit = await Visit.findByPk(visitID, { include: [Checklist, Reason] });
+            if (!visit) {
+                const error = new Error('Visit not found');
+                error.status = 404;
+                throw error;
+            }
+            return visit;
+        } catch (error) {
+            const err = new Error('Failed to fetch visit: ' + error.message);
+            err.status = error.status || 500;
+            throw err;
+        }
+    }
+}
+
+module.exports = new VisitService();
+
+==================================================
+File contents: C:\Users\Kayto\Desktop\IT\Projects\Stage\Stage PFE\Visit_Management\Back-End\utils\generateTLV.js
+==================================================
+function generateTLV(receiptBook) {
+    let tlvString = "";
+
+    // Tag 01: bookID
+    const bookID = receiptBook.bookID || "";
+    tlvString += `01${String(bookID.length).padStart(2, "0")}${bookID}`;
+
+    // Tag 02: number (convert to string)
+    const number = String(receiptBook.number || "");
+    tlvString += `02${String(number.length).padStart(2, "0")}${number}`;
+
+    // Tag 03: type
+    const type = receiptBook.type || "";
+    tlvString += `03${String(type.length).padStart(2, "0")}${type}`;
+
+    // Tag 04: status
+    const status = receiptBook.status || "";
+    tlvString += `04${String(status.length).padStart(2, "0")}${status}`;
+
+    return tlvString;
+}
+
+// Example usage
+const receiptBook = {
+    bookID: "book_001",
+    number: 1001,
+    type: "Payment",
+    status: "In Stock"
+};
+const tlvData = generateTLV(receiptBook);
+console.log(tlvData); // "0107book_001020410010307Payment0408In Stock"
+
+// Function to parse TLV data
+function parseTLV(tlvString) {
+    const result = {};
+    let i = 0;
+    while (i < tlvString.length) {
+        const tag = tlvString.substr(i, 2);
+        const length = parseInt(tlvString.substr(i + 2, 2), 10);
+        const value = tlvString.substr(i + 4, length);
+        result[tag] = value;
+        i += 4 + length;
+    }
+    return result;
+}
+
+// Verify with parseTLV
+const parsed = parseTLV(tlvData);
+console.log(parsed);
+/* Output:
+{
+    "01": "book_001",
+    "02": "1001",
+    "03": "Payment",
+    "04": "In Stock"
+}
+*/
+
+==================================================
+File contents: C:\Users\Kayto\Desktop\IT\Projects\Stage\Stage PFE\Visit_Management\Back-End\utils\qrParser.js
+==================================================
+function parseTLV(data) {
+    let index = 0;
+    const result = {};
+
+    while (index < data.length) {
+        const tag = data.substr(index, 2);
+        index += 2;
+
+        const lengthStr = data.substr(index, 2);
+        const length = parseInt(lengthStr, 10);
+        index += 2;
+
+        const value = data.substr(index, length);
+        index += length;
+
+        // Special handling for known phone number tags ("03" or "02")
+        if (tag === "03" || tag === "02") {
+            result[tag] = value; // Treat as flat string, regardless of content
+        }
+        // Only parse as nested TLV if it strictly follows TLV format and isn't a phone number
+        else if (value.length >= 4 && /^[0-9]{2}[0-9]{2}/.test(value)) {
+            const subLengthStr = value.substr(2, 2);
+            const subLength = parseInt(subLengthStr, 10);
+            if (!isNaN(subLength) && subLength <= value.length - 4) {
+                result[tag] = parseTLV(value);
+            } else {
+                result[tag] = value;
+            }
+        } else {
+            result[tag] = value;
+        }
+    }
+
+    return result;
+}
+
+module.exports = { parseTLV };
+
+==================================================
+File contents: C:\Users\Kayto\Desktop\IT\Projects\Stage\Stage PFE\Visit_Management\Back-End\utils\socket.js
+==================================================
+const io = require('socket.io')();
+
+io.on('connection', (socket) => {
+    console.log('A user connected');
+
+    socket.on('disconnect', () => {
+        console.log('User disconnected');
+    });
+});
+
+module.exports = io;
+
+==================================================
+File contents: C:\Users\Kayto\Desktop\IT\Projects\Stage\Stage PFE\Visit_Management\Back-End\.env
+==================================================
+# Database
+DB_HOST=localhost
+DB_PORT=5432
+DB_USER=postgres
+DB_PASSWORD=admin
+DB_NAME=visits_db
+
+SSL_KEY_PATH=/etc/ssl/private/key.pem
+SSL_CERT_PATH=/etc/ssl/certs/cert.pem
+
+# JWT
+JWT_SECRET=b9e567547e5964ec6901aa16fd9b8e6db45f960f128c45c5adae4f8d4c964aef5b81a679f7a8fa54f216ce37698dda04bcf2e7405a6fde946cbea708d42937edf610d12265b2bd891625bfa65e69efc6049417256d033c8feac7dcc0398a280dcaf4839acc414f4d3b2b65dab85cec7dab98a17dd24fadaa0f977d6ccc76abd71e55291d7001feb26f89f721b419eb2023ef673dfbc8e4b6ad2ad3b2f5e2173ee9ef5d22664c661253270547a617b79fc57ff097f6985d7262679f5b11c72d430fa0317d74097df164362f9ac8d3d511bf303a751ec5ff090526d667c56a3af69c8bfb6f503918ca5d77c26634a23929eff1af71306959e9f4e079c3c8d0a504
+
+# SMTP 
+SMTP_HOST=smtp.gmail.com
+SMTP_PORT=587
+SMTP_USER=sofienlaghouanem.2.0@gmail.com
+SMTP_PASS=zggw thic dbfm lzev
+
+# SMS
+#SMS_GATEWAY_IP=192.168.1.1
+SMS_GATEWAY_PORT=8082
+#SMS_GATEWAY_URL=https://www.traccar.org/sms
+SMS_GATEWAY_API_KEY_LOCAL=1e21c51d-5a64-4bff-8c41-652e6a9d43c8
+SMS_GATEWAY_API_KEY_CLOUD=caY24CuuRousJA3Pzu4Ymp:APA91bEUYQXiT1yspAvZpGIwliYxV-tm39zDdj0lL4c3ZiSs3vOqUIl5Zcaiw8MJGoPj-l4F2eAeHXti8nGUcpr7TdToVfcVNR_J7sp55Wh7FMg5c5vny28
+
+# Server
+PORT=5000
+
+# Super Admin
+SUPER_ADMIN_EMAIL=superadmin@example.com
+SUPER_ADMIN_PASSWORD=SuperSecurePassword123!
+
+# NODE_ENV=production
+
+==================================================
+File contents: C:\Users\Kayto\Desktop\IT\Projects\Stage\Stage PFE\Visit_Management\Back-End\app.js
+==================================================
+const cors = require('cors');
+const express = require('express');
+
+
+const {
+    initializeDatabase,
+    initializeSMTP,
+    initializeSMS,
+    initializeServer,
+} = require('./config');
+const { seedSuperAdmin } = require('./config/SeedSuperAdmin');
+const { sequelize } = require('./config/db');
+const { authenticateJWT, restrictTo } = require('./config/security');
+const { seedMissingPermissions } = require('./config/seedPermissions');
+const { setupAssociations } = require('./models');
+
+
+const agentRoutes = require('./routes/agentRoutes');
+const authRoutes = require('./routes/authRoutes');
+const checklistRoutes = require('./routes/checklistRoutes');
+const permissionRoutes = require('./routes/permissionRoutes');
+const reasonRoutes = require('./routes/reasonRoutes');
+const receiptBookRoutes = require('./routes/receiptBookRoutes');
+const receiptStubRoutes = require('./routes/receiptStubRoutes');
+const roleRoutes = require('./routes/roleRoutes');
+const timesheetRoutes = require('./routes/timesheetRoutes');
+const userRoutes = require('./routes/userRoutes');
+const visitRoutes = require('./routes/visitRoutes');
+
+require('dotenv').config();
+
+const app = express();
+
+// Middleware
+app.use(cors()); // Enable Cross-Origin Resource Sharing
+app.use(express.json()); // Parse incoming JSON requests
+app.use((req, res, next) => {
+    if (req.user) {
+        sequelize.query(`SET jwt.claims.userID = '${req.user.userID}'`)
+            .catch(err => console.error(`${new Date().toISOString()} - Failed to set RLS userID:`, err));
+    }
+    next();
+});
+
+// Routes
+app.use('/api/visits', visitRoutes);
+app.use('/api/checklists', checklistRoutes);
+app.use('/api/reasons', reasonRoutes);
+app.use('/api/timesheets', timesheetRoutes);
+app.use('/api/agents', agentRoutes);
+app.use('/api/auth', authRoutes);
+app.use('/api/users', userRoutes);
+app.use('/api/roles', roleRoutes);
+app.use('/api/permissions', permissionRoutes);
+app.use('/api/receipt-books', receiptBookRoutes);
+app.use('/api/receipt-stubs', receiptStubRoutes);
+
+// Test secure endpoint
+app.get('/test', authenticateJWT, restrictTo('Super Admin', 'Manager'), (req, res) => {
+    res.json({ message: 'Secure endpoint accessed', user: req.user });
+});
+
+// Error handling middleware
+app.use((err, req, res, next) => {
+    console.error(`${new Date().toISOString()} - Server error:`, err.stack);
+    res.status(500).json({ error: 'Something went wrong!' });
+});
+
+// Main application initialization function with detailed logging and summary
+async function startApp() {
+    const startTime = new Date();
+    const summary = {
+        steps: [],
+        successes: 0,
+        failures: 0,
+    };
+
+    // Helper function to log and track step results
+    const logStep = (step, success, message, error = null) => {
+        const timestamp = new Date().toISOString();
+        console.log(`${timestamp} - ${step}: ${message}${error ? ` - Error: ${error.message}` : ''}`);
+        summary.steps.push({ step, success, message, error });
+        summary[success ? 'successes' : 'failures']++;
+    };
+
+    try {
+        console.log(`${new Date().toISOString()} - Starting application initialization...`);
+
+        // Step 1: Initialize database
+        try {
+            await initializeDatabase();
+            logStep('Database Initialization', true, 'Completed successfully');
+        } catch (dbError) {
+            logStep('Database Initialization', false, 'Failed', dbError);
+            throw dbError; // Stop execution on critical failure
+        }
+
+        // Step 2: Initialize SMTP
+        try {
+            await initializeSMTP();
+            logStep('SMTP Initialization', true, 'Completed successfully');
+        } catch (smtpError) {
+            logStep('SMTP Initialization', false, 'Failed', smtpError);
+            throw smtpError; // Stop execution on critical failure
+        }
+
+        // Step 3: Initialize SMS (non-critical)
+        try {
+            await initializeSMS();
+            logStep('SMS Initialization', true, 'Completed successfully');
+        } catch (smsError) {
+            logStep('SMS Initialization', false, 'Proceeding without SMS', smsError);
+            // Non-critical, continue execution
+        }
+
+        // Step 4: Set up model associations
+        try {
+            setupAssociations();
+            logStep('Model Associations', true, 'Relationships established');
+        } catch (assocError) {
+            logStep('Model Associations', false, 'Failed', assocError);
+            throw assocError; // Stop execution on critical failure
+        }
+
+        // Step 5: Sync database
+        try {
+            await sequelize.sync({ alter: true });
+            logStep('Database Sync', true, 'Tables synchronized');
+        } catch (syncError) {
+            logStep('Database Sync', false, 'Failed', syncError);
+            throw syncError; // Stop execution on critical failure
+        }
+
+        // Step 6: Seed missing permissions
+        try {
+            await seedMissingPermissions();
+            logStep('Permission Seeding', true, 'Completed successfully');
+        } catch (seedError) {
+            logStep('Permission Seeding', false, 'Failed', seedError);
+            throw seedError; // Stop execution on critical failure
+        }
+
+        // Step 7: Seed super admin
+        try {
+            await seedSuperAdmin();
+            logStep('Super Admin Seeding', true, 'Completed successfully');
+        } catch (superAdminError) {
+            logStep('Super Admin Seeding', false, 'Failed', superAdminError);
+            throw superAdminError;
+        }
+
+        // Step 8: Initialize server
+        try {
+            await initializeServer(app);
+            logStep('Server Initialization', true, 'Server started');
+        } catch (serverError) {
+            logStep('Server Initialization', false, 'Failed', serverError);
+            throw serverError; // Stop execution on critical failure
+        }
+
+        // Log summary
+        const endTime = new Date();
+        const duration = (endTime - startTime) / 1000; // Duration in seconds
+        console.log(`${new Date().toISOString()} - Initialization Summary:`);
+        console.log(`  Total Steps: ${summary.steps.length}`);
+        console.log(`  Successes: ${summary.successes}`);
+        console.log(`  Failures: ${summary.failures}`);
+        console.log(`  Duration: ${duration.toFixed(2)} seconds`);
+        console.log(`  Details:`);
+        summary.steps.forEach((step, index) => {
+            console.log(`    ${index + 1}. ${step.step}: ${step.success ? 'Success' : 'Failed'} - ${step.message}${step.error ? ` (Error: ${step.error.message})` : ''}`);
+        });
+
+    } catch (error) {
+        console.error(`${new Date().toISOString()} - Application initialization failed:`, error);
+        process.exit(1); // Exit with failure code
+    }
+}
+
+startApp();

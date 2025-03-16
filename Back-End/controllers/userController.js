@@ -35,7 +35,7 @@ class UserController {
         }
     }
 
-    
+
 
     async getUserById(req, res) {
         try {
@@ -86,6 +86,21 @@ class UserController {
             res.status(200).json(roles);
         } catch (error) {
             res.status(404).json({ error: error.message });
+        }
+    }
+
+
+
+    async assignSupervisorsToManager(req, res) {
+        try {
+            const { managerID, supervisorIDs } = req.body;
+            if (!managerID || !supervisorIDs || !Array.isArray(supervisorIDs)) {
+                return res.status(400).json({ error: 'managerID and supervisorIDs (array) are required' });
+            }
+            const result = await UserService.assignSupervisorsToManager(managerID, supervisorIDs);
+            res.status(200).json(result);
+        } catch (error) {
+            res.status(400).json({ error: error.message });
         }
     }
 }

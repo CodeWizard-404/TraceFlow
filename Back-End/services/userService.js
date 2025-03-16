@@ -54,7 +54,7 @@ class UserService {
         }
     }
 
-    
+
 
     // Get a user by ID
     async getUserById(userID) {
@@ -141,6 +141,35 @@ class UserService {
             throw new Error(`Failed to fetch roles for user: ${error.message}`);
         }
     }
+
+
+    // Assign supervisors to a manager
+    async assignSupervisorsToManager(managerID, supervisorIDs) {
+        try {
+            const manager = await User.findByPk(managerID);
+            if (!manager) throw new Error('Manager not found');
+
+            const supervisors = await User.findAll({
+                where: { userID: supervisorIDs },
+            });
+            if (supervisors.length !== supervisorIDs.length) {
+                throw new Error('One or more supervisors not found');
+            }
+
+            // Assign supervisors to the manager
+            await manager.setSupervisors(supervisorIDs);
+
+            return {
+                managerID,
+                assignedSupervisors: supervisors.map(s => s.userID),
+                message: 'Supervisors assigned successfully',
+            };
+        } catch (error) {
+            throw new Error(`Failed to assign supervisors: ${error.message}`);
+        }
+    }
+
+
 }
 
 module.exports = new UserService();

@@ -1,10 +1,12 @@
-// services/receiptStubService.js
 const { ReceiptStub, ReceiptBook, Agent, OTP, User, ReceiptBookTransfer} = require('../models');
 const { sendSMS } = require('../config/sms');
 const { transporter } = require('../config/smtp');
 const { OTPService } = require('./otpService');
 
 class ReceiptStubService {
+
+
+
     static async collectStub(bookID, supervisorID) {
         const book = await ReceiptBook.findByPk(bookID, { include: [Agent, ReceiptStub] });
         if (!book || !book.agentID) throw new Error('ReceiptBook not assigned to an Agent');
@@ -46,15 +48,41 @@ class ReceiptStubService {
         return book.ReceiptStub;
     }
 
+
+
     static async transmitStub(bookID, newOwnerID, currentUserID) {
         const book = await ReceiptBook.findByPk(bookID, { include: [ReceiptStub] });
-        if (!book.ReceiptStub || book.ReceiptStub.status !== 'collected') throw new Error('Stub not collected yet');
+        if (!book.ReceiptStub || book.ReceiptStub.status !== 'collected') {
+            throw new Error('Stub not collected yet');
+        }
         if (book.currentHolderID !== currentUserID) {
             throw new Error('Only the current holder can transmit the stub');
         }
 
         const newOwner = await User.findByPk(newOwnerID);
         if (!newOwner) throw new Error('User not found');
+
+        // Generate OTP for the new owner
+        const otp = await OTPService.generateOTP(newOwnerID);
+        await sendSMS(newOwner.phone, `Your OTP to receive stub for Receipt Book #${book.number} is ${otp.code}`);
+
+        return { message: `OTP sent to user ${newOwnerID} for stub transmission` };
+    }
+
+    static async validateTransmitStub(bookID, newOwnerID, currentUserID, otpCode) {
+        const book = await ReceiptBook.findByPk(bookID, { include: [ReceiptStub] });
+        if (!book.ReceiptStub || book.ReceiptStub.status !== 'collected') {
+            throw new Error('Stub not collected yet');
+        }
+        if (book.currentHolderID !== currentUserID) {
+            throw new Error('Only the current holder can transmit the stub');
+        }
+
+        const newOwner = await User.findByPk(newOwnerID);
+        if (!newOwner) throw new Error('User not found');
+
+        // Validate OTP
+        await OTPService.validateOTP(newOwnerID, otpCode);
 
         const newOwnerRole = await newOwner.getRoles();
         const roleName = newOwnerRole.length > 0 ? newOwnerRole[0].name : 'Unknown';
@@ -68,7 +96,7 @@ class ReceiptStubService {
                 newStatus = 'With Stock Manager';
                 break;
             default:
-                newStatus = 'With Regional Manager'; // Default after stub collection
+                newStatus = 'With Regional Manager';
         }
 
         await Promise.all([
@@ -93,7 +121,8 @@ class ReceiptStubService {
         return book.ReceiptStub;
     }
 
-    // Optional: Archive stub when book is archived
+
+    
     static async archiveStub(bookID, stockManagerID) {
         const book = await ReceiptBook.findByPk(bookID, { include: [ReceiptStub] });
         if (book.currentHolderID !== stockManagerID) throw new Error('Only the current stock manager can archive');
@@ -112,6 +141,8 @@ class ReceiptStubService {
 
         return book.ReceiptStub;
     }
+
+
 }
 
 module.exports = ReceiptStubService;

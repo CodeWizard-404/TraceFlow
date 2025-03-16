@@ -6,6 +6,8 @@ const { ReceiptBook, User, Agent, OTP, ReceiptBookTransfer, ReceiptStub } = requ
 const OTPService = require('../services/otpService');
 
 class ReceiptBookService {
+
+
     static async createReceiptBook(number, type, purchaseUserID) {
         const tlvData = [
             this.formatTLV('01', number.toString()),
@@ -36,7 +38,6 @@ class ReceiptBookService {
         return receiptBook;
     }
 
-    // Send Book To Supplier Email
     static async sendBookToSupplier(bookID, supplierEmail, userID) {
         const book = await this.getReceiptBookById(bookID);
         if (book.status !== 'In Stock') throw new Error('Book must be in stock');
@@ -66,17 +67,19 @@ class ReceiptBookService {
 
                     Best regards,
                     [Your Company Name]`,
-                            attachments: [
-                                {
-                                    filename: 'qrcode.png',
-                                    content: book.qrCode.split("base64,")[1],
-                                    encoding: 'base64',
-                                },
-                            ],
-                        });
+            attachments: [
+                {
+                    filename: 'qrcode.png',
+                    content: book.qrCode.split("base64,")[1],
+                    encoding: 'base64',
+                },
+            ],
+        });
 
         return book;
     }
+
+
 
     static async transferToUser(bookID, newOwnerID) {
         const book = await ReceiptBook.findByPk(bookID);
@@ -146,30 +149,33 @@ class ReceiptBookService {
         return book;
     }
 
-    static async assignToAgent(bookID, agentPhone, supervisorID) {
+
+
+
+    static async assignToAgent(bookID, agentPhone, agentWallet, supervisorID) {
         const book = await this.getReceiptBookById(bookID);
         if (book.status !== 'With Supervisor') throw new Error('Book must be with Supervisor');
         if (book.currentHolderID !== supervisorID) {
             throw new Error('Only the current supervisor can assign to an agent');
         }
 
-        const agent = await Agent.findOne({ where: { phone: agentPhone } });
-        if (!agent) throw new Error('Agent not found');
+        const agent = await Agent.findOne({ where: { phone: agentPhone, wallet: agentWallet } });
+        if (!agent) throw new Error('Agent not found or wallet does not match');
 
         const otp = await OTPService.generateOTP(agent.agentID);
         await sendSMS(agentPhone, `Your OTP to receive Receipt Book #${book.number} is ${otp.code}`);
 
-        return { message: `OTP sent to Agent with phone ${agentPhone}` };
+        return { message: `OTP sent to Agent with phone ${agentPhone} and wallet ${agentWallet}` };
     }
 
-    static async validateAgentAssignment(bookID, agentPhone, otpCode, supervisorID) {
+    static async validateAgentAssignment(bookID, agentPhone, agentWallet, otpCode, supervisorID) {
         const book = await this.getReceiptBookById(bookID);
         if (book.currentHolderID !== supervisorID) {
             throw new Error('Only the current supervisor can validate assignment');
         }
 
-        const agent = await Agent.findOne({ where: { phone: agentPhone } });
-        if (!agent) throw new Error('Agent not found');
+        const agent = await Agent.findOne({ where: { phone: agentPhone, wallet: agentWallet } });
+        if (!agent) throw new Error('Agent not found or wallet does not match');
 
         await OTPService.validateOTP(agent.agentID, otpCode);
 
@@ -187,11 +193,14 @@ class ReceiptBookService {
             from: process.env.SMTP_USER,
             to: (await User.findByPk(supervisorID)).email,
             subject: `Receipt Book #${book.number} Assigned`,
-            text: `Receipt Book #${book.number} assigned to Agent with phone ${agentPhone}.`,
+            text: `Receipt Book #${book.number} assigned to Agent with phone ${agentPhone} and wallet ${agentWallet}.`,
         });
 
         return book;
     }
+
+
+
 
     static async getTransferHistory(bookID) {
         return await ReceiptBookTransfer.findAll({
@@ -205,9 +214,11 @@ class ReceiptBookService {
         });
     }
 
+
+
     static async getReceiptBookById(bookID) {
         const book = await ReceiptBook.findByPk(bookID, {
-            include: [{ model: User, as: 'CurrentHolder' },{ model: ReceiptBookTransfer},  { model: Agent }, { model: ReceiptStub }],
+            include: [{ model: User, as: 'CurrentHolder' }, { model: ReceiptBookTransfer }, { model: Agent }, { model: ReceiptStub }],
         });
         if (!book) throw new Error('ReceiptBook not found');
         return book;
@@ -215,9 +226,66 @@ class ReceiptBookService {
 
     static async getAllReceiptBooks() {
         return await ReceiptBook.findAll({
-            include: [{ model: User, as: 'CurrentHolder' },{ model: ReceiptBookTransfer},  { model: Agent }, { model: ReceiptStub }],
+            include: [{ model: User, as: 'CurrentHolder' }, { model: ReceiptBookTransfer }, { model: Agent }, { model: ReceiptStub }],
         });
     }
+
+
+
+    static async updateReceiptBook(bookID, updates, userID) {
+        const book = await this.getReceiptBookById(bookID);
+
+        // Ensure the user has permission (e.g., current holder or specific role)
+        if (book.currentHolderID !== userID) {
+            throw new Error('Only the current holder can update this receipt book');
+        }
+
+        // Restrict which fields can be updated
+        const allowedUpdates = ['number', 'type'];
+        const updateData = {};
+        for (const key of allowedUpdates) {
+            if (updates[key] !== undefined) {
+                updateData[key] = updates[key];
+            }
+        }
+
+        // If number or type changes, regenerate QR code
+        if (updateData.number || updateData.type) {
+            const tlvData = [
+                this.formatTLV('01', (updateData.number || book.number).toString()),
+                this.formatTLV('02', updateData.type || book.type),
+            ].join('');
+            updateData.qrCode = await QRCode.toDataURL(tlvData);
+        }
+
+        await book.update(updateData);
+        return book;
+    }
+
+    static async deleteReceiptBook(bookID, userID) {
+        const book = await this.getReceiptBookById(bookID);
+
+        // Only allow deletion if the book is in 'In Stock' or 'With Stock Manager' status
+        if (!['In Stock', 'With Stock Manager'].includes(book.status)) {
+            throw new Error('Receipt book can only be deleted if In Stock or With Stock Manager');
+        }
+
+        if (book.currentHolderID !== userID) {
+            throw new Error('Only the current holder can delete this receipt book');
+        }
+
+        await Promise.all([
+            ReceiptStub.destroy({ where: { bookID } }),
+            ReceiptBookTransfer.destroy({ where: { bookID } }),
+            book.destroy(),
+        ]);
+
+        return { message: `Receipt Book #${book.number} deleted successfully` };
+    }
+
+
+
+
 
     static formatTLV(tag, value) {
         const length = value.length.toString().padStart(2, '0');

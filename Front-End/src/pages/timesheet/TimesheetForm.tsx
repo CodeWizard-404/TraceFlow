@@ -47,7 +47,7 @@ const TimesheetForm: React.FC = () => {
   const [supervisorPhoneNumber, setSupervisorPhoneNumber] =
     useState<string>("");
 
-  const [supervisorID, setSupervisorID] = useState<string>("user_p74ijg8f0");
+  const [supervisorID, setSupervisorID] = useState<string>("user_1rgx3l4ra");
 
   useEffect(() => {
     const fetchSupervisor = async () => {

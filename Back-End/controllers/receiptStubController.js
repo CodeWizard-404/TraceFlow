@@ -1,4 +1,3 @@
-// controllers/receiptStubController.js
 const ReceiptStubService = require('../services/receiptStubService');
 
 class ReceiptStubController {
@@ -30,7 +29,19 @@ class ReceiptStubController {
             const { bookID } = req.params;
             const { newOwnerID } = req.body; // New owner specified in request
             const currentUserID = req.user.userID;
-            const stub = await ReceiptStubService.transmitStub(bookID, newOwnerID, currentUserID);
+            const result = await ReceiptStubService.transmitStub(bookID, newOwnerID, currentUserID);
+            res.json(result);
+        } catch (error) {
+            res.status(400).json({ error: error.message });
+        }
+    }
+
+    static async validateTransmitStub(req, res) {
+        try {
+            const { bookID } = req.params;
+            const { newOwnerID, otpCode } = req.body;
+            const currentUserID = req.user.userID;
+            const stub = await ReceiptStubService.validateTransmitStub(bookID, newOwnerID, currentUserID, otpCode);
             res.json(stub);
         } catch (error) {
             res.status(400).json({ error: error.message });
