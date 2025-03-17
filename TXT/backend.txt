@@ -24,4 +24,4 @@ npm install express cors mdns-js sequelize pg pg-hstore dotenv jsonwebtoken node
 npm install qrcode bcrypt jsonwebtoken nodemailer twilio express cors mdns-js sequelize pg pg-hstore dotenv
 
 
-npm install qrcode
+npm install keycloak-connect

@@ -22,5 +22,5 @@
     "noFallthroughCasesInSwitch": true,
     "noUncheckedSideEffectImports": true
   },
-  "include": ["src", "script"]
+  "include": ["src", "script", "../Keycloak/keycloak.ts", "../Keycloak/AuthContext copy.tsx", "../Keycloak/App copy.tsx", "../Keycloak/Callback.tsx", "../Keycloak/Login copy.tsx", "../Keycloak/AdminDashboard copy.tsx"]
 }

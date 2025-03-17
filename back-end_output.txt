@@ -1,5 +1,5 @@
 BACK-END PROJECT FILES
-Generated on: 1742144785.76597
+Generated on: 1742247237.0371969
 ==================================================
 
 ==================================================
@@ -74,22 +74,20 @@ module.exports = {
 File contents: C:\Users\Kayto\Desktop\IT\Projects\Stage\Stage PFE\TraceFlow\Back-End\config\security.js
 ==================================================
 const jwt = require('jsonwebtoken');
-const { Role, User, Permission } = require('../models');
 const { sequelize } = require('./db');
+const { Role, User, Permission } = require('../models');
 require('dotenv').config();
 
 const JWT_SECRET = process.env.JWT_SECRET;
 
-// Middleware to authenticate JWT tokens and attach user data to the request
 const authenticateJWT = async (req, res, next) => {
-    const token = req.headers.authorization?.split(' ')[1]; // Extract token from Authorization header
-    if (!token) return res.status(401).json({ error: 'No token provided' });
+    const token = req.headers.authorization?.split(' ')[1];
+    if (!token) {
+        return res.status(401).json({ error: 'Authentication failed: No token provided' });
+    }
 
     try {
-        // Verify the token and decode its payload
         const decoded = jwt.verify(token, JWT_SECRET);
-
-        // Fetch the user with their roles and permissions
         const user = await User.findByPk(decoded.userID, {
             include: [
                 {
@@ -99,54 +97,33 @@ const authenticateJWT = async (req, res, next) => {
                 },
             ],
         });
-        if (!user) throw new Error('User not found');
-
-        // Attach user to the request object
+        if (!user) {
+            return res.status(401).json({ error: 'Authentication failed: User not found' });
+        }
         req.user = user;
-
-        // Set RLS userID for database queries
         await sequelize.query(`SET jwt.claims.userID = '${user.userID}'`);
         next();
     } catch (error) {
-        res.status(401).json({ error: 'Invalid token' });
+        console.error(`${new Date().toISOString()} - JWT verification failed:`, error.message);
+        return res.status(401).json({ error: `Authentication failed: Invalid or expired token - ${error.message}` });
     }
 };
 
-// Middleware factory to check for a specific permission
 const requirePermission = (permissionName) => {
     return async (req, res, next) => {
         if (!req.user) {
-            return res.status(401).json({ error: 'Authentication required' });
+            return res.status(401).json({ error: 'Authentication required: Please log in' });
         }
-
-        // Extract all permissions from the user’s roles, using 'name' field
-        const userPermissions = req.user.Roles.flatMap(role =>
-            role.Permissions.map(perm => perm.name) // Change 'permission' to 'name'
-        );
-
-        // Check if the required permission is present
+        const userPermissions = req.user.Roles.flatMap(role => role.Permissions.map(perm => perm.name));
         if (!userPermissions.includes(permissionName)) {
-            return res.status(403).json({
-                error: `Permission '${permissionName}' required`
-            });
+            console.warn(`${new Date().toISOString()} - Permission denied for user ${req.user.userID}: Missing ${permissionName}`);
+            return res.status(403).json({ error: `Access denied: '${permissionName}' permission required` });
         }
         next();
     };
 };
 
-// Legacy middleware to restrict access based on role names
-const restrictTo = (...allowedRoles) => {
-    return (req, res, next) => {
-        const userRoles = req.user.Roles.map(role => role.name);
-        const hasPermission = allowedRoles.some(role => userRoles.includes(role));
-        if (!hasPermission) {
-            return res.status(403).json({ error: 'Insufficient role permissions' });
-        }
-        next();
-    };
-};
-
-module.exports = { authenticateJWT, requirePermission, restrictTo };
+module.exports = { authenticateJWT, requirePermission };
 
 ==================================================
 File contents: C:\Users\Kayto\Desktop\IT\Projects\Stage\Stage PFE\TraceFlow\Back-End\config\seedPermissions.js
@@ -559,39 +536,49 @@ module.exports = { transporter, initializeSMTP };
 ==================================================
 File contents: C:\Users\Kayto\Desktop\IT\Projects\Stage\Stage PFE\TraceFlow\Back-End\controllers\agentController.js
 ==================================================
+// controllers/agentController.js
 const AgentService = require('../services/agentService');
 
 class AgentController {
     static async getAgentById(req, res) {
         try {
             const { id } = req.params;
+            if (!id) {
+                return res.status(400).json({ error: 'Agent ID is required' });
+            }
             const agent = await AgentService.getAgentById(id);
             res.json(agent);
         } catch (error) {
-            console.error(error);
-            res.status(error.status || 500).json({ error: error.message || 'Internal server error' });
+            console.error(`${new Date().toISOString()} - Get agent by ID failed:`, error);
+            res.status(error.status || 500).json({ error: error.message || 'Failed to retrieve agent due to an internal error' });
         }
     }
 
     static async getAgentByPhone(req, res) {
         try {
             const { phone } = req.params;
+            if (!phone) {
+                return res.status(400).json({ error: 'Phone number is required' });
+            }
             const agent = await AgentService.getAgentByPhone(phone);
             res.json(agent);
         } catch (error) {
-            console.error(error);
-            res.status(error.status || 500).json({ error: error.message || 'Internal server error' });
+            console.error(`${new Date().toISOString()} - Get agent by phone failed:`, error);
+            res.status(error.status || 500).json({ error: error.message || 'Failed to retrieve agent by phone due to an internal error' });
         }
     }
 
     static async getAgentsByLocation(req, res) {
         try {
             const { location } = req.query;
+            if (!location) {
+                return res.status(400).json({ error: 'Location is required' });
+            }
             const agents = await AgentService.getAgentsByLocation(location);
             res.json(agents);
         } catch (error) {
-            console.error(error);
-            res.status(error.status || 500).json({ error: error.message || 'Internal server error' });
+            console.error(`${new Date().toISOString()} - Get agents by location failed:`, error);
+            res.status(error.status || 500).json({ error: error.message || 'Failed to retrieve agents by location due to an internal error' });
         }
     }
 
@@ -600,8 +587,8 @@ class AgentController {
             const locations = await AgentService.getAllUniqueLocations();
             res.json(locations);
         } catch (error) {
-            console.error(error);
-            res.status(error.status || 500).json({ error: error.message || 'Internal server error' });
+            console.error(`${new Date().toISOString()} - Get unique locations failed:`, error);
+            res.status(error.status || 500).json({ error: error.message || 'Failed to retrieve unique locations due to an internal error' });
         }
     }
 }
@@ -611,39 +598,51 @@ module.exports = AgentController;
 ==================================================
 File contents: C:\Users\Kayto\Desktop\IT\Projects\Stage\Stage PFE\TraceFlow\Back-End\controllers\authController.js
 ==================================================
+// controllers/authController.js
 const AuthService = require('../services/authService');
 
 class AuthController {
     static async login(req, res) {
         try {
-            const { identifier, password } = req.body; 
+            const { identifier, password } = req.body;
+            if (!identifier || !password) {
+                return res.status(400).json({ error: 'Identifier and password are required' });
+            }
             const result = await AuthService.login(identifier, password);
             res.json(result);
         } catch (error) {
-            res.status(401).json({ error: error.message });
+            console.error(`${new Date().toISOString()} - Login failed:`, error);
+            res.status(401).json({ error: error.message || 'Login failed: Invalid credentials' });
         }
     }
 
     static async verify2FA(req, res) {
         try {
             const { userID, otpCode } = req.body;
+            if (!userID || !otpCode) {
+                return res.status(400).json({ error: 'User ID and OTP code are required' });
+            }
             const result = await AuthService.verify2FA(userID, otpCode);
             res.json(result);
         } catch (error) {
-            res.status(401).json({ error: error.message });
-        }
-    }
-    
-    static async resend2FA(req, res) {
-        try {
-            const { userID } = req.body;
-            const result = await AuthService.resend2FA(userID);
-            res.json(result);
-        } catch (error) {
-            res.status(401).json({ error: error.message });
+            console.error(`${new Date().toISOString()} - 2FA verification failed:`, error);
+            res.status(401).json({ error: error.message || '2FA verification failed: Invalid or expired OTP' });
         }
     }
 
+    static async resend2FA(req, res) {
+        try {
+            const { userID } = req.body;
+            if (!userID) {
+                return res.status(400).json({ error: 'User ID is required' });
+            }
+            const result = await AuthService.resend2FA(userID);
+            res.json(result);
+        } catch (error) {
+            console.error(`${new Date().toISOString()} - Resend 2FA failed:`, error);
+            res.status(401).json({ error: error.message || 'Failed to resend 2FA code due to an internal error' });
+        }
+    }
 }
 
 module.exports = AuthController;
@@ -651,26 +650,36 @@ module.exports = AuthController;
 ==================================================
 File contents: C:\Users\Kayto\Desktop\IT\Projects\Stage\Stage PFE\TraceFlow\Back-End\controllers\checklistController.js
 ==================================================
+// controllers/checklistController.js
 const ChecklistService = require('../services/checklistService');
+const { authenticateJWT, requirePermission } = require('../config/security');
 
 class ChecklistController {
     static async createChecklist(req, res) {
         try {
             const { text } = req.body;
+            if (!text) {
+                return res.status(400).json({ error: 'Checklist text is required' });
+            }
             const checklist = await ChecklistService.createItem(text);
             res.status(201).json(checklist);
         } catch (error) {
-            res.status(500).json({ error: error.message });
+            console.error(`${new Date().toISOString()} - Create checklist failed:`, error);
+            res.status(500).json({ error: error.message || 'Failed to create checklist due to an internal error' });
         }
     }
 
     static async getChecklistsByVisitID(req, res) {
         try {
             const { id: visitID } = req.params;
+            if (!visitID) {
+                return res.status(400).json({ error: 'Visit ID is required' });
+            }
             const checklists = await ChecklistService.getChecklistsByVisitId(visitID);
             res.status(200).json(checklists);
         } catch (error) {
-            res.status(500).json({ error: error.message });
+            console.error(`${new Date().toISOString()} - Get checklists by visit ID failed:`, error);
+            res.status(500).json({ error: error.message || 'Failed to retrieve checklists for visit due to an internal error' });
         }
     }
 
@@ -679,7 +688,8 @@ class ChecklistController {
             const checklists = await ChecklistService.getAllChecklists();
             res.status(200).json(checklists);
         } catch (error) {
-            res.status(500).json({ error: error.message });
+            console.error(`${new Date().toISOString()} - Get all checklists failed:`, error);
+            res.status(500).json({ error: error.message || 'Failed to retrieve all checklists due to an internal error' });
         }
     }
 }
@@ -689,96 +699,122 @@ module.exports = ChecklistController;
 ==================================================
 File contents: C:\Users\Kayto\Desktop\IT\Projects\Stage\Stage PFE\TraceFlow\Back-End\controllers\permissionController.js
 ==================================================
+// controllers/permissionController.js
 const PermissionService = require('../services/permissionService');
 
 class PermissionController {
-    async getAllPermissions(req, res) {
+    static async getAllPermissions(req, res) {
         try {
             const permissions = await PermissionService.getAllPermissions();
             res.status(200).json(permissions);
         } catch (error) {
-            res.status(500).json({ error: error.message });
+            console.error(`${new Date().toISOString()} - Get all permissions failed:`, error);
+            res.status(500).json({ error: error.message || 'Failed to retrieve permissions due to an internal error' });
         }
     }
 
-    async getPermissionById(req, res) {
+    static async getPermissionById(req, res) {
         try {
             const { permissionID } = req.params;
+            if (!permissionID) {
+                return res.status(400).json({ error: 'Permission ID is required' });
+            }
             const permission = await PermissionService.getPermissionById(permissionID);
             res.status(200).json(permission);
         } catch (error) {
-            res.status(404).json({ error: error.message });
+            console.error(`${new Date().toISOString()} - Get permission by ID failed:`, error);
+            res.status(404).json({ error: error.message || 'Permission not found' });
         }
     }
 
-    async createPermission(req, res) {
+    static async createPermission(req, res) {
         try {
             const { name, type, className, description } = req.body;
+            if (!name || !type || !className) {
+                return res.status(400).json({ error: 'Name, type, and className are required' });
+            }
             const permission = await PermissionService.createPermission(name, type, className, description);
             res.status(201).json(permission);
         } catch (error) {
-            res.status(400).json({ error: error.message });
+            console.error(`${new Date().toISOString()} - Create permission failed:`, error);
+            res.status(400).json({ error: error.message || 'Failed to create permission due to an internal error' });
         }
     }
 
-    async updatePermission(req, res) {
+    static async updatePermission(req, res) {
         try {
             const { permissionID } = req.params;
             const { name, type, className, description } = req.body;
-            const permission = await PermissionService.updatePermission(permissionID, name, type, className, description);
+            if (!permissionID) {
+                return res.status(400).json({ error: 'Permission ID is required' });
+            }
+            const permission = await PermissionService.updatePermission(permissionID, { name, type, className, description });
             res.status(200).json(permission);
         } catch (error) {
-            res.status(400).json({ error: error.message });
+            console.error(`${new Date().toISOString()} - Update permission failed:`, error);
+            res.status(400).json({ error: error.message || 'Failed to update permission due to an internal error' });
         }
     }
 
-    async deletePermission(req, res) {
+    static async deletePermission(req, res) {
         try {
             const { permissionID } = req.params;
-            const permission = await PermissionService.deletePermission(permissionID);
-            res.status(200).json(permission);
+            if (!permissionID) {
+                return res.status(400).json({ error: 'Permission ID is required' });
+            }
+            await PermissionService.deletePermission(permissionID);
+            res.status(200).json({ message: 'Permission deleted successfully' });
         } catch (error) {
-            res.status(404).json({ error: error.message });
+            console.error(`${new Date().toISOString()} - Delete permission failed:`, error);
+            res.status(404).json({ error: error.message || 'Permission not found' });
         }
     }
-
 }
 
-module.exports = new PermissionController();
+module.exports = PermissionController;
 
 ==================================================
 File contents: C:\Users\Kayto\Desktop\IT\Projects\Stage\Stage PFE\TraceFlow\Back-End\controllers\reasonController.js
 ==================================================
+// controllers/reasonController.js
 const ReasonService = require('../services/reasonService');
 
 class ReasonController {
     static async createReason(req, res) {
         try {
             const { text } = req.body;
+            if (!text) {
+                return res.status(400).json({ error: 'Reason text is required' });
+            }
             const reason = await ReasonService.createItem(text);
             res.status(201).json(reason);
         } catch (error) {
-            res.status(500).json({ error: error.message });
+            console.error(`${new Date().toISOString()} - Create reason failed:`, error);
+            res.status(500).json({ error: error.message || 'Failed to create reason due to an internal error' });
         }
     }
 
     static async getReasonsByVisitID(req, res) {
         try {
             const { id: visitID } = req.params;
+            if (!visitID) {
+                return res.status(400).json({ error: 'Visit ID is required' });
+            }
             const reasons = await ReasonService.getReasonsByVisitId(visitID);
             res.status(200).json(reasons);
         } catch (error) {
-            res.status(500).json({ error: error.message });
+            console.error(`${new Date().toISOString()} - Get reasons by visit ID failed:`, error);
+            res.status(500).json({ error: error.message || 'Failed to retrieve reasons for visit due to an internal error' });
         }
     }
 
-
     static async getAllReasons(req, res) {
         try {
-            const checklists = await ReasonService.getAllReasons();
-            res.status(200).json(checklists);
+            const reasons = await ReasonService.getAllReasons();
+            res.status(200).json(reasons);
         } catch (error) {
-            res.status(500).json({ error: error.message });
+            console.error(`${new Date().toISOString()} - Get all reasons failed:`, error);
+            res.status(500).json({ error: error.message || 'Failed to retrieve all reasons due to an internal error' });
         }
     }
 }
@@ -788,18 +824,22 @@ module.exports = ReasonController;
 ==================================================
 File contents: C:\Users\Kayto\Desktop\IT\Projects\Stage\Stage PFE\TraceFlow\Back-End\controllers\receiptBookController.js
 ==================================================
+// controllers/receiptBookController.js
 const ReceiptBookService = require('../services/receiptBookService');
 
 class ReceiptBookController {
     static async createReceiptBook(req, res) {
         try {
             const { number, type } = req.body;
+            if (!number || !type) {
+                return res.status(400).json({ error: 'Number and type are required' });
+            }
             const purchaseUserID = req.user.userID;
             const receiptBook = await ReceiptBookService.createReceiptBook(number, type, purchaseUserID);
             res.status(201).json(receiptBook);
         } catch (error) {
-            console.error('Error creating receipt book:', error);
-            res.status(400).json({ error: error.message });
+            console.error(`${new Date().toISOString()} - Create receipt book failed:`, error);
+            res.status(400).json({ error: error.message || 'Failed to create receipt book due to an internal error' });
         }
     }
 
@@ -808,111 +848,142 @@ class ReceiptBookController {
             const receiptBooks = await ReceiptBookService.getAllReceiptBooks();
             res.json(receiptBooks);
         } catch (error) {
-            res.status(500).json({ error: error.message });
+            console.error(`${new Date().toISOString()} - Get all receipt books failed:`, error);
+            res.status(500).json({ error: error.message || 'Failed to retrieve receipt books due to an internal error' });
         }
     }
 
     static async getReceiptBookById(req, res) {
         try {
             const { bookID } = req.params;
+            if (!bookID) {
+                return res.status(400).json({ error: 'Book ID is required' });
+            }
             const receiptBook = await ReceiptBookService.getReceiptBookById(bookID);
             res.json(receiptBook);
         } catch (error) {
-            res.status(404).json({ error: error.message });
+            console.error(`${new Date().toISOString()} - Get receipt book by ID failed:`, error);
+            res.status(404).json({ error: error.message || 'Receipt book not found' });
         }
     }
 
     static async updateReceiptBook(req, res) {
         try {
             const { bookID } = req.params;
-            const updates = req.body; // { number, type }
+            const updates = req.body;
+            if (!bookID) {
+                return res.status(400).json({ error: 'Book ID is required' });
+            }
             const userID = req.user.userID;
             const receiptBook = await ReceiptBookService.updateReceiptBook(bookID, updates, userID);
             res.json(receiptBook);
         } catch (error) {
-            res.status(400).json({ error: error.message });
+            console.error(`${new Date().toISOString()} - Update receipt book failed:`, error);
+            res.status(400).json({ error: error.message || 'Failed to update receipt book due to an internal error' });
         }
     }
 
     static async deleteReceiptBook(req, res) {
         try {
             const { bookID } = req.params;
+            if (!bookID) {
+                return res.status(400).json({ error: 'Book ID is required' });
+            }
             const userID = req.user.userID;
             const result = await ReceiptBookService.deleteReceiptBook(bookID, userID);
-            res.status(200).json(result); // Returning 200 with message instead of 204 for consistency
+            res.status(200).json(result);
         } catch (error) {
-            res.status(400).json({ error: error.message });
+            console.error(`${new Date().toISOString()} - Delete receipt book failed:`, error);
+            res.status(400).json({ error: error.message || 'Failed to delete receipt book due to an internal error' });
         }
     }
 
     static async sendToSupplier(req, res) {
         try {
             const { bookID, supplierEmail } = req.body;
+            if (!bookID || !supplierEmail) {
+                return res.status(400).json({ error: 'Book ID and supplier email are required' });
+            }
             const userID = req.user.userID;
             const receiptBook = await ReceiptBookService.sendBookToSupplier(bookID, supplierEmail, userID);
             res.json({ message: `Book ${receiptBook.number} has been sent to ${supplierEmail}` });
         } catch (error) {
-            res.status(400).json({ error: error.message });
+            console.error(`${new Date().toISOString()} - Send receipt book to supplier failed:`, error);
+            res.status(400).json({ error: error.message || 'Failed to send receipt book to supplier due to an internal error' });
         }
     }
 
     static async transferReceiptBookToUser(req, res) {
         try {
             const { bookID } = req.body;
-            const newOwnerID = req.user.userID; // Receiver scans QR, uses their own ID
+            if (!bookID) {
+                return res.status(400).json({ error: 'Book ID is required' });
+            }
+            const newOwnerID = req.user.userID;
             const result = await ReceiptBookService.transferToUser(bookID, newOwnerID);
             res.json(result);
         } catch (error) {
-            res.status(400).json({ error: error.message });
+            console.error(`${new Date().toISOString()} - Transfer receipt book failed:`, error);
+            res.status(400).json({ error: error.message || 'Failed to initiate receipt book transfer due to an internal error' });
         }
     }
 
     static async validateTransferToUser(req, res) {
         try {
             const { otpCode, bookID } = req.body;
-            const newOwnerID = req.user.userID; // Receiver validates with their own ID
+            if (!otpCode || !bookID) {
+                return res.status(400).json({ error: 'OTP code and book ID are required' });
+            }
+            const newOwnerID = req.user.userID;
             const receiptBook = await ReceiptBookService.validateTransferToUser(bookID, newOwnerID, otpCode);
             res.json(receiptBook);
         } catch (error) {
-            res.status(400).json({ error: error.message });
+            console.error(`${new Date().toISOString()} - Validate transfer failed:`, error);
+            res.status(400).json({ error: error.message || 'Failed to validate receipt book transfer due to an internal error' });
         }
     }
 
     static async assignToAgent(req, res) {
         try {
             const { agentPhone, agentWallet, bookID } = req.body;
-            const supervisorID = req.user.userID; // Supervisor scans QR
             if (!agentPhone || !agentWallet || !bookID) {
-                return res.status(400).json({ error: 'agentPhone, agentWallet, and bookID are required' });
+                return res.status(400).json({ error: 'Agent phone, wallet, and book ID are required' });
             }
+            const supervisorID = req.user.userID;
             const result = await ReceiptBookService.assignToAgent(bookID, agentPhone, agentWallet, supervisorID);
             res.json(result);
         } catch (error) {
-            res.status(400).json({ error: error.message });
+            console.error(`${new Date().toISOString()} - Assign to agent failed:`, error);
+            res.status(400).json({ error: error.message || 'Failed to assign receipt book to agent due to an internal error' });
         }
     }
 
     static async validateAgentAssignment(req, res) {
         try {
             const { agentPhone, agentWallet, otpCode, bookID } = req.body;
-            const supervisorID = req.user.userID; // Supervisor validates
             if (!agentPhone || !agentWallet || !otpCode || !bookID) {
-                return res.status(400).json({ error: 'agentPhone, agentWallet, otpCode, and bookID are required' });
+                return res.status(400).json({ error: 'Agent phone, wallet, OTP code, and book ID are required' });
             }
+            const supervisorID = req.user.userID;
             const receiptBook = await ReceiptBookService.validateAgentAssignment(bookID, agentPhone, agentWallet, otpCode, supervisorID);
             res.json(receiptBook);
         } catch (error) {
-            res.status(400).json({ error: error.message });
+            console.error(`${new Date().toISOString()} - Validate agent assignment failed:`, error);
+            res.status(400).json({ error: error.message || 'Failed to validate agent assignment due to an internal error' });
         }
     }
 
     static async getTransferHistory(req, res) {
         try {
             const { bookID } = req.params;
+            if (!bookID) {
+                return res.status(400).json({ error: 'Book ID is required' });
+            }
             const history = await ReceiptBookService.getTransferHistory(bookID);
             res.json(history);
         } catch (error) {
-            res.status(404).json({ error: error.message });
+            console.error(`${new Date().toISOString()} - Get transfer history failed:`, error);
+            res.status(404).json({ error: error.message || 'Failed to retrieve transfer history due to an internal error' });
         }
     }
 }
@@ -922,17 +993,22 @@ module.exports = ReceiptBookController;
 ==================================================
 File contents: C:\Users\Kayto\Desktop\IT\Projects\Stage\Stage PFE\TraceFlow\Back-End\controllers\receiptStubController.js
 ==================================================
+// controllers/receiptStubController.js
 const ReceiptStubService = require('../services/receiptStubService');
 
 class ReceiptStubController {
     static async collectStub(req, res) {
         try {
             const { bookID } = req.params;
-            const supervisorID = req.user.userID; // Any supervisor can collect
+            if (!bookID) {
+                return res.status(400).json({ error: 'Book ID is required' });
+            }
+            const supervisorID = req.user.userID;
             const result = await ReceiptStubService.collectStub(bookID, supervisorID);
             res.json(result);
         } catch (error) {
-            res.status(400).json({ error: error.message });
+            console.error(`${new Date().toISOString()} - Collect stub failed:`, error);
+            res.status(400).json({ error: error.message || 'Failed to initiate stub collection due to an internal error' });
         }
     }
 
@@ -940,23 +1016,31 @@ class ReceiptStubController {
         try {
             const { bookID } = req.params;
             const { otpCode } = req.body;
+            if (!bookID || !otpCode) {
+                return res.status(400).json({ error: 'Book ID and OTP code are required' });
+            }
             const supervisorID = req.user.userID;
             const stub = await ReceiptStubService.validateStubCollection(bookID, supervisorID, otpCode);
             res.json(stub);
         } catch (error) {
-            res.status(400).json({ error: error.message });
+            console.error(`${new Date().toISOString()} - Validate stub collection failed:`, error);
+            res.status(400).json({ error: error.message || 'Failed to validate stub collection due to an internal error' });
         }
     }
 
     static async transmitStub(req, res) {
         try {
             const { bookID } = req.params;
-            const { newOwnerID } = req.body; // New owner specified in request
+            const { newOwnerID } = req.body;
+            if (!bookID || !newOwnerID) {
+                return res.status(400).json({ error: 'Book ID and new owner ID are required' });
+            }
             const currentUserID = req.user.userID;
             const result = await ReceiptStubService.transmitStub(bookID, newOwnerID, currentUserID);
             res.json(result);
         } catch (error) {
-            res.status(400).json({ error: error.message });
+            console.error(`${new Date().toISOString()} - Transmit stub failed:`, error);
+            res.status(400).json({ error: error.message || 'Failed to initiate stub transmission due to an internal error' });
         }
     }
 
@@ -964,22 +1048,30 @@ class ReceiptStubController {
         try {
             const { bookID } = req.params;
             const { newOwnerID, otpCode } = req.body;
+            if (!bookID || !newOwnerID || !otpCode) {
+                return res.status(400).json({ error: 'Book ID, new owner ID, and OTP code are required' });
+            }
             const currentUserID = req.user.userID;
             const stub = await ReceiptStubService.validateTransmitStub(bookID, newOwnerID, currentUserID, otpCode);
             res.json(stub);
         } catch (error) {
-            res.status(400).json({ error: error.message });
+            console.error(`${new Date().toISOString()} - Validate stub transmission failed:`, error);
+            res.status(400).json({ error: error.message || 'Failed to validate stub transmission due to an internal error' });
         }
     }
 
     static async archiveStub(req, res) {
         try {
             const { bookID } = req.params;
+            if (!bookID) {
+                return res.status(400).json({ error: 'Book ID is required' });
+            }
             const stockManagerID = req.user.userID;
             const stub = await ReceiptStubService.archiveStub(bookID, stockManagerID);
             res.json(stub);
         } catch (error) {
-            res.status(400).json({ error: error.message });
+            console.error(`${new Date().toISOString()} - Archive stub failed:`, error);
+            res.status(400).json({ error: error.message || 'Failed to archive stub due to an internal error' });
         }
     }
 }
@@ -989,104 +1081,128 @@ module.exports = ReceiptStubController;
 ==================================================
 File contents: C:\Users\Kayto\Desktop\IT\Projects\Stage\Stage PFE\TraceFlow\Back-End\controllers\roleController.js
 ==================================================
+// controllers/roleController.js
 const RoleService = require('../services/roleService');
 
 class RoleController {
-    async createRole(req, res) {
+    static async createRole(req, res) {
         try {
             const { name, description } = req.body;
+            if (!name) {
+                return res.status(400).json({ error: 'Role name is required' });
+            }
             const role = await RoleService.createRole(name, description);
             res.status(201).json(role);
         } catch (error) {
-            res.status(400).json({ error: error.message });
+            console.error(`${new Date().toISOString()} - Create role failed:`, error);
+            res.status(400).json({ error: error.message || 'Failed to create role due to an internal error' });
         }
     }
 
-    async getAllRoles(req, res) {
+    static async getAllRoles(req, res) {
         try {
             const roles = await RoleService.getAllRoles();
             res.status(200).json(roles);
         } catch (error) {
-            res.status(500).json({ error: error.message });
+            console.error(`${new Date().toISOString()} - Get all roles failed:`, error);
+            res.status(500).json({ error: error.message || 'Failed to retrieve roles due to an internal error' });
         }
     }
 
-    async getRoleById(req, res) {
+    static async getRoleById(req, res) {
         try {
             const { roleID } = req.params;
+            if (!roleID) {
+                return res.status(400).json({ error: 'Role ID is required' });
+            }
             const role = await RoleService.getRoleById(roleID);
             res.status(200).json(role);
         } catch (error) {
-            res.status(404).json({ error: error.message });
+            console.error(`${new Date().toISOString()} - Get role by ID failed:`, error);
+            res.status(404).json({ error: error.message || 'Role not found' });
         }
     }
 
-    async updateRole(req, res) {
+    static async updateRole(req, res) {
         try {
             const { roleID } = req.params;
             const { name, description } = req.body;
-            const role = await RoleService.updateRole(roleID, name, description);
+            if (!roleID) {
+                return res.status(400).json({ error: 'Role ID is required' });
+            }
+            const role = await RoleService.updateRole(roleID, { name, description });
             res.status(200).json(role);
         } catch (error) {
-            res.status(400).json({ error: error.message });
+            console.error(`${new Date().toISOString()} - Update role failed:`, error);
+            res.status(400).json({ error: error.message || 'Failed to update role due to an internal error' });
         }
     }
 
-    async deleteRole(req, res) {
+    static async deleteRole(req, res) {
         try {
             const { roleID } = req.params;
-            const role = await RoleService.deleteRole(roleID);
-            res.status(200).json(role);
+            if (!roleID) {
+                return res.status(400).json({ error: 'Role ID is required' });
+            }
+            await RoleService.deleteRole(roleID);
+            res.status(200).json({ message: 'Role deleted successfully' });
         } catch (error) {
-            res.status(404).json({ error: error.message });
+            console.error(`${new Date().toISOString()} - Delete role failed:`, error);
+            res.status(404).json({ error: error.message || 'Role not found' });
         }
     }
 
-    async assignPermissionsToRole(req, res) {
+    static async assignPermissionsToRole(req, res) {
         try {
             const { roleID } = req.params;
-            const { permissionIDs } = req.body; // Array of permission IDs
+            const { permissionIDs } = req.body;
+            if (!roleID || !Array.isArray(permissionIDs)) {
+                return res.status(400).json({ error: 'Role ID and permission IDs array are required' });
+            }
             const result = await RoleService.assignPermissionsToRole(roleID, permissionIDs);
             res.status(200).json(result);
         } catch (error) {
-            res.status(400).json({ error: error.message });
+            console.error(`${new Date().toISOString()} - Assign permissions to role failed:`, error);
+            res.status(400).json({ error: error.message || 'Failed to assign permissions to role due to an internal error' });
         }
     }
 
-    async getPermissionsByRole(req, res) {
+    static async getPermissionsByRole(req, res) {
         try {
             const { roleID } = req.params;
+            if (!roleID) {
+                return res.status(400).json({ error: 'Role ID is required' });
+            }
             const permissions = await RoleService.getPermissionsByRole(roleID);
             res.status(200).json(permissions);
         } catch (error) {
-            res.status(404).json({ error: error.message });
+            console.error(`${new Date().toISOString()} - Get permissions by role failed:`, error);
+            res.status(404).json({ error: error.message || 'Role not found' });
         }
     }
 }
 
-module.exports = new RoleController();
+module.exports = RoleController;
 
 ==================================================
 File contents: C:\Users\Kayto\Desktop\IT\Projects\Stage\Stage PFE\TraceFlow\Back-End\controllers\timesheetController.js
 ==================================================
-const { Op } = require('sequelize');
-const { Timesheet, User, Sequelize } = require('../models');
+// controllers/timesheetController.js
+const { Timesheet } = require('../models');
 const TimesheetService = require('../services/timesheetService');
 
 class TimesheetController {
     static async createTimesheet(req, res) {
         try {
             const { weekNumber, year, supervisorID, visits } = req.body;
-            const timesheet = await TimesheetService.createTimesheet({
-                weekNumber,
-                year,
-                supervisorID,
-                visits,
-            });
+            if (!weekNumber || !year || !supervisorID || !Array.isArray(visits)) {
+                return res.status(400).json({ error: 'Missing required fields: weekNumber, year, supervisorID, and visits array are mandatory' });
+            }
+            const timesheet = await TimesheetService.createTimesheet({ weekNumber, year, supervisorID, visits });
             res.status(201).json(timesheet);
         } catch (error) {
-            console.error(error);
-            res.status(error.status || 500).json({ error: error.message || 'Internal server error' });
+            console.error(`${new Date().toISOString()} - Create timesheet failed:`, error);
+            res.status(error.status || 500).json({ error: error.message || 'Failed to create timesheet due to an internal error' });
         }
     }
 
@@ -1094,34 +1210,26 @@ class TimesheetController {
         try {
             const { id } = req.params;
             const { visitIDs = [], status } = req.body;
+            if (!status) {
+                return res.status(400).json({ error: 'Status is required to validate a timesheet' });
+            }
             const timesheet = await TimesheetService.validateTimesheet(id, visitIDs, status);
             res.status(200).json(timesheet);
         } catch (error) {
-            console.error(error);
-            res.status(error.status || 500).json({ error: error.message || 'Internal server error' });
+            console.error(`${new Date().toISOString()} - Validate timesheet failed:`, error);
+            res.status(error.status || 500).json({ error: error.message || 'Failed to validate timesheet due to an internal error' });
         }
     }
 
     static async getAllTimesheets(req, res) {
         try {
             const user = req.user;
-            const userPermissions = user.Roles.flatMap(role => role.Permissions.map(perm => perm.permission));
+            const userPermissions = user.Roles.flatMap(role => role.Permissions.map(perm => perm.name));
             let timesheets;
 
-            // Check if user has 'view_all_timesheets' (e.g., for Managers)
             if (userPermissions.includes('view_all_timesheets')) {
-                // Fetch all timesheets for Managers, filtered by their Supervisors
-                const supervisorIDs = await User.findAll({
-                    where: { userID: { [Op.in]: user.Supervisors.map(s => s.userID) } },
-                    attributes: ['userID'],
-                }).then(supervisors => supervisors.map(s => s.userID));
-
-                timesheets = await Timesheet.findAll({
-                    where: { supervisorID: { [Op.in]: supervisorIDs } },
-                    include: ['Visits'],
-                });
+                timesheets = await Timesheet.findAll({ include: ['Visits'] });
             } else {
-                // Default: Supervisors see only their own timesheets
                 timesheets = await Timesheet.findAll({
                     where: { supervisorID: user.userID },
                     include: ['Visits'],
@@ -1129,8 +1237,8 @@ class TimesheetController {
             }
             res.status(200).json(timesheets);
         } catch (error) {
-            console.error(error);
-            res.status(error.status || 500).json({ error: error.message || 'Internal server error' });
+            console.error(`${new Date().toISOString()} - Get all timesheets failed:`, error);
+            res.status(error.status || 500).json({ error: error.message || 'Failed to retrieve timesheets due to an internal error' });
         }
     }
 
@@ -1140,8 +1248,8 @@ class TimesheetController {
             const timesheet = await TimesheetService.viewTimesheet(id);
             res.status(200).json(timesheet);
         } catch (error) {
-            console.error(error);
-            res.status(error.status || 500).json({ error: error.message || 'Internal server error' });
+            console.error(`${new Date().toISOString()} - Get timesheet failed:`, error);
+            res.status(error.status || 500).json({ error: error.message || 'Failed to retrieve timesheet due to an internal error' });
         }
     }
 
@@ -1151,135 +1259,167 @@ class TimesheetController {
             const timesheets = await TimesheetService.getTimesheetsBySupervisor(supervisorID);
             res.status(200).json(timesheets);
         } catch (error) {
-            console.error(error);
-            res.status(error.status || 500).json({ error: error.message || 'Internal server error' });
+            console.error(`${new Date().toISOString()} - Get timesheets by supervisor failed:`, error);
+            res.status(error.status || 500).json({ error: error.message || 'Failed to retrieve timesheets for supervisor due to an internal error' });
         }
     }
-};
+}
 
 module.exports = TimesheetController;
 
 ==================================================
 File contents: C:\Users\Kayto\Desktop\IT\Projects\Stage\Stage PFE\TraceFlow\Back-End\controllers\userController.js
 ==================================================
+// controllers/userController.js
 const UserService = require('../services/userService');
 
 class UserController {
-    async createUser(req, res) {
+    static async createUser(req, res) {
         try {
             const { email, password, firstname, lastname, phone, wallet } = req.body;
+            if (!email || !password || !firstname || !lastname || !phone || !wallet) {
+                return res.status(400).json({ error: 'All fields (email, password, firstname, lastname, phone, wallet) are required' });
+            }
             const user = await UserService.createUser(email, password, firstname, lastname, phone, wallet);
             res.status(201).json(user);
         } catch (error) {
-            res.status(400).json({ error: error.message });
+            console.error(`${new Date().toISOString()} - Create user failed:`, error);
+            res.status(400).json({ error: error.message || 'Failed to create user due to an internal error' });
         }
     }
 
-    async getAllUsers(req, res) {
+    static async getAllUsers(req, res) {
         try {
             const users = await UserService.getAllUsers();
             res.status(200).json(users);
         } catch (error) {
-            res.status(500).json({ error: error.message });
+            console.error(`${new Date().toISOString()} - Get all users failed:`, error);
+            res.status(500).json({ error: error.message || 'Failed to retrieve users due to an internal error' });
         }
     }
 
-    async getIdByPhoneNumber(req, res) {
+    static async getIdByPhoneNumber(req, res) {
         try {
             const { phone } = req.body;
-            const user = await UserService.getIdByPhoneNumber(phone);
-            if (user) {
-                res.status(200).json(user);
-            } else {
-                res.status(404).json({ error: 'User not found' });
+            if (!phone) {
+                return res.status(400).json({ error: 'Phone number is required' });
             }
+            const user = await UserService.getIdByPhoneNumber(phone);
+            res.status(200).json(user);
         } catch (error) {
-            console.log(error);
-            res.status(500).json({ error: error.message });
+            console.error(`${new Date().toISOString()} - Get user ID by phone failed:`, error);
+            res.status(404).json({ error: error.message || 'User not found by phone number' });
         }
     }
 
-
-
-    async getUserById(req, res) {
+    static async getUserById(req, res) {
         try {
             const { userID } = req.params;
+            if (!userID) {
+                return res.status(400).json({ error: 'User ID is required' });
+            }
             const user = await UserService.getUserById(userID);
             res.status(200).json(user);
         } catch (error) {
-            res.status(404).json({ error: error.message });
+            console.error(`${new Date().toISOString()} - Get user by ID failed:`, error);
+            res.status(404).json({ error: error.message || 'User not found' });
         }
     }
 
-    async updateUser(req, res) {
+    static async updateUser(req, res) {
         try {
             const { userID } = req.params;
             const userData = req.body;
+            if (!userID) {
+                return res.status(400).json({ error: 'User ID is required' });
+            }
             const updatedUser = await UserService.updateUser(userID, userData);
             res.status(200).json(updatedUser);
         } catch (error) {
-            res.status(400).json({ error: error.message });
+            console.error(`${new Date().toISOString()} - Update user failed:`, error);
+            res.status(400).json({ error: error.message || 'Failed to update user due to an internal error' });
         }
     }
 
-    async deleteUser(req, res) {
+    static async deleteUser(req, res) {
         try {
             const { userID } = req.params;
+            if (!userID) {
+                return res.status(400).json({ error: 'User ID is required' });
+            }
             const result = await UserService.deleteUser(userID);
             res.status(200).json(result);
         } catch (error) {
-            res.status(400).json({ error: error.message });
+            console.error(`${new Date().toISOString()} - Delete user failed:`, error);
+            res.status(400).json({ error: error.message || 'Failed to delete user due to an internal error' });
         }
     }
 
-    async assignRolesToUser(req, res) {
+    static async assignRolesToUser(req, res) {
         try {
             const { userID } = req.params;
-            const { roleIDs } = req.body; // Array of role IDs
+            const { roleIDs } = req.body;
+            if (!userID || !Array.isArray(roleIDs)) {
+                return res.status(400).json({ error: 'User ID and role IDs array are required' });
+            }
             const result = await UserService.assignRolesToUser(userID, roleIDs);
             res.status(200).json(result);
         } catch (error) {
-            res.status(400).json({ error: error.message });
+            console.error(`${new Date().toISOString()} - Assign roles to user failed:`, error);
+            res.status(400).json({ error: error.message || 'Failed to assign roles to user due to an internal error' });
         }
     }
 
-    async getRolesByUser(req, res) {
+    static async getRolesByUser(req, res) {
         try {
             const { userID } = req.params;
+            if (!userID) {
+                return res.status(400).json({ error: 'User ID is required' });
+            }
             const roles = await UserService.getRolesByUser(userID);
             res.status(200).json(roles);
         } catch (error) {
-            res.status(404).json({ error: error.message });
+            console.error(`${new Date().toISOString()} - Get roles by user failed:`, error);
+            res.status(404).json({ error: error.message || 'User not found' });
         }
     }
 
-
-
-    async assignSupervisorsToManager(req, res) {
+    static async assignSupervisorsToManager(req, res) {
         try {
             const { managerID, supervisorIDs } = req.body;
-            if (!managerID || !supervisorIDs || !Array.isArray(supervisorIDs)) {
-                return res.status(400).json({ error: 'managerID and supervisorIDs (array) are required' });
+            if (!managerID || !Array.isArray(supervisorIDs)) {
+                return res.status(400).json({ error: 'Manager ID and supervisor IDs array are required' });
             }
             const result = await UserService.assignSupervisorsToManager(managerID, supervisorIDs);
             res.status(200).json(result);
         } catch (error) {
-            res.status(400).json({ error: error.message });
+            console.error(`${new Date().toISOString()} - Assign supervisors to manager failed:`, error);
+            res.status(400).json({ error: error.message || 'Failed to assign supervisors to manager due to an internal error' });
         }
     }
 }
 
-module.exports = new UserController();
+module.exports = UserController;
 
 ==================================================
 File contents: C:\Users\Kayto\Desktop\IT\Projects\Stage\Stage PFE\TraceFlow\Back-End\controllers\visitController.js
 ==================================================
+// controllers/visitController.js
 const VisitService = require('../services/visitService');
 
 class VisitController {
     static async createVisit(req, res) {
         try {
             const { date, time, agentID, supervisorID, timesheetID, reasons, checklists } = req.body;
+            if (!date || !time || !agentID || !supervisorID || !timesheetID) {
+                return res.status(400).json({ error: 'Missing required fields: date, time, agentID, supervisorID, and timesheetID are mandatory' });
+            }
+            if (!Array.isArray(reasons) || reasons.length === 0) {
+                return res.status(400).json({ error: 'At least one reason is required' });
+            }
+            if (!Array.isArray(checklists) || checklists.length === 0) {
+                return res.status(400).json({ error: 'At least one checklist item is required' });
+            }
             const visit = await VisitService.createVisit({
                 date,
                 time,
@@ -1291,19 +1431,22 @@ class VisitController {
             });
             res.status(201).json(visit);
         } catch (error) {
-            console.error(error);
-            res.status(error.status || 500).json({ error: error.message || 'Internal server error' });
+            console.error(`${new Date().toISOString()} - Create visit failed:`, error);
+            res.status(error.status || 500).json({ error: error.message || 'Failed to create visit due to an internal error' });
         }
     }
 
     static async verifyQRCode(req, res) {
         try {
             const { qrData, visitId } = req.body;
+            if (!qrData || !visitId) {
+                return res.status(400).json({ error: 'Missing required parameters: qrData and visitId are mandatory' });
+            }
             const result = await VisitService.verifyQRCode(qrData, visitId);
             res.status(result.valid ? 200 : 400).json(result);
         } catch (error) {
-            console.error(error);
-            res.status(error.status || 500).json({ error: error.message || 'Internal server error' });
+            console.error(`${new Date().toISOString()} - QR verification failed:`, error);
+            res.status(error.status || 500).json({ error: error.message || 'Failed to verify QR code due to an internal error' });
         }
     }
 
@@ -1311,11 +1454,14 @@ class VisitController {
         try {
             const { id } = req.params;
             const { duration, checklistUpdates, photos, comment } = req.body;
+            if (!duration) {
+                return res.status(400).json({ error: 'Duration is required to log a visit' });
+            }
             const visit = await VisitService.logVisit(id, { duration, checklistUpdates, photos, comment });
             res.status(200).json(visit);
         } catch (error) {
-            console.error(error);
-            res.status(error.status || 500).json({ error: error.message || 'Internal server error' });
+            console.error(`${new Date().toISOString()} - Log visit failed:`, error);
+            res.status(error.status || 500).json({ error: error.message || 'Failed to log visit due to an internal error' });
         }
     }
 
@@ -1325,11 +1471,11 @@ class VisitController {
             const visit = await VisitService.getVisitByID(id);
             res.status(200).json(visit);
         } catch (error) {
-            console.error(error);
-            res.status(error.status || 500).json({ error: error.message || 'Internal server error' });
+            console.error(`${new Date().toISOString()} - Get visit failed:`, error);
+            res.status(error.status || 500).json({ error: error.message || 'Failed to retrieve visit due to an internal error' });
         }
     }
-};
+}
 
 module.exports = VisitController;
 
@@ -1516,6 +1662,7 @@ module.exports = (sequelize, DataTypes) => {
         number: {
             type: DataTypes.STRING,
             allowNull: false,
+            unique: true,
         },
         type: {
             type: DataTypes.STRING,
@@ -1756,7 +1903,7 @@ module.exports = (sequelize, DataTypes) => {
     phone: { type: DataTypes.STRING, unique: true, allowNull: false },
     email: { type: DataTypes.STRING, unique: true, allowNull: false },
     wallet: { type: DataTypes.STRING, unique: true, allowNull: false },
-    password: { type: DataTypes.STRING, allowNull: true },
+    password: { type: DataTypes.STRING, allowNull: false },
 });
 
 };
@@ -1773,7 +1920,7 @@ module.exports = (sequelize, DataTypes) => {
         primaryKey: true,
         defaultValue: () => `chk_${nanoid()}`, 
     },
-    item: { type: DataTypes.STRING, allowNull: false },
+    item: { type: DataTypes.STRING, allowNull: false, unique: true },
 
 });
 
@@ -1792,7 +1939,7 @@ module.exports = (sequelize, DataTypes) => {
         primaryKey: true,
         defaultValue: () => `rea_${nanoid()}`,
     },
-    item: { type: DataTypes.STRING, allowNull: false },
+    item: { type: DataTypes.STRING, allowNull: false, unique: true },
 
 });
 
@@ -1854,11 +2001,45 @@ File contents: C:\Users\Kayto\Desktop\IT\Projects\Stage\Stage PFE\TraceFlow\Back
 ==================================================
 const express = require('express');
 const router = express.Router();
+//const { keycloak } = require('../config/security'); // Import keycloak instance
 const AuthController = require('../controllers/authController');
-const { authenticateJWT, requirePermission } = require('../config/security');
 
 router.post('/login', AuthController.login);
 router.post('/verify-2fa', AuthController.verify2FA);
+
+
+
+// // Keycloak login redirect
+// router.get('/login', keycloak.protect(), (req, res) => {
+//     // If authenticated, redirect to dashboard; otherwise, Keycloak redirects to its login page
+//     res.redirect('/admin');
+// });
+
+// // Callback route for Keycloak redirect
+// router.get('/callback', keycloak.middleware(), (req, res) => {
+//     if (req.kauth.grant) {
+//         console.log('User authenticated:', req.kauth.grant.access_token.content);
+//         res.redirect('/admin');
+//     } else {
+//         res.status(401).json({ error: 'Authentication failed' });
+//     }
+// });
+
+// // Logout route
+// router.get('/logout', keycloak.middleware({ logout: true }), (req, res) => {
+//     req.session.destroy((err) => {
+//         if (err) {
+//             console.error('Session destruction error:', err);
+//             return res.status(500).json({ error: 'Logout failed' });
+//         }
+//         res.redirect('/login');
+//     });
+// });
+
+// // Protected route example
+// router.get('/admin', keycloak.protect(), (req, res) => {
+//     res.json({ message: 'Welcome to the dashboard!', user: req.kauth.grant.access_token.content });
+// });
 
 module.exports = router;
 
@@ -3581,6 +3762,7 @@ SMS_GATEWAY_API_KEY_CLOUD=caY24CuuRousJA3Pzu4Ymp:APA91bEUYQXiT1yspAvZpGIwliYxV-t
 
 # Server
 PORT=5000
+SESSION_SECRET=8f6b9e567547e5964ec6901aa16fd9b8e6db45f960f128c45c5adae4f8d4c964
 
 # Super Admin
 SUPER_ADMIN_EMAIL=superadmin@example.com
@@ -3588,12 +3770,20 @@ SUPER_ADMIN_PASSWORD=SuperSecurePassword123!
 
 # NODE_ENV=production
 
+# Keycloack
+KEYCLOAK_URL=http://localhost:8080
+KEYCLOAK_REALM=TraceFlow
+KEYCLOAK_CLIENT_ID=traceflow-backend
+KEYCLOAK_CLIENT_SECRET=vQbSFLJmoDRN5eGnXdLXVwuWMijpNsah
+
+# Frontend (optional, for CORS and redirects)
+FRONTEND_URL=http://localhost:5173
+
 ==================================================
 File contents: C:\Users\Kayto\Desktop\IT\Projects\Stage\Stage PFE\TraceFlow\Back-End\app.js
 ==================================================
 const cors = require('cors');
 const express = require('express');
-
 
 const {
     initializeDatabase,
@@ -3603,10 +3793,9 @@ const {
 } = require('./config');
 const { seedSuperAdmin } = require('./config/SeedSuperAdmin');
 const { sequelize } = require('./config/db');
-const { authenticateJWT, restrictTo } = require('./config/security');
+const { authenticateJWT } = require('./config/security');
 const { seedMissingPermissions } = require('./config/seedPermissions');
 const { setupAssociations } = require('./models');
-
 
 const agentRoutes = require('./routes/agentRoutes');
 const authRoutes = require('./routes/authRoutes');
@@ -3624,8 +3813,29 @@ require('dotenv').config();
 
 const app = express();
 
+// CORS configuration
+const allowedOrigins = [
+    process.env.FRONTEND_URL || 'http://localhost:5173', // Default to local dev if not set
+    'http://localhost:3000', // Optional: Add other dev origins if needed
+    // Add production frontend URLs here, e.g., 'https://yourdomain.com'
+];
+
+const corsOptions = {
+    origin: (origin, callback) => {
+        // Allow requests with no origin (e.g., server-to-server or Postman) or if origin is in allowed list
+        if (!origin || allowedOrigins.includes(origin)) {
+            callback(null, true);
+        } else {
+            callback(new Error('Not allowed by CORS'));
+        }
+    },
+    credentials: true, // Required for HttpOnly cookies
+    methods: ['GET', 'POST', 'PUT', 'DELETE', 'OPTIONS'], // Allowed methods
+    allowedHeaders: ['Content-Type', 'Authorization'], // Allowed headers
+};
+
 // Middleware
-app.use(cors()); // Enable Cross-Origin Resource Sharing
+app.use(cors(corsOptions)); // Use restricted CORS
 app.use(express.json()); // Parse incoming JSON requests
 app.use((req, res, next) => {
     if (req.user) {
@@ -3649,7 +3859,7 @@ app.use('/api/receipt-books', receiptBookRoutes);
 app.use('/api/receipt-stubs', receiptStubRoutes);
 
 // Test secure endpoint
-app.get('/test', authenticateJWT, restrictTo('Super Admin', 'Manager'), (req, res) => {
+app.get('/test', authenticateJWT, (req, res) => {
     res.json({ message: 'Secure endpoint accessed', user: req.user });
 });
 
@@ -3685,7 +3895,7 @@ async function startApp() {
             logStep('Database Initialization', true, 'Completed successfully');
         } catch (dbError) {
             logStep('Database Initialization', false, 'Failed', dbError);
-            throw dbError; // Stop execution on critical failure
+            throw dbError;
         }
 
         // Step 2: Initialize SMTP
@@ -3694,7 +3904,7 @@ async function startApp() {
             logStep('SMTP Initialization', true, 'Completed successfully');
         } catch (smtpError) {
             logStep('SMTP Initialization', false, 'Failed', smtpError);
-            throw smtpError; // Stop execution on critical failure
+            throw smtpError;
         }
 
         // Step 3: Initialize SMS (non-critical)
@@ -3703,7 +3913,6 @@ async function startApp() {
             logStep('SMS Initialization', true, 'Completed successfully');
         } catch (smsError) {
             logStep('SMS Initialization', false, 'Proceeding without SMS', smsError);
-            // Non-critical, continue execution
         }
 
         // Step 4: Set up model associations
@@ -3712,7 +3921,7 @@ async function startApp() {
             logStep('Model Associations', true, 'Relationships established');
         } catch (assocError) {
             logStep('Model Associations', false, 'Failed', assocError);
-            throw assocError; // Stop execution on critical failure
+            throw assocError;
         }
 
         // Step 5: Sync database
@@ -3721,7 +3930,7 @@ async function startApp() {
             logStep('Database Sync', true, 'Tables synchronized');
         } catch (syncError) {
             logStep('Database Sync', false, 'Failed', syncError);
-            throw syncError; // Stop execution on critical failure
+            throw syncError;
         }
 
         // Step 6: Seed missing permissions
@@ -3730,7 +3939,7 @@ async function startApp() {
             logStep('Permission Seeding', true, 'Completed successfully');
         } catch (seedError) {
             logStep('Permission Seeding', false, 'Failed', seedError);
-            throw seedError; // Stop execution on critical failure
+            throw seedError;
         }
 
         // Step 7: Seed super admin
@@ -3748,7 +3957,7 @@ async function startApp() {
             logStep('Server Initialization', true, 'Server started');
         } catch (serverError) {
             logStep('Server Initialization', false, 'Failed', serverError);
-            throw serverError; // Stop execution on critical failure
+            throw serverError;
         }
 
         // Log summary
@@ -3766,7 +3975,7 @@ async function startApp() {
 
     } catch (error) {
         console.error(`${new Date().toISOString()} - Application initialization failed:`, error);
-        process.exit(1); // Exit with failure code
+        process.exit(1);
     }
 }
 

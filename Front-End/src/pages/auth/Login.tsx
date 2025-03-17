@@ -1,18 +1,22 @@
-// src/pages/LoginPage.tsx
-import React, { useState } from "react";
-import { useNavigate } from "react-router-dom";
-
-import "./Login.css"; // New CSS file
-import { login } from "../../apis/authAPI";
+import React, { useState, useEffect } from "react";
 import { useAuth } from "../../context/AuthContext";
+import { useError } from "../../context/ErrorContext";
+import { useLocation } from "react-router-dom";
+import { AxiosError } from "axios";
+import "./Login.css";
 
 const LoginPage: React.FC = () => {
     const [identifier, setIdentifier] = useState("");
     const [password, setPassword] = useState("");
-    const [error, setError] = useState<string | null>(null);
     const [loading, setLoading] = useState(false);
-    const { login: authLogin } = useAuth();
-    const navigate = useNavigate();
+    const { loginUser, user, token } = useAuth();
+    const { setError } = useError();
+    const location = useLocation();
+
+    // Log user and token when they change
+    useEffect(() => {
+        console.log("LoginPage - User updated:", user, "Token updated:", token);
+    }, [user, token]);
 
     const handleSubmit = async (e: React.FormEvent) => {
         e.preventDefault();
@@ -20,23 +24,14 @@ const LoginPage: React.FC = () => {
         setError(null);
 
         try {
-            const response = await login(identifier, password);
-            authLogin(response.token, response.user);
-
-            // Role-based redirect
-            const userRoles = response.user.roles || [];
-            if (userRoles.some((role) => role.name === "Admin")) {
-                navigate("/admin");
-            } else if (userRoles.some((role) => role.name === "Manager")) {
-                navigate("/manager-dashboard"); 
-            } else if (userRoles.some((role) => role.name === "Supervisor")) {
-                navigate("/timesheet");
-            } else {
-                navigate("/dashboard"); // Placeholder; adjust as needed
-            }
-        } catch (err) {
-            setError("Invalid credentials. Please try again.");
-            console.error(err);
+            const redirectTo = location.state?.from || "/admin";
+            await loginUser(identifier, password, redirectTo);
+        } catch (err: unknown) {
+            const axiosError = err as AxiosError<{ error: string }>;
+            const errorMessage =
+                axiosError.response?.data?.error || "Invalid credentials. Please try again.";
+            setError(errorMessage);
+            console.error("Login error:", err);
         } finally {
             setLoading(false);
         }
@@ -48,7 +43,6 @@ const LoginPage: React.FC = () => {
                 <h1>Login</h1>
             </header>
             <section className="login-card">
-                {error && <p className="error">{error}</p>}
                 <form onSubmit={handleSubmit}>
                     <div className="form-group">
                         <label htmlFor="identifier">Email or Phone</label>

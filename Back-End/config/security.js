@@ -1,20 +1,18 @@
 const jwt = require('jsonwebtoken');
-const { Role, User, Permission } = require('../models');
 const { sequelize } = require('./db');
+const { Role, User, Permission } = require('../models');
 require('dotenv').config();
 
 const JWT_SECRET = process.env.JWT_SECRET;
 
-// Middleware to authenticate JWT tokens and attach user data to the request
 const authenticateJWT = async (req, res, next) => {
-    const token = req.headers.authorization?.split(' ')[1]; // Extract token from Authorization header
-    if (!token) return res.status(401).json({ error: 'No token provided' });
+    const token = req.headers.authorization?.split(' ')[1];
+    if (!token) {
+        return res.status(401).json({ error: 'Authentication failed: No token provided' });
+    }
 
     try {
-        // Verify the token and decode its payload
         const decoded = jwt.verify(token, JWT_SECRET);
-
-        // Fetch the user with their roles and permissions
         const user = await User.findByPk(decoded.userID, {
             include: [
                 {
@@ -24,51 +22,30 @@ const authenticateJWT = async (req, res, next) => {
                 },
             ],
         });
-        if (!user) throw new Error('User not found');
-
-        // Attach user to the request object
+        if (!user) {
+            return res.status(401).json({ error: 'Authentication failed: User not found' });
+        }
         req.user = user;
-
-        // Set RLS userID for database queries
         await sequelize.query(`SET jwt.claims.userID = '${user.userID}'`);
         next();
     } catch (error) {
-        res.status(401).json({ error: 'Invalid token' });
+        console.error(`${new Date().toISOString()} - JWT verification failed:`, error.message);
+        return res.status(401).json({ error: `Authentication failed: Invalid or expired token - ${error.message}` });
     }
 };
 
-// Middleware factory to check for a specific permission
 const requirePermission = (permissionName) => {
     return async (req, res, next) => {
         if (!req.user) {
-            return res.status(401).json({ error: 'Authentication required' });
+            return res.status(401).json({ error: 'Authentication required: Please log in' });
         }
-
-        // Extract all permissions from the user’s roles, using 'name' field
-        const userPermissions = req.user.Roles.flatMap(role =>
-            role.Permissions.map(perm => perm.name) // Change 'permission' to 'name'
-        );
-
-        // Check if the required permission is present
+        const userPermissions = req.user.Roles.flatMap(role => role.Permissions.map(perm => perm.name));
         if (!userPermissions.includes(permissionName)) {
-            return res.status(403).json({
-                error: `Permission '${permissionName}' required`
-            });
+            console.warn(`${new Date().toISOString()} - Permission denied for user ${req.user.userID}: Missing ${permissionName}`);
+            return res.status(403).json({ error: `Access denied: '${permissionName}' permission required` });
         }
         next();
     };
 };
 
-// Legacy middleware to restrict access based on role names
-const restrictTo = (...allowedRoles) => {
-    return (req, res, next) => {
-        const userRoles = req.user.Roles.map(role => role.name);
-        const hasPermission = allowedRoles.some(role => userRoles.includes(role));
-        if (!hasPermission) {
-            return res.status(403).json({ error: 'Insufficient role permissions' });
-        }
-        next();
-    };
-};
-
-module.exports = { authenticateJWT, requirePermission, restrictTo };
+module.exports = { authenticateJWT, requirePermission };

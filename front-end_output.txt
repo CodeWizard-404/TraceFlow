@@ -1,556 +1,6 @@
 FRONT-END PROJECT FILES
-Generated on: 1742144785.76597
+Generated on: 1742247237.0371969
 ==================================================
-
-==================================================
-File contents: C:\Users\Kayto\Desktop\IT\Projects\Stage\Stage PFE\TraceFlow\Front-End\src\App.css
-==================================================
-/* src/App.css */
-.app-container {
-  display: flex;
-  flex-direction: column;
-  flex: 1; /* Grow to fill the body’s height */
-}
-
-main {
-  flex: 1 0 auto; /* Expand to push footer down */
-}
-
-.header {
-  flex-shrink: 0; /* Prevent shrinking */
-}
-
-.footer {
-  flex-shrink: 0; /* Prevent shrinking */
-}
-
-
-/* Default styles (Light theme) */
-body {
-  margin: 0;
-  font-family: Arial, sans-serif;
-  background: linear-gradient(135deg, #f8fafc 0%, #eef2f6 100%);
-  color: #1f2937;
-}
-
-/* Dark theme overrides */
-body.dark {
-  background: linear-gradient(135deg, #111111 0%, #424242 100%);
-  color: #e2e8f0;
-}
-
-/* Ensure all generic text elements switch color */
-body.dark p,
-body.dark span,
-body.dark li,
-body.dark h1,
-body.dark h2,
-body.dark h3,
-body.dark label {
-  color: #ffffff;
-}
-
-/* App Container */
-body.dark .app-container {
-  background: none;
-}
-
-/* Header */
-body.dark .header,
-body.dark .footer {
-  background: #26292e;
-  box-shadow: 0 0.375rem 1.25rem rgba(0, 0, 0, 0.3);
-  color: #e2e8f0;
-}
-
-body.dark .header h1 {
-  color: #e2e8f0;
-}
-
-/* TimesheetForm */
-body.dark .timesheet-form-container {
-  background: none;
-}
-
-body.dark .timesheet-form-container .form-header h1 {
-  color: #e2e8f0;
-}
-
-body.dark .timesheet-form-container .form-card {
-  background: #2d3748;
-  box-shadow: 0 0.375rem 1.25rem rgba(0, 0, 0, 0.3);
-}
-
-body.dark .timesheet-form-container .form-group label {
-  color: #63b3ed;
-}
-
-body.dark .timesheet-form-container .form-group input[type="date"],
-body.dark .timesheet-form-container .form-group input[type="time"],
-body.dark .timesheet-form-container .form-group .search-input,
-body.dark .timesheet-form-container .form-group select {
-  background: #e8f1ff;
-  border-color: #4a5568;
-}
-
-body.dark .timesheet-form-container .submit-btn {
-  background: #63b3ed;
-  color: #fff;
-}
-
-body.dark .timesheet-form-container .submit-btn:hover:not(:disabled) {
-  background: #4299e1;
-}
-
-body.dark .timesheet-form-container .error,
-body.dark .timesheet-form-container .error-text {
-  color: #f687b3;
-}
-
-body.dark .timesheet-form-container .selected-item {
-  background: #63b3ed;
-}
-
-body.dark .timesheet-form-container .selected-item:hover {
-  background: #4299e1;
-}
-
-/* Timesheets */
-body.dark .timesheets-container {
-  background: none;
-}
-
-body.dark .timesheets-container .timesheets-header .view-toggle {
-  background: #2d3748;
-}
-
-body.dark .timesheets-container .toggle-btn {
-  color: #a0b1c0;
-}
-
-body.dark .timesheets-container .toggle-btn.active {
-  background: #63b3ed;
-  color: #fff;
-}
-
-body.dark .timesheets-container .nav-btn,
-body.dark .timesheets-container .current-btn {
-  background: #2d3748;
-  color: #63b3ed;
-  border-color: #63b3ed;
-}
-body.dark .timesheets-container .create-btn {
-  background: #63b3ed;
-  border: 1px solid #2d3748;
-
-}
-
-body.dark .timesheets-container .nav-btn:hover,
-body.dark .timesheets-container .current-btn:hover {
-  background: #63b3ed;
-  color: #fff;
-}
-
-body.dark .timesheets-container .create-btn:hover {
-  background: #2d3748;
-  color: #63b3ed;
-  border-color: #63b3ed;
-  border: 1px solid #63b3ed;
-}
-
-body.dark .timesheets-container .year-navigation h1,
-body.dark .timesheets-container .month-header h2,
-body.dark .timesheets-container .week-header h2,
-body.dark .timesheets-container .day-header h2,
-body.dark .timesheets-container .month-card h2,
-body.dark .timesheets-container .week-card h3 {
-  color: #e2e8f0;
-}
-
-body.dark .timesheets-container .month-card,
-body.dark .timesheets-container .week-card,
-body.dark .timesheets-container .week-details {
-  background: #2d3748;
-  color: #e2e8f0;
-  box-shadow: 0 0.1rem 0.5rem rgba(0, 0, 0, 0.185);
-}
-body.dark .timesheets-container .week-tile, 
-body.dark .timesheets-container .week-tile,
-body.dark .timesheets-container .day-tile,
-body.dark .timesheets-container .visit-card{
-  background: #31415c;
-  box-shadow: 0 0.1rem 0.5rem rgba(0, 0, 0, 0.185);
-}
-
-body.dark .timesheets-container .visit-card .visit-reasons,
-body.dark .timesheets-container .visit-card .visit-location,
-body.dark .timesheets-container .visit-card .visit-time {
-  color: #e2e8f0;
-}
-
-body.dark .timesheets-container .week-tile:hover ,
-body.dark .timesheets-container .day-tile:hover {
-  background: #63b3ed;
-}
-
-body.dark .timesheets-container .week-range,
-body.dark .timesheets-container .visit-count,
-body.dark .timesheets-container .week-status,
-body.dark .timesheets-container .visit-location,
-body.dark .timesheets-container .visit-duration,
-body.dark .timesheets-container .week-card p {
-  color: #a0aec0;
-}
-
-
-
-
-
-/* VisitDetails */
-body.dark .visit-details-container {
-  background: none;
-}
-
-body.dark .visit-details-container .visit-details-hero {
-  background: linear-gradient(135deg, #63b3ed 0%, #4299e1 100%);
-}
-
-body.dark .visit-details-container .visit-details-hero h1 {
-  color: #e2e8f0;
-}
-
-body.dark .visit-details-container .visit-details-card {
-  background: #2d3748;
-  box-shadow: 0 0.375rem 1.25rem rgba(0, 0, 0, 0.3);
-}
-
-body.dark .visit-details-container .visit-details-card h2 {
-  color: #63b3ed;
-}
-
-body.dark .visit-details-container .card-content p,
-body.dark .visit-details-container .card-content li {
-  color: #e2e8f0;
-}
-
-body.dark .visit-details-container .no-data {
-  color: #a0aec0;
-}
-
-body.dark .visit-details-container .visit-details-log-btn,
-body.dark .visit-details-container .visit-details-back-btn {
-  background: #63b3ed;
-}
-
-body.dark .visit-details-container .visit-details-log-btn:hover,
-body.dark .visit-details-container .visit-details-back-btn:hover {
-  background: #4299e1;
-}
-
-body.dark .visit-details-container .visit-details-error-card {
-  background: #2d3748;
-  border-color: #f687b3;
-}
-
-/* QRScan */
-body.dark .qr-scan-container {
-  background: none;
-}
-
-body.dark .qr-scan-container .qr-header h1 {
-  color: #e2e8f0;
-}
-
-body.dark .qr-scan-container .qr-header p,
-body.dark .qr-scan-container .qr-status p {
-  color: #a0aec0;
-}
-
-body.dark .qr-scan-container .qr-scan-card {
-  background: #2d3748;
-  box-shadow: 0 0.375rem 1.25rem rgba(0, 0, 0, 0.3);
-}
-
-body.dark .qr-scan-container .qr-reader {
-  border-color: #63b3ed;
-}
-
-body.dark .qr-scan-container .qr-back-btn {
-  background: #63b3ed;
-}
-
-body.dark .qr-scan-container .qr-back-btn:hover {
-  background: #4299e1;
-}
-
-body.dark .qr-scan-container .qr-error-card {
-  background: #2d3748;
-  border-color: #f687b3;
-}
-
-body.dark .qr-scan-container .qr-error-card h2 {
-  color: #f687b3;
-}
-
-/* VisitValidation */
-body.dark .visit-validation-container {
-  background: none;
-}
-
-body.dark .visit-validation-container .visit-header-0 {
-  background: linear-gradient(135deg, #63b3ed 0%, #4299e1 100%);
-}
-
-body.dark .visit-validation-container .visit-header-0 h1 {
-  color: #e2e8f0;
-}
-
-body.dark .visit-validation-container .visit-header-0 p {
-  color: #e6e6e6;
-}
-
-body.dark .visit-validation-container .visit-card {
-  background: #2d3748;
-  color: #e2e8f0;
-  box-shadow: 0 0.375rem 1.25rem rgba(0, 0, 0, 0.3);
-}
-
-body.dark .visit-validation-container .details-section,
-body.dark .visit-validation-container .reasons-section,
-body.dark .visit-validation-container .checklist-section, 
-body.dark .visit-validation-container .checklist-section .custom-checkbox-input:checked + .custom-checkbox, 
-body.dark .visit-validation-container .checklist-section .custom-checkbox
-body.dark .visit-validation-container .checklist-section li.checked {
-  background: #404d64;
-  border-color: #63b3ed;
-}
-
-body.dark .visit-validation-container .details-section h2,
-body.dark .visit-validation-container .reasons-section h2,
-body.dark .visit-validation-container .checklist-section h2 {
-  color: #63b3ed;
-}
-
-
-
-body.dark .visit-validation-container .detail-item p,
-body.dark .visit-validation-container .reasons-section li,
-body.dark .visit-validation-container .checklist-section span {
-  color: #e2e8f0;
-}
-
-body.dark .visit-validation-container .detail-item span {
-  color: #a0aec0;
-}
-
-body.dark .visit-validation-container .progress-fill {
-  background: #63b3ed;
-}
-
-body.dark .visit-validation-container .validate-btn,
-body.dark .visit-validation-container .back-btn {
-  background: #63b3ed;
-  color: #ffffff;
-}
-
-body.dark .visit-validation-container .validate-btn:hover:not(:disabled),
-body.dark .visit-validation-container .back-btn:hover:not(:disabled) {
-  background: #4299e1;
-}
-
-/* VisitValidationDetail */
-body.dark .visit-validation-detail-container {
-  background: none;
-}
-
-body.dark .visit-validation-detail-container .visit-header h1 {
-  color: #e2e8f0;
-}
-
-body.dark .visit-validation-detail-container .visit-header p {
-  color: #a0aec0;
-}
-
-body.dark .visit-validation-detail-container .visit-card {
-  background: #2d3748;
-  color: #e2e8f0;
-  box-shadow: 0 0.375rem 1.25rem rgba(0, 0, 0, 0.3);
-}
-
-body.dark .visit-validation-detail-container .detail-section h2 {
-  color: #63b3ed;
-}
-
-body.dark .visit-validation-detail-container .detail-section p,
-body.dark .visit-validation-detail-container .detail-section li {
-  color: #e2e8f0;
-}
-
-body.dark .visit-validation-detail-container .validate-btn,
-body.dark .visit-validation-detail-container .reject-btn,
-body.dark .visit-validation-detail-container .back-btn {
-  background: #63b3ed;
-}
-
-body.dark .visit-validation-detail-container .validate-btn:hover:not(:disabled),
-body.dark .visit-validation-detail-container .reject-btn:hover:not(:disabled),
-body.dark .visit-validation-detail-container .back-btn:hover {
-  background: #4299e1;
-}
-
-body.dark .visit-validation-detail-container .reject-btn {
-  background: #f687b3;
-}
-
-body.dark .visit-validation-detail-container .reject-btn:hover:not(:disabled) {
-  background: #d53f8c;
-}
-
-/* Bootstrap Overrides */
-body.dark .btn-primary {
-  background: #63b3ed;
-  border-color: #63b3ed;
-}
-
-body.dark .btn-primary:hover {
-  background: #4299e1;
-  border-color: #4299e1;
-}
-
-body.dark .form-control {
-  background: #2d3748;
-  color: #e2e8f0;
-  border-color: #4a5568;
-}
-
-==================================================
-File contents: C:\Users\Kayto\Desktop\IT\Projects\Stage\Stage PFE\TraceFlow\Front-End\src\App.tsx
-==================================================
-// src/App.tsx
-import React, { useEffect } from "react";
-import {
-  BrowserRouter as Router,
-  Routes,
-  Route,
-  Navigate,
-} from "react-router-dom";
-import { ThemeProvider, useTheme } from "./context/ThemeContext";
-import { AuthProvider } from "./context/AuthContext"; // Add AuthProvider
-import Timesheets from "./pages/timesheet/Timesheets";
-import TimesheetForm from "./pages/timesheet/TimesheetForm";
-import QRScan from "./pages/visit/QRScan";
-import VisitDetails from "./pages/visit/VisitDetails";
-import VisitValidation from "./pages/visit/VisitValidation";
-import PageNotFound from "./pages/PageNotFound";
-import VisitValidationDetail from "./pages/timesheet/TimesheetValidationDetail";
-import Footer from "./components/Footer";
-import Header from "./components/Header";
-import TimesheetValidation from "./pages/timesheet/TimesheetValidation";
-
-import "./App.css";
-import AdminDashboard from "./pages/Admin/AdminDashboard";
-import LoginPage from "./pages/auth/Login";
-
-const AppContent: React.FC = () => {
-  const { theme } = useTheme();
-
-  useEffect(() => {
-    document.body.className = theme; // Apply 'light' or 'dark' to body
-  }, [theme]);
-
-  return (
-    <div className="app-container">
-      <Header />
-      <main>
-        <Routes>
-          <Route path="/" element={<Navigate to="/login" replace />} /> {/* Default to login */}
-          <Route path="/login" element={<LoginPage />} />
-          <Route path="/admin" element={<AdminDashboard />} />
-          <Route path="/timesheet" element={<Timesheets />} />
-          <Route path="/timesheet-form" element={<TimesheetForm />} />
-          <Route
-            path="/timesheet-validation"
-            element={<TimesheetValidation />}
-          />
-          <Route
-            path="/timesheet-validation/visit/:visitId"
-            element={<VisitValidationDetail />}
-          />
-          <Route path="/qr-scan" element={<QRScan />} />
-          <Route path="/visit/:idVisit" element={<VisitDetails />} />
-          <Route
-            path="/visit/:idVisit/validate-checklist"
-            element={<VisitValidation />}
-          />
-          <Route path="*" element={<PageNotFound />} />
-        </Routes>
-      </main>
-      <Footer />
-    </div>
-  );
-};
-
-const App: React.FC = () => {
-  return (
-    <Router>
-      <ThemeProvider>
-        <AuthProvider> {/* Wrap with AuthProvider */}
-          <AppContent />
-        </AuthProvider>
-      </ThemeProvider>
-    </Router>
-  );
-};
-
-export default App;
-
-
-==================================================
-File contents: C:\Users\Kayto\Desktop\IT\Projects\Stage\Stage PFE\TraceFlow\Front-End\src\config.ts
-==================================================
-export const BASE_URL = "http://192.168.1.14:5000/api"; 
-export const DEFAULT_TIMEOUT = 3600000; 
-
-==================================================
-File contents: C:\Users\Kayto\Desktop\IT\Projects\Stage\Stage PFE\TraceFlow\Front-End\src\index.css
-==================================================
-body {
-    margin: 0;
-    font-family: Arial, sans-serif;
-}
-
-==================================================
-File contents: C:\Users\Kayto\Desktop\IT\Projects\Stage\Stage PFE\TraceFlow\Front-End\src\main.tsx
-==================================================
-import React from "react";
-import { createRoot } from "react-dom/client";
-import { ThemeProvider, useTheme } from "./context/ThemeContext";
-import App from "./App.tsx";
-import "bootstrap/dist/css/bootstrap.min.css";
-import "./App.css"; // Import the global theme CSS
-
-const Root: React.FC = () => {
-  const { theme } = useTheme();
-  React.useEffect(() => {
-    document.body.className = theme; // Apply theme class to body
-  }, [theme]);
-
-  return <App />;
-};
-
-createRoot(document.getElementById("root")!).render(
-  <React.StrictMode>
-    <ThemeProvider>
-      <Root />
-    </ThemeProvider>
-  </React.StrictMode>
-);
-
-==================================================
-File contents: C:\Users\Kayto\Desktop\IT\Projects\Stage\Stage PFE\TraceFlow\Front-End\src\vite-env.d.ts
-==================================================
-/// <reference types="vite/client" />
-
 
 ==================================================
 File contents: C:\Users\Kayto\Desktop\IT\Projects\Stage\Stage PFE\TraceFlow\Front-End\src\apis\agentAPI.tsx
@@ -564,24 +14,52 @@ const agentApi = axios.create({
   timeout: DEFAULT_TIMEOUT,
 });
 
-export const getAgentsByLocation = async (location: string): Promise<AgentsByLocationResponse> => {
-  const response = await agentApi.get<AgentsByLocationResponse>(`/location?location=${location}`);
-  return response.data;
+export const getAgentsByLocation = async (location: string, token?: string): Promise<AgentsByLocationResponse> => {
+  try {
+    const response = await agentApi.get<AgentsByLocationResponse>(`/location?location=${location}`, {
+      headers: token ? { Authorization: `Bearer ${token}` } : {},
+    });
+    return response.data;
+  } catch (error) {
+    console.error(`Error fetching agents by location (${location}):`, error);
+    throw error;
+  }
 };
 
-export const getAgentLocations = async (): Promise<AgentLocationsResponse> => {
-  const response = await agentApi.get<AgentLocationsResponse>("/locations");
-  return response.data;
+export const getAgentLocations = async (token?: string): Promise<AgentLocationsResponse> => {
+  try {
+    const response = await agentApi.get<AgentLocationsResponse>("/locations", {
+      headers: token ? { Authorization: `Bearer ${token}` } : {},
+    });
+    return response.data;
+  } catch (error) {
+    console.error("Error fetching agent locations:", error);
+    throw error;
+  }
 };
 
-export const getAgentByPhone = async (phone: string): Promise<AgentByPhoneResponse> => {
-  const response = await agentApi.get<AgentByPhoneResponse>(`/phone/${phone}`);
-  return response.data;
+export const getAgentByPhone = async (phone: string, token?: string): Promise<AgentByPhoneResponse> => {
+  try {
+    const response = await agentApi.get<AgentByPhoneResponse>(`/phone/${phone}`, {
+      headers: token ? { Authorization: `Bearer ${token}` } : {},
+    });
+    return response.data;
+  } catch (error) {
+    console.error(`Error fetching agent by phone (${phone}):`, error);
+    throw error;
+  }
 };
 
-export const getAgentById = async (id: string): Promise<AgentByIdResponse> => {
-  const response = await agentApi.get<AgentByIdResponse>(`/${id}`);
-  return response.data;
+export const getAgentById = async (id: string, token?: string): Promise<AgentByIdResponse> => {
+  try {
+    const response = await agentApi.get<AgentByIdResponse>(`/${id}`, {
+      headers: token ? { Authorization: `Bearer ${token}` } : {},
+    });
+    return response.data;
+  } catch (error) {
+    console.error(`Error fetching agent by ID (${id}):`, error);
+    throw error;
+  }
 };
 
 ==================================================
@@ -594,12 +72,22 @@ import { LoginResponse } from ".";
 const authApi = axios.create({
     baseURL: `${BASE_URL}/auth`,
     timeout: DEFAULT_TIMEOUT,
+    withCredentials: true, // Include cookies in requests
 });
 
 export const login = async (identifier: string, password: string): Promise<LoginResponse> => {
-    const response = await authApi.post<LoginResponse>("/login", { identifier, password });
-    return response.data;
+    try {
+        const response = await authApi.post<LoginResponse>("/login", { identifier, password });
+        const { token, user } = response.data;
+        console.log("API Response:", { token, user }); // Debug log
+        return response.data;
+    } catch (error) {
+        console.error("Error during login:", error);
+        throw error;
+    }
 };
+
+
 
 ==================================================
 File contents: C:\Users\Kayto\Desktop\IT\Projects\Stage\Stage PFE\TraceFlow\Front-End\src\apis\checklistAPI.tsx
@@ -613,19 +101,40 @@ const checklistApi = axios.create({
     timeout: DEFAULT_TIMEOUT,
 });
 
-export const createChecklist = async (data: { text: string }): Promise<CreateChecklistResponse> => {
-    const response = await checklistApi.post<CreateChecklistResponse>("", data);
-    return response.data;
+export const createChecklist = async (data: { text: string }, token: string): Promise<CreateChecklistResponse> => {
+    try {
+        const response = await checklistApi.post<CreateChecklistResponse>("", data, {
+            headers: { Authorization: `Bearer ${token}` },
+        });
+        return response.data;
+    } catch (error) {
+        console.error("Error creating checklist:", error);
+        throw error;
+    }
 };
 
-export const getAllChecklists = async (): Promise<ListChecklistsResponse> => {
-    const response = await checklistApi.get<ListChecklistsResponse>("");
-    return response.data;
+export const getAllChecklists = async (token?: string): Promise<ListChecklistsResponse> => {
+    try {
+        const response = await checklistApi.get<ListChecklistsResponse>("", {
+            headers: token ? { Authorization: `Bearer ${token}` } : {},
+        });
+        return response.data;
+    } catch (error) {
+        console.error("Error fetching all checklists:", error);
+        throw error;
+    }
 };
 
-export const getChecklistsByVisitId = async (visitId: string): Promise<ChecklistsByVisitResponse> => {
-    const response = await checklistApi.get<ChecklistsByVisitResponse>(`/${visitId}`);
-    return response.data;
+export const getChecklistsByVisitId = async (visitId: string, token: string): Promise<ChecklistsByVisitResponse> => {
+    try {
+        const response = await checklistApi.get<ChecklistsByVisitResponse>(`/${visitId}`, {
+            headers: { Authorization: `Bearer ${token}` },
+        });
+        return response.data;
+    } catch (error) {
+        console.error(`Error fetching checklists for visit (${visitId}):`, error);
+        throw error;
+    }
 };
 
 ==================================================
@@ -643,11 +152,13 @@ import ReceiptBook from "../models/ReceiptBook";
 import ReceiptStub from "../models/ReceiptStub";
 import ReceiptBookTransfer from "../models/ReceiptBookTransfer";
 
+// Agent API Responses
 export type AgentsByLocationResponse = Agent[];
 export type AgentLocationsResponse = string[];
 export type AgentByPhoneResponse = Agent;
 export type AgentByIdResponse = Agent;
 
+// Timesheet API Responses
 export interface CreateTimesheetResponse {
   message: string;
   timesheet: Timesheet;
@@ -657,26 +168,34 @@ export type TimesheetByIdResponse = Timesheet;
 export type ValidateTimesheetResponse = Timesheet;
 export type TimesheetsBySupervisorResponse = Timesheet[];
 
+// Visit API Responses
 export type CreateVisitResponse = Visit;
 export type VerifyQrResponse = { valid: boolean; message: string };
 export type LogVisitResponse = Visit;
 export type VisitByIdResponse = Visit;
 
+// Checklist API Responses
 export type CreateChecklistResponse = Checklist;
 export type ListChecklistsResponse = Checklist[];
 export type ChecklistsByVisitResponse = VisitChecklist[];
 
+// Reason API Responses
 export type CreateReasonResponse = Reason;
 export type ListReasonsResponse = Reason[];
 export type ReasonsByVisitResponse = VisitReason[];
 
+// Supervisor API Responses
 export type GetSupervisorByPhoneNumberResponse = string;
 
+// Auth API Responses
 export type LoginResponse = { token: string; user: User };
 
+// User API Responses
 export type CreateUserResponse = User;
 export type ListUsersResponse = User[];
 export type UserByIdResponse = User;
+export type UpdateUserResponse = User; // Added for updateUser
+export type DeleteUserResponse = void; // Added for deleteUser
 export type AssignRolesResponse = {
   userID: string;
   assignedRoles: string[];
@@ -684,6 +203,7 @@ export type AssignRolesResponse = {
 };
 export type RolesByUserResponse = Role[];
 
+// Role API Responses
 export type CreateRoleResponse = Role;
 export type ListRolesResponse = Role[];
 export type RoleByIdResponse = Role;
@@ -694,9 +214,11 @@ export type AssignPermissionsResponse = {
 };
 export type PermissionsByRoleResponse = Permission[];
 
+// Permission API Responses
 export type ListPermissionsResponse = Permission[];
 export type PermissionByIdResponse = Permission;
 
+// Receipt Book API Responses
 export type CreateReceiptBookResponse = ReceiptBook;
 export type ListReceiptBooksResponse = ReceiptBook[];
 export type ReceiptBookByIdResponse = ReceiptBook;
@@ -707,43 +229,132 @@ export type AssignToAgentResponse = { message: string };
 export type ValidateAgentAssignmentResponse = ReceiptBook;
 export type TransferHistoryResponse = ReceiptBookTransfer[];
 
+// Receipt Stub API Responses
 export type CollectStubResponse = { message: string };
 export type ValidateStubCollectionResponse = ReceiptStub;
 export type TransmitStubResponse = ReceiptStub;
 export type ArchiveStubResponse = ReceiptStub;
 
-
 ==================================================
 File contents: C:\Users\Kayto\Desktop\IT\Projects\Stage\Stage PFE\TraceFlow\Front-End\src\apis\permissionAPI.tsx
 ==================================================
-// src/apis/permissionAPI.ts
-import axios from "axios";
+// src/apis/permissionAPI.tsx
+import axios, { AxiosError } from "axios"; // Import AxiosError for proper typing
 import { BASE_URL, DEFAULT_TIMEOUT } from "../config";
-import {  ListPermissionsResponse, PermissionByIdResponse } from ".";
+import { ListPermissionsResponse, PermissionByIdResponse } from ".";
 
 const permissionApi = axios.create({
     baseURL: `${BASE_URL}/permissions`,
     timeout: DEFAULT_TIMEOUT,
+    withCredentials: true, 
 });
 
-export const getAllPermissions = async (token: string): Promise<ListPermissionsResponse> => {
-    const response = await permissionApi.get<ListPermissionsResponse>("", {
-        headers: { Authorization: `Bearer ${token}` },
-    });
-    return response.data;
+interface ErrorResponse {
+    error: string;
+}
+
+// Get all permissions
+export const getAllPermissions = async (
+    token: string,
+    setError?: (error: string | null) => void
+): Promise<ListPermissionsResponse> => {
+    try {
+        const response = await permissionApi.get<ListPermissionsResponse>("", {
+            headers: { Authorization: `Bearer ${token}` },
+        });
+        setError?.(null); // Clear any previous error
+        return response.data;
+    } catch (error: unknown) { // Use unknown instead of any
+        const axiosError = error as AxiosError<ErrorResponse>;
+        const errorMessage = axiosError.response?.data?.error || "Failed to fetch all permissions";
+        setError?.(errorMessage);
+        throw axiosError; // Re-throw for component-level handling
+    }
 };
 
-export const getPermissionById = async (permissionID: string, token: string): Promise<PermissionByIdResponse> => {
-    const response = await permissionApi.get<PermissionByIdResponse>(`/${permissionID}`, {
-        headers: { Authorization: `Bearer ${token}` },
-    });
-    return response.data;
+// Get permission by ID
+export const getPermissionById = async (
+    permissionID: string,
+    token: string,
+    setError?: (error: string | null) => void
+): Promise<PermissionByIdResponse> => {
+    try {
+        const response = await permissionApi.get<PermissionByIdResponse>(`/${permissionID}`, {
+            headers: { Authorization: `Bearer ${token}` },
+        });
+        setError?.(null);
+        return response.data;
+    } catch (error: unknown) {
+        const axiosError = error as AxiosError<ErrorResponse>;
+        const errorMessage = axiosError.response?.data?.error || `Failed to fetch permission with ID ${permissionID}`;
+        setError?.(errorMessage);
+        throw axiosError;
+    }
+};
+
+// Create a new permission
+export const createPermission = async (
+    permissionData: { name: string; type: "page" | "feature"; class: string; description?: string },
+    token: string,
+    setError?: (error: string | null) => void
+): Promise<PermissionByIdResponse> => {
+    try {
+        const response = await permissionApi.post<PermissionByIdResponse>("", permissionData, {
+            headers: { Authorization: `Bearer ${token}` },
+        });
+        setError?.(null);
+        return response.data;
+    } catch (error: unknown) {
+        const axiosError = error as AxiosError<ErrorResponse>;
+        const errorMessage = axiosError.response?.data?.error || "Failed to create permission";
+        setError?.(errorMessage);
+        throw axiosError;
+    }
+};
+
+// Update an existing permission
+export const updatePermission = async (
+    permissionID: string,
+    permissionData: Partial<{ name: string; type: "page" | "feature"; class: string; description?: string }>,
+    token: string,
+    setError?: (error: string | null) => void
+): Promise<PermissionByIdResponse> => {
+    try {
+        const response = await permissionApi.put<PermissionByIdResponse>(`/${permissionID}`, permissionData, {
+            headers: { Authorization: `Bearer ${token}` },
+        });
+        setError?.(null);
+        return response.data;
+    } catch (error: unknown) {
+        const axiosError = error as AxiosError<ErrorResponse>;
+        const errorMessage = axiosError.response?.data?.error || `Failed to update permission with ID ${permissionID}`;
+        setError?.(errorMessage);
+        throw axiosError;
+    }
+};
+
+// Delete a permission
+export const deletePermission = async (
+    permissionID: string,
+    token: string,
+    setError?: (error: string | null) => void
+): Promise<void> => {
+    try {
+        await permissionApi.delete(`/${permissionID}`, {
+            headers: { Authorization: `Bearer ${token}` },
+        });
+        setError?.(null);
+    } catch (error: unknown) {
+        const axiosError = error as AxiosError<ErrorResponse>;
+        const errorMessage = axiosError.response?.data?.error || `Failed to delete permission with ID ${permissionID}`;
+        setError?.(errorMessage);
+        throw axiosError;
+    }
 };
 
 ==================================================
 File contents: C:\Users\Kayto\Desktop\IT\Projects\Stage\Stage PFE\TraceFlow\Front-End\src\apis\reasonAPI.tsx
 ==================================================
-// src/api/reasonApi.tsx
 import axios from "axios";
 import { CreateReasonResponse, ListReasonsResponse, ReasonsByVisitResponse } from ".";
 import { BASE_URL, DEFAULT_TIMEOUT } from "../config";
@@ -753,25 +364,45 @@ const reasonApi = axios.create({
     timeout: DEFAULT_TIMEOUT,
 });
 
-export const createReason = async (data: { text: string }): Promise<CreateReasonResponse> => {
-    const response = await reasonApi.post<CreateReasonResponse>("", data);
-    return response.data;
+export const createReason = async (data: { text: string }, token: string): Promise<CreateReasonResponse> => {
+    try {
+        const response = await reasonApi.post<CreateReasonResponse>("", data, {
+            headers: { Authorization: `Bearer ${token}` },
+        });
+        return response.data;
+    } catch (error) {
+        console.error("Error creating reason:", error);
+        throw error;
+    }
 };
 
-export const getAllReasons = async (): Promise<ListReasonsResponse> => {
-    const response = await reasonApi.get<ListReasonsResponse>("");
-    return response.data;
+export const getAllReasons = async (token?: string): Promise<ListReasonsResponse> => {
+    try {
+        const response = await reasonApi.get<ListReasonsResponse>("", {
+            headers: token ? { Authorization: `Bearer ${token}` } : {},
+        });
+        return response.data;
+    } catch (error) {
+        console.error("Error fetching all reasons:", error);
+        throw error;
+    }
 };
 
-export const getReasonsByVisitId = async (visitId: string): Promise<ReasonsByVisitResponse> => {
-    const response = await reasonApi.get<ReasonsByVisitResponse>(`/${visitId}`);
-    return response.data;
+export const getReasonsByVisitId = async (visitId: string, token: string): Promise<ReasonsByVisitResponse> => {
+    try {
+        const response = await reasonApi.get<ReasonsByVisitResponse>(`/${visitId}`, {
+            headers: { Authorization: `Bearer ${token}` },
+        });
+        return response.data;
+    } catch (error) {
+        console.error(`Error fetching reasons for visit (${visitId}):`, error);
+        throw error;
+    }
 };
 
 ==================================================
 File contents: C:\Users\Kayto\Desktop\IT\Projects\Stage\Stage PFE\TraceFlow\Front-End\src\apis\receiptBookAPI.tsx
 ==================================================
-// src/apis/receiptBookAPI.ts
 import axios from "axios";
 import { BASE_URL, DEFAULT_TIMEOUT } from "../config";
 import {
@@ -796,24 +427,62 @@ export const createReceiptBook = async (
     receiptBookData: Partial<ReceiptBook>,
     token: string
 ): Promise<CreateReceiptBookResponse> => {
-    const response = await receiptBookApi.post<CreateReceiptBookResponse>("", receiptBookData, {
-        headers: { Authorization: `Bearer ${token}` },
-    });
-    return response.data;
+    try {
+        const response = await receiptBookApi.post<CreateReceiptBookResponse>("", receiptBookData, {
+            headers: { Authorization: `Bearer ${token}` },
+        });
+        return response.data;
+    } catch (error) {
+        console.error("Error creating receipt book:", error);
+        throw error;
+    }
 };
 
 export const getAllReceiptBooks = async (token: string): Promise<ListReceiptBooksResponse> => {
-    const response = await receiptBookApi.get<ListReceiptBooksResponse>("", {
-        headers: { Authorization: `Bearer ${token}` },
-    });
-    return response.data;
+    try {
+        const response = await receiptBookApi.get<ListReceiptBooksResponse>("", {
+            headers: { Authorization: `Bearer ${token}` },
+        });
+        return response.data;
+    } catch (error) {
+        console.error("Error fetching all receipt books:", error);
+        throw error;
+    }
 };
 
 export const getReceiptBookById = async (bookID: string, token: string): Promise<ReceiptBookByIdResponse> => {
-    const response = await receiptBookApi.get<ReceiptBookByIdResponse>(`/${bookID}`, {
-        headers: { Authorization: `Bearer ${token}` },
-    });
-    return response.data;
+    try {
+        const response = await receiptBookApi.get<ReceiptBookByIdResponse>(`/${bookID}`, {
+            headers: { Authorization: `Bearer ${token}` },
+        });
+        return response.data;
+    } catch (error) {
+        console.error(`Error fetching receipt book by ID (${bookID}):`, error);
+        throw error;
+    }
+};
+
+export const updateReceiptBook = async (bookID: string, receiptBookData: Partial<ReceiptBook>, token: string): Promise<ReceiptBookByIdResponse> => {
+    try {
+        const response = await receiptBookApi.put<ReceiptBookByIdResponse>(`/${bookID}`, receiptBookData, {
+            headers: { Authorization: `Bearer ${token}` },
+        });
+        return response.data;
+    } catch (error) {
+        console.error(`Error updating receipt book (${bookID}):`, error);
+        throw error;
+    }
+};
+
+export const deleteReceiptBook = async (bookID: string, token: string): Promise<void> => {
+    try {
+        await receiptBookApi.delete(`/${bookID}`, {
+            headers: { Authorization: `Bearer ${token}` },
+        });
+    } catch (error) {
+        console.error(`Error deleting receipt book (${bookID}):`, error);
+        throw error;
+    }
 };
 
 export const sendToSupplier = async (
@@ -821,21 +490,31 @@ export const sendToSupplier = async (
     supplierEmail: string,
     token: string
 ): Promise<SendToSupplierResponse> => {
-    const response = await receiptBookApi.post<SendToSupplierResponse>(
-        "/send",
-        { bookID, supplierEmail },
-        { headers: { Authorization: `Bearer ${token}` } }
-    );
-    return response.data;
+    try {
+        const response = await receiptBookApi.post<SendToSupplierResponse>(
+            "/send",
+            { bookID, supplierEmail },
+            { headers: { Authorization: `Bearer ${token}` } }
+        );
+        return response.data;
+    } catch (error) {
+        console.error(`Error sending receipt book (${bookID}) to supplier:`, error);
+        throw error;
+    }
 };
 
 export const transferToUser = async (bookID: string, token: string): Promise<TransferToUserResponse> => {
-    const response = await receiptBookApi.post<TransferToUserResponse>(
-        "/transfer",
-        { bookID },
-        { headers: { Authorization: `Bearer ${token}` } }
-    );
-    return response.data;
+    try {
+        const response = await receiptBookApi.post<TransferToUserResponse>(
+            "/transfer",
+            { bookID },
+            { headers: { Authorization: `Bearer ${token}` } }
+        );
+        return response.data;
+    } catch (error) {
+        console.error(`Error transferring receipt book (${bookID}) to user:`, error);
+        throw error;
+    }
 };
 
 export const validateTransferToUser = async (
@@ -843,12 +522,17 @@ export const validateTransferToUser = async (
     otpCode: string,
     token: string
 ): Promise<ValidateTransferResponse> => {
-    const response = await receiptBookApi.post<ValidateTransferResponse>(
-        "/validate-transfer",
-        { bookID, otpCode },
-        { headers: { Authorization: `Bearer ${token}` } }
-    );
-    return response.data;
+    try {
+        const response = await receiptBookApi.post<ValidateTransferResponse>(
+            "/validate-transfer",
+            { bookID, otpCode },
+            { headers: { Authorization: `Bearer ${token}` } }
+        );
+        return response.data;
+    } catch (error) {
+        console.error(`Error validating transfer for receipt book (${bookID}):`, error);
+        throw error;
+    }
 };
 
 export const assignToAgent = async (
@@ -856,12 +540,17 @@ export const assignToAgent = async (
     agentPhone: string,
     token: string
 ): Promise<AssignToAgentResponse> => {
-    const response = await receiptBookApi.post<AssignToAgentResponse>(
-        "/assign-agent",
-        { bookID, agentPhone },
-        { headers: { Authorization: `Bearer ${token}` } }
-    );
-    return response.data;
+    try {
+        const response = await receiptBookApi.post<AssignToAgentResponse>(
+            "/assign-agent",
+            { bookID, agentPhone },
+            { headers: { Authorization: `Bearer ${token}` } }
+        );
+        return response.data;
+    } catch (error) {
+        console.error(`Error assigning receipt book (${bookID}) to agent:`, error);
+        throw error;
+    }
 };
 
 export const validateAgentAssignment = async (
@@ -870,25 +559,34 @@ export const validateAgentAssignment = async (
     otpCode: string,
     token: string
 ): Promise<ValidateAgentAssignmentResponse> => {
-    const response = await receiptBookApi.post<ValidateAgentAssignmentResponse>(
-        "/validate-agent",
-        { bookID, agentPhone, otpCode },
-        { headers: { Authorization: `Bearer ${token}` } }
-    );
-    return response.data;
+    try {
+        const response = await receiptBookApi.post<ValidateAgentAssignmentResponse>(
+            "/validate-agent",
+            { bookID, agentPhone, otpCode },
+            { headers: { Authorization: `Bearer ${token}` } }
+        );
+        return response.data;
+    } catch (error) {
+        console.error(`Error validating agent assignment for receipt book (${bookID}):`, error);
+        throw error;
+    }
 };
 
 export const getTransferHistory = async (bookID: string, token: string): Promise<TransferHistoryResponse> => {
-    const response = await receiptBookApi.get<TransferHistoryResponse>(`/${bookID}/history`, {
-        headers: { Authorization: `Bearer ${token}` },
-    });
-    return response.data;
+    try {
+        const response = await receiptBookApi.get<TransferHistoryResponse>(`/${bookID}/history`, {
+            headers: { Authorization: `Bearer ${token}` },
+        });
+        return response.data;
+    } catch (error) {
+        console.error(`Error fetching transfer history for receipt book (${bookID}):`, error);
+        throw error;
+    }
 };
 
 ==================================================
 File contents: C:\Users\Kayto\Desktop\IT\Projects\Stage\Stage PFE\TraceFlow\Front-End\src\apis\receiptStubAPI.tsx
 ==================================================
-// src/apis/receiptStubAPI.ts
 import axios from "axios";
 import { BASE_URL, DEFAULT_TIMEOUT } from "../config";
 import { CollectStubResponse, ValidateStubCollectionResponse, TransmitStubResponse, ArchiveStubResponse } from ".";
@@ -899,10 +597,15 @@ const receiptStubApi = axios.create({
 });
 
 export const collectStub = async (bookID: string, token: string): Promise<CollectStubResponse> => {
-    const response = await receiptStubApi.post<CollectStubResponse>(`/${bookID}/collect`, {}, {
-        headers: { Authorization: `Bearer ${token}` },
-    });
-    return response.data;
+    try {
+        const response = await receiptStubApi.post<CollectStubResponse>(`/${bookID}/collect`, {}, {
+            headers: { Authorization: `Bearer ${token}` },
+        });
+        return response.data;
+    } catch (error) {
+        console.error(`Error collecting stub for book (${bookID}):`, error);
+        throw error;
+    }
 };
 
 export const validateStubCollection = async (
@@ -910,12 +613,17 @@ export const validateStubCollection = async (
     otpCode: string,
     token: string
 ): Promise<ValidateStubCollectionResponse> => {
-    const response = await receiptStubApi.post<ValidateStubCollectionResponse>(
-        `/${bookID}/validate-collection`,
-        { otpCode },
-        { headers: { Authorization: `Bearer ${token}` } }
-    );
-    return response.data;
+    try {
+        const response = await receiptStubApi.post<ValidateStubCollectionResponse>(
+            `/${bookID}/validate-collection`,
+            { otpCode },
+            { headers: { Authorization: `Bearer ${token}` } }
+        );
+        return response.data;
+    } catch (error) {
+        console.error(`Error validating stub collection for book (${bookID}):`, error);
+        throw error;
+    }
 };
 
 export const transmitStub = async (
@@ -923,19 +631,29 @@ export const transmitStub = async (
     newOwnerID: string,
     token: string
 ): Promise<TransmitStubResponse> => {
-    const response = await receiptStubApi.post<TransmitStubResponse>(
-        `/${bookID}/transmit`,
-        { newOwnerID },
-        { headers: { Authorization: `Bearer ${token}` } }
-    );
-    return response.data;
+    try {
+        const response = await receiptStubApi.post<TransmitStubResponse>(
+            `/${bookID}/transmit`,
+            { newOwnerID },
+            { headers: { Authorization: `Bearer ${token}` } }
+        );
+        return response.data;
+    } catch (error) {
+        console.error(`Error transmitting stub for book (${bookID}):`, error);
+        throw error;
+    }
 };
 
 export const archiveStub = async (bookID: string, token: string): Promise<ArchiveStubResponse> => {
-    const response = await receiptStubApi.post<ArchiveStubResponse>(`/${bookID}/archive`, {}, {
-        headers: { Authorization: `Bearer ${token}` },
-    });
-    return response.data;
+    try {
+        const response = await receiptStubApi.post<ArchiveStubResponse>(`/${bookID}/archive`, {}, {
+            headers: { Authorization: `Bearer ${token}` },
+        });
+        return response.data;
+    } catch (error) {
+        console.error(`Error archiving stub for book (${bookID}):`, error);
+        throw error;
+    }
 };
 
 ==================================================
@@ -952,24 +670,62 @@ const roleApi = axios.create({
 });
 
 export const createRole = async (roleData: Partial<Role>, token: string): Promise<CreateRoleResponse> => {
-    const response = await roleApi.post<CreateRoleResponse>("", roleData, {
-        headers: { Authorization: `Bearer ${token}` },
-    });
-    return response.data;
+    try {
+        const response = await roleApi.post<CreateRoleResponse>("", roleData, {
+            headers: { Authorization: `Bearer ${token}` },
+        });
+        return response.data;
+    } catch (error) {
+        console.error("Error creating role:", error);
+        throw error;
+    }
 };
 
 export const getAllRoles = async (token: string): Promise<ListRolesResponse> => {
-    const response = await roleApi.get<ListRolesResponse>("", {
-        headers: { Authorization: `Bearer ${token}` },
-    });
-    return response.data;
+    try {
+        const response = await roleApi.get<ListRolesResponse>("", {
+            headers: { Authorization: `Bearer ${token}` },
+        });
+        return response.data;
+    } catch (error) {
+        console.error("Error fetching all roles:", error);
+        throw error;
+    }
 };
 
 export const getRoleById = async (roleID: string, token: string): Promise<RoleByIdResponse> => {
-    const response = await roleApi.get<RoleByIdResponse>(`/${roleID}`, {
-        headers: { Authorization: `Bearer ${token}` },
-    });
-    return response.data;
+    try {
+        const response = await roleApi.get<RoleByIdResponse>(`/${roleID}`, {
+            headers: { Authorization: `Bearer ${token}` },
+        });
+        return response.data;
+    } catch (error) {
+        console.error(`Error fetching role by ID (${roleID}):`, error);
+        throw error;
+    }
+};
+
+export const updateRole = async (roleID: string, roleData: Partial<Role>, token: string): Promise<RoleByIdResponse> => {
+    try {
+        const response = await roleApi.put<RoleByIdResponse>(`/${roleID}`, roleData, {
+            headers: { Authorization: `Bearer ${token}` },
+        });
+        return response.data;
+    } catch (error) {
+        console.error(`Error updating role (${roleID}):`, error);
+        throw error;
+    }
+};
+
+export const deleteRole = async (roleID: string, token: string): Promise<void> => {
+    try {
+        await roleApi.delete(`/${roleID}`, {
+            headers: { Authorization: `Bearer ${token}` },
+        });
+    } catch (error) {
+        console.error(`Error deleting role (${roleID}):`, error);
+        throw error;
+    }
 };
 
 export const assignPermissionsToRole = async (
@@ -977,30 +733,29 @@ export const assignPermissionsToRole = async (
     permissionIDs: string[],
     token: string
 ): Promise<AssignPermissionsResponse> => {
-    const response = await roleApi.post<AssignPermissionsResponse>(
-        `/${roleID}/permissions`,
-        { permissionIDs },
-        { headers: { Authorization: `Bearer ${token}` } }
-    );
-    return response.data;
+    try {
+        const response = await roleApi.post<AssignPermissionsResponse>(
+            `/${roleID}/permissions`,
+            { permissionIDs },
+            { headers: { Authorization: `Bearer ${token}` } }
+        );
+        return response.data;
+    } catch (error) {
+        console.error(`Error assigning permissions to role (${roleID}):`, error);
+        throw error;
+    }
 };
 
 export const getPermissionsByRole = async (roleID: string, token: string): Promise<PermissionsByRoleResponse> => {
-    const response = await roleApi.get<PermissionsByRoleResponse>(`/${roleID}/permissions`, {
-        headers: { Authorization: `Bearer ${token}` },
-    });
-    return response.data;
-};
-
-export const revokePermissionsFromRole = async (
-    roleID: string,
-    permissionIDs: string[],
-    token: string
-): Promise<void> => {
-    await roleApi.delete(`/${roleID}/permissions`, {
-        headers: { Authorization: `Bearer ${token}` },
-        data: { permissionIDs }
-    });
+    try {
+        const response = await roleApi.get<PermissionsByRoleResponse>(`/${roleID}/permissions`, {
+            headers: { Authorization: `Bearer ${token}` },
+        });
+        return response.data;
+    } catch (error) {
+        console.error(`Error fetching permissions for role (${roleID}):`, error);
+        throw error;
+    }
 };
 
 ==================================================
@@ -1015,43 +770,82 @@ const timesheetApi = axios.create({
   timeout: DEFAULT_TIMEOUT,
 });
 
-export const createTimesheet = async (data: {
-  weekNumber: number;
-  year: number;
-  supervisorID: string;
-  visits: Array<{
-    date: string;
-    time: string;
-    agentID: string;
-    reasons: Array<{ text?: string; id?: string }>;
-    checklists: Array<{ text?: string; id?: string }>;
-  }>;
-}): Promise<CreateTimesheetResponse> => {
-  const response = await timesheetApi.post<CreateTimesheetResponse>("", data);
-  return response.data;
+export const createTimesheet = async (
+  data: {
+    weekNumber: number;
+    year: number;
+    supervisorID: string;
+    visits: Array<{
+      date: string;
+      time: string;
+      agentID: string;
+      reasons: Array<{ text?: string; id?: string }>;
+      checklists: Array<{ text?: string; id?: string }>;
+    }>;
+  },
+  token: string
+): Promise<CreateTimesheetResponse> => {
+  try {
+    const response = await timesheetApi.post<CreateTimesheetResponse>("", data, {
+      headers: { Authorization: `Bearer ${token}` },
+    });
+    return response.data;
+  } catch (error) {
+    console.error("Error creating timesheet:", error);
+    throw error;
+  }
 };
 
-export const getAllTimesheets = async (): Promise<ListTimesheetsResponse> => {
-  const response = await timesheetApi.get<ListTimesheetsResponse>("");
-  return response.data;
+export const getAllTimesheets = async (token: string): Promise<ListTimesheetsResponse> => {
+  try {
+    const response = await timesheetApi.get<ListTimesheetsResponse>("", {
+      headers: { Authorization: `Bearer ${token}` },
+    });
+    return response.data;
+  } catch (error) {
+    console.error("Error fetching all timesheets:", error);
+    throw error;
+  }
 };
 
-export const getTimesheetById = async (id: string): Promise<TimesheetByIdResponse> => {
-  const response = await timesheetApi.get<TimesheetByIdResponse>(`/${id}`);
-  return response.data;
+export const getTimesheetById = async (id: string, token: string): Promise<TimesheetByIdResponse> => {
+  try {
+    const response = await timesheetApi.get<TimesheetByIdResponse>(`/${id}`, {
+      headers: { Authorization: `Bearer ${token}` },
+    });
+    return response.data;
+  } catch (error) {
+    console.error(`Error fetching timesheet by ID (${id}):`, error);
+    throw error;
+  }
 };
 
 export const validateTimesheet = async (
   id: string,
-  data: { visitIDs: string[]; status: string }
+  data: { visitIDs: string[]; status: string },
+  token: string
 ): Promise<ValidateTimesheetResponse> => {
-  const response = await timesheetApi.put<ValidateTimesheetResponse>(`/${id}/validate`, data);
-  return response.data;
+  try {
+    const response = await timesheetApi.put<ValidateTimesheetResponse>(`/${id}/validate`, data, {
+      headers: { Authorization: `Bearer ${token}` },
+    });
+    return response.data;
+  } catch (error) {
+    console.error(`Error validating timesheet (${id}):`, error);
+    throw error;
+  }
 };
 
-export const getTimesheetsBySupervisor = async (supervisorID: string): Promise<TimesheetsBySupervisorResponse> => {
-  const response = await timesheetApi.get<TimesheetsBySupervisorResponse>(`/supervisor/${supervisorID}`);
-  return response.data;
+export const getTimesheetsBySupervisor = async (supervisorID: string, token: string): Promise<TimesheetsBySupervisorResponse> => {
+  try {
+    const response = await timesheetApi.get<TimesheetsBySupervisorResponse>(`/supervisor/${supervisorID}`, {
+      headers: { Authorization: `Bearer ${token}` },
+    });
+    return response.data;
+  } catch (error) {
+    console.error(`Error fetching timesheets for supervisor (${supervisorID}):`, error);
+    throw error;
+  }
 };
 
 ==================================================
@@ -1059,14 +853,13 @@ File contents: C:\Users\Kayto\Desktop\IT\Projects\Stage\Stage PFE\TraceFlow\Fron
 ==================================================
 import axios from "axios";
 import { BASE_URL, DEFAULT_TIMEOUT } from "../config";
-import { GetSupervisorByPhoneNumberResponse } from ".";
-
 import {
   CreateUserResponse,
   ListUsersResponse,
   UserByIdResponse,
   AssignRolesResponse,
   RolesByUserResponse,
+  GetSupervisorByPhoneNumberResponse,
 } from ".";
 import User from "../models/User";
 
@@ -1076,42 +869,59 @@ const userApi = axios.create({
 });
 
 export const getSupervisorByPhone = async (
-  phone: string
+  phone: string,
+  token?: string
 ): Promise<GetSupervisorByPhoneNumberResponse> => {
-  const response = await userApi.post<GetSupervisorByPhoneNumberResponse>(
-    "/phone",
-    { phone }
-  );
-  return response.data;
+  try {
+    const response = await userApi.post<GetSupervisorByPhoneNumberResponse>(
+      "/phone",
+      { phone },
+      { headers: token ? { Authorization: `Bearer ${token}` } : {} }
+    );
+    return response.data;
+  } catch (error) {
+    console.error(`Error fetching supervisor by phone (${phone}):`, error);
+    throw error;
+  }
 };
 
 export const createUser = async (
   userData: Partial<User>,
   token: string
 ): Promise<CreateUserResponse> => {
-  const response = await userApi.post<CreateUserResponse>("", userData, {
-    headers: { Authorization: `Bearer ${token}` },
-  });
-  return response.data;
+  try {
+    const response = await userApi.post<CreateUserResponse>("", userData, {
+      headers: { Authorization: `Bearer ${token}` },
+    });
+    return response.data;
+  } catch (error) {
+    console.error("Error creating user:", error);
+    throw error;
+  }
 };
 
-export const getAllUsers = async (
-  token: string
-): Promise<ListUsersResponse> => {
-  const response = await userApi.get<ListUsersResponse>("", {
-    headers: { Authorization: `Bearer ${token}` },
-  });
-  return response.data;
+export const getAllUsers = async (token: string): Promise<ListUsersResponse> => {
+  try {
+    const response = await userApi.get<ListUsersResponse>("", {
+      headers: { Authorization: `Bearer ${token}` },
+    });
+    return response.data;
+  } catch (error) {
+    console.error("Error fetching all users:", error);
+    throw error;
+  }
 };
 
-export const getUserById = async (
-  userID: string,
-  token: string
-): Promise<UserByIdResponse> => {
-  const response = await userApi.get<UserByIdResponse>(`/${userID}`, {
-    headers: { Authorization: `Bearer ${token}` },
-  });
-  return response.data;
+export const getUserById = async (userID: string, token: string): Promise<UserByIdResponse> => {
+  try {
+    const response = await userApi.get<UserByIdResponse>(`/${userID}`, {
+      headers: { Authorization: `Bearer ${token}` },
+    });
+    return response.data;
+  } catch (error) {
+    console.error(`Error fetching user by ID (${userID}):`, error);
+    throw error;
+  }
 };
 
 export const assignRolesToUser = async (
@@ -1119,32 +929,50 @@ export const assignRolesToUser = async (
   roleIDs: string[],
   token: string
 ): Promise<AssignRolesResponse> => {
-  const response = await userApi.post<AssignRolesResponse>(
-    `/${userID}/roles`,
-    { roleIDs },
-    { headers: { Authorization: `Bearer ${token}` } }
-  );
-  return response.data;
+  try {
+    const response = await userApi.post<AssignRolesResponse>(
+      `/${userID}/roles`,
+      { roleIDs },
+      { headers: { Authorization: `Bearer ${token}` } }
+    );
+    return response.data;
+  } catch (error) {
+    console.error(`Error assigning roles to user (${userID}):`, error);
+    throw error;
+  }
 };
 
-export const getRolesByUser = async (
-  userID: string,
-  token: string
-): Promise<RolesByUserResponse> => {
-  const response = await userApi.get<RolesByUserResponse>(`/${userID}/roles`, {
-    headers: { Authorization: `Bearer ${token}` },
-  });
-  return response.data;
+export const getRolesByUser = async (userID: string, token: string): Promise<RolesByUserResponse> => {
+  try {
+    const response = await userApi.get<RolesByUserResponse>(`/${userID}/roles`, {
+      headers: { Authorization: `Bearer ${token}` },
+    });
+    return response.data;
+  } catch (error) {
+    console.error(`Error fetching roles for user (${userID}):`, error);
+    throw error;
+  }
 };
-
 
 export const updateUser = async (userID: string, userData: Partial<User>, token: string): Promise<User> => {
-  const response = await userApi.put<User>(`/${userID}`, userData, { headers: { Authorization: `Bearer ${token}` } });
-  return response.data;
+  try {
+    const response = await userApi.put<User>(`/${userID}`, userData, {
+      headers: { Authorization: `Bearer ${token}` },
+    });
+    return response.data;
+  } catch (error) {
+    console.error(`Error updating user (${userID}):`, error);
+    throw error;
+  }
 };
 
 export const deleteUser = async (userID: string, token: string): Promise<void> => {
-  await userApi.delete(`/${userID}`, { headers: { Authorization: `Bearer ${token}` } });
+  try {
+    await userApi.delete(`/${userID}`, { headers: { Authorization: `Bearer ${token}` } });
+  } catch (error) {
+    console.error(`Error deleting user (${userID}):`, error);
+    throw error;
+  }
 };
 
 ==================================================
@@ -1159,45 +987,68 @@ const visitApi = axios.create({
     timeout: DEFAULT_TIMEOUT,
 });
 
-export const createVisit = async (data: {
-    timesheetID: string;
-    supervisorID: string;
-    date: string;
-    time: string;
-    agentID: string;
-    reasons: Array<{ text?: string; id?: string }>;
-    checklists: Array<{ text?: string; id?: string }>;
-}): Promise<CreateVisitResponse> => {
-    const response = await visitApi.post<CreateVisitResponse>("", data);
-    return response.data;
+export const createVisit = async (
+    data: {
+        timesheetID: string;
+        supervisorID: string;
+        date: string;
+        time: string;
+        agentID: string;
+        reasons: Array<{ text?: string; id?: string }>;
+        checklists: Array<{ text?: string; id?: string }>;
+    },
+    token: string
+): Promise<CreateVisitResponse> => {
+    try {
+        const response = await visitApi.post<CreateVisitResponse>("", data, {
+            headers: { Authorization: `Bearer ${token}` },
+        });
+        return response.data;
+    } catch (error) {
+        console.error("Error creating visit:", error);
+        throw error;
+    }
 };
 
-export const verifyQrCode = async (data: { qrData: string; visitId: string }): Promise<VerifyQrResponse> => {
-    const response = await visitApi.post<VerifyQrResponse>("/verify-qr", data);
-    return response.data;
+export const verifyQrCode = async (data: { qrData: string; visitId: string }, token: string): Promise<VerifyQrResponse> => {
+    try {
+        const response = await visitApi.post<VerifyQrResponse>("/verify-qr", data, {
+            headers: { Authorization: `Bearer ${token}` },
+        });
+        return response.data;
+    } catch (error) {
+        console.error(`Error verifying QR code for visit (${data.visitId}):`, error);
+        throw error;
+    }
 };
 
 export const logVisitDetails = async (
     id: string,
-    data: { duration: number; checklistUpdates: Array<{ checklistID: string; checked: boolean }> }
+    data: { duration: number; checklistUpdates: Array<{ checklistID: string; checked: boolean }> },
+    token: string
 ): Promise<LogVisitResponse> => {
-    const response = await visitApi.put<LogVisitResponse>(`/${id}/log`, data);
-    return response.data;
+    try {
+        const response = await visitApi.put<LogVisitResponse>(`/${id}/log`, data, {
+            headers: { Authorization: `Bearer ${token}` },
+        });
+        return response.data;
+    } catch (error) {
+        console.error(`Error logging visit details (${id}):`, error);
+        throw error;
+    }
 };
 
-export const getVisitById = async (id: string): Promise<VisitByIdResponse> => {
-    const response = await visitApi.get<VisitByIdResponse>(`/${id}`);
-    return response.data;
+export const getVisitById = async (id: string, token: string): Promise<VisitByIdResponse> => {
+    try {
+        const response = await visitApi.get<VisitByIdResponse>(`/${id}`, {
+            headers: { Authorization: `Bearer ${token}` },
+        });
+        return response.data;
+    } catch (error) {
+        console.error(`Error fetching visit by ID (${id}):`, error);
+        throw error;
+    }
 };
-
-==================================================
-Error reading C:\Users\Kayto\Desktop\IT\Projects\Stage\Stage PFE\TraceFlow\Front-End\src\assets\Logo.png: 'utf-8' codec can't decode byte 0x89 in position 0: invalid start byte
-==================================================
-
-==================================================
-File contents: C:\Users\Kayto\Desktop\IT\Projects\Stage\Stage PFE\TraceFlow\Front-End\src\assets\react.svg
-==================================================
-<svg xmlns="http://www.w3.org/2000/svg" xmlns:xlink="http://www.w3.org/1999/xlink" aria-hidden="true" role="img" class="iconify iconify--logos" width="35.93" height="32" preserveAspectRatio="xMidYMid meet" viewBox="0 0 256 228"><path fill="#00D8FF" d="M210.483 73.824a171.49 171.49 0 0 0-8.24-2.597c.465-1.9.893-3.777 1.273-5.621c6.238-30.281 2.16-54.676-11.769-62.708c-13.355-7.7-35.196.329-57.254 19.526a171.23 171.23 0 0 0-6.375 5.848a155.866 155.866 0 0 0-4.241-3.917C100.759 3.829 77.587-4.822 63.673 3.233C50.33 10.957 46.379 33.89 51.995 62.588a170.974 170.974 0 0 0 1.892 8.48c-3.28.932-6.445 1.924-9.474 2.98C17.309 83.498 0 98.307 0 113.668c0 15.865 18.582 31.778 46.812 41.427a145.52 145.52 0 0 0 6.921 2.165a167.467 167.467 0 0 0-2.01 9.138c-5.354 28.2-1.173 50.591 12.134 58.266c13.744 7.926 36.812-.22 59.273-19.855a145.567 145.567 0 0 0 5.342-4.923a168.064 168.064 0 0 0 6.92 6.314c21.758 18.722 43.246 26.282 56.54 18.586c13.731-7.949 18.194-32.003 12.4-61.268a145.016 145.016 0 0 0-1.535-6.842c1.62-.48 3.21-.974 4.76-1.488c29.348-9.723 48.443-25.443 48.443-41.52c0-15.417-17.868-30.326-45.517-39.844Zm-6.365 70.984c-1.4.463-2.836.91-4.3 1.345c-3.24-10.257-7.612-21.163-12.963-32.432c5.106-11 9.31-21.767 12.459-31.957c2.619.758 5.16 1.557 7.61 2.4c23.69 8.156 38.14 20.213 38.14 29.504c0 9.896-15.606 22.743-40.946 31.14Zm-10.514 20.834c2.562 12.94 2.927 24.64 1.23 33.787c-1.524 8.219-4.59 13.698-8.382 15.893c-8.067 4.67-25.32-1.4-43.927-17.412a156.726 156.726 0 0 1-6.437-5.87c7.214-7.889 14.423-17.06 21.459-27.246c12.376-1.098 24.068-2.894 34.671-5.345a134.17 134.17 0 0 1 1.386 6.193ZM87.276 214.515c-7.882 2.783-14.16 2.863-17.955.675c-8.075-4.657-11.432-22.636-6.853-46.752a156.923 156.923 0 0 1 1.869-8.499c10.486 2.32 22.093 3.988 34.498 4.994c7.084 9.967 14.501 19.128 21.976 27.15a134.668 134.668 0 0 1-4.877 4.492c-9.933 8.682-19.886 14.842-28.658 17.94ZM50.35 144.747c-12.483-4.267-22.792-9.812-29.858-15.863c-6.35-5.437-9.555-10.836-9.555-15.216c0-9.322 13.897-21.212 37.076-29.293c2.813-.98 5.757-1.905 8.812-2.773c3.204 10.42 7.406 21.315 12.477 32.332c-5.137 11.18-9.399 22.249-12.634 32.792a134.718 134.718 0 0 1-6.318-1.979Zm12.378-84.26c-4.811-24.587-1.616-43.134 6.425-47.789c8.564-4.958 27.502 2.111 47.463 19.835a144.318 144.318 0 0 1 3.841 3.545c-7.438 7.987-14.787 17.08-21.808 26.988c-12.04 1.116-23.565 2.908-34.161 5.309a160.342 160.342 0 0 1-1.76-7.887Zm110.427 27.268a347.8 347.8 0 0 0-7.785-12.803c8.168 1.033 15.994 2.404 23.343 4.08c-2.206 7.072-4.956 14.465-8.193 22.045a381.151 381.151 0 0 0-7.365-13.322Zm-45.032-43.861c5.044 5.465 10.096 11.566 15.065 18.186a322.04 322.04 0 0 0-30.257-.006c4.974-6.559 10.069-12.652 15.192-18.18ZM82.802 87.83a323.167 323.167 0 0 0-7.227 13.238c-3.184-7.553-5.909-14.98-8.134-22.152c7.304-1.634 15.093-2.97 23.209-3.984a321.524 321.524 0 0 0-7.848 12.897Zm8.081 65.352c-8.385-.936-16.291-2.203-23.593-3.793c2.26-7.3 5.045-14.885 8.298-22.6a321.187 321.187 0 0 0 7.257 13.246c2.594 4.48 5.28 8.868 8.038 13.147Zm37.542 31.03c-5.184-5.592-10.354-11.779-15.403-18.433c4.902.192 9.899.29 14.978.29c5.218 0 10.376-.117 15.453-.343c-4.985 6.774-10.018 12.97-15.028 18.486Zm52.198-57.817c3.422 7.8 6.306 15.345 8.596 22.52c-7.422 1.694-15.436 3.058-23.88 4.071a382.417 382.417 0 0 0 7.859-13.026a347.403 347.403 0 0 0 7.425-13.565Zm-16.898 8.101a358.557 358.557 0 0 1-12.281 19.815a329.4 329.4 0 0 1-23.444.823c-7.967 0-15.716-.248-23.178-.732a310.202 310.202 0 0 1-12.513-19.846h.001a307.41 307.41 0 0 1-10.923-20.627a310.278 310.278 0 0 1 10.89-20.637l-.001.001a307.318 307.318 0 0 1 12.413-19.761c7.613-.576 15.42-.876 23.31-.876H128c7.926 0 15.743.303 23.354.883a329.357 329.357 0 0 1 12.335 19.695a358.489 358.489 0 0 1 11.036 20.54a329.472 329.472 0 0 1-11 20.722Zm22.56-122.124c8.572 4.944 11.906 24.881 6.52 51.026c-.344 1.668-.73 3.367-1.15 5.09c-10.622-2.452-22.155-4.275-34.23-5.408c-7.034-10.017-14.323-19.124-21.64-27.008a160.789 160.789 0 0 1 5.888-5.4c18.9-16.447 36.564-22.941 44.612-18.3ZM128 90.808c12.625 0 22.86 10.235 22.86 22.86s-10.235 22.86-22.86 22.86s-22.86-10.235-22.86-22.86s10.235-22.86 22.86-22.86Z"></path></svg>
 
 ==================================================
 File contents: C:\Users\Kayto\Desktop\IT\Projects\Stage\Stage PFE\TraceFlow\Front-End\src\components\CMP.css
@@ -1266,7 +1117,7 @@ body.dark .theme-toggle-btn:hover {
 }
 
 .logo {
-    height: 2.5rem;
+    height: 2rem;
     /* 40px at 16px base */
     width: auto;
     transition: transform 0.3s ease;
@@ -1553,7 +1404,7 @@ File contents: C:\Users\Kayto\Desktop\IT\Projects\Stage\Stage PFE\TraceFlow\Fron
 import { useState } from "react";
 import { useTheme } from "../context/ThemeContext"; // Import useTheme from ThemeContext
 import { FaSun, FaMoon } from "react-icons/fa"; // Icons for theme toggle
-import logo from "../assets/Logo.png";
+import logo from "../assets/Banner.png";
 import "./CMP.css";
 
 function Header() {
@@ -1591,36 +1442,72 @@ export default Header;
 ==================================================
 File contents: C:\Users\Kayto\Desktop\IT\Projects\Stage\Stage PFE\TraceFlow\Front-End\src\context\AuthContext.tsx
 ==================================================
-import { createContext, useState, useContext, ReactNode } from "react";
+import React, { createContext, useContext, useState, useEffect, ReactNode } from "react";
+import { useNavigate, useLocation } from "react-router-dom";
+import { login } from "../apis/authAPI";
 import User from "../models/User";
 
 interface AuthContextType {
     user: User | null;
     token: string | null;
-    login: (token: string, user: User) => void;
-    logout: () => void;
+    loginUser: (identifier: string, password: string, redirectTo?: string) => Promise<void>;
+    logout: () => Promise<void>;
 }
 
 const AuthContext = createContext<AuthContextType | undefined>(undefined);
 
-export const AuthProvider = ({ children }: { children: ReactNode }) => {
-    const [user, setUser] = useState<User | null>(null);
-    const [token, setToken] = useState<string | null>(localStorage.getItem("token"));
+export const AuthProvider: React.FC<{ children: ReactNode }> = ({ children }) => {
+    const [user, setUser] = useState<User | null>(() => {
+        const storedUser = localStorage.getItem("user");
+        const parsedUser = storedUser ? JSON.parse(storedUser) : null;
+        console.log("Initial User from localStorage:", parsedUser);
+        return parsedUser;
+    });
+    const [token, setToken] = useState<string | null>(() => {
+        const storedToken = localStorage.getItem("token");
+        console.log("Initial Token from localStorage:", storedToken);
+        return storedToken;
+    });
+    const navigate = useNavigate();
+    const location = useLocation();
 
-    const login = (token: string, user: User) => {
-        setToken(token);
-        setUser(user);
-        localStorage.setItem("token", token); // Persist token
+    useEffect(() => {
+        console.log("AuthProvider mounted. User:", user, "Token:", token);
+    }, []); // Log only on mount
+
+    const loginUser = async (identifier: string, password: string, redirectTo?: string) => {
+        try {
+            console.log("Attempting login...");
+            const response = await login(identifier, password);
+            console.log("Login response:", response);
+
+            setUser(response.user);
+            setToken(response.token);
+
+            localStorage.setItem("token", response.token);
+            localStorage.setItem("user", JSON.stringify(response.user));
+            console.log("Saved to localStorage. User:", response.user, "Token:", response.token);
+
+            const intendedRoute = redirectTo || location.state?.from || "/admin";
+            console.log("Navigating to:", intendedRoute);
+            navigate(intendedRoute, { replace: true });
+        } catch (error) {
+            console.error("Login failed:", error);
+            throw error;
+        }
     };
 
-    const logout = () => {
-        setToken(null);
+    const logout = async () => {
+        console.log("Logging out...");
         setUser(null);
+        setToken(null);
         localStorage.removeItem("token");
+        localStorage.removeItem("user");
+        navigate("/login");
     };
 
     return (
-        <AuthContext.Provider value={{ user, token, login, logout }}>
+        <AuthContext.Provider value={{ user, token, loginUser, logout }}>
             {children}
         </AuthContext.Provider>
     );
@@ -1628,9 +1515,36 @@ export const AuthProvider = ({ children }: { children: ReactNode }) => {
 
 export const useAuth = () => {
     const context = useContext(AuthContext);
-    if (!context) {
-        throw new Error("useAuth must be used within an AuthProvider");
-    }
+    if (!context) throw new Error("useAuth must be used within an AuthProvider");
+    return context;
+};
+
+==================================================
+File contents: C:\Users\Kayto\Desktop\IT\Projects\Stage\Stage PFE\TraceFlow\Front-End\src\context\ErrorContext.tsx
+==================================================
+// src/context/ErrorContext.tsx
+import React, { createContext, useContext, useState, ReactNode } from "react";
+
+interface ErrorContextType {
+    error: string | null;
+    setError: (error: string | null) => void;
+}
+
+const ErrorContext = createContext<ErrorContextType | undefined>(undefined);
+
+export const ErrorProvider: React.FC<{ children: ReactNode }> = ({ children }) => {
+    const [error, setError] = useState<string | null>(null);
+
+    return (
+        <ErrorContext.Provider value={{ error, setError }}>
+            {children}
+        </ErrorContext.Provider>
+    );
+};
+
+export const useError = () => {
+    const context = useContext(ErrorContext);
+    if (!context) throw new Error("useError must be used within an ErrorProvider");
     return context;
 };
 
@@ -1900,6 +1814,53 @@ File contents: C:\Users\Kayto\Desktop\IT\Projects\Stage\Stage PFE\TraceFlow\Fron
 File contents: C:\Users\Kayto\Desktop\IT\Projects\Stage\Stage PFE\TraceFlow\Front-End\src\pages\AccessDenied.tsx
 ==================================================
 
+
+==================================================
+File contents: C:\Users\Kayto\Desktop\IT\Projects\Stage\Stage PFE\TraceFlow\Front-End\src\pages\ErrorDisplay.tsx
+==================================================
+// src/components/ErrorDisplay.tsx
+import React from "react";
+import { useError } from "../context/ErrorContext";
+
+const ErrorDisplay: React.FC = () => {
+    const { error, setError } = useError();
+
+    if (!error) return null;
+
+    return (
+        <div
+            style={{
+                position: "fixed",
+                top: "10px",
+                left: "50%",
+                transform: "translateX(-50%)",
+                backgroundColor: "#ffe6e6",
+                color: "red",
+                padding: "10px 20px",
+                borderRadius: "5px",
+                boxShadow: "0 2px 5px rgba(0,0,0,0.2)",
+                zIndex: 1000,
+            }}
+        >
+            <span>{error}</span>
+            <button
+                onClick={() => setError(null)}
+                style={{
+                    marginLeft: "10px",
+                    background: "none",
+                    border: "none",
+                    color: "red",
+                    cursor: "pointer",
+                    fontWeight: "bold",
+                }}
+            >
+                ✕
+            </button>
+        </div>
+    );
+};
+
+export default ErrorDisplay;
 
 ==================================================
 File contents: C:\Users\Kayto\Desktop\IT\Projects\Stage\Stage PFE\TraceFlow\Front-End\src\pages\PageNotFound.css
@@ -3498,10 +3459,10 @@ body.dark .error {
 File contents: C:\Users\Kayto\Desktop\IT\Projects\Stage\Stage PFE\TraceFlow\Front-End\src\pages\Admin\AdminDashboard.tsx
 ==================================================
 import React, { useState, useEffect, useMemo } from "react";
-import { FaSearch, FaFilter, FaSort, FaUserPlus, FaPlus, FaEdit, FaTrash, FaArrowLeft, FaInfoCircle, FaAngleDown } from "react-icons/fa";
+import { FaSearch, FaFilter, FaSort, FaUserPlus, FaPlus, FaArrowLeft, FaInfoCircle, FaAngleDown } from "react-icons/fa";
 import { useAuth } from "../../context/AuthContext";
 import { getAllUsers, createUser, assignRolesToUser, getRolesByUser } from "../../apis/userAPI";
-import { getAllRoles, createRole, assignPermissionsToRole, getPermissionsByRole, revokePermissionsFromRole } from "../../apis/roleAPI";
+import { getAllRoles, createRole, assignPermissionsToRole, getPermissionsByRole } from "../../apis/roleAPI";
 import { getAllPermissions } from "../../apis/permissionAPI";
 import User from "../../models/User";
 import Role from "../../models/Role";
@@ -3666,19 +3627,19 @@ const AdminDashboard: React.FC = () => {
         }
     };
 
-    const handleEditUser = (user: User) => {
-        setNewUser({ ...user, password: "" });
-        setSelectedRolesForNewUser(user.roles?.map(r => r.roleID) || []);
-        setView("add-user");
-    };
+    // const handleEditUser = (user: User) => {
+    //     setNewUser({ ...user, password: "" });
+    //     setSelectedRolesForNewUser(user.roles?.map(r => r.roleID) || []);
+    //     setView("add-user");
+    // };
 
-    const handleDeleteUser = async (userID: string) => {
-        if (window.confirm("Are you sure you want to delete this user?")) {
-            setUsers(users.filter(u => u.userID !== userID));
-            if (selectedUser?.userID === userID) setSelectedUser(null);
-            setView("users");
-        }
-    };
+    // const handleDeleteUser = async (userID: string) => {
+    //     if (window.confirm("Are you sure you want to delete this user?")) {
+    //         setUsers(users.filter(u => u.userID !== userID));
+    //         if (selectedUser?.userID === userID) setSelectedUser(null);
+    //         setView("users");
+    //     }
+    // };
 
     const handleTogglePermission = (permissionID: string) => {
         const hasPermission = tempPermissions.some(perm => perm.permissionID === permissionID);
@@ -3698,9 +3659,9 @@ const AdminDashboard: React.FC = () => {
             const currentPermissionIds = selectedRole.permissions?.map(p => p.permissionID) || [];
             const newPermissionIds = tempPermissions.map(p => p.permissionID);
             const toAdd = newPermissionIds.filter(id => !currentPermissionIds.includes(id));
-            const toRemove = currentPermissionIds.filter(id => !newPermissionIds.includes(id));
+            //const toRemove = currentPermissionIds.filter(id => !newPermissionIds.includes(id));
             if (toAdd.length > 0) await assignPermissionsToRole(selectedRole.roleID, toAdd, token!);
-            if (toRemove.length > 0) await revokePermissionsFromRole(selectedRole.roleID, toRemove, token!);
+            //if (toRemove.length > 0) await revokePermissionsFromRole(selectedRole.roleID, toRemove, token!);
             setRoles(roles.map(r => r.roleID === selectedRole.roleID ? { ...r, permissions: tempPermissions } : r));
             setSelectedRole({ ...selectedRole, permissions: tempPermissions });
             setHasUnsavedChanges(false);
@@ -4609,21 +4570,25 @@ body.dark .error {
 ==================================================
 File contents: C:\Users\Kayto\Desktop\IT\Projects\Stage\Stage PFE\TraceFlow\Front-End\src\pages\auth\Login.tsx
 ==================================================
-// src/pages/LoginPage.tsx
-import React, { useState } from "react";
-import { useNavigate } from "react-router-dom";
-
-import "./Login.css"; // New CSS file
-import { login } from "../../apis/authAPI";
+import React, { useState, useEffect } from "react";
 import { useAuth } from "../../context/AuthContext";
+import { useError } from "../../context/ErrorContext";
+import { useLocation } from "react-router-dom";
+import { AxiosError } from "axios";
+import "./Login.css";
 
 const LoginPage: React.FC = () => {
     const [identifier, setIdentifier] = useState("");
     const [password, setPassword] = useState("");
-    const [error, setError] = useState<string | null>(null);
     const [loading, setLoading] = useState(false);
-    const { login: authLogin } = useAuth();
-    const navigate = useNavigate();
+    const { loginUser, user, token } = useAuth();
+    const { setError } = useError();
+    const location = useLocation();
+
+    // Log user and token when they change
+    useEffect(() => {
+        console.log("LoginPage - User updated:", user, "Token updated:", token);
+    }, [user, token]);
 
     const handleSubmit = async (e: React.FormEvent) => {
         e.preventDefault();
@@ -4631,23 +4596,14 @@ const LoginPage: React.FC = () => {
         setError(null);
 
         try {
-            const response = await login(identifier, password);
-            authLogin(response.token, response.user);
-
-            // Role-based redirect
-            const userRoles = response.user.roles || [];
-            if (userRoles.some((role) => role.name === "Admin")) {
-                navigate("/admin");
-            } else if (userRoles.some((role) => role.name === "Manager")) {
-                navigate("/manager-dashboard"); 
-            } else if (userRoles.some((role) => role.name === "Supervisor")) {
-                navigate("/timesheet");
-            } else {
-                navigate("/dashboard"); // Placeholder; adjust as needed
-            }
-        } catch (err) {
-            setError("Invalid credentials. Please try again.");
-            console.error(err);
+            const redirectTo = location.state?.from || "/admin";
+            await loginUser(identifier, password, redirectTo);
+        } catch (err: unknown) {
+            const axiosError = err as AxiosError<{ error: string }>;
+            const errorMessage =
+                axiosError.response?.data?.error || "Invalid credentials. Please try again.";
+            setError(errorMessage);
+            console.error("Login error:", err);
         } finally {
             setLoading(false);
         }
@@ -4659,7 +4615,6 @@ const LoginPage: React.FC = () => {
                 <h1>Login</h1>
             </header>
             <section className="login-card">
-                {error && <p className="error">{error}</p>}
                 <form onSubmit={handleSubmit}>
                     <div className="form-group">
                         <label htmlFor="identifier">Email or Phone</label>

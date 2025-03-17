@@ -1,58 +1,51 @@
 const cors = require('cors');
 const express = require('express');
+const session = require('express-session');
+const { keycloak, authenticateJWT } = require('../Back-End/config/security');
 
 const {
     initializeDatabase,
     initializeSMTP,
     initializeSMS,
     initializeServer,
-} = require('./config');
-const { seedSuperAdmin } = require('./config/SeedSuperAdmin');
-const { sequelize } = require('./config/db');
-const { authenticateJWT } = require('./config/security');
-const { seedMissingPermissions } = require('./config/seedPermissions');
-const { setupAssociations } = require('./models');
+} = require('../Back-End/config');
+const { seedSuperAdmin } = require('../Back-End/config/SeedSuperAdmin');
+const { sequelize } = require('../Back-End/config/db');
+const { restrictTo } = require('../Back-End/config/security');
+const { seedMissingPermissions } = require('../Back-End/config/seedPermissions');
+const { setupAssociations } = require('../Back-End/models');
 
-const agentRoutes = require('./routes/agentRoutes');
-const authRoutes = require('./routes/authRoutes');
-const checklistRoutes = require('./routes/checklistRoutes');
-const permissionRoutes = require('./routes/permissionRoutes');
-const reasonRoutes = require('./routes/reasonRoutes');
-const receiptBookRoutes = require('./routes/receiptBookRoutes');
-const receiptStubRoutes = require('./routes/receiptStubRoutes');
-const roleRoutes = require('./routes/roleRoutes');
-const timesheetRoutes = require('./routes/timesheetRoutes');
-const userRoutes = require('./routes/userRoutes');
-const visitRoutes = require('./routes/visitRoutes');
+
+const agentRoutes = require('../Back-End/routes/agentRoutes');
+const authRoutes = require('../Back-End/routes/authRoutes');
+const checklistRoutes = require('../Back-End/routes/checklistRoutes');
+const permissionRoutes = require('../Back-End/routes/permissionRoutes');
+const reasonRoutes = require('../Back-End/routes/reasonRoutes');
+const receiptBookRoutes = require('../Back-End/routes/receiptBookRoutes');
+const receiptStubRoutes = require('../Back-End/routes/receiptStubRoutes');
+const roleRoutes = require('../Back-End/routes/roleRoutes');
+const timesheetRoutes = require('../Back-End/routes/timesheetRoutes');
+const userRoutes = require('../Back-End/routes/userRoutes');
+const visitRoutes = require('../Back-End/routes/visitRoutes');
 
 require('dotenv').config();
 
 const app = express();
 
-// CORS configuration
-const allowedOrigins = [
-    process.env.FRONTEND_URL || 'http://localhost:5173', // Default to local dev if not set
-    'http://localhost:3000', // Optional: Add other dev origins if needed
-    // Add production frontend URLs here, e.g., 'https://yourdomain.com'
-];
-
-const corsOptions = {
-    origin: (origin, callback) => {
-        // Allow requests with no origin (e.g., server-to-server or Postman) or if origin is in allowed list
-        if (!origin || allowedOrigins.includes(origin)) {
-            callback(null, true);
-        } else {
-            callback(new Error('Not allowed by CORS'));
-        }
-    },
-    credentials: true, // Required for HttpOnly cookies
-    methods: ['GET', 'POST', 'PUT', 'DELETE', 'OPTIONS'], // Allowed methods
-    allowedHeaders: ['Content-Type', 'Authorization'], // Allowed headers
-};
+// Session middleware
+app.use(
+    session({
+        secret: process.env.SESSION_SECRET, // Use a strong secret in production
+        resave: false,
+        saveUninitialized: false,
+        cookie: { secure: process.env.NODE_ENV === 'production' } // Secure in production (HTTPS)
+    })
+);
 
 // Middleware
-app.use(cors(corsOptions)); // Use restricted CORS
-app.use(express.json()); // Parse incoming JSON requests
+app.use(cors());
+app.use(express.json());
+app.use(keycloak.middleware()); // Keycloak middleware for token validation
 app.use((req, res, next) => {
     if (req.user) {
         sequelize.query(`SET jwt.claims.userID = '${req.user.userID}'`)
@@ -60,22 +53,25 @@ app.use((req, res, next) => {
     }
     next();
 });
-
 // Routes
+
+//app.use('/api/auth', authRoutes);
+app.use('/api/users', userRoutes);
+app.use('/api/roles', roleRoutes);
+app.use('/api/permissions', permissionRoutes);
+
+app.use('/api/agents', agentRoutes);
+
 app.use('/api/visits', visitRoutes);
 app.use('/api/checklists', checklistRoutes);
 app.use('/api/reasons', reasonRoutes);
 app.use('/api/timesheets', timesheetRoutes);
-app.use('/api/agents', agentRoutes);
-app.use('/api/auth', authRoutes);
-app.use('/api/users', userRoutes);
-app.use('/api/roles', roleRoutes);
-app.use('/api/permissions', permissionRoutes);
+
 app.use('/api/receipt-books', receiptBookRoutes);
 app.use('/api/receipt-stubs', receiptStubRoutes);
 
 // Test secure endpoint
-app.get('/test', authenticateJWT, (req, res) => {
+app.get('/test', authenticateJWT, restrictTo('Super Admin', 'Manager'), (req, res) => {
     res.json({ message: 'Secure endpoint accessed', user: req.user });
 });
 
@@ -111,7 +107,7 @@ async function startApp() {
             logStep('Database Initialization', true, 'Completed successfully');
         } catch (dbError) {
             logStep('Database Initialization', false, 'Failed', dbError);
-            throw dbError;
+            throw dbError; // Stop execution on critical failure
         }
 
         // Step 2: Initialize SMTP
@@ -120,7 +116,7 @@ async function startApp() {
             logStep('SMTP Initialization', true, 'Completed successfully');
         } catch (smtpError) {
             logStep('SMTP Initialization', false, 'Failed', smtpError);
-            throw smtpError;
+            throw smtpError; // Stop execution on critical failure
         }
 
         // Step 3: Initialize SMS (non-critical)
@@ -129,6 +125,7 @@ async function startApp() {
             logStep('SMS Initialization', true, 'Completed successfully');
         } catch (smsError) {
             logStep('SMS Initialization', false, 'Proceeding without SMS', smsError);
+            // Non-critical, continue execution
         }
 
         // Step 4: Set up model associations
@@ -137,7 +134,7 @@ async function startApp() {
             logStep('Model Associations', true, 'Relationships established');
         } catch (assocError) {
             logStep('Model Associations', false, 'Failed', assocError);
-            throw assocError;
+            throw assocError; // Stop execution on critical failure
         }
 
         // Step 5: Sync database
@@ -146,7 +143,7 @@ async function startApp() {
             logStep('Database Sync', true, 'Tables synchronized');
         } catch (syncError) {
             logStep('Database Sync', false, 'Failed', syncError);
-            throw syncError;
+            throw syncError; // Stop execution on critical failure
         }
 
         // Step 6: Seed missing permissions
@@ -155,7 +152,7 @@ async function startApp() {
             logStep('Permission Seeding', true, 'Completed successfully');
         } catch (seedError) {
             logStep('Permission Seeding', false, 'Failed', seedError);
-            throw seedError;
+            throw seedError; // Stop execution on critical failure
         }
 
         // Step 7: Seed super admin
@@ -173,7 +170,7 @@ async function startApp() {
             logStep('Server Initialization', true, 'Server started');
         } catch (serverError) {
             logStep('Server Initialization', false, 'Failed', serverError);
-            throw serverError;
+            throw serverError; // Stop execution on critical failure
         }
 
         // Log summary
@@ -191,7 +188,7 @@ async function startApp() {
 
     } catch (error) {
         console.error(`${new Date().toISOString()} - Application initialization failed:`, error);
-        process.exit(1);
+        process.exit(1); // Exit with failure code
     }
 }
 

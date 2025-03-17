@@ -10,11 +10,13 @@ import ReceiptBook from "../models/ReceiptBook";
 import ReceiptStub from "../models/ReceiptStub";
 import ReceiptBookTransfer from "../models/ReceiptBookTransfer";
 
+// Agent API Responses
 export type AgentsByLocationResponse = Agent[];
 export type AgentLocationsResponse = string[];
 export type AgentByPhoneResponse = Agent;
 export type AgentByIdResponse = Agent;
 
+// Timesheet API Responses
 export interface CreateTimesheetResponse {
   message: string;
   timesheet: Timesheet;
@@ -24,26 +26,34 @@ export type TimesheetByIdResponse = Timesheet;
 export type ValidateTimesheetResponse = Timesheet;
 export type TimesheetsBySupervisorResponse = Timesheet[];
 
+// Visit API Responses
 export type CreateVisitResponse = Visit;
 export type VerifyQrResponse = { valid: boolean; message: string };
 export type LogVisitResponse = Visit;
 export type VisitByIdResponse = Visit;
 
+// Checklist API Responses
 export type CreateChecklistResponse = Checklist;
 export type ListChecklistsResponse = Checklist[];
 export type ChecklistsByVisitResponse = VisitChecklist[];
 
+// Reason API Responses
 export type CreateReasonResponse = Reason;
 export type ListReasonsResponse = Reason[];
 export type ReasonsByVisitResponse = VisitReason[];
 
+// Supervisor API Responses
 export type GetSupervisorByPhoneNumberResponse = string;
 
+// Auth API Responses
 export type LoginResponse = { token: string; user: User };
 
+// User API Responses
 export type CreateUserResponse = User;
 export type ListUsersResponse = User[];
 export type UserByIdResponse = User;
+export type UpdateUserResponse = User; // Added for updateUser
+export type DeleteUserResponse = void; // Added for deleteUser
 export type AssignRolesResponse = {
   userID: string;
   assignedRoles: string[];
@@ -51,6 +61,7 @@ export type AssignRolesResponse = {
 };
 export type RolesByUserResponse = Role[];
 
+// Role API Responses
 export type CreateRoleResponse = Role;
 export type ListRolesResponse = Role[];
 export type RoleByIdResponse = Role;
@@ -61,9 +72,11 @@ export type AssignPermissionsResponse = {
 };
 export type PermissionsByRoleResponse = Permission[];
 
+// Permission API Responses
 export type ListPermissionsResponse = Permission[];
 export type PermissionByIdResponse = Permission;
 
+// Receipt Book API Responses
 export type CreateReceiptBookResponse = ReceiptBook;
 export type ListReceiptBooksResponse = ReceiptBook[];
 export type ReceiptBookByIdResponse = ReceiptBook;
@@ -74,6 +87,7 @@ export type AssignToAgentResponse = { message: string };
 export type ValidateAgentAssignmentResponse = ReceiptBook;
 export type TransferHistoryResponse = ReceiptBookTransfer[];
 
+// Receipt Stub API Responses
 export type CollectStubResponse = { message: string };
 export type ValidateStubCollectionResponse = ReceiptStub;
 export type TransmitStubResponse = ReceiptStub;

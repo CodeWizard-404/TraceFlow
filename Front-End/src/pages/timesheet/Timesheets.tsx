@@ -6,10 +6,10 @@ import Timesheet from "../../models/Timesheet";
 import { getTimesheetsBySupervisor } from "../../apis/timesheetAPI"; 
 import Visit from "../../models/Visit";
 import { FaClock, FaMapMarkerAlt } from "react-icons/fa";
+import { useAuth } from "../../context/AuthContext";
 
 type ViewMode = "year" | "month" | "week" | "day";
 
-// Main component for displaying timesheets in various views (Year, Month, Week, Day)
 const Timesheets: React.FC = () => {
   const [timesheets, setTimesheets] = useState<Timesheet[]>([]);
   const [currentYear, setCurrentYear] = useState(new Date().getFullYear());
@@ -21,15 +21,21 @@ const Timesheets: React.FC = () => {
   });
   const [loading, setLoading] = useState<boolean>(true);
   const navigate = useNavigate();
+  const { user, token } = useAuth(); // Get user and token from AuthContext
 
-  const supervisorID = "user_001"; // Replace with desired supervisor ID
+  // Check if user exists and has the required permission
+  if (!user || !token || !user.roles?.some(role => role.permissions?.includes("access_timesheets"))) {
+    navigate("/login"); // Redirect to login if unauthorized
+    return null;
+  }
 
-  // Fetch timesheets when the year changes
+  const supervisorID = user.userID; // Use authenticated user's ID dynamically
+
   useEffect(() => {
     const fetchTimesheets = async () => {
       try {
         setLoading(true);
-        const data = await getTimesheetsBySupervisor(supervisorID);
+        const data = await getTimesheetsBySupervisor(supervisorID, token); // Pass token for auth
         setTimesheets(data.filter((ts) => ts.year === currentYear || (ts.year === currentYear - 1 && ts.weekNumber >= 52)));
       } catch (error) {
         console.error("Failed to fetch timesheets:", error);
@@ -39,52 +45,43 @@ const Timesheets: React.FC = () => {
     };
     fetchTimesheets();
     updateCurrentWeekAndDay();
-  }, [currentYear]);
+  }, [currentYear, supervisorID, token]);
 
-  // Persist view mode to localStorage whenever it changes
   useEffect(() => {
     localStorage.setItem("lastViewMode", viewMode);
   }, [viewMode]);
 
-  // Utility to get ISO week number for a date
   const getWeekNumber = (date: Date): number => {
     const year = date.getFullYear();
     const jan1 = new Date(year, 0, 1);
     const firstFridayOffset = (5 - jan1.getDay() + 7) % 7;
     const firstMonday = new Date(year, 0, 1 + firstFridayOffset - 4);
-  
     const diffMs = date.getTime() - firstMonday.getTime();
     const diffDays = Math.floor(diffMs / (1000 * 60 * 60 * 24));
     const weekNum = Math.floor(diffDays / 7) + 1;
-  
-    // Check if the week belongs to the next year
     const nextJan1 = new Date(year + 1, 0, 1);
     const nextFirstFridayOffset = (5 - nextJan1.getDay() + 7) % 7;
     const nextFirstMonday = new Date(year + 1, 0, 1 + nextFirstFridayOffset - 4);
     if (date >= nextFirstMonday) {
-      return getWeekNumber(date); // Recalculate for next year (this could be optimized)
+      return getWeekNumber(date);
     }
-  
-    return weekNum > 0 && weekNum <= getWeeksInYear(year) ? weekNum : 1; // Clamp to valid range
+    return weekNum > 0 && weekNum <= getWeeksInYear(year) ? weekNum : 1;
   };
-  // Get total ISO weeks in a year
+
   const getWeeksInYear = (year: number): number => {
     const jan1 = new Date(year, 0, 1);
     const firstFridayOffset = (5 - jan1.getDay() + 7) % 7;
-    const firstMonday = new Date(year, 0, 1 + firstFridayOffset - 4); // Monday of Week 1
-  
+    const firstMonday = new Date(year, 0, 1 + firstFridayOffset - 4);
     const nextJan1 = new Date(year + 1, 0, 1);
     const nextFirstFridayOffset = (5 - nextJan1.getDay() + 7) % 7;
-    const nextFirstMonday = new Date(year + 1, 0, 1 + nextFirstFridayOffset - 4); // Monday of Week 1 of next year
-  
+    const nextFirstMonday = new Date(year + 1, 0, 1 + nextFirstFridayOffset - 4);
     const daysInYear = (nextFirstMonday.getTime() - firstMonday.getTime()) / (1000 * 60 * 60 * 24);
     return Math.floor(daysInYear / 7);
   };
 
-  // Update current week and day, ensuring day is a weekday (Monday-Friday)
   const updateCurrentWeekAndDay = () => {
     const today = new Date();
-    const weekNum = getWeekNumber(today); // Now using getWeekNumber
+    const weekNum = getWeekNumber(today);
     setCurrentWeek(weekNum);
     setCurrentDay(
       today.getDay() === 0 || today.getDay() === 6
@@ -92,17 +89,15 @@ const Timesheets: React.FC = () => {
         : today
     );
   };
-  // Generate array of weekdays (Monday-Friday) for a given week
+
   const getWeekDays = (year: number, weekNumber: number): Date[] => {
     const jan1 = new Date(year, 0, 1);
-    const firstFridayOffset = (5 - jan1.getDay() + 7) % 7; // Days from Jan 1 to first Friday (5 = Friday)
-    const firstFriday = new Date(year, 0, 1 + firstFridayOffset); // First Friday in January
+    const firstFridayOffset = (5 - jan1.getDay() + 7) % 7;
+    const firstFriday = new Date(year, 0, 1 + firstFridayOffset);
     const firstMonday = new Date(firstFriday);
-    firstMonday.setDate(firstFriday.getDate() - 4); // Monday of the week containing the first Friday
-  
+    firstMonday.setDate(firstFriday.getDate() - 4);
     const weekStart = new Date(firstMonday);
     weekStart.setDate(firstMonday.getDate() + (weekNumber - 1) * 7);
-  
     return Array.from({ length: 5 }, (_, i) => {
       const day = new Date(weekStart);
       day.setDate(weekStart.getDate() + i);
@@ -111,25 +106,19 @@ const Timesheets: React.FC = () => {
     });
   };
 
-  // Utility to sort visits by time (e.g., "09:00" < "14:00")
   const sortVisitsByTime = (visits: Visit[]): Visit[] => {
     return [...visits].sort((a, b) => a.time.localeCompare(b.time));
   };
 
-  // Data generation functions for each view
   const generateYearData = () => {
     const weeksInYear = getWeeksInYear(currentYear);
     const months: { month: number; weeks: { weekNumber: number; days: Date[]; visits: Visit[]; status: string }[] }[] = Array.from({ length: 12 }, (_, m) => ({ month: m, weeks: [] }));
-  
     for (let week = 1; week <= weeksInYear; week++) {
       const days = getWeekDays(currentYear, week);
       let assignedMonth: number;
-  
-      // Special case: Week 1 always belongs to January (month 0)
       if (week === 1) {
-        assignedMonth = 0; // January
+        assignedMonth = 0;
       } else {
-        // For other weeks, use the dominant month based on day count
         const monthCounts = days.reduce((acc, day) => {
           const month = day.getMonth();
           acc[month] = (acc[month] || 0) + 1;
@@ -139,7 +128,6 @@ const Timesheets: React.FC = () => {
           Object.entries(monthCounts).reduce((a, b) => (b[1] > a[1] ? b : a))[0]
         );
       }
-  
       const timesheet = timesheets.find((ts) => ts.weekNumber === week && ts.year === currentYear);
       months[assignedMonth].weeks.push({
         weekNumber: week,
@@ -150,10 +138,10 @@ const Timesheets: React.FC = () => {
     }
     return months;
   };
+
   const generateMonthData = () => {
     const weeksInYear = getWeeksInYear(currentYear);
     const weeks: { weekNumber: number; days: Date[]; visits: Visit[]; status: string }[] = [];
-  
     for (let week = 1; week <= weeksInYear; week++) {
       const days = getWeekDays(currentYear, week);
       const hasDaysInMonth = days.some((day) => day.getMonth() === currentMonth && day.getFullYear() === currentYear);
@@ -169,6 +157,7 @@ const Timesheets: React.FC = () => {
     }
     return weeks;
   };
+
   const generateWeekData = () => {
     const timesheet = timesheets.find((ts) => ts.weekNumber === currentWeek);
     return {
@@ -178,6 +167,7 @@ const Timesheets: React.FC = () => {
       status: timesheet?.status || "Not Scheduled",
     };
   };
+
   const generateDayData = () => {
     if (!currentDay) return [];
     const dateStr = currentDay.toISOString().split("T")[0];
@@ -187,7 +177,6 @@ const Timesheets: React.FC = () => {
     return sortVisitsByTime(visits);
   };
 
-  // Scroll to the current period based on view mode
   const scrollToCurrent = () => {
     const today = new Date();
     setCurrentYear(today.getFullYear());
@@ -211,7 +200,6 @@ const Timesheets: React.FC = () => {
 
   return (
     <div className="timesheets-container">
-      {/* Header with view toggle, year navigation, and action buttons */}
       <header className="timesheets-header">
         <div className="view-toggle">
           {["year", "month", "week", "day"].map((mode) => (
@@ -243,7 +231,6 @@ const Timesheets: React.FC = () => {
         </div>
       </header>
 
-      {/* Year View: Displays all months with their weeks */}
       {viewMode === "year" && (
         <section className="year-view">
           {generateYearData().map(({ month, weeks }) => (
@@ -259,10 +246,10 @@ const Timesheets: React.FC = () => {
                       setViewMode("week");
                     }}
                   >
-                    <span className="week-number">Week {week.weekNumber} :&nbsp;&nbsp;&nbsp;&nbsp;</span> 
+                    <span className="week-number">Week {week.weekNumber} : </span> 
                     <span className="week-range">
                       {week.days[0].toLocaleDateString("en-GB", { day: "numeric", month: "short" })} -{" "}
-                      {week.days[4].toLocaleDateString("en-GB", { day: "numeric", month: "short" })} &nbsp;&nbsp;/&nbsp;
+                      {week.days[4].toLocaleDateString("en-GB", { day: "numeric", month: "short" })} / 
                     </span> 
                     <span className="visit-count">{week.visits.length} Visits</span>
                   </div>
@@ -273,7 +260,6 @@ const Timesheets: React.FC = () => {
         </section>
       )}
 
-      {/* Month View: Displays weeks of the selected month */}
       {viewMode === "month" && (
         <section className="month-view">
           <div className="month-header">
@@ -308,21 +294,14 @@ const Timesheets: React.FC = () => {
         </section>
       )}
 
-      {/* Week View: Displays days with their respective visits */}
       {viewMode === "week" && (
         <section className="week-view">
           <div className="week-header">
-          <button
-              className="nav-btn"
-              onClick={() => setCurrentWeek((prev) => Math.max(1, prev - 1))}
-            >
+            <button className="nav-btn" onClick={() => setCurrentWeek((prev) => Math.max(1, prev - 1))}>
               <span>←</span>
             </button>
             <h2>Week {currentWeek}</h2>
-            <button
-              className="nav-btn"
-              onClick={() => setCurrentWeek((prev) => Math.min(getWeeksInYear(currentYear), prev + 1))}
-            >
+            <button className="nav-btn" onClick={() => setCurrentWeek((prev) => Math.min(getWeeksInYear(currentYear), prev + 1))}>
               <span>→</span>
             </button>
           </div>
@@ -384,7 +363,6 @@ const Timesheets: React.FC = () => {
                                   <p className="visit-location">
                                     <FaMapMarkerAlt /> {visit.location}
                                   </p>
-                                  {/* Display reasons if they exist */}
                                   {visit.Reasons && visit.Reasons.length > 0 && (
                                     <p className="visit-reasons">
                                       Reasons: {visit.Reasons.map((reason) => reason.item).join(", ")}
@@ -407,17 +385,12 @@ const Timesheets: React.FC = () => {
         </section>
       )}
 
-      {/* Day View: Displays visits for the selected day */}
       {viewMode === "day" && (
         <section className="day-view">
           <div className="day-header">
-            <button
-              className="nav-btn"
-              onClick={() => currentDay && setCurrentDay(new Date(currentDay.setDate(currentDay.getDate() - 1)))}
-            >
+            <button className="nav-btn" onClick={() => currentDay && setCurrentDay(new Date(currentDay.setDate(currentDay.getDate() - 1)))}>
               <span>←</span>
             </button>
-            {/* Updated day view header format */}
             <h2>
               {currentDay?.toLocaleDateString("en-GB", {
                 weekday: "short",
@@ -425,10 +398,7 @@ const Timesheets: React.FC = () => {
                 month: "2-digit",
               }).replace(/(\w+)\s(\d+)\/(\d+)/, "$1 $2/$3")}
             </h2>
-            <button
-              className="nav-btn"
-              onClick={() => currentDay && setCurrentDay(new Date(currentDay.setDate(currentDay.getDate() + 1)))}
-            >
+            <button className="nav-btn" onClick={() => currentDay && setCurrentDay(new Date(currentDay.setDate(currentDay.getDate() + 1)))}>
               <span>→</span>
             </button>
           </div>
@@ -441,7 +411,6 @@ const Timesheets: React.FC = () => {
                   onClick={() => navigate(`/visit/${visit.visitID}`)}
                 >
                   <div className="visit-header">
-                    {/* Show time only if not null, format to HH:MM */}
                     {visit.time && (
                       <span className="visit-time">
                         <FaClock /> {visit.time.split(":").slice(0, 2).join(":")}
@@ -454,7 +423,6 @@ const Timesheets: React.FC = () => {
                   <p className="visit-location">
                     <FaMapMarkerAlt /> {visit.location || "Location TBD"}
                   </p>
-                  {/* Display reasons if they exist */}
                   {visit.Reasons && visit.Reasons.length > 0 && (
                     <p className="visit-reasons">
                       Reasons: {visit.Reasons.map((reason) => reason.item).join(", ")}

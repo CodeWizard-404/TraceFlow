@@ -1,13 +1,12 @@
 import axios from "axios";
 import { BASE_URL, DEFAULT_TIMEOUT } from "../config";
-import { GetSupervisorByPhoneNumberResponse } from ".";
-
 import {
   CreateUserResponse,
   ListUsersResponse,
   UserByIdResponse,
   AssignRolesResponse,
   RolesByUserResponse,
+  GetSupervisorByPhoneNumberResponse,
 } from ".";
 import User from "../models/User";
 
@@ -17,42 +16,59 @@ const userApi = axios.create({
 });
 
 export const getSupervisorByPhone = async (
-  phone: string
+  phone: string,
+  token?: string
 ): Promise<GetSupervisorByPhoneNumberResponse> => {
-  const response = await userApi.post<GetSupervisorByPhoneNumberResponse>(
-    "/phone",
-    { phone }
-  );
-  return response.data;
+  try {
+    const response = await userApi.post<GetSupervisorByPhoneNumberResponse>(
+      "/phone",
+      { phone },
+      { headers: token ? { Authorization: `Bearer ${token}` } : {} }
+    );
+    return response.data;
+  } catch (error) {
+    console.error(`Error fetching supervisor by phone (${phone}):`, error);
+    throw error;
+  }
 };
 
 export const createUser = async (
   userData: Partial<User>,
   token: string
 ): Promise<CreateUserResponse> => {
-  const response = await userApi.post<CreateUserResponse>("", userData, {
-    headers: { Authorization: `Bearer ${token}` },
-  });
-  return response.data;
+  try {
+    const response = await userApi.post<CreateUserResponse>("", userData, {
+      headers: { Authorization: `Bearer ${token}` },
+    });
+    return response.data;
+  } catch (error) {
+    console.error("Error creating user:", error);
+    throw error;
+  }
 };
 
-export const getAllUsers = async (
-  token: string
-): Promise<ListUsersResponse> => {
-  const response = await userApi.get<ListUsersResponse>("", {
-    headers: { Authorization: `Bearer ${token}` },
-  });
-  return response.data;
+export const getAllUsers = async (token: string): Promise<ListUsersResponse> => {
+  try {
+    const response = await userApi.get<ListUsersResponse>("", {
+      headers: { Authorization: `Bearer ${token}` },
+    });
+    return response.data;
+  } catch (error) {
+    console.error("Error fetching all users:", error);
+    throw error;
+  }
 };
 
-export const getUserById = async (
-  userID: string,
-  token: string
-): Promise<UserByIdResponse> => {
-  const response = await userApi.get<UserByIdResponse>(`/${userID}`, {
-    headers: { Authorization: `Bearer ${token}` },
-  });
-  return response.data;
+export const getUserById = async (userID: string, token: string): Promise<UserByIdResponse> => {
+  try {
+    const response = await userApi.get<UserByIdResponse>(`/${userID}`, {
+      headers: { Authorization: `Bearer ${token}` },
+    });
+    return response.data;
+  } catch (error) {
+    console.error(`Error fetching user by ID (${userID}):`, error);
+    throw error;
+  }
 };
 
 export const assignRolesToUser = async (
@@ -60,30 +76,48 @@ export const assignRolesToUser = async (
   roleIDs: string[],
   token: string
 ): Promise<AssignRolesResponse> => {
-  const response = await userApi.post<AssignRolesResponse>(
-    `/${userID}/roles`,
-    { roleIDs },
-    { headers: { Authorization: `Bearer ${token}` } }
-  );
-  return response.data;
+  try {
+    const response = await userApi.post<AssignRolesResponse>(
+      `/${userID}/roles`,
+      { roleIDs },
+      { headers: { Authorization: `Bearer ${token}` } }
+    );
+    return response.data;
+  } catch (error) {
+    console.error(`Error assigning roles to user (${userID}):`, error);
+    throw error;
+  }
 };
 
-export const getRolesByUser = async (
-  userID: string,
-  token: string
-): Promise<RolesByUserResponse> => {
-  const response = await userApi.get<RolesByUserResponse>(`/${userID}/roles`, {
-    headers: { Authorization: `Bearer ${token}` },
-  });
-  return response.data;
+export const getRolesByUser = async (userID: string, token: string): Promise<RolesByUserResponse> => {
+  try {
+    const response = await userApi.get<RolesByUserResponse>(`/${userID}/roles`, {
+      headers: { Authorization: `Bearer ${token}` },
+    });
+    return response.data;
+  } catch (error) {
+    console.error(`Error fetching roles for user (${userID}):`, error);
+    throw error;
+  }
 };
-
 
 export const updateUser = async (userID: string, userData: Partial<User>, token: string): Promise<User> => {
-  const response = await userApi.put<User>(`/${userID}`, userData, { headers: { Authorization: `Bearer ${token}` } });
-  return response.data;
+  try {
+    const response = await userApi.put<User>(`/${userID}`, userData, {
+      headers: { Authorization: `Bearer ${token}` },
+    });
+    return response.data;
+  } catch (error) {
+    console.error(`Error updating user (${userID}):`, error);
+    throw error;
+  }
 };
 
 export const deleteUser = async (userID: string, token: string): Promise<void> => {
-  await userApi.delete(`/${userID}`, { headers: { Authorization: `Bearer ${token}` } });
+  try {
+    await userApi.delete(`/${userID}`, { headers: { Authorization: `Bearer ${token}` } });
+  } catch (error) {
+    console.error(`Error deleting user (${userID}):`, error);
+    throw error;
+  }
 };

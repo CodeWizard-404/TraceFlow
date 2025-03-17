@@ -1,16 +1,16 @@
 import React, { useState, useEffect, useMemo } from "react";
-import { FaSearch, FaFilter, FaSort, FaUserPlus, FaPlus, FaArrowLeft, FaInfoCircle, FaAngleDown } from "react-icons/fa";
-import { useAuth } from "../../context/AuthContext";
-import { getAllUsers, createUser, assignRolesToUser, getRolesByUser } from "../../apis/userAPI";
-import { getAllRoles, createRole, assignPermissionsToRole, getPermissionsByRole } from "../../apis/roleAPI";
-import { getAllPermissions } from "../../apis/permissionAPI";
-import User from "../../models/User";
-import Role from "../../models/Role";
-import Permission from "../../models/Permission";
+import { FaSearch, FaFilter, FaSort, FaUserPlus, FaPlus, FaEdit, FaTrash, FaArrowLeft, FaInfoCircle, FaAngleDown } from "react-icons/fa";
+import { useAuth } from "../Front-End/src/context/AuthContext";
+import { getAllUsers, createUser, assignRolesToUser, getRolesByUser } from "../Front-End/src/apis/userAPI";
+import { getAllRoles, createRole, assignPermissionsToRole, getPermissionsByRole, revokePermissionsFromRole } from "../Front-End/src/apis/roleAPI";
+import { getAllPermissions } from "../Front-End/src/apis/permissionAPI";
+import User from "../Front-End/src/models/User";
+import Role from "../Front-End/src/models/Role";
+import Permission from "../Front-End/src/models/Permission";
 import "./AdminDashboard.css";
 
 const AdminDashboard: React.FC = () => {
-    const { token } = useAuth();
+    const { token, isAuthenticated } = useAuth(); // Add isAuthenticated
     const [users, setUsers] = useState<User[]>([]);
     const [roles, setRoles] = useState<Role[]>([]);
     const [permissions, setPermissions] = useState<Permission[]>([]);
@@ -38,21 +38,33 @@ const AdminDashboard: React.FC = () => {
 
     useEffect(() => {
         const fetchData = async () => {
+            if (!isAuthenticated || !token) {
+                console.log("Not authenticated or no token available");
+                return;
+            }
             setLoading(true);
             try {
+                console.log("Fetching data with token:", token);
                 const [usersData, rolesData, permissionsData] = await Promise.all([
-                    getAllUsers(token!),
-                    getAllRoles(token!),
-                    getAllPermissions(token!),
+                    getAllUsers(token),
+                    getAllRoles(token),
+                    getAllPermissions(token),
                 ]);
-                const usersWithRoles = await Promise.all(usersData.map(async (user) => {
-                    const userRoles = await getRolesByUser(user.userID, token!);
-                    return { ...user, roles: userRoles };
-                }));
-                const rolesWithPermissions = await Promise.all(rolesData.map(async (role) => {
-                    const rolePermissions = await getPermissionsByRole(role.roleID, token!);
-                    return { ...role, permissions: rolePermissions };
-                }));
+                console.log("Users:", usersData, "Roles:", rolesData, "Permissions:", permissionsData);
+                
+                const usersWithRoles = await Promise.all(
+                    usersData.map(async (user) => {
+                        const userRoles = await getRolesByUser(user.userID, token);
+                        return { ...user, roles: userRoles };
+                    })
+                );
+                const rolesWithPermissions = await Promise.all(
+                    rolesData.map(async (role) => {
+                        const rolePermissions = await getPermissionsByRole(role.roleID, token);
+                        return { ...role, permissions: rolePermissions };
+                    })
+                );
+                
                 setUsers(usersWithRoles);
                 setRoles(rolesWithPermissions);
                 setPermissions(permissionsData);
@@ -62,9 +74,11 @@ const AdminDashboard: React.FC = () => {
                 setLoading(false);
             }
         };
-        if (token) fetchData();
-    }, [token]);
+        
+        fetchData();
+    }, [token, isAuthenticated]); // Add isAuthenticated to dependencies
 
+    // Rest of your memoized filters remain unchanged
     const filteredUsers = useMemo(() => {
         let result = users.filter((user) =>
             `${user.firstname} ${user.lastname}`.toLowerCase().includes(searchQuery.toLowerCase()) ||
@@ -124,6 +138,7 @@ const AdminDashboard: React.FC = () => {
         }, {} as { [key: string]: { [key: string]: Permission[] } });
     }, [permissions, permissionSearch, selectedCategory]);
 
+    // Keep your existing handlers with minor adjustments
     const handleUserSelect = async (user: User) => {
         if (hasUnsavedUserChanges && !window.confirm('You have unsaved changes. Are you sure you want to proceed?')) return;
         setSelectedUser(user);
@@ -139,21 +154,16 @@ const AdminDashboard: React.FC = () => {
     };
 
     const handleRoleSelect = async (role: Role) => {
-        // Fixed roles - cannot be modified
         if (role.name === 'Admin' || role.name === 'Super Admin') {
             alert('Fixed roles cannot be modified.');
             return;
         }
-    
-        // Pre-made roles - warn but allow if confirmed
         const fixedRoles = ['Manager', 'Supervisor', 'Purchase', 'Regional Manager', 'Stock Manager'];
         if (fixedRoles.includes(role.name)) {
             if (!window.confirm('Warning: Modifying pre-made roles may affect system functionality. Are you sure you want to proceed?')) {
                 return;
             }
         }
-    
-        // Custom roles - no restrictions, proceed directly
         if (hasUnsavedChanges && !window.confirm('You have unsaved changes. Are you sure you want to switch roles?')) return;
         
         setSelectedRole(role);
@@ -167,19 +177,19 @@ const AdminDashboard: React.FC = () => {
         }
     };
 
-    // const handleEditUser = (user: User) => {
-    //     setNewUser({ ...user, password: "" });
-    //     setSelectedRolesForNewUser(user.roles?.map(r => r.roleID) || []);
-    //     setView("add-user");
-    // };
+    const handleEditUser = (user: User) => {
+        setNewUser({ ...user, password: "" });
+        setSelectedRolesForNewUser(user.roles?.map(r => r.roleID) || []);
+        setView("add-user");
+    };
 
-    // const handleDeleteUser = async (userID: string) => {
-    //     if (window.confirm("Are you sure you want to delete this user?")) {
-    //         setUsers(users.filter(u => u.userID !== userID));
-    //         if (selectedUser?.userID === userID) setSelectedUser(null);
-    //         setView("users");
-    //     }
-    // };
+    const handleDeleteUser = async (userID: string) => {
+        if (window.confirm("Are you sure you want to delete this user?")) {
+            setUsers(users.filter(u => u.userID !== userID));
+            if (selectedUser?.userID === userID) setSelectedUser(null);
+            setView("users");
+        }
+    };
 
     const handleTogglePermission = (permissionID: string) => {
         const hasPermission = tempPermissions.some(perm => perm.permissionID === permissionID);
@@ -193,15 +203,15 @@ const AdminDashboard: React.FC = () => {
     };
 
     const handleSavePermissions = async () => {
-        if (!selectedRole) return;
+        if (!selectedRole || !token) return;
         setLoading(true);
         try {
             const currentPermissionIds = selectedRole.permissions?.map(p => p.permissionID) || [];
             const newPermissionIds = tempPermissions.map(p => p.permissionID);
             const toAdd = newPermissionIds.filter(id => !currentPermissionIds.includes(id));
-            //const toRemove = currentPermissionIds.filter(id => !newPermissionIds.includes(id));
-            if (toAdd.length > 0) await assignPermissionsToRole(selectedRole.roleID, toAdd, token!);
-            //if (toRemove.length > 0) await revokePermissionsFromRole(selectedRole.roleID, toRemove, token!);
+            const toRemove = currentPermissionIds.filter(id => !newPermissionIds.includes(id));
+            if (toAdd.length > 0) await assignPermissionsToRole(selectedRole.roleID, toAdd, token);
+            if (toRemove.length > 0) await revokePermissionsFromRole(selectedRole.roleID, toRemove, token);
             setRoles(roles.map(r => r.roleID === selectedRole.roleID ? { ...r, permissions: tempPermissions } : r));
             setSelectedRole({ ...selectedRole, permissions: tempPermissions });
             setHasUnsavedChanges(false);
@@ -224,14 +234,13 @@ const AdminDashboard: React.FC = () => {
     };
 
     const handleSaveUserRoles = async () => {
-        if (!selectedUser) return;
+        if (!selectedUser || !token) return;
         setLoading(true);
         try {
             const currentRoleIds = selectedUser.roles?.map(r => r.roleID) || [];
             const newRoleIds = tempRoles.map(r => r.roleID);
             const toAdd = newRoleIds.filter(id => !currentRoleIds.includes(id));
-            //const toRemove = currentRoleIds.filter(id => !newRoleIds.includes(id));
-            if (toAdd.length > 0) await assignRolesToUser(selectedUser.userID, toAdd, token!);
+            if (toAdd.length > 0) await assignRolesToUser(selectedUser.userID, toAdd, token);
             setUsers(users.map(u => u.userID === selectedUser.userID ? { ...u, roles: tempRoles } : u));
             setSelectedUser({ ...selectedUser, roles: tempRoles });
             setHasUnsavedUserChanges(false);
@@ -244,15 +253,16 @@ const AdminDashboard: React.FC = () => {
     };
 
     const handleCreateUser = async () => {
+        if (!token) return;
         if (newUser.password !== passwordConfirm) {
             alert("Passwords do not match!");
             return;
         }
         try {
-            const createdUser = await createUser({ ...newUser }, token!);
+            const createdUser = await createUser({ ...newUser }, token);
             if (selectedRolesForNewUser.length > 0) {
-                await assignRolesToUser(createdUser.userID, selectedRolesForNewUser, token!);
-                createdUser.roles = await getRolesByUser(createdUser.userID, token!);
+                await assignRolesToUser(createdUser.userID, selectedRolesForNewUser, token);
+                createdUser.roles = await getRolesByUser(createdUser.userID, token);
             }
             setUsers([...users, createdUser]);
             setNewUser({});
@@ -265,14 +275,15 @@ const AdminDashboard: React.FC = () => {
     };
 
     const handleCreateRole = async () => {
+        if (!token) return;
         try {
             const createdRole = await createRole({
                 name: newRole.name,
                 description: newRole.description
-            }, token!);
+            }, token);
             if (selectedPermissionsForNewRole.length > 0) {
-                await assignPermissionsToRole(createdRole.roleID, selectedPermissionsForNewRole, token!);
-                createdRole.permissions = await getPermissionsByRole(createdRole.roleID, token!);
+                await assignPermissionsToRole(createdRole.roleID, selectedPermissionsForNewRole, token);
+                createdRole.permissions = await getPermissionsByRole(createdRole.roleID, token);
             }
             setRoles([...roles, createdRole]);
             setNewRole({});
@@ -299,7 +310,7 @@ const AdminDashboard: React.FC = () => {
 
     const toggleRolePopup = (roleID: string) => {
         setActiveRolePopup(activeRolePopup === roleID ? null : roleID);
-        setExpandedClasses(new Set()); // Reset expanded classes when opening/closing popup
+        setExpandedClasses(new Set());
     };
 
     const toggleClassExpansion = (className: string) => {
@@ -324,10 +335,17 @@ const AdminDashboard: React.FC = () => {
         return byClass;
     };
 
-    if (loading) return <div className="loading-text">Loading Admin Dashboard...</div>;
+    if (!isAuthenticated) {
+        return <div>Please log in to access the Admin Dashboard.</div>;
+    }
+
+    if (loading) {
+        return <div className="loading-text">Loading Admin Dashboard...</div>;
+    }
 
     return (
         <div className="admin-dashboard">
+            {/* Your existing JSX remains unchanged below */}
             <header className="dashboard-header">
                 <h1>
                     {view === "users" && "Users Management"}
@@ -405,6 +423,7 @@ const AdminDashboard: React.FC = () => {
                         <div className="users-list">
                             <div className="table-card">
                                 <h2>Users</h2>
+                                {users.length === 0 && <p>No users found.</p>}
                                 <div className="table-container">
                                     <div className="table-head">
                                         <div className="table-row">
@@ -433,9 +452,9 @@ const AdminDashboard: React.FC = () => {
                         </div>
                     )}
 
+                    {/* Rest of your JSX remains unchanged */}
                     {view === "roles" && (
                         <div className="roles-management">
-                            {/* Fixed Roles */}
                             {(() => {
                                 const fixedRoles = filteredRoles.filter(role => 
                                     ['Admin', 'Super Admin'].includes(role.name)
@@ -473,7 +492,6 @@ const AdminDashboard: React.FC = () => {
                                 return null;
                             })()}
 
-                            {/* Pre-made Roles */}
                             {(() => {
                                 const premadeRoles = filteredRoles.filter(role => 
                                     ['Manager', 'Supervisor', 'Purchase', 'Regional Manager', 'Stock Manager'].includes(role.name)
@@ -502,14 +520,9 @@ const AdminDashboard: React.FC = () => {
                                 return null;
                             })()}
 
-                            {/* Custom Roles */}
                             {(() => {
                                 const customRoles = filteredRoles.filter(role => 
-                                    ![
-                                        'Admin', 'Super Admin',
-                                        'Manager', 'Supervisor', 'Purchase', 
-                                        'Regional Manager', 'Stock Manager'
-                                    ].includes(role.name)
+                                    !['Admin', 'Super Admin', 'Manager', 'Supervisor', 'Purchase', 'Regional Manager', 'Stock Manager'].includes(role.name)
                                 );
                                 if (customRoles.length > 0) {
                                     return (
@@ -535,7 +548,6 @@ const AdminDashboard: React.FC = () => {
                                 return null;
                             })()}
 
-                            {/* Role Info Popup */}
                             {activeRolePopup && (
                                 <div className="role-info-popup-overlay" onClick={() => setActiveRolePopup(null)}>
                                     <div className="role-info-popup" onClick={(e) => e.stopPropagation()}>
@@ -611,6 +623,7 @@ const AdminDashboard: React.FC = () => {
 
                     {view === "add-user" && (
                         <div className="form-card">
+                            {/* Existing form JSX unchanged */}
                             <div className="form-section">
                                 <h3>Personal Information</h3>
                                 <div className="form-row">
@@ -852,22 +865,13 @@ const AdminDashboard: React.FC = () => {
                         <div className="details-card">
                             <div className="card-header">
                                 <h2>User Details</h2>
-                                {/* <div className="user-actions">
-                                    <button className="edit-button" onClick={() => handleEditUser(selectedUser)}>
-                                        <FaEdit /> Edit
-                                    </button>
-                                    <button className="delete-button" onClick={() => handleDeleteUser(selectedUser.userID)}>
-                                        <FaTrash /> Delete
-                                    </button>
-                                </div> */}
                             </div>
                             <hr />
-
                             <div className="form-section">
                                 <h3>Basic Information</h3>
                                 <div className="info-grid">
                                     <p><strong>Email:</strong> {selectedUser.email}</p>
-                                    <p><strong>Phone:</strong> {selectedUser.phone }</p>
+                                    <p><strong>Phone:</strong> {selectedUser.phone}</p>
                                     <p><strong>Wallet:</strong> {selectedUser.wallet}</p>
                                 </div>
                             </div>

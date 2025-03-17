@@ -1,7 +1,7 @@
 import { useState } from "react";
 import { useTheme } from "../context/ThemeContext"; // Import useTheme from ThemeContext
 import { FaSun, FaMoon } from "react-icons/fa"; // Icons for theme toggle
-import logo from "../assets/Logo.png";
+import logo from "../assets/Banner.png";
 import "./CMP.css";
 
 function Header() {
