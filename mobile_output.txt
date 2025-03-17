@@ -3,7 +3,7 @@ Generated on: 1742144785.76597
 ==================================================
 
 ==================================================
-File contents: C:\Users\Kayto\Desktop\IT\Projects\Stage\Stage PFE\Visit_Management\Mobile\lib\main.dart
+File contents: C:\Users\Kayto\Desktop\IT\Projects\Stage\Stage PFE\TraceFlow\Mobile\lib\main.dart
 ==================================================
 // lib/main.dart
 import 'package:flutter/material.dart';
@@ -77,7 +77,7 @@ class MyApp extends StatelessWidget {
 }
 
 ==================================================
-File contents: C:\Users\Kayto\Desktop\IT\Projects\Stage\Stage PFE\Visit_Management\Mobile\lib\models\agent.dart
+File contents: C:\Users\Kayto\Desktop\IT\Projects\Stage\Stage PFE\TraceFlow\Mobile\lib\models\agent.dart
 ==================================================
 // models/agent.dart
 class Agent {
@@ -131,7 +131,7 @@ class Agent {
 }
 
 ==================================================
-File contents: C:\Users\Kayto\Desktop\IT\Projects\Stage\Stage PFE\Visit_Management\Mobile\lib\models\checklist.dart
+File contents: C:\Users\Kayto\Desktop\IT\Projects\Stage\Stage PFE\TraceFlow\Mobile\lib\models\checklist.dart
 ==================================================
 import 'package:visit_management/models/visit_checklist.dart';
 
@@ -167,7 +167,7 @@ class Checklist {
 
 
 ==================================================
-File contents: C:\Users\Kayto\Desktop\IT\Projects\Stage\Stage PFE\Visit_Management\Mobile\lib\models\reason.dart
+File contents: C:\Users\Kayto\Desktop\IT\Projects\Stage\Stage PFE\TraceFlow\Mobile\lib\models\reason.dart
 ==================================================
 import 'package:visit_management/models/visit_reason.dart';
 
@@ -202,7 +202,7 @@ class Reason {
 }
 
 ==================================================
-File contents: C:\Users\Kayto\Desktop\IT\Projects\Stage\Stage PFE\Visit_Management\Mobile\lib\models\timesheet.dart
+File contents: C:\Users\Kayto\Desktop\IT\Projects\Stage\Stage PFE\TraceFlow\Mobile\lib\models\timesheet.dart
 ==================================================
 import 'package:visit_management/models/visit.dart';
 
@@ -249,7 +249,7 @@ class Timesheet {
 }
 
 ==================================================
-File contents: C:\Users\Kayto\Desktop\IT\Projects\Stage\Stage PFE\Visit_Management\Mobile\lib\models\visit.dart
+File contents: C:\Users\Kayto\Desktop\IT\Projects\Stage\Stage PFE\TraceFlow\Mobile\lib\models\visit.dart
 ==================================================
 import 'package:visit_management/models/reason.dart';
 import 'package:visit_management/models/checklist.dart';
@@ -315,7 +315,7 @@ class Visit {
 }
 
 ==================================================
-File contents: C:\Users\Kayto\Desktop\IT\Projects\Stage\Stage PFE\Visit_Management\Mobile\lib\models\visit_checklist.dart
+File contents: C:\Users\Kayto\Desktop\IT\Projects\Stage\Stage PFE\TraceFlow\Mobile\lib\models\visit_checklist.dart
 ==================================================
 class VisitChecklist {
   final bool? checked;
@@ -347,7 +347,7 @@ class VisitChecklist {
 
 
 ==================================================
-File contents: C:\Users\Kayto\Desktop\IT\Projects\Stage\Stage PFE\Visit_Management\Mobile\lib\models\visit_reason.dart
+File contents: C:\Users\Kayto\Desktop\IT\Projects\Stage\Stage PFE\TraceFlow\Mobile\lib\models\visit_reason.dart
 ==================================================
 class VisitReason {
   final String? visitID;
@@ -374,7 +374,7 @@ class VisitReason {
 }
 
 ==================================================
-File contents: C:\Users\Kayto\Desktop\IT\Projects\Stage\Stage PFE\Visit_Management\Mobile\lib\providers\agent_provider.dart
+File contents: C:\Users\Kayto\Desktop\IT\Projects\Stage\Stage PFE\TraceFlow\Mobile\lib\providers\agent_provider.dart
 ==================================================
 // providers/agent_provider.dart
 import 'package:flutter/foundation.dart';
@@ -432,7 +432,7 @@ class AgentProvider with ChangeNotifier {
 }
 
 ==================================================
-File contents: C:\Users\Kayto\Desktop\IT\Projects\Stage\Stage PFE\Visit_Management\Mobile\lib\providers\checklist_provider.dart
+File contents: C:\Users\Kayto\Desktop\IT\Projects\Stage\Stage PFE\TraceFlow\Mobile\lib\providers\checklist_provider.dart
 ==================================================
 import 'package:flutter/foundation.dart';
 import '../models/checklist.dart';
@@ -451,7 +451,7 @@ class ChecklistProvider with ChangeNotifier {
 }
 
 ==================================================
-File contents: C:\Users\Kayto\Desktop\IT\Projects\Stage\Stage PFE\Visit_Management\Mobile\lib\providers\reason_provider.dart
+File contents: C:\Users\Kayto\Desktop\IT\Projects\Stage\Stage PFE\TraceFlow\Mobile\lib\providers\reason_provider.dart
 ==================================================
 import 'package:flutter/foundation.dart';
 import '../models/reason.dart';
@@ -470,7 +470,7 @@ class ReasonProvider with ChangeNotifier {
 }
 
 ==================================================
-File contents: C:\Users\Kayto\Desktop\IT\Projects\Stage\Stage PFE\Visit_Management\Mobile\lib\providers\theme_provider.dart
+File contents: C:\Users\Kayto\Desktop\IT\Projects\Stage\Stage PFE\TraceFlow\Mobile\lib\providers\theme_provider.dart
 ==================================================
 // lib/providers/theme_provider.dart
 import 'package:flutter/material.dart';
@@ -521,7 +521,7 @@ class ThemeProvider with ChangeNotifier {
 }
 
 ==================================================
-File contents: C:\Users\Kayto\Desktop\IT\Projects\Stage\Stage PFE\Visit_Management\Mobile\lib\providers\timesheet_provider.dart
+File contents: C:\Users\Kayto\Desktop\IT\Projects\Stage\Stage PFE\TraceFlow\Mobile\lib\providers\timesheet_provider.dart
 ==================================================
 import 'dart:convert';
 import 'package:flutter/foundation.dart';
@@ -602,7 +602,7 @@ class TimesheetProvider with ChangeNotifier {
 }
 
 ==================================================
-File contents: C:\Users\Kayto\Desktop\IT\Projects\Stage\Stage PFE\Visit_Management\Mobile\lib\providers\visit_provider.dart
+File contents: C:\Users\Kayto\Desktop\IT\Projects\Stage\Stage PFE\TraceFlow\Mobile\lib\providers\visit_provider.dart
 ==================================================
 import 'package:flutter/cupertino.dart';
 import '../models/reason.dart';
@@ -687,7 +687,7 @@ class VisitProvider with ChangeNotifier {
 }
 
 ==================================================
-File contents: C:\Users\Kayto\Desktop\IT\Projects\Stage\Stage PFE\Visit_Management\Mobile\lib\screens\Error.dart
+File contents: C:\Users\Kayto\Desktop\IT\Projects\Stage\Stage PFE\TraceFlow\Mobile\lib\screens\Error.dart
 ==================================================
 import 'package:flutter/material.dart';
 import 'dart:math' as math;
@@ -990,7 +990,7 @@ class CosmicWavesPainter extends CustomPainter {
 }
 
 ==================================================
-File contents: C:\Users\Kayto\Desktop\IT\Projects\Stage\Stage PFE\Visit_Management\Mobile\lib\screens\Timesheet\Timesheet_details.dart
+File contents: C:\Users\Kayto\Desktop\IT\Projects\Stage\Stage PFE\TraceFlow\Mobile\lib\screens\Timesheet\Timesheet_details.dart
 ==================================================
 // lib/screens/Timesheet/home_screen.dart
 import 'package:flutter/material.dart';
@@ -1373,7 +1373,7 @@ class HomeScreenState extends State<HomeScreen> with SingleTickerProviderStateMi
 }
 
 ==================================================
-File contents: C:\Users\Kayto\Desktop\IT\Projects\Stage\Stage PFE\Visit_Management\Mobile\lib\screens\Visit\create_visit.dart
+File contents: C:\Users\Kayto\Desktop\IT\Projects\Stage\Stage PFE\TraceFlow\Mobile\lib\screens\Visit\create_visit.dart
 ==================================================
 import 'dart:async';
 import 'dart:convert';
@@ -2292,7 +2292,7 @@ class _CreateVisitScreenState extends State<CreateVisitScreen> {
 }
 
 ==================================================
-File contents: C:\Users\Kayto\Desktop\IT\Projects\Stage\Stage PFE\Visit_Management\Mobile\lib\screens\Visit\log_visit_screen.dart
+File contents: C:\Users\Kayto\Desktop\IT\Projects\Stage\Stage PFE\TraceFlow\Mobile\lib\screens\Visit\log_visit_screen.dart
 ==================================================
 import 'package:flutter/material.dart';
 import 'package:provider/provider.dart';
@@ -2663,7 +2663,7 @@ class LogVisitScreenState extends State<LogVisitScreen> {
 }
 
 ==================================================
-File contents: C:\Users\Kayto\Desktop\IT\Projects\Stage\Stage PFE\Visit_Management\Mobile\lib\screens\Visit\visit_details.dart
+File contents: C:\Users\Kayto\Desktop\IT\Projects\Stage\Stage PFE\TraceFlow\Mobile\lib\screens\Visit\visit_details.dart
 ==================================================
 import 'package:flutter/material.dart';
 import 'package:provider/provider.dart';
@@ -3239,7 +3239,7 @@ class VisitDetailsScreen extends StatelessWidget {
 }
 
 ==================================================
-File contents: C:\Users\Kayto\Desktop\IT\Projects\Stage\Stage PFE\Visit_Management\Mobile\lib\services\agent_service.dart
+File contents: C:\Users\Kayto\Desktop\IT\Projects\Stage\Stage PFE\TraceFlow\Mobile\lib\services\agent_service.dart
 ==================================================
 import 'dart:convert';
 import 'package:http/http.dart' as http;
@@ -3296,7 +3296,7 @@ class AgentService {
 }
 
 ==================================================
-File contents: C:\Users\Kayto\Desktop\IT\Projects\Stage\Stage PFE\Visit_Management\Mobile\lib\services\checklist_service.dart
+File contents: C:\Users\Kayto\Desktop\IT\Projects\Stage\Stage PFE\TraceFlow\Mobile\lib\services\checklist_service.dart
 ==================================================
 import 'dart:convert';
 import 'package:http/http.dart' as http;
@@ -3335,7 +3335,7 @@ class ChecklistService {
 }
 
 ==================================================
-File contents: C:\Users\Kayto\Desktop\IT\Projects\Stage\Stage PFE\Visit_Management\Mobile\lib\services\reason_service.dart
+File contents: C:\Users\Kayto\Desktop\IT\Projects\Stage\Stage PFE\TraceFlow\Mobile\lib\services\reason_service.dart
 ==================================================
 import 'dart:convert';
 import 'package:http/http.dart' as http;
@@ -3374,7 +3374,7 @@ class ReasonService {
 }
 
 ==================================================
-File contents: C:\Users\Kayto\Desktop\IT\Projects\Stage\Stage PFE\Visit_Management\Mobile\lib\services\timesheet_service.dart
+File contents: C:\Users\Kayto\Desktop\IT\Projects\Stage\Stage PFE\TraceFlow\Mobile\lib\services\timesheet_service.dart
 ==================================================
 import 'package:http/http.dart' as http;
 import 'dart:convert';
@@ -3435,7 +3435,7 @@ class TimesheetService {
 }
 
 ==================================================
-File contents: C:\Users\Kayto\Desktop\IT\Projects\Stage\Stage PFE\Visit_Management\Mobile\lib\services\visits_service.dart
+File contents: C:\Users\Kayto\Desktop\IT\Projects\Stage\Stage PFE\TraceFlow\Mobile\lib\services\visits_service.dart
 ==================================================
 import 'package:http/http.dart' as http;
 import 'dart:convert';
@@ -3500,7 +3500,7 @@ class VisitService {
 }
 
 ==================================================
-File contents: C:\Users\Kayto\Desktop\IT\Projects\Stage\Stage PFE\Visit_Management\Mobile\lib\themes\app_themes.dart
+File contents: C:\Users\Kayto\Desktop\IT\Projects\Stage\Stage PFE\TraceFlow\Mobile\lib\themes\app_themes.dart
 ==================================================
 import 'package:flutter/material.dart';
 
@@ -3574,19 +3574,19 @@ class AppThemes {
 }
 
 ==================================================
-File contents: C:\Users\Kayto\Desktop\IT\Projects\Stage\Stage PFE\Visit_Management\Mobile\lib\utils\constants.dart
+File contents: C:\Users\Kayto\Desktop\IT\Projects\Stage\Stage PFE\TraceFlow\Mobile\lib\utils\constants.dart
 ==================================================
 
 const String baseUrl = 'http://192.168.1.12:5000/api';
 
 
 ==================================================
-File contents: C:\Users\Kayto\Desktop\IT\Projects\Stage\Stage PFE\Visit_Management\Mobile\lib\utils\helpers.dart
+File contents: C:\Users\Kayto\Desktop\IT\Projects\Stage\Stage PFE\TraceFlow\Mobile\lib\utils\helpers.dart
 ==================================================
 
 
 ==================================================
-File contents: C:\Users\Kayto\Desktop\IT\Projects\Stage\Stage PFE\Visit_Management\Mobile\lib\widgets\qr_scanner_widget.dart
+File contents: C:\Users\Kayto\Desktop\IT\Projects\Stage\Stage PFE\TraceFlow\Mobile\lib\widgets\qr_scanner_widget.dart
 ==================================================
 import 'package:flutter/material.dart';
 import 'package:camera/camera.dart';
@@ -3963,7 +3963,7 @@ class QROverlayPainter extends CustomPainter {
 }
 
 ==================================================
-File contents: C:\Users\Kayto\Desktop\IT\Projects\Stage\Stage PFE\Visit_Management\Mobile\lib\widgets\Glass_Effect\GlassChip.dart
+File contents: C:\Users\Kayto\Desktop\IT\Projects\Stage\Stage PFE\TraceFlow\Mobile\lib\widgets\Glass_Effect\GlassChip.dart
 ==================================================
 import 'package:flutter/material.dart';
 
@@ -4007,7 +4007,7 @@ class GlassChip extends StatelessWidget {
 }
 
 ==================================================
-File contents: C:\Users\Kayto\Desktop\IT\Projects\Stage\Stage PFE\Visit_Management\Mobile\lib\widgets\Glass_Effect\GlassContainer.dart
+File contents: C:\Users\Kayto\Desktop\IT\Projects\Stage\Stage PFE\TraceFlow\Mobile\lib\widgets\Glass_Effect\GlassContainer.dart
 ==================================================
 import 'package:flutter/material.dart';
 
@@ -4048,7 +4048,7 @@ class GlassContainer extends StatelessWidget {
 }
 
 ==================================================
-File contents: C:\Users\Kayto\Desktop\IT\Projects\Stage\Stage PFE\Visit_Management\Mobile\lib\widgets\Glass_Effect\GlassStatusChip.dart
+File contents: C:\Users\Kayto\Desktop\IT\Projects\Stage\Stage PFE\TraceFlow\Mobile\lib\widgets\Glass_Effect\GlassStatusChip.dart
 ==================================================
 import 'package:flutter/material.dart';
 
@@ -4095,7 +4095,7 @@ class GlassStatusChip extends StatelessWidget {
 }
 
 ==================================================
-File contents: C:\Users\Kayto\Desktop\IT\Projects\Stage\Stage PFE\Visit_Management\Mobile\lib\widgets\Timesheet\day_view.dart
+File contents: C:\Users\Kayto\Desktop\IT\Projects\Stage\Stage PFE\TraceFlow\Mobile\lib\widgets\Timesheet\day_view.dart
 ==================================================
 import 'package:flutter/material.dart';
 import 'package:provider/provider.dart';
@@ -4187,7 +4187,7 @@ class DayView extends StatelessWidget {
 }
 
 ==================================================
-File contents: C:\Users\Kayto\Desktop\IT\Projects\Stage\Stage PFE\Visit_Management\Mobile\lib\widgets\Timesheet\week_view.dart
+File contents: C:\Users\Kayto\Desktop\IT\Projects\Stage\Stage PFE\TraceFlow\Mobile\lib\widgets\Timesheet\week_view.dart
 ==================================================
 import 'package:flutter/material.dart';
 import 'package:intl/intl.dart';
@@ -4266,7 +4266,7 @@ class WeekView extends StatelessWidget {
 }
 
 ==================================================
-File contents: C:\Users\Kayto\Desktop\IT\Projects\Stage\Stage PFE\Visit_Management\Mobile\lib\widgets\Visit\visit_item.dart
+File contents: C:\Users\Kayto\Desktop\IT\Projects\Stage\Stage PFE\TraceFlow\Mobile\lib\widgets\Visit\visit_item.dart
 ==================================================
 import 'package:flutter/material.dart';
 import '../../models/visit.dart';

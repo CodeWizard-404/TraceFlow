@@ -3,7 +3,7 @@ Generated on: 1742144785.76597
 ==================================================
 
 ==================================================
-File contents: C:\Users\Kayto\Desktop\IT\Projects\Stage\Stage PFE\Visit_Management\Back-End\config\db.js
+File contents: C:\Users\Kayto\Desktop\IT\Projects\Stage\Stage PFE\TraceFlow\Back-End\config\db.js
 ==================================================
 const { Sequelize } = require('sequelize');
 require('dotenv').config();
@@ -55,7 +55,7 @@ async function initializeDatabase() {
 module.exports = { sequelize, initializeDatabase };
 
 ==================================================
-File contents: C:\Users\Kayto\Desktop\IT\Projects\Stage\Stage PFE\Visit_Management\Back-End\config\index.js
+File contents: C:\Users\Kayto\Desktop\IT\Projects\Stage\Stage PFE\TraceFlow\Back-End\config\index.js
 ==================================================
 const { initializeDatabase, sequelize } = require('./db');
 const { initializeServer } = require('./server');
@@ -71,7 +71,7 @@ module.exports = {
 };
 
 ==================================================
-File contents: C:\Users\Kayto\Desktop\IT\Projects\Stage\Stage PFE\Visit_Management\Back-End\config\security.js
+File contents: C:\Users\Kayto\Desktop\IT\Projects\Stage\Stage PFE\TraceFlow\Back-End\config\security.js
 ==================================================
 const jwt = require('jsonwebtoken');
 const { Role, User, Permission } = require('../models');
@@ -149,7 +149,7 @@ const restrictTo = (...allowedRoles) => {
 module.exports = { authenticateJWT, requirePermission, restrictTo };
 
 ==================================================
-File contents: C:\Users\Kayto\Desktop\IT\Projects\Stage\Stage PFE\Visit_Management\Back-End\config\seedPermissions.js
+File contents: C:\Users\Kayto\Desktop\IT\Projects\Stage\Stage PFE\TraceFlow\Back-End\config\seedPermissions.js
 ==================================================
 const fs = require('fs').promises;
 const path = require('path');
@@ -307,7 +307,7 @@ if (require.main === module) {
 }
 
 ==================================================
-File contents: C:\Users\Kayto\Desktop\IT\Projects\Stage\Stage PFE\Visit_Management\Back-End\config\SeedSuperAdmin.js
+File contents: C:\Users\Kayto\Desktop\IT\Projects\Stage\Stage PFE\TraceFlow\Back-End\config\SeedSuperAdmin.js
 ==================================================
 const bcrypt = require('bcrypt');
 const { sequelize, User, Role, Permission } = require('../models');
@@ -415,7 +415,7 @@ if (require.main === module) {
 }
 
 ==================================================
-File contents: C:\Users\Kayto\Desktop\IT\Projects\Stage\Stage PFE\Visit_Management\Back-End\config\server.js
+File contents: C:\Users\Kayto\Desktop\IT\Projects\Stage\Stage PFE\TraceFlow\Back-End\config\server.js
 ==================================================
 const fs = require('fs');
 const https = require('https');
@@ -458,7 +458,7 @@ async function initializeServer(app) {
 module.exports = { initializeServer };
 
 ==================================================
-File contents: C:\Users\Kayto\Desktop\IT\Projects\Stage\Stage PFE\Visit_Management\Back-End\config\sms.js
+File contents: C:\Users\Kayto\Desktop\IT\Projects\Stage\Stage PFE\TraceFlow\Back-End\config\sms.js
 ==================================================
 const axios = require('axios');
 const { User } = require('../models');
@@ -527,7 +527,7 @@ async function initializeSMS() {
 module.exports = { sendSMS, initializeSMS };
 
 ==================================================
-File contents: C:\Users\Kayto\Desktop\IT\Projects\Stage\Stage PFE\Visit_Management\Back-End\config\smtp.js
+File contents: C:\Users\Kayto\Desktop\IT\Projects\Stage\Stage PFE\TraceFlow\Back-End\config\smtp.js
 ==================================================
 const nodemailer = require('nodemailer');
 require('dotenv').config();
@@ -557,7 +557,7 @@ async function initializeSMTP() {
 module.exports = { transporter, initializeSMTP };
 
 ==================================================
-File contents: C:\Users\Kayto\Desktop\IT\Projects\Stage\Stage PFE\Visit_Management\Back-End\controllers\agentController.js
+File contents: C:\Users\Kayto\Desktop\IT\Projects\Stage\Stage PFE\TraceFlow\Back-End\controllers\agentController.js
 ==================================================
 const AgentService = require('../services/agentService');
 
@@ -609,7 +609,7 @@ class AgentController {
 module.exports = AgentController;
 
 ==================================================
-File contents: C:\Users\Kayto\Desktop\IT\Projects\Stage\Stage PFE\Visit_Management\Back-End\controllers\authController.js
+File contents: C:\Users\Kayto\Desktop\IT\Projects\Stage\Stage PFE\TraceFlow\Back-End\controllers\authController.js
 ==================================================
 const AuthService = require('../services/authService');
 
@@ -649,7 +649,7 @@ class AuthController {
 module.exports = AuthController;
 
 ==================================================
-File contents: C:\Users\Kayto\Desktop\IT\Projects\Stage\Stage PFE\Visit_Management\Back-End\controllers\checklistController.js
+File contents: C:\Users\Kayto\Desktop\IT\Projects\Stage\Stage PFE\TraceFlow\Back-End\controllers\checklistController.js
 ==================================================
 const ChecklistService = require('../services/checklistService');
 
@@ -687,7 +687,7 @@ class ChecklistController {
 module.exports = ChecklistController;
 
 ==================================================
-File contents: C:\Users\Kayto\Desktop\IT\Projects\Stage\Stage PFE\Visit_Management\Back-End\controllers\permissionController.js
+File contents: C:\Users\Kayto\Desktop\IT\Projects\Stage\Stage PFE\TraceFlow\Back-End\controllers\permissionController.js
 ==================================================
 const PermissionService = require('../services/permissionService');
 
@@ -747,7 +747,7 @@ class PermissionController {
 module.exports = new PermissionController();
 
 ==================================================
-File contents: C:\Users\Kayto\Desktop\IT\Projects\Stage\Stage PFE\Visit_Management\Back-End\controllers\reasonController.js
+File contents: C:\Users\Kayto\Desktop\IT\Projects\Stage\Stage PFE\TraceFlow\Back-End\controllers\reasonController.js
 ==================================================
 const ReasonService = require('../services/reasonService');
 
@@ -786,7 +786,7 @@ class ReasonController {
 module.exports = ReasonController;
 
 ==================================================
-File contents: C:\Users\Kayto\Desktop\IT\Projects\Stage\Stage PFE\Visit_Management\Back-End\controllers\receiptBookController.js
+File contents: C:\Users\Kayto\Desktop\IT\Projects\Stage\Stage PFE\TraceFlow\Back-End\controllers\receiptBookController.js
 ==================================================
 const ReceiptBookService = require('../services/receiptBookService');
 
@@ -880,9 +880,12 @@ class ReceiptBookController {
 
     static async assignToAgent(req, res) {
         try {
-            const { agentPhone, bookID } = req.body;
+            const { agentPhone, agentWallet, bookID } = req.body;
             const supervisorID = req.user.userID; // Supervisor scans QR
-            const result = await ReceiptBookService.assignToAgent(bookID, agentPhone, supervisorID);
+            if (!agentPhone || !agentWallet || !bookID) {
+                return res.status(400).json({ error: 'agentPhone, agentWallet, and bookID are required' });
+            }
+            const result = await ReceiptBookService.assignToAgent(bookID, agentPhone, agentWallet, supervisorID);
             res.json(result);
         } catch (error) {
             res.status(400).json({ error: error.message });
@@ -891,9 +894,12 @@ class ReceiptBookController {
 
     static async validateAgentAssignment(req, res) {
         try {
-            const { agentPhone, otpCode, bookID } = req.body;
+            const { agentPhone, agentWallet, otpCode, bookID } = req.body;
             const supervisorID = req.user.userID; // Supervisor validates
-            const receiptBook = await ReceiptBookService.validateAgentAssignment(bookID, agentPhone, otpCode, supervisorID);
+            if (!agentPhone || !agentWallet || !otpCode || !bookID) {
+                return res.status(400).json({ error: 'agentPhone, agentWallet, otpCode, and bookID are required' });
+            }
+            const receiptBook = await ReceiptBookService.validateAgentAssignment(bookID, agentPhone, agentWallet, otpCode, supervisorID);
             res.json(receiptBook);
         } catch (error) {
             res.status(400).json({ error: error.message });
@@ -914,7 +920,7 @@ class ReceiptBookController {
 module.exports = ReceiptBookController;
 
 ==================================================
-File contents: C:\Users\Kayto\Desktop\IT\Projects\Stage\Stage PFE\Visit_Management\Back-End\controllers\receiptStubController.js
+File contents: C:\Users\Kayto\Desktop\IT\Projects\Stage\Stage PFE\TraceFlow\Back-End\controllers\receiptStubController.js
 ==================================================
 const ReceiptStubService = require('../services/receiptStubService');
 
@@ -981,7 +987,7 @@ class ReceiptStubController {
 module.exports = ReceiptStubController;
 
 ==================================================
-File contents: C:\Users\Kayto\Desktop\IT\Projects\Stage\Stage PFE\Visit_Management\Back-End\controllers\roleController.js
+File contents: C:\Users\Kayto\Desktop\IT\Projects\Stage\Stage PFE\TraceFlow\Back-End\controllers\roleController.js
 ==================================================
 const RoleService = require('../services/roleService');
 
@@ -1061,7 +1067,7 @@ class RoleController {
 module.exports = new RoleController();
 
 ==================================================
-File contents: C:\Users\Kayto\Desktop\IT\Projects\Stage\Stage PFE\Visit_Management\Back-End\controllers\timesheetController.js
+File contents: C:\Users\Kayto\Desktop\IT\Projects\Stage\Stage PFE\TraceFlow\Back-End\controllers\timesheetController.js
 ==================================================
 const { Op } = require('sequelize');
 const { Timesheet, User, Sequelize } = require('../models');
@@ -1154,7 +1160,7 @@ class TimesheetController {
 module.exports = TimesheetController;
 
 ==================================================
-File contents: C:\Users\Kayto\Desktop\IT\Projects\Stage\Stage PFE\Visit_Management\Back-End\controllers\userController.js
+File contents: C:\Users\Kayto\Desktop\IT\Projects\Stage\Stage PFE\TraceFlow\Back-End\controllers\userController.js
 ==================================================
 const UserService = require('../services/userService');
 
@@ -1193,7 +1199,7 @@ class UserController {
         }
     }
 
-    
+
 
     async getUserById(req, res) {
         try {
@@ -1246,12 +1252,27 @@ class UserController {
             res.status(404).json({ error: error.message });
         }
     }
+
+
+
+    async assignSupervisorsToManager(req, res) {
+        try {
+            const { managerID, supervisorIDs } = req.body;
+            if (!managerID || !supervisorIDs || !Array.isArray(supervisorIDs)) {
+                return res.status(400).json({ error: 'managerID and supervisorIDs (array) are required' });
+            }
+            const result = await UserService.assignSupervisorsToManager(managerID, supervisorIDs);
+            res.status(200).json(result);
+        } catch (error) {
+            res.status(400).json({ error: error.message });
+        }
+    }
 }
 
 module.exports = new UserController();
 
 ==================================================
-File contents: C:\Users\Kayto\Desktop\IT\Projects\Stage\Stage PFE\Visit_Management\Back-End\controllers\visitController.js
+File contents: C:\Users\Kayto\Desktop\IT\Projects\Stage\Stage PFE\TraceFlow\Back-End\controllers\visitController.js
 ==================================================
 const VisitService = require('../services/visitService');
 
@@ -1314,7 +1335,7 @@ module.exports = VisitController;
 
 
 ==================================================
-File contents: C:\Users\Kayto\Desktop\IT\Projects\Stage\Stage PFE\Visit_Management\Back-End\middleware\RBAC_Middleware.js
+File contents: C:\Users\Kayto\Desktop\IT\Projects\Stage\Stage PFE\TraceFlow\Back-End\middleware\RBAC_Middleware.js
 ==================================================
 const rbacMiddleware = (requiredPermission) => {
     return async (req, res, next) => {
@@ -1347,7 +1368,7 @@ const rbacMiddleware = (requiredPermission) => {
 module.exports = rbacMiddleware;
 
 ==================================================
-File contents: C:\Users\Kayto\Desktop\IT\Projects\Stage\Stage PFE\Visit_Management\Back-End\models\agent.js
+File contents: C:\Users\Kayto\Desktop\IT\Projects\Stage\Stage PFE\TraceFlow\Back-End\models\agent.js
 ==================================================
 const { nanoid } = require('nanoid');
 
@@ -1369,7 +1390,7 @@ module.exports = (sequelize, DataTypes) => {
 };
 
 ==================================================
-File contents: C:\Users\Kayto\Desktop\IT\Projects\Stage\Stage PFE\Visit_Management\Back-End\models\index.js
+File contents: C:\Users\Kayto\Desktop\IT\Projects\Stage\Stage PFE\TraceFlow\Back-End\models\index.js
 ==================================================
 const { sequelize } = require("../config/db");
 const DataTypes = require("sequelize").DataTypes;
@@ -1460,7 +1481,7 @@ module.exports = { sequelize, User, Agent, Visit, Timesheet, Checklist, Reason, 
 
 
 ==================================================
-File contents: C:\Users\Kayto\Desktop\IT\Projects\Stage\Stage PFE\Visit_Management\Back-End\models\timesheet.js
+File contents: C:\Users\Kayto\Desktop\IT\Projects\Stage\Stage PFE\TraceFlow\Back-End\models\timesheet.js
 ==================================================
 const { nanoid } = require('nanoid');
 
@@ -1480,7 +1501,7 @@ module.exports = (sequelize, DataTypes) => {
 };
 
 ==================================================
-File contents: C:\Users\Kayto\Desktop\IT\Projects\Stage\Stage PFE\Visit_Management\Back-End\models\receipt\receiptBook.js
+File contents: C:\Users\Kayto\Desktop\IT\Projects\Stage\Stage PFE\TraceFlow\Back-End\models\receipt\receiptBook.js
 ==================================================
 // models/receipt/receiptBook.js
 const { nanoid } = require('nanoid');
@@ -1533,7 +1554,7 @@ module.exports = (sequelize, DataTypes) => {
 };
 
 ==================================================
-File contents: C:\Users\Kayto\Desktop\IT\Projects\Stage\Stage PFE\Visit_Management\Back-End\models\receipt\ReceiptBookTransfer.js
+File contents: C:\Users\Kayto\Desktop\IT\Projects\Stage\Stage PFE\TraceFlow\Back-End\models\receipt\ReceiptBookTransfer.js
 ==================================================
 // models/receipt/receiptBookTransfer.js
 const { nanoid } = require('nanoid');
@@ -1581,7 +1602,7 @@ module.exports = (sequelize, DataTypes) => {
 };
 
 ==================================================
-File contents: C:\Users\Kayto\Desktop\IT\Projects\Stage\Stage PFE\Visit_Management\Back-End\models\receipt\receiptStub.js
+File contents: C:\Users\Kayto\Desktop\IT\Projects\Stage\Stage PFE\TraceFlow\Back-End\models\receipt\receiptStub.js
 ==================================================
 // models/receipt/receiptStub.js
 const { nanoid } = require('nanoid');
@@ -1611,7 +1632,7 @@ module.exports = (sequelize, DataTypes) => {
 };
 
 ==================================================
-File contents: C:\Users\Kayto\Desktop\IT\Projects\Stage\Stage PFE\Visit_Management\Back-End\models\user\otp.js
+File contents: C:\Users\Kayto\Desktop\IT\Projects\Stage\Stage PFE\TraceFlow\Back-End\models\user\otp.js
 ==================================================
 const { nanoid } = require('nanoid');
 
@@ -1649,7 +1670,7 @@ module.exports = (sequelize, DataTypes) => {
 };
 
 ==================================================
-File contents: C:\Users\Kayto\Desktop\IT\Projects\Stage\Stage PFE\Visit_Management\Back-End\models\user\permission.js
+File contents: C:\Users\Kayto\Desktop\IT\Projects\Stage\Stage PFE\TraceFlow\Back-End\models\user\permission.js
 ==================================================
 const { nanoid } = require('nanoid');
 
@@ -1695,7 +1716,7 @@ module.exports = (sequelize, DataTypes) => {
 };
 
 ==================================================
-File contents: C:\Users\Kayto\Desktop\IT\Projects\Stage\Stage PFE\Visit_Management\Back-End\models\user\role.js
+File contents: C:\Users\Kayto\Desktop\IT\Projects\Stage\Stage PFE\TraceFlow\Back-End\models\user\role.js
 ==================================================
 const { nanoid } = require('nanoid');
 
@@ -1719,7 +1740,7 @@ module.exports = (sequelize, DataTypes) => {
 };
 
 ==================================================
-File contents: C:\Users\Kayto\Desktop\IT\Projects\Stage\Stage PFE\Visit_Management\Back-End\models\user\user.js
+File contents: C:\Users\Kayto\Desktop\IT\Projects\Stage\Stage PFE\TraceFlow\Back-End\models\user\user.js
 ==================================================
 const { nanoid } = require('nanoid');
 
@@ -1741,7 +1762,7 @@ module.exports = (sequelize, DataTypes) => {
 };
 
 ==================================================
-File contents: C:\Users\Kayto\Desktop\IT\Projects\Stage\Stage PFE\Visit_Management\Back-End\models\visit\checklist.js
+File contents: C:\Users\Kayto\Desktop\IT\Projects\Stage\Stage PFE\TraceFlow\Back-End\models\visit\checklist.js
 ==================================================
 const { nanoid } = require('nanoid');
 
@@ -1760,7 +1781,7 @@ module.exports = (sequelize, DataTypes) => {
 
 
 ==================================================
-File contents: C:\Users\Kayto\Desktop\IT\Projects\Stage\Stage PFE\Visit_Management\Back-End\models\visit\reason.js
+File contents: C:\Users\Kayto\Desktop\IT\Projects\Stage\Stage PFE\TraceFlow\Back-End\models\visit\reason.js
 ==================================================
 const { nanoid } = require('nanoid');
 
@@ -1779,7 +1800,7 @@ module.exports = (sequelize, DataTypes) => {
 
 
 ==================================================
-File contents: C:\Users\Kayto\Desktop\IT\Projects\Stage\Stage PFE\Visit_Management\Back-End\models\visit\visit.js
+File contents: C:\Users\Kayto\Desktop\IT\Projects\Stage\Stage PFE\TraceFlow\Back-End\models\visit\visit.js
 ==================================================
 const { nanoid } = require('nanoid');
 
@@ -1805,7 +1826,7 @@ module.exports = (sequelize, DataTypes) => {
 
 
 ==================================================
-File contents: C:\Users\Kayto\Desktop\IT\Projects\Stage\Stage PFE\Visit_Management\Back-End\models\visit\VisitChecklists.js
+File contents: C:\Users\Kayto\Desktop\IT\Projects\Stage\Stage PFE\TraceFlow\Back-End\models\visit\VisitChecklists.js
 ==================================================
 module.exports = (sequelize, DataTypes) => {
     return sequelize.define('VisitChecklist', {
@@ -1814,7 +1835,7 @@ module.exports = (sequelize, DataTypes) => {
 };
 
 ==================================================
-File contents: C:\Users\Kayto\Desktop\IT\Projects\Stage\Stage PFE\Visit_Management\Back-End\routes\agentRoutes.js
+File contents: C:\Users\Kayto\Desktop\IT\Projects\Stage\Stage PFE\TraceFlow\Back-End\routes\agentRoutes.js
 ==================================================
 const express = require('express');
 const router = express.Router();
@@ -1829,7 +1850,7 @@ router.get('/:id', authenticateJWT, requirePermission('read_agents'), AgentContr
 module.exports = router;
 
 ==================================================
-File contents: C:\Users\Kayto\Desktop\IT\Projects\Stage\Stage PFE\Visit_Management\Back-End\routes\authRoutes.js
+File contents: C:\Users\Kayto\Desktop\IT\Projects\Stage\Stage PFE\TraceFlow\Back-End\routes\authRoutes.js
 ==================================================
 const express = require('express');
 const router = express.Router();
@@ -1842,7 +1863,7 @@ router.post('/verify-2fa', AuthController.verify2FA);
 module.exports = router;
 
 ==================================================
-File contents: C:\Users\Kayto\Desktop\IT\Projects\Stage\Stage PFE\Visit_Management\Back-End\routes\checklistRoutes.js
+File contents: C:\Users\Kayto\Desktop\IT\Projects\Stage\Stage PFE\TraceFlow\Back-End\routes\checklistRoutes.js
 ==================================================
 const express = require('express');
 const router = express.Router();
@@ -1856,7 +1877,7 @@ router.get('/:id', authenticateJWT, requirePermission('read_checklist_item_detai
 module.exports = router;
 
 ==================================================
-File contents: C:\Users\Kayto\Desktop\IT\Projects\Stage\Stage PFE\Visit_Management\Back-End\routes\permissionRoutes.js
+File contents: C:\Users\Kayto\Desktop\IT\Projects\Stage\Stage PFE\TraceFlow\Back-End\routes\permissionRoutes.js
 ==================================================
 const express = require('express');
 const router = express.Router();
@@ -1873,7 +1894,7 @@ router.get('/:permissionID', authenticateJWT, requirePermission('read_permission
 module.exports = router;
 
 ==================================================
-File contents: C:\Users\Kayto\Desktop\IT\Projects\Stage\Stage PFE\Visit_Management\Back-End\routes\reasonRoutes.js
+File contents: C:\Users\Kayto\Desktop\IT\Projects\Stage\Stage PFE\TraceFlow\Back-End\routes\reasonRoutes.js
 ==================================================
 const express = require('express');
 const router = express.Router();
@@ -1887,7 +1908,7 @@ router.get('/:id', authenticateJWT, requirePermission('read_reason_item_details'
 module.exports = router;
 
 ==================================================
-File contents: C:\Users\Kayto\Desktop\IT\Projects\Stage\Stage PFE\Visit_Management\Back-End\routes\receiptBookRoutes.js
+File contents: C:\Users\Kayto\Desktop\IT\Projects\Stage\Stage PFE\TraceFlow\Back-End\routes\receiptBookRoutes.js
 ==================================================
 // routes/receiptBookRoutes.js
 const express = require('express');
@@ -1900,9 +1921,9 @@ const ReceiptBookController = require('../controllers/receiptBookController');
 // Other Routes
 router.post('/send', authenticateJWT, requirePermission('send_receipt_books'), ReceiptBookController.sendToSupplier);
 router.post('/transfer', authenticateJWT, requirePermission('transfer_receipt_books'), ReceiptBookController.transferReceiptBookToUser);
-router.post('/validate-transfer', authenticateJWT, requirePermission('validate_receipt_books'), ReceiptBookController.validateTransferToUser);
+router.post('/validate-transfer', authenticateJWT, requirePermission('validate_receipt_books_transfer'), ReceiptBookController.validateTransferToUser);
 router.post('/assign-agent', authenticateJWT, requirePermission('assign_receipt_books'), ReceiptBookController.assignToAgent);
-router.post('/validate-agent', authenticateJWT, requirePermission('validate_receipt_books'), ReceiptBookController.validateAgentAssignment);
+router.post('/validate-agent', authenticateJWT, requirePermission('validate_receipt_books_assignement'), ReceiptBookController.validateAgentAssignment);
 router.get('/:bookID/history', authenticateJWT, requirePermission('access_receipt_book_history'), ReceiptBookController.getTransferHistory);
 
 
@@ -1918,7 +1939,7 @@ router.delete('/:bookID', authenticateJWT, requirePermission('delete_receipt_boo
 module.exports = router;
 
 ==================================================
-File contents: C:\Users\Kayto\Desktop\IT\Projects\Stage\Stage PFE\Visit_Management\Back-End\routes\receiptStubRoutes.js
+File contents: C:\Users\Kayto\Desktop\IT\Projects\Stage\Stage PFE\TraceFlow\Back-End\routes\receiptStubRoutes.js
 ==================================================
 const express = require('express');
 const router = express.Router();
@@ -1934,7 +1955,7 @@ router.post('/:bookID/archive', authenticateJWT, requirePermission('archive_rece
 module.exports = router;
 
 ==================================================
-File contents: C:\Users\Kayto\Desktop\IT\Projects\Stage\Stage PFE\Visit_Management\Back-End\routes\roleRoutes.js
+File contents: C:\Users\Kayto\Desktop\IT\Projects\Stage\Stage PFE\TraceFlow\Back-End\routes\roleRoutes.js
 ==================================================
 const express = require('express');
 const router = express.Router();
@@ -1954,7 +1975,7 @@ router.delete('/:roleID', authenticateJWT, requirePermission('delete_roles'), Ro
 module.exports = router;
 
 ==================================================
-File contents: C:\Users\Kayto\Desktop\IT\Projects\Stage\Stage PFE\Visit_Management\Back-End\routes\timesheetRoutes.js
+File contents: C:\Users\Kayto\Desktop\IT\Projects\Stage\Stage PFE\TraceFlow\Back-End\routes\timesheetRoutes.js
 ==================================================
 const express = require('express');
 const router = express.Router();
@@ -1971,7 +1992,7 @@ router.get('/supervisor/:supervisorID', authenticateJWT, requirePermission('acce
 module.exports = router;
 
 ==================================================
-File contents: C:\Users\Kayto\Desktop\IT\Projects\Stage\Stage PFE\Visit_Management\Back-End\routes\userRoutes.js
+File contents: C:\Users\Kayto\Desktop\IT\Projects\Stage\Stage PFE\TraceFlow\Back-End\routes\userRoutes.js
 ==================================================
 const express = require('express');
 const router = express.Router();
@@ -1989,11 +2010,12 @@ router.delete('/:userID', authenticateJWT, requirePermission('delete_users'), Us
 
 router.post('/:userID/roles', authenticateJWT, requirePermission('assign_roles'), UserController.assignRolesToUser);
 router.get('/:userID/roles', authenticateJWT, requirePermission('read_roles'), UserController.getRolesByUser);
+router.post('/assign-supervisors', authenticateJWT, requirePermission('assign_supervisors'), UserController.assignSupervisorsToManager);
 
 module.exports = router;
 
 ==================================================
-File contents: C:\Users\Kayto\Desktop\IT\Projects\Stage\Stage PFE\Visit_Management\Back-End\routes\visitRoutes.js
+File contents: C:\Users\Kayto\Desktop\IT\Projects\Stage\Stage PFE\TraceFlow\Back-End\routes\visitRoutes.js
 ==================================================
 const express = require('express');
 const router = express.Router();
@@ -2008,7 +2030,7 @@ router.get('/:id', authenticateJWT, requirePermission('access_visit_details'), V
 module.exports = router;
 
 ==================================================
-File contents: C:\Users\Kayto\Desktop\IT\Projects\Stage\Stage PFE\Visit_Management\Back-End\services\agentService.js
+File contents: C:\Users\Kayto\Desktop\IT\Projects\Stage\Stage PFE\TraceFlow\Back-End\services\agentService.js
 ==================================================
 const { Agent } = require('../models');
 
@@ -2056,7 +2078,7 @@ class AgentService {
 module.exports = AgentService;
 
 ==================================================
-File contents: C:\Users\Kayto\Desktop\IT\Projects\Stage\Stage PFE\Visit_Management\Back-End\services\authService.js
+File contents: C:\Users\Kayto\Desktop\IT\Projects\Stage\Stage PFE\TraceFlow\Back-End\services\authService.js
 ==================================================
 const bcrypt = require('bcrypt');
 const jwt = require('jsonwebtoken');
@@ -2161,7 +2183,7 @@ class AuthService {
 module.exports = AuthService;
 
 ==================================================
-File contents: C:\Users\Kayto\Desktop\IT\Projects\Stage\Stage PFE\Visit_Management\Back-End\services\checklistService.js
+File contents: C:\Users\Kayto\Desktop\IT\Projects\Stage\Stage PFE\TraceFlow\Back-End\services\checklistService.js
 ==================================================
 const { Checklist, Visit, VisitChecklist } = require('../models');
 
@@ -2205,7 +2227,7 @@ class ChecklistService {
 module.exports = ChecklistService;
 
 ==================================================
-File contents: C:\Users\Kayto\Desktop\IT\Projects\Stage\Stage PFE\Visit_Management\Back-End\services\otpService.js
+File contents: C:\Users\Kayto\Desktop\IT\Projects\Stage\Stage PFE\TraceFlow\Back-End\services\otpService.js
 ==================================================
 const crypto = require('crypto');
 const { Op } = require('sequelize');
@@ -2259,7 +2281,7 @@ class OTPService {
 module.exports = OTPService;
 
 ==================================================
-File contents: C:\Users\Kayto\Desktop\IT\Projects\Stage\Stage PFE\Visit_Management\Back-End\services\permissionService.js
+File contents: C:\Users\Kayto\Desktop\IT\Projects\Stage\Stage PFE\TraceFlow\Back-End\services\permissionService.js
 ==================================================
 const { Permission, Role } = require('../models');
 
@@ -2307,7 +2329,7 @@ class PermissionService {
 module.exports = PermissionService;
 
 ==================================================
-File contents: C:\Users\Kayto\Desktop\IT\Projects\Stage\Stage PFE\Visit_Management\Back-End\services\reasonService.js
+File contents: C:\Users\Kayto\Desktop\IT\Projects\Stage\Stage PFE\TraceFlow\Back-End\services\reasonService.js
 ==================================================
 const { Reason, Visit } = require('../models');
 
@@ -2337,7 +2359,7 @@ class ReasonService {
 module.exports = ReasonService;
 
 ==================================================
-File contents: C:\Users\Kayto\Desktop\IT\Projects\Stage\Stage PFE\Visit_Management\Back-End\services\receiptBookService.js
+File contents: C:\Users\Kayto\Desktop\IT\Projects\Stage\Stage PFE\TraceFlow\Back-End\services\receiptBookService.js
 ==================================================
 const QRCode = require('qrcode');
 const { Op } = require('sequelize');
@@ -2408,14 +2430,14 @@ class ReceiptBookService {
 
                     Best regards,
                     [Your Company Name]`,
-                            attachments: [
-                                {
-                                    filename: 'qrcode.png',
-                                    content: book.qrCode.split("base64,")[1],
-                                    encoding: 'base64',
-                                },
-                            ],
-                        });
+            attachments: [
+                {
+                    filename: 'qrcode.png',
+                    content: book.qrCode.split("base64,")[1],
+                    encoding: 'base64',
+                },
+            ],
+        });
 
         return book;
     }
@@ -2493,30 +2515,30 @@ class ReceiptBookService {
 
 
 
-    static async assignToAgent(bookID, agentPhone, supervisorID) {
+    static async assignToAgent(bookID, agentPhone, agentWallet, supervisorID) {
         const book = await this.getReceiptBookById(bookID);
         if (book.status !== 'With Supervisor') throw new Error('Book must be with Supervisor');
         if (book.currentHolderID !== supervisorID) {
             throw new Error('Only the current supervisor can assign to an agent');
         }
 
-        const agent = await Agent.findOne({ where: { phone: agentPhone } });
-        if (!agent) throw new Error('Agent not found');
+        const agent = await Agent.findOne({ where: { phone: agentPhone, wallet: agentWallet } });
+        if (!agent) throw new Error('Agent not found or wallet does not match');
 
         const otp = await OTPService.generateOTP(agent.agentID);
         await sendSMS(agentPhone, `Your OTP to receive Receipt Book #${book.number} is ${otp.code}`);
 
-        return { message: `OTP sent to Agent with phone ${agentPhone}` };
+        return { message: `OTP sent to Agent with phone ${agentPhone} and wallet ${agentWallet}` };
     }
 
-    static async validateAgentAssignment(bookID, agentPhone, otpCode, supervisorID) {
+    static async validateAgentAssignment(bookID, agentPhone, agentWallet, otpCode, supervisorID) {
         const book = await this.getReceiptBookById(bookID);
         if (book.currentHolderID !== supervisorID) {
             throw new Error('Only the current supervisor can validate assignment');
         }
 
-        const agent = await Agent.findOne({ where: { phone: agentPhone } });
-        if (!agent) throw new Error('Agent not found');
+        const agent = await Agent.findOne({ where: { phone: agentPhone, wallet: agentWallet } });
+        if (!agent) throw new Error('Agent not found or wallet does not match');
 
         await OTPService.validateOTP(agent.agentID, otpCode);
 
@@ -2534,7 +2556,7 @@ class ReceiptBookService {
             from: process.env.SMTP_USER,
             to: (await User.findByPk(supervisorID)).email,
             subject: `Receipt Book #${book.number} Assigned`,
-            text: `Receipt Book #${book.number} assigned to Agent with phone ${agentPhone}.`,
+            text: `Receipt Book #${book.number} assigned to Agent with phone ${agentPhone} and wallet ${agentWallet}.`,
         });
 
         return book;
@@ -2559,7 +2581,7 @@ class ReceiptBookService {
 
     static async getReceiptBookById(bookID) {
         const book = await ReceiptBook.findByPk(bookID, {
-            include: [{ model: User, as: 'CurrentHolder' },{ model: ReceiptBookTransfer},  { model: Agent }, { model: ReceiptStub }],
+            include: [{ model: User, as: 'CurrentHolder' }, { model: ReceiptBookTransfer }, { model: Agent }, { model: ReceiptStub }],
         });
         if (!book) throw new Error('ReceiptBook not found');
         return book;
@@ -2567,7 +2589,7 @@ class ReceiptBookService {
 
     static async getAllReceiptBooks() {
         return await ReceiptBook.findAll({
-            include: [{ model: User, as: 'CurrentHolder' },{ model: ReceiptBookTransfer},  { model: Agent }, { model: ReceiptStub }],
+            include: [{ model: User, as: 'CurrentHolder' }, { model: ReceiptBookTransfer }, { model: Agent }, { model: ReceiptStub }],
         });
     }
 
@@ -2626,7 +2648,7 @@ class ReceiptBookService {
 
 
 
-    
+
 
     static formatTLV(tag, value) {
         const length = value.length.toString().padStart(2, '0');
@@ -2637,7 +2659,7 @@ class ReceiptBookService {
 module.exports = ReceiptBookService;
 
 ==================================================
-File contents: C:\Users\Kayto\Desktop\IT\Projects\Stage\Stage PFE\Visit_Management\Back-End\services\receiptStubService.js
+File contents: C:\Users\Kayto\Desktop\IT\Projects\Stage\Stage PFE\TraceFlow\Back-End\services\receiptStubService.js
 ==================================================
 const { ReceiptStub, ReceiptBook, Agent, OTP, User, ReceiptBookTransfer} = require('../models');
 const { sendSMS } = require('../config/sms');
@@ -2789,7 +2811,7 @@ class ReceiptStubService {
 module.exports = ReceiptStubService;
 
 ==================================================
-File contents: C:\Users\Kayto\Desktop\IT\Projects\Stage\Stage PFE\Visit_Management\Back-End\services\roleService.js
+File contents: C:\Users\Kayto\Desktop\IT\Projects\Stage\Stage PFE\TraceFlow\Back-End\services\roleService.js
 ==================================================
 const { Role, Permission } = require('../models');
 
@@ -2910,7 +2932,7 @@ class RoleService {
 module.exports = new RoleService();
 
 ==================================================
-File contents: C:\Users\Kayto\Desktop\IT\Projects\Stage\Stage PFE\Visit_Management\Back-End\services\timesheetService.js
+File contents: C:\Users\Kayto\Desktop\IT\Projects\Stage\Stage PFE\TraceFlow\Back-End\services\timesheetService.js
 ==================================================
 const { Visit, Reason, Checklist, Timesheet } = require('../models');
 const VisitService = require('./visitService');
@@ -3103,7 +3125,7 @@ class TimesheetService {
 module.exports = new TimesheetService();
 
 ==================================================
-File contents: C:\Users\Kayto\Desktop\IT\Projects\Stage\Stage PFE\Visit_Management\Back-End\services\userService.js
+File contents: C:\Users\Kayto\Desktop\IT\Projects\Stage\Stage PFE\TraceFlow\Back-End\services\userService.js
 ==================================================
 const bcrypt = require('bcrypt');
 const { Op } = require('sequelize');
@@ -3161,7 +3183,7 @@ class UserService {
         }
     }
 
-    
+
 
     // Get a user by ID
     async getUserById(userID) {
@@ -3248,12 +3270,41 @@ class UserService {
             throw new Error(`Failed to fetch roles for user: ${error.message}`);
         }
     }
+
+
+    // Assign supervisors to a manager
+    async assignSupervisorsToManager(managerID, supervisorIDs) {
+        try {
+            const manager = await User.findByPk(managerID);
+            if (!manager) throw new Error('Manager not found');
+
+            const supervisors = await User.findAll({
+                where: { userID: supervisorIDs },
+            });
+            if (supervisors.length !== supervisorIDs.length) {
+                throw new Error('One or more supervisors not found');
+            }
+
+            // Assign supervisors to the manager
+            await manager.setSupervisors(supervisorIDs);
+
+            return {
+                managerID,
+                assignedSupervisors: supervisors.map(s => s.userID),
+                message: 'Supervisors assigned successfully',
+            };
+        } catch (error) {
+            throw new Error(`Failed to assign supervisors: ${error.message}`);
+        }
+    }
+
+
 }
 
 module.exports = new UserService();
 
 ==================================================
-File contents: C:\Users\Kayto\Desktop\IT\Projects\Stage\Stage PFE\Visit_Management\Back-End\services\visitService.js
+File contents: C:\Users\Kayto\Desktop\IT\Projects\Stage\Stage PFE\TraceFlow\Back-End\services\visitService.js
 ==================================================
 const { Visit, Agent, Reason, Checklist } = require('../models');
 const { parseTLV } = require('../utils/qrParser');
@@ -3383,7 +3434,7 @@ class VisitService {
 module.exports = new VisitService();
 
 ==================================================
-File contents: C:\Users\Kayto\Desktop\IT\Projects\Stage\Stage PFE\Visit_Management\Back-End\utils\generateTLV.js
+File contents: C:\Users\Kayto\Desktop\IT\Projects\Stage\Stage PFE\TraceFlow\Back-End\utils\generateTLV.js
 ==================================================
 function generateTLV(receiptBook) {
     let tlvString = "";
@@ -3444,7 +3495,7 @@ console.log(parsed);
 */
 
 ==================================================
-File contents: C:\Users\Kayto\Desktop\IT\Projects\Stage\Stage PFE\Visit_Management\Back-End\utils\qrParser.js
+File contents: C:\Users\Kayto\Desktop\IT\Projects\Stage\Stage PFE\TraceFlow\Back-End\utils\qrParser.js
 ==================================================
 function parseTLV(data) {
     let index = 0;
@@ -3485,7 +3536,7 @@ function parseTLV(data) {
 module.exports = { parseTLV };
 
 ==================================================
-File contents: C:\Users\Kayto\Desktop\IT\Projects\Stage\Stage PFE\Visit_Management\Back-End\utils\socket.js
+File contents: C:\Users\Kayto\Desktop\IT\Projects\Stage\Stage PFE\TraceFlow\Back-End\utils\socket.js
 ==================================================
 const io = require('socket.io')();
 
@@ -3500,7 +3551,7 @@ io.on('connection', (socket) => {
 module.exports = io;
 
 ==================================================
-File contents: C:\Users\Kayto\Desktop\IT\Projects\Stage\Stage PFE\Visit_Management\Back-End\.env
+File contents: C:\Users\Kayto\Desktop\IT\Projects\Stage\Stage PFE\TraceFlow\Back-End\.env
 ==================================================
 # Database
 DB_HOST=localhost
@@ -3538,7 +3589,7 @@ SUPER_ADMIN_PASSWORD=SuperSecurePassword123!
 # NODE_ENV=production
 
 ==================================================
-File contents: C:\Users\Kayto\Desktop\IT\Projects\Stage\Stage PFE\Visit_Management\Back-End\app.js
+File contents: C:\Users\Kayto\Desktop\IT\Projects\Stage\Stage PFE\TraceFlow\Back-End\app.js
 ==================================================
 const cors = require('cors');
 const express = require('express');
