@@ -1,17 +1,9 @@
-import axios from "axios";
+import api from "./axiosConfig"; // Use the shared instance
 import { CreateChecklistResponse, ListChecklistsResponse, ChecklistsByVisitResponse } from ".";
-import { BASE_URL, DEFAULT_TIMEOUT } from "../config";
 
-const checklistApi = axios.create({
-    baseURL: `${BASE_URL}/checklists`,
-    timeout: DEFAULT_TIMEOUT,
-});
-
-export const createChecklist = async (data: { text: string }, token: string): Promise<CreateChecklistResponse> => {
+export const createChecklist = async (data: { text: string }): Promise<CreateChecklistResponse> => {
     try {
-        const response = await checklistApi.post<CreateChecklistResponse>("", data, {
-            headers: { Authorization: `Bearer ${token}` },
-        });
+        const response = await api.post<CreateChecklistResponse>("/checklists", data);
         return response.data;
     } catch (error) {
         console.error("Error creating checklist:", error);
@@ -19,11 +11,9 @@ export const createChecklist = async (data: { text: string }, token: string): Pr
     }
 };
 
-export const getAllChecklists = async (token?: string): Promise<ListChecklistsResponse> => {
+export const getAllChecklists = async (): Promise<ListChecklistsResponse> => {
     try {
-        const response = await checklistApi.get<ListChecklistsResponse>("", {
-            headers: token ? { Authorization: `Bearer ${token}` } : {},
-        });
+        const response = await api.get<ListChecklistsResponse>("/checklists");
         return response.data;
     } catch (error) {
         console.error("Error fetching all checklists:", error);
@@ -31,11 +21,9 @@ export const getAllChecklists = async (token?: string): Promise<ListChecklistsRe
     }
 };
 
-export const getChecklistsByVisitId = async (visitId: string, token: string): Promise<ChecklistsByVisitResponse> => {
+export const getChecklistsByVisitId = async (visitId: string): Promise<ChecklistsByVisitResponse> => {
     try {
-        const response = await checklistApi.get<ChecklistsByVisitResponse>(`/${visitId}`, {
-            headers: { Authorization: `Bearer ${token}` },
-        });
+        const response = await api.get<ChecklistsByVisitResponse>(`/checklists/${visitId}`);
         return response.data;
     } catch (error) {
         console.error(`Error fetching checklists for visit (${visitId}):`, error);

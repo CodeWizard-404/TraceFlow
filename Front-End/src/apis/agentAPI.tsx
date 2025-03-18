@@ -1,17 +1,9 @@
-import axios from "axios";
-import { BASE_URL, DEFAULT_TIMEOUT } from "../config";
+import api from "./axiosConfig"; // Use the shared instance
 import { AgentsByLocationResponse, AgentLocationsResponse, AgentByPhoneResponse, AgentByIdResponse } from ".";
 
-const agentApi = axios.create({
-  baseURL: `${BASE_URL}/agents`,
-  timeout: DEFAULT_TIMEOUT,
-});
-
-export const getAgentsByLocation = async (location: string, token?: string): Promise<AgentsByLocationResponse> => {
+export const getAgentsByLocation = async (location: string): Promise<AgentsByLocationResponse> => {
   try {
-    const response = await agentApi.get<AgentsByLocationResponse>(`/location?location=${location}`, {
-      headers: token ? { Authorization: `Bearer ${token}` } : {},
-    });
+    const response = await api.get<AgentsByLocationResponse>(`/agents/location?location=${location}`);
     return response.data;
   } catch (error) {
     console.error(`Error fetching agents by location (${location}):`, error);
@@ -19,11 +11,9 @@ export const getAgentsByLocation = async (location: string, token?: string): Pro
   }
 };
 
-export const getAgentLocations = async (token?: string): Promise<AgentLocationsResponse> => {
+export const getAgentLocations = async (): Promise<AgentLocationsResponse> => {
   try {
-    const response = await agentApi.get<AgentLocationsResponse>("/locations", {
-      headers: token ? { Authorization: `Bearer ${token}` } : {},
-    });
+    const response = await api.get<AgentLocationsResponse>("/agents/locations");
     return response.data;
   } catch (error) {
     console.error("Error fetching agent locations:", error);
@@ -31,11 +21,9 @@ export const getAgentLocations = async (token?: string): Promise<AgentLocationsR
   }
 };
 
-export const getAgentByPhone = async (phone: string, token?: string): Promise<AgentByPhoneResponse> => {
+export const getAgentByPhone = async (phone: string): Promise<AgentByPhoneResponse> => {
   try {
-    const response = await agentApi.get<AgentByPhoneResponse>(`/phone/${phone}`, {
-      headers: token ? { Authorization: `Bearer ${token}` } : {},
-    });
+    const response = await api.get<AgentByPhoneResponse>(`/agents/phone/${phone}`);
     return response.data;
   } catch (error) {
     console.error(`Error fetching agent by phone (${phone}):`, error);
@@ -43,11 +31,9 @@ export const getAgentByPhone = async (phone: string, token?: string): Promise<Ag
   }
 };
 
-export const getAgentById = async (id: string, token?: string): Promise<AgentByIdResponse> => {
+export const getAgentById = async (id: string): Promise<AgentByIdResponse> => {
   try {
-    const response = await agentApi.get<AgentByIdResponse>(`/${id}`, {
-      headers: token ? { Authorization: `Bearer ${token}` } : {},
-    });
+    const response = await api.get<AgentByIdResponse>(`/agents/${id}`);
     return response.data;
   } catch (error) {
     console.error(`Error fetching agent by ID (${id}):`, error);

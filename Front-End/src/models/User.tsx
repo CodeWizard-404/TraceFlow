@@ -1,4 +1,5 @@
-import Role from './Role'; 
+import Role from './Role';
+
 interface User {
     userID: string;
     firstname: string;
@@ -6,8 +7,10 @@ interface User {
     phone: string;
     email: string;
     wallet: string;
-    password?: string; 
-    roles?: Role[]; 
+    password?: string;
+    roles?: Role[];
+    supervisors?: User[];
+    managers?: User[]; 
 }
 
 export default User;

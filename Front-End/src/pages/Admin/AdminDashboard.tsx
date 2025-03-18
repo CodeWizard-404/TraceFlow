@@ -1,13 +1,23 @@
 import React, { useState, useEffect, useMemo } from "react";
 import { FaSearch, FaFilter, FaSort, FaUserPlus, FaPlus, FaArrowLeft, FaInfoCircle, FaAngleDown } from "react-icons/fa";
 import { useAuth } from "../../context/AuthContext";
-import { getAllUsers, createUser, assignRolesToUser, getRolesByUser } from "../../apis/userAPI";
+import {
+    getAllUsers,
+    createUser,
+    assignRolesToUser,
+    getRolesByUser,
+    assignSupervisorsToManager,
+    getSupervisorsByUser,
+    getManagersByUser,
+} from "../../apis/userAPI";
 import { getAllRoles, createRole, assignPermissionsToRole, getPermissionsByRole } from "../../apis/roleAPI";
 import { getAllPermissions } from "../../apis/permissionAPI";
 import User from "../../models/User";
 import Role from "../../models/Role";
 import Permission from "../../models/Permission";
 import "./AdminDashboard.css";
+
+const ITEMS_PER_PAGE = 10; // Pagination: 10 items per page
 
 const AdminDashboard: React.FC = () => {
     const { token } = useAuth();
@@ -36,6 +46,15 @@ const AdminDashboard: React.FC = () => {
     const [expandedClasses, setExpandedClasses] = useState<Set<string>>(new Set());
     const [passwordConfirm, setPasswordConfirm] = useState("");
 
+    // Supervisor/Manager Assignment States
+    const [tempSupervisors, setTempSupervisors] = useState<User[]>([]);
+    const [tempManagers, setTempManagers] = useState<User[]>([]);
+    const [hasUnsavedSupervisorChanges, setHasUnsavedSupervisorChanges] = useState(false);
+    const [supervisorSearch, setSupervisorSearch] = useState("");
+    const [managerSearch, setManagerSearch] = useState("");
+    const [supervisorPage, setSupervisorPage] = useState(1);
+    const [managerPage, setManagerPage] = useState(1);
+
     useEffect(() => {
         const fetchData = async () => {
             setLoading(true);
@@ -45,15 +64,19 @@ const AdminDashboard: React.FC = () => {
                     getAllRoles(token!),
                     getAllPermissions(token!),
                 ]);
-                const usersWithRoles = await Promise.all(usersData.map(async (user) => {
-                    const userRoles = await getRolesByUser(user.userID, token!);
-                    return { ...user, roles: userRoles };
+                const usersWithDetails = await Promise.all(usersData.map(async (user) => {
+                    const [userRoles, supervisors, managers] = await Promise.all([
+                        getRolesByUser(user.userID, token!),
+                        getSupervisorsByUser(user.userID, token!),
+                        getManagersByUser(user.userID, token!),
+                    ]);
+                    return { ...user, roles: userRoles, supervisors, managers };
                 }));
+                setUsers(usersWithDetails);
                 const rolesWithPermissions = await Promise.all(rolesData.map(async (role) => {
                     const rolePermissions = await getPermissionsByRole(role.roleID, token!);
                     return { ...role, permissions: rolePermissions };
                 }));
-                setUsers(usersWithRoles);
                 setRoles(rolesWithPermissions);
                 setPermissions(permissionsData);
             } catch (error) {
@@ -70,13 +93,9 @@ const AdminDashboard: React.FC = () => {
             `${user.firstname} ${user.lastname}`.toLowerCase().includes(searchQuery.toLowerCase()) ||
             user.email.toLowerCase().includes(searchQuery.toLowerCase())
         );
-
         if (roleFilter !== "all") {
-            result = result.filter((user) =>
-                user.roles?.some((role) => role.roleID === roleFilter)
-            );
+            result = result.filter((user) => user.roles?.some((role) => role.roleID === roleFilter));
         }
-
         result.sort((a, b) => {
             const fieldA = sortField === "name" ? `${a.firstname} ${a.lastname}` : sortField === "email" ? a.email : (a.roles?.length || 0);
             const fieldB = sortField === "name" ? `${b.firstname} ${b.lastname}` : sortField === "email" ? b.email : (b.roles?.length || 0);
@@ -124,38 +143,70 @@ const AdminDashboard: React.FC = () => {
         }, {} as { [key: string]: { [key: string]: Permission[] } });
     }, [permissions, permissionSearch, selectedCategory]);
 
+    // Memoized Supervisor/Manager Filters with Search
+    const supervisorUsers = useMemo(() => {
+        return users.filter(u => u.roles?.some(r => r.name === "Supervisor")).filter(s =>
+            `${s.firstname} ${s.lastname}`.toLowerCase().includes(supervisorSearch.toLowerCase()) ||
+            s.email.toLowerCase().includes(supervisorSearch.toLowerCase())
+        );
+    }, [users, supervisorSearch]);
+
+    const managerUsers = useMemo(() => {
+        return users.filter(u => u.roles?.some(r => r.name === "Manager")).filter(m =>
+            `${m.firstname} ${m.lastname}`.toLowerCase().includes(managerSearch.toLowerCase()) ||
+            m.email.toLowerCase().includes(managerSearch.toLowerCase())
+        );
+    }, [users, managerSearch]);
+
+    // Paginated Supervisors and Managers
+    const paginatedSupervisors = useMemo(() => {
+        const start = (supervisorPage - 1) * ITEMS_PER_PAGE;
+        const end = start + ITEMS_PER_PAGE;
+        return supervisorUsers.slice(start, end);
+    }, [supervisorUsers, supervisorPage]);
+
+    const paginatedManagers = useMemo(() => {
+        const start = (managerPage - 1) * ITEMS_PER_PAGE;
+        const end = start + ITEMS_PER_PAGE;
+        return managerUsers.slice(start, end);
+    }, [managerUsers, managerPage]);
+
     const handleUserSelect = async (user: User) => {
-        if (hasUnsavedUserChanges && !window.confirm('You have unsaved changes. Are you sure you want to proceed?')) return;
+        if ((hasUnsavedUserChanges || hasUnsavedSupervisorChanges) && !window.confirm('You have unsaved changes. Are you sure you want to proceed?')) return;
         setSelectedUser(user);
         try {
-            const userRoles = await getRolesByUser(user.userID, token!);
-            setUsers(users.map(u => u.userID === user.userID ? { ...u, roles: userRoles } : u));
+            const [userRoles, supervisors, managers] = await Promise.all([
+                getRolesByUser(user.userID, token!),
+                getSupervisorsByUser(user.userID, token!),
+                getManagersByUser(user.userID, token!),
+            ]);
+            setUsers(users.map(u => u.userID === user.userID ? { ...u, roles: userRoles, supervisors, managers } : u));
             setTempRoles(userRoles);
+            setTempSupervisors(supervisors || []);
+            setTempManagers(managers || []);
             setHasUnsavedUserChanges(false);
+            setHasUnsavedSupervisorChanges(false);
+            setSupervisorSearch("");
+            setManagerSearch("");
+            setSupervisorPage(1);
+            setManagerPage(1);
             setView("user-details");
         } catch (error) {
-            console.error("Failed to fetch user roles:", error);
+            console.error("Failed to fetch user details:", error);
         }
     };
 
     const handleRoleSelect = async (role: Role) => {
-        // Fixed roles - cannot be modified
         if (role.name === 'Admin' || role.name === 'Super Admin') {
             alert('Fixed roles cannot be modified.');
             return;
         }
-    
-        // Pre-made roles - warn but allow if confirmed
         const fixedRoles = ['Manager', 'Supervisor', 'Purchase', 'Regional Manager', 'Stock Manager'];
-        if (fixedRoles.includes(role.name)) {
-            if (!window.confirm('Warning: Modifying pre-made roles may affect system functionality. Are you sure you want to proceed?')) {
-                return;
-            }
+        if (fixedRoles.includes(role.name) && !window.confirm('Warning: Modifying pre-made roles may affect system functionality. Are you sure you want to proceed?')) {
+            return;
         }
-    
-        // Custom roles - no restrictions, proceed directly
         if (hasUnsavedChanges && !window.confirm('You have unsaved changes. Are you sure you want to switch roles?')) return;
-        
+
         setSelectedRole(role);
         try {
             const rolePermissions = await getPermissionsByRole(role.roleID, token!);
@@ -166,20 +217,6 @@ const AdminDashboard: React.FC = () => {
             console.error("Failed to fetch role permissions:", error);
         }
     };
-
-    // const handleEditUser = (user: User) => {
-    //     setNewUser({ ...user, password: "" });
-    //     setSelectedRolesForNewUser(user.roles?.map(r => r.roleID) || []);
-    //     setView("add-user");
-    // };
-
-    // const handleDeleteUser = async (userID: string) => {
-    //     if (window.confirm("Are you sure you want to delete this user?")) {
-    //         setUsers(users.filter(u => u.userID !== userID));
-    //         if (selectedUser?.userID === userID) setSelectedUser(null);
-    //         setView("users");
-    //     }
-    // };
 
     const handleTogglePermission = (permissionID: string) => {
         const hasPermission = tempPermissions.some(perm => perm.permissionID === permissionID);
@@ -199,9 +236,7 @@ const AdminDashboard: React.FC = () => {
             const currentPermissionIds = selectedRole.permissions?.map(p => p.permissionID) || [];
             const newPermissionIds = tempPermissions.map(p => p.permissionID);
             const toAdd = newPermissionIds.filter(id => !currentPermissionIds.includes(id));
-            //const toRemove = currentPermissionIds.filter(id => !newPermissionIds.includes(id));
             if (toAdd.length > 0) await assignPermissionsToRole(selectedRole.roleID, toAdd, token!);
-            //if (toRemove.length > 0) await revokePermissionsFromRole(selectedRole.roleID, toRemove, token!);
             setRoles(roles.map(r => r.roleID === selectedRole.roleID ? { ...r, permissions: tempPermissions } : r));
             setSelectedRole({ ...selectedRole, permissions: tempPermissions });
             setHasUnsavedChanges(false);
@@ -230,7 +265,6 @@ const AdminDashboard: React.FC = () => {
             const currentRoleIds = selectedUser.roles?.map(r => r.roleID) || [];
             const newRoleIds = tempRoles.map(r => r.roleID);
             const toAdd = newRoleIds.filter(id => !currentRoleIds.includes(id));
-            //const toRemove = currentRoleIds.filter(id => !newRoleIds.includes(id));
             if (toAdd.length > 0) await assignRolesToUser(selectedUser.userID, toAdd, token!);
             setUsers(users.map(u => u.userID === selectedUser.userID ? { ...u, roles: tempRoles } : u));
             setSelectedUser({ ...selectedUser, roles: tempRoles });
@@ -238,6 +272,57 @@ const AdminDashboard: React.FC = () => {
         } catch (error) {
             console.error("Failed to save roles:", error);
             setTempRoles(selectedUser.roles || []);
+        } finally {
+            setLoading(false);
+        }
+    };
+
+    const handleToggleSupervisor = (supervisor: User) => {
+        const hasSupervisor = tempSupervisors.some(s => s.userID === supervisor.userID);
+        if (hasSupervisor) {
+            setTempSupervisors(tempSupervisors.filter(s => s.userID !== supervisor.userID));
+        } else {
+            setTempSupervisors([...tempSupervisors, supervisor]);
+        }
+        setHasUnsavedSupervisorChanges(true);
+    };
+
+    const handleToggleManager = (manager: User) => {
+        const hasManager = tempManagers.some(m => m.userID === manager.userID);
+        if (hasManager) {
+            setTempManagers(tempManagers.filter(m => m.userID !== manager.userID));
+        } else {
+            setTempManagers([...tempManagers, manager]);
+        }
+        setHasUnsavedSupervisorChanges(true);
+    };
+
+    const handleSaveSupervisorsAndManagers = async () => {
+        if (!selectedUser) return;
+        setLoading(true);
+        try {
+            const supervisorIds = tempSupervisors.map(s => s.userID);
+            const managerIds = tempManagers.map(m => m.userID);
+
+            const isManager = selectedUser.roles?.some(r => r.name === "Manager");
+            if (isManager && supervisorIds.length > 0) {
+                await assignSupervisorsToManager(selectedUser.userID, supervisorIds, token!);
+            }
+
+            const isSupervisor = selectedUser.roles?.some(r => r.name === "Supervisor");
+            if (isSupervisor && managerIds.length > 0) {
+                await Promise.all(managerIds.map(managerId =>
+                    assignSupervisorsToManager(managerId, [selectedUser.userID], token!)
+                ));
+            }
+
+            setUsers(users.map(u => u.userID === selectedUser.userID ? { ...u, supervisors: tempSupervisors, managers: tempManagers } : u));
+            setSelectedUser({ ...selectedUser, supervisors: tempSupervisors, managers: tempManagers });
+            setHasUnsavedSupervisorChanges(false);
+        } catch (error) {
+            console.error("Failed to save supervisors/managers:", error);
+            setTempSupervisors(selectedUser.supervisors || []);
+            setTempManagers(selectedUser.managers || []);
         } finally {
             setLoading(false);
         }
@@ -266,10 +351,7 @@ const AdminDashboard: React.FC = () => {
 
     const handleCreateRole = async () => {
         try {
-            const createdRole = await createRole({
-                name: newRole.name,
-                description: newRole.description
-            }, token!);
+            const createdRole = await createRole({ name: newRole.name, description: newRole.description }, token!);
             if (selectedPermissionsForNewRole.length > 0) {
                 await assignPermissionsToRole(createdRole.roleID, selectedPermissionsForNewRole, token!);
                 createdRole.permissions = await getPermissionsByRole(createdRole.roleID, token!);
@@ -299,17 +381,14 @@ const AdminDashboard: React.FC = () => {
 
     const toggleRolePopup = (roleID: string) => {
         setActiveRolePopup(activeRolePopup === roleID ? null : roleID);
-        setExpandedClasses(new Set()); // Reset expanded classes when opening/closing popup
+        setExpandedClasses(new Set());
     };
 
     const toggleClassExpansion = (className: string) => {
         setExpandedClasses(prev => {
             const newSet = new Set(prev);
-            if (newSet.has(className)) {
-                newSet.delete(className);
-            } else {
-                newSet.add(className);
-            }
+            if (newSet.has(className)) newSet.delete(className);
+            else newSet.add(className);
             return newSet;
         });
     };
@@ -435,9 +514,9 @@ const AdminDashboard: React.FC = () => {
 
                     {view === "roles" && (
                         <div className="roles-management">
-                            {/* Fixed Roles */}
+                            {/* ... (unchanged roles management section) ... */}
                             {(() => {
-                                const fixedRoles = filteredRoles.filter(role => 
+                                const fixedRoles = filteredRoles.filter(role =>
                                     ['Admin', 'Super Admin'].includes(role.name)
                                 );
                                 if (fixedRoles.length > 0) {
@@ -473,9 +552,8 @@ const AdminDashboard: React.FC = () => {
                                 return null;
                             })()}
 
-                            {/* Pre-made Roles */}
                             {(() => {
-                                const premadeRoles = filteredRoles.filter(role => 
+                                const premadeRoles = filteredRoles.filter(role =>
                                     ['Manager', 'Supervisor', 'Purchase', 'Regional Manager', 'Stock Manager'].includes(role.name)
                                 );
                                 if (premadeRoles.length > 0) {
@@ -502,14 +580,9 @@ const AdminDashboard: React.FC = () => {
                                 return null;
                             })()}
 
-                            {/* Custom Roles */}
                             {(() => {
-                                const customRoles = filteredRoles.filter(role => 
-                                    ![
-                                        'Admin', 'Super Admin',
-                                        'Manager', 'Supervisor', 'Purchase', 
-                                        'Regional Manager', 'Stock Manager'
-                                    ].includes(role.name)
+                                const customRoles = filteredRoles.filter(role =>
+                                    !['Admin', 'Super Admin', 'Manager', 'Supervisor', 'Purchase', 'Regional Manager', 'Stock Manager'].includes(role.name)
                                 );
                                 if (customRoles.length > 0) {
                                     return (
@@ -535,7 +608,6 @@ const AdminDashboard: React.FC = () => {
                                 return null;
                             })()}
 
-                            {/* Role Info Popup */}
                             {activeRolePopup && (
                                 <div className="role-info-popup-overlay" onClick={() => setActiveRolePopup(null)}>
                                     <div className="role-info-popup" onClick={(e) => e.stopPropagation()}>
@@ -610,7 +682,8 @@ const AdminDashboard: React.FC = () => {
                     )}
 
                     {view === "add-user" && (
-                        <div className="form-card">
+                        <div className="form-card form-card-0">
+                            {/* ... (unchanged add-user section) ... */}
                             <div className="form-section">
                                 <h3>Personal Information</h3>
                                 <div className="form-row">
@@ -763,7 +836,8 @@ const AdminDashboard: React.FC = () => {
                     )}
 
                     {view === "add-role" && (
-                        <div className="form-card">
+                        <div className="form-card form-card-0">
+                            {/* ... (unchanged add-role section) ... */}
                             <div className="form-section">
                                 <h3>Role Details</h3>
                                 <div className="form-group">
@@ -852,22 +926,13 @@ const AdminDashboard: React.FC = () => {
                         <div className="details-card">
                             <div className="card-header">
                                 <h2>User Details</h2>
-                                {/* <div className="user-actions">
-                                    <button className="edit-button" onClick={() => handleEditUser(selectedUser)}>
-                                        <FaEdit /> Edit
-                                    </button>
-                                    <button className="delete-button" onClick={() => handleDeleteUser(selectedUser.userID)}>
-                                        <FaTrash /> Delete
-                                    </button>
-                                </div> */}
                             </div>
                             <hr />
-
                             <div className="form-section">
                                 <h3>Basic Information</h3>
                                 <div className="info-grid">
                                     <p><strong>Email:</strong> {selectedUser.email}</p>
-                                    <p><strong>Phone:</strong> {selectedUser.phone }</p>
+                                    <p><strong>Phone:</strong> {selectedUser.phone}</p>
                                     <p><strong>Wallet:</strong> {selectedUser.wallet}</p>
                                 </div>
                             </div>
@@ -901,6 +966,108 @@ const AdminDashboard: React.FC = () => {
                                     ))}
                                 </div>
                             </div>
+                            {(selectedUser.roles?.some(r => r.name === "Manager") || selectedUser.roles?.some(r => r.name === "Supervisor")) && (
+                                <div className="form-section">
+                                    <div className="group-header">
+                                        <h3>Supervisor/Manager Assignments</h3>
+                                        {hasUnsavedSupervisorChanges && (
+                                            <button className="action-button" onClick={handleSaveSupervisorsAndManagers} disabled={loading}>
+                                                {loading ? 'Saving...' : 'Save Assignments'}
+                                            </button>
+                                        )}
+                                    </div>
+                                    {selectedUser.roles?.some(r => r.name === "Manager") && (
+                                        <div className="assignment-list">
+                                            <h4>Supervisors Assigned to This Manager</h4>
+                                            <div className="search-container assignment-search">
+                                                <FaSearch className="search-icon" />
+                                                <input
+                                                    type="text"
+                                                    placeholder="Search supervisors..."
+                                                    value={supervisorSearch}
+                                                    onChange={(e) => setSupervisorSearch(e.target.value)}
+                                                    className="search-input"
+                                                />
+                                            </div>
+                                            <div className="list-container">
+                                                {paginatedSupervisors.map((supervisor) => (
+                                                    <div key={supervisor.userID} className="list-item">
+                                                        <label>
+                                                            <input
+                                                                type="checkbox"
+                                                                checked={tempSupervisors.some(s => s.userID === supervisor.userID)}
+                                                                onChange={() => handleToggleSupervisor(supervisor)}
+                                                                disabled={loading}
+                                                            />
+                                                            {`${supervisor.firstname} ${supervisor.lastname} (${supervisor.email})`}
+                                                        </label>
+                                                    </div>
+                                                ))}
+                                            </div>
+                                            <div className="pagination">
+                                                <button
+                                                    onClick={() => setSupervisorPage(p => Math.max(1, p - 1))}
+                                                    disabled={supervisorPage === 1}
+                                                >
+                                                    Previous
+                                                </button>
+                                                <span>Page {supervisorPage} of {Math.ceil(supervisorUsers.length / ITEMS_PER_PAGE)}</span>
+                                                <button
+                                                    onClick={() => setSupervisorPage(p => p + 1)}
+                                                    disabled={supervisorPage >= Math.ceil(supervisorUsers.length / ITEMS_PER_PAGE)}
+                                                >
+                                                    Next
+                                                </button>
+                                            </div>
+                                        </div>
+                                    )}
+                                    {selectedUser.roles?.some(r => r.name === "Supervisor") && (
+                                        <div className="assignment-list">
+                                            <h4>Managers Assigned to This Supervisor</h4>
+                                            <div className="search-container assignment-search">
+                                                <FaSearch className="search-icon" />
+                                                <input
+                                                    type="text"
+                                                    placeholder="Search managers..."
+                                                    value={managerSearch}
+                                                    onChange={(e) => setManagerSearch(e.target.value)}
+                                                    className="search-input"
+                                                />
+                                            </div>
+                                            <div className="list-container">
+                                                {paginatedManagers.map((manager) => (
+                                                    <div key={manager.userID} className="list-item">
+                                                        <label>
+                                                            <input
+                                                                type="checkbox"
+                                                                checked={tempManagers.some(m => m.userID === manager.userID)}
+                                                                onChange={() => handleToggleManager(manager)}
+                                                                disabled={loading}
+                                                            />
+                                                            {`${manager.firstname} ${manager.lastname} (${manager.email})`}
+                                                        </label>
+                                                    </div>
+                                                ))}
+                                            </div>
+                                            <div className="pagination">
+                                                <button
+                                                    onClick={() => setManagerPage(p => Math.max(1, p - 1))}
+                                                    disabled={managerPage === 1}
+                                                >
+                                                    Previous
+                                                </button>
+                                                <span>Page {managerPage} of {Math.ceil(managerUsers.length / ITEMS_PER_PAGE)}</span>
+                                                <button
+                                                    onClick={() => setManagerPage(p => p + 1)}
+                                                    disabled={managerPage >= Math.ceil(managerUsers.length / ITEMS_PER_PAGE)}
+                                                >
+                                                    Next
+                                                </button>
+                                            </div>
+                                        </div>
+                                    )}
+                                </div>
+                            )}
                             {activeRolePopup && (
                                 <div className="role-info-popup-overlay" onClick={() => setActiveRolePopup(null)}>
                                     <div className="role-info-popup" onClick={(e) => e.stopPropagation()}>

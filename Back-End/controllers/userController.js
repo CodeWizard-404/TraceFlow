@@ -125,6 +125,34 @@ class UserController {
             res.status(400).json({ error: error.message || 'Failed to assign supervisors to manager due to an internal error' });
         }
     }
+
+    static async getSupervisorsByUser(req, res) {
+        try {
+            const { userID } = req.params;
+            if (!userID) {
+                return res.status(400).json({ error: 'User ID is required' });
+            }
+            const supervisors = await UserService.getSupervisorsByUser(userID);
+            res.status(200).json(supervisors);
+        } catch (error) {
+            console.error(`${new Date().toISOString()} - Get supervisors by user failed:`, error);
+            res.status(404).json({ error: error.message || 'Failed to fetch supervisors' });
+        }
+    }
+
+    static async getManagersByUser(req, res) {
+        try {
+            const { userID } = req.params;
+            if (!userID) {
+                return res.status(400).json({ error: 'User ID is required' });
+            }
+            const managers = await UserService.getManagersByUser(userID);
+            res.status(200).json(managers);
+        } catch (error) {
+            console.error(`${new Date().toISOString()} - Get managers by user failed:`, error);
+            res.status(404).json({ error: error.message || 'Failed to fetch managers' });
+        }
+    }
 }
 
 module.exports = UserController;

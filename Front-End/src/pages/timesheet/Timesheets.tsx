@@ -1,3 +1,4 @@
+/* eslint-disable react-hooks/rules-of-hooks */
 /* eslint-disable react-hooks/exhaustive-deps */
 import React, { useEffect, useState } from "react";
 import { useNavigate } from "react-router-dom";
@@ -170,7 +171,10 @@ const Timesheets: React.FC = () => {
 
   const generateDayData = () => {
     if (!currentDay) return [];
-    const dateStr = currentDay.toISOString().split("T")[0];
+    const year = currentDay.getFullYear();
+    const month = String(currentDay.getMonth() + 1).padStart(2, "0"); 
+    const day = String(currentDay.getDate()).padStart(2, "0");
+    const dateStr = `${year}-${month}-${day}`;
     const visits = timesheets
       .flatMap((ts) => ts.Visits || [])
       .filter((visit) => visit.date === dateStr);

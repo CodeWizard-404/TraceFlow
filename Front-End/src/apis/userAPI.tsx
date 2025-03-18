@@ -7,6 +7,11 @@ import {
   AssignRolesResponse,
   RolesByUserResponse,
   GetSupervisorByPhoneNumberResponse,
+  UpdateUserResponse,
+  DeleteUserResponse,
+  SupervisorsByUserResponse, 
+  ManagersByUserResponse,    
+  AssignSupervisorsResponse, 
 } from ".";
 import User from "../models/User";
 
@@ -101,9 +106,13 @@ export const getRolesByUser = async (userID: string, token: string): Promise<Rol
   }
 };
 
-export const updateUser = async (userID: string, userData: Partial<User>, token: string): Promise<User> => {
+export const updateUser = async (
+  userID: string,
+  userData: Partial<User>,
+  token: string
+): Promise<UpdateUserResponse> => {
   try {
-    const response = await userApi.put<User>(`/${userID}`, userData, {
+    const response = await userApi.put<UpdateUserResponse>(`/${userID}`, userData, {
       headers: { Authorization: `Bearer ${token}` },
     });
     return response.data;
@@ -113,11 +122,59 @@ export const updateUser = async (userID: string, userData: Partial<User>, token:
   }
 };
 
-export const deleteUser = async (userID: string, token: string): Promise<void> => {
+export const deleteUser = async (userID: string, token: string): Promise<DeleteUserResponse> => {
   try {
     await userApi.delete(`/${userID}`, { headers: { Authorization: `Bearer ${token}` } });
   } catch (error) {
     console.error(`Error deleting user (${userID}):`, error);
+    throw error;
+  }
+};
+
+export const getSupervisorsByUser = async (
+  userID: string,
+  token: string
+): Promise<SupervisorsByUserResponse> => {
+  try {
+    const response = await userApi.get<SupervisorsByUserResponse>(`/${userID}/supervisors`, {
+      headers: { Authorization: `Bearer ${token}` },
+    });
+    return response.data;
+  } catch (error) {
+    console.error(`Error fetching supervisors for user (${userID}):`, error);
+    throw error;
+  }
+};
+
+export const getManagersByUser = async (
+  userID: string,
+  token: string
+): Promise<ManagersByUserResponse> => {
+  try {
+    const response = await userApi.get<ManagersByUserResponse>(`/${userID}/managers`, {
+      headers: { Authorization: `Bearer ${token}` },
+    });
+    return response.data;
+  } catch (error) {
+    console.error(`Error fetching managers for user (${userID}):`, error);
+    throw error;
+  }
+};
+
+export const assignSupervisorsToManager = async (
+  managerID: string,
+  supervisorIDs: string[],
+  token: string
+): Promise<AssignSupervisorsResponse> => {
+  try {
+    const response = await userApi.post<AssignSupervisorsResponse>(
+      "/assign-supervisors",
+      { managerID, supervisorIDs },
+      { headers: { Authorization: `Bearer ${token}` } }
+    );
+    return response.data;
+  } catch (error) {
+    console.error(`Error assigning supervisors to manager (${managerID}):`, error);
     throw error;
   }
 };

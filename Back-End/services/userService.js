@@ -142,34 +142,77 @@ class UserService {
         }
     }
 
-
-    // Assign supervisors to a manager
-    async assignSupervisorsToManager(managerID, supervisorIDs) {
-        try {
-            const manager = await User.findByPk(managerID);
-            if (!manager) throw new Error('Manager not found');
-
-            const supervisors = await User.findAll({
-                where: { userID: supervisorIDs },
-            });
-            if (supervisors.length !== supervisorIDs.length) {
-                throw new Error('One or more supervisors not found');
+    
+        async getSupervisorsByUser(userID) {
+            try {
+                const user = await User.findByPk(userID, {
+                    include: [{
+                        model: User,
+                        as: 'Supervisors',
+                        through: { attributes: [] },
+                        attributes: ['userID', 'firstname', 'lastname', 'email', 'phone'],
+                    }],
+                });
+                if (!user) throw new Error('User not found');
+                return user.Supervisors;
+            } catch (error) {
+                throw new Error(`Failed to fetch supervisors: ${error.message}`);
             }
-
-            // Assign supervisors to the manager
-            await manager.setSupervisors(supervisorIDs);
-
-            return {
-                managerID,
-                assignedSupervisors: supervisors.map(s => s.userID),
-                message: 'Supervisors assigned successfully',
-            };
-        } catch (error) {
-            throw new Error(`Failed to assign supervisors: ${error.message}`);
+        }
+    
+        async getManagersByUser(userID) {
+            try {
+                const user = await User.findByPk(userID, {
+                    include: [{
+                        model: User,
+                        as: 'Managers',
+                        through: { attributes: [] },
+                        attributes: ['userID', 'firstname', 'lastname', 'email', 'phone'],
+                    }],
+                });
+                if (!user) throw new Error('User not found');
+                return user.Managers;
+            } catch (error) {
+                throw new Error(`Failed to fetch managers: ${error.message}`);
+            }
+        }
+    
+        // Update assignSupervisorsToManager to ensure it works bidirectionally
+        async assignSupervisorsToManager(managerID, supervisorIDs) {
+            try {
+                const manager = await User.findByPk(managerID);
+                if (!manager) throw new Error('Manager not found');
+    
+                const supervisors = await User.findAll({
+                    where: { userID: supervisorIDs },
+                });
+                if (supervisors.length !== supervisorIDs.length) {
+                    throw new Error('One or more supervisors not found');
+                }
+    
+                // Fetch current supervisors
+                const currentSupervisors = await manager.getSupervisors();
+                const currentSupervisorIDs = currentSupervisors.map(s => s.userID);
+                const newSupervisors = supervisorIDs.filter(id => !currentSupervisorIDs.includes(id));
+    
+                if (newSupervisors.length > 0) {
+                    await manager.addSupervisors(newSupervisors);
+                }
+    
+                return {
+                    managerID,
+                    assignedSupervisors: supervisors.map(s => s.userID),
+                    message: 'Supervisors assigned successfully',
+                };
+            } catch (error) {
+                throw new Error(`Failed to assign supervisors: ${error.message}`);
+            }
         }
     }
+    
 
 
-}
+
+
 
 module.exports = new UserService();

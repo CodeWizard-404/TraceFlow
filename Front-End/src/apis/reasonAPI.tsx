@@ -1,17 +1,9 @@
-import axios from "axios";
+import api from "./axiosConfig"; // Use the shared instance
 import { CreateReasonResponse, ListReasonsResponse, ReasonsByVisitResponse } from ".";
-import { BASE_URL, DEFAULT_TIMEOUT } from "../config";
 
-const reasonApi = axios.create({
-    baseURL: `${BASE_URL}/reasons`,
-    timeout: DEFAULT_TIMEOUT,
-});
-
-export const createReason = async (data: { text: string }, token: string): Promise<CreateReasonResponse> => {
+export const createReason = async (data: { text: string }): Promise<CreateReasonResponse> => {
     try {
-        const response = await reasonApi.post<CreateReasonResponse>("", data, {
-            headers: { Authorization: `Bearer ${token}` },
-        });
+        const response = await api.post<CreateReasonResponse>("/reasons", data);
         return response.data;
     } catch (error) {
         console.error("Error creating reason:", error);
@@ -19,11 +11,9 @@ export const createReason = async (data: { text: string }, token: string): Promi
     }
 };
 
-export const getAllReasons = async (token?: string): Promise<ListReasonsResponse> => {
+export const getAllReasons = async (): Promise<ListReasonsResponse> => {
     try {
-        const response = await reasonApi.get<ListReasonsResponse>("", {
-            headers: token ? { Authorization: `Bearer ${token}` } : {},
-        });
+        const response = await api.get<ListReasonsResponse>("/reasons");
         return response.data;
     } catch (error) {
         console.error("Error fetching all reasons:", error);
@@ -31,11 +21,9 @@ export const getAllReasons = async (token?: string): Promise<ListReasonsResponse
     }
 };
 
-export const getReasonsByVisitId = async (visitId: string, token: string): Promise<ReasonsByVisitResponse> => {
+export const getReasonsByVisitId = async (visitId: string): Promise<ReasonsByVisitResponse> => {
     try {
-        const response = await reasonApi.get<ReasonsByVisitResponse>(`/${visitId}`, {
-            headers: { Authorization: `Bearer ${token}` },
-        });
+        const response = await api.get<ReasonsByVisitResponse>(`/reasons/${visitId}`);
         return response.data;
     } catch (error) {
         console.error(`Error fetching reasons for visit (${visitId}):`, error);

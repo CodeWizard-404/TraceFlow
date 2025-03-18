@@ -2,6 +2,7 @@ import React, { createContext, useContext, useState, useEffect, ReactNode } from
 import { useNavigate, useLocation } from "react-router-dom";
 import { login } from "../apis/authAPI";
 import User from "../models/User";
+import { setupAxiosInterceptors } from "../apis/axiosConfig"; // Import the interceptor setup
 
 interface AuthContextType {
     user: User | null;
@@ -26,6 +27,12 @@ export const AuthProvider: React.FC<{ children: ReactNode }> = ({ children }) =>
     });
     const navigate = useNavigate();
     const location = useLocation();
+
+    // Set up Axios interceptor when token changes
+    useEffect(() => {
+        setupAxiosInterceptors(() => token); // Pass a function to get the current token
+        console.log("Axios interceptor updated with token:", token);
+    }, [token]);
 
     useEffect(() => {
         console.log("AuthProvider mounted. User:", user, "Token:", token);

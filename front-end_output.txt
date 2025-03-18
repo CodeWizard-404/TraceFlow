@@ -1,9 +1,9 @@
 FRONT-END PROJECT FILES
-Generated on: 1742247237.0371969
+Generated on: 1742288175.6189606
 ==================================================
 
 ==================================================
-File contents: C:\Users\Kayto\Desktop\IT\Projects\Stage\Stage PFE\TraceFlow\Front-End\src\apis\agentAPI.tsx
+File contents: C:\Users\Kayto\Desktop\IT\Projects\Stage\Stage PFE\Visit_Management\Front-End\src\apis\agentAPI.tsx
 ==================================================
 import axios from "axios";
 import { BASE_URL, DEFAULT_TIMEOUT } from "../config";
@@ -63,7 +63,7 @@ export const getAgentById = async (id: string, token?: string): Promise<AgentByI
 };
 
 ==================================================
-File contents: C:\Users\Kayto\Desktop\IT\Projects\Stage\Stage PFE\TraceFlow\Front-End\src\apis\authAPI.tsx
+File contents: C:\Users\Kayto\Desktop\IT\Projects\Stage\Stage PFE\Visit_Management\Front-End\src\apis\authAPI.tsx
 ==================================================
 import axios from "axios";
 import { BASE_URL, DEFAULT_TIMEOUT } from "../config";
@@ -90,7 +90,7 @@ export const login = async (identifier: string, password: string): Promise<Login
 
 
 ==================================================
-File contents: C:\Users\Kayto\Desktop\IT\Projects\Stage\Stage PFE\TraceFlow\Front-End\src\apis\checklistAPI.tsx
+File contents: C:\Users\Kayto\Desktop\IT\Projects\Stage\Stage PFE\Visit_Management\Front-End\src\apis\checklistAPI.tsx
 ==================================================
 import axios from "axios";
 import { CreateChecklistResponse, ListChecklistsResponse, ChecklistsByVisitResponse } from ".";
@@ -138,7 +138,7 @@ export const getChecklistsByVisitId = async (visitId: string, token: string): Pr
 };
 
 ==================================================
-File contents: C:\Users\Kayto\Desktop\IT\Projects\Stage\Stage PFE\TraceFlow\Front-End\src\apis\index.tsx
+File contents: C:\Users\Kayto\Desktop\IT\Projects\Stage\Stage PFE\Visit_Management\Front-End\src\apis\index.tsx
 ==================================================
 import Agent from "../models/Agent";
 import { Checklist, VisitChecklist } from "../models/Checklist";
@@ -236,7 +236,7 @@ export type TransmitStubResponse = ReceiptStub;
 export type ArchiveStubResponse = ReceiptStub;
 
 ==================================================
-File contents: C:\Users\Kayto\Desktop\IT\Projects\Stage\Stage PFE\TraceFlow\Front-End\src\apis\permissionAPI.tsx
+File contents: C:\Users\Kayto\Desktop\IT\Projects\Stage\Stage PFE\Visit_Management\Front-End\src\apis\permissionAPI.tsx
 ==================================================
 // src/apis/permissionAPI.tsx
 import axios, { AxiosError } from "axios"; // Import AxiosError for proper typing
@@ -353,7 +353,7 @@ export const deletePermission = async (
 };
 
 ==================================================
-File contents: C:\Users\Kayto\Desktop\IT\Projects\Stage\Stage PFE\TraceFlow\Front-End\src\apis\reasonAPI.tsx
+File contents: C:\Users\Kayto\Desktop\IT\Projects\Stage\Stage PFE\Visit_Management\Front-End\src\apis\reasonAPI.tsx
 ==================================================
 import axios from "axios";
 import { CreateReasonResponse, ListReasonsResponse, ReasonsByVisitResponse } from ".";
@@ -401,7 +401,7 @@ export const getReasonsByVisitId = async (visitId: string, token: string): Promi
 };
 
 ==================================================
-File contents: C:\Users\Kayto\Desktop\IT\Projects\Stage\Stage PFE\TraceFlow\Front-End\src\apis\receiptBookAPI.tsx
+File contents: C:\Users\Kayto\Desktop\IT\Projects\Stage\Stage PFE\Visit_Management\Front-End\src\apis\receiptBookAPI.tsx
 ==================================================
 import axios from "axios";
 import { BASE_URL, DEFAULT_TIMEOUT } from "../config";
@@ -585,7 +585,7 @@ export const getTransferHistory = async (bookID: string, token: string): Promise
 };
 
 ==================================================
-File contents: C:\Users\Kayto\Desktop\IT\Projects\Stage\Stage PFE\TraceFlow\Front-End\src\apis\receiptStubAPI.tsx
+File contents: C:\Users\Kayto\Desktop\IT\Projects\Stage\Stage PFE\Visit_Management\Front-End\src\apis\receiptStubAPI.tsx
 ==================================================
 import axios from "axios";
 import { BASE_URL, DEFAULT_TIMEOUT } from "../config";
@@ -657,7 +657,7 @@ export const archiveStub = async (bookID: string, token: string): Promise<Archiv
 };
 
 ==================================================
-File contents: C:\Users\Kayto\Desktop\IT\Projects\Stage\Stage PFE\TraceFlow\Front-End\src\apis\roleAPI.tsx
+File contents: C:\Users\Kayto\Desktop\IT\Projects\Stage\Stage PFE\Visit_Management\Front-End\src\apis\roleAPI.tsx
 ==================================================
 import axios from "axios";
 import { BASE_URL, DEFAULT_TIMEOUT } from "../config";
@@ -759,7 +759,7 @@ export const getPermissionsByRole = async (roleID: string, token: string): Promi
 };
 
 ==================================================
-File contents: C:\Users\Kayto\Desktop\IT\Projects\Stage\Stage PFE\TraceFlow\Front-End\src\apis\timesheetAPI.tsx
+File contents: C:\Users\Kayto\Desktop\IT\Projects\Stage\Stage PFE\Visit_Management\Front-End\src\apis\timesheetAPI.tsx
 ==================================================
 import axios from "axios";
 import { CreateTimesheetResponse, ListTimesheetsResponse, TimesheetByIdResponse, ValidateTimesheetResponse, TimesheetsBySupervisorResponse } from ".";
@@ -849,7 +849,7 @@ export const getTimesheetsBySupervisor = async (supervisorID: string, token: str
 };
 
 ==================================================
-File contents: C:\Users\Kayto\Desktop\IT\Projects\Stage\Stage PFE\TraceFlow\Front-End\src\apis\userAPI.tsx
+File contents: C:\Users\Kayto\Desktop\IT\Projects\Stage\Stage PFE\Visit_Management\Front-End\src\apis\userAPI.tsx
 ==================================================
 import axios from "axios";
 import { BASE_URL, DEFAULT_TIMEOUT } from "../config";
@@ -976,7 +976,7 @@ export const deleteUser = async (userID: string, token: string): Promise<void> =
 };
 
 ==================================================
-File contents: C:\Users\Kayto\Desktop\IT\Projects\Stage\Stage PFE\TraceFlow\Front-End\src\apis\visitAPI.tsx
+File contents: C:\Users\Kayto\Desktop\IT\Projects\Stage\Stage PFE\Visit_Management\Front-End\src\apis\visitAPI.tsx
 ==================================================
 import axios from "axios";
 import { CreateVisitResponse, VerifyQrResponse, LogVisitResponse, VisitByIdResponse } from ".";
@@ -1051,396 +1051,7 @@ export const getVisitById = async (id: string, token: string): Promise<VisitById
 };
 
 ==================================================
-File contents: C:\Users\Kayto\Desktop\IT\Projects\Stage\Stage PFE\TraceFlow\Front-End\src\components\CMP.css
-==================================================
-body.dark .header {
-    background: #2d3748;
-    color: #e2e8f0;
-}
-
-.header h1 {
-    margin: 0;
-    font-size: 1.5rem;
-    font-weight: 700;
-}
-
-.theme-toggle-btn {
-    display: flex;
-    align-items: center;
-    padding: 0.5rem 0.5rem;
-    font-size: 0.875rem;
-    font-weight: 600;
-    background: #4cb1c7;
-    color: #fff;
-    border: none;
-    border-radius: 3.125rem;
-    cursor: pointer;
-    transition: all 0.3s ease;
-}
-
-body.dark .theme-toggle-btn {
-    background: #63b3ed;
-}
-
-.theme-toggle-btn:hover {
-    background: #3a8fa2;
-}
-
-body.dark .theme-toggle-btn:hover {
-    background: #4299e1;
-}
-
-
-
-
-
-
-.header {
-    background: #fff;
-    padding: 0.9375rem 1.25rem;
-    box-shadow: 0 0.25rem 0.75rem rgba(0, 0, 0, 0.05);
-    border-bottom: 1px solid rgba(76, 177, 199, 0.2);
-    position: sticky;
-    top: 0;
-    z-index: 1000;
-}
-
-.header-container {
-    max-width: 1280px;
-    margin: 0 auto;
-    display: flex;
-    justify-content: space-between;
-    align-items: center;
-    flex-wrap: wrap;
-    gap: 0.9375rem;
-    /* 15px at 16px base */
-}
-
-.logo {
-    height: 2rem;
-    /* 40px at 16px base */
-    width: auto;
-    transition: transform 0.3s ease;
-}
-
-.logo:hover {
-    transform: scale(1.05);
-}
-
-.menu-toggle {
-    display: none;
-    /* Hidden by default on desktop */
-    font-size: 1.5rem;
-    /* 24px at 16px base */
-    background: none;
-    border: none;
-    color: #4cb1c7;
-    cursor: pointer;
-    padding: 0;
-    transition: color 0.3s ease;
-}
-
-.menu-toggle:hover {
-    color: #3a8fa2;
-}
-
-.header-nav {
-    display: flex;
-    gap: 1.875rem;
-    /* 30px at 16px base */
-    align-items: center;
-}
-
-.nav-link {
-    font-family: 'Inter', sans-serif;
-    font-size: 1rem;
-    /* 16px at 16px base */
-    font-weight: 600;
-    color: #1f2937;
-    text-decoration: none;
-    padding: 0.375rem 0.75rem;
-    /* 6px 12px at 16px base */
-    position: relative;
-    transition: all 0.3s ease;
-}
-
-.nav-link::after {
-    content: '';
-    position: absolute;
-    width: 0;
-    height: 0.125rem;
-    /* 2px at 16px base */
-    bottom: 0;
-    left: 50%;
-    background: #4cb1c7;
-    transition: all 0.3s ease;
-    transform: translateX(-50%);
-}
-
-.nav-link:hover::after {
-    width: 100%;
-}
-
-.nav-link:hover {
-    color: #4cb1c7;
-    transform: scale(1.05);
-}
-
-/* Responsive Design */
-@media (max-width: 768px) {
-    .header {
-        padding: 0.625rem 0.9375rem;
-        /* 11.25px 16.875px at 18px base */
-    }
-
-    .header-container {
-        flex-direction: row;
-        justify-content: space-between;
-        align-items: center;
-        gap: 1rem;
-        /* 18px at 18px base */
-    }
-
-    .logo {
-        height: 2rem;
-        /* 36px at 18px base */
-    }
-
-    .menu-toggle {
-        display: block;
-        font-size: 1.5rem;
-        /* 27px at 18px base */
-    }
-
-    .header-nav {
-        display: none;
-        /* Hidden by default on mobile */
-        flex-direction: column;
-        gap: 1.25rem;
-        /* 22.5px at 18px base */
-        width: 100%;
-        padding: 1.25rem 0;
-        background: #fff;
-        position: absolute;
-        top: 100%;
-        left: 0;
-        box-shadow: 0 0.25rem 0.75rem rgba(0, 0, 0, 0.05);
-        border-top: 1px solid rgba(76, 177, 199, 0.2);
-    }
-
-    .header-nav.open {
-        display: flex;
-    }
-
-    .nav-link {
-        font-size: 0.875rem;
-        /* 15.75px at 18px base */
-        padding: 0.5rem 0;
-        /* 9px at 18px base */
-        text-align: center;
-    }
-
-    .nav-link::after {
-        height: 0.0625rem;
-        /* 1.125px at 18px base */
-    }
-
-    .nav-link:hover::after {
-        width: 50%;
-    }
-
-    .nav-link:hover {
-        transform: none;
-        /* No scale on mobile */
-    }
-}
-
-@media (max-width: 480px) {
-    .header {
-        padding: 0.5rem 0.625rem;
-        /* 10px 12.5px at 20px base */
-    }
-
-    .logo {
-        height: 1.75rem;
-        /* 35px at 20px base */
-    }
-
-    .menu-toggle {
-        font-size: 1.25rem;
-        /* 25px at 20px base */
-    }
-
-    .nav-link {
-        font-size: 0.75rem;
-        /* 15px at 20px base */
-        padding: 0.625rem 0;
-        /* 12.5px at 20px base */
-    }
-}
-
-/* src/components/Footer.css */
-.footer {
-    background: #fff;
-    padding: 1.25rem;
-    /* 20px at 16px base */
-    border-top: 1px solid rgba(76, 177, 199, 0.2);
-    box-shadow: 0 -0.25rem 0.75rem rgba(0, 0, 0, 0.05);
-}
-
-.footer-container {
-    max-width: 1280px;
-    margin: 0 auto;
-    display: flex;
-    justify-content: space-between;
-    align-items: center;
-    flex-wrap: wrap;
-    gap: 0.9375rem;
-    /* 15px at 16px base */
-}
-
-.footer-text {
-    font-family: 'Inter', sans-serif;
-    font-size: 0.75rem;
-    /* 12px at 16px base */
-    color: #6b7280;
-    margin: 0;
-}
-
-.footer-links {
-    display: flex;
-    gap: 1.25rem;
-    /* 20px at 16px base */
-    flex-wrap: wrap;
-}
-
-.footer-link {
-    font-family: 'Inter', sans-serif;
-    font-size: 0.75rem;
-    /* 12px at 16px base */
-    font-weight: 600;
-    color: #4cb1c7;
-    text-decoration: none;
-    transition: all 0.3s ease;
-}
-
-.footer-link:hover {
-    color: #3a8fa2;
-    text-decoration: underline;
-}
-
-/* Responsive Design */
-@media (max-width: 768px) {
-    .footer {
-        padding: 0.9375rem;
-        /* 16.875px at 18px base */
-    }
-
-    .footer-container {
-        flex-direction: column;
-        align-items: center;
-        text-align: center;
-        gap: 1rem;
-        /* 18px at 18px base */
-    }
-
-    .footer-links {
-        gap: 0.9375rem;
-        /* 16.875px at 18px base */
-        justify-content: center;
-    }
-
-    .footer-text,
-    .footer-link {
-        font-size: 0.6875rem;
-        /* 12.375px at 18px base */
-    }
-}
-
-@media (max-width: 480px) {
-    .footer {
-        padding: 0.625rem;
-        /* 12.5px at 20px base */
-    }
-
-    .footer-text,
-    .footer-link {
-        font-size: 0.625rem;
-        /* 12.5px at 20px base */
-    }
-
-    .footer-links {
-        gap: 0.625rem;
-        /* 12.5px at 20px base */
-    }
-}
-
-==================================================
-File contents: C:\Users\Kayto\Desktop\IT\Projects\Stage\Stage PFE\TraceFlow\Front-End\src\components\Footer.tsx
-==================================================
-import "./CMP.css";
-
-function Footer() {
-  const currentYear = new Date().getFullYear();
-  return (
-    <footer className="footer">
-      <div className="footer-container">
-        <p className="footer-text">© Copyright {currentYear}. All Rights Reserved</p>
-        <div className="footer-links">
-          <a href="/privacy" className="footer-link">Privacy Policy</a>
-          <a href="/terms" className="footer-link">Terms of Service</a>
-          <a href="/contact" className="footer-link">Contact Us</a>
-        </div>
-      </div>
-    </footer>
-  );
-}
-
-export default Footer;
-
-==================================================
-File contents: C:\Users\Kayto\Desktop\IT\Projects\Stage\Stage PFE\TraceFlow\Front-End\src\components\Header.tsx
-==================================================
-import { useState } from "react";
-import { useTheme } from "../context/ThemeContext"; // Import useTheme from ThemeContext
-import { FaSun, FaMoon } from "react-icons/fa"; // Icons for theme toggle
-import logo from "../assets/Banner.png";
-import "./CMP.css";
-
-function Header() {
-  const [isMenuOpen, setIsMenuOpen] = useState(false);
-  const { theme, toggleTheme } = useTheme(); // Access theme and toggle function
-
-  const toggleMenu = () => {
-    setIsMenuOpen((prev) => !prev);
-  };
-
-  return (
-    <header className="header">
-      <div className="header-container">
-        <img className="logo" src={logo} alt="LOGO" />
-        <button className="menu-toggle" onClick={toggleMenu}>
-          {isMenuOpen ? "✕" : "☰"}
-        </button>
-        <nav className={`header-nav ${isMenuOpen ? "open" : ""}`}>
-          <a href="/timesheet" className="nav-link">Timesheets</a>
-          <a href="/schedule" className="nav-link">Schedule</a>
-          <a href="/about" className="nav-link">About</a>
-          {/* Theme Toggle Button */}
-          <button className="theme-toggle-btn" onClick={toggleTheme}>
-            {theme === "light" ? <FaMoon /> : <FaSun />}
-            
-          </button>
-        </nav>
-      </div>
-    </header>
-  );
-}
-
-export default Header;
-
-==================================================
-File contents: C:\Users\Kayto\Desktop\IT\Projects\Stage\Stage PFE\TraceFlow\Front-End\src\context\AuthContext.tsx
+File contents: C:\Users\Kayto\Desktop\IT\Projects\Stage\Stage PFE\Visit_Management\Front-End\src\context\AuthContext.tsx
 ==================================================
 import React, { createContext, useContext, useState, useEffect, ReactNode } from "react";
 import { useNavigate, useLocation } from "react-router-dom";
@@ -1520,7 +1131,7 @@ export const useAuth = () => {
 };
 
 ==================================================
-File contents: C:\Users\Kayto\Desktop\IT\Projects\Stage\Stage PFE\TraceFlow\Front-End\src\context\ErrorContext.tsx
+File contents: C:\Users\Kayto\Desktop\IT\Projects\Stage\Stage PFE\Visit_Management\Front-End\src\context\ErrorContext.tsx
 ==================================================
 // src/context/ErrorContext.tsx
 import React, { createContext, useContext, useState, ReactNode } from "react";
@@ -1549,7 +1160,7 @@ export const useError = () => {
 };
 
 ==================================================
-File contents: C:\Users\Kayto\Desktop\IT\Projects\Stage\Stage PFE\TraceFlow\Front-End\src\context\ThemeContext.tsx
+File contents: C:\Users\Kayto\Desktop\IT\Projects\Stage\Stage PFE\Visit_Management\Front-End\src\context\ThemeContext.tsx
 ==================================================
 import React, { createContext, useState, useContext, ReactNode } from "react";
 
@@ -1591,232 +1202,17 @@ export const useTheme = () => {
 };
 
 ==================================================
-File contents: C:\Users\Kayto\Desktop\IT\Projects\Stage\Stage PFE\TraceFlow\Front-End\src\models\Agent.tsx
-==================================================
-interface Agent {
-  agentID: string;
-  name?: string;
-  lastname?: string;
-  wallet?: string;
-  cin?: string;
-  email?: string;
-  phone?: string;
-  location?: string;
-}
-
-export default Agent;
-
-
-==================================================
-File contents: C:\Users\Kayto\Desktop\IT\Projects\Stage\Stage PFE\TraceFlow\Front-End\src\models\Checklist.tsx
-==================================================
-interface Checklist {
-    checklistID: string;
-    item: string;
-}
-
-interface VisitChecklist extends Checklist {
-    VisitChecklist?: {
-        checked: boolean;
-        visitID: string;
-        checklistID: string;
-    };
-}
-
-export type { VisitChecklist, Checklist };
-
-==================================================
-File contents: C:\Users\Kayto\Desktop\IT\Projects\Stage\Stage PFE\TraceFlow\Front-End\src\models\OTP.tsx
-==================================================
-interface OTP {
-    code: string;
-    expiresAt: string;
-    userID: string;
-}
-
-export default OTP;
-
-==================================================
-File contents: C:\Users\Kayto\Desktop\IT\Projects\Stage\Stage PFE\TraceFlow\Front-End\src\models\Permission.tsx
-==================================================
-// src/models/Permission.ts
-interface Permission {
-    permissionID: string;
-    name: string;
-    type: "page" | "feature"; // From your backend permission seeding
-    class: string; 
-    description?: string;
-}
-
-export default Permission;
-
-==================================================
-File contents: C:\Users\Kayto\Desktop\IT\Projects\Stage\Stage PFE\TraceFlow\Front-End\src\models\Reason.tsx
-==================================================
-interface Reason {
-    reasonID: string;
-    item: string;
-}
-
-interface VisitReason extends Reason {
-    VisitReasons?: {
-        visitID: string;
-        reasonID: string;
-    };
-}
-
-export type { Reason, VisitReason };
-
-==================================================
-File contents: C:\Users\Kayto\Desktop\IT\Projects\Stage\Stage PFE\TraceFlow\Front-End\src\models\ReceiptBook.tsx
-==================================================
-interface ReceiptBook {
-    bookID: string;
-    number: number;
-    type: string;
-    qrCode: string; // Base64 encoded QR code image
-    status: "In Stock" | "Sent to Supplier" | "With Regional Manager" | "With Supervisor" | "Assigned to Agent" | "Stub Collected" | "With Stock Manager";
-    currentHolderID?: string; // User ID of current holder
-    agentID?: string; // Optional agent assignment
-    createdAt?: string;
-    updatedAt?: string;
-}
-
-export default ReceiptBook;
-
-==================================================
-File contents: C:\Users\Kayto\Desktop\IT\Projects\Stage\Stage PFE\TraceFlow\Front-End\src\models\ReceiptBookTransfer.tsx
-==================================================
-interface ReceiptBookTransfer {
-    transferID: string;
-    bookID: string;
-    fromUserID?: string;
-    toUserID?: string;
-    status: string;
-    transferDate: string;
-}
-
-export default ReceiptBookTransfer;
-
-==================================================
-File contents: C:\Users\Kayto\Desktop\IT\Projects\Stage\Stage PFE\TraceFlow\Front-End\src\models\ReceiptStub.tsx
-==================================================
-interface ReceiptStub {
-    stubID: string;
-    bookID: string;
-    status: "pending" | "collected" | "transmitted" | "archived";
-    createdAt?: string;
-    updatedAt?: string;
-}
-
-export default ReceiptStub;
-
-==================================================
-File contents: C:\Users\Kayto\Desktop\IT\Projects\Stage\Stage PFE\TraceFlow\Front-End\src\models\Role.tsx
-==================================================
-import Permission from "./Permission";
-interface Role {
-    roleID: string;
-    name: string;
-    description?: string;
-    permissions?: Permission[];
-}
-
-export default Role
-
-==================================================
-File contents: C:\Users\Kayto\Desktop\IT\Projects\Stage\Stage PFE\TraceFlow\Front-End\src\models\Timesheet.tsx
-==================================================
-import TimesheetStatus from "./Enum/TimesheetStatus";
-import Visit from "./Visit";
-
-interface Timesheet {
-  timesheetID: string;
-  weekNumber: number;
-  year: number;
-  status: TimesheetStatus;
-  supervisorID: string;
-  Visits?: Visit[];
-}
-
-export default Timesheet;
-
-
-==================================================
-File contents: C:\Users\Kayto\Desktop\IT\Projects\Stage\Stage PFE\TraceFlow\Front-End\src\models\User.tsx
-==================================================
-import Role from './Role'; 
-interface User {
-    userID: string;
-    firstname: string;
-    lastname: string;
-    phone: string;
-    email: string;
-    wallet: string;
-    password?: string; 
-    roles?: Role[]; 
-}
-
-export default User;
-
-
-==================================================
-File contents: C:\Users\Kayto\Desktop\IT\Projects\Stage\Stage PFE\TraceFlow\Front-End\src\models\Visit.tsx
-==================================================
-import { VisitChecklist } from "./Checklist";
-import VisitStatus from "./Enum/VisitStatus";
-import { VisitReason } from "./Reason";
-
-interface Visit {
-  visitID: string;
-  date: string;
-  time: string; 
-  duration?: number | null; 
-  location?: string;
-  status: VisitStatus;
-  photos?: string[];
-  comment?: string | null;
-  agentID: string;
-  timesheetID: string;
-  Checklists?: VisitChecklist[]; 
-  Reasons?: VisitReason[]; 
-}
-
-export default Visit;
-
-
-==================================================
-File contents: C:\Users\Kayto\Desktop\IT\Projects\Stage\Stage PFE\TraceFlow\Front-End\src\models\Enum\TimesheetStatus.tsx
-==================================================
-enum TimesheetStatus {
-    PENDING = "pending",
-    VALIDATED = "validated",
-}
-export default TimesheetStatus;
-
-==================================================
-File contents: C:\Users\Kayto\Desktop\IT\Projects\Stage\Stage PFE\TraceFlow\Front-End\src\models\Enum\VisitStatus.tsx
-==================================================
-enum VisitStatus {
-    PENDING = "pending",
-    VISITED = "visited",
-    VALIDATED = "validated",
-    REJECTED = "rejected",
-}
-export default VisitStatus;
-
-==================================================
-File contents: C:\Users\Kayto\Desktop\IT\Projects\Stage\Stage PFE\TraceFlow\Front-End\src\pages\AccessDenied.css
+File contents: C:\Users\Kayto\Desktop\IT\Projects\Stage\Stage PFE\Visit_Management\Front-End\src\pages\AccessDenied.css
 ==================================================
 
 
 ==================================================
-File contents: C:\Users\Kayto\Desktop\IT\Projects\Stage\Stage PFE\TraceFlow\Front-End\src\pages\AccessDenied.tsx
+File contents: C:\Users\Kayto\Desktop\IT\Projects\Stage\Stage PFE\Visit_Management\Front-End\src\pages\AccessDenied.tsx
 ==================================================
 
 
 ==================================================
-File contents: C:\Users\Kayto\Desktop\IT\Projects\Stage\Stage PFE\TraceFlow\Front-End\src\pages\ErrorDisplay.tsx
+File contents: C:\Users\Kayto\Desktop\IT\Projects\Stage\Stage PFE\Visit_Management\Front-End\src\pages\ErrorDisplay.tsx
 ==================================================
 // src/components/ErrorDisplay.tsx
 import React from "react";
@@ -1863,7 +1259,7 @@ const ErrorDisplay: React.FC = () => {
 export default ErrorDisplay;
 
 ==================================================
-File contents: C:\Users\Kayto\Desktop\IT\Projects\Stage\Stage PFE\TraceFlow\Front-End\src\pages\PageNotFound.css
+File contents: C:\Users\Kayto\Desktop\IT\Projects\Stage\Stage PFE\Visit_Management\Front-End\src\pages\PageNotFound.css
 ==================================================
 @import url('https://fonts.googleapis.com/css2?family=Inter:wght@400;600;700&display=swap');
 
@@ -2209,7 +1605,7 @@ File contents: C:\Users\Kayto\Desktop\IT\Projects\Stage\Stage PFE\TraceFlow\Fron
 }
 
 ==================================================
-File contents: C:\Users\Kayto\Desktop\IT\Projects\Stage\Stage PFE\TraceFlow\Front-End\src\pages\PageNotFound.tsx
+File contents: C:\Users\Kayto\Desktop\IT\Projects\Stage\Stage PFE\Visit_Management\Front-End\src\pages\PageNotFound.tsx
 ==================================================
 import React, { useEffect, useState } from "react";
 import { useNavigate } from "react-router-dom";
@@ -2311,7 +1707,7 @@ const PageNotFound: React.FC = () => {
 export default PageNotFound;
 
 ==================================================
-File contents: C:\Users\Kayto\Desktop\IT\Projects\Stage\Stage PFE\TraceFlow\Front-End\src\pages\Admin\AdminDashboard.css
+File contents: C:\Users\Kayto\Desktop\IT\Projects\Stage\Stage PFE\Visit_Management\Front-End\src\pages\Admin\AdminDashboard.css
 ==================================================
 /* AdminDashboard.css */
 @import url('https://fonts.googleapis.com/css2?family=Inter:wght@400;600;700&display=swap');
@@ -3456,7 +2852,7 @@ body.dark .error {
 }
 
 ==================================================
-File contents: C:\Users\Kayto\Desktop\IT\Projects\Stage\Stage PFE\TraceFlow\Front-End\src\pages\Admin\AdminDashboard.tsx
+File contents: C:\Users\Kayto\Desktop\IT\Projects\Stage\Stage PFE\Visit_Management\Front-End\src\pages\Admin\AdminDashboard.tsx
 ==================================================
 import React, { useState, useEffect, useMemo } from "react";
 import { FaSearch, FaFilter, FaSort, FaUserPlus, FaPlus, FaArrowLeft, FaInfoCircle, FaAngleDown } from "react-icons/fa";
@@ -4405,7 +3801,7 @@ const AdminDashboard: React.FC = () => {
 export default AdminDashboard;
 
 ==================================================
-File contents: C:\Users\Kayto\Desktop\IT\Projects\Stage\Stage PFE\TraceFlow\Front-End\src\pages\auth\Login.css
+File contents: C:\Users\Kayto\Desktop\IT\Projects\Stage\Stage PFE\Visit_Management\Front-End\src\pages\auth\Login.css
 ==================================================
 @import url('https://fonts.googleapis.com/css2?family=Inter:wght@400;600;700&display=swap');
 
@@ -4568,7 +3964,7 @@ body.dark .error {
 }
 
 ==================================================
-File contents: C:\Users\Kayto\Desktop\IT\Projects\Stage\Stage PFE\TraceFlow\Front-End\src\pages\auth\Login.tsx
+File contents: C:\Users\Kayto\Desktop\IT\Projects\Stage\Stage PFE\Visit_Management\Front-End\src\pages\auth\Login.tsx
 ==================================================
 import React, { useState, useEffect } from "react";
 import { useAuth } from "../../context/AuthContext";
@@ -4654,7 +4050,7 @@ const LoginPage: React.FC = () => {
 export default LoginPage;
 
 ==================================================
-File contents: C:\Users\Kayto\Desktop\IT\Projects\Stage\Stage PFE\TraceFlow\Front-End\src\pages\timesheet\TimesheetForm.css
+File contents: C:\Users\Kayto\Desktop\IT\Projects\Stage\Stage PFE\Visit_Management\Front-End\src\pages\timesheet\TimesheetForm.css
 ==================================================
 /* src/pages/timesheet/TimesheetForm.css */
 @import url('https://fonts.googleapis.com/css2?family=Inter:wght@400;600;700&display=swap');
@@ -4691,6 +4087,7 @@ File contents: C:\Users\Kayto\Desktop\IT\Projects\Stage\Stage PFE\TraceFlow\Fron
     padding: 1.5rem;
     box-shadow: 0 0.375rem 1.25rem rgba(0, 0, 0, 0.05);
     width: 100%;
+    max-width: 37.5rem;
     margin-top: 1rem;
     transition: transform 0.3s ease;
 }
@@ -4878,13 +4275,13 @@ File contents: C:\Users\Kayto\Desktop\IT\Projects\Stage\Stage PFE\TraceFlow\Fron
 }
 
 ==================================================
-File contents: C:\Users\Kayto\Desktop\IT\Projects\Stage\Stage PFE\TraceFlow\Front-End\src\pages\timesheet\TimesheetForm.tsx
+File contents: C:\Users\Kayto\Desktop\IT\Projects\Stage\Stage PFE\Visit_Management\Front-End\src\pages\timesheet\TimesheetForm.tsx
 ==================================================
+/* eslint-disable react-hooks/rules-of-hooks */
 /* eslint-disable react-hooks/exhaustive-deps */
-// src/pages/timesheet/TimesheetForm.tsx
 import React, { useState, useEffect, useCallback } from "react";
 import { useNavigate } from "react-router-dom";
-import { debounce, set } from "lodash";
+import { debounce } from "lodash";
 import "./TimesheetForm.css";
 import Agent from "../../models/Agent";
 import {
@@ -4895,71 +4292,65 @@ import {
 import { getAllChecklists } from "../../apis/checklistAPI";
 import { getAllReasons } from "../../apis/reasonAPI";
 import { createTimesheet } from "../../apis/timesheetAPI";
+import { getSupervisorByPhone, getAllUsers } from "../../apis/userAPI"; // Assuming getAllUsers can filter supervisors
 import { Checklist } from "../../models/Checklist";
 import { Reason } from "../../models/Reason";
-import { getSupervisorByPhone } from "../../apis/userAPI";
+import { useAuth } from "../../context/AuthContext";
+import User from "../../models/User";
 
 const TimesheetForm: React.FC = () => {
   const navigate = useNavigate();
+  const { user, token } = useAuth(); // Get user and token from AuthContext
   const [date, setDate] = useState<string>("");
   const [time, setTime] = useState<string>("");
   const [locations, setLocations] = useState<string[]>([]);
-  const [permissions, setPermissions] = useState<string[]>([]);
   const [selectedLocation, setSelectedLocation] = useState<string>("");
   const [locationSearch, setLocationSearch] = useState<string>("");
   const [agents, setAgents] = useState<Agent[]>([]);
   const [selectedAgent, setSelectedAgent] = useState<string>("");
   const [agentSearch, setAgentSearch] = useState<string>("");
-  const [agentPhone, setAgentPhone] = useState<string>(""); // Phone input state
+  const [agentPhone, setAgentPhone] = useState<string>("");
   const [reasons, setReasons] = useState<Reason[]>([]);
-  const [selectedReasons, setSelectedReasons] = useState<
-    Array<{ id?: string }>
-  >([]);
+  const [selectedReasons, setSelectedReasons] = useState<Array<{ id?: string }>>([]);
   const [reasonSearch, setReasonSearch] = useState<string>("");
   const [checklists, setChecklists] = useState<Checklist[]>([]);
-  const [selectedChecklists, setSelectedChecklists] = useState<
-    Array<{ id?: string }>
-  >([]);
+  const [selectedChecklists, setSelectedChecklists] = useState<Array<{ id?: string }>>([]);
   const [checklistSearch, setChecklistSearch] = useState<string>("");
   const [loading, setLoading] = useState<boolean>(false);
   const [error, setError] = useState<string | null>(null);
+  
+  // Supervisor-related states
+  const [supervisors, setSupervisors] = useState<User[]>([]);
+  const [selectedSupervisor, setSelectedSupervisor] = useState<string>("");
+  const [supervisorPhone, setSupervisorPhone] = useState<string>("");
+  const [supervisorSearch, setSupervisorSearch] = useState<string>("");
 
-  //current user usr_NS9wWkikBFWEeRH62V2Zi
+  // Check if user exists and has the required permission to access this form
+  if (!user || !token || !user.roles?.some(role => role.permissions?.includes("create_timesheets"))) {
+    navigate("/login");
+    return null;
+  }
 
-  const [supervisorPhoneNumber, setSupervisorPhoneNumber] =
-    useState<string>("");
+  const canValidateTimesheets = user.roles?.some(role => role.permissions?.includes("validate_timesheets"));
+  const supervisorID = canValidateTimesheets && selectedSupervisor ? selectedSupervisor : user.userID;
 
-  const [supervisorID, setSupervisorID] = useState<string>("user_1rgx3l4ra");
-
-  useEffect(() => {
-    const fetchSupervisor = async () => {
-      if (supervisorPhoneNumber) {
-        try {
-          const supervisorID = await getSupervisorByPhone(
-            supervisorPhoneNumber
-          );
-          setSupervisorID(supervisorID);
-        } catch (err) {
-          console.error("Failed to fetch supervisor:", err);
-        }
-      }
-    };
-    fetchSupervisor();
-  }, [supervisorPhoneNumber]);
-
-  // Initial data fetching
+  // Fetch initial data (locations, reasons, checklists, and supervisors if applicable)
   useEffect(() => {
     const fetchData = async () => {
       try {
         setLoading(true);
-        const [locationsData, reasonsData, checklistsData] = await Promise.all([
+        const [locationsData, reasonsData, checklistsData, supervisorsData] = await Promise.all([
           getAgentLocations(),
           getAllReasons(),
           getAllChecklists(),
+          canValidateTimesheets ? getAllUsers(token).then(users => users.filter(u => u.roles?.some(r => r.name === "Supervisor"))) : Promise.resolve([]), // Filter for supervisors
         ]);
         setLocations(locationsData);
         setReasons(reasonsData);
         setChecklists(checklistsData);
+        if (canValidateTimesheets) {
+          setSupervisors(supervisorsData);
+        }
       } catch (err) {
         setError("Failed to load initial data");
         console.error(err);
@@ -4968,9 +4359,9 @@ const TimesheetForm: React.FC = () => {
       }
     };
     fetchData();
-  }, []);
+  }, [token, canValidateTimesheets]);
 
-  // Fetch agents by location (only if no phone is entered)
+  // Fetch agents by location
   useEffect(() => {
     if (selectedLocation && !agentPhone) {
       const fetchAgents = async () => {
@@ -4989,12 +4380,11 @@ const TimesheetForm: React.FC = () => {
     }
   }, [selectedLocation, agentPhone]);
 
-  // Debounced function to fetch agent by phone
+  // Debounced fetch agent by phone
   const fetchAgentByPhone = useCallback(
     debounce(async (phone: string) => {
       if (phone.length < 7) {
-        // Adjust this based on your phone number length requirement
-        setError(null); // Clear error while typing incomplete number
+        setError(null);
         return;
       }
       try {
@@ -5003,7 +4393,7 @@ const TimesheetForm: React.FC = () => {
         setSelectedLocation(agentData.location || "");
         setAgents([agentData]);
         setAgentSearch(`${agentData.name || ""} ${agentData.lastname || ""}`);
-        setError(null); // Clear any previous error
+        setError(null);
       } catch (err) {
         setError("Agent not found with this phone number");
         setSelectedAgent("");
@@ -5011,11 +4401,10 @@ const TimesheetForm: React.FC = () => {
         setSelectedLocation("");
         console.error(err);
       }
-    }, 500), // 500ms debounce delay
+    }, 500),
     []
   );
 
-  // Trigger fetchAgentByPhone when agentPhone changes
   useEffect(() => {
     if (agentPhone) {
       fetchAgentByPhone(agentPhone);
@@ -5024,18 +4413,52 @@ const TimesheetForm: React.FC = () => {
       setAgents([]);
       setSelectedLocation("");
       setAgentSearch("");
-      setError(null); // Clear error when phone is cleared
+      setError(null);
     }
     return () => {
-      fetchAgentByPhone.cancel(); // Cancel debounce on cleanup
+      fetchAgentByPhone.cancel();
     };
   }, [agentPhone, fetchAgentByPhone]);
 
+  // Debounced fetch supervisor by phone
+  const fetchSupervisorByPhone = useCallback(
+    debounce(async (phone: string) => {
+      if (phone.length < 7) {
+        setError(null);
+        return;
+      }
+      try {
+        const supervisorData = await getSupervisorByPhone(phone, token);
+        setSelectedSupervisor(supervisorData);
+        setSupervisors([supervisorData.userID]);
+        setSupervisorSearch(`${supervisorData.firstname || ""} ${supervisorData.lastname || ""}`);
+        setError(null);
+      } catch (err) {
+        setError("Supervisor not found with this phone number");
+        setSelectedSupervisor("");
+        setSupervisors([]);
+        console.error(err);
+      }
+    }, 500),
+    [token]
+  );
+
+  useEffect(() => {
+    if (supervisorPhone && canValidateTimesheets) {
+      fetchSupervisorByPhone(supervisorPhone);
+    } else if (canValidateTimesheets) {
+      setSelectedSupervisor("");
+      setSupervisorSearch("");
+      setError(null);
+    }
+    return () => {
+      fetchSupervisorByPhone.cancel();
+    };
+  }, [supervisorPhone, canValidateTimesheets, fetchSupervisorByPhone]);
+
   const getWeekNumber = (dateStr: string): number => {
     const date = new Date(dateStr);
-    const utcDate = new Date(
-      Date.UTC(date.getUTCFullYear(), date.getUTCMonth(), date.getUTCDate())
-    );
+    const utcDate = new Date(Date.UTC(date.getUTCFullYear(), date.getUTCMonth(), date.getUTCDate()));
     utcDate.setUTCDate(utcDate.getUTCDate() + 4 - (utcDate.getUTCDay() || 7));
     const yearStart = new Date(Date.UTC(utcDate.getUTCFullYear(), 0, 1));
     const diffMs = utcDate.getTime() - yearStart.getTime();
@@ -5053,10 +4476,7 @@ const TimesheetForm: React.FC = () => {
 
   const handleChecklistSelect = (checklist: Checklist) => {
     if (!selectedChecklists.some((c) => c.id === checklist.checklistID)) {
-      setSelectedChecklists([
-        ...selectedChecklists,
-        { id: checklist.checklistID },
-      ]);
+      setSelectedChecklists([...selectedChecklists, { id: checklist.checklistID }]);
     }
     setChecklistSearch("");
   };
@@ -5085,7 +4505,7 @@ const TimesheetForm: React.FC = () => {
     };
 
     try {
-      await createTimesheet(timesheetData);
+      await createTimesheet(timesheetData, token);
       navigate("/timesheet");
     } catch (err) {
       setError("Failed to create timesheet");
@@ -5100,10 +4520,10 @@ const TimesheetForm: React.FC = () => {
     time &&
     selectedAgent &&
     selectedReasons.length > 0 &&
-    selectedChecklists.length > 0;
+    selectedChecklists.length > 0 &&
+    (!canValidateTimesheets || selectedSupervisor); // Require supervisor if user can validate
 
   if (loading && !error) return <div className="loading">Loading...</div>;
-  //if (error && !agentPhone) return <div className="error">{error}</div>; // Only show error if no phone is being typed
 
   return (
     <div className="timesheet-form-container">
@@ -5112,41 +4532,44 @@ const TimesheetForm: React.FC = () => {
       </header>
       <section className="form-card">
         <form onSubmit={handleSubmit}>
-          {permission === "create_timesheet_to_supervisor" && (
+          {canValidateTimesheets && (
             <div className="form-group">
-              <label htmlFor="supervisorPhoneNumber">
-                Supervisor Phone Number
-              </label>
+              <label htmlFor="supervisor">Supervisor</label>
               <input
                 type="text"
-                placeholder="Search supervisors..."
-                value={supervisorPhoneNumber}
-                onChange={(e) => setSupervisorPhoneNumber(e.target.value)}
+                placeholder="Search supervisors by name..."
+                value={supervisorSearch}
+                onChange={(e) => setSupervisorSearch(e.target.value)}
+                className="search-input"
+              />
+              <input
+                type="tel"
+                placeholder="Or enter supervisor phone number..."
+                value={supervisorPhone}
+                onChange={(e) => setSupervisorPhone(e.target.value)}
                 className="search-input"
               />
               <select
-                id="agent"
-                value={selectedAgent}
-                onChange={(e) => setSelectedAgent(e.target.value)}
-                disabled={!!agentPhone || !selectedLocation} // Disabled if phone is entered OR location is not selected
+                id="supervisor"
+                value={selectedSupervisor}
+                onChange={(e) => setSelectedSupervisor(e.target.value)}
                 required
-                aria-label="Select an agent"
+                aria-label="Select a supervisor"
               >
-                <option value="">Select an agent</option>
-                {agents
-                  .filter((agent) =>
-                    `${agent.name || ""} ${agent.lastname || ""} ${
-                      agent.phone || ""
-                    }`
+                <option value="">Select a supervisor</option>
+                {supervisors
+                  .filter((supervisor) =>
+                    `${supervisor.firstname || ""} ${supervisor.lastname || ""} ${supervisor.phone || ""}`
                       .toLowerCase()
-                      .includes(agentSearch.toLowerCase())
+                      .includes(supervisorSearch.toLowerCase())
                   )
-                  .map((agent) => (
-                    <option key={agent.agentID} value={agent.agentID}>
-                      {agent.name} {agent.lastname} {agent.phone}
+                  .map((supervisor) => (
+                    <option key={supervisor.userID} value={supervisor.userID}>
+                      {supervisor.firstname} {supervisor.lastname} ({supervisor.phone})
                     </option>
                   ))}
               </select>
+              {error && supervisorPhone && <span className="error-text">{error}</span>}
             </div>
           )}
           <div className="form-group">
@@ -5179,8 +4602,7 @@ const TimesheetForm: React.FC = () => {
               onChange={(e) => setAgentPhone(e.target.value)}
               className="search-input"
             />
-            {error && agentPhone && <span className="error-text">{error}</span>}{" "}
-            {/* Show error only if phone is entered */}
+            {error && agentPhone && <span className="error-text">{error}</span>}
           </div>
           <div className="form-group">
             <label htmlFor="location">Location</label>
@@ -5190,7 +4612,7 @@ const TimesheetForm: React.FC = () => {
               value={locationSearch}
               onChange={(e) => setLocationSearch(e.target.value)}
               className="search-input"
-              disabled={!!agentPhone} // Disable if phone is used
+              disabled={!!agentPhone}
             />
             <select
               id="location"
@@ -5198,13 +4620,11 @@ const TimesheetForm: React.FC = () => {
               onChange={(e) => setSelectedLocation(e.target.value)}
               required
               aria-label="Select a location"
-              disabled={!!agentPhone} // Disable if phone is used
+              disabled={!!agentPhone}
             >
               <option value="">Select a location</option>
               {locations
-                .filter((loc) =>
-                  loc.toLowerCase().includes(locationSearch.toLowerCase())
-                )
+                .filter((loc) => loc.toLowerCase().includes(locationSearch.toLowerCase()))
                 .map((loc) => (
                   <option key={loc} value={loc}>
                     {loc}
@@ -5219,23 +4639,21 @@ const TimesheetForm: React.FC = () => {
               placeholder="Search agents..."
               value={agentSearch}
               onChange={(e) => setAgentSearch(e.target.value)}
-              disabled={!!agentPhone || !selectedLocation} // Disabled if phone is entered OR location is not selected
+              disabled={!!agentPhone || !selectedLocation}
               className="search-input"
             />
             <select
               id="agent"
               value={selectedAgent}
               onChange={(e) => setSelectedAgent(e.target.value)}
-              disabled={!!agentPhone || !selectedLocation} // Disabled if phone is entered OR location is not selected
+              disabled={!!agentPhone || !selectedLocation}
               required
               aria-label="Select an agent"
             >
               <option value="">Select an agent</option>
               {agents
                 .filter((agent) =>
-                  `${agent.name || ""} ${agent.lastname || ""} ${
-                    agent.phone || ""
-                  }`
+                  `${agent.name || ""} ${agent.lastname || ""} ${agent.phone || ""}`
                     .toLowerCase()
                     .includes(agentSearch.toLowerCase())
                 )
@@ -5258,18 +4676,14 @@ const TimesheetForm: React.FC = () => {
             <select
               value=""
               onChange={(e) => {
-                const reason = reasons.find(
-                  (r) => r.reasonID === e.target.value
-                );
+                const reason = reasons.find((r) => r.reasonID === e.target.value);
                 if (reason) handleReasonSelect(reason);
               }}
               aria-label="Select a reason"
             >
               <option value="">Select a reason</option>
               {reasons
-                .filter((reason) =>
-                  reason.item.toLowerCase().includes(reasonSearch.toLowerCase())
-                )
+                .filter((reason) => reason.item.toLowerCase().includes(reasonSearch.toLowerCase()))
                 .map((reason) => (
                   <option key={reason.reasonID} value={reason.reasonID}>
                     {reason.item}
@@ -5281,11 +4695,7 @@ const TimesheetForm: React.FC = () => {
                 <span
                   key={index}
                   className="selected-item"
-                  onClick={() =>
-                    setSelectedReasons(
-                      selectedReasons.filter((_, i) => i !== index)
-                    )
-                  }
+                  onClick={() => setSelectedReasons(selectedReasons.filter((_, i) => i !== index))}
                 >
                   {reasons.find((r) => r.reasonID === reason.id)?.item} ×
                 </span>
@@ -5304,25 +4714,16 @@ const TimesheetForm: React.FC = () => {
             <select
               value=""
               onChange={(e) => {
-                const checklist = checklists.find(
-                  (c) => c.checklistID === e.target.value
-                );
+                const checklist = checklists.find((c) => c.checklistID === e.target.value);
                 if (checklist) handleChecklistSelect(checklist);
               }}
               aria-label="Select a checklist"
             >
               <option value="">Select a checklist</option>
               {checklists
-                .filter((checklist) =>
-                  checklist.item
-                    .toLowerCase()
-                    .includes(checklistSearch.toLowerCase())
-                )
+                .filter((checklist) => checklist.item.toLowerCase().includes(checklistSearch.toLowerCase()))
                 .map((checklist) => (
-                  <option
-                    key={checklist.checklistID}
-                    value={checklist.checklistID}
-                  >
+                  <option key={checklist.checklistID} value={checklist.checklistID}>
                     {checklist.item}
                   </option>
                 ))}
@@ -5332,14 +4733,9 @@ const TimesheetForm: React.FC = () => {
                 <span
                   key={index}
                   className="selected-item"
-                  onClick={() =>
-                    setSelectedChecklists(
-                      selectedChecklists.filter((_, i) => i !== index)
-                    )
-                  }
+                  onClick={() => setSelectedChecklists(selectedChecklists.filter((_, i) => i !== index))}
                 >
-                  {checklists.find((c) => c.checklistID === checklist.id)?.item}{" "}
-                  ×
+                  {checklists.find((c) => c.checklistID === checklist.id)?.item} ×
                 </span>
               ))}
             </div>
@@ -5361,9 +4757,8 @@ const TimesheetForm: React.FC = () => {
 
 export default TimesheetForm;
 
-
 ==================================================
-File contents: C:\Users\Kayto\Desktop\IT\Projects\Stage\Stage PFE\TraceFlow\Front-End\src\pages\timesheet\Timesheets.css
+File contents: C:\Users\Kayto\Desktop\IT\Projects\Stage\Stage PFE\Visit_Management\Front-End\src\pages\timesheet\Timesheets.css
 ==================================================
 @import url('https://fonts.googleapis.com/css2?family=Inter:wght@400;600;700&display=swap');
 
@@ -5967,7 +5362,7 @@ html {
 }
 
 ==================================================
-File contents: C:\Users\Kayto\Desktop\IT\Projects\Stage\Stage PFE\TraceFlow\Front-End\src\pages\timesheet\Timesheets.tsx
+File contents: C:\Users\Kayto\Desktop\IT\Projects\Stage\Stage PFE\Visit_Management\Front-End\src\pages\timesheet\Timesheets.tsx
 ==================================================
 /* eslint-disable react-hooks/exhaustive-deps */
 import React, { useEffect, useState } from "react";
@@ -5977,10 +5372,10 @@ import Timesheet from "../../models/Timesheet";
 import { getTimesheetsBySupervisor } from "../../apis/timesheetAPI"; 
 import Visit from "../../models/Visit";
 import { FaClock, FaMapMarkerAlt } from "react-icons/fa";
+import { useAuth } from "../../context/AuthContext";
 
 type ViewMode = "year" | "month" | "week" | "day";
 
-// Main component for displaying timesheets in various views (Year, Month, Week, Day)
 const Timesheets: React.FC = () => {
   const [timesheets, setTimesheets] = useState<Timesheet[]>([]);
   const [currentYear, setCurrentYear] = useState(new Date().getFullYear());
@@ -5992,15 +5387,21 @@ const Timesheets: React.FC = () => {
   });
   const [loading, setLoading] = useState<boolean>(true);
   const navigate = useNavigate();
+  const { user, token } = useAuth(); // Get user and token from AuthContext
 
-  const supervisorID = "user_001"; // Replace with desired supervisor ID
+  // Check if user exists and has the required permission
+  if (!user || !token || !user.roles?.some(role => role.permissions?.includes("access_timesheets"))) {
+    navigate("/login"); // Redirect to login if unauthorized
+    return null;
+  }
 
-  // Fetch timesheets when the year changes
+  const supervisorID = user.userID; // Use authenticated user's ID dynamically
+
   useEffect(() => {
     const fetchTimesheets = async () => {
       try {
         setLoading(true);
-        const data = await getTimesheetsBySupervisor(supervisorID);
+        const data = await getTimesheetsBySupervisor(supervisorID, token); // Pass token for auth
         setTimesheets(data.filter((ts) => ts.year === currentYear || (ts.year === currentYear - 1 && ts.weekNumber >= 52)));
       } catch (error) {
         console.error("Failed to fetch timesheets:", error);
@@ -6010,52 +5411,43 @@ const Timesheets: React.FC = () => {
     };
     fetchTimesheets();
     updateCurrentWeekAndDay();
-  }, [currentYear]);
+  }, [currentYear, supervisorID, token]);
 
-  // Persist view mode to localStorage whenever it changes
   useEffect(() => {
     localStorage.setItem("lastViewMode", viewMode);
   }, [viewMode]);
 
-  // Utility to get ISO week number for a date
   const getWeekNumber = (date: Date): number => {
     const year = date.getFullYear();
     const jan1 = new Date(year, 0, 1);
     const firstFridayOffset = (5 - jan1.getDay() + 7) % 7;
     const firstMonday = new Date(year, 0, 1 + firstFridayOffset - 4);
-  
     const diffMs = date.getTime() - firstMonday.getTime();
     const diffDays = Math.floor(diffMs / (1000 * 60 * 60 * 24));
     const weekNum = Math.floor(diffDays / 7) + 1;
-  
-    // Check if the week belongs to the next year
     const nextJan1 = new Date(year + 1, 0, 1);
     const nextFirstFridayOffset = (5 - nextJan1.getDay() + 7) % 7;
     const nextFirstMonday = new Date(year + 1, 0, 1 + nextFirstFridayOffset - 4);
     if (date >= nextFirstMonday) {
-      return getWeekNumber(date); // Recalculate for next year (this could be optimized)
+      return getWeekNumber(date);
     }
-  
-    return weekNum > 0 && weekNum <= getWeeksInYear(year) ? weekNum : 1; // Clamp to valid range
+    return weekNum > 0 && weekNum <= getWeeksInYear(year) ? weekNum : 1;
   };
-  // Get total ISO weeks in a year
+
   const getWeeksInYear = (year: number): number => {
     const jan1 = new Date(year, 0, 1);
     const firstFridayOffset = (5 - jan1.getDay() + 7) % 7;
-    const firstMonday = new Date(year, 0, 1 + firstFridayOffset - 4); // Monday of Week 1
-  
+    const firstMonday = new Date(year, 0, 1 + firstFridayOffset - 4);
     const nextJan1 = new Date(year + 1, 0, 1);
     const nextFirstFridayOffset = (5 - nextJan1.getDay() + 7) % 7;
-    const nextFirstMonday = new Date(year + 1, 0, 1 + nextFirstFridayOffset - 4); // Monday of Week 1 of next year
-  
+    const nextFirstMonday = new Date(year + 1, 0, 1 + nextFirstFridayOffset - 4);
     const daysInYear = (nextFirstMonday.getTime() - firstMonday.getTime()) / (1000 * 60 * 60 * 24);
     return Math.floor(daysInYear / 7);
   };
 
-  // Update current week and day, ensuring day is a weekday (Monday-Friday)
   const updateCurrentWeekAndDay = () => {
     const today = new Date();
-    const weekNum = getWeekNumber(today); // Now using getWeekNumber
+    const weekNum = getWeekNumber(today);
     setCurrentWeek(weekNum);
     setCurrentDay(
       today.getDay() === 0 || today.getDay() === 6
@@ -6063,17 +5455,15 @@ const Timesheets: React.FC = () => {
         : today
     );
   };
-  // Generate array of weekdays (Monday-Friday) for a given week
+
   const getWeekDays = (year: number, weekNumber: number): Date[] => {
     const jan1 = new Date(year, 0, 1);
-    const firstFridayOffset = (5 - jan1.getDay() + 7) % 7; // Days from Jan 1 to first Friday (5 = Friday)
-    const firstFriday = new Date(year, 0, 1 + firstFridayOffset); // First Friday in January
+    const firstFridayOffset = (5 - jan1.getDay() + 7) % 7;
+    const firstFriday = new Date(year, 0, 1 + firstFridayOffset);
     const firstMonday = new Date(firstFriday);
-    firstMonday.setDate(firstFriday.getDate() - 4); // Monday of the week containing the first Friday
-  
+    firstMonday.setDate(firstFriday.getDate() - 4);
     const weekStart = new Date(firstMonday);
     weekStart.setDate(firstMonday.getDate() + (weekNumber - 1) * 7);
-  
     return Array.from({ length: 5 }, (_, i) => {
       const day = new Date(weekStart);
       day.setDate(weekStart.getDate() + i);
@@ -6082,25 +5472,19 @@ const Timesheets: React.FC = () => {
     });
   };
 
-  // Utility to sort visits by time (e.g., "09:00" < "14:00")
   const sortVisitsByTime = (visits: Visit[]): Visit[] => {
     return [...visits].sort((a, b) => a.time.localeCompare(b.time));
   };
 
-  // Data generation functions for each view
   const generateYearData = () => {
     const weeksInYear = getWeeksInYear(currentYear);
     const months: { month: number; weeks: { weekNumber: number; days: Date[]; visits: Visit[]; status: string }[] }[] = Array.from({ length: 12 }, (_, m) => ({ month: m, weeks: [] }));
-  
     for (let week = 1; week <= weeksInYear; week++) {
       const days = getWeekDays(currentYear, week);
       let assignedMonth: number;
-  
-      // Special case: Week 1 always belongs to January (month 0)
       if (week === 1) {
-        assignedMonth = 0; // January
+        assignedMonth = 0;
       } else {
-        // For other weeks, use the dominant month based on day count
         const monthCounts = days.reduce((acc, day) => {
           const month = day.getMonth();
           acc[month] = (acc[month] || 0) + 1;
@@ -6110,7 +5494,6 @@ const Timesheets: React.FC = () => {
           Object.entries(monthCounts).reduce((a, b) => (b[1] > a[1] ? b : a))[0]
         );
       }
-  
       const timesheet = timesheets.find((ts) => ts.weekNumber === week && ts.year === currentYear);
       months[assignedMonth].weeks.push({
         weekNumber: week,
@@ -6121,10 +5504,10 @@ const Timesheets: React.FC = () => {
     }
     return months;
   };
+
   const generateMonthData = () => {
     const weeksInYear = getWeeksInYear(currentYear);
     const weeks: { weekNumber: number; days: Date[]; visits: Visit[]; status: string }[] = [];
-  
     for (let week = 1; week <= weeksInYear; week++) {
       const days = getWeekDays(currentYear, week);
       const hasDaysInMonth = days.some((day) => day.getMonth() === currentMonth && day.getFullYear() === currentYear);
@@ -6140,6 +5523,7 @@ const Timesheets: React.FC = () => {
     }
     return weeks;
   };
+
   const generateWeekData = () => {
     const timesheet = timesheets.find((ts) => ts.weekNumber === currentWeek);
     return {
@@ -6149,6 +5533,7 @@ const Timesheets: React.FC = () => {
       status: timesheet?.status || "Not Scheduled",
     };
   };
+
   const generateDayData = () => {
     if (!currentDay) return [];
     const dateStr = currentDay.toISOString().split("T")[0];
@@ -6158,7 +5543,6 @@ const Timesheets: React.FC = () => {
     return sortVisitsByTime(visits);
   };
 
-  // Scroll to the current period based on view mode
   const scrollToCurrent = () => {
     const today = new Date();
     setCurrentYear(today.getFullYear());
@@ -6182,7 +5566,6 @@ const Timesheets: React.FC = () => {
 
   return (
     <div className="timesheets-container">
-      {/* Header with view toggle, year navigation, and action buttons */}
       <header className="timesheets-header">
         <div className="view-toggle">
           {["year", "month", "week", "day"].map((mode) => (
@@ -6214,7 +5597,6 @@ const Timesheets: React.FC = () => {
         </div>
       </header>
 
-      {/* Year View: Displays all months with their weeks */}
       {viewMode === "year" && (
         <section className="year-view">
           {generateYearData().map(({ month, weeks }) => (
@@ -6230,10 +5612,10 @@ const Timesheets: React.FC = () => {
                       setViewMode("week");
                     }}
                   >
-                    <span className="week-number">Week {week.weekNumber} :&nbsp;&nbsp;&nbsp;&nbsp;</span> 
+                    <span className="week-number">Week {week.weekNumber} : </span> 
                     <span className="week-range">
                       {week.days[0].toLocaleDateString("en-GB", { day: "numeric", month: "short" })} -{" "}
-                      {week.days[4].toLocaleDateString("en-GB", { day: "numeric", month: "short" })} &nbsp;&nbsp;/&nbsp;
+                      {week.days[4].toLocaleDateString("en-GB", { day: "numeric", month: "short" })} / 
                     </span> 
                     <span className="visit-count">{week.visits.length} Visits</span>
                   </div>
@@ -6244,7 +5626,6 @@ const Timesheets: React.FC = () => {
         </section>
       )}
 
-      {/* Month View: Displays weeks of the selected month */}
       {viewMode === "month" && (
         <section className="month-view">
           <div className="month-header">
@@ -6279,21 +5660,14 @@ const Timesheets: React.FC = () => {
         </section>
       )}
 
-      {/* Week View: Displays days with their respective visits */}
       {viewMode === "week" && (
         <section className="week-view">
           <div className="week-header">
-          <button
-              className="nav-btn"
-              onClick={() => setCurrentWeek((prev) => Math.max(1, prev - 1))}
-            >
+            <button className="nav-btn" onClick={() => setCurrentWeek((prev) => Math.max(1, prev - 1))}>
               <span>←</span>
             </button>
             <h2>Week {currentWeek}</h2>
-            <button
-              className="nav-btn"
-              onClick={() => setCurrentWeek((prev) => Math.min(getWeeksInYear(currentYear), prev + 1))}
-            >
+            <button className="nav-btn" onClick={() => setCurrentWeek((prev) => Math.min(getWeeksInYear(currentYear), prev + 1))}>
               <span>→</span>
             </button>
           </div>
@@ -6355,7 +5729,6 @@ const Timesheets: React.FC = () => {
                                   <p className="visit-location">
                                     <FaMapMarkerAlt /> {visit.location}
                                   </p>
-                                  {/* Display reasons if they exist */}
                                   {visit.Reasons && visit.Reasons.length > 0 && (
                                     <p className="visit-reasons">
                                       Reasons: {visit.Reasons.map((reason) => reason.item).join(", ")}
@@ -6378,17 +5751,12 @@ const Timesheets: React.FC = () => {
         </section>
       )}
 
-      {/* Day View: Displays visits for the selected day */}
       {viewMode === "day" && (
         <section className="day-view">
           <div className="day-header">
-            <button
-              className="nav-btn"
-              onClick={() => currentDay && setCurrentDay(new Date(currentDay.setDate(currentDay.getDate() - 1)))}
-            >
+            <button className="nav-btn" onClick={() => currentDay && setCurrentDay(new Date(currentDay.setDate(currentDay.getDate() - 1)))}>
               <span>←</span>
             </button>
-            {/* Updated day view header format */}
             <h2>
               {currentDay?.toLocaleDateString("en-GB", {
                 weekday: "short",
@@ -6396,10 +5764,7 @@ const Timesheets: React.FC = () => {
                 month: "2-digit",
               }).replace(/(\w+)\s(\d+)\/(\d+)/, "$1 $2/$3")}
             </h2>
-            <button
-              className="nav-btn"
-              onClick={() => currentDay && setCurrentDay(new Date(currentDay.setDate(currentDay.getDate() + 1)))}
-            >
+            <button className="nav-btn" onClick={() => currentDay && setCurrentDay(new Date(currentDay.setDate(currentDay.getDate() + 1)))}>
               <span>→</span>
             </button>
           </div>
@@ -6412,7 +5777,6 @@ const Timesheets: React.FC = () => {
                   onClick={() => navigate(`/visit/${visit.visitID}`)}
                 >
                   <div className="visit-header">
-                    {/* Show time only if not null, format to HH:MM */}
                     {visit.time && (
                       <span className="visit-time">
                         <FaClock /> {visit.time.split(":").slice(0, 2).join(":")}
@@ -6425,7 +5789,6 @@ const Timesheets: React.FC = () => {
                   <p className="visit-location">
                     <FaMapMarkerAlt /> {visit.location || "Location TBD"}
                   </p>
-                  {/* Display reasons if they exist */}
                   {visit.Reasons && visit.Reasons.length > 0 && (
                     <p className="visit-reasons">
                       Reasons: {visit.Reasons.map((reason) => reason.item).join(", ")}
@@ -6446,7 +5809,7 @@ const Timesheets: React.FC = () => {
 export default Timesheets;
 
 ==================================================
-File contents: C:\Users\Kayto\Desktop\IT\Projects\Stage\Stage PFE\TraceFlow\Front-End\src\pages\timesheet\TimesheetValidation.css
+File contents: C:\Users\Kayto\Desktop\IT\Projects\Stage\Stage PFE\Visit_Management\Front-End\src\pages\timesheet\TimesheetValidation.css
 ==================================================
 /* src/pages/timesheet/TimesheetValidation.css */
 @import url('https://fonts.googleapis.com/css2?family=Inter:wght@400;600;700&display=swap');
@@ -7175,7 +6538,7 @@ File contents: C:\Users\Kayto\Desktop\IT\Projects\Stage\Stage PFE\TraceFlow\Fron
 }
 
 ==================================================
-File contents: C:\Users\Kayto\Desktop\IT\Projects\Stage\Stage PFE\TraceFlow\Front-End\src\pages\timesheet\TimesheetValidation.tsx
+File contents: C:\Users\Kayto\Desktop\IT\Projects\Stage\Stage PFE\Visit_Management\Front-End\src\pages\timesheet\TimesheetValidation.tsx
 ==================================================
 import React, { useEffect, useState } from "react";
 import { useNavigate } from "react-router-dom";
@@ -7715,7 +7078,7 @@ const TimesheetValidation: React.FC = () => {
 export default TimesheetValidation;
 
 ==================================================
-File contents: C:\Users\Kayto\Desktop\IT\Projects\Stage\Stage PFE\TraceFlow\Front-End\src\pages\timesheet\TimesheetValidationDetail.css
+File contents: C:\Users\Kayto\Desktop\IT\Projects\Stage\Stage PFE\Visit_Management\Front-End\src\pages\timesheet\TimesheetValidationDetail.css
 ==================================================
 /* src/pages/timesheet/VisitValidationDetail.css */
 @import url('https://fonts.googleapis.com/css2?family=Inter:wght@400;600;700&display=swap');
@@ -7858,7 +7221,7 @@ File contents: C:\Users\Kayto\Desktop\IT\Projects\Stage\Stage PFE\TraceFlow\Fron
 }
 
 ==================================================
-File contents: C:\Users\Kayto\Desktop\IT\Projects\Stage\Stage PFE\TraceFlow\Front-End\src\pages\timesheet\TimesheetValidationDetail.tsx
+File contents: C:\Users\Kayto\Desktop\IT\Projects\Stage\Stage PFE\Visit_Management\Front-End\src\pages\timesheet\TimesheetValidationDetail.tsx
 ==================================================
 import React, { useState, useEffect } from "react";
 import { useParams, useNavigate } from "react-router-dom";
@@ -8000,7 +7363,7 @@ const VisitValidationDetail: React.FC = () => {
 export default VisitValidationDetail;
 
 ==================================================
-File contents: C:\Users\Kayto\Desktop\IT\Projects\Stage\Stage PFE\TraceFlow\Front-End\src\pages\visit\QRScan.css
+File contents: C:\Users\Kayto\Desktop\IT\Projects\Stage\Stage PFE\Visit_Management\Front-End\src\pages\visit\QRScan.css
 ==================================================
 /* src/pages/visit/QRScan.css */
 @import url('https://fonts.googleapis.com/css2?family=Inter:wght@400;600;700&display=swap');
@@ -8278,7 +7641,7 @@ File contents: C:\Users\Kayto\Desktop\IT\Projects\Stage\Stage PFE\TraceFlow\Fron
 }
 
 ==================================================
-File contents: C:\Users\Kayto\Desktop\IT\Projects\Stage\Stage PFE\TraceFlow\Front-End\src\pages\visit\QRScan.tsx
+File contents: C:\Users\Kayto\Desktop\IT\Projects\Stage\Stage PFE\Visit_Management\Front-End\src\pages\visit\QRScan.tsx
 ==================================================
 // src/pages/visit/QRScan.tsx
 import React, { useEffect, useState, useRef } from "react";
@@ -8456,7 +7819,7 @@ const QRScan: React.FC = () => {
 export default QRScan;
 
 ==================================================
-File contents: C:\Users\Kayto\Desktop\IT\Projects\Stage\Stage PFE\TraceFlow\Front-End\src\pages\visit\VisitDetails.css
+File contents: C:\Users\Kayto\Desktop\IT\Projects\Stage\Stage PFE\Visit_Management\Front-End\src\pages\visit\VisitDetails.css
 ==================================================
 /* src/pages/visit/VisitDetails.css */
 @import url('https://fonts.googleapis.com/css2?family=Inter:wght@400;600;700&display=swap');
@@ -8788,7 +8151,7 @@ File contents: C:\Users\Kayto\Desktop\IT\Projects\Stage\Stage PFE\TraceFlow\Fron
 }
 
 ==================================================
-File contents: C:\Users\Kayto\Desktop\IT\Projects\Stage\Stage PFE\TraceFlow\Front-End\src\pages\visit\VisitDetails.tsx
+File contents: C:\Users\Kayto\Desktop\IT\Projects\Stage\Stage PFE\Visit_Management\Front-End\src\pages\visit\VisitDetails.tsx
 ==================================================
 // src/pages/visit/VisitDetails.tsx
 import React, { useState, useEffect } from "react";
@@ -8973,7 +8336,7 @@ const VisitDetails: React.FC = () => {
 export default VisitDetails;
 
 ==================================================
-File contents: C:\Users\Kayto\Desktop\IT\Projects\Stage\Stage PFE\TraceFlow\Front-End\src\pages\visit\VisitValidation.css
+File contents: C:\Users\Kayto\Desktop\IT\Projects\Stage\Stage PFE\Visit_Management\Front-End\src\pages\visit\VisitValidation.css
 ==================================================
 /* src/pages/visit/VisitValidationChecklist.css */
 @import url('https://fonts.googleapis.com/css2?family=Inter:wght@400;600;700&display=swap');
@@ -9347,7 +8710,7 @@ File contents: C:\Users\Kayto\Desktop\IT\Projects\Stage\Stage PFE\TraceFlow\Fron
 }
 
 ==================================================
-File contents: C:\Users\Kayto\Desktop\IT\Projects\Stage\Stage PFE\TraceFlow\Front-End\src\pages\visit\VisitValidation.tsx
+File contents: C:\Users\Kayto\Desktop\IT\Projects\Stage\Stage PFE\Visit_Management\Front-End\src\pages\visit\VisitValidation.tsx
 ==================================================
 import React, { useState, useEffect } from "react";
 import { useParams, useNavigate } from "react-router-dom";

@@ -52,14 +52,21 @@ export type LoginResponse = { token: string; user: User };
 export type CreateUserResponse = User;
 export type ListUsersResponse = User[];
 export type UserByIdResponse = User;
-export type UpdateUserResponse = User; // Added for updateUser
-export type DeleteUserResponse = void; // Added for deleteUser
+export type UpdateUserResponse = User;
+export type DeleteUserResponse = void;
 export type AssignRolesResponse = {
   userID: string;
   assignedRoles: string[];
   totalAssigned: number;
 };
 export type RolesByUserResponse = Role[];
+export type SupervisorsByUserResponse = User[]; 
+export type ManagersByUserResponse = User[];
+export type AssignSupervisorsResponse = {
+  managerID: string;
+  assignedSupervisors: string[];
+  message: string;
+};
 
 // Role API Responses
 export type CreateRoleResponse = Role;

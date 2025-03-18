@@ -15,5 +15,7 @@ router.delete('/:userID', authenticateJWT, requirePermission('delete_users'), Us
 router.post('/:userID/roles', authenticateJWT, requirePermission('assign_roles'), UserController.assignRolesToUser);
 router.get('/:userID/roles', authenticateJWT, requirePermission('read_roles'), UserController.getRolesByUser);
 router.post('/assign-supervisors', authenticateJWT, requirePermission('assign_supervisors'), UserController.assignSupervisorsToManager);
+router.get('/:userID/supervisors', authenticateJWT, requirePermission('read_supervisors'), UserController.getSupervisorsByUser);
+router.get('/:userID/managers', authenticateJWT, requirePermission('read_managers'), UserController.getManagersByUser);
 
 module.exports = router;

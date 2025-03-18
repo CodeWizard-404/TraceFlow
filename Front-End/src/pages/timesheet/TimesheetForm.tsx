@@ -13,15 +13,17 @@ import {
 import { getAllChecklists } from "../../apis/checklistAPI";
 import { getAllReasons } from "../../apis/reasonAPI";
 import { createTimesheet } from "../../apis/timesheetAPI";
-import { getSupervisorByPhone, getAllUsers } from "../../apis/userAPI"; // Assuming getAllUsers can filter supervisors
+import { getSupervisorByPhone, getSupervisorsByUser } from "../../apis/userAPI"; // Replace getAllUsers with getSupervisorsByUser
 import { Checklist } from "../../models/Checklist";
 import { Reason } from "../../models/Reason";
 import { useAuth } from "../../context/AuthContext";
+import { useError } from "../../context/ErrorContext";
 import User from "../../models/User";
 
 const TimesheetForm: React.FC = () => {
   const navigate = useNavigate();
-  const { user, token } = useAuth(); // Get user and token from AuthContext
+  const { user, token } = useAuth();
+  const { setError } = useError();
   const [date, setDate] = useState<string>("");
   const [time, setTime] = useState<string>("");
   const [locations, setLocations] = useState<string[]>([]);
@@ -38,49 +40,49 @@ const TimesheetForm: React.FC = () => {
   const [selectedChecklists, setSelectedChecklists] = useState<Array<{ id?: string }>>([]);
   const [checklistSearch, setChecklistSearch] = useState<string>("");
   const [loading, setLoading] = useState<boolean>(false);
-  const [error, setError] = useState<string | null>(null);
-  
-  // Supervisor-related states
   const [supervisors, setSupervisors] = useState<User[]>([]);
   const [selectedSupervisor, setSelectedSupervisor] = useState<string>("");
   const [supervisorPhone, setSupervisorPhone] = useState<string>("");
   const [supervisorSearch, setSupervisorSearch] = useState<string>("");
 
-  // Check if user exists and has the required permission to access this form
-  if (!user || !token || !user.roles?.some(role => role.permissions?.includes("create_timesheets"))) {
-    navigate("/login");
-    return null;
-  }
+  // Redirect if user is not authenticated or lacks permission
+  useEffect(() => {
+    if (!user || !token || !user.roles?.some(role => role.permissions?.includes("create_timesheets"))) {
+      navigate("/login");
+    }
+  }, [user, token, navigate]);
+
+  if (!user || !token) return null;
 
   const canValidateTimesheets = user.roles?.some(role => role.permissions?.includes("validate_timesheets"));
   const supervisorID = canValidateTimesheets && selectedSupervisor ? selectedSupervisor : user.userID;
 
-  // Fetch initial data (locations, reasons, checklists, and supervisors if applicable)
+  // Fetch initial data
   useEffect(() => {
     const fetchData = async () => {
+      setLoading(true);
       try {
-        setLoading(true);
         const [locationsData, reasonsData, checklistsData, supervisorsData] = await Promise.all([
           getAgentLocations(),
           getAllReasons(),
           getAllChecklists(),
-          canValidateTimesheets ? getAllUsers(token).then(users => users.filter(u => u.roles?.some(r => r.name === "Supervisor"))) : Promise.resolve([]), // Filter for supervisors
+          canValidateTimesheets
+            ? getSupervisorsByUser(user.userID, token) // Fetch supervisors assigned to the logged-in user
+            : Promise.resolve([]),
         ]);
         setLocations(locationsData);
         setReasons(reasonsData);
         setChecklists(checklistsData);
-        if (canValidateTimesheets) {
-          setSupervisors(supervisorsData);
-        }
+        if (canValidateTimesheets) setSupervisors(supervisorsData);
       } catch (err) {
-        setError("Failed to load initial data");
-        console.error(err);
+        setError("Failed to load initial data. Please try again.");
+        console.error("Fetch data error:", err);
       } finally {
         setLoading(false);
       }
     };
     fetchData();
-  }, [token, canValidateTimesheets]);
+  }, [token, canValidateTimesheets, user.userID, setError]);
 
   // Fetch agents by location
   useEffect(() => {
@@ -91,7 +93,7 @@ const TimesheetForm: React.FC = () => {
           setAgents(agentsData);
         } catch (err) {
           setError(`Failed to load agents for ${selectedLocation}`);
-          console.error(err);
+          console.error("Fetch agents error:", err);
         }
       };
       fetchAgents();
@@ -99,82 +101,66 @@ const TimesheetForm: React.FC = () => {
       setAgents([]);
       setSelectedAgent("");
     }
-  }, [selectedLocation, agentPhone]);
+  }, [selectedLocation, agentPhone, setError]);
 
   // Debounced fetch agent by phone
   const fetchAgentByPhone = useCallback(
     debounce(async (phone: string) => {
-      if (phone.length < 7) {
-        setError(null);
-        return;
-      }
+      if (phone.length < 7) return;
       try {
         const agentData = await getAgentByPhone(phone);
         setSelectedAgent(agentData.agentID);
         setSelectedLocation(agentData.location || "");
         setAgents([agentData]);
         setAgentSearch(`${agentData.name || ""} ${agentData.lastname || ""}`);
-        setError(null);
       } catch (err) {
         setError("Agent not found with this phone number");
         setSelectedAgent("");
         setAgents([]);
         setSelectedLocation("");
-        console.error(err);
+        console.error("Fetch agent by phone error:", err);
       }
     }, 500),
-    []
+    [setError]
   );
 
   useEffect(() => {
-    if (agentPhone) {
-      fetchAgentByPhone(agentPhone);
-    } else {
+    if (agentPhone) fetchAgentByPhone(agentPhone);
+    else {
       setSelectedAgent("");
       setAgents([]);
       setSelectedLocation("");
       setAgentSearch("");
-      setError(null);
     }
-    return () => {
-      fetchAgentByPhone.cancel();
-    };
+    return () => fetchAgentByPhone.cancel();
   }, [agentPhone, fetchAgentByPhone]);
 
   // Debounced fetch supervisor by phone
   const fetchSupervisorByPhone = useCallback(
     debounce(async (phone: string) => {
-      if (phone.length < 7) {
-        setError(null);
-        return;
-      }
+      if (phone.length < 7) return;
       try {
-        const supervisorData = await getSupervisorByPhone(phone, token);
-        setSelectedSupervisor(supervisorData);
-        setSupervisors([supervisorData.userID]);
-        setSupervisorSearch(`${supervisorData.firstname || ""} ${supervisorData.lastname || ""}`);
-        setError(null);
+        const supervisorID = await getSupervisorByPhone(phone, token);
+        const supervisor = supervisors.find(s => s.userID === supervisorID) || { userID: supervisorID, firstname: "", lastname: "", phone };
+        setSelectedSupervisor(supervisorID);
+        setSupervisors(prev => prev.some(s => s.userID === supervisorID) ? prev : [...prev, supervisor]);
+        setSupervisorSearch(`${supervisor.firstname || ""} ${supervisor.lastname || ""}`);
       } catch (err) {
         setError("Supervisor not found with this phone number");
         setSelectedSupervisor("");
-        setSupervisors([]);
-        console.error(err);
+        console.error("Fetch supervisor by phone error:", err);
       }
     }, 500),
-    [token]
+    [token, supervisors, setError]
   );
 
   useEffect(() => {
-    if (supervisorPhone && canValidateTimesheets) {
-      fetchSupervisorByPhone(supervisorPhone);
-    } else if (canValidateTimesheets) {
+    if (supervisorPhone && canValidateTimesheets) fetchSupervisorByPhone(supervisorPhone);
+    else if (canValidateTimesheets) {
       setSelectedSupervisor("");
       setSupervisorSearch("");
-      setError(null);
     }
-    return () => {
-      fetchSupervisorByPhone.cancel();
-    };
+    return () => fetchSupervisorByPhone.cancel();
   }, [supervisorPhone, canValidateTimesheets, fetchSupervisorByPhone]);
 
   const getWeekNumber = (dateStr: string): number => {
@@ -182,21 +168,18 @@ const TimesheetForm: React.FC = () => {
     const utcDate = new Date(Date.UTC(date.getUTCFullYear(), date.getUTCMonth(), date.getUTCDate()));
     utcDate.setUTCDate(utcDate.getUTCDate() + 4 - (utcDate.getUTCDay() || 7));
     const yearStart = new Date(Date.UTC(utcDate.getUTCFullYear(), 0, 1));
-    const diffMs = utcDate.getTime() - yearStart.getTime();
-    const dayMs = 24 * 60 * 60 * 1000;
-    const weekNum = Math.ceil((diffMs / dayMs + 1) / 7);
-    return weekNum;
+    return Math.ceil(((utcDate.getTime() - yearStart.getTime()) / 86400000 + 1) / 7);
   };
 
   const handleReasonSelect = (reason: Reason) => {
-    if (!selectedReasons.some((r) => r.id === reason.reasonID)) {
+    if (!selectedReasons.some(r => r.id === reason.reasonID)) {
       setSelectedReasons([...selectedReasons, { id: reason.reasonID }]);
     }
     setReasonSearch("");
   };
 
   const handleChecklistSelect = (checklist: Checklist) => {
-    if (!selectedChecklists.some((c) => c.id === checklist.checklistID)) {
+    if (!selectedChecklists.some(c => c.id === checklist.checklistID)) {
       setSelectedChecklists([...selectedChecklists, { id: checklist.checklistID }]);
     }
     setChecklistSearch("");
@@ -214,23 +197,21 @@ const TimesheetForm: React.FC = () => {
       weekNumber,
       year,
       supervisorID,
-      visits: [
-        {
-          date,
-          time: `${time}:00`,
-          agentID: selectedAgent,
-          reasons: selectedReasons,
-          checklists: selectedChecklists,
-        },
-      ],
+      visits: [{
+        date,
+        time: `${time}:00`,
+        agentID: selectedAgent,
+        reasons: selectedReasons,
+        checklists: selectedChecklists,
+      }],
     };
 
     try {
       await createTimesheet(timesheetData, token);
       navigate("/timesheet");
     } catch (err) {
-      setError("Failed to create timesheet");
-      console.error(err);
+      setError("Failed to create timesheet. Please try again.");
+      console.error("Submit error:", err);
     } finally {
       setLoading(false);
     }
@@ -242,9 +223,9 @@ const TimesheetForm: React.FC = () => {
     selectedAgent &&
     selectedReasons.length > 0 &&
     selectedChecklists.length > 0 &&
-    (!canValidateTimesheets || selectedSupervisor); // Require supervisor if user can validate
+    (!canValidateTimesheets || selectedSupervisor);
 
-  if (loading && !error) return <div className="loading">Loading...</div>;
+  if (loading) return <div className="loading">Loading...</div>;
 
   return (
     <div className="timesheet-form-container">
@@ -279,18 +260,17 @@ const TimesheetForm: React.FC = () => {
               >
                 <option value="">Select a supervisor</option>
                 {supervisors
-                  .filter((supervisor) =>
-                    `${supervisor.firstname || ""} ${supervisor.lastname || ""} ${supervisor.phone || ""}`
+                  .filter((s) =>
+                    `${s.firstname || ""} ${s.lastname || ""} ${s.phone || ""}`
                       .toLowerCase()
                       .includes(supervisorSearch.toLowerCase())
                   )
-                  .map((supervisor) => (
-                    <option key={supervisor.userID} value={supervisor.userID}>
-                      {supervisor.firstname} {supervisor.lastname} ({supervisor.phone})
+                  .map((s) => (
+                    <option key={s.userID} value={s.userID}>
+                      {s.firstname} {s.lastname} ({s.phone})
                     </option>
                   ))}
               </select>
-              {error && supervisorPhone && <span className="error-text">{error}</span>}
             </div>
           )}
           <div className="form-group">
@@ -323,7 +303,6 @@ const TimesheetForm: React.FC = () => {
               onChange={(e) => setAgentPhone(e.target.value)}
               className="search-input"
             />
-            {error && agentPhone && <span className="error-text">{error}</span>}
           </div>
           <div className="form-group">
             <label htmlFor="location">Location</label>
@@ -380,7 +359,7 @@ const TimesheetForm: React.FC = () => {
                 )
                 .map((agent) => (
                   <option key={agent.agentID} value={agent.agentID}>
-                    {agent.name} {agent.lastname} {agent.phone}
+                    {agent.name} {agent.lastname} ({agent.phone})
                   </option>
                 ))}
             </select>
