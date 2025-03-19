@@ -5,20 +5,12 @@ Generated on: 1742288175.6189606
 ==================================================
 File contents: C:\Users\Kayto\Desktop\IT\Projects\Stage\Stage PFE\Visit_Management\Front-End\src\apis\agentAPI.tsx
 ==================================================
-import axios from "axios";
-import { BASE_URL, DEFAULT_TIMEOUT } from "../config";
+import api from "./axiosConfig"; // Use the shared instance
 import { AgentsByLocationResponse, AgentLocationsResponse, AgentByPhoneResponse, AgentByIdResponse } from ".";
 
-const agentApi = axios.create({
-  baseURL: `${BASE_URL}/agents`,
-  timeout: DEFAULT_TIMEOUT,
-});
-
-export const getAgentsByLocation = async (location: string, token?: string): Promise<AgentsByLocationResponse> => {
+export const getAgentsByLocation = async (location: string): Promise<AgentsByLocationResponse> => {
   try {
-    const response = await agentApi.get<AgentsByLocationResponse>(`/location?location=${location}`, {
-      headers: token ? { Authorization: `Bearer ${token}` } : {},
-    });
+    const response = await api.get<AgentsByLocationResponse>(`/agents/location?location=${location}`);
     return response.data;
   } catch (error) {
     console.error(`Error fetching agents by location (${location}):`, error);
@@ -26,11 +18,9 @@ export const getAgentsByLocation = async (location: string, token?: string): Pro
   }
 };
 
-export const getAgentLocations = async (token?: string): Promise<AgentLocationsResponse> => {
+export const getAgentLocations = async (): Promise<AgentLocationsResponse> => {
   try {
-    const response = await agentApi.get<AgentLocationsResponse>("/locations", {
-      headers: token ? { Authorization: `Bearer ${token}` } : {},
-    });
+    const response = await api.get<AgentLocationsResponse>("/agents/locations");
     return response.data;
   } catch (error) {
     console.error("Error fetching agent locations:", error);
@@ -38,11 +28,9 @@ export const getAgentLocations = async (token?: string): Promise<AgentLocationsR
   }
 };
 
-export const getAgentByPhone = async (phone: string, token?: string): Promise<AgentByPhoneResponse> => {
+export const getAgentByPhone = async (phone: string): Promise<AgentByPhoneResponse> => {
   try {
-    const response = await agentApi.get<AgentByPhoneResponse>(`/phone/${phone}`, {
-      headers: token ? { Authorization: `Bearer ${token}` } : {},
-    });
+    const response = await api.get<AgentByPhoneResponse>(`/agents/phone/${phone}`);
     return response.data;
   } catch (error) {
     console.error(`Error fetching agent by phone (${phone}):`, error);
@@ -50,17 +38,18 @@ export const getAgentByPhone = async (phone: string, token?: string): Promise<Ag
   }
 };
 
-export const getAgentById = async (id: string, token?: string): Promise<AgentByIdResponse> => {
+export const getAgentById = async (id: string, token: string): Promise<AgentByIdResponse> => {
   try {
-    const response = await agentApi.get<AgentByIdResponse>(`/${id}`, {
-      headers: token ? { Authorization: `Bearer ${token}` } : {},
-    });
-    return response.data;
+      const response = await api.get<AgentByIdResponse>(`/agents/${id}`, {
+          headers: { Authorization: `Bearer ${token}` },
+      });
+      return response.data;
   } catch (error) {
-    console.error(`Error fetching agent by ID (${id}):`, error);
-    throw error;
+      console.error(`Error fetching agent by ID (${id}):`, error);
+      throw error;
   }
 };
+
 
 ==================================================
 File contents: C:\Users\Kayto\Desktop\IT\Projects\Stage\Stage PFE\Visit_Management\Front-End\src\apis\authAPI.tsx
@@ -90,22 +79,57 @@ export const login = async (identifier: string, password: string): Promise<Login
 
 
 ==================================================
-File contents: C:\Users\Kayto\Desktop\IT\Projects\Stage\Stage PFE\Visit_Management\Front-End\src\apis\checklistAPI.tsx
+File contents: C:\Users\Kayto\Desktop\IT\Projects\Stage\Stage PFE\Visit_Management\Front-End\src\apis\axiosConfig.tsx
 ==================================================
-import axios from "axios";
-import { CreateChecklistResponse, ListChecklistsResponse, ChecklistsByVisitResponse } from ".";
+import axios, { AxiosInstance } from "axios";
 import { BASE_URL, DEFAULT_TIMEOUT } from "../config";
 
-const checklistApi = axios.create({
-    baseURL: `${BASE_URL}/checklists`,
+const api: AxiosInstance = axios.create({
+    baseURL: BASE_URL,
     timeout: DEFAULT_TIMEOUT,
+    withCredentials: true, // Keep this if your backend uses cookies (optional)
 });
 
-export const createChecklist = async (data: { text: string }, token: string): Promise<CreateChecklistResponse> => {
+// Function to set up the interceptor with the token
+export const setupAxiosInterceptors = (getToken: () => string | null) => {
+    api.interceptors.request.use(
+        (config) => {
+            const token = getToken();
+            console.log("Interceptor - Token:", token); // Debug
+            if (token) {
+                config.headers["Authorization"] = `Bearer ${token}`;
+            } else {
+                console.warn("Interceptor - No token available");
+            }
+            return config;
+        },
+        (error) => Promise.reject(error)
+    );
+
+    // Optional: Handle 401 responses globally (e.g., redirect to login)
+    api.interceptors.response.use(
+        (response) => response,
+        (error) => {
+            if (error.response?.status === 401) {
+                // Optionally trigger logout or redirect to login
+                console.error("Unauthorized request - token may be invalid or expired");
+            }
+            return Promise.reject(error);
+        }
+    );
+};
+
+export default api;
+
+==================================================
+File contents: C:\Users\Kayto\Desktop\IT\Projects\Stage\Stage PFE\Visit_Management\Front-End\src\apis\checklistAPI.tsx
+==================================================
+import api from "./axiosConfig"; // Use the shared instance
+import { CreateChecklistResponse, ListChecklistsResponse, ChecklistsByVisitResponse } from ".";
+
+export const createChecklist = async (data: { text: string }): Promise<CreateChecklistResponse> => {
     try {
-        const response = await checklistApi.post<CreateChecklistResponse>("", data, {
-            headers: { Authorization: `Bearer ${token}` },
-        });
+        const response = await api.post<CreateChecklistResponse>("/checklists", data);
         return response.data;
     } catch (error) {
         console.error("Error creating checklist:", error);
@@ -113,11 +137,9 @@ export const createChecklist = async (data: { text: string }, token: string): Pr
     }
 };
 
-export const getAllChecklists = async (token?: string): Promise<ListChecklistsResponse> => {
+export const getAllChecklists = async (): Promise<ListChecklistsResponse> => {
     try {
-        const response = await checklistApi.get<ListChecklistsResponse>("", {
-            headers: token ? { Authorization: `Bearer ${token}` } : {},
-        });
+        const response = await api.get<ListChecklistsResponse>("/checklists");
         return response.data;
     } catch (error) {
         console.error("Error fetching all checklists:", error);
@@ -125,11 +147,9 @@ export const getAllChecklists = async (token?: string): Promise<ListChecklistsRe
     }
 };
 
-export const getChecklistsByVisitId = async (visitId: string, token: string): Promise<ChecklistsByVisitResponse> => {
+export const getChecklistsByVisitId = async (visitId: string): Promise<ChecklistsByVisitResponse> => {
     try {
-        const response = await checklistApi.get<ChecklistsByVisitResponse>(`/${visitId}`, {
-            headers: { Authorization: `Bearer ${token}` },
-        });
+        const response = await api.get<ChecklistsByVisitResponse>(`/checklists/${visitId}`);
         return response.data;
     } catch (error) {
         console.error(`Error fetching checklists for visit (${visitId}):`, error);
@@ -194,14 +214,21 @@ export type LoginResponse = { token: string; user: User };
 export type CreateUserResponse = User;
 export type ListUsersResponse = User[];
 export type UserByIdResponse = User;
-export type UpdateUserResponse = User; // Added for updateUser
-export type DeleteUserResponse = void; // Added for deleteUser
+export type UpdateUserResponse = User;
+export type DeleteUserResponse = void;
 export type AssignRolesResponse = {
   userID: string;
   assignedRoles: string[];
   totalAssigned: number;
 };
 export type RolesByUserResponse = Role[];
+export type SupervisorsByUserResponse = User[]; 
+export type ManagersByUserResponse = User[];
+export type AssignSupervisorsResponse = {
+  managerID: string;
+  assignedSupervisors: string[];
+  message: string;
+};
 
 // Role API Responses
 export type CreateRoleResponse = Role;
@@ -355,20 +382,12 @@ export const deletePermission = async (
 ==================================================
 File contents: C:\Users\Kayto\Desktop\IT\Projects\Stage\Stage PFE\Visit_Management\Front-End\src\apis\reasonAPI.tsx
 ==================================================
-import axios from "axios";
+import api from "./axiosConfig"; // Use the shared instance
 import { CreateReasonResponse, ListReasonsResponse, ReasonsByVisitResponse } from ".";
-import { BASE_URL, DEFAULT_TIMEOUT } from "../config";
 
-const reasonApi = axios.create({
-    baseURL: `${BASE_URL}/reasons`,
-    timeout: DEFAULT_TIMEOUT,
-});
-
-export const createReason = async (data: { text: string }, token: string): Promise<CreateReasonResponse> => {
+export const createReason = async (data: { text: string }): Promise<CreateReasonResponse> => {
     try {
-        const response = await reasonApi.post<CreateReasonResponse>("", data, {
-            headers: { Authorization: `Bearer ${token}` },
-        });
+        const response = await api.post<CreateReasonResponse>("/reasons", data);
         return response.data;
     } catch (error) {
         console.error("Error creating reason:", error);
@@ -376,11 +395,9 @@ export const createReason = async (data: { text: string }, token: string): Promi
     }
 };
 
-export const getAllReasons = async (token?: string): Promise<ListReasonsResponse> => {
+export const getAllReasons = async (): Promise<ListReasonsResponse> => {
     try {
-        const response = await reasonApi.get<ListReasonsResponse>("", {
-            headers: token ? { Authorization: `Bearer ${token}` } : {},
-        });
+        const response = await api.get<ListReasonsResponse>("/reasons");
         return response.data;
     } catch (error) {
         console.error("Error fetching all reasons:", error);
@@ -388,11 +405,9 @@ export const getAllReasons = async (token?: string): Promise<ListReasonsResponse
     }
 };
 
-export const getReasonsByVisitId = async (visitId: string, token: string): Promise<ReasonsByVisitResponse> => {
+export const getReasonsByVisitId = async (visitId: string): Promise<ReasonsByVisitResponse> => {
     try {
-        const response = await reasonApi.get<ReasonsByVisitResponse>(`/${visitId}`, {
-            headers: { Authorization: `Bearer ${token}` },
-        });
+        const response = await api.get<ReasonsByVisitResponse>(`/reasons/${visitId}`);
         return response.data;
     } catch (error) {
         console.error(`Error fetching reasons for visit (${visitId}):`, error);
@@ -852,6 +867,8 @@ export const getTimesheetsBySupervisor = async (supervisorID: string, token: str
 File contents: C:\Users\Kayto\Desktop\IT\Projects\Stage\Stage PFE\Visit_Management\Front-End\src\apis\userAPI.tsx
 ==================================================
 import axios from "axios";
+//import api from "./axiosConfig"; // Use the shared instance
+
 import { BASE_URL, DEFAULT_TIMEOUT } from "../config";
 import {
   CreateUserResponse,
@@ -860,6 +877,11 @@ import {
   AssignRolesResponse,
   RolesByUserResponse,
   GetSupervisorByPhoneNumberResponse,
+  UpdateUserResponse,
+  DeleteUserResponse,
+  SupervisorsByUserResponse, 
+  ManagersByUserResponse,    
+  AssignSupervisorsResponse, 
 } from ".";
 import User from "../models/User";
 
@@ -954,9 +976,13 @@ export const getRolesByUser = async (userID: string, token: string): Promise<Rol
   }
 };
 
-export const updateUser = async (userID: string, userData: Partial<User>, token: string): Promise<User> => {
+export const updateUser = async (
+  userID: string,
+  userData: Partial<User>,
+  token: string
+): Promise<UpdateUserResponse> => {
   try {
-    const response = await userApi.put<User>(`/${userID}`, userData, {
+    const response = await userApi.put<UpdateUserResponse>(`/${userID}`, userData, {
       headers: { Authorization: `Bearer ${token}` },
     });
     return response.data;
@@ -966,7 +992,7 @@ export const updateUser = async (userID: string, userData: Partial<User>, token:
   }
 };
 
-export const deleteUser = async (userID: string, token: string): Promise<void> => {
+export const deleteUser = async (userID: string, token: string): Promise<DeleteUserResponse> => {
   try {
     await userApi.delete(`/${userID}`, { headers: { Authorization: `Bearer ${token}` } });
   } catch (error) {
@@ -975,17 +1001,61 @@ export const deleteUser = async (userID: string, token: string): Promise<void> =
   }
 };
 
+export const getSupervisorsByUser = async (
+  userID: string,
+  token: string
+): Promise<SupervisorsByUserResponse> => {
+  try {
+    const response = await userApi.get<SupervisorsByUserResponse>(`/${userID}/supervisors`, {
+      headers: { Authorization: `Bearer ${token}` },
+    });
+    return response.data;
+  } catch (error) {
+    console.error(`Error fetching supervisors for user (${userID}):`, error);
+    throw error;
+  }
+};
+
+export const getManagersByUser = async (
+  userID: string,
+  token: string
+): Promise<ManagersByUserResponse> => {
+  try {
+    const response = await userApi.get<ManagersByUserResponse>(`/${userID}/managers`, {
+      headers: { Authorization: `Bearer ${token}` },
+    });
+    return response.data;
+  } catch (error) {
+    console.error(`Error fetching managers for user (${userID}):`, error);
+    throw error;
+  }
+};
+
+export const assignSupervisorsToManager = async (
+  managerID: string,
+  supervisorIDs: string[],
+  token: string
+): Promise<AssignSupervisorsResponse> => {
+  try {
+    const response = await userApi.post<AssignSupervisorsResponse>(
+      "/assign-supervisors",
+      { managerID, supervisorIDs },
+      { headers: { Authorization: `Bearer ${token}` } }
+    );
+    return response.data;
+  } catch (error) {
+    console.error(`Error assigning supervisors to manager (${managerID}):`, error);
+    throw error;
+  }
+};
+
 ==================================================
 File contents: C:\Users\Kayto\Desktop\IT\Projects\Stage\Stage PFE\Visit_Management\Front-End\src\apis\visitAPI.tsx
 ==================================================
-import axios from "axios";
+import api from "./axiosConfig"; // Use the shared instance
 import { CreateVisitResponse, VerifyQrResponse, LogVisitResponse, VisitByIdResponse } from ".";
-import { BASE_URL, DEFAULT_TIMEOUT } from "../config";
 
-const visitApi = axios.create({
-    baseURL: `${BASE_URL}/visits`,
-    timeout: DEFAULT_TIMEOUT,
-});
+
 
 export const createVisit = async (
     data: {
@@ -1000,7 +1070,7 @@ export const createVisit = async (
     token: string
 ): Promise<CreateVisitResponse> => {
     try {
-        const response = await visitApi.post<CreateVisitResponse>("", data, {
+        const response = await api.post<CreateVisitResponse>("/visits", data, {
             headers: { Authorization: `Bearer ${token}` },
         });
         return response.data;
@@ -1012,7 +1082,7 @@ export const createVisit = async (
 
 export const verifyQrCode = async (data: { qrData: string; visitId: string }, token: string): Promise<VerifyQrResponse> => {
     try {
-        const response = await visitApi.post<VerifyQrResponse>("/verify-qr", data, {
+        const response = await api.post<VerifyQrResponse>("/visits/verify-qr", data, {
             headers: { Authorization: `Bearer ${token}` },
         });
         return response.data;
@@ -1028,7 +1098,7 @@ export const logVisitDetails = async (
     token: string
 ): Promise<LogVisitResponse> => {
     try {
-        const response = await visitApi.put<LogVisitResponse>(`/${id}/log`, data, {
+        const response = await api.put<LogVisitResponse>(`/visits/${id}/log`, data, {
             headers: { Authorization: `Bearer ${token}` },
         });
         return response.data;
@@ -1040,9 +1110,11 @@ export const logVisitDetails = async (
 
 export const getVisitById = async (id: string, token: string): Promise<VisitByIdResponse> => {
     try {
-        const response = await visitApi.get<VisitByIdResponse>(`/${id}`, {
-            headers: { Authorization: `Bearer ${token}` },
+        console.log("getVisitById - Sending request with token:", token);
+        const response = await api.get<VisitByIdResponse>(`/visits/${id}`, {
+            headers: { Authorization: `Bearer ${token}` }, // Still include this for safety
         });
+        console.log("getVisitById - Response:", response.status);
         return response.data;
     } catch (error) {
         console.error(`Error fetching visit by ID (${id}):`, error);
@@ -1053,10 +1125,12 @@ export const getVisitById = async (id: string, token: string): Promise<VisitById
 ==================================================
 File contents: C:\Users\Kayto\Desktop\IT\Projects\Stage\Stage PFE\Visit_Management\Front-End\src\context\AuthContext.tsx
 ==================================================
+// src/context/AuthContext.tsx
 import React, { createContext, useContext, useState, useEffect, ReactNode } from "react";
 import { useNavigate, useLocation } from "react-router-dom";
 import { login } from "../apis/authAPI";
 import User from "../models/User";
+import { setupAxiosInterceptors } from "../apis/axiosConfig";
 
 interface AuthContextType {
     user: User | null;
@@ -1079,12 +1153,46 @@ export const AuthProvider: React.FC<{ children: ReactNode }> = ({ children }) =>
         console.log("Initial Token from localStorage:", storedToken);
         return storedToken;
     });
+    const [hasLoggedIn, setHasLoggedIn] = useState(false); // New flag to control useEffect
     const navigate = useNavigate();
     const location = useLocation();
 
     useEffect(() => {
-        console.log("AuthProvider mounted. User:", user, "Token:", token);
-    }, []); // Log only on mount
+        setupAxiosInterceptors(() => token);
+        console.log("Axios interceptor updated with token:", token);
+    }, [token]);
+
+    useEffect(() => {
+        if (user && token && !hasLoggedIn) { // Only run once after login
+            const userPermissions = user.roles?.flatMap(role =>
+                Array.isArray(role.permissions) ? role.permissions : []
+            ) || [];
+
+            console.log("User:", user);
+            console.log("User Roles:", user.roles);
+            console.log("Extracted Permissions:", userPermissions);
+            console.log("location.state?.from:", location.state?.from);
+
+            let targetRoute = "/admin"; // Default route
+            if (userPermissions.includes("access_timesheets")) {
+                targetRoute = "/timesheet";
+                console.log("Redirecting to /timesheet due to access_timesheets");
+            } else if (userPermissions.includes("log_visits")) {
+                targetRoute = "/timesheet";
+                console.log("Redirecting to /timesheet due to log_visits");
+            } else if (userPermissions.includes("create_users") || userPermissions.includes("update_users")) {
+                targetRoute = "/admin";
+                console.log("Redirecting to /admin due to create_users or update_users");
+            } else {
+                console.log("No matching permissions, using default /admin");
+            }
+
+            const finalRoute = location.state?.from && !userPermissions.length ? location.state?.from : targetRoute;
+            console.log("Final Navigation Route:", finalRoute);
+            navigate(finalRoute, { replace: true });
+            setHasLoggedIn(true); // Prevent re-running after navigation
+        }
+    }, [user, token, navigate, location.state, hasLoggedIn]);
 
     const loginUser = async (identifier: string, password: string, redirectTo?: string) => {
         try {
@@ -1094,14 +1202,10 @@ export const AuthProvider: React.FC<{ children: ReactNode }> = ({ children }) =>
 
             setUser(response.user);
             setToken(response.token);
-
             localStorage.setItem("token", response.token);
             localStorage.setItem("user", JSON.stringify(response.user));
             console.log("Saved to localStorage. User:", response.user, "Token:", response.token);
-
-            const intendedRoute = redirectTo || location.state?.from || "/admin";
-            console.log("Navigating to:", intendedRoute);
-            navigate(intendedRoute, { replace: true });
+            setHasLoggedIn(false); // Reset flag for new login
         } catch (error) {
             console.error("Login failed:", error);
             throw error;
@@ -1112,6 +1216,7 @@ export const AuthProvider: React.FC<{ children: ReactNode }> = ({ children }) =>
         console.log("Logging out...");
         setUser(null);
         setToken(null);
+        setHasLoggedIn(false);
         localStorage.removeItem("token");
         localStorage.removeItem("user");
         navigate("/login");
@@ -1202,6 +1307,223 @@ export const useTheme = () => {
 };
 
 ==================================================
+File contents: C:\Users\Kayto\Desktop\IT\Projects\Stage\Stage PFE\Visit_Management\Front-End\src\models\Agent.tsx
+==================================================
+interface Agent {
+  agentID: string;
+  name?: string;
+  lastname?: string;
+  wallet?: string;
+  cin?: string;
+  email?: string;
+  phone?: string;
+  location?: string;
+}
+
+export default Agent;
+
+
+==================================================
+File contents: C:\Users\Kayto\Desktop\IT\Projects\Stage\Stage PFE\Visit_Management\Front-End\src\models\Checklist.tsx
+==================================================
+interface Checklist {
+    checklistID: string;
+    item: string;
+}
+
+interface VisitChecklist extends Checklist {
+    VisitChecklist?: {
+        checked: boolean;
+        visitID: string;
+        checklistID: string;
+    };
+}
+
+export type { VisitChecklist, Checklist };
+
+==================================================
+File contents: C:\Users\Kayto\Desktop\IT\Projects\Stage\Stage PFE\Visit_Management\Front-End\src\models\OTP.tsx
+==================================================
+interface OTP {
+    code: string;
+    expiresAt: string;
+    userID: string;
+}
+
+export default OTP;
+
+==================================================
+File contents: C:\Users\Kayto\Desktop\IT\Projects\Stage\Stage PFE\Visit_Management\Front-End\src\models\Permission.tsx
+==================================================
+// src/models/Permission.ts
+interface Permission {
+    permissionID: string;
+    name: string;
+    type: "page" | "feature"; // From your backend permission seeding
+    class: string; 
+    description?: string;
+}
+
+export default Permission;
+
+==================================================
+File contents: C:\Users\Kayto\Desktop\IT\Projects\Stage\Stage PFE\Visit_Management\Front-End\src\models\Reason.tsx
+==================================================
+interface Reason {
+    reasonID: string;
+    item: string;
+}
+
+interface VisitReason extends Reason {
+    VisitReasons?: {
+        visitID: string;
+        reasonID: string;
+    };
+}
+
+export type { Reason, VisitReason };
+
+==================================================
+File contents: C:\Users\Kayto\Desktop\IT\Projects\Stage\Stage PFE\Visit_Management\Front-End\src\models\ReceiptBook.tsx
+==================================================
+interface ReceiptBook {
+    bookID: string;
+    number: number;
+    type: string;
+    qrCode: string; // Base64 encoded QR code image
+    status: "In Stock" | "Sent to Supplier" | "With Regional Manager" | "With Supervisor" | "Assigned to Agent" | "Stub Collected" | "With Stock Manager";
+    currentHolderID?: string; // User ID of current holder
+    agentID?: string; // Optional agent assignment
+    createdAt?: string;
+    updatedAt?: string;
+}
+
+export default ReceiptBook;
+
+==================================================
+File contents: C:\Users\Kayto\Desktop\IT\Projects\Stage\Stage PFE\Visit_Management\Front-End\src\models\ReceiptBookTransfer.tsx
+==================================================
+interface ReceiptBookTransfer {
+    transferID: string;
+    bookID: string;
+    fromUserID?: string;
+    toUserID?: string;
+    status: string;
+    transferDate: string;
+}
+
+export default ReceiptBookTransfer;
+
+==================================================
+File contents: C:\Users\Kayto\Desktop\IT\Projects\Stage\Stage PFE\Visit_Management\Front-End\src\models\ReceiptStub.tsx
+==================================================
+interface ReceiptStub {
+    stubID: string;
+    bookID: string;
+    status: "pending" | "collected" | "transmitted" | "archived";
+    createdAt?: string;
+    updatedAt?: string;
+}
+
+export default ReceiptStub;
+
+==================================================
+File contents: C:\Users\Kayto\Desktop\IT\Projects\Stage\Stage PFE\Visit_Management\Front-End\src\models\Role.tsx
+==================================================
+import Permission from "./Permission";
+interface Role {
+    roleID: string;
+    name: string;
+    description?: string;
+    permissions?: Permission[];
+}
+
+export default Role
+
+==================================================
+File contents: C:\Users\Kayto\Desktop\IT\Projects\Stage\Stage PFE\Visit_Management\Front-End\src\models\Timesheet.tsx
+==================================================
+import TimesheetStatus from "./Enum/TimesheetStatus";
+import Visit from "./Visit";
+
+interface Timesheet {
+  timesheetID: string;
+  weekNumber: number;
+  year: number;
+  status: TimesheetStatus;
+  supervisorID: string;
+  Visits?: Visit[];
+}
+
+export default Timesheet;
+
+
+==================================================
+File contents: C:\Users\Kayto\Desktop\IT\Projects\Stage\Stage PFE\Visit_Management\Front-End\src\models\User.tsx
+==================================================
+import Role from './Role';
+
+interface User {
+    userID: string;
+    firstname: string;
+    lastname: string;
+    phone: string;
+    email: string;
+    wallet: string;
+    password?: string;
+    roles?: Role[];
+    supervisors?: User[];
+    managers?: User[]; 
+}
+
+export default User;
+
+==================================================
+File contents: C:\Users\Kayto\Desktop\IT\Projects\Stage\Stage PFE\Visit_Management\Front-End\src\models\Visit.tsx
+==================================================
+import { VisitChecklist } from "./Checklist";
+import VisitStatus from "./Enum/VisitStatus";
+import { VisitReason } from "./Reason";
+
+interface Visit {
+  visitID: string;
+  date: string;
+  time: string; 
+  duration?: number | null; 
+  location?: string;
+  status: VisitStatus;
+  photos?: string[];
+  comment?: string | null;
+  agentID: string;
+  timesheetID: string;
+  Checklists?: VisitChecklist[]; 
+  Reasons?: VisitReason[]; 
+}
+
+export default Visit;
+
+
+==================================================
+File contents: C:\Users\Kayto\Desktop\IT\Projects\Stage\Stage PFE\Visit_Management\Front-End\src\models\Enum\TimesheetStatus.tsx
+==================================================
+enum TimesheetStatus {
+    PENDING = "pending",
+    VALIDATED = "validated",
+}
+export default TimesheetStatus;
+
+==================================================
+File contents: C:\Users\Kayto\Desktop\IT\Projects\Stage\Stage PFE\Visit_Management\Front-End\src\models\Enum\VisitStatus.tsx
+==================================================
+enum VisitStatus {
+    PENDING = "pending",
+    VISITED = "visited",
+    VALIDATED = "validated",
+    REJECTED = "rejected",
+}
+export default VisitStatus;
+
+==================================================
 File contents: C:\Users\Kayto\Desktop\IT\Projects\Stage\Stage PFE\Visit_Management\Front-End\src\pages\AccessDenied.css
 ==================================================
 
@@ -1212,11 +1534,46 @@ File contents: C:\Users\Kayto\Desktop\IT\Projects\Stage\Stage PFE\Visit_Manageme
 
 
 ==================================================
+File contents: C:\Users\Kayto\Desktop\IT\Projects\Stage\Stage PFE\Visit_Management\Front-End\src\pages\ErrorDisplay.css
+==================================================
+.error-display {
+    position: fixed;
+    top: 10px;
+    left: 50%;
+    transform: translateX(-50%);
+    background-color: #ffe6e6;
+    padding: 10px 20px;
+    border-radius: 5px;
+    box-shadow: 0 2px 5px rgba(0, 0, 0, 0.2);
+    z-index: 1000;
+    color: #d32f2f;
+}
+
+.error-display span {
+    color: inherit;
+}
+
+.error-display button {
+    margin-left: 10px;
+    background: none;
+    border: none;
+    color: inherit;
+    cursor: pointer;
+    font-weight: bold;
+}
+
+/* Dark mode using body.dark */
+body.dark .error-display {
+    background-color: #732727;
+    color: #ff6b6b;
+}
+
+==================================================
 File contents: C:\Users\Kayto\Desktop\IT\Projects\Stage\Stage PFE\Visit_Management\Front-End\src\pages\ErrorDisplay.tsx
 ==================================================
-// src/components/ErrorDisplay.tsx
 import React from "react";
 import { useError } from "../context/ErrorContext";
+import "./ErrorDisplay.css";
 
 const ErrorDisplay: React.FC = () => {
     const { error, setError } = useError();
@@ -1224,34 +1581,9 @@ const ErrorDisplay: React.FC = () => {
     if (!error) return null;
 
     return (
-        <div
-            style={{
-                position: "fixed",
-                top: "10px",
-                left: "50%",
-                transform: "translateX(-50%)",
-                backgroundColor: "#ffe6e6",
-                color: "red",
-                padding: "10px 20px",
-                borderRadius: "5px",
-                boxShadow: "0 2px 5px rgba(0,0,0,0.2)",
-                zIndex: 1000,
-            }}
-        >
+        <div className="error-display">
             <span>{error}</span>
-            <button
-                onClick={() => setError(null)}
-                style={{
-                    marginLeft: "10px",
-                    background: "none",
-                    border: "none",
-                    color: "red",
-                    cursor: "pointer",
-                    fontWeight: "bold",
-                }}
-            >
-                ✕
-            </button>
+            <button onClick={() => setError(null)}>✕</button>
         </div>
     );
 };
@@ -1767,32 +2099,33 @@ body.dark .search-container {
 }
 
 .search-icon {
-    color: #fff;
+    color: #4b4b4b;
 }
 
 body.dark .search-icon {
-    color: #4b4b4b;
+    color: #d5d5d5;
 }
 
 .search-input {
     border: none;
     outline: none;
     font-size: 0.875rem;
-    color: #fff;
+    color: #4b4b4b;
     background: transparent;
     width: 100%;
 }
 
 body.dark .search-input {
-    color: #868686;
+    color: #d5d5d5;
 }
 
 .search-input::placeholder {
-    color: rgba(255, 255, 255, 0.7);
+    color: #363636;
 }
 
 body.dark .search-input::placeholder {
-    color: #363636;
+    color: rgba(255, 255, 255, 0.7);
+
 }
 
 .back-button {
@@ -2011,6 +2344,8 @@ body.dark .action-button:hover {
     box-shadow: 0 0.375rem 1.25rem rgba(0, 0, 0, 0.05);
     transition: transform 0.3s ease;
 }
+
+
 
 body.dark .table-card, body.dark .form-card, body.dark .details-card {
     background: #222222;
@@ -2851,19 +3186,158 @@ body.dark .error {
     color: #ff6b6b;
 }
 
+
+.form-card-0{
+    max-width: none !important;
+}
+
+.assignment-list {
+    margin-top: 1rem;
+    padding: 1rem;
+    background: #f8fafc;
+    border-radius: 0.75rem;
+    box-shadow: 0 0.375rem 1.25rem rgba(0, 0, 0, 0.05);
+}
+
+body.dark .assignment-list {
+    background: #2b2b2b;
+    box-shadow: 0 0.375rem 1.25rem rgba(0, 0, 0, 0.3);
+}
+
+.assignment-list h4 {
+    font-size: 1rem;
+    font-weight: 600;
+    color: #4cb1c7;
+    margin-bottom: 0.75rem;
+}
+
+body.dark .assignment-list h4 {
+    color: #60a0dc;
+}
+
+.assignment-search {
+    margin-bottom: 1rem;
+    background: rgba(255, 255, 255, 0.9);
+}
+
+body.dark .assignment-search {
+    background: rgba(255, 255, 255, 0.1);
+}
+
+.list-container {
+    max-height: 300px;
+    overflow-y: auto;
+    border: 1px solid #ddd;
+    border-radius: 0.5rem;
+    padding: 0.5rem;
+    background: #fff;
+}
+
+body.dark .list-container {
+    border-color: #4b5563;
+    background: #363636;
+}
+
+.list-item {
+    padding: 0.5rem;
+    font-size: 0.875rem;
+    color: #1f2937;
+    display: flex;
+    align-items: center;
+    gap: 0.5rem;
+}
+
+body.dark .list-item {
+    color: #e5e7eb;
+}
+
+.list-item label {
+    display: flex;
+    align-items: center;
+    gap: 0.5rem;
+    cursor: pointer;
+}
+
+.list-item input[type="checkbox"] {
+    margin: 0;
+}
+
+.pagination {
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    margin-top: 1rem;
+}
+
+.pagination button {
+    padding: 0.5rem 1rem;
+    font-size: 0.875rem;
+    background: #f8fafc;
+    border: 1px solid #ddd;
+    border-radius: 0.5rem;
+    color: #1f2937;
+    cursor: pointer;
+    transition: all 0.3s ease;
+}
+
+body.dark .pagination button {
+    background: #363636;
+    border-color: #4b5563;
+    color: #e5e7eb;
+}
+
+.pagination button:hover {
+    background: #4cb1c7;
+    color: #fff;
+}
+
+body.dark .pagination button:hover {
+    background: #63b3ed;
+}
+
+.pagination button:disabled {
+    background: #e5e7eb;
+    color: #9ca3af;
+    cursor: not-allowed;
+}
+
+body.dark .pagination button:disabled {
+    background: #4b5563;
+    color: #6b7280;
+}
+
+.pagination span {
+    font-size: 0.875rem;
+    color: #6b7280;
+}
+
+body.dark .pagination span {
+    color: #9ca3af;
+}
+
 ==================================================
 File contents: C:\Users\Kayto\Desktop\IT\Projects\Stage\Stage PFE\Visit_Management\Front-End\src\pages\Admin\AdminDashboard.tsx
 ==================================================
 import React, { useState, useEffect, useMemo } from "react";
 import { FaSearch, FaFilter, FaSort, FaUserPlus, FaPlus, FaArrowLeft, FaInfoCircle, FaAngleDown } from "react-icons/fa";
 import { useAuth } from "../../context/AuthContext";
-import { getAllUsers, createUser, assignRolesToUser, getRolesByUser } from "../../apis/userAPI";
+import {
+    getAllUsers,
+    createUser,
+    assignRolesToUser,
+    getRolesByUser,
+    assignSupervisorsToManager,
+    getSupervisorsByUser,
+    getManagersByUser,
+} from "../../apis/userAPI";
 import { getAllRoles, createRole, assignPermissionsToRole, getPermissionsByRole } from "../../apis/roleAPI";
 import { getAllPermissions } from "../../apis/permissionAPI";
 import User from "../../models/User";
 import Role from "../../models/Role";
 import Permission from "../../models/Permission";
 import "./AdminDashboard.css";
+
+const ITEMS_PER_PAGE = 10; // Pagination: 10 items per page
 
 const AdminDashboard: React.FC = () => {
     const { token } = useAuth();
@@ -2891,6 +3365,13 @@ const AdminDashboard: React.FC = () => {
     const [activeRolePopup, setActiveRolePopup] = useState<string | null>(null);
     const [expandedClasses, setExpandedClasses] = useState<Set<string>>(new Set());
     const [passwordConfirm, setPasswordConfirm] = useState("");
+    const [tempSupervisors, setTempSupervisors] = useState<User[]>([]);
+    const [tempManagers, setTempManagers] = useState<User[]>([]);
+    const [hasUnsavedSupervisorChanges, setHasUnsavedSupervisorChanges] = useState(false);
+    const [supervisorSearch, setSupervisorSearch] = useState("");
+    const [managerSearch, setManagerSearch] = useState("");
+    const [supervisorPage, setSupervisorPage] = useState(1);
+    const [managerPage, setManagerPage] = useState(1);
 
     useEffect(() => {
         const fetchData = async () => {
@@ -2901,15 +3382,19 @@ const AdminDashboard: React.FC = () => {
                     getAllRoles(token!),
                     getAllPermissions(token!),
                 ]);
-                const usersWithRoles = await Promise.all(usersData.map(async (user) => {
-                    const userRoles = await getRolesByUser(user.userID, token!);
-                    return { ...user, roles: userRoles };
+                const usersWithDetails = await Promise.all(usersData.map(async (user) => {
+                    const [userRoles, supervisors, managers] = await Promise.all([
+                        getRolesByUser(user.userID, token!),
+                        getSupervisorsByUser(user.userID, token!),
+                        getManagersByUser(user.userID, token!),
+                    ]);
+                    return { ...user, roles: userRoles, supervisors, managers };
                 }));
+                setUsers(usersWithDetails);
                 const rolesWithPermissions = await Promise.all(rolesData.map(async (role) => {
                     const rolePermissions = await getPermissionsByRole(role.roleID, token!);
                     return { ...role, permissions: rolePermissions };
                 }));
-                setUsers(usersWithRoles);
                 setRoles(rolesWithPermissions);
                 setPermissions(permissionsData);
             } catch (error) {
@@ -2926,13 +3411,9 @@ const AdminDashboard: React.FC = () => {
             `${user.firstname} ${user.lastname}`.toLowerCase().includes(searchQuery.toLowerCase()) ||
             user.email.toLowerCase().includes(searchQuery.toLowerCase())
         );
-
         if (roleFilter !== "all") {
-            result = result.filter((user) =>
-                user.roles?.some((role) => role.roleID === roleFilter)
-            );
+            result = result.filter((user) => user.roles?.some((role) => role.roleID === roleFilter));
         }
-
         result.sort((a, b) => {
             const fieldA = sortField === "name" ? `${a.firstname} ${a.lastname}` : sortField === "email" ? a.email : (a.roles?.length || 0);
             const fieldB = sortField === "name" ? `${b.firstname} ${b.lastname}` : sortField === "email" ? b.email : (b.roles?.length || 0);
@@ -2980,38 +3461,70 @@ const AdminDashboard: React.FC = () => {
         }, {} as { [key: string]: { [key: string]: Permission[] } });
     }, [permissions, permissionSearch, selectedCategory]);
 
+    // Memoized Supervisor/Manager Filters with Search
+    const supervisorUsers = useMemo(() => {
+        return users.filter(u => u.roles?.some(r => r.name === "Supervisor")).filter(s =>
+            `${s.firstname} ${s.lastname}`.toLowerCase().includes(supervisorSearch.toLowerCase()) ||
+            s.email.toLowerCase().includes(supervisorSearch.toLowerCase())
+        );
+    }, [users, supervisorSearch]);
+
+    const managerUsers = useMemo(() => {
+        return users.filter(u => u.roles?.some(r => r.name === "Manager")).filter(m =>
+            `${m.firstname} ${m.lastname}`.toLowerCase().includes(managerSearch.toLowerCase()) ||
+            m.email.toLowerCase().includes(managerSearch.toLowerCase())
+        );
+    }, [users, managerSearch]);
+
+    // Paginated Supervisors and Managers
+    const paginatedSupervisors = useMemo(() => {
+        const start = (supervisorPage - 1) * ITEMS_PER_PAGE;
+        const end = start + ITEMS_PER_PAGE;
+        return supervisorUsers.slice(start, end);
+    }, [supervisorUsers, supervisorPage]);
+
+    const paginatedManagers = useMemo(() => {
+        const start = (managerPage - 1) * ITEMS_PER_PAGE;
+        const end = start + ITEMS_PER_PAGE;
+        return managerUsers.slice(start, end);
+    }, [managerUsers, managerPage]);
+
     const handleUserSelect = async (user: User) => {
-        if (hasUnsavedUserChanges && !window.confirm('You have unsaved changes. Are you sure you want to proceed?')) return;
+        if ((hasUnsavedUserChanges || hasUnsavedSupervisorChanges) && !window.confirm('You have unsaved changes. Are you sure you want to proceed?')) return;
         setSelectedUser(user);
         try {
-            const userRoles = await getRolesByUser(user.userID, token!);
-            setUsers(users.map(u => u.userID === user.userID ? { ...u, roles: userRoles } : u));
+            const [userRoles, supervisors, managers] = await Promise.all([
+                getRolesByUser(user.userID, token!),
+                getSupervisorsByUser(user.userID, token!),
+                getManagersByUser(user.userID, token!),
+            ]);
+            setUsers(users.map(u => u.userID === user.userID ? { ...u, roles: userRoles, supervisors, managers } : u));
             setTempRoles(userRoles);
+            setTempSupervisors(supervisors || []);
+            setTempManagers(managers || []);
             setHasUnsavedUserChanges(false);
+            setHasUnsavedSupervisorChanges(false);
+            setSupervisorSearch("");
+            setManagerSearch("");
+            setSupervisorPage(1);
+            setManagerPage(1);
             setView("user-details");
         } catch (error) {
-            console.error("Failed to fetch user roles:", error);
+            console.error("Failed to fetch user details:", error);
         }
     };
 
     const handleRoleSelect = async (role: Role) => {
-        // Fixed roles - cannot be modified
         if (role.name === 'Admin' || role.name === 'Super Admin') {
             alert('Fixed roles cannot be modified.');
             return;
         }
-    
-        // Pre-made roles - warn but allow if confirmed
         const fixedRoles = ['Manager', 'Supervisor', 'Purchase', 'Regional Manager', 'Stock Manager'];
-        if (fixedRoles.includes(role.name)) {
-            if (!window.confirm('Warning: Modifying pre-made roles may affect system functionality. Are you sure you want to proceed?')) {
-                return;
-            }
+        if (fixedRoles.includes(role.name) && !window.confirm('Warning: Modifying pre-made roles may affect system functionality. Are you sure you want to proceed?')) {
+            return;
         }
-    
-        // Custom roles - no restrictions, proceed directly
         if (hasUnsavedChanges && !window.confirm('You have unsaved changes. Are you sure you want to switch roles?')) return;
-        
+
         setSelectedRole(role);
         try {
             const rolePermissions = await getPermissionsByRole(role.roleID, token!);
@@ -3022,20 +3535,6 @@ const AdminDashboard: React.FC = () => {
             console.error("Failed to fetch role permissions:", error);
         }
     };
-
-    // const handleEditUser = (user: User) => {
-    //     setNewUser({ ...user, password: "" });
-    //     setSelectedRolesForNewUser(user.roles?.map(r => r.roleID) || []);
-    //     setView("add-user");
-    // };
-
-    // const handleDeleteUser = async (userID: string) => {
-    //     if (window.confirm("Are you sure you want to delete this user?")) {
-    //         setUsers(users.filter(u => u.userID !== userID));
-    //         if (selectedUser?.userID === userID) setSelectedUser(null);
-    //         setView("users");
-    //     }
-    // };
 
     const handleTogglePermission = (permissionID: string) => {
         const hasPermission = tempPermissions.some(perm => perm.permissionID === permissionID);
@@ -3055,9 +3554,7 @@ const AdminDashboard: React.FC = () => {
             const currentPermissionIds = selectedRole.permissions?.map(p => p.permissionID) || [];
             const newPermissionIds = tempPermissions.map(p => p.permissionID);
             const toAdd = newPermissionIds.filter(id => !currentPermissionIds.includes(id));
-            //const toRemove = currentPermissionIds.filter(id => !newPermissionIds.includes(id));
             if (toAdd.length > 0) await assignPermissionsToRole(selectedRole.roleID, toAdd, token!);
-            //if (toRemove.length > 0) await revokePermissionsFromRole(selectedRole.roleID, toRemove, token!);
             setRoles(roles.map(r => r.roleID === selectedRole.roleID ? { ...r, permissions: tempPermissions } : r));
             setSelectedRole({ ...selectedRole, permissions: tempPermissions });
             setHasUnsavedChanges(false);
@@ -3086,7 +3583,6 @@ const AdminDashboard: React.FC = () => {
             const currentRoleIds = selectedUser.roles?.map(r => r.roleID) || [];
             const newRoleIds = tempRoles.map(r => r.roleID);
             const toAdd = newRoleIds.filter(id => !currentRoleIds.includes(id));
-            //const toRemove = currentRoleIds.filter(id => !newRoleIds.includes(id));
             if (toAdd.length > 0) await assignRolesToUser(selectedUser.userID, toAdd, token!);
             setUsers(users.map(u => u.userID === selectedUser.userID ? { ...u, roles: tempRoles } : u));
             setSelectedUser({ ...selectedUser, roles: tempRoles });
@@ -3094,6 +3590,57 @@ const AdminDashboard: React.FC = () => {
         } catch (error) {
             console.error("Failed to save roles:", error);
             setTempRoles(selectedUser.roles || []);
+        } finally {
+            setLoading(false);
+        }
+    };
+
+    const handleToggleSupervisor = (supervisor: User) => {
+        const hasSupervisor = tempSupervisors.some(s => s.userID === supervisor.userID);
+        if (hasSupervisor) {
+            setTempSupervisors(tempSupervisors.filter(s => s.userID !== supervisor.userID));
+        } else {
+            setTempSupervisors([...tempSupervisors, supervisor]);
+        }
+        setHasUnsavedSupervisorChanges(true);
+    };
+
+    const handleToggleManager = (manager: User) => {
+        const hasManager = tempManagers.some(m => m.userID === manager.userID);
+        if (hasManager) {
+            setTempManagers(tempManagers.filter(m => m.userID !== manager.userID));
+        } else {
+            setTempManagers([...tempManagers, manager]);
+        }
+        setHasUnsavedSupervisorChanges(true);
+    };
+
+    const handleSaveSupervisorsAndManagers = async () => {
+        if (!selectedUser) return;
+        setLoading(true);
+        try {
+            const supervisorIds = tempSupervisors.map(s => s.userID);
+            const managerIds = tempManagers.map(m => m.userID);
+
+            const isManager = selectedUser.roles?.some(r => r.name === "Manager");
+            if (isManager && supervisorIds.length > 0) {
+                await assignSupervisorsToManager(selectedUser.userID, supervisorIds, token!);
+            }
+
+            const isSupervisor = selectedUser.roles?.some(r => r.name === "Supervisor");
+            if (isSupervisor && managerIds.length > 0) {
+                await Promise.all(managerIds.map(managerId =>
+                    assignSupervisorsToManager(managerId, [selectedUser.userID], token!)
+                ));
+            }
+
+            setUsers(users.map(u => u.userID === selectedUser.userID ? { ...u, supervisors: tempSupervisors, managers: tempManagers } : u));
+            setSelectedUser({ ...selectedUser, supervisors: tempSupervisors, managers: tempManagers });
+            setHasUnsavedSupervisorChanges(false);
+        } catch (error) {
+            console.error("Failed to save supervisors/managers:", error);
+            setTempSupervisors(selectedUser.supervisors || []);
+            setTempManagers(selectedUser.managers || []);
         } finally {
             setLoading(false);
         }
@@ -3122,10 +3669,7 @@ const AdminDashboard: React.FC = () => {
 
     const handleCreateRole = async () => {
         try {
-            const createdRole = await createRole({
-                name: newRole.name,
-                description: newRole.description
-            }, token!);
+            const createdRole = await createRole({ name: newRole.name, description: newRole.description }, token!);
             if (selectedPermissionsForNewRole.length > 0) {
                 await assignPermissionsToRole(createdRole.roleID, selectedPermissionsForNewRole, token!);
                 createdRole.permissions = await getPermissionsByRole(createdRole.roleID, token!);
@@ -3155,17 +3699,14 @@ const AdminDashboard: React.FC = () => {
 
     const toggleRolePopup = (roleID: string) => {
         setActiveRolePopup(activeRolePopup === roleID ? null : roleID);
-        setExpandedClasses(new Set()); // Reset expanded classes when opening/closing popup
+        setExpandedClasses(new Set());
     };
 
     const toggleClassExpansion = (className: string) => {
         setExpandedClasses(prev => {
             const newSet = new Set(prev);
-            if (newSet.has(className)) {
-                newSet.delete(className);
-            } else {
-                newSet.add(className);
-            }
+            if (newSet.has(className)) newSet.delete(className);
+            else newSet.add(className);
             return newSet;
         });
     };
@@ -3291,9 +3832,9 @@ const AdminDashboard: React.FC = () => {
 
                     {view === "roles" && (
                         <div className="roles-management">
-                            {/* Fixed Roles */}
+                            {/* ... (unchanged roles management section) ... */}
                             {(() => {
-                                const fixedRoles = filteredRoles.filter(role => 
+                                const fixedRoles = filteredRoles.filter(role =>
                                     ['Admin', 'Super Admin'].includes(role.name)
                                 );
                                 if (fixedRoles.length > 0) {
@@ -3329,9 +3870,8 @@ const AdminDashboard: React.FC = () => {
                                 return null;
                             })()}
 
-                            {/* Pre-made Roles */}
                             {(() => {
-                                const premadeRoles = filteredRoles.filter(role => 
+                                const premadeRoles = filteredRoles.filter(role =>
                                     ['Manager', 'Supervisor', 'Purchase', 'Regional Manager', 'Stock Manager'].includes(role.name)
                                 );
                                 if (premadeRoles.length > 0) {
@@ -3358,14 +3898,9 @@ const AdminDashboard: React.FC = () => {
                                 return null;
                             })()}
 
-                            {/* Custom Roles */}
                             {(() => {
-                                const customRoles = filteredRoles.filter(role => 
-                                    ![
-                                        'Admin', 'Super Admin',
-                                        'Manager', 'Supervisor', 'Purchase', 
-                                        'Regional Manager', 'Stock Manager'
-                                    ].includes(role.name)
+                                const customRoles = filteredRoles.filter(role =>
+                                    !['Admin', 'Super Admin', 'Manager', 'Supervisor', 'Purchase', 'Regional Manager', 'Stock Manager'].includes(role.name)
                                 );
                                 if (customRoles.length > 0) {
                                     return (
@@ -3391,7 +3926,6 @@ const AdminDashboard: React.FC = () => {
                                 return null;
                             })()}
 
-                            {/* Role Info Popup */}
                             {activeRolePopup && (
                                 <div className="role-info-popup-overlay" onClick={() => setActiveRolePopup(null)}>
                                     <div className="role-info-popup" onClick={(e) => e.stopPropagation()}>
@@ -3466,7 +4000,8 @@ const AdminDashboard: React.FC = () => {
                     )}
 
                     {view === "add-user" && (
-                        <div className="form-card">
+                        <div className="form-card form-card-0">
+                            {/* ... (unchanged add-user section) ... */}
                             <div className="form-section">
                                 <h3>Personal Information</h3>
                                 <div className="form-row">
@@ -3619,7 +4154,8 @@ const AdminDashboard: React.FC = () => {
                     )}
 
                     {view === "add-role" && (
-                        <div className="form-card">
+                        <div className="form-card form-card-0">
+                            {/* ... (unchanged add-role section) ... */}
                             <div className="form-section">
                                 <h3>Role Details</h3>
                                 <div className="form-group">
@@ -3708,22 +4244,13 @@ const AdminDashboard: React.FC = () => {
                         <div className="details-card">
                             <div className="card-header">
                                 <h2>User Details</h2>
-                                {/* <div className="user-actions">
-                                    <button className="edit-button" onClick={() => handleEditUser(selectedUser)}>
-                                        <FaEdit /> Edit
-                                    </button>
-                                    <button className="delete-button" onClick={() => handleDeleteUser(selectedUser.userID)}>
-                                        <FaTrash /> Delete
-                                    </button>
-                                </div> */}
                             </div>
                             <hr />
-
                             <div className="form-section">
                                 <h3>Basic Information</h3>
                                 <div className="info-grid">
                                     <p><strong>Email:</strong> {selectedUser.email}</p>
-                                    <p><strong>Phone:</strong> {selectedUser.phone }</p>
+                                    <p><strong>Phone:</strong> {selectedUser.phone}</p>
                                     <p><strong>Wallet:</strong> {selectedUser.wallet}</p>
                                 </div>
                             </div>
@@ -3757,6 +4284,108 @@ const AdminDashboard: React.FC = () => {
                                     ))}
                                 </div>
                             </div>
+                            {(selectedUser.roles?.some(r => r.name === "Manager") || selectedUser.roles?.some(r => r.name === "Supervisor")) && (
+                                <div className="form-section">
+                                    <div className="group-header">
+                                        <h3>Supervisor/Manager Assignments</h3>
+                                        {hasUnsavedSupervisorChanges && (
+                                            <button className="action-button" onClick={handleSaveSupervisorsAndManagers} disabled={loading}>
+                                                {loading ? 'Saving...' : 'Save Assignments'}
+                                            </button>
+                                        )}
+                                    </div>
+                                    {selectedUser.roles?.some(r => r.name === "Manager") && (
+                                        <div className="assignment-list">
+                                            <h4>Supervisors Assigned to This Manager</h4>
+                                            <div className="search-container assignment-search">
+                                                <FaSearch className="search-icon" />
+                                                <input
+                                                    type="text"
+                                                    placeholder="Search supervisors..."
+                                                    value={supervisorSearch}
+                                                    onChange={(e) => setSupervisorSearch(e.target.value)}
+                                                    className="search-input"
+                                                />
+                                            </div>
+                                            <div className="list-container">
+                                                {paginatedSupervisors.map((supervisor) => (
+                                                    <div key={supervisor.userID} className="list-item">
+                                                        <label>
+                                                            <input
+                                                                type="checkbox"
+                                                                checked={tempSupervisors.some(s => s.userID === supervisor.userID)}
+                                                                onChange={() => handleToggleSupervisor(supervisor)}
+                                                                disabled={loading}
+                                                            />
+                                                            {`${supervisor.firstname} ${supervisor.lastname} (${supervisor.email})`}
+                                                        </label>
+                                                    </div>
+                                                ))}
+                                            </div>
+                                            <div className="pagination">
+                                                <button
+                                                    onClick={() => setSupervisorPage(p => Math.max(1, p - 1))}
+                                                    disabled={supervisorPage === 1}
+                                                >
+                                                    Previous
+                                                </button>
+                                                <span>Page {supervisorPage} of {Math.ceil(supervisorUsers.length / ITEMS_PER_PAGE)}</span>
+                                                <button
+                                                    onClick={() => setSupervisorPage(p => p + 1)}
+                                                    disabled={supervisorPage >= Math.ceil(supervisorUsers.length / ITEMS_PER_PAGE)}
+                                                >
+                                                    Next
+                                                </button>
+                                            </div>
+                                        </div>
+                                    )}
+                                    {selectedUser.roles?.some(r => r.name === "Supervisor") && (
+                                        <div className="assignment-list">
+                                            <h4>Managers Assigned to This Supervisor</h4>
+                                            <div className="search-container assignment-search">
+                                                <FaSearch className="search-icon" />
+                                                <input
+                                                    type="text"
+                                                    placeholder="Search managers..."
+                                                    value={managerSearch}
+                                                    onChange={(e) => setManagerSearch(e.target.value)}
+                                                    className="search-input"
+                                                />
+                                            </div>
+                                            <div className="list-container">
+                                                {paginatedManagers.map((manager) => (
+                                                    <div key={manager.userID} className="list-item">
+                                                        <label>
+                                                            <input
+                                                                type="checkbox"
+                                                                checked={tempManagers.some(m => m.userID === manager.userID)}
+                                                                onChange={() => handleToggleManager(manager)}
+                                                                disabled={loading}
+                                                            />
+                                                            {`${manager.firstname} ${manager.lastname} (${manager.email})`}
+                                                        </label>
+                                                    </div>
+                                                ))}
+                                            </div>
+                                            <div className="pagination">
+                                                <button
+                                                    onClick={() => setManagerPage(p => Math.max(1, p - 1))}
+                                                    disabled={managerPage === 1}
+                                                >
+                                                    Previous
+                                                </button>
+                                                <span>Page {managerPage} of {Math.ceil(managerUsers.length / ITEMS_PER_PAGE)}</span>
+                                                <button
+                                                    onClick={() => setManagerPage(p => p + 1)}
+                                                    disabled={managerPage >= Math.ceil(managerUsers.length / ITEMS_PER_PAGE)}
+                                                >
+                                                    Next
+                                                </button>
+                                            </div>
+                                        </div>
+                                    )}
+                                </div>
+                            )}
                             {activeRolePopup && (
                                 <div className="role-info-popup-overlay" onClick={() => setActiveRolePopup(null)}>
                                     <div className="role-info-popup" onClick={(e) => e.stopPropagation()}>
@@ -3828,7 +4457,7 @@ File contents: C:\Users\Kayto\Desktop\IT\Projects\Stage\Stage PFE\Visit_Manageme
     margin: 0;
     font-size: 1.5rem;
     font-weight: 700;
-    color: #1f2937;
+    color: #292929;
 }
 
 .login-card {
@@ -3912,7 +4541,7 @@ body.dark .login-header h1 {
 }
 
 body.dark .login-card {
-    background: #2d3748;
+    background: #363636;
     box-shadow: 0 0.375rem 1.25rem rgba(0, 0, 0, 0.3);
 }
 
@@ -3966,6 +4595,7 @@ body.dark .error {
 ==================================================
 File contents: C:\Users\Kayto\Desktop\IT\Projects\Stage\Stage PFE\Visit_Management\Front-End\src\pages\auth\Login.tsx
 ==================================================
+// src/pages/auth/Login.tsx
 import React, { useState, useEffect } from "react";
 import { useAuth } from "../../context/AuthContext";
 import { useError } from "../../context/ErrorContext";
@@ -3981,7 +4611,6 @@ const LoginPage: React.FC = () => {
     const { setError } = useError();
     const location = useLocation();
 
-    // Log user and token when they change
     useEffect(() => {
         console.log("LoginPage - User updated:", user, "Token updated:", token);
     }, [user, token]);
@@ -3992,7 +4621,8 @@ const LoginPage: React.FC = () => {
         setError(null);
 
         try {
-            const redirectTo = location.state?.from || "/admin";
+            // Pass the intended redirect from location.state, if any
+            const redirectTo = location.state?.from;
             await loginUser(identifier, password, redirectTo);
         } catch (err: unknown) {
             const axiosError = err as AxiosError<{ error: string }>;
@@ -4078,7 +4708,7 @@ File contents: C:\Users\Kayto\Desktop\IT\Projects\Stage\Stage PFE\Visit_Manageme
     margin: 0;
     font-size: 1.5rem;
     font-weight: 700;
-    color: #1f2937;
+    color: #282828;
 }
 
 .form-card {
@@ -4087,7 +4717,7 @@ File contents: C:\Users\Kayto\Desktop\IT\Projects\Stage\Stage PFE\Visit_Manageme
     padding: 1.5rem;
     box-shadow: 0 0.375rem 1.25rem rgba(0, 0, 0, 0.05);
     width: 100%;
-    max-width: 37.5rem;
+    max-width: 37.5rem !important;
     margin-top: 1rem;
     transition: transform 0.3s ease;
 }
@@ -4292,15 +4922,17 @@ import {
 import { getAllChecklists } from "../../apis/checklistAPI";
 import { getAllReasons } from "../../apis/reasonAPI";
 import { createTimesheet } from "../../apis/timesheetAPI";
-import { getSupervisorByPhone, getAllUsers } from "../../apis/userAPI"; // Assuming getAllUsers can filter supervisors
+import { getSupervisorByPhone, getSupervisorsByUser } from "../../apis/userAPI"; // Replace getAllUsers with getSupervisorsByUser
 import { Checklist } from "../../models/Checklist";
 import { Reason } from "../../models/Reason";
 import { useAuth } from "../../context/AuthContext";
+import { useError } from "../../context/ErrorContext";
 import User from "../../models/User";
 
 const TimesheetForm: React.FC = () => {
   const navigate = useNavigate();
-  const { user, token } = useAuth(); // Get user and token from AuthContext
+  const { user, token } = useAuth();
+  const { setError } = useError();
   const [date, setDate] = useState<string>("");
   const [time, setTime] = useState<string>("");
   const [locations, setLocations] = useState<string[]>([]);
@@ -4317,49 +4949,49 @@ const TimesheetForm: React.FC = () => {
   const [selectedChecklists, setSelectedChecklists] = useState<Array<{ id?: string }>>([]);
   const [checklistSearch, setChecklistSearch] = useState<string>("");
   const [loading, setLoading] = useState<boolean>(false);
-  const [error, setError] = useState<string | null>(null);
-  
-  // Supervisor-related states
   const [supervisors, setSupervisors] = useState<User[]>([]);
   const [selectedSupervisor, setSelectedSupervisor] = useState<string>("");
   const [supervisorPhone, setSupervisorPhone] = useState<string>("");
   const [supervisorSearch, setSupervisorSearch] = useState<string>("");
 
-  // Check if user exists and has the required permission to access this form
-  if (!user || !token || !user.roles?.some(role => role.permissions?.includes("create_timesheets"))) {
-    navigate("/login");
-    return null;
-  }
+  // Redirect if user is not authenticated or lacks permission
+  useEffect(() => {
+    if (!user || !token || !user.roles?.some(role => role.permissions?.includes("create_timesheets"))) {
+      navigate("/login");
+    }
+  }, [user, token, navigate]);
+
+  if (!user || !token) return null;
 
   const canValidateTimesheets = user.roles?.some(role => role.permissions?.includes("validate_timesheets"));
   const supervisorID = canValidateTimesheets && selectedSupervisor ? selectedSupervisor : user.userID;
 
-  // Fetch initial data (locations, reasons, checklists, and supervisors if applicable)
+  // Fetch initial data
   useEffect(() => {
     const fetchData = async () => {
+      setLoading(true);
       try {
-        setLoading(true);
         const [locationsData, reasonsData, checklistsData, supervisorsData] = await Promise.all([
           getAgentLocations(),
           getAllReasons(),
           getAllChecklists(),
-          canValidateTimesheets ? getAllUsers(token).then(users => users.filter(u => u.roles?.some(r => r.name === "Supervisor"))) : Promise.resolve([]), // Filter for supervisors
+          canValidateTimesheets
+            ? getSupervisorsByUser(user.userID, token) // Fetch supervisors assigned to the logged-in user
+            : Promise.resolve([]),
         ]);
         setLocations(locationsData);
         setReasons(reasonsData);
         setChecklists(checklistsData);
-        if (canValidateTimesheets) {
-          setSupervisors(supervisorsData);
-        }
+        if (canValidateTimesheets) setSupervisors(supervisorsData);
       } catch (err) {
-        setError("Failed to load initial data");
-        console.error(err);
+        setError("Failed to load initial data. Please try again.");
+        console.error("Fetch data error:", err);
       } finally {
         setLoading(false);
       }
     };
     fetchData();
-  }, [token, canValidateTimesheets]);
+  }, [token, canValidateTimesheets, user.userID, setError]);
 
   // Fetch agents by location
   useEffect(() => {
@@ -4370,7 +5002,7 @@ const TimesheetForm: React.FC = () => {
           setAgents(agentsData);
         } catch (err) {
           setError(`Failed to load agents for ${selectedLocation}`);
-          console.error(err);
+          console.error("Fetch agents error:", err);
         }
       };
       fetchAgents();
@@ -4378,82 +5010,66 @@ const TimesheetForm: React.FC = () => {
       setAgents([]);
       setSelectedAgent("");
     }
-  }, [selectedLocation, agentPhone]);
+  }, [selectedLocation, agentPhone, setError]);
 
   // Debounced fetch agent by phone
   const fetchAgentByPhone = useCallback(
     debounce(async (phone: string) => {
-      if (phone.length < 7) {
-        setError(null);
-        return;
-      }
+      if (phone.length < 7) return;
       try {
         const agentData = await getAgentByPhone(phone);
         setSelectedAgent(agentData.agentID);
         setSelectedLocation(agentData.location || "");
         setAgents([agentData]);
         setAgentSearch(`${agentData.name || ""} ${agentData.lastname || ""}`);
-        setError(null);
       } catch (err) {
         setError("Agent not found with this phone number");
         setSelectedAgent("");
         setAgents([]);
         setSelectedLocation("");
-        console.error(err);
+        console.error("Fetch agent by phone error:", err);
       }
     }, 500),
-    []
+    [setError]
   );
 
   useEffect(() => {
-    if (agentPhone) {
-      fetchAgentByPhone(agentPhone);
-    } else {
+    if (agentPhone) fetchAgentByPhone(agentPhone);
+    else {
       setSelectedAgent("");
       setAgents([]);
       setSelectedLocation("");
       setAgentSearch("");
-      setError(null);
     }
-    return () => {
-      fetchAgentByPhone.cancel();
-    };
+    return () => fetchAgentByPhone.cancel();
   }, [agentPhone, fetchAgentByPhone]);
 
   // Debounced fetch supervisor by phone
   const fetchSupervisorByPhone = useCallback(
     debounce(async (phone: string) => {
-      if (phone.length < 7) {
-        setError(null);
-        return;
-      }
+      if (phone.length < 7) return;
       try {
-        const supervisorData = await getSupervisorByPhone(phone, token);
-        setSelectedSupervisor(supervisorData);
-        setSupervisors([supervisorData.userID]);
-        setSupervisorSearch(`${supervisorData.firstname || ""} ${supervisorData.lastname || ""}`);
-        setError(null);
+        const supervisorID = await getSupervisorByPhone(phone, token);
+        const supervisor = supervisors.find(s => s.userID === supervisorID) || { userID: supervisorID, firstname: "", lastname: "", phone };
+        setSelectedSupervisor(supervisorID);
+        setSupervisors(prev => prev.some(s => s.userID === supervisorID) ? prev : [...prev, supervisor]);
+        setSupervisorSearch(`${supervisor.firstname || ""} ${supervisor.lastname || ""}`);
       } catch (err) {
         setError("Supervisor not found with this phone number");
         setSelectedSupervisor("");
-        setSupervisors([]);
-        console.error(err);
+        console.error("Fetch supervisor by phone error:", err);
       }
     }, 500),
-    [token]
+    [token, supervisors, setError]
   );
 
   useEffect(() => {
-    if (supervisorPhone && canValidateTimesheets) {
-      fetchSupervisorByPhone(supervisorPhone);
-    } else if (canValidateTimesheets) {
+    if (supervisorPhone && canValidateTimesheets) fetchSupervisorByPhone(supervisorPhone);
+    else if (canValidateTimesheets) {
       setSelectedSupervisor("");
       setSupervisorSearch("");
-      setError(null);
     }
-    return () => {
-      fetchSupervisorByPhone.cancel();
-    };
+    return () => fetchSupervisorByPhone.cancel();
   }, [supervisorPhone, canValidateTimesheets, fetchSupervisorByPhone]);
 
   const getWeekNumber = (dateStr: string): number => {
@@ -4461,21 +5077,18 @@ const TimesheetForm: React.FC = () => {
     const utcDate = new Date(Date.UTC(date.getUTCFullYear(), date.getUTCMonth(), date.getUTCDate()));
     utcDate.setUTCDate(utcDate.getUTCDate() + 4 - (utcDate.getUTCDay() || 7));
     const yearStart = new Date(Date.UTC(utcDate.getUTCFullYear(), 0, 1));
-    const diffMs = utcDate.getTime() - yearStart.getTime();
-    const dayMs = 24 * 60 * 60 * 1000;
-    const weekNum = Math.ceil((diffMs / dayMs + 1) / 7);
-    return weekNum;
+    return Math.ceil(((utcDate.getTime() - yearStart.getTime()) / 86400000 + 1) / 7);
   };
 
   const handleReasonSelect = (reason: Reason) => {
-    if (!selectedReasons.some((r) => r.id === reason.reasonID)) {
+    if (!selectedReasons.some(r => r.id === reason.reasonID)) {
       setSelectedReasons([...selectedReasons, { id: reason.reasonID }]);
     }
     setReasonSearch("");
   };
 
   const handleChecklistSelect = (checklist: Checklist) => {
-    if (!selectedChecklists.some((c) => c.id === checklist.checklistID)) {
+    if (!selectedChecklists.some(c => c.id === checklist.checklistID)) {
       setSelectedChecklists([...selectedChecklists, { id: checklist.checklistID }]);
     }
     setChecklistSearch("");
@@ -4493,23 +5106,21 @@ const TimesheetForm: React.FC = () => {
       weekNumber,
       year,
       supervisorID,
-      visits: [
-        {
-          date,
-          time: `${time}:00`,
-          agentID: selectedAgent,
-          reasons: selectedReasons,
-          checklists: selectedChecklists,
-        },
-      ],
+      visits: [{
+        date,
+        time: `${time}:00`,
+        agentID: selectedAgent,
+        reasons: selectedReasons,
+        checklists: selectedChecklists,
+      }],
     };
 
     try {
       await createTimesheet(timesheetData, token);
       navigate("/timesheet");
     } catch (err) {
-      setError("Failed to create timesheet");
-      console.error(err);
+      setError("Failed to create timesheet. Please try again.");
+      console.error("Submit error:", err);
     } finally {
       setLoading(false);
     }
@@ -4521,9 +5132,9 @@ const TimesheetForm: React.FC = () => {
     selectedAgent &&
     selectedReasons.length > 0 &&
     selectedChecklists.length > 0 &&
-    (!canValidateTimesheets || selectedSupervisor); // Require supervisor if user can validate
+    (!canValidateTimesheets || selectedSupervisor);
 
-  if (loading && !error) return <div className="loading">Loading...</div>;
+  if (loading) return <div className="loading">Loading...</div>;
 
   return (
     <div className="timesheet-form-container">
@@ -4558,18 +5169,17 @@ const TimesheetForm: React.FC = () => {
               >
                 <option value="">Select a supervisor</option>
                 {supervisors
-                  .filter((supervisor) =>
-                    `${supervisor.firstname || ""} ${supervisor.lastname || ""} ${supervisor.phone || ""}`
+                  .filter((s) =>
+                    `${s.firstname || ""} ${s.lastname || ""} ${s.phone || ""}`
                       .toLowerCase()
                       .includes(supervisorSearch.toLowerCase())
                   )
-                  .map((supervisor) => (
-                    <option key={supervisor.userID} value={supervisor.userID}>
-                      {supervisor.firstname} {supervisor.lastname} ({supervisor.phone})
+                  .map((s) => (
+                    <option key={s.userID} value={s.userID}>
+                      {s.firstname} {s.lastname} ({s.phone})
                     </option>
                   ))}
               </select>
-              {error && supervisorPhone && <span className="error-text">{error}</span>}
             </div>
           )}
           <div className="form-group">
@@ -4602,7 +5212,6 @@ const TimesheetForm: React.FC = () => {
               onChange={(e) => setAgentPhone(e.target.value)}
               className="search-input"
             />
-            {error && agentPhone && <span className="error-text">{error}</span>}
           </div>
           <div className="form-group">
             <label htmlFor="location">Location</label>
@@ -4659,7 +5268,7 @@ const TimesheetForm: React.FC = () => {
                 )
                 .map((agent) => (
                   <option key={agent.agentID} value={agent.agentID}>
-                    {agent.name} {agent.lastname} {agent.phone}
+                    {agent.name} {agent.lastname} ({agent.phone})
                   </option>
                 ))}
             </select>
@@ -5364,6 +5973,7 @@ html {
 ==================================================
 File contents: C:\Users\Kayto\Desktop\IT\Projects\Stage\Stage PFE\Visit_Management\Front-End\src\pages\timesheet\Timesheets.tsx
 ==================================================
+/* eslint-disable react-hooks/rules-of-hooks */
 /* eslint-disable react-hooks/exhaustive-deps */
 import React, { useEffect, useState } from "react";
 import { useNavigate } from "react-router-dom";
@@ -5536,7 +6146,10 @@ const Timesheets: React.FC = () => {
 
   const generateDayData = () => {
     if (!currentDay) return [];
-    const dateStr = currentDay.toISOString().split("T")[0];
+    const year = currentDay.getFullYear();
+    const month = String(currentDay.getMonth() + 1).padStart(2, "0"); 
+    const day = String(currentDay.getDate()).padStart(2, "0");
+    const dateStr = `${year}-${month}-${day}`;
     const visits = timesheets
       .flatMap((ts) => ts.Visits || [])
       .filter((visit) => visit.date === dateStr);
@@ -7650,10 +8263,12 @@ import { Html5Qrcode } from "html5-qrcode";
 import Visit from "../../models/Visit";
 import "./QRScan.css";
 import { verifyQrCode } from "../../apis/visitAPI";
+import { useAuth } from "../../context/AuthContext";
 
 const QRScan: React.FC = () => {
     const navigate = useNavigate();
     const location = useLocation();
+    const { token } = useAuth();
     const [backendError, setBackendError] = useState<string | null>(null); // For mismatch or validation errors
     const [status, setStatus] = useState<string>("Scanning..."); // Track scanning status
     const [loading, setLoading] = useState<boolean>(true);
@@ -7662,8 +8277,6 @@ const QRScan: React.FC = () => {
     const [isSuccess, setIsSuccess] = useState<boolean>(false); // For success animation
     const qrRef = useRef<HTMLDivElement>(null);
     const qrCode = useRef<Html5Qrcode | null>(null);
-
-    // Get visit from location state
     const visit = (location.state as { visit?: Visit })?.visit;
 
     useEffect(() => {
@@ -7689,7 +8302,7 @@ const QRScan: React.FC = () => {
         qrCode.current = html5QrCode;
 
         const config = { fps: 10, qrbox: { width: 250, height: 250 } };
-        const qrCodeSuccessCallback = async (decodedText: string, decodedResult: any) => {
+        const qrCodeSuccessCallback = async (decodedText: string) => {
             setStatus("QR Code Detected"); // Show detection
             await new Promise((resolve) => setTimeout(resolve, 1500)); // Delay for visibility
             setStatus("Checking..."); // Update status when checking
@@ -7698,8 +8311,8 @@ const QRScan: React.FC = () => {
             try {
                 const response = await verifyQrCode({
                     qrData: decodedText,
-                    visitId: visit.visitID,
-                });
+                    visitId: visit.visitID}
+                    , token!); // Pass token explicitly
 
                 if (response.valid) {
                     setStatus("Validating..."); // Show validation status
@@ -7762,7 +8375,7 @@ const QRScan: React.FC = () => {
             }
             setIsMounted(false);
         };
-    }, [visit, navigate, isMounted]);
+    }, [visit, navigate, isMounted , token]);
 
     const handleBack = () => {
         navigate(-1); // Go back to previous page (VisitDetails)
@@ -8166,10 +8779,12 @@ import { getAgentById } from "../../apis/agentAPI";
 import { getVisitById } from "../../apis/visitAPI";
 import Visit from "../../models/Visit";
 import Agent from "../../models/Agent";
+import { useAuth } from "../../context/AuthContext";
 
 const VisitDetails: React.FC = () => {
     const { idVisit } = useParams<{ idVisit: string }>();
     const navigate = useNavigate();
+    const { token } = useAuth(); // Get token from AuthContext
     const [visit, setVisit] = useState<Visit | null>(null);
     const [agent, setAgent] = useState<Agent | null>(null);
     const [loading, setLoading] = useState<boolean>(true);
@@ -8185,11 +8800,11 @@ const VisitDetails: React.FC = () => {
 
             try {
                 setLoading(true);
-                const visitData = await getVisitById(idVisit);
+                const visitData = await getVisitById(idVisit, token!); // Pass token                
                 setVisit(visitData);
 
                 if (visitData.agentID) {
-                    const agentData = await getAgentById(visitData.agentID);
+                    const agentData = await getAgentById(visitData.agentID, token!);
                     setAgent(agentData);
                 }
             } catch (err) {
@@ -8201,7 +8816,7 @@ const VisitDetails: React.FC = () => {
         };
 
         fetchVisitDetails();
-    }, [idVisit]);
+    }, [idVisit, token]);
 
     const handleLogVisit = () => {
         if (visit) {
@@ -8721,10 +9336,12 @@ import { getAgentById } from "../../apis/agentAPI";
 import { getVisitById, logVisitDetails } from "../../apis/visitAPI";
 import Visit from "../../models/Visit";
 import Agent from "../../models/Agent";
+import { useAuth } from "../../context/AuthContext";
 
 
 const VisitValidation: React.FC = () => {
     const { idVisit } = useParams<{ idVisit: string }>();
+    const { token } = useAuth();    
     const navigate = useNavigate();
     const [visit, setVisit] = useState<Visit | null>(null);
     const [agent, setAgent] = useState<Agent | null>(null);
@@ -8736,19 +9353,19 @@ const VisitValidation: React.FC = () => {
 
     useEffect(() => {
         const fetchVisitData = async () => {
-            if (!idVisit) {
-                setError("No visit ID provided.");
+            if (!idVisit || !token) {
+                setError("Missing visit ID or authentication token.");
                 setLoading(false);
                 return;
             }
 
             try {
                 setLoading(true);
-                const visitData = await getVisitById(idVisit);
+                const visitData = await getVisitById(idVisit, token); // Pass token explicitly
                 setVisit(visitData);
 
                 if (visitData.agentID) {
-                    const agentData = await getAgentById(visitData.agentID);
+                    const agentData = await getAgentById(visitData.agentID, token); // Pass token
                     setAgent(agentData);
                 }
 
@@ -8769,7 +9386,7 @@ const VisitValidation: React.FC = () => {
         };
 
         fetchVisitData();
-    }, [idVisit]);
+    }, [idVisit, token]);
 
     const handleChecklistChange = (checklistId: string) => {
         setChecklist((prev) =>
@@ -8801,7 +9418,7 @@ const VisitValidation: React.FC = () => {
                 status: "validated",
             };
 
-            await logVisitDetails(idVisit, updatedVisitData);
+            await logVisitDetails(idVisit, updatedVisitData, token!); // Pass token explicitly
             await new Promise((resolve) => setTimeout(resolve, 500)); // Brief delay for animation
             navigate("/timesheet");
         } catch (err) {

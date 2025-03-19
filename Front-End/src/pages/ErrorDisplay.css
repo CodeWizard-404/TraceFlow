@@ -1,0 +1,31 @@
+.error-display {
+    position: fixed;
+    top: 10px;
+    left: 50%;
+    transform: translateX(-50%);
+    background-color: #ffe6e6;
+    padding: 10px 20px;
+    border-radius: 5px;
+    box-shadow: 0 2px 5px rgba(0, 0, 0, 0.2);
+    z-index: 1000;
+    color: #d32f2f;
+}
+
+.error-display span {
+    color: inherit;
+}
+
+.error-display button {
+    margin-left: 10px;
+    background: none;
+    border: none;
+    color: inherit;
+    cursor: pointer;
+    font-weight: bold;
+}
+
+/* Dark mode using body.dark */
+body.dark .error-display {
+    background-color: #732727;
+    color: #ff6b6b;
+}

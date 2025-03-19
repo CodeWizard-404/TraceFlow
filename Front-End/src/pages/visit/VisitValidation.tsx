@@ -7,10 +7,12 @@ import { getAgentById } from "../../apis/agentAPI";
 import { getVisitById, logVisitDetails } from "../../apis/visitAPI";
 import Visit from "../../models/Visit";
 import Agent from "../../models/Agent";
+import { useAuth } from "../../context/AuthContext";
 
 
 const VisitValidation: React.FC = () => {
     const { idVisit } = useParams<{ idVisit: string }>();
+    const { token } = useAuth();    
     const navigate = useNavigate();
     const [visit, setVisit] = useState<Visit | null>(null);
     const [agent, setAgent] = useState<Agent | null>(null);
@@ -22,19 +24,19 @@ const VisitValidation: React.FC = () => {
 
     useEffect(() => {
         const fetchVisitData = async () => {
-            if (!idVisit) {
-                setError("No visit ID provided.");
+            if (!idVisit || !token) {
+                setError("Missing visit ID or authentication token.");
                 setLoading(false);
                 return;
             }
 
             try {
                 setLoading(true);
-                const visitData = await getVisitById(idVisit);
+                const visitData = await getVisitById(idVisit, token); // Pass token explicitly
                 setVisit(visitData);
 
                 if (visitData.agentID) {
-                    const agentData = await getAgentById(visitData.agentID);
+                    const agentData = await getAgentById(visitData.agentID, token); // Pass token
                     setAgent(agentData);
                 }
 
@@ -55,7 +57,7 @@ const VisitValidation: React.FC = () => {
         };
 
         fetchVisitData();
-    }, [idVisit]);
+    }, [idVisit, token]);
 
     const handleChecklistChange = (checklistId: string) => {
         setChecklist((prev) =>
@@ -87,7 +89,7 @@ const VisitValidation: React.FC = () => {
                 status: "validated",
             };
 
-            await logVisitDetails(idVisit, updatedVisitData);
+            await logVisitDetails(idVisit, updatedVisitData, token!); // Pass token explicitly
             await new Promise((resolve) => setTimeout(resolve, 500)); // Brief delay for animation
             navigate("/timesheet");
         } catch (err) {

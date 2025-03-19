@@ -23,7 +23,7 @@
     margin: 0;
     font-size: 1.5rem;
     font-weight: 700;
-    color: #1f2937;
+    color: #292929;
 }
 
 .login-card {
@@ -107,7 +107,7 @@ body.dark .login-header h1 {
 }
 
 body.dark .login-card {
-    background: #2d3748;
+    background: #363636;
     box-shadow: 0 0.375rem 1.25rem rgba(0, 0, 0, 0.3);
 }
 

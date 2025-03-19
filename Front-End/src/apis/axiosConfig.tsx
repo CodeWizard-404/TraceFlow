@@ -12,14 +12,15 @@ export const setupAxiosInterceptors = (getToken: () => string | null) => {
     api.interceptors.request.use(
         (config) => {
             const token = getToken();
+            console.log("Interceptor - Token:", token); // Debug
             if (token) {
                 config.headers["Authorization"] = `Bearer ${token}`;
+            } else {
+                console.warn("Interceptor - No token available");
             }
             return config;
         },
-        (error) => {
-            return Promise.reject(error);
-        }
+        (error) => Promise.reject(error)
     );
 
     // Optional: Handle 401 responses globally (e.g., redirect to login)

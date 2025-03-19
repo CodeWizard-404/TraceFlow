@@ -45,8 +45,6 @@ const AdminDashboard: React.FC = () => {
     const [activeRolePopup, setActiveRolePopup] = useState<string | null>(null);
     const [expandedClasses, setExpandedClasses] = useState<Set<string>>(new Set());
     const [passwordConfirm, setPasswordConfirm] = useState("");
-
-    // Supervisor/Manager Assignment States
     const [tempSupervisors, setTempSupervisors] = useState<User[]>([]);
     const [tempManagers, setTempManagers] = useState<User[]>([]);
     const [hasUnsavedSupervisorChanges, setHasUnsavedSupervisorChanges] = useState(false);

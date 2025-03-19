@@ -11,10 +11,12 @@ import { getAgentById } from "../../apis/agentAPI";
 import { getVisitById } from "../../apis/visitAPI";
 import Visit from "../../models/Visit";
 import Agent from "../../models/Agent";
+import { useAuth } from "../../context/AuthContext";
 
 const VisitDetails: React.FC = () => {
     const { idVisit } = useParams<{ idVisit: string }>();
     const navigate = useNavigate();
+    const { token } = useAuth(); // Get token from AuthContext
     const [visit, setVisit] = useState<Visit | null>(null);
     const [agent, setAgent] = useState<Agent | null>(null);
     const [loading, setLoading] = useState<boolean>(true);
@@ -30,11 +32,11 @@ const VisitDetails: React.FC = () => {
 
             try {
                 setLoading(true);
-                const visitData = await getVisitById(idVisit);
+                const visitData = await getVisitById(idVisit, token!); // Pass token                
                 setVisit(visitData);
 
                 if (visitData.agentID) {
-                    const agentData = await getAgentById(visitData.agentID);
+                    const agentData = await getAgentById(visitData.agentID, token!);
                     setAgent(agentData);
                 }
             } catch (err) {
@@ -46,7 +48,7 @@ const VisitDetails: React.FC = () => {
         };
 
         fetchVisitDetails();
-    }, [idVisit]);
+    }, [idVisit, token]);
 
     const handleLogVisit = () => {
         if (visit) {

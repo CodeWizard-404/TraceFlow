@@ -1,3 +1,4 @@
+// src/pages/auth/Login.tsx
 import React, { useState, useEffect } from "react";
 import { useAuth } from "../../context/AuthContext";
 import { useError } from "../../context/ErrorContext";
@@ -13,7 +14,6 @@ const LoginPage: React.FC = () => {
     const { setError } = useError();
     const location = useLocation();
 
-    // Log user and token when they change
     useEffect(() => {
         console.log("LoginPage - User updated:", user, "Token updated:", token);
     }, [user, token]);
@@ -24,7 +24,8 @@ const LoginPage: React.FC = () => {
         setError(null);
 
         try {
-            const redirectTo = location.state?.from || "/admin";
+            // Pass the intended redirect from location.state, if any
+            const redirectTo = location.state?.from;
             await loginUser(identifier, password, redirectTo);
         } catch (err: unknown) {
             const axiosError = err as AxiosError<{ error: string }>;

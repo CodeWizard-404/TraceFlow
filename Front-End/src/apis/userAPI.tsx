@@ -1,4 +1,6 @@
 import axios from "axios";
+//import api from "./axiosConfig"; // Use the shared instance
+
 import { BASE_URL, DEFAULT_TIMEOUT } from "../config";
 import {
   CreateUserResponse,

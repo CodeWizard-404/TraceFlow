@@ -28,7 +28,7 @@ body {
 
 /* Dark theme overrides */
 body.dark {
-  background: linear-gradient(135deg, #111111 0%, #424242 100%);
+  background: linear-gradient(135deg, #1e1e1e 0%, #1e1e1e 100%);
   color: #e2e8f0;
 }
 

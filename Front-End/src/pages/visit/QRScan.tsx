@@ -5,10 +5,12 @@ import { Html5Qrcode } from "html5-qrcode";
 import Visit from "../../models/Visit";
 import "./QRScan.css";
 import { verifyQrCode } from "../../apis/visitAPI";
+import { useAuth } from "../../context/AuthContext";
 
 const QRScan: React.FC = () => {
     const navigate = useNavigate();
     const location = useLocation();
+    const { token } = useAuth();
     const [backendError, setBackendError] = useState<string | null>(null); // For mismatch or validation errors
     const [status, setStatus] = useState<string>("Scanning..."); // Track scanning status
     const [loading, setLoading] = useState<boolean>(true);
@@ -17,8 +19,6 @@ const QRScan: React.FC = () => {
     const [isSuccess, setIsSuccess] = useState<boolean>(false); // For success animation
     const qrRef = useRef<HTMLDivElement>(null);
     const qrCode = useRef<Html5Qrcode | null>(null);
-
-    // Get visit from location state
     const visit = (location.state as { visit?: Visit })?.visit;
 
     useEffect(() => {
@@ -44,7 +44,7 @@ const QRScan: React.FC = () => {
         qrCode.current = html5QrCode;
 
         const config = { fps: 10, qrbox: { width: 250, height: 250 } };
-        const qrCodeSuccessCallback = async (decodedText: string, decodedResult: any) => {
+        const qrCodeSuccessCallback = async (decodedText: string) => {
             setStatus("QR Code Detected"); // Show detection
             await new Promise((resolve) => setTimeout(resolve, 1500)); // Delay for visibility
             setStatus("Checking..."); // Update status when checking
@@ -53,8 +53,8 @@ const QRScan: React.FC = () => {
             try {
                 const response = await verifyQrCode({
                     qrData: decodedText,
-                    visitId: visit.visitID,
-                });
+                    visitId: visit.visitID}
+                    , token!); // Pass token explicitly
 
                 if (response.valid) {
                     setStatus("Validating..."); // Show validation status
@@ -117,7 +117,7 @@ const QRScan: React.FC = () => {
             }
             setIsMounted(false);
         };
-    }, [visit, navigate, isMounted]);
+    }, [visit, navigate, isMounted , token]);
 
     const handleBack = () => {
         navigate(-1); // Go back to previous page (VisitDetails)

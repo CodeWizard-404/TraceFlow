@@ -31,12 +31,14 @@ export const getAgentByPhone = async (phone: string): Promise<AgentByPhoneRespon
   }
 };
 
-export const getAgentById = async (id: string): Promise<AgentByIdResponse> => {
+export const getAgentById = async (id: string, token: string): Promise<AgentByIdResponse> => {
   try {
-    const response = await api.get<AgentByIdResponse>(`/agents/${id}`);
-    return response.data;
+      const response = await api.get<AgentByIdResponse>(`/agents/${id}`, {
+          headers: { Authorization: `Bearer ${token}` },
+      });
+      return response.data;
   } catch (error) {
-    console.error(`Error fetching agent by ID (${id}):`, error);
-    throw error;
+      console.error(`Error fetching agent by ID (${id}):`, error);
+      throw error;
   }
 };
