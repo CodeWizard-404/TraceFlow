@@ -69,32 +69,36 @@ class RoleController {
         }
     }
 
-    static async assignPermissionsToRole(req, res) {
+
+
+
+    
+    static async assignRolesToUser(req, res) {
         try {
-            const { roleID } = req.params;
-            const { permissionIDs } = req.body;
-            if (!roleID || !Array.isArray(permissionIDs)) {
-                return res.status(400).json({ error: 'Role ID and permission IDs array are required' });
+            const { userID } = req.params;
+            const { roleIDs } = req.body;
+            if (!userID || !Array.isArray(roleIDs)) {
+                return res.status(400).json({ error: 'User ID and role IDs array are required' });
             }
-            const result = await RoleService.assignPermissionsToRole(roleID, permissionIDs);
+            const result = await RoleService.assignRolesToUser(userID, roleIDs);
             res.status(200).json(result);
         } catch (error) {
-            console.error(`${new Date().toISOString()} - Assign permissions to role failed:`, error);
-            res.status(400).json({ error: error.message || 'Failed to assign permissions to role due to an internal error' });
+            console.error(`${new Date().toISOString()} - Assign roles to user failed:`, error);
+            res.status(400).json({ error: error.message || 'Failed to assign roles to user due to an internal error' });
         }
     }
 
-    static async getPermissionsByRole(req, res) {
+    static async getRolesByUser(req, res) {
         try {
-            const { roleID } = req.params;
-            if (!roleID) {
-                return res.status(400).json({ error: 'Role ID is required' });
+            const { userID } = req.params;
+            if (!userID) {
+                return res.status(400).json({ error: 'User ID is required' });
             }
-            const permissions = await RoleService.getPermissionsByRole(roleID);
-            res.status(200).json(permissions);
+            const roles = await RoleService.getRolesByUser(userID);
+            res.status(200).json(roles);
         } catch (error) {
-            console.error(`${new Date().toISOString()} - Get permissions by role failed:`, error);
-            res.status(404).json({ error: error.message || 'Role not found' });
+            console.error(`${new Date().toISOString()} - Get roles by user failed:`, error);
+            res.status(404).json({ error: error.message || 'User not found' });
         }
     }
 }

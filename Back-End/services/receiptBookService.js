@@ -1,5 +1,4 @@
 const QRCode = require('qrcode');
-const { Op } = require('sequelize');
 const { sendSMS } = require('../config/sms');
 const { transporter } = require('../config/smtp');
 const { ReceiptBook, User, Agent, OTP, ReceiptBookTransfer, ReceiptStub } = require('../models');
@@ -8,221 +7,197 @@ const OTPService = require('../services/otpService');
 class ReceiptBookService {
 
 
+    // Create a new receipt book with stub
     static async createReceiptBook(number, type, purchaseUserID) {
         const tlvData = [
-            this.formatTLV('01', number.toString()),
-            this.formatTLV('02', type),
+            this.formatTLV('01', (number || number).toString()),
+            this.formatTLV('02', type || type),
         ].join('');
         const qrCode = await QRCode.toDataURL(tlvData);
-
-        const receiptBook = await ReceiptBook.create({
-            number,
-            type,
-            qrCode,
-            status: 'In Stock',
-            currentHolderID: purchaseUserID,
-        });
-
-        // Create the stub at the same time as the book
-        await ReceiptStub.create({
-            bookID: receiptBook.bookID,
-            status: 'pending',
-        });
-
-        await ReceiptBookTransfer.create({
-            bookID: receiptBook.bookID,
-            fromUserID: purchaseUserID,
-            status: 'In Stock',
-        });
-
-        return receiptBook;
-    }
-
-    static async sendBookToSupplier(bookID, supplierEmail, userID) {
-        const book = await this.getReceiptBookById(bookID);
-        if (book.status !== 'In Stock') throw new Error('Book must be in stock');
-
-        await book.update({ status: 'Sent to Supplier', currentHolderID: null });
-        await ReceiptBookTransfer.create({
-            bookID,
-            fromUserID: userID,
-            status: 'Sent to Supplier',
-        });
-
-        const user = await User.findByPk(userID);
-
-        // Notify via email
-        await transporter.sendMail({
-            from: user.email,
-            to: supplierEmail,
-            subject: `Receipt Book #${book.number} Assignment Notification`,
-            text: `Receipt Book #${book.number}. Below are the details of the receipt book:
-
-                    - Number: ${book.number}
-                    - Type: ${book.type}
-
-                    Please find the QR code attached for your reference.
-
-                    Thank you for your cooperation.
-
-                    Best regards,
-                    [Your Company Name]`,
-            attachments: [
-                {
-                    filename: 'qrcode.png',
-                    content: book.qrCode.split("base64,")[1],
-                    encoding: 'base64',
-                },
-            ],
-        });
-
+        const book = await ReceiptBook.create({ number, type, qrCode, status: 'In Stock', currentHolderID: purchaseUserID });
+        await ReceiptStub.create({ bookID: book.bookID, status: 'pending' });
+        await this.logTransfer(book.bookID, purchaseUserID, null, 'Pending', 'ToSupplier');
         return book;
     }
 
-
-
-    static async transferToUser(bookID, newOwnerID) {
-        const book = await ReceiptBook.findByPk(bookID);
-        const newOwner = await User.findByPk(newOwnerID);
-        if (!newOwner) throw new Error('User not found');
-
-        const otp = await OTPService.generateOTP(newOwnerID);
-        await sendSMS(newOwner.phone, `Your OTP to receive Receipt Book #${book.number} is ${otp.code}`);
-
-        return { message: `OTP sent to user ${newOwnerID}` };
-    }
-
-    static async validateTransferToUser(bookID, newOwnerID, otpCode) {
-        const book = await this.getReceiptBookById(bookID);
-        const newOwner = await User.findByPk(newOwnerID);
-        if (!newOwner) throw new Error('User not found');
-
-        await OTPService.validateOTP(newOwnerID, otpCode);
-
-        const newOwnerRole = await newOwner.getRoles();
-        const roleName = newOwnerRole.length > 0 ? newOwnerRole[0].name : 'Unknown';
-
-        let newStatus;
-        switch (roleName) {
-            case 'Regional Manager':
-                newStatus = 'With Regional Manager';
-                break;
-            case 'Supervisor':
-                newStatus = 'With Supervisor';
-                break;
-            case 'Stock Manager':
-                newStatus = 'With Stock Manager';
-                break;
-            default:
-                const statusMap = {
-                    'In Stock': 'With Regional Manager',
-                    'Sent to Supplier': 'With Regional Manager',
-                    'With Regional Manager': 'With Supervisor',
-                    'With Supervisor': 'With Supervisor',
-                    'Stub Collected': 'With Regional Manager',
-                    'With Regional Manager': 'With Stock Manager',
-                    'With Supervisor': 'With Stock Manager',
-                };
-                newStatus = statusMap[book.status] || book.status;
-        }
-
-        const previousHolderID = book.currentHolderID;
-
-        await Promise.all([
-            book.setUsers([newOwnerID]),
-            book.update({ status: newStatus, currentHolderID: newOwnerID }),
-            ReceiptBookTransfer.create({
-                bookID,
-                fromUserID: previousHolderID,
-                toUserID: newOwnerID,
-                status: newStatus,
-            }),
-        ]);
-
-        await transporter.sendMail({
-            from: process.env.SMTP_USER,
-            to: newOwner.email,
-            subject: `Receipt Book #${book.number} Transferred`,
-            text: `You are now the holder of Receipt Book #${book.number}. Status: ${newStatus}`,
-        });
-
-        return book;
-    }
-
-
-
-
-    static async assignToAgent(bookID, agentPhone, agentWallet, supervisorID) {
-        const book = await this.getReceiptBookById(bookID);
-        if (book.status !== 'With Supervisor') throw new Error('Book must be with Supervisor');
-        if (book.currentHolderID !== supervisorID) {
-            throw new Error('Only the current supervisor can assign to an agent');
-        }
-
-        const agent = await Agent.findOne({ where: { phone: agentPhone, wallet: agentWallet } });
-        if (!agent) throw new Error('Agent not found or wallet does not match');
-
-        const otp = await OTPService.generateOTP(agent.agentID);
-        await sendSMS(agentPhone, `Your OTP to receive Receipt Book #${book.number} is ${otp.code}`);
-
-        return { message: `OTP sent to Agent with phone ${agentPhone} and wallet ${agentWallet}` };
-    }
-
-    static async validateAgentAssignment(bookID, agentPhone, agentWallet, otpCode, supervisorID) {
-        const book = await this.getReceiptBookById(bookID);
-        if (book.currentHolderID !== supervisorID) {
-            throw new Error('Only the current supervisor can validate assignment');
-        }
-
-        const agent = await Agent.findOne({ where: { phone: agentPhone, wallet: agentWallet } });
-        if (!agent) throw new Error('Agent not found or wallet does not match');
-
-        await OTPService.validateOTP(agent.agentID, otpCode);
-
-        await Promise.all([
-            book.update({ agentID: agent.agentID, status: 'Assigned to Agent', currentHolderID: null }),
-            ReceiptBookTransfer.create({
-                bookID,
-                fromUserID: supervisorID,
-                toAgentID: agent.agentID,
-                status: 'Assigned to Agent',
-            }),
-        ]);
-
-        await transporter.sendMail({
-            from: process.env.SMTP_USER,
-            to: (await User.findByPk(supervisorID)).email,
-            subject: `Receipt Book #${book.number} Assigned`,
-            text: `Receipt Book #${book.number} assigned to Agent with phone ${agentPhone} and wallet ${agentWallet}.`,
-        });
-
-        return book;
-    }
-
-
-
-
-    static async getTransferHistory(bookID) {
-        return await ReceiptBookTransfer.findAll({
-            where: { bookID },
-            include: [
-                { model: User, as: 'FromUser' },
-                { model: User, as: 'ToUser' },
-                { model: Agent },
-            ],
-            order: [['transferDate', 'ASC']],
-        });
-    }
-
-
-
+    // Get receipt book by ID with associations
     static async getReceiptBookById(bookID) {
         const book = await ReceiptBook.findByPk(bookID, {
             include: [{ model: User, as: 'CurrentHolder' }, { model: ReceiptBookTransfer }, { model: Agent }, { model: ReceiptStub }],
         });
-        if (!book) throw new Error('ReceiptBook not found');
+        if (!book) throw new Error('Receipt book not found');
         return book;
     }
+
+    // Send multiple books to supplier
+    static async sendToSupplier(bookIDs, supplierEmail, userID) {
+        const books = await ReceiptBook.findAll({ where: { bookID: bookIDs, status: 'In Stock', currentHolderID: userID } });
+        if (books.length !== bookIDs.length) throw new Error('Some books are not in stock or not held by you');
+
+        await Promise.all(books.map(book =>
+            Promise.all([
+                book.update({ status: 'Sent to Supplier', currentHolderID: null, supplierSentAt: new Date() }),
+                this.logTransfer(book.bookID, userID, null, 'Validated', 'ToSupplier'),
+            ])
+        ));
+
+        const table = books.map(b => `${b.number} | ${b.type}`).join('\n');
+        await transporter.sendMail({
+            from: process.env.SMTP_USER,
+            to: supplierEmail,
+            subject: 'Receipt Books Sent',
+            text: `The following receipt books have been sent:\n${table}`,
+            attachments: books.map(b => ({ filename: `${b.number}.png`, content: b.qrCode.split("base64,")[1], encoding: 'base64' })),
+        });
+
+        return { message: `${books.length} books sent to supplier` };
+    }
+
+    // Get transfer history
+    static async getTransferHistory(bookID) {
+        return await ReceiptBookTransfer.findAll({
+            where: { bookID },
+            include: [{ model: User, as: 'FromUser' }, { model: User, as: 'ToUser' }, { model: Agent }],
+            order: [['transferDate', 'ASC']],
+        });
+    }
+
+    // Generic transfer method for users or agents
+    static async transfer(bookIDs, recipientID, senderID, recipientType = 'user') {
+        const books = await ReceiptBook.findAll({ where: { bookID: bookIDs } });
+        if (books.length !== bookIDs.length) throw new Error('Some books not found');
+        if (!this.canTransfer(books, senderID)) throw new Error('Invalid transfer conditions');
+
+        const recipient = recipientType === 'user' ? await User.findByPk(recipientID) : await Agent.findOne({ where: { agentID: recipientID } });
+        if (!recipient) throw new Error(`${recipientType === 'user' ? 'User' : 'Agent'} not found`);
+
+        const { transferType } = this.determineTransferDetails(books[0].status, recipientType, recipient);
+        const otp = await OTPService.generateOTP(recipientID, recipientType);
+        const recipientPhone = recipient.phone || recipient.Agent?.phone;
+        await sendSMS(recipientPhone, `Your OTP for receiving ${bookIDs.length} books is ${otp.code}`);
+
+        await Promise.all(books.map(book =>
+            this.logTransfer(book.bookID, senderID, recipientID, 'Pending', transferType, recipientType === 'agent' ? 'toAgentID' : 'toUserID')
+        ));
+
+        return { message: `OTP sent to ${recipientType} ${recipientID}`, otpID: otp.otpID };
+    }
+
+    // Validate transfer with OTP
+    static async validateTransfer(bookIDs, recipientID, otpCode, recipientType = 'user') {
+        const transfers = await ReceiptBookTransfer.findAll({
+            where: { 
+                bookID: bookIDs, 
+                [recipientType === 'user' ? 'toUserID' : 'toAgentID']: recipientID, 
+                status: 'Pending' 
+            },
+        });
+        if (transfers.length !== bookIDs.length) throw new Error('Invalid or incomplete transfer set');
+
+        await OTPService.validateOTP(recipientID, otpCode, recipientType);
+
+        const recipient = recipientType === 'user' ? await User.findByPk(recipientID) : await Agent.findByPk(recipientID);
+        const { status } = this.determineTransferDetails(transfers[0].bookID, recipientType, recipient);
+
+        await Promise.all(transfers.map(async t => {
+            const book = await ReceiptBook.findByPk(t.bookID);
+            await Promise.all([
+                book.update({ 
+                    status, 
+                    currentHolderID: recipientType === 'user' ? recipientID : null, 
+                    agentID: recipientType === 'agent' ? recipientID : null 
+                }),
+                t.update({ status: 'Validated' }),
+            ]);
+        }));
+
+        const recipientEmail = recipient.email || (await User.findByPk(transfers[0].fromUserID))?.email;
+        await transporter.sendMail({
+            from: process.env.SMTP_USER,
+            to: recipientEmail,
+            subject: `Transfer of ${bookIDs.length} Books Validated`,
+            text: `${bookIDs.length} books transferred to ${recipientType} ${recipientID}. New status: ${status}`,
+        });
+
+        return { message: `${bookIDs.length} books transferred and validated` };
+    }
+
+    // Helper: Log transfer
+    static async logTransfer(bookID, fromID, toID, status, transferType, toField = 'toUserID') {
+        const transferData = { bookID, status, transferType };
+        if (fromID) transferData.fromUserID = fromID;
+        if (toID) transferData[toField] = toID;
+        return await ReceiptBookTransfer.create(transferData);
+    }
+
+    // Helper: Check if transfer is valid
+    static canTransfer(books, senderID) {
+        return books.every(book => 
+            (book.status === 'In Stock' && book.currentHolderID === senderID) ||
+            (book.status === 'Sent to Supplier' && !book.currentHolderID) ||
+            (['With Regional Manager', 'With Supervisor', 'Stub Collected'].includes(book.status) && book.currentHolderID === senderID)
+        );
+    }
+
+    // Helper: Determine status and transfer type
+static determineTransferDetails(currentStatus, recipientType, recipient) {
+    if (recipientType === 'agent') {
+        return { status: 'Assigned to Agent', transferType: 'ToAgent' };
+    }
+
+    const role = recipient.Roles?.length ? recipient.Roles[0].name : 'Unknown';
+
+    // Map current status to new status based on recipient role
+    const statusMap = {
+        'In Stock': 'Sent to Supplier',
+        'Sent to Supplier': 'With Regional Manager',
+        'With Regional Manager': {
+            'Supervisor': 'With Supervisor',
+            'Regional Manager': 'With Regional Manager', // Same-role transfer
+        },
+        'With Supervisor': {
+            'Supervisor': 'With Supervisor', // Same-role transfer
+            'Regional Manager': 'With Regional Manager', // Return to Regional Manager
+            'Stock Manager': 'With Stock Manager', // Rare case, but possible
+        },
+        'Stub Collected': {
+            'Regional Manager': 'With Regional Manager',
+            'Stock Manager': 'With Stock Manager',
+        },
+        'With Stock Manager': {
+            'Stock Manager': 'With Stock Manager', // Same-role transfer
+        },
+    };
+
+    const transferTypeMap = {
+        'Regional Manager': 'ToRegionalManager',
+        'Supervisor': 'ToSupervisor',
+        'Stock Manager': 'ToStockManager',
+    };
+
+    // Determine new status based on current status and recipient role
+    let newStatus;
+    if (statusMap[currentStatus]) {
+        if (typeof statusMap[currentStatus] === 'object') {
+            newStatus = statusMap[currentStatus][role] || currentStatus; // Fallback to current if role not mapped
+        } else {
+            newStatus = statusMap[currentStatus];
+        }
+    } else {
+        newStatus = currentStatus; // Default to no change if status not mapped
+    }
+
+    const transferType = transferTypeMap[role];
+    return { status: newStatus, transferType };
+}
+
+    // helper: Format TLV data
+    static formatTLV(tag, value) {
+        const length = value.length.toString().padStart(2, '0');
+        return `${tag}${length}${value}`;
+    }
+
+
 
     static async getAllReceiptBooks() {
         return await ReceiptBook.findAll({
@@ -230,15 +205,8 @@ class ReceiptBookService {
         });
     }
 
-
-
-    static async updateReceiptBook(bookID, updates, userID) {
+    static async updateReceiptBook(bookID, updates) {
         const book = await this.getReceiptBookById(bookID);
-
-        // Ensure the user has permission (e.g., current holder or specific role)
-        if (book.currentHolderID !== userID) {
-            throw new Error('Only the current holder can update this receipt book');
-        }
 
         // Restrict which fields can be updated
         const allowedUpdates = ['number', 'type'];
@@ -287,10 +255,7 @@ class ReceiptBookService {
 
 
 
-    static formatTLV(tag, value) {
-        const length = value.length.toString().padStart(2, '0');
-        return `${tag}${length}${value}`;
-    }
+
 }
 
 module.exports = ReceiptBookService;

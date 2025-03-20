@@ -1,11 +1,6 @@
-import axios from "axios";
+import api from "./axiosConfig";
 import { CreateTimesheetResponse, ListTimesheetsResponse, TimesheetByIdResponse, ValidateTimesheetResponse, TimesheetsBySupervisorResponse } from ".";
-import { BASE_URL, DEFAULT_TIMEOUT } from "../config";
 
-const timesheetApi = axios.create({
-  baseURL: `${BASE_URL}/timesheets`,
-  timeout: DEFAULT_TIMEOUT,
-});
 
 export const createTimesheet = async (
   data: {
@@ -23,7 +18,7 @@ export const createTimesheet = async (
   token: string
 ): Promise<CreateTimesheetResponse> => {
   try {
-    const response = await timesheetApi.post<CreateTimesheetResponse>("", data, {
+    const response = await api.post<CreateTimesheetResponse>("/timesheets", data, {
       headers: { Authorization: `Bearer ${token}` },
     });
     return response.data;
@@ -35,7 +30,7 @@ export const createTimesheet = async (
 
 export const getAllTimesheets = async (token: string): Promise<ListTimesheetsResponse> => {
   try {
-    const response = await timesheetApi.get<ListTimesheetsResponse>("", {
+    const response = await api.get<ListTimesheetsResponse>("/timesheets", {
       headers: { Authorization: `Bearer ${token}` },
     });
     return response.data;
@@ -47,7 +42,7 @@ export const getAllTimesheets = async (token: string): Promise<ListTimesheetsRes
 
 export const getTimesheetById = async (id: string, token: string): Promise<TimesheetByIdResponse> => {
   try {
-    const response = await timesheetApi.get<TimesheetByIdResponse>(`/${id}`, {
+    const response = await api.get<TimesheetByIdResponse>(`/timesheets/${id}`, {
       headers: { Authorization: `Bearer ${token}` },
     });
     return response.data;
@@ -63,7 +58,7 @@ export const validateTimesheet = async (
   token: string
 ): Promise<ValidateTimesheetResponse> => {
   try {
-    const response = await timesheetApi.put<ValidateTimesheetResponse>(`/${id}/validate`, data, {
+    const response = await api.put<ValidateTimesheetResponse>(`/timesheets/${id}/validate`, data, {
       headers: { Authorization: `Bearer ${token}` },
     });
     return response.data;
@@ -75,7 +70,7 @@ export const validateTimesheet = async (
 
 export const getTimesheetsBySupervisor = async (supervisorID: string, token: string): Promise<TimesheetsBySupervisorResponse> => {
   try {
-    const response = await timesheetApi.get<TimesheetsBySupervisorResponse>(`/supervisor/${supervisorID}`, {
+    const response = await api.get<TimesheetsBySupervisorResponse>(`/timesheets/supervisor/${supervisorID}`, {
       headers: { Authorization: `Bearer ${token}` },
     });
     return response.data;

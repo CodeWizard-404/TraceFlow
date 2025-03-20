@@ -1,9 +1,11 @@
-import api from "./axiosConfig"; // Use the shared instance
+import api from "./axiosConfig";
 import { CreateChecklistResponse, ListChecklistsResponse, ChecklistsByVisitResponse } from ".";
 
-export const createChecklist = async (data: { text: string }): Promise<CreateChecklistResponse> => {
+export const createChecklist = async (data: { text: string } , token: string): Promise<CreateChecklistResponse> => {
     try {
-        const response = await api.post<CreateChecklistResponse>("/checklists", data);
+        const response = await api.post<CreateChecklistResponse>("/checklists", data, {
+            headers: { Authorization: `Bearer ${token}` },
+        });
         return response.data;
     } catch (error) {
         console.error("Error creating checklist:", error);
@@ -11,9 +13,11 @@ export const createChecklist = async (data: { text: string }): Promise<CreateChe
     }
 };
 
-export const getAllChecklists = async (): Promise<ListChecklistsResponse> => {
+export const getAllChecklists = async ( token: string): Promise<ListChecklistsResponse> => {
     try {
-        const response = await api.get<ListChecklistsResponse>("/checklists");
+        const response = await api.get<ListChecklistsResponse>("/checklists", {
+            headers: { Authorization: `Bearer ${token}` },
+        });
         return response.data;
     } catch (error) {
         console.error("Error fetching all checklists:", error);
@@ -21,9 +25,11 @@ export const getAllChecklists = async (): Promise<ListChecklistsResponse> => {
     }
 };
 
-export const getChecklistsByVisitId = async (visitId: string): Promise<ChecklistsByVisitResponse> => {
+export const getChecklistsByVisitId = async (visitId: string , token: string): Promise<ChecklistsByVisitResponse> => {
     try {
-        const response = await api.get<ChecklistsByVisitResponse>(`/checklists/${visitId}`);
+        const response = await api.get<ChecklistsByVisitResponse>(`/checklists/${visitId}`, {
+            headers: { Authorization: `Bearer ${token}` },
+        });
         return response.data;
     } catch (error) {
         console.error(`Error fetching checklists for visit (${visitId}):`, error);

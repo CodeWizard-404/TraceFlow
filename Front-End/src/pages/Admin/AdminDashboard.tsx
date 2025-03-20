@@ -20,7 +20,7 @@ import "./AdminDashboard.css";
 const ITEMS_PER_PAGE = 10; // Pagination: 10 items per page
 
 const AdminDashboard: React.FC = () => {
-    const { token } = useAuth();
+    const { token, user: currentUser } = useAuth(); // Assuming useAuth provides the current user's details including roles
     const [users, setUsers] = useState<User[]>([]);
     const [roles, setRoles] = useState<Role[]>([]);
     const [permissions, setPermissions] = useState<Permission[]>([]);
@@ -52,6 +52,11 @@ const AdminDashboard: React.FC = () => {
     const [managerSearch, setManagerSearch] = useState("");
     const [supervisorPage, setSupervisorPage] = useState(1);
     const [managerPage, setManagerPage] = useState(1);
+
+    // Check if the current user has the "Super Admin" role
+    const isSuperAdmin = useMemo(() => {
+        return currentUser?.roles?.some((role: Role) => role.name === "Super Admin") || false;
+    }, [currentUser]);
 
     useEffect(() => {
         const fetchData = async () => {
@@ -111,17 +116,19 @@ const AdminDashboard: React.FC = () => {
 
     const categorizedPermissions = useMemo(() => {
         const byClass: { [key: string]: { [key: string]: Permission[] } } = {};
-        permissions.forEach((perm) => {
-            const formattedName = perm.name.replace(/_/g, ' ').replace(/\b\w/g, char => char.toUpperCase());
-            if (!byClass[perm.class]) byClass[perm.class] = {};
-            if (!byClass[perm.class][perm.type]) byClass[perm.class][perm.type] = [];
-            byClass[perm.class][perm.type].push({ ...perm, name: formattedName });
-        });
+        permissions
+            .filter((perm) => isSuperAdmin || !["Role", "Permission", "User"].includes(perm.class))
+            .forEach((perm) => {
+                const formattedName = perm.name.replace(/_/g, ' ').replace(/\b\w/g, char => char.toUpperCase());
+                if (!byClass[perm.class]) byClass[perm.class] = {};
+                if (!byClass[perm.class][perm.type]) byClass[perm.class][perm.type] = [];
+                byClass[perm.class][perm.type].push({ ...perm, name: formattedName });
+            });
         return byClass;
-    }, [permissions]);
+    }, [permissions, isSuperAdmin]);
 
     const filteredPermissions = useMemo(() => {
-        let result = permissions;
+        let result = permissions.filter((perm) => isSuperAdmin || !["Role", "Permission", "User"].includes(perm.class));
         if (permissionSearch) {
             result = result.filter((perm) =>
                 perm.name.toLowerCase().includes(permissionSearch.toLowerCase()) ||
@@ -139,7 +146,7 @@ const AdminDashboard: React.FC = () => {
             acc[perm.class][perm.type].push({ ...perm, name: formattedName });
             return acc;
         }, {} as { [key: string]: { [key: string]: Permission[] } });
-    }, [permissions, permissionSearch, selectedCategory]);
+    }, [permissions, permissionSearch, selectedCategory, isSuperAdmin]);
 
     // Memoized Supervisor/Manager Filters with Search
     const supervisorUsers = useMemo(() => {
@@ -195,8 +202,12 @@ const AdminDashboard: React.FC = () => {
     };
 
     const handleRoleSelect = async (role: Role) => {
-        if (role.name === 'Admin' || role.name === 'Super Admin') {
-            alert('Fixed roles cannot be modified.');
+        if (!isSuperAdmin && role.name === 'Admin') {
+            alert('Only Super Admins can modify the Admin role.');
+            return;
+        }
+        if (role.name === 'Super Admin') {
+            alert('The Super Admin role cannot be modified.');
             return;
         }
         const fixedRoles = ['Manager', 'Supervisor', 'Purchase', 'Regional Manager', 'Stock Manager'];
@@ -223,6 +234,18 @@ const AdminDashboard: React.FC = () => {
         } else {
             const newPermission = permissions.find(p => p.permissionID === permissionID);
             if (newPermission) setTempPermissions([...tempPermissions, newPermission]);
+        }
+        setHasUnsavedChanges(true);
+    };
+
+    const handleToggleAllPermissionsInClass = (className: string) => {
+        const classPermissions = permissions.filter(p => p.class === className);
+        const allSelected = classPermissions.every(p => tempPermissions.some(tp => tp.permissionID === p.permissionID));
+        if (allSelected) {
+            setTempPermissions(tempPermissions.filter(p => !classPermissions.some(cp => cp.permissionID === p.permissionID)));
+        } else {
+            const newPermissions = classPermissions.filter(p => !tempPermissions.some(tp => tp.permissionID === p.permissionID));
+            setTempPermissions([...tempPermissions, ...newPermissions]);
         }
         setHasUnsavedChanges(true);
     };
@@ -393,11 +416,13 @@ const AdminDashboard: React.FC = () => {
 
     const getCategorizedPermissionsForRole = (role: Role) => {
         const byClass: { [key: string]: Permission[] } = {};
-        role.permissions?.forEach(perm => {
-            const formattedName = perm.name.replace(/_/g, ' ').replace(/\b\w/g, char => char.toUpperCase());
-            if (!byClass[perm.class]) byClass[perm.class] = [];
-            byClass[perm.class].push({ ...perm, name: formattedName });
-        });
+        role.permissions
+            ?.filter((perm) => isSuperAdmin || !["Role", "Permission", "User"].includes(perm.class))
+            .forEach(perm => {
+                const formattedName = perm.name.replace(/_/g, ' ').replace(/\b\w/g, char => char.toUpperCase());
+                if (!byClass[perm.class]) byClass[perm.class] = [];
+                byClass[perm.class].push({ ...perm, name: formattedName });
+            });
         return byClass;
     };
 
@@ -421,7 +446,7 @@ const AdminDashboard: React.FC = () => {
                             placeholder={view === "roles" ? "Search roles..." : "Search users..."}
                             value={searchQuery}
                             onChange={(e) => setSearchQuery(e.target.value)}
-                            className="search-input"
+                            className="search-input input-0"
                         />
                     </div>
                 )}
@@ -512,7 +537,6 @@ const AdminDashboard: React.FC = () => {
 
                     {view === "roles" && (
                         <div className="roles-management">
-                            {/* ... (unchanged roles management section) ... */}
                             {(() => {
                                 const fixedRoles = filteredRoles.filter(role =>
                                     ['Admin', 'Super Admin'].includes(role.name)
@@ -655,7 +679,17 @@ const AdminDashboard: React.FC = () => {
                                     <div className="permissions-list">
                                         {Object.entries(categorizedPermissions).map(([className, types]) => (
                                             <div key={className} className="permission-class">
-                                                <h4>{className}</h4>
+                                                <div className="permission-class-header">
+                                                    <h4>{className}</h4>
+                                                    <button
+                                                        className="toggle-all-button"
+                                                        onClick={() => handleToggleAllPermissionsInClass(className)}
+                                                        disabled={loading}
+                                                    >
+                                                        {permissions.filter(p => p.class === className).every(p => tempPermissions.some(tp => tp.permissionID === p.permissionID))
+                                                            ? "Deselect All" : "Select All"}
+                                                    </button>
+                                                </div>
                                                 {Object.entries(types).map(([type, perms]) => (
                                                     <div key={type} className="permission-type">
                                                         <h5>{type}</h5>
@@ -681,7 +715,6 @@ const AdminDashboard: React.FC = () => {
 
                     {view === "add-user" && (
                         <div className="form-card form-card-0">
-                            {/* ... (unchanged add-user section) ... */}
                             <div className="form-section">
                                 <h3>Personal Information</h3>
                                 <div className="form-row">
@@ -835,7 +868,6 @@ const AdminDashboard: React.FC = () => {
 
                     {view === "add-role" && (
                         <div className="form-card form-card-0">
-                            {/* ... (unchanged add-role section) ... */}
                             <div className="form-section">
                                 <h3>Role Details</h3>
                                 <div className="form-group">
@@ -890,7 +922,29 @@ const AdminDashboard: React.FC = () => {
                                     <div className="permissions-grid">
                                         {Object.entries(filteredPermissions).map(([className, types]) => (
                                             <div key={className} className="permission-class">
-                                                <h4>{className}</h4>
+                                                <div className="permission-class-header">
+                                                    <h4>{className}</h4>
+                                                    <button
+                                                        className="toggle-all-button"
+                                                        onClick={() => {
+                                                            const classPermissions = permissions.filter(p => p.class === className);
+                                                            const allSelected = classPermissions.every(p => selectedPermissionsForNewRole.includes(p.permissionID));
+                                                            if (allSelected) {
+                                                                setSelectedPermissionsForNewRole(prev =>
+                                                                    prev.filter(id => !classPermissions.some(p => p.permissionID === id))
+                                                                );
+                                                            } else {
+                                                                setSelectedPermissionsForNewRole(prev => [
+                                                                    ...prev,
+                                                                    ...classPermissions.filter(p => !prev.includes(p.permissionID)).map(p => p.permissionID)
+                                                                ]);
+                                                            }
+                                                        }}
+                                                    >
+                                                        {permissions.filter(p => p.class === className).every(p => selectedPermissionsForNewRole.includes(p.permissionID))
+                                                            ? "Deselect All" : "Select All"}
+                                                    </button>
+                                                </div>
                                                 {Object.entries(types).map(([type, perms]) => (
                                                     <div key={type} className="permission-type">
                                                         <h5>{type}</h5>

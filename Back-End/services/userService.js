@@ -1,6 +1,5 @@
 const bcrypt = require('bcrypt');
-const { Op } = require('sequelize');
-const { User, Role, OTP, Permission } = require('../models');
+const { User, Role, Permission, UserPermissionOverride } = require('../models');
 
 class UserService {
     // Create a user (simplified for this example)
@@ -41,11 +40,10 @@ class UserService {
     }
 
     // Get a user ID by phone number
-    async getIdByPhoneNumber(phone) {
+    async getUserByPhoneNumber(phone) {
         try {
             const user = await User.findOne({
                 where: { phone },
-                attributes: ['userID'],
             });
             if (!user) throw new Error('User not found');
             return user.userID;
@@ -53,8 +51,6 @@ class UserService {
             throw new Error(`Failed to fetch user ID: ${error.message}`);
         }
     }
-
-
 
     // Get a user by ID
     async getUserById(userID) {
@@ -89,130 +85,76 @@ class UserService {
         }
     }
 
-    // Assign roles to a user
-    async assignRolesToUser(userID, roleIDs) {
-        try {
-            const user = await User.findByPk(userID);
-            if (!user) throw new Error('User not found');
 
-            const roles = await Role.findAll({
-                where: { roleID: roleIDs },
-            });
-            if (roles.length !== roleIDs.length) {
-                throw new Error('One or more roles not found');
-            }
 
-            const currentRoles = await user.getRoles();
-            const currentRoleIDs = currentRoles.map(r => r.roleID);
-            const newRoles = roles.filter(r => !currentRoleIDs.includes(r.roleID));
-
-            if (newRoles.length > 0) {
-                await user.addRoles(newRoles);
-            }
-
-            return {
-                userID,
-                assignedRoles: newRoles.map(r => r.name),
-                totalAssigned: (await user.getRoles()).length,
-            };
-        } catch (error) {
-            throw new Error(`Failed to assign roles: ${error.message}`);
-        }
-    }
-
-    // Get roles by user
-    async getRolesByUser(userID) {
+    
+    async getSupervisorsByUser(userID) {
         try {
             const user = await User.findByPk(userID, {
                 include: [{
-                    model: Role,
+                    model: User,
+                    as: 'Supervisors',
                     through: { attributes: [] },
-                    attributes: ['roleID', 'name', 'description'],
-                    include: [{
-                        model: Permission,
-                        through: { attributes: [] },
-                        attributes: ['name', 'description'],
-                    }],
+                    attributes: ['userID', 'firstname', 'lastname', 'email', 'phone'],
                 }],
             });
             if (!user) throw new Error('User not found');
-            return user.Roles;
+            return user.Supervisors;
         } catch (error) {
-            throw new Error(`Failed to fetch roles for user: ${error.message}`);
+            throw new Error(`Failed to fetch supervisors: ${error.message}`);
         }
     }
 
-    
-        async getSupervisorsByUser(userID) {
-            try {
-                const user = await User.findByPk(userID, {
-                    include: [{
-                        model: User,
-                        as: 'Supervisors',
-                        through: { attributes: [] },
-                        attributes: ['userID', 'firstname', 'lastname', 'email', 'phone'],
-                    }],
-                });
-                if (!user) throw new Error('User not found');
-                return user.Supervisors;
-            } catch (error) {
-                throw new Error(`Failed to fetch supervisors: ${error.message}`);
-            }
-        }
-    
-        async getManagersByUser(userID) {
-            try {
-                const user = await User.findByPk(userID, {
-                    include: [{
-                        model: User,
-                        as: 'Managers',
-                        through: { attributes: [] },
-                        attributes: ['userID', 'firstname', 'lastname', 'email', 'phone'],
-                    }],
-                });
-                if (!user) throw new Error('User not found');
-                return user.Managers;
-            } catch (error) {
-                throw new Error(`Failed to fetch managers: ${error.message}`);
-            }
-        }
-    
-        // Update assignSupervisorsToManager to ensure it works bidirectionally
-        async assignSupervisorsToManager(managerID, supervisorIDs) {
-            try {
-                const manager = await User.findByPk(managerID);
-                if (!manager) throw new Error('Manager not found');
-    
-                const supervisors = await User.findAll({
-                    where: { userID: supervisorIDs },
-                });
-                if (supervisors.length !== supervisorIDs.length) {
-                    throw new Error('One or more supervisors not found');
-                }
-    
-                // Fetch current supervisors
-                const currentSupervisors = await manager.getSupervisors();
-                const currentSupervisorIDs = currentSupervisors.map(s => s.userID);
-                const newSupervisors = supervisorIDs.filter(id => !currentSupervisorIDs.includes(id));
-    
-                if (newSupervisors.length > 0) {
-                    await manager.addSupervisors(newSupervisors);
-                }
-    
-                return {
-                    managerID,
-                    assignedSupervisors: supervisors.map(s => s.userID),
-                    message: 'Supervisors assigned successfully',
-                };
-            } catch (error) {
-                throw new Error(`Failed to assign supervisors: ${error.message}`);
-            }
+    async getManagersByUser(userID) {
+        try {
+            const user = await User.findByPk(userID, {
+                include: [{
+                    model: User,
+                    as: 'Managers',
+                    through: { attributes: [] },
+                    attributes: ['userID', 'firstname', 'lastname', 'email', 'phone'],
+                }],
+            });
+            if (!user) throw new Error('User not found');
+            return user.Managers;
+        } catch (error) {
+            throw new Error(`Failed to fetch managers: ${error.message}`);
         }
     }
-    
+
+    // Update assignSupervisorsToManager to ensure it works bidirectionally
+    async assignSupervisorsToManager(managerID, supervisorIDs) {
+        try {
+            const manager = await User.findByPk(managerID);
+            if (!manager) throw new Error('Manager not found');
+
+            const supervisors = await User.findAll({
+                where: { userID: supervisorIDs },
+            });
+            if (supervisors.length !== supervisorIDs.length) {
+                throw new Error('One or more supervisors not found');
+            }
+
+            // Fetch current supervisors
+            const currentSupervisors = await manager.getSupervisors();
+            const currentSupervisorIDs = currentSupervisors.map(s => s.userID);
+            const newSupervisors = supervisorIDs.filter(id => !currentSupervisorIDs.includes(id));
+
+            if (newSupervisors.length > 0) {
+                await manager.addSupervisors(newSupervisors);
+            }
+
+            return {
+                managerID,
+                assignedSupervisors: supervisors.map(s => s.userID),
+                message: 'Supervisors assigned successfully',
+            };
+        } catch (error) {
+            throw new Error(`Failed to assign supervisors: ${error.message}`);
+        }
+    }
 
 
-
-
+}
 
 module.exports = new UserService();

@@ -4,35 +4,19 @@ const { OTP } = require('../models');
 
 class OTPService {
     // Generate a new OTP for a user
-    static async generateOTP(userID) {
-        const code = crypto.randomInt(100000, 999999).toString(); // 6-digit OTP
-        const expiresAt = new Date(Date.now() + 10 * 60 * 1000); // Expires in 10 minutes
-
-        const otp = await OTP.create({
-            code,
-            expiresAt,
-            userID,
-        });
-        return otp;
+    static async generateOTP(entityID, type = 'user') {
+        const code = crypto.randomInt(100000, 999999).toString();
+        const expiresAt = new Date(Date.now() + 10 * 60 * 1000);
+        const otpData = { code, expiresAt };
+        otpData[type === 'user' ? 'userID' : 'agentID'] = entityID;
+        return await OTP.create(otpData);
     }
 
-    // Send an OTP via SMS
-
-    // Validate an OTP
-    static async validateOTP(userID, code) {
-        const otp = await OTP.findOne({
-            where: {
-                userID,
-                code,
-                expiresAt: { [Op.gt]: new Date() }, // Check if not expired
-            },
-        });
-
-        if (!otp) {
-            throw new Error('Invalid or expired OTP');
-        }
-
-        // Optionally delete the OTP after validation
+    static async validateOTP(entityID, code, type = 'user') {
+        const where = { code, expiresAt: { [Op.gt]: new Date() } };
+        where[type === 'user' ? 'userID' : 'agentID'] = entityID;
+        const otp = await OTP.findOne({ where });
+        if (!otp) throw new Error('Invalid or expired OTP');
         await otp.destroy();
         return true;
     }

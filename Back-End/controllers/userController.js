@@ -16,7 +16,7 @@ class UserController {
         }
     }
 
-    static async getAllUsers(req, res) {
+    static async getAllUsers(res) {
         try {
             const users = await UserService.getAllUsers();
             res.status(200).json(users);
@@ -26,16 +26,16 @@ class UserController {
         }
     }
 
-    static async getIdByPhoneNumber(req, res) {
+    static async getUserByPhoneNumber(req, res) {
         try {
             const { phone } = req.body;
             if (!phone) {
                 return res.status(400).json({ error: 'Phone number is required' });
             }
-            const user = await UserService.getIdByPhoneNumber(phone);
+            const user = await UserService.getUserByPhoneNumber(phone);
             res.status(200).json(user);
         } catch (error) {
-            console.error(`${new Date().toISOString()} - Get user ID by phone failed:`, error);
+            console.error(`${new Date().toISOString()} - Get user by phone failed:`, error);
             res.status(404).json({ error: error.message || 'User not found by phone number' });
         }
     }
@@ -83,34 +83,9 @@ class UserController {
         }
     }
 
-    static async assignRolesToUser(req, res) {
-        try {
-            const { userID } = req.params;
-            const { roleIDs } = req.body;
-            if (!userID || !Array.isArray(roleIDs)) {
-                return res.status(400).json({ error: 'User ID and role IDs array are required' });
-            }
-            const result = await UserService.assignRolesToUser(userID, roleIDs);
-            res.status(200).json(result);
-        } catch (error) {
-            console.error(`${new Date().toISOString()} - Assign roles to user failed:`, error);
-            res.status(400).json({ error: error.message || 'Failed to assign roles to user due to an internal error' });
-        }
-    }
 
-    static async getRolesByUser(req, res) {
-        try {
-            const { userID } = req.params;
-            if (!userID) {
-                return res.status(400).json({ error: 'User ID is required' });
-            }
-            const roles = await UserService.getRolesByUser(userID);
-            res.status(200).json(roles);
-        } catch (error) {
-            console.error(`${new Date().toISOString()} - Get roles by user failed:`, error);
-            res.status(404).json({ error: error.message || 'User not found' });
-        }
-    }
+
+    
 
     static async assignSupervisorsToManager(req, res) {
         try {

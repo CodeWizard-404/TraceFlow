@@ -1,9 +1,11 @@
-import api from "./axiosConfig"; // Use the shared instance
+import api from "./axiosConfig"; 
 import { AgentsByLocationResponse, AgentLocationsResponse, AgentByPhoneResponse, AgentByIdResponse } from ".";
 
-export const getAgentsByLocation = async (location: string): Promise<AgentsByLocationResponse> => {
+export const getAgentsByLocation = async (location: string, token: string): Promise<AgentsByLocationResponse> => {
   try {
-    const response = await api.get<AgentsByLocationResponse>(`/agents/location?location=${location}`);
+    const response = await api.get<AgentsByLocationResponse>(`/agents/location?location=${location}`, {
+      headers: { Authorization: `Bearer ${token}` },
+  });
     return response.data;
   } catch (error) {
     console.error(`Error fetching agents by location (${location}):`, error);
@@ -11,9 +13,11 @@ export const getAgentsByLocation = async (location: string): Promise<AgentsByLoc
   }
 };
 
-export const getAgentLocations = async (): Promise<AgentLocationsResponse> => {
+export const getAgentLocations = async (token: string): Promise<AgentLocationsResponse> => {
   try {
-    const response = await api.get<AgentLocationsResponse>("/agents/locations");
+    const response = await api.get<AgentLocationsResponse>("/agents/locations", {
+      headers: { Authorization: `Bearer ${token}` },
+  });
     return response.data;
   } catch (error) {
     console.error("Error fetching agent locations:", error);
@@ -21,9 +25,11 @@ export const getAgentLocations = async (): Promise<AgentLocationsResponse> => {
   }
 };
 
-export const getAgentByPhone = async (phone: string): Promise<AgentByPhoneResponse> => {
+export const getAgentByPhone = async (phone: string, token: string): Promise<AgentByPhoneResponse> => {
   try {
-    const response = await api.get<AgentByPhoneResponse>(`/agents/phone/${phone}`);
+    const response = await api.get<AgentByPhoneResponse>(`/agents/phone/${phone}`, {
+      headers: { Authorization: `Bearer ${token}` },
+  });
     return response.data;
   } catch (error) {
     console.error(`Error fetching agent by phone (${phone}):`, error);

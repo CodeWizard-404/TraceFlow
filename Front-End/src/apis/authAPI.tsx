@@ -1,18 +1,10 @@
-import axios from "axios";
-import { BASE_URL, DEFAULT_TIMEOUT } from "../config";
-import { LoginResponse } from ".";
+import api from "./axiosConfig";
 
-const authApi = axios.create({
-    baseURL: `${BASE_URL}/auth`,
-    timeout: DEFAULT_TIMEOUT,
-    withCredentials: true, // Include cookies in requests
-});
+import { LoginResponse } from ".";
 
 export const login = async (identifier: string, password: string): Promise<LoginResponse> => {
     try {
-        const response = await authApi.post<LoginResponse>("/login", { identifier, password });
-        const { token, user } = response.data;
-        console.log("API Response:", { token, user }); // Debug log
+        const response = await api.post<LoginResponse>("/auth/login", { identifier, password });
         return response.data;
     } catch (error) {
         console.error("Error during login:", error);

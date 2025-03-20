@@ -1,13 +1,9 @@
 // src/apis/permissionAPI.tsx
-import axios, { AxiosError } from "axios"; // Import AxiosError for proper typing
-import { BASE_URL, DEFAULT_TIMEOUT } from "../config";
+import { AxiosError } from "axios";
+import api from "./axiosConfig";
+
 import { ListPermissionsResponse, PermissionByIdResponse } from ".";
 
-const permissionApi = axios.create({
-    baseURL: `${BASE_URL}/permissions`,
-    timeout: DEFAULT_TIMEOUT,
-    withCredentials: true, 
-});
 
 interface ErrorResponse {
     error: string;
@@ -19,16 +15,16 @@ export const getAllPermissions = async (
     setError?: (error: string | null) => void
 ): Promise<ListPermissionsResponse> => {
     try {
-        const response = await permissionApi.get<ListPermissionsResponse>("", {
+        const response = await api.get<ListPermissionsResponse>("/permissions", {
             headers: { Authorization: `Bearer ${token}` },
         });
-        setError?.(null); // Clear any previous error
+        setError?.(null); 
         return response.data;
-    } catch (error: unknown) { // Use unknown instead of any
+    } catch (error: unknown) { 
         const axiosError = error as AxiosError<ErrorResponse>;
         const errorMessage = axiosError.response?.data?.error || "Failed to fetch all permissions";
         setError?.(errorMessage);
-        throw axiosError; // Re-throw for component-level handling
+        throw axiosError; 
     }
 };
 
@@ -39,7 +35,7 @@ export const getPermissionById = async (
     setError?: (error: string | null) => void
 ): Promise<PermissionByIdResponse> => {
     try {
-        const response = await permissionApi.get<PermissionByIdResponse>(`/${permissionID}`, {
+        const response = await api.get<PermissionByIdResponse>(`/permissions/${permissionID}`, {
             headers: { Authorization: `Bearer ${token}` },
         });
         setError?.(null);
@@ -59,7 +55,7 @@ export const createPermission = async (
     setError?: (error: string | null) => void
 ): Promise<PermissionByIdResponse> => {
     try {
-        const response = await permissionApi.post<PermissionByIdResponse>("", permissionData, {
+        const response = await api.post<PermissionByIdResponse>("/permissions", permissionData, {
             headers: { Authorization: `Bearer ${token}` },
         });
         setError?.(null);
@@ -80,7 +76,7 @@ export const updatePermission = async (
     setError?: (error: string | null) => void
 ): Promise<PermissionByIdResponse> => {
     try {
-        const response = await permissionApi.put<PermissionByIdResponse>(`/${permissionID}`, permissionData, {
+        const response = await api.put<PermissionByIdResponse>(`/permissions/${permissionID}`, permissionData, {
             headers: { Authorization: `Bearer ${token}` },
         });
         setError?.(null);
@@ -100,7 +96,7 @@ export const deletePermission = async (
     setError?: (error: string | null) => void
 ): Promise<void> => {
     try {
-        await permissionApi.delete(`/${permissionID}`, {
+        await api.delete(`/permissions/${permissionID}`, {
             headers: { Authorization: `Bearer ${token}` },
         });
         setError?.(null);

@@ -28,20 +28,16 @@ interface ProtectedRouteProps {
 const ProtectedRoute: React.FC<ProtectedRouteProps> = ({ children, requiredPermissions }) => {
     const { user, token } = useAuth();
 
-    console.log("ProtectedRoute - User:", user, "Token:", token);
 
     if (!user || !token) {
-        console.log("Redirecting to /login - No user or token");
         return <Navigate to="/login" replace state={{ from: window.location.pathname }} />;
     }
 
     const userPermissions = user.roles?.flatMap(role =>
         Array.isArray(role.permissions) ? role.permissions : []
     ) || [];
-    console.log("User Permissions:", userPermissions, "Required Permissions:", requiredPermissions);
 
     const hasPermission = requiredPermissions.some(perm => userPermissions.includes(perm));
-    console.log("Has Permission:", hasPermission);
 
     return hasPermission ? children : <Navigate to="/admin" replace />;
 };

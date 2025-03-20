@@ -1,6 +1,5 @@
 const cors = require('cors');
 const express = require('express');
-
 const {
     initializeDatabase,
     initializeSMTP,
@@ -29,39 +28,33 @@ require('dotenv').config();
 
 const app = express();
 
-// CORS configuration
 const allowedOrigins = [
-    process.env.FRONTEND_URL || 'http://localhost:5173', // Default to local dev if not set
-    'http://localhost:3000', // Optional: Add other dev origins if needed
-    // Add production frontend URLs here, e.g., 'https://yourdomain.com'
+    process.env.FRONTEND_URL || 'http://localhost:5173',
+    'http://localhost:3000',
 ];
 
 const corsOptions = {
     origin: (origin, callback) => {
-        // Allow requests with no origin (e.g., server-to-server or Postman) or if origin is in allowed list
         if (!origin || allowedOrigins.includes(origin)) {
             callback(null, true);
         } else {
             callback(new Error('Not allowed by CORS'));
         }
     },
-    credentials: true, // Required for HttpOnly cookies
-    methods: ['GET', 'POST', 'PUT', 'DELETE', 'OPTIONS'], // Allowed methods
-    allowedHeaders: ['Content-Type', 'Authorization'], // Allowed headers
+    credentials: true,
+    methods: ['GET', 'POST', 'PUT', 'DELETE', 'OPTIONS'],
+    allowedHeaders: ['Content-Type', 'Authorization'],
 };
 
-// Middleware
-app.use(cors(corsOptions)); // Use restricted CORS
-app.use(express.json()); // Parse incoming JSON requests
+app.use(cors(corsOptions));
+app.use(express.json());
 app.use((req, res, next) => {
     if (req.user) {
-        sequelize.query(`SET jwt.claims.userID = '${req.user.userID}'`)
-            .catch(err => console.error(`${new Date().toISOString()} - Failed to set RLS userID:`, err));
+        sequelize.query(`SET jwt.claims.userID = '${req.user.userID}'`).catch(err => console.error(`${new Date().toISOString()} - Failed to set RLS userID:`, err));
     }
     next();
 });
 
-// Routes
 app.use('/api/visits', visitRoutes);
 app.use('/api/checklists', checklistRoutes);
 app.use('/api/reasons', reasonRoutes);
@@ -74,18 +67,15 @@ app.use('/api/permissions', permissionRoutes);
 app.use('/api/receipt-books', receiptBookRoutes);
 app.use('/api/receipt-stubs', receiptStubRoutes);
 
-// Test secure endpoint
 app.get('/test', authenticateJWT, (req, res) => {
     res.json({ message: 'Secure endpoint accessed', user: req.user });
 });
 
-// Error handling middleware
 app.use((err, req, res, next) => {
     console.error(`${new Date().toISOString()} - Server error:`, err.stack);
     res.status(500).json({ error: 'Something went wrong!' });
 });
 
-// Main application initialization function with detailed logging and summary
 async function startApp() {
     const startTime = new Date();
     const summary = {
@@ -94,7 +84,6 @@ async function startApp() {
         failures: 0,
     };
 
-    // Helper function to log and track step results
     const logStep = (step, success, message, error = null) => {
         const timestamp = new Date().toISOString();
         console.log(`${timestamp} - ${step}: ${message}${error ? ` - Error: ${error.message}` : ''}`);
@@ -105,7 +94,6 @@ async function startApp() {
     try {
         console.log(`${new Date().toISOString()} - Starting application initialization...`);
 
-        // Step 1: Initialize database
         try {
             await initializeDatabase();
             logStep('Database Initialization', true, 'Completed successfully');
@@ -114,7 +102,6 @@ async function startApp() {
             throw dbError;
         }
 
-        // Step 2: Initialize SMTP
         try {
             await initializeSMTP();
             logStep('SMTP Initialization', true, 'Completed successfully');
@@ -123,7 +110,6 @@ async function startApp() {
             throw smtpError;
         }
 
-        // Step 3: Initialize SMS (non-critical)
         try {
             await initializeSMS();
             logStep('SMS Initialization', true, 'Completed successfully');
@@ -131,7 +117,6 @@ async function startApp() {
             logStep('SMS Initialization', false, 'Proceeding without SMS', smsError);
         }
 
-        // Step 4: Set up model associations
         try {
             setupAssociations();
             logStep('Model Associations', true, 'Relationships established');
@@ -140,7 +125,6 @@ async function startApp() {
             throw assocError;
         }
 
-        // Step 5: Sync database
         try {
             await sequelize.sync({ alter: true });
             logStep('Database Sync', true, 'Tables synchronized');
@@ -149,7 +133,6 @@ async function startApp() {
             throw syncError;
         }
 
-        // Step 6: Seed missing permissions
         try {
             await seedMissingPermissions();
             logStep('Permission Seeding', true, 'Completed successfully');
@@ -158,16 +141,6 @@ async function startApp() {
             throw seedError;
         }
 
-        // Step 7: Seed super admin
-        try {
-            await seedSuperAdmin();
-            logStep('Super Admin Seeding', true, 'Completed successfully');
-        } catch (superAdminError) {
-            logStep('Super Admin Seeding', false, 'Failed', superAdminError);
-            throw superAdminError;
-        }
-
-        // Step 8: Initialize server
         try {
             await initializeServer(app);
             logStep('Server Initialization', true, 'Server started');
@@ -176,9 +149,16 @@ async function startApp() {
             throw serverError;
         }
 
-        // Log summary
+        try {
+            await seedSuperAdmin();
+            logStep('Super Admin Seeding', true, 'Completed successfully');
+        } catch (superAdminError) {
+            logStep('Super Admin Seeding', false, 'Failed', superAdminError);
+            throw superAdminError;
+        }
+
         const endTime = new Date();
-        const duration = (endTime - startTime) / 1000; // Duration in seconds
+        const duration = (endTime - startTime) / 1000;
         console.log(`${new Date().toISOString()} - Initialization Summary:`);
         console.log(`  Total Steps: ${summary.steps.length}`);
         console.log(`  Successes: ${summary.successes}`);
@@ -188,7 +168,6 @@ async function startApp() {
         summary.steps.forEach((step, index) => {
             console.log(`    ${index + 1}. ${step.step}: ${step.success ? 'Success' : 'Failed'} - ${step.message}${step.error ? ` (Error: ${step.error.message})` : ''}`);
         });
-
     } catch (error) {
         console.error(`${new Date().toISOString()} - Application initialization failed:`, error);
         process.exit(1);

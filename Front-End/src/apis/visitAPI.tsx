@@ -1,7 +1,5 @@
-import api from "./axiosConfig"; // Use the shared instance
+import api from "./axiosConfig";
 import { CreateVisitResponse, VerifyQrResponse, LogVisitResponse, VisitByIdResponse } from ".";
-
-
 
 export const createVisit = async (
     data: {
@@ -56,11 +54,9 @@ export const logVisitDetails = async (
 
 export const getVisitById = async (id: string, token: string): Promise<VisitByIdResponse> => {
     try {
-        console.log("getVisitById - Sending request with token:", token);
         const response = await api.get<VisitByIdResponse>(`/visits/${id}`, {
-            headers: { Authorization: `Bearer ${token}` }, // Still include this for safety
+            headers: { Authorization: `Bearer ${token}` }, 
         });
-        console.log("getVisitById - Response:", response.status);
         return response.data;
     } catch (error) {
         console.error(`Error fetching visit by ID (${id}):`, error);

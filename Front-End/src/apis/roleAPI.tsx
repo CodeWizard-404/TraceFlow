@@ -1,16 +1,12 @@
-import axios from "axios";
-import { BASE_URL, DEFAULT_TIMEOUT } from "../config";
+import api from "./axiosConfig";
+
 import { CreateRoleResponse, ListRolesResponse, RoleByIdResponse, AssignPermissionsResponse, PermissionsByRoleResponse } from ".";
 import Role from "../models/Role";
 
-const roleApi = axios.create({
-    baseURL: `${BASE_URL}/roles`,
-    timeout: DEFAULT_TIMEOUT,
-});
 
 export const createRole = async (roleData: Partial<Role>, token: string): Promise<CreateRoleResponse> => {
     try {
-        const response = await roleApi.post<CreateRoleResponse>("", roleData, {
+        const response = await api.post<CreateRoleResponse>("/roles", roleData, {
             headers: { Authorization: `Bearer ${token}` },
         });
         return response.data;
@@ -22,7 +18,7 @@ export const createRole = async (roleData: Partial<Role>, token: string): Promis
 
 export const getAllRoles = async (token: string): Promise<ListRolesResponse> => {
     try {
-        const response = await roleApi.get<ListRolesResponse>("", {
+        const response = await api.get<ListRolesResponse>("/roles", {
             headers: { Authorization: `Bearer ${token}` },
         });
         return response.data;
@@ -34,7 +30,7 @@ export const getAllRoles = async (token: string): Promise<ListRolesResponse> => 
 
 export const getRoleById = async (roleID: string, token: string): Promise<RoleByIdResponse> => {
     try {
-        const response = await roleApi.get<RoleByIdResponse>(`/${roleID}`, {
+        const response = await api.get<RoleByIdResponse>(`/roles/${roleID}`, {
             headers: { Authorization: `Bearer ${token}` },
         });
         return response.data;
@@ -46,7 +42,7 @@ export const getRoleById = async (roleID: string, token: string): Promise<RoleBy
 
 export const updateRole = async (roleID: string, roleData: Partial<Role>, token: string): Promise<RoleByIdResponse> => {
     try {
-        const response = await roleApi.put<RoleByIdResponse>(`/${roleID}`, roleData, {
+        const response = await api.put<RoleByIdResponse>(`/roles/${roleID}`, roleData, {
             headers: { Authorization: `Bearer ${token}` },
         });
         return response.data;
@@ -58,7 +54,7 @@ export const updateRole = async (roleID: string, roleData: Partial<Role>, token:
 
 export const deleteRole = async (roleID: string, token: string): Promise<void> => {
     try {
-        await roleApi.delete(`/${roleID}`, {
+        await api.delete(`/roles/${roleID}`, {
             headers: { Authorization: `Bearer ${token}` },
         });
     } catch (error) {
@@ -73,8 +69,8 @@ export const assignPermissionsToRole = async (
     token: string
 ): Promise<AssignPermissionsResponse> => {
     try {
-        const response = await roleApi.post<AssignPermissionsResponse>(
-            `/${roleID}/permissions`,
+        const response = await api.post<AssignPermissionsResponse>(
+            `/roles/${roleID}/permissions`,
             { permissionIDs },
             { headers: { Authorization: `Bearer ${token}` } }
         );
@@ -87,7 +83,7 @@ export const assignPermissionsToRole = async (
 
 export const getPermissionsByRole = async (roleID: string, token: string): Promise<PermissionsByRoleResponse> => {
     try {
-        const response = await roleApi.get<PermissionsByRoleResponse>(`/${roleID}/permissions`, {
+        const response = await api.get<PermissionsByRoleResponse>(`/roles/${roleID}/permissions`, {
             headers: { Authorization: `Bearer ${token}` },
         });
         return response.data;

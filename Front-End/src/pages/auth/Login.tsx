@@ -15,7 +15,6 @@ const LoginPage: React.FC = () => {
     const location = useLocation();
 
     useEffect(() => {
-        console.log("LoginPage - User updated:", user, "Token updated:", token);
     }, [user, token]);
 
     const handleSubmit = async (e: React.FormEvent) => {

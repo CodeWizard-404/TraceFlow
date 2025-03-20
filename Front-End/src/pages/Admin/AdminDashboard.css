@@ -72,15 +72,11 @@ body.dark .search-icon {
     width: 100%;
 }
 
-body.dark .search-input {
-    color: #d5d5d5;
-}
-
 .search-input::placeholder {
     color: #363636;
 }
 
-body.dark .search-input::placeholder {
+body.dark .input-0::placeholder {
     color: rgba(255, 255, 255, 0.7);
 
 }
@@ -411,6 +407,8 @@ body.dark .role-card:hover {
 .role-card.selected {
     background: #4cb1c7;
     color: #fff;
+    transition: all 0.3s ease;
+
 }
 
 body.dark .role-card.selected {
@@ -504,7 +502,6 @@ body.dark .form-group label {
 
 body.dark .form-group input, body.dark .form-group textarea {
     background: #363636;
-    color: #e5e7eb;
     border-color: #4b5563;
 }
 
@@ -655,6 +652,43 @@ body.dark .role-info-icon {
     box-shadow: 0 0.375rem 1.25rem rgba(129, 129, 129, 0.295);
     transition: all 0.3s ease;
 }
+
+.permission-class-header {
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+
+}
+.toggle-all-button {
+    margin-left: 10px;
+    padding: 5px 10px;
+    font-size: 12px;
+    background: #f8fafc;
+    border: 1px solid #ddd;
+    border-radius: 0.75rem;
+    color: #1f2937;
+    transition: all 0.3s ease;
+
+}
+
+.toggle-all-button:hover {
+    background: #eef2f6;
+    border-color: #4cb1c7;
+
+}
+
+body.dark .toggle-all-button {
+    background: #1f2937;
+    border: 1px solid #ddd;
+    color: #f8fafc;
+
+}
+body.dark .toggle-all-button:hover {
+    background: #303030;
+    border-color: #63b3ed;
+    color: #fff;
+}
+
 
 body.dark .permission-class {
     background-color: #303030;
@@ -1037,10 +1071,14 @@ body.dark .role-category-header {
     border: 2px solid #e81f76;
     opacity: 0.8;
     cursor: not-allowed;
+    transition: all 0.3s ease;
+
 }
 
 .role-card.premade {
     border: 2px solid #4cb1c7;
+    transition: all 0.3s ease;
+
 }
 
 body.dark .role-card.fix {
@@ -1059,6 +1097,8 @@ body.dark .role-card.premade {
     background: #fff;
     cursor: pointer;
     transition: box-shadow 0.2s;
+    transition: all 0.3s ease;
+
 }
 
 

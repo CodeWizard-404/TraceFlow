@@ -29,9 +29,15 @@ module.exports = (sequelize, DataTypes) => {
             references: { model: 'Agents', key: 'agentID' },
         },
         status: {
+            type: DataTypes.ENUM('Pending', 'Validated'),
+            allowNull: false,
+            defaultValue: 'Pending',
+        },
+        transferType: {
             type: DataTypes.ENUM(
-                'In Stock', 'Sent to Supplier', 'With Regional Manager', 'With Supervisor', 
-                'Assigned to Agent', 'Stub Collected', 'With Stock Manager', 'Archived'
+                'ToSupplier', 'ToRegionalManager', 'ToSupervisor', 
+                'ToAgent', 'StubToSupervisor', 'ToRegionalManagerFromSupervisor', 
+                'ToStockManager', 'Archived'
             ),
             allowNull: false,
         },

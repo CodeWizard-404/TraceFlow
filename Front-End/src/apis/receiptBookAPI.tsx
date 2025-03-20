@@ -1,5 +1,4 @@
-import axios from "axios";
-import { BASE_URL, DEFAULT_TIMEOUT } from "../config";
+import api from "./axiosConfig";
 import {
     CreateReceiptBookResponse,
     ListReceiptBooksResponse,
@@ -13,17 +12,13 @@ import {
 } from ".";
 import ReceiptBook from "../models/ReceiptBook";
 
-const receiptBookApi = axios.create({
-    baseURL: `${BASE_URL}/receipt-books`,
-    timeout: DEFAULT_TIMEOUT,
-});
 
 export const createReceiptBook = async (
     receiptBookData: Partial<ReceiptBook>,
     token: string
 ): Promise<CreateReceiptBookResponse> => {
     try {
-        const response = await receiptBookApi.post<CreateReceiptBookResponse>("", receiptBookData, {
+        const response = await api.post<CreateReceiptBookResponse>("/receipt-books", receiptBookData, {
             headers: { Authorization: `Bearer ${token}` },
         });
         return response.data;
@@ -35,7 +30,7 @@ export const createReceiptBook = async (
 
 export const getAllReceiptBooks = async (token: string): Promise<ListReceiptBooksResponse> => {
     try {
-        const response = await receiptBookApi.get<ListReceiptBooksResponse>("", {
+        const response = await api.get<ListReceiptBooksResponse>("/receipt-books", {
             headers: { Authorization: `Bearer ${token}` },
         });
         return response.data;
@@ -47,7 +42,7 @@ export const getAllReceiptBooks = async (token: string): Promise<ListReceiptBook
 
 export const getReceiptBookById = async (bookID: string, token: string): Promise<ReceiptBookByIdResponse> => {
     try {
-        const response = await receiptBookApi.get<ReceiptBookByIdResponse>(`/${bookID}`, {
+        const response = await api.get<ReceiptBookByIdResponse>(`/receipt-books/${bookID}`, {
             headers: { Authorization: `Bearer ${token}` },
         });
         return response.data;
@@ -59,7 +54,7 @@ export const getReceiptBookById = async (bookID: string, token: string): Promise
 
 export const updateReceiptBook = async (bookID: string, receiptBookData: Partial<ReceiptBook>, token: string): Promise<ReceiptBookByIdResponse> => {
     try {
-        const response = await receiptBookApi.put<ReceiptBookByIdResponse>(`/${bookID}`, receiptBookData, {
+        const response = await api.put<ReceiptBookByIdResponse>(`/receipt-books/${bookID}`, receiptBookData, {
             headers: { Authorization: `Bearer ${token}` },
         });
         return response.data;
@@ -71,7 +66,7 @@ export const updateReceiptBook = async (bookID: string, receiptBookData: Partial
 
 export const deleteReceiptBook = async (bookID: string, token: string): Promise<void> => {
     try {
-        await receiptBookApi.delete(`/${bookID}`, {
+        await api.delete(`/receipt-books/${bookID}`, {
             headers: { Authorization: `Bearer ${token}` },
         });
     } catch (error) {
@@ -86,8 +81,8 @@ export const sendToSupplier = async (
     token: string
 ): Promise<SendToSupplierResponse> => {
     try {
-        const response = await receiptBookApi.post<SendToSupplierResponse>(
-            "/send",
+        const response = await api.post<SendToSupplierResponse>(
+            "/receipt-books/send",
             { bookID, supplierEmail },
             { headers: { Authorization: `Bearer ${token}` } }
         );
@@ -100,8 +95,8 @@ export const sendToSupplier = async (
 
 export const transferToUser = async (bookID: string, token: string): Promise<TransferToUserResponse> => {
     try {
-        const response = await receiptBookApi.post<TransferToUserResponse>(
-            "/transfer",
+        const response = await api.post<TransferToUserResponse>(
+            "/receipt-books/transfer",
             { bookID },
             { headers: { Authorization: `Bearer ${token}` } }
         );
@@ -118,8 +113,8 @@ export const validateTransferToUser = async (
     token: string
 ): Promise<ValidateTransferResponse> => {
     try {
-        const response = await receiptBookApi.post<ValidateTransferResponse>(
-            "/validate-transfer",
+        const response = await api.post<ValidateTransferResponse>(
+            "/receipt-books/validate-transfer",
             { bookID, otpCode },
             { headers: { Authorization: `Bearer ${token}` } }
         );
@@ -136,8 +131,8 @@ export const assignToAgent = async (
     token: string
 ): Promise<AssignToAgentResponse> => {
     try {
-        const response = await receiptBookApi.post<AssignToAgentResponse>(
-            "/assign-agent",
+        const response = await api.post<AssignToAgentResponse>(
+            "/receipt-books/assign-agent",
             { bookID, agentPhone },
             { headers: { Authorization: `Bearer ${token}` } }
         );
@@ -155,8 +150,8 @@ export const validateAgentAssignment = async (
     token: string
 ): Promise<ValidateAgentAssignmentResponse> => {
     try {
-        const response = await receiptBookApi.post<ValidateAgentAssignmentResponse>(
-            "/validate-agent",
+        const response = await api.post<ValidateAgentAssignmentResponse>(
+            "/receipt-books/validate-agent",
             { bookID, agentPhone, otpCode },
             { headers: { Authorization: `Bearer ${token}` } }
         );
@@ -169,7 +164,7 @@ export const validateAgentAssignment = async (
 
 export const getTransferHistory = async (bookID: string, token: string): Promise<TransferHistoryResponse> => {
     try {
-        const response = await receiptBookApi.get<TransferHistoryResponse>(`/${bookID}/history`, {
+        const response = await api.get<TransferHistoryResponse>(`/receipt-books/${bookID}/history`, {
             headers: { Authorization: `Bearer ${token}` },
         });
         return response.data;

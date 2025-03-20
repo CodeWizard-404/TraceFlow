@@ -32,7 +32,6 @@ const QRScan: React.FC = () => {
         }
 
         if (!isMounted || !qrRef.current) {
-            console.log("Ref check:", qrRef.current); // Debug ref
             console.error("Failed to initialize QR scanner. Element not found.");
             setLoading(false);
             setStatus("");
@@ -99,7 +98,6 @@ const QRScan: React.FC = () => {
             )
             .then(() => {
                 setLoading(false);
-                console.log("Camera started successfully");
             })
             .catch((err) => {
                 console.error("Failed to start camera:", err.message);

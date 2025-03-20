@@ -1,4 +1,4 @@
-const { Role, Permission } = require('../models');
+const { Role, Permission, User } = require('../models');
 
 class RoleService {
     // Create a new role
@@ -65,53 +65,62 @@ class RoleService {
         }
     }
 
-    // Assign permissions to a role
-    async assignPermissionsToRole(roleID, permissionIDs) {
-        try {
-            const role = await Role.findByPk(roleID);
-            if (!role) throw new Error('Role not found');
 
-            const permissions = await Permission.findAll({
-                where: { permissionID: permissionIDs },
+    // Assign roles to a user
+    async assignRolesToUser(userID, roleIDs) {
+        try {
+            const user = await User.findByPk(userID);
+            if (!user) throw new Error('User not found');
+
+            const roles = await Role.findAll({
+                where: { roleID: roleIDs },
             });
-            if (permissions.length !== permissionIDs.length) {
-                throw new Error('One or more permissions not found');
+            if (roles.length !== roleIDs.length) {
+                throw new Error('One or more roles not found');
             }
 
-            const currentPermissions = await role.getPermissions();
-            const currentPermissionIDs = currentPermissions.map(p => p.permissionID);
-            const newPermissions = permissions.filter(p => !currentPermissionIDs.includes(p.permissionID));
+            const currentRoles = await user.getRoles();
+            const currentRoleIDs = currentRoles.map(r => r.roleID);
+            const newRoles = roles.filter(r => !currentRoleIDs.includes(r.roleID));
 
-            if (newPermissions.length > 0) {
-                await role.addPermissions(newPermissions);
+            if (newRoles.length > 0) {
+                await user.addRoles(newRoles);
             }
 
             return {
-                roleID,
-                assignedPermissions: newPermissions.map(p => p.name),
-                totalAssigned: (await role.getPermissions()).length,
+                userID,
+                assignedRoles: newRoles.map(r => r.name),
+                totalAssigned: (await user.getRoles()).length,
             };
         } catch (error) {
-            throw new Error(`Failed to assign permissions: ${error.message}`);
+            throw new Error(`Failed to assign roles: ${error.message}`);
         }
     }
 
-    // Get permissions by role
-    async getPermissionsByRole(roleID) {
+    // Get roles by user
+    async getRolesByUser(userID) {
         try {
-            const role = await Role.findByPk(roleID, {
+            const user = await User.findByPk(userID, {
                 include: [{
-                    model: Permission,
-                    through: { attributes: [] }, // Exclude junction table attributes
-                    attributes: ['permissionID', 'name', 'type', 'class', 'description'],
+                    model: Role,
+                    through: { attributes: [] },
+                    attributes: ['roleID', 'name', 'description'],
+                    include: [{
+                        model: Permission,
+                        through: { attributes: [] },
+                        attributes: ['name', 'description'],
+                    }],
                 }],
             });
-            if (!role) throw new Error('Role not found');
-            return role.Permissions;
+            if (!user) throw new Error('User not found');
+            return user.Roles;
         } catch (error) {
-            throw new Error(`Failed to fetch permissions for role: ${error.message}`);
+            throw new Error(`Failed to fetch roles for user: ${error.message}`);
         }
     }
+
+
+
 }
 
 module.exports = new RoleService();

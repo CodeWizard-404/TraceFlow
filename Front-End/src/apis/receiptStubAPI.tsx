@@ -1,15 +1,11 @@
-import axios from "axios";
-import { BASE_URL, DEFAULT_TIMEOUT } from "../config";
+import api from "./axiosConfig";
 import { CollectStubResponse, ValidateStubCollectionResponse, TransmitStubResponse, ArchiveStubResponse } from ".";
 
-const receiptStubApi = axios.create({
-    baseURL: `${BASE_URL}/receipt-stubs`,
-    timeout: DEFAULT_TIMEOUT,
-});
+
 
 export const collectStub = async (bookID: string, token: string): Promise<CollectStubResponse> => {
     try {
-        const response = await receiptStubApi.post<CollectStubResponse>(`/${bookID}/collect`, {}, {
+        const response = await api.post<CollectStubResponse>(`/receipt-stubs/${bookID}/collect`, {}, {
             headers: { Authorization: `Bearer ${token}` },
         });
         return response.data;
@@ -25,8 +21,8 @@ export const validateStubCollection = async (
     token: string
 ): Promise<ValidateStubCollectionResponse> => {
     try {
-        const response = await receiptStubApi.post<ValidateStubCollectionResponse>(
-            `/${bookID}/validate-collection`,
+        const response = await api.post<ValidateStubCollectionResponse>(
+            `/receipt-stubs/${bookID}/validate-collection`,
             { otpCode },
             { headers: { Authorization: `Bearer ${token}` } }
         );
@@ -43,8 +39,8 @@ export const transmitStub = async (
     token: string
 ): Promise<TransmitStubResponse> => {
     try {
-        const response = await receiptStubApi.post<TransmitStubResponse>(
-            `/${bookID}/transmit`,
+        const response = await api.post<TransmitStubResponse>(
+            `/receipt-stubs/${bookID}/transmit`,
             { newOwnerID },
             { headers: { Authorization: `Bearer ${token}` } }
         );
@@ -57,7 +53,7 @@ export const transmitStub = async (
 
 export const archiveStub = async (bookID: string, token: string): Promise<ArchiveStubResponse> => {
     try {
-        const response = await receiptStubApi.post<ArchiveStubResponse>(`/${bookID}/archive`, {}, {
+        const response = await api.post<ArchiveStubResponse>(`/receipt-stubs/${bookID}/archive`, {}, {
             headers: { Authorization: `Bearer ${token}` },
         });
         return response.data;

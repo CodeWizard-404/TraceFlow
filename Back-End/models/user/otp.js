@@ -28,7 +28,15 @@ module.exports = (sequelize, DataTypes) => {
                 key: 'userID',
             },
         },
+        agentID: { 
+            type: DataTypes.STRING, 
+            allowNull: true, 
+            references: { 
+                model: 'Agents', 
+                key: 'agentID' 
+            } 
+        },
     }, {
-        timestamps: false, // We manually handle createdAt
+        timestamps: false, 
     });
 };

@@ -1,7 +1,4 @@
-import axios from "axios";
-//import api from "./axiosConfig"; // Use the shared instance
-
-import { BASE_URL, DEFAULT_TIMEOUT } from "../config";
+import api from "./axiosConfig";
 import {
   CreateUserResponse,
   ListUsersResponse,
@@ -17,18 +14,14 @@ import {
 } from ".";
 import User from "../models/User";
 
-const userApi = axios.create({
-  baseURL: `${BASE_URL}/users`,
-  timeout: DEFAULT_TIMEOUT,
-});
 
 export const getSupervisorByPhone = async (
   phone: string,
   token?: string
 ): Promise<GetSupervisorByPhoneNumberResponse> => {
   try {
-    const response = await userApi.post<GetSupervisorByPhoneNumberResponse>(
-      "/phone",
+    const response = await api.post<GetSupervisorByPhoneNumberResponse>(
+      "/users/phone",
       { phone },
       { headers: token ? { Authorization: `Bearer ${token}` } : {} }
     );
@@ -44,7 +37,7 @@ export const createUser = async (
   token: string
 ): Promise<CreateUserResponse> => {
   try {
-    const response = await userApi.post<CreateUserResponse>("", userData, {
+    const response = await api.post<CreateUserResponse>("/users", userData, {
       headers: { Authorization: `Bearer ${token}` },
     });
     return response.data;
@@ -56,7 +49,7 @@ export const createUser = async (
 
 export const getAllUsers = async (token: string): Promise<ListUsersResponse> => {
   try {
-    const response = await userApi.get<ListUsersResponse>("", {
+    const response = await api.get<ListUsersResponse>("/users", {
       headers: { Authorization: `Bearer ${token}` },
     });
     return response.data;
@@ -68,7 +61,7 @@ export const getAllUsers = async (token: string): Promise<ListUsersResponse> => 
 
 export const getUserById = async (userID: string, token: string): Promise<UserByIdResponse> => {
   try {
-    const response = await userApi.get<UserByIdResponse>(`/${userID}`, {
+    const response = await api.get<UserByIdResponse>(`/users/${userID}`, {
       headers: { Authorization: `Bearer ${token}` },
     });
     return response.data;
@@ -84,8 +77,8 @@ export const assignRolesToUser = async (
   token: string
 ): Promise<AssignRolesResponse> => {
   try {
-    const response = await userApi.post<AssignRolesResponse>(
-      `/${userID}/roles`,
+    const response = await api.post<AssignRolesResponse>(
+      `/users/${userID}/roles`,
       { roleIDs },
       { headers: { Authorization: `Bearer ${token}` } }
     );
@@ -98,7 +91,7 @@ export const assignRolesToUser = async (
 
 export const getRolesByUser = async (userID: string, token: string): Promise<RolesByUserResponse> => {
   try {
-    const response = await userApi.get<RolesByUserResponse>(`/${userID}/roles`, {
+    const response = await api.get<RolesByUserResponse>(`/users/${userID}/roles`, {
       headers: { Authorization: `Bearer ${token}` },
     });
     return response.data;
@@ -114,7 +107,7 @@ export const updateUser = async (
   token: string
 ): Promise<UpdateUserResponse> => {
   try {
-    const response = await userApi.put<UpdateUserResponse>(`/${userID}`, userData, {
+    const response = await api.put<UpdateUserResponse>(`/users/${userID}`, userData, {
       headers: { Authorization: `Bearer ${token}` },
     });
     return response.data;
@@ -126,7 +119,7 @@ export const updateUser = async (
 
 export const deleteUser = async (userID: string, token: string): Promise<DeleteUserResponse> => {
   try {
-    await userApi.delete(`/${userID}`, { headers: { Authorization: `Bearer ${token}` } });
+    await api.delete(`/users/${userID}`, { headers: { Authorization: `Bearer ${token}` } });
   } catch (error) {
     console.error(`Error deleting user (${userID}):`, error);
     throw error;
@@ -138,7 +131,7 @@ export const getSupervisorsByUser = async (
   token: string
 ): Promise<SupervisorsByUserResponse> => {
   try {
-    const response = await userApi.get<SupervisorsByUserResponse>(`/${userID}/supervisors`, {
+    const response = await api.get<SupervisorsByUserResponse>(`/users/${userID}/supervisors`, {
       headers: { Authorization: `Bearer ${token}` },
     });
     return response.data;
@@ -153,7 +146,7 @@ export const getManagersByUser = async (
   token: string
 ): Promise<ManagersByUserResponse> => {
   try {
-    const response = await userApi.get<ManagersByUserResponse>(`/${userID}/managers`, {
+    const response = await api.get<ManagersByUserResponse>(`/users/${userID}/managers`, {
       headers: { Authorization: `Bearer ${token}` },
     });
     return response.data;
@@ -169,8 +162,8 @@ export const assignSupervisorsToManager = async (
   token: string
 ): Promise<AssignSupervisorsResponse> => {
   try {
-    const response = await userApi.post<AssignSupervisorsResponse>(
-      "/assign-supervisors",
+    const response = await api.post<AssignSupervisorsResponse>(
+      "/users/assign-supervisors",
       { managerID, supervisorIDs },
       { headers: { Authorization: `Bearer ${token}` } }
     );

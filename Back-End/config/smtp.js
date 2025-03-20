@@ -14,11 +14,8 @@ const transporter = nodemailer.createTransport({
 // Verifies SMTP configuration and ensures the server is ready
 async function initializeSMTP() {
     try {
-        console.log(`${new Date().toISOString()} - Verifying SMTP connection to ${process.env.SMTP_HOST}:${process.env.SMTP_PORT}...`);
         await transporter.verify();
-        console.log(`${new Date().toISOString()} - SMTP server ready`);
     } catch (error) {
-        console.error(`${new Date().toISOString()} - SMTP configuration error:`, error);
         throw error; // Re-throw to be caught by the caller
     }
 }

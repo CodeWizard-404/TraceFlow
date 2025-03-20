@@ -68,6 +68,84 @@ class PermissionController {
             res.status(404).json({ error: error.message || 'Permission not found' });
         }
     }
+
+
+
+    static async assignPermissionsToRole(req, res) {
+        try {
+            const { roleID } = req.params;
+            const { permissionIDs } = req.body;
+            if (!roleID || !Array.isArray(permissionIDs)) {
+                return res.status(400).json({ error: 'Role ID and permission IDs array are required' });
+            }
+            const result = await PermissionService.assignPermissionsToRole(roleID, permissionIDs);
+            res.status(200).json(result);
+        } catch (error) {
+            console.error(`${new Date().toISOString()} - Assign permissions to role failed:`, error);
+            res.status(400).json({ error: error.message || 'Failed to assign permissions to role due to an internal error' });
+        }
+    }
+
+    static async getPermissionsByRole(req, res) {
+        try {
+            const { roleID } = req.params;
+            if (!roleID) {
+                return res.status(400).json({ error: 'Role ID is required' });
+            }
+            const permissions = await PermissionService.getPermissionsByRole(roleID);
+            res.status(200).json(permissions);
+        } catch (error) {
+            console.error(`${new Date().toISOString()} - Get permissions by role failed:`, error);
+            res.status(404).json({ error: error.message || 'Role not found' });
+        }
+    }
+
+
+    
+
+    static async addPermissionOverride(req, res) {
+        try {
+            const { userID } = req.params;
+            const { roleID, permissionID, action } = req.body;
+            if (!userID || !roleID || !permissionID || !['grant', 'revoke'].includes(action)) {
+                return res.status(400).json({ error: 'User ID, role ID, permission ID, and valid action (grant/revoke) are required' });
+            }
+            const override = await PermissionService.addPermissionOverride(userID, roleID, permissionID, action);
+            res.status(201).json(override);
+        } catch (error) {
+            console.error(`${new Date().toISOString()} - Add permission override failed:`, error);
+            res.status(400).json({ error: error.message });
+        }
+    }
+
+    static async removePermissionOverride(req, res) {
+        try {
+            const { overrideID } = req.params;
+            if (!overrideID) {
+                return res.status(400).json({ error: 'Override ID is required' });
+            }
+            const result = await PermissionService.removePermissionOverride(overrideID);
+            res.status(200).json(result);
+        } catch (error) {
+            console.error(`${new Date().toISOString()} - Remove permission override failed:`, error);
+            res.status(400).json({ error: error.message });
+        }
+    }
+
+    static async getEffectivePermissions(req, res) {
+        try {
+            const { userID } = req.params;
+            if (!userID) {
+                return res.status(400).json({ error: 'User ID is required'});
+            }
+            const permissions = await PermissionService.getEffectivePermissions(userID);
+            res.status(200).json(permissions);
+        } catch (error) {
+            console.error(`${new Date().toISOString()} - Get effective permissions failed:`, error);
+            res.status(404).json({ error: error.message });
+        }
+    }
+
 }
 
 module.exports = PermissionController;

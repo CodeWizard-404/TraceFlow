@@ -63,9 +63,9 @@ const TimesheetForm: React.FC = () => {
       setLoading(true);
       try {
         const [locationsData, reasonsData, checklistsData, supervisorsData] = await Promise.all([
-          getAgentLocations(),
-          getAllReasons(),
-          getAllChecklists(),
+          getAgentLocations( token),
+          getAllReasons(token),
+          getAllChecklists(token),
           canValidateTimesheets
             ? getSupervisorsByUser(user.userID, token) // Fetch supervisors assigned to the logged-in user
             : Promise.resolve([]),
@@ -89,7 +89,7 @@ const TimesheetForm: React.FC = () => {
     if (selectedLocation && !agentPhone) {
       const fetchAgents = async () => {
         try {
-          const agentsData = await getAgentsByLocation(selectedLocation);
+          const agentsData = await getAgentsByLocation(selectedLocation, token);
           setAgents(agentsData);
         } catch (err) {
           setError(`Failed to load agents for ${selectedLocation}`);
@@ -108,7 +108,7 @@ const TimesheetForm: React.FC = () => {
     debounce(async (phone: string) => {
       if (phone.length < 7) return;
       try {
-        const agentData = await getAgentByPhone(phone);
+        const agentData = await getAgentByPhone(phone, token);
         setSelectedAgent(agentData.agentID);
         setSelectedLocation(agentData.location || "");
         setAgents([agentData]);
