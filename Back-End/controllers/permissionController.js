@@ -100,7 +100,6 @@ class PermissionController {
         }
     }
 
-
     
 
     static async addPermissionOverride(req, res) {
@@ -142,6 +141,20 @@ class PermissionController {
             res.status(200).json(permissions);
         } catch (error) {
             console.error(`${new Date().toISOString()} - Get effective permissions failed:`, error);
+            res.status(404).json({ error: error.message });
+        }
+    }
+
+    static async getPermissionOverrides(req, res) {
+        try {
+            const { userID } = req.params;
+            if (!userID) {
+                return res.status(400).json({ error: 'User ID is required' });
+            }
+            const overrides = await PermissionService.getPermissionOverrides(userID);
+            res.status(200).json(overrides);
+        } catch (error) {
+            console.error(`${new Date().toISOString()} - Get permission overrides failed:`, error);
             res.status(404).json({ error: error.message });
         }
     }

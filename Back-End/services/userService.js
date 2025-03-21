@@ -3,7 +3,7 @@ const { User, Role, Permission, UserPermissionOverride } = require('../models');
 
 class UserService {
     // Create a user (simplified for this example)
-    async createUser(email, password, firstname, lastname, phone, wallet) {
+    static async createUser(email, password, firstname, lastname, phone, wallet) {
         try {
             const hashedPassword = await bcrypt.hash(password, 10);
             const [user, created] = await User.findOrCreate({
@@ -25,7 +25,7 @@ class UserService {
     }
 
     // Get all users
-    async getAllUsers() {
+    static async getAllUsers() {
         try {
             return await User.findAll({
                 include: [{
@@ -40,20 +40,20 @@ class UserService {
     }
 
     // Get a user ID by phone number
-    async getUserByPhoneNumber(phone) {
+    static async getUserByPhoneNumber(phone) {
         try {
             const user = await User.findOne({
                 where: { phone },
             });
             if (!user) throw new Error('User not found');
-            return user.userID;
+            return user;
         } catch (error) {
             throw new Error(`Failed to fetch user ID: ${error.message}`);
         }
     }
 
     // Get a user by ID
-    async getUserById(userID) {
+    static async getUserById(userID) {
         try {
             const user = await User.findByPk(userID);
             if (!user) throw new Error('User not found');
@@ -63,7 +63,7 @@ class UserService {
         }
     }
     // Update a user
-    async updateUser(userID, userData) {
+    static async updateUser(userID, userData) {
         try {
             const user = await User.findByPk(userID);
             if (!user) throw new Error('User not found');
@@ -74,7 +74,7 @@ class UserService {
         }
     }
     // Delete a user
-    async deleteUser(userID) {
+    static async deleteUser(userID) {
         try {
             const user = await User.findByPk(userID);
             if (!user) throw new Error('User not found');
@@ -88,7 +88,7 @@ class UserService {
 
 
     
-    async getSupervisorsByUser(userID) {
+    static async getSupervisorsByUser(userID) {
         try {
             const user = await User.findByPk(userID, {
                 include: [{
@@ -105,7 +105,7 @@ class UserService {
         }
     }
 
-    async getManagersByUser(userID) {
+    static async getManagersByUser(userID) {
         try {
             const user = await User.findByPk(userID, {
                 include: [{
@@ -123,7 +123,7 @@ class UserService {
     }
 
     // Update assignSupervisorsToManager to ensure it works bidirectionally
-    async assignSupervisorsToManager(managerID, supervisorIDs) {
+    static async assignSupervisorsToManager(managerID, supervisorIDs) {
         try {
             const manager = await User.findByPk(managerID);
             if (!manager) throw new Error('Manager not found');
@@ -157,4 +157,4 @@ class UserService {
 
 }
 
-module.exports = new UserService();
+module.exports = UserService;

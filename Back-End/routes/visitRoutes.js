@@ -4,7 +4,7 @@ const { authenticateJWT, requirePermission } = require('../config/security');
 const VisitController = require('../controllers/visitController');
 
 router.post('/', authenticateJWT, requirePermission('create_visits'), VisitController.createVisit);
-router.post('/verify-qr', authenticateJWT, requirePermission('validate_visits'), VisitController.verifyQRCode);
+router.post('/verify-qr', authenticateJWT, requirePermission('scan_visits'), VisitController.verifyQRCode);
 router.put('/:id/log', authenticateJWT, requirePermission('log_visits'), VisitController.logVisit);
 router.get('/:id', authenticateJWT, requirePermission('access_visit_details'), VisitController.getVisitByID);
 

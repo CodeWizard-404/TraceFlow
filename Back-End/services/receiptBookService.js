@@ -140,56 +140,56 @@ class ReceiptBookService {
     }
 
     // Helper: Determine status and transfer type
-static determineTransferDetails(currentStatus, recipientType, recipient) {
-    if (recipientType === 'agent') {
-        return { status: 'Assigned to Agent', transferType: 'ToAgent' };
-    }
-
-    const role = recipient.Roles?.length ? recipient.Roles[0].name : 'Unknown';
-
-    // Map current status to new status based on recipient role
-    const statusMap = {
-        'In Stock': 'Sent to Supplier',
-        'Sent to Supplier': 'With Regional Manager',
-        'With Regional Manager': {
-            'Supervisor': 'With Supervisor',
-            'Regional Manager': 'With Regional Manager', // Same-role transfer
-        },
-        'With Supervisor': {
-            'Supervisor': 'With Supervisor', // Same-role transfer
-            'Regional Manager': 'With Regional Manager', // Return to Regional Manager
-            'Stock Manager': 'With Stock Manager', // Rare case, but possible
-        },
-        'Stub Collected': {
-            'Regional Manager': 'With Regional Manager',
-            'Stock Manager': 'With Stock Manager',
-        },
-        'With Stock Manager': {
-            'Stock Manager': 'With Stock Manager', // Same-role transfer
-        },
-    };
-
-    const transferTypeMap = {
-        'Regional Manager': 'ToRegionalManager',
-        'Supervisor': 'ToSupervisor',
-        'Stock Manager': 'ToStockManager',
-    };
-
-    // Determine new status based on current status and recipient role
-    let newStatus;
-    if (statusMap[currentStatus]) {
-        if (typeof statusMap[currentStatus] === 'object') {
-            newStatus = statusMap[currentStatus][role] || currentStatus; // Fallback to current if role not mapped
-        } else {
-            newStatus = statusMap[currentStatus];
+    static determineTransferDetails(currentStatus, recipientType, recipient) {
+        if (recipientType === 'agent') {
+            return { status: 'Assigned to Agent', transferType: 'ToAgent' };
         }
-    } else {
-        newStatus = currentStatus; // Default to no change if status not mapped
-    }
 
-    const transferType = transferTypeMap[role];
-    return { status: newStatus, transferType };
-}
+        const role = recipient.Roles?.length ? recipient.Roles[0].name : 'Unknown';
+
+        // Map current status to new status based on recipient role
+        const statusMap = {
+            'In Stock': 'Sent to Supplier',
+            'Sent to Supplier': 'With Regional Manager',
+            'With Regional Manager': {
+                'Supervisor': 'With Supervisor',
+                'Regional Manager': 'With Regional Manager', // Same-role transfer
+            },
+            'With Supervisor': {
+                'Supervisor': 'With Supervisor', // Same-role transfer
+                'Regional Manager': 'With Regional Manager', // Return to Regional Manager
+                'Stock Manager': 'With Stock Manager', // Rare case, but possible
+            },
+            'Stub Collected': {
+                'Regional Manager': 'With Regional Manager',
+                'Stock Manager': 'With Stock Manager',
+            },
+            'With Stock Manager': {
+                'Stock Manager': 'With Stock Manager', // Same-role transfer
+            },
+        };
+
+        const transferTypeMap = {
+            'Regional Manager': 'ToRegionalManager',
+            'Supervisor': 'ToSupervisor',
+            'Stock Manager': 'ToStockManager',
+        };
+
+        // Determine new status based on current status and recipient role
+        let newStatus;
+        if (statusMap[currentStatus]) {
+            if (typeof statusMap[currentStatus] === 'object') {
+                newStatus = statusMap[currentStatus][role] || currentStatus; // Fallback to current if role not mapped
+            } else {
+                newStatus = statusMap[currentStatus];
+            }
+        } else {
+            newStatus = currentStatus; // Default to no change if status not mapped
+        }
+
+        const transferType = transferTypeMap[role];
+        return { status: newStatus, transferType };
+    }
 
     // helper: Format TLV data
     static formatTLV(tag, value) {

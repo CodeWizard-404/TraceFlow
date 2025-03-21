@@ -9,6 +9,7 @@ import Permission from "../models/Permission";
 import ReceiptBook from "../models/ReceiptBook";
 import ReceiptStub from "../models/ReceiptStub";
 import ReceiptBookTransfer from "../models/ReceiptBookTransfer";
+import UserPermissionOverride from "../models/UserPermissionOverride";
 
 // Agent API Responses
 export type AgentsByLocationResponse = Agent[];
@@ -16,11 +17,60 @@ export type AgentLocationsResponse = string[];
 export type AgentByPhoneResponse = Agent;
 export type AgentByIdResponse = Agent;
 
+// Auth API Responses
+export interface LoginResponse {  token: string;  user: User;}
+export interface Verify2FAResponse {  token: string;  userID: string;}
+export interface Resend2FAResponse {  message: string;}
+
+
+
+// User API Responses
+export type CreateUserResponse = User;
+export type ListUsersResponse = User[];
+export type UserByPhoneResponse = User;
+export type UserByIdResponse = User;
+export type UpdateUserResponse = User;
+export interface DeleteUserResponse {  message: string;}
+export interface AssignSupervisorsResponse {  managerID: string;  supervisorIDs: string[];}
+export type SupervisorsByUserResponse = User[];
+export type ManagersByUserResponse = User[];
+
+
+// Role API Responses
+export type CreateRoleResponse = Role;
+export type ListRolesResponse = Role[];
+export type RoleByIdResponse = Role;
+export type UpdateRoleResponse = Role;
+export interface DeleteRoleResponse {  message: string;}
+export interface AssignRolesResponse {  userID: string;  roleIDs: string[];}
+export type RolesByUserResponse = Role[];
+
+
+// Permission API Responses
+export type ListPermissionsResponse = Permission[];
+export type PermissionByIdResponse = Permission;
+export type CreatePermissionResponse = Permission;
+export type UpdatePermissionResponse = Permission;
+export interface DeletePermissionResponse {  message: string;}
+export interface AssignPermissionsResponse {  roleID: string;  permissionIDs: string[];}
+export type PermissionsByRoleResponse = Permission[];
+export type AddPermissionOverrideResponse = UserPermissionOverride;
+export interface RemovePermissionOverrideResponse {  message: string; }
+export type EffectivePermissionsResponse = Permission[];
+export type UserPermissionOverrideResponse = UserPermissionOverride;
+
+
+
+
+
+
+
+
+
+
+
 // Timesheet API Responses
-export interface CreateTimesheetResponse {
-  message: string;
-  timesheet: Timesheet;
-}
+export type CreateTimesheetResponse = {  message: string;  timesheet: Timesheet;};
 export type ListTimesheetsResponse = Timesheet[];
 export type TimesheetByIdResponse = Timesheet;
 export type ValidateTimesheetResponse = Timesheet;
@@ -28,74 +78,39 @@ export type TimesheetsBySupervisorResponse = Timesheet[];
 
 // Visit API Responses
 export type CreateVisitResponse = Visit;
-export type VerifyQrResponse = { valid: boolean; message: string };
+export interface VerifyQrResponse {valid: boolean; message: string;}
 export type LogVisitResponse = Visit;
 export type VisitByIdResponse = Visit;
 
-// Checklist API Responses
-export type CreateChecklistResponse = Checklist;
-export type ListChecklistsResponse = Checklist[];
-export type ChecklistsByVisitResponse = VisitChecklist[];
 
 // Reason API Responses
 export type CreateReasonResponse = Reason;
 export type ListReasonsResponse = Reason[];
 export type ReasonsByVisitResponse = VisitReason[];
 
-// Supervisor API Responses
-export type GetSupervisorByPhoneNumberResponse = string;
+// Checklist API Responses
+export type CreateChecklistResponse = Checklist;
+export type ListChecklistsResponse = Checklist[];
+export type ChecklistsByVisitResponse = VisitChecklist[];
 
-// Auth API Responses
-export type LoginResponse = { token: string; user: User };
-
-// User API Responses
-export type CreateUserResponse = User;
-export type ListUsersResponse = User[];
-export type UserByIdResponse = User;
-export type UpdateUserResponse = User;
-export type DeleteUserResponse = void;
-export type AssignRolesResponse = {
-  userID: string;
-  assignedRoles: string[];
-  totalAssigned: number;
-};
-export type RolesByUserResponse = Role[];
-export type SupervisorsByUserResponse = User[]; 
-export type ManagersByUserResponse = User[];
-export type AssignSupervisorsResponse = {
-  managerID: string;
-  assignedSupervisors: string[];
-  message: string;
-};
-
-// Role API Responses
-export type CreateRoleResponse = Role;
-export type ListRolesResponse = Role[];
-export type RoleByIdResponse = Role;
-export type AssignPermissionsResponse = {
-  roleID: string;
-  assignedPermissions: string[];
-  totalAssigned: number;
-};
-export type PermissionsByRoleResponse = Permission[];
-
-// Permission API Responses
-export type ListPermissionsResponse = Permission[];
-export type PermissionByIdResponse = Permission;
 
 // Receipt Book API Responses
 export type CreateReceiptBookResponse = ReceiptBook;
 export type ListReceiptBooksResponse = ReceiptBook[];
 export type ReceiptBookByIdResponse = ReceiptBook;
-export type SendToSupplierResponse = { message: string };
-export type TransferToUserResponse = { message: string };
+export type UpdateReceiptBookResponse = ReceiptBook;
+export interface DeleteReceiptBookResponse {  message: string; }
+export interface SendToSupplierResponse {  message: string; }
+export interface TransferResponse {  message: string;}
 export type ValidateTransferResponse = ReceiptBook;
-export type AssignToAgentResponse = { message: string };
-export type ValidateAgentAssignmentResponse = ReceiptBook;
 export type TransferHistoryResponse = ReceiptBookTransfer[];
 
 // Receipt Stub API Responses
-export type CollectStubResponse = { message: string };
+export interface CollectStubResponse {  message: string;}
 export type ValidateStubCollectionResponse = ReceiptStub;
-export type TransmitStubResponse = ReceiptStub;
 export type ArchiveStubResponse = ReceiptStub;
+
+
+
+
+

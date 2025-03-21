@@ -4,7 +4,7 @@ const ChecklistService = require('./checklistService');
 const ReasonService = require('./reasonService');
 
 class VisitService {
-    async createVisit(data) {
+    static async createVisit(data) {
         const { date, time, agentID, supervisorID, timesheetID, reasons, checklists } = data;
         if (!date || !time || !agentID || !supervisorID || !timesheetID) {
             const error = new Error('Missing required fields');
@@ -40,7 +40,7 @@ class VisitService {
         }
     }
 
-    async verifyQRCode(qrData, visitId) {
+    static async verifyQRCode(qrData, visitId) {
         if (!qrData || !visitId) {
             const error = new Error('Missing required parameters');
             error.status = 400;
@@ -79,7 +79,7 @@ class VisitService {
         }
     }
 
-    async logVisit(visitID, data) {
+    static async logVisit(visitID, data) {
         try {
             const { duration, checklistUpdates, photos, comment } = data;
             const visit = await Visit.findByPk(visitID, { include: [Checklist] });
@@ -106,7 +106,7 @@ class VisitService {
         }
     }
 
-    async getVisitByID(visitID) {
+    static async getVisitByID(visitID) {
         try {
             const visit = await Visit.findByPk(visitID, { include: [Checklist, Reason] });
             if (!visit) {
@@ -123,4 +123,4 @@ class VisitService {
     }
 }
 
-module.exports = new VisitService();
+module.exports = VisitService;

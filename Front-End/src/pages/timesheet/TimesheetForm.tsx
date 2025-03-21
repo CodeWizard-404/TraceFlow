@@ -1,6 +1,6 @@
 /* eslint-disable react-hooks/rules-of-hooks */
 /* eslint-disable react-hooks/exhaustive-deps */
-import React, { useState, useEffect, useCallback } from "react";
+import React, { useState, useEffect, useCallback, useMemo } from "react";
 import { useNavigate } from "react-router-dom";
 import { debounce } from "lodash";
 import "./TimesheetForm.css";
@@ -13,7 +13,7 @@ import {
 import { getAllChecklists } from "../../apis/checklistAPI";
 import { getAllReasons } from "../../apis/reasonAPI";
 import { createTimesheet } from "../../apis/timesheetAPI";
-import { getSupervisorByPhone, getSupervisorsByUser } from "../../apis/userAPI"; // Replace getAllUsers with getSupervisorsByUser
+import { getUserByPhone, getSupervisorsByUser } from "../../apis/userAPI"; 
 import { Checklist } from "../../models/Checklist";
 import { Reason } from "../../models/Reason";
 import { useAuth } from "../../context/AuthContext";
@@ -22,7 +22,7 @@ import User from "../../models/User";
 
 const TimesheetForm: React.FC = () => {
   const navigate = useNavigate();
-  const { user, token } = useAuth();
+  const { user, token, effectivePermissions, userRoles } = useAuth();
   const { setError } = useError();
   const [date, setDate] = useState<string>("");
   const [time, setTime] = useState<string>("");
@@ -45,16 +45,19 @@ const TimesheetForm: React.FC = () => {
   const [supervisorPhone, setSupervisorPhone] = useState<string>("");
   const [supervisorSearch, setSupervisorSearch] = useState<string>("");
 
+  // Permission Checks based on effectivePermissions
+  const canCreateTimesheets = useMemo(() => userRoles?.some(r => r.name === "create_timesheets"), [effectivePermissions]);
+  const canValidateTimesheets = useMemo(() => userRoles?.some(r => r.name === "validate_timesheets"), [effectivePermissions]);
+
   // Redirect if user is not authenticated or lacks permission
   useEffect(() => {
-    if (!user || !token || !user.roles?.some(role => role.permissions?.includes("create_timesheets"))) {
+    if (!user || !token || !canCreateTimesheets) {
       navigate("/login");
     }
   }, [user, token, navigate]);
 
   if (!user || !token) return null;
 
-  const canValidateTimesheets = user.roles?.some(role => role.permissions?.includes("validate_timesheets"));
   const supervisorID = canValidateTimesheets && selectedSupervisor ? selectedSupervisor : user.userID;
 
   // Fetch initial data
@@ -67,7 +70,7 @@ const TimesheetForm: React.FC = () => {
           getAllReasons(token),
           getAllChecklists(token),
           canValidateTimesheets
-            ? getSupervisorsByUser(user.userID, token) // Fetch supervisors assigned to the logged-in user
+            ? getSupervisorsByUser(user.userID, token) 
             : Promise.resolve([]),
         ]);
         setLocations(locationsData);
@@ -135,15 +138,14 @@ const TimesheetForm: React.FC = () => {
     return () => fetchAgentByPhone.cancel();
   }, [agentPhone, fetchAgentByPhone]);
 
-  // Debounced fetch supervisor by phone
   const fetchSupervisorByPhone = useCallback(
     debounce(async (phone: string) => {
       if (phone.length < 7) return;
+      console.log("Fetching supervisor with phone:", phone); // Debug
       try {
-        const supervisorID = await getSupervisorByPhone(phone, token);
-        const supervisor = supervisors.find(s => s.userID === supervisorID) || { userID: supervisorID, firstname: "", lastname: "", phone };
-        setSelectedSupervisor(supervisorID);
-        setSupervisors(prev => prev.some(s => s.userID === supervisorID) ? prev : [...prev, supervisor]);
+        const supervisor = await getUserByPhone(phone, token);
+        setSelectedSupervisor(supervisor.userID);
+        setSupervisors(prev => prev.some(s => s.userID === supervisor.userID) ? prev : [...prev, supervisor]);
         setSupervisorSearch(`${supervisor.firstname || ""} ${supervisor.lastname || ""}`);
       } catch (err) {
         setError("Supervisor not found with this phone number");

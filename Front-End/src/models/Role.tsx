@@ -1,4 +1,5 @@
 import Permission from "./Permission";
+
 interface Role {
     roleID: string;
     name: string;
@@ -6,4 +7,4 @@ interface Role {
     permissions?: Permission[];
 }
 
-export default Role
+export default Role;

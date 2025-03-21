@@ -1,7 +1,5 @@
 import api from "./axiosConfig";
-import { CollectStubResponse, ValidateStubCollectionResponse, TransmitStubResponse, ArchiveStubResponse } from ".";
-
-
+import { CollectStubResponse, ValidateStubCollectionResponse, ArchiveStubResponse } from ".";
 
 export const collectStub = async (bookID: string, token: string): Promise<CollectStubResponse> => {
     try {
@@ -21,32 +19,12 @@ export const validateStubCollection = async (
     token: string
 ): Promise<ValidateStubCollectionResponse> => {
     try {
-        const response = await api.post<ValidateStubCollectionResponse>(
-            `/receipt-stubs/${bookID}/validate-collection`,
-            { otpCode },
-            { headers: { Authorization: `Bearer ${token}` } }
-        );
+        const response = await api.post<ValidateStubCollectionResponse>(`/receipt-stubs/${bookID}/validate-collection`, { otpCode }, {
+            headers: { Authorization: `Bearer ${token}` },
+        });
         return response.data;
     } catch (error) {
         console.error(`Error validating stub collection for book (${bookID}):`, error);
-        throw error;
-    }
-};
-
-export const transmitStub = async (
-    bookID: string,
-    newOwnerID: string,
-    token: string
-): Promise<TransmitStubResponse> => {
-    try {
-        const response = await api.post<TransmitStubResponse>(
-            `/receipt-stubs/${bookID}/transmit`,
-            { newOwnerID },
-            { headers: { Authorization: `Bearer ${token}` } }
-        );
-        return response.data;
-    } catch (error) {
-        console.error(`Error transmitting stub for book (${bookID}):`, error);
         throw error;
     }
 };

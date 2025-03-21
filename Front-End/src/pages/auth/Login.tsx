@@ -1,8 +1,6 @@
-// src/pages/auth/Login.tsx
-import React, { useState, useEffect } from "react";
+import React, { useState } from "react";
 import { useAuth } from "../../context/AuthContext";
 import { useError } from "../../context/ErrorContext";
-import { useLocation } from "react-router-dom";
 import { AxiosError } from "axios";
 import "./Login.css";
 
@@ -10,12 +8,8 @@ const LoginPage: React.FC = () => {
     const [identifier, setIdentifier] = useState("");
     const [password, setPassword] = useState("");
     const [loading, setLoading] = useState(false);
-    const { loginUser, user, token } = useAuth();
+    const { loginUser } = useAuth();
     const { setError } = useError();
-    const location = useLocation();
-
-    useEffect(() => {
-    }, [user, token]);
 
     const handleSubmit = async (e: React.FormEvent) => {
         e.preventDefault();
@@ -23,9 +17,7 @@ const LoginPage: React.FC = () => {
         setError(null);
 
         try {
-            // Pass the intended redirect from location.state, if any
-            const redirectTo = location.state?.from;
-            await loginUser(identifier, password, redirectTo);
+            await loginUser(identifier, password); // No redirectTo parameter
         } catch (err: unknown) {
             const axiosError = err as AxiosError<{ error: string }>;
             const errorMessage =

@@ -2,7 +2,7 @@ const { Visit, Reason, Checklist, Timesheet } = require('../models');
 const VisitService = require('./visitService');
 
 class TimesheetService {
-    async createTimesheet(data) {
+    static async createTimesheet(data) {
         const { weekNumber, year, supervisorID, visits } = data;
 
         // Validate required fields
@@ -68,7 +68,7 @@ class TimesheetService {
         }
     }
 
-    async validateTimesheet(timesheetID, visitIDs = [], status) {
+    static async validateTimesheet(timesheetID, visitIDs = [], status) {
         if (!status || (Array.isArray(visitIDs) && visitIDs.some(id => typeof id !== 'string'))) {
             const error = new Error('Invalid input data');
             error.status = 400;
@@ -113,7 +113,7 @@ class TimesheetService {
         }
     }
 
-    async listTimesheets() {
+    static async listTimesheets() {
         try {
             return await Timesheet.findAll({
                 include: [
@@ -133,7 +133,7 @@ class TimesheetService {
         }
     }
 
-    async viewTimesheet(timesheetID) {
+    static async viewTimesheet(timesheetID) {
         try {
             const timesheet = await Timesheet.findByPk(timesheetID, {
                 include: [
@@ -159,7 +159,7 @@ class TimesheetService {
         }
     }
 
-    async getTimesheetsBySupervisor(supervisorID) {
+    static async getTimesheetsBySupervisor(supervisorID) {
         if (!supervisorID) {
             const error = new Error('Invalid supervisorID');
             error.status = 400;
@@ -186,4 +186,4 @@ class TimesheetService {
     }
 }
 
-module.exports = new TimesheetService();
+module.exports = TimesheetService;

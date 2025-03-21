@@ -1,91 +1,125 @@
-// src/context/AuthContext.tsx
 import React, { createContext, useContext, useState, useEffect, ReactNode } from "react";
 import { useNavigate, useLocation } from "react-router-dom";
 import { login } from "../apis/authAPI";
-import User from "../models/User";
+import { getEffectivePermissions } from "../apis/permissionAPI";
+import { getRolesByUser } from "../apis/roleAPI";
 import { setupAxiosInterceptors } from "../apis/axiosConfig";
+import User from "../models/User";
+import Permission from "../models/Permission";
+import Role from "../models/Role";
 
+// Define the shape of the authentication context
 interface AuthContextType {
     user: User | null;
     token: string | null;
-    loginUser: (identifier: string, password: string, redirectTo?: string) => Promise<void>;
-    logout: () => Promise<void>;
+    userRoles: Role[] | null;
+    effectivePermissions: Permission[] | null;
+    permissionsLoaded: boolean;
+    loginUser: (identifier: string, password: string) => Promise<void>;
+    logout: () => void;
 }
 
+// Create the context with an undefined initial value
 const AuthContext = createContext<AuthContextType | undefined>(undefined);
 
+// AuthProvider component to manage authentication state and logic
 export const AuthProvider: React.FC<{ children: ReactNode }> = ({ children }) => {
+    // Initialize state from localStorage for persistence
     const [user, setUser] = useState<User | null>(() => {
         const storedUser = localStorage.getItem("user");
-        const parsedUser = storedUser ? JSON.parse(storedUser) : null;
-        return parsedUser;
+        return storedUser ? JSON.parse(storedUser) : null;
     });
-    const [token, setToken] = useState<string | null>(() => {
-        const storedToken = localStorage.getItem("token");
-        return storedToken;
-    });
-    const [hasLoggedIn, setHasLoggedIn] = useState(false); 
+    const [token, setToken] = useState<string | null>(() => localStorage.getItem("token"));
+    const [userRoles, setUserRoles] = useState<Role[] | null>(null);
+    const [effectivePermissions, setEffectivePermissions] = useState<Permission[] | null>(null);
+    const [permissionsLoaded, setPermissionsLoaded] = useState(false);
+
     const navigate = useNavigate();
     const location = useLocation();
 
+    // Configure Axios interceptors 
     useEffect(() => {
-        setupAxiosInterceptors(() => token);
-    }, [token]);
+        setupAxiosInterceptors();
+    }, []);
 
+    // Fetch user roles and permissions when user and token are available
     useEffect(() => {
-        if (user && token && !hasLoggedIn) { 
-            const userPermissions = user.roles?.flatMap(role =>
-                Array.isArray(role.permissions) ? role.permissions : []
-            ) || [];
+        const fetchPermissions = async () => {
+            if (!user || !token) return;
+            try {
+                const [perms, roles] = await Promise.all([
+                    getEffectivePermissions(user.userID, token),
+                    getRolesByUser(user.userID, token),
+                ]);
+                setEffectivePermissions(perms);
+                setUserRoles(roles);
+            } catch (error) {
+                console.error("Failed to fetch permissions:", error);
+            } finally {
+                setPermissionsLoaded(true);
+            }
+        };
+        fetchPermissions();
+    }, [user, token]);
 
-
-            let targetRoute = "/"; // Default route
-            if (userPermissions.includes("create_users") || userPermissions.includes("update_users")) {
-                targetRoute = "/admin";
-            } else if (userPermissions.includes("access_timesheets")) {
-                targetRoute = "/timesheet";
-            } 
-
-            const finalRoute = location.state?.from && !userPermissions.length ? location.state?.from : targetRoute;
+    // Handle redirection after login based on roles or previous location
+    useEffect(() => {
+        if (user && token && permissionsLoaded && userRoles) {
+            const targetRoute = determineTargetRoute(userRoles);
+            const finalRoute = location.state?.from || targetRoute;
             navigate(finalRoute, { replace: true });
-            setHasLoggedIn(true); 
         }
-    }, [user, token, navigate, location.state, hasLoggedIn]);
+    }, [user, token, permissionsLoaded, userRoles, location.state, navigate]);
 
-    const loginUser = async (identifier: string, password: string) => {
-        try {
-            const response = await login(identifier, password);
-
-            setUser(response.user);
-            setToken(response.token);
-            localStorage.setItem("token", response.token);
-            localStorage.setItem("user", JSON.stringify(response.user));
-            setHasLoggedIn(false);
-        } catch (error) {
-            console.error("Login failed:", error);
-            throw error;
-        }
+    // Helper function to determine the default route based on roles
+    const determineTargetRoute = (roles: Role[]): string => {
+        if (roles.some((r) => ["Admin", "Super Admin"].includes(r.name))) return "/admin";
+        if (roles.some((r) => ["Manager", "Supervisor"].includes(r.name))) return "/timesheet";
+        return "/";
     };
 
-    const logout = async () => {
+    // Login function to authenticate the user
+    const loginUser = async (identifier: string, password: string) => {
+        const response = await login(identifier, password);
+        setUser(response.user);
+        setToken(response.token);
+        localStorage.setItem("token", response.token);
+        localStorage.setItem("user", JSON.stringify(response.user));
+        setPermissionsLoaded(false); 
+    };
+
+    // Logout function to clear state and redirect
+    const logout = () => {
         setUser(null);
         setToken(null);
-        setHasLoggedIn(false);
+        setUserRoles(null);
+        setEffectivePermissions(null);
+        setPermissionsLoaded(false);
         localStorage.removeItem("token");
         localStorage.removeItem("user");
         navigate("/login");
     };
 
-    return (
-        <AuthContext.Provider value={{ user, token, loginUser, logout }}>
-            {children}
-        </AuthContext.Provider>
-    );
+    // Provide the context value to children
+    const value: AuthContextType = {
+        user,
+        token,
+        userRoles,
+        effectivePermissions,
+        permissionsLoaded,
+        loginUser,
+        logout,
+    };
+
+    return <AuthContext.Provider value={value}>{children}</AuthContext.Provider>;
 };
 
+// Custom hook to access the auth context
 // eslint-disable-next-line react-refresh/only-export-components
-export const useAuth = () => {
+export const useAuth = (): AuthContextType => {
     const context = useContext(AuthContext);
-    if (!context) throw new Error("useAuth must be used within an AuthProvider");
+    if (!context) {
+        throw new Error("useAuth must be used within an AuthProvider");
+    }
     return context;
 };

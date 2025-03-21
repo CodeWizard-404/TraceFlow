@@ -10,8 +10,8 @@ router.get('/:roleID', authenticateJWT, requirePermission('read_role_details'), 
 router.put('/:roleID', authenticateJWT, requirePermission('update_roles'), RoleController.updateRole);
 router.delete('/:roleID', authenticateJWT, requirePermission('delete_roles'), RoleController.deleteRole);
 
-router.post('/:userID/roles', authenticateJWT, requirePermission('assign_roles'), RoleController.assignRolesToUser);
-router.get('/:userID/roles', authenticateJWT, requirePermission('read_roles_by_user'), RoleController.getRolesByUser);
+router.post('/user/:userID/assign', authenticateJWT, requirePermission('assign_roles'), RoleController.assignRolesToUser);
+router.get('/user/:userID', authenticateJWT, requirePermission('read_roles_by_user'), RoleController.getRolesByUser);
 
 
 module.exports = router;

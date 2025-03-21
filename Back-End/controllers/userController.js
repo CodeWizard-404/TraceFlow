@@ -16,7 +16,7 @@ class UserController {
         }
     }
 
-    static async getAllUsers(res) {
+    static async getAllUsers(req, res) {
         try {
             const users = await UserService.getAllUsers();
             res.status(200).json(users);
@@ -28,7 +28,7 @@ class UserController {
 
     static async getUserByPhoneNumber(req, res) {
         try {
-            const { phone } = req.body;
+            const { phone } = req.params;
             if (!phone) {
                 return res.status(400).json({ error: 'Phone number is required' });
             }

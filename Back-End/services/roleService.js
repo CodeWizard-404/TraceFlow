@@ -2,7 +2,7 @@ const { Role, Permission, User } = require('../models');
 
 class RoleService {
     // Create a new role
-    async createRole(name, description) {
+    static async createRole(name, description) {
         try {
             const [role, created] = await Role.findOrCreate({
                 where: { name },
@@ -20,7 +20,7 @@ class RoleService {
     }
 
     // Get all roles
-    async getAllRoles() {
+    static async getAllRoles() {
         try {
             return await Role.findAll({
                 attributes: ['roleID', 'name', 'description'],
@@ -31,7 +31,7 @@ class RoleService {
     }
 
     // Get role by ID
-    async getRoleById(roleID) {
+    static async getRoleById(roleID) {
         try {
             const role = await Role.findByPk(roleID);
             if (!role) throw new Error('Role not found');
@@ -42,7 +42,7 @@ class RoleService {
     }
 
     // Delete a role
-    async deleteRole(roleID) {
+    static async deleteRole(roleID) {
         try {
             const role = await Role.findByPk(roleID);
             if (!role) throw new Error('Role not found');
@@ -54,7 +54,7 @@ class RoleService {
     }
 
     // Update a role    
-    async updateRole(roleID, updates) {
+    static async updateRole(roleID, updates) {
         try {
             const role = await Role.findByPk(roleID);
             if (!role) throw new Error('Role not found');
@@ -67,7 +67,7 @@ class RoleService {
 
 
     // Assign roles to a user
-    async assignRolesToUser(userID, roleIDs) {
+    static async assignRolesToUser(userID, roleIDs) {
         try {
             const user = await User.findByPk(userID);
             if (!user) throw new Error('User not found');
@@ -98,7 +98,7 @@ class RoleService {
     }
 
     // Get roles by user
-    async getRolesByUser(userID) {
+    static async getRolesByUser(userID) {
         try {
             const user = await User.findByPk(userID, {
                 include: [{
@@ -123,4 +123,4 @@ class RoleService {
 
 }
 
-module.exports = new RoleService();
+module.exports = RoleService;

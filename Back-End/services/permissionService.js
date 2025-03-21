@@ -43,7 +43,7 @@ class PermissionService {
     
 
     // Assign permissions to a role
-    async assignPermissionsToRole(roleID, permissionIDs) {
+    static async assignPermissionsToRole(roleID, permissionIDs) {
         try {
             const role = await Role.findByPk(roleID);
             if (!role) throw new Error('Role not found');
@@ -74,7 +74,7 @@ class PermissionService {
     }
 
     // Get permissions by role
-    async getPermissionsByRole(roleID) {
+    static async getPermissionsByRole(roleID) {
         try {
             const role = await Role.findByPk(roleID, {
                 include: [{
@@ -94,7 +94,7 @@ class PermissionService {
 
 
     // Add a permission override for a user within a role
-    async addPermissionOverride(userID, roleID, permissionID, action) {
+    static async addPermissionOverride(userID, roleID, permissionID, action) {
         try {
             const user = await User.findByPk(userID);
             if (!user) throw new Error('User not found');
@@ -126,7 +126,7 @@ class PermissionService {
     }
 
     // Remove a permission override
-    async removePermissionOverride(overrideID) {
+    static async removePermissionOverride(overrideID) {
         try {
             const override = await UserPermissionOverride.findByPk(overrideID);
             if (!override) throw new Error('Override not found');
@@ -138,7 +138,7 @@ class PermissionService {
     }
 
     // Get effective permissions for a user
-    async getEffectivePermissions(userID) {
+    static async getEffectivePermissions(userID) {
         try {
             const user = await User.findByPk(userID, {
                 include: [{
@@ -186,6 +186,22 @@ class PermissionService {
             return effectivePermissions;
         } catch (error) {
             throw new Error(`Failed to fetch effective permissions: ${error.message}`);
+        }
+    }
+
+    // Get permission overrides for a user
+    static async getPermissionOverrides(userID) {
+        try {
+            const user = await User.findByPk(userID, {
+                include: [{
+                    model: UserPermissionOverride,
+                    include: [{ model: Permission }],
+                }],
+            });
+            if (!user) throw new Error('User not found');
+            return user.UserPermissionOverrides;
+        } catch (error) {
+            throw new Error(`Failed to fetch permission overrides: ${error.message}`);
         }
     }
 

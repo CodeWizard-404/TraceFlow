@@ -3,22 +3,21 @@ import {
     CreateReceiptBookResponse,
     ListReceiptBooksResponse,
     ReceiptBookByIdResponse,
+    UpdateReceiptBookResponse,
+    DeleteReceiptBookResponse,
     SendToSupplierResponse,
-    TransferToUserResponse,
+    TransferResponse,
     ValidateTransferResponse,
-    AssignToAgentResponse,
-    ValidateAgentAssignmentResponse,
     TransferHistoryResponse,
 } from ".";
 import ReceiptBook from "../models/ReceiptBook";
 
-
 export const createReceiptBook = async (
-    receiptBookData: Partial<ReceiptBook>,
+    data: { number: string; type: string },
     token: string
 ): Promise<CreateReceiptBookResponse> => {
     try {
-        const response = await api.post<CreateReceiptBookResponse>("/receipt-books", receiptBookData, {
+        const response = await api.post<CreateReceiptBookResponse>("/receipt-books", data, {
             headers: { Authorization: `Bearer ${token}` },
         });
         return response.data;
@@ -52,9 +51,13 @@ export const getReceiptBookById = async (bookID: string, token: string): Promise
     }
 };
 
-export const updateReceiptBook = async (bookID: string, receiptBookData: Partial<ReceiptBook>, token: string): Promise<ReceiptBookByIdResponse> => {
+export const updateReceiptBook = async (
+    bookID: string,
+    data: Partial<ReceiptBook>,
+    token: string
+): Promise<UpdateReceiptBookResponse> => {
     try {
-        const response = await api.put<ReceiptBookByIdResponse>(`/receipt-books/${bookID}`, receiptBookData, {
+        const response = await api.put<UpdateReceiptBookResponse>(`/receipt-books/${bookID}`, data, {
             headers: { Authorization: `Bearer ${token}` },
         });
         return response.data;
@@ -64,11 +67,12 @@ export const updateReceiptBook = async (bookID: string, receiptBookData: Partial
     }
 };
 
-export const deleteReceiptBook = async (bookID: string, token: string): Promise<void> => {
+export const deleteReceiptBook = async (bookID: string, token: string): Promise<DeleteReceiptBookResponse> => {
     try {
-        await api.delete(`/receipt-books/${bookID}`, {
+        const response = await api.delete<DeleteReceiptBookResponse>(`/receipt-books/${bookID}`, {
             headers: { Authorization: `Bearer ${token}` },
         });
+        return response.data;
     } catch (error) {
         console.error(`Error deleting receipt book (${bookID}):`, error);
         throw error;
@@ -76,88 +80,57 @@ export const deleteReceiptBook = async (bookID: string, token: string): Promise<
 };
 
 export const sendToSupplier = async (
-    bookID: string,
+    bookIDs: string[],
     supplierEmail: string,
     token: string
 ): Promise<SendToSupplierResponse> => {
     try {
-        const response = await api.post<SendToSupplierResponse>(
-            "/receipt-books/send",
-            { bookID, supplierEmail },
-            { headers: { Authorization: `Bearer ${token}` } }
-        );
+        const response = await api.post<SendToSupplierResponse>("/receipt-books/send", { bookIDs, supplierEmail }, {
+            headers: { Authorization: `Bearer ${token}` },
+        });
         return response.data;
     } catch (error) {
-        console.error(`Error sending receipt book (${bookID}) to supplier:`, error);
+        console.error("Error sending receipt books to supplier:", error);
         throw error;
     }
 };
 
-export const transferToUser = async (bookID: string, token: string): Promise<TransferToUserResponse> => {
+export const transfer = async (
+    bookIDs: string[],
+    recipientID: string,
+    recipientType: "user" | "agent",
+    token: string
+): Promise<TransferResponse> => {
     try {
-        const response = await api.post<TransferToUserResponse>(
-            "/receipt-books/transfer",
-            { bookID },
-            { headers: { Authorization: `Bearer ${token}` } }
-        );
+        const response = await api.post<TransferResponse>("/receipt-books/transfer", { bookIDs, recipientID, recipientType }, {
+            headers: { Authorization: `Bearer ${token}` },
+        });
         return response.data;
     } catch (error) {
-        console.error(`Error transferring receipt book (${bookID}) to user:`, error);
+        console.error("Error transferring receipt books:", error);
         throw error;
     }
 };
 
-export const validateTransferToUser = async (
-    bookID: string,
+export const validateTransfer = async (
+    bookIDs: string[],
+    recipientID: string,
     otpCode: string,
+    recipientType: "user" | "agent",
     token: string
 ): Promise<ValidateTransferResponse> => {
     try {
-        const response = await api.post<ValidateTransferResponse>(
-            "/receipt-books/validate-transfer",
-            { bookID, otpCode },
-            { headers: { Authorization: `Bearer ${token}` } }
-        );
+        const response = await api.post<ValidateTransferResponse>("/receipt-books/validate-transfer", {
+            bookIDs,
+            recipientID,
+            otpCode,
+            recipientType,
+        }, {
+            headers: { Authorization: `Bearer ${token}` },
+        });
         return response.data;
     } catch (error) {
-        console.error(`Error validating transfer for receipt book (${bookID}):`, error);
-        throw error;
-    }
-};
-
-export const assignToAgent = async (
-    bookID: string,
-    agentPhone: string,
-    token: string
-): Promise<AssignToAgentResponse> => {
-    try {
-        const response = await api.post<AssignToAgentResponse>(
-            "/receipt-books/assign-agent",
-            { bookID, agentPhone },
-            { headers: { Authorization: `Bearer ${token}` } }
-        );
-        return response.data;
-    } catch (error) {
-        console.error(`Error assigning receipt book (${bookID}) to agent:`, error);
-        throw error;
-    }
-};
-
-export const validateAgentAssignment = async (
-    bookID: string,
-    agentPhone: string,
-    otpCode: string,
-    token: string
-): Promise<ValidateAgentAssignmentResponse> => {
-    try {
-        const response = await api.post<ValidateAgentAssignmentResponse>(
-            "/receipt-books/validate-agent",
-            { bookID, agentPhone, otpCode },
-            { headers: { Authorization: `Bearer ${token}` } }
-        );
-        return response.data;
-    } catch (error) {
-        console.error(`Error validating agent assignment for receipt book (${bookID}):`, error);
+        console.error("Error validating transfer:", error);
         throw error;
     }
 };

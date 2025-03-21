@@ -3,7 +3,17 @@ interface ReceiptBookTransfer {
     bookID: string;
     fromUserID?: string;
     toUserID?: string;
-    status: string;
+    toAgentID?: string;
+    status: "Pending" | "Validated";
+    transferType:
+    | "ToSupplier"
+    | "ToRegionalManager"
+    | "ToSupervisor"
+    | "ToAgent"
+    | "StubToSupervisor"
+    | "ToRegionalManagerFromSupervisor"
+    | "ToStockManager"
+    | "Archived";
     transferDate: string;
 }
 

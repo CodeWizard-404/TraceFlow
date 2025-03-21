@@ -1,4 +1,3 @@
-// src/App.tsx
 import React, { useEffect } from "react";
 import { BrowserRouter as Router, Routes, Route, Navigate } from "react-router-dom";
 import { ThemeProvider, useTheme } from "./context/ThemeContext";
@@ -18,34 +17,35 @@ import AdminDashboard from "./pages/Admin/AdminDashboard";
 import LoginPage from "./pages/auth/Login";
 import "./App.css";
 import ErrorDisplay from "./pages/ErrorDisplay";
+import AccessDenied from "./pages/AccessDenied";
 
-// Updated ProtectedRoute to check user instead of token
+// ProtectedRoute component
 interface ProtectedRouteProps {
     children: JSX.Element;
     requiredPermissions: string[];
 }
 
 const ProtectedRoute: React.FC<ProtectedRouteProps> = ({ children, requiredPermissions }) => {
-    const { user, token } = useAuth();
-
+    const { user, token, effectivePermissions, permissionsLoaded } = useAuth();
 
     if (!user || !token) {
         return <Navigate to="/login" replace state={{ from: window.location.pathname }} />;
     }
 
-    const userPermissions = user.roles?.flatMap(role =>
-        Array.isArray(role.permissions) ? role.permissions : []
-    ) || [];
+    if (!permissionsLoaded) {
+        return <div>Loading permissions...</div>; // Wait for permissions to load
+    }
 
-    const hasPermission = requiredPermissions.some(perm => userPermissions.includes(perm));
+    const hasPermission = requiredPermissions.some((perm) =>
+        effectivePermissions?.some((p) => p.name === perm)
+    );
 
-    return hasPermission ? children : <Navigate to="/admin" replace />;
+    return hasPermission ? children : <Navigate to="/access-denied" replace />;
 };
 
-// Update AppContent to pass required permissions to ProtectedRoute
+// AppContent component
 const AppContent: React.FC = () => {
     const { theme } = useTheme();
-    //onst { user } = useAuth();
 
     useEffect(() => {
         document.body.className = theme;
@@ -58,6 +58,7 @@ const AppContent: React.FC = () => {
                 <ErrorDisplay />
                 <Routes>
                     <Route path="/login" element={<LoginPage />} />
+                    <Route path="/access-denied" element={<AccessDenied />} />
                     <Route path="/" element={<Navigate to="/login" replace />} />
                     <Route
                         path="/admin"
@@ -131,12 +132,13 @@ const AppContent: React.FC = () => {
     );
 };
 
+// Main App component
 const App: React.FC = () => {
     return (
         <Router>
             <ThemeProvider>
                 <AuthProvider>
-                    <ErrorProvider> {/* Wrap with ErrorProvider */}
+                    <ErrorProvider>
                         <AppContent />
                     </ErrorProvider>
                 </AuthProvider>
