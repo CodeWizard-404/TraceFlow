@@ -5,6 +5,7 @@ const TimesheetController = require('../controllers/timesheetController');
 
 
 router.post('/', authenticateJWT, requirePermission('create_timesheets'), TimesheetController.createTimesheet);
+router.post('/', authenticateJWT, requirePermission('create_timesheets_for_supervisor'), TimesheetController.createTimesheet);
 router.get('/', authenticateJWT, requirePermission('access_timesheets'), TimesheetController.getAllTimesheets);
 router.get('/:id', authenticateJWT, requirePermission('access_timesheet_details'), TimesheetController.getTimesheetById);
 router.put('/:id/validate', authenticateJWT, requirePermission('validate_timesheets'), TimesheetController.validateTimesheet);

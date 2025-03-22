@@ -1,0 +1,126 @@
+.receipt-book-details-container {
+  padding: 1rem;
+  max-width: 1200px;
+  margin: 0 auto;
+  font-family: 'Inter', sans-serif;
+  background: #f0f4f8;
+  min-height: 100vh;
+}
+
+.details-hero {
+  background: linear-gradient(135deg, #4cb1c7 0%, #3a8fa2 100%);
+  color: #fff;
+  padding: 1rem;
+  border-radius: 0.75rem;
+  text-align: center;
+  margin-bottom: 1rem;
+}
+
+.details-hero h1 {
+  margin: 0;
+  font-size: 1.5rem;
+  font-weight: 700;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  gap: 0.5rem;
+}
+
+.details-grid {
+  display: grid;
+  grid-template-columns: 1fr;
+  gap: 1rem;
+}
+
+.details-card {
+  background: #fff;
+  border-radius: 0.75rem;
+  padding: 1rem;
+  box-shadow: 0 4px 15px rgba(0, 0, 0, 0.05);
+}
+
+.details-card h2 {
+  font-size: 1.1rem;
+  font-weight: 600;
+  color: #4cb1c7;
+  margin: 0 0 0.75rem;
+  display: flex;
+  align-items: center;
+  gap: 0.5rem;
+}
+
+.details-card p {
+  margin: 0.5rem 0;
+  font-size: 0.9rem;
+}
+
+.qr-code {
+  text-align: center;
+  margin: 1rem 0;
+}
+
+.details-card ul {
+  list-style: none;
+  padding: 0;
+  margin: 0;
+}
+
+.details-card li {
+  font-size: 0.9rem;
+  padding: 0.5rem 0;
+  border-bottom: 1px solid #e5e7eb;
+}
+
+.details-card li:last-child {
+  border-bottom: none;
+}
+
+.details-actions {
+  display: flex;
+  gap: 1rem;
+  justify-content: center;
+  margin-top: 1rem;
+  flex-wrap: wrap;
+}
+
+.details-actions button {
+  padding: 0.75rem 1.5rem;
+  font-size: 0.9rem;
+  font-weight: 600;
+  text-transform: uppercase;
+  background: linear-gradient(135deg, #4cb1c7 0%, #3a8fa2 100%);
+  color: #fff;
+  border: none;
+  border-radius: 0.5rem;
+  cursor: pointer;
+  display: flex;
+  align-items: center;
+  gap: 0.5rem;
+}
+
+.details-actions button:hover {
+  opacity: 0.9;
+}
+
+.status-dot {
+  width: 0.5rem;
+  height: 0.5rem;
+  border-radius: 50%;
+  display: inline-block;
+}
+
+/* Status-specific colors */
+.status-in-stock { background: #10b981; }
+.status-sent-to-supplier { background: #f59e0b; }
+.status-with-regional-manager { background: #4cb1c7; }
+.status-with-supervisor { background: #3b82f6; }
+.status-assigned-to-agent { background: #8b5cf6; }
+.status-stub-collected { background: #eab308; }
+.status-with-stock-manager { background: #ec4899; }
+.status-archived { background: #6b7280; }
+
+@media (min-width: 768px) {
+  .details-grid {
+    grid-template-columns: repeat(2, 1fr);
+  }
+}

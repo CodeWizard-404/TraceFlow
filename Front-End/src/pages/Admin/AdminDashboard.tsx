@@ -11,8 +11,7 @@ import Permission from "../../models/Permission";
 import UserPermissionOverride from "../../models/UserPermissionOverride";
 import "./AdminDashboard.css";
 
-const ITEMS_PER_PAGE = 10; // Pagination: 10 items per page
-
+const ITEMS_PER_PAGE = 10;
 const AdminDashboard: React.FC = () => {
     const { token, effectivePermissions, userRoles } = useAuth();
     const [users, setUsers] = useState<User[]>([]);
@@ -22,7 +21,7 @@ const AdminDashboard: React.FC = () => {
     const [selectedRole, setSelectedRole] = useState<Role | null>(null);
     const [view, setView] = useState<"users" | "roles" | "add-user" | "add-role" | "user-details">("users");
     const [searchQuery, setSearchQuery] = useState("");
-    const [sortField, setSortField] = useState<"name" | "email" | "roleCount">("name");
+    const [sortField, setSortField] = useState<"name" | "email" | "role">("role");
     const [sortOrder, setSortOrder] = useState<"asc" | "desc">("asc");
     const [roleFilter, setRoleFilter] = useState<string>("all");
     const [newUser, setNewUser] = useState<Partial<User>>({});
@@ -50,22 +49,30 @@ const AdminDashboard: React.FC = () => {
     const [managerSearch, setManagerSearch] = useState("");
     const [supervisorPage, setSupervisorPage] = useState(1);
     const [managerPage, setManagerPage] = useState(1);
+    const [userPage, setUserPage] = useState(1);
     const [expandedSection, setExpandedSection] = useState<string | null>(null);
 
 
     // Permission Checks based on effectivePermissions
+    const isSuperAdmin = useMemo(() => userRoles?.some(r => r.name === "Super Admin"), [userRoles]); 
+
+    const canViewUsers = useMemo(() => effectivePermissions?.some(p => p.name === "read_users"), [effectivePermissions]);
     const canCreateUsers = useMemo(() => effectivePermissions?.some(p => p.name === "create_users"), [effectivePermissions]);
     //const canUpdateUsers = useMemo(() => effectivePermissions?.some(p => p.name === "update_users"), [effectivePermissions]);
     //const canDeleteUsers = useMemo(() => effectivePermissions?.some(p => p.name === "delete_users"), [effectivePermissions]);
+
+    const canViewRoles = useMemo(() => effectivePermissions?.some(p => p.name === "read_roles"), [effectivePermissions]);
     const canCreateRoles = useMemo(() => effectivePermissions?.some(p => p.name === "create_roles"), [effectivePermissions]);
     const canUpdateRoles = useMemo(() => effectivePermissions?.some(p => p.name === "update_roles"), [effectivePermissions]);
     //const canDeleteRoles = useMemo(() => effectivePermissions?.some(p => p.name === "delete_roles"), [effectivePermissions]);
-    const canAssignPermissions = useMemo(() => effectivePermissions?.some(p => p.name === "assign_permissions"), [effectivePermissions]);
-    //const canRovokePermissions = useMemo(() => effectivePermissions?.some(p => p.name === "revoke_permissions"), [effectivePermissions]);
+
     const canAssignRoles = useMemo(() => effectivePermissions?.some(p => p.name === "assign_roles"), [effectivePermissions]);
     //const canRovokeRoles = useMemo(() => effectivePermissions?.some(p => p.name === "revoke_roles"), [effectivePermissions]);
+
+    const canAssignPermissions = useMemo(() => effectivePermissions?.some(p => p.name === "assign_permissions"), [effectivePermissions]);
+    //const canRovokePermissions = useMemo(() => effectivePermissions?.some(p => p.name === "revoke_permissions"), [effectivePermissions]);
+
     const canAssignSupervisors = useMemo(() => effectivePermissions?.some(p => p.name === "assign_supervisors"), [effectivePermissions]);
-    const isSuperAdmin = useMemo(() => userRoles?.some(r => r.name === "Super Admin"), [userRoles]); 
 
     useEffect(() => {
         const fetchData = async () => {
@@ -124,8 +131,12 @@ const AdminDashboard: React.FC = () => {
             result = result.filter((user) => user.roles?.some((role) => role.roleID === roleFilter));
         }
         result.sort((a, b) => {
-            const fieldA = sortField === "name" ? `${a.firstname} ${a.lastname}` : sortField === "email" ? a.email : (a.roles?.length || 0);
-            const fieldB = sortField === "name" ? `${b.firstname} ${b.lastname}` : sortField === "email" ? b.email : (b.roles?.length || 0);
+            const isSuperAdminA = a.roles?.some(role => role.name === "Super Admin");
+            const isSuperAdminB = b.roles?.some(role => role.name === "Super Admin");
+            if (isSuperAdminA && !isSuperAdminB) return -1;
+            if (!isSuperAdminA && isSuperAdminB) return 1;
+            const fieldA = sortField === "name" ? `${a.firstname} ${a.lastname}` : sortField === "email" ? a.email : (a.roles?.map(role => role.name).join(", ") || "");
+            const fieldB = sortField === "name" ? `${b.firstname} ${b.lastname}` : sortField === "email" ? b.email : (b.roles?.map(role => role.name).join(", ") || "");
             return sortOrder === "asc" ? (fieldA > fieldB ? 1 : -1) : (fieldA < fieldB ? 1 : -1);
         });
         return result;
@@ -198,6 +209,12 @@ const AdminDashboard: React.FC = () => {
         return managerUsers.slice(start, end);
     }, [managerUsers, managerPage]);
 
+    const paginatedUsers = useMemo(() => {
+        const start = (userPage - 1) * ITEMS_PER_PAGE;
+        const end = start + ITEMS_PER_PAGE;
+        return filteredUsers.slice(start, end);
+    }, [filteredUsers, userPage]);
+
     const handleUserSelect = async (user: User) => {
         if ((hasUnsavedUserChanges || hasUnsavedSupervisorChanges || hasUnsavedOverrideChanges) && !window.confirm('You have unsaved changes. Are you sure you want to proceed?')) return;
         setSelectedUser(user);
@@ -223,6 +240,7 @@ const AdminDashboard: React.FC = () => {
             setManagerSearch("");
             setSupervisorPage(1);
             setManagerPage(1);
+            setUserPage(1);
             setView("user-details");
         } catch (error) {
             console.error("Failed to fetch user details:", error);
@@ -578,20 +596,20 @@ const AdminDashboard: React.FC = () => {
                     <div className="filter-card">
                         <h3>View</h3>
                         <button className={view === "users" || view === "add-user" || view === "user-details" ? "active" : ""} onClick={() => setView("users")}>
-                            Users Management
+                            Users
                         </button>
                         <button className={view === "roles" || view === "add-role" ? "active" : ""} onClick={() => setView("roles")}>
-                            Roles Management
+                            Roles
                         </button>
                     </div>
                     {(view === "users" || view === "add-user" || view === "user-details") && (
                         <>
                             <div className="sort-card">
                                 <h3>Sort Users By</h3>
-                                <select value={sortField} onChange={(e) => setSortField(e.target.value as "name" | "email" | "roleCount")}>
+                                <select value={sortField} onChange={(e) => setSortField(e.target.value as "name" | "email" | "role")}>
                                     <option value="name">Name</option>
                                     <option value="email">Email</option>
-                                    <option value="roleCount">Role Count</option>
+                                    <option value="role">Role</option>
                                 </select>
                                 <button onClick={() => setSortOrder(sortOrder === "asc" ? "desc" : "asc")}>
                                     <FaSort /> {sortOrder === "asc" ? "Asc" : "Desc"}
@@ -621,7 +639,7 @@ const AdminDashboard: React.FC = () => {
                 </aside>
 
                 <main className="main-content">
-                    {view === "users" && (
+                    {view === "users" && canViewUsers && (
                         <div className="users-list">
                             <div className="table-card">
                                 <h2>Users</h2>
@@ -635,7 +653,7 @@ const AdminDashboard: React.FC = () => {
                                         </div>
                                     </div>
                                     <div className="table-body">
-                                        {filteredUsers.map((user) => (
+                                        {paginatedUsers.map((user) => (
                                             <div
                                                 key={user.userID}
                                                 className="table-row user-row"
@@ -644,16 +662,31 @@ const AdminDashboard: React.FC = () => {
                                                 <div className="table-cell">{`${user.firstname} ${user.lastname}`}</div>
                                                 <div className="table-cell">{user.email}</div>
                                                 <div className="table-cell">{user.phone}</div>
-                                                <div className="table-cell">{user.roles?.length || 0}</div>
+                                                <div className="table-cell">{user.roles?.[0]?.name || "No Role"}</div>
                                             </div>
                                         ))}
                                     </div>
+                                </div>
+                                <div className="pagination">
+                                    <button
+                                        onClick={() => setUserPage(p => Math.max(1, p - 1))}
+                                        disabled={userPage === 1}
+                                    >
+                                        Previous
+                                    </button>
+                                    <span>Page {userPage} of {Math.ceil(filteredUsers.length / ITEMS_PER_PAGE)}</span>
+                                    <button
+                                        onClick={() => setUserPage(p => p + 1)}
+                                        disabled={userPage >= Math.ceil(filteredUsers.length / ITEMS_PER_PAGE)}
+                                    >
+                                        Next
+                                    </button>
                                 </div>
                             </div>
                         </div>
                     )}
 
-                    {view === "roles" && (
+                    {view === "roles" && canViewRoles && (
                         <div className="roles-management">
                             {(() => {
                                 const fixedRoles = filteredRoles.filter(role =>
@@ -824,7 +857,7 @@ const AdminDashboard: React.FC = () => {
                                     </div>
                                     <h3>Permissions</h3>
                                     <div className="permissions-list">
-                                        {Object.entries(categorizedPermissions).map(([className, types]) => (
+                                        {Object.entries(filteredPermissions).map(([className, types]) => (
                                             <div key={className} className="permission-class">
                                                 <div className="permission-class-header">
                                                     <h4>{className}</h4>
@@ -1131,301 +1164,327 @@ const AdminDashboard: React.FC = () => {
                         </div>
                     )}
 
-{view === "user-details" && selectedUser && (
-    <div className="details-card">
-        <div className="card-header">
-            <h2>User Details</h2>
-        </div>
-        <hr />
-        <div className="form-section">
-            <h3>Basic Information</h3>
-            <div className="info-grid">
-                <p><strong>Email:</strong> {selectedUser.email}</p>
-                <p><strong>Phone:</strong> {selectedUser.phone}</p>
-                <p><strong>Wallet:</strong> {selectedUser.wallet}</p>
-            </div>
-        </div>
-
-        <div className="dropdown-stack">
-            {/* Role Management */}
-            {canAssignRoles && (
-                <div className="dropdown-unit">
-                    <div className="dropdown-bar" onClick={() => toggleSection("roles")}>
-                        <h3>Role Management</h3>
-                        <FaAngleDown className={`dropdown-icon ${expandedSection === "roles" ? "expanded" : ""}`} />
-                    </div>
-                    {expandedSection === "roles" && (
-                        <div className="dropdown-body">
-                            <div className="group-header">
-                                {hasUnsavedUserChanges && (
-                                    <button className="action-button" onClick={handleSaveUserRoles} disabled={loading}>
-                                        {loading ? "Saving..." : "Save Changes"}
-                                    </button>
-                                )}
+                    {view === "user-details" && selectedUser && (
+                        <div className="details-card">
+                            <div className="card-header">
+                                <h2>User Details</h2>
                             </div>
-                            <div className="roles-grid">
-                                {roles.map((role) => (
-                                    <div key={role.roleID} className="role-toggle-container">
-                                        <button
-                                            className={`role-toggle-button ${tempRoles.some(r => r.roleID === role.roleID) ? "active" : ""}`}
-                                            onClick={() => handleToggleRole(role)}
-                                            disabled={loading || (role.name === "Super Admin" && !isSuperAdmin)}
-                                        >
-                                            <span>{role.name}</span>
-                                            <FaInfoCircle
-                                                className="role-info-icon"
-                                                onClick={(e) => {
-                                                    e.stopPropagation();
-                                                    toggleRolePopup(role.roleID);
-                                                }}
-                                            />
-                                        </button>
-                                    </div>
-                                ))}
-                            </div>
-                        </div>
-                    )}
-                </div>
-            )}
-
-            {/* Permission Overrides */}
-            {canAssignPermissions && (
-                <div className="dropdown-unit">
-                    <div className="dropdown-bar" onClick={() => toggleSection("permissions")}>
-                        <h3>Permission Overrides</h3>
-                        <FaAngleDown className={`dropdown-icon ${expandedSection === "permissions" ? "expanded" : ""}`} />
-                    </div>
-                    {expandedSection === "permissions" && (
-                        <div className="dropdown-body">
-                            <div className="group-header">
-                                {hasUnsavedOverrideChanges && (
-                                    <button className="action-button" onClick={handleSaveOverrides} disabled={loading}>
-                                        {loading ? "Saving..." : "Save Changes"}
-                                    </button>
-                                )}
-                            </div>
-                            <div className="permissions-filter-section">
-                                <div className="permissions-filter-header">
-                                    <FaFilter />
-                                    <label>Filter Permissions</label>
-                                </div>
-                                <div className="permissions-filter-controls">
-                                    <div className="permissions-search">
-                                        <input
-                                            type="text"
-                                            placeholder="Search permissions..."
-                                            value={permissionSearch}
-                                            onChange={(e) => setPermissionSearch(e.target.value)}
-                                            className="search-input"
-                                        />
-                                    </div>
-                                    <div className="permissions-category">
-                                        <select
-                                            value={selectedCategory}
-                                            onChange={(e) => setSelectedCategory(e.target.value)}
-                                        >
-                                            <option value="all">All Categories</option>
-                                            {Object.keys(categorizedPermissions).map((category) => (
-                                                <option key={category} value={category}>
-                                                    {category.charAt(0).toUpperCase() + category.slice(1)}
-                                                </option>
-                                            ))}
-                                        </select>
-                                    </div>
+                            <hr />
+                            <div className="form-section">
+                                <h3>Basic Information</h3>
+                                <div className="info-grid">
+                                    <p><strong>Email:</strong> {selectedUser.email}</p>
+                                    <p><strong>Phone:</strong> {selectedUser.phone}</p>
+                                    <p><strong>Wallet:</strong> {selectedUser.wallet}</p>
                                 </div>
                             </div>
-                            <h4>Effective Permissions</h4>
-                            <div className="permissions-list">
-                                {Object.entries(filteredPermissions).map(([className, types]) => (
-                                    <div key={className} className="permission-class">
-                                        <h4>{className}</h4>
-                                        {Object.entries(types).map(([type, perms]) => (
-                                            <div key={type} className="permission-type">
-                                                <h5>{type}</h5>
-                                                <div className="permission-buttons">
-                                                    {perms.map((perm) => {
-                                                        const isEffective = effectiveUserPermissions.some(p => p.permissionID === perm.permissionID);
-                                                        const tempOverride = tempOverrides.find(o => o.permissionID === perm.permissionID);
-                                                        const hasOverride = !!tempOverride;
-                                                        const overrideAction = tempOverride?.action;
-                                                        return (
-                                                            <div key={perm.permissionID} className="permission-item">
-                                                                <button
-                                                                    className={`permission-button ${(hasOverride ? (overrideAction === "grant") : isEffective) ? "assigned" : ""}`}
-                                                                    disabled={loading}
-                                                                >
-                                                                    {perm.name}
-                                                                </button>
-                                                                {canAssignPermissions && (
-                                                                    <div className="override-controls">
-                                                                        {!hasOverride && !isEffective && (
-                                                                            <button
-                                                                                className="override-button grant"
-                                                                                onClick={() => handleAddOverride(perm.permissionID, "grant")}
-                                                                                disabled={loading}
-                                                                                title="Grant Permission"
-                                                                            >
-                                                                                <FaPlus />
-                                                                            </button>
-                                                                        )}
-                                                                        {!hasOverride && isEffective && (
-                                                                            <button
-                                                                                className="override-button revoke"
-                                                                                onClick={() => handleAddOverride(perm.permissionID, "revoke")}
-                                                                                disabled={loading}
-                                                                                title="Revoke Permission"
-                                                                            >
-                                                                                <FaMinus />
-                                                                            </button>
-                                                                        )}
-                                                                        {hasOverride && (
-                                                                            <button
-                                                                                className="override-button remove"
-                                                                                onClick={() => handleRemoveOverride(tempOverride.overrideID)}
-                                                                                disabled={loading}
-                                                                                title="Remove Override"
-                                                                            >
-                                                                                <FaTimes />
-                                                                            </button>
-                                                                        )}
-                                                                    </div>
-                                                                )}
-                                                            </div>
-                                                        );
-                                                    })}
+
+                            <div className="dropdown-stack">
+                                {/* Role Management */}
+                                {canAssignRoles && (
+                                    <div className="dropdown-unit">
+                                        <div className="dropdown-bar" onClick={() => toggleSection("roles")}>
+                                            <h3>Role Management</h3>
+                                            <FaAngleDown className={`dropdown-icon ${expandedSection === "roles" ? "expanded" : ""}`} />
+                                        </div>
+                                        {expandedSection === "roles" && (
+                                            <div className="dropdown-body">
+                                                <div className="group-header">
+                                                    {hasUnsavedUserChanges && (
+                                                        <button className="action-button" onClick={handleSaveUserRoles} disabled={loading}>
+                                                            {loading ? "Saving..." : "Save Changes"}
+                                                        </button>
+                                                    )}
+                                                </div>
+                                                <div className="roles-grid">
+                                                    {roles.map((role) => (
+                                                        <div key={role.roleID} className="role-toggle-container">
+                                                            <button
+                                                                className={`role-toggle-button ${tempRoles.some(r => r.roleID === role.roleID) ? "active" : ""}`}
+                                                                onClick={() => handleToggleRole(role)}
+                                                                disabled={loading || (role.name === "Super Admin" && !isSuperAdmin)}
+                                                            >
+                                                                <span>{role.name}</span>
+                                                                <FaInfoCircle
+                                                                    className="role-info-icon"
+                                                                    onClick={(e) => {
+                                                                        e.stopPropagation();
+                                                                        toggleRolePopup(role.roleID);
+                                                                    }}
+                                                                />
+                                                            </button>
+                                                        </div>
+                                                    ))}
                                                 </div>
                                             </div>
-                                        ))}
+                                        )}
                                     </div>
-                                ))}
-                            </div>
-                        </div>
-                    )}
-                </div>
-            )}
+                                )}
 
-            {/* Supervisor/Manager Assignments */}
-            {(selectedUser.roles?.some(r => r.name === "Manager") || selectedUser.roles?.some(r => r.name === "Supervisor")) && canAssignSupervisors && (
-                <div className="dropdown-unit">
-                    <div className="dropdown-bar" onClick={() => toggleSection("assignments")}>
-                        <h3>Assignments</h3>
-                        <FaAngleDown className={`dropdown-icon ${expandedSection === "assignments" ? "expanded" : ""}`} />
-                    </div>
-                    {expandedSection === "assignments" && (
-                        <div className="dropdown-body">
-                            <div className="group-header">
-                                {hasUnsavedSupervisorChanges && (
-                                    <button className="action-button" onClick={handleSaveSupervisorsAndManagers} disabled={loading}>
-                                        {loading ? "Saving..." : "Save Assignments"}
-                                    </button>
+                                {/* Permission Overrides */}
+                                {canAssignPermissions && (
+                                    <div className="dropdown-unit">
+                                        <div className="dropdown-bar" onClick={() => toggleSection("permissions")}>
+                                            <h3>Permission Overrides</h3>
+                                            <FaAngleDown className={`dropdown-icon ${expandedSection === "permissions" ? "expanded" : ""}`} />
+                                        </div>
+                                        {expandedSection === "permissions" && (
+                                            <div className="dropdown-body">
+                                                <div className="group-header">
+                                                    {hasUnsavedOverrideChanges && (
+                                                        <button className="action-button" onClick={handleSaveOverrides} disabled={loading}>
+                                                            {loading ? "Saving..." : "Save Changes"}
+                                                        </button>
+                                                    )}
+                                                </div>
+                                                <div className="permissions-filter-section">
+                                                    <div className="permissions-filter-header">
+                                                        <FaFilter />
+                                                        <label>Filter Permissions</label>
+                                                    </div>
+                                                    <div className="permissions-filter-controls">
+                                                        <div className="permissions-search">
+                                                            <input
+                                                                type="text"
+                                                                placeholder="Search permissions..."
+                                                                value={permissionSearch}
+                                                                onChange={(e) => setPermissionSearch(e.target.value)}
+                                                                className="search-input"
+                                                            />
+                                                        </div>
+                                                        <div className="permissions-category">
+                                                            <select
+                                                                value={selectedCategory}
+                                                                onChange={(e) => setSelectedCategory(e.target.value)}
+                                                            >
+                                                                <option value="all">All Categories</option>
+                                                                {Object.keys(categorizedPermissions).map((category) => (
+                                                                    <option key={category} value={category}>
+                                                                        {category.charAt(0).toUpperCase() + category.slice(1)}
+                                                                    </option>
+                                                                ))}
+                                                            </select>
+                                                        </div>
+                                                    </div>
+                                                </div>
+                                                <h4>Effective Permissions</h4>
+                                                <div className="permissions-list">
+                                                    {Object.entries(filteredPermissions).map(([className, types]) => (
+                                                        <div key={className} className="permission-class">
+                                                            <h4>{className}</h4>
+                                                            {Object.entries(types).map(([type, perms]) => (
+                                                                <div key={type} className="permission-type">
+                                                                    <h5>{type}</h5>
+                                                                    <div className="permission-buttons">
+                                                                        {perms.map((perm) => {
+                                                                            const isEffective = effectiveUserPermissions.some(p => p.permissionID === perm.permissionID);
+                                                                            const tempOverride = tempOverrides.find(o => o.permissionID === perm.permissionID);
+                                                                            const hasOverride = !!tempOverride;
+                                                                            const overrideAction = tempOverride?.action;
+                                                                            return (
+                                                                                <div key={perm.permissionID} className="permission-item">
+                                                                                    <button
+                                                                                        className={`permission-button ${(hasOverride ? (overrideAction === "grant") : isEffective) ? "assigned" : ""}`}
+                                                                                        disabled={loading}
+                                                                                    >
+                                                                                        {perm.name}
+                                                                                    </button>
+                                                                                    {canAssignPermissions && (
+                                                                                        <div className="override-controls">
+                                                                                            {!hasOverride && !isEffective && (
+                                                                                                <button
+                                                                                                    className="override-button grant"
+                                                                                                    onClick={() => handleAddOverride(perm.permissionID, "grant")}
+                                                                                                    disabled={loading}
+                                                                                                    title="Grant Permission"
+                                                                                                >
+                                                                                                    <FaPlus />
+                                                                                                </button>
+                                                                                            )}
+                                                                                            {!hasOverride && isEffective && (
+                                                                                                <button
+                                                                                                    className="override-button revoke"
+                                                                                                    onClick={() => handleAddOverride(perm.permissionID, "revoke")}
+                                                                                                    disabled={loading}
+                                                                                                    title="Revoke Permission"
+                                                                                                >
+                                                                                                    <FaMinus />
+                                                                                                </button>
+                                                                                            )}
+                                                                                            {hasOverride && (
+                                                                                                <button
+                                                                                                    className="override-button remove"
+                                                                                                    onClick={() => handleRemoveOverride(tempOverride.overrideID)}
+                                                                                                    disabled={loading}
+                                                                                                    title="Remove Override"
+                                                                                                >
+                                                                                                    <FaTimes />
+                                                                                                </button>
+                                                                                            )}
+                                                                                        </div>
+                                                                                    )}
+                                                                                </div>
+                                                                            );
+                                                                        })}
+                                                                    </div>
+                                                                </div>
+                                                            ))}
+                                                        </div>
+                                                    ))}
+                                                </div>
+                                            </div>
+                                        )}
+                                    </div>
+                                )}
+
+                                {/* Supervisor/Manager Assignments */}
+                                {(selectedUser.roles?.some(r => r.name === "Manager") || selectedUser.roles?.some(r => r.name === "Supervisor")) && canAssignSupervisors && (
+                                    <div className="dropdown-unit">
+                                        <div className="dropdown-bar" onClick={() => toggleSection("assignments")}>
+                                            <h3>Assignments</h3>
+                                            <FaAngleDown className={`dropdown-icon ${expandedSection === "assignments" ? "expanded" : ""}`} />
+                                        </div>
+                                        {expandedSection === "assignments" && (
+                                            <div className="dropdown-body">
+                                                <div className="group-header">
+                                                    {hasUnsavedSupervisorChanges && (
+                                                        <button className="action-button" onClick={handleSaveSupervisorsAndManagers} disabled={loading}>
+                                                            {loading ? "Saving..." : "Save Assignments"}
+                                                        </button>
+                                                    )}
+                                                </div>
+                                                {selectedUser.roles?.some(r => r.name === "Manager") && (
+                                                    <div className="assignment-list">
+                                                        <h4>Supervisors Assigned to This Manager</h4>
+                                                        <div className="search-container assignment-search">
+                                                            <FaSearch className="search-icon" />
+                                                            <input
+                                                                type="text"
+                                                                placeholder="Search supervisors..."
+                                                                value={supervisorSearch}
+                                                                onChange={(e) => setSupervisorSearch(e.target.value)}
+                                                                className="search-input"
+                                                            />
+                                                        </div>
+                                                        <div className="list-container">
+                                                            {paginatedSupervisors.map((supervisor) => (
+                                                                <div key={supervisor.userID} className="list-item">
+                                                                    <label>
+                                                                        <input
+                                                                            type="checkbox"
+                                                                            checked={tempSupervisors.some(s => s.userID === supervisor.userID)}
+                                                                            onChange={() => handleToggleSupervisor(supervisor)}
+                                                                            disabled={loading}
+                                                                        />
+                                                                        {`${supervisor.firstname} ${supervisor.lastname} (${supervisor.email})`}
+                                                                    </label>
+                                                                </div>
+                                                            ))}
+                                                        </div>
+                                                        <div className="pagination">
+                                                            <button
+                                                                onClick={() => setSupervisorPage(p => Math.max(1, p - 1))}
+                                                                disabled={supervisorPage === 1}
+                                                            >
+                                                                Previous
+                                                            </button>
+                                                            <span>Page {supervisorPage} of {Math.ceil(supervisorUsers.length / ITEMS_PER_PAGE)}</span>
+                                                            <button
+                                                                onClick={() => setSupervisorPage(p => p + 1)}
+                                                                disabled={supervisorPage >= Math.ceil(supervisorUsers.length / ITEMS_PER_PAGE)}
+                                                            >
+                                                                Next
+                                                            </button>
+                                                        </div>
+                                                    </div>
+                                                )}
+                                                {selectedUser.roles?.some(r => r.name === "Supervisor") && (
+                                                    <div className="assignment-list">
+                                                        <h4>Managers Assigned to This Supervisor</h4>
+                                                        <div className="search-container assignment-search">
+                                                            <FaSearch className="search-icon" />
+                                                            <input
+                                                                type="text"
+                                                                placeholder="Search managers..."
+                                                                value={managerSearch}
+                                                                onChange={(e) => setManagerSearch(e.target.value)}
+                                                                className="search-input"
+                                                            />
+                                                        </div>
+                                                        <div className="list-container">
+                                                            {paginatedManagers.map((manager) => (
+                                                                <div key={manager.userID} className="list-item">
+                                                                    <label>
+                                                                        <input
+                                                                            type="checkbox"
+                                                                            checked={tempManagers.some(m => m.userID === manager.userID)}
+                                                                            onChange={() => handleToggleManager(manager)}
+                                                                            disabled={loading}
+                                                                        />
+                                                                        {`${manager.firstname} ${manager.lastname} (${manager.email})`}
+                                                                    </label>
+                                                                </div>
+                                                            ))}
+                                                        </div>
+                                                        <div className="pagination">
+                                                            <button
+                                                                onClick={() => setManagerPage(p => Math.max(1, p - 1))}
+                                                                disabled={managerPage === 1}
+                                                            >
+                                                                Previous
+                                                            </button>
+                                                            <span>Page {managerPage} of {Math.ceil(managerUsers.length / ITEMS_PER_PAGE)}</span>
+                                                            <button
+                                                                onClick={() => setManagerPage(p => p + 1)}
+                                                                disabled={managerPage >= Math.ceil(managerUsers.length / ITEMS_PER_PAGE)}
+                                                            >
+                                                                Next
+                                                            </button>
+                                                        </div>
+                                                    </div>
+                                                )}
+                                            </div>
+                                        )}
+                                    </div>
                                 )}
                             </div>
-                            {selectedUser.roles?.some(r => r.name === "Manager") && (
-                                <div className="assignment-list">
-                                    <h4>Supervisors Assigned to This Manager</h4>
-                                    <div className="search-container assignment-search">
-                                        <FaSearch className="search-icon" />
-                                        <input
-                                            type="text"
-                                            placeholder="Search supervisors..."
-                                            value={supervisorSearch}
-                                            onChange={(e) => setSupervisorSearch(e.target.value)}
-                                            className="search-input"
-                                        />
-                                    </div>
-                                    <div className="list-container">
-                                        {paginatedSupervisors.map((supervisor) => (
-                                            <div key={supervisor.userID} className="list-item">
-                                                <label>
-                                                    <input
-                                                        type="checkbox"
-                                                        checked={tempSupervisors.some(s => s.userID === supervisor.userID)}
-                                                        onChange={() => handleToggleSupervisor(supervisor)}
-                                                        disabled={loading}
-                                                    />
-                                                    {`${supervisor.firstname} ${supervisor.lastname} (${supervisor.email})`}
-                                                </label>
-                                            </div>
-                                        ))}
-                                    </div>
-                                    <div className="pagination">
-                                        <button
-                                            onClick={() => setSupervisorPage(p => Math.max(1, p - 1))}
-                                            disabled={supervisorPage === 1}
-                                        >
-                                            Previous
-                                        </button>
-                                        <span>Page {supervisorPage} of {Math.ceil(supervisorUsers.length / ITEMS_PER_PAGE)}</span>
-                                        <button
-                                            onClick={() => setSupervisorPage(p => p + 1)}
-                                            disabled={supervisorPage >= Math.ceil(supervisorUsers.length / ITEMS_PER_PAGE)}
-                                        >
-                                            Next
-                                        </button>
-                                    </div>
-                                </div>
-                            )}
-                            {selectedUser.roles?.some(r => r.name === "Supervisor") && (
-                                <div className="assignment-list">
-                                    <h4>Managers Assigned to This Supervisor</h4>
-                                    <div className="search-container assignment-search">
-                                        <FaSearch className="search-icon" />
-                                        <input
-                                            type="text"
-                                            placeholder="Search managers..."
-                                            value={managerSearch}
-                                            onChange={(e) => setManagerSearch(e.target.value)}
-                                            className="search-input"
-                                        />
-                                    </div>
-                                    <div className="list-container">
-                                        {paginatedManagers.map((manager) => (
-                                            <div key={manager.userID} className="list-item">
-                                                <label>
-                                                    <input
-                                                        type="checkbox"
-                                                        checked={tempManagers.some(m => m.userID === manager.userID)}
-                                                        onChange={() => handleToggleManager(manager)}
-                                                        disabled={loading}
-                                                    />
-                                                    {`${manager.firstname} ${manager.lastname} (${manager.email})`}
-                                                </label>
-                                            </div>
-                                        ))}
-                                    </div>
-                                    <div className="pagination">
-                                        <button
-                                            onClick={() => setManagerPage(p => Math.max(1, p - 1))}
-                                            disabled={managerPage === 1}
-                                        >
-                                            Previous
-                                        </button>
-                                        <span>Page {managerPage} of {Math.ceil(managerUsers.length / ITEMS_PER_PAGE)}</span>
-                                        <button
-                                            onClick={() => setManagerPage(p => p + 1)}
-                                            disabled={managerPage >= Math.ceil(managerUsers.length / ITEMS_PER_PAGE)}
-                                        >
-                                            Next
-                                        </button>
+
+                            {/* Role Info Popup unchanged */}
+                            {activeRolePopup && (
+                                <div className="role-info-popup-overlay" onClick={() => setActiveRolePopup(null)}>
+                                    <div className="role-info-popup" onClick={(e) => e.stopPropagation()}>
+                                        {roles.find(role => role.roleID === activeRolePopup) && (
+                                            <>
+                                                <h4>{roles.find(role => role.roleID === activeRolePopup)!.name}</h4>
+                                                <p>{roles.find(role => role.roleID === activeRolePopup)!.description || 'No description available'}</p>
+                                                <h5>Permissions by Class:</h5>
+                                                {Object.entries(getCategorizedPermissionsForRole(roles.find(role => role.roleID === activeRolePopup)!)).length > 0 ? (
+                                                    Object.entries(getCategorizedPermissionsForRole(roles.find(role => role.roleID === activeRolePopup)!)).map(([className, perms]) => (
+                                                        <div key={className} className="permission-class-item">
+                                                            <button
+                                                                className="class-toggle"
+                                                                onClick={() => toggleClassExpansion(className)}
+                                                            >
+                                                                {className} ({perms.length})
+                                                                <FaAngleDown className={`toggle-icon ${expandedClasses.has(className) ? 'expanded' : ''}`} />
+                                                            </button>
+                                                            <ul className={`permission-list ${expandedClasses.has(className) ? 'expanded' : ''}`}>
+                                                                {perms.map(perm => (
+                                                                    <li key={perm.permissionID}>{perm.name}</li>
+                                                                ))}
+                                                            </ul>
+                                                        </div>
+                                                    ))
+                                                ) : (
+                                                    <p>No permissions assigned</p>
+                                                )}
+                                            </>
+                                        )}
                                     </div>
                                 </div>
                             )}
                         </div>
                     )}
-                </div>
-            )}
-        </div>
-
-        {/* Role Info Popup unchanged */}
-        {activeRolePopup && (
-            <div className="role-info-popup-overlay" onClick={() => setActiveRolePopup(null)}>
-                <div className="role-info-popup" onClick={(e) => e.stopPropagation()}>
-                    {/* Popup content unchanged */}
-                </div>
-            </div>
-        )}
-    </div>
-)}
                 </main>
             </section>
         </div>

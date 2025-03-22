@@ -144,8 +144,8 @@ body.dark .back-button:hover {
 
 .sidebar {
     flex: 1;
-    min-width: 280px;
-    max-width: 320px;
+    min-width: 180px !important;
+    max-width: 220px !important;
     display: flex;
     flex-direction: column;
     gap: 1.5rem;
@@ -153,7 +153,7 @@ body.dark .back-button:hover {
 
 .filter-card, .sort-card, .role-filter-card {
     background: #fff;
-    padding: 1.5rem;
+    padding: 1rem 1rem 0 1rem  !important;
     border-radius: 0.75rem;
     box-shadow: 0 0.375rem 1.25rem rgba(0, 0, 0, 0.05);
     transition: transform 0.3s ease;
@@ -162,6 +162,7 @@ body.dark .back-button:hover {
 body.dark .filter-card, body.dark .sort-card, body.dark .role-filter-card {
     background: #222222;
     box-shadow: 0 0.375rem 1.25rem rgba(0, 0, 0, 0.3);
+    border: 1px solid rgba(107, 114, 128, 0.5) ;
 }
 
 .filter-card:hover, .sort-card:hover, .role-filter-card:hover {
@@ -176,12 +177,12 @@ body.dark .filter-card, body.dark .sort-card, body.dark .role-filter-card {
 }
 
 body.dark .filter-card h3, body.dark .sort-card h3, body.dark .role-filter-card h3 {
-    color: #608bdc;
+    color: #60a0dc;
 }
 
 .filter-card button {
     width: 100%;
-    padding: 0.75rem 1.25rem;
+    padding: 0.3rem 1.25rem;
     font-size: 0.875rem;
     font-weight: 600;
     background: #f8fafc;
@@ -218,7 +219,7 @@ body.dark .filter-card button:hover:not(.active) {
 
 .sort-card select, .role-filter-card select {
     width: 100%;
-    padding: 0.75rem;
+    padding: 0.5rem !important;
     font-size: 0.875rem;
     border: 1px solid #ddd;
     border-radius: 0.75rem;
@@ -245,7 +246,8 @@ body.dark .sort-card select:focus, body.dark .role-filter-card select:focus {
 
 .sort-card button {
     width: 100%;
-    padding: 0.75rem;
+    padding: 0.3rem !important;
+    margin-bottom: 0.75rem !important;
     font-size: 0.875rem;
     font-weight: 600;
     background: #fff;
@@ -358,14 +360,15 @@ body.dark .table-card h2 {
 }
 
 body.dark .table-head .table-row {
-    background: #5c98e68a;
+    background: #63b3edb7 !important;
     color: #e5e7eb;
+    color: #272727 !important;
 }
 
 .table-row {
     display: grid;
-    grid-template-columns: 2fr 3fr 1fr 1fr;
-    padding: 0.75rem 1rem;
+    grid-template-columns: 0.7fr 1fr 1fr 0.5fr;
+    padding: 0.rem 1rem;
     align-items: center;
 }
 
@@ -389,6 +392,8 @@ body.dark .table-body .table-row {
 
 body.dark .table-body .table-row:hover {
     background: #63b3ed;
+    color: #252525;
+    font-weight: 600;
 }
 
 .table-cell {
@@ -675,29 +680,39 @@ body.dark .role-info-icon {
 }
 
 .permissions-grid::-webkit-scrollbar,
-.permissions-list::-webkit-scrollbar {
+.permissions-list::-webkit-scrollbar,
+.permission-list::-webkit-scrollbar,
+.role-info-popup::-webkit-scrollbar {
     width: 12px;
 }
 
 .permissions-grid::-webkit-scrollbar-track,
-.permissions-list::-webkit-scrollbar-track {
+.permissions-list::-webkit-scrollbar-track,
+.permission-list::-webkit-scrollbar-track,
+.role-info-popup::-webkit-scrollbar-track {
     background: #f8fafc;
 }
 
 body.dark .permissions-grid::-webkit-scrollbar-track,
-body.dark .permissions-list::-webkit-scrollbar-track {
+body.dark .permissions-list::-webkit-scrollbar-track,
+body.dark .permission-list::-webkit-scrollbar-track,
+body.dark .role-info-popup::-webkit-scrollbar-track {
     background: #2b2b2b;
 }
 
 .permissions-grid::-webkit-scrollbar-thumb,
-.permissions-list::-webkit-scrollbar-thumb {
+.permissions-list::-webkit-scrollbar-thumb,
+.permission-list::-webkit-scrollbar-thumb,
+.role-info-popup::-webkit-scrollbar-thumb {
     background-color: #4cb1c7;
     border-radius: 6px;
     border: 3px solid #f8fafc;
 }
 
 body.dark .permissions-grid::-webkit-scrollbar-thumb,
-body.dark .permissions-list::-webkit-scrollbar-thumb {
+body.dark .permissions-list::-webkit-scrollbar-thumb,
+body.dark .permission-list::-webkit-scrollbar-thumb,
+body.dark .role-info-popup::-webkit-scrollbar-thumb {
     background-color: #63b3ed;
     border: 3px solid #2b2b2b;
 }
@@ -1046,6 +1061,22 @@ body.dark .permission-list {
 .permission-list li:nth-child(3) { transition-delay: 0.2s; }
 .permission-list li:nth-child(4) { transition-delay: 0.25s; }
 .permission-list li:nth-child(5) { transition-delay: 0.3s; }
+.permission-list li:nth-child(6) { transition-delay: 0.35s; }
+.permission-list li:nth-child(7) { transition-delay: 0.4s; }
+.permission-list li:nth-child(8) { transition-delay: 0.45s; }
+.permission-list li:nth-child(9) { transition-delay: 0.5s; }
+.permission-list li:nth-child(10) { transition-delay: 0.55s; }
+.permission-list li:nth-child(11) { transition-delay: 0.6s; }
+.permission-list li:nth-child(12) { transition-delay: 0.65s; }
+.permission-list li:nth-child(13) { transition-delay: 0.7s; }
+.permission-list li:nth-child(14) { transition-delay: 0.75s; }
+.permission-list li:nth-child(15) { transition-delay: 0.8s; }
+.permission-list li:nth-child(16) { transition-delay: 0.85s; }
+.permission-list li:nth-child(17) { transition-delay: 0.9s; }
+.permission-list li:nth-child(18) { transition-delay: 0.95s; }
+.permission-list li:nth-child(19) { transition-delay: 1s; }
+
+
 
 .toggle-icon {
     transition: transform 0.3s ease-in-out;

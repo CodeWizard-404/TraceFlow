@@ -1,0 +1,111 @@
+.receipt-book-form-container {
+    padding: 1rem;
+    max-width: 600px;
+    margin: 0 auto;
+    font-family: 'Inter', sans-serif;
+    background: #f0f4f8;
+    min-height: 100vh;
+  }
+  
+  .form-header {
+    background: linear-gradient(135deg, #4cb1c7 0%, #3a8fa2 100%);
+    color: #fff;
+    padding: 1rem;
+    border-radius: 0.75rem;
+    text-align: center;
+    margin-bottom: 1rem;
+  }
+  
+  .form-header h1 {
+    margin: 0;
+    font-size: 1.5rem;
+    font-weight: 700;
+  }
+  
+  .form-card {
+    background: #fff;
+    border-radius: 0.75rem;
+    padding: 1.5rem;
+    box-shadow: 0 4px 15px rgba(0, 0, 0, 0.05);
+  }
+  
+  .form-group {
+    margin-bottom: 1rem;
+  }
+  
+  .form-group label {
+    display: block;
+    font-size: 0.9rem;
+    color: #4cb1c7;
+    margin-bottom: 0.25rem;
+  }
+  
+  .form-group input,
+  .form-group select {
+    width: 100%;
+    padding: 0.75rem;
+    border: 1px solid #e5e7eb;
+    border-radius: 0.5rem;
+    font-size: 0.9rem;
+  }
+  
+  .error {
+    color: #e81f76;
+    font-size: 0.9rem;
+    text-align: center;
+    margin-bottom: 1rem;
+  }
+  
+  .form-actions {
+    display: flex;
+    gap: 1rem;
+    justify-content: center;
+  }
+  
+  .created-book {
+    text-align: center;
+  }
+  
+  .created-book h2 {
+    font-size: 1.2rem;
+    color: #4cb1c7;
+    margin-bottom: 1rem;
+  }
+  
+  .created-book p {
+    font-size: 0.9rem;
+    margin: 0.5rem 0;
+  }
+  
+  .qr-code {
+    margin: 1rem 0;
+  }
+  
+  .back-btn,
+  .save-btn {
+    padding: 0.75rem 1.5rem;
+    font-size: 0.9rem;
+    font-weight: 600;
+    text-transform: uppercase;
+    border: none;
+    border-radius: 0.5rem;
+    cursor: pointer;
+    display: flex;
+    align-items: center;
+    gap: 0.5rem;
+  }
+  
+  .back-btn {
+    background: #6b7280;
+    color: #fff;
+  }
+  
+  .save-btn {
+    background: linear-gradient(135deg, #4cb1c7 0%, #3a8fa2 100%);
+    color: #fff;
+  }
+  
+  .back-btn:hover,
+  .save-btn:hover {
+    opacity: 0.9;
+  }

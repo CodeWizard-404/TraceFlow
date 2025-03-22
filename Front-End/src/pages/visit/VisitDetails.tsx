@@ -1,5 +1,5 @@
 // src/pages/visit/VisitDetails.tsx
-import React, { useState, useEffect } from "react";
+import React, { useState, useEffect, useMemo } from "react";
 import { useParams, useNavigate } from "react-router-dom";
 import {
     FaCalendar, FaClock, FaMapMarkerAlt, FaUser,
@@ -9,18 +9,34 @@ import {
 import "./VisitDetails.css";
 import { getAgentById } from "../../apis/agentAPI";
 import { getVisitById } from "../../apis/visitAPI";
+import { validateTimesheet } from "../../apis/timesheetAPI";
 import Visit from "../../models/Visit";
 import Agent from "../../models/Agent";
 import { useAuth } from "../../context/AuthContext";
+import VisitStatus from "../../models/Enum/VisitStatus";
 
 const VisitDetails: React.FC = () => {
     const { idVisit } = useParams<{ idVisit: string }>();
     const navigate = useNavigate();
-    const { token } = useAuth(); // Get token from AuthContext
+    const { token, effectivePermissions, permissionsLoaded } = useAuth();
     const [visit, setVisit] = useState<Visit | null>(null);
     const [agent, setAgent] = useState<Agent | null>(null);
     const [loading, setLoading] = useState<boolean>(true);
     const [error, setError] = useState<string | null>(null);
+
+    // Permission Checks
+    const canAccessVisitDetails = useMemo(() => 
+        effectivePermissions?.some(p => p.name === "access_visit_details"), 
+        [effectivePermissions]
+    );
+    const canLogVisits = useMemo(() => 
+        effectivePermissions?.some(p => p.name === "log_visits"), 
+        [effectivePermissions]
+    );
+    const canValidateTimesheets = useMemo(() => 
+        effectivePermissions?.some(p => p.name === "validate_timesheets"), 
+        [effectivePermissions]
+    );
 
     useEffect(() => {
         const fetchVisitDetails = async () => {
@@ -30,13 +46,19 @@ const VisitDetails: React.FC = () => {
                 return;
             }
 
+            if (!token || !canAccessVisitDetails) {
+                setError("Access Denied: You lack permission to view visit details.");
+                setLoading(false);
+                return;
+            }
+
             try {
                 setLoading(true);
-                const visitData = await getVisitById(idVisit, token!); // Pass token                
+                const visitData = await getVisitById(idVisit, token);
                 setVisit(visitData);
 
                 if (visitData.agentID) {
-                    const agentData = await getAgentById(visitData.agentID, token!);
+                    const agentData = await getAgentById(visitData.agentID, token);
                     setAgent(agentData);
                 }
             } catch (err) {
@@ -47,14 +69,44 @@ const VisitDetails: React.FC = () => {
             }
         };
 
-        fetchVisitDetails();
-    }, [idVisit, token]);
+        if (permissionsLoaded) {
+            fetchVisitDetails();
+        }
+    }, [idVisit, token, canAccessVisitDetails, permissionsLoaded]);
 
     const handleLogVisit = () => {
-        if (visit) {
+        if (visit && canLogVisits) {
             navigate("/qr-scan", { state: { visit } });
         }
     };
+
+    const handleValidate = async () => {
+        if (!visit || !visit.timesheetID || !canValidateTimesheets) return;
+        try {
+            await validateTimesheet(visit.timesheetID, { visitIDs: [visit.visitID], status: "validated" }, token!);
+            setVisit(prev => prev ? { ...prev, status: VisitStatus.VALIDATED } : null);
+        } catch (err) {
+            setError("Failed to validate visit.");
+            console.error(err);
+        }
+    };
+
+    const handleReject = async () => {
+        if (!visit || !visit.timesheetID || !canValidateTimesheets) return;
+        try {
+            await validateTimesheet(visit.timesheetID, { visitIDs: [visit.visitID], status: "rejected" }, token!);
+            setVisit(prev => prev ? { ...prev, status: VisitStatus.REJECTED } : null);
+        } catch (err) {
+            setError("Failed to reject visit.");
+            console.error(err);
+        }
+    };
+
+    if (!permissionsLoaded) return (
+        <div className="visit-details-loading">
+            Loading permissions...
+        </div>
+    );
 
     if (loading) return (
         <div className="visit-details-loading">
@@ -166,9 +218,39 @@ const VisitDetails: React.FC = () => {
             </div>
 
             <div className="visit-details-actions">
-                <button className="visit-details-log-btn" onClick={handleLogVisit}>
-                    Log Visit
-                </button>
+                {canLogVisits && (
+                    <button 
+                        className="visit-details-log-btn" 
+                        onClick={handleLogVisit}
+                        disabled={visit.status === VisitStatus.PENDING || visit.status === VisitStatus.VISITED || visit.status === VisitStatus.REJECTED }
+                    >
+                        Log Visit
+                    </button>
+                )}
+                {canValidateTimesheets && (
+                    <div className="visit-details-log-btn2">
+                        <button 
+                            className="validate-visit-btn" 
+                            onClick={handleValidate} 
+                            disabled={
+                                visit.status === VisitStatus.VALIDATED ||
+                                visit.status === VisitStatus.VISITED
+                            }
+                        >
+                            Validate
+                        </button>
+                        <button 
+                            className="reject-visit-btn" 
+                            onClick={handleReject} 
+                            disabled={
+                                visit.status === VisitStatus.REJECTED ||
+                                visit.status === VisitStatus.VISITED
+                            }
+                        >
+                            Reject
+                        </button>
+                    </div>
+                )}
                 <button
                     className="visit-details-back-btn"
                     onClick={() => navigate("/timesheet")}

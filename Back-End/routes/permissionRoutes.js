@@ -16,8 +16,8 @@ router.get('/role/:roleID',authenticateJWT, requirePermission('read_permissions_
 
 router.post('/override/:userID', authenticateJWT, requirePermission('create_permission_overrides'), PermissionController.addPermissionOverride);
 router.delete('/override/:overrideID', authenticateJWT, requirePermission('delete_permission_overrides'), PermissionController.removePermissionOverride);
-router.get('/override/:userID', authenticateJWT, requirePermission('read_permission_overrides'), PermissionController.getPermissionOverrides);
-router.get('/effective/:userID', authenticateJWT, requirePermission('read_effective_permissions'), PermissionController.getEffectivePermissions);
+router.get('/override/:userID', authenticateJWT, PermissionController.getPermissionOverrides);
+router.get('/effective/:userID', authenticateJWT,  PermissionController.getEffectivePermissions);
 
 
 module.exports = router;

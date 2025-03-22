@@ -1,0 +1,128 @@
+.archived-receipt-books-container {
+  padding: 1rem;
+  max-width: 1200px;
+  margin: 0 auto;
+  font-family: 'Inter', sans-serif;
+  background: #f0f4f8;
+  min-height: 100vh;
+}
+
+.archived-header {
+  background: linear-gradient(135deg, #4cb1c7 0%, #3a8fa2 100%);
+  color: #fff;
+  padding: 1rem;
+  border-radius: 0.75rem;
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  margin-bottom: 1rem;
+}
+
+.archived-header h1 {
+  margin: 0;
+  font-size: 1.5rem;
+  font-weight: 700;
+}
+
+.header-actions {
+  display: flex;
+  gap: 1rem;
+  align-items: center;
+}
+
+.search-bar {
+  display: flex;
+  align-items: center;
+  background: #fff;
+  padding: 0.5rem;
+  border-radius: 0.5rem;
+}
+
+.search-bar svg {
+  color: #4cb1c7;
+  margin-right: 0.5rem;
+}
+
+.search-bar input {
+  border: none;
+  outline: none;
+  font-size: 0.9rem;
+}
+
+.header-actions button {
+  padding: 0.75rem 1.5rem;
+  background: #fff;
+  color: #4cb1c7;
+  border: none;
+  border-radius: 0.5rem;
+  cursor: pointer;
+  display: flex;
+  align-items: center;
+  gap: 0.5rem;
+  font-weight: 600;
+}
+
+.header-actions button:hover {
+  background: #e5e7eb;
+}
+
+.books-list {
+  display: grid;
+  grid-template-columns: repeat(auto-fill, minmax(320px, 1fr));
+  gap: 1rem;
+}
+
+.book-card {
+  background: #fff;
+  border-radius: 0.75rem;
+  padding: 1rem;
+  box-shadow: 0 4px 15px rgba(0, 0, 0, 0.05);
+  cursor: pointer;
+  display: flex;
+  align-items: center;
+  gap: 1rem;
+  transition: transform 0.2s ease;
+}
+
+.book-card:hover {
+  transform: translateY(-5px);
+}
+
+.book-info p {
+  margin: 0.25rem 0;
+  font-size: 0.9rem;
+}
+
+.qr-preview {
+  flex-shrink: 0;
+}
+
+.status-dot {
+  width: 0.5rem;
+  height: 0.5rem;
+  border-radius: 50%;
+  display: inline-block;
+  margin-right: 0.5rem;
+}
+
+.status-archived {
+  background: #6b7280;
+}
+
+.status-text {
+  font-size: 0.85rem;
+  color: #6b7280;
+}
+
+.no-books, .loading {
+  text-align: center;
+  color: #6b7280;
+  font-size: 1rem;
+  padding: 2rem;
+}
+
+@media (max-width: 768px) {
+  .archived-header { flex-direction: column; gap: 1rem; }
+  .header-actions { flex-direction: column; width: 100%; }
+  .books-list { grid-template-columns: 1fr; }
+}

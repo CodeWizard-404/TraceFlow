@@ -24,7 +24,6 @@ const AuthContext = createContext<AuthContextType | undefined>(undefined);
 
 // AuthProvider component to manage authentication state and logic
 export const AuthProvider: React.FC<{ children: ReactNode }> = ({ children }) => {
-    // Initialize state from localStorage for persistence
     const [user, setUser] = useState<User | null>(() => {
         const storedUser = localStorage.getItem("user");
         return storedUser ? JSON.parse(storedUser) : null;
@@ -33,16 +32,15 @@ export const AuthProvider: React.FC<{ children: ReactNode }> = ({ children }) =>
     const [userRoles, setUserRoles] = useState<Role[] | null>(null);
     const [effectivePermissions, setEffectivePermissions] = useState<Permission[] | null>(null);
     const [permissionsLoaded, setPermissionsLoaded] = useState(false);
+    const [isInitialLogin, setIsInitialLogin] = useState(false); // New flag
 
     const navigate = useNavigate();
     const location = useLocation();
 
-    // Configure Axios interceptors 
     useEffect(() => {
         setupAxiosInterceptors();
     }, []);
 
-    // Fetch user roles and permissions when user and token are available
     useEffect(() => {
         const fetchPermissions = async () => {
             if (!user || !token) return;
@@ -62,45 +60,44 @@ export const AuthProvider: React.FC<{ children: ReactNode }> = ({ children }) =>
         fetchPermissions();
     }, [user, token]);
 
-    // Handle redirection after login based on roles or previous location
+    // Redirect only on initial login
     useEffect(() => {
-        if (user && token && permissionsLoaded && userRoles) {
+        if (user && token && permissionsLoaded && userRoles && isInitialLogin) {
             const targetRoute = determineTargetRoute(userRoles);
             const finalRoute = location.state?.from || targetRoute;
             navigate(finalRoute, { replace: true });
+            setIsInitialLogin(false); 
         }
-    }, [user, token, permissionsLoaded, userRoles, location.state, navigate]);
+    }, [user, token, permissionsLoaded, userRoles, location.state, navigate, isInitialLogin]);
 
-    // Helper function to determine the default route based on roles
     const determineTargetRoute = (roles: Role[]): string => {
         if (roles.some((r) => ["Admin", "Super Admin"].includes(r.name))) return "/admin";
         if (roles.some((r) => ["Manager", "Supervisor"].includes(r.name))) return "/timesheet";
         return "/";
     };
 
-    // Login function to authenticate the user
     const loginUser = async (identifier: string, password: string) => {
         const response = await login(identifier, password);
         setUser(response.user);
         setToken(response.token);
         localStorage.setItem("token", response.token);
         localStorage.setItem("user", JSON.stringify(response.user));
-        setPermissionsLoaded(false); 
+        setPermissionsLoaded(false);
+        setIsInitialLogin(true); // Set flag on login
     };
 
-    // Logout function to clear state and redirect
     const logout = () => {
         setUser(null);
         setToken(null);
         setUserRoles(null);
         setEffectivePermissions(null);
         setPermissionsLoaded(false);
+        setIsInitialLogin(false); // Reset flag on logout
         localStorage.removeItem("token");
         localStorage.removeItem("user");
         navigate("/login");
     };
 
-    // Provide the context value to children
     const value: AuthContextType = {
         user,
         token,

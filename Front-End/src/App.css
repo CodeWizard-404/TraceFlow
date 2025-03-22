@@ -262,14 +262,23 @@ body.dark .visit-details-container .no-data {
 }
 
 body.dark .visit-details-container .visit-details-log-btn,
-body.dark .visit-details-container .visit-details-back-btn {
+body.dark .visit-details-container .visit-details-back-btn,
+body.dark .visit-details-container .validate-visit-btn {
   background: #63b3ed;
+}
+body.dark .visit-details-container .reject-visit-btn {
+  background: #d02f70;
 }
 
 body.dark .visit-details-container .visit-details-log-btn:hover,
-body.dark .visit-details-container .visit-details-back-btn:hover {
+body.dark .visit-details-container .visit-details-back-btn:hover,
+body.dark .visit-details-container .validate-visit-btn:hover{
   background: #4299e1;
 }
+body.dark .visit-details-container .reject-visit-btn:hover {
+  background: #b70a4f;
+}
+
 
 body.dark .visit-details-container .visit-details-error-card {
   background: #2d3748;
@@ -334,7 +343,7 @@ body.dark .visit-validation-container .visit-header-0 p {
 }
 
 body.dark .visit-validation-container .visit-card {
-  background: #2d3748;
+  background: #222222;
   color: #e2e8f0;
   box-shadow: 0 0.375rem 1.25rem rgba(0, 0, 0, 0.3);
 }
@@ -345,7 +354,7 @@ body.dark .visit-validation-container .checklist-section,
 body.dark .visit-validation-container .checklist-section .custom-checkbox-input:checked + .custom-checkbox, 
 body.dark .visit-validation-container .checklist-section .custom-checkbox
 body.dark .visit-validation-container .checklist-section li.checked {
-  background: #404d64;
+  background: #333333;
   border-color: #63b3ed;
 }
 

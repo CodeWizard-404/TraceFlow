@@ -1,5 +1,5 @@
 import React from "react";
-import { useError } from "../context/ErrorContext";
+import { useError } from "../../context/ErrorContext";
 import "./ErrorDisplay.css";
 
 const ErrorDisplay: React.FC = () => {

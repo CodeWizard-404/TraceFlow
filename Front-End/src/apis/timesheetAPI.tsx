@@ -14,6 +14,7 @@ export const createTimesheet = async (
       reasons: Array<{ text?: string; id?: string }>;
       checklists: Array<{ text?: string; id?: string }>;
     }>;
+    status?: string;
   },
   token: string
 ): Promise<CreateTimesheetResponse> => {

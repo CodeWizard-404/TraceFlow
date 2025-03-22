@@ -1,7 +1,7 @@
-import React, { useState, useEffect } from "react";
+// src/pages/visit/VisitValidation.tsx
+import React, { useState, useEffect, useMemo } from "react";
 import { useParams, useNavigate } from "react-router-dom";
 import { FaUser, FaPhone, FaListUl, FaCheckCircle, FaArrowLeft, FaCheck } from "react-icons/fa";
-
 import "./VisitValidation.css";
 import { getAgentById } from "../../apis/agentAPI";
 import { getVisitById, logVisitDetails } from "../../apis/visitAPI";
@@ -9,10 +9,9 @@ import Visit from "../../models/Visit";
 import Agent from "../../models/Agent";
 import { useAuth } from "../../context/AuthContext";
 
-
 const VisitValidation: React.FC = () => {
     const { idVisit } = useParams<{ idVisit: string }>();
-    const { token } = useAuth();    
+    const { token, effectivePermissions, permissionsLoaded } = useAuth();
     const navigate = useNavigate();
     const [visit, setVisit] = useState<Visit | null>(null);
     const [agent, setAgent] = useState<Agent | null>(null);
@@ -22,6 +21,12 @@ const VisitValidation: React.FC = () => {
     const [error, setError] = useState<string | null>(null);
     const [isSubmitting, setIsSubmitting] = useState<boolean>(false);
 
+    // Permission Checks
+    const canLogVisits = useMemo(
+        () => effectivePermissions?.some((p) => p.name === "log_visits"),
+        [effectivePermissions]
+    );
+
     useEffect(() => {
         const fetchVisitData = async () => {
             if (!idVisit || !token) {
@@ -30,13 +35,21 @@ const VisitValidation: React.FC = () => {
                 return;
             }
 
+            if (!permissionsLoaded) return;
+
+            if (!canLogVisits) {
+                setError("Access Denied: You lack permission to log visits.");
+                setLoading(false);
+                return;
+            }
+
             try {
                 setLoading(true);
-                const visitData = await getVisitById(idVisit, token); // Pass token explicitly
+                const visitData = await getVisitById(idVisit, token);
                 setVisit(visitData);
 
                 if (visitData.agentID) {
-                    const agentData = await getAgentById(visitData.agentID, token); // Pass token
+                    const agentData = await getAgentById(visitData.agentID, token);
                     setAgent(agentData);
                 }
 
@@ -57,18 +70,19 @@ const VisitValidation: React.FC = () => {
         };
 
         fetchVisitData();
-    }, [idVisit, token]);
+    }, [idVisit, token, canLogVisits, permissionsLoaded]);
 
     const handleChecklistChange = (checklistId: string) => {
         setChecklist((prev) =>
-            prev.map((item) =>
-                item.id === checklistId ? { ...item, checked: !item.checked } : item
-            )
+            prev.map((item) => (item.id === checklistId ? { ...item, checked: !item.checked } : item))
         );
     };
 
     const handleValidate = async () => {
-        if (!visit || !idVisit || !entryTime) return;
+        if (!visit || !idVisit || !entryTime || !canLogVisits) {
+            setError("Access Denied: Insufficient permissions to validate.");
+            return;
+        }
 
         setIsSubmitting(true);
         setError(null);
@@ -85,12 +99,11 @@ const VisitValidation: React.FC = () => {
 
             const updatedVisitData = {
                 duration: durationMinutes,
-                checklistUpdates,
-                status: "validated",
+                checklistUpdates
             };
 
-            await logVisitDetails(idVisit, updatedVisitData, token!); // Pass token explicitly
-            await new Promise((resolve) => setTimeout(resolve, 500)); // Brief delay for animation
+            await logVisitDetails(idVisit, updatedVisitData, token!);
+            await new Promise((resolve) => setTimeout(resolve, 500));
             navigate("/timesheet");
         } catch (err) {
             setError("Failed to validate visit.");
@@ -103,8 +116,10 @@ const VisitValidation: React.FC = () => {
     const completedItems = checklist.filter((item) => item.checked).length;
     const totalItems = checklist.length;
 
+    if (!permissionsLoaded) return <div className="visit-validation-container">Loading permissions...</div>;
+
     if (loading) return <div className="loading">Loading...</div>;
-    if (error || !visit) return (
+    if (error || !visit || !canLogVisits) return (
         <div className="visit-validation-container">
             <div className="error">{error || "Visit not found."}</div>
             <button className="back-btn" onClick={() => navigate("/timesheet")}>
@@ -123,7 +138,6 @@ const VisitValidation: React.FC = () => {
                 <p>Complete the checklist and validate the visit.</p>
             </header>
             <section className="visit-card">
-                {/* Visit Details */}
                 <div className="details-section">
                     <h2>Visit Details</h2>
                     <div className="detail-item">
@@ -136,7 +150,6 @@ const VisitValidation: React.FC = () => {
                     </div>
                 </div>
 
-                {/* Reasons */}
                 <div className="reasons-section">
                     <h2><FaListUl /> Reasons</h2>
                     {visit.Reasons && visit.Reasons.length > 0 ? (
@@ -150,7 +163,6 @@ const VisitValidation: React.FC = () => {
                     )}
                 </div>
 
-                {/* Checklist */}
                 <div className="checklist-section">
                     <h2><FaCheckCircle /> Checklist ({completedItems}/{totalItems})</h2>
                     {checklist.length > 0 ? (
@@ -185,12 +197,11 @@ const VisitValidation: React.FC = () => {
                     )}
                 </div>
 
-                {/* Actions */}
                 <div className="visit-actions">
                     <button
                         className={`validate-btn ${isSubmitting ? "submitting" : ""}`}
                         onClick={handleValidate}
-                        disabled={isSubmitting || checklist.every((item) => !item.checked)}
+                        disabled={isSubmitting || checklist.every((item) => !item.checked) }
                     >
                         <FaCheck /> {isSubmitting ? "Validating..." : "Validate Visit"}
                     </button>

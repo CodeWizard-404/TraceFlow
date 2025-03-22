@@ -5,11 +5,27 @@ const TimesheetService = require('../services/timesheetService');
 class TimesheetController {
     static async createTimesheet(req, res) {
         try {
-            const { weekNumber, year, supervisorID, visits } = req.body;
+            const { weekNumber, year, supervisorID, visits, status = 'pending' } = req.body;
             if (!weekNumber || !year || !supervisorID || !Array.isArray(visits)) {
                 return res.status(400).json({ error: 'Missing required fields: weekNumber, year, supervisorID, and visits array are mandatory' });
             }
-            const timesheet = await TimesheetService.createTimesheet({ weekNumber, year, supervisorID, visits });
+            // Validate status if provided
+            if (status && !['pending', 'validated'].includes(status)) {
+                return res.status(400).json({ error: 'Invalid status value. Must be "pending" or "validated"' });
+            }
+            // Log req.user for debugging
+            console.log(`${new Date().toISOString()} - req.user:`, req.user);
+
+            // Flatten permissions from Roles
+            const userPermissions = req.user?.Roles?.flatMap(role => role.Permissions?.map(perm => perm.name) || []) || [];
+            const hasSupervisorPermission = userPermissions.includes('create_timesheets_for_supervisor');
+            console.log(`${new Date().toISOString()} - User permissions:`, userPermissions); 
+
+            if (status === 'validated' && !hasSupervisorPermission) {
+                return res.status(403).json({ error: 'Permission denied: Only users with create_timesheets_for_supervisor can set status to validated' });
+            }
+
+            const timesheet = await TimesheetService.createTimesheet({ weekNumber, year, supervisorID, visits, status });
             res.status(201).json(timesheet);
         } catch (error) {
             console.error(`${new Date().toISOString()} - Create timesheet failed:`, error);
@@ -34,22 +50,11 @@ class TimesheetController {
 
     static async getAllTimesheets(req, res) {
         try {
-            const user = req.user;
-            const userPermissions = user.Roles.flatMap(role => role.Permissions.map(perm => perm.name));
-            let timesheets;
-
-            if (userPermissions.includes('view_all_timesheets')) {
-                timesheets = await Timesheet.findAll({ include: ['Visits'] });
-            } else {
-                timesheets = await Timesheet.findAll({
-                    where: { supervisorID: user.userID },
-                    include: ['Visits'],
-                });
-            }
+            const timesheets = await TimesheetService.listTimesheets();
             res.status(200).json(timesheets);
         } catch (error) {
             console.error(`${new Date().toISOString()} - Get all timesheets failed:`, error);
-            res.status(error.status || 500).json({ error: error.message || 'Failed to retrieve timesheets due to an internal error' });
+            res.status(500).json({ error: error.message || 'Failed to retrieve all timesheets due to an internal error' });
         }
     }
 
