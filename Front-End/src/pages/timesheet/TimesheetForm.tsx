@@ -82,7 +82,7 @@ const TimesheetForm: React.FC = () => {
     return null;
   }
 
-  const supervisorID = canAssignSupervisors && selectedSupervisor ? selectedSupervisor : user.userID;
+  const supervisorID = canReadSupervisors && selectedSupervisor ? selectedSupervisor : user.userID;
 
   // Fetch initial data
   useEffect(() => {
@@ -93,7 +93,7 @@ const TimesheetForm: React.FC = () => {
           canReadAgentsByLocation ? getAgentLocations(token) : Promise.resolve([]),
           canReadReasons ? getAllReasons(token) : Promise.resolve([]),
           canReadChecklists ? getAllChecklists(token) : Promise.resolve([]),
-          canAssignSupervisors && canReadSupervisors ? getSupervisorsByUser(user.userID, token) : Promise.resolve([]),
+          canReadSupervisors ? getSupervisorsByUser(user.userID, token) : Promise.resolve([]),
         ];
         const [locationsData, reasonsData, checklistsData, supervisorsData] = await Promise.all(promises);
         setLocations(locationsData as string[]);

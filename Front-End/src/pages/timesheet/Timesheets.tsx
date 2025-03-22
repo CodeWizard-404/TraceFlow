@@ -17,7 +17,7 @@ interface VisitWithSupervisor extends Visit {
 }
 
 const Timesheets: React.FC = () => {
-  const { user, token, effectivePermissions, permissionsLoaded } = useAuth();
+  const { user, token, userRoles, effectivePermissions, permissionsLoaded } = useAuth();
   const [timesheets, setTimesheets] = useState<Timesheet[]>([]);
   const [filteredTimesheets, setFilteredTimesheets] = useState<Timesheet[]>([]);
   const [users, setUsers] = useState<User[]>([]);
@@ -58,6 +58,11 @@ const Timesheets: React.FC = () => {
   );
   const canReadSupervisors = useMemo(() => 
     effectivePermissions?.some(p => p.name === "read_supervisors"), [effectivePermissions]
+  );
+
+  // Check if user is Super Admin
+  const isSuperAdmin = useMemo(() => 
+    userRoles?.some(role => role.name === "Super Admin"), [userRoles]
   );
 
   // Fetch Timesheets
@@ -101,7 +106,7 @@ const Timesheets: React.FC = () => {
     const fetchUsers = async () => {
       try {
         let userData: User[] = [];
-        if (canReadUsers) {
+        if (isSuperAdmin) {
           userData = await getAllUsers(token);
         } else if (canReadSupervisors && supervisorID) {
           userData = await getSupervisorsByUser(supervisorID, token);

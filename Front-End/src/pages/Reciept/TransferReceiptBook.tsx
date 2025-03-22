@@ -1,44 +1,65 @@
-import React, { useState, useEffect } from "react";
-import { useParams, useNavigate } from "react-router-dom";
-import { FaArrowLeft, FaExchangeAlt, FaCheck, FaQrcode } from "react-icons/fa";
-import { QRCodeSVG } from "qrcode.react";
+import React, { useState, useEffect, useRef } from "react";
+import { useNavigate } from "react-router-dom";
+import { FaArrowLeft, FaExchangeAlt, FaCheck } from "react-icons/fa";
+import { Html5Qrcode } from "html5-qrcode";
 import { useAuth } from "../../context/AuthContext";
-import { getReceiptBookById, transfer, validateTransfer } from "../../apis/receiptBookAPI";
+import {
+    getAllReceiptBooks,
+    transfer,
+    validateTransfer,
+} from "../../apis/receiptBookAPI";
 import { getAllUsers } from "../../apis/userAPI";
+import { getAgentById } from "../../apis/agentAPI";
+import "./TransferReceiptBook.css";
 import ReceiptBook from "../../models/ReceiptBook";
 import User from "../../models/User";
-import "./TransferReceiptBook.css";
+import Agent from "../../models/Agent";
 
 const TransferReceiptBook: React.FC = () => {
-    const { bookID } = useParams<{ bookID: string }>();
     const { token, userRoles, effectivePermissions } = useAuth();
     const navigate = useNavigate();
-    const [book, setBook] = useState<ReceiptBook | null>(null);
+    const [receiptBooks, setReceiptBooks] = useState<ReceiptBook[]>([]);
+    const [selectedBookIDs, setSelectedBookIDs] = useState<string[]>([]);
     const [users, setUsers] = useState<User[]>([]);
-    const [recipientType, setRecipientType] = useState<string>("");
+    const [agents, setAgents] = useState<Agent[]>([]);
+    const [recipientType, setRecipientType] = useState<User | Agent>();
     const [recipientID, setRecipientID] = useState<string>("");
-    const [scannedQR, setScannedQR] = useState<string>("");
+    const [scannedQR, setScannedQR] = useState<string[]>([]);
     const [otp, setOtp] = useState<string>("");
     const [loading, setLoading] = useState<boolean>(true);
     const [error, setError] = useState<string | null>(null);
     const [transferInitiated, setTransferInitiated] = useState<boolean>(false);
-
+    const qrScannerRef = useRef<Html5Qrcode | null>(null);
+    const qrReaderRef = useRef<HTMLDivElement>(null);
+    const [isScannerInitialized, setIsScannerInitialized] = useState<boolean>(false);
+    const scannedQRRef = useRef<Set<string>>(new Set()); 
     const userRole = userRoles?.[0]?.name || "";
 
     useEffect(() => {
         const fetchData = async () => {
-            if (!bookID || !token || !effectivePermissions?.some((p) => p.name === "transfer_receipt_books")) {
-                setError("Access Denied or Invalid Book ID");
+            if (
+                !token ||
+                !effectivePermissions?.some((p) => p.name === "transfer_receipt_books")
+            ) {
+                setError("Access Denied");
                 setLoading(false);
                 return;
             }
             try {
-                const [bookData, usersData] = await Promise.all([
-                    getReceiptBookById(bookID, token),
+                const [booksData, usersData] = await Promise.all([
+                    getAllReceiptBooks(token),
                     getAllUsers(token),
                 ]);
-                setBook(bookData);
+                setReceiptBooks(booksData);
                 setUsers(usersData);
+                // Fetch agents if Supervisor role
+                if (userRole === "Supervisor") {
+                    const agentPromises = booksData
+                        .filter((b) => b.agentID)
+                        .map((b) => getAgentById(b.agentID!, token));
+                    const agentsData = await Promise.all(agentPromises);
+                    setAgents(agentsData);
+                }
             } catch (err) {
                 setError("Failed to load data.");
                 console.error(err);
@@ -47,54 +68,161 @@ const TransferReceiptBook: React.FC = () => {
             }
         };
         fetchData();
-    }, [bookID, token, effectivePermissions]);
+    }, [token, effectivePermissions, userRole]);
+
+    // Updated scanning logic with qrCodeErrorCallback
+    useEffect(() => {
+        if (!qrReaderRef.current || qrScannerRef.current || isScannerInitialized) return;
+
+        const html5QrCode = new Html5Qrcode("qr-reader");
+        qrScannerRef.current = html5QrCode;
+
+        let isProcessing = false; // Simple flag to prevent overlapping scans
+        const config = { fps: 10, qrbox: { width: 250, height: 250 } };
+
+        const handleScanSuccess = async (decodedText: string) => {
+            if (isProcessing) return; // Prevent concurrent processing
+            isProcessing = true;
+
+            try {
+                // Parse TLV data: 01<length><number>02<length><type>
+                const parseTLV = (text: string) => {
+                    const numberLength = parseInt(text.slice(2, 4), 10);
+                    const number = text.slice(4, 4 + numberLength);
+                    const typeStart = 4 + numberLength + 2; // Skip '02' and length
+                    const typeLength = parseInt(text.slice(typeStart, typeStart + 2), 10);
+                    const type = text.slice(typeStart + 2, typeStart + 2 + typeLength);
+                    return { number, type };
+                };
+
+                const { number, type } = parseTLV(decodedText);
+                const matchingBook = receiptBooks.find(
+                    (r) => r.number === number && r.type === type
+                );
+
+                if (!matchingBook) {
+                    setError(`QR code "${number}" not found in receipt books.`);
+                    return;
+                }
+
+                if (scannedQRRef.current.has(decodedText)) {
+                    setError(`QR code "${number}" has already been scanned.`);
+                    return;
+                }
+
+                // Update state atomically
+                setScannedQR((prev) => {
+                    const newScanned = [...prev, decodedText];
+                    scannedQRRef.current.add(decodedText); // Sync ref
+                    return newScanned;
+                });
+                setSelectedBookIDs((prev) => [...prev, matchingBook.bookID]);
+                setError(null); // Clear error on success
+            } catch (err) {
+                setError("Invalid QR code format. Please try again.");
+                console.error("QR Parse Error:", err);
+            } finally {
+                // Debounce reset
+                setTimeout(() => {
+                    isProcessing = false;
+                }, 1000); // 1-second debounce
+            }
+        };
+
+        const handleScanError = (errorMessage: string) => {
+            console.warn("QR Scan Error:", errorMessage);
+        };
+
+        html5QrCode
+            .start(
+                { facingMode: "environment" },
+                config,
+                handleScanSuccess,
+                handleScanError // Added the missing qrCodeErrorCallback
+            )
+            .then(() => {
+                setIsScannerInitialized(true);
+            })
+            .catch((err) => {
+                setError("Camera access denied or unavailable. Please check permissions.");
+                console.error("Scanner Start Error:", err);
+            });
+
+        // Cleanup
+        return () => {
+            if (qrScannerRef.current && isScannerInitialized) {
+                qrScannerRef.current
+                    .stop()
+                    .then(() => {
+                        qrScannerRef.current!.clear();
+                        qrScannerRef.current = null;
+                        setIsScannerInitialized(false);
+                    })
+                    .catch((err) => console.error("Scanner Stop Error:", err));
+            }
+            // eslint-disable-next-line react-hooks/exhaustive-deps
+            scannedQRRef.current.clear();
+        };
+    }, [receiptBooks, isScannerInitialized]);
 
     const getRecipientOptions = () => {
-        if (!book) return [];
+        console.log("User Role:", userRole);
         switch (userRole) {
             case "Purchase Team":
-                return book.status === "In Stock" ? ["Supplier", "Regional Manager"] : [];
+                return ["Supplier", "Regional Manager"];
             case "Regional Manager":
-                return book.status === "With Regional Manager"
-                    ? ["Regional Manager", "Supervisor"]
-                    : book.status === "Stub Collected"
-                        ? ["Regional Manager", "Stock Manager"]
-                        : [];
+                return ["Regional Manager", "Supervisor", "Stock Manager"];
             case "Supervisor":
-                return book.status === "With Supervisor"
-                    ? ["Supervisor", "Regional Manager", "Agent"]
-                    : book.status === "Stub Collected"
-                        ? ["Supervisor", "Regional Manager", "Stock Manager"]
-                        : [];
+                return ["Supervisor", "Regional Manager", "Agent", "Stock Manager"];
+            case "Stock Manager":
+                return ["Stock Manager", "Archive"];
+            case "Super Admin":
+                return ["Supplier", "Regional Manager", "Supervisor", "Agent", "Stock Manager"];
             default:
                 return [];
         }
     };
 
-    const filteredUsers = users.filter((user) =>
-        user.roles?.some((role) => recipientType === role.name)
-    );
-
-    const handleScan = (e: React.ChangeEvent<HTMLInputElement>) => {
-        const qrValue = e.target.value;
-        setScannedQR(qrValue);
-        if (qrValue === book?.qrCode) {
-            setError(null);
-        } else {
-            setError("Scanned QR code does not match this receipt book.");
-        }
-    };
+    const filteredRecipients =
+        recipientType && (recipientType as Agent).name === "Agent"
+            ? agents
+            : recipientType &&
+                ((recipientType as User).roles?.[0]?.name === "Supplier" ||
+                    (recipientType as User).roles?.[0]?.name === "Archive")
+                ? []
+                : users.filter((u) =>
+                    u.roles?.some((r) => r.name === (recipientType as User).firstname)
+                );
 
     const handleInitiateTransfer = async (e: React.FormEvent) => {
         e.preventDefault();
-        if (!bookID || !recipientType || !recipientID || !token || scannedQR !== book?.qrCode) {
-            setError("Please scan the correct QR code and select a recipient.");
+        if (
+            selectedBookIDs.length === 0 ||
+            !recipientType ||
+            ((recipientType as User).roles?.[0]?.name !== "Supplier" &&
+                (recipientType as User).roles?.[0]?.name !== "Archive" &&
+                !recipientID)
+        ) {
+            setError("Please scan at least one QR code and select a recipient.");
+            return;
+        }
+        if (!scannedQR.every((qr) => receiptBooks.some((r) => r.qrCode === qr))) {
+            setError("One or more scanned QR codes do not match any receipt book.");
             return;
         }
         try {
-            const recipientTypeForAPI = recipientType === "Agent" ? "agent" : "user";
-            await transfer([bookID], recipientID, recipientTypeForAPI, token);
+            const recipientTypeForAPI =
+                (recipientType as Agent)?.name === "Agent" ? "agent" : "user";
+            const result = await transfer(
+                selectedBookIDs,
+                recipientID ||
+                (recipientType as User)?.userID ||
+                (recipientType as Agent)?.agentID,
+                recipientTypeForAPI,
+                token!
+            );
             setTransferInitiated(true);
+            setOtp(result.message ? "" : result.message); // If no OTP (e.g., Supplier), use message
             setError(null);
         } catch (err) {
             setError("Failed to initiate transfer.");
@@ -104,14 +232,31 @@ const TransferReceiptBook: React.FC = () => {
 
     const handleValidateTransfer = async (e: React.FormEvent) => {
         e.preventDefault();
-        if (!bookID || !otp || !recipientID || !token) {
+        if (
+            !otp ||
+            selectedBookIDs.length === 0 ||
+            ((recipientType as User)?.roles?.[0]?.name !== "Supplier" &&
+                (recipientType as User)?.roles?.[0]?.name !== "Archive" &&
+                !recipientID)
+        ) {
             setError("Please enter the OTP.");
             return;
         }
         try {
-            const recipientTypeForAPI = recipientType === "Agent" ? "agent" : "user";
-            await validateTransfer([bookID], recipientID, otp, recipientTypeForAPI, token);
-            navigate(`/receipt-book/${bookID}`);
+            const recipientTypeForAPI =
+                (recipientType as Agent)?.name === "Agent" ? "agent" : "user";
+            const recipientIDForAPI =
+                recipientID ||
+                (recipientType as User)?.userID ||
+                (recipientType as Agent)?.agentID;
+            await validateTransfer(
+                selectedBookIDs,
+                recipientIDForAPI!,
+                otp,
+                recipientTypeForAPI,
+                token!
+            );
+            navigate("/receipt-books");
         } catch (err) {
             setError("Invalid OTP or transfer validation failed.");
             console.error(err);
@@ -119,71 +264,103 @@ const TransferReceiptBook: React.FC = () => {
     };
 
     if (loading) return <div className="loading">Loading...</div>;
-    if (error || !book) return <div className="error">{error || "Receipt book not found."}</div>;
+    if (error && !isScannerInitialized) return <div className="error">{error}</div>;
 
     return (
         <div className="transfer-receipt-book-container">
             <header className="transfer-header">
-                <h1>Transfer Receipt Book: {book.number}</h1>
+                <h1>Transfer Receipt Books</h1>
             </header>
             <div className="transfer-card">
                 {!transferInitiated ? (
                     <form onSubmit={handleInitiateTransfer}>
                         <div className="form-group">
-                            <label htmlFor="qrScan">Scan QR Code</label>
-                            <div className="qr-scan">
-                                <FaQrcode />
-                                <input
-                                    id="qrScan"
-                                    type="text"
-                                    value={scannedQR}
-                                    onChange={handleScan}
-                                    placeholder="Enter QR code value"
-                                    required
-                                />
-                            </div>
-                            <div className="qr-preview">
-                                <QRCodeSVG value={book.qrCode} size={100} />
+                            <label>Scan QR Codes</label>
+                            {error && <div className="error-above-camera">{error}</div>}
+                            <div id="qr-reader" ref={qrReaderRef} className="qr-reader"></div>
+                            <div className="scanned-list">
+                                <h4>Scanned Books ({selectedBookIDs.length})</h4>
+                                <ul>
+                                    {selectedBookIDs.map((bookID) => (
+                                        <li key={bookID}>
+                                            {receiptBooks.find((r) => r.bookID === bookID)?.number}
+                                            <button
+                                                onClick={() => {
+                                                    setSelectedBookIDs((prev) =>
+                                                        prev.filter((id) => id !== bookID)
+                                                    );
+                                                    setScannedQR((prev) => {
+                                                        const qrToRemove = receiptBooks.find(
+                                                            (r) => r.bookID === bookID
+                                                        )?.qrCode;
+                                                        scannedQRRef.current.delete(qrToRemove || "");
+                                                        return prev.filter((qr) => qr !== qrToRemove);
+                                                    });
+                                                }}
+                                            >
+                                                Remove
+                                            </button>
+                                        </li>
+                                    ))}
+                                </ul>
                             </div>
                         </div>
                         <div className="form-group">
-                            <label htmlFor="recipientType">Recipient Type</label>
+                            <label>Recipient Type</label>
                             <select
-                                id="recipientType"
-                                value={recipientType}
+                                value={
+                                    recipientType
+                                        ? (recipientType as User).firstname ||
+                                        (recipientType as Agent).name
+                                        : ""
+                                }
                                 onChange={(e) => {
-                                    setRecipientType(e.target.value);
+                                    const selectedType =
+                                        users.find((user) => user.firstname === e.target.value) ||
+                                        agents.find((agent) => agent.name === e.target.value);
+                                    setRecipientType(selectedType);
                                     setRecipientID("");
                                 }}
                                 required
                             >
                                 <option value="">Select Recipient Type</option>
                                 {getRecipientOptions().map((type) => (
-                                    <option key={type} value={type}>{type}</option>
+                                    <option key={type} value={type}>
+                                        {type}
+                                    </option>
                                 ))}
                             </select>
                         </div>
-                        {recipientType && (
-                            <div className="form-group">
-                                <label htmlFor="recipientID">Recipient</label>
-                                <select
-                                    id="recipientID"
-                                    value={recipientID}
-                                    onChange={(e) => setRecipientID(e.target.value)}
-                                    required
-                                >
-                                    <option value="">Select Recipient</option>
-                                    {filteredUsers.map((user) => (
-                                        <option key={user.userID} value={user.userID}>
-                                            {user.firstname} {user.lastname} ({user.email})
-                                        </option>
-                                    ))}
-                                </select>
-                            </div>
-                        )}
-                        {error && <div className="error">{error}</div>}
+                        {recipientType &&
+                            (recipientType as User).roles?.[0]?.name !== "Supplier" &&
+                            (recipientType as User).roles?.[0]?.name !== "Archive" && (
+                                <div className="form-group">
+                                    <label>Recipient</label>
+                                    <select
+                                        value={recipientID}
+                                        onChange={(e) => setRecipientID(e.target.value)}
+                                        required
+                                    >
+                                        <option value="">Select Recipient</option>
+                                        {filteredRecipients.map((r) => (
+                                            <option
+                                                key={"userID" in r ? r.userID : r.agentID}
+                                                value={"userID" in r ? r.userID : r.agentID}
+                                            >
+                                                {"firstname" in r ? r.firstname : r.name}{" "}
+                                                {"lastname" in r ? r.lastname : ""} (
+                                                {"email" in r ? r.email : r.phone})
+                                            </option>
+                                        ))}
+                                    </select>
+                                </div>
+                            )}
                         <div className="form-actions">
-                            <button type="button" className="back-btn" onClick={() => navigate(`/receipt-book/${bookID}`)}>
+                            <button
+                                type="button"
+                                className="back-btn"
+                                onClick={() => navigate("/receipt-books")}
+                            >
                                 <FaArrowLeft /> Back
                             </button>
                             <button type="submit" className="transfer-btn">
@@ -193,20 +370,26 @@ const TransferReceiptBook: React.FC = () => {
                     </form>
                 ) : (
                     <form onSubmit={handleValidateTransfer}>
-                        <div className="form-group">
-                            <label htmlFor="otp">Enter OTP</label>
-                            <input
-                                id="otp"
-                                type="text"
-                                value={otp}
-                                onChange={(e) => setOtp(e.target.value)}
-                                placeholder="Enter OTP sent to recipient"
-                                required
-                            />
-                        </div>
+                        {(recipientType as User)?.roles?.[0]?.name !== "Supplier" &&
+                            (recipientType as User)?.roles?.[0]?.name !== "Archive" && (
+                                <div className="form-group">
+                                    <label>Enter OTP</label>
+                                    <input
+                                        type="text"
+                                        value={otp}
+                                        onChange={(e) => setOtp(e.target.value)}
+                                        placeholder="Enter OTP sent to recipient"
+                                        required
+                                    />
+                                </div>
+                            )}
                         {error && <div className="error">{error}</div>}
                         <div className="form-actions">
-                            <button type="button" className="back-btn" onClick={() => setTransferInitiated(false)}>
+                            <button
+                                type="button"
+                                className="back-btn"
+                                onClick={() => setTransferInitiated(false)}
+                            >
                                 <FaArrowLeft /> Back
                             </button>
                             <button type="submit" className="validate-btn">

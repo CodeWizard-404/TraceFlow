@@ -21,6 +21,7 @@ import ReceiptBooks from "./pages/Reciept/ReceiptBooks";
 import TransferReceiptBook from "./pages/Reciept/TransferReceiptBook";
 import StubCollection from "./pages/Reciept/StubCollection";
 import ArchivedReceiptBooks from "./pages/Reciept/ArchivedReceiptBooks";
+import ReceiptBookHistory from "./pages/Reciept/ReceiptBookHistory";
 
 
 // Permission-based ProtectedRoute component
@@ -146,9 +147,14 @@ const AppContent: React.FC = () => {
                         }
                         />
 
-
+                    <Route 
+                        path="/receipt-book/:bookID/history" 
+                        element={
+                        <ReceiptBookHistory />
+                        } 
+                    />
                     <Route
-                        path="/receipt-book/:bookID/transfer"
+                        path="/transfer-receipt-books"
                         element={
                             <ProtectedRoute requiredPermissions={["transfer_receipt_books"]}>
                                 <TransferReceiptBook />
