@@ -3,6 +3,8 @@
   display: flex;
   flex-direction: column;
   flex: 1; /* Grow to fill the body’s height */
+  height: 100vh;
+
 }
 
 main {
@@ -14,12 +16,18 @@ main {
 }
 
 .footer {
+  position: fixed;
+  bottom: 0;
+  left: 0;
+  width: 100%;
   flex-shrink: 0; /* Prevent shrinking */
+  background: #f8fafc; /* Ensure it’s visible over content; adjust as needed */
+  z-index: 10; /* Ensure it stays above other content */
 }
-
 
 /* Default styles (Light theme) */
 body {
+  height: 100%;
   margin: 0;
   font-family: Arial, sans-serif;
   background: linear-gradient(135deg, #f8fafc 0%, #eef2f6 100%);

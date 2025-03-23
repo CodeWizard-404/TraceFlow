@@ -8,7 +8,7 @@ interface User {
     email: string;
     wallet: string;
     password?: string;
-    roles?: Role[];
+    Roles?: Role[];
     supervisors?: User[];
     managers?: User[];
 }

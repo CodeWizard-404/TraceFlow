@@ -104,6 +104,10 @@ const ReceiptBookHistory: React.FC = () => {
                     <FaArrowLeft /> Back to Receipts
                 </button>
             </header>
+            <div className="history-footer">
+                <p>Current Status: <span style={{ color: getStatusColor(book.status) }}>{book.status}</span></p>
+                <p>Current Holder: {book.currentHolderID ? usersMap.get(book.currentHolderID) : book.agentID ? agentsMap.get(book.agentID) : "N/A"}</p>
+            </div>
             <div className="timeline">
                 <div className="timeline-path">
                     {history.map((entry, index) => (
@@ -123,10 +127,7 @@ const ReceiptBookHistory: React.FC = () => {
                     ))}
                 </div>
             </div>
-            <footer className="history-footer">
-                <p>Current Status: <span style={{ color: getStatusColor(book.status) }}>{book.status}</span></p>
-                <p>Current Holder: {book.currentHolderID ? usersMap.get(book.currentHolderID) : book.agentID ? agentsMap.get(book.agentID) : "N/A"}</p>
-            </footer>
+
         </div>
     );
 };

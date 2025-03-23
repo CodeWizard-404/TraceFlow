@@ -112,15 +112,15 @@ const AdminDashboard: React.FC = () => {
     }, [selectedRole]);
 
     useEffect(() => {
-        if (selectedUser) setTempRoles(selectedUser.roles || []);
+        if (selectedUser) setTempRoles(selectedUser.Roles || []);
     }, [selectedUser]);
 
 
     const filteredUsers = useMemo(() => {
         let result = users.filter((user) => {
             if (!isSuperAdmin) return (
-                user.roles?.some((role) => role.name !== "Super Admin") &&
-                user.roles?.some((role) => role.name !== "Admin")
+                user.Roles?.some((role) => role.name !== "Super Admin") &&
+                user.Roles?.some((role) => role.name !== "Admin")
             );
             return (
                 `${user.firstname} ${user.lastname}`.toLowerCase().includes(searchQuery.toLowerCase()) ||
@@ -128,15 +128,15 @@ const AdminDashboard: React.FC = () => {
             );
         });
         if (roleFilter !== "all") {
-            result = result.filter((user) => user.roles?.some((role) => role.roleID === roleFilter));
+            result = result.filter((user) => user.Roles?.some((role) => role.roleID === roleFilter));
         }
         result.sort((a, b) => {
-            const isSuperAdminA = a.roles?.some(role => role.name === "Super Admin");
-            const isSuperAdminB = b.roles?.some(role => role.name === "Super Admin");
+            const isSuperAdminA = a.Roles?.some(role => role.name === "Super Admin");
+            const isSuperAdminB = b.Roles?.some(role => role.name === "Super Admin");
             if (isSuperAdminA && !isSuperAdminB) return -1;
             if (!isSuperAdminA && isSuperAdminB) return 1;
-            const fieldA = sortField === "name" ? `${a.firstname} ${a.lastname}` : sortField === "email" ? a.email : (a.roles?.map(role => role.name).join(", ") || "");
-            const fieldB = sortField === "name" ? `${b.firstname} ${b.lastname}` : sortField === "email" ? b.email : (b.roles?.map(role => role.name).join(", ") || "");
+            const fieldA = sortField === "name" ? `${a.firstname} ${a.lastname}` : sortField === "email" ? a.email : (a.Roles?.map(role => role.name).join(", ") || "");
+            const fieldB = sortField === "name" ? `${b.firstname} ${b.lastname}` : sortField === "email" ? b.email : (b.Roles?.map(role => role.name).join(", ") || "");
             return sortOrder === "asc" ? (fieldA > fieldB ? 1 : -1) : (fieldA < fieldB ? 1 : -1);
         });
         return result;
@@ -184,14 +184,14 @@ const AdminDashboard: React.FC = () => {
     }, [permissions, permissionSearch, selectedCategory, isSuperAdmin]);
 
     const supervisorUsers = useMemo(() => {
-        return users.filter(u => u.roles?.some(r => r.name === "Supervisor")).filter(s =>
+        return users.filter(u => u.Roles?.some(r => r.name === "Supervisor")).filter(s =>
             `${s.firstname} ${s.lastname}`.toLowerCase().includes(supervisorSearch.toLowerCase()) ||
             s.email.toLowerCase().includes(supervisorSearch.toLowerCase())
         );
     }, [users, supervisorSearch]);
 
     const managerUsers = useMemo(() => {
-        return users.filter(u => u.roles?.some(r => r.name === "Manager")).filter(m =>
+        return users.filter(u => u.Roles?.some(r => r.name === "Manager")).filter(m =>
             `${m.firstname} ${m.lastname}`.toLowerCase().includes(managerSearch.toLowerCase()) ||
             m.email.toLowerCase().includes(managerSearch.toLowerCase())
         );
@@ -256,7 +256,7 @@ const AdminDashboard: React.FC = () => {
             alert('The Super Admin role cannot be modified.');
             return;
         }
-        const fixedRoles = ['Manager', 'Supervisor', 'Purchase', 'Regional Manager', 'Stock Manager'];
+        const fixedRoles = ['Manager', 'Supervisor', 'Purchase Team', 'Regional Manager', 'Stock Manager'];
         if (fixedRoles.includes(role.name) && !window.confirm('Warning: Modifying pre-made roles may affect system functionality. Are you sure you want to proceed?')) {
             return;
         }
@@ -336,16 +336,16 @@ const AdminDashboard: React.FC = () => {
         if (!selectedUser || !canAssignRoles) return;
         setLoading(true);
         try {
-            const currentRoleIds = selectedUser.roles?.map(r => r.roleID) || [];
+            const currentRoleIds = selectedUser.Roles?.map(r => r.roleID) || [];
             const newRoleIds = tempRoles.map(r => r.roleID);
             const toAdd = newRoleIds.filter(id => !currentRoleIds.includes(id));
             if (toAdd.length > 0) await assignRolesToUser(selectedUser.userID, toAdd, token!);
             setUsers(users.map(u => u.userID === selectedUser.userID ? { ...u, roles: tempRoles } : u));
-            setSelectedUser({ ...selectedUser, roles: tempRoles });
+            setSelectedUser({ ...selectedUser, Roles: tempRoles });
             setHasUnsavedUserChanges(false);
         } catch (error) {
             console.error("Failed to save roles:", error);
-            setTempRoles(selectedUser.roles || []);
+            setTempRoles(selectedUser.Roles || []);
         } finally {
             setLoading(false);
         }
@@ -380,12 +380,12 @@ const AdminDashboard: React.FC = () => {
             const supervisorIds = tempSupervisors.map(s => s.userID);
             const managerIds = tempManagers.map(m => m.userID);
 
-            const isManager = selectedUser.roles?.some(r => r.name === "Manager");
+            const isManager = selectedUser.Roles?.some(r => r.name === "Manager");
             if (isManager && supervisorIds.length > 0) {
                 await assignSupervisorsToManager(selectedUser.userID, supervisorIds, token!);
             }
 
-            const isSupervisor = selectedUser.roles?.some(r => r.name === "Supervisor");
+            const isSupervisor = selectedUser.Roles?.some(r => r.name === "Supervisor");
             if (isSupervisor && managerIds.length > 0) {
                 await Promise.all(managerIds.map(managerId =>
                     assignSupervisorsToManager(managerId, [selectedUser.userID], token!)
@@ -430,7 +430,7 @@ const AdminDashboard: React.FC = () => {
                 });
                 if (filteredRoles.length > 0) {
                     await assignRolesToUser(createdUser.userID, filteredRoles, token!);
-                    createdUser.roles = await getRolesByUser(createdUser.userID, token!);
+                    createdUser.Roles = await getRolesByUser(createdUser.userID, token!);
                 }
                 if (selectedRolesForNewUser.some(roleID => roles.find(r => r.roleID === roleID)?.name === "Super Admin") && !isSuperAdmin) {
                     alert("Super Admin role assignment skipped: Only Super Admins can assign this role.");
@@ -662,7 +662,7 @@ const AdminDashboard: React.FC = () => {
                                                 <div className="table-cell">{`${user.firstname} ${user.lastname}`}</div>
                                                 <div className="table-cell">{user.email}</div>
                                                 <div className="table-cell">{user.phone}</div>
-                                                <div className="table-cell">{user.roles?.[0]?.name || "No Role"}</div>
+                                                <div className="table-cell">{user.Roles?.[0]?.name || "No Role"}</div>
                                             </div>
                                         ))}
                                     </div>
@@ -727,7 +727,7 @@ const AdminDashboard: React.FC = () => {
 
                             {(() => {
                                 const premadeRoles = filteredRoles.filter(role =>
-                                    ['Manager', 'Supervisor', 'Purchase', 'Regional Manager', 'Stock Manager'].includes(role.name)
+                                    ['Manager', 'Supervisor', 'Purchase Team', 'Regional Manager', 'Stock Manager'].includes(role.name)
                                 );
                                 if (premadeRoles.length > 0) {
                                     return (
@@ -755,7 +755,7 @@ const AdminDashboard: React.FC = () => {
 
                             {(() => {
                                 const customRoles = filteredRoles.filter(role =>
-                                    !['Admin', 'Super Admin', 'Manager', 'Supervisor', 'Purchase', 'Regional Manager', 'Stock Manager'].includes(role.name)
+                                    !['Admin', 'Super Admin', 'Manager', 'Supervisor', 'Purchase Team', 'Regional Manager', 'Stock Manager'].includes(role.name)
                                 );
                                 if (customRoles.length > 0) {
                                     return (
@@ -1338,7 +1338,7 @@ const AdminDashboard: React.FC = () => {
                                 )}
 
                                 {/* Supervisor/Manager Assignments */}
-                                {(selectedUser.roles?.some(r => r.name === "Manager") || selectedUser.roles?.some(r => r.name === "Supervisor")) && canAssignSupervisors && (
+                                {(selectedUser.Roles?.some(r => r.name === "Manager") || selectedUser.Roles?.some(r => r.name === "Supervisor")) && canAssignSupervisors && (
                                     <div className="dropdown-unit">
                                         <div className="dropdown-bar" onClick={() => toggleSection("assignments")}>
                                             <h3>Assignments</h3>
@@ -1353,7 +1353,7 @@ const AdminDashboard: React.FC = () => {
                                                         </button>
                                                     )}
                                                 </div>
-                                                {selectedUser.roles?.some(r => r.name === "Manager") && (
+                                                {selectedUser.Roles?.some(r => r.name === "Manager") && (
                                                     <div className="assignment-list">
                                                         <h4>Supervisors Assigned to This Manager</h4>
                                                         <div className="search-container assignment-search">
@@ -1398,7 +1398,7 @@ const AdminDashboard: React.FC = () => {
                                                         </div>
                                                     </div>
                                                 )}
-                                                {selectedUser.roles?.some(r => r.name === "Supervisor") && (
+                                                {selectedUser.Roles?.some(r => r.name === "Supervisor") && (
                                                     <div className="assignment-list">
                                                         <h4>Managers Assigned to This Supervisor</h4>
                                                         <div className="search-container assignment-search">

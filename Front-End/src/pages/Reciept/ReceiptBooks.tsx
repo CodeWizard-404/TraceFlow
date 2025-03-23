@@ -1,15 +1,18 @@
 import React, { useState, useEffect, useMemo } from "react";
 import { useNavigate } from "react-router-dom";
-import { FaSearch, FaSort, FaPlus, FaEdit, FaTrash, FaHistory } from "react-icons/fa";
+import { FaSearch, FaSort, FaPlus, FaEdit, FaTrash, FaHistory, FaExchangeAlt } from "react-icons/fa";
 import { useAuth } from "../../context/AuthContext";
 import { getAllReceiptBooks, createReceiptBook, updateReceiptBook, deleteReceiptBook } from "../../apis/receiptBookAPI";
 import "./ReceiptBooks.css";
 import ReceiptBook from "../../models/ReceiptBook";
+import { getUserById } from "../../apis/userAPI";
+import { getAgentById } from "../../apis/agentAPI";
 
 const ITEMS_PER_PAGE = 10;
 
 const ReceiptBooks: React.FC = () => {
-    const { token, effectivePermissions } = useAuth();
+    const { token, effectivePermissions, userRoles } = useAuth();
+    const navigate = useNavigate();
     const [receiptBooks, setReceiptBooks] = useState<ReceiptBook[]>([]);
     const [view, setView] = useState<"list" | "create" | "edit">("list");
     const [searchQuery, setSearchQuery] = useState("");
@@ -21,28 +24,94 @@ const ReceiptBooks: React.FC = () => {
     const [editReceiptBook, setEditReceiptBook] = useState<ReceiptBook | null>(null);
     const [loading, setLoading] = useState(false);
     const [currentPage, setCurrentPage] = useState(1);
-    const navigate = useNavigate();
+    const [holdersMap, setHoldersMap] = useState<Map<string, string>>(new Map());
+
+    const currentUserID = token ? JSON.parse(atob(token.split('.')[1])).sub : "";
+    const userRole = userRoles?.[0]?.name || "";
+
+    // Permissions object based on effectivePermissions
     const permissions = {
         canView: effectivePermissions?.some(p => p.name === "access_receipt_books"),
+        canViewDetails: effectivePermissions?.some(p => p.name === "access_receipt_book_details"),
+        canViewHistory: effectivePermissions?.some(p => p.name === "access_receipt_book_history"),
         canCreate: effectivePermissions?.some(p => p.name === "create_receipt_books"),
         canUpdate: effectivePermissions?.some(p => p.name === "update_receipt_books"),
         canDelete: effectivePermissions?.some(p => p.name === "delete_receipt_books"),
+        canTransfer: effectivePermissions?.some(p => p.name === "transfer_receipt_books"),
     };
 
+    // Fetch receipt books with role-based filtering
     useEffect(() => {
         const fetchData = async () => {
+            if (!token || !permissions.canView) {
+                setLoading(false);
+                return;
+            }
             setLoading(true);
             try {
-                const receiptsData = await getAllReceiptBooks(token!);
-                setReceiptBooks(receiptsData);
-            } catch {
-                console.error("Failed to fetch receipt books:", Error);
+                const receiptsData = await getAllReceiptBooks(token);
+                let filteredBooks = receiptsData;
+
+                // Apply role-specific filters based on permissions and role context
+                if (userRole === "Supervisor") {
+                    filteredBooks = receiptsData.filter(r => r.currentHolderID === currentUserID);
+                } else if (userRole === "Stock Manager") {
+                    filteredBooks = receiptsData.filter(r => 
+                        !["In Stock", "With Stock Manager", "Archived"].includes(r.status)
+                    );
+                }
+
+                setReceiptBooks(filteredBooks);
+            } catch (error) {
+                console.error("Failed to fetch receipt books:", error);
             } finally {
                 setLoading(false);
             }
         };
-        if (token && permissions.canView) fetchData();
-    }, [token, permissions.canView]);
+        fetchData();
+    }, [token, permissions.canView, userRole, currentUserID]);
+
+    // Fetch holder names (users and agents)
+    useEffect(() => {
+        const fetchHolders = async () => {
+            const uniqueUserIDs = Array.from(new Set(receiptBooks.map(r => r.currentHolderID).filter(id => id)));
+            const uniqueAgentIDs = Array.from(new Set(receiptBooks.map(r => r.agentID).filter(id => id)));
+            let hasChanges = false;
+            const newHoldersMap = new Map<string, string>(holdersMap);
+
+            for (const userID of uniqueUserIDs) {
+                if (userID && !newHoldersMap.has(userID)) {
+                    try {
+                        const userData = await getUserById(userID, token!);
+                        newHoldersMap.set(userID, `${userData.firstname} ${userData.lastname}`);
+                        hasChanges = true;
+                    } catch (error) {
+                        console.error(`Failed to fetch user ${userID}:`, error);
+                        newHoldersMap.set(userID, "Unknown User");
+                        hasChanges = true;
+                    }
+                }
+            }
+
+            for (const agentID of uniqueAgentIDs) {
+                if (agentID && !newHoldersMap.has(agentID)) {
+                    try {
+                        const agentData = await getAgentById(agentID, token!);
+                        newHoldersMap.set(agentID, `${agentData.name} ${agentData.lastname}`);
+                        hasChanges = true;
+                    } catch (error) {
+                        console.error(`Failed to fetch agent ${agentID}:`, error);
+                        newHoldersMap.set(agentID, "Unknown Agent");
+                        hasChanges = true;
+                    }
+                }
+            }
+
+            if (hasChanges) setHoldersMap(newHoldersMap);
+        };
+
+        if (token && receiptBooks.length > 0) fetchHolders();
+    }, [token, receiptBooks, holdersMap]);
 
     const uniqueTypes = useMemo(() => Array.from(new Set(receiptBooks.map(r => r.type))), [receiptBooks]);
     const uniqueStatuses = useMemo(() => Array.from(new Set(receiptBooks.map(r => r.status))), [receiptBooks]);
@@ -103,11 +172,18 @@ const ReceiptBooks: React.FC = () => {
             await deleteReceiptBook(bookID, token!);
             setReceiptBooks(receiptBooks.filter(r => r.bookID !== bookID));
         } catch (error) {
-            alert(`Failed to delete receipt book :${error}`);
+            alert(`Failed to delete receipt book: ${error}`);
+        }
+    };
+
+    const handleTransfer = () => {
+        if (permissions.canTransfer) {
+            navigate("/transfer-receipt-books");
         }
     };
 
     if (loading) return <div className="loading-text">Loading...</div>;
+    if (!permissions.canView) return <div className="error-text">Access Denied: You lack permission to view receipt books.</div>;
 
     return (
         <div className="receipt-books">
@@ -162,10 +238,15 @@ const ReceiptBooks: React.FC = () => {
                             <FaPlus /> New Receipt
                         </button>
                     )}
+                    {permissions.canTransfer && (
+                        <button className="action-button" onClick={handleTransfer}>
+                            <FaExchangeAlt /> Transfer Books
+                        </button>
+                    )}
                 </aside>
 
                 <main className="main-content">
-                    {view === "list" && permissions.canView && (
+                    {view === "list" && (
                         <div className="table-card">
                             <h2>Receipts</h2>
                             <div className="table-container">
@@ -185,23 +266,51 @@ const ReceiptBooks: React.FC = () => {
                                             <div className="table-cell">{receipt.number}</div>
                                             <div className="table-cell">{receipt.type}</div>
                                             <div className="table-cell">{receipt.status}</div>
-                                            <div className="table-cell">{receipt.currentHolderID || "N/A"}</div>
+                                            <div className="table-cell">
+                                                {receipt.agentID
+                                                    ? holdersMap.get(receipt.agentID) || "Loading..."
+                                                    : receipt.currentHolderID
+                                                    ? holdersMap.get(receipt.currentHolderID) || "Loading..."
+                                                    : "N/A"}
+                                            </div>
                                             <div className="table-cell">
                                                 <img src={receipt.qrCode} alt="QR Code" style={{ width: "50px" }} />
                                             </div>
                                             <div className="table-cell actions">
-                                                {permissions.canUpdate && <button onClick={() => { setEditReceiptBook(receipt); setView("edit"); }}><FaEdit /></button>}
-                                                {permissions.canDelete && <button onClick={() => handleDelete(receipt.bookID)}><FaTrash /></button>}
-                                                <button onClick={() => navigate(`/receipt-book/${receipt.bookID}/history`)}><FaHistory /></button>
+                                                {permissions.canUpdate && (
+                                                    <button onClick={() => { setEditReceiptBook(receipt); setView("edit"); }}>
+                                                        <FaEdit />
+                                                    </button>
+                                                )}
+                                                {permissions.canDelete && (
+                                                    <button onClick={() => handleDelete(receipt.bookID)}>
+                                                        <FaTrash />
+                                                    </button>
+                                                )}
+                                                {permissions.canViewHistory && (
+                                                    <button onClick={() => navigate(`/receipt-book/${receipt.bookID}/history`)}>
+                                                        <FaHistory />
+                                                    </button>
+                                                )}
                                             </div>
                                         </div>
                                     ))}
                                 </div>
                             </div>
                             <div className="pagination">
-                                <button onClick={() => setCurrentPage(p => Math.max(1, p - 1))} disabled={currentPage === 1}>Previous</button>
+                                <button
+                                    onClick={() => setCurrentPage(p => Math.max(1, p - 1))}
+                                    disabled={currentPage === 1}
+                                >
+                                    Previous
+                                </button>
                                 <span>Page {currentPage} of {Math.ceil(filteredReceiptBooks.length / ITEMS_PER_PAGE)}</span>
-                                <button onClick={() => setCurrentPage(p => p + 1)} disabled={currentPage >= Math.ceil(filteredReceiptBooks.length / ITEMS_PER_PAGE)}>Next</button>
+                                <button
+                                    onClick={() => setCurrentPage(p => p + 1)}
+                                    disabled={currentPage >= Math.ceil(filteredReceiptBooks.length / ITEMS_PER_PAGE)}
+                                >
+                                    Next
+                                </button>
                             </div>
                         </div>
                     )}
@@ -211,11 +320,17 @@ const ReceiptBooks: React.FC = () => {
                             <h3>New Receipt</h3>
                             <div className="form-group">
                                 <label>Number</label>
-                                <input value={newReceiptBook.number || ""} onChange={(e) => setNewReceiptBook({ ...newReceiptBook, number: e.target.value })} />
+                                <input
+                                    value={newReceiptBook.number || ""}
+                                    onChange={(e: React.ChangeEvent<HTMLInputElement>) => setNewReceiptBook({ ...newReceiptBook, number: e.target.value })}
+                                />
                             </div>
                             <div className="form-group">
                                 <label>Type</label>
-                                <input value={newReceiptBook.type || ""} onChange={(e) => setNewReceiptBook({ ...newReceiptBook, type: e.target.value })} />
+                                <input
+                                    value={newReceiptBook.type || ""}
+                                    onChange={(e) => setNewReceiptBook({ ...newReceiptBook, type: e.target.value })}
+                                />
                             </div>
                             <button className="action-button" onClick={handleCreate}>Create</button>
                             <button className="back-button" onClick={() => setView("list")}>Cancel</button>
@@ -227,11 +342,17 @@ const ReceiptBooks: React.FC = () => {
                             <h3>Edit Receipt #{editReceiptBook.number}</h3>
                             <div className="form-group">
                                 <label>Number</label>
-                                <input value={editReceiptBook.number} onChange={(e) => setEditReceiptBook({ ...editReceiptBook, number: e.target.value })} />
+                                <input
+                                    value={editReceiptBook.number}
+                                    onChange={(e) => setEditReceiptBook({ ...editReceiptBook, number: e.target.value })}
+                                />
                             </div>
                             <div className="form-group">
                                 <label>Type</label>
-                                <input value={editReceiptBook.type} onChange={(e) => setEditReceiptBook({ ...editReceiptBook, type: e.target.value })} />
+                                <input
+                                    value={editReceiptBook.type}
+                                    onChange={(e) => setEditReceiptBook({ ...editReceiptBook, type: e.target.value })}
+                                />
                             </div>
                             <button className="action-button" onClick={handleUpdate}>Save</button>
                             <button className="back-button" onClick={() => setView("list")}>Cancel</button>

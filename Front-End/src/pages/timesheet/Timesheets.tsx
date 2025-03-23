@@ -59,6 +59,9 @@ const Timesheets: React.FC = () => {
   const canReadSupervisors = useMemo(() => 
     effectivePermissions?.some(p => p.name === "read_supervisors"), [effectivePermissions]
   );
+  const canAccessReceiptBooks = useMemo(() => 
+    effectivePermissions?.some(p => p.name === "access_receipt_books"), [effectivePermissions]
+  );
 
   // Check if user is Super Admin
   const isSuperAdmin = useMemo(() => 
@@ -338,41 +341,47 @@ const Timesheets: React.FC = () => {
 
   return (
 <div className="timesheets-container">
-  <header className="timesheets-header">
-    <div className="view-toggle">
-      {["year", "month", "week", "day"].map((mode) => (
-        <button
-          key={mode}
-          className={`toggle-btn ${viewMode === mode ? "active" : ""}`}
-          onClick={() => setViewMode(mode as ViewMode)}
-        >
-          {mode.charAt(0).toUpperCase() + mode.slice(1)}
-        </button>
-      ))}
-    </div>
-    <div className="year-navigation">
-      <button className="nav-btn" onClick={() => setCurrentYear((prev) => prev - 1)}>
-        <span>←</span>
+<header className="timesheets-header">
+  <div className="view-toggle">
+    {["year", "month", "week", "day"].map((mode) => (
+      <button
+        key={mode}
+        className={`toggle-btn ${viewMode === mode ? "active" : ""}`}
+        onClick={() => setViewMode(mode as ViewMode)}
+      >
+        {mode.charAt(0).toUpperCase() + mode.slice(1)}
       </button>
-      <h1>{currentYear}</h1>
-      <button className="nav-btn" onClick={() => setCurrentYear((prev) => prev + 1)}>
-        <span>→</span>
+    ))}
+  </div>
+  <div className="year-navigation">
+    <button className="nav-btn" onClick={() => setCurrentYear((prev) => prev - 1)}>
+      <span>←</span>
+    </button>
+    <h1>{currentYear}</h1>
+    <button className="nav-btn" onClick={() => setCurrentYear((prev) => prev + 1)}>
+      <span>→</span>
+    </button>
+  </div>
+  <div className="action-buttons">
+    {canCreateTimesheets && (
+      <button
+        className="create-btn"
+        onClick={() => navigate("/timesheet-form", { state: { year: currentYear } })}
+      >
+        Schedule Visit
       </button>
-    </div>
-    <div className="action-buttons">
-      {canCreateTimesheets && (
-        <button
-          className="create-btn"
-          onClick={() => navigate("/timesheet-form", { state: { year: currentYear } })}
-        >
-          Schedule Visit
-        </button>
-      )}
-      <button className="current-btn" onClick={scrollToCurrent}>
-        Current {viewMode.charAt(0).toUpperCase() + viewMode.slice(1)}
+    )}
+    {canAccessReceiptBooks && (
+      <button className="receipt-books-btn" onClick={() => navigate("/receipt-books")}>
+        Receipt Books
       </button>
-    </div>
-  </header>
+    )}
+    <button className="current-btn" onClick={scrollToCurrent}>
+      Current {viewMode.charAt(0).toUpperCase() + viewMode.slice(1)}
+    </button>
+
+  </div>
+</header>
 
   {(canReadUsers || canReadSupervisors) && (
     <div className="filter-bubble">

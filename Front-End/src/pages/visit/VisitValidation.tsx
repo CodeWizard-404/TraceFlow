@@ -168,22 +168,36 @@ const VisitValidation: React.FC = () => {
                     {checklist.length > 0 ? (
                         <>
                             <ul className="checklist">
-                                {checklist.map((item) => (
-                                    <li key={item.id} className={item.checked ? "checked" : ""}>
-                                        <label className="custom-checkbox-label">
-                                            <input
-                                                type="checkbox"
-                                                checked={item.checked}
-                                                onChange={() => handleChecklistChange(item.id)}
-                                                className="custom-checkbox-input"
-                                            />
-                                            <span className="custom-checkbox">
-                                                <FaCheck className="check-icon" />
-                                            </span>
-                                            <span className="checklist-text">{item.item}</span>
-                                        </label>
-                                    </li>
-                                ))}
+                                {checklist.map((item) => {
+                                    const isTransferItem = item.item.toLowerCase() === "transfer a receipt book";
+                                    return (
+                                        <li key={item.id} className={item.checked ? "checked" : ""}>
+                                            {isTransferItem ? (
+                                                <span
+                                                    className="checklist-text"
+                                                    onClick={() => navigate("/transfer-receipt-books", {
+                                                        state: { agentID: visit?.agentID, forceAgent: true }
+                                                    })}
+                                                >
+                                                    {item.item}
+                                                </span>
+                                            ) : (
+                                                <label className="custom-checkbox-label">
+                                                    <input
+                                                        type="checkbox"
+                                                        checked={item.checked}
+                                                        onChange={() => handleChecklistChange(item.id)}
+                                                        className="custom-checkbox-input"
+                                                    />
+                                                    <span className="custom-checkbox">
+                                                        <FaCheck className="check-icon" />
+                                                    </span>
+                                                    <span className="checklist-text">{item.item}</span>
+                                                </label>
+                                            )}
+                                        </li>
+                                    );
+                                })}
                             </ul>
                             <div className="progress-bar">
                                 <div
@@ -201,7 +215,7 @@ const VisitValidation: React.FC = () => {
                     <button
                         className={`validate-btn ${isSubmitting ? "submitting" : ""}`}
                         onClick={handleValidate}
-                        disabled={isSubmitting || checklist.every((item) => !item.checked) }
+                        disabled={isSubmitting || checklist.every((item) => !item.checked)}
                     >
                         <FaCheck /> {isSubmitting ? "Validating..." : "Validate Visit"}
                     </button>

@@ -19,8 +19,6 @@ import AccessDenied from "./pages/Error/AccessDenied";
 import ReceiptBooks from "./pages/Reciept/ReceiptBooks";
 
 import TransferReceiptBook from "./pages/Reciept/TransferReceiptBook";
-import StubCollection from "./pages/Reciept/StubCollection";
-import ArchivedReceiptBooks from "./pages/Reciept/ArchivedReceiptBooks";
 import ReceiptBookHistory from "./pages/Reciept/ReceiptBookHistory";
 
 
@@ -150,7 +148,9 @@ const AppContent: React.FC = () => {
                     <Route 
                         path="/receipt-book/:bookID/history" 
                         element={
-                        <ReceiptBookHistory />
+                            <ProtectedRoute requiredPermissions={["access_receipt_book_history"]}>
+                                <ReceiptBookHistory />
+                            </ProtectedRoute>
                         } 
                     />
                     <Route
@@ -161,22 +161,7 @@ const AppContent: React.FC = () => {
                             </ProtectedRoute>
                         }
                     />
-                    <Route
-                    path="/receipt-book/:bookID/stub-collection"
-                    element={
-                        <ProtectedRoute requiredPermissions={["collect_receipt_stubs"]}>
-                        <StubCollection />
-                        </ProtectedRoute>
-                    }
-                    />
-                    <Route
-                    path="/receipt-books/archived"
-                    element={
-                        <ProtectedRoute requiredPermissions={["archive_receipt_stubs"]}>
-                        <ArchivedReceiptBooks />
-                        </ProtectedRoute>
-                    }
-                    />
+
                     <Route path="*" element={<PageNotFound />} />
                 </Routes>
             </main>
