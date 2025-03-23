@@ -23,6 +23,7 @@ const roleRoutes = require('./routes/roleRoutes');
 const timesheetRoutes = require('./routes/timesheetRoutes');
 const userRoutes = require('./routes/userRoutes');
 const visitRoutes = require('./routes/visitRoutes');
+const configRoutes = require('./routes/configRoutes');
 
 require('dotenv').config();
 
@@ -55,6 +56,7 @@ app.use((req, res, next) => {
     next();
 });
 
+app.use('/api/config', configRoutes);
 app.use('/api/visits', visitRoutes);
 app.use('/api/checklists', checklistRoutes);
 app.use('/api/reasons', reasonRoutes);

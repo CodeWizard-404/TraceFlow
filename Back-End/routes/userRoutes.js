@@ -11,6 +11,8 @@ router.get('/:userID', authenticateJWT, requirePermission('read_user_details'), 
 router.put('/:userID', authenticateJWT, requirePermission('update_users'), UserController.updateUser);
 router.delete('/:userID', authenticateJWT, requirePermission('delete_users'), UserController.deleteUser);
 
+router.get('/me/roles', authenticateJWT, UserController.getRolesByUser);
+
 router.post('/assign-supervisors', authenticateJWT, requirePermission('assign_supervisors'), UserController.assignSupervisorsToManager);
 router.get('/:userID/supervisors', authenticateJWT, requirePermission('read_supervisors'), UserController.getSupervisorsByUser);
 router.get('/:userID/managers', authenticateJWT, requirePermission('read_managers'), UserController.getManagersByUser);

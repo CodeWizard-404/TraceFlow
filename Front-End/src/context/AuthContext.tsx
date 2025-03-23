@@ -28,6 +28,19 @@ export const AuthProvider: React.FC<{ children: ReactNode }> = ({ children }) =>
         const storedUser = localStorage.getItem("user");
         return storedUser ? JSON.parse(storedUser) : null;
     });
+    const refreshUserRoles = async (token: string) => {
+        try {
+            const userResponse = await fetch(`${process.env.REACT_APP_BASE_URL}/users/me/roles`, {
+                method: 'GET',
+                headers: { Authorization: `Bearer ${token}` },
+            });
+            if (!userResponse.ok) throw new Error('Failed to fetch user roles');
+            const roles = await userResponse.json();
+            setUserRoles(roles);
+        } catch (error) {
+            console.error('Failed to refresh user roles:', error);
+        }
+    };
     const [token, setToken] = useState<string | null>(() => localStorage.getItem("token"));
     const [userRoles, setUserRoles] = useState<Role[] | null>(null);
     const [effectivePermissions, setEffectivePermissions] = useState<Permission[] | null>(null);
@@ -36,6 +49,12 @@ export const AuthProvider: React.FC<{ children: ReactNode }> = ({ children }) =>
 
     const navigate = useNavigate();
     const location = useLocation();
+
+    useEffect(() => {
+        if (token) {
+            refreshUserRoles(token);
+        }
+    }, [token]);
 
     useEffect(() => {
         setupAxiosInterceptors();

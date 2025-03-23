@@ -5,7 +5,7 @@ const { transporter } = require('../config/smtp');
 
 class ReceiptStubService {
     // Collect stub from agent
-    static async collectStub(bookID, supervisorID) {
+    static async collectStub(bookID) {
         const book = await ReceiptBook.findByPk(bookID, { include: [Agent, ReceiptStub] });
         if (book.status !== 'Assigned to Agent' || !book.agentID) throw new Error('Book not assigned to an agent');
         if (book.ReceiptStub.status !== 'pending') throw new Error('Stub already processed');

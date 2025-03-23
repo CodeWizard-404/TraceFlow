@@ -3,298 +3,815 @@ Generated on: 1742409167.4223557
 ==================================================
 
 ==================================================
-File contents: C:\Users\Kayto\Desktop\IT\Projects\Stage\Stage PFE\TraceFlow\Mobile\lib\models\agent.dart
+File contents: C:\Users\Kayto\Desktop\IT\Projects\Stage\Stage PFE\TraceFlow\Mobile\lib\widgets\qr_scanner_widget.dart
 ==================================================
-// models/agent.dart
-class Agent {
-  final String? agentID;
-  final String? name;
-  final String? lastname;
-  final String? cin;
-  final String? email;
-  final String? phone;
-  final String? wallet;
-  final String? location;
+import 'package:flutter/material.dart';
+import 'package:camera/camera.dart';
+import 'package:flutter/services.dart';
+import 'package:google_mlkit_barcode_scanning/google_mlkit_barcode_scanning.dart';
 
-  Agent({
-    this.agentID,
-    this.name,
-    this.lastname,
-    this.cin,
-    this.email,
-    this.phone,
-    this.wallet,
-    this.location,
-  });
+class QRScannerWidget extends StatefulWidget {
+  const QRScannerWidget({super.key});
 
-  // Convert JSON to Agent object
-  factory Agent.fromJson(Map<String, dynamic> json) {
-    return Agent(
-      agentID: json['agentID'],
-      name: json['name'],
-      lastname: json['lastname'],
-      cin: json['cin'],
-      email: json['email'],
-      phone: json['phone'],
-      wallet: json['wallet'],
-      location: json['location'],
+  @override
+  QRScannerWidgetState createState() => QRScannerWidgetState();
+}
+
+class QRScannerWidgetState extends State<QRScannerWidget> {
+  late CameraController _cameraController;
+  final BarcodeScanner _barcodeScanner = BarcodeScanner(formats: [BarcodeFormat.qrCode]);
+  bool _isInitialized = false;
+  bool _isScanning = false;
+  double _appBarHeight = 0.0; // To store the app bar height for alignment
+
+  @override
+  void initState() {
+    super.initState();
+    _initializeCamera();
+  }
+
+  Future<void> _initializeCamera() async {
+    final cameras = await availableCameras();
+    _cameraController = CameraController(
+      cameras.first,
+      ResolutionPreset.high,
+      enableAudio: false,
+      imageFormatGroup: ImageFormatGroup.yuv420,
+    );
+    await _cameraController.initialize();
+    await _cameraController.lockCaptureOrientation(DeviceOrientation.portraitUp);
+
+    setState(() {
+      _isInitialized = true;
+    });
+  }
+
+  @override
+  void dispose() {
+    _cameraController.dispose();
+    _barcodeScanner.close();
+    super.dispose();
+  }
+
+  Future<void> _scanQRCode() async {
+    if (!_isInitialized || _isScanning) return;
+    setState(() => _isScanning = true);
+    try {
+      final image = await _cameraController.takePicture();
+      final inputImage = InputImage.fromFilePath(image.path);
+      final barcodes = await _barcodeScanner.processImage(inputImage);
+      for (final barcode in barcodes) {
+        if (barcode.rawValue != null) {
+          Navigator.pop(context, barcode.rawValue);
+          return;
+        }
+      }
+      _showSnackBar('No valid QR code detected');
+    } catch (e) {
+      _showSnackBar('Error scanning QR code: $e');
+    } finally {
+      setState(() => _isScanning = false);
+    }
+  }
+
+  void _showSnackBar(String message) {
+    ScaffoldMessenger.of(context).showSnackBar(
+      SnackBar(
+        content: Text(message),
+        backgroundColor: Colors.red.withOpacity(0.9),
+        behavior: SnackBarBehavior.floating,
+        shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(12)),
+        duration: const Duration(seconds: 2),
+      ),
     );
   }
 
-  // Convert Agent object to JSON
-  Map<String, dynamic> toJson() {
-    return {
-      'agentID': agentID,
-      'name': name,
-      'lastname': lastname,
-      'cin': cin,
-      'email': email,
-      'phone': phone,
-      'wallet': wallet,
-      'location': location,
-    };
+  @override
+  Widget build(BuildContext context) {
+    return Scaffold(
+      backgroundColor: Colors.black,
+      body: Stack(
+        children: [
+          // Camera Preview
+          if (_isInitialized)
+            Positioned.fill(
+              child: OverflowBox(
+                maxWidth: double.infinity,
+                maxHeight: double.infinity,
+                child: FittedBox(
+                  fit: BoxFit.cover,
+                  child: SizedBox(
+                    width: _cameraController.value.previewSize?.height,
+                    height: _cameraController.value.previewSize?.width,
+                    child: CameraPreview(_cameraController),
+                  ),
+                ),
+              ),
+            ),
+          // Dark overlay outside QR frame
+          if (_isInitialized)
+            Positioned.fill(
+              child: CustomPaint(
+                painter: QROverlayPainter(appBarHeight: _appBarHeight),
+              ),
+            ),
+          // AppBar and content
+          Column(
+            children: [
+              Container(
+                decoration: const BoxDecoration(
+                  gradient: LinearGradient(
+                    colors: [Color(0xFF4CB1C7), Color(0xFF64C9D1)],
+                    begin: Alignment.topLeft,
+                    end: Alignment.bottomRight,
+                  ),
+                  borderRadius: BorderRadius.only(
+                    bottomLeft: Radius.circular(30),
+                    bottomRight: Radius.circular(30),
+                  ),
+                ),
+                child: SafeArea(
+                  bottom: false,
+                  child: Padding(
+                    padding: const EdgeInsets.all(20),
+                    child: Column(
+                      crossAxisAlignment: CrossAxisAlignment.start,
+                      children: [
+                        Row(
+                          children: [
+                            IconButton(
+                              icon: const Icon(Icons.arrow_back_ios_rounded, color: Colors.white),
+                              onPressed: () => Navigator.of(context).pop(),
+                            ),
+                          ],
+                        ),
+                        const Text(
+                          'QR Scanner',
+                          style: TextStyle(
+                            fontSize: 32,
+                            fontWeight: FontWeight.bold,
+                            color: Colors.white,
+                            letterSpacing: 1.2,
+                            shadows: [Shadow(color: Colors.black45, blurRadius: 4, offset: Offset(0, 2))],
+                          ),
+                        ),
+                        const SizedBox(height: 12),
+                        Text(
+                          'Align the QR code within the frame',
+                          style: TextStyle(
+                            fontSize: 16,
+                            color: Colors.white.withOpacity(0.9),
+                            fontWeight: FontWeight.w500,
+                          ),
+                        ),
+                        const SizedBox(height: 20),
+                      ],
+                    ),
+                  ),
+                ),
+              ),
+              Expanded(
+                child: LayoutBuilder(
+                  builder: (context, constraints) {
+                    // Calculate app bar height after layout
+                    WidgetsBinding.instance.addPostFrameCallback((_) {
+                      final appBarRenderBox = context.findRenderObject() as RenderBox?;
+                      if (appBarRenderBox != null && _appBarHeight != appBarRenderBox.size.height) {
+                        setState(() {
+                          _appBarHeight = appBarRenderBox.size.height + MediaQuery.of(context).padding.top;
+                        });
+                      }
+                    });
+
+                    return Column(
+                      mainAxisAlignment: MainAxisAlignment.center,
+                      children: [
+                        if (!_isInitialized)
+                          const CircularProgressIndicator(
+                            color: Color(0xFF4CB1C7),
+                            strokeWidth: 3,
+                          )
+                        else
+                          Stack(
+                            alignment: Alignment.center,
+                            children: [
+                              SizedBox(
+                                width: 320,
+                                height: 320,
+                                child: Stack(
+                                  children: [
+                                    Positioned(
+                                      top: 0,
+                                      left: 0,
+                                      child: _buildStaticCorner(),
+                                    ),
+                                    Positioned(
+                                      top: 0,
+                                      right: 0,
+                                      child: Transform.rotate(
+                                        angle: 1.5708,
+                                        child: _buildStaticCorner(),
+                                      ),
+                                    ),
+                                    Positioned(
+                                      bottom: 0,
+                                      left: 0,
+                                      child: Transform.rotate(
+                                        angle: -1.5708,
+                                        child: _buildStaticCorner(),
+                                      ),
+                                    ),
+                                    Positioned(
+                                      bottom: 0,
+                                      right: 0,
+                                      child: Transform.rotate(
+                                        angle: 3.1416,
+                                        child: _buildStaticCorner(),
+                                      ),
+                                    ),
+                                  ],
+                                ),
+                              ),
+                              if (_isScanning)
+                                Container(
+                                  width: 70,
+                                  height: 70,
+                                  decoration: BoxDecoration(
+                                    shape: BoxShape.circle,
+                                    gradient: RadialGradient(
+                                      colors: [
+                                        Colors.black.withOpacity(0.6),
+                                        Colors.black.withOpacity(0.3),
+                                      ],
+                                    ),
+                                  ),
+                                  child: const CircularProgressIndicator(
+                                    color: Color(0xFF4CB1C7),
+                                    strokeWidth: 4,
+                                  ),
+                                ),
+                            ],
+                          ),
+                        const SizedBox(height: 48),
+                        GestureDetector(
+                          onTap: _scanQRCode,
+                          child: AnimatedContainer(
+                            duration: const Duration(milliseconds: 300),
+                            curve: Curves.easeInOut,
+                            padding: const EdgeInsets.symmetric(horizontal: 48, vertical: 18),
+                            decoration: BoxDecoration(
+                              gradient: LinearGradient(
+                                colors: _isScanning
+                                    ? [Colors.grey.shade600, Colors.grey.shade700]
+                                    : [const Color(0xFF4CB1C7), const Color(0xFF64C9D1)],
+                                begin: Alignment.topLeft,
+                                end: Alignment.bottomRight,
+                              ),
+                              borderRadius: BorderRadius.circular(40),
+                            ),
+                            child: Row(
+                              mainAxisSize: MainAxisSize.min,
+                              children: [
+                                Icon(
+                                  Icons.qr_code_scanner,
+                                  color: Colors.white.withOpacity(_isScanning ? 0.7 : 1.0),
+                                  size: 28,
+                                ),
+                                const SizedBox(width: 16),
+                                Text(
+                                  _isScanning ? 'Scanning...' : 'Scan QR',
+                                  style: TextStyle(
+                                    fontSize: 20,
+                                    color: Colors.white.withOpacity(_isScanning ? 0.7 : 1.0),
+                                    fontWeight: FontWeight.bold,
+                                    letterSpacing: 1.1,
+                                  ),
+                                ),
+                              ],
+                            ),
+                          ),
+                        ),
+                        const SizedBox(height: 24),
+                        Text(
+                          _isScanning ? 'Analyzing code...' : 'Tap to initiate scan',
+                          style: TextStyle(
+                            fontSize: 16,
+                            color: Colors.white.withOpacity(0.8),
+                            fontWeight: FontWeight.w500,
+                          ),
+                        ),
+                      ],
+                    );
+                  },
+                ),
+              ),
+            ],
+          ),
+        ],
+      ),
+    );
+  }
+
+  Widget _buildStaticCorner() {
+    return Container(
+      width: 40,
+      height: 40,
+      decoration: BoxDecoration(
+        border: Border(
+          top: BorderSide(color: const Color(0xFF4CB1C7), width: 5),
+          left: BorderSide(color: const Color(0xFF4CB1C7), width: 5),
+        ),
+        borderRadius: const BorderRadius.only(
+          topLeft: Radius.circular(12),
+        ),
+      ),
+    );
+  }
+}
+
+class QROverlayPainter extends CustomPainter {
+  final double appBarHeight;
+
+  QROverlayPainter({required this.appBarHeight});
+
+  @override
+  void paint(Canvas canvas, Size size) {
+    final paint = Paint()..color = Colors.black.withOpacity(0.85);
+
+    const qrSize = 313.0;
+    // Center the frame in the space below the app bar
+    final availableHeight = size.height - appBarHeight;
+    final qrRect = Rect.fromCenter(
+      center: Offset(size.width / 2, size.height / 1.87),
+      width: qrSize,
+      height: qrSize,
+    );
+
+    final path = Path()
+      ..addRect(Rect.fromLTWH(0, 0, size.width, size.height))
+      ..addRRect(
+        RRect.fromRectAndRadius(
+          qrRect,
+          const Radius.circular(12),
+        ),
+      )
+      ..fillType = PathFillType.evenOdd;
+
+    canvas.drawPath(path, paint);
+
+    final gradientPaint = Paint()
+      ..shader = RadialGradient(
+        center: Alignment.center,
+        radius: qrSize / 2 + 20,
+        colors: [
+          const Color(0xFF4CB1C7).withOpacity(0.1),
+          Colors.transparent,
+        ],
+      ).createShader(qrRect);
+
+    canvas.drawRRect(
+      RRect.fromRectAndRadius(qrRect, const Radius.circular(12)),
+      gradientPaint,
+    );
+  }
+
+  @override
+  bool shouldRepaint(covariant CustomPainter oldDelegate) => false;
+}
+
+==================================================
+File contents: C:\Users\Kayto\Desktop\IT\Projects\Stage\Stage PFE\TraceFlow\Mobile\lib\widgets\Glass_Effect\GlassChip.dart
+==================================================
+import 'package:flutter/material.dart';
+
+class GlassChip extends StatelessWidget {
+  final String label;
+
+  const GlassChip({required this.label, super.key});
+
+  @override
+  Widget build(BuildContext context) {
+    return Container(
+      padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 6),
+      decoration: BoxDecoration(
+        borderRadius: BorderRadius.circular(16),
+        gradient: LinearGradient(
+          colors: [
+            Theme.of(context).colorScheme.primary.withOpacity(0.2),
+            Theme.of(context).colorScheme.secondary.withOpacity(0.2),
+          ],
+          begin: Alignment.topLeft,
+          end: Alignment.bottomRight,
+        ),
+        boxShadow: [
+          BoxShadow(
+            color: Theme.of(context).colorScheme.primary.withOpacity(0.1),
+            blurRadius: 8,
+            offset: const Offset(0, 2),
+          ),
+        ],
+      ),
+      child: Text(
+        label,
+        style: TextStyle(
+          fontSize: 12,
+          color: Theme.of(context).colorScheme.primary, // Use primary color for text
+          fontWeight: FontWeight.w600,
+        ),
+      ),
+    );
   }
 }
 
 ==================================================
-File contents: C:\Users\Kayto\Desktop\IT\Projects\Stage\Stage PFE\TraceFlow\Mobile\lib\models\checklist.dart
+File contents: C:\Users\Kayto\Desktop\IT\Projects\Stage\Stage PFE\TraceFlow\Mobile\lib\widgets\Glass_Effect\GlassContainer.dart
 ==================================================
-import 'package:visit_management/models/visit_checklist.dart';
+import 'package:flutter/material.dart';
 
-class Checklist {
-  final String? checklistID;
-  final String? item;
-  final VisitChecklist? visitChecklist;
+class GlassContainer extends StatelessWidget {
+  final Widget child;
 
-  Checklist({
-    this.checklistID,
-    this.item,
-    this.visitChecklist,
-  });
+  const GlassContainer({required this.child, super.key});
 
-  factory Checklist.fromJson(Map<String, dynamic> json) {
-    return Checklist(
-      checklistID: json['checklistID'],
-      item: json['item'],
-      visitChecklist: json['VisitChecklist'] != null
-          ? VisitChecklist.fromJson(json['VisitChecklist'])
-          : null,
+  @override
+  Widget build(BuildContext context) {
+    return Container(
+      padding: EdgeInsets.symmetric(horizontal: 16, vertical: 12),
+      decoration: BoxDecoration(
+        borderRadius: BorderRadius.circular(20),
+        gradient: LinearGradient(
+          colors: [
+            Theme.of(context).colorScheme.surface.withOpacity(0.7),
+            Theme.of(context).colorScheme.surface.withOpacity(0.4),
+          ],
+          begin: Alignment.topLeft,
+          end: Alignment.bottomRight,
+        ),
+        boxShadow: [
+          BoxShadow(
+            color: Theme.of(context).colorScheme.primary.withOpacity(0.05),
+            blurRadius: 20,
+            offset: Offset(0, 4),
+          ),
+        ],
+        border: Border.all(
+          color: Theme.of(context).colorScheme.onSurface.withOpacity(0.2),
+          width: 1,
+        ),
+      ),
+      child: child,
     );
-  }
-
-  Map<String, dynamic> toJson() {
-    return {
-      'checklistID': checklistID,
-      'item': item,
-      'VisitChecklist': visitChecklist?.toJson(),
-    };
-  }
-}
-
-
-==================================================
-File contents: C:\Users\Kayto\Desktop\IT\Projects\Stage\Stage PFE\TraceFlow\Mobile\lib\models\reason.dart
-==================================================
-import 'package:visit_management/models/visit_reason.dart';
-
-class Reason {
-  final String? reasonID;
-  final String? item;
-  final VisitReason? visitReason;
-
-  Reason({
-    this.reasonID,
-    this.item,
-    this.visitReason,
-  });
-
-  factory Reason.fromJson(Map<String, dynamic> json) {
-    return Reason(
-      reasonID: json['reasonID'],
-      item: json['item'],
-      visitReason: json['VisitReasons'] != null
-          ? VisitReason.fromJson(json['VisitReasons'])
-          : null,
-    );
-  }
-
-  Map<String, dynamic> toJson() {
-    return {
-      'reasonID': reasonID,
-      'item': item,
-      'VisitReasons': visitReason?.toJson(),
-    };
   }
 }
 
 ==================================================
-File contents: C:\Users\Kayto\Desktop\IT\Projects\Stage\Stage PFE\TraceFlow\Mobile\lib\models\timesheet.dart
+File contents: C:\Users\Kayto\Desktop\IT\Projects\Stage\Stage PFE\TraceFlow\Mobile\lib\widgets\Glass_Effect\GlassStatusChip.dart
 ==================================================
-import 'package:visit_management/models/visit.dart';
+import 'package:flutter/material.dart';
 
-class Timesheet {
-  final String? timesheetID;
-  final int? weekNumber;
-  final int? year;
-  final String? status;
-  final String? supervisorID;
-  final List<Visit>? visits;
+class GlassStatusChip extends StatelessWidget {
+  final String status;
+  final Color? color;
 
-  Timesheet({
-    this.timesheetID,
-    this.weekNumber,
-    this.year,
-    this.status,
-    this.supervisorID,
-    this.visits,
-  });
+  const GlassStatusChip({required this.status, this.color, super.key});
 
-  factory Timesheet.fromJson(Map<String, dynamic> json) {
-    return Timesheet(
-      timesheetID: json['timesheetID'],
-      weekNumber: json['weekNumber'],
-      year: json['year'],
-      status: json['status'],
-      supervisorID: json['supervisorID'],
-      visits: (json['Visits'] as List?)
-          ?.map((e) => Visit.fromJson(e))
-          .toList(),
+  @override
+  Widget build(BuildContext context) {
+    final chipColor = color ?? Theme.of(context).colorScheme.onSurface.withOpacity(0.6); // Fallback to onSurface
+
+    return Container(
+      padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 6),
+      decoration: BoxDecoration(
+        borderRadius: BorderRadius.circular(16),
+        gradient: LinearGradient(
+          colors: [
+            chipColor.withOpacity(0.2),
+            chipColor.withOpacity(0.1),
+          ],
+          begin: Alignment.topLeft,
+          end: Alignment.bottomRight,
+        ),
+        boxShadow: [
+          BoxShadow(
+            color: chipColor.withOpacity(0.2),
+            blurRadius: 8,
+            offset: const Offset(0, 2),
+          ),
+        ],
+      ),
+      child: Text(
+        status,
+        style: TextStyle(
+          fontSize: 12,
+          color: chipColor, // Use the provided or fallback color
+          fontWeight: FontWeight.bold,
+        ),
+      ),
     );
-  }
-
-  Map<String, dynamic> toJson() {
-    return {
-      'timesheetID': timesheetID,
-      'weekNumber': weekNumber,
-      'year': year,
-      'status': status,
-      'supervisorID': supervisorID,
-      'Visits': visits?.map((e) => e.toJson()).toList(),
-    };
   }
 }
 
 ==================================================
-File contents: C:\Users\Kayto\Desktop\IT\Projects\Stage\Stage PFE\TraceFlow\Mobile\lib\models\visit.dart
+File contents: C:\Users\Kayto\Desktop\IT\Projects\Stage\Stage PFE\TraceFlow\Mobile\lib\widgets\Timesheet\day_view.dart
 ==================================================
-import 'package:visit_management/models/reason.dart';
-import 'package:visit_management/models/checklist.dart';
+import 'package:flutter/material.dart';
+import 'package:provider/provider.dart';
+import '../../models/timesheet.dart';
+import '../../models/visit.dart';
+import '../../providers/timesheet_provider.dart';
+import '../Visit/visit_item.dart';
 
-class Visit {
-  final String? visitID;
-  final DateTime? date;
-  final String? time;
-  final String? location;
-  final int? duration;
-  final List<Checklist>? checklists;
-  final List<Reason>? reasons;
-  final String? agentID;
-  final String? timesheetID;
-  final String? status;
+class DayView extends StatelessWidget {
+  final DateTime day;
 
-  Visit({
-    this.visitID,
-    this.date,
-    this.time,
-    this.location,
-    this.duration,
-    this.checklists,
-    this.reasons,
-    this.agentID,
-    this.timesheetID,
-    this.status,
-  });
+  const DayView(this.day, {super.key});
 
-  factory Visit.fromJson(Map<String, dynamic> json) {
-    return Visit(
-      visitID: json['visitID'],
-      date: json['date'] != null ? DateTime.parse(json['date']) : null,
-      time: json['time'],
-      location: json['location'],
-      duration: json['duration'],
-      checklists: (json['Checklists'] as List?)
-          ?.map((e) => Checklist.fromJson(e))
-          .toList(),
-      reasons: (json['Reasons'] as List?)
-          ?.map((e) => Reason.fromJson(e))
-          .toList(),
-      agentID: json['agentID'],
-      timesheetID: json['timesheetID'],
-      status: json['status'],
-    );
+  List<Visit> getVisitsForDay(DateTime day, List<Timesheet> timesheets) {
+    final localDayStart = DateTime(day.year, day.month, day.day);
+    final allVisits = timesheets
+        .expand((timesheet) => timesheet.visits ?? [])
+        .where((visit) {
+      final visitDate = visit.date != null
+          ? DateTime(
+        visit.date!.toLocal().year,
+        visit.date!.toLocal().month,
+        visit.date!.toLocal().day,
+      )
+          : null;
+      return visitDate != null && visitDate.isAtSameMomentAs(localDayStart);
+    })
+        .toList()
+        .cast<Visit>();
+
+    allVisits.sort((a, b) {
+      if (a.time == null && b.time == null) return 0;
+      if (a.time == null) return 1;
+      if (b.time == null) return -1;
+      return a.time!.compareTo(b.time!);
+    });
+
+    return allVisits;
   }
 
-  Map<String, dynamic> toJson() {
-    return {
-      'visitID': visitID,
-      'date': date?.toIso8601String(),
-      'time': time,
-      'location': location,
-      'duration': duration,
-      'Checklists': checklists?.map((e) => e.toJson()).toList(),
-      'Reasons': reasons?.map((e) => e.toJson()).toList(),
-      'agentID': agentID,
-      'timesheetID': timesheetID,
-      'status': status,
-    };
+  @override
+  Widget build(BuildContext context) {
+    return Consumer<TimesheetProvider>(
+      builder: (context, provider, child) {
+        final visits = getVisitsForDay(day, provider.timesheets);
+        return SingleChildScrollView(
+          child: Padding(
+            padding: const EdgeInsets.symmetric(vertical: 16),
+            child: Column(
+              crossAxisAlignment: CrossAxisAlignment.start,
+              children: [
+                if (visits.isEmpty)
+                  Padding(
+                    padding: const EdgeInsets.symmetric(vertical: 16),
+                    child: Row(
+                      mainAxisAlignment: MainAxisAlignment.center,
+                      children: [
+                        Container(
+                          padding: const EdgeInsets.all(8),
+                          decoration: BoxDecoration(
+                            shape: BoxShape.circle,
+                            color: Theme.of(context).colorScheme.primary.withOpacity(0.1),
+                          ),
+                          child: Icon(
+                            Icons.event_busy,
+                            size: 20,
+                            color: Theme.of(context).colorScheme.primary,
+                          ),
+                        ),
+                        SizedBox(width: 8),
+                        Text(
+                          'No visits scheduled',
+                          style: Theme.of(context).textTheme.bodyMedium?.copyWith(
+                            color: Theme.of(context).colorScheme.onSurface.withOpacity(0.6),
+                          ),
+                        ),
+                      ],
+                    ),
+                  )
+                else
+                  ...visits.map((visit) => VisitItem(visit)).toList(),
+              ],
+            ),
+          ),
+        );
+      },
+    );
   }
 }
 
 ==================================================
-File contents: C:\Users\Kayto\Desktop\IT\Projects\Stage\Stage PFE\TraceFlow\Mobile\lib\models\visit_checklist.dart
+File contents: C:\Users\Kayto\Desktop\IT\Projects\Stage\Stage PFE\TraceFlow\Mobile\lib\widgets\Timesheet\week_view.dart
 ==================================================
-class VisitChecklist {
-  final bool? checked;
-  final String? visitID;
-  final String? checklistID;
+import 'package:flutter/material.dart';
+import 'package:intl/intl.dart';
+import '../Glass_Effect/GlassChip.dart';
+import 'day_view.dart';
 
-  VisitChecklist({
-    this.checked,
-    this.visitID,
-    this.checklistID,
-  });
+class WeekView extends StatelessWidget {
+  final DateTime weekStartDate;
 
-  factory VisitChecklist.fromJson(Map<String, dynamic> json) {
-    return VisitChecklist(
-      checked: json['checked'],
-      visitID: json['visitID'],
-      checklistID: json['checklistID'],
-    );
+  const WeekView(this.weekStartDate, {super.key});
+
+  List<DateTime> getWeekDays(DateTime startDate) {
+    DateTime monday = startDate.subtract(Duration(days: startDate.weekday - 1));
+    return List.generate(5, (index) => monday.add(Duration(days: index)));
   }
 
-  Map<String, dynamic> toJson() {
-    return {
-      'checked': checked,
-      'visitID': visitID,
-      'checklistID': checklistID,
-    };
+  @override
+  Widget build(BuildContext context) {
+    final weekDays = getWeekDays(weekStartDate);
+
+    return ListView.builder(
+      padding: EdgeInsets.symmetric(vertical: 8),
+      itemCount: weekDays.length,
+      itemBuilder: (context, index) {
+        final day = weekDays[index];
+        return Padding(
+          padding: EdgeInsets.symmetric(vertical: 8, horizontal: 16),
+          child: AnimatedContainer(
+            duration: Duration(milliseconds: 300),
+            curve: Curves.easeInOut,
+            decoration: BoxDecoration(
+              borderRadius: BorderRadius.circular(20),
+              gradient: LinearGradient(
+                begin: Alignment.topLeft,
+                end: Alignment.bottomRight,
+                colors: [
+                  Theme.of(context).colorScheme.surface.withOpacity(0.9),
+                  Theme.of(context).colorScheme.surface.withOpacity(0.7),
+                ],
+              ),
+              boxShadow: [
+                BoxShadow(
+                  color: Theme.of(context).colorScheme.primary.withOpacity(0.1),
+                  blurRadius: 12,
+                  offset: Offset(0, 4),
+                ),
+              ],
+            ),
+            child: Padding(
+              padding: EdgeInsets.all(16),
+              child: Column(
+                crossAxisAlignment: CrossAxisAlignment.start,
+                children: [
+                  Row(
+                    mainAxisAlignment: MainAxisAlignment.spaceBetween,
+                    children: [
+                      Text(
+                        DateFormat('EEEE').format(day),
+                        style: Theme.of(context).textTheme.headlineSmall,
+                      ),
+                      GlassChip(
+                        label: DateFormat('MMM d').format(day),
+                      ),
+                    ],
+                  ),
+                  SizedBox(height: 16),
+                  DayView(day),
+                ],
+              ),
+            ),
+          ),
+        );
+      },
+    );
   }
 }
 
-
 ==================================================
-File contents: C:\Users\Kayto\Desktop\IT\Projects\Stage\Stage PFE\TraceFlow\Mobile\lib\models\visit_reason.dart
+File contents: C:\Users\Kayto\Desktop\IT\Projects\Stage\Stage PFE\TraceFlow\Mobile\lib\widgets\Visit\visit_item.dart
 ==================================================
-class VisitReason {
-  final String? visitID;
-  final String? reasonID;
+import 'package:flutter/material.dart';
+import '../../models/visit.dart';
+import '../../screens/Visit/visit_details.dart';
+import '../Glass_Effect/GlassChip.dart';
+import '../Glass_Effect/GlassStatusChip.dart';
 
-  VisitReason({
-    this.visitID,
-    this.reasonID,
-  });
+class VisitItem extends StatelessWidget {
+  final Visit visit;
 
-  factory VisitReason.fromJson(Map<String, dynamic> json) {
-    return VisitReason(
-      visitID: json['visitID'],
-      reasonID: json['reasonID'],
+  const VisitItem(this.visit, {super.key});
+
+  @override
+  Widget build(BuildContext context) {
+    String formattedTime = visit.time?.split(':').take(2).join(':') ?? 'N/A';
+
+    return Padding(
+      padding: EdgeInsets.symmetric(vertical: 8, horizontal: 1),
+      child: GestureDetector(
+        onTap: () {
+          Navigator.push(
+            context,
+            MaterialPageRoute(
+              builder: (_) => VisitDetailsScreen(visit: visit),
+            ),
+          );
+        },
+        child: AnimatedContainer(
+          duration: Duration(milliseconds: 300),
+          curve: Curves.easeInOut,
+          decoration: BoxDecoration(
+            borderRadius: BorderRadius.circular(20),
+            gradient: LinearGradient(
+              begin: Alignment.topLeft,
+              end: Alignment.bottomRight,
+              colors: [
+                Theme.of(context).colorScheme.surface.withOpacity(0.9),
+                Theme.of(context).colorScheme.surface.withOpacity(0.7),
+              ],
+            ),
+            border: Border.all(
+              color: Theme.of(context).colorScheme.primary.withOpacity(0.5),
+              width: 1,
+            ),
+            boxShadow: [
+              BoxShadow(
+                color: Theme.of(context).colorScheme.primary.withOpacity(0.1),
+                blurRadius: 12,
+                offset: Offset(0, 4),
+              ),
+            ],
+          ),
+          child: Padding(
+            padding: EdgeInsets.all(16),
+            child: Column(
+              crossAxisAlignment: CrossAxisAlignment.start,
+              children: [
+                Row(
+                  mainAxisAlignment: MainAxisAlignment.spaceBetween,
+                  children: [
+                    Flexible(
+                      child: Text(
+                        'Visit Details',
+                        style: Theme.of(context).textTheme.headlineSmall,
+                      ),
+                    ),
+                    GlassStatusChip(
+                      status: visit.status ?? 'Unknown',
+                      color: _getStatusColor(context, visit.status),
+                    ),
+                  ],
+                ),
+                SizedBox(height: 16),
+                _buildInfoRow(context, Icons.location_on, 'Location: ${visit.location ?? 'N/A'}'),
+                SizedBox(height: 12),
+                _buildInfoRow(context, Icons.access_time, 'Time: $formattedTime'),
+                SizedBox(height: 16),
+                Wrap(
+                  spacing: 8,
+                  runSpacing: 8,
+                  children: (visit.reasons ?? [])
+                      .map((reason) => GlassChip(
+                    label: reason.item ?? 'N/A',
+                  ))
+                      .toList(),
+                ),
+              ],
+            ),
+          ),
+        ),
+      ),
     );
   }
 
-  Map<String, dynamic> toJson() {
-    return {
-      'visitID': visitID,
-      'reasonID': reasonID,
-    };
+  Widget _buildInfoRow(BuildContext context, IconData icon, String text) {
+    return Row(
+      children: [
+        Container(
+          padding: EdgeInsets.all(6),
+          decoration: BoxDecoration(
+            shape: BoxShape.circle,
+            color: Theme.of(context).colorScheme.primary.withOpacity(0.1),
+          ),
+          child: Icon(icon, size: 18, color: Theme.of(context).colorScheme.primary),
+        ),
+        SizedBox(width: 12),
+        Expanded(
+          child: Text(
+            text,
+            style: Theme.of(context).textTheme.bodyMedium,
+          ),
+        ),
+      ],
+    );
+  }
+
+  Color? _getStatusColor(BuildContext context, String? status) {
+    switch (status?.toLowerCase()) {
+      case 'visited':
+        return Colors.lightBlue;
+      case 'pending':
+        return Colors.orange;
+      case 'rejected':
+        return Colors.red;
+      case 'validated':
+        return Colors.pink;
+      default:
+        return Theme.of(context).colorScheme.onSurface.withOpacity(0.6);
+    }
   }
 }

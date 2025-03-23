@@ -12,6 +12,8 @@ const SUPER_ADMIN_CONFIG = {
     roleName: 'Super Admin',
 };
 
+
+
 async function seedSuperAdmin() {
     try {
         await sequelize.sync({ alter: true });
@@ -28,6 +30,8 @@ async function seedSuperAdmin() {
 
         // Assign all permissions to Super Admin role
         const allPermissions = await Permission.findAll();
+        await superAdminRole.setPermissions(allPermissions);
+
         if (allPermissions.length === 0) return;
         const currentPermissions = await superAdminRole.getPermissions();
         const currentPermissionIDs = currentPermissions.map(p => p.permissionID);
@@ -58,6 +62,7 @@ async function seedSuperAdmin() {
         if (!currentRoleIDs.includes(superAdminRole.roleID)) {
             await superAdminUser.addRole(superAdminRole);
         }
+
 
         // Output credentials
         console.log(`\x1b[34m\nSuper Admin Credentials:\n\tEmail:\t\t${SUPER_ADMIN_CONFIG.email}\n\tPassword:\t${SUPER_ADMIN_CONFIG.password}\n\x1b[0m`);

@@ -21,7 +21,7 @@ const TransferReceiptBook: React.FC = () => {
     const { token, userRoles, effectivePermissions } = useAuth();
     const navigate = useNavigate();
     const location = useLocation();
-    const { agentID: preSelectedAgentID, forceAgent } = (location.state as { agentID?: string; forceAgent?: boolean }) || {};
+    const { agentID: preSelectedAgentID, forceAgent, transferType } = (location.state as { agentID?: string; forceAgent?: boolean; transferType?: string }) || {};
 
     const [receiptBooks, setReceiptBooks] = useState<ReceiptBook[]>([]);
     const [selectedBookIDs, setSelectedBookIDs] = useState<string[]>([]);
@@ -68,7 +68,6 @@ const TransferReceiptBook: React.FC = () => {
     const handleScanSuccess = useCallback(async (decodedText: string) => {
         console.log("Scan detected:", decodedText, { isScannerRunning, selectedBookIDs, scannedQR });
 
-        // Removed early exit: if scanner calls this, it’s running
         try {
             const parseTLV = (text: string) => {
                 const numberLength = parseInt(text.slice(2, 4), 10);
@@ -137,7 +136,8 @@ const TransferReceiptBook: React.FC = () => {
     // Pre-select agent and force recipient type
     useEffect(() => {
         if (preSelectedAgentID && forceAgent && !recipientType) {
-            setRecipientType("Agent");
+            const initialRecipientType = transferType || "Agent";
+            setRecipientType(initialRecipientType);
             setRecipientID(preSelectedAgentID);
             setAgentPhone("");
             const fetchAgent = async () => {
@@ -151,7 +151,53 @@ const TransferReceiptBook: React.FC = () => {
             };
             fetchAgent();
         }
-    }, [preSelectedAgentID, forceAgent, token, recipientType]);
+    }, [preSelectedAgentID, forceAgent, token, recipientType, transferType]);
+
+    // Stop scanner function
+    const stopScanner = useCallback(async () => {
+        if (stopLockRef.current || !qrScannerRef.current || !isScannerRunning) return;
+        stopLockRef.current = true;
+        console.log("Stopping QR scanner...");
+        try {
+            await qrScannerRef.current.stop();
+            qrScannerRef.current.clear();
+            qrScannerRef.current = null;
+            setIsScannerRunning(false);
+            scannedQRRef.current.clear();
+            console.log("Scanner stopped successfully.");
+        } catch (err) {
+            console.error("Stop Scanner Error:", err);
+        } finally {
+            stopLockRef.current = false;
+        }
+    }, [isScannerRunning]);
+
+    // Start scanner function
+    const startScanner = useCallback(async () => {
+        if (stopLockRef.current || !qrReaderRef.current || isScannerRunning || isScannerStarting) return;
+        setIsScannerStarting(true);
+        const html5QrCode = qrScannerRef.current || new Html5Qrcode("qr-reader");
+        qrScannerRef.current = html5QrCode;
+        const config = { fps: 10, qrbox: { width: 250, height: 250 } };
+
+        console.log("Starting scanner...");
+        try {
+            await html5QrCode.start(
+                { facingMode: "environment" },
+                config,
+                handleScanSuccess,
+                (err) => console.warn("Scan error:", err)
+            );
+            console.log("QR scanner started successfully.", { auto: !!preSelectedAgentID });
+            setIsScannerRunning(true);
+            setError(null);
+        } catch (err) {
+            setError("Camera access denied or unavailable.");
+            console.error("Scanner Start Error:", err);
+        } finally {
+            setIsScannerStarting(false);
+        }
+    }, [handleScanSuccess, isScannerRunning, isScannerStarting, preSelectedAgentID]);
 
     // Unified scanner control
     useEffect(() => {
@@ -159,82 +205,46 @@ const TransferReceiptBook: React.FC = () => {
             !qrReaderRef.current ||
             !recipientType ||
             !(recipientID || recipientType === "Supplier" || recipientType === "Archive" || recipientType === "Stub Collection") ||
-            transferInitiated ||
-            isScannerRunning ||
-            isScannerStarting
+            transferInitiated
         ) {
             return;
         }
 
-        const html5QrCode = qrScannerRef.current || new Html5Qrcode("qr-reader");
-        qrScannerRef.current = html5QrCode;
-        const config = { fps: 10, qrbox: { width: 250, height: 250 } };
-
-        const startScanner = async () => {
-            if (stopLockRef.current) return;
-            setIsScannerStarting(true);
-            console.log("Starting scanner...");
-            try {
-                await html5QrCode.start(
-                    { facingMode: "environment" },
-                    config,
-                    handleScanSuccess,
-                    (err) => console.warn("Scan error:", err)
-                );
-                console.log("QR scanner started successfully.", { auto: !!preSelectedAgentID });
-                setIsScannerRunning(true);
-                setError(null);
-            } catch (err) {
-                setError("Camera access denied or unavailable.");
-                console.error("Scanner Start Error:", err);
-            } finally {
-                setIsScannerStarting(false);
-            }
-        };
-
         startScanner();
 
         return () => {
-            const stopScanner = async () => {
-                if (stopLockRef.current || !qrScannerRef.current || !isScannerRunning) return;
-                stopLockRef.current = true;
-                console.log("Stopping QR scanner on cleanup...");
-                try {
-                    await qrScannerRef.current.stop();
-                    qrScannerRef.current.clear();
-                    qrScannerRef.current = null;
-                    setIsScannerRunning(false);
-                    scannedQRRef.current.clear();
-                } catch (err) {
-                    console.error("Cleanup Stop Error:", err);
-                } finally {
-                    stopLockRef.current = false;
-                }
-            };
             stopScanner();
         };
-    }, [recipientType, recipientID, transferInitiated, isScannerRunning, preSelectedAgentID, handleScanSuccess, isScannerStarting]);
+    }, [recipientType, recipientID, transferInitiated, startScanner, stopScanner]);
+
+    // Handle page visibility changes
+    useEffect(() => {
+        const handleVisibilityChange = () => {
+            if (document.hidden) {
+                stopScanner();
+            } else if (
+                recipientType &&
+                (recipientID || recipientType === "Supplier" || recipientType === "Archive" || recipientType === "Stub Collection") &&
+                !transferInitiated
+            ) {
+                startScanner();
+            }
+        };
+
+        document.addEventListener("visibilitychange", handleVisibilityChange);
+
+        return () => {
+            document.removeEventListener("visibilitychange", handleVisibilityChange);
+            stopScanner(); // Ensure scanner stops on unmount
+        };
+    }, [recipientType, recipientID, transferInitiated, startScanner, stopScanner]);
 
     // Stop scanner for OTP phase
     useEffect(() => {
-        const stopScannerForOTP = async () => {
-            if (!transferInitiated || stopLockRef.current || !qrScannerRef.current || !isScannerRunning) return;
-            stopLockRef.current = true;
-            console.log("Stopping QR scanner due to OTP stage...");
-            try {
-                await qrScannerRef.current.stop();
-                qrScannerRef.current.clear();
-                qrScannerRef.current = null;
-                setIsScannerRunning(false);
-                scannedQRRef.current.clear();
-            } catch (err) {
-                console.error("OTP Stop Error:", err);
-            } finally {
-                stopLockRef.current = false;
-            }
-        };
-        stopScannerForOTP();
-    }, [isScannerRunning, transferInitiated]);
+        if (transferInitiated && isScannerRunning) {
+            stopScanner();
+        }
+    }, [transferInitiated, isScannerRunning, stopScanner]);
 
     // Fetch initial data
     useEffect(() => {
@@ -446,35 +456,37 @@ const TransferReceiptBook: React.FC = () => {
             <div className="transfer-card">
                 {!transferInitiated ? (
                     <form onSubmit={handleInitiateTransfer}>
-                        <div className="form-group">
-                            <label>Recipient Type</label>
-                            <select
-                                value={recipientType}
-                                onChange={(e) => {
-                                    setRecipientType(e.target.value);
-                                    setRecipientID("");
-                                    setSupplierEmail("");
-                                    setAgentPhone("");
-                                    setSelectedLocation("");
-                                    setSearchQuery("");
-                                    setSelectedBookIDs([]);
-                                    setScannedQR([]);
-                                    scannedQRRef.current.clear();
-                                    setAgents([]);
-                                    setIsScannerRunning(false);
-                                }}
-                                required
-                            >
-                                <option value="">Select Recipient Type</option>
-                                {getRecipientOptions().map((type) => (
-                                    <option key={type} value={type}>{type}</option>
-                                ))}
-                            </select>
-                        </div>
+                        {!forceAgent && (
+                            <div className="form-group">
+                                <label>Recipient Type</label>
+                                <select
+                                    value={recipientType}
+                                    onChange={(e) => {
+                                        setRecipientType(e.target.value);
+                                        setRecipientID("");
+                                        setSupplierEmail("");
+                                        setAgentPhone("");
+                                        setSelectedLocation("");
+                                        setSearchQuery("");
+                                        setSelectedBookIDs([]);
+                                        setScannedQR([]);
+                                        scannedQRRef.current.clear();
+                                        setAgents([]);
+                                        setIsScannerRunning(false);
+                                    }}
+                                    required
+                                >
+                                    <option value="">Select Recipient Type</option>
+                                    {getRecipientOptions().map((type) => (
+                                        <option key={type} value={type}>{type}</option>
+                                    ))}
+                                </select>
+                            </div>
+                        )}
 
                         {recipientType && (
                             <>
-                                {recipientType === "Agent" && (
+                                {recipientType === "Agent" && !forceAgent && (
                                     <div className="form-group">
                                         <label>Agent Selection</label>
                                         <input
@@ -558,6 +570,12 @@ const TransferReceiptBook: React.FC = () => {
                                         {recipientID && (
                                             <p>Selected User: {users.find(u => u.userID === recipientID)?.firstname} {users.find(u => u.userID === recipientID)?.lastname}</p>
                                         )}
+                                    </div>
+                                )}
+                                {(recipientType === "Agent" || recipientType === "Stub Collection") && forceAgent && (
+                                    <div className="form-group">
+                                        <label>Selected Agent</label>
+                                        <p>{agents.find(a => a.agentID === recipientID)?.name + " " + agents.find(a => a.agentID === recipientID)?.lastname || "Loading..."}</p>
                                     </div>
                                 )}
                             </>

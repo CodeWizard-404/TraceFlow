@@ -1,4 +1,3 @@
-// src/pages/visit/VisitValidation.tsx
 import React, { useState, useEffect, useMemo } from "react";
 import { useParams, useNavigate } from "react-router-dom";
 import { FaUser, FaPhone, FaListUl, FaCheckCircle, FaArrowLeft, FaCheck } from "react-icons/fa";
@@ -21,7 +20,6 @@ const VisitValidation: React.FC = () => {
     const [error, setError] = useState<string | null>(null);
     const [isSubmitting, setIsSubmitting] = useState<boolean>(false);
 
-    // Permission Checks
     const canLogVisits = useMemo(
         () => effectivePermissions?.some((p) => p.name === "log_visits"),
         [effectivePermissions]
@@ -170,18 +168,67 @@ const VisitValidation: React.FC = () => {
                             <ul className="checklist">
                                 {checklist.map((item) => {
                                     const isTransferItem = item.item.toLowerCase() === "transfer a receipt book";
-                                    return (
-                                        <li key={item.id} className={item.checked ? "checked" : ""}>
-                                            {isTransferItem ? (
-                                                <span
-                                                    className="checklist-text"
-                                                    onClick={() => navigate("/transfer-receipt-books", {
-                                                        state: { agentID: visit?.agentID, forceAgent: true }
-                                                    })}
-                                                >
-                                                    {item.item}
-                                                </span>
-                                            ) : (
+                                    const isStubCollectionItem = item.item.toLowerCase() === "collect receipt stub";
+
+                                    if (isTransferItem) {
+                                        return (
+                                            <li key={item.id} className={item.checked ? "checked" : ""}>
+                                                <label className="custom-checkbox-label">
+                                                    <input
+                                                        type="checkbox"
+                                                        checked={item.checked}
+                                                        onChange={() => {
+                                                            handleChecklistChange(item.id);
+                                                            if (!item.checked) {
+                                                                navigate("/transfer-receipt-books", {
+                                                                    state: { 
+                                                                        agentID: visit?.agentID, 
+                                                                        forceAgent: true,
+                                                                        transferType: "Agent"
+                                                                    }
+                                                                });
+                                                            }
+                                                        }}
+                                                        className="custom-checkbox-input"
+                                                    />
+                                                    <span className="custom-checkbox">
+                                                        <FaCheck className="check-icon" />
+                                                    </span>
+                                                    <span className="checklist-text">{item.item}</span>
+                                                </label>
+                                            </li>
+                                        );
+                                    } else if (isStubCollectionItem) {
+                                        return (
+                                            <li key={item.id} className={item.checked ? "checked" : ""}>
+                                                <label className="custom-checkbox-label">
+                                                    <input
+                                                        type="checkbox"
+                                                        checked={item.checked}
+                                                        onChange={() => {
+                                                            handleChecklistChange(item.id);
+                                                            if (!item.checked) {
+                                                                navigate("/transfer-receipt-books", {
+                                                                    state: { 
+                                                                        agentID: visit?.agentID, 
+                                                                        forceAgent: true,
+                                                                        transferType: "Stub Collection"
+                                                                    }
+                                                                });
+                                                            }
+                                                        }}
+                                                        className="custom-checkbox-input"
+                                                    />
+                                                    <span className="custom-checkbox">
+                                                        <FaCheck className="check-icon" />
+                                                    </span>
+                                                    <span className="checklist-text">{item.item}</span>
+                                                </label>
+                                            </li>
+                                        );
+                                    } else {
+                                        return (
+                                            <li key={item.id} className={item.checked ? "checked" : ""}>
                                                 <label className="custom-checkbox-label">
                                                     <input
                                                         type="checkbox"
@@ -194,9 +241,9 @@ const VisitValidation: React.FC = () => {
                                                     </span>
                                                     <span className="checklist-text">{item.item}</span>
                                                 </label>
-                                            )}
-                                        </li>
-                                    );
+                                            </li>
+                                        );
+                                    }
                                 })}
                             </ul>
                             <div className="progress-bar">

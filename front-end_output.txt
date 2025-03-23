@@ -2,6 +2,197 @@ FRONT-END PROJECT FILES
 Generated on: 1742409167.4223557
 ==================================================
 
+
+app.tsx:
+import React, { useEffect } from "react";
+import { BrowserRouter as Router, Routes, Route, Navigate } from "react-router-dom";
+import { ThemeProvider, useTheme } from "./context/ThemeContext";
+import { AuthProvider, useAuth } from "./context/AuthContext";
+import { ErrorProvider } from "./context/ErrorContext";
+import Timesheets from "./pages/timesheet/Timesheets";
+import TimesheetForm from "./pages/timesheet/TimesheetForm";
+import QRScan from "./pages/visit/QRScan";
+import VisitDetails from "./pages/visit/VisitDetails";
+import VisitValidation from "./pages/visit/VisitValidation";
+import PageNotFound from "./pages/Error/PageNotFound";
+import Footer from "./components/Footer";
+import Header from "./components/Header";
+import AdminDashboard from "./pages/Admin/AdminDashboard";
+import LoginPage from "./pages/Auth/Login";
+import "./App.css";
+import ErrorDisplay from "./pages/Error/ErrorDisplay";
+import AccessDenied from "./pages/Error/AccessDenied";
+import ReceiptBooks from "./pages/Reciept/ReceiptBooks";
+
+import TransferReceiptBook from "./pages/Reciept/TransferReceiptBook";
+import ReceiptBookHistory from "./pages/Reciept/ReceiptBookHistory";
+
+
+// Permission-based ProtectedRoute component
+interface ProtectedRouteProps {
+    children: JSX.Element;
+    requiredPermissions: string[];
+}
+
+const ProtectedRoute: React.FC<ProtectedRouteProps> = ({ children, requiredPermissions }) => {
+    const { user, token, effectivePermissions, permissionsLoaded } = useAuth();
+
+    if (!user || !token) {
+        return <Navigate to="/login" replace state={{ from: window.location.pathname }} />;
+    }
+
+    if (!permissionsLoaded) {
+        return <div>Loading permissions...</div>;
+    }
+
+    const hasPermission = requiredPermissions.some((perm) =>
+        effectivePermissions?.some((p) => p.name === perm)
+    );
+
+    return hasPermission ? children : <Navigate to="/access-denied" replace />;
+};
+
+// Role-based ProtectedRoute component
+interface RoleProtectedRouteProps {
+    children: JSX.Element;
+    requiredRoles: string[];
+}
+
+const RoleProtectedRoute: React.FC<RoleProtectedRouteProps> = ({ children, requiredRoles }) => {
+    const { user, token, userRoles, permissionsLoaded } = useAuth();
+
+    if (!user || !token) {
+        return <Navigate to="/login" replace state={{ from: window.location.pathname }} />;
+    }
+
+    if (!permissionsLoaded || !userRoles) {
+        return <div>Loading permissions...</div>;
+    }
+
+    const hasRequiredRole = userRoles.some((role) => 
+        requiredRoles.includes(role.name)
+    );
+
+    return hasRequiredRole ? children : <Navigate to="/access-denied" replace />;
+};
+
+// AppContent component
+const AppContent: React.FC = () => {
+    const { theme } = useTheme();
+
+    useEffect(() => {
+        document.body.className = theme;
+    }, [theme]);
+
+    return (
+        <div className="app-container">
+            <Header />
+            <main>
+                <ErrorDisplay />
+                <Routes>
+                    <Route path="/login" element={<LoginPage />} />
+                    <Route path="/access-denied" element={<AccessDenied />} />
+                    <Route path="/" element={<Navigate to="/login" replace />} />
+                    <Route
+                        path="/admin"
+                        element={
+                            <RoleProtectedRoute requiredRoles={["Admin", "Super Admin"]}>
+                                <AdminDashboard />
+                            </RoleProtectedRoute>
+                        }
+                    />
+                    <Route
+                        path="/timesheet"
+                        element={
+                            <ProtectedRoute requiredPermissions={["access_Supervisor_timesheets"]}>
+                                <Timesheets />
+                            </ProtectedRoute>
+                        }
+                    />
+                    <Route
+                        path="/timesheet-form"
+                        element={
+                            <ProtectedRoute requiredPermissions={["create_timesheets"]}>
+                                <TimesheetForm />
+                            </ProtectedRoute>
+                        }
+                    />
+
+                    <Route
+                        path="/qr-scan"
+                        element={
+                            <ProtectedRoute requiredPermissions={["scan_visits"]}>
+                                <QRScan />
+                            </ProtectedRoute>
+                        }
+                    />
+                    <Route
+                        path="/visit/:idVisit"
+                        element={
+                            <ProtectedRoute requiredPermissions={["access_visit_details"]}>
+                                <VisitDetails />
+                            </ProtectedRoute>
+                        }
+                    />
+                    <Route
+                        path="/visit/:idVisit/validate-checklist"
+                        element={
+                            <ProtectedRoute requiredPermissions={["log_visits"]}>
+                                <VisitValidation />
+                            </ProtectedRoute>
+                        }
+                    />
+                    <Route
+                        path="/receipt-books"
+                        element={
+                            <ProtectedRoute requiredPermissions={["access_receipt_books"]}>
+                                <ReceiptBooks />
+                            </ProtectedRoute>
+                        }
+                        />
+
+                    <Route 
+                        path="/receipt-book/:bookID/history" 
+                        element={
+                            <ProtectedRoute requiredPermissions={["access_receipt_book_history"]}>
+                                <ReceiptBookHistory />
+                            </ProtectedRoute>
+                        } 
+                    />
+                    <Route
+                        path="/transfer-receipt-books"
+                        element={
+                            <ProtectedRoute requiredPermissions={["transfer_receipt_books"]}>
+                                <TransferReceiptBook />
+                            </ProtectedRoute>
+                        }
+                    />
+
+                    <Route path="*" element={<PageNotFound />} />
+                </Routes>
+            </main>
+            <Footer />
+        </div>
+    );
+};
+
+// Main App component
+const App: React.FC = () => {
+    return (
+        <Router>
+            <ThemeProvider>
+                <AuthProvider>
+                    <ErrorProvider>
+                        <AppContent />
+                    </ErrorProvider>
+                </AuthProvider>
+            </ThemeProvider>
+        </Router>
+    );
+};
+
+export default App;
+
 ==================================================
 File contents: C:\Users\Kayto\Desktop\IT\Projects\Stage\Stage PFE\TraceFlow\Front-End\src\apis\agentAPI.tsx
 ==================================================
@@ -97,11 +288,10 @@ export const resend2FA = async (userID: string): Promise<Resend2FAResponse> => {
 File contents: C:\Users\Kayto\Desktop\IT\Projects\Stage\Stage PFE\TraceFlow\Front-End\src\apis\axiosConfig.tsx
 ==================================================
 import axios, { AxiosInstance } from "axios";
-import { BASE_URL, DEFAULT_TIMEOUT } from "../config";
 
 const api: AxiosInstance = axios.create({
-    baseURL: BASE_URL,
-    timeout: DEFAULT_TIMEOUT,
+    baseURL: process.env.REACT_APP_BASE_URL,
+    timeout: Number(process.env.REACT_APP_DEFAULT_TIMEOUT),
     withCredentials: true,
 });
 
@@ -2016,7 +2206,7 @@ interface User {
     email: string;
     wallet: string;
     password?: string;
-    roles?: Role[];
+    Roles?: Role[];
     supervisors?: User[];
     managers?: User[];
 }
@@ -2230,8 +2420,8 @@ body.dark .back-button:hover {
 
 .sidebar {
     flex: 1;
-    min-width: 280px;
-    max-width: 320px;
+    min-width: 180px !important;
+    max-width: 220px !important;
     display: flex;
     flex-direction: column;
     gap: 1.5rem;
@@ -2239,7 +2429,7 @@ body.dark .back-button:hover {
 
 .filter-card, .sort-card, .role-filter-card {
     background: #fff;
-    padding: 1.5rem;
+    padding: 1rem 1rem 0 1rem  !important;
     border-radius: 0.75rem;
     box-shadow: 0 0.375rem 1.25rem rgba(0, 0, 0, 0.05);
     transition: transform 0.3s ease;
@@ -2248,6 +2438,7 @@ body.dark .back-button:hover {
 body.dark .filter-card, body.dark .sort-card, body.dark .role-filter-card {
     background: #222222;
     box-shadow: 0 0.375rem 1.25rem rgba(0, 0, 0, 0.3);
+    border: 1px solid rgba(107, 114, 128, 0.5) ;
 }
 
 .filter-card:hover, .sort-card:hover, .role-filter-card:hover {
@@ -2262,12 +2453,12 @@ body.dark .filter-card, body.dark .sort-card, body.dark .role-filter-card {
 }
 
 body.dark .filter-card h3, body.dark .sort-card h3, body.dark .role-filter-card h3 {
-    color: #608bdc;
+    color: #60a0dc;
 }
 
 .filter-card button {
     width: 100%;
-    padding: 0.75rem 1.25rem;
+    padding: 0.3rem 1.25rem;
     font-size: 0.875rem;
     font-weight: 600;
     background: #f8fafc;
@@ -2304,7 +2495,7 @@ body.dark .filter-card button:hover:not(.active) {
 
 .sort-card select, .role-filter-card select {
     width: 100%;
-    padding: 0.75rem;
+    padding: 0.5rem !important;
     font-size: 0.875rem;
     border: 1px solid #ddd;
     border-radius: 0.75rem;
@@ -2331,7 +2522,8 @@ body.dark .sort-card select:focus, body.dark .role-filter-card select:focus {
 
 .sort-card button {
     width: 100%;
-    padding: 0.75rem;
+    padding: 0.3rem !important;
+    margin-bottom: 0.75rem !important;
     font-size: 0.875rem;
     font-weight: 600;
     background: #fff;
@@ -2444,14 +2636,15 @@ body.dark .table-card h2 {
 }
 
 body.dark .table-head .table-row {
-    background: #5c98e68a;
+    background: #63b3edb7 !important;
     color: #e5e7eb;
+    color: #272727 !important;
 }
 
 .table-row {
     display: grid;
-    grid-template-columns: 2fr 3fr 1fr 1fr;
-    padding: 0.75rem 1rem;
+    grid-template-columns: 0.7fr 1fr 1fr 0.5fr;
+    padding: 0.rem 1rem;
     align-items: center;
 }
 
@@ -2475,6 +2668,8 @@ body.dark .table-body .table-row {
 
 body.dark .table-body .table-row:hover {
     background: #63b3ed;
+    color: #252525;
+    font-weight: 600;
 }
 
 .table-cell {
@@ -3781,8 +3976,7 @@ import Permission from "../../models/Permission";
 import UserPermissionOverride from "../../models/UserPermissionOverride";
 import "./AdminDashboard.css";
 
-const ITEMS_PER_PAGE = 10; // Pagination: 10 items per page
-
+const ITEMS_PER_PAGE = 10;
 const AdminDashboard: React.FC = () => {
     const { token, effectivePermissions, userRoles } = useAuth();
     const [users, setUsers] = useState<User[]>([]);
@@ -3792,7 +3986,7 @@ const AdminDashboard: React.FC = () => {
     const [selectedRole, setSelectedRole] = useState<Role | null>(null);
     const [view, setView] = useState<"users" | "roles" | "add-user" | "add-role" | "user-details">("users");
     const [searchQuery, setSearchQuery] = useState("");
-    const [sortField, setSortField] = useState<"name" | "email" | "roleCount">("name");
+    const [sortField, setSortField] = useState<"name" | "email" | "role">("role");
     const [sortOrder, setSortOrder] = useState<"asc" | "desc">("asc");
     const [roleFilter, setRoleFilter] = useState<string>("all");
     const [newUser, setNewUser] = useState<Partial<User>>({});
@@ -3820,6 +4014,7 @@ const AdminDashboard: React.FC = () => {
     const [managerSearch, setManagerSearch] = useState("");
     const [supervisorPage, setSupervisorPage] = useState(1);
     const [managerPage, setManagerPage] = useState(1);
+    const [userPage, setUserPage] = useState(1);
     const [expandedSection, setExpandedSection] = useState<string | null>(null);
 
 
@@ -3882,15 +4077,15 @@ const AdminDashboard: React.FC = () => {
     }, [selectedRole]);
 
     useEffect(() => {
-        if (selectedUser) setTempRoles(selectedUser.roles || []);
+        if (selectedUser) setTempRoles(selectedUser.Roles || []);
     }, [selectedUser]);
 
 
     const filteredUsers = useMemo(() => {
         let result = users.filter((user) => {
             if (!isSuperAdmin) return (
-                user.roles?.some((role) => role.name !== "Super Admin") &&
-                user.roles?.some((role) => role.name !== "Admin")
+                user.Roles?.some((role) => role.name !== "Super Admin") &&
+                user.Roles?.some((role) => role.name !== "Admin")
             );
             return (
                 `${user.firstname} ${user.lastname}`.toLowerCase().includes(searchQuery.toLowerCase()) ||
@@ -3898,11 +4093,15 @@ const AdminDashboard: React.FC = () => {
             );
         });
         if (roleFilter !== "all") {
-            result = result.filter((user) => user.roles?.some((role) => role.roleID === roleFilter));
+            result = result.filter((user) => user.Roles?.some((role) => role.roleID === roleFilter));
         }
         result.sort((a, b) => {
-            const fieldA = sortField === "name" ? `${a.firstname} ${a.lastname}` : sortField === "email" ? a.email : (a.roles?.length || 0);
-            const fieldB = sortField === "name" ? `${b.firstname} ${b.lastname}` : sortField === "email" ? b.email : (b.roles?.length || 0);
+            const isSuperAdminA = a.Roles?.some(role => role.name === "Super Admin");
+            const isSuperAdminB = b.Roles?.some(role => role.name === "Super Admin");
+            if (isSuperAdminA && !isSuperAdminB) return -1;
+            if (!isSuperAdminA && isSuperAdminB) return 1;
+            const fieldA = sortField === "name" ? `${a.firstname} ${a.lastname}` : sortField === "email" ? a.email : (a.Roles?.map(role => role.name).join(", ") || "");
+            const fieldB = sortField === "name" ? `${b.firstname} ${b.lastname}` : sortField === "email" ? b.email : (b.Roles?.map(role => role.name).join(", ") || "");
             return sortOrder === "asc" ? (fieldA > fieldB ? 1 : -1) : (fieldA < fieldB ? 1 : -1);
         });
         return result;
@@ -3950,14 +4149,14 @@ const AdminDashboard: React.FC = () => {
     }, [permissions, permissionSearch, selectedCategory, isSuperAdmin]);
 
     const supervisorUsers = useMemo(() => {
-        return users.filter(u => u.roles?.some(r => r.name === "Supervisor")).filter(s =>
+        return users.filter(u => u.Roles?.some(r => r.name === "Supervisor")).filter(s =>
             `${s.firstname} ${s.lastname}`.toLowerCase().includes(supervisorSearch.toLowerCase()) ||
             s.email.toLowerCase().includes(supervisorSearch.toLowerCase())
         );
     }, [users, supervisorSearch]);
 
     const managerUsers = useMemo(() => {
-        return users.filter(u => u.roles?.some(r => r.name === "Manager")).filter(m =>
+        return users.filter(u => u.Roles?.some(r => r.name === "Manager")).filter(m =>
             `${m.firstname} ${m.lastname}`.toLowerCase().includes(managerSearch.toLowerCase()) ||
             m.email.toLowerCase().includes(managerSearch.toLowerCase())
         );
@@ -3974,6 +4173,12 @@ const AdminDashboard: React.FC = () => {
         const end = start + ITEMS_PER_PAGE;
         return managerUsers.slice(start, end);
     }, [managerUsers, managerPage]);
+
+    const paginatedUsers = useMemo(() => {
+        const start = (userPage - 1) * ITEMS_PER_PAGE;
+        const end = start + ITEMS_PER_PAGE;
+        return filteredUsers.slice(start, end);
+    }, [filteredUsers, userPage]);
 
     const handleUserSelect = async (user: User) => {
         if ((hasUnsavedUserChanges || hasUnsavedSupervisorChanges || hasUnsavedOverrideChanges) && !window.confirm('You have unsaved changes. Are you sure you want to proceed?')) return;
@@ -4000,6 +4205,7 @@ const AdminDashboard: React.FC = () => {
             setManagerSearch("");
             setSupervisorPage(1);
             setManagerPage(1);
+            setUserPage(1);
             setView("user-details");
         } catch (error) {
             console.error("Failed to fetch user details:", error);
@@ -4015,7 +4221,7 @@ const AdminDashboard: React.FC = () => {
             alert('The Super Admin role cannot be modified.');
             return;
         }
-        const fixedRoles = ['Manager', 'Supervisor', 'Purchase', 'Regional Manager', 'Stock Manager'];
+        const fixedRoles = ['Manager', 'Supervisor', 'Purchase Team', 'Regional Manager', 'Stock Manager'];
         if (fixedRoles.includes(role.name) && !window.confirm('Warning: Modifying pre-made roles may affect system functionality. Are you sure you want to proceed?')) {
             return;
         }
@@ -4095,16 +4301,16 @@ const AdminDashboard: React.FC = () => {
         if (!selectedUser || !canAssignRoles) return;
         setLoading(true);
         try {
-            const currentRoleIds = selectedUser.roles?.map(r => r.roleID) || [];
+            const currentRoleIds = selectedUser.Roles?.map(r => r.roleID) || [];
             const newRoleIds = tempRoles.map(r => r.roleID);
             const toAdd = newRoleIds.filter(id => !currentRoleIds.includes(id));
             if (toAdd.length > 0) await assignRolesToUser(selectedUser.userID, toAdd, token!);
             setUsers(users.map(u => u.userID === selectedUser.userID ? { ...u, roles: tempRoles } : u));
-            setSelectedUser({ ...selectedUser, roles: tempRoles });
+            setSelectedUser({ ...selectedUser, Roles: tempRoles });
             setHasUnsavedUserChanges(false);
         } catch (error) {
             console.error("Failed to save roles:", error);
-            setTempRoles(selectedUser.roles || []);
+            setTempRoles(selectedUser.Roles || []);
         } finally {
             setLoading(false);
         }
@@ -4139,12 +4345,12 @@ const AdminDashboard: React.FC = () => {
             const supervisorIds = tempSupervisors.map(s => s.userID);
             const managerIds = tempManagers.map(m => m.userID);
 
-            const isManager = selectedUser.roles?.some(r => r.name === "Manager");
+            const isManager = selectedUser.Roles?.some(r => r.name === "Manager");
             if (isManager && supervisorIds.length > 0) {
                 await assignSupervisorsToManager(selectedUser.userID, supervisorIds, token!);
             }
 
-            const isSupervisor = selectedUser.roles?.some(r => r.name === "Supervisor");
+            const isSupervisor = selectedUser.Roles?.some(r => r.name === "Supervisor");
             if (isSupervisor && managerIds.length > 0) {
                 await Promise.all(managerIds.map(managerId =>
                     assignSupervisorsToManager(managerId, [selectedUser.userID], token!)
@@ -4189,7 +4395,7 @@ const AdminDashboard: React.FC = () => {
                 });
                 if (filteredRoles.length > 0) {
                     await assignRolesToUser(createdUser.userID, filteredRoles, token!);
-                    createdUser.roles = await getRolesByUser(createdUser.userID, token!);
+                    createdUser.Roles = await getRolesByUser(createdUser.userID, token!);
                 }
                 if (selectedRolesForNewUser.some(roleID => roles.find(r => r.roleID === roleID)?.name === "Super Admin") && !isSuperAdmin) {
                     alert("Super Admin role assignment skipped: Only Super Admins can assign this role.");
@@ -4355,20 +4561,20 @@ const AdminDashboard: React.FC = () => {
                     <div className="filter-card">
                         <h3>View</h3>
                         <button className={view === "users" || view === "add-user" || view === "user-details" ? "active" : ""} onClick={() => setView("users")}>
-                            Users Management
+                            Users
                         </button>
                         <button className={view === "roles" || view === "add-role" ? "active" : ""} onClick={() => setView("roles")}>
-                            Roles Management
+                            Roles
                         </button>
                     </div>
                     {(view === "users" || view === "add-user" || view === "user-details") && (
                         <>
                             <div className="sort-card">
                                 <h3>Sort Users By</h3>
-                                <select value={sortField} onChange={(e) => setSortField(e.target.value as "name" | "email" | "roleCount")}>
+                                <select value={sortField} onChange={(e) => setSortField(e.target.value as "name" | "email" | "role")}>
                                     <option value="name">Name</option>
                                     <option value="email">Email</option>
-                                    <option value="roleCount">Role Count</option>
+                                    <option value="role">Role</option>
                                 </select>
                                 <button onClick={() => setSortOrder(sortOrder === "asc" ? "desc" : "asc")}>
                                     <FaSort /> {sortOrder === "asc" ? "Asc" : "Desc"}
@@ -4412,7 +4618,7 @@ const AdminDashboard: React.FC = () => {
                                         </div>
                                     </div>
                                     <div className="table-body">
-                                        {filteredUsers.map((user) => (
+                                        {paginatedUsers.map((user) => (
                                             <div
                                                 key={user.userID}
                                                 className="table-row user-row"
@@ -4421,10 +4627,25 @@ const AdminDashboard: React.FC = () => {
                                                 <div className="table-cell">{`${user.firstname} ${user.lastname}`}</div>
                                                 <div className="table-cell">{user.email}</div>
                                                 <div className="table-cell">{user.phone}</div>
-                                                <div className="table-cell">{user.roles?.length || 0}</div>
+                                                <div className="table-cell">{user.Roles?.[0]?.name || "No Role"}</div>
                                             </div>
                                         ))}
                                     </div>
+                                </div>
+                                <div className="pagination">
+                                    <button
+                                        onClick={() => setUserPage(p => Math.max(1, p - 1))}
+                                        disabled={userPage === 1}
+                                    >
+                                        Previous
+                                    </button>
+                                    <span>Page {userPage} of {Math.ceil(filteredUsers.length / ITEMS_PER_PAGE)}</span>
+                                    <button
+                                        onClick={() => setUserPage(p => p + 1)}
+                                        disabled={userPage >= Math.ceil(filteredUsers.length / ITEMS_PER_PAGE)}
+                                    >
+                                        Next
+                                    </button>
                                 </div>
                             </div>
                         </div>
@@ -4471,7 +4692,7 @@ const AdminDashboard: React.FC = () => {
 
                             {(() => {
                                 const premadeRoles = filteredRoles.filter(role =>
-                                    ['Manager', 'Supervisor', 'Purchase', 'Regional Manager', 'Stock Manager'].includes(role.name)
+                                    ['Manager', 'Supervisor', 'Purchase Team', 'Regional Manager', 'Stock Manager'].includes(role.name)
                                 );
                                 if (premadeRoles.length > 0) {
                                     return (
@@ -4499,7 +4720,7 @@ const AdminDashboard: React.FC = () => {
 
                             {(() => {
                                 const customRoles = filteredRoles.filter(role =>
-                                    !['Admin', 'Super Admin', 'Manager', 'Supervisor', 'Purchase', 'Regional Manager', 'Stock Manager'].includes(role.name)
+                                    !['Admin', 'Super Admin', 'Manager', 'Supervisor', 'Purchase Team', 'Regional Manager', 'Stock Manager'].includes(role.name)
                                 );
                                 if (customRoles.length > 0) {
                                     return (
@@ -5082,7 +5303,7 @@ const AdminDashboard: React.FC = () => {
                                 )}
 
                                 {/* Supervisor/Manager Assignments */}
-                                {(selectedUser.roles?.some(r => r.name === "Manager") || selectedUser.roles?.some(r => r.name === "Supervisor")) && canAssignSupervisors && (
+                                {(selectedUser.Roles?.some(r => r.name === "Manager") || selectedUser.Roles?.some(r => r.name === "Supervisor")) && canAssignSupervisors && (
                                     <div className="dropdown-unit">
                                         <div className="dropdown-bar" onClick={() => toggleSection("assignments")}>
                                             <h3>Assignments</h3>
@@ -5097,7 +5318,7 @@ const AdminDashboard: React.FC = () => {
                                                         </button>
                                                     )}
                                                 </div>
-                                                {selectedUser.roles?.some(r => r.name === "Manager") && (
+                                                {selectedUser.Roles?.some(r => r.name === "Manager") && (
                                                     <div className="assignment-list">
                                                         <h4>Supervisors Assigned to This Manager</h4>
                                                         <div className="search-container assignment-search">
@@ -5142,7 +5363,7 @@ const AdminDashboard: React.FC = () => {
                                                         </div>
                                                     </div>
                                                 )}
-                                                {selectedUser.roles?.some(r => r.name === "Supervisor") && (
+                                                {selectedUser.Roles?.some(r => r.name === "Supervisor") && (
                                                     <div className="assignment-list">
                                                         <h4>Managers Assigned to This Supervisor</h4>
                                                         <div className="search-container assignment-search">
@@ -6010,1309 +6231,396 @@ const PageNotFound: React.FC = () => {
 export default PageNotFound;
 
 ==================================================
-File contents: C:\Users\Kayto\Desktop\IT\Projects\Stage\Stage PFE\TraceFlow\Front-End\src\pages\Reciept\ArchivedReceiptBooks.css
+File contents: C:\Users\Kayto\Desktop\IT\Projects\Stage\Stage PFE\TraceFlow\Front-End\src\pages\Reciept\ReceiptBookHistory.css
 ==================================================
-.archived-receipt-books-container {
-    padding: 1rem;
-    max-width: 1200px;
+.history-container {
+    padding: 2rem;
+    max-width: 1440px;
     margin: 0 auto;
     font-family: 'Inter', sans-serif;
-    background: #f0f4f8;
-    min-height: 100vh;
-  }
-  
-  .archived-header {
+    display: flex;
+    flex-direction: column;
+    gap: 2rem;
+    color: #1f2937;
+    height: 100vh;
+}
+
+body.dark .history-container {
+    color: #e2e8f0;
+}
+
+.history-header {
     background: linear-gradient(135deg, #4cb1c7 0%, #3a8fa2 100%);
     color: #fff;
-    padding: 1rem;
+    padding: 1.5rem;
     border-radius: 0.75rem;
     display: flex;
     justify-content: space-between;
     align-items: center;
-    margin-bottom: 1rem;
-  }
-  
-  .archived-header h1 {
+    box-shadow: 0 0.25rem 0.75rem rgba(76, 177, 199, 0.3);
+}
+
+body.dark .history-header {
+    background: linear-gradient(135deg, #63b3ed 0%, #4299e1 100%);
+    box-shadow: 0 0.375rem 1.25rem rgba(0, 0, 0, 0.3);
+    color: #e2e8f0;
+}
+
+.history-header h1 {
     margin: 0;
-    font-size: 1.5rem;
+    font-size: 2rem;
     font-weight: 700;
-  }
-  
-  .header-actions {
-    display: flex;
-    gap: 1rem;
-    align-items: center;
-  }
-  
-  .search-bar {
-    display: flex;
-    align-items: center;
-    background: #fff;
-    padding: 0.5rem;
-    border-radius: 0.5rem;
-  }
-  
-  .search-bar svg {
-    color: #4cb1c7;
-    margin-right: 0.5rem;
-  }
-  
-  .search-bar input {
-    border: none;
-    outline: none;
-    font-size: 0.9rem;
-  }
-  
-  .header-actions button {
+}
+
+body.dark .history-header h1 {
+    color: #e2e8f0;
+}
+
+.back-btn {
     padding: 0.75rem 1.5rem;
+    font-size: 0.9rem;
+    font-weight: 600;
     background: #fff;
     color: #4cb1c7;
-    border: none;
+    border: 1px solid #4cb1c7;
     border-radius: 0.5rem;
     cursor: pointer;
     display: flex;
     align-items: center;
     gap: 0.5rem;
-    font-weight: 600;
-  }
-  
-  .header-actions button:hover {
-    background: #e5e7eb;
-  }
-  
-  .books-list {
-    display: grid;
-    grid-template-columns: repeat(auto-fill, minmax(300px, 1fr));
-    gap: 1rem;
-  }
-  
-  .book-card {
-    background: #fff;
-    border-radius: 0.75rem;
-    padding: 1rem;
-    box-shadow: 0 4px 15px rgba(0, 0, 0, 0.05);
-    cursor: pointer;
-    display: flex;
-    justify-content: space-between;
-    align-items: center;
-    transition: transform 0.2s ease;
-  }
-  
-  .book-card:hover {
-    transform: translateY(-5px);
-  }
-  
-  .book-info p {
-    margin: 0.25rem 0;
-    font-size: 0.9rem;
-  }
-  
-  .status-dot {
-    width: 0.5rem;
-    height: 0.5rem;
-    border-radius: 50%;
-    display: inline-block;
-    margin-right: 0.5rem;
-  }
-  
-  .status-archived {
-    background: #6b7280;
-  }
-  
-  .status-text {
-    font-size: 0.85rem;
-    color: #6b7280;
-  }
-  
-  .no-books {
-    text-align: center;
-    color: #6b7280;
-    font-size: 1rem;
-    padding: 2rem;
-  }
-  
-  .loading {
-    text-align: center;
-    padding: 2rem;
-    color: #6b7280;
-  }
-  
-  @media (max-width: 768px) {
-    .archived-header {
-      flex-direction: column;
-      gap: 1rem;
-    }
-    .header-actions {
-      flex-direction: column;
-      width: 100%;
-    }
-    .books-list {
-      grid-template-columns: 1fr;
-    }
-  }
+    transition: all 0.3s ease;
+}
 
-==================================================
-File contents: C:\Users\Kayto\Desktop\IT\Projects\Stage\Stage PFE\TraceFlow\Front-End\src\pages\Reciept\ArchivedReceiptBooks.tsx
-==================================================
-import React, { useEffect, useState } from "react";
-import { useNavigate } from "react-router-dom";
-import { FaArrowLeft, FaSearch } from "react-icons/fa";
-import { useAuth } from "../../context/AuthContext";
-import { getAllReceiptBooks } from "../../apis/receiptBookAPI";
-import ReceiptBook from "../../models/ReceiptBook";
-import "./ArchivedReceiptBooks.css";
-
-const ArchivedReceiptBooks: React.FC = () => {
-    const { token, effectivePermissions, permissionsLoaded } = useAuth();
-    const navigate = useNavigate();
-    const [books, setBooks] = useState<ReceiptBook[]>([]);
-    const [loading, setLoading] = useState<boolean>(true);
-    const [search, setSearch] = useState<string>("");
-
-    useEffect(() => {
-        const fetchBooks = async () => {
-            if (!token || !permissionsLoaded || !effectivePermissions?.some((p) => p.name === "archive_receipt_stubs")) {
-                setLoading(false);
-                return;
-            }
-            try {
-                const data = await getAllReceiptBooks(token);
-                const archivedBooks = data.filter((book) => book.status === "Archived");
-                setBooks(archivedBooks);
-            } catch (err) {
-                console.error("Failed to fetch receipt books:", err);
-            } finally {
-                setLoading(false);
-            }
-        };
-        fetchBooks();
-    }, [token, permissionsLoaded, effectivePermissions]);
-
-    const filteredBooks = books.filter((book) =>
-        book.number.toLowerCase().includes(search.toLowerCase()) || book.bookID.toLowerCase().includes(search.toLowerCase())
-    );
-
-    if (!permissionsLoaded) return <div>Loading permissions...</div>;
-    if (!effectivePermissions?.some((p) => p.name === "archive_receipt_stubs")) {
-        return <div>Access Denied: You lack permission to view archived receipt books.</div>;
-    }
-
-    return (
-        <div className="archived-receipt-books-container">
-            <header className="archived-header">
-                <h1>Archived Receipt Books</h1>
-                <div className="header-actions">
-                    <div className="search-bar">
-                        <FaSearch />
-                        <input
-                            type="text"
-                            placeholder="Search by ID or Number..."
-                            value={search}
-                            onChange={(e) => setSearch(e.target.value)}
-                        />
-                    </div>
-                    <button onClick={() => navigate("/receipt-books")}>
-                        <FaArrowLeft /> Back to Active Books
-                    </button>
-                </div>
-            </header>
-            {loading ? (
-                <div className="loading">Loading...</div>
-            ) : (
-                <div className="books-list">
-                    {filteredBooks.length > 0 ? (
-                        filteredBooks.map((book) => (
-                            <div
-                                key={book.bookID}
-                                className="book-card"
-                                onClick={() => navigate(`/receipt-book/${book.bookID}`)}
-                            >
-                                <div className="book-info">
-                                    <p>
-                                        <strong>{book.number}</strong> - {book.type}
-                                    </p>
-                                    <p>Last Holder ID: {book.currentHolderID || "N/A"}</p>
-                                </div>
-                                <span className="status-dot status-archived"></span>
-                                <p className="status-text">{book.status}</p>
-                            </div>
-                        ))
-                    ) : (
-                        <div className="no-books">No archived receipt books found.</div>
-                    )}
-                </div>
-            )}
-        </div>
-    );
-};
-
-export default ArchivedReceiptBooks;
-
-==================================================
-File contents: C:\Users\Kayto\Desktop\IT\Projects\Stage\Stage PFE\TraceFlow\Front-End\src\pages\Reciept\ReceiptBookDetails.css
-==================================================
-/* src/pages/receiptBook/ReceiptBookDetails.css */
-.receipt-book-details-container {
-    padding: 1rem;
-    max-width: 1200px;
-    margin: 0 auto;
-    font-family: 'Inter', sans-serif;
-    background: #f0f4f8;
-    min-height: 100vh;
-  }
-  
-  .details-hero {
-    background: linear-gradient(135deg, #4cb1c7 0%, #3a8fa2 100%);
+body.dark .back-btn {
+    background: #63b3ed;
     color: #fff;
-    padding: 1rem;
-    border-radius: 0.75rem;
-    text-align: center;
-    margin-bottom: 1rem;
-  }
-  
-  .details-hero h1 {
-    margin: 0;
-    font-size: 1.5rem;
-    font-weight: 700;
+    border: 1px solid #63b3ed;
+}
+
+.back-btn:hover {
+    background: #4cb1c7;
+    color: #fff;
+}
+
+body.dark .back-btn:hover {
+    background: #4299e1;
+}
+
+.timeline {
+    flex: 1;
+    padding: 2rem 0;
+    display: flex;
+    justify-content: center;
+}
+
+body.dark .timeline {
+    background: none;
+}
+
+.timeline-path {
+    position: relative;
+    width: 100%;
+    max-width: 600px;
+    display: flex;
+    flex-direction: column;
+    gap: 2rem;
+}
+
+.timeline-node {
+    position: relative;
+    display: flex;
+    align-items: flex-start;
+    gap: 1rem;
+    padding-left: 2rem;
+    animation: fadeIn 0.5s ease-in;
+}
+
+@keyframes fadeIn {
+    from { opacity: 0; transform: translateY(10px); }
+    to { opacity: 1; transform: translateY(0); }
+}
+
+.node-marker {
+    width: 30px;
+    height: 30px;
+    border-radius: 50%;
     display: flex;
     align-items: center;
     justify-content: center;
-    gap: 0.5rem;
-  }
-  
-  .details-grid {
-    display: grid;
-    grid-template-columns: 1fr;
-    gap: 1rem;
-  }
-  
-  .details-card {
-    background: #fff;
+    color: #fff;
+    font-size: 1rem;
+    box-shadow: 0 0 8px rgba(0, 0, 0, 0.1);
+    flex-shrink: 0;
+}
+
+body.dark .node-marker {
+    box-shadow: 0 0 8px rgba(0, 0, 0, 0.3);
+}
+
+/* Enhanced Card Styles */
+.node-details {
+    background: linear-gradient(135deg, #ffffff 0%, #f8fafc 100%);
+    padding: 1.25rem;
     border-radius: 0.75rem;
-    padding: 1rem;
-    box-shadow: 0 4px 15px rgba(0, 0, 0, 0.05);
-  }
-  
-  .details-card h2 {
+    box-shadow: 0 4px 12px rgba(0, 0, 0, 0.05);
+    flex: 1;
+    position: relative;
+    overflow: hidden;
+    transition: transform 0.3s ease, box-shadow 0.3s ease;
+}
+
+body.dark .node-details {
+    background: linear-gradient(135deg, #262626 0%, #2d3748 100%);
+    box-shadow: 0 4px 12px rgba(0, 0, 0, 0.2);
+    color: #e2e8f0;
+}
+
+.node-details::before {
+    content: '';
+    position: absolute;
+    top: 0;
+    left: 0;
+    width: 4px;
+    height: 100%;
+    background: #4cb1c7;
+    transition: width 0.3s ease;
+}
+
+body.dark .node-details::before {
+    background: #63b3ed;
+}
+
+.timeline-node:hover .node-details {
+    transform: translateY(-4px);
+    box-shadow: 0 8px 20px rgba(0, 0, 0, 0.1);
+}
+
+body.dark .timeline-node:hover .node-details {
+    box-shadow: 0 8px 20px rgba(0, 0, 0, 0.3);
+}
+
+.timeline-node:hover .node-details::before {
+    width: 8px;
+}
+
+.node-details h3 {
+    margin: 0 0 0.75rem;
     font-size: 1.1rem;
     font-weight: 600;
     color: #4cb1c7;
-    margin: 0 0 0.75rem;
-    display: flex;
-    align-items: center;
-    gap: 0.5rem;
-  }
-  
-  .details-card p {
+    position: relative;
+    padding-bottom: 0.25rem;
+}
+
+body.dark .node-details h3 {
+    color: #63b3ed;
+}
+
+.node-details h3::after {
+    content: '';
+    position: absolute;
+    bottom: 0;
+    left: 0;
+    width: 30px;
+    height: 2px;
+    background: #4cb1c7;
+}
+
+body.dark .node-details h3::after {
+    background: #63b3ed;
+}
+
+.node-details p {
+    margin: 0.35rem 0;
+    font-size: 0.9rem;
+    color: #1f2937;
+    line-height: 1.4;
+}
+
+body.dark .node-details p {
+    color: #e2e8f0;
+}
+
+.node-details p strong {
+    color: #4b5563;
+}
+
+body.dark .node-details p strong {
+    color: #a0aec0;
+}
+
+/* Twist-Specific Card Styles */
+.node-details.same-role {
+    border-left: 4px solid #ff9800; /* Same-role transfer (e.g., Regional Manager → Regional Manager) */
+}
+
+body.dark .node-details.same-role {
+    border-left: 4px solid #f687b3;
+}
+
+.node-details.return {
+    background: linear-gradient(135deg, #fff8e1 0%, #f8fafc 100%); /* Supervisor → Regional Manager return */
+    border-left: 4px solid #ff9800;
+}
+
+body.dark .node-details.return {
+    background: linear-gradient(135deg, #2d3748 0%, #262626 100%);
+    border-left: 4px solid #f687b3;
+}
+
+.node-details.direct {
+    border-left: 4px dashed #4cb1c7; /* Supervisor → Stock Manager post-stub */
+}
+
+body.dark .node-details.direct {
+    border-left: 4px dashed #63b3ed;
+}
+
+/* Connector Styles */
+.timeline-connector {
+    position: absolute;
+    left: 15px;
+    top: 30px;
+    height: calc(100% - 30px);
+    width: 2px;
+    background: #e5e7eb;
+    z-index: -1;
+}
+
+body.dark .timeline-connector {
+    background: #4a5568;
+}
+
+.timeline-node.same-role .timeline-connector {
+    background: none;
+    border: 2px solid #ff9800;
+    border-radius: 0 0 20px 20px;
+    width: 20px;
+    left: 5px;
+}
+
+body.dark .timeline-node.same-role .timeline-connector {
+    border-color: #f687b3;
+}
+
+.timeline-node.return .timeline-connector {
+    background: none;
+    border: 2px solid #ff9800;
+    border-radius: 20px 20px 0 0;
+    height: calc(100% + 30px);
+    top: -30px;
+}
+
+body.dark .timeline-node.return .timeline-connector {
+    border-color: #f687b3;
+}
+
+.timeline-node.direct .timeline-connector {
+    background: none;
+    border: 2px dashed #4cb1c7;
+}
+
+body.dark .timeline-node.direct .timeline-connector {
+    border-color: #63b3ed;
+}
+
+.history-footer {
+    background: #fff;
+    padding: 1rem;
+    border-radius: 0.75rem;
+    box-shadow: 0 0.25rem 0.75rem rgba(0, 0, 0, 0.1);
+    text-align: center;
+}
+
+body.dark .history-footer {
+    background: #262626;
+    box-shadow: 0 0.375rem 1.25rem rgba(0, 0, 0, 0.3);
+}
+
+.history-footer p {
     margin: 0.5rem 0;
-    font-size: 0.9rem;
-  }
-  
-  .details-card ul {
-    list-style: none;
-    padding: 0;
-    margin: 0;
-  }
-  
-  .details-card li {
-    font-size: 0.9rem;
-    padding: 0.5rem 0;
-    border-bottom: 1px solid #e5e7eb;
-  }
-  
-  .details-card li:last-child {
-    border-bottom: none;
-  }
-  
-  .details-actions {
-    display: flex;
-    gap: 1rem;
-    justify-content: center;
-    margin-top: 1rem;
-  }
-  
-  .details-actions button {
-    padding: 0.75rem 1.5rem;
-    font-size: 0.9rem;
-    font-weight: 600;
-    text-transform: uppercase;
-    background: linear-gradient(135deg, #4cb1c7 0%, #3a8fa2 100%);
-    color: #fff;
-    border: none;
-    border-radius: 0.5rem;
-    cursor: pointer;
-    display: flex;
-    align-items: center;
-    gap: 0.5rem;
-  }
-  
-  .details-actions button:hover {
-    opacity: 0.9;
-  }
-  
-  @media (min-width: 768px) {
-    .details-grid {
-      grid-template-columns: repeat(2, 1fr);
-    }
-  }
+    font-size: 1rem;
+    color: #1f2937;
+}
+
+body.dark .history-footer p {
+    color: #e2e8f0;
+}
+
+.loading, .error {
+    text-align: center;
+    font-size: 1.2rem;
+    color: #6b7280;
+    padding: 2rem;
+}
+
+body.dark .loading, body.dark .error {
+    color: #a0aec0;
+}
 
 ==================================================
-File contents: C:\Users\Kayto\Desktop\IT\Projects\Stage\Stage PFE\TraceFlow\Front-End\src\pages\Reciept\ReceiptBookDetails.tsx
+File contents: C:\Users\Kayto\Desktop\IT\Projects\Stage\Stage PFE\TraceFlow\Front-End\src\pages\Reciept\ReceiptBookHistory.tsx
 ==================================================
-import React, { useEffect, useState } from "react";
+import React, { useState, useEffect } from "react";
 import { useParams, useNavigate } from "react-router-dom";
-import { FaArrowLeft, FaHistory, FaTruck, FaExchangeAlt, FaArchive } from "react-icons/fa";
+import { FaArrowLeft, FaHistory } from "react-icons/fa";
 import { useAuth } from "../../context/AuthContext";
-import "./ReceiptBookDetails.css";
 import { getReceiptBookById, getTransferHistory } from "../../apis/receiptBookAPI";
+import { getUserById } from "../../apis/userAPI";
+import { getAgentById } from "../../apis/agentAPI";
 import ReceiptBook from "../../models/ReceiptBook";
 import ReceiptBookTransfer from "../../models/ReceiptBookTransfer";
+import "./ReceiptBookHistory.css";
 
-
-
-const ReceiptBookDetails: React.FC = () => {
+const ReceiptBookHistory: React.FC = () => {
     const { bookID } = useParams<{ bookID: string }>();
     const { token, effectivePermissions } = useAuth();
     const navigate = useNavigate();
     const [book, setBook] = useState<ReceiptBook | null>(null);
     const [history, setHistory] = useState<ReceiptBookTransfer[]>([]);
+    const [usersMap, setUsersMap] = useState<Map<string, string>>(new Map());
+    const [agentsMap, setAgentsMap] = useState<Map<string, string>>(new Map());
     const [loading, setLoading] = useState<boolean>(true);
     const [error, setError] = useState<string | null>(null);
 
-    useEffect(() => {
-        const fetchDetails = async () => {
-            console.log("bookID:", bookID);
-            console.log("token:", token);
-            console.log("permissions:", effectivePermissions);
-            if (!bookID || !token || !effectivePermissions?.some((p) => p.name === "access_receipt_book_details")) {
-                setError("Access Denied or Invalid Book ID");
-                setLoading(false);
-                return;
-            }
-            try {
-                const bookData = await getReceiptBookById(bookID, token);
-                const historyData = await getTransferHistory(bookID, token);
-                setBook(bookData);
-                setHistory(historyData);
-            } catch (err) {
-                setError("Failed to load receipt book details.");
-                console.error(err);
-            } finally {
-                setLoading(false);
-            }
-        };
-        fetchDetails();
-    }, [bookID, token, effectivePermissions]);
-
-    const canTransfer = effectivePermissions?.some((p) => p.name === "transfer_receipt_books");
-    const canCollectStub = effectivePermissions?.some((p) => p.name === "collect_stubs") && book?.status === "Assigned to Agent";
-    const canArchive = effectivePermissions?.some((p) => p.name === "archive_receipt_books") && book?.status === "With Stock Manager";
-
-    if (loading) return <div className="loading">Loading...</div>;
-    if (error || !book) return <div className="error">{error || "Receipt book not found."}</div>;
-
-    return (
-        <div className="receipt-book-details-container">
-            <div className="details-hero">
-                <h1>
-                    {book.number} - {book.type}
-                    <span className={`status-dot status-${book.status.toLowerCase().replace(/\s/g, "-")}`}></span>
-                    <span>{book.status}</span>
-                </h1>
-            </div>
-            <div className="details-grid">
-                <div className="details-card">
-                    <h2>Details</h2>
-                    <p><strong>ID:</strong> {book.bookID}</p>
-                    <p><strong>Current Holder:</strong> {book.currentHolderID || "N/A"}</p>
-                    {/* <p><strong>Last Updated:</strong> {new Date(book.lastUpdated).toLocaleString()}</p> */}
-                </div>
-                <div className="details-card">
-                    <h2><FaHistory /> Transfer History</h2>
-                    {history.length > 0 ? (
-                        <ul>
-                            {history.map((transfer, index) => (
-                                <li key={index}>
-                                    {transfer.fromUserID} → {transfer.toUserID} on {new Date(transfer.transferDate).toLocaleString()}
-                                </li>
-                            ))}
-                        </ul>
-                    ) : (
-                        <p>No transfer history available.</p>
-                    )}
-                </div>
-            </div>
-            <div className="details-actions">
-                {canTransfer && (
-                    <button onClick={() => navigate(`/receipt-book/${bookID}/transfer`)}>
-                        <FaExchangeAlt /> Transfer
-                    </button>
-                )}
-                {canCollectStub && (
-                    <button onClick={() => navigate(`/receipt-book/${bookID}/stub-collection`)}>
-                        <FaTruck /> Collect Stub
-                    </button>
-                )}
-                {canArchive && (
-                    <button onClick={() => {/* Add archive logic */ }}>
-                        <FaArchive /> Archive
-                    </button>
-                )}
-                <button onClick={() => navigate("/receipt-books")}>
-                    <FaArrowLeft /> Back
-                </button>
-            </div>
-        </div>
-    );
-};
-
-export default ReceiptBookDetails;
-
-==================================================
-File contents: C:\Users\Kayto\Desktop\IT\Projects\Stage\Stage PFE\TraceFlow\Front-End\src\pages\Reciept\ReceiptBookForm.css
-==================================================
-/* src/pages/receiptBook/ReceiptBookForm.css */
-.receipt-book-form-container {
-    padding: 1rem;
-    max-width: 600px;
-    margin: 0 auto;
-    font-family: 'Inter', sans-serif;
-    background: #f0f4f8;
-    min-height: 100vh;
-}
-
-.form-header {
-    background: linear-gradient(135deg, #4cb1c7 0%, #3a8fa2 100%);
-    color: #fff;
-    padding: 1rem;
-    border-radius: 0.75rem;
-    text-align: center;
-    margin-bottom: 1rem;
-}
-
-.form-header h1 {
-    margin: 0;
-    font-size: 1.5rem;
-    font-weight: 700;
-}
-
-.form-card {
-    background: #fff;
-    border-radius: 0.75rem;
-    padding: 1.5rem;
-    box-shadow: 0 4px 15px rgba(0, 0, 0, 0.05);
-}
-
-.form-group {
-    margin-bottom: 1rem;
-}
-
-.form-group label {
-    display: block;
-    font-size: 0.9rem;
-    color: #4cb1c7;
-    margin-bottom: 0.25rem;
-}
-
-.form-group input,
-.form-group select {
-    width: 100%;
-    padding: 0.75rem;
-    border: 1px solid #e5e7eb;
-    border-radius: 0.5rem;
-    font-size: 0.9rem;
-}
-
-.error {
-    color: #e81f76;
-    font-size: 0.9rem;
-    text-align: center;
-    margin-bottom: 1rem;
-}
-
-.form-actions {
-    display: flex;
-    gap: 1rem;
-    justify-content: center;
-}
-
-.back-btn,
-.save-btn {
-    padding: 0.75rem 1.5rem;
-    font-size: 0.9rem;
-    font-weight: 600;
-    text-transform: uppercase;
-    border: none;
-    border-radius: 0.5rem;
-    cursor: pointer;
-    display: flex;
-    align-items: center;
-    gap: 0.5rem;
-}
-
-.back-btn {
-    background: #6b7280;
-    color: #fff;
-}
-
-.save-btn {
-    background: linear-gradient(135deg, #4cb1c7 0%, #3a8fa2 100%);
-    color: #fff;
-}
-
-.back-btn:hover,
-.save-btn:hover {
-    opacity: 0.9;
-}
-
-==================================================
-File contents: C:\Users\Kayto\Desktop\IT\Projects\Stage\Stage PFE\TraceFlow\Front-End\src\pages\Reciept\ReceiptBookForm.tsx
-==================================================
-import React, { useState } from "react";
-import { useNavigate } from "react-router-dom";
-import { FaArrowLeft, FaSave } from "react-icons/fa";
-import { useAuth } from "../../context/AuthContext";
-import "./ReceiptBookForm.css";
-import { createReceiptBook } from "../../apis/receiptBookAPI";
-
-
-
-const ReceiptBookForm: React.FC = () => {
-    const { token, effectivePermissions } = useAuth();
-    const navigate = useNavigate();
-    const [formData, setFormData] = useState({ number: "", type: "Cash" });
-    const [error, setError] = useState<string | null>(null);
-
-    const handleSubmit = async (e: React.FormEvent) => {
-        e.preventDefault();
-        if (!token || !effectivePermissions?.some((p) => p.name === "create_receipt_books")) {
-            setError("Access Denied: You lack permission to create receipt books.");
-            return;
-        }
-        try {
-            await createReceiptBook(formData, token);
-            navigate("/receipt-books");
-        } catch (err) {
-            setError("Failed to create receipt book.");
-            console.error(err);
-        }
-    };
-
-    return (
-        <div className="receipt-book-form-container">
-            <header className="form-header">
-                <h1>Create Receipt Book</h1>
-            </header>
-            <form className="form-card" onSubmit={handleSubmit}>
-                <div className="form-group">
-                    <label htmlFor="number">Number</label>
-                    <input
-                        id="number"
-                        type="text"
-                        value={formData.number}
-                        onChange={(e) => setFormData({ ...formData, number: e.target.value })}
-                        required
-                    />
-                </div>
-                <div className="form-group">
-                    <label htmlFor="type">Type</label>
-                    <select
-                        id="type"
-                        value={formData.type}
-                        onChange={(e) => setFormData({ ...formData, type: e.target.value })}
-                    >
-                        <option value="Cash">Cash</option>
-                        <option value="Credit">Credit</option>
-                    </select>
-                </div>
-                {error && <div className="error">{error}</div>}
-                <div className="form-actions">
-                    <button type="button" className="back-btn" onClick={() => navigate("/receipt-books")}>
-                        <FaArrowLeft /> Back
-                    </button>
-                    <button type="submit" className="save-btn">
-                        <FaSave /> Save
-                    </button>
-                </div>
-            </form>
-        </div>
-    );
-};
-
-export default ReceiptBookForm;
-
-==================================================
-File contents: C:\Users\Kayto\Desktop\IT\Projects\Stage\Stage PFE\TraceFlow\Front-End\src\pages\Reciept\ReceiptBooks.css
-==================================================
-/* src/pages/receiptBook/ReceiptBooks.css */
-@import url('https://fonts.googleapis.com/css2?family=Inter:wght@400;600;700&display=swap');
-
-.receipt-books-container {
-    padding: 1rem;
-    max-width: 1200px;
-    margin: 0 auto;
-    font-family: 'Inter', sans-serif;
-    background: #f0f4f8;
-    min-height: 100vh;
-}
-
-.receipt-books-header {
-    background: linear-gradient(135deg, #4cb1c7 0%, #3a8fa2 100%);
-    color: #fff;
-    padding: 1rem;
-    border-radius: 0.75rem;
-    display: flex;
-    justify-content: space-between;
-    align-items: center;
-    margin-bottom: 1rem;
-}
-
-.receipt-books-header h1 {
-    margin: 0;
-    font-size: 1.5rem;
-    font-weight: 700;
-}
-
-.header-actions {
-    display: flex;
-    gap: 1rem;
-    align-items: center;
-}
-
-.search-bar {
-    display: flex;
-    align-items: center;
-    background: #fff;
-    padding: 0.5rem;
-    border-radius: 0.5rem;
-}
-
-.search-bar svg {
-    color: #4cb1c7;
-    margin-right: 0.5rem;
-}
-
-.search-bar input {
-    border: none;
-    outline: none;
-    font-size: 0.9rem;
-}
-
-.header-actions select {
-    padding: 0.5rem;
-    border-radius: 0.5rem;
-    border: none;
-    font-size: 0.9rem;
-}
-
-.header-actions button {
-    padding: 0.75rem 1.5rem;
-    background: #fff;
-    color: #4cb1c7;
-    border: none;
-    border-radius: 0.5rem;
-    cursor: pointer;
-    display: flex;
-    align-items: center;
-    gap: 0.5rem;
-    font-weight: 600;
-}
-
-.header-actions button:hover {
-    background: #e5e7eb;
-}
-
-.books-list {
-    display: grid;
-    grid-template-columns: repeat(auto-fill, minmax(300px, 1fr));
-    gap: 1rem;
-}
-
-.book-card {
-    background: #fff;
-    border-radius: 0.75rem;
-    padding: 1rem;
-    box-shadow: 0 4px 15px rgba(0, 0, 0, 0.05);
-    cursor: pointer;
-    display: flex;
-    justify-content: space-between;
-    align-items: center;
-    transition: transform 0.2s ease;
-}
-
-.book-card:hover {
-    transform: translateY(-5px);
-}
-
-.book-info p {
-    margin: 0.25rem 0;
-    font-size: 0.9rem;
-}
-
-.status-dot {
-    width: 0.5rem;
-    height: 0.5rem;
-    border-radius: 50%;
-    display: inline-block;
-    margin-right: 0.5rem;
-}
-
-.status-in-stock {
-    background: #10b981;
-}
-
-.status-sent-to-supplier {
-    background: #f59e0b;
-}
-
-.status-with-regional-manager {
-    background: #4cb1c7;
-}
-
-.status-with-supervisor {
-    background: #3b82f6;
-}
-
-.status-assigned-to-agent {
-    background: #8b5cf6;
-}
-
-.status-stub-collected {
-    background: #eab308;
-}
-
-.status-with-stock-manager {
-    background: #ec4899;
-}
-
-.status-archived {
-    background: #6b7280;
-}
-
-.status-text {
-    font-size: 0.85rem;
-    color: #6b7280;
-}
-
-.no-books {
-    text-align: center;
-    color: #6b7280;
-    font-size: 1rem;
-    padding: 2rem;
-}
-
-.loading {
-    text-align: center;
-    padding: 2rem;
-    color: #6b7280;
-}
-
-@media (max-width: 768px) {
-    .receipt-books-header {
-        flex-direction: column;
-        gap: 1rem;
-    }
-
-    .header-actions {
-        flex-direction: column;
-        width: 100%;
-    }
-
-    .books-list {
-        grid-template-columns: 1fr;
-    }
-}
-
-==================================================
-File contents: C:\Users\Kayto\Desktop\IT\Projects\Stage\Stage PFE\TraceFlow\Front-End\src\pages\Reciept\ReceiptBooks.tsx
-==================================================
-import React, { useEffect, useState } from "react";
-import { useNavigate } from "react-router-dom";
-import { FaPlus, FaSearch } from "react-icons/fa";
-import { useAuth } from "../../context/AuthContext";
-import "./ReceiptBooks.css";
-import ReceiptBook from "../../models/ReceiptBook";
-import { getAllReceiptBooks } from "../../apis/receiptBookAPI";
-
-
-
-const ReceiptBooks: React.FC = () => {
-    const { token, effectivePermissions, permissionsLoaded } = useAuth();
-    const navigate = useNavigate();
-    const [books, setBooks] = useState<ReceiptBook[]>([]);
-    const [loading, setLoading] = useState<boolean>(true);
-    const [search, setSearch] = useState<string>("");
-    const [statusFilter, setStatusFilter] = useState<string>("");
-
-    useEffect(() => {
-        const fetchBooks = async () => {
-            if (!token || !permissionsLoaded || !effectivePermissions?.some((p) => p.name === "access_receipt_books")) {
-                setLoading(false);
-                return;
-            }
-            try {
-                const data = await getAllReceiptBooks(token);
-                setBooks(data);
-            } catch (err) {
-                console.error("Failed to fetch receipt books:", err);
-            } finally {
-                setLoading(false);
-            }
-        };
-        fetchBooks();
-    }, [token, permissionsLoaded, effectivePermissions]);
-
-    const filteredBooks = books.filter((book) => {
-        const matchesSearch = book.number.toLowerCase().includes(search.toLowerCase()) || book.bookID.toLowerCase().includes(search.toLowerCase());
-        const matchesStatus = statusFilter ? book.status === statusFilter : true;
-        return matchesSearch && matchesStatus;
-    });
-
-    if (!permissionsLoaded) return <div>Loading permissions...</div>;
-
-    if (!effectivePermissions?.some((p) => p.name === "access_receipt_books")) {
-        return <div>Access Denied: You lack permission to view receipt books.</div>;
-    }
-
-    return (
-        <div className="receipt-books-container">
-            <header className="receipt-books-header">
-                <h1>Receipt Books</h1>
-                <div className="header-actions">
-                    <div className="search-bar">
-                        <FaSearch />
-                        <input
-                            type="text"
-                            placeholder="Search by ID or Number..."
-                            value={search}
-                            onChange={(e) => setSearch(e.target.value)}
-                        />
-                    </div>
-                    <select value={statusFilter} onChange={(e) => setStatusFilter(e.target.value)}>
-                        <option value="">All Statuses</option>
-                        <option value="In Stock">In Stock</option>
-                        <option value="Sent to Supplier">Sent to Supplier</option>
-                        <option value="With Regional Manager">With Regional Manager</option>
-                        <option value="With Supervisor">With Supervisor</option>
-                        <option value="Assigned to Agent">Assigned to Agent</option>
-                        <option value="Stub Collected">Stub Collected</option>
-                        <option value="With Stock Manager">With Stock Manager</option>
-                        <option value="Archived">Archived</option>
-                    </select>
-                    <button onClick={() => navigate("/receipt-book-form")}>
-                        <FaPlus /> Create New
-                    </button>
-                </div>
-            </header>
-            {loading ? (
-                <div className="loading">Loading...</div>
-            ) : (
-                <div className="books-list">
-                    {filteredBooks.length > 0 ? (
-                        filteredBooks.map((book) => (
-                            <div
-                                key={book.bookID}
-                                className="book-card"
-                                onClick={() => navigate(`/receipt-book/${book.bookID}`)}
-                            >
-                                <div className="book-info">
-                                    <p>
-                                        <strong>{book.number}</strong> - {book.type}
-                                    </p>
-                                    <p>{book.currentHolderID || "N/A"}</p>
-                                </div>
-                                <span className={`status-dot status-${book.status.toLowerCase().replace(/\s/g, "-")}`}></span>
-                                <p className="status-text">{book.status}</p>
-                            </div>
-                        ))
-                    ) : (
-                        <div className="no-books">No receipt books found.</div>
-                    )}
-                </div>
-            )}
-        </div>
-    );
-};
-
-export default ReceiptBooks;
-
-==================================================
-File contents: C:\Users\Kayto\Desktop\IT\Projects\Stage\Stage PFE\TraceFlow\Front-End\src\pages\Reciept\StubCollection.css
-==================================================
-.stub-collection-container {
-    padding: 1rem;
-    max-width: 600px;
-    margin: 0 auto;
-    font-family: 'Inter', sans-serif;
-    background: #f0f4f8;
-    min-height: 100vh;
-  }
-  
-  .stub-header {
-    background: linear-gradient(135deg, #4cb1c7 0%, #3a8fa2 100%);
-    color: #fff;
-    padding: 1rem;
-    border-radius: 0.75rem;
-    text-align: center;
-    margin-bottom: 1rem;
-  }
-  
-  .stub-header h1 {
-    margin: 0;
-    font-size: 1.5rem;
-    font-weight: 700;
-  }
-  
-  .stub-card {
-    background: #fff;
-    border-radius: 0.75rem;
-    padding: 1.5rem;
-    box-shadow: 0 4px 15px rgba(0, 0, 0, 0.05);
-  }
-  
-  .stub-card p {
-    margin: 0.5rem 0;
-    font-size: 0.9rem;
-  }
-  
-  .form-group {
-    margin-bottom: 1rem;
-  }
-  
-  .form-group label {
-    display: block;
-    font-size: 0.9rem;
-    color: #4cb1c7;
-    margin-bottom: 0.25rem;
-  }
-  
-  .form-group input {
-    width: 100%;
-    padding: 0.75rem;
-    border: 1px solid #e5e7eb;
-    border-radius: 0.5rem;
-    font-size: 0.9rem;
-  }
-  
-  .error {
-    color: #e81f76;
-    font-size: 0.9rem;
-    text-align: center;
-    margin-bottom: 1rem;
-  }
-  
-  .form-actions {
-    display: flex;
-    gap: 1rem;
-    justify-content: center;
-  }
-  
-  .back-btn,
-  .collect-btn,
-  .validate-btn {
-    padding: 0.75rem 1.5rem;
-    font-size: 0.9rem;
-    font-weight: 600;
-    text-transform: uppercase;
-    border: none;
-    border-radius: 0.5rem;
-    cursor: pointer;
-    display: flex;
-    align-items: center;
-    gap: 0.5rem;
-  }
-  
-  .back-btn {
-    background: #6b7280;
-    color: #fff;
-  }
-  
-  .collect-btn,
-  .validate-btn {
-    background: linear-gradient(135deg, #4cb1c7 0%, #3a8fa2 100%);
-    color: #fff;
-  }
-  
-  .back-btn:hover,
-  .collect-btn:hover,
-  .validate-btn:hover {
-    opacity: 0.9;
-  }
-
-==================================================
-File contents: C:\Users\Kayto\Desktop\IT\Projects\Stage\Stage PFE\TraceFlow\Front-End\src\pages\Reciept\StubCollection.tsx
-==================================================
-import React, { useState, useEffect } from "react";
-import { useParams, useNavigate } from "react-router-dom";
-import { FaArrowLeft, FaTruck, FaCheck } from "react-icons/fa";
-import { useAuth } from "../../context/AuthContext";
-import { getReceiptBookById } from "../../apis/receiptBookAPI";
-import { collectStub, validateStubCollection } from "../../apis/receiptStubAPI";
-import ReceiptBook from "../../models/ReceiptBook";
-import "./StubCollection.css";
-
-const StubCollection: React.FC = () => {
-    const { bookID } = useParams<{ bookID: string }>();
-    const { token, effectivePermissions } = useAuth();
-    const navigate = useNavigate();
-    const [book, setBook] = useState<ReceiptBook | null>(null);
-    const [otp, setOtp] = useState<string>("");
-    const [loading, setLoading] = useState<boolean>(true);
-    const [error, setError] = useState<string | null>(null);
-    const [stubInitiated, setStubInitiated] = useState<boolean>(false);
-
-    useEffect(() => {
-        const fetchBook = async () => {
-            if (!bookID || !token || !effectivePermissions?.some((p) => p.name === "collect_receipt_stubs")) {
-                setError("Access Denied or Invalid Book ID");
-                setLoading(false);
-                return;
-            }
-            try {
-                const bookData = await getReceiptBookById(bookID, token);
-                if (bookData.status !== "Assigned to Agent") {
-                    setError("Stub collection is only available for books assigned to an agent.");
-                }
-                setBook(bookData);
-            } catch (err) {
-                setError("Failed to load receipt book.");
-                console.error(err);
-            } finally {
-                setLoading(false);
-            }
-        };
-        fetchBook();
-    }, [bookID, token, effectivePermissions]);
-
-    const handleInitiateStubCollection = async (e: React.FormEvent) => {
-        e.preventDefault();
-        if (!bookID || !token) {
-            setError("Invalid book ID or missing authentication.");
-            return;
-        }
-        try {
-            await collectStub(bookID, token);
-            setStubInitiated(true);
-            setError(null);
-        } catch (err) {
-            setError("Failed to initiate stub collection.");
-            console.error(err);
-        }
-    };
-
-    const handleValidateStubCollection = async (e: React.FormEvent) => {
-        e.preventDefault();
-        if (!bookID || !otp || !token) {
-            setError("Please enter the OTP.");
-            return;
-        }
-        try {
-            await validateStubCollection(bookID, otp, token);
-            navigate(`/receipt-book/${bookID}`);
-        } catch (err) {
-            setError("Invalid OTP or stub collection validation failed.");
-            console.error(err);
-        }
-    };
-
-    if (loading) return <div className="loading">Loading...</div>;
-    if (error || !book) return <div className="error">{error || "Receipt book not found."}</div>;
-
-    return (
-        <div className="stub-collection-container">
-            <header className="stub-header">
-                <h1>Collect Stub for Receipt Book: {book.number}</h1>
-            </header>
-            <div className="stub-card">
-                {!stubInitiated ? (
-                    <form onSubmit={handleInitiateStubCollection}>
-                        <p>Current Status: {book.status}</p>
-                        <p>Agent ID: {book.agentID || "N/A"}</p>
-                        {error && <div className="error">{error}</div>}
-                        <div className="form-actions">
-                            <button type="button" className="back-btn" onClick={() => navigate(`/receipt-book/${bookID}`)}>
-                                <FaArrowLeft /> Back
-                            </button>
-                            <button type="submit" className="collect-btn">
-                                <FaTruck /> Initiate Stub Collection
-                            </button>
-                        </div>
-                    </form>
-                ) : (
-                    <form onSubmit={handleValidateStubCollection}>
-                        <div className="form-group">
-                            <label htmlFor="otp">Enter OTP</label>
-                            <input
-                                id="otp"
-                                type="text"
-                                value={otp}
-                                onChange={(e) => setOtp(e.target.value)}
-                                placeholder="Enter OTP sent to supervisor"
-                                required
-                            />
-                        </div>
-                        {error && <div className="error">{error}</div>}
-                        <div className="form-actions">
-                            <button type="button" className="back-btn" onClick={() => setStubInitiated(false)}>
-                                <FaArrowLeft /> Back
-                            </button>
-                            <button type="submit" className="validate-btn">
-                                <FaCheck /> Validate Collection
-                            </button>
-                        </div>
-                    </form>
-                )}
-            </div>
-        </div>
-    );
-};
-
-export default StubCollection;
-
-==================================================
-File contents: C:\Users\Kayto\Desktop\IT\Projects\Stage\Stage PFE\TraceFlow\Front-End\src\pages\Reciept\TransferReceiptBook.css
-==================================================
-/* Reusing the previous CSS as it’s still valid */
-.transfer-receipt-book-container {
-    padding: 1rem;
-    max-width: 600px;
-    margin: 0 auto;
-    font-family: 'Inter', sans-serif;
-    background: #f0f4f8;
-    min-height: 100vh;
-  }
-  
-  .transfer-header {
-    background: linear-gradient(135deg, #4cb1c7 0%, #3a8fa2 100%);
-    color: #fff;
-    padding: 1rem;
-    border-radius: 0.75rem;
-    text-align: center;
-    margin-bottom: 1rem;
-  }
-  
-  .transfer-header h1 {
-    margin: 0;
-    font-size: 1.5rem;
-    font-weight: 700;
-  }
-  
-  .transfer-card {
-    background: #fff;
-    border-radius: 0.75rem;
-    padding: 1.5rem;
-    box-shadow: 0 4px 15px rgba(0, 0, 0, 0.05);
-  }
-  
-  .form-group {
-    margin-bottom: 1rem;
-  }
-  
-  .form-group label {
-    display: block;
-    font-size: 0.9rem;
-    color: #4cb1c7;
-    margin-bottom: 0.25rem;
-  }
-  
-  .form-group select,
-  .form-group input {
-    width: 100%;
-    padding: 0.75rem;
-    border: 1px solid #e5e7eb;
-    border-radius: 0.5rem;
-    font-size: 0.9rem;
-  }
-  
-  .error {
-    color: #e81f76;
-    font-size: 0.9rem;
-    text-align: center;
-    margin-bottom: 1rem;
-  }
-  
-  .form-actions {
-    display: flex;
-    gap: 1rem;
-    justify-content: center;
-  }
-  
-  .back-btn,
-  .transfer-btn,
-  .validate-btn {
-    padding: 0.75rem 1.5rem;
-    font-size: 0.9rem;
-    font-weight: 600;
-    text-transform: uppercase;
-    border: none;
-    border-radius: 0.5rem;
-    cursor: pointer;
-    display: flex;
-    align-items: center;
-    gap: 0.5rem;
-  }
-  
-  .back-btn {
-    background: #6b7280;
-    color: #fff;
-  }
-  
-  .transfer-btn,
-  .validate-btn {
-    background: linear-gradient(135deg, #4cb1c7 0%, #3a8fa2 100%);
-    color: #fff;
-  }
-  
-  .back-btn:hover,
-  .transfer-btn:hover,
-  .validate-btn:hover {
-    opacity: 0.9;
-  }
-
-==================================================
-File contents: C:\Users\Kayto\Desktop\IT\Projects\Stage\Stage PFE\TraceFlow\Front-End\src\pages\Reciept\TransferReceiptBook.tsx
-==================================================
-import React, { useState, useEffect } from "react";
-import { useParams, useNavigate } from "react-router-dom";
-import { FaArrowLeft, FaExchangeAlt, FaCheck } from "react-icons/fa";
-import { useAuth } from "../../context/AuthContext";
-import { getReceiptBookById, transfer, validateTransfer } from "../../apis/receiptBookAPI";
-import { getAllUsers } from "../../apis/userAPI";
-import ReceiptBook from "../../models/ReceiptBook";
-import User from "../../models/User";
-import "./TransferReceiptBook.css";
-
-const TransferReceiptBook: React.FC = () => {
-    const { bookID } = useParams<{ bookID: string }>();
-    const { token, effectivePermissions } = useAuth();
-    const navigate = useNavigate();
-    const [book, setBook] = useState<ReceiptBook | null>(null);
-    const [users, setUsers] = useState<User[]>([]);
-    const [recipientType, setRecipientType] = useState<string>("");
-    const [recipientID, setRecipientID] = useState<string>("");
-    const [otp, setOtp] = useState<string>("");
-    const [loading, setLoading] = useState<boolean>(true);
-    const [error, setError] = useState<string | null>(null);
-    const [transferInitiated, setTransferInitiated] = useState<boolean>(false);
-
-    // Fetch receipt book and users on mount
     useEffect(() => {
         const fetchData = async () => {
-            if (!bookID || !token || !effectivePermissions?.some((p) => p.name === "transfer_receipt_books")) {
-                
+            if (!bookID || !token || !effectivePermissions?.some(p => p.name === "access_receipt_book_history")) {
                 setError("Access Denied or Invalid Book ID");
                 setLoading(false);
                 return;
             }
             try {
-                const [bookData, usersData] = await Promise.all([
+                const [bookData, historyData] = await Promise.all([
                     getReceiptBookById(bookID, token),
-                    getAllUsers(token),
+                    getTransferHistory(bookID, token),
                 ]);
                 setBook(bookData);
-                setUsers(usersData);
+                setHistory(historyData);
+
+                const userIDs = new Set<string>();
+                const agentIDs = new Set<string>();
+                historyData.forEach(entry => {
+                    if (entry.fromUserID) userIDs.add(entry.fromUserID);
+                    if (entry.toUserID) userIDs.add(entry.toUserID);
+                    if (entry.toAgentID) agentIDs.add(entry.toAgentID);
+                });
+
+                const userPromises = Array.from(userIDs).map(id => getUserById(id, token));
+                const userResults = await Promise.all(userPromises);
+                const newUsersMap = new Map<string, string>();
+                userResults.forEach(user => newUsersMap.set(user.userID, `${user.firstname} ${user.lastname}`));
+                setUsersMap(newUsersMap);
+
+                if (agentIDs.size > 0) {
+                    const agentPromises = Array.from(agentIDs).map(id => getAgentById(id, token));
+                    const agentResults = await Promise.all(agentPromises);
+                    const newAgentsMap = new Map<string, string>();
+                    agentResults.forEach(agent => newAgentsMap.set(agent.agentID, `${agent.name} ${agent.lastname}`));
+                    setAgentsMap(newAgentsMap);
+                }
             } catch (err) {
-                setError("Failed to load data.");
+                setError("Failed to fetch history or details.");
                 console.error(err);
             } finally {
                 setLoading(false);
@@ -7321,131 +6629,1974 @@ const TransferReceiptBook: React.FC = () => {
         fetchData();
     }, [bookID, token, effectivePermissions]);
 
-    // Filter users based on selected recipient type
-    const filteredUsers = users.filter((user) =>
-        user.roles?.some((role) => {
-            switch (recipientType) {
-                case "Supplier": return role.name === "Supplier";
-                case "Regional Manager": return role.name === "Regional Manager";
-                case "Supervisor": return role.name === "Supervisor";
-                case "Agent": return role.name === "Agent"; // Assuming Agent is a role; adjust if it's not
-                case "Stock Manager": return role.name === "Stock Manager";
-                default: return false;
-            }
-        })
+    const getRoleFromTransfer = (entry: ReceiptBookTransfer) => {
+        if (entry.toAgentID) return "Agent";
+        if (entry.transferType.includes("Supplier")) return "Supplier";
+        if (entry.transferType.includes("RegionalManager")) return "Regional Manager";
+        if (entry.transferType.includes("Supervisor")) return "Supervisor";
+        if (entry.transferType.includes("StockManager")) return "Stock Manager";
+        if (entry.transferType.includes("Archive")) return "Archive";
+        return "Unknown";
+    };
+
+    const getNodeClass = (entry: ReceiptBookTransfer, prevEntry?: ReceiptBookTransfer, index?: number) => {
+        const currentRole = getRoleFromTransfer(entry);
+        const prevRole = prevEntry ? getRoleFromTransfer(prevEntry) : null;
+
+        // Same-Role Transfer: Same role as previous (e.g., Regional Manager → Regional Manager)
+        const isSameRole = prevRole && currentRole === prevRole && currentRole !== "Agent" && currentRole !== "Supplier";
+
+        // Return: Supervisor → Regional Manager (pre-Agent or post-stub)
+        const isReturn = prevRole === "Supervisor" && currentRole === "Regional Manager";
+
+        // Direct Route: Supervisor → Stock Manager after stub collection
+        const hasStub = history.some((e, i) => i < (index || 0) && e.transferType === "StubToSupervisor");
+        const isDirect = prevRole === "Supervisor" && currentRole === "Stock Manager" && hasStub;
+
+        return `${isSameRole ? "same-role" : ""} ${isReturn ? "return" : ""} ${isDirect ? "direct" : ""}`.trim();
+    };
+
+    if (loading) return <div className="loading">Tracking History...</div>;
+    if (error || !book) return <div className="error">{error || "Receipt book not found."}</div>;
+
+    return (
+        <div className="history-container">
+            <header className="history-header">
+                <h1>Receipt Book #{book.number} History</h1>
+                <button className="back-btn" onClick={() => navigate("/receipt-books")}>
+                    <FaArrowLeft /> Back to Receipts
+                </button>
+            </header>
+            <div className="history-footer">
+                <p>Current Status: <span style={{ color: getStatusColor(book.status) }}>{book.status}</span></p>
+                <p>Current Holder: {book.currentHolderID ? usersMap.get(book.currentHolderID) : book.agentID ? agentsMap.get(book.agentID) : "N/A"}</p>
+            </div>
+            <div className="timeline">
+                <div className="timeline-path">
+                    {history.map((entry, index) => (
+                        <div key={entry.transferID} className={`timeline-node ${getNodeClass(entry, history[index - 1], index)}`}>
+                            <div className="node-marker" style={{ backgroundColor: getStatusColor(entry.transferType) }}>
+                                <FaHistory />
+                            </div>
+                            <div className={`node-details ${getNodeClass(entry, history[index - 1], index)}`}>
+                                <h3>{entry.transferType.replace(/([A-Z])/g, " $1").trim()}</h3>
+                                <p><strong>From:</strong> {entry.fromUserID ? usersMap.get(entry.fromUserID) : "Initial Stock"}</p>
+                                <p><strong>To:</strong> {entry.toUserID ? usersMap.get(entry.toUserID) : entry.toAgentID ? agentsMap.get(entry.toAgentID) : "Supplier"}</p>
+                                <p><strong>Date:</strong> {new Date(entry.transferDate).toLocaleString()}</p>
+                                <p><strong>Status:</strong> {entry.status}</p>
+                            </div>
+                            {index < history.length - 1 && <div className="timeline-connector"></div>}
+                        </div>
+                    ))}
+                </div>
+            </div>
+
+        </div>
     );
+};
+
+const getStatusColor = (status: string) => {
+    switch (status) {
+        case "In Stock": return "#4CAF50";
+        case "Sent to Supplier": return "#2196F3";
+        case "With Regional Manager": return "#FF9800";
+        case "With Supervisor": return "#9C27B0";
+        case "Assigned to Agent": return "#F44336";
+        case "Stub Collected": return "#795548";
+        case "With Stock Manager": return "#607D8B";
+        case "Archived": return "#000000";
+        case "ToSupplier": return "#2196F3";
+        case "ToRegionalManager": return "#FF9800";
+        case "ToSupervisor": return "#9C27B0";
+        case "ToAgent": return "#F44336";
+        case "StubToSupervisor": return "#795548";
+        case "ToStockManager": return "#607D8B";
+        case "ToRegionalManagerFromSupervisor": return "#FF9800";
+        default: return "#757575";
+    }
+};
+
+export default ReceiptBookHistory;
+
+==================================================
+File contents: C:\Users\Kayto\Desktop\IT\Projects\Stage\Stage PFE\TraceFlow\Front-End\src\pages\Reciept\ReceiptBooks.css
+==================================================
+/* ReceiptBooks.css */
+@import url('https://fonts.googleapis.com/css2?family=Inter:wght@400;600;700&display=swap');
+
+.receipt-books {
+    padding: 1.5rem;
+    max-width: 1440px;
+    margin: 0 auto;
+    font-family: 'Inter', sans-serif;
+    min-height: 100%;
+    display: flex;
+    flex-direction: column;
+    gap: 1.5rem;
+}
+
+/* Header */
+.dashboard-header {
+    background: linear-gradient(135deg, #4cb1c7 0%, #3a8fa2 100%);
+    color: #fff;
+    padding: 1.5rem;
+    border-radius: 0.75rem;
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    box-shadow: 0 0.25rem 0.75rem rgba(76, 177, 199, 0.3);
+    flex-wrap: wrap;
+    gap: 1rem;
+}
+
+body.dark .dashboard-header {
+    background: linear-gradient(135deg, #63b3ed 0%, #4a83ce 100%);
+    box-shadow: 0 0.25rem 0.75rem rgba(0, 0, 0, 0.5);
+}
+
+.dashboard-header h1 {
+    margin: 0;
+    font-size: 1.75rem;
+    font-weight: 700;
+    letter-spacing: 0.05rem;
+}
+
+body.dark .dashboard-header h1 {
+    color: #e5e7eb;
+}
+
+
+
+.search-icon {
+    color: #fff;
+}
+
+body.dark .search-icon {
+    color: #d1d5db;
+}
+
+
+
+/* Content Layout */
+.dashboard-content {
+    display: flex;
+    gap: 2rem;
+    flex-wrap: wrap;
+}
+
+.sidebar {
+    flex: 1;
+    min-width: 280px;
+    max-width: 320px;
+    display: flex;
+    flex-direction: column;
+    gap: 1.5rem;
+}
+
+.filter-card, .sort-card {
+    background: rgba(255, 255, 255, 0.9);
+    padding: 1.5rem;
+    border-radius: 0.75rem;
+    box-shadow: 0 0.375rem 1.25rem rgba(0, 0, 0, 0.05);
+    border: 1px solid rgba(229, 231, 235, 0.5);
+    transition: transform 0.3s ease, box-shadow 0.3s ease;
+}
+
+body.dark .filter-card, body.dark .sort-card {
+    background: rgba(34, 34, 34, 0.9);
+    box-shadow: 0 0.375rem 1.25rem rgba(0, 0, 0, 0.3);
+    border-color: rgba(107, 114, 128, 0.5);
+}
+
+.filter-card:hover, .sort-card:hover {
+    box-shadow: 0 0.5rem 1.5rem rgba(0, 0, 0, 0.1);
+}
+
+body.dark .filter-card:hover, body.dark .sort-card:hover {
+    box-shadow: 0 0.5rem 1.5rem rgba(0, 0, 0, 0.4);
+}
+
+.filter-card h3, .sort-card h3 {
+    font-size: 1.125rem;
+    font-weight: 600;
+    color: #4cb1c7;
+    margin-bottom: 1rem;
+}
+
+body.dark .filter-card h3, body.dark .sort-card h3 {
+    color: #60a0dc;
+}
+
+.filter-card select, .sort-card select {
+    width: 100%;
+    padding: 0.75rem;
+    font-size: 0.875rem;
+    border: 1px solid #ddd;
+    border-radius: 0.75rem;
+    background: #f8fafc;
+    color: #1f2937;
+    transition: border-color 0.3s ease;
+}
+
+body.dark .filter-card select, body.dark .sort-card select {
+    background: #363636;
+    color: #e5e7eb;
+    border-color: #4b5563;
+}
+
+.filter-card select:focus, .sort-card select:focus {
+    border-color: #4cb1c7;
+    outline: none;
+}
+
+body.dark .filter-card select:focus, body.dark .sort-card select:focus {
+    border-color: #60a0dc;
+}
+
+.sort-card button {
+    width: 100%;
+    padding: 0.75rem;
+    font-size: 0.875rem;
+    font-weight: 600;
+    background: #fff;
+    border: 1px solid #4cb1c7;
+    border-radius: 0.75rem;
+    color: #4cb1c7;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    gap: 0.5rem;
+    transition: all 0.3s ease;
+}
+
+body.dark .sort-card button {
+    background: #1f2937;
+    border-color: #60a0dc;
+    color: #60a0dc;
+}
+
+.sort-card button:hover {
+    background: #4cb1c7;
+    color: #fff;
+}
+
+body.dark .sort-card button:hover {
+    background: #63b3ed;
+}
+
+.action-button {
+    padding: 0.75rem 1.5rem;
+    font-size: 0.875rem;
+    font-weight: 600;
+    text-transform: uppercase;
+    background: #4cb1c7;
+    color: #fff;
+    border: none;
+    border-radius: 3.125rem;
+    cursor: pointer;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    gap: 0.5rem;
+    box-shadow: 0 0.25rem 0.75rem rgba(76, 177, 199, 0.3);
+    transition: all 0.3s ease;
+}
+
+body.dark .action-button {
+    background: #63b3ed;
+    box-shadow: 0 0.25rem 0.75rem rgba(0, 0, 0, 0.4);
+}
+
+.action-button:hover {
+    background: #3a8fa2;
+    transform: scale(1.05);
+}
+
+body.dark .action-button:hover {
+    background: #4a83ce;
+}
+
+.main-content {
+    flex: 3;
+    min-width: 0;
+    display: flex;
+    flex-direction: column;
+    gap: 1.5rem;
+}
+
+/* Cards */
+.table-card, .form-card, .history-card {
+    background: rgba(255, 255, 255, 0.9);
+    border-radius: 0.75rem;
+    padding: 1.5rem;
+    box-shadow: 0 0.375rem 1.25rem rgba(0, 0, 0, 0.05);
+    border: 1px solid rgba(229, 231, 235, 0.5);
+    transition: transform 0.3s ease;
+}
+
+body.dark .table-card, body.dark .form-card, body.dark .history-card {
+    background: rgba(34, 34, 34, 0.9);
+    box-shadow: 0 0.375rem 1.25rem rgba(0, 0, 0, 0.3);
+    border-color: rgba(107, 114, 128, 0.5);
+}
+
+.table-card h2, .form-card h3, .history-card h3 {
+    font-size: 1.25rem;
+    font-weight: 600;
+    color: #4cb1c7;
+    margin-bottom: 1rem;
+}
+
+body.dark .table-card h2, body.dark .form-card h3, body.dark .history-card h3 {
+    color: #60a0dc;
+}
+
+/* Table */
+.table-container {
+    overflow-y: auto;
+    max-height: 600px;
+    border-radius: 0.5rem;
+}
+
+.table-head .table-row {
+    background: rgba(76, 177, 199, 0.55);
+    font-size: 0.875rem;
+    font-weight: 600;
+    color: #1f2937;
+    position: sticky;
+    top: 0;
+    z-index: 1;
+}
+
+body.dark .table-head .table-row {
+    background: rgba(99, 179, 237, 0.55);
+    color: #e5e7eb;
+}
+
+
+
+.table-body .table-row {
+    background: #f8fafc;
+    border-radius: 0.5rem;
+    margin: 0.5rem 0;
+    transition: all 0.3s ease;
+}
+
+body.dark .table-body .table-row {
+    background: #333333;
+    color: #e5e7eb;
+}
+
+.table-body .table-row:hover {
+    background: #4cb1c7;
+    color: #fff;
+}
+
+body.dark .table-body .table-row:hover {
+    background: #63b3ed;
+}
+
+.table-cell {
+    padding: 0.5rem;
+    font-size: 0.875rem;
+    overflow: hidden;
+    text-overflow: ellipsis;
+    white-space: nowrap;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+}
+
+.actions {
+    display: flex;
+    gap: 0.5rem;
+}
+
+.actions button {
+    padding: 0.3rem;
+    background: #cecece;
+    color: #fff;
+    border: none;
+    border-radius: 0.5rem;
+    cursor: pointer;
+    transition: all 0.3s ease;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+}
+
+body.dark .actions button {
+    background: #5f5f5f;
+}
+
+.actions button:hover {
+    background: #272727;
+    transform: scale(1.1);
+}
+
+body.dark .actions button:hover {
+    background: #232323;
+}
+
+/* Form */
+.form-group {
+    margin-bottom: 1rem;
+}
+
+.form-group label {
+    display: block;
+    font-size: 0.875rem;
+    font-weight: 600;
+    color: #4cb1c7;
+    margin-bottom: 0.5rem;
+}
+
+body.dark .form-group label {
+    color: #60a0dc;
+}
+
+.form-group input,
+.form-group select {
+    width: 100%;
+    padding: 0.75rem;
+    font-size: 0.875rem;
+    border: 1px solid #ddd;
+    border-radius: 0.75rem;
+    background: #f8fafc;
+    color: #1f2937;
+    transition: border-color 0.3s ease;
+}
+
+body.dark .form-group input,
+body.dark .form-group select {
+    background: #363636;
+    color: #e5e7eb;
+    border-color: #4b5563;
+}
+
+.form-group input:focus,
+.form-group select:focus {
+    border-color: #4cb1c7;
+    outline: none;
+}
+
+body.dark .form-group input:focus,
+body.dark .form-group select:focus {
+    border-color: #60a0dc;
+}
+
+.back-button {
+    padding: 0.75rem 1.5rem;
+    font-size: 0.875rem;
+    font-weight: 600;
+    text-transform: uppercase;
+    background: #fff;
+    color: #4cb1c7;
+    border: 1px solid #4cb1c7;
+    border-radius: 3.125rem;
+    cursor: pointer;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    gap: 0.5rem;
+    transition: all 0.3s ease;
+    margin-top: 1rem;
+}
+
+body.dark .back-button {
+    background: #1f2937;
+    color: #60a0dc;
+    border-color: #60a0dc;
+}
+
+.back-button:hover {
+    background: #4cb1c7;
+    color: #fff;
+}
+
+body.dark .back-button:hover {
+    background: #63b3ed;
+}
+
+/* Pagination */
+.pagination {
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    margin-top: 1rem;
+}
+
+.pagination button {
+    padding: 0.5rem 1rem;
+    font-size: 0.875rem;
+    background: #f8fafc;
+    border: 1px solid #ddd;
+    border-radius: 0.5rem;
+    color: #1f2937;
+    cursor: pointer;
+    transition: all 0.3s ease;
+}
+
+body.dark .pagination button {
+    background: #363636;
+    border-color: #4b5563;
+    color: #e5e7eb;
+}
+
+.pagination button:hover {
+    background: #4cb1c7;
+    color: #fff;
+}
+
+body.dark .pagination button:hover {
+    background: #63b3ed;
+}
+
+.pagination button:disabled {
+    background: #e5e7eb;
+    color: #9ca3af;
+    cursor: not-allowed;
+}
+
+body.dark .pagination button:disabled {
+    background: #4b5563;
+    color: #6b7280;
+}
+
+.pagination span {
+    font-size: 0.875rem;
+    color: #6b7280;
+}
+
+body.dark .pagination span {
+    color: #9ca3af;
+}
+
+/* History Card */
+.history-card .table-row {
+    grid-template-columns: 2fr 2fr 1fr;
+}
+
+/* Loading */
+.loading-text {
+    text-align: center;
+    font-size: 1rem;
+    color: #6b7280;
+    padding: 1.5rem;
+}
+
+body.dark .loading-text {
+    color: #9ca3af;
+}
+
+/* Responsive Adjustments */
+@media (max-width: 768px) {
+    .receipt-books {
+        padding: 1rem;
+    }
+
+    .dashboard-content {
+        flex-direction: column;
+        gap: 1rem;
+    }
+
+    .sidebar {
+        max-width: 100%;
+    }
+
+    .table-row {
+        grid-template-columns: 1fr;
+        text-align: center;
+    }
+
+    .table-cell {
+        padding: 0.75rem 0;
+    }
+
+    .actions {
+        justify-content: center;
+    }
+}
+
+@media (max-width: 480px) {
+    .dashboard-header {
+        flex-direction: column;
+        align-items: flex-start;
+    }
+
+    .search-container {
+        max-width: 100%;
+    }
+
+    .pagination {
+        flex-direction: column;
+        gap: 0.5rem;
+    }
+}
+
+
+/* Reuse styles from AdminDashboard.css and add specific overrides */
+.receipt-books {
+    padding: 1.5rem;
+    max-width: 1440px;
+    margin: 0 auto;
+    font-family: 'Inter', sans-serif;
+    min-height: 100vh;
+    display: flex;
+    flex-direction: column;
+    gap: 1.5rem;
+}
+
+/* Ensure table includes QR code column */
+.table-row-1 {
+    grid-template-columns: 0.5fr 1fr 1.3fr 1.3fr 0.7fr 1fr ;
+    padding: 0 1rem  !important;
+    /* Adjusted for select and QR code */
+}
+
+.table-row-2 {
+    grid-template-columns: 1fr 1fr 1fr 1fr !important ;
+    /* Adjusted for select and QR code */
+}
+
+/* QR Code styling */
+.table-cell img {
+    max-width: 2rem;
+    border-radius: 0.25rem;
+}
+
+.scan-card {
+    background: rgba(255, 255, 255, 0.1);
+    border-radius: 1rem;
+    padding: 1.5rem;
+    box-shadow: 0 4px 6px rgba(0, 0, 0, 0.1);
+    -webkit-backdrop-filter: blur(10px);
+    backdrop-filter: blur(10px);
+    max-width: 600px;
+    margin: 0 auto;
+}
+
+.scanned-list {
+    margin-top: 1rem;
+}
+
+.scanned-list ul {
+    list-style: none;
+    padding: 0;
+    max-height: 200px;
+    overflow-y: auto;
+}
+
+.scanned-list li {
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    padding: 0.5rem;
+    border-bottom: 1px solid rgba(255, 255, 255, 0.2);
+}
+
+.scanned-list li button {
+    background: #ff4444;
+    border: none;
+    color: white;
+    padding: 0.25rem 0.5rem;
+    border-radius: 0.25rem;
+    cursor: pointer;
+}
+
+.scanned-list li button:hover {
+    background: #cc0000;
+}
+
+.qr-reader {
+    width: 100%;
+    max-width: 400px;
+    margin: 0 auto;
+}
+
+
+.receipt-books-btn {
+    padding: 0.75rem 1.5rem;
+    font-size: 0.875rem;
+    font-weight: 600;
+    text-transform: uppercase;
+    background: #4cb1c7;
+    color: #fff;
+    border: none;
+    border-radius: 3.125rem;
+    cursor: pointer;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    gap: 0.5rem;
+    box-shadow: 0 0.25rem 0.75rem rgba(76, 177, 199, 0.3);
+    transition: all 0.3s ease;
+}
+
+body.dark .receipt-books-btn {
+    background: #63b3ed;
+    border: 1px solid #262626;
+}
+
+.receipt-books-btn:hover {
+    background: #3a8fa2;
+}
+
+body.dark .receipt-books-btn:hover {
+    background: #262626;
+    color: #63b3ed;
+    border-color: #63b3ed;
+}
+
+
+  
+
+
+==================================================
+File contents: C:\Users\Kayto\Desktop\IT\Projects\Stage\Stage PFE\TraceFlow\Front-End\src\pages\Reciept\ReceiptBooks.tsx
+==================================================
+import React, { useState, useEffect, useMemo } from "react";
+import { useNavigate } from "react-router-dom";
+import { FaSearch, FaSort, FaPlus, FaEdit, FaTrash, FaHistory, FaExchangeAlt } from "react-icons/fa";
+import { useAuth } from "../../context/AuthContext";
+import { getAllReceiptBooks, createReceiptBook, updateReceiptBook, deleteReceiptBook } from "../../apis/receiptBookAPI";
+import "./ReceiptBooks.css";
+import ReceiptBook from "../../models/ReceiptBook";
+import { getUserById } from "../../apis/userAPI";
+import { getAgentById } from "../../apis/agentAPI";
+
+const ITEMS_PER_PAGE = 10;
+
+const ReceiptBooks: React.FC = () => {
+    const { token, effectivePermissions, userRoles } = useAuth();
+    const navigate = useNavigate();
+    const [receiptBooks, setReceiptBooks] = useState<ReceiptBook[]>([]);
+    const [view, setView] = useState<"list" | "create" | "edit">("list");
+    const [searchQuery, setSearchQuery] = useState("");
+    const [sortField, setSortField] = useState<"number" | "type" | "status">("number");
+    const [sortOrder, setSortOrder] = useState<"asc" | "desc">("asc");
+    const [filterType, setFilterType] = useState<string>("all");
+    const [filterStatus, setFilterStatus] = useState<string>("all");
+    const [newReceiptBook, setNewReceiptBook] = useState<Partial<ReceiptBook>>({});
+    const [editReceiptBook, setEditReceiptBook] = useState<ReceiptBook | null>(null);
+    const [loading, setLoading] = useState(false);
+    const [currentPage, setCurrentPage] = useState(1);
+    const [holdersMap, setHoldersMap] = useState<Map<string, string>>(new Map());
+
+    const currentUserID = token ? JSON.parse(atob(token.split('.')[1])).sub : "";
+    const userRole = userRoles?.[0]?.name || "";
+
+    // Permissions object based on effectivePermissions
+    const permissions = {
+        canView: effectivePermissions?.some(p => p.name === "access_receipt_books"),
+        canViewDetails: effectivePermissions?.some(p => p.name === "access_receipt_book_details"),
+        canViewHistory: effectivePermissions?.some(p => p.name === "access_receipt_book_history"),
+        canCreate: effectivePermissions?.some(p => p.name === "create_receipt_books"),
+        canUpdate: effectivePermissions?.some(p => p.name === "update_receipt_books"),
+        canDelete: effectivePermissions?.some(p => p.name === "delete_receipt_books"),
+        canTransfer: effectivePermissions?.some(p => p.name === "transfer_receipt_books"),
+    };
+
+    // Fetch receipt books with role-based filtering
+    useEffect(() => {
+        const fetchData = async () => {
+            if (!token || !permissions.canView) {
+                setLoading(false);
+                return;
+            }
+            setLoading(true);
+            try {
+                const receiptsData = await getAllReceiptBooks(token);
+                let filteredBooks = receiptsData;
+
+                // Apply role-specific filters based on permissions and role context
+                if (userRole === "Supervisor") {
+                    filteredBooks = receiptsData.filter(r => r.currentHolderID === currentUserID);
+                } else if (userRole === "Stock Manager") {
+                    filteredBooks = receiptsData.filter(r => 
+                        !["In Stock", "With Stock Manager", "Archived"].includes(r.status)
+                    );
+                }
+
+                setReceiptBooks(filteredBooks);
+            } catch (error) {
+                console.error("Failed to fetch receipt books:", error);
+            } finally {
+                setLoading(false);
+            }
+        };
+        fetchData();
+    }, [token, permissions.canView, userRole, currentUserID]);
+
+    // Fetch holder names (users and agents)
+    useEffect(() => {
+        const fetchHolders = async () => {
+            const uniqueUserIDs = Array.from(new Set(receiptBooks.map(r => r.currentHolderID).filter(id => id)));
+            const uniqueAgentIDs = Array.from(new Set(receiptBooks.map(r => r.agentID).filter(id => id)));
+            let hasChanges = false;
+            const newHoldersMap = new Map<string, string>(holdersMap);
+
+            for (const userID of uniqueUserIDs) {
+                if (userID && !newHoldersMap.has(userID)) {
+                    try {
+                        const userData = await getUserById(userID, token!);
+                        newHoldersMap.set(userID, `${userData.firstname} ${userData.lastname}`);
+                        hasChanges = true;
+                    } catch (error) {
+                        console.error(`Failed to fetch user ${userID}:`, error);
+                        newHoldersMap.set(userID, "Unknown User");
+                        hasChanges = true;
+                    }
+                }
+            }
+
+            for (const agentID of uniqueAgentIDs) {
+                if (agentID && !newHoldersMap.has(agentID)) {
+                    try {
+                        const agentData = await getAgentById(agentID, token!);
+                        newHoldersMap.set(agentID, `${agentData.name} ${agentData.lastname}`);
+                        hasChanges = true;
+                    } catch (error) {
+                        console.error(`Failed to fetch agent ${agentID}:`, error);
+                        newHoldersMap.set(agentID, "Unknown Agent");
+                        hasChanges = true;
+                    }
+                }
+            }
+
+            if (hasChanges) setHoldersMap(newHoldersMap);
+        };
+
+        if (token && receiptBooks.length > 0) fetchHolders();
+    }, [token, receiptBooks, holdersMap]);
+
+    const uniqueTypes = useMemo(() => Array.from(new Set(receiptBooks.map(r => r.type))), [receiptBooks]);
+    const uniqueStatuses = useMemo(() => Array.from(new Set(receiptBooks.map(r => r.status))), [receiptBooks]);
+
+    const filteredReceiptBooks = useMemo(() => {
+        let result = receiptBooks.filter(r =>
+            r.number.toString().includes(searchQuery) ||
+            r.type.toLowerCase().includes(searchQuery.toLowerCase()) ||
+            r.status.toLowerCase().includes(searchQuery.toLowerCase())
+        );
+        if (filterType !== "all") result = result.filter(r => r.type === filterType);
+        if (filterStatus !== "all") result = result.filter(r => r.status === filterStatus);
+        result.sort((a, b) => {
+            const fieldA = sortField === "number" ? a.number : sortField === "type" ? a.type : a.status;
+            const fieldB = sortField === "number" ? b.number : sortField === "type" ? b.type : b.status;
+            return sortOrder === "asc" ? (fieldA > fieldB ? 1 : -1) : (fieldA < fieldB ? 1 : -1);
+        });
+        return result;
+    }, [receiptBooks, searchQuery, sortField, sortOrder, filterType, filterStatus]);
+
+    const paginatedReceiptBooks = useMemo(() => {
+        const start = (currentPage - 1) * ITEMS_PER_PAGE;
+        const end = start + ITEMS_PER_PAGE;
+        return filteredReceiptBooks.slice(start, end);
+    }, [filteredReceiptBooks, currentPage]);
+
+    const handleCreate = async () => {
+        if (!permissions.canCreate) return;
+        try {
+            if (newReceiptBook.number && newReceiptBook.type) {
+                const createdReceipt = await createReceiptBook({ number: newReceiptBook.number, type: newReceiptBook.type }, token!);
+                setReceiptBooks([...receiptBooks, createdReceipt]);
+                setNewReceiptBook({});
+                setView("list");
+            } else {
+                alert("Please fill in all required fields.");
+            }
+        } catch (error) {
+            alert(`Failed to create receipt book: ${error}`);
+        }
+    };
+
+    const handleUpdate = async () => {
+        if (!permissions.canUpdate || !editReceiptBook) return;
+        try {
+            const updatedReceipt = await updateReceiptBook(editReceiptBook.bookID, editReceiptBook, token!);
+            setReceiptBooks(receiptBooks.map(r => r.bookID === updatedReceipt.bookID ? updatedReceipt : r));
+            setEditReceiptBook(null);
+            setView("list");
+        } catch (error) {
+            alert(`Failed to update receipt book: ${error}`);
+        }
+    };
+
+    const handleDelete = async (bookID: string) => {
+        if (!permissions.canDelete || !window.confirm("Are you sure?")) return;
+        try {
+            await deleteReceiptBook(bookID, token!);
+            setReceiptBooks(receiptBooks.filter(r => r.bookID !== bookID));
+        } catch (error) {
+            alert(`Failed to delete receipt book: ${error}`);
+        }
+    };
+
+    const handleTransfer = () => {
+        if (permissions.canTransfer) {
+            navigate("/transfer-receipt-books");
+        }
+    };
+
+    if (loading) return <div className="loading-text">Loading...</div>;
+    if (!permissions.canView) return <div className="error-text">Access Denied: You lack permission to view receipt books.</div>;
+
+    return (
+        <div className="receipt-books">
+            <header className="dashboard-header">
+                <h1>{view === "list" ? "Receipt Books" : view.charAt(0).toUpperCase() + view.slice(1)}</h1>
+                {view === "list" && (
+                    <div className="search-container">
+                        <FaSearch className="search-icon" />
+                        <input
+                            type="text"
+                            placeholder="Search receipts..."
+                            value={searchQuery}
+                            onChange={(e) => setSearchQuery(e.target.value)}
+                            className="search-input"
+                        />
+                    </div>
+                )}
+            </header>
+
+            <section className="dashboard-content">
+                <aside className="sidebar">
+                    <div className="sort-card">
+                        <h3>Sort By</h3>
+                        <select value={sortField} onChange={(e) => setSortField(e.target.value as "number" | "type" | "status")}>
+                            <option value="number">Number</option>
+                            <option value="type">Type</option>
+                            <option value="status">Status</option>
+                        </select>
+                        <button onClick={() => setSortOrder(sortOrder === "asc" ? "desc" : "asc")}>
+                            <FaSort /> {sortOrder === "asc" ? "Asc" : "Desc"}
+                        </button>
+                    </div>
+                    <div className="filter-card">
+                        <h3>Filters</h3>
+                        <div className="form-group">
+                            <label>Type</label>
+                            <select value={filterType} onChange={(e) => setFilterType(e.target.value)}>
+                                <option value="all">All Types</option>
+                                {uniqueTypes.map(type => <option key={type} value={type}>{type}</option>)}
+                            </select>
+                        </div>
+                        <div className="form-group">
+                            <label>Status</label>
+                            <select value={filterStatus} onChange={(e) => setFilterStatus(e.target.value)}>
+                                <option value="all">All Statuses</option>
+                                {uniqueStatuses.map(status => <option key={status} value={status}>{status}</option>)}
+                            </select>
+                        </div>
+                    </div>
+                    {permissions.canCreate && (
+                        <button className="action-button" onClick={() => setView("create")}>
+                            <FaPlus /> New Receipt
+                        </button>
+                    )}
+                    {permissions.canTransfer && (
+                        <button className="action-button" onClick={handleTransfer}>
+                            <FaExchangeAlt /> Transfer Books
+                        </button>
+                    )}
+                </aside>
+
+                <main className="main-content">
+                    {view === "list" && (
+                        <div className="table-card">
+                            <h2>Receipts</h2>
+                            <div className="table-container">
+                                <div className="table-head">
+                                    <div className="table-row table-row-1">
+                                        <div className="table-cell">Number</div>
+                                        <div className="table-cell">Type</div>
+                                        <div className="table-cell">Status</div>
+                                        <div className="table-cell">Holder</div>
+                                        <div className="table-cell">QR Code</div>
+                                        <div className="table-cell">Actions</div>
+                                    </div>
+                                </div>
+                                <div className="table-body">
+                                    {paginatedReceiptBooks.map((receipt) => (
+                                        <div key={receipt.bookID} className="table-row table-row-1">
+                                            <div className="table-cell">{receipt.number}</div>
+                                            <div className="table-cell">{receipt.type}</div>
+                                            <div className="table-cell">{receipt.status}</div>
+                                            <div className="table-cell">
+                                                {receipt.agentID
+                                                    ? holdersMap.get(receipt.agentID) || "Loading..."
+                                                    : receipt.currentHolderID
+                                                    ? holdersMap.get(receipt.currentHolderID) || "Loading..."
+                                                    : "N/A"}
+                                            </div>
+                                            <div className="table-cell">
+                                                <img src={receipt.qrCode} alt="QR Code" style={{ width: "50px" }} />
+                                            </div>
+                                            <div className="table-cell actions">
+                                                {permissions.canUpdate && (
+                                                    <button onClick={() => { setEditReceiptBook(receipt); setView("edit"); }}>
+                                                        <FaEdit />
+                                                    </button>
+                                                )}
+                                                {permissions.canDelete && (
+                                                    <button onClick={() => handleDelete(receipt.bookID)}>
+                                                        <FaTrash />
+                                                    </button>
+                                                )}
+                                                {permissions.canViewHistory && (
+                                                    <button onClick={() => navigate(`/receipt-book/${receipt.bookID}/history`)}>
+                                                        <FaHistory />
+                                                    </button>
+                                                )}
+                                            </div>
+                                        </div>
+                                    ))}
+                                </div>
+                            </div>
+                            <div className="pagination">
+                                <button
+                                    onClick={() => setCurrentPage(p => Math.max(1, p - 1))}
+                                    disabled={currentPage === 1}
+                                >
+                                    Previous
+                                </button>
+                                <span>Page {currentPage} of {Math.ceil(filteredReceiptBooks.length / ITEMS_PER_PAGE)}</span>
+                                <button
+                                    onClick={() => setCurrentPage(p => p + 1)}
+                                    disabled={currentPage >= Math.ceil(filteredReceiptBooks.length / ITEMS_PER_PAGE)}
+                                >
+                                    Next
+                                </button>
+                            </div>
+                        </div>
+                    )}
+
+                    {view === "create" && permissions.canCreate && (
+                        <div className="form-card">
+                            <h3>New Receipt</h3>
+                            <div className="form-group">
+                                <label>Number</label>
+                                <input
+                                    value={newReceiptBook.number || ""}
+                                    onChange={(e: React.ChangeEvent<HTMLInputElement>) => setNewReceiptBook({ ...newReceiptBook, number: e.target.value })}
+                                />
+                            </div>
+                            <div className="form-group">
+                                <label>Type</label>
+                                <input
+                                    value={newReceiptBook.type || ""}
+                                    onChange={(e) => setNewReceiptBook({ ...newReceiptBook, type: e.target.value })}
+                                />
+                            </div>
+                            <button className="action-button" onClick={handleCreate}>Create</button>
+                            <button className="back-button" onClick={() => setView("list")}>Cancel</button>
+                        </div>
+                    )}
+
+                    {view === "edit" && editReceiptBook && permissions.canUpdate && (
+                        <div className="form-card">
+                            <h3>Edit Receipt #{editReceiptBook.number}</h3>
+                            <div className="form-group">
+                                <label>Number</label>
+                                <input
+                                    value={editReceiptBook.number}
+                                    onChange={(e) => setEditReceiptBook({ ...editReceiptBook, number: e.target.value })}
+                                />
+                            </div>
+                            <div className="form-group">
+                                <label>Type</label>
+                                <input
+                                    value={editReceiptBook.type}
+                                    onChange={(e) => setEditReceiptBook({ ...editReceiptBook, type: e.target.value })}
+                                />
+                            </div>
+                            <button className="action-button" onClick={handleUpdate}>Save</button>
+                            <button className="back-button" onClick={() => setView("list")}>Cancel</button>
+                        </div>
+                    )}
+                </main>
+            </section>
+        </div>
+    );
+};
+
+export default ReceiptBooks;
+
+==================================================
+File contents: C:\Users\Kayto\Desktop\IT\Projects\Stage\Stage PFE\TraceFlow\Front-End\src\pages\Reciept\TransferReceiptBook.css
+==================================================
+/* Default styles (Light theme) */
+.transfer-receipt-book-container {
+  padding: 1rem;
+  max-width: 600px;
+  margin: 0 auto;
+  font-family: 'Inter', sans-serif;
+  background: #f0f4f8;
+  min-height: 100vh;
+}
+
+.transfer-header {
+  background: linear-gradient(135deg, #4cb1c7 0%, #3a8fa2 100%);
+  color: #fff;
+  padding: 1rem;
+  border-radius: 0.75rem;
+  text-align: center;
+  margin-bottom: 1rem;
+}
+
+.transfer-header h1 {
+  margin: 0;
+  font-size: 1.5rem;
+  font-weight: 700;
+}
+
+.transfer-card {
+  background: #fff;
+  border-radius: 0.75rem;
+  padding: 1.5rem;
+  box-shadow: 0 4px 15px rgba(0, 0, 0, 0.05);
+}
+
+.form-group {
+  margin-bottom: 1rem;
+}
+
+.form-group label {
+  display: block;
+  font-size: 0.9rem;
+  color: #4cb1c7;
+  margin-bottom: 0.25rem;
+}
+
+.qr-reader {
+  width: 100%;
+  max-width: 400px;
+  margin: 0 auto;
+}
+
+.form-group select,
+.form-group input {
+  width: 100%;
+  padding: 0.75rem;
+  border: 1px solid #e5e7eb;
+  border-radius: 0.5rem;
+  font-size: 0.9rem;
+  background: #fff;
+  color: #1f2937;
+}
+
+.error {
+  color: #e81f76;
+  font-size: 0.9rem;
+  text-align: center;
+  margin-bottom: 1rem;
+}
+
+.error-above-camera {
+  color: #e81f76;
+  font-size: 0.9rem;
+  text-align: center;
+  margin-bottom: 0.5rem;
+  background: rgba(255, 255, 255, 0.9);
+  padding: 0.5rem;
+  border-radius: 0.25rem;
+}
+
+.form-actions {
+  display: flex;
+  gap: 1rem;
+  justify-content: center;
+}
+
+.back-btn,
+.transfer-btn,
+.validate-btn {
+  padding: 0.75rem 1.5rem;
+  font-size: 0.9rem;
+  font-weight: 600;
+  text-transform: uppercase;
+  border: none;
+  border-radius: 0.5rem;
+  cursor: pointer;
+  display: flex;
+  align-items: center;
+  gap: 0.5rem;
+}
+
+.back-btn {
+  background: #6b7280;
+  color: #fff;
+}
+
+.transfer-btn,
+.validate-btn {
+  background: linear-gradient(135deg, #4cb1c7 0%, #3a8fa2 100%);
+  color: #fff;
+}
+
+.back-btn:hover,
+.transfer-btn:hover,
+.validate-btn:hover {
+  opacity: 0.9;
+}
+
+.scanned-list {
+  margin-top: 1rem;
+}
+
+.scanned-list ul {
+  list-style: none;
+  padding: 0;
+  max-height: 200px;
+  overflow-y: auto;
+}
+
+.scanned-list li {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  padding: 0.5rem;
+  border-bottom: 1px solid #e5e7eb;
+  color: #1f2937;
+}
+
+.scanned-list li button {
+  background: #ff4444;
+  border: none;
+  color: white;
+  padding: 0.25rem 0.5rem;
+  border-radius: 0.25rem;
+  cursor: pointer;
+}
+
+.scanned-list li button:hover {
+  background: #cc0000;
+}
+
+/* Dark theme overrides */
+body.dark .transfer-receipt-book-container {
+  background: none; /* Remove background to align with body.dark gradient */
+}
+
+body.dark .transfer-header {
+  background: linear-gradient(135deg, #63b3ed 0%, #4299e1 100%);
+  color: #e2e8f0;
+  box-shadow: 0 0.375rem 1.25rem rgba(0, 0, 0, 0.3);
+}
+
+body.dark .transfer-header h1 {
+  color: #e2e8f0;
+}
+
+body.dark .transfer-card {
+  background: #262626;
+  box-shadow: 0 0.375rem 1.25rem rgba(0, 0, 0, 0.3);
+}
+
+body.dark .form-group label {
+  color: #63b3ed;
+}
+
+body.dark .form-group select,
+body.dark .form-group input {
+  background: #262626;
+  border-color: #4a5568;
+  color: #e2e8f0;
+}
+
+body.dark .qr-reader {
+  border-color: #63b3ed;
+}
+
+body.dark .error {
+  color: #f68787;
+}
+
+body.dark .error-above-camera {
+  color: #f68787;
+  background: rgba(38, 38, 38, 0.9); /* Match dark theme background */
+}
+
+body.dark .back-btn {
+  background: #6b7280;
+  color: #e2e8f0;
+}
+
+body.dark .transfer-btn,
+body.dark .validate-btn {
+  background: #63b3ed;
+  color: #fff;
+}
+
+body.dark .back-btn:hover,
+body.dark .transfer-btn:hover,
+body.dark .validate-btn:hover {
+  background: #4299e1;
+}
+
+body.dark .scanned-list li {
+  color: #e2e8f0;
+  border-bottom: 1px solid #4a5568;
+}
+
+body.dark .scanned-list li button {
+  background: #f68787;
+}
+
+body.dark .scanned-list li button:hover {
+  background: #d53f3f;
+}
+
+==================================================
+File contents: C:\Users\Kayto\Desktop\IT\Projects\Stage\Stage PFE\TraceFlow\Front-End\src\pages\Reciept\TransferReceiptBook.tsx
+==================================================
+import React, { useState, useEffect, useRef, useCallback } from "react";
+import { useLocation, useNavigate } from "react-router-dom";
+import { FaArrowLeft, FaExchangeAlt, FaCheck } from "react-icons/fa";
+import { Html5Qrcode } from "html5-qrcode";
+import { useAuth } from "../../context/AuthContext";
+import {
+    getAllReceiptBooks,
+    transfer,
+    validateTransfer,
+    sendToSupplier,
+} from "../../apis/receiptBookAPI";
+import { collectStub, validateStubCollection, archiveStub } from "../../apis/receiptStubAPI";
+import { getAllUsers, getUserByPhone } from "../../apis/userAPI";
+import { getAgentsByLocation, getAgentLocations, getAgentByPhone, getAgentById } from "../../apis/agentAPI";
+import "./TransferReceiptBook.css";
+import ReceiptBook from "../../models/ReceiptBook";
+import User from "../../models/User";
+import Agent from "../../models/Agent";
+
+const TransferReceiptBook: React.FC = () => {
+    const { token, userRoles, effectivePermissions } = useAuth();
+    const navigate = useNavigate();
+    const location = useLocation();
+    const { agentID: preSelectedAgentID, forceAgent, transferType } = (location.state as { agentID?: string; forceAgent?: boolean; transferType?: string }) || {};
+
+    const [receiptBooks, setReceiptBooks] = useState<ReceiptBook[]>([]);
+    const [selectedBookIDs, setSelectedBookIDs] = useState<string[]>([]);
+    const [users, setUsers] = useState<User[]>([]);
+    const [locations, setLocations] = useState<string[]>([]);
+    const [agents, setAgents] = useState<Agent[]>([]);
+    const [recipientType, setRecipientType] = useState<string>("");
+    const [recipientID, setRecipientID] = useState<string>("");
+    const [supplierEmail, setSupplierEmail] = useState<string>("");
+    const [agentPhone, setAgentPhone] = useState<string>("");
+    const [selectedLocation, setSelectedLocation] = useState<string>("");
+    const [searchQuery, setSearchQuery] = useState<string>("");
+    const [scannedQR, setScannedQR] = useState<string[]>([]);
+    const [otp, setOtp] = useState<string>("");
+    const [loading, setLoading] = useState<boolean>(true);
+    const [error, setError] = useState<string | null>(null);
+    const [transferInitiated, setTransferInitiated] = useState<boolean>(false);
+    const [isScannerRunning, setIsScannerRunning] = useState<boolean>(false);
+    const [isScannerStarting, setIsScannerStarting] = useState<boolean>(false);
+    const qrScannerRef = useRef<Html5Qrcode | null>(null);
+    const qrReaderRef = useRef<HTMLDivElement>(null);
+    const scannedQRRef = useRef<Set<string>>(new Set());
+    const stopLockRef = useRef<boolean>(false);
+    const userRole = userRoles?.[0]?.name || "";
+    const currentUserID = token ? JSON.parse(atob(token.split('.')[1])).sub : "";
+
+    const isTransferable = useCallback((book: ReceiptBook) => {
+        switch (userRole) {
+            case "Purchase Team":
+                return book.status === "In Stock" && book.currentHolderID === currentUserID;
+            case "Regional Manager":
+                return ["With Regional Manager", "Stub Collected"].includes(book.status) && book.currentHolderID === currentUserID;
+            case "Supervisor":
+                return ["With Supervisor", "Stub Collected", "Assigned to Agent"].includes(book.status) && (book.currentHolderID === currentUserID || book.agentID);
+            case "Stock Manager":
+                return book.status === "With Stock Manager" && book.currentHolderID === currentUserID;
+            case "Super Admin":
+                return true;
+            default:
+                return false;
+        }
+    }, [userRole, currentUserID]);
+
+    const handleScanSuccess = useCallback(async (decodedText: string) => {
+        console.log("Scan detected:", decodedText, { isScannerRunning, selectedBookIDs, scannedQR });
+
+        try {
+            const parseTLV = (text: string) => {
+                const numberLength = parseInt(text.slice(2, 4), 10);
+                const number = text.slice(4, 4 + numberLength);
+                const typeStart = 4 + numberLength + 2;
+                const typeLength = parseInt(text.slice(typeStart, typeStart + 2), 10);
+                const type = text.slice(typeStart + 2, typeStart + 2 + typeLength);
+                return { number, type };
+            };
+
+            const { number, type } = parseTLV(decodedText);
+            console.log("Parsed QR:", { number, type });
+
+            const matchingBook = receiptBooks.find(
+                (r) => r.number === number && r.type === type
+            );
+            if (!matchingBook) {
+                setError(`QR code "${number}" not found in receipt books.`);
+                console.log("No matching book found.");
+                return;
+            }
+
+            if (scannedQRRef.current.has(decodedText)) {
+                setError(`QR code "${number}" has already been scanned.`);
+                console.log("QR already scanned.");
+                return;
+            }
+
+            if (!isTransferable(matchingBook)) {
+                setError(`Book "${number}" (status: ${matchingBook.status}) cannot be transferred by ${userRole}.`);
+                console.log("Book not transferable.");
+                return;
+            }
+
+            if (recipientType === "Stub Collection" && matchingBook.status !== "Assigned to Agent") {
+                setError(`Book "${number}" must be "Assigned to Agent" for stub collection.`);
+                console.log("Invalid status for stub collection.");
+                return;
+            }
+
+            if (recipientType === "Agent" && selectedBookIDs.length >= 1) {
+                setError("Supervisors can only assign one receipt book to an Agent.");
+                console.log("Agent limit reached.");
+                return;
+            }
+
+            console.log("Adding QR:", decodedText, "BookID:", matchingBook.bookID);
+            setScannedQR((prev) => {
+                const newScanned = [...prev, decodedText];
+                console.log("Updated scannedQR:", newScanned);
+                return newScanned;
+            });
+            setSelectedBookIDs((prev) => {
+                const newSelected = [...prev, matchingBook.bookID];
+                console.log("Updated selectedBookIDs:", newSelected);
+                return newSelected;
+            });
+            scannedQRRef.current.add(decodedText);
+            setError(null);
+        } catch (err) {
+            setError("Invalid QR code format. Please try again.");
+            console.error("QR Parse Error:", err);
+        }
+    }, [isScannerRunning, selectedBookIDs, scannedQR, receiptBooks, isTransferable, recipientType, userRole]);
+
+    // Pre-select agent and force recipient type
+    useEffect(() => {
+        if (preSelectedAgentID && forceAgent && !recipientType) {
+            const initialRecipientType = transferType || "Agent";
+            setRecipientType(initialRecipientType);
+            setRecipientID(preSelectedAgentID);
+            setAgentPhone("");
+            const fetchAgent = async () => {
+                try {
+                    const agent = await getAgentById(preSelectedAgentID, token!);
+                    setAgents([agent]);
+                } catch (err) {
+                    setError("Failed to fetch agent details.");
+                    console.error(err);
+                }
+            };
+            fetchAgent();
+        }
+    }, [preSelectedAgentID, forceAgent, token, recipientType, transferType]);
+
+    // Stop scanner function
+    const stopScanner = useCallback(async () => {
+        if (stopLockRef.current || !qrScannerRef.current || !isScannerRunning) return;
+        stopLockRef.current = true;
+        console.log("Stopping QR scanner...");
+        try {
+            await qrScannerRef.current.stop();
+            qrScannerRef.current.clear();
+            qrScannerRef.current = null;
+            setIsScannerRunning(false);
+            scannedQRRef.current.clear();
+            console.log("Scanner stopped successfully.");
+        } catch (err) {
+            console.error("Stop Scanner Error:", err);
+        } finally {
+            stopLockRef.current = false;
+        }
+    }, [isScannerRunning]);
+
+    // Start scanner function
+    const startScanner = useCallback(async () => {
+        if (stopLockRef.current || !qrReaderRef.current || isScannerRunning || isScannerStarting) return;
+        setIsScannerStarting(true);
+        const html5QrCode = qrScannerRef.current || new Html5Qrcode("qr-reader");
+        qrScannerRef.current = html5QrCode;
+        const config = { fps: 10, qrbox: { width: 250, height: 250 } };
+
+        console.log("Starting scanner...");
+        try {
+            await html5QrCode.start(
+                { facingMode: "environment" },
+                config,
+                handleScanSuccess,
+                (err) => console.warn("Scan error:", err)
+            );
+            console.log("QR scanner started successfully.", { auto: !!preSelectedAgentID });
+            setIsScannerRunning(true);
+            setError(null);
+        } catch (err) {
+            setError("Camera access denied or unavailable.");
+            console.error("Scanner Start Error:", err);
+        } finally {
+            setIsScannerStarting(false);
+        }
+    }, [handleScanSuccess, isScannerRunning, isScannerStarting, preSelectedAgentID]);
+
+    // Unified scanner control
+    useEffect(() => {
+        if (
+            !qrReaderRef.current ||
+            !recipientType ||
+            !(recipientID || recipientType === "Supplier" || recipientType === "Archive" || recipientType === "Stub Collection") ||
+            transferInitiated
+        ) {
+            return;
+        }
+
+        startScanner();
+
+        return () => {
+            stopScanner();
+        };
+    }, [recipientType, recipientID, transferInitiated, startScanner, stopScanner]);
+
+    // Handle page visibility changes
+    useEffect(() => {
+        const handleVisibilityChange = () => {
+            if (document.hidden) {
+                stopScanner();
+            } else if (
+                recipientType &&
+                (recipientID || recipientType === "Supplier" || recipientType === "Archive" || recipientType === "Stub Collection") &&
+                !transferInitiated
+            ) {
+                startScanner();
+            }
+        };
+
+        document.addEventListener("visibilitychange", handleVisibilityChange);
+
+        return () => {
+            document.removeEventListener("visibilitychange", handleVisibilityChange);
+            stopScanner(); // Ensure scanner stops on unmount
+        };
+    }, [recipientType, recipientID, transferInitiated, startScanner, stopScanner]);
+
+    // Stop scanner for OTP phase
+    useEffect(() => {
+        if (transferInitiated && isScannerRunning) {
+            stopScanner();
+        }
+    }, [transferInitiated, isScannerRunning, stopScanner]);
+
+    // Fetch initial data
+    useEffect(() => {
+        const fetchData = async () => {
+            if (!token || !effectivePermissions?.some((p) => p.name === "transfer_receipt_books")) {
+                setError("Access Denied - Missing transfer_receipt_books permission");
+                setLoading(false);
+                return;
+            }
+            try {
+                const [booksData, usersData, locationsData] = await Promise.all([
+                    getAllReceiptBooks(token),
+                    getAllUsers(token),
+                    getAgentLocations(token),
+                ]);
+                setReceiptBooks(booksData);
+                setUsers(usersData);
+                setLocations(locationsData);
+            } catch (err) {
+                setError("Failed to load data. Check console for details.");
+                console.error("Fetch Data Error:", err);
+            } finally {
+                setLoading(false);
+            }
+        };
+        fetchData();
+    }, [token, effectivePermissions]);
+
+    const getRecipientOptions = () => {
+        switch (userRole) {
+            case "Purchase Team":
+                return ["Supplier", "Regional Manager"];
+            case "Regional Manager":
+                return ["Regional Manager", "Supervisor", "Stock Manager"];
+            case "Supervisor":
+                return ["Supervisor", "Regional Manager", "Agent", "Stock Manager", "Stub Collection"];
+            case "Stock Manager":
+                return ["Stock Manager", "Archive"];
+            case "Super Admin":
+                return ["Supplier", "Regional Manager", "Supervisor", "Agent", "Stock Manager", "Stub Collection", "Archive"];
+            default:
+                return [];
+        }
+    };
+
+    const fetchAgentsByLocation = useCallback(async (location: string) => {
+        try {
+            const agentsData = await getAgentsByLocation(location, token!);
+            setAgents(agentsData);
+        } catch (err) {
+            setError("Failed to fetch agents by location.");
+            console.error(err);
+        }
+    }, [token]);
+
+    useEffect(() => {
+        if (!agentPhone || recipientType !== "Agent") return;
+        const timeout = setTimeout(async () => {
+            try {
+                const agent = await getAgentByPhone(agentPhone, token!);
+                setRecipientID(agent.agentID);
+                setAgents([agent]);
+                setSelectedLocation("");
+                setError(null);
+            } catch (err) {
+                setRecipientID("");
+                setError(`No agent found with phone ${agentPhone}.`);
+                console.error(err);
+            }
+        }, 500);
+        return () => clearTimeout(timeout);
+    }, [agentPhone, recipientType, token]);
+
+    useEffect(() => {
+        if (!searchQuery || recipientType === "Agent" || recipientType === "Supplier" || recipientType === "Archive" || recipientType === "Stub Collection") return;
+        const timeout = setTimeout(async () => {
+            try {
+                const user = await getUserByPhone(searchQuery, token!);
+                if (user.Roles?.some(r => r.name.toLowerCase() === recipientType.toLowerCase())) {
+                    setRecipientID(user.userID);
+                    setError(null);
+                } else {
+                    setRecipientID("");
+                    setError(`User with phone ${searchQuery} does not have role ${recipientType}.`);
+                }
+            } catch (err) {
+                setRecipientID("");
+                setError(`No user found with phone ${searchQuery}.`);
+                console.error(err);
+            }
+        }, 500);
+        return () => clearTimeout(timeout);
+    }, [searchQuery, recipientType, token]);
+
+    const filteredAgents = () => {
+        if (!selectedLocation) return [];
+        return agents.filter(a =>
+            (a.name!.toLowerCase().includes(searchQuery.toLowerCase()) ||
+                a.phone!.includes(searchQuery))
+        );
+    };
+
+    const filteredUsers = () => {
+        return users.filter(u =>
+            u.Roles?.some(r => r.name.toLowerCase() === recipientType.toLowerCase()) &&
+            (u.firstname.toLowerCase().includes(searchQuery.toLowerCase()) ||
+                u.lastname.toLowerCase().includes(searchQuery.toLowerCase()) ||
+                u.phone.includes(searchQuery))
+        );
+    };
+
+    useEffect(() => {
+        if (recipientType === "Agent" && selectedLocation) {
+            fetchAgentsByLocation(selectedLocation);
+        }
+    }, [recipientType, selectedLocation, fetchAgentsByLocation]);
 
     const handleInitiateTransfer = async (e: React.FormEvent) => {
         e.preventDefault();
-        if (!bookID || !recipientType || !recipientID || !token) {
-            setError("Please select a recipient type and ID.");
+        if (selectedBookIDs.length === 0) {
+            setError("Please scan at least one QR code.");
             return;
         }
+        if (recipientType === "Agent" && selectedBookIDs.length > 1) {
+            setError("Supervisors can only assign one receipt book to an Agent.");
+            return;
+        }
+        if (!recipientType) {
+            setError("Please select a recipient type.");
+            return;
+        }
+        if (recipientType === "Supplier" && !supplierEmail) {
+            setError("Please enter a supplier email.");
+            return;
+        }
+        if (recipientType === "Agent" && !recipientID) {
+            setError("Please enter an agent phone number or select an agent.");
+            return;
+        }
+        if (recipientType !== "Supplier" && recipientType !== "Archive" && recipientType !== "Stub Collection" && !recipientID) {
+            setError("Please select a recipient or enter a phone number.");
+            return;
+        }
+
         try {
-            const recipientTypeForAPI = recipientType === "Agent" ? "agent" : "user";
-            await transfer([bookID], recipientID, recipientTypeForAPI, token);
-            setTransferInitiated(true);
-            setError(null);
+            if (recipientType === "Supplier") {
+                await sendToSupplier(selectedBookIDs, supplierEmail, token!);
+                navigate(-1);
+            } else if (recipientType === "Stub Collection") {
+                if (selectedBookIDs.length > 1) {
+                    setError("Stub collection can only process one book at a time.");
+                    return;
+                }
+                await collectStub(selectedBookIDs[0], token!);
+                setTransferInitiated(true);
+                setError(null);
+            } else if (recipientType === "Archive") {
+                await Promise.all(selectedBookIDs.map(bookID => archiveStub(bookID, token!)));
+                navigate(-1);
+            } else {
+                const recipientTypeForAPI = recipientType === "Agent" ? "agent" : "user";
+                await transfer(selectedBookIDs, recipientID, recipientTypeForAPI, token!);
+                setTransferInitiated(true);
+                setError(null);
+            }
         } catch (err) {
-            setError("Failed to initiate transfer.");
+            setError("Failed to initiate transfer: " + (err instanceof Error ? err.message : "Unknown error"));
             console.error(err);
         }
     };
 
     const handleValidateTransfer = async (e: React.FormEvent) => {
         e.preventDefault();
-        if (!bookID || !otp || !recipientID || !token) {
-            setError("Please enter the OTP and ensure all fields are filled.");
+        if (recipientType === "Archive") {
+            navigate(-1);
+            return;
+        }
+        if (!otp) {
+            setError("Please enter the OTP.");
             return;
         }
         try {
-            const recipientTypeForAPI = recipientType === "Agent" ? "agent" : "user";
-            await validateTransfer([bookID], recipientID, otp, recipientTypeForAPI, token);
-            navigate(`/receipt-book/${bookID}`);
+            if (recipientType === "Stub Collection") {
+                if (selectedBookIDs.length !== 1) {
+                    setError("Stub collection requires exactly one book.");
+                    return;
+                }
+                await validateStubCollection(selectedBookIDs[0], otp, token!);
+                navigate(-1);
+            } else {
+                const recipientTypeForAPI = recipientType === "Agent" ? "agent" : "user";
+                await validateTransfer(selectedBookIDs, recipientID, otp, recipientTypeForAPI, token!);
+                navigate(-1);
+            }
         } catch (err) {
-            setError("Invalid OTP or transfer validation failed.");
+            setError("Invalid OTP or transfer validation failed: " + (err instanceof Error ? err.message : "Unknown error"));
             console.error(err);
         }
     };
 
     if (loading) return <div className="loading">Loading...</div>;
-    if (error || !book) return <div className="error">{error || "Receipt book not found."}</div>;
+    if (error && !recipientType) return <div className="error">{error}</div>;
 
     return (
         <div className="transfer-receipt-book-container">
             <header className="transfer-header">
-                <h1>Transfer Receipt Book: {book.number}</h1>
+                <h1>Transfer Receipt Books ({userRole})</h1>
             </header>
             <div className="transfer-card">
                 {!transferInitiated ? (
                     <form onSubmit={handleInitiateTransfer}>
-                        <div className="form-group">
-                            <label htmlFor="recipientType">Recipient Type</label>
-                            <select
-                                id="recipientType"
-                                value={recipientType}
-                                onChange={(e) => {
-                                    setRecipientType(e.target.value);
-                                    setRecipientID(""); // Reset recipientID when type changes
-                                }}
-                                required
-                            >
-                                <option value="">Select Recipient Type</option>
-                                <option value="Supplier">Supplier</option>
-                                <option value="Regional Manager">Regional Manager</option>
-                                <option value="Supervisor">Supervisor</option>
-                                <option value="Agent">Agent</option>
-                                <option value="Stock Manager">Stock Manager</option>
-                            </select>
-                        </div>
-                        {recipientType && (
+                        {!forceAgent && (
                             <div className="form-group">
-                                <label htmlFor="recipientID">Recipient</label>
+                                <label>Recipient Type</label>
                                 <select
-                                    id="recipientID"
-                                    value={recipientID}
-                                    onChange={(e) => setRecipientID(e.target.value)}
+                                    value={recipientType}
+                                    onChange={(e) => {
+                                        setRecipientType(e.target.value);
+                                        setRecipientID("");
+                                        setSupplierEmail("");
+                                        setAgentPhone("");
+                                        setSelectedLocation("");
+                                        setSearchQuery("");
+                                        setSelectedBookIDs([]);
+                                        setScannedQR([]);
+                                        scannedQRRef.current.clear();
+                                        setAgents([]);
+                                        setIsScannerRunning(false);
+                                    }}
                                     required
                                 >
-                                    <option value="">Select Recipient</option>
-                                    {filteredUsers.map((user) => (
-                                        <option key={user.userID} value={user.userID}>
-                                            {user.firstname} {user.lastname} ({user.email})
-                                        </option>
+                                    <option value="">Select Recipient Type</option>
+                                    {getRecipientOptions().map((type) => (
+                                        <option key={type} value={type}>{type}</option>
                                     ))}
                                 </select>
                             </div>
                         )}
-                        {error && <div className="error">{error}</div>}
+
+                        {recipientType && (
+                            <>
+                                {recipientType === "Agent" && !forceAgent && (
+                                    <div className="form-group">
+                                        <label>Agent Selection</label>
+                                        <input
+                                            type="text"
+                                            value={agentPhone}
+                                            onChange={(e) => setAgentPhone(e.target.value)}
+                                            placeholder="Enter agent phone number"
+                                        />
+                                        {!recipientID && (
+                                            <>
+                                                <p>OR</p>
+                                                <select
+                                                    value={selectedLocation}
+                                                    onChange={(e) => setSelectedLocation(e.target.value)}
+                                                >
+                                                    <option value="">Select Location</option>
+                                                    {locations.map((loc) => (
+                                                        <option key={loc} value={loc}>{loc}</option>
+                                                    ))}
+                                                </select>
+                                                {selectedLocation && (
+                                                    <>
+                                                        <input
+                                                            type="text"
+                                                            value={searchQuery}
+                                                            onChange={(e) => setSearchQuery(e.target.value)}
+                                                            placeholder="Search agents by name or phone"
+                                                        />
+                                                        <select
+                                                            value={recipientID}
+                                                            onChange={(e) => setRecipientID(e.target.value)}
+                                                        >
+                                                            <option value="">Select Agent</option>
+                                                            {filteredAgents().map((a) => (
+                                                                <option key={a.agentID} value={a.agentID}>
+                                                                    {a.name} ({a.phone})
+                                                                </option>
+                                                            ))}
+                                                        </select>
+                                                    </>
+                                                )}
+                                            </>
+                                        )}
+                                        {recipientID && (
+                                            <p>Selected Agent: {agents.find(a => a.agentID === recipientID)?.name + " " + agents.find(a => a.agentID === recipientID)?.lastname || "Loading..."}</p>
+                                        )}
+                                    </div>
+                                )}
+                                {recipientType === "Supplier" && (
+                                    <div className="form-group">
+                                        <label>Supplier Email</label>
+                                        <input
+                                            type="email"
+                                            value={supplierEmail}
+                                            onChange={(e) => setSupplierEmail(e.target.value)}
+                                            placeholder="Enter supplier email"
+                                            required
+                                        />
+                                    </div>
+                                )}
+                                {recipientType !== "Agent" && recipientType !== "Supplier" && recipientType !== "Archive" && recipientType !== "Stub Collection" && (
+                                    <div className="form-group">
+                                        <label>Recipient Selection ({recipientType})</label>
+                                        <input
+                                            type="text"
+                                            value={searchQuery}
+                                            onChange={(e) => setSearchQuery(e.target.value)}
+                                            placeholder="Enter phone number or search by name"
+                                        />
+                                        <select
+                                            value={recipientID}
+                                            onChange={(e) => setRecipientID(e.target.value)}
+                                        >
+                                            <option value="">Select {recipientType}</option>
+                                            {filteredUsers().map((u) => (
+                                                <option key={u.userID} value={u.userID}>
+                                                    {u.firstname} {u.lastname} ({u.phone})
+                                                </option>
+                                            ))}
+                                        </select>
+                                        {recipientID && (
+                                            <p>Selected User: {users.find(u => u.userID === recipientID)?.firstname} {users.find(u => u.userID === recipientID)?.lastname}</p>
+                                        )}
+                                    </div>
+                                )}
+                                {(recipientType === "Agent" || recipientType === "Stub Collection") && forceAgent && (
+                                    <div className="form-group">
+                                        <label>Selected Agent</label>
+                                        <p>{agents.find(a => a.agentID === recipientID)?.name + " " + agents.find(a => a.agentID === recipientID)?.lastname || "Loading..."}</p>
+                                    </div>
+                                )}
+                            </>
+                        )}
+
+                        {recipientType && (recipientID || recipientType === "Supplier" || recipientType === "Archive" || recipientType === "Stub Collection") && (
+                            <div className="form-group">
+                                <label>Scan QR Codes</label>
+                                {error && <div className="error-above-camera">{error}</div>}
+                                <div id="qr-reader" ref={qrReaderRef} className="qr-reader" style={{ width: "100%", height: "300px" }} />
+                                <div className="scanned-list">
+                                    <h4>Selected Books ({selectedBookIDs.length})</h4>
+                                    <ul>
+                                        {selectedBookIDs.map((bookID) => {
+                                            const book = receiptBooks.find(r => r.bookID === bookID);
+                                            return (
+                                                <li key={bookID}>
+                                                    {book?.number} ({book?.status})
+                                                    <button
+                                                        onClick={() => {
+                                                            setSelectedBookIDs(prev => prev.filter(id => id !== bookID));
+                                                            setScannedQR(prev => prev.filter(qr => qr !== book?.qrCode));
+                                                            scannedQRRef.current.delete(book?.qrCode || "");
+                                                        }}
+                                                    >
+                                                        Remove
+                                                    </button>
+                                                </li>
+                                            );
+                                        })}
+                                    </ul>
+                                    {scannedQR.length > 0 && <p>{scannedQR.length} QR codes scanned.</p>}
+                                </div>
+                            </div>
+                        )}
+
                         <div className="form-actions">
-                            <button type="button" className="back-btn" onClick={() => navigate(`/receipt-book/${bookID}`)}>
+                            <button type="button" className="back-btn" onClick={() => navigate(-1)}>
                                 <FaArrowLeft /> Back
                             </button>
-                            <button type="submit" className="transfer-btn">
-                                <FaExchangeAlt /> Initiate Transfer
-                            </button>
+                            {recipientType && (recipientID || recipientType === "Supplier" || recipientType === "Archive" || recipientType === "Stub Collection") && (
+                                <button type="submit" className="transfer-btn">
+                                    <FaExchangeAlt /> {recipientType === "Stub Collection" ? "Initiate Stub Collection" : "Initiate Transfer"}
+                                </button>
+                            )}
                         </div>
                     </form>
                 ) : (
                     <form onSubmit={handleValidateTransfer}>
-                        <div className="form-group">
-                            <label htmlFor="otp">Enter OTP</label>
-                            <input
-                                id="otp"
-                                type="text"
-                                value={otp}
-                                onChange={(e) => setOtp(e.target.value)}
-                                placeholder="Enter OTP sent to recipient"
-                                required
-                            />
-                        </div>
+                        {recipientType !== "Archive" && (
+                            <div className="form-group">
+                                <label>Enter OTP {recipientType === "Stub Collection" ? "(Sent to Agent)" : `(Sent to ${recipientType} ${recipientID})`}</label>
+                                <input
+                                    type="text"
+                                    value={otp}
+                                    onChange={(e) => setOtp(e.target.value)}
+                                    placeholder="Enter OTP"
+                                    required
+                                />
+                            </div>
+                        )}
                         {error && <div className="error">{error}</div>}
                         <div className="form-actions">
                             <button type="button" className="back-btn" onClick={() => setTransferInitiated(false)}>
                                 <FaArrowLeft /> Back
                             </button>
                             <button type="submit" className="validate-btn">
-                                <FaCheck /> Validate Transfer
+                                <FaCheck /> {recipientType === "Stub Collection" ? "Validate Stub Collection" : "Validate Transfer"}
                             </button>
                         </div>
                     </form>
@@ -7773,7 +8924,7 @@ const TimesheetForm: React.FC = () => {
     return null;
   }
 
-  const supervisorID = canAssignSupervisors && selectedSupervisor ? selectedSupervisor : user.userID;
+  const supervisorID = canReadSupervisors && selectedSupervisor ? selectedSupervisor : user.userID;
 
   // Fetch initial data
   useEffect(() => {
@@ -7784,7 +8935,7 @@ const TimesheetForm: React.FC = () => {
           canReadAgentsByLocation ? getAgentLocations(token) : Promise.resolve([]),
           canReadReasons ? getAllReasons(token) : Promise.resolve([]),
           canReadChecklists ? getAllChecklists(token) : Promise.resolve([]),
-          canAssignSupervisors && canReadSupervisors ? getSupervisorsByUser(user.userID, token) : Promise.resolve([]),
+          canReadSupervisors ? getSupervisorsByUser(user.userID, token) : Promise.resolve([]),
         ];
         const [locationsData, reasonsData, checklistsData, supervisorsData] = await Promise.all(promises);
         setLocations(locationsData as string[]);
@@ -9084,7 +10235,7 @@ interface VisitWithSupervisor extends Visit {
 }
 
 const Timesheets: React.FC = () => {
-  const { user, token, effectivePermissions, permissionsLoaded } = useAuth();
+  const { user, token, userRoles, effectivePermissions, permissionsLoaded } = useAuth();
   const [timesheets, setTimesheets] = useState<Timesheet[]>([]);
   const [filteredTimesheets, setFilteredTimesheets] = useState<Timesheet[]>([]);
   const [users, setUsers] = useState<User[]>([]);
@@ -9126,6 +10277,14 @@ const Timesheets: React.FC = () => {
   const canReadSupervisors = useMemo(() => 
     effectivePermissions?.some(p => p.name === "read_supervisors"), [effectivePermissions]
   );
+  const canAccessReceiptBooks = useMemo(() => 
+    effectivePermissions?.some(p => p.name === "access_receipt_books"), [effectivePermissions]
+  );
+
+  // Check if user is Super Admin
+  const isSuperAdmin = useMemo(() => 
+    userRoles?.some(role => role.name === "Super Admin"), [userRoles]
+  );
 
   // Fetch Timesheets
   const fetchTimesheets = async () => {
@@ -9162,24 +10321,34 @@ const Timesheets: React.FC = () => {
   }, [currentYear, supervisorID, token, permissionsLoaded, canReadSupervisors, canAccessSupervisorTimesheets, canAccessTimesheets]);
 
   // Fetch Users for Supervisor Names and Filter
-  useEffect(() => {
-    if (!token || !permissionsLoaded || (!canReadUsers && !canReadSupervisors)) return;
+// Fetch Users for Supervisor Names and Filter
+useEffect(() => {
+  if (!token || !permissionsLoaded || (!canReadUsers && !canReadSupervisors)) return;
 
-    const fetchUsers = async () => {
-      try {
-        let userData: User[] = [];
-        if (canReadUsers) {
-          userData = await getAllUsers(token);
-        } else if (canReadSupervisors && supervisorID) {
-          userData = await getSupervisorsByUser(supervisorID, token);
-        }
-        setUsers(userData);
-      } catch (error) {
-        console.error("Failed to fetch users:", error);
+  const fetchUsers = async () => {
+    try {
+      let userData: User[] = [];
+      if (isSuperAdmin) {
+        // Fetch all users and filter for those with "Supervisor" role
+        const allUsers = await getAllUsers(token);
+        userData = allUsers.filter(user =>
+          user.Roles?.some(role => role.name.toLowerCase() === "supervisor")
+        );
+      } else if (canReadSupervisors && supervisorID) {
+        // Fetch supervisors by user and ensure they have "Supervisor" role
+        userData = await getSupervisorsByUser(supervisorID, token);
+        // Optional: Add an extra filter to ensure only supervisors are included
+        userData = userData.filter(user =>
+          user.Roles?.some(role => role.name.toLowerCase() === "supervisor")
+        );
       }
-    };
-    fetchUsers();
-  }, [token, permissionsLoaded, canReadUsers, canReadSupervisors, supervisorID]);
+      setUsers(userData);
+    } catch (error) {
+      console.error("Failed to fetch users:", error);
+    }
+  };
+  fetchUsers();
+}, [token, permissionsLoaded, canReadUsers, canReadSupervisors, supervisorID, isSuperAdmin]);
 
   // Filter Timesheets
   useEffect(() => {
@@ -9400,41 +10569,47 @@ const Timesheets: React.FC = () => {
 
   return (
 <div className="timesheets-container">
-  <header className="timesheets-header">
-    <div className="view-toggle">
-      {["year", "month", "week", "day"].map((mode) => (
-        <button
-          key={mode}
-          className={`toggle-btn ${viewMode === mode ? "active" : ""}`}
-          onClick={() => setViewMode(mode as ViewMode)}
-        >
-          {mode.charAt(0).toUpperCase() + mode.slice(1)}
-        </button>
-      ))}
-    </div>
-    <div className="year-navigation">
-      <button className="nav-btn" onClick={() => setCurrentYear((prev) => prev - 1)}>
-        <span>←</span>
+<header className="timesheets-header">
+  <div className="view-toggle">
+    {["year", "month", "week", "day"].map((mode) => (
+      <button
+        key={mode}
+        className={`toggle-btn ${viewMode === mode ? "active" : ""}`}
+        onClick={() => setViewMode(mode as ViewMode)}
+      >
+        {mode.charAt(0).toUpperCase() + mode.slice(1)}
       </button>
-      <h1>{currentYear}</h1>
-      <button className="nav-btn" onClick={() => setCurrentYear((prev) => prev + 1)}>
-        <span>→</span>
+    ))}
+  </div>
+  <div className="year-navigation">
+    <button className="nav-btn" onClick={() => setCurrentYear((prev) => prev - 1)}>
+      <span>←</span>
+    </button>
+    <h1>{currentYear}</h1>
+    <button className="nav-btn" onClick={() => setCurrentYear((prev) => prev + 1)}>
+      <span>→</span>
+    </button>
+  </div>
+  <div className="action-buttons">
+    {canCreateTimesheets && (
+      <button
+        className="create-btn"
+        onClick={() => navigate("/timesheet-form", { state: { year: currentYear } })}
+      >
+        Schedule Visit
       </button>
-    </div>
-    <div className="action-buttons">
-      {canCreateTimesheets && (
-        <button
-          className="create-btn"
-          onClick={() => navigate("/timesheet-form", { state: { year: currentYear } })}
-        >
-          Schedule Visit
-        </button>
-      )}
-      <button className="current-btn" onClick={scrollToCurrent}>
-        Current {viewMode.charAt(0).toUpperCase() + viewMode.slice(1)}
+    )}
+    {canAccessReceiptBooks && (
+      <button className="receipt-books-btn" onClick={() => navigate("/receipt-books")}>
+        Receipt Books
       </button>
-    </div>
-  </header>
+    )}
+    <button className="current-btn" onClick={scrollToCurrent}>
+      Current {viewMode.charAt(0).toUpperCase() + viewMode.slice(1)}
+    </button>
+
+  </div>
+</header>
 
   {(canReadUsers || canReadSupervisors) && (
     <div className="filter-bubble">
@@ -11188,15 +12363,11 @@ body.dark .status-visited {
   text-align: center;
   font-size: 0.875rem;
   color: #e81f76;
-  font-size: larger  !important;
-  font-weight:bolder;
-  text-transform:  uppercase  !important;
   padding: 1rem;
   background: #fff;
   border-radius: 0.75rem;
   box-shadow: 0 0.25rem 0.75rem rgba(0, 0, 0, 0.05);
   margin-top: 1rem;
-  padding: 15rem 25rem;
 }
 
 body.dark .error {
@@ -11228,10 +12399,12 @@ body.dark .error {
   }
 }
 
+
+
+
 ==================================================
 File contents: C:\Users\Kayto\Desktop\IT\Projects\Stage\Stage PFE\TraceFlow\Front-End\src\pages\visit\VisitValidation.tsx
 ==================================================
-// src/pages/visit/VisitValidation.tsx
 import React, { useState, useEffect, useMemo } from "react";
 import { useParams, useNavigate } from "react-router-dom";
 import { FaUser, FaPhone, FaListUl, FaCheckCircle, FaArrowLeft, FaCheck } from "react-icons/fa";
@@ -11254,7 +12427,6 @@ const VisitValidation: React.FC = () => {
     const [error, setError] = useState<string | null>(null);
     const [isSubmitting, setIsSubmitting] = useState<boolean>(false);
 
-    // Permission Checks
     const canLogVisits = useMemo(
         () => effectivePermissions?.some((p) => p.name === "log_visits"),
         [effectivePermissions]
@@ -11401,22 +12573,85 @@ const VisitValidation: React.FC = () => {
                     {checklist.length > 0 ? (
                         <>
                             <ul className="checklist">
-                                {checklist.map((item) => (
-                                    <li key={item.id} className={item.checked ? "checked" : ""}>
-                                        <label className="custom-checkbox-label">
-                                            <input
-                                                type="checkbox"
-                                                checked={item.checked}
-                                                onChange={() => handleChecklistChange(item.id)}
-                                                className="custom-checkbox-input"
-                                            />
-                                            <span className="custom-checkbox">
-                                                <FaCheck className="check-icon" />
-                                            </span>
-                                            <span className="checklist-text">{item.item}</span>
-                                        </label>
-                                    </li>
-                                ))}
+                                {checklist.map((item) => {
+                                    const isTransferItem = item.item.toLowerCase() === "transfer a receipt book";
+                                    const isStubCollectionItem = item.item.toLowerCase() === "collect receipt stub";
+
+                                    if (isTransferItem) {
+                                        return (
+                                            <li key={item.id} className={item.checked ? "checked" : ""}>
+                                                <label className="custom-checkbox-label">
+                                                    <input
+                                                        type="checkbox"
+                                                        checked={item.checked}
+                                                        onChange={() => {
+                                                            handleChecklistChange(item.id);
+                                                            if (!item.checked) {
+                                                                navigate("/transfer-receipt-books", {
+                                                                    state: { 
+                                                                        agentID: visit?.agentID, 
+                                                                        forceAgent: true,
+                                                                        transferType: "Agent"
+                                                                    }
+                                                                });
+                                                            }
+                                                        }}
+                                                        className="custom-checkbox-input"
+                                                    />
+                                                    <span className="custom-checkbox">
+                                                        <FaCheck className="check-icon" />
+                                                    </span>
+                                                    <span className="checklist-text">{item.item}</span>
+                                                </label>
+                                            </li>
+                                        );
+                                    } else if (isStubCollectionItem) {
+                                        return (
+                                            <li key={item.id} className={item.checked ? "checked" : ""}>
+                                                <label className="custom-checkbox-label">
+                                                    <input
+                                                        type="checkbox"
+                                                        checked={item.checked}
+                                                        onChange={() => {
+                                                            handleChecklistChange(item.id);
+                                                            if (!item.checked) {
+                                                                navigate("/transfer-receipt-books", {
+                                                                    state: { 
+                                                                        agentID: visit?.agentID, 
+                                                                        forceAgent: true,
+                                                                        transferType: "Stub Collection"
+                                                                    }
+                                                                });
+                                                            }
+                                                        }}
+                                                        className="custom-checkbox-input"
+                                                    />
+                                                    <span className="custom-checkbox">
+                                                        <FaCheck className="check-icon" />
+                                                    </span>
+                                                    <span className="checklist-text">{item.item}</span>
+                                                </label>
+                                            </li>
+                                        );
+                                    } else {
+                                        return (
+                                            <li key={item.id} className={item.checked ? "checked" : ""}>
+                                                <label className="custom-checkbox-label">
+                                                    <input
+                                                        type="checkbox"
+                                                        checked={item.checked}
+                                                        onChange={() => handleChecklistChange(item.id)}
+                                                        className="custom-checkbox-input"
+                                                    />
+                                                    <span className="custom-checkbox">
+                                                        <FaCheck className="check-icon" />
+                                                    </span>
+                                                    <span className="checklist-text">{item.item}</span>
+                                                </label>
+                                            </li>
+                                        );
+                                    }
+                                })}
                             </ul>
                             <div className="progress-bar">
                                 <div
@@ -11434,7 +12669,7 @@ const VisitValidation: React.FC = () => {
                     <button
                         className={`validate-btn ${isSubmitting ? "submitting" : ""}`}
                         onClick={handleValidate}
-                        disabled={isSubmitting || checklist.every((item) => !item.checked) }
+                        disabled={isSubmitting || checklist.every((item) => !item.checked)}
                     >
                         <FaCheck /> {isSubmitting ? "Validating..." : "Validate Visit"}
                     </button>

@@ -29,7 +29,8 @@ VALUES
 ('chk_004', 'Confirm cash register balance', NOW(), NOW()),
 ('chk_005', 'Review employee attendance', NOW(), NOW()),
 ('chk_006', 'Test security cameras', NOW(), NOW()),
-('chk_007', 'Transfer a receipt book', NOW(), NOW());
+('chk_007', 'Transfer a receipt book', NOW(), NOW()),
+('chk_008', 'Collect receipt stub', NOW(), NOW());
 
 
 

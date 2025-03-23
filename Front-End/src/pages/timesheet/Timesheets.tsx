@@ -9,6 +9,7 @@ import { FaClock, FaMapMarkerAlt, FaRegUser } from "react-icons/fa";
 import { useAuth } from "../../context/AuthContext";
 import User from "../../models/User";
 import { getAllUsers, getSupervisorsByUser } from "../../apis/userAPI";
+import { useConfig } from '../../context/ConfigContext';
 
 type ViewMode = "year" | "month" | "week" | "day";
 
@@ -17,6 +18,7 @@ interface VisitWithSupervisor extends Visit {
 }
 
 const Timesheets: React.FC = () => {
+  const { permissions, roles } = useConfig();
   const { user, token, userRoles, effectivePermissions, permissionsLoaded } = useAuth();
   const [timesheets, setTimesheets] = useState<Timesheet[]>([]);
   const [filteredTimesheets, setFilteredTimesheets] = useState<Timesheet[]>([]);
@@ -25,46 +27,46 @@ const Timesheets: React.FC = () => {
   const [currentMonth, setCurrentMonth] = useState(new Date().getMonth());
   const [currentWeek, setCurrentWeek] = useState<number>(0);
   const [currentDay, setCurrentDay] = useState<Date | null>(null);
-  const [viewMode, setViewMode] = useState<ViewMode>(() => 
+  const [viewMode, setViewMode] = useState<ViewMode>(() =>
     (localStorage.getItem("lastViewMode") as ViewMode) || "year"
   );
   const [loading, setLoading] = useState<boolean>(true);
-  const [supervisorFilter, setSupervisorFilter] = useState<string>(() => 
+  const [supervisorFilter, setSupervisorFilter] = useState<string>(() =>
     localStorage.getItem("supervisorFilter") || "all"
   );
-  const [supervisorSearch, setSupervisorSearch] = useState<string>(""); // New search state
+  const [supervisorSearch, setSupervisorSearch] = useState<string>("");
   const navigate = useNavigate();
 
   const supervisorID = user?.userID;
 
   // Permission Checks
-  const canAccessTimesheetDetails = useMemo(() => 
+  const canAccessTimesheetDetails = useMemo(() =>
     effectivePermissions?.some(p => p.name === "access_timesheet_details"), [effectivePermissions]
   );
-  const canCreateTimesheets = useMemo(() => 
+  const canCreateTimesheets = useMemo(() =>
     effectivePermissions?.some(p => p.name === "create_timesheets"), [effectivePermissions]
   );
   const canAccessSupervisorTimesheets = useMemo(() => 
-    effectivePermissions?.some(p => p.name === "access_Supervisor_timesheets"), [effectivePermissions]
+    effectivePermissions?.some(p => p.name === permissions.find(p => p.name === 'access_Supervisor_timesheets')?.name), [effectivePermissions, permissions]
   );
-  const canValidateTimesheets = useMemo(() => 
+  const canValidateTimesheets = useMemo(() =>
     effectivePermissions?.some(p => p.name === "validate_timesheets"), [effectivePermissions]
   );
-  const canAccessTimesheets = useMemo(() => 
+  const canAccessTimesheets = useMemo(() =>
     effectivePermissions?.some(p => p.name === "access_timesheets"), [effectivePermissions]
   );
-  const canReadUsers = useMemo(() => 
+  const canReadUsers = useMemo(() =>
     effectivePermissions?.some(p => p.name === "read_users"), [effectivePermissions]
   );
-  const canReadSupervisors = useMemo(() => 
+  const canReadSupervisors = useMemo(() =>
     effectivePermissions?.some(p => p.name === "read_supervisors"), [effectivePermissions]
   );
-  const canAccessReceiptBooks = useMemo(() => 
+  const canAccessReceiptBooks = useMemo(() =>
     effectivePermissions?.some(p => p.name === "access_receipt_books"), [effectivePermissions]
   );
 
   // Check if user is Super Admin
-  const isSuperAdmin = useMemo(() => 
+  const isSuperAdmin = useMemo(() =>
     userRoles?.some(role => role.name === "Super Admin"), [userRoles]
   );
 
@@ -77,16 +79,16 @@ const Timesheets: React.FC = () => {
         data = await getAllTimesheets(token!);
       } else if (canReadSupervisors) {
         const supervisors = await getSupervisorsByUser(supervisorID!, token!);
-        const supervisorTimesheetsPromises = supervisors.map(supervisor => 
+        const supervisorTimesheetsPromises = supervisors.map(supervisor =>
           getTimesheetsBySupervisor(supervisor.userID, token!)
         );
         data = (await Promise.all(supervisorTimesheetsPromises)).flat();
-      } 
+      }
       else if (canAccessSupervisorTimesheets) {
         data = await getTimesheetsBySupervisor(supervisorID!, token!);
       }
-    
-      setTimesheets(data.filter((ts) => 
+
+      setTimesheets(data.filter((ts) =>
         ts.year === currentYear || (ts.year === currentYear - 1 && ts.weekNumber >= 52)
       ));
     } catch (error) {
@@ -110,9 +112,18 @@ const Timesheets: React.FC = () => {
       try {
         let userData: User[] = [];
         if (isSuperAdmin) {
-          userData = await getAllUsers(token);
+          // Fetch all users and filter for those with "Supervisor" role
+          const allUsers = await getAllUsers(token);
+          userData = allUsers.filter(user =>
+            user.Roles?.some(role => role.name.toLowerCase() === "supervisor")
+          );
         } else if (canReadSupervisors && supervisorID) {
+          // Fetch supervisors by user and ensure they have "Supervisor" role
           userData = await getSupervisorsByUser(supervisorID, token);
+          // Optional: Add an extra filter to ensure only supervisors are included
+          userData = userData.filter(user =>
+            user.Roles?.some(role => role.name.toLowerCase() === "supervisor")
+          );
         }
         setUsers(userData);
       } catch (error) {
@@ -120,7 +131,7 @@ const Timesheets: React.FC = () => {
       }
     };
     fetchUsers();
-  }, [token, permissionsLoaded, canReadUsers, canReadSupervisors, supervisorID]);
+  }, [token, permissionsLoaded, canReadUsers, canReadSupervisors, supervisorID, isSuperAdmin]);
 
   // Filter Timesheets
   useEffect(() => {
@@ -201,9 +212,9 @@ const Timesheets: React.FC = () => {
   // Data Generation
   const generateYearData = () => {
     const weeksInYear = getWeeksInYear(currentYear);
-    const months: { month: number; weeks: { weekNumber: number; days: Date[]; visits: VisitWithSupervisor[]; status: string; supervisorCount: number }[] }[] = 
+    const months: { month: number; weeks: { weekNumber: number; days: Date[]; visits: VisitWithSupervisor[]; status: string; supervisorCount: number }[] }[] =
       Array.from({ length: 12 }, (_, m) => ({ month: m, weeks: [] }));
-  
+
     for (let week = 1; week <= weeksInYear; week++) {
       const days = getWeekDays(currentYear, week);
       let assignedMonth: number;
@@ -217,14 +228,14 @@ const Timesheets: React.FC = () => {
         }, {} as Record<number, number>);
         assignedMonth = Number(Object.entries(monthCounts).reduce((a, b) => (b[1] > a[1] ? b : a))[0]);
       }
-  
+
       const matchingTimesheets = filteredTimesheets.filter((ts) => ts.weekNumber === week && ts.year === currentYear);
       const allVisits: VisitWithSupervisor[] = matchingTimesheets.flatMap((ts) =>
         (ts.Visits || []).map((visit) => ({ ...visit, supervisorID: ts.supervisorID }))
       );
       const status = matchingTimesheets.length > 0 ? matchingTimesheets[0].status : "Not Scheduled";
       const supervisorCount = new Set(matchingTimesheets.map(ts => ts.supervisorID)).size;
-  
+
       months[assignedMonth].weeks.push({
         weekNumber: week,
         days,
@@ -235,11 +246,11 @@ const Timesheets: React.FC = () => {
     }
     return months;
   };
-  
+
   const generateMonthData = () => {
     const weeksInYear = getWeeksInYear(currentYear);
     const weeks: { weekNumber: number; days: Date[]; visits: VisitWithSupervisor[]; status: string; supervisorCount: number }[] = [];
-  
+
     for (let week = 1; week <= weeksInYear; week++) {
       const days = getWeekDays(currentYear, week);
       const hasDaysInMonth = days.some((day) => day.getMonth() === currentMonth && day.getFullYear() === currentYear);
@@ -250,7 +261,7 @@ const Timesheets: React.FC = () => {
         );
         const status = matchingTimesheets.length > 0 ? matchingTimesheets[0].status : "Not Scheduled";
         const supervisorCount = new Set(matchingTimesheets.map(ts => ts.supervisorID)).size;
-  
+
         weeks.push({
           weekNumber: week,
           days,
@@ -299,10 +310,10 @@ const Timesheets: React.FC = () => {
       const id = viewMode === "year"
         ? `month-${today.getMonth()}`
         : viewMode === "month"
-        ? `week-${currentWeek}`
-        : viewMode === "week"
-        ? `week-${currentWeek}`
-        : `day-${today.toISOString().split("T")[0]}`;
+          ? `week-${currentWeek}`
+          : viewMode === "week"
+            ? `week-${currentWeek}`
+            : `day-${today.toISOString().split("T")[0]}`;
       const element = document.getElementById(id);
       if (element) element.scrollIntoView({ behavior: "smooth" });
     }, 0);
@@ -326,7 +337,7 @@ const Timesheets: React.FC = () => {
   const filteredSupervisors = useMemo(() => {
     if (!supervisorSearch) return users;
     const searchLower = supervisorSearch.toLowerCase();
-    return users.filter(user => 
+    return users.filter(user =>
       `${user.firstname} ${user.lastname}`.toLowerCase().includes(searchLower) ||
       (user.phone && user.phone.toLowerCase().includes(searchLower))
     );
@@ -340,77 +351,77 @@ const Timesheets: React.FC = () => {
   if (loading) return <div className="loading">Loading Timesheets...</div>;
 
   return (
-<div className="timesheets-container">
-<header className="timesheets-header">
-  <div className="view-toggle">
-    {["year", "month", "week", "day"].map((mode) => (
-      <button
-        key={mode}
-        className={`toggle-btn ${viewMode === mode ? "active" : ""}`}
-        onClick={() => setViewMode(mode as ViewMode)}
-      >
-        {mode.charAt(0).toUpperCase() + mode.slice(1)}
-      </button>
-    ))}
-  </div>
-  <div className="year-navigation">
-    <button className="nav-btn" onClick={() => setCurrentYear((prev) => prev - 1)}>
-      <span>←</span>
-    </button>
-    <h1>{currentYear}</h1>
-    <button className="nav-btn" onClick={() => setCurrentYear((prev) => prev + 1)}>
-      <span>→</span>
-    </button>
-  </div>
-  <div className="action-buttons">
-    {canCreateTimesheets && (
-      <button
-        className="create-btn"
-        onClick={() => navigate("/timesheet-form", { state: { year: currentYear } })}
-      >
-        Schedule Visit
-      </button>
-    )}
-    {canAccessReceiptBooks && (
-      <button className="receipt-books-btn" onClick={() => navigate("/receipt-books")}>
-        Receipt Books
-      </button>
-    )}
-    <button className="current-btn" onClick={scrollToCurrent}>
-      Current {viewMode.charAt(0).toUpperCase() + viewMode.slice(1)}
-    </button>
-
-  </div>
-</header>
-
-  {(canReadUsers || canReadSupervisors) && (
-    <div className="filter-bubble">
-      <button className="filter-toggle-btn">Filter Supervisors</button>
-      <div className="filter-panel">
-        <div className="supervisor-filter-container">
-          <input
-            type="text"
-            placeholder="Search by name or phone..."
-            value={supervisorSearch}
-            onChange={(e) => setSupervisorSearch(e.target.value)}
-            className="supervisor-search"
-          />
-          <select
-            className="supervisor-filter"
-            value={supervisorFilter}
-            onChange={(e) => setSupervisorFilter(e.target.value)}
-          >
-            <option value="all">All Supervisors</option>
-            {filteredSupervisors.map((supervisor) => (
-              <option key={supervisor.userID} value={supervisor.userID}>
-                {supervisor.firstname} {supervisor.lastname} {supervisor.phone ? `(${supervisor.phone})` : ""}
-              </option>
-            ))}
-          </select>
+    <div className="timesheets-container">
+      <header className="timesheets-header">
+        <div className="view-toggle">
+          {["year", "month", "week", "day"].map((mode) => (
+            <button
+              key={mode}
+              className={`toggle-btn ${viewMode === mode ? "active" : ""}`}
+              onClick={() => setViewMode(mode as ViewMode)}
+            >
+              {mode.charAt(0).toUpperCase() + mode.slice(1)}
+            </button>
+          ))}
         </div>
-      </div>
-    </div>
-  )}
+        <div className="year-navigation">
+          <button className="nav-btn" onClick={() => setCurrentYear((prev) => prev - 1)}>
+            <span>←</span>
+          </button>
+          <h1>{currentYear}</h1>
+          <button className="nav-btn" onClick={() => setCurrentYear((prev) => prev + 1)}>
+            <span>→</span>
+          </button>
+        </div>
+        <div className="action-buttons">
+          {canCreateTimesheets && (
+            <button
+              className="create-btn"
+              onClick={() => navigate("/timesheet-form", { state: { year: currentYear } })}
+            >
+              Schedule Visit
+            </button>
+          )}
+          {canAccessReceiptBooks && (
+            <button className="receipt-books-btn" onClick={() => navigate("/receipt-books")}>
+              Receipt Books
+            </button>
+          )}
+          <button className="current-btn" onClick={scrollToCurrent}>
+            Current {viewMode.charAt(0).toUpperCase() + viewMode.slice(1)}
+          </button>
+
+        </div>
+      </header>
+
+      {(canReadUsers || canReadSupervisors) && (
+        <div className="filter-bubble">
+          <button className="filter-toggle-btn">Filter Supervisors</button>
+          <div className="filter-panel">
+            <div className="supervisor-filter-container">
+              <input
+                type="text"
+                placeholder="Search by name or phone..."
+                value={supervisorSearch}
+                onChange={(e) => setSupervisorSearch(e.target.value)}
+                className="supervisor-search"
+              />
+              <select
+                className="supervisor-filter"
+                value={supervisorFilter}
+                onChange={(e) => setSupervisorFilter(e.target.value)}
+              >
+                <option value="all">All Supervisors</option>
+                {filteredSupervisors.map((supervisor) => (
+                  <option key={supervisor.userID} value={supervisor.userID}>
+                    {supervisor.firstname} {supervisor.lastname} {supervisor.phone ? `(${supervisor.phone})` : ""}
+                  </option>
+                ))}
+              </select>
+            </div>
+          </div>
+        </div>
+      )}
 
 
       {/* Rest of the component remains unchanged */}
@@ -477,7 +488,7 @@ const Timesheets: React.FC = () => {
                 </p>
                 <p className="week-info">
                   {week.visits.length} Visits {!canReadSupervisors && `- Status: ${week.status}`}
-                  {canReadSupervisors && ` - Supervisors: ${week.supervisorCount}`}                
+                  {canReadSupervisors && ` - Supervisors: ${week.supervisorCount}`}
                 </p>
               </div>
             ))}
@@ -485,117 +496,117 @@ const Timesheets: React.FC = () => {
         </section>
       )}
 
-{viewMode === "week" && (
-  <section className="week-view">
-    <div className="week-header">
-      <button className="nav-btn" onClick={() => setCurrentWeek((prev) => Math.max(1, prev - 1))}>
-        <span>←</span>
-      </button>
-      <h2>Week {currentWeek}</h2>
-      <button className="nav-btn" onClick={() => setCurrentWeek((prev) => Math.min(getWeeksInYear(currentYear), prev + 1))}>
-        <span>→</span>
-      </button>
-    </div>
-    <div className="week-details">
-      {(() => {
-        const weekData = generateWeekData();
-        return (
-          <>
-            <div className="week-details-header">
-              <div className="week-details-info">
-                <p className="week-range">
-                  {weekData.days[0].toLocaleDateString("en-GB", { day: "numeric", month: "short" })} -{" "}
-                  {weekData.days[4].toLocaleDateString("en-GB", { day: "numeric", month: "short" })}
-                </p>
-                <p className="week-status">
-                  Status: {weekData.status}
-                  {canReadSupervisors && weekData.supervisorID && ` - Supervisor: ${users.find(u => u.userID === weekData.supervisorID)?.firstname || "Unknown"} ${users.find(u => u.userID === weekData.supervisorID)?.lastname || ""}`}
-                </p>
-              </div>
-              {canValidateTimesheets && weekData.status !== "Validated" && (
-                <button
-                  className="validate-timesheet-btn nav-btn"
-                  onClick={() => handleValidateTimesheet(filteredTimesheets.find((ts) => ts.weekNumber === currentWeek)?.timesheetID || "")}
-                >
-                  Validate Entire Timesheet
-                </button>
-              )}
-            </div>
-            <div className="days-grid">
-              {weekData.days.map((day) => {
-                const dayStr = day.toISOString().split("T")[0];
-                const dayVisits = sortVisitsByTime(
-                  weekData.visits.filter((v) => {
-                    const visitDate = new Date(v.date);
-                    visitDate.setHours(0, 0, 0, 0);
-                    return visitDate.toISOString().split("T")[0] === dayStr;
-                  })
-                );
-                return (
-                  <div className="day-column" key={dayStr}>
-                    <div
-                      className="day-tile"
-                      onClick={canAccessTimesheetDetails ? () => {
-                        setCurrentDay(day);
-                        setViewMode("day");
-                      } : undefined}
-                    >
-                      <span className="day-name">
-                        {day.toLocaleDateString("en-GB", { weekday: "short" })}
-                      </span>
-                      <span className="day-date">{day.getDate()}</span>
-                      <span className="visit-count">
-                        {dayVisits.length > 0 ? `/ ${dayVisits.length} Visits` : ""}
-                      </span>
+      {viewMode === "week" && (
+        <section className="week-view">
+          <div className="week-header">
+            <button className="nav-btn" onClick={() => setCurrentWeek((prev) => Math.max(1, prev - 1))}>
+              <span>←</span>
+            </button>
+            <h2>Week {currentWeek}</h2>
+            <button className="nav-btn" onClick={() => setCurrentWeek((prev) => Math.min(getWeeksInYear(currentYear), prev + 1))}>
+              <span>→</span>
+            </button>
+          </div>
+          <div className="week-details">
+            {(() => {
+              const weekData = generateWeekData();
+              return (
+                <>
+                  <div className="week-details-header">
+                    <div className="week-details-info">
+                      <p className="week-range">
+                        {weekData.days[0].toLocaleDateString("en-GB", { day: "numeric", month: "short" })} -{" "}
+                        {weekData.days[4].toLocaleDateString("en-GB", { day: "numeric", month: "short" })}
+                      </p>
+                      <p className="week-status">
+                        Status: {weekData.status}
+                        {canReadSupervisors && weekData.supervisorID && ` - Supervisor: ${users.find(u => u.userID === weekData.supervisorID)?.firstname || "Unknown"} ${users.find(u => u.userID === weekData.supervisorID)?.lastname || ""}`}
+                      </p>
                     </div>
-                    <div className="visits-list">
-                      {dayVisits.length > 0 ? (
-                        dayVisits.map((visit) => (
+                    {canValidateTimesheets && weekData.status !== "Validated" && (
+                      <button
+                        className="validate-timesheet-btn nav-btn"
+                        onClick={() => handleValidateTimesheet(filteredTimesheets.find((ts) => ts.weekNumber === currentWeek)?.timesheetID || "")}
+                      >
+                        Validate Entire Timesheet
+                      </button>
+                    )}
+                  </div>
+                  <div className="days-grid">
+                    {weekData.days.map((day) => {
+                      const dayStr = day.toISOString().split("T")[0];
+                      const dayVisits = sortVisitsByTime(
+                        weekData.visits.filter((v) => {
+                          const visitDate = new Date(v.date);
+                          visitDate.setHours(0, 0, 0, 0);
+                          return visitDate.toISOString().split("T")[0] === dayStr;
+                        })
+                      );
+                      return (
+                        <div className="day-column" key={dayStr}>
                           <div
-                            key={visit.visitID}
-                            className="visit-card"
-                            onClick={() => navigate(`/visit/${visit.visitID}`) }
+                            className="day-tile"
+                            onClick={canAccessTimesheetDetails ? () => {
+                              setCurrentDay(day);
+                              setViewMode("day");
+                            } : undefined}
                           >
-                            { canReadSupervisors && visit.supervisorID && (
-                              <p className="visit-supervisor">
-                                <FaRegUser /> {users.find(u => u.userID === visit.supervisorID)?.firstname } {users.find(u => u.userID === visit.supervisorID)?.lastname}
-                              </p>
-                            )}
-                            <hr />
-                            <div className="visit-header">
-                              {visit.time && (
-                                <span className="visit-time">
-                                  <FaClock /> {visit.time.split(":").slice(0, 2).join(":")}
-                                </span>
-                              )}
-                              <span className={`visit-status status-${visit.status.toLowerCase()}`}>
-                                {visit.status}
-                              </span>
-                            </div>
-                            <p className="visit-location">
-                              <FaMapMarkerAlt /> {visit.location || "Location TBD"}
-                            </p>
-                            {visit.Reasons && visit.Reasons.length > 0 && (
-                              <p className="visit-reasons">
-                                Reasons: {visit.Reasons.map((reason) => reason.item).join(", ")}
-                              </p>
+                            <span className="day-name">
+                              {day.toLocaleDateString("en-GB", { weekday: "short" })}
+                            </span>
+                            <span className="day-date">{day.getDate()}</span>
+                            <span className="visit-count">
+                              {dayVisits.length > 0 ? `/ ${dayVisits.length} Visits` : ""}
+                            </span>
+                          </div>
+                          <div className="visits-list">
+                            {dayVisits.length > 0 ? (
+                              dayVisits.map((visit) => (
+                                <div
+                                  key={visit.visitID}
+                                  className="visit-card"
+                                  onClick={() => navigate(`/visit/${visit.visitID}`)}
+                                >
+                                  {canReadSupervisors && visit.supervisorID && (
+                                    <p className="visit-supervisor">
+                                      <FaRegUser /> {users.find(u => u.userID === visit.supervisorID)?.firstname} {users.find(u => u.userID === visit.supervisorID)?.lastname}
+                                    </p>
+                                  )}
+                                  <hr />
+                                  <div className="visit-header">
+                                    {visit.time && (
+                                      <span className="visit-time">
+                                        <FaClock /> {visit.time.split(":").slice(0, 2).join(":")}
+                                      </span>
+                                    )}
+                                    <span className={`visit-status status-${visit.status.toLowerCase()}`}>
+                                      {visit.status}
+                                    </span>
+                                  </div>
+                                  <p className="visit-location">
+                                    <FaMapMarkerAlt /> {visit.location || "Location TBD"}
+                                  </p>
+                                  {visit.Reasons && visit.Reasons.length > 0 && (
+                                    <p className="visit-reasons">
+                                      Reasons: {visit.Reasons.map((reason) => reason.item).join(", ")}
+                                    </p>
+                                  )}
+                                </div>
+                              ))
+                            ) : (
+                              <div className="no-visits">No Visits Scheduled</div>
                             )}
                           </div>
-                        ))
-                      ) : (
-                        <div className="no-visits">No Visits Scheduled</div>
-                      )}
-                    </div>
+                        </div>
+                      );
+                    })}
                   </div>
-                );
-              })}
-            </div>
-          </>
-        );
-      })()}
-    </div>
-  </section>
-)}
+                </>
+              );
+            })()}
+          </div>
+        </section>
+      )}
 
       {viewMode === "day" && (
         <section className="day-view">
@@ -622,7 +633,7 @@ const Timesheets: React.FC = () => {
                   className="visit-card"
                   onClick={() => navigate(`/visit/${visit.visitID}`)}
                 >
-                  {canReadSupervisors  && visit.supervisorID && (
+                  {canReadSupervisors && visit.supervisorID && (
                     <p className="visit-supervisor">
                       <FaRegUser /> {users.find(u => u.userID === visit.supervisorID)?.firstname || "Unknown"} {users.find(u => u.userID === visit.supervisorID)?.lastname || ""}
                     </p>

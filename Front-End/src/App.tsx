@@ -170,15 +170,18 @@ const AppContent: React.FC = () => {
     );
 };
 
-// Main App component
+import { ConfigProvider } from './context/ConfigContext';
+
 const App: React.FC = () => {
     return (
         <Router>
             <ThemeProvider>
                 <AuthProvider>
-                    <ErrorProvider>
-                        <AppContent />
-                    </ErrorProvider>
+                    <ConfigProvider>
+                        <ErrorProvider>
+                            <AppContent />
+                        </ErrorProvider>
+                    </ConfigProvider>
                 </AuthProvider>
             </ThemeProvider>
         </Router>

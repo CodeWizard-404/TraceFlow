@@ -1,9 +1,8 @@
 import axios, { AxiosInstance } from "axios";
-import { BASE_URL, DEFAULT_TIMEOUT } from "../config";
 
 const api: AxiosInstance = axios.create({
-    baseURL: BASE_URL,
-    timeout: DEFAULT_TIMEOUT,
+    baseURL: process.env.REACT_APP_BASE_URL,
+    timeout: Number(process.env.REACT_APP_DEFAULT_TIMEOUT),
     withCredentials: true,
 });
 
