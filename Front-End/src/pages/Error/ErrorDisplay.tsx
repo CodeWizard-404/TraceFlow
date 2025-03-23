@@ -9,8 +9,12 @@ const ErrorDisplay: React.FC = () => {
 
     return (
         <div className="error-display">
-            <span>{error}</span>
-            <button onClick={() => setError(null)}>✕</button>
+            <div className="error-glass">
+                <span>{error}</span>
+                <button className="dismiss-button" onClick={() => setError(null)}>
+                    ✕
+                </button>
+            </div>
         </div>
     );
 };

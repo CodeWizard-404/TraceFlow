@@ -1,37 +1,35 @@
 import React, { useEffect, useState } from "react";
 import { useNavigate } from "react-router-dom";
-import { FaRocket, FaArrowLeft } from "react-icons/fa";
+import { FaArrowLeft } from "react-icons/fa";
 import "./PageNotFound.css";
 
 const PageNotFound: React.FC = () => {
   const navigate = useNavigate();
-  const [stars, setStars] = useState<JSX.Element[]>([]);
+  const [lines, setLines] = useState<JSX.Element[]>([]);
 
-  // Generate random stars for the background
+  // Generate animated digital lines for the background
   useEffect(() => {
-    const generateStars = () => {
-      const starElements = Array.from({ length: 100 }, (_, i) => {
-        const size = Math.random() * 3 + 1;
-        const left = Math.random() * 100;
-        const top = Math.random() * 100;
-        const animationDelay = Math.random() * 5;
+    const generateLines = () => {
+      const lineElements = Array.from({ length: 20 }, (_, i) => {
+        const isVertical = Math.random() > 0.5;
+        const size = Math.random() * 200 + 50;
+        const pos = Math.random() * 100;
+        const animationDelay = Math.random() * 3;
         return (
           <div
             key={i}
-            className="star"
+            className={`line ${isVertical ? "vertical" : "horizontal"}`}
             style={{
-              width: `${size}px`,
-              height: `${size}px`,
-              left: `${left}%`,
-              top: `${top}%`,
+              [isVertical ? "height" : "width"]: `${size}px`,
+              [isVertical ? "left" : "top"]: `${pos}%`,
               animationDelay: `${animationDelay}s`,
             }}
           />
         );
       });
-      setStars(starElements);
+      setLines(lineElements);
     };
-    generateStars();
+    generateLines();
   }, []);
 
   const handleBack = () => {
@@ -40,57 +38,32 @@ const PageNotFound: React.FC = () => {
 
   return (
     <div className="not-found-container">
-      {/* Starry Background */}
-      <div className="stars-layer">{stars}</div>
+      {/* Digital Lines Background */}
+      <div className="lines-layer">{lines}</div>
 
       {/* Main Content */}
       <div className="not-found-content">
-        {/* Rocket Animation */}
-        <div className="rocket-wrapper">
-          <FaRocket className="rocket-icon" />
-          <div className="rocket-trail"></div>
-        </div>
-
         {/* 404 Text with Glitch Effect */}
         <h1 className="not-found-title">
           <span className="glitch" data-text="404">
             404
           </span>
-          <span className="subtitle">Lost in Space</span>
+          <span className="subtitle">Page Not Found</span>
         </h1>
 
         {/* Message */}
         <p className="not-found-message">
-          Oops! It seems you've ventured into the unknown. This page doesn't exist.
+          Oops! It looks like this page doesn’t exist or has been moved.
         </p>
 
-        {/* Back Button with Hover Effect */}
+        {/* Back Button */}
         <button className="back-btn" onClick={handleBack}>
-          <FaArrowLeft /> Return to Orbit
+          <FaArrowLeft /> Return
         </button>
-
-        {/* Floating Particles */}
-        <div className="particles">
-          {Array.from({ length: 10 }).map((_, i) => (
-            <div
-              key={i}
-              className="particle"
-              style={{
-                left: `${Math.random() * 100}%`,
-                animationDelay: `${Math.random() * 3}s`,
-                animationDuration: `${Math.random() * 5 + 5}s`,
-              }}
-            />
-          ))}
-        </div>
       </div>
 
-      {/* Cosmic Wave Effect */}
-      <div className="cosmic-waves">
-        <div className="wave wave1"></div>
-        <div className="wave wave2"></div>
-        <div className="wave wave3"></div>
-      </div>
+      {/* Grid Overlay */}
+      <div className="grid-overlay" />
     </div>
   );
 };

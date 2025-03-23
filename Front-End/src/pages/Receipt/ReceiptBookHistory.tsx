@@ -9,24 +9,59 @@ import ReceiptBook from "../../models/ReceiptBook";
 import ReceiptBookTransfer from "../../models/ReceiptBookTransfer";
 import "./ReceiptBookHistory.css";
 
-const ReceiptBookHistory: React.FC = () => {
-    const { bookID } = useParams<{ bookID: string }>();
-    const { token, effectivePermissions } = useAuth();
-    const navigate = useNavigate();
-    const [book, setBook] = useState<ReceiptBook | null>(null);
-    const [history, setHistory] = useState<ReceiptBookTransfer[]>([]);
-    const [usersMap, setUsersMap] = useState<Map<string, string>>(new Map());
-    const [agentsMap, setAgentsMap] = useState<Map<string, string>>(new Map());
-    const [loading, setLoading] = useState<boolean>(true);
-    const [error, setError] = useState<string | null>(null);
+const PERMISSIONS = {
+    ACCESS_RECEIPT_BOOK_HISTORY: import.meta.env.VITE_PERMISSIONS_ACCESS_RECEIPT_BOOK_HISTORY,
+};
 
+// Role-based status colors for visualization
+const STATUS_COLORS = {
+    "In Stock": "#4CAF50",
+    "Sent to Supplier": "#2196F3",
+    "With Regional Manager": "#FF9800",
+    "With Supervisor": "#9C27B0",
+    "Assigned to Agent": "#F44336",
+    "Stub Collected": "#795548",
+    "With Stock Manager": "#607D8B",
+    "Archived": "#000000",
+    "ToSupplier": "#2196F3",
+    "ToRegionalManager": "#FF9800",
+    "ToSupervisor": "#9C27B0",
+    "ToAgent": "#F44336",
+    "StubToSupervisor": "#795548",
+    "ToStockManager": "#607D8B",
+    "ToRegionalManagerFromSupervisor": "#FF9800",
+} as const;
+
+// Main Component
+const ReceiptBookHistory: React.FC = () => {
+    // Hooks
+    const { bookID } = useParams<{ bookID: string }>(); // Receipt book ID from URL params
+    const navigate = useNavigate();
+    const { token, effectivePermissions } = useAuth();
+
+    // State
+    const [book, setBook] = useState<ReceiptBook | null>(null); // Current receipt book details
+    const [history, setHistory] = useState<ReceiptBookTransfer[]>([]); // Transfer history of the receipt book
+    const [usersMap, setUsersMap] = useState<Map<string, string>>(new Map()); // Map of user IDs to full names
+    const [agentsMap, setAgentsMap] = useState<Map<string, string>>(new Map()); // Map of agent IDs to full names
+    const [loading, setLoading] = useState<boolean>(true); // Loading state for data fetch
+    const [error, setError] = useState<string | null>(null); // Error message
+
+    // Permission Checks 
+    const userPermissions = React.useMemo(() => ({
+        canViewHistory: effectivePermissions?.some(p => p.name === PERMISSIONS.ACCESS_RECEIPT_BOOK_HISTORY),
+    }), [effectivePermissions]);
+
+    // Fetch receipt book details and transfer history
     useEffect(() => {
         const fetchData = async () => {
-            if (!bookID || !token || !effectivePermissions?.some(p => p.name === "access_receipt_book_history")) {
+            if (!bookID || !token || !userPermissions.canViewHistory) {
                 setError("Access Denied or Invalid Book ID");
                 setLoading(false);
                 return;
             }
+
+            setLoading(true);
             try {
                 const [bookData, historyData] = await Promise.all([
                     getReceiptBookById(bookID, token),
@@ -35,6 +70,7 @@ const ReceiptBookHistory: React.FC = () => {
                 setBook(bookData);
                 setHistory(historyData);
 
+                // Collect unique user and agent IDs from history
                 const userIDs = new Set<string>();
                 const agentIDs = new Set<string>();
                 historyData.forEach(entry => {
@@ -43,30 +79,36 @@ const ReceiptBookHistory: React.FC = () => {
                     if (entry.toAgentID) agentIDs.add(entry.toAgentID);
                 });
 
+                // Fetch user names
                 const userPromises = Array.from(userIDs).map(id => getUserById(id, token));
                 const userResults = await Promise.all(userPromises);
-                const newUsersMap = new Map<string, string>();
-                userResults.forEach(user => newUsersMap.set(user.userID, `${user.firstname} ${user.lastname}`));
+                const newUsersMap = new Map<string, string>(
+                    userResults.map(user => [user.userID, `${user.firstname} ${user.lastname}`])
+                );
                 setUsersMap(newUsersMap);
 
+                // Fetch agent names if applicable
                 if (agentIDs.size > 0) {
                     const agentPromises = Array.from(agentIDs).map(id => getAgentById(id, token));
                     const agentResults = await Promise.all(agentPromises);
-                    const newAgentsMap = new Map<string, string>();
-                    agentResults.forEach(agent => newAgentsMap.set(agent.agentID, `${agent.name} ${agent.lastname}`));
+                    const newAgentsMap = new Map<string, string>(
+                        agentResults.map(agent => [agent.agentID, `${agent.name} ${agent.lastname}`])
+                    );
                     setAgentsMap(newAgentsMap);
                 }
             } catch (err) {
                 setError("Failed to fetch history or details.");
-                console.error(err);
+                console.error("Fetch Error:", err);
             } finally {
                 setLoading(false);
             }
         };
-        fetchData();
-    }, [bookID, token, effectivePermissions]);
 
-    const getRoleFromTransfer = (entry: ReceiptBookTransfer) => {
+        fetchData();
+    }, [bookID, token, userPermissions.canViewHistory]);
+
+    // Determine the role involved in a transfer
+    const getRoleFromTransfer = (entry: ReceiptBookTransfer): string => {
         if (entry.toAgentID) return "Agent";
         if (entry.transferType.includes("Supplier")) return "Supplier";
         if (entry.transferType.includes("RegionalManager")) return "Regional Manager";
@@ -76,38 +118,46 @@ const ReceiptBookHistory: React.FC = () => {
         return "Unknown";
     };
 
-    const getNodeClass = (entry: ReceiptBookTransfer, prevEntry?: ReceiptBookTransfer, index?: number) => {
+    // Assign CSS classes to timeline nodes based on transfer context
+    const getNodeClass = (entry: ReceiptBookTransfer, prevEntry?: ReceiptBookTransfer, index?: number): string => {
         const currentRole = getRoleFromTransfer(entry);
         const prevRole = prevEntry ? getRoleFromTransfer(prevEntry) : null;
 
-        // Same-Role Transfer: Same role as previous (e.g., Regional Manager → Regional Manager)
         const isSameRole = prevRole && currentRole === prevRole && currentRole !== "Agent" && currentRole !== "Supplier";
-
-        // Return: Supervisor → Regional Manager (pre-Agent or post-stub)
         const isReturn = prevRole === "Supervisor" && currentRole === "Regional Manager";
-
-        // Direct Route: Supervisor → Stock Manager after stub collection
         const hasStub = history.some((e, i) => i < (index || 0) && e.transferType === "StubToSupervisor");
         const isDirect = prevRole === "Supervisor" && currentRole === "Stock Manager" && hasStub;
 
         return `${isSameRole ? "same-role" : ""} ${isReturn ? "return" : ""} ${isDirect ? "direct" : ""}`.trim();
     };
 
+    // Get color for a given status or transfer type
+    const getStatusColor = (status: string): string => {
+        return STATUS_COLORS[status as keyof typeof STATUS_COLORS] || "#757575"; // Default gray for unknown status
+    };
+
+    // Early Returns for Loading and Error States
     if (loading) return <div className="loading">Tracking History...</div>;
     if (error || !book) return <div className="error">{error || "Receipt book not found."}</div>;
 
+    // Render
     return (
         <div className="history-container">
+            {/* Header Section */}
             <header className="history-header">
                 <h1>Receipt Book #{book.number} History</h1>
                 <button className="back-btn" onClick={() => navigate("/receipt-books")}>
                     <FaArrowLeft /> Back to Receipts
                 </button>
             </header>
+
+            {/* Footer Section with Current Status */}
             <div className="history-footer">
                 <p>Current Status: <span style={{ color: getStatusColor(book.status) }}>{book.status}</span></p>
                 <p>Current Holder: {book.currentHolderID ? usersMap.get(book.currentHolderID) : book.agentID ? agentsMap.get(book.agentID) : "N/A"}</p>
             </div>
+
+            {/* Timeline Section */}
             <div className="timeline">
                 <div className="timeline-path">
                     {history.map((entry, index) => (
@@ -127,30 +177,8 @@ const ReceiptBookHistory: React.FC = () => {
                     ))}
                 </div>
             </div>
-
         </div>
     );
-};
-
-const getStatusColor = (status: string) => {
-    switch (status) {
-        case "In Stock": return "#4CAF50";
-        case "Sent to Supplier": return "#2196F3";
-        case "With Regional Manager": return "#FF9800";
-        case "With Supervisor": return "#9C27B0";
-        case "Assigned to Agent": return "#F44336";
-        case "Stub Collected": return "#795548";
-        case "With Stock Manager": return "#607D8B";
-        case "Archived": return "#000000";
-        case "ToSupplier": return "#2196F3";
-        case "ToRegionalManager": return "#FF9800";
-        case "ToSupervisor": return "#9C27B0";
-        case "ToAgent": return "#F44336";
-        case "StubToSupervisor": return "#795548";
-        case "ToStockManager": return "#607D8B";
-        case "ToRegionalManagerFromSupervisor": return "#FF9800";
-        default: return "#757575";
-    }
 };
 
 export default ReceiptBookHistory;

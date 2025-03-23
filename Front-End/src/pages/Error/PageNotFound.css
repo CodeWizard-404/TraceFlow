@@ -4,7 +4,7 @@
     position: relative;
     min-height: 100vh;
     width: 100%;
-    background: linear-gradient(135deg, #1e2a44 0%, #0d1b2a 100%);
+    background: linear-gradient(135deg, #f8fafc 0%, #e2e8f0 100%);
     overflow: hidden;
     display: flex;
     justify-content: center;
@@ -12,88 +12,77 @@
     font-family: 'Inter', sans-serif;
 }
 
-/* Starry Background */
-.stars-layer {
+body.dark .not-found-container {
+    background: linear-gradient(135deg, #1f2937 0%, #2d3748 100%);
+}
+
+/* Digital Lines Background */
+.lines-layer {
     position: absolute;
     top: 0;
     left: 0;
     width: 100%;
     height: 100%;
     pointer-events: none;
+    z-index: 1;
 }
 
-.star {
+.line {
     position: absolute;
-    background: #fff;
-    border-radius: 50%;
-    animation: twinkle 5s infinite ease-in-out;
+    background: rgba(76, 177, 199, 0.5);
+    animation: pulseLine 3s infinite ease-in-out;
 }
 
-@keyframes twinkle {
-    0%, 100% {
-        opacity: 0.2;
-    }
+body.dark .line {
+    background: rgba(99, 179, 237, 0.5);
+}
 
-    50% {
-        opacity: 1;
-    }
+.line.horizontal {
+    height: 2px;
+    left: 0;
+}
+
+.line.vertical {
+    width: 2px;
+    top: 0;
+}
+
+@keyframes pulseLine {
+    0%, 100% { opacity: 0.3; }
+    50% { opacity: 0.8; }
+}
+
+/* Grid Overlay */
+.grid-overlay {
+    position: absolute;
+    top: 0;
+    left: 0;
+    width: 100%;
+    height: 100%;
+    background: url('data:image/svg+xml,%3Csvg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 40 40" opacity="0.05"%3E%3Cpath d="M0 0h40v40H0zM5 0v40M10 0v40M15 0v40M20 0v40M25 0v40M30 0v40M35 0v40M0 5h40M0 10h40M0 15h40M0 20h40M0 25h40M0 30h40M0 35h40" stroke="%234cb1c7" stroke-width="1"/%3E%3C/svg%3E') repeat;
+    pointer-events: none;
+    z-index: 2;
+}
+
+body.dark .grid-overlay {
+    background: url('data:image/svg+xml,%3Csvg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 40 40" opacity="0.05"%3E%3Cpath d="M0 0h40v40H0zM5 0v40M10 0v40M15 0v40M20 0v40M25 0v40M30 0v40M35 0v40M0 5h40M0 10h40M0 15h40M0 20h40M0 25h40M0 30h40M0 35h40" stroke="%2363b3ed" stroke-width="1"/%3E%3C/svg%3E') repeat;
 }
 
 /* Main Content */
 .not-found-content {
     position: relative;
-    z-index: 2;
+    z-index: 3;
     text-align: center;
-    color: #fff;
     padding: 2rem;
     max-width: 800px;
+    background: rgba(255, 255, 255, 0.9);
+    border-radius: 1rem;
+    box-shadow: 0 0.5rem 1.5rem rgba(0, 0, 0, 0.1);
 }
 
-/* Rocket Animation */
-.rocket-wrapper {
-    position: relative;
-    margin-bottom: 2rem;
-}
-
-.rocket-icon {
-    font-size: 4rem;
-    color: #4cb1c7;
-    animation: floatRocket 4s infinite ease-in-out;
-    position: relative;
-    z-index: 2;
-}
-
-.rocket-trail {
-    position: absolute;
-    bottom: -1rem;
-    left: 50%;
-    transform: translateX(-50%);
-    width: 2px;
-    height: 50px;
-    background: linear-gradient(to bottom, #4cb1c7, transparent);
-    animation: trailFade 1s infinite ease-in-out;
-}
-
-@keyframes floatRocket {
-    0%, 100% {
-        transform: translateY(0) rotate(45deg);
-    }
-
-    50% {
-        transform: translateY(-20px) rotate(45deg);
-    }
-}
-
-@keyframes trailFade {
-    0% {
-        opacity: 1;
-        height: 50px;
-    }
-
-    100% {
-        opacity: 0;
-        height: 20px;
-    }
+body.dark .not-found-content {
+    background: rgba(45, 55, 72, 0.9);
+    box-shadow: 0 0.5rem 1.5rem rgba(0, 0, 0, 0.4);
 }
 
 /* 404 Title with Glitch Effect */
@@ -103,11 +92,15 @@
     font-weight: 700;
     line-height: 1;
     position: relative;
+    color: #2d3748;
+}
+
+body.dark .not-found-title {
+    color: #e5e7eb;
 }
 
 .glitch {
     position: relative;
-    color: #fff;
     animation: glitch 2s linear infinite;
 }
 
@@ -127,68 +120,60 @@
     clip-path: polygon(0 0, 100% 0, 100% 33%, 0 33%);
 }
 
+body.dark .glitch::before {
+    color: #63b3ed;
+}
+
 .glitch::after {
     color: #e81f76;
     animation: glitch-bottom 1.5s linear infinite;
     clip-path: polygon(0 67%, 100% 67%, 100% 100%, 0 100%);
 }
 
+body.dark .glitch::after {
+    color: #ff6b6b;
+}
+
 @keyframes glitch {
-    2%, 64% {
-        transform: translate(2px, 0);
-    }
-
-    4%, 60% {
-        transform: translate(-2px, 0);
-    }
-
-    62% {
-        transform: translate(0, 0);
-    }
+    2%, 64% { transform: translate(2px, 0); }
+    4%, 60% { transform: translate(-2px, 0); }
+    62% { transform: translate(0, 0); }
 }
 
 @keyframes glitch-top {
-    2%, 64% {
-        transform: translate(4px, -2px);
-    }
-
-    4%, 60% {
-        transform: translate(-4px, 2px);
-    }
-
-    62% {
-        transform: translate(0, 0);
-    }
+    2%, 64% { transform: translate(4px, -2px); }
+    4%, 60% { transform: translate(-4px, 2px); }
+    62% { transform: translate(0, 0); }
 }
 
 @keyframes glitch-bottom {
-    2%, 64% {
-        transform: translate(-4px, 2px);
-    }
-
-    4%, 60% {
-        transform: translate(4px, -2px);
-    }
-
-    62% {
-        transform: translate(0, 0);
-    }
+    2%, 64% { transform: translate(-4px, 2px); }
+    4%, 60% { transform: translate(4px, -2px); }
+    62% { transform: translate(0, 0); }
 }
 
 .subtitle {
     display: block;
     font-size: 1.5rem;
     font-weight: 400;
-    color: rgba(255, 255, 255, 0.8);
+    color: #4cb1c7;
     margin-top: 0.5rem;
+}
+
+body.dark .subtitle {
+    color: #63b3ed;
 }
 
 /* Message */
 .not-found-message {
     font-size: 1.1rem;
-    color: rgba(255, 255, 255, 0.9);
+    color: #2d3748;
     margin: 1.5rem 0;
     line-height: 1.6;
+}
+
+body.dark .not-found-message {
+    color: #e5e7eb;
 }
 
 /* Back Button */
@@ -209,89 +194,18 @@
     transition: all 0.3s ease;
 }
 
+body.dark .back-btn {
+    background: linear-gradient(135deg, #63b3ed 0%, #4a83ce 100%);
+    box-shadow: 0 0.25rem 0.75rem rgba(0, 0, 0, 0.5);
+}
+
 .back-btn:hover {
     transform: scale(1.05);
     box-shadow: 0 0.5rem 1rem rgba(76, 177, 199, 0.5);
 }
 
-/* Floating Particles */
-.particles {
-    position: absolute;
-    top: 0;
-    left: 0;
-    width: 100%;
-    height: 100%;
-    pointer-events: none;
-}
-
-.particle {
-    position: absolute;
-    width: 8px;
-    height: 8px;
-    background: rgba(76, 177, 199, 0.5);
-    border-radius: 50%;
-    animation: floatParticle linear infinite;
-}
-
-@keyframes floatParticle {
-    0% {
-        transform: translate(0, 0);
-        opacity: 0.5;
-    }
-
-    100% {
-        transform: translate(50px, -100px);
-        opacity: 0;
-    }
-}
-
-/* Cosmic Waves */
-.cosmic-waves {
-    position: absolute;
-    bottom: 0;
-    left: 0;
-    width: 100%;
-    height: 200px;
-    overflow: hidden;
-    pointer-events: none;
-}
-
-.wave {
-    position: absolute;
-    bottom: 0;
-    left: 0;
-    width: 200%;
-    height: 100%;
-    background: rgba(76, 177, 199, 0.1);
-    border-radius: 50% 50% 0 0;
-    animation: waveFlow infinite linear;
-}
-
-.wave1 {
-    animation-duration: 20s;
-    transform: translateX(-25%);
-}
-
-.wave2 {
-    animation-duration: 25s;
-    background: rgba(232, 31, 118, 0.1);
-    transform: translateX(-15%);
-}
-
-.wave3 {
-    animation-duration: 30s;
-    background: rgba(245, 158, 11, 0.1);
-    transform: translateX(-10%);
-}
-
-@keyframes waveFlow {
-    0% {
-        transform: translateX(-50%);
-    }
-
-    100% {
-        transform: translateX(0);
-    }
+body.dark .back-btn:hover {
+    box-shadow: 0 0.5rem 1rem rgba(0, 0, 0, 0.7);
 }
 
 /* Responsive Design */
@@ -302,10 +216,6 @@
 
     .subtitle {
         font-size: 1.2rem;
-    }
-
-    .rocket-icon {
-        font-size: 3rem;
     }
 
     .not-found-message {
@@ -325,10 +235,6 @@
 
     .subtitle {
         font-size: 1rem;
-    }
-
-    .rocket-icon {
-        font-size: 2.5rem;
     }
 
     .not-found-message {

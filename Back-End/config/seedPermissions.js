@@ -4,7 +4,6 @@ const { nanoid } = require('nanoid');
 const { Permission } = require('../models');
 require('dotenv').config();
 
-
 const directoriesToScan = [
     path.join(__dirname, '../routes'),
     path.join(__dirname, '../controllers'),
@@ -12,7 +11,6 @@ const directoriesToScan = [
 
 const permissionRegex = /requirePermission\(['"`]([^'`"]+)['"`]\)/g;
 const routePathRegex = /app\.use\(['"`]([^'`"]+)['"`],\s*[a-zA-Z0-9_]+Routes\)/g;
-
 
 const getRouteClass = (routePath) => {
     const basePath = routePath.toLowerCase().replace('/api/', '');
@@ -27,7 +25,6 @@ const getRouteClass = (routePath) => {
     if (basePath.includes('roles')) return 'Role';
     if (basePath.includes('permissions')) return 'Permission';
     if (basePath.includes('users')) return 'User';
-    if (basePath.includes('config')) return 'Config';
     return 'User';
 };
 

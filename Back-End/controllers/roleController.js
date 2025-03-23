@@ -88,6 +88,21 @@ class RoleController {
         }
     }
 
+    static async revokeRolesFromUser(req, res) { 
+        try {
+            const { userID } = req.params;
+            const { roleIDs } = req.body;
+            if (!userID || !Array.isArray(roleIDs) || roleIDs.length === 0) {
+                return res.status(400).json({ error: 'User ID and non-empty role IDs array are required' });
+            }
+            const result = await RoleService.revokeRoleFromUser(userID, roleIDs);
+            res.status(200).json(result);
+        } catch (error) {
+            console.error(`${new Date().toISOString()} - Revoke roles from user failed:`, error);
+            res.status(400).json({ error: error.message || 'Failed to revoke roles from user due to an internal error' });
+        }
+    }
+
     static async getRolesByUser(req, res) {
         try {
             const { userID } = req.params;

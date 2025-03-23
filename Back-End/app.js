@@ -23,7 +23,6 @@ const roleRoutes = require('./routes/roleRoutes');
 const timesheetRoutes = require('./routes/timesheetRoutes');
 const userRoutes = require('./routes/userRoutes');
 const visitRoutes = require('./routes/visitRoutes');
-const configRoutes = require('./routes/configRoutes');
 
 require('dotenv').config();
 
@@ -56,7 +55,6 @@ app.use((req, res, next) => {
     next();
 });
 
-app.use('/api/config', configRoutes);
 app.use('/api/visits', visitRoutes);
 app.use('/api/checklists', checklistRoutes);
 app.use('/api/reasons', reasonRoutes);
@@ -96,68 +94,29 @@ async function startApp() {
     try {
         console.log(`${new Date().toISOString()} - Starting application initialization...`);
 
-        try {
-            await initializeDatabase();
-            logStep('Database Initialization', true, 'Completed successfully');
-        } catch (dbError) {
-            logStep('Database Initialization', false, 'Failed', dbError);
-            throw dbError;
-        }
+        await initializeDatabase();
+        logStep('Database Initialization', true, 'Completed successfully');
 
-        try {
-            await initializeSMTP();
-            logStep('SMTP Initialization', true, 'Completed successfully');
-        } catch (smtpError) {
-            logStep('SMTP Initialization', false, 'Failed', smtpError);
-            throw smtpError;
-        }
+        await initializeSMTP();
+        logStep('SMTP Initialization', true, 'Completed successfully');
 
-        try {
-            await initializeSMS();
-            logStep('SMS Initialization', true, 'Completed successfully');
-        } catch (smsError) {
-            logStep('SMS Initialization', false, 'Proceeding without SMS', smsError);
-        }
+        await initializeSMS();
+        logStep('SMS Initialization', true, 'Completed successfully');
 
-        try {
-            setupAssociations();
-            logStep('Model Associations', true, 'Relationships established');
-        } catch (assocError) {
-            logStep('Model Associations', false, 'Failed', assocError);
-            throw assocError;
-        }
+        setupAssociations();
+        logStep('Model Associations', true, 'Relationships established');
 
-        try {
-            await sequelize.sync({ alter: true });
-            logStep('Database Sync', true, 'Tables synchronized');
-        } catch (syncError) {
-            logStep('Database Sync', false, 'Failed', syncError);
-            throw syncError;
-        }
+        await sequelize.sync({ alter: true });
+        logStep('Database Sync', true, 'Tables synchronized');
 
-        try {
-            await seedMissingPermissions();
-            logStep('Permission Seeding', true, 'Completed successfully');
-        } catch (seedError) {
-            logStep('Permission Seeding', false, 'Failed', seedError);
-            throw seedError;
-        }
+        await seedMissingPermissions();
+        logStep('Permission Seeding', true, 'Completed successfully');
 
-        try {
-            await initializeServer(app);
-            logStep('Server Initialization', true, 'Server started');
-        } catch (serverError) {
-            logStep('Server Initialization', false, 'Failed', serverError);
-            throw serverError;
-        }
+        await initializeServer(app);
+        logStep('Server Initialization', true, 'Server started');
 
-        try {
-            await seedSuperAdmin();
-            logStep('Super Admin Seeding', true, 'Completed successfully');
-        } catch (superAdminError) {
-            logStep('Super Admin Seeding', false, 'Failed', superAdminError);
-            throw superAdminError;
-        }
+        await seedSuperAdmin();
+        logStep('Super Admin Seeding', true, 'Completed successfully');
 
         const endTime = new Date();
         const duration = (endTime - startTime) / 1000;
@@ -166,10 +125,6 @@ async function startApp() {
         console.log(`  Successes: ${summary.successes}`);
         console.log(`  Failures: ${summary.failures}`);
         console.log(`  Duration: ${duration.toFixed(2)} seconds`);
-        console.log(`  Details:`);
-        summary.steps.forEach((step, index) => {
-            console.log(`    ${index + 1}. ${step.step}: ${step.success ? 'Success' : 'Failed'} - ${step.message}${step.error ? ` (Error: ${step.error.message})` : ''}`);
-        });
     } catch (error) {
         console.error(`${new Date().toISOString()} - Application initialization failed:`, error);
         process.exit(1);

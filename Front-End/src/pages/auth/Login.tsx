@@ -4,28 +4,33 @@ import { useError } from "../../context/ErrorContext";
 import { AxiosError } from "axios";
 import "./Login.css";
 
+// LoginPage component for user authentication
 const LoginPage: React.FC = () => {
+    // State for form inputs and loading status
     const [identifier, setIdentifier] = useState("");
     const [password, setPassword] = useState("");
     const [loading, setLoading] = useState(false);
-    const { loginUser } = useAuth();
-    const { setError } = useError();
 
+    const { loginUser } = useAuth(); // Access login function from AuthContext
+    const { setError } = useError(); // Access error setter from ErrorContext
+
+    // Handles form submission for login
     const handleSubmit = async (e: React.FormEvent) => {
         e.preventDefault();
-        setLoading(true);
-        setError(null);
+        setLoading(true); // Indicate loading state
+        setError(null); // Clear any previous errors
 
         try {
-            await loginUser(identifier, password); // No redirectTo parameter
+            await loginUser(identifier, password); // Attempt login; redirect handled in AuthProvider
         } catch (err: unknown) {
+            // Handle login errors
             const axiosError = err as AxiosError<{ error: string }>;
-            const errorMessage =
+            const errorMessage = 
                 axiosError.response?.data?.error || "Invalid credentials. Please try again.";
             setError(errorMessage);
             console.error("Login error:", err);
         } finally {
-            setLoading(false);
+            setLoading(false); // Reset loading state
         }
     };
 
@@ -62,7 +67,11 @@ const LoginPage: React.FC = () => {
                             placeholder="Enter password"
                         />
                     </div>
-                    <button type="submit" className="submit-btn" disabled={loading}>
+                    <button 
+                        type="submit" 
+                        className="submit-btn" 
+                        disabled={loading}
+                    >
                         {loading ? "Logging in..." : "Login"}
                     </button>
                 </form>

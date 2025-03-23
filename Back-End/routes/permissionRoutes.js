@@ -12,6 +12,7 @@ router.delete('/:permissionID', authenticateJWT, requirePermission('delete_permi
 router.get('/:permissionID', authenticateJWT, requirePermission('read_permission_details'), PermissionController.getPermissionById);
 
 router.post('/role/:roleID/assign', authenticateJWT, requirePermission('assign_permissions'), PermissionController.assignPermissionsToRole);
+router.post('/role/:roleID/revoke', authenticateJWT, requirePermission('revoke_permissions'), PermissionController.revokePermissionsFromRole);
 router.get('/role/:roleID',authenticateJWT, requirePermission('read_permissions_by_role'), PermissionController.getPermissionsByRole);
 
 router.post('/override/:userID', authenticateJWT, requirePermission('create_permission_overrides'), PermissionController.addPermissionOverride);

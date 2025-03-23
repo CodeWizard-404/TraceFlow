@@ -9,6 +9,6 @@ router.post('/', authenticateJWT, requirePermission('create_timesheets_for_super
 router.get('/', authenticateJWT, requirePermission('access_timesheets'), TimesheetController.getAllTimesheets);
 router.get('/:id', authenticateJWT, requirePermission('access_timesheet_details'), TimesheetController.getTimesheetById);
 router.put('/:id/validate', authenticateJWT, requirePermission('validate_timesheets'), TimesheetController.validateTimesheet);
-router.get('/supervisor/:supervisorID', authenticateJWT, requirePermission('access_Supervisor_timesheets'), TimesheetController.getTimesheetsBySupervisor);
+router.get('/supervisor/:supervisorID', authenticateJWT, requirePermission('access_supervisor_timesheets'), TimesheetController.getTimesheetsBySupervisor);
 
 module.exports = router;

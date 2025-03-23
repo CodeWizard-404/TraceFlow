@@ -11,6 +11,7 @@ import {
     RemovePermissionOverrideResponse,
     EffectivePermissionsResponse,
     UserPermissionOverrideResponse,
+    RevokePermissionsResponse
 } from ".";
 
 export const getAllPermissions = async (token: string): Promise<ListPermissionsResponse> => {
@@ -92,6 +93,22 @@ export const assignPermissionsToRole = async (
         return response.data;
     } catch (error) {
         console.error(`Error assigning permissions to role (${roleID}):`, error);
+        throw error;
+    }
+};
+
+export const revokePermissionsFromRole = async (
+    roleID: string,
+    permissionIDs: string[],
+    token: string
+): Promise<RevokePermissionsResponse> => {
+    try {
+        const response = await api.post<RevokePermissionsResponse>(`/permissions/role/${roleID}/revoke`, { permissionIDs }, {
+            headers: { Authorization: `Bearer ${token}` },
+        });
+        return response.data;
+    } catch (error) {
+        console.error(`Error revoking permissions from role (${roleID}):`, error);
         throw error;
     }
 };

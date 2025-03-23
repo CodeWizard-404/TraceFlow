@@ -1,6 +1,5 @@
 // controllers/userController.js
 const UserService = require('../services/userService');
-const RoleService = require('../services/roleService');
 
 class UserController {
     static async createUser(req, res) {
@@ -86,22 +85,6 @@ class UserController {
 
 
 
-    static async getRolesByUser(req, res) {
-        try {
-            const { userID } = req.params;
-            // Use req.user.userID if no explicit userID is provided (for /me/roles)
-            const targetUserID = userID || req.user.userID;
-            if (!targetUserID) {
-                return res.status(400).json({ error: 'User ID is required' });
-            }
-            const roles = await RoleService.getRolesByUser(targetUserID);
-            res.status(200).json(roles);
-        } catch (error) {
-            console.error(`${new Date().toISOString()} - Get roles by user failed:`, error);
-            res.status(404).json({ error: error.message || 'User not found' });
-        }
-    }
-
     
 
     static async assignSupervisorsToManager(req, res) {
@@ -115,6 +98,20 @@ class UserController {
         } catch (error) {
             console.error(`${new Date().toISOString()} - Assign supervisors to manager failed:`, error);
             res.status(400).json({ error: error.message || 'Failed to assign supervisors to manager due to an internal error' });
+        }
+    }
+
+    static async revokeSupervisorsFromManager(req, res) {
+        try {
+            const { managerID, supervisorIDs } = req.body;
+            if (!managerID || !Array.isArray(supervisorIDs)) {
+                return res.status(400).json({ error: 'Manager ID and supervisor IDs array are required' });
+            }
+            const result = await UserService.revokeSupervisorsFromManager(managerID, supervisorIDs);
+            res.status(200).json(result);
+        } catch (error) {
+            console.error(`${new Date().toISOString()} - Revoke supervisors from manager failed:`, error);
+            res.status(400).json({ error: error.message || 'Failed to revoke supervisors from manager due to an internal error' });
         }
     }
 

@@ -1,4 +1,3 @@
-// src/pages/visit/QRScan.tsx
 import React, { useEffect, useState, useRef, useMemo } from "react";
 import { useLocation, useNavigate } from "react-router-dom";
 import { Html5Qrcode } from "html5-qrcode";
@@ -7,29 +6,38 @@ import "./QRScan.css";
 import { verifyQrCode } from "../../apis/visitAPI";
 import { useAuth } from "../../context/AuthContext";
 
+const PERMISSIONS = {
+    SCAN_VISITS: import.meta.env.VITE_PERMISSIONS_SCAN_VISITS,
+};
+
+// Main Component
 const QRScan: React.FC = () => {
+    // Hooks
     const navigate = useNavigate();
     const location = useLocation();
     const { token, effectivePermissions, permissionsLoaded } = useAuth();
-    const [backendError, setBackendError] = useState<string | null>(null);
-    const [status, setStatus] = useState<string>("Scanning...");
-    const [loading, setLoading] = useState<boolean>(true);
-    const [isMounted, setIsMounted] = useState<boolean>(false);
-    const [isShaking, setIsShaking] = useState<boolean>(false);
-    const [isSuccess, setIsSuccess] = useState<boolean>(false);
-    const qrRef = useRef<HTMLDivElement>(null);
-    const qrCode = useRef<Html5Qrcode | null>(null);
-    const visit = (location.state as { visit?: Visit })?.visit;
+    const visit = (location.state as { visit?: Visit })?.visit; // Visit data passed via location state
 
-    // Permission Check
-    const canScanVisits = useMemo(
-        () => effectivePermissions?.some((p) => p.name === "scan_visits"),
-        [effectivePermissions]
-    );
+    // State
+    const [backendError, setBackendError] = useState<string | null>(null); // Error message from backend verification
+    const [status, setStatus] = useState<string>("Scanning..."); // Current status of the QR scan process
+    const [loading, setLoading] = useState<boolean>(true); // Loading state for camera initialization
+    const [isMounted, setIsMounted] = useState<boolean>(false); // Tracks component mounting status
+    const [isShaking, setIsShaking] = useState<boolean>(false); // Triggers shake animation on error
+    const [isSuccess, setIsSuccess] = useState<boolean>(false); // Indicates successful QR validation
+    const qrRef = useRef<HTMLDivElement>(null); // Reference to the QR reader DOM element
+    const qrCode = useRef<Html5Qrcode | null>(null); // Reference to the Html5Qrcode instance
 
+    // Permission Checks (Centralized)
+    const userPermissions = useMemo(() => ({
+        canScanVisits: effectivePermissions?.some(p => p.name === PERMISSIONS.SCAN_VISITS),
+    }), [effectivePermissions]);
+
+    // QR Scanner Setup and Logic
     useEffect(() => {
         setIsMounted(true);
 
+        // Validate preconditions
         if (!visit || !visit.visitID) {
             console.error("No visit data provided. Please go back and select a visit.");
             setLoading(false);
@@ -46,13 +54,12 @@ const QRScan: React.FC = () => {
         }
 
         if (!permissionsLoaded) {
-            console.log("Permissions not yet loaded, waiting...");
             return;
         }
 
-        if (!canScanVisits) {
+        if (!userPermissions.canScanVisits) {
             console.error("User lacks 'scan_visits' permission.");
-            setBackendError("Access Denied: You lack permission to scan visits.");
+            navigate("/access-denied");
             setLoading(false);
             setStatus("");
             return;
@@ -65,11 +72,14 @@ const QRScan: React.FC = () => {
             return;
         }
 
+        // Initialize QR scanner
         const html5QrCode = new Html5Qrcode("qr-reader");
         qrCode.current = html5QrCode;
 
         const config = { fps: 10, qrbox: { width: 250, height: 250 } };
+
         const qrCodeSuccessCallback = async (decodedText: string) => {
+            // Handle successful QR code scan and verification
             setStatus("QR Code Detected");
             await new Promise((resolve) => setTimeout(resolve, 1500));
             setStatus("Checking...");
@@ -104,6 +114,7 @@ const QRScan: React.FC = () => {
         };
 
         const qrCodeErrorCallback = (error: string) => {
+            // Handle QR scan errors
             console.warn(`QR scan error: ${error}`);
             if (error.includes("NotAllowedError")) {
                 console.error("Camera access denied. Please allow camera access and try again.");
@@ -123,6 +134,7 @@ const QRScan: React.FC = () => {
                 setStatus("");
             });
 
+        // Cleanup on unmount
         return () => {
             if (qrCode.current) {
                 qrCode.current
@@ -132,12 +144,15 @@ const QRScan: React.FC = () => {
             }
             setIsMounted(false);
         };
-    }, [visit, navigate, token, permissionsLoaded, canScanVisits , isMounted]);
+    }, [visit, navigate, token, permissionsLoaded, userPermissions.canScanVisits, isMounted]);
 
+    // Handlers
     const handleBack = () => {
+        // Navigate back to the previous page
         navigate(-1);
     };
 
+    // Early Returns for Error States
     if (!visit || !visit.visitID) {
         return (
             <div className="qr-scan-container">
@@ -156,7 +171,7 @@ const QRScan: React.FC = () => {
         return <div className="qr-scan-container">Loading permissions...</div>;
     }
 
-    if (!token || !canScanVisits) {
+    if (!token || !userPermissions.canScanVisits) {
         return (
             <div className="qr-scan-container">
                 <div className="qr-scan-error-card">
@@ -170,12 +185,16 @@ const QRScan: React.FC = () => {
         );
     }
 
+    // Render
     return (
         <div className="qr-scan-container">
+            {/* Header Section */}
             <header className="qr-header">
                 <h1>Scan QR Code</h1>
                 <p>Align the QR code within the frame to validate the visit.</p>
             </header>
+
+            {/* QR Scanner Section */}
             <section className={`qr-scan-card ${isShaking ? "shake" : ""} ${isSuccess ? "success" : ""}`}>
                 {loading ? (
                     <div className="qr-loading">
@@ -195,6 +214,8 @@ const QRScan: React.FC = () => {
                     </>
                 )}
             </section>
+
+            {/* Action Buttons */}
             <div className="qr-actions">
                 <button className="qr-back-btn" onClick={handleBack}>
                     Back

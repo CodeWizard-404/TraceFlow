@@ -8,23 +8,33 @@ import Visit from "../../models/Visit";
 import Agent from "../../models/Agent";
 import { useAuth } from "../../context/AuthContext";
 
+const PERMISSIONS = {
+    LOG_VISITS: import.meta.env.VITE_PERMISSIONS_LOG_VISITS,
+};
+
+
+// Main Component
 const VisitValidation: React.FC = () => {
-    const { idVisit } = useParams<{ idVisit: string }>();
-    const { token, effectivePermissions, permissionsLoaded } = useAuth();
+    // Hooks
+    const { idVisit } = useParams<{ idVisit: string }>(); // Visit ID from URL parameters
     const navigate = useNavigate();
-    const [visit, setVisit] = useState<Visit | null>(null);
-    const [agent, setAgent] = useState<Agent | null>(null);
-    const [checklist, setChecklist] = useState<Array<{ id: string; item: string; checked: boolean }>>([]);
-    const [entryTime, setEntryTime] = useState<number | null>(null);
-    const [loading, setLoading] = useState<boolean>(true);
-    const [error, setError] = useState<string | null>(null);
-    const [isSubmitting, setIsSubmitting] = useState<boolean>(false);
+    const { token, effectivePermissions, permissionsLoaded } = useAuth();
 
-    const canLogVisits = useMemo(
-        () => effectivePermissions?.some((p) => p.name === "log_visits"),
-        [effectivePermissions]
-    );
+    // State
+    const [visit, setVisit] = useState<Visit | null>(null); // Details of the selected visit
+    const [agent, setAgent] = useState<Agent | null>(null); // Agent assigned to the visit
+    const [checklist, setChecklist] = useState<Array<{ id: string; item: string; checked: boolean }>>([]); // Checklist items with checked status
+    const [entryTime, setEntryTime] = useState<number | null>(null); // Timestamp when the page was loaded
+    const [loading, setLoading] = useState<boolean>(true); // Loading state for async operations
+    const [error, setError] = useState<string | null>(null); // Error message if data fetch fails
+    const [isSubmitting, setIsSubmitting] = useState<boolean>(false); // Submission state for validation
 
+    // Permission Checks 
+    const userPermissions = useMemo(() => ({
+        canLogVisits: effectivePermissions?.some(p => p.name === PERMISSIONS.LOG_VISITS),
+    }), [effectivePermissions]);
+    
+    // Fetch Visit Data
     useEffect(() => {
         const fetchVisitData = async () => {
             if (!idVisit || !token) {
@@ -34,12 +44,6 @@ const VisitValidation: React.FC = () => {
             }
 
             if (!permissionsLoaded) return;
-
-            if (!canLogVisits) {
-                setError("Access Denied: You lack permission to log visits.");
-                setLoading(false);
-                return;
-            }
 
             try {
                 setLoading(true);
@@ -51,6 +55,7 @@ const VisitValidation: React.FC = () => {
                     setAgent(agentData);
                 }
 
+                // Initialize checklist from visit data
                 const initialChecklist = visitData.Checklists?.map((cl) => ({
                     id: cl.checklistID,
                     item: cl.item,
@@ -61,25 +66,28 @@ const VisitValidation: React.FC = () => {
                 setEntryTime(Date.now());
             } catch (err) {
                 setError("Failed to load visit or agent data.");
-                console.error(err);
+                console.error("Fetch visit data error:", err);
             } finally {
                 setLoading(false);
             }
         };
 
         fetchVisitData();
-    }, [idVisit, token, canLogVisits, permissionsLoaded]);
+    }, [idVisit, token, userPermissions.canLogVisits, permissionsLoaded]);
 
+    // Handlers
     const handleChecklistChange = (checklistId: string) => {
+        // Toggle the checked status of a checklist item
         setChecklist((prev) =>
             prev.map((item) => (item.id === checklistId ? { ...item, checked: !item.checked } : item))
         );
     };
 
     const handleValidate = async () => {
-        if (!visit || !idVisit || !entryTime || !canLogVisits) {
-            setError("Access Denied: Insufficient permissions to validate.");
-            return;
+        // Validate the visit by logging details and updating duration/checklist
+        if (!visit || !idVisit || !entryTime || !userPermissions.canLogVisits) {
+            navigate("/access-denied");
+            return null;
         }
 
         setIsSubmitting(true);
@@ -101,23 +109,26 @@ const VisitValidation: React.FC = () => {
             };
 
             await logVisitDetails(idVisit, updatedVisitData, token!);
-            await new Promise((resolve) => setTimeout(resolve, 500));
+            await new Promise((resolve) => setTimeout(resolve, 500)); // Brief delay for UX
             navigate("/timesheet");
         } catch (err) {
             setError("Failed to validate visit.");
-            console.error(err);
+            console.error("Validate visit error:", err);
         } finally {
             setIsSubmitting(false);
         }
     };
 
-    const completedItems = checklist.filter((item) => item.checked).length;
+    // Memoized Checklist Stats
+    const completedItems = useMemo(() => checklist.filter((item) => item.checked).length, [checklist]);
     const totalItems = checklist.length;
 
+    // Early Returns for Loading and Error States
     if (!permissionsLoaded) return <div className="visit-validation-container">Loading permissions...</div>;
 
     if (loading) return <div className="loading">Loading...</div>;
-    if (error || !visit || !canLogVisits) return (
+
+    if (error || !visit || !userPermissions.canLogVisits) return (
         <div className="visit-validation-container">
             <div className="error">{error || "Visit not found."}</div>
             <button className="back-btn" onClick={() => navigate("/timesheet")}>
@@ -126,8 +137,10 @@ const VisitValidation: React.FC = () => {
         </div>
     );
 
+    // Render
     return (
         <div className="visit-validation-container">
+            {/* Header Section */}
             <header className="visit-header-0">
                 <h1>
                     Validate Visit
@@ -135,7 +148,9 @@ const VisitValidation: React.FC = () => {
                 </h1>
                 <p>Complete the checklist and validate the visit.</p>
             </header>
+
             <section className="visit-card">
+                {/* Visit Details Section */}
                 <div className="details-section">
                     <h2>Visit Details</h2>
                     <div className="detail-item">
@@ -148,6 +163,7 @@ const VisitValidation: React.FC = () => {
                     </div>
                 </div>
 
+                {/* Reasons Section */}
                 <div className="reasons-section">
                     <h2><FaListUl /> Reasons</h2>
                     {visit.Reasons && visit.Reasons.length > 0 ? (
@@ -161,6 +177,7 @@ const VisitValidation: React.FC = () => {
                     )}
                 </div>
 
+                {/* Checklist Section */}
                 <div className="checklist-section">
                     <h2><FaCheckCircle /> Checklist ({completedItems}/{totalItems})</h2>
                     {checklist.length > 0 ? (
@@ -258,6 +275,7 @@ const VisitValidation: React.FC = () => {
                     )}
                 </div>
 
+                {/* Action Buttons */}
                 <div className="visit-actions">
                     <button
                         className={`validate-btn ${isSubmitting ? "submitting" : ""}`}

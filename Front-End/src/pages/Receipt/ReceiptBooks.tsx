@@ -8,42 +8,70 @@ import ReceiptBook from "../../models/ReceiptBook";
 import { getUserById } from "../../apis/userAPI";
 import { getAgentById } from "../../apis/agentAPI";
 
+const PERMISSIONS = {
+    ACCESS_RECEIPT_BOOKS: import.meta.env.VITE_PERMISSIONS_ACCESS_RECEIPT_BOOKS,
+    ACCESS_RECEIPT_BOOK_DETAILS: import.meta.env.VITE_PERMISSIONS_ACCESS_RECEIPT_BOOK_DETAILS,
+    ACCESS_RECEIPT_BOOK_HISTORY: import.meta.env.VITE_PERMISSIONS_ACCESS_RECEIPT_BOOK_HISTORY,
+    CREATE_RECEIPT_BOOKS: import.meta.env.VITE_PERMISSIONS_CREATE_RECEIPT_BOOKS,
+    UPDATE_RECEIPT_BOOKS: import.meta.env.VITE_PERMISSIONS_UPDATE_RECEIPT_BOOKS,
+    DELETE_RECEIPT_BOOKS: import.meta.env.VITE_PERMISSIONS_DELETE_RECEIPT_BOOKS,
+    TRANSFER_RECEIPT_BOOKS: import.meta.env.VITE_PERMISSIONS_TRANSFER_RECEIPT_BOOKS,
+  };
+  
+  const ROLES = {
+    SUPERVISOR: import.meta.env.VITE_ROLES_SUPERVISOR,
+    STOCK_MANAGER: import.meta.env.VITE_ROLES_STOCK_MANAGER,
+  };
+
+
 const ITEMS_PER_PAGE = 10;
 
+// Main Component
 const ReceiptBooks: React.FC = () => {
-    const { token, effectivePermissions, userRoles } = useAuth();
+    // Hooks
     const navigate = useNavigate();
-    const [receiptBooks, setReceiptBooks] = useState<ReceiptBook[]>([]);
-    const [view, setView] = useState<"list" | "create" | "edit">("list");
-    const [searchQuery, setSearchQuery] = useState("");
-    const [sortField, setSortField] = useState<"number" | "type" | "status">("number");
-    const [sortOrder, setSortOrder] = useState<"asc" | "desc">("asc");
-    const [filterType, setFilterType] = useState<string>("all");
-    const [filterStatus, setFilterStatus] = useState<string>("all");
-    const [newReceiptBook, setNewReceiptBook] = useState<Partial<ReceiptBook>>({});
-    const [editReceiptBook, setEditReceiptBook] = useState<ReceiptBook | null>(null);
-    const [loading, setLoading] = useState(false);
-    const [currentPage, setCurrentPage] = useState(1);
-    const [holdersMap, setHoldersMap] = useState<Map<string, string>>(new Map());
+    const { token, effectivePermissions, userRoles, permissionsLoaded } = useAuth();
+    const currentUserID = token ? JSON.parse(atob(token.split('.')[1])).sub : ""; // Current user's ID from token
 
-    const currentUserID = token ? JSON.parse(atob(token.split('.')[1])).sub : "";
-    const userRole = userRoles?.[0]?.name || "";
+    // State
+    const [receiptBooks, setReceiptBooks] = useState<ReceiptBook[]>([]); // List of all receipt books
+    const [view, setView] = useState<"list" | "create" | "edit">("list"); // Current view mode
+    const [searchQuery, setSearchQuery] = useState(""); // Search query for filtering receipt books
+    const [sortField, setSortField] = useState<"number" | "type" | "status">("number"); // Field to sort by
+    const [sortOrder, setSortOrder] = useState<"asc" | "desc">("asc"); // Sort order
+    const [filterType, setFilterType] = useState<string>("all"); // Filter by receipt book type
+    const [filterStatus, setFilterStatus] = useState<string>("all"); // Filter by receipt book status
+    const [newReceiptBook, setNewReceiptBook] = useState<Partial<ReceiptBook>>({}); // Data for creating a new receipt book
+    const [editReceiptBook, setEditReceiptBook] = useState<ReceiptBook | null>(null); // Receipt book being edited
+    const [loading, setLoading] = useState(false); // Loading state for async operations
+    const [currentPage, setCurrentPage] = useState(1); // Current page for pagination
+    const [holdersMap, setHoldersMap] = useState<Map<string, string>>(new Map()); // Map of holder IDs to names
 
-    // Permissions object based on effectivePermissions
-    const permissions = {
-        canView: effectivePermissions?.some(p => p.name === "access_receipt_books"),
-        canViewDetails: effectivePermissions?.some(p => p.name === "access_receipt_book_details"),
-        canViewHistory: effectivePermissions?.some(p => p.name === "access_receipt_book_history"),
-        canCreate: effectivePermissions?.some(p => p.name === "create_receipt_books"),
-        canUpdate: effectivePermissions?.some(p => p.name === "update_receipt_books"),
-        canDelete: effectivePermissions?.some(p => p.name === "delete_receipt_books"),
-        canTransfer: effectivePermissions?.some(p => p.name === "transfer_receipt_books"),
-    };
+    // Permission Checks 
+const userPermissions = useMemo(() => ({
+        canView: effectivePermissions?.some(p => p.name === PERMISSIONS.ACCESS_RECEIPT_BOOKS),
+        canViewDetails: effectivePermissions?.some(p => p.name === PERMISSIONS.ACCESS_RECEIPT_BOOK_DETAILS),
+        canViewHistory: effectivePermissions?.some(p => p.name === PERMISSIONS.ACCESS_RECEIPT_BOOK_HISTORY),
+        canCreate: effectivePermissions?.some(p => p.name === PERMISSIONS.CREATE_RECEIPT_BOOKS),
+        canUpdate: effectivePermissions?.some(p => p.name === PERMISSIONS.UPDATE_RECEIPT_BOOKS),
+        canDelete: effectivePermissions?.some(p => p.name === PERMISSIONS.DELETE_RECEIPT_BOOKS),
+        canTransfer: effectivePermissions?.some(p => p.name === PERMISSIONS.TRANSFER_RECEIPT_BOOKS),
+    }), [effectivePermissions]);
 
-    // Fetch receipt books with role-based filtering
+    // Role-Based Capabilities 
+    const userCapabilities = useMemo(() => ({
+        isSupervisorLike: userRoles?.some(role => 
+            role.name === ROLES.SUPERVISOR
+        ) || false,
+        isStockManagerLike: userRoles?.some(role => 
+            role.name === ROLES.STOCK_MANAGER
+        ) || false,
+    }), [userRoles]);
+
+    // Fetch Receipt Books with Role-Based Filtering
     useEffect(() => {
         const fetchData = async () => {
-            if (!token || !permissions.canView) {
+            if (!token || !userPermissions.canView || !permissionsLoaded) {
                 setLoading(false);
                 return;
             }
@@ -52,14 +80,17 @@ const ReceiptBooks: React.FC = () => {
                 const receiptsData = await getAllReceiptBooks(token);
                 let filteredBooks = receiptsData;
 
-                // Apply role-specific filters based on permissions and role context
-                if (userRole === "Supervisor") {
+                // Apply dynamic role-based filtering
+                if ((userCapabilities.isSupervisorLike && !userCapabilities.isStockManagerLike) ||(userCapabilities.isSupervisorLike && userCapabilities.isStockManagerLike)) {
+                    // Supervisor-like roles see only their own receipt books
                     filteredBooks = receiptsData.filter(r => r.currentHolderID === currentUserID);
-                } else if (userRole === "Stock Manager") {
+                } else if (userCapabilities.isStockManagerLike && !userCapabilities.isSupervisorLike) {
+                    // Stock Manager-like roles exclude certain statuses
                     filteredBooks = receiptsData.filter(r => 
                         !["In Stock", "With Stock Manager", "Archived"].includes(r.status)
                     );
-                }
+                } 
+                // If neither capability applies (e.g., Admin), show all receipt books
 
                 setReceiptBooks(filteredBooks);
             } catch (error) {
@@ -69,9 +100,9 @@ const ReceiptBooks: React.FC = () => {
             }
         };
         fetchData();
-    }, [token, permissions.canView, userRole, currentUserID]);
+    }, [token, userPermissions.canView, userCapabilities.isSupervisorLike, userCapabilities.isStockManagerLike, currentUserID, permissionsLoaded]);
 
-    // Fetch holder names (users and agents)
+    // Fetch Holder Names (Users and Agents)
     useEffect(() => {
         const fetchHolders = async () => {
             const uniqueUserIDs = Array.from(new Set(receiptBooks.map(r => r.currentHolderID).filter(id => id)));
@@ -79,6 +110,7 @@ const ReceiptBooks: React.FC = () => {
             let hasChanges = false;
             const newHoldersMap = new Map<string, string>(holdersMap);
 
+            // Fetch user names
             for (const userID of uniqueUserIDs) {
                 if (userID && !newHoldersMap.has(userID)) {
                     try {
@@ -93,6 +125,7 @@ const ReceiptBooks: React.FC = () => {
                 }
             }
 
+            // Fetch agent names
             for (const agentID of uniqueAgentIDs) {
                 if (agentID && !newHoldersMap.has(agentID)) {
                     try {
@@ -113,6 +146,7 @@ const ReceiptBooks: React.FC = () => {
         if (token && receiptBooks.length > 0) fetchHolders();
     }, [token, receiptBooks, holdersMap]);
 
+    // Memoized Data Calculations
     const uniqueTypes = useMemo(() => Array.from(new Set(receiptBooks.map(r => r.type))), [receiptBooks]);
     const uniqueStatuses = useMemo(() => Array.from(new Set(receiptBooks.map(r => r.status))), [receiptBooks]);
 
@@ -138,8 +172,10 @@ const ReceiptBooks: React.FC = () => {
         return filteredReceiptBooks.slice(start, end);
     }, [filteredReceiptBooks, currentPage]);
 
+    // Handlers
     const handleCreate = async () => {
-        if (!permissions.canCreate) return;
+        // Create a new receipt book
+        if (!userPermissions.canCreate) return;
         try {
             if (newReceiptBook.number && newReceiptBook.type) {
                 const createdReceipt = await createReceiptBook({ number: newReceiptBook.number, type: newReceiptBook.type }, token!);
@@ -155,7 +191,8 @@ const ReceiptBooks: React.FC = () => {
     };
 
     const handleUpdate = async () => {
-        if (!permissions.canUpdate || !editReceiptBook) return;
+        // Update an existing receipt book
+        if (!userPermissions.canUpdate || !editReceiptBook) return;
         try {
             const updatedReceipt = await updateReceiptBook(editReceiptBook.bookID, editReceiptBook, token!);
             setReceiptBooks(receiptBooks.map(r => r.bookID === updatedReceipt.bookID ? updatedReceipt : r));
@@ -167,7 +204,8 @@ const ReceiptBooks: React.FC = () => {
     };
 
     const handleDelete = async (bookID: string) => {
-        if (!permissions.canDelete || !window.confirm("Are you sure?")) return;
+        // Delete a receipt book with confirmation
+        if (!userPermissions.canDelete || !window.confirm("Are you sure?")) return;
         try {
             await deleteReceiptBook(bookID, token!);
             setReceiptBooks(receiptBooks.filter(r => r.bookID !== bookID));
@@ -177,16 +215,24 @@ const ReceiptBooks: React.FC = () => {
     };
 
     const handleTransfer = () => {
-        if (permissions.canTransfer) {
+        // Navigate to transfer receipt books page if permitted
+        if (userPermissions.canTransfer) {
             navigate("/transfer-receipt-books");
         }
     };
 
+    // Early Returns for Loading and Access Denied
+    if (!permissionsLoaded) return <div className="loading-text">Loading permissions...</div>;
     if (loading) return <div className="loading-text">Loading...</div>;
-    if (!permissions.canView) return <div className="error-text">Access Denied: You lack permission to view receipt books.</div>;
+    if (!userPermissions.canView) {
+        navigate("/access-denied");
+        return null;               
+    }
 
+    // Render
     return (
         <div className="receipt-books">
+            {/* Header Section */}
             <header className="dashboard-header">
                 <h1>{view === "list" ? "Receipt Books" : view.charAt(0).toUpperCase() + view.slice(1)}</h1>
                 {view === "list" && (
@@ -204,6 +250,7 @@ const ReceiptBooks: React.FC = () => {
             </header>
 
             <section className="dashboard-content">
+                {/* Sidebar Section */}
                 <aside className="sidebar">
                     <div className="sort-card">
                         <h3>Sort By</h3>
@@ -233,18 +280,19 @@ const ReceiptBooks: React.FC = () => {
                             </select>
                         </div>
                     </div>
-                    {permissions.canCreate && (
+                    {userPermissions.canCreate && (
                         <button className="action-button" onClick={() => setView("create")}>
                             <FaPlus /> New Receipt
                         </button>
                     )}
-                    {permissions.canTransfer && (
+                    {userPermissions.canTransfer && (
                         <button className="action-button" onClick={handleTransfer}>
                             <FaExchangeAlt /> Transfer Books
                         </button>
                     )}
                 </aside>
 
+                {/* Main Content Section */}
                 <main className="main-content">
                     {view === "list" && (
                         <div className="table-card">
@@ -277,17 +325,17 @@ const ReceiptBooks: React.FC = () => {
                                                 <img src={receipt.qrCode} alt="QR Code" style={{ width: "50px" }} />
                                             </div>
                                             <div className="table-cell actions">
-                                                {permissions.canUpdate && (
+                                                {userPermissions.canUpdate && (
                                                     <button onClick={() => { setEditReceiptBook(receipt); setView("edit"); }}>
                                                         <FaEdit />
                                                     </button>
                                                 )}
-                                                {permissions.canDelete && (
+                                                {userPermissions.canDelete && (
                                                     <button onClick={() => handleDelete(receipt.bookID)}>
                                                         <FaTrash />
                                                     </button>
                                                 )}
-                                                {permissions.canViewHistory && (
+                                                {userPermissions.canViewHistory && (
                                                     <button onClick={() => navigate(`/receipt-book/${receipt.bookID}/history`)}>
                                                         <FaHistory />
                                                     </button>
@@ -315,7 +363,7 @@ const ReceiptBooks: React.FC = () => {
                         </div>
                     )}
 
-                    {view === "create" && permissions.canCreate && (
+                    {view === "create" && userPermissions.canCreate && (
                         <div className="form-card">
                             <h3>New Receipt</h3>
                             <div className="form-group">
@@ -337,7 +385,7 @@ const ReceiptBooks: React.FC = () => {
                         </div>
                     )}
 
-                    {view === "edit" && editReceiptBook && permissions.canUpdate && (
+                    {view === "edit" && editReceiptBook && userPermissions.canUpdate && (
                         <div className="form-card">
                             <h3>Edit Receipt #{editReceiptBook.number}</h3>
                             <div className="form-group">

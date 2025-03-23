@@ -9,6 +9,7 @@ import {
   AssignSupervisorsResponse,
   SupervisorsByUserResponse,
   ManagersByUserResponse,
+  RevokeSupervisorsResponse
 } from ".";
 import User from "../models/User";
 
@@ -42,9 +43,10 @@ export const getAllUsers = async (token: string): Promise<ListUsersResponse> => 
 export const getUserByPhone = async (phone: string, token: string) => {
   try {
     const response = await api.get<UserByPhoneResponse>(`/users/phone/${phone}`, {
-        headers: { Authorization: `Bearer ${token}`,
-        },
-      }
+      headers: {
+        Authorization: `Bearer ${token}`,
+      },
+    }
     );
     return response.data;
   } catch (error) {
@@ -108,6 +110,23 @@ export const assignSupervisorsToManager = async (
     throw error;
   }
 };
+
+export const revokeSupervisorsFromManager = async (
+  managerID: string,
+  supervisorIDs: string[],
+  token: string
+): Promise<RevokeSupervisorsResponse> => {
+  try {
+    const response = await api.post<RevokeSupervisorsResponse>("/users/revoke-supervisors", { managerID, supervisorIDs }, {
+    headers: { Authorization: `Bearer ${token}` },
+    });
+    return response.data;
+  } catch (error) {
+    console.error(`Error revoking supervisors from manager (${managerID}):`, error);
+    throw error;
+  }
+};
+
 
 export const getSupervisorsByUser = async (userID: string, token: string): Promise<SupervisorsByUserResponse> => {
   try {
