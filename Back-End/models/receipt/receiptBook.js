@@ -21,6 +21,7 @@ module.exports = (sequelize, DataTypes) => {
             type: DataTypes.ENUM(
                 'In Stock',              // Purchase team
                 'Sent to Supplier',      // Purchase team
+                'From Supplier',         // Purchase team
                 'With Regional Manager', // Regional manager(s)
                 'With Supervisor',       // Supervisor(s)
                 'Assigned to Agent',     // Agent
