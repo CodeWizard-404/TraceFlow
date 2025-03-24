@@ -1925,6 +1925,7 @@ const AdminDashboard: React.FC = () => {
                                         <div className="form-section">
                                             <h3>Basic Information</h3>
                                             <div className="info-grid">
+                                                <p><strong>Name:</strong> {selectedUser.firstname} {selectedUser.lastname}</p>
                                                 <p><strong>Email:</strong> {selectedUser.email}</p>
                                                 <p><strong>Phone:</strong> {selectedUser.phone}</p>
                                                 <p><strong>Wallet:</strong> {selectedUser.wallet || "N/A"}</p>

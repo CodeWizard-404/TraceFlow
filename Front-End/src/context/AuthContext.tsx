@@ -1,3 +1,4 @@
+// AuthContext.tsx
 import React, { createContext, useContext, useState, useEffect, ReactNode } from "react";
 import { useNavigate, useLocation } from "react-router-dom";
 import { login } from "../apis/authAPI";
@@ -39,6 +40,7 @@ export const AuthProvider: React.FC<{ children: ReactNode }> = ({ children }) =>
     const [userRoles, setUserRoles] = useState<Role[] | null>(null);
     const [effectivePermissions, setEffectivePermissions] = useState<Permission[] | null>(null);
     const [permissionsLoaded, setPermissionsLoaded] = useState(false);
+    const [noAccess, setNoAccess] = useState(false); // New state for no access message
 
     const navigate = useNavigate();
     const location = useLocation();
@@ -47,9 +49,8 @@ export const AuthProvider: React.FC<{ children: ReactNode }> = ({ children }) =>
         setupAxiosInterceptors();
     }, []);
 
-    // Define protected routes and their required permissions
     const protectedRoutes: { [key: string]: string[] } = {
-        "/admin": [ROLES.ADMIN, ROLES.SUPER_ADMIN], // Role-based for simplicity
+        "/admin": [ROLES.ADMIN, ROLES.SUPER_ADMIN],
         "/timesheet": [import.meta.env.VITE_PERMISSIONS_ACCESS_SUPERVISOR_TIMESHEETS],
         "/timesheet-form": [import.meta.env.VITE_PERMISSIONS_CREATE_TIMESHEETS],
         "/qr-scan": [import.meta.env.VITE_PERMISSIONS_SCAN_VISITS],
@@ -60,11 +61,9 @@ export const AuthProvider: React.FC<{ children: ReactNode }> = ({ children }) =>
         "/transfer-receipt-books": [import.meta.env.VITE_PERMISSIONS_TRANSFER_RECEIPT_BOOKS],
     };
 
-    // Check if the user has permission for a given route
     const hasPermissionForRoute = (pathname: string): boolean => {
         if (!effectivePermissions || !userRoles) return false;
 
-        // Handle dynamic routes (e.g., /visit/:idVisit)
         const routeKey = Object.keys(protectedRoutes).find(key => {
             if (key.includes(":")) {
                 const regex = new RegExp(`^${key.replace(/:[^/]+/g, "[^/]+")}$`);
@@ -73,7 +72,7 @@ export const AuthProvider: React.FC<{ children: ReactNode }> = ({ children }) =>
             return key === pathname;
         });
 
-        if (!routeKey) return true; // Public route or not protected
+        if (!routeKey) return true;
 
         const required = protectedRoutes[routeKey];
         if (routeKey === "/admin") {
@@ -84,7 +83,6 @@ export const AuthProvider: React.FC<{ children: ReactNode }> = ({ children }) =>
 
     useEffect(() => {
         if (!user || !token) {
-            // Redirect to login if not authenticated, unless already there
             if (location.pathname !== "/login") {
                 navigate("/login", { replace: true, state: { from: location.pathname } });
             }
@@ -93,10 +91,18 @@ export const AuthProvider: React.FC<{ children: ReactNode }> = ({ children }) =>
 
         if (!permissionsLoaded) return;
 
+        // Check if user has no roles or permissions
+        if ((!userRoles || userRoles.length === 0) && 
+            (!effectivePermissions || effectivePermissions.length === 0)) {
+            setNoAccess(true); // Show no access message
+            return;
+        }
+
+        setNoAccess(false); // Reset no access state if user has roles/permissions
+
         const targetRoute = determineTargetRoute(userRoles || []);
         const currentPath = location.pathname;
 
-        // Redirect logged-in users away from /login
         if (currentPath === "/login") {
             const fromRoute = location.state?.from && hasPermissionForRoute(location.state.from)
                 ? location.state.from
@@ -105,19 +111,17 @@ export const AuthProvider: React.FC<{ children: ReactNode }> = ({ children }) =>
             return;
         }
 
-        // Allow staying on current route if user has permission
         if (hasPermissionForRoute(currentPath)) {
             return;
         }
 
-        // Redirect to target route if current route is unauthorized or root
         if (currentPath === "/" || !hasPermissionForRoute(currentPath)) {
             const fromRoute = location.state?.from && location.state.from !== "/login" && hasPermissionForRoute(location.state.from)
                 ? location.state.from
                 : targetRoute;
             navigate(fromRoute, { replace: true });
         }
-    }, [user, token, permissionsLoaded, userRoles, navigate, location]);
+    }, [user, token, permissionsLoaded, userRoles, effectivePermissions, navigate, location]);
 
     useEffect(() => {
         const fetchPermissions = async () => {
@@ -180,6 +184,7 @@ export const AuthProvider: React.FC<{ children: ReactNode }> = ({ children }) =>
         setUserRoles(null);
         setEffectivePermissions(null);
         setPermissionsLoaded(false);
+        setNoAccess(false);
         localStorage.removeItem("token");
         localStorage.removeItem("user");
         navigate("/login", { replace: true, state: null });
@@ -195,7 +200,41 @@ export const AuthProvider: React.FC<{ children: ReactNode }> = ({ children }) =>
         logout,
     };
 
-    return <AuthContext.Provider value={value}>{children}</AuthContext.Provider>;
+    // Render children or no access message
+    return (
+        <AuthContext.Provider value={value}>
+            {noAccess ? (
+                <div style={{
+                    display: "flex",
+                    justifyContent: "center",
+                    alignItems: "center",
+                    height: "100vh",
+                    flexDirection: "column",
+                    textAlign: "center",
+                    padding: "20px"
+                }}>
+                    <h2>No Access</h2>
+                    <p>You don't have any roles or permissions assigned. Please contact an administrator.</p>
+                    <button
+                        onClick={logout}
+                        style={{
+                            padding: "10px 20px",
+                            fontSize: "16px",
+                            cursor: "pointer",
+                            backgroundColor: "#ff4444",
+                            color: "white",
+                            border: "none",
+                            borderRadius: "5px"
+                        }}
+                    >
+                        Logout
+                    </button>
+                </div>
+            ) : (
+                children
+            )}
+        </AuthContext.Provider>
+    );
 };
 
 export const useAuth = (): AuthContextType => {

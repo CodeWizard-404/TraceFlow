@@ -30,3 +30,4 @@ export const resend2FA = async (userID: string): Promise<Resend2FAResponse> => {
         throw error;
     }
 };
+

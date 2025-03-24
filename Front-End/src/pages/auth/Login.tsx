@@ -1,36 +1,33 @@
+// LoginPage.tsx
 import React, { useState } from "react";
 import { useAuth } from "../../context/AuthContext";
 import { useError } from "../../context/ErrorContext";
 import { AxiosError } from "axios";
 import "./Login.css";
 
-// LoginPage component for user authentication
 const LoginPage: React.FC = () => {
-    // State for form inputs and loading status
     const [identifier, setIdentifier] = useState("");
     const [password, setPassword] = useState("");
     const [loading, setLoading] = useState(false);
 
-    const { loginUser } = useAuth(); // Access login function from AuthContext
-    const { setError } = useError(); // Access error setter from ErrorContext
+    const { loginUser } = useAuth();
+    const { setError } = useError();
 
-    // Handles form submission for login
     const handleSubmit = async (e: React.FormEvent) => {
         e.preventDefault();
-        setLoading(true); // Indicate loading state
-        setError(null); // Clear any previous errors
+        setLoading(true);
+        setError(null);
 
         try {
-            await loginUser(identifier, password); // Attempt login; redirect handled in AuthProvider
+            await loginUser(identifier, password);
         } catch (err: unknown) {
-            // Handle login errors
             const axiosError = err as AxiosError<{ error: string }>;
             const errorMessage = 
                 axiosError.response?.data?.error || "Invalid credentials. Please try again.";
             setError(errorMessage);
             console.error("Login error:", err);
         } finally {
-            setLoading(false); // Reset loading state
+            setLoading(false);
         }
     };
 
@@ -81,3 +78,4 @@ const LoginPage: React.FC = () => {
 };
 
 export default LoginPage;
+

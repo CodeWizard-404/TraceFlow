@@ -1,7 +1,7 @@
 /* eslint-disable react-hooks/exhaustive-deps */
 import React, { useState, useEffect, useRef, useCallback, useMemo } from "react";
 import { useLocation, useNavigate } from "react-router-dom";
-import { FaArrowLeft, FaExchangeAlt, FaCheck } from "react-icons/fa";
+import { FaArrowLeft, FaExchangeAlt, FaCheck, FaChevronLeft, FaChevronRight } from "react-icons/fa";
 import { Html5Qrcode } from "html5-qrcode";
 import { useAuth } from "../../context/AuthContext";
 import {
@@ -30,7 +30,6 @@ const ROLES = {
     SUPER_ADMIN: import.meta.env.VITE_ROLES_SUPER_ADMIN,
 };
 
-// Role-based transfer rules
 const ROLE_TRANSFER_RULES = {
     [ROLES.PURCHASE_TEAM]: {
         transferable: (book: ReceiptBook, userID: string) => book.status === "In Stock" && book.currentHolderID === userID,
@@ -54,17 +53,26 @@ const ROLE_TRANSFER_RULES = {
     },
 } as const;
 
-// Main Component
+const ITEMS_PER_PAGE = 6;
+
 const TransferReceiptBook: React.FC = () => {
-    // Hooks
     const navigate = useNavigate();
     const location = useLocation();
     const { token, userRoles, effectivePermissions } = useAuth();
     const { agentID: preSelectedAgentID, forceAgent, transferType } = (location.state as { agentID?: string; forceAgent?: boolean; transferType?: string }) || {};
-    const userRoleSet = new Set(userRoles?.map(role => role.name) || []); // All user roles as a Set
-    const currentUserID = token ? JSON.parse(atob(token.split('.')[1])).sub : ""; // Current user's ID from token
+    const userRoleSet = new Set(userRoles?.map(role => role.name) || []);
 
-    // State
+    const currentUserID = useMemo(() => {
+        if (!token) return "";
+        try {
+            const payload = JSON.parse(atob(token.split('.')[1]));
+            return payload.userID || "";
+        } catch (e) {
+            console.error("Token parsing failed:", e);
+            return "";
+        }
+    }, [token]);
+
     const [receiptBooks, setReceiptBooks] = useState<ReceiptBook[]>([]);
     const [selectedBookIDs, setSelectedBookIDs] = useState<string[]>([]);
     const [users, setUsers] = useState<User[]>([]);
@@ -76,6 +84,7 @@ const TransferReceiptBook: React.FC = () => {
     const [agentPhone, setAgentPhone] = useState<string>("");
     const [selectedLocation, setSelectedLocation] = useState<string>("");
     const [searchQuery, setSearchQuery] = useState<string>("");
+    const [bookSearchQuery, setBookSearchQuery] = useState<string>("");
     const [scannedQR, setScannedQR] = useState<string[]>([]);
     const [otp, setOtp] = useState<string>("");
     const [loading, setLoading] = useState<boolean>(true);
@@ -83,25 +92,26 @@ const TransferReceiptBook: React.FC = () => {
     const [transferInitiated, setTransferInitiated] = useState<boolean>(false);
     const [isScannerRunning, setIsScannerRunning] = useState<boolean>(false);
     const [isScannerStarting, setIsScannerStarting] = useState<boolean>(false);
+    const [currentPage, setCurrentPage] = useState<number>(1); // Pagination state
     const qrScannerRef = useRef<Html5Qrcode | null>(null);
     const qrReaderRef = useRef<HTMLDivElement>(null);
     const scannedQRRef = useRef<Set<string>>(new Set());
     const stopLockRef = useRef<boolean>(false);
 
-    // Permission Checks (Centralized)
     const userPermissions = useMemo(() => ({
         canTransferReceiptBooks: effectivePermissions?.some(p => p.name === PERMISSIONS.TRANSFER_RECEIPT_BOOKS),
     }), [effectivePermissions]);
 
-    // Check if a receipt book is transferable based on all user roles
     const isTransferable = useCallback((book: ReceiptBook) => {
+        if (recipientType === "Supplier") {
+            return book.status === "In Stock" && book.currentHolderID === currentUserID;
+        }
         return Array.from(userRoleSet).some(role => {
             const rule = ROLE_TRANSFER_RULES[role as unknown as keyof typeof ROLE_TRANSFER_RULES];
             return rule && rule.transferable(book, currentUserID);
         });
-    }, [userRoleSet, currentUserID]);
+    }, [userRoleSet, currentUserID, recipientType]);
 
-    // Handle successful QR scan
     const handleScanSuccess = useCallback(async (decodedText: string) => {
         try {
             const parseTLV = (text: string) => {
@@ -151,7 +161,6 @@ const TransferReceiptBook: React.FC = () => {
         }
     }, [isTransferable, recipientType, selectedBookIDs, receiptBooks, userRoleSet]);
 
-    // Pre-select agent and force recipient type
     useEffect(() => {
         if (preSelectedAgentID && forceAgent && !recipientType) {
             const initialRecipientType = transferType || "Agent";
@@ -171,7 +180,6 @@ const TransferReceiptBook: React.FC = () => {
         }
     }, [preSelectedAgentID, forceAgent, token, recipientType, transferType]);
 
-    // Stop QR scanner
     const stopScanner = useCallback(async () => {
         if (stopLockRef.current || !qrScannerRef.current || !isScannerRunning) return;
         stopLockRef.current = true;
@@ -188,7 +196,6 @@ const TransferReceiptBook: React.FC = () => {
         }
     }, [isScannerRunning]);
 
-    // Start QR scanner
     const startScanner = useCallback(async () => {
         if (stopLockRef.current || !qrReaderRef.current || isScannerRunning || isScannerStarting) return;
         setIsScannerStarting(true);
@@ -213,11 +220,10 @@ const TransferReceiptBook: React.FC = () => {
         }
     }, [handleScanSuccess, isScannerRunning, isScannerStarting]);
 
-    // Unified scanner control
     useEffect(() => {
         if (!qrReaderRef.current || !recipientType || 
             !(recipientID || recipientType === "Supplier" || recipientType === "Archive" || recipientType === "Stub Collection") || 
-            transferInitiated) {
+            transferInitiated || recipientType === "Supplier") {
             return;
         }
 
@@ -228,14 +234,14 @@ const TransferReceiptBook: React.FC = () => {
         };
     }, [recipientType, recipientID, transferInitiated, startScanner, stopScanner]);
 
-    // Handle page visibility changes
     useEffect(() => {
         const handleVisibilityChange = () => {
             if (document.hidden) {
                 stopScanner();
             } else if (
                 recipientType &&
-                (recipientID || recipientType === "Supplier" || recipientType === "Archive" || recipientType === "Stub Collection") &&
+                recipientType !== "Supplier" &&
+                (recipientID || recipientType === "Archive" || recipientType === "Stub Collection") &&
                 !transferInitiated
             ) {
                 startScanner();
@@ -250,14 +256,12 @@ const TransferReceiptBook: React.FC = () => {
         };
     }, [recipientType, recipientID, transferInitiated, startScanner, stopScanner]);
 
-    // Stop scanner for OTP phase
     useEffect(() => {
         if (transferInitiated && isScannerRunning) {
             stopScanner();
         }
     }, [transferInitiated, isScannerRunning, stopScanner]);
 
-    // Fetch initial data
     useEffect(() => {
         const fetchData = async () => {
             if (!token || !userPermissions.canTransferReceiptBooks) {
@@ -284,7 +288,6 @@ const TransferReceiptBook: React.FC = () => {
         fetchData();
     }, [token, userPermissions.canTransferReceiptBooks]);
 
-    // Get recipient options based on all user roles
     const getRecipientOptions = useCallback(() => {
         const options = new Set<string>();
         Array.from(userRoleSet).forEach(role => {
@@ -296,7 +299,6 @@ const TransferReceiptBook: React.FC = () => {
         return Array.from(options);
     }, [userRoleSet]);
 
-    // Fetch agents by location
     const fetchAgentsByLocation = useCallback(async (location: string) => {
         try {
             const agentsData = await getAgentsByLocation(location, token!);
@@ -307,7 +309,6 @@ const TransferReceiptBook: React.FC = () => {
         }
     }, [token]);
 
-    // Lookup agent by phone
     useEffect(() => {
         if (!agentPhone || recipientType !== "Agent") return;
         const timeout = setTimeout(async () => {
@@ -326,7 +327,6 @@ const TransferReceiptBook: React.FC = () => {
         return () => clearTimeout(timeout);
     }, [agentPhone, recipientType, token]);
 
-    // Lookup user by phone
     useEffect(() => {
         if (!searchQuery || recipientType === "Agent" || recipientType === "Supplier" || 
             recipientType === "Archive" || recipientType === "Stub Collection") return;
@@ -349,7 +349,6 @@ const TransferReceiptBook: React.FC = () => {
         return () => clearTimeout(timeout);
     }, [searchQuery, recipientType, token]);
 
-    // Filter agents by location and search query
     const filteredAgents = useCallback(() => {
         if (!selectedLocation) return [];
         return agents.filter(a =>
@@ -357,7 +356,6 @@ const TransferReceiptBook: React.FC = () => {
         );
     }, [agents, selectedLocation, searchQuery]);
 
-    // Filter users by role and search query
     const filteredUsers = useCallback(() => {
         return users.filter(u =>
             u.Roles?.some(r => r.name.toLowerCase() === recipientType.toLowerCase()) &&
@@ -367,18 +365,52 @@ const TransferReceiptBook: React.FC = () => {
         );
     }, [users, recipientType, searchQuery]);
 
-    // Fetch agents when location changes
+    const filteredBooks = useMemo(() => {
+        const inStockBooks = receiptBooks.filter(book => 
+            book.status === "In Stock" && isTransferable(book)
+        ).filter(book =>
+            book.number.toLowerCase().includes(bookSearchQuery.toLowerCase()) ||
+            book.type.toLowerCase().includes(bookSearchQuery.toLowerCase())
+        );
+        const startIndex = (currentPage - 1) * ITEMS_PER_PAGE;
+        const endIndex = startIndex + ITEMS_PER_PAGE;
+        return inStockBooks.slice(startIndex, endIndex);
+    }, [receiptBooks, bookSearchQuery, isTransferable, currentPage]);
+
+    const totalPages = useMemo(() => {
+        const inStockBooks = receiptBooks.filter(book => 
+            book.status === "In Stock" && isTransferable(book)
+        ).filter(book =>
+            book.number.toLowerCase().includes(bookSearchQuery.toLowerCase()) ||
+            book.type.toLowerCase().includes(bookSearchQuery.toLowerCase())
+        );
+        return Math.ceil(inStockBooks.length / ITEMS_PER_PAGE);
+    }, [receiptBooks, bookSearchQuery, isTransferable]);
+
+    const handleBookSelection = (bookID: string) => {
+        setSelectedBookIDs(prev =>
+            prev.includes(bookID)
+                ? prev.filter(id => id !== bookID)
+                : [...prev, bookID]
+        );
+    };
+
+    const handlePageChange = (page: number) => {
+        if (page >= 1 && page <= totalPages) {
+            setCurrentPage(page);
+        }
+    };
+
     useEffect(() => {
         if (recipientType === "Agent" && selectedLocation) {
             fetchAgentsByLocation(selectedLocation);
         }
     }, [recipientType, selectedLocation, fetchAgentsByLocation]);
 
-    // Handle transfer initiation
     const handleInitiateTransfer = async (e: React.FormEvent) => {
         e.preventDefault();
         if (selectedBookIDs.length === 0) {
-            setError("Please scan at least one QR code.");
+            setError("Please select at least one book.");
             return;
         }
         if (recipientType === "Agent" && userRoleSet.has("Supervisor") && selectedBookIDs.length > 1) {
@@ -429,7 +461,6 @@ const TransferReceiptBook: React.FC = () => {
         }
     };
 
-    // Handle transfer validation with OTP
     const handleValidateTransfer = async (e: React.FormEvent) => {
         e.preventDefault();
         if (recipientType === "Archive") {
@@ -459,7 +490,6 @@ const TransferReceiptBook: React.FC = () => {
         }
     };
 
-    // Early Returns for Loading and Error States
     if (loading) return <div className="loading">Loading...</div>;
     if (error && !recipientType) return (
         <div className="error">
@@ -470,19 +500,14 @@ const TransferReceiptBook: React.FC = () => {
         </div>
     );
 
-    // Render
     return (
         <div className="transfer-receipt-book-container">
-            {/* Header Section */}
             <header className="transfer-header">
                 <h1>Transfer Receipt Books ({Array.from(userRoleSet).join(", ")})</h1>
             </header>
-
-            {/* Transfer Card Section */}
             <div className="transfer-card">
                 {!transferInitiated ? (
                     <form onSubmit={handleInitiateTransfer}>
-                        {/* Recipient Type Selection */}
                         {!forceAgent && (
                             <div className="form-group">
                                 <label>Recipient Type</label>
@@ -495,11 +520,13 @@ const TransferReceiptBook: React.FC = () => {
                                         setAgentPhone("");
                                         setSelectedLocation("");
                                         setSearchQuery("");
+                                        setBookSearchQuery("");
                                         setSelectedBookIDs([]);
                                         setScannedQR([]);
                                         scannedQRRef.current.clear();
                                         setAgents([]);
                                         setIsScannerRunning(false);
+                                        setCurrentPage(1); // Reset page on recipient type change
                                     }}
                                     required
                                 >
@@ -513,7 +540,6 @@ const TransferReceiptBook: React.FC = () => {
 
                         {recipientType && (
                             <>
-                                {/* Agent Selection */}
                                 {recipientType === "Agent" && !forceAgent && (
                                     <div className="form-group">
                                         <label>Agent Selection</label>
@@ -564,21 +590,76 @@ const TransferReceiptBook: React.FC = () => {
                                     </div>
                                 )}
 
-                                {/* Supplier Email */}
                                 {recipientType === "Supplier" && (
-                                    <div className="form-group">
-                                        <label>Supplier Email</label>
-                                        <input
-                                            type="email"
-                                            value={supplierEmail}
-                                            onChange={(e) => setSupplierEmail(e.target.value)}
-                                            placeholder="Enter supplier email"
-                                            required
-                                        />
-                                    </div>
+                                    <>
+                                        <div className="form-group">
+                                            <label>Supplier Email</label>
+                                            <input
+                                                type="email"
+                                                value={supplierEmail}
+                                                onChange={(e) => setSupplierEmail(e.target.value)}
+                                                placeholder="Enter supplier email"
+                                                required
+                                            />
+                                        </div>
+                                        <div className="form-group book-selection-section">
+                                            <label>Select In Stock Books to Transfer</label>
+                                            <input
+                                                type="text"
+                                                value={bookSearchQuery}
+                                                onChange={(e) => {setBookSearchQuery(e.target.value); setCurrentPage(1);}} // Reset to page 1 on search
+                                                placeholder="Search books by number or type"
+                                            />
+                                            <ul className="book-list">
+                                                {filteredBooks.length > 0 ? (
+                                                    filteredBooks.map((book) => (
+                                                        <li key={book.bookID} className={selectedBookIDs.includes(book.bookID) ? "checked" : ""}>
+                                                            <label className="custom-checkbox-label">
+                                                                <input
+                                                                    type="checkbox"
+                                                                    className="custom-checkbox-input"
+                                                                    checked={selectedBookIDs.includes(book.bookID)}
+                                                                    onChange={() => handleBookSelection(book.bookID)}
+                                                                />
+                                                                <span className="custom-checkbox">
+                                                                    <FaCheck className="check-icon" />
+                                                                </span>
+                                                                <span className="checklist-text">{book.number} - {book.type}</span>
+                                                            </label>
+                                                        </li>
+                                                    ))
+                                                ) : (
+                                                    <li className="no-data">No In Stock books available or matching search.</li>
+                                                )}
+                                            </ul>
+                                            {totalPages > 1 && (
+                                                <div className="pagination">
+                                                    <button
+                                                        type="button"
+                                                        className="page-btn"
+                                                        onClick={() => handlePageChange(currentPage - 1)}
+                                                        disabled={currentPage === 1}
+                                                    >
+                                                        <FaChevronLeft />
+                                                    </button>
+                                                    <span className="page-info">
+                                                        Page {currentPage} of {totalPages}
+                                                    </span>
+                                                    <button
+                                                        type="button"
+                                                        className="page-btn"
+                                                        onClick={() => handlePageChange(currentPage + 1)}
+                                                        disabled={currentPage === totalPages}
+                                                    >
+                                                        <FaChevronRight />
+                                                    </button>
+                                                </div>
+                                            )}
+                                            <p>Selected Books: {selectedBookIDs.length}</p>
+                                        </div>
+                                    </>
                                 )}
 
-                                {/* User Selection */}
                                 {recipientType !== "Agent" && recipientType !== "Supplier" && recipientType !== "Archive" && recipientType !== "Stub Collection" && (
                                     <div className="form-group">
                                         <label>Recipient Selection ({recipientType})</label>
@@ -605,7 +686,6 @@ const TransferReceiptBook: React.FC = () => {
                                     </div>
                                 )}
 
-                                {/* Pre-selected Agent Display */}
                                 {(recipientType === "Agent" || recipientType === "Stub Collection") && forceAgent && (
                                     <div className="form-group">
                                         <label>Selected Agent</label>
@@ -613,12 +693,11 @@ const TransferReceiptBook: React.FC = () => {
                                     </div>
                                 )}
 
-                                {/* QR Code Scanner */}
-                                {recipientType && (recipientID || recipientType === "Supplier" || recipientType === "Archive" || recipientType === "Stub Collection") && (
-                                    <div className="form-group">
+                                {recipientType !== "Supplier" && recipientType && (recipientID || recipientType === "Archive" || recipientType === "Stub Collection") && (
+                                    <div className="form-group qr-section">
                                         <label>Scan QR Codes</label>
                                         {error && <div className="error-above-camera">{error}</div>}
-                                        <div id="qr-reader" ref={qrReaderRef} className="qr-reader" style={{ width: "100%", height: "300px" }} />
+                                        <div id="qr-reader" ref={qrReaderRef} className="qr-reader" />
                                         <div className="scanned-list">
                                             <h4>Selected Books ({selectedBookIDs.length})</h4>
                                             <ul>
@@ -645,7 +724,6 @@ const TransferReceiptBook: React.FC = () => {
                                     </div>
                                 )}
 
-                                {/* Form Actions */}
                                 <div className="form-actions">
                                     <button type="button" className="back-btn" onClick={() => navigate(-1)}>
                                         <FaArrowLeft /> Back
@@ -661,7 +739,6 @@ const TransferReceiptBook: React.FC = () => {
                     </form>
                 ) : (
                     <form onSubmit={handleValidateTransfer}>
-                        {/* OTP Validation */}
                         {recipientType !== "Archive" && (
                             <div className="form-group">
                                 <label>Enter OTP {recipientType === "Stub Collection" ? "(Sent to Agent)" : `(Sent to ${recipientType} ${recipientID})`}</label>
@@ -675,8 +752,6 @@ const TransferReceiptBook: React.FC = () => {
                             </div>
                         )}
                         {error && <div className="error">{error}</div>}
-
-                        {/* Form Actions */}
                         <div className="form-actions">
                             <button type="button" className="back-btn" onClick={() => setTransferInitiated(false)}>
                                 <FaArrowLeft /> Back
