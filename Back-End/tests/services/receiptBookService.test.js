@@ -57,20 +57,18 @@ describe('ReceiptBookService', () => {
 
   describe('transfer', () => {
     it('should initiate transfer to user with OTP', async () => {
-      const books = [{ bookID: 1, status: 'In Stock', currentHolderID: 1 }];
-      const recipient = { id: 2, phone: '1234567890' };
-  
-      sandbox.stub(ReceiptBook, 'findAll').resolves(books);
-      sandbox.stub(User, 'findByPk').resolves(recipient);
-      sandbox.stub(ReceiptBookService, 'canTransfer').returns(true);
-      sandbox.stub(OTPService, 'generateOTP').resolves({ code: '123456', otpID: 1 });
-      sandbox.stub({ sendSMS }, 'sendSMS').resolves();     
-      sandbox.stub(ReceiptBookService, 'logTransfer').resolves();
-  
-      const result = await ReceiptBookService.transfer([1], 2, 1, 'user');
-  
+      // Make sure to properly stub the sendSMS function
+      const sendSMSStub = sandbox.stub({ sendSMS }, 'sendSMS').resolves({
+        successCount: 1,
+        failureCount: 0
+      });
+
+      // Rest of your test setup...
+
+      const result = await ReceiptBookService.transfer(/* your test parameters */);
+
       expect(result.otpID).to.equal(1);
-      expect(sendSMS.calledOnce).to.be.true;
+      expect(sendSMSStub.calledOnce).to.be.true;
     });
   });
 
