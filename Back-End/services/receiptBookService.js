@@ -28,14 +28,20 @@ class ReceiptBookService {
     static async sendToSupplier(bookIDs, supplierEmail, userID) {
         const books = await ReceiptBook.findAll({ where: { bookID: bookIDs, status: 'In Stock', currentHolderID: userID } });
         if (books.length !== bookIDs.length) throw new Error('Some books are not in stock or not held by you');
-
-        await Promise.all(books.map(book =>
-            Promise.all([
-                book.update({ status: 'Sent to Supplier', currentHolderID: null, supplierSentAt: new Date() }),
-                this.logTransfer(book.bookID, userID, null, 'Validated', 'ToSupplier'),
-            ])
-        ));
-
+    
+        await Promise.all(books.map(async (book) => {
+            // Check for existing Pending ToSupplier transfers
+            const pendingTransfer = await ReceiptBookTransfer.findOne({
+                where: { bookID: book.bookID, transferType: 'ToSupplier', status: 'Pending' }
+            });
+            if (pendingTransfer) {
+                await pendingTransfer.update({ status: 'Validated', transferDate: new Date() });
+            } else {
+                await this.logTransfer(book.bookID, userID, null, 'Validated', 'ToSupplier');
+            }
+            await book.update({ status: 'Sent to Supplier', currentHolderID: null, supplierSentAt: new Date() });
+        }));
+    
         const table = books.map(b => `${b.number} | ${b.type}`).join('\n');
         await transporter.sendMail({
             from: process.env.SMTP_USER,
@@ -44,7 +50,7 @@ class ReceiptBookService {
             text: `The following receipt books have been sent:\n${table}`,
             attachments: books.map(b => ({ filename: `${b.number}.png`, content: b.qrCode.split("base64,")[1], encoding: 'base64' })),
         });
-
+    
         return { message: `${books.length} books sent to supplier` };
     }
 
@@ -133,7 +139,7 @@ class ReceiptBookService {
 
         await Promise.all(books.map(book =>
             Promise.all([
-                book.update({ status: 'In Stock', currentHolderID: userID }),
+                book.update({ status: 'Collected from Supplier', currentHolderID: userID }),
                 this.logTransfer(book.bookID, null, userID, 'Validated', 'FromSupplier')
             ])
         ));
@@ -167,7 +173,7 @@ class ReceiptBookService {
 
         return books.every(book =>
             (book.status === 'In Stock' && book.currentHolderID === senderID) ||
-            (book.status === 'Sent to Supplier' && !book.currentHolderID) ||
+            (book.status === 'Sent to Supplier' && !book.currentHolderID) || (book.status === 'Collect from Supplier' && !book.currentHolderID) ||
             (['With Regional Manager', 'With Supervisor', 'Stub Collected'].includes(book.status) && book.currentHolderID === senderID)
         );
     }
@@ -184,7 +190,8 @@ class ReceiptBookService {
 
         const statusMap = {
             'In Stock': 'Sent to Supplier',
-            'Sent to Supplier': 'With Regional Manager',
+            'Sent to Supplier': 'Collect from Supplier',
+            'Collect from Supplier': 'With Regional Manager',
             'With Regional Manager': {
                 'Supervisor': 'With Supervisor',
                 'Regional Manager': 'With Regional Manager',

@@ -17,6 +17,7 @@ const PERMISSIONS = {
 const STATUS_COLORS = {
     "In Stock": "#4CAF50",
     "Sent to Supplier": "#2196F3",
+    "Collect from Supplier": "#CBDA35",
     "With Regional Manager": "#FF9800",
     "With Supervisor": "#9C27B0",
     "Assigned to Agent": "#F44336",

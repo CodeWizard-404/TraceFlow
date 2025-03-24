@@ -1703,6 +1703,7 @@ module.exports = (sequelize, DataTypes) => {
             type: DataTypes.ENUM(
                 'In Stock',              // Purchase team
                 'Sent to Supplier',      // Purchase team
+                Collected from Supplier
                 'With Regional Manager', // Regional manager(s)
                 'With Supervisor',       // Supervisor(s)
                 'Assigned to Agent',     // Agent
