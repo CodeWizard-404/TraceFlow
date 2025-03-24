@@ -104,6 +104,7 @@ export type ReceiptBookByIdResponse = ReceiptBook;
 export type UpdateReceiptBookResponse = ReceiptBook;
 export interface DeleteReceiptBookResponse {  message: string; }
 export interface SendToSupplierResponse {  message: string; }
+export interface ReceiveFromSupplierResponse {  message: string; }
 export interface TransferResponse {  message: string;}
 export type ValidateTransferResponse = ReceiptBook;
 export type TransferHistoryResponse = ReceiptBookTransfer[];

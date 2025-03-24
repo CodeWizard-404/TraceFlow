@@ -9,6 +9,7 @@ import {
     transfer,
     validateTransfer,
     sendToSupplier,
+    collectFromSupplier,
 } from "../../apis/receiptBookAPI";
 import { collectStub, validateStubCollection, archiveStub } from "../../apis/receiptStubAPI";
 import { getAllUsers, getUserByPhone } from "../../apis/userAPI";
@@ -32,8 +33,10 @@ const ROLES = {
 
 const ROLE_TRANSFER_RULES = {
     [ROLES.PURCHASE_TEAM]: {
-        transferable: (book: ReceiptBook, userID: string) => book.status === "In Stock" && book.currentHolderID === userID,
-        recipientOptions: ["Supplier", "Regional Manager"],
+        transferable: (book: ReceiptBook, userID: string) => 
+            (book.status === "In Stock" && book.currentHolderID === userID) || 
+            (book.status === "Sent to Supplier" && !book.currentHolderID),
+        recipientOptions: ["Supplier", "Regional Manager", "Collect from Supplier"],
     },
     [ROLES.REGIONAL_MANAGER]: {
         transferable: (book: ReceiptBook, userID: string) => ["With Regional Manager", "Stub Collected"].includes(book.status) && book.currentHolderID === userID,
@@ -49,7 +52,7 @@ const ROLE_TRANSFER_RULES = {
     },
     [ROLES.SUPER_ADMIN]: {
         transferable: () => true,
-        recipientOptions: ["Supplier", "Regional Manager", "Supervisor", "Agent", "Stock Manager", "Stub Collection", "Archive"],
+        recipientOptions: ["Supplier", "Regional Manager", "Supervisor", "Agent", "Stock Manager", "Stub Collection", "Archive", "Collect from Supplier"],
     },
 } as const;
 
@@ -92,7 +95,7 @@ const TransferReceiptBook: React.FC = () => {
     const [transferInitiated, setTransferInitiated] = useState<boolean>(false);
     const [isScannerRunning, setIsScannerRunning] = useState<boolean>(false);
     const [isScannerStarting, setIsScannerStarting] = useState<boolean>(false);
-    const [currentPage, setCurrentPage] = useState<number>(1); // Pagination state
+    const [currentPage, setCurrentPage] = useState<number>(1);
     const qrScannerRef = useRef<Html5Qrcode | null>(null);
     const qrReaderRef = useRef<HTMLDivElement>(null);
     const scannedQRRef = useRef<Set<string>>(new Set());
@@ -105,6 +108,9 @@ const TransferReceiptBook: React.FC = () => {
     const isTransferable = useCallback((book: ReceiptBook) => {
         if (recipientType === "Supplier") {
             return book.status === "In Stock" && book.currentHolderID === currentUserID;
+        }
+        if (recipientType === "Collect from Supplier") {
+            return book.status === "Sent to Supplier" && !book.currentHolderID;
         }
         return Array.from(userRoleSet).some(role => {
             const rule = ROLE_TRANSFER_RULES[role as unknown as keyof typeof ROLE_TRANSFER_RULES];
@@ -137,7 +143,7 @@ const TransferReceiptBook: React.FC = () => {
             }
 
             if (!isTransferable(matchingBook)) {
-                setError(`Book "${number}" (status: ${matchingBook.status}) cannot be transferred by your role(s).`);
+                setError(`Book "${number}" (status: ${matchingBook.status}) cannot be transferred/collected by your role(s).`);
                 return;
             }
 
@@ -222,7 +228,7 @@ const TransferReceiptBook: React.FC = () => {
 
     useEffect(() => {
         if (!qrReaderRef.current || !recipientType || 
-            !(recipientID || recipientType === "Supplier" || recipientType === "Archive" || recipientType === "Stub Collection") || 
+            !(recipientID || recipientType === "Supplier" || recipientType === "Archive" || recipientType === "Stub Collection" || recipientType === "Collect from Supplier") || 
             transferInitiated || recipientType === "Supplier") {
             return;
         }
@@ -241,7 +247,7 @@ const TransferReceiptBook: React.FC = () => {
             } else if (
                 recipientType &&
                 recipientType !== "Supplier" &&
-                (recipientID || recipientType === "Archive" || recipientType === "Stub Collection") &&
+                (recipientID || recipientType === "Archive" || recipientType === "Stub Collection" || recipientType === "Collect from Supplier") &&
                 !transferInitiated
             ) {
                 startScanner();
@@ -329,7 +335,7 @@ const TransferReceiptBook: React.FC = () => {
 
     useEffect(() => {
         if (!searchQuery || recipientType === "Agent" || recipientType === "Supplier" || 
-            recipientType === "Archive" || recipientType === "Stub Collection") return;
+            recipientType === "Archive" || recipientType === "Stub Collection" || recipientType === "Collect from Supplier") return;
         const timeout = setTimeout(async () => {
             try {
                 const user = await getUserByPhone(searchQuery, token!);
@@ -429,7 +435,7 @@ const TransferReceiptBook: React.FC = () => {
             setError("Please enter an agent phone number or select an agent.");
             return;
         }
-        if (recipientType !== "Supplier" && recipientType !== "Archive" && recipientType !== "Stub Collection" && !recipientID) {
+        if (recipientType !== "Supplier" && recipientType !== "Archive" && recipientType !== "Stub Collection" && recipientType !== "Collect from Supplier" && !recipientID) {
             setError("Please select a recipient or enter a phone number.");
             return;
         }
@@ -449,6 +455,9 @@ const TransferReceiptBook: React.FC = () => {
             } else if (recipientType === "Archive") {
                 await Promise.all(selectedBookIDs.map(bookID => archiveStub(bookID, token!)));
                 navigate(-1);
+            } else if (recipientType === "Collect from Supplier") {
+                await collectFromSupplier(selectedBookIDs, currentUserID, token!);
+                navigate(-1);
             } else {
                 const recipientTypeForAPI = recipientType === "Agent" ? "agent" : "user";
                 await transfer(selectedBookIDs, recipientID, recipientTypeForAPI, token!);
@@ -456,14 +465,14 @@ const TransferReceiptBook: React.FC = () => {
                 setError(null);
             }
         } catch (err) {
-            setError("Failed to initiate transfer: " + (err instanceof Error ? err.message : "Unknown error"));
+            setError("Failed to initiate transfer/collection: " + (err instanceof Error ? err.message : "Unknown error"));
             console.error(err);
         }
     };
 
     const handleValidateTransfer = async (e: React.FormEvent) => {
         e.preventDefault();
-        if (recipientType === "Archive") {
+        if (recipientType === "Archive" || recipientType === "Collect from Supplier") {
             navigate(-1);
             return;
         }
@@ -526,7 +535,7 @@ const TransferReceiptBook: React.FC = () => {
                                         scannedQRRef.current.clear();
                                         setAgents([]);
                                         setIsScannerRunning(false);
-                                        setCurrentPage(1); // Reset page on recipient type change
+                                        setCurrentPage(1);
                                     }}
                                     required
                                 >
@@ -607,7 +616,7 @@ const TransferReceiptBook: React.FC = () => {
                                             <input
                                                 type="text"
                                                 value={bookSearchQuery}
-                                                onChange={(e) => {setBookSearchQuery(e.target.value); setCurrentPage(1);}} // Reset to page 1 on search
+                                                onChange={(e) => {setBookSearchQuery(e.target.value); setCurrentPage(1);}}
                                                 placeholder="Search books by number or type"
                                             />
                                             <ul className="book-list">
@@ -660,7 +669,7 @@ const TransferReceiptBook: React.FC = () => {
                                     </>
                                 )}
 
-                                {recipientType !== "Agent" && recipientType !== "Supplier" && recipientType !== "Archive" && recipientType !== "Stub Collection" && (
+                                {recipientType !== "Agent" && recipientType !== "Supplier" && recipientType !== "Archive" && recipientType !== "Stub Collection" && recipientType !== "Collect from Supplier" && (
                                     <div className="form-group">
                                         <label>Recipient Selection ({recipientType})</label>
                                         <input
@@ -693,9 +702,9 @@ const TransferReceiptBook: React.FC = () => {
                                     </div>
                                 )}
 
-                                {recipientType !== "Supplier" && recipientType && (recipientID || recipientType === "Archive" || recipientType === "Stub Collection") && (
+                                {recipientType !== "Supplier" && recipientType && (recipientID || recipientType === "Archive" || recipientType === "Stub Collection" || recipientType === "Collect from Supplier") && (
                                     <div className="form-group qr-section">
-                                        <label>Scan QR Codes</label>
+                                        <label>{recipientType === "Collect from Supplier" ? "Scan Books to Collect from Supplier" : "Scan QR Codes"}</label>
                                         {error && <div className="error-above-camera">{error}</div>}
                                         <div id="qr-reader" ref={qrReaderRef} className="qr-reader" />
                                         <div className="scanned-list">
@@ -728,9 +737,9 @@ const TransferReceiptBook: React.FC = () => {
                                     <button type="button" className="back-btn" onClick={() => navigate(-1)}>
                                         <FaArrowLeft /> Back
                                     </button>
-                                    {recipientType && (recipientID || recipientType === "Supplier" || recipientType === "Archive" || recipientType === "Stub Collection") && (
+                                    {recipientType && (recipientID || recipientType === "Supplier" || recipientType === "Archive" || recipientType === "Stub Collection" || recipientType === "Collect from Supplier") && (
                                         <button type="submit" className="transfer-btn">
-                                            <FaExchangeAlt /> {recipientType === "Stub Collection" ? "Initiate Stub Collection" : "Initiate Transfer"}
+                                            <FaExchangeAlt /> {recipientType === "Stub Collection" ? "Initiate Stub Collection" : recipientType === "Collect from Supplier" ? "Collect from Supplier" : "Initiate Transfer"}
                                         </button>
                                     )}
                                 </div>
@@ -739,7 +748,7 @@ const TransferReceiptBook: React.FC = () => {
                     </form>
                 ) : (
                     <form onSubmit={handleValidateTransfer}>
-                        {recipientType !== "Archive" && (
+                        {recipientType !== "Archive" && recipientType !== "Collect from Supplier" && (
                             <div className="form-group">
                                 <label>Enter OTP {recipientType === "Stub Collection" ? "(Sent to Agent)" : `(Sent to ${recipientType} ${recipientID})`}</label>
                                 <input

@@ -58,6 +58,19 @@ class ReceiptBookController {
             res.status(400).json({ error: error.message || 'Failed to initiate transfer' });
         }
     }
+    
+    static async collectFromSupplier(req, res) {
+        try {
+            const { bookIDs, userID } = req.body;
+            if (!Array.isArray(bookIDs) || !userID) return res.status(400).json({ error: 'Book IDs (array) and user ID are required' });
+            const result = await ReceiptBookService.collectFromSupplier(bookIDs, userID);
+            res.json(result);
+        } catch (error) {
+            console.error(`${new Date().toISOString()} - Collect from supplier failed:`, error);
+            res.status(400).json({ error: error.message || 'Failed to collect books from supplier' });
+        }
+    }
+
 
     static async validateTransfer(req, res) {
         try {

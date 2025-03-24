@@ -9,6 +9,7 @@ import {
     TransferResponse,
     ValidateTransferResponse,
     TransferHistoryResponse,
+    ReceiveFromSupplierResponse,
 } from ".";
 import ReceiptBook from "../models/ReceiptBook";
 
@@ -91,6 +92,22 @@ export const sendToSupplier = async (
         return response.data;
     } catch (error) {
         console.error("Error sending receipt books to supplier:", error);
+        throw error;
+    }
+};
+
+export const collectFromSupplier = async (
+    bookIDs: string[],
+    userID: string,
+    token: string
+): Promise<ReceiveFromSupplierResponse> => {
+    try {
+        const response = await api.post<ReceiveFromSupplierResponse>("/receipt-books/receive", { bookIDs, userID }, {
+            headers: { Authorization: `Bearer ${token}` },
+        });
+        return response.data;
+    } catch (error) {
+        console.error("Error collecting receipt books from supplier:", error);
         throw error;
     }
 };
