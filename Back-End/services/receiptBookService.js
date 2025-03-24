@@ -134,7 +134,7 @@ class ReceiptBookService {
         await Promise.all(books.map(book =>
             Promise.all([
                 book.update({ status: 'In Stock', currentHolderID: userID }),
-                this.logTransfer(book.bookID, null, userID, 'Validated', 'From Supplier')
+                this.logTransfer(book.bookID, null, userID, 'Validated', 'FromSupplier')
             ])
         ));
 

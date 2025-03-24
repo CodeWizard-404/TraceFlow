@@ -6,6 +6,7 @@ interface ReceiptBook {
     status:
     | "In Stock"
     | "Sent to Supplier"
+    | "From Supplier"
     | "With Regional Manager"
     | "With Supervisor"
     | "Assigned to Agent"

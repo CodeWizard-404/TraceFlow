@@ -37,7 +37,7 @@ module.exports = (sequelize, DataTypes) => {
             type: DataTypes.ENUM(
                 'ToSupplier', 'ToRegionalManager', 'ToSupervisor', 
                 'ToAgent', 'StubToSupervisor', 'ToRegionalManagerFromSupervisor', 
-                'ToStockManager', 'Archived'
+                'ToStockManager', 'Archived', 'FromSupplier' 
             ),
             allowNull: false,
         },
