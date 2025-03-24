@@ -13,7 +13,8 @@ interface ReceiptBookTransfer {
     | "StubToSupervisor"
     | "ToRegionalManagerFromSupervisor"
     | "ToStockManager"
-    | "Archived";
+    | "Archived"
+    | "FromSupplier"; 
     transferDate: string;
 }
 
