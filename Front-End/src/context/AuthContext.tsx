@@ -8,7 +8,6 @@ import User from "../models/User";
 import Permission from "../models/Permission";
 import Role from "../models/Role";
 
-// Define roles from environment variables
 const ROLES = {
     ADMIN: import.meta.env.VITE_ROLES_ADMIN,
     SUPER_ADMIN: import.meta.env.VITE_ROLES_SUPER_ADMIN,
@@ -19,7 +18,6 @@ const ROLES = {
     STOCK_MANAGER: import.meta.env.VITE_ROLES_STOCK_MANAGER,
 };
 
-// Interface for the authentication context shape
 interface AuthContextType {
     user: User | null;
     token: string | null;
@@ -30,64 +28,103 @@ interface AuthContextType {
     logout: () => void;
 }
 
-// Create the authentication context
 const AuthContext = createContext<AuthContextType | undefined>(undefined);
 
-// AuthProvider component to manage authentication state and provide context
 export const AuthProvider: React.FC<{ children: ReactNode }> = ({ children }) => {
-    // State for user, initialized from localStorage if available
     const [user, setUser] = useState<User | null>(() => {
         const storedUser = localStorage.getItem("user");
         return storedUser ? JSON.parse(storedUser) : null;
     });
-
-    // State for token, initialized from localStorage if available
     const [token, setToken] = useState<string | null>(() => localStorage.getItem("token"));
-
-    // State for user roles and permissions
     const [userRoles, setUserRoles] = useState<Role[] | null>(null);
     const [effectivePermissions, setEffectivePermissions] = useState<Permission[] | null>(null);
-    const [permissionsLoaded, setPermissionsLoaded] = useState(false); // Tracks if permissions are loaded
+    const [permissionsLoaded, setPermissionsLoaded] = useState(false);
 
     const navigate = useNavigate();
     const location = useLocation();
 
-    // Effect to setup Axios interceptors once on mount
     useEffect(() => {
         setupAxiosInterceptors();
     }, []);
 
-    // Effect to handle redirection based on user roles and permissions
+    // Define protected routes and their required permissions
+    const protectedRoutes: { [key: string]: string[] } = {
+        "/admin": [ROLES.ADMIN, ROLES.SUPER_ADMIN], // Role-based for simplicity
+        "/timesheet": [import.meta.env.VITE_PERMISSIONS_ACCESS_SUPERVISOR_TIMESHEETS],
+        "/timesheet-form": [import.meta.env.VITE_PERMISSIONS_CREATE_TIMESHEETS],
+        "/qr-scan": [import.meta.env.VITE_PERMISSIONS_SCAN_VISITS],
+        "/visit/:idVisit": [import.meta.env.VITE_PERMISSIONS_ACCESS_VISIT_DETAILS],
+        "/visit/:idVisit/validate-checklist": [import.meta.env.VITE_PERMISSIONS_LOG_VISITS],
+        "/receipt-books": [import.meta.env.VITE_PERMISSIONS_ACCESS_RECEIPT_BOOKS],
+        "/receipt-book/:bookID/history": [import.meta.env.VITE_PERMISSIONS_ACCESS_RECEIPT_BOOK_HISTORY],
+        "/transfer-receipt-books": [import.meta.env.VITE_PERMISSIONS_TRANSFER_RECEIPT_BOOKS],
+    };
+
+    // Check if the user has permission for a given route
+    const hasPermissionForRoute = (pathname: string): boolean => {
+        if (!effectivePermissions || !userRoles) return false;
+
+        // Handle dynamic routes (e.g., /visit/:idVisit)
+        const routeKey = Object.keys(protectedRoutes).find(key => {
+            if (key.includes(":")) {
+                const regex = new RegExp(`^${key.replace(/:[^/]+/g, "[^/]+")}$`);
+                return regex.test(pathname);
+            }
+            return key === pathname;
+        });
+
+        if (!routeKey) return true; // Public route or not protected
+
+        const required = protectedRoutes[routeKey];
+        if (routeKey === "/admin") {
+            return userRoles.some(role => required.includes(role.name));
+        }
+        return effectivePermissions.some(perm => required.includes(perm.name));
+    };
+
     useEffect(() => {
-        // Exit early if no user or permissions aren't loaded
-        if (!user || !permissionsLoaded) {
+        if (!user || !token) {
+            // Redirect to login if not authenticated, unless already there
+            if (location.pathname !== "/login") {
+                navigate("/login", { replace: true, state: { from: location.pathname } });
+            }
             return;
         }
 
-        // Determine the target route based on user roles
+        if (!permissionsLoaded) return;
+
         const targetRoute = determineTargetRoute(userRoles || []);
-        // Use location.state.from only if it's a valid protected route (not /login)
-        const fromRoute = location.state?.from && location.state.from !== "/login" 
-            ? location.state.from 
-            : null;
-        const finalRoute = fromRoute || targetRoute;
+        const currentPath = location.pathname;
 
-        // Prevent redundant navigation if already on the target route
-        if (location.pathname === finalRoute) {
+        // Redirect logged-in users away from /login
+        if (currentPath === "/login") {
+            const fromRoute = location.state?.from && hasPermissionForRoute(location.state.from)
+                ? location.state.from
+                : targetRoute;
+            navigate(fromRoute, { replace: true });
             return;
         }
 
-        // Navigate to the determined route
-        navigate(finalRoute, { replace: true });
-    }, [user, permissionsLoaded, userRoles, navigate, location]);
+        // Allow staying on current route if user has permission
+        if (hasPermissionForRoute(currentPath)) {
+            return;
+        }
 
-    // Effect to fetch roles and permissions for persisted sessions
+        // Redirect to target route if current route is unauthorized or root
+        if (currentPath === "/" || !hasPermissionForRoute(currentPath)) {
+            const fromRoute = location.state?.from && location.state.from !== "/login" && hasPermissionForRoute(location.state.from)
+                ? location.state.from
+                : targetRoute;
+            navigate(fromRoute, { replace: true });
+        }
+    }, [user, token, permissionsLoaded, userRoles, navigate, location]);
+
     useEffect(() => {
         const fetchPermissions = async () => {
             if (!user || !token || permissionsLoaded) return;
 
             try {
-                setPermissionsLoaded(false); // Reset loading state
+                setPermissionsLoaded(false);
                 const [perms, roles] = await Promise.all([
                     getEffectivePermissions(user.userID, token),
                     getRolesByUser(user.userID, token),
@@ -97,48 +134,33 @@ export const AuthProvider: React.FC<{ children: ReactNode }> = ({ children }) =>
             } catch (error) {
                 console.error("Failed to fetch permissions on mount:", error);
             } finally {
-                setPermissionsLoaded(true); // Mark permissions as loaded
+                setPermissionsLoaded(true);
             }
         };
 
         fetchPermissions();
     }, [user, token, permissionsLoaded]);
 
-    // Determines the target route based on user roles
     const determineTargetRoute = (roles: Role[]): string => {
-        if (!roles || roles.length === 0) {
-            console.warn("No roles provided, defaulting to /");
-            return "/"; // Default route if no roles are present
-        }
-
-        if (roles.some((r) => [ROLES.ADMIN, ROLES.SUPER_ADMIN].includes(r.name))) {
-            return "/admin";
-        }
-        if (roles.some((r) => [ROLES.MANAGER, ROLES.SUPERVISOR].includes(r.name))) {
-            return "/timesheet";
-        }
-        if (roles.some((r) => [ROLES.PURCHASE_TEAM, ROLES.REGIONAL_MANAGER, ROLES.STOCK_MANAGER].includes(r.name))) {
-            return "/receipt-books";
-        }
-
-        console.warn("No matching role found, defaulting to /");
-        return "/"; // Fallback route
+        if (!roles || roles.length === 0) return "/";
+        if (roles.some((r) => [ROLES.ADMIN, ROLES.SUPER_ADMIN].includes(r.name))) return "/admin";
+        if (roles.some((r) => [ROLES.MANAGER, ROLES.SUPERVISOR].includes(r.name))) return "/timesheet";
+        if (roles.some((r) => [ROLES.PURCHASE_TEAM, ROLES.REGIONAL_MANAGER, ROLES.STOCK_MANAGER].includes(r.name))) return "/receipt-books";
+        return "/";
     };
 
-    // Logs in a user and fetches their roles and permissions
     const loginUser = async (identifier: string, password: string) => {
         const response = await login(identifier, password);
         const newToken = response.token;
         const newUser = response.user;
 
-        // Store token and user in localStorage
         localStorage.setItem("token", newToken);
         localStorage.setItem("user", JSON.stringify(newUser));
         setToken(newToken);
         setUser(newUser);
 
         try {
-            setPermissionsLoaded(false); // Reset loading state
+            setPermissionsLoaded(false);
             const [perms, roles] = await Promise.all([
                 getEffectivePermissions(newUser.userID, newToken),
                 getRolesByUser(newUser.userID, newToken),
@@ -148,11 +170,10 @@ export const AuthProvider: React.FC<{ children: ReactNode }> = ({ children }) =>
         } catch (error) {
             console.error("Failed to fetch permissions after login:", error);
         } finally {
-            setPermissionsLoaded(true); // Mark permissions as loaded
+            setPermissionsLoaded(true);
         }
     };
 
-    // Logs out the user and clears all state
     const logout = () => {
         setUser(null);
         setToken(null);
@@ -161,10 +182,9 @@ export const AuthProvider: React.FC<{ children: ReactNode }> = ({ children }) =>
         setPermissionsLoaded(false);
         localStorage.removeItem("token");
         localStorage.removeItem("user");
-        navigate("/login", { replace: true, state: null }); // Clear state and redirect
+        navigate("/login", { replace: true, state: null });
     };
 
-    // Context value to provide to consumers
     const value: AuthContextType = {
         user,
         token,
@@ -178,8 +198,6 @@ export const AuthProvider: React.FC<{ children: ReactNode }> = ({ children }) =>
     return <AuthContext.Provider value={value}>{children}</AuthContext.Provider>;
 };
 
-// Custom hook to access the authentication context
-// eslint-disable-next-line react-refresh/only-export-components
 export const useAuth = (): AuthContextType => {
     const context = useContext(AuthContext);
     if (!context) {

@@ -40,13 +40,16 @@ const PERMISSIONS = {
     CREATE_USERS: import.meta.env.VITE_PERMISSIONS_CREATE_USERS,
     UPDATE_USERS: import.meta.env.VITE_PERMISSIONS_UPDATE_USERS,
     DELETE_USERS: import.meta.env.VITE_PERMISSIONS_DELETE_USERS,
+
     READ_ROLES: import.meta.env.VITE_PERMISSIONS_READ_ROLES,
     CREATE_ROLES: import.meta.env.VITE_PERMISSIONS_CREATE_ROLES,
     UPDATE_ROLES: import.meta.env.VITE_PERMISSIONS_UPDATE_ROLES,
     ASSIGN_ROLES: import.meta.env.VITE_PERMISSIONS_ASSIGN_ROLES,
+
     ASSIGN_PERMISSIONS: import.meta.env.VITE_PERMISSIONS_ASSIGN_PERMISSIONS,
     ASSIGN_SUPERVISORS: import.meta.env.VITE_PERMISSIONS_ASSIGN_SUPERVISORS,
     READ_PERMISSIONS: import.meta.env.VITE_PERMISSIONS_READ_PERMISSIONS,
+    
     CREATE_PERMISSIONS: import.meta.env.VITE_PERMISSIONS_CREATE_PERMISSIONS,
     UPDATE_PERMISSIONS: import.meta.env.VITE_PERMISSIONS_UPDATE_PERMISSIONS,
 };
@@ -62,6 +65,11 @@ const ITEMS_PER_PAGE = 10;
 type ViewMode = "users" | "roles" | "permissions" | "add-user" | "add-role" | "add-permission" | "user-details"; // Updated type
 type SortField = "name" | "email" | "role";
 type SortOrder = "asc" | "desc";
+
+interface ConfirmationState {
+    message: string;
+    onConfirm: () => void;
+}
 
 // Main Component
 const AdminDashboard: React.FC = () => {
@@ -114,13 +122,15 @@ const AdminDashboard: React.FC = () => {
     const [isEditingUser, setIsEditingUser] = useState(false); // Tracks if user details are being edited
     const [editedUser, setEditedUser] = useState<Partial<User> & { passwordConfirm?: string }>({});    
     const [tempSupervisors, setTempSupervisors] = useState<User[]>([]); // Temporary supervisors for selected user
+    const [error, setError] = useState<string | null>(null);
+    const [confirmation, setConfirmation] = useState<ConfirmationState | null>(null);
 
     // Permission Checks
     const userPermissions = useMemo(() => ({
         canViewUsers: effectivePermissions?.some(p => p.name === PERMISSIONS.READ_USERS),
         canCreateUsers: effectivePermissions?.some(p => p.name === PERMISSIONS.CREATE_USERS),
-        canUpdateUsers: effectivePermissions?.some(p => p.name === PERMISSIONS.UPDATE_USERS), // Add if not present
-        canDeleteUsers: effectivePermissions?.some(p => p.name === PERMISSIONS.DELETE_USERS), // Add if not present
+        canUpdateUsers: effectivePermissions?.some(p => p.name === PERMISSIONS.UPDATE_USERS), 
+        canDeleteUsers: effectivePermissions?.some(p => p.name === PERMISSIONS.DELETE_USERS), 
         canViewRoles: effectivePermissions?.some(p => p.name === PERMISSIONS.READ_ROLES),
         canCreateRoles: effectivePermissions?.some(p => p.name === PERMISSIONS.CREATE_ROLES),
         canUpdateRoles: effectivePermissions?.some(p => p.name === PERMISSIONS.UPDATE_ROLES),
@@ -286,10 +296,46 @@ const AdminDashboard: React.FC = () => {
     }, [filteredUsers, userPage]);
 
     // Handlers
+
+    const clearError = () => setError(null);
+
     const handleUserSelect = async (user: User) => {
-        // Select a user and fetch detailed data
-        if ((hasUnsavedUserChanges || hasUnsavedSupervisorChanges || hasUnsavedOverrideChanges) &&
-            !window.confirm('You have unsaved changes. Are you sure you want to proceed?')) return;
+        if ((hasUnsavedUserChanges || hasUnsavedSupervisorChanges || hasUnsavedOverrideChanges)) {
+            setConfirmation({
+                message: 'You have unsaved changes. Are you sure you want to proceed?',
+                onConfirm: async () => {
+                    setSelectedUser(user);
+                    try {
+                        const [userRoles, supervisors, managers, effectivePerms, overrides] = await Promise.all([
+                            getRolesByUser(user.userID, token!),
+                            getSupervisorsByUser(user.userID, token!),
+                            getManagersByUser(user.userID, token!),
+                            getEffectivePermissions(user.userID, token!),
+                            getPermissionOverridesByUser(user.userID, token!),
+                        ]);
+                        setUsers(users.map(u => u.userID === user.userID ? { ...u, Roles: userRoles, supervisors, managers } : u));
+                        setTempRoles(userRoles);
+                        setTempSupervisors(supervisors || []);
+                        setTempManagers(managers || []);
+                        setEffectiveUserPermissions(effectivePerms);
+                        setUserOverrides(overrides || []);
+                        setTempOverrides(overrides || []);
+                        setHasUnsavedUserChanges(false);
+                        setHasUnsavedSupervisorChanges(false);
+                        setHasUnsavedOverrideChanges(false);
+                        setSupervisorSearch("");
+                        setManagerSearch("");
+                        setSupervisorPage(1);
+                        setManagerPage(1);
+                        setUserPage(1);
+                        setView("user-details");
+                    } catch (error) {
+                        console.error("Failed to fetch user details:", error);
+                    }
+                },
+            });
+            return;
+        }
         setSelectedUser(user);
         try {
             const [userRoles, supervisors, managers, effectivePerms, overrides] = await Promise.all([
@@ -321,28 +367,40 @@ const AdminDashboard: React.FC = () => {
     };
 
     const handleRoleSelect = async (role: Role) => {
-        // Select a role for editing with validation
         if (!isSuperAdmin && role.name === 'Admin') {
-            alert('Only Super Admins can modify the Admin role.');
+            setError('Only Super Admins can modify the Admin role.');
             return;
         }
         if (role.name === ROLES.SUPER_ADMIN) {
-            alert('The Super Admin role cannot be modified.');
+            setError('The Super Admin role cannot be modified.');
             return;
         }
         const fixedRoles = ['Manager', 'Supervisor', 'Purchase Team', 'Regional Manager', 'Stock Manager'];
-        if (fixedRoles.includes(role.name) &&
-            !window.confirm('Warning: Modifying pre-made roles may affect system functionality. Are you sure you want to proceed?')) {
+        if (fixedRoles.includes(role.name)) {
+            setConfirmation({
+                message: 'Warning: Modifying pre-made roles may affect system functionality. Are you sure you want to proceed?',
+                onConfirm: () => proceedWithRoleSelect(role),
+            });
             return;
         }
-        if (hasUnsavedChanges && !window.confirm('You have unsaved changes. Are you sure you want to switch roles?')) return;
-
+        if (hasUnsavedChanges) {
+            setConfirmation({
+                message: 'You have unsaved changes. Are you sure you want to switch roles?',
+                onConfirm: () => proceedWithRoleSelect(role),
+            });
+            return;
+        }
+        proceedWithRoleSelect(role);
+    };
+    
+    const proceedWithRoleSelect = async (role: Role) => {
         setSelectedRole(role);
         try {
             const rolePermissions = await getPermissionsByRole(role.roleID, token!);
             setRoles(roles.map(r => r.roleID === role.roleID ? { ...r, permissions: rolePermissions } : r));
             setTempPermissions(rolePermissions);
             setHasUnsavedChanges(false);
+            setError(null);
         } catch (error) {
             console.error("Failed to fetch role permissions:", error);
         }
@@ -393,7 +451,21 @@ const AdminDashboard: React.FC = () => {
     };
 
     const handlePermissionSelect = async (permission: Permission) => {
-        if (hasUnsavedChanges && !window.confirm('You have unsaved changes. Are you sure you want to switch permissions?')) return;
+        if (hasUnsavedChanges) {
+            setConfirmation({
+                message: 'You have unsaved changes. Are you sure you want to switch permissions?',
+                onConfirm: async () => {
+                    setSelectedPermission(permission);
+                    try {
+                        const permDetails = await getPermissionById(permission.permissionID, token!);
+                        setSelectedPermission(permDetails);
+                    } catch (error) {
+                        console.error("Failed to fetch permission details:", error);
+                    }
+                },
+            });
+            return;
+        }
         setSelectedPermission(permission);
         try {
             const permDetails = await getPermissionById(permission.permissionID, token!);
@@ -405,7 +477,7 @@ const AdminDashboard: React.FC = () => {
     
     const handleCreatePermission = async () => {
         if (!userPermissions.canCreatePermissions || !newPermission.name || !newPermission.type || !newPermission.class) {
-            alert("Name, type, and class are required.");
+            setError("Name, type, and class are required.");
             return;
         }
         setLoading(true);
@@ -419,6 +491,7 @@ const AdminDashboard: React.FC = () => {
             setPermissions([...permissionsList, createdPermission]);
             setNewPermission({});
             setView("permissions");
+            setError(null); // Clear error on success
         } catch (error) {
             console.error("Failed to create permission:", error);
         } finally {
@@ -436,7 +509,7 @@ const AdminDashboard: React.FC = () => {
     const handleSavePermissionEdit = async () => {
         if (!selectedPermission || !userPermissions.canUpdatePermissions || !isEditingPermission) return;
         if (!editedPermission.name) {
-            alert("Permission name is required.");
+            setError("Permission name is required.");
             return;
         }
         setLoading(true);
@@ -451,6 +524,7 @@ const AdminDashboard: React.FC = () => {
             setSelectedPermission(updatedPermission);
             setIsEditingPermission(false);
             setEditedPermission({});
+            setError(null); // Clear error on success
         } catch (error) {
             console.error("Failed to update permission:", error);
         } finally {
@@ -460,56 +534,71 @@ const AdminDashboard: React.FC = () => {
     
     const handleDeletePermission = async (permission: Permission) => {
         if (!userPermissions.canUpdatePermissions) return;
-        if (!window.confirm(`Are you sure you want to delete the "${permission.name}" permission? This action cannot be undone.`)) return;
-        setLoading(true);
-        try {
-            await deletePermission(permission.permissionID, token!);
-            setPermissions(permissionsList.filter(p => p.permissionID !== permission.permissionID));
-            setSelectedPermission(null);
-        } catch (error) {
-            console.error("Failed to delete permission:", error);
-        } finally {
-            setLoading(false);
-        }
+        setConfirmation({
+            message: `Are you sure you want to delete the "${permission.name}" permission? This action cannot be undone.`,
+            onConfirm: async () => {
+                setLoading(true);
+                try {
+                    await deletePermission(permission.permissionID, token!);
+                    setPermissions(permissionsList.filter(p => p.permissionID !== permission.permissionID));
+                    setSelectedPermission(null);
+                    setError(null);
+                } catch (error) {
+                    console.error("Failed to delete permission:", error);
+                } finally {
+                    setLoading(false);
+                }
+            },
+        });
     };
 
     const handleToggleRole = async (role: Role) => {
         if (!userPermissions.canAssignRoles) return;
         if (role.name === ROLES.SUPER_ADMIN && !isSuperAdmin) {
-            alert("Only Super Admins can assign or revoke the Super Admin role.");
+            setError("Only Super Admins can assign or revoke the Super Admin role.");
             return;
         }
         
         const hasRole = tempRoles.some(r => r.roleID === role.roleID);
-        setLoading(true);
-        try {
-            if (hasRole) {
-                // Revoke the role
-                if (!window.confirm(`Are you sure you want to revoke the "${role.name}" role from ${selectedUser?.firstname} ${selectedUser?.lastname}?`)) {
-                    setLoading(false);
-                    return;
-                }
-                const result = await revokeRolesFromUser(selectedUser!.userID, [role.roleID], token!);
-                const revokedRoleID = Array.isArray(result) ? result[0].revokedRole.roleID : result.revokedRole.roleID;
-                const updatedRoles = tempRoles.filter(r => r.roleID !== revokedRoleID);
-                setTempRoles(updatedRoles);
-                setUsers(users.map(u => u.userID === selectedUser!.userID ? { ...u, Roles: updatedRoles } : u));
-                setSelectedUser({ ...selectedUser!, Roles: updatedRoles });
-            } else {
-                // Assign the role
+        if (hasRole) {
+            setConfirmation({
+                message: `Are you sure you want to revoke the "${role.name}" role from ${selectedUser?.firstname} ${selectedUser?.lastname}?`,
+                onConfirm: async () => {
+                    setLoading(true);
+                    try {
+                        const result = await revokeRolesFromUser(selectedUser!.userID, [role.roleID], token!);
+                        const revokedRoleID = Array.isArray(result) ? result[0].revokedRole.roleID : result.revokedRole.roleID;
+                        const updatedRoles = tempRoles.filter(r => r.roleID !== revokedRoleID);
+                        setTempRoles(updatedRoles);
+                        setUsers(users.map(u => u.userID === selectedUser!.userID ? { ...u, Roles: updatedRoles } : u));
+                        setSelectedUser({ ...selectedUser!, Roles: updatedRoles });
+                        setHasUnsavedUserChanges(false);
+                        setError(null);
+                    } catch (error) {
+                        console.error("Failed to toggle role:", error);
+                        setTempRoles(selectedUser!.Roles || []);
+                    } finally {
+                        setLoading(false);
+                    }
+                },
+            });
+        } else {
+            setLoading(true);
+            try {
                 const toAdd = [role.roleID];
                 await assignRolesToUser(selectedUser!.userID, toAdd, token!);
                 const updatedRoles = [...tempRoles, role];
                 setTempRoles(updatedRoles);
                 setUsers(users.map(u => u.userID === selectedUser!.userID ? { ...u, Roles: updatedRoles } : u));
                 setSelectedUser({ ...selectedUser!, Roles: updatedRoles });
+                setHasUnsavedUserChanges(false);
+                setError(null);
+            } catch (error) {
+                console.error("Failed to toggle role:", error);
+                setTempRoles(selectedUser!.Roles || []);
+            } finally {
+                setLoading(false);
             }
-            setHasUnsavedUserChanges(false); // No unsaved changes since we save immediately
-        } catch (error) {
-            console.error("Failed to toggle role:", error);
-            setTempRoles(selectedUser!.Roles || []);
-        } finally {
-            setLoading(false);
         }
     };
 
@@ -561,7 +650,7 @@ const AdminDashboard: React.FC = () => {
     const handleEditRole = (role: Role) => {
         if (!userPermissions.canUpdateRoles) return;
         if (role.name === ROLES.SUPER_ADMIN) {
-            alert("The Super Admin role cannot be modified.");
+            setError("The Super Admin role cannot be modified.");
             return;
         }
         setIsEditingRole(true);
@@ -572,7 +661,7 @@ const AdminDashboard: React.FC = () => {
     const handleSaveRoleEdit = async () => {
         if (!selectedRole || !userPermissions.canUpdateRoles || !isEditingRole) return;
         if (!editedRole.name) {
-            alert("Role name is required.");
+            setError("Role name is required.");
             return;
         }
     
@@ -586,6 +675,7 @@ const AdminDashboard: React.FC = () => {
             setSelectedRole({ ...updatedRole, permissions: selectedRole.permissions });
             setIsEditingRole(false);
             setEditedRole({});
+            setError(null); // Clear error on success
         } catch (error) {
             console.error("Failed to update role:", error);
         } finally {
@@ -596,21 +686,25 @@ const AdminDashboard: React.FC = () => {
     const handleDeleteRole = async (role: Role) => {
         if (!userPermissions.canUpdateRoles) return;
         if (role.name === ROLES.SUPER_ADMIN) {
-            alert("The Super Admin role cannot be deleted.");
+            setError("The Super Admin role cannot be deleted.");
             return;
         }
-        if (!window.confirm(`Are you sure you want to delete the "${role.name}" role? This action cannot be undone.`)) return;
-    
-        setLoading(true);
-        try {
-            await deleteRole(role.roleID, token!);
-            setRoles(roles.filter(r => r.roleID !== role.roleID));
-            setSelectedRole(null);
-        } catch (error) {
-            console.error("Failed to delete role:", error);
-        } finally {
-            setLoading(false);
-        }
+        setConfirmation({
+            message: `Are you sure you want to delete the "${role.name}" role? This action cannot be undone.`,
+            onConfirm: async () => {
+                setLoading(true);
+                try {
+                    await deleteRole(role.roleID, token!);
+                    setRoles(roles.filter(r => r.roleID !== role.roleID));
+                    setSelectedRole(null);
+                    setError(null);
+                } catch (error) {
+                    console.error("Failed to delete role:", error);
+                } finally {
+                    setLoading(false);
+                }
+            },
+        });
     };
 
     const handleToggleSupervisor = (supervisor: User) => {
@@ -652,42 +746,61 @@ const AdminDashboard: React.FC = () => {
     const handleSaveUserEdit = async () => {
         if (!selectedUser || !userPermissions.canUpdateUsers || !isEditingUser) return;
     
-        // Validation for required fields
+        // Define required fields excluding password
         const requiredFields = {
             firstname: editedUser.firstname,
             lastname: editedUser.lastname,
             email: editedUser.email,
             phone: editedUser.phone,
-            password: editedUser.password,
         };
     
+        // Check required fields
         for (const [field, value] of Object.entries(requiredFields)) {
             if (!value || value.trim() === "") {
-                alert(`${field.charAt(0).toUpperCase() + field.slice(1)} is required.`);
+                setError(`${field.charAt(0).toUpperCase() + field.slice(1)} is required.`);
                 return;
             }
         }
     
-        // Password confirmation check
-        if (editedUser.password !== editedUser.passwordConfirm) {
-            alert("Passwords do not match.");
-            return;
+        // Handle password logic: only validate if user entered something
+        const hasPasswordInput = editedUser.password && editedUser.password.trim() !== "";
+        const hasPasswordConfirmInput = editedUser.passwordConfirm && editedUser.passwordConfirm.trim() !== "";
+        
+        if (hasPasswordInput || hasPasswordConfirmInput) {
+            if (!hasPasswordInput) {
+                setError("Password is required if confirmation is provided.");
+                return;
+            }
+            if (!hasPasswordConfirmInput) {
+                setError("Password confirmation is required if password is provided.");
+                return;
+            }
+            if (editedUser.password !== editedUser.passwordConfirm) {
+                setError("Passwords do not match.");
+                return;
+            }
         }
     
         setLoading(true);
         try {
-            const updatedUser = await updateUser(selectedUser.userID, {
+            // Build update payload, only include password if provided
+            const updatePayload: Partial<User> = {
                 firstname: editedUser.firstname,
                 lastname: editedUser.lastname,
                 email: editedUser.email,
                 phone: editedUser.phone,
                 wallet: editedUser.wallet || "",
-                password: editedUser.password,
-            }, token!);
+            };
+            if (hasPasswordInput) {
+                updatePayload.password = editedUser.password;
+            }
+    
+            const updatedUser = await updateUser(selectedUser.userID, updatePayload, token!);
             setUsers(users.map(u => u.userID === selectedUser.userID ? updatedUser : u));
             setSelectedUser(updatedUser);
             setIsEditingUser(false);
             setEditedUser({});
+            setError(null);
         } catch (error) {
             console.error("Failed to update user:", error);
         } finally {
@@ -697,18 +810,23 @@ const AdminDashboard: React.FC = () => {
     
     const handleDeleteUser = async () => {
         if (!selectedUser || !userPermissions.canDeleteUsers) return;
-        if (!window.confirm(`Are you sure you want to delete ${selectedUser.firstname} ${selectedUser.lastname}? This action cannot be undone.`)) return;
-        setLoading(true);
-        try {
-            await deleteUser(selectedUser.userID, token!);
-            setUsers(users.filter(u => u.userID !== selectedUser.userID));
-            setSelectedUser(null);
-            setView("users");
-        } catch (error) {
-            console.error("Failed to delete user:", error);
-        } finally {
-            setLoading(false);
-        }
+        setConfirmation({
+            message: `Are you sure you want to delete ${selectedUser.firstname} ${selectedUser.lastname}? This action cannot be undone.`,
+            onConfirm: async () => {
+                setLoading(true);
+                try {
+                    await deleteUser(selectedUser.userID, token!);
+                    setUsers(users.filter(u => u.userID !== selectedUser.userID));
+                    setSelectedUser(null);
+                    setView("users");
+                    setError(null);
+                } catch (error) {
+                    console.error("Failed to delete user:", error);
+                } finally {
+                    setLoading(false);
+                }
+            },
+        });
     };
 
     const handleSaveSupervisorsAndManagers = async () => {
@@ -763,15 +881,14 @@ const AdminDashboard: React.FC = () => {
     };
 
     const handleCreateUser = async () => {
-        // Create a new user with selected roles
         if (!userPermissions.canCreateUsers) return;
         if (newUser.password !== passwordConfirm) {
-            alert("Passwords do not match!");
+            setError("Passwords do not match!");
             return;
         }
         try {
             if (!newUser.email || !newUser.password || !newUser.firstname || !newUser.lastname || !newUser.phone || !newUser.wallet) {
-                alert("All fields are required.");
+                setError("All fields are required.");
                 return;
             }
             const createdUser = await createUser({
@@ -792,7 +909,7 @@ const AdminDashboard: React.FC = () => {
                     createdUser.Roles = await getRolesByUser(createdUser.userID, token!);
                 }
                 if (selectedRolesForNewUser.some(roleID => roles.find(r => r.roleID === roleID)?.name === ROLES.SUPER_ADMIN) && !isSuperAdmin) {
-                    alert("Super Admin role assignment skipped: Only Super Admins can assign this role.");
+                    setError("Super Admin role assignment skipped: Only Super Admins can assign this role.");
                 }
             }
             setUsers([...users, createdUser]);
@@ -800,17 +917,17 @@ const AdminDashboard: React.FC = () => {
             setPasswordConfirm("");
             setSelectedRolesForNewUser([]);
             setView("users");
+            if (!error) setError(null); // Clear error only if no Super Admin warning
         } catch (error) {
             console.error("Failed to create user:", error);
         }
     };
 
     const handleCreateRole = async () => {
-        // Create a new role with selected permissions
         if (!userPermissions.canCreateRoles) return;
         try {
             if (!newRole.name || !newRole.description) {
-                alert("Role name and description are required.");
+                setError("Role name and description are required.");
                 return;
             }
             const createdRole = await createRole({ name: newRole.name, description: newRole.description }, token!);
@@ -822,6 +939,7 @@ const AdminDashboard: React.FC = () => {
             setNewRole({});
             setSelectedPermissionsForNewRole([]);
             setView("roles");
+            setError(null); // Clear error on success
         } catch (error) {
             console.error("Failed to create role:", error);
         }
@@ -835,11 +953,10 @@ const AdminDashboard: React.FC = () => {
     };
 
     const handleAddOverride = (permissionID: string, action: "grant" | "revoke") => {
-        // Add a permission override for the selected user
         if (!selectedUser || !userPermissions.canAssignPermissions) return;
         const roleID = tempRoles[0]?.roleID;
         if (!roleID) {
-            alert("No role selected for override");
+            setError("No role selected for override");
             return;
         }
         const newOverride = {
@@ -931,9 +1048,63 @@ const AdminDashboard: React.FC = () => {
     // Early Return for Loading State
     if (loading) return <div className="loading-text">Loading Admin Dashboard...</div>;
 
+    const ConfirmationModal: React.FC<{ message: string; onConfirm: () => void; onCancel: () => void }> = ({ message, onConfirm, onCancel }) => {
+        const [isFadingOut, setIsFadingOut] = useState(false);
+    
+        const handleConfirm = () => {
+            setIsFadingOut(true);
+            setTimeout(() => {
+                onConfirm();
+            }, 300); // Match CSS animation duration
+        };
+    
+        const handleCancel = () => {
+            setIsFadingOut(true);
+            setTimeout(() => {
+                onCancel();
+            }, 300); // Match CSS animation duration
+        };
+    
+        return (
+            <div className={`confirmation-modal-overlay ${isFadingOut ? 'fade-out' : 'fade-in'}`}>
+                <div className="confirmation-modal">
+                    <p>{message}</p>
+                    <div className="confirmation-actions">
+                        <button className="confirm-button" onClick={handleConfirm}>
+                            Confirm
+                        </button>
+                        <button className="cancel-button" onClick={handleCancel}>
+                            Cancel
+                        </button>
+                    </div>
+                </div>
+            </div>
+        );
+    };
+
     // Render
     return (
+        
         <div className="admin-dashboard">
+
+            {confirmation && (
+                <ConfirmationModal
+                    message={confirmation.message}
+                    onConfirm={() => {
+                        confirmation.onConfirm();
+                        setConfirmation(null);
+                    }}
+                    onCancel={() => setConfirmation(null)}
+                />
+            )}
+            {error && (
+                <div className="error-message">
+                    <span>{error}</span>
+                    <button className="close-error" onClick={clearError}>
+                        <FaTimes />
+                    </button>
+                </div>
+            )}
             <header className="dashboard-header">
                 <h1>
                     {view === "users" && "Users Management"}
@@ -972,9 +1143,11 @@ const AdminDashboard: React.FC = () => {
                         <button className={view === "roles" || view === "add-role" ? "active" : ""} onClick={() => setView("roles")}>
                             Roles
                         </button>
+                        {userPermissions.canCreatePermissions &&
                         <button className={view === "permissions" || view === "add-permission" ? "active" : ""} onClick={() => setView("permissions")}>
                             Permissions
                         </button>
+                        }
                     </div>
                     {(view === "users" || view === "add-user" || view === "user-details") && (
                         <>
@@ -1507,7 +1680,7 @@ const AdminDashboard: React.FC = () => {
                                                         className={`role-toggle-button ${selectedRolesForNewUser.includes(role.roleID) ? "active" : ""}`}
                                                         onClick={() => {
                                                             if (role.name === ROLES.SUPER_ADMIN && !isSuperAdmin) {
-                                                                alert("Only Super Admins can assign the Super Admin role.");
+                                                                setError("Only Super Admins can assign the Super Admin role.");
                                                                 return;
                                                             }
                                                             setSelectedRolesForNewUser(prev =>
