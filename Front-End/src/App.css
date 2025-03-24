@@ -3,24 +3,32 @@
   display: flex;
   flex-direction: column;
   flex: 1; /* Grow to fill the body’s height */
+  height: 100vh;
+
 }
 
 main {
-  flex: 1 0 auto; /* Expand to push footer down */
-}
-
-.header {
-  flex-shrink: 0; /* Prevent shrinking */
+  flex: 1 0 auto; /* Grow to fill available space and push footer down */
+  padding-bottom: 2rem; /* Optional: Add some space before the footer */
 }
 
 .footer {
   flex-shrink: 0; /* Prevent shrinking */
+  position: fixed;
+  bottom: 0;
+  left: 0;
+  width: 100%;
+  flex-shrink: 0; /* Prevent shrinking */
+  background: #f8fafc; /* Ensure it’s visible over content; adjust as needed */
+  z-index: 10; /* Ensure it stays above other content */
+  padding: 1rem; /* Add some padding for better appearance */
 }
-
 
 /* Default styles (Light theme) */
 body {
+  height: 100vh;
   margin: 0;
+  flex-direction: column;
   font-family: Arial, sans-serif;
   background: linear-gradient(135deg, #f8fafc 0%, #eef2f6 100%);
   color: #1f2937;
@@ -262,14 +270,23 @@ body.dark .visit-details-container .no-data {
 }
 
 body.dark .visit-details-container .visit-details-log-btn,
-body.dark .visit-details-container .visit-details-back-btn {
+body.dark .visit-details-container .visit-details-back-btn,
+body.dark .visit-details-container .validate-visit-btn {
   background: #63b3ed;
+}
+body.dark .visit-details-container .reject-visit-btn {
+  background: #d02f70;
 }
 
 body.dark .visit-details-container .visit-details-log-btn:hover,
-body.dark .visit-details-container .visit-details-back-btn:hover {
+body.dark .visit-details-container .visit-details-back-btn:hover,
+body.dark .visit-details-container .validate-visit-btn:hover{
   background: #4299e1;
 }
+body.dark .visit-details-container .reject-visit-btn:hover {
+  background: #b70a4f;
+}
+
 
 body.dark .visit-details-container .visit-details-error-card {
   background: #2d3748;
@@ -334,7 +351,7 @@ body.dark .visit-validation-container .visit-header-0 p {
 }
 
 body.dark .visit-validation-container .visit-card {
-  background: #2d3748;
+  background: #222222;
   color: #e2e8f0;
   box-shadow: 0 0.375rem 1.25rem rgba(0, 0, 0, 0.3);
 }
@@ -345,7 +362,7 @@ body.dark .visit-validation-container .checklist-section,
 body.dark .visit-validation-container .checklist-section .custom-checkbox-input:checked + .custom-checkbox, 
 body.dark .visit-validation-container .checklist-section .custom-checkbox
 body.dark .visit-validation-container .checklist-section li.checked {
-  background: #404d64;
+  background: #333333;
   border-color: #63b3ed;
 }
 

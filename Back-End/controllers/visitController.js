@@ -48,9 +48,6 @@ class VisitController {
         try {
             const { id } = req.params;
             const { duration, checklistUpdates, photos, comment } = req.body;
-            if (!duration) {
-                return res.status(400).json({ error: 'Duration is required to log a visit' });
-            }
             const visit = await VisitService.logVisit(id, { duration, checklistUpdates, photos, comment });
             res.status(200).json(visit);
         } catch (error) {

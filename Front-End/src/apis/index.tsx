@@ -31,7 +31,8 @@ export type UserByPhoneResponse = User;
 export type UserByIdResponse = User;
 export type UpdateUserResponse = User;
 export interface DeleteUserResponse {  message: string;}
-export interface AssignSupervisorsResponse {  managerID: string;  supervisorIDs: string[];}
+export interface AssignSupervisorsResponse {  managerID: string;  assignedSupervisors: string[]; message: string;}
+export interface RevokeSupervisorsResponse {  managerID: string;  revokedSupervisors: User[];  message: string;}
 export type SupervisorsByUserResponse = User[];
 export type ManagersByUserResponse = User[];
 
@@ -42,7 +43,8 @@ export type ListRolesResponse = Role[];
 export type RoleByIdResponse = Role;
 export type UpdateRoleResponse = Role;
 export interface DeleteRoleResponse {  message: string;}
-export interface AssignRolesResponse {  userID: string;  roleIDs: string[];}
+export interface AssignRolesResponse { userID: string; assignedRoles: string[]; totalAssigned: number; }
+export interface RevokeRoleResponse { userID: string; revokedRole: Role;  totalAssigned: number;  message: string; }
 export type RolesByUserResponse = Role[];
 
 
@@ -52,7 +54,8 @@ export type PermissionByIdResponse = Permission;
 export type CreatePermissionResponse = Permission;
 export type UpdatePermissionResponse = Permission;
 export interface DeletePermissionResponse {  message: string;}
-export interface AssignPermissionsResponse {  roleID: string;  permissionIDs: string[];}
+export interface AssignPermissionsResponse {  roleID: string;  assignedPermissions: Permission[]; totalAssigned: number}
+export interface RevokePermissionsResponse {  roleID: string;  revokedPermissions: Permission[];  totalAssigned: number;  message: string;}
 export type PermissionsByRoleResponse = Permission[];
 export type AddPermissionOverrideResponse = UserPermissionOverride;
 export interface RemovePermissionOverrideResponse {  message: string; }

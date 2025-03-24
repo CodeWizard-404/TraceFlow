@@ -101,6 +101,20 @@ class UserController {
         }
     }
 
+    static async revokeSupervisorsFromManager(req, res) {
+        try {
+            const { managerID, supervisorIDs } = req.body;
+            if (!managerID || !Array.isArray(supervisorIDs)) {
+                return res.status(400).json({ error: 'Manager ID and supervisor IDs array are required' });
+            }
+            const result = await UserService.revokeSupervisorsFromManager(managerID, supervisorIDs);
+            res.status(200).json(result);
+        } catch (error) {
+            console.error(`${new Date().toISOString()} - Revoke supervisors from manager failed:`, error);
+            res.status(400).json({ error: error.message || 'Failed to revoke supervisors from manager due to an internal error' });
+        }
+    }
+
     static async getSupervisorsByUser(req, res) {
         try {
             const { userID } = req.params;

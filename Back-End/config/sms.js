@@ -1,9 +1,8 @@
 const axios = require('axios');
-const { User } = require('../models');
+const { User, Agent } = require('../models'); 
 const { transporter } = require('./smtp');
 require('dotenv').config();
 
-// Sends an SMS via the Traccar SMS Gateway with email fallback
 async function sendSMS(to, message) {
     try {
         const response = await axios.post(`${process.env.SMS_GATEWAY_URL}/`, {
@@ -21,7 +20,7 @@ async function sendSMS(to, message) {
         console.error(`${new Date().toISOString()} - Traccar SMS Gateway error:`, error.response?.data || error.message);
 
         try {
-            const email = await findUserEmailByPhone(to);
+            const email = await findEmailByPhone(to);
             if (email) {
                 await transporter.sendMail({
                     from: process.env.SMTP_USER,
@@ -32,27 +31,33 @@ async function sendSMS(to, message) {
                 console.log(`${new Date().toISOString()} - Fallback email sent to ${email}`);
                 return { success: true, method: 'Email', fallback: true };
             }
-            throw new Error('SMS failed and no email fallback available');
+            console.log(`${new Date().toISOString()} - No email found for phone: ${to}`);
+            return { success: false, method: 'None', reason: 'No SMS or email available' };
         } catch (emailError) {
-            throw new Error('Failed to send SMS and email fallback');
+            console.error(`${new Date().toISOString()} - Email fallback error:`, emailError.message);
+            return { success: false, method: 'None', reason: 'Failed to send SMS and email' };
         }
     }
 }
 
-// Helper function to find a user’s email by phone number
-async function findUserEmailByPhone(phone) {
+async function findEmailByPhone(phone) {
+    let email = null;
     const user = await User.findOne({ where: { phone } });
-    console.log(`${new Date().toISOString()} - Email lookup result: ${user ? user.email : 'Not found'}`);
-    return user ? user.email : null;
+    if (user) {
+        email = user.email;
+    } else {
+        const agent = await Agent.findOne({ where: { phone } });
+        email = agent?.email || null;
+    }
+    console.log(`${new Date().toISOString()} - Email lookup result: ${email || 'Not found'}`);
+    return email;
 }
 
-// Initializes the SMS gateway (currently a placeholder)
 async function initializeSMS() {
     try {
-        // Placeholder for actual initialization logic if needed
         return true;
     } catch (error) {
-        throw error; // Re-throw to be caught by the caller
+        throw error;
     }
 }
 

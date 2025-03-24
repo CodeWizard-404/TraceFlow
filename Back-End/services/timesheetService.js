@@ -3,7 +3,7 @@ const VisitService = require('./visitService');
 
 class TimesheetService {
     static async createTimesheet(data) {
-        const { weekNumber, year, supervisorID, visits } = data;
+        const { weekNumber, year, supervisorID, visits, status = 'pending' } = data;
 
         // Validate required fields
         if (!weekNumber || !year || !supervisorID || !Array.isArray(visits)) {
@@ -34,7 +34,10 @@ class TimesheetService {
         try {
             let timesheet = await Timesheet.findOne({ where: { weekNumber, year, supervisorID } });
             if (!timesheet) {
-                timesheet = await Timesheet.create({ weekNumber, year, supervisorID, status: 'pending' });
+                timesheet = await Timesheet.create({ weekNumber, year, supervisorID, status });
+            } else if (timesheet.status !== status) {
+                timesheet.status = status;
+                await timesheet.save();
             }
 
             for (const visitData of visits) {
@@ -47,6 +50,7 @@ class TimesheetService {
                     timesheetID: timesheet.timesheetID,
                     reasons: visitData.reasons,
                     checklists: visitData.checklists,
+                    status, 
                 });
             }
 
@@ -69,45 +73,63 @@ class TimesheetService {
     }
 
     static async validateTimesheet(timesheetID, visitIDs = [], status) {
+        // Validate inputs
         if (!status || (Array.isArray(visitIDs) && visitIDs.some(id => typeof id !== 'string'))) {
-            const error = new Error('Invalid input data');
+            const error = new Error('Invalid input: status is required and visitIDs must be strings');
             error.status = 400;
             throw error;
         }
-
+    
         try {
+            // Fetch timesheet
             const timesheet = await Timesheet.findByPk(timesheetID);
             if (!timesheet) {
                 const error = new Error('Timesheet not found');
                 error.status = 404;
                 throw error;
             }
-            // ... (rest of the logic remains the same, just add status to errors)
+    
+            // Fetch all visits for the timesheet
             const visits = await Visit.findAll({ where: { timesheetID } });
+    
+            // Determine which visits to update (only pending or rejected)
             let visitsToUpdate;
             if (visitIDs.length === 0) {
-                visitsToUpdate = visits;
+                // If no visitIDs provided, update all pending or rejected visits
+                visitsToUpdate = visits.filter(visit => 
+                    visit.status === 'pending' || visit.status === 'rejected'
+                );
             } else {
+                // If visitIDs provided, update only those that are pending or rejected
                 const visitIdSet = new Set(visitIDs);
-                visitsToUpdate = visits.filter(visit => visitIdSet.has(visit.visitID));
-                if (visitsToUpdate.length !== visitIDs.length) {
-                    const error = new Error('One or more visit IDs not found in this timesheet');
-                    error.status = 404;
-                    throw error;
-                }
+                visitsToUpdate = visits.filter(visit => 
+                    visitIdSet.has(visit.visitID) && 
+                    (visit.status === 'pending' || visit.status === 'rejected')
+                );
+                // No error if some visitIDs don’t match—just skip them
             }
-            await Promise.all(visitsToUpdate.map(async visit => {
+    
+            // If no visits to update, return the timesheet as-is
+            if (visitsToUpdate.length === 0) {
+                return timesheet;
+            }
+    
+            // Update the status of matching visits
+            await Promise.all(visitsToUpdate.map(async (visit) => {
                 visit.status = status;
                 await visit.save();
             }));
+    
+            // Check if all visits are validated and update timesheet status if so
             const updatedVisits = await Visit.findAll({ where: { timesheetID } });
-            if (updatedVisits.every(v => v.status === 'validated')) {
+            if (updatedVisits.every(visit => visit.status === 'validated')) {
                 timesheet.status = 'validated';
                 await timesheet.save();
             }
+    
             return timesheet;
         } catch (error) {
-            const err = new Error('Validation failed: ' + error.message);
+            const err = new Error(`Validation failed: ${error.message}`);
             err.status = error.status || 500;
             throw err;
         }

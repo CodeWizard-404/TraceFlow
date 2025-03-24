@@ -1,0 +1,248 @@
+@import url('https://fonts.googleapis.com/css2?family=Inter:wght@400;600;700&display=swap');
+
+.not-found-container {
+    position: relative;
+    min-height: 100vh;
+    width: 100%;
+    background: linear-gradient(135deg, #f8fafc 0%, #e2e8f0 100%);
+    overflow: hidden;
+    display: flex;
+    justify-content: center;
+    align-items: center;
+    font-family: 'Inter', sans-serif;
+}
+
+body.dark .not-found-container {
+    background: linear-gradient(135deg, #1f2937 0%, #2d3748 100%);
+}
+
+/* Digital Lines Background */
+.lines-layer {
+    position: absolute;
+    top: 0;
+    left: 0;
+    width: 100%;
+    height: 100%;
+    pointer-events: none;
+    z-index: 1;
+}
+
+.line {
+    position: absolute;
+    background: rgba(76, 177, 199, 0.5);
+    animation: pulseLine 3s infinite ease-in-out;
+}
+
+body.dark .line {
+    background: rgba(99, 179, 237, 0.5);
+}
+
+.line.horizontal {
+    height: 2px;
+    left: 0;
+}
+
+.line.vertical {
+    width: 2px;
+    top: 0;
+}
+
+@keyframes pulseLine {
+    0%, 100% { opacity: 0.3; }
+    50% { opacity: 0.8; }
+}
+
+/* Grid Overlay */
+.grid-overlay {
+    position: absolute;
+    top: 0;
+    left: 0;
+    width: 100%;
+    height: 100%;
+    background: url('data:image/svg+xml,%3Csvg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 40 40" opacity="0.05"%3E%3Cpath d="M0 0h40v40H0zM5 0v40M10 0v40M15 0v40M20 0v40M25 0v40M30 0v40M35 0v40M0 5h40M0 10h40M0 15h40M0 20h40M0 25h40M0 30h40M0 35h40" stroke="%234cb1c7" stroke-width="1"/%3E%3C/svg%3E') repeat;
+    pointer-events: none;
+    z-index: 2;
+}
+
+body.dark .grid-overlay {
+    background: url('data:image/svg+xml,%3Csvg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 40 40" opacity="0.05"%3E%3Cpath d="M0 0h40v40H0zM5 0v40M10 0v40M15 0v40M20 0v40M25 0v40M30 0v40M35 0v40M0 5h40M0 10h40M0 15h40M0 20h40M0 25h40M0 30h40M0 35h40" stroke="%2363b3ed" stroke-width="1"/%3E%3C/svg%3E') repeat;
+}
+
+/* Main Content */
+.not-found-content {
+    position: relative;
+    z-index: 3;
+    text-align: center;
+    padding: 2rem;
+    max-width: 800px;
+    background: rgba(255, 255, 255, 0.9);
+    border-radius: 1rem;
+    box-shadow: 0 0.5rem 1.5rem rgba(0, 0, 0, 0.1);
+}
+
+body.dark .not-found-content {
+    background: rgba(45, 55, 72, 0.9);
+    box-shadow: 0 0.5rem 1.5rem rgba(0, 0, 0, 0.4);
+}
+
+/* 404 Title with Glitch Effect */
+.not-found-title {
+    margin: 0;
+    font-size: 6rem;
+    font-weight: 700;
+    line-height: 1;
+    position: relative;
+    color: #2d3748;
+}
+
+body.dark .not-found-title {
+    color: #e5e7eb;
+}
+
+.glitch {
+    position: relative;
+    animation: glitch 2s linear infinite;
+}
+
+.glitch::before,
+.glitch::after {
+    content: attr(data-text);
+    position: absolute;
+    top: 0;
+    left: 0;
+    width: 100%;
+    height: 100%;
+}
+
+.glitch::before {
+    color: #4cb1c7;
+    animation: glitch-top 1s linear infinite;
+    clip-path: polygon(0 0, 100% 0, 100% 33%, 0 33%);
+}
+
+body.dark .glitch::before {
+    color: #63b3ed;
+}
+
+.glitch::after {
+    color: #e81f76;
+    animation: glitch-bottom 1.5s linear infinite;
+    clip-path: polygon(0 67%, 100% 67%, 100% 100%, 0 100%);
+}
+
+body.dark .glitch::after {
+    color: #ff6b6b;
+}
+
+@keyframes glitch {
+    2%, 64% { transform: translate(2px, 0); }
+    4%, 60% { transform: translate(-2px, 0); }
+    62% { transform: translate(0, 0); }
+}
+
+@keyframes glitch-top {
+    2%, 64% { transform: translate(4px, -2px); }
+    4%, 60% { transform: translate(-4px, 2px); }
+    62% { transform: translate(0, 0); }
+}
+
+@keyframes glitch-bottom {
+    2%, 64% { transform: translate(-4px, 2px); }
+    4%, 60% { transform: translate(4px, -2px); }
+    62% { transform: translate(0, 0); }
+}
+
+.subtitle {
+    display: block;
+    font-size: 1.5rem;
+    font-weight: 400;
+    color: #4cb1c7;
+    margin-top: 0.5rem;
+}
+
+body.dark .subtitle {
+    color: #63b3ed;
+}
+
+/* Message */
+.not-found-message {
+    font-size: 1.1rem;
+    color: #2d3748;
+    margin: 1.5rem 0;
+    line-height: 1.6;
+}
+
+body.dark .not-found-message {
+    color: #e5e7eb;
+}
+
+/* Back Button */
+.back-btn {
+    padding: 0.75rem 2rem;
+    font-size: 1rem;
+    font-weight: 600;
+    text-transform: uppercase;
+    background: linear-gradient(135deg, #4cb1c7 0%, #3a8fa2 100%);
+    color: #fff;
+    border: none;
+    border-radius: 3rem;
+    cursor: pointer;
+    display: flex;
+    align-items: center;
+    gap: 0.5rem;
+    box-shadow: 0 0.25rem 0.75rem rgba(76, 177, 199, 0.3);
+    transition: all 0.3s ease;
+}
+
+body.dark .back-btn {
+    background: linear-gradient(135deg, #63b3ed 0%, #4a83ce 100%);
+    box-shadow: 0 0.25rem 0.75rem rgba(0, 0, 0, 0.5);
+}
+
+.back-btn:hover {
+    transform: scale(1.05);
+    box-shadow: 0 0.5rem 1rem rgba(76, 177, 199, 0.5);
+}
+
+body.dark .back-btn:hover {
+    box-shadow: 0 0.5rem 1rem rgba(0, 0, 0, 0.7);
+}
+
+/* Responsive Design */
+@media (max-width: 768px) {
+    .not-found-title {
+        font-size: 4rem;
+    }
+
+    .subtitle {
+        font-size: 1.2rem;
+    }
+
+    .not-found-message {
+        font-size: 1rem;
+    }
+
+    .back-btn {
+        padding: 0.6rem 1.5rem;
+        font-size: 0.9rem;
+    }
+}
+
+@media (max-width: 480px) {
+    .not-found-title {
+        font-size: 3rem;
+    }
+
+    .subtitle {
+        font-size: 1rem;
+    }
+
+    .not-found-message {
+        font-size: 0.9rem;
+    }
+
+    .back-btn {
+        padding: 0.5rem 1.25rem;
+        font-size: 0.8rem;
+    }
+}

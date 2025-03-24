@@ -1,3 +1,11 @@
 {
-    "postman.settings.dotenv-detection-notification-visibility": false
+    "postman.settings.dotenv-detection-notification-visibility": false,
+    "cSpell.words": [
+        "firstname",
+        "lastname",
+        "qrcode",
+        "rovoke",
+        "timesheet",
+        "Timesheets"
+    ]
 }

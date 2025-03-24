@@ -354,7 +354,7 @@ html {
 
 .visit-time {
   font-size: 0.875rem;
-  font-weight: 600;
+  font-weight: 500;
   color: #1f2937;
 }
 
@@ -365,6 +365,12 @@ html {
   color: #fff;
 }
 
+hr{
+  margin: 0 0 0.5rem  0  !important;
+}
+.visit-supervisor{
+  margin-bottom: 0.5rem !important;
+}
 /* Dynamic status colors */
 .status-visited {
   background: #4cb1c7;
@@ -396,6 +402,9 @@ html {
 .visit-time svg, .visit-location svg, .visit-date svg {
   color: #4cb1c7; /* Match your theme color */
   font-size: 0.875rem; /* 14px at 16px base */
+}
+body.dark .visit-time svg, body.dark .visit-location svg, body.dark .visit-date svg {
+  color: #63b3ed; /* Invert color for dark mode */
 }
 
 /* Style for reasons */
@@ -433,6 +442,34 @@ html {
   font-size: 1.25rem; /* 20px at 16px base */
   font-weight: 700;
   color: #1f2937;
+}
+
+.supervisor-filter {
+  padding: 0.625rem 1.25rem;
+  font-size: 0.875rem;
+  font-weight: 600;
+  text-transform: uppercase;
+  letter-spacing: 0.03125rem;
+  background: #fff;
+  color: #4cb1c7;
+  border: 1px solid #4cb1c7;
+  border-radius: 3.125rem;
+  cursor: pointer;
+  transition: all 0.3s ease;
+}
+
+body.dark .supervisor-filter {
+  background: #262626;
+  color: #63b3ed;
+  border-color: #63b3ed;
+}
+
+
+
+
+.supervisor-filter:focus {
+  outline: none;
+  box-shadow: 0 0 0 2px rgba(76, 177, 199, 0.2);
 }
 
 /* Responsive Design */
@@ -544,6 +581,12 @@ html {
   .visit-duration {
     font-size: 0.75rem; /* 13.5px at 18px */
   }
+
+  .supervisor-filter {
+    padding: 0.75rem 1.5rem;
+    font-size: 0.875rem;
+    width: 100%;
+  }
 }
 
 @media (max-width: 480px) {
@@ -596,5 +639,231 @@ html {
   .week-range,
   .visit-count {
     font-size: 0.75rem; /* 15px at 20px */
+  }
+
+
+  .supervisor-filter {
+    padding: 0.625rem 1.25rem;
+    font-size: 0.75rem;
+  }
+}
+
+
+/* Supervisor Filter Container */
+.supervisor-filter-container {
+  gap: 0.625rem; /* Matches action-buttons gap */
+}
+
+/* Supervisor Search Input */
+.supervisor-search {
+  padding: 0.625rem 1.25rem; /* Matches create-btn, current-btn padding */
+  font-size: 0.875rem; /* Matches other buttons */
+  font-weight: 600; /* Matches other buttons */
+  text-transform: uppercase; /* Matches other buttons */
+  letter-spacing: 0.03125rem; /* Matches other buttons */
+  background: #fff;
+  color: #4cb1c7;
+  border: 1px solid #4cb1c7;
+  border-radius: 3.125rem; /* Matches other buttons */
+  font-family: 'Inter', sans-serif; /* Matches container */
+  transition: all 0.3s ease; /* Matches other buttons */
+}
+
+.supervisor-search:focus {
+  outline: none;
+  box-shadow: 0 0 0 2px rgba(76, 177, 199, 0.2); /* Matches supervisor-filter focus */
+}
+
+.supervisor-search:hover {
+  background: #f8fafc; /* Matches day-tile hover background */
+}
+
+/* Dark mode support */
+body.dark .supervisor-search {
+  background: #262626;
+  color: #63b3ed;
+  border-color: #63b3ed;
+}
+
+/* Responsive Design */
+@media (max-width: 768px) {
+  .supervisor-search {
+    padding: 0.75rem 1.5rem; /* Matches create-btn at this breakpoint */
+    font-size: 0.875rem;
+  }
+}
+
+@media (max-width: 480px) {
+  .supervisor-search {
+    padding: 0.625rem 1.25rem; /* Matches create-btn at this breakpoint */
+    font-size: 0.75rem;
+  }
+}
+
+
+/* Filter Bubble */
+.filter-bubble {
+  position: fixed;
+  bottom: 1.5rem; /* Space from bottom */
+  right: 1.5rem; /* Space from right */
+  z-index: 1000; /* Ensure it stays above content */
+}
+
+.filter-toggle-btn {
+  padding: 0.75rem 1.5rem;
+  font-size: 0.875rem;
+  font-weight: 600;
+  text-transform: uppercase;
+  letter-spacing: 0.03125rem;
+  background: #4cb1c7;
+  color: #fff;
+  border: none;
+  border-radius: 3.125rem;
+  box-shadow: 0 0.25rem 0.75rem rgba(76, 177, 199, 0.3);
+  cursor: pointer;
+  transition: all 0.3s ease;
+}
+
+.filter-toggle-btn:hover {
+  background: #3a8fa2;
+  transform: scale(1.05); /* Slight grow effect */
+}
+
+/* Filter Panel (Hidden by default, shown on hover/focus) */
+.filter-panel {
+  position: absolute;
+  bottom: 3.5rem; /* Position above the button */
+  right: 0;
+  background: #fff;
+  border-radius: 1rem;
+  padding: 1rem;
+  box-shadow: 0 0.375rem 1.25rem rgba(0, 0, 0, 0.1);
+  width: 20rem; /* Fixed width for consistency */
+  opacity: 0;
+  visibility: hidden;
+  transform: translateY(0.5rem); /* Slight offset for animation */
+  transition: all 0.3s ease;
+}
+
+.filter-bubble:hover .filter-panel,
+.filter-toggle-btn:focus + .filter-panel {
+  opacity: 1;
+  visibility: visible;
+  transform: translateY(0); /* Slide up into place */
+}
+
+.supervisor-filter-container {
+  display: flex;
+  flex-direction: column;
+  gap: 0.625rem;
+}
+
+/* Adjust existing supervisor styles for the panel */
+.supervisor-search,
+.supervisor-filter {
+  width: 100%;
+  box-sizing: border-box;
+}
+
+/* Dark mode support */
+body.dark .filter-toggle-btn {
+  background: #63b3ed;
+  color: #1f2937;
+}
+
+body.dark .filter-panel {
+  background: #262626;
+}
+
+/* Responsive adjustments */
+@media (max-width: 768px) {
+  .filter-bubble {
+    bottom: 1rem;
+    right: 1rem;
+  }
+
+  .filter-toggle-btn {
+    padding: 0.625rem 1.25rem;
+    font-size: 0.875rem;
+  }
+
+  .filter-panel {
+    width: 18rem; /* Slightly smaller on tablets */
+    bottom: 3rem;
+  }
+}
+
+@media (max-width: 480px) {
+  .filter-bubble {
+    bottom: 0.75rem;
+    right: 0.75rem;
+  }
+
+  .filter-toggle-btn {
+    padding: 0.5rem 1rem;
+    font-size: 0.75rem;
+  }
+
+  .filter-panel {
+    width: 100%; /* Full width on mobile */
+    max-width: 15rem;
+    bottom: 2.5rem;
+    right: 0.75rem;
+  }
+}
+
+
+/* Week Details Header */
+.week-details-header {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  margin-bottom: 1rem;
+  flex-wrap: wrap;
+  gap: 1rem;
+}
+
+.week-details-info {
+  display: flex;
+  flex-direction: column;
+  gap: 0.25rem;
+}
+
+/* Ensure validate button aligns properly */
+.validate-timesheet-btn {
+  padding: 0.5rem 1rem; /* Matches nav-btn */
+  font-size: 0.875rem;
+  font-weight: 600;
+  color: #4cb1c7;
+  background: #fff;
+  border: 1px solid #4cb1c7;
+  border-radius: 3.125rem;
+  cursor: pointer;
+  transition: all 0.3s ease;
+}
+
+.validate-timesheet-btn:hover {
+  background: #4cb1c7;
+  color: #fff;
+}
+
+/* Responsive adjustments */
+@media (max-width: 768px) {
+  .week-details-header {
+    flex-direction: column;
+    align-items: flex-start;
+    text-align: center;
+  }
+
+  .validate-timesheet-btn {
+    width: 100%; /* Full width on smaller screens */
+    padding: 0.625rem 1.125rem;
+  }
+}
+
+@media (max-width: 480px) {
+  .validate-timesheet-btn {
+    padding: 0.5rem 1rem;
+    font-size: 0.75rem;
   }
 }

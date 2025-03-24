@@ -86,6 +86,21 @@ class PermissionController {
         }
     }
 
+    static async revokePermissionsFromRole(req, res) {
+        try {
+            const { roleID } = req.params;
+            const { permissionIDs } = req.body;
+            if (!roleID || !Array.isArray(permissionIDs)) {
+                return res.status(400).json({ error: 'Role ID and permission IDs array are required' });
+            }
+            const result = await PermissionService.revokePermissionsFromRole(roleID, permissionIDs);
+            res.status(200).json(result);
+        } catch (error) {
+            console.error(`${new Date().toISOString()} - Revoke permissions from role failed:`, error);
+            res.status(400).json({ error: error.message || 'Failed to revoke permissions from role due to an internal error' });
+        }
+    }
+
     static async getPermissionsByRole(req, res) {
         try {
             const { roleID } = req.params;

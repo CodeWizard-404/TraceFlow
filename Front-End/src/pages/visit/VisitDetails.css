@@ -141,8 +141,15 @@
   padding: 0 1rem;
 }
 
+button:disabled {
+  opacity: 0.5;
+  cursor: not-allowed;
+}
+
 .visit-details-log-btn,
-.visit-details-back-btn {
+.visit-details-back-btn,
+.validate-visit-btn,
+.reject-visit-btn {
   padding: 0.75rem;
   font-size: 0.9rem;
   font-weight: 600;
@@ -160,12 +167,35 @@
   box-shadow: 0 3px 10px rgba(76, 177, 199, 0.3);
   transition: all 0.2s ease;
 }
+.reject-visit-btn {
+  background: linear-gradient(135deg, #f687b3 0%, #ff3c8a 100%);
+
+}
 
 .visit-details-log-btn:hover,
-.visit-details-back-btn:hover {
+.visit-details-back-btn:hover,
+.validate-visit-btn:hover,
+.reject-visit-btn:hover {
   transform: scale(1.02);
   box-shadow: 0 5px 15px rgba(76, 177, 199, 0.4);
 }
+
+.visit-details-log-btn2{
+  font-size: 0.9rem;
+  font-weight: 600;
+  text-transform: uppercase;
+  color: #fff;
+  border: none;
+  border-radius: 0.5rem;
+  cursor: pointer;
+  flex: 1;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  gap: 0.5rem;
+  transition: all 0.2s ease;}
+
+
 
 .visit-details-loading {
   flex: 1;
@@ -326,3 +356,4 @@
     font-size: 0.55rem;
   }
 }
+

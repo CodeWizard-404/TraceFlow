@@ -1,7 +1,7 @@
 const QRCode = require('qrcode');
 const { sendSMS } = require('../config/sms');
 const { transporter } = require('../config/smtp');
-const { ReceiptBook, User, Agent, OTP, ReceiptBookTransfer, ReceiptStub } = require('../models');
+const { ReceiptBook, User, Agent, OTP, ReceiptBookTransfer, ReceiptStub, Role } = require('../models');
 const OTPService = require('../services/otpService');
 
 class ReceiptBookService {
@@ -66,21 +66,31 @@ class ReceiptBookService {
     static async transfer(bookIDs, recipientID, senderID, recipientType = 'user') {
         const books = await ReceiptBook.findAll({ where: { bookID: bookIDs } });
         if (books.length !== bookIDs.length) throw new Error('Some books not found');
-        if (!this.canTransfer(books, senderID)) throw new Error('Invalid transfer conditions');
-
-        const recipient = recipientType === 'user' ? await User.findByPk(recipientID) : await Agent.findOne({ where: { agentID: recipientID } });
+        
+        const canTransfer = await this.canTransfer(books, senderID);
+        if (!canTransfer) throw new Error('Invalid transfer conditions');
+    
+        const recipient = recipientType === 'user' 
+            ? await User.findByPk(recipientID, { include: [Role] }) 
+            : await Agent.findOne({ where: { agentID: recipientID } });
         if (!recipient) throw new Error(`${recipientType === 'user' ? 'User' : 'Agent'} not found`);
-
+    
         const { transferType } = this.determineTransferDetails(books[0].status, recipientType, recipient);
+        if (!transferType) throw new Error('Invalid transfer type determined');
+    
         const otp = await OTPService.generateOTP(recipientID, recipientType);
         const recipientPhone = recipient.phone || recipient.Agent?.phone;
-        await sendSMS(recipientPhone, `Your OTP for receiving ${bookIDs.length} books is ${otp.code}`);
-
+        const smsResult = await sendSMS(recipientPhone, `Your OTP for receiving ${bookIDs.length} books is ${otp.code}`);
+        
+        if (!smsResult.success) {
+            console.warn(`${new Date().toISOString()} - Notification failed for ${recipientType} ${recipientID}: ${smsResult.reason}`);
+        }
+    
         await Promise.all(books.map(book =>
             this.logTransfer(book.bookID, senderID, recipientID, 'Pending', transferType, recipientType === 'agent' ? 'toAgentID' : 'toUserID')
         ));
-
-        return { message: `OTP sent to ${recipientType} ${recipientID}`, otpID: otp.otpID };
+    
+        return { message: `Transfer initiated for ${recipientType} ${recipientID}`, otpID: otp.otpID };
     }
 
     // Validate transfer with OTP
@@ -93,12 +103,18 @@ class ReceiptBookService {
             },
         });
         if (transfers.length !== bookIDs.length) throw new Error('Invalid or incomplete transfer set');
-
+    
         await OTPService.validateOTP(recipientID, otpCode, recipientType);
-
-        const recipient = recipientType === 'user' ? await User.findByPk(recipientID) : await Agent.findByPk(recipientID);
-        const { status } = this.determineTransferDetails(transfers[0].bookID, recipientType, recipient);
-
+    
+        const recipient = recipientType === 'user' 
+            ? await User.findByPk(recipientID, { include: [Role] }) 
+            : await Agent.findByPk(recipientID);
+        if (!recipient) throw new Error(`${recipientType} not found`);
+    
+        const transferType = transfers[0].transferType;
+        const book = await ReceiptBook.findByPk(transfers[0].bookID); // Fetch book for current status
+        const { status } = this.determineTransferDetails(book.status, recipientType, recipient); // Use book.status
+    
         await Promise.all(transfers.map(async t => {
             const book = await ReceiptBook.findByPk(t.bookID);
             await Promise.all([
@@ -110,7 +126,7 @@ class ReceiptBookService {
                 t.update({ status: 'Validated' }),
             ]);
         }));
-
+    
         const recipientEmail = recipient.email || (await User.findByPk(transfers[0].fromUserID))?.email;
         await transporter.sendMail({
             from: process.env.SMTP_USER,
@@ -118,7 +134,7 @@ class ReceiptBookService {
             subject: `Transfer of ${bookIDs.length} Books Validated`,
             text: `${bookIDs.length} books transferred to ${recipientType} ${recipientID}. New status: ${status}`,
         });
-
+    
         return { message: `${bookIDs.length} books transferred and validated` };
     }
 
@@ -131,63 +147,78 @@ class ReceiptBookService {
     }
 
     // Helper: Check if transfer is valid
-    static canTransfer(books, senderID) {
+    static async canTransfer(books, senderID) { // Make async to fetch sender roles
+        const sender = await User.findByPk(senderID, { include: [Role] });
+        const isSuperAdmin = sender?.Roles?.some(r => r.name === 'Super Admin');
+    
+        if (isSuperAdmin) {
+            console.log(`${new Date().toISOString()} - Super Admin bypass for senderID: ${senderID}`);
+            return true; // Super Admin can transfer anything
+        }
+    
         return books.every(book => 
             (book.status === 'In Stock' && book.currentHolderID === senderID) ||
             (book.status === 'Sent to Supplier' && !book.currentHolderID) ||
             (['With Regional Manager', 'With Supervisor', 'Stub Collected'].includes(book.status) && book.currentHolderID === senderID)
         );
     }
-
     // Helper: Determine status and transfer type
     static determineTransferDetails(currentStatus, recipientType, recipient) {
+        console.log(`${new Date().toISOString()} - determineTransferDetails inputs:`, { currentStatus, recipientType, recipient: JSON.stringify(recipient) });
+    
         if (recipientType === 'agent') {
             return { status: 'Assigned to Agent', transferType: 'ToAgent' };
         }
-
+    
         const role = recipient.Roles?.length ? recipient.Roles[0].name : 'Unknown';
-
-        // Map current status to new status based on recipient role
+        console.log(`${new Date().toISOString()} - Determined role: ${role} for recipientID: ${recipient.userID || recipient.agentID}`);
+    
         const statusMap = {
             'In Stock': 'Sent to Supplier',
             'Sent to Supplier': 'With Regional Manager',
             'With Regional Manager': {
                 'Supervisor': 'With Supervisor',
-                'Regional Manager': 'With Regional Manager', // Same-role transfer
+                'Regional Manager': 'With Regional Manager',
+                'Stock Manager': 'With Stock Manager', // Fixed this transition
             },
             'With Supervisor': {
-                'Supervisor': 'With Supervisor', // Same-role transfer
-                'Regional Manager': 'With Regional Manager', // Return to Regional Manager
-                'Stock Manager': 'With Stock Manager', // Rare case, but possible
+                'Supervisor': 'With Supervisor',
+                'Regional Manager': 'With Regional Manager',
+                'Stock Manager': 'With Stock Manager',
             },
             'Stub Collected': {
                 'Regional Manager': 'With Regional Manager',
                 'Stock Manager': 'With Stock Manager',
             },
             'With Stock Manager': {
-                'Stock Manager': 'With Stock Manager', // Same-role transfer
+                'Stock Manager': 'With Stock Manager',
             },
         };
-
+    
         const transferTypeMap = {
             'Regional Manager': 'ToRegionalManager',
             'Supervisor': 'ToSupervisor',
             'Stock Manager': 'ToStockManager',
         };
-
-        // Determine new status based on current status and recipient role
+    
         let newStatus;
         if (statusMap[currentStatus]) {
             if (typeof statusMap[currentStatus] === 'object') {
-                newStatus = statusMap[currentStatus][role] || currentStatus; // Fallback to current if role not mapped
+                newStatus = statusMap[currentStatus][role] || currentStatus;
             } else {
                 newStatus = statusMap[currentStatus];
             }
         } else {
-            newStatus = currentStatus; // Default to no change if status not mapped
+            newStatus = currentStatus;
         }
-
-        const transferType = transferTypeMap[role];
+    
+        const transferType = transferTypeMap[role] || 'Unknown';
+        if (!['ToSupplier', 'ToRegionalManager', 'ToSupervisor', 'ToAgent', 'StubToSupervisor', 'ToRegionalManagerFromSupervisor', 'ToStockManager', 'Archived'].includes(transferType)) {
+            console.error(`${new Date().toISOString()} - Invalid transferType: ${transferType} for role: ${role}`);
+            throw new Error(`Invalid transferType: ${transferType}`);
+        }
+    
+        console.log(`${new Date().toISOString()} - Determined:`, { status: newStatus, transferType });
         return { status: newStatus, transferType };
     }
 

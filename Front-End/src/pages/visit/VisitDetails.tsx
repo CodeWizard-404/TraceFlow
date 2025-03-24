@@ -1,5 +1,4 @@
-// src/pages/visit/VisitDetails.tsx
-import React, { useState, useEffect } from "react";
+import React, { useState, useEffect, useMemo } from "react";
 import { useParams, useNavigate } from "react-router-dom";
 import {
     FaCalendar, FaClock, FaMapMarkerAlt, FaUser,
@@ -9,19 +8,39 @@ import {
 import "./VisitDetails.css";
 import { getAgentById } from "../../apis/agentAPI";
 import { getVisitById } from "../../apis/visitAPI";
+import { validateTimesheet } from "../../apis/timesheetAPI";
 import Visit from "../../models/Visit";
 import Agent from "../../models/Agent";
 import { useAuth } from "../../context/AuthContext";
+import VisitStatus from "../../models/Enum/VisitStatus";
 
+const PERMISSIONS = {
+    ACCESS_VISIT_DETAILS: import.meta.env.VITE_PERMISSIONS_ACCESS_VISIT_DETAILS,
+    LOG_VISITS: import.meta.env.VITE_PERMISSIONS_LOG_VISITS,
+    VALIDATE_TIMESHEETS: import.meta.env.VITE_PERMISSIONS_VALIDATE_TIMESHEETS,
+};
+
+// Main Component
 const VisitDetails: React.FC = () => {
-    const { idVisit } = useParams<{ idVisit: string }>();
+    // Hooks
+    const { idVisit } = useParams<{ idVisit: string }>(); // Visit ID from URL parameters
     const navigate = useNavigate();
-    const { token } = useAuth(); // Get token from AuthContext
-    const [visit, setVisit] = useState<Visit | null>(null);
-    const [agent, setAgent] = useState<Agent | null>(null);
-    const [loading, setLoading] = useState<boolean>(true);
-    const [error, setError] = useState<string | null>(null);
+    const { token, effectivePermissions, permissionsLoaded } = useAuth();
 
+    // State
+    const [visit, setVisit] = useState<Visit | null>(null); // Details of the selected visit
+    const [agent, setAgent] = useState<Agent | null>(null); // Agent assigned to the visit
+    const [loading, setLoading] = useState<boolean>(true); // Loading state for async operations
+    const [error, setError] = useState<string | null>(null); // Error message if data fetch fails
+
+    // Permission Checks (Centralized)
+    const userPermissions = useMemo(() => ({
+        canAccessVisitDetails: effectivePermissions?.some(p => p.name === PERMISSIONS.ACCESS_VISIT_DETAILS),
+        canLogVisits: effectivePermissions?.some(p => p.name === PERMISSIONS.LOG_VISITS),
+        canValidateTimesheets: effectivePermissions?.some(p => p.name === PERMISSIONS.VALIDATE_TIMESHEETS),
+    }), [effectivePermissions]);
+
+    // Fetch Visit Details
     useEffect(() => {
         const fetchVisitDetails = async () => {
             if (!idVisit) {
@@ -30,31 +49,72 @@ const VisitDetails: React.FC = () => {
                 return;
             }
 
+            if (!token || !userPermissions.canAccessVisitDetails) {
+                navigate("/access-denied");
+                setLoading(false);
+                return null;               
+            }
+
             try {
                 setLoading(true);
-                const visitData = await getVisitById(idVisit, token!); // Pass token                
+                const visitData = await getVisitById(idVisit, token);
                 setVisit(visitData);
 
                 if (visitData.agentID) {
-                    const agentData = await getAgentById(visitData.agentID, token!);
+                    const agentData = await getAgentById(visitData.agentID, token);
                     setAgent(agentData);
                 }
             } catch (err) {
                 setError("Failed to load visit details.");
-                console.error(err);
+                console.error("Fetch visit details error:", err);
             } finally {
                 setLoading(false);
             }
         };
 
-        fetchVisitDetails();
-    }, [idVisit, token]);
+        if (permissionsLoaded) {
+            fetchVisitDetails();
+        }
+    }, [idVisit, token, userPermissions.canAccessVisitDetails, permissionsLoaded, navigate]);
 
+    // Handlers
     const handleLogVisit = () => {
-        if (visit) {
+        // Navigate to QR scan page to log the visit if permitted
+        if (visit && userPermissions.canLogVisits) {
             navigate("/qr-scan", { state: { visit } });
         }
     };
+
+    const handleValidate = async () => {
+        // Validate the visit and update its status
+        if (!visit || !visit.timesheetID || !userPermissions.canValidateTimesheets) return;
+        try {
+            await validateTimesheet(visit.timesheetID, { visitIDs: [visit.visitID], status: "validated" }, token!);
+            setVisit(prev => prev ? { ...prev, status: VisitStatus.VALIDATED } : null);
+        } catch (err) {
+            setError("Failed to validate visit.");
+            console.error("Validate visit error:", err);
+        }
+    };
+
+    const handleReject = async () => {
+        // Reject the visit and update its status
+        if (!visit || !visit.timesheetID || !userPermissions.canValidateTimesheets) return;
+        try {
+            await validateTimesheet(visit.timesheetID, { visitIDs: [visit.visitID], status: "rejected" }, token!);
+            setVisit(prev => prev ? { ...prev, status: VisitStatus.REJECTED } : null);
+        } catch (err) {
+            setError("Failed to reject visit.");
+            console.error("Reject visit error:", err);
+        }
+    };
+
+    // Early Returns for Loading and Error States
+    if (!permissionsLoaded) return (
+        <div className="visit-details-loading">
+            Loading permissions...
+        </div>
+    );
 
     if (loading) return (
         <div className="visit-details-loading">
@@ -79,8 +139,10 @@ const VisitDetails: React.FC = () => {
         );
     }
 
+    // Render
     return (
         <div className="visit-details-container">
+            {/* Header Section */}
             <div className="visit-details-hero">
                 <h1>
                     <FaListUl /> Visit {visit.status}
@@ -103,7 +165,9 @@ const VisitDetails: React.FC = () => {
                 </h1>
             </div>
 
+            {/* Details Grid */}
             <div className="visit-details-grid">
+                {/* When & Where Card */}
                 <div className="visit-details-card">
                     <h2><FaCalendar /> When & Where</h2>
                     <div className="card-content">
@@ -113,6 +177,7 @@ const VisitDetails: React.FC = () => {
                     </div>
                 </div>
 
+                {/* Agent Card */}
                 <div className="visit-details-card">
                     <h2><FaUser /> Agent</h2>
                     <div className="card-content">
@@ -127,6 +192,7 @@ const VisitDetails: React.FC = () => {
                     </div>
                 </div>
 
+                {/* Reasons Card */}
                 <div className="visit-details-card">
                     <h2><FaListUl /> Reasons</h2>
                     <div className="card-content">
@@ -142,6 +208,7 @@ const VisitDetails: React.FC = () => {
                     </div>
                 </div>
 
+                {/* Checklist Card */}
                 <div className="visit-details-card">
                     <h2><FaCheckCircle /> Checklist</h2>
                     <div className="card-content">
@@ -165,10 +232,41 @@ const VisitDetails: React.FC = () => {
                 </div>
             </div>
 
+            {/* Action Buttons */}
             <div className="visit-details-actions">
-                <button className="visit-details-log-btn" onClick={handleLogVisit}>
-                    Log Visit
-                </button>
+                {userPermissions.canLogVisits && (
+                    <button 
+                        className="visit-details-log-btn" 
+                        onClick={handleLogVisit}
+                        disabled={visit.status === VisitStatus.PENDING || visit.status === VisitStatus.VISITED || visit.status === VisitStatus.REJECTED}
+                    >
+                        Log Visit
+                    </button>
+                )}
+                {userPermissions.canValidateTimesheets && (
+                    <div className="visit-details-log-btn2">
+                        <button 
+                            className="validate-visit-btn" 
+                            onClick={handleValidate} 
+                            disabled={
+                                visit.status === VisitStatus.VALIDATED ||
+                                visit.status === VisitStatus.VISITED
+                            }
+                        >
+                            Validate
+                        </button>
+                        <button 
+                            className="reject-visit-btn" 
+                            onClick={handleReject} 
+                            disabled={
+                                visit.status === VisitStatus.REJECTED ||
+                                visit.status === VisitStatus.VISITED
+                            }
+                        >
+                            Reject
+                        </button>
+                    </div>
+                )}
                 <button
                     className="visit-details-back-btn"
                     onClick={() => navigate("/timesheet")}

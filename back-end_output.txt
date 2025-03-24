@@ -129,6 +129,7 @@ const { nanoid } = require('nanoid');
 const { Permission } = require('../models');
 require('dotenv').config();
 
+
 const directoriesToScan = [
     path.join(__dirname, '../routes'),
     path.join(__dirname, '../controllers'),
@@ -136,6 +137,7 @@ const directoriesToScan = [
 
 const permissionRegex = /requirePermission\(['"`]([^'`"]+)['"`]\)/g;
 const routePathRegex = /app\.use\(['"`]([^'`"]+)['"`],\s*[a-zA-Z0-9_]+Routes\)/g;
+
 
 const getRouteClass = (routePath) => {
     const basePath = routePath.toLowerCase().replace('/api/', '');
@@ -150,6 +152,7 @@ const getRouteClass = (routePath) => {
     if (basePath.includes('roles')) return 'Role';
     if (basePath.includes('permissions')) return 'Permission';
     if (basePath.includes('users')) return 'User';
+    if (basePath.includes('config')) return 'Config';
     return 'User';
 };
 
@@ -250,6 +253,8 @@ const SUPER_ADMIN_CONFIG = {
     roleName: 'Super Admin',
 };
 
+
+
 async function seedSuperAdmin() {
     try {
         await sequelize.sync({ alter: true });
@@ -266,6 +271,8 @@ async function seedSuperAdmin() {
 
         // Assign all permissions to Super Admin role
         const allPermissions = await Permission.findAll();
+        await superAdminRole.setPermissions(allPermissions);
+
         if (allPermissions.length === 0) return;
         const currentPermissions = await superAdminRole.getPermissions();
         const currentPermissionIDs = currentPermissions.map(p => p.permissionID);
@@ -296,6 +303,7 @@ async function seedSuperAdmin() {
         if (!currentRoleIDs.includes(superAdminRole.roleID)) {
             await superAdminUser.addRole(superAdminRole);
         }
+
 
         // Output credentials
         console.log(`\x1b[34m\nSuper Admin Credentials:\n\tEmail:\t\t${SUPER_ADMIN_CONFIG.email}\n\tPassword:\t${SUPER_ADMIN_CONFIG.password}\n\x1b[0m`);
@@ -354,11 +362,10 @@ module.exports = { initializeServer };
 File contents: C:\Users\Kayto\Desktop\IT\Projects\Stage\Stage PFE\TraceFlow\Back-End\config\sms.js
 ==================================================
 const axios = require('axios');
-const { User } = require('../models');
+const { User, Agent } = require('../models'); 
 const { transporter } = require('./smtp');
 require('dotenv').config();
 
-// Sends an SMS via the Traccar SMS Gateway with email fallback
 async function sendSMS(to, message) {
     try {
         const response = await axios.post(`${process.env.SMS_GATEWAY_URL}/`, {
@@ -376,7 +383,7 @@ async function sendSMS(to, message) {
         console.error(`${new Date().toISOString()} - Traccar SMS Gateway error:`, error.response?.data || error.message);
 
         try {
-            const email = await findUserEmailByPhone(to);
+            const email = await findEmailByPhone(to);
             if (email) {
                 await transporter.sendMail({
                     from: process.env.SMTP_USER,
@@ -387,27 +394,33 @@ async function sendSMS(to, message) {
                 console.log(`${new Date().toISOString()} - Fallback email sent to ${email}`);
                 return { success: true, method: 'Email', fallback: true };
             }
-            throw new Error('SMS failed and no email fallback available');
+            console.log(`${new Date().toISOString()} - No email found for phone: ${to}`);
+            return { success: false, method: 'None', reason: 'No SMS or email available' };
         } catch (emailError) {
-            throw new Error('Failed to send SMS and email fallback');
+            console.error(`${new Date().toISOString()} - Email fallback error:`, emailError.message);
+            return { success: false, method: 'None', reason: 'Failed to send SMS and email' };
         }
     }
 }
 
-// Helper function to find a user’s email by phone number
-async function findUserEmailByPhone(phone) {
+async function findEmailByPhone(phone) {
+    let email = null;
     const user = await User.findOne({ where: { phone } });
-    console.log(`${new Date().toISOString()} - Email lookup result: ${user ? user.email : 'Not found'}`);
-    return user ? user.email : null;
+    if (user) {
+        email = user.email;
+    } else {
+        const agent = await Agent.findOne({ where: { phone } });
+        email = agent?.email || null;
+    }
+    console.log(`${new Date().toISOString()} - Email lookup result: ${email || 'Not found'}`);
+    return email;
 }
 
-// Initializes the SMS gateway (currently a placeholder)
 async function initializeSMS() {
     try {
-        // Placeholder for actual initialization logic if needed
         return true;
     } catch (error) {
-        throw error; // Re-throw to be caught by the caller
+        throw error;
     }
 }
 
@@ -439,3 +452,3851 @@ async function initializeSMTP() {
 }
 
 module.exports = { transporter, initializeSMTP };
+
+==================================================
+File contents: C:\Users\Kayto\Desktop\IT\Projects\Stage\Stage PFE\TraceFlow\Back-End\controllers\agentController.js
+==================================================
+// controllers/agentController.js
+const AgentService = require('../services/agentService');
+
+class AgentController {
+    static async getAgentById(req, res) {
+        try {
+            const { id } = req.params;
+            if (!id) {
+                return res.status(400).json({ error: 'Agent ID is required' });
+            }
+            const agent = await AgentService.getAgentById(id);
+            res.json(agent);
+        } catch (error) {
+            console.error(`${new Date().toISOString()} - Get agent by ID failed:`, error);
+            res.status(error.status || 500).json({ error: error.message || 'Failed to retrieve agent due to an internal error' });
+        }
+    }
+
+    static async getAgentByPhone(req, res) {
+        try {
+            const { phone } = req.params;
+            if (!phone) {
+                return res.status(400).json({ error: 'Phone number is required' });
+            }
+            const agent = await AgentService.getAgentByPhone(phone);
+            res.json(agent);
+        } catch (error) {
+            console.error(`${new Date().toISOString()} - Get agent by phone failed:`, error);
+            res.status(error.status || 500).json({ error: error.message || 'Failed to retrieve agent by phone due to an internal error' });
+        }
+    }
+
+    static async getAgentsByLocation(req, res) {
+        try {
+            const { location } = req.query;
+            if (!location) {
+                return res.status(400).json({ error: 'Location is required' });
+            }
+            const agents = await AgentService.getAgentsByLocation(location);
+            res.json(agents);
+        } catch (error) {
+            console.error(`${new Date().toISOString()} - Get agents by location failed:`, error);
+            res.status(error.status || 500).json({ error: error.message || 'Failed to retrieve agents by location due to an internal error' });
+        }
+    }
+
+    static async getAllUniqueLocations(req, res) {
+        try {
+            const locations = await AgentService.getAllUniqueLocations();
+            res.json(locations);
+        } catch (error) {
+            console.error(`${new Date().toISOString()} - Get unique locations failed:`, error);
+            res.status(error.status || 500).json({ error: error.message || 'Failed to retrieve unique locations due to an internal error' });
+        }
+    }
+}
+
+module.exports = AgentController;
+
+==================================================
+File contents: C:\Users\Kayto\Desktop\IT\Projects\Stage\Stage PFE\TraceFlow\Back-End\controllers\authController.js
+==================================================
+// controllers/authController.js
+const AuthService = require('../services/authService');
+
+class AuthController {
+    static async login(req, res) {
+        try {
+            const { identifier, password } = req.body;
+            if (!identifier || !password) {
+                return res.status(400).json({ error: 'Identifier and password are required' });
+            }
+            const result = await AuthService.login(identifier, password);
+            res.json(result);
+        } catch (error) {
+            console.error(`${new Date().toISOString()} - Login failed:`, error);
+            res.status(401).json({ error: error.message || 'Login failed: Invalid credentials' });
+        }
+    }
+
+    static async verify2FA(req, res) {
+        try {
+            const { userID, otpCode } = req.body;
+            if (!userID || !otpCode) {
+                return res.status(400).json({ error: 'User ID and OTP code are required' });
+            }
+            const result = await AuthService.verify2FA(userID, otpCode);
+            res.json(result);
+        } catch (error) {
+            console.error(`${new Date().toISOString()} - 2FA verification failed:`, error);
+            res.status(401).json({ error: error.message || '2FA verification failed: Invalid or expired OTP' });
+        }
+    }
+
+    static async resend2FA(req, res) {
+        try {
+            const { userID } = req.body;
+            if (!userID) {
+                return res.status(400).json({ error: 'User ID is required' });
+            }
+            const result = await AuthService.resend2FA(userID);
+            res.json(result);
+        } catch (error) {
+            console.error(`${new Date().toISOString()} - Resend 2FA failed:`, error);
+            res.status(401).json({ error: error.message || 'Failed to resend 2FA code due to an internal error' });
+        }
+    }
+}
+
+module.exports = AuthController;
+
+==================================================
+File contents: C:\Users\Kayto\Desktop\IT\Projects\Stage\Stage PFE\TraceFlow\Back-End\controllers\checklistController.js
+==================================================
+// controllers/checklistController.js
+const ChecklistService = require('../services/checklistService');
+const { authenticateJWT, requirePermission } = require('../config/security');
+
+class ChecklistController {
+    static async createChecklist(req, res) {
+        try {
+            const { text } = req.body;
+            if (!text) {
+                return res.status(400).json({ error: 'Checklist text is required' });
+            }
+            const checklist = await ChecklistService.createItem(text);
+            res.status(201).json(checklist);
+        } catch (error) {
+            console.error(`${new Date().toISOString()} - Create checklist failed:`, error);
+            res.status(500).json({ error: error.message || 'Failed to create checklist due to an internal error' });
+        }
+    }
+
+    static async getChecklistsByVisitID(req, res) {
+        try {
+            const { id: visitID } = req.params;
+            if (!visitID) {
+                return res.status(400).json({ error: 'Visit ID is required' });
+            }
+            const checklists = await ChecklistService.getChecklistsByVisitId(visitID);
+            res.status(200).json(checklists);
+        } catch (error) {
+            console.error(`${new Date().toISOString()} - Get checklists by visit ID failed:`, error);
+            res.status(500).json({ error: error.message || 'Failed to retrieve checklists for visit due to an internal error' });
+        }
+    }
+
+    static async getAllChecklists(req, res) {
+        try {
+            const checklists = await ChecklistService.getAllChecklists();
+            res.status(200).json(checklists);
+        } catch (error) {
+            console.error(`${new Date().toISOString()} - Get all checklists failed:`, error);
+            res.status(500).json({ error: error.message || 'Failed to retrieve all checklists due to an internal error' });
+        }
+    }
+}
+
+module.exports = ChecklistController;
+
+==================================================
+File contents: C:\Users\Kayto\Desktop\IT\Projects\Stage\Stage PFE\TraceFlow\Back-End\controllers\configController.js
+==================================================
+// controllers/configController.js
+const { Permission, Role, Checklist, Reason } = require('../models');
+
+class ConfigController {
+    static async getConfig(req, res) {
+        try {
+            // Fetch all permissions
+            const permissions = await Permission.findAll({
+                attributes: ['permissionID', 'name', 'type', 'class', 'description']
+            });
+
+            // Fetch all roles with their permissions
+            const roles = await Role.findAll({
+                attributes: ['roleID', 'name', 'description'],
+                include: [{
+                    model: Permission,
+                    through: { attributes: [] },
+                    attributes: ['permissionID', 'name']
+                }]
+            });
+
+            // Fetch all checklist items
+            const checklistItems = await Checklist.findAll({
+                attributes: ['checklistID', 'item']
+            });
+
+            // Fetch all reason items
+            const reasonItems = await Reason.findAll({
+                attributes: ['reasonID', 'item']
+            });
+
+
+            const config = {
+                permissions: permissions.map(p => ({
+                    id: p.permissionID,
+                    name: p.name,
+                    type: p.type,
+                    class: p.class,
+                    description: p.description
+                })),
+                roles: roles.map(r => ({
+                    id: r.roleID,
+                    name: r.name,
+                    description: r.description,
+                    permissions: r.Permissions.map(p => p.name)
+                })),
+                checklistItems: checklistItems.map(c => ({
+                    id: c.checklistID,
+                    item: c.item
+                })),
+                reasonItems: reasonItems.map(r => ({
+                    id: r.reasonID,
+                    item: r.item
+                })),
+            };
+
+            res.status(200).json(config);
+        } catch (error) {
+            console.error(`${new Date().toISOString()} - Get config failed:`, error);
+            res.status(500).json({ error: 'Failed to retrieve configuration data' });
+        }
+    }
+}
+
+module.exports = ConfigController;
+
+==================================================
+File contents: C:\Users\Kayto\Desktop\IT\Projects\Stage\Stage PFE\TraceFlow\Back-End\controllers\permissionController.js
+==================================================
+// controllers/permissionController.js
+const PermissionService = require('../services/permissionService');
+
+class PermissionController {
+    static async getAllPermissions(req, res) {
+        try {
+            const permissions = await PermissionService.getAllPermissions();
+            res.status(200).json(permissions);
+        } catch (error) {
+            console.error(`${new Date().toISOString()} - Get all permissions failed:`, error);
+            res.status(500).json({ error: error.message || 'Failed to retrieve permissions due to an internal error' });
+        }
+    }
+
+    static async getPermissionById(req, res) {
+        try {
+            const { permissionID } = req.params;
+            if (!permissionID) {
+                return res.status(400).json({ error: 'Permission ID is required' });
+            }
+            const permission = await PermissionService.getPermissionById(permissionID);
+            res.status(200).json(permission);
+        } catch (error) {
+            console.error(`${new Date().toISOString()} - Get permission by ID failed:`, error);
+            res.status(404).json({ error: error.message || 'Permission not found' });
+        }
+    }
+
+    static async createPermission(req, res) {
+        try {
+            const { name, type, className, description } = req.body;
+            if (!name || !type || !className) {
+                return res.status(400).json({ error: 'Name, type, and className are required' });
+            }
+            const permission = await PermissionService.createPermission(name, type, className, description);
+            res.status(201).json(permission);
+        } catch (error) {
+            console.error(`${new Date().toISOString()} - Create permission failed:`, error);
+            res.status(400).json({ error: error.message || 'Failed to create permission due to an internal error' });
+        }
+    }
+
+    static async updatePermission(req, res) {
+        try {
+            const { permissionID } = req.params;
+            const { name, type, className, description } = req.body;
+            if (!permissionID) {
+                return res.status(400).json({ error: 'Permission ID is required' });
+            }
+            const permission = await PermissionService.updatePermission(permissionID, { name, type, className, description });
+            res.status(200).json(permission);
+        } catch (error) {
+            console.error(`${new Date().toISOString()} - Update permission failed:`, error);
+            res.status(400).json({ error: error.message || 'Failed to update permission due to an internal error' });
+        }
+    }
+
+    static async deletePermission(req, res) {
+        try {
+            const { permissionID } = req.params;
+            if (!permissionID) {
+                return res.status(400).json({ error: 'Permission ID is required' });
+            }
+            await PermissionService.deletePermission(permissionID);
+            res.status(200).json({ message: 'Permission deleted successfully' });
+        } catch (error) {
+            console.error(`${new Date().toISOString()} - Delete permission failed:`, error);
+            res.status(404).json({ error: error.message || 'Permission not found' });
+        }
+    }
+
+
+
+    static async assignPermissionsToRole(req, res) {
+        try {
+            const { roleID } = req.params;
+            const { permissionIDs } = req.body;
+            if (!roleID || !Array.isArray(permissionIDs)) {
+                return res.status(400).json({ error: 'Role ID and permission IDs array are required' });
+            }
+            const result = await PermissionService.assignPermissionsToRole(roleID, permissionIDs);
+            res.status(200).json(result);
+        } catch (error) {
+            console.error(`${new Date().toISOString()} - Assign permissions to role failed:`, error);
+            res.status(400).json({ error: error.message || 'Failed to assign permissions to role due to an internal error' });
+        }
+    }
+
+    static async getPermissionsByRole(req, res) {
+        try {
+            const { roleID } = req.params;
+            if (!roleID) {
+                return res.status(400).json({ error: 'Role ID is required' });
+            }
+            const permissions = await PermissionService.getPermissionsByRole(roleID);
+            res.status(200).json(permissions);
+        } catch (error) {
+            console.error(`${new Date().toISOString()} - Get permissions by role failed:`, error);
+            res.status(404).json({ error: error.message || 'Role not found' });
+        }
+    }
+
+    
+
+    static async addPermissionOverride(req, res) {
+        try {
+            const { userID } = req.params;
+            const { roleID, permissionID, action } = req.body;
+            if (!userID || !roleID || !permissionID || !['grant', 'revoke'].includes(action)) {
+                return res.status(400).json({ error: 'User ID, role ID, permission ID, and valid action (grant/revoke) are required' });
+            }
+            const override = await PermissionService.addPermissionOverride(userID, roleID, permissionID, action);
+            res.status(201).json(override);
+        } catch (error) {
+            console.error(`${new Date().toISOString()} - Add permission override failed:`, error);
+            res.status(400).json({ error: error.message });
+        }
+    }
+
+    static async removePermissionOverride(req, res) {
+        try {
+            const { overrideID } = req.params;
+            if (!overrideID) {
+                return res.status(400).json({ error: 'Override ID is required' });
+            }
+            const result = await PermissionService.removePermissionOverride(overrideID);
+            res.status(200).json(result);
+        } catch (error) {
+            console.error(`${new Date().toISOString()} - Remove permission override failed:`, error);
+            res.status(400).json({ error: error.message });
+        }
+    }
+
+    static async getEffectivePermissions(req, res) {
+        try {
+            const { userID } = req.params;
+            if (!userID) {
+                return res.status(400).json({ error: 'User ID is required'});
+            }
+            const permissions = await PermissionService.getEffectivePermissions(userID);
+            res.status(200).json(permissions);
+        } catch (error) {
+            console.error(`${new Date().toISOString()} - Get effective permissions failed:`, error);
+            res.status(404).json({ error: error.message });
+        }
+    }
+
+    static async getPermissionOverrides(req, res) {
+        try {
+            const { userID } = req.params;
+            if (!userID) {
+                return res.status(400).json({ error: 'User ID is required' });
+            }
+            const overrides = await PermissionService.getPermissionOverrides(userID);
+            res.status(200).json(overrides);
+        } catch (error) {
+            console.error(`${new Date().toISOString()} - Get permission overrides failed:`, error);
+            res.status(404).json({ error: error.message });
+        }
+    }
+
+}
+
+module.exports = PermissionController;
+
+==================================================
+File contents: C:\Users\Kayto\Desktop\IT\Projects\Stage\Stage PFE\TraceFlow\Back-End\controllers\reasonController.js
+==================================================
+// controllers/reasonController.js
+const ReasonService = require('../services/reasonService');
+
+class ReasonController {
+    static async createReason(req, res) {
+        try {
+            const { text } = req.body;
+            if (!text) {
+                return res.status(400).json({ error: 'Reason text is required' });
+            }
+            const reason = await ReasonService.createItem(text);
+            res.status(201).json(reason);
+        } catch (error) {
+            console.error(`${new Date().toISOString()} - Create reason failed:`, error);
+            res.status(500).json({ error: error.message || 'Failed to create reason due to an internal error' });
+        }
+    }
+
+    static async getReasonsByVisitID(req, res) {
+        try {
+            const { id: visitID } = req.params;
+            if (!visitID) {
+                return res.status(400).json({ error: 'Visit ID is required' });
+            }
+            const reasons = await ReasonService.getReasonsByVisitId(visitID);
+            res.status(200).json(reasons);
+        } catch (error) {
+            console.error(`${new Date().toISOString()} - Get reasons by visit ID failed:`, error);
+            res.status(500).json({ error: error.message || 'Failed to retrieve reasons for visit due to an internal error' });
+        }
+    }
+
+    static async getAllReasons(req, res) {
+        try {
+            const reasons = await ReasonService.getAllReasons();
+            res.status(200).json(reasons);
+        } catch (error) {
+            console.error(`${new Date().toISOString()} - Get all reasons failed:`, error);
+            res.status(500).json({ error: error.message || 'Failed to retrieve all reasons due to an internal error' });
+        }
+    }
+}
+
+module.exports = ReasonController;
+
+==================================================
+File contents: C:\Users\Kayto\Desktop\IT\Projects\Stage\Stage PFE\TraceFlow\Back-End\controllers\receiptBookController.js
+==================================================
+// controllers/receiptBookController.js
+const ReceiptBookService = require('../services/receiptBookService');
+
+class ReceiptBookController {
+    static async createReceiptBook(req, res) {
+        try {
+            const { number, type } = req.body;
+            if (!number || !type) return res.status(400).json({ error: 'Number and type are required' });
+            const receiptBook = await ReceiptBookService.createReceiptBook(number, type, req.user.userID);
+            res.status(201).json(receiptBook);
+        } catch (error) {
+            console.error(`${new Date().toISOString()} - Create receipt book failed:`, error);
+            res.status(400).json({ error: error.message || 'Failed to create receipt book' });
+        }
+    }
+
+    static async getAllReceiptBooks(req, res) {
+        try {
+            const receiptBooks = await ReceiptBookService.getAllReceiptBooks();
+            res.json(receiptBooks);
+        } catch (error) {
+            console.error(`${new Date().toISOString()} - Get all receipt books failed:`, error);
+            res.status(500).json({ error: error.message || 'Failed to retrieve receipt books' });
+        }
+    }
+
+    static async getReceiptBookById(req, res) {
+        try {
+            const { bookID } = req.params;
+            const receiptBook = await ReceiptBookService.getReceiptBookById(bookID);
+            res.json(receiptBook);
+        } catch (error) {
+            console.error(`${new Date().toISOString()} - Get receipt book failed:`, error);
+            res.status(404).json({ error: error.message || 'Receipt book not found' });
+        }
+    }
+
+    static async sendToSupplier(req, res) {
+        try {
+            const { bookIDs, supplierEmail } = req.body;
+            if (!Array.isArray(bookIDs) || !supplierEmail) return res.status(400).json({ error: 'Book IDs (array) and supplier email are required' });
+            const result = await ReceiptBookService.sendToSupplier(bookIDs, supplierEmail, req.user.userID);
+            res.json(result);
+        } catch (error) {
+            console.error(`${new Date().toISOString()} - Send to supplier failed:`, error);
+            res.status(400).json({ error: error.message || 'Failed to send books to supplier' });
+        }
+    }
+
+    static async transfer(req, res) {
+        try {
+            const { bookIDs, recipientID, recipientType = 'user' } = req.body;
+            if (!Array.isArray(bookIDs) || !recipientID) return res.status(400).json({ error: 'Book IDs (array) and recipient ID are required' });
+            const result = await ReceiptBookService.transfer(bookIDs, recipientID, req.user.userID, recipientType);
+            res.json(result);
+        } catch (error) {
+            console.error(`${new Date().toISOString()} - Transfer failed:`, error);
+            res.status(400).json({ error: error.message || 'Failed to initiate transfer' });
+        }
+    }
+
+    static async validateTransfer(req, res) {
+        try {
+            const { bookIDs, recipientID, otpCode, recipientType = 'user' } = req.body;
+            if (!Array.isArray(bookIDs) || !recipientID || !otpCode) {
+                return res.status(400).json({ error: 'Book IDs (array), recipient ID, and OTP code are required' });
+            }
+            const result = await ReceiptBookService.validateTransfer(bookIDs, recipientID, otpCode, recipientType);
+            res.json(result);
+        } catch (error) {
+            console.error(`${new Date().toISOString()} - Validate transfer failed:`, error);
+            res.status(400).json({ error: error.message || 'Failed to validate transfer' });
+        }
+    }
+
+    static async getTransferHistory(req, res) {
+        try {
+            const { bookID } = req.params;
+            const history = await ReceiptBookService.getTransferHistory(bookID);
+            res.json(history);
+        } catch (error) {
+            console.error(`${new Date().toISOString()} - Get transfer history failed:`, error);
+            res.status(404).json({ error: error.message || 'Failed to retrieve transfer history' });
+        }
+    }
+
+    static async updateReceiptBook(req, res) {
+        try {
+            const { bookID } = req.params;
+            const updates = req.body;
+            if (!bookID) {
+                return res.status(400).json({ error: 'Book ID is required' });
+            }
+            const userID = req.user.userID;
+            const receiptBook = await ReceiptBookService.updateReceiptBook(bookID, updates, userID);
+            res.json(receiptBook);
+        } catch (error) {
+            console.error(`${new Date().toISOString()} - Update receipt book failed:`, error);
+            res.status(400).json({ error: error.message || 'Failed to update receipt book due to an internal error' });
+        }
+    }
+
+    static async deleteReceiptBook(req, res) {
+        try {
+            const { bookID } = req.params;
+            if (!bookID) {
+                return res.status(400).json({ error: 'Book ID is required' });
+            }
+            const userID = req.user.userID;
+            const result = await ReceiptBookService.deleteReceiptBook(bookID, userID);
+            res.status(200).json(result);
+        } catch (error) {
+            console.error(`${new Date().toISOString()} - Delete receipt book failed:`, error);
+            res.status(400).json({ error: error.message || 'Failed to delete receipt book due to an internal error' });
+        }
+    }
+
+}
+
+module.exports = ReceiptBookController;
+
+==================================================
+File contents: C:\Users\Kayto\Desktop\IT\Projects\Stage\Stage PFE\TraceFlow\Back-End\controllers\receiptStubController.js
+==================================================
+// controllers/receiptStubController.js
+const ReceiptStubService = require('../services/receiptStubService');
+
+class ReceiptStubController {
+    static async collectStub(req, res) {
+        try {
+            const { bookID } = req.params;
+            if (!bookID) return res.status(400).json({ error: 'Book ID is required' });
+            const result = await ReceiptStubService.collectStub(bookID);
+            res.json(result);
+        } catch (error) {
+            console.error(`${new Date().toISOString()} - Collect stub failed:`, error);
+            res.status(400).json({ error: error.message || 'Failed to initiate stub collection' });
+        }
+    }
+
+    static async validateStubCollection(req, res) {
+        try {
+            const { bookID } = req.params;
+            const { otpCode } = req.body;
+            if (!bookID || !otpCode) return res.status(400).json({ error: 'Book ID and OTP code are required' });
+            const result = await ReceiptStubService.validateStubCollection(bookID, req.user.userID, otpCode);
+            res.json(result);
+        } catch (error) {
+            console.error(`${new Date().toISOString()} - Validate stub collection failed:`, error);
+            res.status(400).json({ error: error.message || 'Failed to validate stub collection' });
+        }
+    }
+
+    static async archiveStub(req, res) {
+        try {
+            const { bookID } = req.params;
+            if (!bookID) return res.status(400).json({ error: 'Book ID is required' });
+            const result = await ReceiptStubService.archiveStub(bookID, req.user.userID);
+            res.json(result);
+        } catch (error) {
+            console.error(`${new Date().toISOString()} - Archive stub failed:`, error);
+            res.status(400).json({ error: error.message || 'Failed to archive stub' });
+        }
+    }
+}
+
+module.exports = ReceiptStubController;
+
+==================================================
+File contents: C:\Users\Kayto\Desktop\IT\Projects\Stage\Stage PFE\TraceFlow\Back-End\controllers\roleController.js
+==================================================
+// controllers/roleController.js
+const RoleService = require('../services/roleService');
+
+class RoleController {
+    static async createRole(req, res) {
+        try {
+            const { name, description } = req.body;
+            if (!name) {
+                return res.status(400).json({ error: 'Role name is required' });
+            }
+            const role = await RoleService.createRole(name, description);
+            res.status(201).json(role);
+        } catch (error) {
+            console.error(`${new Date().toISOString()} - Create role failed:`, error);
+            res.status(400).json({ error: error.message || 'Failed to create role due to an internal error' });
+        }
+    }
+
+    static async getAllRoles(req, res) {
+        try {
+            const roles = await RoleService.getAllRoles();
+            res.status(200).json(roles);
+        } catch (error) {
+            console.error(`${new Date().toISOString()} - Get all roles failed:`, error);
+            res.status(500).json({ error: error.message || 'Failed to retrieve roles due to an internal error' });
+        }
+    }
+
+    static async getRoleById(req, res) {
+        try {
+            const { roleID } = req.params;
+            if (!roleID) {
+                return res.status(400).json({ error: 'Role ID is required' });
+            }
+            const role = await RoleService.getRoleById(roleID);
+            res.status(200).json(role);
+        } catch (error) {
+            console.error(`${new Date().toISOString()} - Get role by ID failed:`, error);
+            res.status(404).json({ error: error.message || 'Role not found' });
+        }
+    }
+
+    static async updateRole(req, res) {
+        try {
+            const { roleID } = req.params;
+            const { name, description } = req.body;
+            if (!roleID) {
+                return res.status(400).json({ error: 'Role ID is required' });
+            }
+            const role = await RoleService.updateRole(roleID, { name, description });
+            res.status(200).json(role);
+        } catch (error) {
+            console.error(`${new Date().toISOString()} - Update role failed:`, error);
+            res.status(400).json({ error: error.message || 'Failed to update role due to an internal error' });
+        }
+    }
+
+    static async deleteRole(req, res) {
+        try {
+            const { roleID } = req.params;
+            if (!roleID) {
+                return res.status(400).json({ error: 'Role ID is required' });
+            }
+            await RoleService.deleteRole(roleID);
+            res.status(200).json({ message: 'Role deleted successfully' });
+        } catch (error) {
+            console.error(`${new Date().toISOString()} - Delete role failed:`, error);
+            res.status(404).json({ error: error.message || 'Role not found' });
+        }
+    }
+
+
+
+
+    
+    static async assignRolesToUser(req, res) {
+        try {
+            const { userID } = req.params;
+            const { roleIDs } = req.body;
+            if (!userID || !Array.isArray(roleIDs)) {
+                return res.status(400).json({ error: 'User ID and role IDs array are required' });
+            }
+            const result = await RoleService.assignRolesToUser(userID, roleIDs);
+            res.status(200).json(result);
+        } catch (error) {
+            console.error(`${new Date().toISOString()} - Assign roles to user failed:`, error);
+            res.status(400).json({ error: error.message || 'Failed to assign roles to user due to an internal error' });
+        }
+    }
+
+    static async getRolesByUser(req, res) {
+        try {
+            const { userID } = req.params;
+            if (!userID) {
+                return res.status(400).json({ error: 'User ID is required' });
+            }
+            const roles = await RoleService.getRolesByUser(userID);
+            res.status(200).json(roles);
+        } catch (error) {
+            console.error(`${new Date().toISOString()} - Get roles by user failed:`, error);
+            res.status(404).json({ error: error.message || 'User not found' });
+        }
+    }
+}
+
+module.exports = RoleController;
+
+==================================================
+File contents: C:\Users\Kayto\Desktop\IT\Projects\Stage\Stage PFE\TraceFlow\Back-End\controllers\timesheetController.js
+==================================================
+// controllers/timesheetController.js
+const { Timesheet } = require('../models');
+const TimesheetService = require('../services/timesheetService');
+
+class TimesheetController {
+    static async createTimesheet(req, res) {
+        try {
+            const { weekNumber, year, supervisorID, visits, status = 'pending' } = req.body;
+            if (!weekNumber || !year || !supervisorID || !Array.isArray(visits)) {
+                return res.status(400).json({ error: 'Missing required fields: weekNumber, year, supervisorID, and visits array are mandatory' });
+            }
+            // Validate status if provided
+            if (status && !['pending', 'validated'].includes(status)) {
+                return res.status(400).json({ error: 'Invalid status value. Must be "pending" or "validated"' });
+            }
+            // Log req.user for debugging
+            console.log(`${new Date().toISOString()} - req.user:`, req.user);
+
+            // Flatten permissions from Roles
+            const userPermissions = req.user?.Roles?.flatMap(role => role.Permissions?.map(perm => perm.name) || []) || [];
+            const hasSupervisorPermission = userPermissions.includes('create_timesheets_for_supervisor');
+            console.log(`${new Date().toISOString()} - User permissions:`, userPermissions); 
+
+            if (status === 'validated' && !hasSupervisorPermission) {
+                return res.status(403).json({ error: 'Permission denied: Only users with create_timesheets_for_supervisor can set status to validated' });
+            }
+
+            const timesheet = await TimesheetService.createTimesheet({ weekNumber, year, supervisorID, visits, status });
+            res.status(201).json(timesheet);
+        } catch (error) {
+            console.error(`${new Date().toISOString()} - Create timesheet failed:`, error);
+            res.status(error.status || 500).json({ error: error.message || 'Failed to create timesheet due to an internal error' });
+        }
+    }
+
+    static async validateTimesheet(req, res) {
+        try {
+            const { id } = req.params;
+            const { visitIDs = [], status } = req.body;
+            if (!status) {
+                return res.status(400).json({ error: 'Status is required to validate a timesheet' });
+            }
+            const timesheet = await TimesheetService.validateTimesheet(id, visitIDs, status);
+            res.status(200).json(timesheet);
+        } catch (error) {
+            console.error(`${new Date().toISOString()} - Validate timesheet failed:`, error);
+            res.status(error.status || 500).json({ error: error.message || 'Failed to validate timesheet due to an internal error' });
+        }
+    }
+
+    static async getAllTimesheets(req, res) {
+        try {
+            const timesheets = await TimesheetService.listTimesheets();
+            res.status(200).json(timesheets);
+        } catch (error) {
+            console.error(`${new Date().toISOString()} - Get all timesheets failed:`, error);
+            res.status(500).json({ error: error.message || 'Failed to retrieve all timesheets due to an internal error' });
+        }
+    }
+
+    static async getTimesheetById(req, res) {
+        try {
+            const { id } = req.params;
+            const timesheet = await TimesheetService.viewTimesheet(id);
+            res.status(200).json(timesheet);
+        } catch (error) {
+            console.error(`${new Date().toISOString()} - Get timesheet failed:`, error);
+            res.status(error.status || 500).json({ error: error.message || 'Failed to retrieve timesheet due to an internal error' });
+        }
+    }
+
+    static async getTimesheetsBySupervisor(req, res) {
+        try {
+            const { supervisorID } = req.params;
+            const timesheets = await TimesheetService.getTimesheetsBySupervisor(supervisorID);
+            res.status(200).json(timesheets);
+        } catch (error) {
+            console.error(`${new Date().toISOString()} - Get timesheets by supervisor failed:`, error);
+            res.status(error.status || 500).json({ error: error.message || 'Failed to retrieve timesheets for supervisor due to an internal error' });
+        }
+    }
+}
+
+module.exports = TimesheetController;
+
+==================================================
+File contents: C:\Users\Kayto\Desktop\IT\Projects\Stage\Stage PFE\TraceFlow\Back-End\controllers\userController.js
+==================================================
+// controllers/userController.js
+const UserService = require('../services/userService');
+const RoleService = require('../services/roleService');
+
+class UserController {
+    static async createUser(req, res) {
+        try {
+            const { email, password, firstname, lastname, phone, wallet } = req.body;
+            if (!email || !password || !firstname || !lastname || !phone || !wallet) {
+                return res.status(400).json({ error: 'All fields (email, password, firstname, lastname, phone, wallet) are required' });
+            }
+            const user = await UserService.createUser(email, password, firstname, lastname, phone, wallet);
+            res.status(201).json(user);
+        } catch (error) {
+            console.error(`${new Date().toISOString()} - Create user failed:`, error);
+            res.status(400).json({ error: error.message || 'Failed to create user due to an internal error' });
+        }
+    }
+
+    static async getAllUsers(req, res) {
+        try {
+            const users = await UserService.getAllUsers();
+            res.status(200).json(users);
+        } catch (error) {
+            console.error(`${new Date().toISOString()} - Get all users failed:`, error);
+            res.status(500).json({ error: error.message || 'Failed to retrieve users due to an internal error' });
+        }
+    }
+
+    static async getUserByPhoneNumber(req, res) {
+        try {
+            const { phone } = req.params;
+            if (!phone) {
+                return res.status(400).json({ error: 'Phone number is required' });
+            }
+            const user = await UserService.getUserByPhoneNumber(phone);
+            res.status(200).json(user);
+        } catch (error) {
+            console.error(`${new Date().toISOString()} - Get user by phone failed:`, error);
+            res.status(404).json({ error: error.message || 'User not found by phone number' });
+        }
+    }
+
+    static async getUserById(req, res) {
+        try {
+            const { userID } = req.params;
+            if (!userID) {
+                return res.status(400).json({ error: 'User ID is required' });
+            }
+            const user = await UserService.getUserById(userID);
+            res.status(200).json(user);
+        } catch (error) {
+            console.error(`${new Date().toISOString()} - Get user by ID failed:`, error);
+            res.status(404).json({ error: error.message || 'User not found' });
+        }
+    }
+
+    static async updateUser(req, res) {
+        try {
+            const { userID } = req.params;
+            const userData = req.body;
+            if (!userID) {
+                return res.status(400).json({ error: 'User ID is required' });
+            }
+            const updatedUser = await UserService.updateUser(userID, userData);
+            res.status(200).json(updatedUser);
+        } catch (error) {
+            console.error(`${new Date().toISOString()} - Update user failed:`, error);
+            res.status(400).json({ error: error.message || 'Failed to update user due to an internal error' });
+        }
+    }
+
+    static async deleteUser(req, res) {
+        try {
+            const { userID } = req.params;
+            if (!userID) {
+                return res.status(400).json({ error: 'User ID is required' });
+            }
+            const result = await UserService.deleteUser(userID);
+            res.status(200).json(result);
+        } catch (error) {
+            console.error(`${new Date().toISOString()} - Delete user failed:`, error);
+            res.status(400).json({ error: error.message || 'Failed to delete user due to an internal error' });
+        }
+    }
+
+
+
+    static async getRolesByUser(req, res) {
+        try {
+            const { userID } = req.params;
+            // Use req.user.userID if no explicit userID is provided (for /me/roles)
+            const targetUserID = userID || req.user.userID;
+            if (!targetUserID) {
+                return res.status(400).json({ error: 'User ID is required' });
+            }
+            const roles = await RoleService.getRolesByUser(targetUserID);
+            res.status(200).json(roles);
+        } catch (error) {
+            console.error(`${new Date().toISOString()} - Get roles by user failed:`, error);
+            res.status(404).json({ error: error.message || 'User not found' });
+        }
+    }
+
+    
+
+    static async assignSupervisorsToManager(req, res) {
+        try {
+            const { managerID, supervisorIDs } = req.body;
+            if (!managerID || !Array.isArray(supervisorIDs)) {
+                return res.status(400).json({ error: 'Manager ID and supervisor IDs array are required' });
+            }
+            const result = await UserService.assignSupervisorsToManager(managerID, supervisorIDs);
+            res.status(200).json(result);
+        } catch (error) {
+            console.error(`${new Date().toISOString()} - Assign supervisors to manager failed:`, error);
+            res.status(400).json({ error: error.message || 'Failed to assign supervisors to manager due to an internal error' });
+        }
+    }
+
+    static async getSupervisorsByUser(req, res) {
+        try {
+            const { userID } = req.params;
+            if (!userID) {
+                return res.status(400).json({ error: 'User ID is required' });
+            }
+            const supervisors = await UserService.getSupervisorsByUser(userID);
+            res.status(200).json(supervisors);
+        } catch (error) {
+            console.error(`${new Date().toISOString()} - Get supervisors by user failed:`, error);
+            res.status(404).json({ error: error.message || 'Failed to fetch supervisors' });
+        }
+    }
+
+    static async getManagersByUser(req, res) {
+        try {
+            const { userID } = req.params;
+            if (!userID) {
+                return res.status(400).json({ error: 'User ID is required' });
+            }
+            const managers = await UserService.getManagersByUser(userID);
+            res.status(200).json(managers);
+        } catch (error) {
+            console.error(`${new Date().toISOString()} - Get managers by user failed:`, error);
+            res.status(404).json({ error: error.message || 'Failed to fetch managers' });
+        }
+    }
+}
+
+module.exports = UserController;
+
+==================================================
+File contents: C:\Users\Kayto\Desktop\IT\Projects\Stage\Stage PFE\TraceFlow\Back-End\controllers\visitController.js
+==================================================
+// controllers/visitController.js
+const VisitService = require('../services/visitService');
+
+class VisitController {
+    static async createVisit(req, res) {
+        try {
+            const { date, time, agentID, supervisorID, timesheetID, reasons, checklists } = req.body;
+            if (!date || !time || !agentID || !supervisorID || !timesheetID) {
+                return res.status(400).json({ error: 'Missing required fields: date, time, agentID, supervisorID, and timesheetID are mandatory' });
+            }
+            if (!Array.isArray(reasons) || reasons.length === 0) {
+                return res.status(400).json({ error: 'At least one reason is required' });
+            }
+            if (!Array.isArray(checklists) || checklists.length === 0) {
+                return res.status(400).json({ error: 'At least one checklist item is required' });
+            }
+            const visit = await VisitService.createVisit({
+                date,
+                time,
+                agentID,
+                supervisorID,
+                timesheetID,
+                reasons,
+                checklists,
+            });
+            res.status(201).json(visit);
+        } catch (error) {
+            console.error(`${new Date().toISOString()} - Create visit failed:`, error);
+            res.status(error.status || 500).json({ error: error.message || 'Failed to create visit due to an internal error' });
+        }
+    }
+
+    static async verifyQRCode(req, res) {
+        try {
+            const { qrData, visitId } = req.body;
+            if (!qrData || !visitId) {
+                return res.status(400).json({ error: 'Missing required parameters: qrData and visitId are mandatory' });
+            }
+            const result = await VisitService.verifyQRCode(qrData, visitId);
+            res.status(result.valid ? 200 : 400).json(result);
+        } catch (error) {
+            console.error(`${new Date().toISOString()} - QR verification failed:`, error);
+            res.status(error.status || 500).json({ error: error.message || 'Failed to verify QR code due to an internal error' });
+        }
+    }
+
+    static async logVisit(req, res) {
+        try {
+            const { id } = req.params;
+            const { duration, checklistUpdates, photos, comment } = req.body;
+            const visit = await VisitService.logVisit(id, { duration, checklistUpdates, photos, comment });
+            res.status(200).json(visit);
+        } catch (error) {
+            console.error(`${new Date().toISOString()} - Log visit failed:`, error);
+            res.status(error.status || 500).json({ error: error.message || 'Failed to log visit due to an internal error' });
+        }
+    }
+
+    static async getVisitByID(req, res) {
+        try {
+            const { id } = req.params;
+            const visit = await VisitService.getVisitByID(id);
+            res.status(200).json(visit);
+        } catch (error) {
+            console.error(`${new Date().toISOString()} - Get visit failed:`, error);
+            res.status(error.status || 500).json({ error: error.message || 'Failed to retrieve visit due to an internal error' });
+        }
+    }
+}
+
+module.exports = VisitController;
+
+
+==================================================
+File contents: C:\Users\Kayto\Desktop\IT\Projects\Stage\Stage PFE\TraceFlow\Back-End\middleware\RBAC_Middleware.js
+==================================================
+const rbacMiddleware = (requiredPermission) => {
+    return async (req, res, next) => {
+        // authenticateJWT has already run and attached req.user
+        if (!req.user) {
+            return res.status(401).json({ error: 'Authentication required. Please log in.' });
+        }
+
+        try {
+            // Check if user has the required permission
+            const hasPermission = req.user.Roles.some(role =>
+                role.Permissions.some(perm => perm.permission === requiredPermission)
+            );
+
+            if (!hasPermission) {
+                return res.status(403).json({
+                    error: `Permission '${requiredPermission}' required for this action`
+                });
+            }
+
+            // User has permission, proceed
+            next();
+        } catch (error) {
+            console.error('RBAC Middleware Error:', error);
+            return res.status(500).json({ error: 'Internal server error during authorization' });
+        }
+    };
+};
+
+module.exports = rbacMiddleware;
+
+==================================================
+File contents: C:\Users\Kayto\Desktop\IT\Projects\Stage\Stage PFE\TraceFlow\Back-End\models\agent.js
+==================================================
+const { nanoid } = require('nanoid');
+
+module.exports = (sequelize, DataTypes) => {
+    return sequelize.define('Agent', {
+        agentID: {
+            type: DataTypes.STRING,
+            primaryKey: true,
+            defaultValue: () => `agt_${nanoid()}`,
+        },
+        name: { type: DataTypes.STRING },
+        lastname: { type: DataTypes.STRING},
+        wallet: { type: DataTypes.STRING },
+        cin: { type: DataTypes.STRING, unique: true},
+        email: { type: DataTypes.STRING, unique: true },
+        phone: { type: DataTypes.STRING },
+        location: { type: DataTypes.STRING},
+    });
+};
+
+==================================================
+File contents: C:\Users\Kayto\Desktop\IT\Projects\Stage\Stage PFE\TraceFlow\Back-End\models\index.js
+==================================================
+const { sequelize } = require("../config/db");
+const DataTypes = require("sequelize").DataTypes;
+
+const Agent = require("./agent")(sequelize, DataTypes);
+const ReceiptBook = require("./receipt/receiptBook")(sequelize, DataTypes);
+const ReceiptStub = require("./receipt/receiptStub")(sequelize, DataTypes);
+const ReceiptBookTransfer = require("./receipt/ReceiptBookTransfer")(sequelize, DataTypes);
+const Timesheet = require("./timesheet")(sequelize, DataTypes);
+const OTP = require("./user/otp")(sequelize, DataTypes);
+const Permission = require("./user/permission")(sequelize, DataTypes);
+const Role = require("./user/role")(sequelize, DataTypes);
+const User = require("./user/user")(sequelize, DataTypes);
+const UserPermissionOverride = require("./user/UserPermissionOverride")(sequelize, DataTypes);
+const Visit = require("./visit/visit")(sequelize, DataTypes);
+const Checklist = require("./visit/checklist")(sequelize, DataTypes);
+const VisitChecklist = require("./visit/VisitChecklists")(sequelize, DataTypes);
+const Reason = require("./visit/reason")(sequelize, DataTypes);
+
+const setupAssociations = () => {
+
+    // User - User (many to many): A User can have multiple Supervisors and Managers, and a User can be a Supervisor or Manager of multiple Users.
+    User.belongsToMany(User, {as: 'Supervisors', through: 'ManagerSupervisors', foreignKey: 'managerID', otherKey: 'supervisorID',});
+    User.belongsToMany(User, {as: 'Managers', through: 'ManagerSupervisors', foreignKey: 'supervisorID', otherKey: 'managerID',});
+
+    // Agent - Visit (1 to many): An Agent can have multiple Visits.
+    Agent.hasMany(Visit, { foreignKey: "agentID" });
+    Visit.belongsTo(Agent, { foreignKey: "agentID" });
+
+    // Timesheet - Visit (1 to many): A Timesheet tracks multiple Visits.
+    Timesheet.hasMany(Visit, { foreignKey: "timesheetID" });
+    Visit.belongsTo(Timesheet, { foreignKey: "timesheetID" });
+
+    // User - Timesheet (1 to many): A User can oversee multiple Timesheets.
+    User.hasMany(Timesheet, { foreignKey: "supervisorID" });
+    Timesheet.belongsTo(User, { foreignKey: "supervisorID" });
+
+    // Visit - Checklist (many to many): A Visit can have multiple Checklists, and a Checklist can apply to multiple Visits.
+    Visit.belongsToMany(Checklist, { through: { model: VisitChecklist, unique: false }, foreignKey: "visitID", otherKey: "checklistID",});
+    Checklist.belongsToMany(Visit, { through: { model: VisitChecklist, unique: false }, foreignKey: "checklistID", otherKey: "visitID",});
+
+    // Visit - Reason (many to many): A Visit can have multiple Reasons (e.g., cancellation), and a Reason can apply to multiple Visits.
+    Visit.belongsToMany(Reason, {through: "VisitReasons", foreignKey: "visitID", otherKey: "reasonID", });
+    Reason.belongsToMany(Visit, { through: "VisitReasons", foreignKey: "reasonID", otherKey: "visitID",});
+
+    // User - OTP (1 to many): A User can have multiple OTPs for secure actions (e.g., receipt book transfers).
+    User.hasMany(OTP, { foreignKey: "userID" });
+    OTP.belongsTo(User, { foreignKey: "userID" });
+
+    // User - Role (many to many): A User can have multiple Roles, and a Role can be assigned to multiple Users.
+    User.belongsToMany(Role, { through: "UserRoles", foreignKey: "userID", otherKey: "roleID",});
+    Role.belongsToMany(User, { through: "UserRoles", foreignKey: "roleID", otherKey: "userID",});
+
+    // Role - Permission (many to many): A Role can have multiple Permissions, and a Permission can belong to multiple Roles.
+    Role.belongsToMany(Permission, { through: "RolePermissions", foreignKey: "roleID", otherKey: "permissionID",});
+    Permission.belongsToMany(Role, { through: "RolePermissions", foreignKey: "permissionID", otherKey: "roleID",});
+
+    // models/index.js (in setupAssociations)
+    User.hasMany(UserPermissionOverride, { foreignKey: 'userID' });
+    UserPermissionOverride.belongsTo(User, { foreignKey: 'userID' });
+
+    Permission.hasMany(UserPermissionOverride, { foreignKey: 'permissionID' });
+    UserPermissionOverride.belongsTo(Permission, { foreignKey: 'permissionID' });
+
+    Role.hasMany(UserPermissionOverride, { foreignKey: 'roleID' });
+    UserPermissionOverride.belongsTo(Role, { foreignKey: 'roleID' });
+
+    // User - ReceiptBook (many to many): A User can own or manage multiple ReceiptBooks, and a ReceiptBook can be linked to multiple Users.
+    User.belongsToMany(ReceiptBook, { through: "UserReceiptBooks", foreignKey: "userID", otherKey: "bookID",});
+    ReceiptBook.belongsToMany(User, { through: "UserReceiptBooks", foreignKey: "bookID", otherKey: "userID",});
+
+    ReceiptBook.hasMany(ReceiptBookTransfer, { foreignKey: "bookID" });
+    ReceiptBookTransfer.belongsTo(ReceiptBook, { foreignKey: "bookID" });
+
+    ReceiptBook.belongsTo(User, { as: 'CurrentHolder', foreignKey: 'currentHolderID' });
+    User.hasMany(ReceiptBook, { as: 'HeldBooks', foreignKey: 'currentHolderID' });
+
+    User.hasMany(ReceiptBookTransfer, { as: "SentTransfers", foreignKey: "fromUserID" });
+    ReceiptBookTransfer.belongsTo(User, { as: "FromUser", foreignKey: "fromUserID" });
+
+    User.hasMany(ReceiptBookTransfer, { as: "ReceivedTransfers", foreignKey: "toUserID" });
+    ReceiptBookTransfer.belongsTo(User, { as: "ToUser", foreignKey: "toUserID" });
+
+    Agent.hasMany(ReceiptBookTransfer, { foreignKey: "toAgentID" });
+    ReceiptBookTransfer.belongsTo(Agent, { foreignKey: "toAgentID" });
+
+    // ReceiptBook - Agent (many to one): A ReceiptBook is assigned to one Agent, but an Agent can have multiple ReceiptBooks.
+    ReceiptBook.belongsTo(Agent, { foreignKey: "agentID" });
+    Agent.hasMany(ReceiptBook, { foreignKey: "agentID" });
+
+    // ReceiptBook - ReceiptStub (1 to 1): A ReceiptBook has one ReceiptStub, and a ReceiptStub belongs to one ReceiptBook.
+    ReceiptBook.hasOne(ReceiptStub, { foreignKey: "bookID" });
+    ReceiptStub.belongsTo(ReceiptBook, { foreignKey: "bookID" });
+};
+
+module.exports = { sequelize, User, Agent, Visit, Timesheet, Checklist, Reason, VisitChecklist, OTP, Role, Permission, ReceiptBook, ReceiptStub, ReceiptBookTransfer, UserPermissionOverride, 
+    setupAssociations,
+};
+
+
+==================================================
+File contents: C:\Users\Kayto\Desktop\IT\Projects\Stage\Stage PFE\TraceFlow\Back-End\models\timesheet.js
+==================================================
+const { nanoid } = require('nanoid');
+
+module.exports = (sequelize, DataTypes) => {
+    return sequelize.define('Timesheet', {
+    timesheetID: { 
+        type: DataTypes.STRING,     
+        primaryKey: true,
+        defaultValue: () => `ts_${nanoid()}`,
+    },
+    weekNumber: { type: DataTypes.INTEGER, allowNull: false },
+    year: { type: DataTypes.INTEGER, allowNull: false },
+    status: { type: DataTypes.STRING, allowNull: false },
+    supervisorID: { type: DataTypes.STRING, allowNull: false }, 
+});
+
+};
+
+==================================================
+File contents: C:\Users\Kayto\Desktop\IT\Projects\Stage\Stage PFE\TraceFlow\Back-End\models\receipt\receiptBook.js
+==================================================
+// models/receipt/receiptBook.js
+const { nanoid } = require('nanoid');
+
+module.exports = (sequelize, DataTypes) => {
+    return sequelize.define('ReceiptBook', {
+        bookID: {
+            type: DataTypes.STRING,
+            primaryKey: true,
+            defaultValue: () => `book_${nanoid()}`,
+        },
+        number: {
+            type: DataTypes.STRING,
+            allowNull: false,
+            unique: true,
+        },
+        type: {
+            type: DataTypes.STRING,
+            allowNull: false,
+        },
+        status: {
+            type: DataTypes.ENUM(
+                'In Stock',              // Purchase team
+                'Sent to Supplier',      // Purchase team
+                'With Regional Manager', // Regional manager(s)
+                'With Supervisor',       // Supervisor(s)
+                'Assigned to Agent',     // Agent
+                'Stub Collected',        // Supervisor after collecting stub
+                'With Stock Manager',    // Stock manager
+                'Archived'               // Final state
+            ),
+            allowNull: false,
+            defaultValue: 'In Stock',
+        },
+        qrCode: {
+            type: DataTypes.TEXT,
+            allowNull: false,
+            unique: true,
+        },
+        agentID: {
+            type: DataTypes.STRING,
+            allowNull: true,
+            references: { model: 'Agents', key: 'agentID' },
+        },
+        currentHolderID: {
+            type: DataTypes.STRING,
+            allowNull: true, // Null when with agent or in stock initially
+            references: { model: 'Users', key: 'userID' },
+        },
+    });
+};
+
+==================================================
+File contents: C:\Users\Kayto\Desktop\IT\Projects\Stage\Stage PFE\TraceFlow\Back-End\models\receipt\ReceiptBookTransfer.js
+==================================================
+// models/receipt/receiptBookTransfer.js
+const { nanoid } = require('nanoid');
+
+module.exports = (sequelize, DataTypes) => {
+    return sequelize.define('ReceiptBookTransfer', {
+        transferID: {
+            type: DataTypes.STRING,
+            primaryKey: true,
+            defaultValue: () => `trans_${nanoid()}`,
+        },
+        bookID: {
+            type: DataTypes.STRING,
+            allowNull: false,
+            references: { model: 'ReceiptBooks', key: 'bookID' },
+        },
+        fromUserID: {
+            type: DataTypes.STRING,
+            allowNull: true, // Null if from agent or initial stock
+            references: { model: 'Users', key: 'userID' },
+        },
+        toUserID: {
+            type: DataTypes.STRING,
+            allowNull: true, // Null if to agent
+            references: { model: 'Users', key: 'userID' },
+        },
+        toAgentID: {
+            type: DataTypes.STRING,
+            allowNull: true, // Null if to user
+            references: { model: 'Agents', key: 'agentID' },
+        },
+        status: {
+            type: DataTypes.ENUM('Pending', 'Validated'),
+            allowNull: false,
+            defaultValue: 'Pending',
+        },
+        transferType: {
+            type: DataTypes.ENUM(
+                'ToSupplier', 'ToRegionalManager', 'ToSupervisor', 
+                'ToAgent', 'StubToSupervisor', 'ToRegionalManagerFromSupervisor', 
+                'ToStockManager', 'Archived'
+            ),
+            allowNull: false,
+        },
+        transferDate: {
+            type: DataTypes.DATE,
+            allowNull: false,
+            defaultValue: DataTypes.NOW,
+        },
+    });
+};
+
+==================================================
+File contents: C:\Users\Kayto\Desktop\IT\Projects\Stage\Stage PFE\TraceFlow\Back-End\models\receipt\receiptStub.js
+==================================================
+// models/receipt/receiptStub.js
+const { nanoid } = require('nanoid');
+
+module.exports = (sequelize, DataTypes) => {
+    return sequelize.define('ReceiptStub', {
+        stubID: {
+            type: DataTypes.STRING,
+            primaryKey: true,
+            defaultValue: () => `stub_${nanoid()}`,
+        },
+        status: {
+            type: DataTypes.ENUM('pending', 'collected', 'transmitted', 'archived'),
+            allowNull: false,
+            defaultValue: 'pending',
+        },
+        bookID: {
+            type: DataTypes.STRING,
+            allowNull: false,
+            unique: true, // One stub per book
+            references: {
+                model: 'ReceiptBooks',
+                key: 'bookID',
+            },
+        },
+    });
+};
+
+==================================================
+File contents: C:\Users\Kayto\Desktop\IT\Projects\Stage\Stage PFE\TraceFlow\Back-End\models\user\otp.js
+==================================================
+const { nanoid } = require('nanoid');
+
+module.exports = (sequelize, DataTypes) => {
+    return sequelize.define('OTP', {
+        otpID: {
+            type: DataTypes.STRING,
+            primaryKey: true,
+            defaultValue: () => `otp_${nanoid()}`,
+        },
+        code: { type: DataTypes.STRING, allowNull: false },
+        expiresAt: { type: DataTypes.DATE, allowNull: false },
+        createdAt: { type: DataTypes.DATE, allowNull: false, defaultValue: DataTypes.NOW },
+        userID: { 
+            type: DataTypes.STRING,
+            allowNull: true, 
+            references: { model: 'Users', key: 'userID' },
+        },
+        agentID: { 
+            type: DataTypes.STRING, 
+            allowNull: true, 
+            references: { model: 'Agents', key: 'agentID' } 
+        },
+    }, {
+        timestamps: false,
+        validate: { 
+            atLeastOneID() {
+                if (!this.userID && !this.agentID) {
+                    throw new Error('Either userID or agentID must be provided');
+                }
+            }
+        }
+    });
+};
+
+==================================================
+File contents: C:\Users\Kayto\Desktop\IT\Projects\Stage\Stage PFE\TraceFlow\Back-End\models\user\permission.js
+==================================================
+const { nanoid } = require('nanoid');
+
+module.exports = (sequelize, DataTypes) => {
+    return sequelize.define('Permission', {
+        permissionID: {
+            type: DataTypes.STRING,
+            primaryKey: true,
+            defaultValue: () => `perm_${nanoid()}`,
+        },
+        name: { 
+            type: DataTypes.STRING,
+            allowNull: false,
+            unique: true, 
+        },
+        type: { 
+            type: DataTypes.ENUM('page', 'feature'),
+            allowNull: false,
+            defaultValue: 'feature',
+        },
+        class: {
+            type: DataTypes.ENUM(
+                'User',       // Permissions related to user management
+                'Role',       // Permissions related to roles
+                'Timesheet',  // Permissions related to timesheets
+                'Visit',      // Permissions related to visits
+                'Checklist',  // Permissions related to checklists
+                'Reason',     // Permissions related to reasons
+                'ReceiptBook', // Permissions related to receipt books
+                'ReceiptStub', // Permissions related to receipt stubs
+                'Agent',       // Permissions related to agents
+                'Auth',       // Permissions related to authentication
+                'Permission', // Permissions related to permissions
+                'Config'      // Permissions related to configuration
+            ),
+            allowNull: false,
+            defaultValue: 'User',
+        },
+        description: {
+            type: DataTypes.STRING,
+            allowNull: true,
+        },
+    });
+};
+
+==================================================
+File contents: C:\Users\Kayto\Desktop\IT\Projects\Stage\Stage PFE\TraceFlow\Back-End\models\user\role.js
+==================================================
+const { nanoid } = require('nanoid');
+
+module.exports = (sequelize, DataTypes) => {
+    return sequelize.define('Role', {
+        roleID: {
+            type: DataTypes.STRING,
+            primaryKey: true,
+            defaultValue: () => `rol_${nanoid()}`,
+        },
+        name: {
+            type: DataTypes.STRING,
+            allowNull: false,
+            unique: true,
+        },
+        description: {
+            type: DataTypes.STRING,
+            allowNull: true,
+        },
+    });
+};
+
+==================================================
+File contents: C:\Users\Kayto\Desktop\IT\Projects\Stage\Stage PFE\TraceFlow\Back-End\models\user\user.js
+==================================================
+const { nanoid } = require('nanoid');
+
+module.exports = (sequelize, DataTypes) => {
+    return sequelize.define('User', {
+    userID: { 
+        type: DataTypes.STRING,     
+        primaryKey: true,
+        defaultValue: () => `usr_${nanoid()}`,
+    },
+    firstname: { type: DataTypes.STRING, allowNull: false },
+    lastname: { type: DataTypes.STRING, allowNull: false },
+    phone: { type: DataTypes.STRING, unique: true, allowNull: false },
+    email: { type: DataTypes.STRING, unique: true, allowNull: false },
+    wallet: { type: DataTypes.STRING, unique: true, allowNull: false },
+    password: { type: DataTypes.STRING, allowNull: false },
+});
+
+};
+
+==================================================
+File contents: C:\Users\Kayto\Desktop\IT\Projects\Stage\Stage PFE\TraceFlow\Back-End\models\user\UserPermissionOverride.js
+==================================================
+const { nanoid } = require('nanoid');
+
+module.exports = (sequelize, DataTypes) => {
+    return sequelize.define('UserPermissionOverride', {
+        overrideID: {
+            type: DataTypes.STRING,
+            primaryKey: true,
+            defaultValue: () => `override_${nanoid()}`,
+        },
+        userID: {
+            type: DataTypes.STRING,
+            allowNull: false,
+            references: { model: 'Users', key: 'userID' },
+        },
+        permissionID: {
+            type: DataTypes.STRING,
+            allowNull: false,
+            references: { model: 'Permissions', key: 'permissionID' },
+        },
+        roleID: {
+            type: DataTypes.STRING,
+            allowNull: false,
+            references: { model: 'Roles', key: 'roleID' },
+        },
+        action: {
+            type: DataTypes.ENUM('grant', 'revoke'),
+            allowNull: false,
+        },
+    });
+};
+
+==================================================
+File contents: C:\Users\Kayto\Desktop\IT\Projects\Stage\Stage PFE\TraceFlow\Back-End\models\visit\checklist.js
+==================================================
+const { nanoid } = require('nanoid');
+
+module.exports = (sequelize, DataTypes) => {
+    return sequelize.define('Checklist', {
+    checklistID: { 
+        type: DataTypes.STRING,     
+        primaryKey: true,
+        defaultValue: () => `chk_${nanoid()}`, 
+    },
+    item: { type: DataTypes.STRING, allowNull: false, unique: true },
+
+});
+
+};
+
+
+==================================================
+File contents: C:\Users\Kayto\Desktop\IT\Projects\Stage\Stage PFE\TraceFlow\Back-End\models\visit\reason.js
+==================================================
+const { nanoid } = require('nanoid');
+
+module.exports = (sequelize, DataTypes) => {
+    return sequelize.define('Reason', {
+    reasonID: { 
+        type: DataTypes.STRING,     
+        primaryKey: true,
+        defaultValue: () => `rea_${nanoid()}`,
+    },
+    item: { type: DataTypes.STRING, allowNull: false, unique: true },
+
+});
+
+};
+
+
+==================================================
+File contents: C:\Users\Kayto\Desktop\IT\Projects\Stage\Stage PFE\TraceFlow\Back-End\models\visit\visit.js
+==================================================
+const { nanoid } = require('nanoid');
+
+module.exports = (sequelize, DataTypes) => {
+    return sequelize.define('Visit', {
+    visitID: { 
+        type: DataTypes.STRING,     
+        primaryKey: true,
+        defaultValue: () => `vis_${nanoid()}`,
+    },
+    date: { type: DataTypes.DATEONLY, allowNull: false },
+    time: { type: DataTypes.TIME, allowNull: false },
+    duration: { type: DataTypes.INTEGER}, 
+    location: { type: DataTypes.STRING},
+    status: { type: DataTypes.STRING,allowNull: false },
+    photos: { type: DataTypes.ARRAY(DataTypes.STRING), defaultValue: []},
+    comment: { type: DataTypes.TEXT},
+    agentID: { type: DataTypes.STRING, allowNull: false }, 
+    timesheetID: { type: DataTypes.STRING, allowNull: false }, 
+});
+
+};
+
+
+==================================================
+File contents: C:\Users\Kayto\Desktop\IT\Projects\Stage\Stage PFE\TraceFlow\Back-End\models\visit\VisitChecklists.js
+==================================================
+module.exports = (sequelize, DataTypes) => {
+    return sequelize.define('VisitChecklist', {
+        checked: { type: DataTypes.BOOLEAN, defaultValue: false}
+    });
+};
+
+==================================================
+File contents: C:\Users\Kayto\Desktop\IT\Projects\Stage\Stage PFE\TraceFlow\Back-End\routes\agentRoutes.js
+==================================================
+const express = require('express');
+const router = express.Router();
+const { authenticateJWT, requirePermission } = require('../config/security');
+const AgentController = require('../controllers/agentController');
+
+router.get('/location', authenticateJWT, requirePermission('read_agents_by_location'), AgentController.getAgentsByLocation);
+router.get('/locations', authenticateJWT, requirePermission('read_agents_locations'), AgentController.getAllUniqueLocations);
+router.get('/phone/:phone', authenticateJWT, requirePermission('read_agents_by_phone'), AgentController.getAgentByPhone);
+router.get('/:id', authenticateJWT, requirePermission('read_agents_by_id'), AgentController.getAgentById);
+
+module.exports = router;
+
+==================================================
+File contents: C:\Users\Kayto\Desktop\IT\Projects\Stage\Stage PFE\TraceFlow\Back-End\routes\authRoutes.js
+==================================================
+const express = require('express');
+const router = express.Router();
+//const { keycloak } = require('../config/security'); // Import keycloak instance
+const AuthController = require('../controllers/authController');
+
+router.post('/login', AuthController.login);
+router.post('/verify-2fa', AuthController.verify2FA);
+
+
+module.exports = router;
+
+==================================================
+File contents: C:\Users\Kayto\Desktop\IT\Projects\Stage\Stage PFE\TraceFlow\Back-End\routes\checklistRoutes.js
+==================================================
+const express = require('express');
+const router = express.Router();
+const { authenticateJWT, requirePermission } = require('../config/security');
+const ChecklistController = require('../controllers/checklistController');
+
+router.post('/', authenticateJWT, requirePermission('create_checklists_items'), ChecklistController.createChecklist);
+router.get('/', authenticateJWT, requirePermission('read_checklists_items'), ChecklistController.getAllChecklists);
+router.get('/:id', authenticateJWT, requirePermission('read_checklist_item_details'), ChecklistController.getChecklistsByVisitID);
+
+module.exports = router;
+
+==================================================
+File contents: C:\Users\Kayto\Desktop\IT\Projects\Stage\Stage PFE\TraceFlow\Back-End\routes\configRoutes.js
+==================================================
+// routes/configRoutes.js
+const express = require('express');
+const ConfigController = require('../controllers/configController');
+const { authenticateJWT, requirePermission } = require('../config/security');
+
+const router = express.Router();
+
+router.get('/', 
+    authenticateJWT, 
+    requirePermission('read_config'),
+    ConfigController.getConfig
+);
+
+module.exports = router;
+
+==================================================
+File contents: C:\Users\Kayto\Desktop\IT\Projects\Stage\Stage PFE\TraceFlow\Back-End\routes\permissionRoutes.js
+==================================================
+const express = require('express');
+const router = express.Router();
+const PermissionController = require('../controllers/permissionController');
+const { authenticateJWT, requirePermission } = require('../config/security');
+
+
+
+router.get('/', authenticateJWT, requirePermission('read_permissions'), PermissionController.getAllPermissions);
+router.post('/', authenticateJWT, requirePermission('create_permissions'), PermissionController.createPermission);
+router.put('/:permissionID', authenticateJWT, requirePermission('update_permissions'), PermissionController.updatePermission);
+router.delete('/:permissionID', authenticateJWT, requirePermission('delete_permissions'), PermissionController.deletePermission);
+router.get('/:permissionID', authenticateJWT, requirePermission('read_permission_details'), PermissionController.getPermissionById);
+
+router.post('/role/:roleID/assign', authenticateJWT, requirePermission('assign_permissions'), PermissionController.assignPermissionsToRole);
+router.get('/role/:roleID',authenticateJWT, requirePermission('read_permissions_by_role'), PermissionController.getPermissionsByRole);
+
+router.post('/override/:userID', authenticateJWT, requirePermission('create_permission_overrides'), PermissionController.addPermissionOverride);
+router.delete('/override/:overrideID', authenticateJWT, requirePermission('delete_permission_overrides'), PermissionController.removePermissionOverride);
+router.get('/override/:userID', authenticateJWT, PermissionController.getPermissionOverrides);
+router.get('/effective/:userID', authenticateJWT,  PermissionController.getEffectivePermissions);
+
+
+module.exports = router;
+
+==================================================
+File contents: C:\Users\Kayto\Desktop\IT\Projects\Stage\Stage PFE\TraceFlow\Back-End\routes\reasonRoutes.js
+==================================================
+const express = require('express');
+const router = express.Router();
+const { authenticateJWT, requirePermission } = require('../config/security');
+const ReasonController = require('../controllers/reasonController');
+
+router.post('/', authenticateJWT, requirePermission('create_reason_items'), ReasonController.createReason);
+router.get('/', authenticateJWT, requirePermission('read_reason_items'), ReasonController.getAllReasons);
+router.get('/:id', authenticateJWT, requirePermission('read_reason_item_details'), ReasonController.getReasonsByVisitID);
+
+module.exports = router;
+
+==================================================
+File contents: C:\Users\Kayto\Desktop\IT\Projects\Stage\Stage PFE\TraceFlow\Back-End\routes\receiptBookRoutes.js
+==================================================
+// routes/receiptBookRoutes.js
+const express = require('express');
+const router = express.Router();
+const { authenticateJWT, requirePermission } = require('../config/security');
+const ReceiptBookController = require('../controllers/receiptBookController');
+
+// CRUD Routes
+router.post('/', authenticateJWT, requirePermission('create_receipt_books'), ReceiptBookController.createReceiptBook);
+router.get('/', authenticateJWT, requirePermission('access_receipt_books'), ReceiptBookController.getAllReceiptBooks);
+router.get('/:bookID', authenticateJWT, requirePermission('access_receipt_book_details'), ReceiptBookController.getReceiptBookById);
+router.put('/:bookID', authenticateJWT, requirePermission('update_receipt_books'), ReceiptBookController.updateReceiptBook);
+router.delete('/:bookID', authenticateJWT, requirePermission('delete_receipt_books'), ReceiptBookController.deleteReceiptBook);
+
+// Transfer Routes
+router.post('/send', authenticateJWT, requirePermission('send_receipt_books'), ReceiptBookController.sendToSupplier);
+router.post('/transfer', authenticateJWT, requirePermission('transfer_receipt_books'), ReceiptBookController.transfer);
+router.post('/validate-transfer', authenticateJWT, requirePermission('validate_receipt_books_transfer'), ReceiptBookController.validateTransfer);
+router.get('/:bookID/history', authenticateJWT, requirePermission('access_receipt_book_history'), ReceiptBookController.getTransferHistory);
+
+
+// CRUD Routes
+
+
+
+
+module.exports = router;
+
+==================================================
+File contents: C:\Users\Kayto\Desktop\IT\Projects\Stage\Stage PFE\TraceFlow\Back-End\routes\receiptStubRoutes.js
+==================================================
+const express = require('express');
+const router = express.Router();
+const { authenticateJWT, requirePermission } = require('../config/security');
+const ReceiptStubController = require('../controllers/receiptStubController');
+
+router.post('/:bookID/collect', authenticateJWT, requirePermission('collect_receipt_stubs'), ReceiptStubController.collectStub);
+router.post('/:bookID/validate-collection', authenticateJWT, requirePermission('validate_receipt_stubs'), ReceiptStubController.validateStubCollection);
+router.post('/:bookID/archive', authenticateJWT, requirePermission('archive_receipt_stubs'), ReceiptStubController.archiveStub);
+
+module.exports = router;
+
+==================================================
+File contents: C:\Users\Kayto\Desktop\IT\Projects\Stage\Stage PFE\TraceFlow\Back-End\routes\roleRoutes.js
+==================================================
+const express = require('express');
+const router = express.Router();
+const RoleController = require('../controllers/roleController');
+const { authenticateJWT, requirePermission } = require('../config/security');
+
+
+router.post('/', authenticateJWT, requirePermission('create_roles'), RoleController.createRole);
+router.get('/', authenticateJWT, requirePermission('read_roles'), RoleController.getAllRoles);
+router.get('/:roleID', authenticateJWT, requirePermission('read_role_details'), RoleController.getRoleById);
+router.put('/:roleID', authenticateJWT, requirePermission('update_roles'), RoleController.updateRole);
+router.delete('/:roleID', authenticateJWT, requirePermission('delete_roles'), RoleController.deleteRole);
+
+router.post('/user/:userID/assign', authenticateJWT, requirePermission('assign_roles'), RoleController.assignRolesToUser);
+router.get('/user/:userID', authenticateJWT, RoleController.getRolesByUser);
+
+
+module.exports = router;
+
+==================================================
+File contents: C:\Users\Kayto\Desktop\IT\Projects\Stage\Stage PFE\TraceFlow\Back-End\routes\timesheetRoutes.js
+==================================================
+const express = require('express');
+const router = express.Router();
+const { authenticateJWT, requirePermission } = require('../config/security');
+const TimesheetController = require('../controllers/timesheetController');
+
+
+router.post('/', authenticateJWT, requirePermission('create_timesheets'), TimesheetController.createTimesheet);
+router.post('/', authenticateJWT, requirePermission('create_timesheets_for_supervisor'), TimesheetController.createTimesheet);
+router.get('/', authenticateJWT, requirePermission('access_timesheets'), TimesheetController.getAllTimesheets);
+router.get('/:id', authenticateJWT, requirePermission('access_timesheet_details'), TimesheetController.getTimesheetById);
+router.put('/:id/validate', authenticateJWT, requirePermission('validate_timesheets'), TimesheetController.validateTimesheet);
+router.get('/supervisor/:supervisorID', authenticateJWT, requirePermission('access_supervisor_timesheets'), TimesheetController.getTimesheetsBySupervisor);
+
+module.exports = router;
+
+==================================================
+File contents: C:\Users\Kayto\Desktop\IT\Projects\Stage\Stage PFE\TraceFlow\Back-End\routes\userRoutes.js
+==================================================
+const express = require('express');
+const router = express.Router();
+const UserController = require('../controllers/userController');
+const { authenticateJWT, requirePermission } = require('../config/security');
+
+
+router.post('/', authenticateJWT, requirePermission('create_users'), UserController.createUser);
+router.get('/', authenticateJWT, requirePermission('read_users'), UserController.getAllUsers);
+router.get('/phone/:phone', authenticateJWT, requirePermission('read_user_by_phone'), UserController.getUserByPhoneNumber);
+router.get('/:userID', authenticateJWT, requirePermission('read_user_details'), UserController.getUserById);
+router.put('/:userID', authenticateJWT, requirePermission('update_users'), UserController.updateUser);
+router.delete('/:userID', authenticateJWT, requirePermission('delete_users'), UserController.deleteUser);
+
+router.get('/me/roles', authenticateJWT, UserController.getRolesByUser);
+
+router.post('/assign-supervisors', authenticateJWT, requirePermission('assign_supervisors'), UserController.assignSupervisorsToManager);
+router.get('/:userID/supervisors', authenticateJWT, requirePermission('read_supervisors'), UserController.getSupervisorsByUser);
+router.get('/:userID/managers', authenticateJWT, requirePermission('read_managers'), UserController.getManagersByUser);
+
+module.exports = router;
+
+==================================================
+File contents: C:\Users\Kayto\Desktop\IT\Projects\Stage\Stage PFE\TraceFlow\Back-End\routes\visitRoutes.js
+==================================================
+const express = require('express');
+const router = express.Router();
+const { authenticateJWT, requirePermission } = require('../config/security');
+const VisitController = require('../controllers/visitController');
+
+router.post('/', authenticateJWT, requirePermission('create_visits'), VisitController.createVisit);
+router.post('/verify-qr', authenticateJWT, requirePermission('scan_visits'), VisitController.verifyQRCode);
+router.put('/:id/log', authenticateJWT, requirePermission('log_visits'), VisitController.logVisit);
+router.get('/:id', authenticateJWT, requirePermission('access_visit_details'), VisitController.getVisitByID);
+
+module.exports = router;
+
+==================================================
+File contents: C:\Users\Kayto\Desktop\IT\Projects\Stage\Stage PFE\TraceFlow\Back-End\services\agentService.js
+==================================================
+const { Agent } = require('../models');
+
+class AgentService {
+    static async getAgentById(id) {
+        const agent = await Agent.findByPk(id);
+        if (!agent) {
+            const error = new Error('Agent not found');
+            error.status = 404;
+            throw error;
+        }
+        return agent;
+    }
+
+    static async getAgentByPhone(phone) {
+        const agent = await Agent.findOne({ where: { phone } });
+        if (!agent) {
+            const error = new Error('Agent not found');
+            error.status = 404;
+            throw error;
+        }
+        return agent;
+    }
+
+    static async getAgentsByLocation(location) {
+        if (!location) {
+            const error = new Error('Location is required');
+            error.status = 400;
+            throw error;
+        }
+        const agents = await Agent.findAll({ where: { location } });
+        return agents;
+    }
+
+    static async getAllUniqueLocations() {
+        const locations = await Agent.findAll({
+            attributes: ['location'],
+            group: ['location'],
+        });
+        const uniqueLocations = locations.map((loc) => loc.location);
+        return uniqueLocations;
+    }
+}
+
+module.exports = AgentService;
+
+==================================================
+File contents: C:\Users\Kayto\Desktop\IT\Projects\Stage\Stage PFE\TraceFlow\Back-End\services\authService.js
+==================================================
+const bcrypt = require('bcrypt');
+const jwt = require('jsonwebtoken');
+const { Op } = require('sequelize');
+const { sendSMS } = require('../config/sms');
+const { transporter } = require('../config/smtp');
+const { User, Role, OTP, Permission } = require('../models');
+const otpService = require('./otpService');
+
+const JWT_SECRET = process.env.JWT_SECRET;
+
+class AuthService {
+
+    // Login with email/password
+    static async login(identifier, password) { 
+        try {
+            const user = await User.findOne({
+                where: {
+                    [Op.or]: [ 
+                        { email: identifier },
+                        { phone: identifier }
+                    ]
+                },
+                include: [{
+                    model: Role,
+                    through: { attributes: [] },
+                    include: [{
+                        model: Permission,
+                        through: { attributes: [] },
+                        attributes: ['name', 'type', 'class'],
+                    }],
+                }],
+            });
+
+            if (!user) throw new Error('Invalid credentials');
+
+            const isMatch = await bcrypt.compare(password, user.password);
+            if (!isMatch) throw new Error('Invalid credentials');
+
+            const roles = user.Roles.map(role => ({
+                name: role.name,
+                permissions: role.Permissions.map(p => p.name),
+            }));
+
+            const token = jwt.sign(
+                { userID: user.userID, email: user.email, phone: user.phone, roles },  // Added phone to token
+                process.env.JWT_SECRET || 'your-secret-key',
+                { expiresIn: '1h' }
+            );
+
+            return { 
+                token, 
+                user: { 
+                    userID: user.userID, 
+                    email: user.email, 
+                    phone: user.phone,  // Added phone to response
+                    roles 
+                } 
+            };
+        } catch (error) {
+            throw new Error(`Login failed: ${error.message}`);
+        }
+    }
+
+    // Add a helper method to determine login type
+    static isEmail(identifier) {
+        // Basic email validation regex
+        const emailRegex = /^[^\s@]+@[^\s@]+\.[^\s@]+$/;
+        return emailRegex.test(identifier);
+    }
+
+    // Verify 2FA OTP and issue JWT
+    static async verify2FA(userID, otpCode) {
+        const otp = await otpService.validateOTP(userID, otpCode);
+        if (!otp) throw new Error('Invalid or expired OTP');
+        const user = await User.findByPk(userID);
+        const token = jwt.sign(
+            { userID: user.userID, email: user.email },
+            JWT_SECRET,
+            { expiresIn: '1h' }
+        );
+        return { token };
+    }
+
+    // Resend 2FA OTP
+    static async resend2FA(userID) {
+        const user = await User.findByPk(userID);
+        if (!user) throw new Error('User not found');
+
+        const otpCode = Math.floor(100000 + Math.random() * 900000).toString();
+        const expiresAt = new Date(Date.now() + 10 * 60 * 1000);
+        await OTP.create({ code: otpCode, expiresAt, userID: user.userID });
+
+        await sendSMS(user.phone, `Your TraceFlow 2FA code is ${otpCode}`);
+
+        return { userID: user.userID, message: 'OTP sent to your phone' };
+    }
+
+
+}
+
+module.exports = AuthService;
+
+==================================================
+File contents: C:\Users\Kayto\Desktop\IT\Projects\Stage\Stage PFE\TraceFlow\Back-End\services\checklistService.js
+==================================================
+const { Checklist, Visit, VisitChecklist } = require('../models');
+
+class ChecklistService {
+    static async createItem(text) {
+        return Checklist.create({ item: text });
+    }
+
+    static async getItemsByIds(ids) {
+        const items = await Checklist.findAll({ where: { checklistID: ids } });
+        if (items.length !== ids.length) {
+            throw new Error('One or more checklist IDs do not exist');
+        }
+        return items;
+    }
+
+    static async getChecklistsByVisitId(visitId) {
+        const visit = await Visit.findByPk(visitId, { include: Checklist });
+        return visit.Checklists;
+    }
+
+    static async updateChecklistStatus(visitId, checklistId, checked) {
+        try {
+            const visitChecklist = await VisitChecklist.findOne({
+                where: { visitID: visitId, checklistID: checklistId },
+            });
+            if (!visitChecklist) throw new Error('Checklist item not found');
+            visitChecklist.checked = checked;
+            await visitChecklist.save();
+            return visitChecklist;
+        } catch (error) {
+            throw new Error('Failed to update checklist: ' + error.message);
+        }
+    }
+
+    static async getAllChecklists() {
+        return Checklist.findAll();
+    }
+}
+
+module.exports = ChecklistService;
+
+==================================================
+File contents: C:\Users\Kayto\Desktop\IT\Projects\Stage\Stage PFE\TraceFlow\Back-End\services\otpService.js
+==================================================
+const crypto = require('crypto');
+const { Op } = require('sequelize');
+const { OTP } = require('../models');
+
+class OTPService {
+    // Generate a new OTP for a user
+    static async generateOTP(entityID, type = 'user') {
+        const code = crypto.randomInt(100000, 999999).toString();
+        const expiresAt = new Date(Date.now() + 10 * 60 * 1000);
+        const otpData = { code, expiresAt };
+        otpData[type === 'user' ? 'userID' : 'agentID'] = entityID;
+        return await OTP.create(otpData);
+    }
+
+    static async validateOTP(entityID, code, type = 'user') {
+        const where = { code, expiresAt: { [Op.gt]: new Date() } };
+        where[type === 'user' ? 'userID' : 'agentID'] = entityID;
+        const otp = await OTP.findOne({ where });
+        if (!otp) throw new Error('Invalid or expired OTP');
+        await otp.destroy();
+        return true;
+    }
+
+    // Delete expired OTPs (cleanup)
+    static async cleanupExpiredOTPs() {
+        await OTP.destroy({
+            where: {
+                expiresAt: { [Op.lt]: new Date() },
+            },
+        });
+    }
+}
+
+module.exports = OTPService;
+
+==================================================
+File contents: C:\Users\Kayto\Desktop\IT\Projects\Stage\Stage PFE\TraceFlow\Back-End\services\permissionService.js
+==================================================
+const { Permission, Role, User, UserPermissionOverride } = require('../models');
+
+class PermissionService {
+    // Create a new permission
+    static async createPermission(name, type, className, description) {
+        const perm = await Permission.create({ name, type, className, description });
+        return perm;
+    }
+
+    // Get all permissions
+    static async getAllPermissions() {
+        return await Permission.findAll();
+    }
+
+    // Get a permission by ID
+    static async getPermissionById(permissionID) {
+        const perm = await Permission.findByPk(permissionID, {
+            include: [{
+                model: Role,
+                attributes: ['roleID', 'name']
+            }]
+        });
+        if (!perm) throw new Error('Permission not found');
+        return perm;
+    }
+
+    // Update a permission
+    static async updatePermission(permissionID, updates) {
+        const perm = await Permission.findByPk(permissionID);
+        if (!perm) throw new Error('Permission not found');
+        await perm.update(updates);
+        return perm;
+    }
+
+    // Delete a permission
+    static async deletePermission(permissionID) {
+        const perm = await Permission.findByPk(permissionID);
+        if (!perm) throw new Error('Permission not found');
+        await perm.destroy();
+    }
+
+
+    
+
+    // Assign permissions to a role
+    static async assignPermissionsToRole(roleID, permissionIDs) {
+        try {
+            const role = await Role.findByPk(roleID);
+            if (!role) throw new Error('Role not found');
+
+            const permissions = await Permission.findAll({
+                where: { permissionID: permissionIDs },
+            });
+            if (permissions.length !== permissionIDs.length) {
+                throw new Error('One or more permissions not found');
+            }
+
+            const currentPermissions = await role.getPermissions();
+            const currentPermissionIDs = currentPermissions.map(p => p.permissionID);
+            const newPermissions = permissions.filter(p => !currentPermissionIDs.includes(p.permissionID));
+
+            if (newPermissions.length > 0) {
+                await role.addPermissions(newPermissions);
+            }
+
+            return {
+                roleID,
+                assignedPermissions: newPermissions.map(p => p.name),
+                totalAssigned: (await role.getPermissions()).length,
+            };
+        } catch (error) {
+            throw new Error(`Failed to assign permissions: ${error.message}`);
+        }
+    }
+
+    // Get permissions by role
+    static async getPermissionsByRole(roleID) {
+        try {
+            const role = await Role.findByPk(roleID, {
+                include: [{
+                    model: Permission,
+                    through: { attributes: [] }, // Exclude junction table attributes
+                    attributes: ['permissionID', 'name', 'type', 'class', 'description'],
+                }],
+            });
+            if (!role) throw new Error('Role not found');
+            return role.Permissions;
+        } catch (error) {
+            throw new Error(`Failed to fetch permissions for role: ${error.message}`);
+        }
+    }
+
+
+
+
+    // Add a permission override for a user within a role
+    static async addPermissionOverride(userID, roleID, permissionID, action) {
+        try {
+            const user = await User.findByPk(userID);
+            if (!user) throw new Error('User not found');
+
+            const role = await Role.findByPk(roleID);
+            if (!role) throw new Error('Role not found');
+
+            const permission = await Permission.findByPk(permissionID);
+            if (!permission) throw new Error('Permission not found');
+
+            // Check if the user has the role
+            const userRoles = await user.getRoles({ where: { roleID } });
+            if (!userRoles.length) throw new Error('User does not have this role');
+
+            // Check if the override already exists
+            const [override, created] = await UserPermissionOverride.findOrCreate({
+                where: { userID, roleID, permissionID },
+                defaults: { action },
+            });
+
+            if (!created) {
+                await override.update({ action });
+            }
+
+            return override;
+        } catch (error) {
+            throw new Error(`Failed to add permission override: ${error.message}`);
+        }
+    }
+
+    // Remove a permission override
+    static async removePermissionOverride(overrideID) {
+        try {
+            const override = await UserPermissionOverride.findByPk(overrideID);
+            if (!override) throw new Error('Override not found');
+            await override.destroy();
+            return { message: 'Override removed successfully' };
+        } catch (error) {
+            throw new Error(`Failed to remove permission override: ${error.message}`);
+        }
+    }
+
+    // Get effective permissions for a user
+    static async getEffectivePermissions(userID) {
+        try {
+            const user = await User.findByPk(userID, {
+                include: [{
+                    model: Role,
+                    through: { attributes: [] },
+                    include: [{
+                        model: Permission,
+                        through: { attributes: [] },
+                        attributes: ['permissionID', 'name', 'type', 'class', 'description'],
+                    }],
+                }, {
+                    model: UserPermissionOverride,
+                    include: [{ model: Permission }],
+                }],
+            });
+            if (!user) throw new Error('User not found');
+
+            // Aggregate role-based permissions
+            const rolePermissions = {};
+            for (const role of user.Roles) {
+                rolePermissions[role.roleID] = role.Permissions.reduce((acc, perm) => {
+                    acc[perm.permissionID] = perm;
+                    return acc;
+                }, {});
+            }
+
+            // Apply overrides
+            for (const override of user.UserPermissionOverrides) {
+                const { roleID, permissionID, action } = override;
+                if (!rolePermissions[roleID]) continue;
+
+                if (action === 'revoke') {
+                    delete rolePermissions[roleID][permissionID];
+                } else if (action === 'grant') {
+                    rolePermissions[roleID][permissionID] = override.Permission;
+                }
+            }
+
+            // Flatten the permissions into a single array
+            const effectivePermissions = [];
+            for (const roleID in rolePermissions) {
+                effectivePermissions.push(...Object.values(rolePermissions[roleID]));
+            }
+
+            return effectivePermissions;
+        } catch (error) {
+            throw new Error(`Failed to fetch effective permissions: ${error.message}`);
+        }
+    }
+
+    // Get permission overrides for a user
+    static async getPermissionOverrides(userID) {
+        try {
+            const user = await User.findByPk(userID, {
+                include: [{
+                    model: UserPermissionOverride,
+                    include: [{ model: Permission }],
+                }],
+            });
+            if (!user) throw new Error('User not found');
+            return user.UserPermissionOverrides;
+        } catch (error) {
+            throw new Error(`Failed to fetch permission overrides: ${error.message}`);
+        }
+    }
+
+
+}
+
+module.exports = PermissionService;
+
+==================================================
+File contents: C:\Users\Kayto\Desktop\IT\Projects\Stage\Stage PFE\TraceFlow\Back-End\services\reasonService.js
+==================================================
+const { Reason, Visit } = require('../models');
+
+class ReasonService {
+    static async createItem(text) {
+        return Reason.create({ item: text });
+    }
+
+    static async getItemsByIds(ids) {
+        const items = await Reason.findAll({ where: { reasonID: ids } });
+        if (items.length !== ids.length) {
+            throw new Error('One or more reason IDs do not exist');
+        }
+        return items;
+    }
+
+    static async getReasonsByVisitId(visitId) {
+        const visit = await Visit.findByPk(visitId, { include: Reason });
+        return visit.Reasons;
+    }
+
+    static async getAllReasons() {
+        return Reason.findAll();
+    }
+}
+
+module.exports = ReasonService;
+
+==================================================
+File contents: C:\Users\Kayto\Desktop\IT\Projects\Stage\Stage PFE\TraceFlow\Back-End\services\receiptBookService.js
+==================================================
+const QRCode = require('qrcode');
+const { sendSMS } = require('../config/sms');
+const { transporter } = require('../config/smtp');
+const { ReceiptBook, User, Agent, OTP, ReceiptBookTransfer, ReceiptStub, Role } = require('../models');
+const OTPService = require('../services/otpService');
+
+class ReceiptBookService {
+
+
+    // Create a new receipt book with stub
+    static async createReceiptBook(number, type, purchaseUserID) {
+        const tlvData = [
+            this.formatTLV('01', (number || number).toString()),
+            this.formatTLV('02', type || type),
+        ].join('');
+        const qrCode = await QRCode.toDataURL(tlvData);
+        const book = await ReceiptBook.create({ number, type, qrCode, status: 'In Stock', currentHolderID: purchaseUserID });
+        await ReceiptStub.create({ bookID: book.bookID, status: 'pending' });
+        await this.logTransfer(book.bookID, purchaseUserID, null, 'Pending', 'ToSupplier');
+        return book;
+    }
+
+    // Get receipt book by ID with associations
+    static async getReceiptBookById(bookID) {
+        const book = await ReceiptBook.findByPk(bookID, {
+            include: [{ model: User, as: 'CurrentHolder' }, { model: ReceiptBookTransfer }, { model: Agent }, { model: ReceiptStub }],
+        });
+        if (!book) throw new Error('Receipt book not found');
+        return book;
+    }
+
+    // Send multiple books to supplier
+    static async sendToSupplier(bookIDs, supplierEmail, userID) {
+        const books = await ReceiptBook.findAll({ where: { bookID: bookIDs, status: 'In Stock', currentHolderID: userID } });
+        if (books.length !== bookIDs.length) throw new Error('Some books are not in stock or not held by you');
+
+        await Promise.all(books.map(book =>
+            Promise.all([
+                book.update({ status: 'Sent to Supplier', currentHolderID: null, supplierSentAt: new Date() }),
+                this.logTransfer(book.bookID, userID, null, 'Validated', 'ToSupplier'),
+            ])
+        ));
+
+        const table = books.map(b => `${b.number} | ${b.type}`).join('\n');
+        await transporter.sendMail({
+            from: process.env.SMTP_USER,
+            to: supplierEmail,
+            subject: 'Receipt Books Sent',
+            text: `The following receipt books have been sent:\n${table}`,
+            attachments: books.map(b => ({ filename: `${b.number}.png`, content: b.qrCode.split("base64,")[1], encoding: 'base64' })),
+        });
+
+        return { message: `${books.length} books sent to supplier` };
+    }
+
+    // Get transfer history
+    static async getTransferHistory(bookID) {
+        return await ReceiptBookTransfer.findAll({
+            where: { bookID },
+            include: [{ model: User, as: 'FromUser' }, { model: User, as: 'ToUser' }, { model: Agent }],
+            order: [['transferDate', 'ASC']],
+        });
+    }
+
+    // Generic transfer method for users or agents
+    static async transfer(bookIDs, recipientID, senderID, recipientType = 'user') {
+        const books = await ReceiptBook.findAll({ where: { bookID: bookIDs } });
+        if (books.length !== bookIDs.length) throw new Error('Some books not found');
+        
+        const canTransfer = await this.canTransfer(books, senderID);
+        if (!canTransfer) throw new Error('Invalid transfer conditions');
+    
+        const recipient = recipientType === 'user' 
+            ? await User.findByPk(recipientID, { include: [Role] }) 
+            : await Agent.findOne({ where: { agentID: recipientID } });
+        if (!recipient) throw new Error(`${recipientType === 'user' ? 'User' : 'Agent'} not found`);
+    
+        const { transferType } = this.determineTransferDetails(books[0].status, recipientType, recipient);
+        if (!transferType) throw new Error('Invalid transfer type determined');
+    
+        const otp = await OTPService.generateOTP(recipientID, recipientType);
+        const recipientPhone = recipient.phone || recipient.Agent?.phone;
+        const smsResult = await sendSMS(recipientPhone, `Your OTP for receiving ${bookIDs.length} books is ${otp.code}`);
+        
+        if (!smsResult.success) {
+            console.warn(`${new Date().toISOString()} - Notification failed for ${recipientType} ${recipientID}: ${smsResult.reason}`);
+        }
+    
+        await Promise.all(books.map(book =>
+            this.logTransfer(book.bookID, senderID, recipientID, 'Pending', transferType, recipientType === 'agent' ? 'toAgentID' : 'toUserID')
+        ));
+    
+        return { message: `Transfer initiated for ${recipientType} ${recipientID}`, otpID: otp.otpID };
+    }
+
+    // Validate transfer with OTP
+    static async validateTransfer(bookIDs, recipientID, otpCode, recipientType = 'user') {
+        const transfers = await ReceiptBookTransfer.findAll({
+            where: { 
+                bookID: bookIDs, 
+                [recipientType === 'user' ? 'toUserID' : 'toAgentID']: recipientID, 
+                status: 'Pending' 
+            },
+        });
+        if (transfers.length !== bookIDs.length) throw new Error('Invalid or incomplete transfer set');
+    
+        await OTPService.validateOTP(recipientID, otpCode, recipientType);
+    
+        const recipient = recipientType === 'user' 
+            ? await User.findByPk(recipientID, { include: [Role] }) 
+            : await Agent.findByPk(recipientID);
+        if (!recipient) throw new Error(`${recipientType} not found`);
+    
+        const transferType = transfers[0].transferType;
+        const book = await ReceiptBook.findByPk(transfers[0].bookID); // Fetch book for current status
+        const { status } = this.determineTransferDetails(book.status, recipientType, recipient); // Use book.status
+    
+        await Promise.all(transfers.map(async t => {
+            const book = await ReceiptBook.findByPk(t.bookID);
+            await Promise.all([
+                book.update({ 
+                    status, 
+                    currentHolderID: recipientType === 'user' ? recipientID : null, 
+                    agentID: recipientType === 'agent' ? recipientID : null 
+                }),
+                t.update({ status: 'Validated' }),
+            ]);
+        }));
+    
+        const recipientEmail = recipient.email || (await User.findByPk(transfers[0].fromUserID))?.email;
+        await transporter.sendMail({
+            from: process.env.SMTP_USER,
+            to: recipientEmail,
+            subject: `Transfer of ${bookIDs.length} Books Validated`,
+            text: `${bookIDs.length} books transferred to ${recipientType} ${recipientID}. New status: ${status}`,
+        });
+    
+        return { message: `${bookIDs.length} books transferred and validated` };
+    }
+
+    // Helper: Log transfer
+    static async logTransfer(bookID, fromID, toID, status, transferType, toField = 'toUserID') {
+        const transferData = { bookID, status, transferType };
+        if (fromID) transferData.fromUserID = fromID;
+        if (toID) transferData[toField] = toID;
+        return await ReceiptBookTransfer.create(transferData);
+    }
+
+    // Helper: Check if transfer is valid
+    static async canTransfer(books, senderID) { // Make async to fetch sender roles
+        const sender = await User.findByPk(senderID, { include: [Role] });
+        const isSuperAdmin = sender?.Roles?.some(r => r.name === 'Super Admin');
+    
+        if (isSuperAdmin) {
+            console.log(`${new Date().toISOString()} - Super Admin bypass for senderID: ${senderID}`);
+            return true; // Super Admin can transfer anything
+        }
+    
+        return books.every(book => 
+            (book.status === 'In Stock' && book.currentHolderID === senderID) ||
+            (book.status === 'Sent to Supplier' && !book.currentHolderID) ||
+            (['With Regional Manager', 'With Supervisor', 'Stub Collected'].includes(book.status) && book.currentHolderID === senderID)
+        );
+    }
+    // Helper: Determine status and transfer type
+    static determineTransferDetails(currentStatus, recipientType, recipient) {
+        console.log(`${new Date().toISOString()} - determineTransferDetails inputs:`, { currentStatus, recipientType, recipient: JSON.stringify(recipient) });
+    
+        if (recipientType === 'agent') {
+            return { status: 'Assigned to Agent', transferType: 'ToAgent' };
+        }
+    
+        const role = recipient.Roles?.length ? recipient.Roles[0].name : 'Unknown';
+        console.log(`${new Date().toISOString()} - Determined role: ${role} for recipientID: ${recipient.userID || recipient.agentID}`);
+    
+        const statusMap = {
+            'In Stock': 'Sent to Supplier',
+            'Sent to Supplier': 'With Regional Manager',
+            'With Regional Manager': {
+                'Supervisor': 'With Supervisor',
+                'Regional Manager': 'With Regional Manager',
+                'Stock Manager': 'With Stock Manager', // Fixed this transition
+            },
+            'With Supervisor': {
+                'Supervisor': 'With Supervisor',
+                'Regional Manager': 'With Regional Manager',
+                'Stock Manager': 'With Stock Manager',
+            },
+            'Stub Collected': {
+                'Regional Manager': 'With Regional Manager',
+                'Stock Manager': 'With Stock Manager',
+            },
+            'With Stock Manager': {
+                'Stock Manager': 'With Stock Manager',
+            },
+        };
+    
+        const transferTypeMap = {
+            'Regional Manager': 'ToRegionalManager',
+            'Supervisor': 'ToSupervisor',
+            'Stock Manager': 'ToStockManager',
+        };
+    
+        let newStatus;
+        if (statusMap[currentStatus]) {
+            if (typeof statusMap[currentStatus] === 'object') {
+                newStatus = statusMap[currentStatus][role] || currentStatus;
+            } else {
+                newStatus = statusMap[currentStatus];
+            }
+        } else {
+            newStatus = currentStatus;
+        }
+    
+        const transferType = transferTypeMap[role] || 'Unknown';
+        if (!['ToSupplier', 'ToRegionalManager', 'ToSupervisor', 'ToAgent', 'StubToSupervisor', 'ToRegionalManagerFromSupervisor', 'ToStockManager', 'Archived'].includes(transferType)) {
+            console.error(`${new Date().toISOString()} - Invalid transferType: ${transferType} for role: ${role}`);
+            throw new Error(`Invalid transferType: ${transferType}`);
+        }
+    
+        console.log(`${new Date().toISOString()} - Determined:`, { status: newStatus, transferType });
+        return { status: newStatus, transferType };
+    }
+
+    // helper: Format TLV data
+    static formatTLV(tag, value) {
+        const length = value.length.toString().padStart(2, '0');
+        return `${tag}${length}${value}`;
+    }
+
+
+
+    static async getAllReceiptBooks() {
+        return await ReceiptBook.findAll({
+            include: [{ model: User, as: 'CurrentHolder' }, { model: ReceiptBookTransfer }, { model: Agent }, { model: ReceiptStub }],
+        });
+    }
+
+    static async updateReceiptBook(bookID, updates) {
+        const book = await this.getReceiptBookById(bookID);
+
+        // Restrict which fields can be updated
+        const allowedUpdates = ['number', 'type'];
+        const updateData = {};
+        for (const key of allowedUpdates) {
+            if (updates[key] !== undefined) {
+                updateData[key] = updates[key];
+            }
+        }
+
+        // If number or type changes, regenerate QR code
+        if (updateData.number || updateData.type) {
+            const tlvData = [
+                this.formatTLV('01', (updateData.number || book.number).toString()),
+                this.formatTLV('02', updateData.type || book.type),
+            ].join('');
+            updateData.qrCode = await QRCode.toDataURL(tlvData);
+        }
+
+        await book.update(updateData);
+        return book;
+    }
+
+    static async deleteReceiptBook(bookID, userID) {
+        const book = await this.getReceiptBookById(bookID);
+
+        // Only allow deletion if the book is in 'In Stock' or 'With Stock Manager' status
+        if (!['In Stock', 'With Stock Manager'].includes(book.status)) {
+            throw new Error('Receipt book can only be deleted if In Stock or With Stock Manager');
+        }
+
+        if (book.currentHolderID !== userID) {
+            throw new Error('Only the current holder can delete this receipt book');
+        }
+
+        await Promise.all([
+            ReceiptStub.destroy({ where: { bookID } }),
+            ReceiptBookTransfer.destroy({ where: { bookID } }),
+            book.destroy(),
+        ]);
+
+        return { message: `Receipt Book #${book.number} deleted successfully` };
+    }
+
+
+
+
+
+
+}
+
+module.exports = ReceiptBookService;
+
+==================================================
+File contents: C:\Users\Kayto\Desktop\IT\Projects\Stage\Stage PFE\TraceFlow\Back-End\services\receiptStubService.js
+==================================================
+const { ReceiptBook, Agent, ReceiptStub, ReceiptBookTransfer } = require('../models');
+const OTPService = require('./otpService');
+const { sendSMS } = require('../config/sms');
+const { transporter } = require('../config/smtp');
+
+class ReceiptStubService {
+    // Collect stub from agent
+    static async collectStub(bookID) {
+        const book = await ReceiptBook.findByPk(bookID, { include: [Agent, ReceiptStub] });
+        if (book.status !== 'Assigned to Agent' || !book.agentID) throw new Error('Book not assigned to an agent');
+        if (book.ReceiptStub.status !== 'pending') throw new Error('Stub already processed');
+
+        const otp = await OTPService.generateOTP(book.agentID, 'agent');
+        await sendSMS(book.Agent.phone, `Your OTP for stub collection of Book #${book.number} is ${otp.code}`);
+
+        return { message: 'OTP sent to agent' };
+    }
+
+    // Validate stub collection
+    static async validateStubCollection(bookID, supervisorID, otpCode) {
+        const book = await ReceiptBook.findByPk(bookID, { include: [Agent, ReceiptStub] });
+        if (book.status !== 'Assigned to Agent' || !book.agentID) throw new Error('Invalid book state');
+
+        await OTPService.validateOTP(book.agentID, otpCode, 'agent');
+
+        await Promise.all([
+            book.update({ status: 'Stub Collected', agentID: null, currentHolderID: supervisorID }),
+            book.ReceiptStub.update({ status: 'collected' }),
+            ReceiptBookTransfer.create({ bookID, fromAgentID: book.agentID, toUserID: supervisorID, status: 'Validated', transferType: 'StubToSupervisor' }),
+        ]);
+
+        return { message: 'Stub collected' };
+    }
+
+    // Archive stub
+    static async archiveStub(bookID, stockManagerID) {
+        const book = await ReceiptBook.findByPk(bookID, { include: [ReceiptStub] });
+        if (book.currentHolderID !== stockManagerID) throw new Error('Only the stock manager can archive');
+        if (book.status !== 'With Stock Manager') throw new Error('Book must be with stock manager');
+        if (book.ReceiptStub.status === 'archived') throw new Error('Stub already archived');
+
+        await Promise.all([
+            book.update({ status: 'Archived' }),
+            book.ReceiptStub.update({ status: 'archived' }),
+            ReceiptBookTransfer.create({ bookID, fromUserID: stockManagerID, toUserID: stockManagerID, status: 'Validated', transferType: 'Archived' }),
+        ]);
+
+        return { message: 'Stub archived' };
+    }
+}
+
+module.exports = ReceiptStubService;
+
+==================================================
+File contents: C:\Users\Kayto\Desktop\IT\Projects\Stage\Stage PFE\TraceFlow\Back-End\services\roleService.js
+==================================================
+const { Role, Permission, User } = require('../models');
+
+class RoleService {
+    // Create a new role
+    static async createRole(name, description) {
+        try {
+            const [role, created] = await Role.findOrCreate({
+                where: { name },
+                defaults: {
+                    roleID: `role_${Math.random().toString(36).substr(2, 9)}`, // Replace with nanoid if preferred
+                    name,
+                    description,
+                },
+            });
+            if (!created) throw new Error('Role already exists');
+            return role;
+        } catch (error) {
+            throw new Error(`Failed to create role: ${error.message}`);
+        }
+    }
+
+    // Get all roles
+    static async getAllRoles() {
+        try {
+            return await Role.findAll({
+                attributes: ['roleID', 'name', 'description'],
+            });
+        } catch (error) {
+            throw new Error(`Failed to fetch roles: ${error.message}`);
+        }
+    }
+
+    // Get role by ID
+    static async getRoleById(roleID) {
+        try {
+            const role = await Role.findByPk(roleID);
+            if (!role) throw new Error('Role not found');
+            return role;
+        } catch (error) {
+            throw new Error(`Failed to fetch role: ${error.message}`);
+        }
+    }
+
+    // Delete a role
+    static async deleteRole(roleID) {
+        try {
+            const role = await Role.findByPk(roleID);
+            if (!role) throw new Error('Role not found');
+            await role.destroy();
+            return role;
+        } catch (error) {
+            throw new Error(`Failed to delete role: ${error.message}`);
+        }
+    }
+
+    // Update a role    
+    static async updateRole(roleID, updates) {
+        try {
+            const role = await Role.findByPk(roleID);
+            if (!role) throw new Error('Role not found');
+            await role.update(updates);
+            return role;
+        } catch (error) {
+            throw new Error(`Failed to update role: ${error.message}`);
+        }
+    }
+
+
+    // Assign roles to a user
+    static async assignRolesToUser(userID, roleIDs) {
+        try {
+            const user = await User.findByPk(userID);
+            if (!user) throw new Error('User not found');
+
+            const roles = await Role.findAll({
+                where: { roleID: roleIDs },
+            });
+            if (roles.length !== roleIDs.length) {
+                throw new Error('One or more roles not found');
+            }
+
+            const currentRoles = await user.getRoles();
+            const currentRoleIDs = currentRoles.map(r => r.roleID);
+            const newRoles = roles.filter(r => !currentRoleIDs.includes(r.roleID));
+
+            if (newRoles.length > 0) {
+                await user.addRoles(newRoles);
+            }
+
+            return {
+                userID,
+                assignedRoles: newRoles.map(r => r.name),
+                totalAssigned: (await user.getRoles()).length,
+            };
+        } catch (error) {
+            throw new Error(`Failed to assign roles: ${error.message}`);
+        }
+    }
+
+    // Get roles by user
+    static async getRolesByUser(userID) {
+        try {
+            const user = await User.findByPk(userID, {
+                include: [{
+                    model: Role,
+                    through: { attributes: [] },
+                    attributes: ['roleID', 'name', 'description'],
+                    include: [{
+                        model: Permission,
+                        through: { attributes: [] },
+                        attributes: ['name', 'description'],
+                    }],
+                }],
+            });
+            if (!user) throw new Error('User not found');
+            return user.Roles;
+        } catch (error) {
+            throw new Error(`Failed to fetch roles for user: ${error.message}`);
+        }
+    }
+
+
+
+}
+
+module.exports = RoleService;
+
+==================================================
+File contents: C:\Users\Kayto\Desktop\IT\Projects\Stage\Stage PFE\TraceFlow\Back-End\services\timesheetService.js
+==================================================
+const { Visit, Reason, Checklist, Timesheet } = require('../models');
+const VisitService = require('./visitService');
+
+class TimesheetService {
+    static async createTimesheet(data) {
+        const { weekNumber, year, supervisorID, visits, status = 'pending' } = data;
+
+        // Validate required fields
+        if (!weekNumber || !year || !supervisorID || !Array.isArray(visits)) {
+            const error = new Error('Invalid input data');
+            error.status = 400;
+            throw error;
+        }
+
+        // Validate each visit structure
+        for (const visit of visits) {
+            if (!visit.date || !visit.time || !visit.agentID) {
+                const error = new Error('Invalid visit data structure');
+                error.status = 400;
+                throw error;
+            }
+            if (!Array.isArray(visit.reasons) || visit.reasons.length === 0) {
+                const error = new Error('At least one reason must be provided');
+                error.status = 400;
+                throw error;
+            }
+            if (!Array.isArray(visit.checklists) || visit.checklists.length === 0) {
+                const error = new Error('At least one checklist item must be provided');
+                error.status = 400;
+                throw error;
+            }
+        }
+
+        try {
+            let timesheet = await Timesheet.findOne({ where: { weekNumber, year, supervisorID } });
+            if (!timesheet) {
+                timesheet = await Timesheet.create({ weekNumber, year, supervisorID, status });
+            } else if (timesheet.status !== status) {
+                timesheet.status = status;
+                await timesheet.save();
+            }
+
+            for (const visitData of visits) {
+                await VisitService.createVisit({
+                    date: visitData.date,
+                    time: visitData.time,
+                    location: visitData.location,
+                    agentID: visitData.agentID,
+                    supervisorID,
+                    timesheetID: timesheet.timesheetID,
+                    reasons: visitData.reasons,
+                    checklists: visitData.checklists,
+                    status, 
+                });
+            }
+
+            return await Timesheet.findByPk(timesheet.timesheetID, {
+                include: [
+                    {
+                        model: Visit,
+                        include: [
+                            { model: Checklist, through: { attributes: ["checked"] } },
+                            { model: Reason, through: { attributes: [] } },
+                        ],
+                    },
+                ],
+            });
+        } catch (error) {
+            const err = new Error('Failed to create timesheet: ' + error.message);
+            err.status = 500;
+            throw err;
+        }
+    }
+
+    static async validateTimesheet(timesheetID, visitIDs = [], status) {
+        // Validate inputs
+        if (!status || (Array.isArray(visitIDs) && visitIDs.some(id => typeof id !== 'string'))) {
+            const error = new Error('Invalid input: status is required and visitIDs must be strings');
+            error.status = 400;
+            throw error;
+        }
+    
+        try {
+            // Fetch timesheet
+            const timesheet = await Timesheet.findByPk(timesheetID);
+            if (!timesheet) {
+                const error = new Error('Timesheet not found');
+                error.status = 404;
+                throw error;
+            }
+    
+            // Fetch all visits for the timesheet
+            const visits = await Visit.findAll({ where: { timesheetID } });
+    
+            // Determine which visits to update (only pending or rejected)
+            let visitsToUpdate;
+            if (visitIDs.length === 0) {
+                // If no visitIDs provided, update all pending or rejected visits
+                visitsToUpdate = visits.filter(visit => 
+                    visit.status === 'pending' || visit.status === 'rejected'
+                );
+            } else {
+                // If visitIDs provided, update only those that are pending or rejected
+                const visitIdSet = new Set(visitIDs);
+                visitsToUpdate = visits.filter(visit => 
+                    visitIdSet.has(visit.visitID) && 
+                    (visit.status === 'pending' || visit.status === 'rejected')
+                );
+                // No error if some visitIDs don’t match—just skip them
+            }
+    
+            // If no visits to update, return the timesheet as-is
+            if (visitsToUpdate.length === 0) {
+                return timesheet;
+            }
+    
+            // Update the status of matching visits
+            await Promise.all(visitsToUpdate.map(async (visit) => {
+                visit.status = status;
+                await visit.save();
+            }));
+    
+            // Check if all visits are validated and update timesheet status if so
+            const updatedVisits = await Visit.findAll({ where: { timesheetID } });
+            if (updatedVisits.every(visit => visit.status === 'validated')) {
+                timesheet.status = 'validated';
+                await timesheet.save();
+            }
+    
+            return timesheet;
+        } catch (error) {
+            const err = new Error(`Validation failed: ${error.message}`);
+            err.status = error.status || 500;
+            throw err;
+        }
+    }
+
+    static async listTimesheets() {
+        try {
+            return await Timesheet.findAll({
+                include: [
+                    {
+                        model: Visit,
+                        include: [
+                            { model: Checklist, through: { attributes: ["checked"] }, attributes: ["item"] },
+                            { model: Reason, through: { attributes: [] }, attributes: ["item"] },
+                        ],
+                    },
+                ],
+            });
+        } catch (error) {
+            const err = new Error('Failed to get timesheets: ' + error.message);
+            err.status = 500;
+            throw err;
+        }
+    }
+
+    static async viewTimesheet(timesheetID) {
+        try {
+            const timesheet = await Timesheet.findByPk(timesheetID, {
+                include: [
+                    {
+                        model: Visit,
+                        include: [
+                            { model: Checklist, through: { attributes: ["checked"] }, attributes: ["item"] },
+                            { model: Reason, through: { attributes: [] }, attributes: ["item"] },
+                        ],
+                    },
+                ],
+            });
+            if (!timesheet) {
+                const error = new Error('Timesheet not found');
+                error.status = 404;
+                throw error;
+            }
+            return timesheet;
+        } catch (error) {
+            const err = new Error('Failed to get timesheet: ' + error.message);
+            err.status = error.status || 500;
+            throw err;
+        }
+    }
+
+    static async getTimesheetsBySupervisor(supervisorID) {
+        if (!supervisorID) {
+            const error = new Error('Invalid supervisorID');
+            error.status = 400;
+            throw error;
+        }
+        try {
+            return await Timesheet.findAll({
+                where: { supervisorID },
+                include: [
+                    {
+                        model: Visit,
+                        include: [
+                            { model: Checklist, through: { attributes: ["checked"] }, attributes: ["item"] },
+                            { model: Reason, through: { attributes: [] }, attributes: ["item"] },
+                        ],
+                    },
+                ],
+            });
+        } catch (error) {
+            const err = new Error('Failed to get timesheets by supervisorID: ' + error.message);
+            err.status = 500;
+            throw err;
+        }
+    }
+}
+
+module.exports = TimesheetService;
+
+==================================================
+File contents: C:\Users\Kayto\Desktop\IT\Projects\Stage\Stage PFE\TraceFlow\Back-End\services\userService.js
+==================================================
+const bcrypt = require('bcrypt');
+const { User, Role, Permission, UserPermissionOverride } = require('../models');
+
+class UserService {
+    // Create a user (simplified for this example)
+    static async createUser(email, password, firstname, lastname, phone, wallet) {
+        try {
+            const hashedPassword = await bcrypt.hash(password, 10);
+            const [user, created] = await User.findOrCreate({
+                where: { phone },
+                defaults: {
+                    email,
+                    password: hashedPassword,
+                    firstname,
+                    lastname,
+                    phone,
+                    wallet,
+                },
+            });
+            if (!created) throw new Error('User already exists');
+            return user;
+        } catch (error) {
+            throw new Error(`Failed to create user: ${error.message}`);
+        }
+    }
+
+    // Get all users
+    static async getAllUsers() {
+        try {
+            return await User.findAll({
+                include: [{
+                    model: Role,
+                    through: { attributes: [] },
+                    attributes: ['name'],
+                }],
+            });
+        } catch (error) {
+            throw new Error(`Failed to fetch users: ${error.message}`);
+        }
+    }
+
+    // Get a user ID by phone number
+    static async getUserByPhoneNumber(phone) {
+        try {
+            const user = await User.findOne({
+                where: { phone },
+            });
+            if (!user) throw new Error('User not found');
+            return user;
+        } catch (error) {
+            throw new Error(`Failed to fetch user ID: ${error.message}`);
+        }
+    }
+
+    // Get a user by ID
+    static async getUserById(userID) {
+        try {
+            const user = await User.findByPk(userID);
+            if (!user) throw new Error('User not found');
+            return user;
+        } catch (error) {
+            throw new Error(`Failed to fetch user: ${error.message}`);
+        }
+    }
+    // Update a user
+    static async updateUser(userID, userData) {
+        try {
+            const user = await User.findByPk(userID);
+            if (!user) throw new Error('User not found');
+            await user.update(userData);
+            return user;
+        } catch (error) {
+            throw new Error(`Failed to update user: ${error.message}`);
+        }
+    }
+    // Delete a user
+    static async deleteUser(userID) {
+        try {
+            const user = await User.findByPk(userID);
+            if (!user) throw new Error('User not found');
+            await user.destroy();
+            return { message: 'User deleted successfully' };
+        } catch (error) {
+            throw new Error(`Failed to delete user: ${error.message}`);
+        }
+    }
+
+
+
+    
+    static async getSupervisorsByUser(userID) {
+        try {
+            const user = await User.findByPk(userID, {
+                include: [{
+                    model: User,
+                    as: 'Supervisors',
+                    through: { attributes: [] },
+                    attributes: ['userID', 'firstname', 'lastname', 'email', 'phone'],
+                }],
+            });
+            if (!user) throw new Error('User not found');
+            return user.Supervisors;
+        } catch (error) {
+            throw new Error(`Failed to fetch supervisors: ${error.message}`);
+        }
+    }
+
+    static async getManagersByUser(userID) {
+        try {
+            const user = await User.findByPk(userID, {
+                include: [{
+                    model: User,
+                    as: 'Managers',
+                    through: { attributes: [] },
+                    attributes: ['userID', 'firstname', 'lastname', 'email', 'phone'],
+                }],
+            });
+            if (!user) throw new Error('User not found');
+            return user.Managers;
+        } catch (error) {
+            throw new Error(`Failed to fetch managers: ${error.message}`);
+        }
+    }
+
+    // Update assignSupervisorsToManager to ensure it works bidirectionally
+    static async assignSupervisorsToManager(managerID, supervisorIDs) {
+        try {
+            const manager = await User.findByPk(managerID);
+            if (!manager) throw new Error('Manager not found');
+
+            const supervisors = await User.findAll({
+                where: { userID: supervisorIDs },
+            });
+            if (supervisors.length !== supervisorIDs.length) {
+                throw new Error('One or more supervisors not found');
+            }
+
+            // Fetch current supervisors
+            const currentSupervisors = await manager.getSupervisors();
+            const currentSupervisorIDs = currentSupervisors.map(s => s.userID);
+            const newSupervisors = supervisorIDs.filter(id => !currentSupervisorIDs.includes(id));
+
+            if (newSupervisors.length > 0) {
+                await manager.addSupervisors(newSupervisors);
+            }
+
+            return {
+                managerID,
+                assignedSupervisors: supervisors.map(s => s.userID),
+                message: 'Supervisors assigned successfully',
+            };
+        } catch (error) {
+            throw new Error(`Failed to assign supervisors: ${error.message}`);
+        }
+    }
+
+
+}
+
+module.exports = UserService;
+
+==================================================
+File contents: C:\Users\Kayto\Desktop\IT\Projects\Stage\Stage PFE\TraceFlow\Back-End\services\visitService.js
+==================================================
+const { Visit, Agent, Reason, Checklist } = require('../models');
+const { parseTLV } = require('../utils/qrParser');
+const ChecklistService = require('./checklistService');
+const ReasonService = require('./reasonService');
+
+class VisitService {
+    static async createVisit(data) {
+        const { date, time, agentID, supervisorID, timesheetID, reasons, checklists, status = 'pending' } = data;
+        if (!date || !time || !agentID || !supervisorID || !timesheetID) {
+            const error = new Error('Missing required fields');
+            error.status = 400;
+            throw error;
+        }
+        try {
+            const agent = await Agent.findByPk(agentID);
+            if (!agent) {
+                const error = new Error('Agent not found');
+                error.status = 404;
+                throw error;
+            }
+            const visit = await Visit.create({
+                date,
+                time,
+                location: agent.location,
+                agentID,
+                timesheetID,
+                status, 
+            });
+            const reasonIds = reasons.map(r => r.id);
+            const createdReasons = await ReasonService.getItemsByIds(reasonIds);
+            await visit.setReasons(createdReasons);
+            const checklistIds = checklists.map(c => c.id);
+            const createdChecklists = await ChecklistService.getItemsByIds(checklistIds);
+            await visit.setChecklists(createdChecklists);
+            return visit.reload({ include: [Reason, Checklist] });
+        } catch (error) {
+            const err = new Error('Failed to create visit: ' + error.message);
+            err.status = error.status || 500;
+            throw err;
+        }
+    }
+
+    static async verifyQRCode(qrData, visitId) {
+        if (!qrData || !visitId) {
+            const error = new Error('Missing required parameters');
+            error.status = 400;
+            throw error;
+        }
+        try {
+            const parsedQR = parseTLV(qrData);
+            let agentPhoneFromQR = parsedQR['29']?.['03'] || parsedQR['02'];
+            if (typeof agentPhoneFromQR === 'object' && agentPhoneFromQR !== null) {
+                agentPhoneFromQR = Object.values(agentPhoneFromQR).join('').replace(/[^0-9+]/g, '');
+            } else {
+                agentPhoneFromQR = agentPhoneFromQR?.replace(/[^0-9+]/g, '');
+            }
+            if (!agentPhoneFromQR) {
+                const error = new Error('Invalid QR code - missing agent phone number');
+                error.status = 400;
+                throw error;
+            }
+            const visit = await Visit.findByPk(visitId);
+            if (!visit) {
+                const error = new Error('Visit not found');
+                error.status = 404;
+                throw error;
+            }
+            const agent = await Agent.findByPk(visit.agentID);
+            if (agent.phone !== agentPhoneFromQR) {
+                const error = new Error(`Phone mismatch:\nQR: ${agentPhoneFromQR}\nVisit: ${agent.phone}`);
+                error.status = 400;
+                throw error;
+            }
+            return { valid: true, message: 'Verification successful' };
+        } catch (error) {
+            const err = new Error(error.message);
+            err.status = error.status || 500;
+            throw err;
+        }
+    }
+
+    static async logVisit(visitID, data) {
+        try {
+            const { duration, checklistUpdates, photos, comment } = data;
+            const visit = await Visit.findByPk(visitID, { include: [Checklist] });
+            if (!visit) {
+                const error = new Error('Visit not found');
+                error.status = 404;
+                throw error;
+            }
+            if (checklistUpdates && Array.isArray(checklistUpdates)) {
+                for (const update of checklistUpdates) {
+                    await ChecklistService.updateChecklistStatus(visitID, update.checklistID, update.checked);
+                }
+            }
+            visit.duration = duration;
+            visit.photos = photos;
+            visit.comment = comment;
+            visit.status = 'visited';
+            await visit.save();
+            return visit.reload({ include: [Checklist] });
+        } catch (error) {
+            const err = new Error('Failed to log visit: ' + error.message);
+            err.status = error.status || 500;
+            throw err;
+        }
+    }
+
+    static async getVisitByID(visitID) {
+        try {
+            const visit = await Visit.findByPk(visitID, { include: [Checklist, Reason] });
+            if (!visit) {
+                const error = new Error('Visit not found');
+                error.status = 404;
+                throw error;
+            }
+            return visit;
+        } catch (error) {
+            const err = new Error('Failed to fetch visit: ' + error.message);
+            err.status = error.status || 500;
+            throw err;
+        }
+    }
+}
+
+module.exports = VisitService;
+
+==================================================
+File contents: C:\Users\Kayto\Desktop\IT\Projects\Stage\Stage PFE\TraceFlow\Back-End\utils\generateTLV.js
+==================================================
+function generateTLV(receiptBook) {
+    let tlvString = "";
+
+    // Tag 01: bookID
+    const bookID = receiptBook.bookID || "";
+    tlvString += `01${String(bookID.length).padStart(2, "0")}${bookID}`;
+
+    // Tag 02: number (convert to string)
+    const number = String(receiptBook.number || "");
+    tlvString += `02${String(number.length).padStart(2, "0")}${number}`;
+
+    // Tag 03: type
+    const type = receiptBook.type || "";
+    tlvString += `03${String(type.length).padStart(2, "0")}${type}`;
+
+    // Tag 04: status
+    const status = receiptBook.status || "";
+    tlvString += `04${String(status.length).padStart(2, "0")}${status}`;
+
+    return tlvString;
+}
+
+// Example usage
+const receiptBook = {
+    bookID: "book_001",
+    number: 1001,
+    type: "Payment",
+    status: "In Stock"
+};
+const tlvData = generateTLV(receiptBook);
+console.log(tlvData); // "0107book_001020410010307Payment0408In Stock"
+
+// Function to parse TLV data
+function parseTLV(tlvString) {
+    const result = {};
+    let i = 0;
+    while (i < tlvString.length) {
+        const tag = tlvString.substr(i, 2);
+        const length = parseInt(tlvString.substr(i + 2, 2), 10);
+        const value = tlvString.substr(i + 4, length);
+        result[tag] = value;
+        i += 4 + length;
+    }
+    return result;
+}
+
+// Verify with parseTLV
+const parsed = parseTLV(tlvData);
+console.log(parsed);
+/* Output:
+{
+    "01": "book_001",
+    "02": "1001",
+    "03": "Payment",
+    "04": "In Stock"
+}
+*/
+
+==================================================
+File contents: C:\Users\Kayto\Desktop\IT\Projects\Stage\Stage PFE\TraceFlow\Back-End\utils\qrParser.js
+==================================================
+function parseTLV(data) {
+    let index = 0;
+    const result = {};
+
+    while (index < data.length) {
+        const tag = data.substr(index, 2);
+        index += 2;
+
+        const lengthStr = data.substr(index, 2);
+        const length = parseInt(lengthStr, 10);
+        index += 2;
+
+        const value = data.substr(index, length);
+        index += length;
+
+        // Special handling for known phone number tags ("03" or "02")
+        if (tag === "03" || tag === "02") {
+            result[tag] = value; // Treat as flat string, regardless of content
+        }
+        // Only parse as nested TLV if it strictly follows TLV format and isn't a phone number
+        else if (value.length >= 4 && /^[0-9]{2}[0-9]{2}/.test(value)) {
+            const subLengthStr = value.substr(2, 2);
+            const subLength = parseInt(subLengthStr, 10);
+            if (!isNaN(subLength) && subLength <= value.length - 4) {
+                result[tag] = parseTLV(value);
+            } else {
+                result[tag] = value;
+            }
+        } else {
+            result[tag] = value;
+        }
+    }
+
+    return result;
+}
+
+module.exports = { parseTLV };
+
+==================================================
+File contents: C:\Users\Kayto\Desktop\IT\Projects\Stage\Stage PFE\TraceFlow\Back-End\utils\socket.js
+==================================================
+const io = require('socket.io')();
+
+io.on('connection', (socket) => {
+    console.log('A user connected');
+
+    socket.on('disconnect', () => {
+        console.log('User disconnected');
+    });
+});
+
+module.exports = io;
+
+==================================================
+File contents: C:\Users\Kayto\Desktop\IT\Projects\Stage\Stage PFE\TraceFlow\Back-End\.env
+==================================================
+# Database
+DB_HOST=localhost
+DB_PORT=5432
+DB_USER=postgres
+DB_PASSWORD=admin
+DB_NAME=traceflow_db
+
+SSL_KEY_PATH=/etc/ssl/private/key.pem
+SSL_CERT_PATH=/etc/ssl/certs/cert.pem
+
+# JWT
+JWT_SECRET=b9e567547e5964ec6901aa16fd9b8e6db45f960f128c45c5adae4f8d4c964aef5b81a679f7a8fa54f216ce37698dda04bcf2e7405a6fde946cbea708d42937edf610d12265b2bd891625bfa65e69efc6049417256d033c8feac7dcc0398a280dcaf4839acc414f4d3b2b65dab85cec7dab98a17dd24fadaa0f977d6ccc76abd71e55291d7001feb26f89f721b419eb2023ef673dfbc8e4b6ad2ad3b2f5e2173ee9ef5d22664c661253270547a617b79fc57ff097f6985d7262679f5b11c72d430fa0317d74097df164362f9ac8d3d511bf303a751ec5ff090526d667c56a3af69c8bfb6f503918ca5d77c26634a23929eff1af71306959e9f4e079c3c8d0a504
+
+# SMTP 
+SMTP_HOST=smtp.gmail.com
+SMTP_PORT=587
+SMTP_USER=sofienlaghouanem.2.0@gmail.com
+SMTP_PASS=zggw thic dbfm lzev
+
+# SMS
+#SMS_GATEWAY_IP=192.168.1.1
+SMS_GATEWAY_PORT=8082
+#SMS_GATEWAY_URL=https://www.traccar.org/sms
+SMS_GATEWAY_API_KEY_LOCAL=1e21c51d-5a64-4bff-8c41-652e6a9d43c8
+SMS_GATEWAY_API_KEY_CLOUD=caY24CuuRousJA3Pzu4Ymp:APA91bEUYQXiT1yspAvZpGIwliYxV-tm39zDdj0lL4c3ZiSs3vOqUIl5Zcaiw8MJGoPj-l4F2eAeHXti8nGUcpr7TdToVfcVNR_J7sp55Wh7FMg5c5vny28
+
+# Server
+PORT=5000
+SESSION_SECRET=8f6b9e567547e5964ec6901aa16fd9b8e6db45f960f128c45c5adae4f8d4c964
+
+# Super Admin
+SUPER_ADMIN_EMAIL=superadmin@example.com
+SUPER_ADMIN_PASSWORD=SuperSecurePassword123!
+
+# NODE_ENV=production
+
+# Keycloack
+KEYCLOAK_URL=http://localhost:8080
+KEYCLOAK_REALM=TraceFlow
+KEYCLOAK_CLIENT_ID=traceflow-backend
+KEYCLOAK_CLIENT_SECRET=vQbSFLJmoDRN5eGnXdLXVwuWMijpNsah
+
+# Frontend (optional, for CORS and redirects)
+FRONTEND_URL=http://localhost:5173
+
+==================================================
+File contents: C:\Users\Kayto\Desktop\IT\Projects\Stage\Stage PFE\TraceFlow\Back-End\app.js
+==================================================
+const cors = require('cors');
+const express = require('express');
+const {
+    initializeDatabase,
+    initializeSMTP,
+    initializeSMS,
+    initializeServer,
+} = require('./config');
+const { seedSuperAdmin } = require('./config/SeedSuperAdmin');
+const { sequelize } = require('./config/db');
+const { authenticateJWT } = require('./config/security');
+const { seedMissingPermissions } = require('./config/seedPermissions');
+const { setupAssociations } = require('./models');
+
+const agentRoutes = require('./routes/agentRoutes');
+const authRoutes = require('./routes/authRoutes');
+const checklistRoutes = require('./routes/checklistRoutes');
+const permissionRoutes = require('./routes/permissionRoutes');
+const reasonRoutes = require('./routes/reasonRoutes');
+const receiptBookRoutes = require('./routes/receiptBookRoutes');
+const receiptStubRoutes = require('./routes/receiptStubRoutes');
+const roleRoutes = require('./routes/roleRoutes');
+const timesheetRoutes = require('./routes/timesheetRoutes');
+const userRoutes = require('./routes/userRoutes');
+const visitRoutes = require('./routes/visitRoutes');
+const configRoutes = require('./routes/configRoutes');
+
+require('dotenv').config();
+
+const app = express();
+
+const allowedOrigins = [
+    process.env.FRONTEND_URL || 'http://localhost:5173',
+    'http://localhost:3000',
+];
+
+const corsOptions = {
+    origin: (origin, callback) => {
+        if (!origin || allowedOrigins.includes(origin)) {
+            callback(null, true);
+        } else {
+            callback(new Error('Not allowed by CORS'));
+        }
+    },
+    credentials: true,
+    methods: ['GET', 'POST', 'PUT', 'DELETE', 'OPTIONS'],
+    allowedHeaders: ['Content-Type', 'Authorization'],
+};
+
+app.use(cors(corsOptions));
+app.use(express.json());
+app.use((req, res, next) => {
+    if (req.user) {
+        sequelize.query(`SET jwt.claims.userID = '${req.user.userID}'`).catch(err => console.error(`${new Date().toISOString()} - Failed to set RLS userID:`, err));
+    }
+    next();
+});
+
+app.use('/api/config', configRoutes);
+app.use('/api/visits', visitRoutes);
+app.use('/api/checklists', checklistRoutes);
+app.use('/api/reasons', reasonRoutes);
+app.use('/api/timesheets', timesheetRoutes);
+app.use('/api/agents', agentRoutes);
+app.use('/api/auth', authRoutes);
+app.use('/api/users', userRoutes);
+app.use('/api/roles', roleRoutes);
+app.use('/api/permissions', permissionRoutes);
+app.use('/api/receipt-books', receiptBookRoutes);
+app.use('/api/receipt-stubs', receiptStubRoutes);
+
+app.get('/test', authenticateJWT, (req, res) => {
+    res.json({ message: 'Secure endpoint accessed', user: req.user });
+});
+
+app.use((err, req, res, next) => {
+    console.error(`${new Date().toISOString()} - Server error:`, err.stack);
+    res.status(500).json({ error: 'Something went wrong!' });
+});
+
+async function startApp() {
+    const startTime = new Date();
+    const summary = {
+        steps: [],
+        successes: 0,
+        failures: 0,
+    };
+
+    const logStep = (step, success, message, error = null) => {
+        const timestamp = new Date().toISOString();
+        console.log(`${timestamp} - ${step}: ${message}${error ? ` - Error: ${error.message}` : ''}`);
+        summary.steps.push({ step, success, message, error });
+        summary[success ? 'successes' : 'failures']++;
+    };
+
+    try {
+        console.log(`${new Date().toISOString()} - Starting application initialization...`);
+
+        try {
+            await initializeDatabase();
+            logStep('Database Initialization', true, 'Completed successfully');
+        } catch (dbError) {
+            logStep('Database Initialization', false, 'Failed', dbError);
+            throw dbError;
+        }
+
+        try {
+            await initializeSMTP();
+            logStep('SMTP Initialization', true, 'Completed successfully');
+        } catch (smtpError) {
+            logStep('SMTP Initialization', false, 'Failed', smtpError);
+            throw smtpError;
+        }
+
+        try {
+            await initializeSMS();
+            logStep('SMS Initialization', true, 'Completed successfully');
+        } catch (smsError) {
+            logStep('SMS Initialization', false, 'Proceeding without SMS', smsError);
+        }
+
+        try {
+            setupAssociations();
+            logStep('Model Associations', true, 'Relationships established');
+        } catch (assocError) {
+            logStep('Model Associations', false, 'Failed', assocError);
+            throw assocError;
+        }
+
+        try {
+            await sequelize.sync({ alter: true });
+            logStep('Database Sync', true, 'Tables synchronized');
+        } catch (syncError) {
+            logStep('Database Sync', false, 'Failed', syncError);
+            throw syncError;
+        }
+
+        try {
+            await seedMissingPermissions();
+            logStep('Permission Seeding', true, 'Completed successfully');
+        } catch (seedError) {
+            logStep('Permission Seeding', false, 'Failed', seedError);
+            throw seedError;
+        }
+
+        try {
+            await initializeServer(app);
+            logStep('Server Initialization', true, 'Server started');
+        } catch (serverError) {
+            logStep('Server Initialization', false, 'Failed', serverError);
+            throw serverError;
+        }
+
+        try {
+            await seedSuperAdmin();
+            logStep('Super Admin Seeding', true, 'Completed successfully');
+        } catch (superAdminError) {
+            logStep('Super Admin Seeding', false, 'Failed', superAdminError);
+            throw superAdminError;
+        }
+
+        const endTime = new Date();
+        const duration = (endTime - startTime) / 1000;
+        console.log(`${new Date().toISOString()} - Initialization Summary:`);
+        console.log(`  Total Steps: ${summary.steps.length}`);
+        console.log(`  Successes: ${summary.successes}`);
+        console.log(`  Failures: ${summary.failures}`);
+        console.log(`  Duration: ${duration.toFixed(2)} seconds`);
+        console.log(`  Details:`);
+        summary.steps.forEach((step, index) => {
+            console.log(`    ${index + 1}. ${step.step}: ${step.success ? 'Success' : 'Failed'} - ${step.message}${step.error ? ` (Error: ${step.error.message})` : ''}`);
+        });
+    } catch (error) {
+        console.error(`${new Date().toISOString()} - Application initialization failed:`, error);
+        process.exit(1);
+    }
+}
+
+startApp();
+
+
+
+import React, { useEffect } from "react";
+import { BrowserRouter as Router, Routes, Route, Navigate } from "react-router-dom";
+import { ThemeProvider, useTheme } from "./context/ThemeContext";
+import { AuthProvider, useAuth } from "./context/AuthContext";
+import { ConfigProvider } from "./context/ConfigContext";
+import { ErrorProvider } from "./context/ErrorContext";
+import Timesheets from "./pages/timesheet/Timesheets";
+import TimesheetForm from "./pages/timesheet/TimesheetForm";
+import QRScan from "./pages/visit/QRScan";
+import VisitDetails from "./pages/visit/VisitDetails";
+import VisitValidation from "./pages/visit/VisitValidation";
+import PageNotFound from "./pages/Error/PageNotFound";
+import Footer from "./components/Footer";
+import Header from "./components/Header";
+import AdminDashboard from "./pages/Admin/AdminDashboard";
+import LoginPage from "./pages/Auth/Login";
+import ReceiptBooks from "./pages/Reciept/ReceiptBooks";
+import TransferReceiptBook from "./pages/Reciept/TransferReceiptBook";
+import ReceiptBookHistory from "./pages/Reciept/ReceiptBookHistory";
+import ErrorDisplay from "./pages/Error/ErrorDisplay";
+import AccessDenied from "./pages/Error/AccessDenied";
+import "./App.css";
+
+// Permission-based ProtectedRoute component
+interface ProtectedRouteProps {
+    children: JSX.Element;
+    requiredPermissions: string[];
+}
+
+const ProtectedRoute: React.FC<ProtectedRouteProps> = ({ children, requiredPermissions }) => {
+    const { user, token, effectivePermissions, permissionsLoaded } = useAuth();
+
+    // Redirect to login if no user or token is present
+    if (!user || !token) {
+        return <Navigate to="/login" replace state={{ from: window.location.pathname }} />;
+    }
+
+    // Show loading state until permissions are fully loaded
+    if (!permissionsLoaded) {
+        return <div>Loading permissions...</div>;
+    }
+
+    // Check if user has any of the required permissions
+    const hasPermission = requiredPermissions.some(perm =>
+        effectivePermissions?.some(p => p.name === perm)
+    );
+
+    return hasPermission ? children : <Navigate to="/access-denied" replace />;
+};
+
+// Role-based ProtectedRoute component
+interface RoleProtectedRouteProps {
+    children: JSX.Element;
+    requiredRoles: string[];
+}
+
+const RoleProtectedRoute: React.FC<RoleProtectedRouteProps> = ({ children, requiredRoles }) => {
+    const { user, token, userRoles, permissionsLoaded } = useAuth();
+
+    // Redirect to login if no user or token is present
+    if (!user || !token) {
+        return <Navigate to="/login" replace state={{ from: window.location.pathname }} />;
+    }
+
+    // Show loading state until permissions and roles are fully loaded
+    if (!permissionsLoaded || !userRoles) {
+        return <div>Loading permissions...</div>;
+    }
+
+    // Check if user has any of the required roles
+    const hasRequiredRole = userRoles.some(role => requiredRoles.includes(role.name));
+
+    return hasRequiredRole ? children : <Navigate to="/access-denied" replace />;
+};
+
+// Main content component with routing and layout
+const AppContent: React.FC = () => {
+    const { theme } = useTheme();
+
+    // Apply theme to body class on change
+    useEffect(() => {
+        document.body.className = theme;
+    }, [theme]);
+
+    return (
+        <div className="app-container">
+            {/* Header */}
+            <Header />
+
+            {/* Main Content */}
+            <main>
+                <ErrorDisplay />
+                <Routes>
+                    {/* Public Routes */}
+                    <Route path="/login" element={<LoginPage />} />
+                    <Route path="/access-denied" element={<AccessDenied />} />
+                    <Route path="/" element={<Navigate to="/login" replace />} />
+
+                    {/* Role-Protected Routes */}
+                    <Route
+                        path="/admin"
+                        element={
+                            <RoleProtectedRoute requiredRoles={["Admin", "Super Admin"]}>
+                                <AdminDashboard />
+                            </RoleProtectedRoute>
+                        }
+                    />
+
+                    {/* Permission-Protected Routes */}
+                    <Route
+                        path="/timesheet"
+                        element={
+                            <ProtectedRoute requiredPermissions={["access_supervisor_timesheets"]}>
+                                <Timesheets />
+                            </ProtectedRoute>
+                        }
+                    />
+                    <Route
+                        path="/timesheet-form"
+                        element={
+                            <ProtectedRoute requiredPermissions={["create_timesheets"]}>
+                                <TimesheetForm />
+                            </ProtectedRoute>
+                        }
+                    />
+                    <Route
+                        path="/qr-scan"
+                        element={
+                            <ProtectedRoute requiredPermissions={["scan_visits"]}>
+                                <QRScan />
+                            </ProtectedRoute>
+                        }
+                    />
+                    <Route
+                        path="/visit/:idVisit"
+                        element={
+                            <ProtectedRoute requiredPermissions={["access_visit_details"]}>
+                                <VisitDetails />
+                            </ProtectedRoute>
+                        }
+                    />
+                    <Route
+                        path="/visit/:idVisit/validate-checklist"
+                        element={
+                            <ProtectedRoute requiredPermissions={["log_visits"]}>
+                                <VisitValidation />
+                            </ProtectedRoute>
+                        }
+                    />
+                    <Route
+                        path="/receipt-books"
+                        element={
+                            <ProtectedRoute requiredPermissions={["access_receipt_books"]}>
+                                <ReceiptBooks />
+                            </ProtectedRoute>
+                        }
+                    />
+                    <Route
+                        path="/receipt-book/:bookID/history"
+                        element={
+                            <ProtectedRoute requiredPermissions={["access_receipt_book_history"]}>
+                                <ReceiptBookHistory />
+                            </ProtectedRoute>
+                        }
+                    />
+                    <Route
+                        path="/transfer-receipt-books"
+                        element={
+                            <ProtectedRoute requiredPermissions={["transfer_receipt_books"]}>
+                                <TransferReceiptBook />
+                            </ProtectedRoute>
+                        }
+                    />
+
+                    {/* Fallback Route */}
+                    <Route path="*" element={<PageNotFound />} />
+                </Routes>
+            </main>
+
+            {/* Footer */}
+            <Footer />
+        </div>
+    );
+};
+
+// Main App component with providers and router
+const App: React.FC = () => {
+    return (
+        <Router>
+            <ThemeProvider>
+                <AuthProvider>
+                    <ConfigProvider>
+                        <ErrorProvider>
+                            <AppContent />
+                        </ErrorProvider>
+                    </ConfigProvider>
+                </AuthProvider>
+            </ThemeProvider>
+        </Router>
+    );
+};
+
+export default App;

@@ -6,7 +6,7 @@ class ReceiptStubController {
         try {
             const { bookID } = req.params;
             if (!bookID) return res.status(400).json({ error: 'Book ID is required' });
-            const result = await ReceiptStubService.collectStub(bookID, req.user.userID);
+            const result = await ReceiptStubService.collectStub(bookID);
             res.json(result);
         } catch (error) {
             console.error(`${new Date().toISOString()} - Collect stub failed:`, error);

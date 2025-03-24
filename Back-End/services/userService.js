@@ -154,6 +154,37 @@ class UserService {
         }
     }
 
+    static async revokeSupervisorsFromManager(managerID, supervisorIDs) {
+        try {
+            const manager = await User.findByPk(managerID);
+            if (!manager) throw new Error('Manager not found');
+
+            const supervisors = await User.findAll({
+                where: { userID: supervisorIDs },
+            });
+            if (supervisors.length !== supervisorIDs.length) {
+                throw new Error('One or more supervisors not found');
+            }
+
+            // Fetch current supervisors
+            const currentSupervisors = await manager.getSupervisors();
+            const currentSupervisorIDs = currentSupervisors.map(s => s.userID);
+            const revokedSupervisors = supervisorIDs.filter(id => currentSupervisorIDs.includes(id));
+
+            if (revokedSupervisors.length > 0) {
+                await manager.removeSupervisors(revokedSupervisors);
+            }
+
+            return {
+                managerID,
+                revokedSupervisors,
+                message: 'Supervisors revoked successfully',
+            };
+        } catch (error) {
+            throw new Error(`Failed to revoke supervisors: ${error.message}`);
+        }
+    }
+
 
 }
 

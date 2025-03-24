@@ -15,7 +15,8 @@
     "test": "jest",
     "start": "node app.js",
     "dev": "nodemon app.js",
-    "seed:permissions": "node config/seedPermissions.js"
+    "seed:permissions": "node config/seedPermissions.js",
+    "migrate": "sequelize db:migrate --dialect postgres"
   },
   "keywords": [],
   "author": "",

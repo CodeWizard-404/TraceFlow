@@ -12,12 +12,13 @@ router.delete('/:permissionID', authenticateJWT, requirePermission('delete_permi
 router.get('/:permissionID', authenticateJWT, requirePermission('read_permission_details'), PermissionController.getPermissionById);
 
 router.post('/role/:roleID/assign', authenticateJWT, requirePermission('assign_permissions'), PermissionController.assignPermissionsToRole);
+router.post('/role/:roleID/revoke', authenticateJWT, requirePermission('revoke_permissions'), PermissionController.revokePermissionsFromRole);
 router.get('/role/:roleID',authenticateJWT, requirePermission('read_permissions_by_role'), PermissionController.getPermissionsByRole);
 
 router.post('/override/:userID', authenticateJWT, requirePermission('create_permission_overrides'), PermissionController.addPermissionOverride);
 router.delete('/override/:overrideID', authenticateJWT, requirePermission('delete_permission_overrides'), PermissionController.removePermissionOverride);
-router.get('/override/:userID', authenticateJWT, requirePermission('read_permission_overrides'), PermissionController.getPermissionOverrides);
-router.get('/effective/:userID', authenticateJWT, requirePermission('read_effective_permissions'), PermissionController.getEffectivePermissions);
+router.get('/override/:userID', authenticateJWT, PermissionController.getPermissionOverrides);
+router.get('/effective/:userID', authenticateJWT,  PermissionController.getEffectivePermissions);
 
 
 module.exports = router;

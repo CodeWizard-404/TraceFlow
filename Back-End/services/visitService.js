@@ -5,7 +5,7 @@ const ReasonService = require('./reasonService');
 
 class VisitService {
     static async createVisit(data) {
-        const { date, time, agentID, supervisorID, timesheetID, reasons, checklists } = data;
+        const { date, time, agentID, supervisorID, timesheetID, reasons, checklists, status = 'pending' } = data;
         if (!date || !time || !agentID || !supervisorID || !timesheetID) {
             const error = new Error('Missing required fields');
             error.status = 400;
@@ -24,7 +24,7 @@ class VisitService {
                 location: agent.location,
                 agentID,
                 timesheetID,
-                status: 'pending',
+                status, 
             });
             const reasonIds = reasons.map(r => r.id);
             const createdReasons = await ReasonService.getItemsByIds(reasonIds);

@@ -144,8 +144,8 @@ body.dark .back-button:hover {
 
 .sidebar {
     flex: 1;
-    min-width: 280px;
-    max-width: 320px;
+    min-width: 180px !important;
+    max-width: 220px !important;
     display: flex;
     flex-direction: column;
     gap: 1.5rem;
@@ -153,7 +153,7 @@ body.dark .back-button:hover {
 
 .filter-card, .sort-card, .role-filter-card {
     background: #fff;
-    padding: 1.5rem;
+    padding: 1rem 1rem 0 1rem  !important;
     border-radius: 0.75rem;
     box-shadow: 0 0.375rem 1.25rem rgba(0, 0, 0, 0.05);
     transition: transform 0.3s ease;
@@ -162,6 +162,7 @@ body.dark .back-button:hover {
 body.dark .filter-card, body.dark .sort-card, body.dark .role-filter-card {
     background: #222222;
     box-shadow: 0 0.375rem 1.25rem rgba(0, 0, 0, 0.3);
+    border: 1px solid rgba(107, 114, 128, 0.5) ;
 }
 
 .filter-card:hover, .sort-card:hover, .role-filter-card:hover {
@@ -176,12 +177,12 @@ body.dark .filter-card, body.dark .sort-card, body.dark .role-filter-card {
 }
 
 body.dark .filter-card h3, body.dark .sort-card h3, body.dark .role-filter-card h3 {
-    color: #608bdc;
+    color: #60a0dc;
 }
 
 .filter-card button {
     width: 100%;
-    padding: 0.75rem 1.25rem;
+    padding: 0.3rem 1.25rem;
     font-size: 0.875rem;
     font-weight: 600;
     background: #f8fafc;
@@ -218,7 +219,7 @@ body.dark .filter-card button:hover:not(.active) {
 
 .sort-card select, .role-filter-card select {
     width: 100%;
-    padding: 0.75rem;
+    padding: 0.5rem !important;
     font-size: 0.875rem;
     border: 1px solid #ddd;
     border-radius: 0.75rem;
@@ -245,7 +246,8 @@ body.dark .sort-card select:focus, body.dark .role-filter-card select:focus {
 
 .sort-card button {
     width: 100%;
-    padding: 0.75rem;
+    padding: 0.3rem !important;
+    margin-bottom: 0.75rem !important;
     font-size: 0.875rem;
     font-weight: 600;
     background: #fff;
@@ -358,14 +360,15 @@ body.dark .table-card h2 {
 }
 
 body.dark .table-head .table-row {
-    background: #5c98e68a;
+    background: #63b3edb7 !important;
     color: #e5e7eb;
+    color: #272727 !important;
 }
 
 .table-row {
     display: grid;
-    grid-template-columns: 2fr 3fr 1fr 1fr;
-    padding: 0.75rem 1rem;
+    grid-template-columns: 0.7fr 1fr 1fr 0.5fr;
+    padding: 0.rem 1rem;
     align-items: center;
 }
 
@@ -389,6 +392,8 @@ body.dark .table-body .table-row {
 
 body.dark .table-body .table-row:hover {
     background: #63b3ed;
+    color: #252525;
+    font-weight: 600;
 }
 
 .table-cell {
@@ -458,6 +463,7 @@ body.dark .role-card.selected {
     margin-bottom: 1.25rem;
     flex-wrap: wrap;
     gap: 1rem;
+    margin-bottom: 1rem !important;
 }
 
 .card-header h2 {
@@ -675,29 +681,39 @@ body.dark .role-info-icon {
 }
 
 .permissions-grid::-webkit-scrollbar,
-.permissions-list::-webkit-scrollbar {
+.permissions-list::-webkit-scrollbar,
+.permission-list::-webkit-scrollbar,
+.role-info-popup::-webkit-scrollbar {
     width: 12px;
 }
 
 .permissions-grid::-webkit-scrollbar-track,
-.permissions-list::-webkit-scrollbar-track {
+.permissions-list::-webkit-scrollbar-track,
+.permission-list::-webkit-scrollbar-track,
+.role-info-popup::-webkit-scrollbar-track {
     background: #f8fafc;
 }
 
 body.dark .permissions-grid::-webkit-scrollbar-track,
-body.dark .permissions-list::-webkit-scrollbar-track {
+body.dark .permissions-list::-webkit-scrollbar-track,
+body.dark .permission-list::-webkit-scrollbar-track,
+body.dark .role-info-popup::-webkit-scrollbar-track {
     background: #2b2b2b;
 }
 
 .permissions-grid::-webkit-scrollbar-thumb,
-.permissions-list::-webkit-scrollbar-thumb {
+.permissions-list::-webkit-scrollbar-thumb,
+.permission-list::-webkit-scrollbar-thumb,
+.role-info-popup::-webkit-scrollbar-thumb {
     background-color: #4cb1c7;
     border-radius: 6px;
     border: 3px solid #f8fafc;
 }
 
 body.dark .permissions-grid::-webkit-scrollbar-thumb,
-body.dark .permissions-list::-webkit-scrollbar-thumb {
+body.dark .permissions-list::-webkit-scrollbar-thumb,
+body.dark .permission-list::-webkit-scrollbar-thumb,
+body.dark .role-info-popup::-webkit-scrollbar-thumb {
     background-color: #63b3ed;
     border: 3px solid #2b2b2b;
 }
@@ -1046,6 +1062,22 @@ body.dark .permission-list {
 .permission-list li:nth-child(3) { transition-delay: 0.2s; }
 .permission-list li:nth-child(4) { transition-delay: 0.25s; }
 .permission-list li:nth-child(5) { transition-delay: 0.3s; }
+.permission-list li:nth-child(6) { transition-delay: 0.35s; }
+.permission-list li:nth-child(7) { transition-delay: 0.4s; }
+.permission-list li:nth-child(8) { transition-delay: 0.45s; }
+.permission-list li:nth-child(9) { transition-delay: 0.5s; }
+.permission-list li:nth-child(10) { transition-delay: 0.55s; }
+.permission-list li:nth-child(11) { transition-delay: 0.6s; }
+.permission-list li:nth-child(12) { transition-delay: 0.65s; }
+.permission-list li:nth-child(13) { transition-delay: 0.7s; }
+.permission-list li:nth-child(14) { transition-delay: 0.75s; }
+.permission-list li:nth-child(15) { transition-delay: 0.8s; }
+.permission-list li:nth-child(16) { transition-delay: 0.85s; }
+.permission-list li:nth-child(17) { transition-delay: 0.9s; }
+.permission-list li:nth-child(18) { transition-delay: 0.95s; }
+.permission-list li:nth-child(19) { transition-delay: 1s; }
+
+
 
 .toggle-icon {
     transition: transform 0.3s ease-in-out;
@@ -1651,4 +1683,542 @@ body.dark .dropdown-unit:hover {
 
 body.dark .dropdown-body .list-container {
     border-color: #4b5563;
+}
+
+
+
+.role-toggle-container {
+    position: relative;
+    display: flex;
+    align-items: center;
+    gap: 0.5rem;
+}
+
+.revoke-button {
+    padding: 0.3rem;
+    font-size: 0.75rem;
+    background: #e81f76;
+    color: #fff;
+    border: none;
+    border-radius: 0.5rem;
+    cursor: pointer;
+    transition: all 0.3s ease;
+    width: 1.5rem;
+    height: 1.5rem;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+}
+
+body.dark .revoke-button {
+    background: #9f174f;
+}
+
+.revoke-button:hover {
+    background: #c81a65;
+    transform: scale(1.1);
+}
+
+body.dark .revoke-button:hover {
+    background: #7d123e;
+}
+
+.role-edit-form {
+    display: flex;
+    flex-direction: column;
+    gap: 1rem;
+    width: 100%;
+}
+
+.role-edit-input, .role-edit-textarea {
+    padding: 0.75rem;
+    font-size: 0.875rem;
+    border: 1px solid #ddd;
+    border-radius: 0.75rem;
+    background: #f8fafc;
+    color: #1f2937;
+    transition: border-color 0.3s ease;
+}
+
+body.dark .role-edit-input, body.dark .role-edit-textarea {
+    background: #363636;
+    color: #e5e7eb;
+    border-color: #4b5563;
+}
+
+.role-edit-input:focus, .role-edit-textarea:focus {
+    border-color: #4cb1c7;
+    outline: none;
+}
+
+body.dark .role-edit-input:focus, body.dark .role-edit-textarea:focus {
+    border-color: #60a0dc;
+}
+
+.role-edit-textarea {
+    min-height: 100px;
+    resize: vertical;
+}
+
+.role-edit-actions {
+    display: flex;
+    gap: 0.75rem;
+}
+
+.cancel-button {
+    padding: 0.75rem 1.5rem;
+    font-size: 0.875rem;
+    font-weight: 600;
+    background: #6b7280;
+    color: #fff;
+    border: none;
+    border-radius: 3.125rem;
+    cursor: pointer;
+    transition: all 0.3s ease;
+}
+
+body.dark .cancel-button {
+    background: #4b5563;
+}
+
+.cancel-button:hover {
+    background: #4b5563;
+    transform: scale(1.05);
+}
+
+body.dark .cancel-button:hover {
+    background: #374151;
+}
+
+.role-actions {
+    display: flex;
+    gap: 0.75rem;
+}
+
+.edit-button {
+    padding: 0.625rem 1.25rem;
+    font-size: 0.875rem;
+    font-weight: 600;
+    background: #4cb1c7;
+    color: #fff;
+    border: none;
+    border-radius: 0.75rem;
+    cursor: pointer;
+    display: flex;
+    align-items: center;
+    gap: 0.5rem;
+    transition: all 0.3s ease;
+}
+
+body.dark .edit-button {
+    background: #63b3ed;
+}
+
+.edit-button:hover {
+    background: #3a8fa2;
+}
+
+body.dark .edit-button:hover {
+    background: #1f3b56;
+}
+
+.delete-button {
+    padding: 0.625rem 1.25rem;
+    font-size: 0.875rem;
+    font-weight: 600;
+    background: #e81f76;
+    color: #fff;
+    border: none;
+    border-radius: 0.75rem;
+    cursor: pointer;
+    display: flex;
+    align-items: center;
+    gap: 0.5rem;
+    transition: all 0.3s ease;
+}
+
+body.dark .delete-button {
+    background: #9f174f;
+}
+
+.delete-button:hover {
+    background: #c81a65;
+}
+
+body.dark .delete-button:hover {
+    background: #7d123e;
+}
+
+
+.permissions-management {
+    display: flex;
+    flex-direction: column;
+    gap: 1.5rem;
+}
+
+.permissions-grid {
+    display: grid;
+    grid-template-columns: repeat(auto-fill, minmax(220px, 1fr));
+    gap: 1.5rem;
+}
+
+.permission-card {
+    background: #fff;
+    border-radius: 0.75rem;
+    padding: 1.25rem;
+    box-shadow: 0 0.375rem 1.25rem rgba(0, 0, 0, 0.05);
+    transition: all 0.3s ease;
+    cursor: pointer;
+}
+
+body.dark .permission-card {
+    background: #1f2937;
+    box-shadow: 0 0.375rem 1.25rem rgba(0, 0, 0, 0.3);
+}
+
+.permission-card:hover {
+    transform: translateY(-0.3125rem);
+    background: #4cb1c7;
+    color: #fff;
+}
+
+body.dark .permission-card:hover {
+    background: #63b3ed;
+}
+
+.permission-card.selected {
+    background: #4cb1c7;
+    color: #fff;
+}
+
+body.dark .permission-card.selected {
+    background: #63b3ed;
+}
+
+.permission-card h3 {
+    font-size: 1rem;
+    font-weight: 600;
+    margin: 0 0 0.75rem;
+}
+
+.permission-card p {
+    font-size: 0.875rem;
+    margin: 0 0 0.5rem;
+}
+
+.permission-edit-form {
+    display: flex;
+    flex-direction: column;
+    gap: 1rem;
+    width: 100%;
+}
+
+.permission-edit-input, .permission-edit-textarea {
+    padding: 0.75rem;
+    font-size: 0.875rem;
+    border: 1px solid #ddd;
+    border-radius: 0.75rem;
+    background: #f8fafc;
+    color: #1f2937;
+    transition: border-color 0.3s ease;
+}
+
+body.dark .permission-edit-input, body.dark .permission-edit-textarea {
+    background: #363636;
+    color: #e5e7eb;
+    border-color: #4b5563;
+}
+
+.permission-edit-input:focus, .permission-edit-textarea:focus {
+    border-color: #4cb1c7;
+    outline: none;
+}
+
+body.dark .permission-edit-input:focus, body.dark .permission-edit-textarea:focus {
+    border-color: #60a0dc;
+}
+
+.permission-edit-textarea {
+    min-height: 100px;
+    resize: vertical;
+}
+
+.permission-edit-actions {
+    display: flex;
+    gap: 0.75rem;
+}
+
+.permission-actions {
+    display: flex;
+    gap: 0.75rem;
+}
+
+
+.user-details {
+    display: flex;
+    flex-direction: column;
+    gap: 1.5rem;
+}
+
+.user-edit-form {
+    display: flex;
+    flex-direction: column;
+    gap: 1rem;
+    width: 100%;
+}
+
+.user-edit-input {
+    padding: 0.75rem;
+    font-size: 0.875rem;
+    border: 1px solid #ddd;
+    border-radius: 0.75rem;
+    background: #f8fafc;
+    color: #1f2937;
+    transition: border-color 0.3s ease;
+}
+
+body.dark .user-edit-input {
+    background: #363636;
+    color: #e5e7eb;
+    border-color: #4b5563;
+}
+
+.user-edit-input:focus {
+    border-color: #4cb1c7;
+    outline: none;
+}
+
+body.dark .user-edit-input:focus {
+    border-color: #60a0dc;
+}
+
+.user-edit-actions {
+    display: flex;
+    gap: 0.75rem;
+}
+
+.user-actions {
+    display: flex;
+    gap: 0.75rem;
+}
+
+.supervisors-grid {
+    display: grid;
+    grid-template-columns: repeat(auto-fill, minmax(200px, 1fr));
+    gap: 1rem;
+}
+
+.supervisor-toggle-container {
+    display: flex;
+    align-items: center;
+}
+
+.supervisor-toggle-button {
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    width: 100%;
+    padding: 0.75rem 1rem;
+    font-size: 0.875rem;
+    border: 1px solid #ddd;
+    border-radius: 0.75rem;
+    background: #fff;
+    cursor: pointer;
+    transition: all 0.3s ease;
+}
+
+body.dark .supervisor-toggle-button {
+    background: #1f2937;
+    border-color: #4b5563;
+    color: #e5e7eb;
+}
+
+.supervisor-toggle-button.active {
+    background: #4cb1c7;
+    color: #fff;
+    border-color: #4cb1c7;
+}
+
+body.dark .supervisor-toggle-button.active {
+    background: #63b3ed;
+    border-color: #63b3ed;
+}
+
+.supervisor-toggle-button:hover:not(.active) {
+    background: #f1f5f9;
+}
+
+body.dark .supervisor-toggle-button:hover:not(.active) {
+    background: #374151;
+}
+
+
+.error-message {
+    background-color: #f8d7da;
+    color: #721c24;
+    padding: 10px 15px;
+    border: 1px solid #f5c6cb;
+    border-radius: 0.75rem !important;
+    border-radius: 4px;
+    display: flex;
+    justify-self: center;
+    justify-content: space-between;
+    align-items: center;
+    margin-bottom: 15px;
+    max-width: 500px;
+    position: fixed;
+    top: 2rem;
+    left: 50%;
+    transform: translateX(-50%);
+    z-index: 1000;
+    transition: all 0.3s ease;
+}
+
+.close-error {
+    background: none;
+    border: none;
+    color: #721c24;
+    cursor: pointer;
+    font-size: 16px;
+}
+
+body.dark .error-message {
+    background-color: #721c25d5;
+    color: #e5e7eb;
+    border-color: #79464b;
+}
+
+body.dark .close-error {
+    color: #e5e7eb;
+}
+
+
+/* Confirmation Modal Overlay */
+.confirmation-modal-overlay {
+    position: fixed;
+    top: 0;
+    left: 0;
+    right: 0;
+    bottom: 0;
+    background: rgba(0, 0, 0, 0.5);
+    display: flex;
+    justify-content: center;
+    align-items: center;
+    z-index: 1000;
+    opacity: 0;
+    transition: opacity 0.3s ease-in-out;
+}
+
+body.dark .confirmation-modal-overlay {
+    background: rgba(0, 0, 0, 0.7);
+}
+
+.confirmation-modal-overlay.fade-in {
+    opacity: 1;
+}
+
+.confirmation-modal-overlay.fade-out {
+    opacity: 0;
+}
+
+/* Confirmation Modal */
+.confirmation-modal {
+    background: #fff;
+    padding: 1.5rem;
+    border-radius: 0.75rem;
+    box-shadow: 0 0.375rem 1.25rem rgba(0, 0, 0, 0.05);
+    max-width: 400px;
+    width: 90%;
+    font-family: 'Inter', sans-serif;
+    text-align: center;
+    transform: scale(0.95);
+    transition: transform 0.3s ease-in-out;
+}
+
+body.dark .confirmation-modal {
+    background: #222222;
+    box-shadow: 0 0.375rem 1.25rem rgba(0, 0, 0, 0.3);
+}
+
+.confirmation-modal-overlay.fade-in .confirmation-modal {
+    transform: scale(1);
+}
+
+.confirmation-modal-overlay.fade-out .confirmation-modal {
+    transform: scale(0.95);
+}
+
+.confirmation-modal p {
+    font-size: 1rem;
+    color: #1f2937;
+    margin: 0 0 1.5rem;
+}
+
+body.dark .confirmation-modal p {
+    color: #e5e7eb;
+}
+
+/* Confirmation Actions */
+.confirmation-actions {
+    display: flex;
+    justify-content: space-around;
+    gap: 0.75rem;
+}
+
+/* Confirm Button */
+.confirm-button {
+    padding: 0.75rem 1.5rem;
+    font-size: 0.875rem;
+    font-weight: 600;
+    text-transform: uppercase;
+    background: linear-gradient(135deg, #4cb1c7 0%, #3a8fa2 100%);
+    color: #fff;
+    border: none;
+    border-radius: 3.125rem;
+    cursor: pointer;
+    box-shadow: 0 0.25rem 0.75rem rgba(76, 177, 199, 0.3);
+    transition: all 0.3s ease;
+}
+
+body.dark .confirm-button {
+    background: linear-gradient(135deg, #63b3ed 0%, #4a83ce 100%);
+    box-shadow: 0 0.25rem 0.75rem rgba(23, 82, 159, 0.4);
+}
+
+.confirm-button:hover {
+    background: #3a8fa2;
+    transform: scale(1.05);
+}
+
+body.dark .confirm-button:hover {
+    background: #1f3956;
+}
+
+/* Cancel Button */
+.cancel-button {
+    padding: 0.75rem 1.5rem;
+    font-size: 0.875rem;
+    font-weight: 600;
+    text-transform: uppercase;
+    background: #e81f76;
+    color: #fff;
+    border: none;
+    border-radius: 3.125rem;
+    cursor: pointer;
+    box-shadow: 0 0.25rem 0.75rem rgba(232, 31, 118, 0.3);
+    transition: all 0.3s ease;
+}
+
+body.dark .cancel-button {
+    background: #9f174f;
+    box-shadow: 0 0.25rem 0.75rem rgba(159, 23, 79, 0.4);
+}
+
+.cancel-button:hover {
+    background: #c81a65;
+    transform: scale(1.05);
+}
+
+body.dark .cancel-button:hover {
+    background: #7d123e;
 }

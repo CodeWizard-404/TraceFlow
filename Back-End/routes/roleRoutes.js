@@ -11,7 +11,8 @@ router.put('/:roleID', authenticateJWT, requirePermission('update_roles'), RoleC
 router.delete('/:roleID', authenticateJWT, requirePermission('delete_roles'), RoleController.deleteRole);
 
 router.post('/user/:userID/assign', authenticateJWT, requirePermission('assign_roles'), RoleController.assignRolesToUser);
-router.get('/user/:userID', authenticateJWT, requirePermission('read_roles_by_user'), RoleController.getRolesByUser);
+router.post('/user/:userID/revoke', authenticateJWT, requirePermission('rovoke_roles'), RoleController.revokeRolesFromUser);
+router.get('/user/:userID', authenticateJWT, RoleController.getRolesByUser);
 
 
 module.exports = router;

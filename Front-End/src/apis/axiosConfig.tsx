@@ -1,37 +1,31 @@
 import axios, { AxiosInstance } from "axios";
-import { BASE_URL, DEFAULT_TIMEOUT } from "../config";
 
+// Create an Axios instance with base configuration
 const api: AxiosInstance = axios.create({
-    baseURL: BASE_URL,
-    timeout: DEFAULT_TIMEOUT,
-    withCredentials: true,
+    baseURL: import.meta.env.VITE_BASE_URL || "http://localhost:5000/api", // Fallback URL if env var is missing
+    timeout: 10000, // Request timeout in milliseconds (10 seconds)
+    withCredentials: true, // Include credentials in requests
 });
 
-// Set up the interceptor without relying on a getToken function
+// Sets up Axios interceptors for request handling
 export const setupAxiosInterceptors = () => {
     api.interceptors.request.use(
         (config) => {
+            // Skip adding token if Authorization header is already set
+            if (config.headers.Authorization) {
+                return config;
+            }
+
+            // Add token to headers if available in localStorage
             const token = localStorage.getItem("token");
             if (token) {
-                config.headers["Authorization"] = `Bearer ${token}`;
+                config.headers.Authorization = `Bearer ${token}`;
             } else {
                 console.warn("Interceptor - No token available");
             }
             return config;
         },
-        (error) => Promise.reject(error)
-    );
-
-    // Handle 401 responses globally
-    api.interceptors.response.use(
-        (response) => response,
-        (error) => {
-            if (error.response?.status === 401) {
-                console.error("Unauthorized request - token may be invalid or expired");
-                // Optionally trigger logout or redirect to login
-            }
-            return Promise.reject(error);
-        }
+        (error) => Promise.reject(error) // Reject request errors
     );
 };
 

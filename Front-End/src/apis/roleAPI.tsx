@@ -7,6 +7,7 @@ import {
     DeleteRoleResponse,
     AssignRolesResponse,
     RolesByUserResponse,
+    RevokeRoleResponse,
 } from ".";
 
 export const createRole = async (
@@ -88,6 +89,22 @@ export const assignRolesToUser = async (
         return response.data;
     } catch (error) {
         console.error(`Error assigning roles to user (${userID}):`, error);
+        throw error;
+    }
+};
+
+export const revokeRolesFromUser = async (
+    userID: string,
+    roleIDs: string[],
+    token: string
+): Promise<RevokeRoleResponse | RevokeRoleResponse[]> => {
+    try {
+        const response = await api.post<RevokeRoleResponse | RevokeRoleResponse[]>(`/roles/user/${userID}/revoke`, { roleIDs }, {
+            headers: { Authorization: `Bearer ${token}` },
+        });
+        return response.data;
+    } catch (error) {
+        console.error(`Error revoking roles from user (${userID}):`, error);
         throw error;
     }
 };
