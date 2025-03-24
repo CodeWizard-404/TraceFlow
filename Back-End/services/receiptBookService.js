@@ -66,67 +66,67 @@ class ReceiptBookService {
     static async transfer(bookIDs, recipientID, senderID, recipientType = 'user') {
         const books = await ReceiptBook.findAll({ where: { bookID: bookIDs } });
         if (books.length !== bookIDs.length) throw new Error('Some books not found');
-        
+
         const canTransfer = await this.canTransfer(books, senderID);
         if (!canTransfer) throw new Error('Invalid transfer conditions');
-    
-        const recipient = recipientType === 'user' 
-            ? await User.findByPk(recipientID, { include: [Role] }) 
+
+        const recipient = recipientType === 'user'
+            ? await User.findByPk(recipientID, { include: [Role] })
             : await Agent.findOne({ where: { agentID: recipientID } });
         if (!recipient) throw new Error(`${recipientType === 'user' ? 'User' : 'Agent'} not found`);
-    
+
         const { transferType } = this.determineTransferDetails(books[0].status, recipientType, recipient);
         if (!transferType) throw new Error('Invalid transfer type determined');
-    
+
         const otp = await OTPService.generateOTP(recipientID, recipientType);
         const recipientPhone = recipient.phone || recipient.Agent?.phone;
         const smsResult = await sendSMS(recipientPhone, `Your OTP for receiving ${bookIDs.length} books is ${otp.code}`);
-        
+
         if (!smsResult.success) {
             console.warn(`${new Date().toISOString()} - Notification failed for ${recipientType} ${recipientID}: ${smsResult.reason}`);
         }
-    
+
         await Promise.all(books.map(book =>
             this.logTransfer(book.bookID, senderID, recipientID, 'Pending', transferType, recipientType === 'agent' ? 'toAgentID' : 'toUserID')
         ));
-    
+
         return { message: `Transfer initiated for ${recipientType} ${recipientID}`, otpID: otp.otpID };
     }
 
     // Validate transfer with OTP
     static async validateTransfer(bookIDs, recipientID, otpCode, recipientType = 'user') {
         const transfers = await ReceiptBookTransfer.findAll({
-            where: { 
-                bookID: bookIDs, 
-                [recipientType === 'user' ? 'toUserID' : 'toAgentID']: recipientID, 
-                status: 'Pending' 
+            where: {
+                bookID: bookIDs,
+                [recipientType === 'user' ? 'toUserID' : 'toAgentID']: recipientID,
+                status: 'Pending'
             },
         });
         if (transfers.length !== bookIDs.length) throw new Error('Invalid or incomplete transfer set');
-    
+
         await OTPService.validateOTP(recipientID, otpCode, recipientType);
-    
-        const recipient = recipientType === 'user' 
-            ? await User.findByPk(recipientID, { include: [Role] }) 
+
+        const recipient = recipientType === 'user'
+            ? await User.findByPk(recipientID, { include: [Role] })
             : await Agent.findByPk(recipientID);
         if (!recipient) throw new Error(`${recipientType} not found`);
-    
+
         const transferType = transfers[0].transferType;
         const book = await ReceiptBook.findByPk(transfers[0].bookID); // Fetch book for current status
         const { status } = this.determineTransferDetails(book.status, recipientType, recipient); // Use book.status
-    
+
         await Promise.all(transfers.map(async t => {
             const book = await ReceiptBook.findByPk(t.bookID);
             await Promise.all([
-                book.update({ 
-                    status, 
-                    currentHolderID: recipientType === 'user' ? recipientID : null, 
-                    agentID: recipientType === 'agent' ? recipientID : null 
+                book.update({
+                    status,
+                    currentHolderID: recipientType === 'user' ? recipientID : null,
+                    agentID: recipientType === 'agent' ? recipientID : null
                 }),
                 t.update({ status: 'Validated' }),
             ]);
         }));
-    
+
         const recipientEmail = recipient.email || (await User.findByPk(transfers[0].fromUserID))?.email;
         await transporter.sendMail({
             from: process.env.SMTP_USER,
@@ -134,7 +134,7 @@ class ReceiptBookService {
             subject: `Transfer of ${bookIDs.length} Books Validated`,
             text: `${bookIDs.length} books transferred to ${recipientType} ${recipientID}. New status: ${status}`,
         });
-    
+
         return { message: `${bookIDs.length} books transferred and validated` };
     }
 
@@ -150,13 +150,13 @@ class ReceiptBookService {
     static async canTransfer(books, senderID) { // Make async to fetch sender roles
         const sender = await User.findByPk(senderID, { include: [Role] });
         const isSuperAdmin = sender?.Roles?.some(r => r.name === 'Super Admin');
-    
+
         if (isSuperAdmin) {
             console.log(`${new Date().toISOString()} - Super Admin bypass for senderID: ${senderID}`);
             return true; // Super Admin can transfer anything
         }
-    
-        return books.every(book => 
+
+        return books.every(book =>
             (book.status === 'In Stock' && book.currentHolderID === senderID) ||
             (book.status === 'Sent to Supplier' && !book.currentHolderID) ||
             (['With Regional Manager', 'With Supervisor', 'Stub Collected'].includes(book.status) && book.currentHolderID === senderID)
@@ -165,14 +165,14 @@ class ReceiptBookService {
     // Helper: Determine status and transfer type
     static determineTransferDetails(currentStatus, recipientType, recipient) {
         console.log(`${new Date().toISOString()} - determineTransferDetails inputs:`, { currentStatus, recipientType, recipient: JSON.stringify(recipient) });
-    
+
         if (recipientType === 'agent') {
             return { status: 'Assigned to Agent', transferType: 'ToAgent' };
         }
-    
+
         const role = recipient.Roles?.length ? recipient.Roles[0].name : 'Unknown';
         console.log(`${new Date().toISOString()} - Determined role: ${role} for recipientID: ${recipient.userID || recipient.agentID}`);
-    
+
         const statusMap = {
             'In Stock': 'Sent to Supplier',
             'Sent to Supplier': 'With Regional Manager',
@@ -194,13 +194,13 @@ class ReceiptBookService {
                 'Stock Manager': 'With Stock Manager',
             },
         };
-    
+
         const transferTypeMap = {
             'Regional Manager': 'ToRegionalManager',
             'Supervisor': 'ToSupervisor',
             'Stock Manager': 'ToStockManager',
         };
-    
+
         let newStatus;
         if (statusMap[currentStatus]) {
             if (typeof statusMap[currentStatus] === 'object') {
@@ -211,13 +211,13 @@ class ReceiptBookService {
         } else {
             newStatus = currentStatus;
         }
-    
+
         const transferType = transferTypeMap[role] || 'Unknown';
         if (!['ToSupplier', 'ToRegionalManager', 'ToSupervisor', 'ToAgent', 'StubToSupervisor', 'ToRegionalManagerFromSupervisor', 'ToStockManager', 'Archived'].includes(transferType)) {
             console.error(`${new Date().toISOString()} - Invalid transferType: ${transferType} for role: ${role}`);
             throw new Error(`Invalid transferType: ${transferType}`);
         }
-    
+
         console.log(`${new Date().toISOString()} - Determined:`, { status: newStatus, transferType });
         return { status: newStatus, transferType };
     }

@@ -50,7 +50,7 @@ class TimesheetService {
                     timesheetID: timesheet.timesheetID,
                     reasons: visitData.reasons,
                     checklists: visitData.checklists,
-                    status, 
+                    status,
                 });
             }
 
@@ -79,7 +79,7 @@ class TimesheetService {
             error.status = 400;
             throw error;
         }
-    
+
         try {
             // Fetch timesheet
             const timesheet = await Timesheet.findByPk(timesheetID);
@@ -88,45 +88,45 @@ class TimesheetService {
                 error.status = 404;
                 throw error;
             }
-    
+
             // Fetch all visits for the timesheet
             const visits = await Visit.findAll({ where: { timesheetID } });
-    
+
             // Determine which visits to update (only pending or rejected)
             let visitsToUpdate;
             if (visitIDs.length === 0) {
                 // If no visitIDs provided, update all pending or rejected visits
-                visitsToUpdate = visits.filter(visit => 
+                visitsToUpdate = visits.filter(visit =>
                     visit.status === 'pending' || visit.status === 'rejected'
                 );
             } else {
                 // If visitIDs provided, update only those that are pending or rejected
                 const visitIdSet = new Set(visitIDs);
-                visitsToUpdate = visits.filter(visit => 
-                    visitIdSet.has(visit.visitID) && 
+                visitsToUpdate = visits.filter(visit =>
+                    visitIdSet.has(visit.visitID) &&
                     (visit.status === 'pending' || visit.status === 'rejected')
                 );
                 // No error if some visitIDs don’t match—just skip them
             }
-    
+
             // If no visits to update, return the timesheet as-is
             if (visitsToUpdate.length === 0) {
                 return timesheet;
             }
-    
+
             // Update the status of matching visits
             await Promise.all(visitsToUpdate.map(async (visit) => {
                 visit.status = status;
                 await visit.save();
             }));
-    
+
             // Check if all visits are validated and update timesheet status if so
             const updatedVisits = await Visit.findAll({ where: { timesheetID } });
             if (updatedVisits.every(visit => visit.status === 'validated')) {
                 timesheet.status = 'validated';
                 await timesheet.save();
             }
-    
+
             return timesheet;
         } catch (error) {
             const err = new Error(`Validation failed: ${error.message}`);

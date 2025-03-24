@@ -102,16 +102,16 @@ class RoleService {
         try {
             const user = await User.findByPk(userID);
             if (!user) throw new Error('User not found');
-    
+
             // Validate and process each roleID
             const results = [];
             for (const roleID of roleIDs) {
                 const role = await Role.findByPk(roleID);
                 if (!role) throw new Error(`Role not found: ${roleID}`);
-    
+
                 const hasRole = await user.hasRole(role);
                 if (!hasRole) throw new Error(`User does not have role: ${roleID}`);
-    
+
                 await user.removeRole(role);
                 results.push({
                     userID,
@@ -120,7 +120,7 @@ class RoleService {
                     message: `Role ${roleID} revoked successfully`
                 });
             }
-    
+
             return results.length === 1 ? results[0] : results; // Return single object if one role, array if multiple
         } catch (error) {
             throw new Error(`Failed to revoke role(s): ${error.message}`);

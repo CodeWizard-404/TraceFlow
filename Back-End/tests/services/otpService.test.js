@@ -16,57 +16,63 @@ describe('OTPService', () => {
     });
 
     describe('generateOTP', () => {
-        it('should generate OTP for user with correct format', async () => {
+        it('should generate OTP for user with valid data', async () => {
             const mockCode = '123456';
-            sandbox.stub(crypto, 'randomInt').returns(mockCode);
-            const createStub = sandbox.stub(OTP, 'create').resolves({ code: mockCode });
+            sandbox.stub(crypto, 'randomInt').returns(parseInt(mockCode));
+            const mockOTP = {
+                code: mockCode,
+                userID: 1,
+                expiresAt: sinon.match.date
+            };
+            const createStub = sandbox.stub(OTP, 'create').resolves(mockOTP);
 
             const result = await OTPService.generateOTP(1, 'user');
 
+            expect(result).to.deep.equal(mockOTP);
             expect(createStub.calledOnce).to.be.true;
-            const createArgs = createStub.getCall(0).args[0];
-            expect(createArgs.code).to.equal(mockCode);
-            expect(createArgs.userID).to.equal(1);
-            expect(createArgs.expiresAt).to.be.instanceof(Date);
+            expect(createStub.firstCall.args[0].userID).to.equal(1);
+            expect(createStub.firstCall.args[0].code).to.equal(mockCode);
         });
 
-        it('should generate OTP for agent with correct format', async () => {
-            const mockCode = '654321';
-            sandbox.stub(crypto, 'randomInt').returns(mockCode);
-            const createStub = sandbox.stub(OTP, 'create').resolves({ code: mockCode });
+        it('should generate OTP for agent with valid data', async () => {
+            const mockCode = '123456';
+            sandbox.stub(crypto, 'randomInt').returns(parseInt(mockCode));
+            const mockOTP = {
+                code: mockCode,
+                agentID: 1,
+                expiresAt: sinon.match.date
+            };
+            const createStub = sandbox.stub(OTP, 'create').resolves(mockOTP);
 
-            const result = await OTPService.generateOTP(2, 'agent');
+            const result = await OTPService.generateOTP(1, 'agent');
 
+            expect(result).to.deep.equal(mockOTP);
             expect(createStub.calledOnce).to.be.true;
-            const createArgs = createStub.getCall(0).args[0];
-            expect(createArgs.code).to.equal(mockCode);
-            expect(createArgs.agentID).to.equal(2);
-            expect(createArgs.expiresAt).to.be.instanceof(Date);
+            expect(createStub.firstCall.args[0].agentID).to.equal(1);
+            expect(createStub.firstCall.args[0].code).to.equal(mockCode);
         });
 
-        it('should default to user type when no type specified', async () => {
-            const mockCode = '789012';
-            sandbox.stub(crypto, 'randomInt').returns(mockCode);
-            const createStub = sandbox.stub(OTP, 'create').resolves({ code: mockCode });
-
-            const result = await OTPService.generateOTP(3);
-
-            expect(createStub.calledOnce).to.be.true;
-            const createArgs = createStub.getCall(0).args[0];
-            expect(createArgs.userID).to.equal(3);
-            expect(createArgs.agentID).to.be.undefined;
-        });
-
-        it('should set expiration time 10 minutes in the future', async () => {
-            const now = new Date('2023-01-01T10:00:00Z');
-            sandbox.useFakeTimers(now);
-            sandbox.stub(crypto, 'randomInt').returns('123456');
+        it('should set default type to user when type not provided', async () => {
+            const mockCode = '123456';
+            sandbox.stub(crypto, 'randomInt').returns(parseInt(mockCode));
             const createStub = sandbox.stub(OTP, 'create').resolves({});
 
             await OTPService.generateOTP(1);
 
-            const createArgs = createStub.getCall(0).args[0];
-            expect(createArgs.expiresAt.getTime()).to.equal(now.getTime() + 10 * 60 * 1000);
+            expect(createStub.firstCall.args[0].userID).to.equal(1);
+            expect(createStub.firstCall.args[0].agentID).to.be.undefined;
+        });
+
+        it('should set expiration time 10 minutes in the future', async () => {
+            const now = new Date();
+            sandbox.useFakeTimers(now.getTime());
+            sandbox.stub(crypto, 'randomInt').returns(123456);
+            const createStub = sandbox.stub(OTP, 'create').resolves({});
+
+            await OTPService.generateOTP(1);
+
+            const expectedExpiration = new Date(now.getTime() + 10 * 60 * 1000);
+            expect(createStub.firstCall.args[0].expiresAt.getTime()).to.equal(expectedExpiration.getTime());
         });
     });
 });

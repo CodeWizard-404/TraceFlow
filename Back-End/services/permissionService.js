@@ -40,7 +40,7 @@ class PermissionService {
     }
 
 
-    
+
 
     // Assign permissions to a role
     static async assignPermissionsToRole(roleID, permissionIDs) {
@@ -78,16 +78,16 @@ class PermissionService {
         try {
             const role = await Role.findByPk(roleID);
             if (!role) throw new Error('Role not found');
-    
+
             // Validate and process each permissionID
             const results = [];
             for (const permissionID of permissionIDs) {
                 const permission = await Permission.findByPk(permissionID);
                 if (!permission) throw new Error(`Permission not found: ${permissionID}`);
-    
+
                 const hasPermission = await role.hasPermission(permission);
                 if (!hasPermission) throw new Error(`Role does not have permission: ${permissionID}`);
-    
+
                 await role.removePermission(permission);
                 results.push({
                     roleID,
@@ -96,7 +96,7 @@ class PermissionService {
                     message: `Permission ${permissionID} revoked successfully`
                 });
             }
-    
+
             return results.length === 1 ? results[0] : results; // Return single object if one permission, array if multiple
         } catch (error) {
             throw new Error(`Failed to revoke permission(s): ${error.message}`);
