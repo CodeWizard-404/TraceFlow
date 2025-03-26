@@ -84,6 +84,7 @@ class VisitService {
     static async logVisit(visitID, data, files) {
         try {
             const { duration, checklistUpdates, comment } = data;
+            console.log(`Files in service:`, files); // Debug log
             if (!files || files.length === 0) {
                 const error = new Error('At least one photo is required to log a visit');
                 error.status = 400;
@@ -116,9 +117,8 @@ class VisitService {
             await visit.save();
             return visit.reload({ include: [Checklist] });
         } catch (error) {
-            const err = new Error('Failed to log visit: ' + error.message);
-            err.status = error.status || 500;
-            throw err;
+            console.error(`${new Date().toISOString()} - Log visit failed:`, error);
+            throw error;
         }
     }
 

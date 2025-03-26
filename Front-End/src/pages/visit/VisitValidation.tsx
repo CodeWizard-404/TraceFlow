@@ -42,26 +42,22 @@ const VisitValidation: React.FC = () => {
                 setLoading(false);
                 return;
             }
-
             if (!permissionsLoaded) return;
 
             try {
                 setLoading(true);
                 const visitData = await getVisitById(idVisit, token);
                 setVisit(visitData);
-
                 if (visitData.agentID) {
                     const agentData = await getAgentById(visitData.agentID, token);
                     setAgent(agentData);
                 }
-
                 const initialChecklist = visitData.Checklists?.map((cl) => ({
                     id: cl.checklistID,
                     item: cl.item,
                     checked: cl.VisitChecklist?.checked || false,
                 })) || [];
                 setChecklist(initialChecklist);
-
                 setEntryTime(Date.now());
             } catch (err) {
                 setError("Failed to load visit or agent data.");
@@ -74,27 +70,37 @@ const VisitValidation: React.FC = () => {
         fetchVisitData();
     }, [idVisit, token, userPermissions.canLogVisits, permissionsLoaded]);
 
-    // Updated Start Camera Function
     const startCamera = async () => {
         try {
-            const stream = await navigator.mediaDevices.getUserMedia({
-                video: { facingMode: "environment" } // Use rear camera if available, falls back to front on desktop
-            });
+            console.log("Requesting camera access...");
+            const stream = await navigator.mediaDevices.getUserMedia({ video: true }); // Simplified for desktop
+            console.log("Camera stream obtained:", stream);
+
             if (videoRef.current) {
                 videoRef.current.srcObject = stream;
-                videoRef.current.onloadedmetadata = () => {
-                    videoRef.current!.play().catch(err => {
-                        setError("Failed to play video stream.");
-                        console.error("Video play error:", err);
-                    });
-                };
+                console.log("Stream assigned to video element.");
                 setIsCameraActive(true);
+            } else {
+                console.error("Video ref is null.");
+                setError("Video element not found.");
             }
         } catch (err) {
             setError("Failed to access camera. Please ensure permissions are granted.");
             console.error("Camera error:", err);
         }
     };
+
+    // Play video when camera is active
+    useEffect(() => {
+        if (isCameraActive && videoRef.current && videoRef.current.srcObject) {
+            videoRef.current.play()
+                .then(() => console.log("Video playback started successfully."))
+                .catch(err => {
+                    setError("Failed to play video stream.");
+                    console.error("Video play error:", err);
+                });
+        }
+    }, [isCameraActive]);
 
     const capturePhoto = () => {
         if (videoRef.current && canvasRef.current) {
@@ -109,9 +115,12 @@ const VisitValidation: React.FC = () => {
                     if (blob) {
                         const file = new File([blob], `photo-${Date.now()}.jpg`, { type: "image/jpeg" });
                         setPhotos((prev) => [...prev, file]);
+                        console.log("Photo captured:", file);
                     }
                 }, "image/jpeg");
             }
+        } else {
+            console.error("Video or canvas ref is null during capture.");
         }
     };
 
@@ -121,6 +130,7 @@ const VisitValidation: React.FC = () => {
             stream.getTracks().forEach(track => track.stop());
             videoRef.current.srcObject = null;
             setIsCameraActive(false);
+            console.log("Camera stopped.");
         }
     };
 
@@ -175,8 +185,8 @@ const VisitValidation: React.FC = () => {
     if (error || !visit || !userPermissions.canLogVisits) return (
         <div className="visit-validation-container">
             <div className="error">{error || "Visit not found or access denied."}</div>
-            <button className="back-btn" onClick={() => navigate("/timesheet")}>
-                <FaArrowLeft /> Back to Timesheets
+            <button className="back-btn" onClick={() => { navigate(0); }}>
+                <FaArrowLeft /> Back
             </button>
         </div>
     );
@@ -192,7 +202,6 @@ const VisitValidation: React.FC = () => {
             </header>
 
             <section className="visit-card">
-                {/* Existing sections unchanged */}
                 <div className="details-section">
                     <h2>Visit Details</h2>
                     <div className="detail-item">
@@ -255,13 +264,17 @@ const VisitValidation: React.FC = () => {
                 <div className="photos-section">
                     <h2><FaCamera /> Photos ({photos.length})</h2>
                     <div className="camera-controls">
-                        {!isCameraActive ? (
-                            <button className="camera-btn" onClick={startCamera}>
-                                <FaCamera /> Start Camera
-                            </button>
-                        ) : (
+                        <button className="camera-btn" onClick={startCamera} disabled={isCameraActive}>
+                            <FaCamera /> Start Camera
+                        </button>
+                        <video
+                            ref={videoRef}
+                            className={`camera-preview ${isCameraActive ? "active" : ""}`}
+                            muted
+                            playsInline
+                        />
+                        {isCameraActive && (
                             <>
-                                <video ref={videoRef} className="camera-preview" muted playsInline />
                                 <button className="capture-btn" onClick={capturePhoto}>
                                     Capture Photo
                                 </button>

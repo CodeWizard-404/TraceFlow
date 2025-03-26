@@ -2,7 +2,7 @@ const express = require('express');
 const router = express.Router();
 const { authenticateJWT, requirePermission } = require('../config/security');
 const TimesheetController = require('../controllers/timesheetController');
-const upload = require('../config/mutler');
+const upload = require('../config/multer');
 
 router.post('/', authenticateJWT, requirePermission('create_self_timesheets'), TimesheetController.createTimesheet);
 router.post('/', authenticateJWT, requirePermission('create_timesheets_for_supervisor'), TimesheetController.createTimesheet);

@@ -32,6 +32,10 @@ export const logVisitDetails = async (
         if (data.comment) formData.append('comment', data.comment);
         data.photos.forEach((photo) => formData.append('photos', photo));
 
+        for (const [key, value] of formData.entries()) {
+            console.log(`FormData entry: ${key}=${value instanceof File ? value.name : value}`);
+        }
+
         const response = await api.put<LogVisitResponse>(`/visits/${id}/log`, formData, {
             headers: {
                 Authorization: `Bearer ${token}`,

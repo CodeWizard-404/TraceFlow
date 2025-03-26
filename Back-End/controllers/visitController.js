@@ -21,6 +21,10 @@ class VisitController {
             const { id } = req.params;
             const { duration, checklistUpdates, comment } = req.body;
             const files = req.files;
+
+            console.log(`Received files:`, files); // Debug log
+            console.log(`Received body:`, req.body); // Debug log
+
             const visit = await VisitService.logVisit(id, { duration, checklistUpdates, comment }, files);
             res.status(200).json(visit);
         } catch (error) {
