@@ -84,7 +84,6 @@ class VisitService {
     static async logVisit(visitID, data, files) {
         try {
             const { duration, checklistUpdates, comment } = data;
-            console.log(`Files in service:`, files); // Debug log
             if (!files || files.length === 0) {
                 const error = new Error('At least one photo is required to log a visit');
                 error.status = 400;
@@ -101,7 +100,7 @@ class VisitService {
             }
             const date = visit.date;
             const time = visit.time.replace(/:/g, '-');
-            const supervisorName = visit.Timesheet.User.firstname.toLowerCase();
+            const supervisorName = `${visit.Timesheet.User.firstname.toLowerCase()}_${visit.Timesheet.User.lastname.toLowerCase()}`;
             const folderName = `${date}_${time}_${supervisorName}`;
             const photoPaths = files.map(file => `/uploads/photos/${folderName}/${file.filename}`);
 
@@ -122,23 +121,6 @@ class VisitService {
         }
     }
 
-    static async getVisitByID(visitID) {
-        try {
-            const visit = await Visit.findByPk(visitID, { include: [Checklist, Reason] });
-            if (!visit) {
-                const error = new Error('Visit not found');
-                error.status = 404;
-                throw error;
-            }
-            return visit;
-        } catch (error) {
-            const err = new Error('Failed to fetch visit: ' + error.message);
-            err.status = error.status || 500;
-            throw err;
-        }
-    }
-
-
     static async updateVisit(visitID, data, files = []) {
         try {
             const { date, time, duration, location, status, comment } = data;
@@ -151,14 +133,12 @@ class VisitService {
                 throw error;
             }
 
-            // Determine current folder
             const oldDate = visit.date;
             const oldTime = visit.time.replace(/:/g, '-');
-            const supervisorName = visit.Timesheet.User.firstname.toLowerCase();
+            const supervisorName = `${visit.Timesheet.User.firstname.toLowerCase()}_${visit.Timesheet.User.lastname.toLowerCase()}`;
             const oldFolderName = `${oldDate}_${oldTime}_${supervisorName}`;
             const oldFolderPath = path.join(__dirname, '../uploads/photos', oldFolderName);
 
-            // New folder if date or time changes
             const newDate = date || visit.date;
             const newTime = (time || visit.time).replace(/:/g, '-');
             const newFolderName = `${newDate}_${newTime}_${supervisorName}`;
@@ -166,16 +146,14 @@ class VisitService {
 
             let photoPaths = visit.photos;
             if (files.length > 0) {
-                // New photos uploaded: replace existing ones
                 if (fs.existsSync(oldFolderPath)) {
-                    fs.rmSync(oldFolderPath, { recursive: true, force: true }); // Delete old folder
+                    fs.rmSync(oldFolderPath, { recursive: true, force: true });
                 }
                 if (!fs.existsSync(newFolderPath)) {
                     fs.mkdirSync(newFolderPath, { recursive: true });
                 }
                 photoPaths = files.map(file => `/uploads/photos/${newFolderName}/${file.filename}`);
             } else if (oldFolderName !== newFolderName && fs.existsSync(oldFolderPath)) {
-                // No new photos, but folder name changed: rename folder
                 fs.renameSync(oldFolderPath, newFolderPath);
                 photoPaths = visit.photos.map(p => p.replace(oldFolderName, newFolderName));
             }
@@ -208,12 +186,12 @@ class VisitService {
             }
             const date = visit.date;
             const time = visit.time.replace(/:/g, '-');
-            const supervisorName = visit.Timesheet.User.firstname.toLowerCase();
+            const supervisorName = `${visit.Timesheet.User.firstname.toLowerCase()}_${visit.Timesheet.User.lastname.toLowerCase()}`;
             const folderName = `${date}_${time}_${supervisorName}`;
             const folderPath = path.join(__dirname, '../uploads/photos', folderName);
 
             if (fs.existsSync(folderPath)) {
-                fs.rmSync(folderPath, { recursive: true, force: true }); // Delete folder and photos
+                fs.rmSync(folderPath, { recursive: true, force: true });
             }
             await visit.destroy();
             return { message: 'Visit and associated photos deleted successfully' };
@@ -223,6 +201,24 @@ class VisitService {
             throw err;
         }
     }
+
+    static async getVisitByID(visitID) {
+        try {
+            const visit = await Visit.findByPk(visitID, { include: [Checklist, Reason] });
+            if (!visit) {
+                const error = new Error('Visit not found');
+                error.status = 404;
+                throw error;
+            }
+            return visit;
+        } catch (error) {
+            const err = new Error('Failed to fetch visit: ' + error.message);
+            err.status = error.status || 500;
+            throw err;
+        }
+    }
+
+
 
 }
 

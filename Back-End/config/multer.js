@@ -1,15 +1,13 @@
-// config/multer.js
 const multer = require('multer');
 const path = require('path');
-const { nanoid } = require('nanoid');
 const fs = require('fs');
 const { Timesheet, User } = require('../models');
 
+// Use a request-scoped counter to track file indices
 const storage = multer.diskStorage({
     destination: async (req, file, cb) => {
         const { id } = req.params; // visitID from the route
         try {
-            // Fetch visit details
             const visit = await require('../models').Visit.findByPk(id, {
                 include: [{ model: Timesheet, include: [User] }],
             });
@@ -17,16 +15,12 @@ const storage = multer.diskStorage({
                 return cb(new Error('Visit not found'));
             }
 
-            // Extract date, time, and supervisor name
             const date = visit.date; // e.g., "2025-03-27"
-            const time = visit.time.replace(/:/g, '-'); // e.g., "10:00" -> "10-00"
-            const supervisorName = visit.Timesheet.User.firstname.toLowerCase(); // e.g., "john"
-
-            // Construct folder name
-            const folderName = `${date}_${time}_${supervisorName}`;
+            const time = visit.time.replace(/:/g, '-'); // e.g., "10-00"
+            const supervisorName = `${visit.Timesheet.User.firstname.toLowerCase()}_${visit.Timesheet.User.lastname.toLowerCase()}`; // e.g., "supervisor_user"
+            const folderName = `${date}_${time}_${supervisorName}`; // e.g., "2025-03-27_10-00_supervisor_user"
             const uploadPath = path.join(__dirname, '../uploads/photos', folderName);
 
-            // Create folder if it doesn’t exist
             if (!fs.existsSync(uploadPath)) {
                 fs.mkdirSync(uploadPath, { recursive: true });
             }
@@ -37,9 +31,27 @@ const storage = multer.diskStorage({
         }
     },
     filename: (req, file, cb) => {
-        const uniqueSuffix = `${nanoid()}-${Date.now()}`;
+        // Initialize a counter on the request object if it doesn’t exist
+        if (!req.fileCounter) {
+            req.fileCounter = 0;
+        }
+
+        // Generate a base timestamp (once per request)
+        if (!req.timestamp) {
+            req.timestamp = new Date().toISOString()
+                .replace(/T/, '_')
+                .replace(/:/g, '-')
+                .replace(/\..+/, '');
+        }
+
+        // Use the counter to create a unique suffix and increment it
+        const fileIndex = req.fileCounter;
+        const uniqueSuffix = `${req.timestamp}_${fileIndex}`; // e.g., "2025-03-26_17-27-42_0", "..._1", etc.
         const ext = path.extname(file.originalname).toLowerCase();
         cb(null, `${uniqueSuffix}${ext}`);
+
+        // Increment the counter for the next file
+        req.fileCounter += 1;
     },
 });
 

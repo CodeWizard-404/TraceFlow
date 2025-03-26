@@ -1,6 +1,6 @@
 import React, { useState, useEffect, useMemo, useRef } from "react";
 import { useParams, useNavigate } from "react-router-dom";
-import { FaUser, FaPhone, FaListUl, FaCheckCircle, FaArrowLeft, FaCheck, FaCamera } from "react-icons/fa";
+import { FaUser, FaPhone, FaListUl, FaCheckCircle, FaArrowLeft, FaCheck, FaCamera, FaTimes } from "react-icons/fa";
 import "./VisitValidation.css";
 import { getAgentById } from "../../apis/agentAPI";
 import { getVisitById, logVisitDetails } from "../../apis/visitAPI";
@@ -27,6 +27,7 @@ const VisitValidation: React.FC = () => {
     const [error, setError] = useState<string | null>(null);
     const [isSubmitting, setIsSubmitting] = useState<boolean>(false);
     const [isCameraActive, setIsCameraActive] = useState<boolean>(false);
+    const [selectedPhoto, setSelectedPhoto] = useState<string | null>(null);
 
     const videoRef = useRef<HTMLVideoElement>(null);
     const canvasRef = useRef<HTMLCanvasElement>(null);
@@ -71,33 +72,48 @@ const VisitValidation: React.FC = () => {
     }, [idVisit, token, userPermissions.canLogVisits, permissionsLoaded]);
 
     const startCamera = async () => {
+        console.log("Start Camera button clicked");
         try {
             console.log("Requesting camera access...");
-            const stream = await navigator.mediaDevices.getUserMedia({ video: true }); // Simplified for desktop
-            console.log("Camera stream obtained:", stream);
-
+            const stream = await navigator.mediaDevices.getUserMedia({ video: { facingMode: "environment" } });
+            console.log("Stream obtained:", stream);
             if (videoRef.current) {
                 videoRef.current.srcObject = stream;
-                console.log("Stream assigned to video element.");
+                console.log("Stream assigned to video element");
                 setIsCameraActive(true);
+                console.log("Camera active state set");
             } else {
-                console.error("Video ref is null.");
+                console.error("Video ref is null");
                 setError("Video element not found.");
             }
         } catch (err) {
             setError("Failed to access camera. Please ensure permissions are granted.");
-            console.error("Camera error:", err);
+            console.error("Camera access error:", err);
         }
     };
 
-    // Play video when camera is active
+    const stopCamera = () => {
+        console.log("Stop Camera button clicked");
+        if (videoRef.current && videoRef.current.srcObject) {
+            const stream = videoRef.current.srcObject as MediaStream;
+            stream.getTracks().forEach(track => {
+                track.stop();
+                console.log("Track stopped:", track);
+            });
+            videoRef.current.srcObject = null;
+            setIsCameraActive(false);
+            console.log("Camera stopped and state reset");
+        }
+    };
+
     useEffect(() => {
         if (isCameraActive && videoRef.current && videoRef.current.srcObject) {
+            console.log("Attempting to play video...");
             videoRef.current.play()
-                .then(() => console.log("Video playback started successfully."))
+                .then(() => console.log("Video playing successfully"))
                 .catch(err => {
-                    setError("Failed to play video stream.");
-                    console.error("Video play error:", err);
+                    console.error("Video play failed:", err);
+                    setError("Failed to play camera stream.");
                 });
         }
     }, [isCameraActive]);
@@ -115,23 +131,22 @@ const VisitValidation: React.FC = () => {
                     if (blob) {
                         const file = new File([blob], `photo-${Date.now()}.jpg`, { type: "image/jpeg" });
                         setPhotos((prev) => [...prev, file]);
-                        console.log("Photo captured:", file);
                     }
                 }, "image/jpeg");
             }
-        } else {
-            console.error("Video or canvas ref is null during capture.");
         }
     };
 
-    const stopCamera = () => {
-        if (videoRef.current && videoRef.current.srcObject) {
-            const stream = videoRef.current.srcObject as MediaStream;
-            stream.getTracks().forEach(track => track.stop());
-            videoRef.current.srcObject = null;
-            setIsCameraActive(false);
-            console.log("Camera stopped.");
-        }
+    const removePhoto = (index: number) => {
+        setPhotos((prev) => prev.filter((_, i) => i !== index));
+    };
+
+    const openPhotoPreview = (photo: File) => {
+        setSelectedPhoto(URL.createObjectURL(photo));
+    };
+
+    const closePhotoPreview = () => {
+        setSelectedPhoto(null);
     };
 
     const handleChecklistChange = (checklistId: string) => {
@@ -192,18 +207,20 @@ const VisitValidation: React.FC = () => {
     );
 
     return (
-        <div className="visit-validation-container">
-            <header className="visit-header-0">
-                <h1>
-                    Validate Visit
-                    <span className={`status-dot status-${visit.status}`}></span>
-                </h1>
-                <p>Complete the checklist, add photos, and validate the visit.</p>
-            </header>
+        <div className={`visit-validation-container ${isCameraActive ? 'camera-active' : ''}`}>
+            {!isCameraActive && (
+                <header className="visit-header-0">
+                    <h1>
+                        Validate Visit
+                        <span className={`status-dot status-${visit.status}`}></span>
+                    </h1>
+                    <p>Complete the checklist, add photos, and validate the visit.</p>
+                </header>
+            )}
 
             <section className="visit-card">
                 <div className="details-section">
-                    <h2>Visit Details</h2>
+                    <h2><FaUser /> Visit Details</h2>
                     <div className="detail-item">
                         <span><FaUser /> Agent</span>
                         <p>{agent ? `${agent.name} ${agent.lastname}` : "N/A"}</p>
@@ -267,32 +284,42 @@ const VisitValidation: React.FC = () => {
                         <button className="camera-btn" onClick={startCamera} disabled={isCameraActive}>
                             <FaCamera /> Start Camera
                         </button>
-                        <video
-                            ref={videoRef}
-                            className={`camera-preview ${isCameraActive ? "active" : ""}`}
-                            muted
-                            playsInline
-                        />
-                        {isCameraActive && (
-                            <>
-                                <button className="capture-btn" onClick={capturePhoto}>
-                                    Capture Photo
-                                </button>
-                                <button className="stop-btn" onClick={stopCamera}>
-                                    Stop Camera
-                                </button>
-                            </>
-                        )}
+                        <div className={`camera-container ${isCameraActive ? 'active' : ''}`}>
+                            <video
+                                ref={videoRef}
+                                className="camera-preview"
+                                muted
+                                playsInline
+                            />
+                            {isCameraActive && (
+                                <>
+                                    <button className="stop-camera-btn" onClick={stopCamera}>
+                                        <FaTimes />
+                                    </button>
+                                    <button className="capture-btn" onClick={capturePhoto}>
+                                        Capture Photo
+                                    </button>
+                                </>
+                            )}
+                        </div>
                     </div>
                     {photos.length > 0 && (
                         <div className="photo-previews">
                             {photos.map((photo, index) => (
-                                <img
-                                    key={index}
-                                    src={URL.createObjectURL(photo)}
-                                    alt={`Captured photo ${index + 1}`}
-                                    className="photo-preview"
-                                />
+                                <div key={index} className="photo-container">
+                                    <img
+                                        src={URL.createObjectURL(photo)}
+                                        alt={`Captured photo ${index + 1}`}
+                                        className="photo-preview"
+                                        onClick={() => openPhotoPreview(photo)}
+                                    />
+                                    <button
+                                        className="remove-photo-btn"
+                                        onClick={() => removePhoto(index)}
+                                    >
+                                        <FaTimes />
+                                    </button>
+                                </div>
                             ))}
                         </div>
                     )}
@@ -324,6 +351,14 @@ const VisitValidation: React.FC = () => {
             </section>
 
             <canvas ref={canvasRef} style={{ display: "none" }} />
+            {selectedPhoto && (
+                <div className="photo-fullscreen-preview" onClick={closePhotoPreview}>
+                    <img src={selectedPhoto} alt="Full-screen preview" className="fullscreen-image" />
+                    <button className="close-preview-btn" onClick={closePhotoPreview}>
+                        <FaTimes />
+                    </button>
+                </div>
+            )}
         </div>
     );
 };
