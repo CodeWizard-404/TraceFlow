@@ -1,6 +1,6 @@
-import React, { useState, useEffect, useMemo } from "react";
+import React, { useState, useEffect, useMemo, useRef } from "react";
 import { useParams, useNavigate } from "react-router-dom";
-import { FaUser, FaPhone, FaListUl, FaCheckCircle, FaArrowLeft, FaCheck } from "react-icons/fa";
+import { FaUser, FaPhone, FaListUl, FaCheckCircle, FaArrowLeft, FaCheck, FaCamera } from "react-icons/fa";
 import "./VisitValidation.css";
 import { getAgentById } from "../../apis/agentAPI";
 import { getVisitById, logVisitDetails } from "../../apis/visitAPI";
@@ -12,29 +12,29 @@ const PERMISSIONS = {
     LOG_VISITS: import.meta.env.VITE_PERMISSIONS_LOG_VISITS,
 };
 
-
-// Main Component
 const VisitValidation: React.FC = () => {
-    // Hooks
-    const { idVisit } = useParams<{ idVisit: string }>(); // Visit ID from URL parameters
+    const { idVisit } = useParams<{ idVisit: string }>();
     const navigate = useNavigate();
     const { token, effectivePermissions, permissionsLoaded } = useAuth();
 
-    // State
-    const [visit, setVisit] = useState<Visit | null>(null); // Details of the selected visit
-    const [agent, setAgent] = useState<Agent | null>(null); // Agent assigned to the visit
-    const [checklist, setChecklist] = useState<Array<{ id: string; item: string; checked: boolean }>>([]); // Checklist items with checked status
-    const [entryTime, setEntryTime] = useState<number | null>(null); // Timestamp when the page was loaded
-    const [loading, setLoading] = useState<boolean>(true); // Loading state for async operations
-    const [error, setError] = useState<string | null>(null); // Error message if data fetch fails
-    const [isSubmitting, setIsSubmitting] = useState<boolean>(false); // Submission state for validation
+    const [visit, setVisit] = useState<Visit | null>(null);
+    const [agent, setAgent] = useState<Agent | null>(null);
+    const [checklist, setChecklist] = useState<Array<{ id: string; item: string; checked: boolean }>>([]);
+    const [entryTime, setEntryTime] = useState<number | null>(null);
+    const [photos, setPhotos] = useState<File[]>([]);
+    const [comment, setComment] = useState<string>("");
+    const [loading, setLoading] = useState<boolean>(true);
+    const [error, setError] = useState<string | null>(null);
+    const [isSubmitting, setIsSubmitting] = useState<boolean>(false);
+    const [isCameraActive, setIsCameraActive] = useState<boolean>(false);
 
-    // Permission Checks 
+    const videoRef = useRef<HTMLVideoElement>(null);
+    const canvasRef = useRef<HTMLCanvasElement>(null);
+
     const userPermissions = useMemo(() => ({
         canLogVisits: effectivePermissions?.some(p => p.name === PERMISSIONS.LOG_VISITS),
     }), [effectivePermissions]);
-    
-    // Fetch Visit Data
+
     useEffect(() => {
         const fetchVisitData = async () => {
             if (!idVisit || !token) {
@@ -55,7 +55,6 @@ const VisitValidation: React.FC = () => {
                     setAgent(agentData);
                 }
 
-                // Initialize checklist from visit data
                 const initialChecklist = visitData.Checklists?.map((cl) => ({
                     id: cl.checklistID,
                     item: cl.item,
@@ -75,19 +74,66 @@ const VisitValidation: React.FC = () => {
         fetchVisitData();
     }, [idVisit, token, userPermissions.canLogVisits, permissionsLoaded]);
 
-    // Handlers
+    // Updated Start Camera Function
+    const startCamera = async () => {
+        try {
+            const stream = await navigator.mediaDevices.getUserMedia({
+                video: { facingMode: "environment" } // Use rear camera if available, falls back to front on desktop
+            });
+            if (videoRef.current) {
+                videoRef.current.srcObject = stream;
+                videoRef.current.onloadedmetadata = () => {
+                    videoRef.current!.play().catch(err => {
+                        setError("Failed to play video stream.");
+                        console.error("Video play error:", err);
+                    });
+                };
+                setIsCameraActive(true);
+            }
+        } catch (err) {
+            setError("Failed to access camera. Please ensure permissions are granted.");
+            console.error("Camera error:", err);
+        }
+    };
+
+    const capturePhoto = () => {
+        if (videoRef.current && canvasRef.current) {
+            const video = videoRef.current;
+            const canvas = canvasRef.current;
+            canvas.width = video.videoWidth;
+            canvas.height = video.videoHeight;
+            const context = canvas.getContext("2d");
+            if (context) {
+                context.drawImage(video, 0, 0, canvas.width, canvas.height);
+                canvas.toBlob((blob) => {
+                    if (blob) {
+                        const file = new File([blob], `photo-${Date.now()}.jpg`, { type: "image/jpeg" });
+                        setPhotos((prev) => [...prev, file]);
+                    }
+                }, "image/jpeg");
+            }
+        }
+    };
+
+    const stopCamera = () => {
+        if (videoRef.current && videoRef.current.srcObject) {
+            const stream = videoRef.current.srcObject as MediaStream;
+            stream.getTracks().forEach(track => track.stop());
+            videoRef.current.srcObject = null;
+            setIsCameraActive(false);
+        }
+    };
+
     const handleChecklistChange = (checklistId: string) => {
-        // Toggle the checked status of a checklist item
         setChecklist((prev) =>
             prev.map((item) => (item.id === checklistId ? { ...item, checked: !item.checked } : item))
         );
     };
 
     const handleValidate = async () => {
-        // Validate the visit by logging details and updating duration/checklist
-        if (!visit || !idVisit || !entryTime || !userPermissions.canLogVisits) {
-            navigate("/access-denied");
-            return null;
+        if (!visit || !idVisit || !entryTime || !userPermissions.canLogVisits || photos.length === 0) {
+            setError(photos.length === 0 ? "At least one photo is required." : "Access denied or missing data.");
+            return;
         }
 
         setIsSubmitting(true);
@@ -105,11 +151,13 @@ const VisitValidation: React.FC = () => {
 
             const updatedVisitData = {
                 duration: durationMinutes,
-                checklistUpdates
+                checklistUpdates,
+                photos,
+                comment,
             };
 
             await logVisitDetails(idVisit, updatedVisitData, token!);
-            await new Promise((resolve) => setTimeout(resolve, 500)); // Brief delay for UX
+            stopCamera();
             navigate("/timesheet");
         } catch (err) {
             setError("Failed to validate visit.");
@@ -119,38 +167,32 @@ const VisitValidation: React.FC = () => {
         }
     };
 
-    // Memoized Checklist Stats
     const completedItems = useMemo(() => checklist.filter((item) => item.checked).length, [checklist]);
     const totalItems = checklist.length;
 
-    // Early Returns for Loading and Error States
     if (!permissionsLoaded) return <div className="visit-validation-container">Loading permissions...</div>;
-
     if (loading) return <div className="loading">Loading...</div>;
-
     if (error || !visit || !userPermissions.canLogVisits) return (
         <div className="visit-validation-container">
-            <div className="error">{error || "Visit not found."}</div>
+            <div className="error">{error || "Visit not found or access denied."}</div>
             <button className="back-btn" onClick={() => navigate("/timesheet")}>
                 <FaArrowLeft /> Back to Timesheets
             </button>
         </div>
     );
 
-    // Render
     return (
         <div className="visit-validation-container">
-            {/* Header Section */}
             <header className="visit-header-0">
                 <h1>
                     Validate Visit
                     <span className={`status-dot status-${visit.status}`}></span>
                 </h1>
-                <p>Complete the checklist and validate the visit.</p>
+                <p>Complete the checklist, add photos, and validate the visit.</p>
             </header>
 
             <section className="visit-card">
-                {/* Visit Details Section */}
+                {/* Existing sections unchanged */}
                 <div className="details-section">
                     <h2>Visit Details</h2>
                     <div className="detail-item">
@@ -163,7 +205,6 @@ const VisitValidation: React.FC = () => {
                     </div>
                 </div>
 
-                {/* Reasons Section */}
                 <div className="reasons-section">
                     <h2><FaListUl /> Reasons</h2>
                     {visit.Reasons && visit.Reasons.length > 0 ? (
@@ -177,91 +218,27 @@ const VisitValidation: React.FC = () => {
                     )}
                 </div>
 
-                {/* Checklist Section */}
                 <div className="checklist-section">
                     <h2><FaCheckCircle /> Checklist ({completedItems}/{totalItems})</h2>
                     {checklist.length > 0 ? (
                         <>
                             <ul className="checklist">
-                                {checklist.map((item) => {
-                                    const isTransferItem = item.item.toLowerCase() === "transfer a receipt book";
-                                    const isStubCollectionItem = item.item.toLowerCase() === "collect receipt stub";
-
-                                    if (isTransferItem) {
-                                        return (
-                                            <li key={item.id} className={item.checked ? "checked" : ""}>
-                                                <label className="custom-checkbox-label">
-                                                    <input
-                                                        type="checkbox"
-                                                        checked={item.checked}
-                                                        onChange={() => {
-                                                            handleChecklistChange(item.id);
-                                                            if (!item.checked) {
-                                                                navigate("/transfer-receipt-books", {
-                                                                    state: { 
-                                                                        agentID: visit?.agentID, 
-                                                                        forceAgent: true,
-                                                                        transferType: "Agent"
-                                                                    }
-                                                                });
-                                                            }
-                                                        }}
-                                                        className="custom-checkbox-input"
-                                                    />
-                                                    <span className="custom-checkbox">
-                                                        <FaCheck className="check-icon" />
-                                                    </span>
-                                                    <span className="checklist-text">{item.item}</span>
-                                                </label>
-                                            </li>
-                                        );
-                                    } else if (isStubCollectionItem) {
-                                        return (
-                                            <li key={item.id} className={item.checked ? "checked" : ""}>
-                                                <label className="custom-checkbox-label">
-                                                    <input
-                                                        type="checkbox"
-                                                        checked={item.checked}
-                                                        onChange={() => {
-                                                            handleChecklistChange(item.id);
-                                                            if (!item.checked) {
-                                                                navigate("/transfer-receipt-books", {
-                                                                    state: { 
-                                                                        agentID: visit?.agentID, 
-                                                                        forceAgent: true,
-                                                                        transferType: "Stub Collection"
-                                                                    }
-                                                                });
-                                                            }
-                                                        }}
-                                                        className="custom-checkbox-input"
-                                                    />
-                                                    <span className="custom-checkbox">
-                                                        <FaCheck className="check-icon" />
-                                                    </span>
-                                                    <span className="checklist-text">{item.item}</span>
-                                                </label>
-                                            </li>
-                                        );
-                                    } else {
-                                        return (
-                                            <li key={item.id} className={item.checked ? "checked" : ""}>
-                                                <label className="custom-checkbox-label">
-                                                    <input
-                                                        type="checkbox"
-                                                        checked={item.checked}
-                                                        onChange={() => handleChecklistChange(item.id)}
-                                                        className="custom-checkbox-input"
-                                                    />
-                                                    <span className="custom-checkbox">
-                                                        <FaCheck className="check-icon" />
-                                                    </span>
-                                                    <span className="checklist-text">{item.item}</span>
-                                                </label>
-                                            </li>
-                                        );
-                                    }
-                                })}
+                                {checklist.map((item) => (
+                                    <li key={item.id} className={item.checked ? "checked" : ""}>
+                                        <label className="custom-checkbox-label">
+                                            <input
+                                                type="checkbox"
+                                                checked={item.checked}
+                                                onChange={() => handleChecklistChange(item.id)}
+                                                className="custom-checkbox-input"
+                                            />
+                                            <span className="custom-checkbox">
+                                                <FaCheck className="check-icon" />
+                                            </span>
+                                            <span className="checklist-text">{item.item}</span>
+                                        </label>
+                                    </li>
+                                ))}
                             </ul>
                             <div className="progress-bar">
                                 <div
@@ -275,20 +252,65 @@ const VisitValidation: React.FC = () => {
                     )}
                 </div>
 
-                {/* Action Buttons */}
+                <div className="photos-section">
+                    <h2><FaCamera /> Photos ({photos.length})</h2>
+                    <div className="camera-controls">
+                        {!isCameraActive ? (
+                            <button className="camera-btn" onClick={startCamera}>
+                                <FaCamera /> Start Camera
+                            </button>
+                        ) : (
+                            <>
+                                <video ref={videoRef} className="camera-preview" muted playsInline />
+                                <button className="capture-btn" onClick={capturePhoto}>
+                                    Capture Photo
+                                </button>
+                                <button className="stop-btn" onClick={stopCamera}>
+                                    Stop Camera
+                                </button>
+                            </>
+                        )}
+                    </div>
+                    {photos.length > 0 && (
+                        <div className="photo-previews">
+                            {photos.map((photo, index) => (
+                                <img
+                                    key={index}
+                                    src={URL.createObjectURL(photo)}
+                                    alt={`Captured photo ${index + 1}`}
+                                    className="photo-preview"
+                                />
+                            ))}
+                        </div>
+                    )}
+                    <p className="photo-note">At least one photo is required.</p>
+                </div>
+
+                <div className="comment-section">
+                    <h2>Comment (Optional)</h2>
+                    <textarea
+                        value={comment}
+                        onChange={(e) => setComment(e.target.value)}
+                        placeholder="Add a comment about the visit..."
+                        className="comment-input"
+                    />
+                </div>
+
                 <div className="visit-actions">
                     <button
                         className={`validate-btn ${isSubmitting ? "submitting" : ""}`}
                         onClick={handleValidate}
-                        disabled={isSubmitting || checklist.every((item) => !item.checked)}
+                        disabled={isSubmitting || photos.length === 0}
                     >
                         <FaCheck /> {isSubmitting ? "Validating..." : "Validate Visit"}
                     </button>
-                    <button className="back-btn" onClick={() => navigate("/timesheet")}>
+                    <button className="back-btn" onClick={() => { stopCamera(); navigate("/timesheet"); }}>
                         <FaArrowLeft /> Back
                     </button>
                 </div>
             </section>
+
+            <canvas ref={canvasRef} style={{ display: "none" }} />
         </div>
     );
 };

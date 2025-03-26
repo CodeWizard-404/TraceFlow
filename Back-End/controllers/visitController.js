@@ -19,8 +19,9 @@ class VisitController {
     static async logVisit(req, res) {
         try {
             const { id } = req.params;
-            const { duration, checklistUpdates, photos, comment } = req.body;
-            const visit = await VisitService.logVisit(id, { duration, checklistUpdates, photos, comment });
+            const { duration, checklistUpdates, comment } = req.body;
+            const files = req.files;
+            const visit = await VisitService.logVisit(id, { duration, checklistUpdates, comment }, files);
             res.status(200).json(visit);
         } catch (error) {
             console.error(`${new Date().toISOString()} - Log visit failed:`, error);

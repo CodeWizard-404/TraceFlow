@@ -29,6 +29,76 @@ export const createTimesheet = async (
   }
 };
 
+
+export const updateTimesheet = async (
+  id: string,
+  data: {
+    weekNumber?: number;
+    year?: number;
+    status?: string;
+    visits?: Array<{
+      visitID?: string;
+      date?: string;
+      time?: string;
+      duration?: number;
+      location?: string;
+      status?: string;
+      comment?: string;
+      photos?: File[];
+    }>;
+  },
+  token: string
+): Promise<TimesheetByIdResponse> => {
+  try {
+    const formData = new FormData();
+    if (data.weekNumber) formData.append('weekNumber', data.weekNumber.toString());
+    if (data.year) formData.append('year', data.year.toString());
+    if (data.status) formData.append('status', data.status);
+
+    if (data.visits) {
+      const visitsData = data.visits.map(visit => {
+        // eslint-disable-next-line @typescript-eslint/no-explicit-any
+        const visitObj: any = { ...visit };
+        delete visitObj.photos; // Remove photos from JSON
+        return visitObj;
+      });
+      formData.append('visits', JSON.stringify(visitsData));
+
+      // Append photos with visit-specific field names
+      data.visits.forEach((visit) => {
+        if (visit.photos && visit.visitID) {
+          visit.photos.forEach((photo) => {
+            formData.append(`photos.${visit.visitID}`, photo);
+          });
+        }
+      });
+    }
+
+    const response = await api.put<TimesheetByIdResponse>(`/timesheets/${id}`, formData, {
+      headers: {
+        Authorization: `Bearer ${token}`,
+        'Content-Type': 'multipart/form-data',
+      },
+    });
+    return response.data;
+  } catch (error) {
+    console.error(`Error updating timesheet (${id}):`, error);
+    throw error;
+  }
+};
+
+export const deleteTimesheet = async (id: string, token: string): Promise<{ message: string }> => {
+  try {
+    const response = await api.delete<{ message: string }>(`/timesheets/${id}`, {
+      headers: { Authorization: `Bearer ${token}` },
+    });
+    return response.data;
+  } catch (error) {
+    console.error(`Error deleting timesheet (${id}):`, error);
+    throw error;
+  }
+};
+
 export const getAllTimesheets = async (token: string): Promise<ListTimesheetsResponse> => {
   try {
     const response = await api.get<ListTimesheetsResponse>("/timesheets", {

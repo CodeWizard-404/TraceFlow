@@ -191,8 +191,7 @@ const Timesheets: React.FC = () => {
       return weekStart;
     });
 
-  const sortVisitsByTime = (visits: VisitWithSupervisor[]): VisitWithSupervisor[] =>
-    [...visits].sort((a, b) => a.time.localeCompare(b.time));
+  const sortVisitsByTime = (visits: VisitWithSupervisor[]): VisitWithSupervisor[] => [...visits].sort((a, b) => a.time.localeCompare(b.time));
 
   // Data Generation Functions
   const generateYearData = () => {
@@ -296,7 +295,7 @@ const Timesheets: React.FC = () => {
 
   // Early Returns
   if (!permissionsLoaded) return <div className="loading">Loading permissions...</div>;
-  if (!token || !userPermissions.canAccessSupervisorTimesheets) {
+  if (!token) {
     navigate("/access-denied");
     return null;
   }
@@ -336,7 +335,7 @@ const Timesheets: React.FC = () => {
         </div>
       </header>
 
-      {(userPermissions.canReadUsers || userPermissions.canReadSupervisors) && (
+      {(isSuperAdmin || userPermissions.canReadSupervisors) && (
         <div className="filter-bubble">
           <button className="filter-toggle-btn">Filter Supervisors</button>
           <div className="filter-panel">

@@ -25,3 +25,5 @@ npm install qrcode bcrypt jsonwebtoken nodemailer twilio express cors mdns-js se
 
 
 npm install keycloak-connect
+
+npm install multer

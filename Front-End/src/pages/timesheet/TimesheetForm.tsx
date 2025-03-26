@@ -58,8 +58,8 @@ const TimesheetForm: React.FC = () => {
   const [supervisorPhone, setSupervisorPhone] = useState<string>("");
   const [supervisorSearch, setSupervisorSearch] = useState<string>("");
 
-  // Current date/time setup (March 25, 2025)
-  const currentDateTime = new Date('2025-03-25');
+  // Current date/time setup
+  const currentDateTime = new Date(Date.now());
   const currentDate = currentDateTime.toISOString().split('T')[0];
   const currentHours = currentDateTime.getHours().toString().padStart(2, '0');
   const currentMinutes = currentDateTime.getMinutes().toString().padStart(2, '0');

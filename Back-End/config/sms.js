@@ -1,5 +1,5 @@
 const axios = require('axios');
-const { User, Agent } = require('../models'); 
+const { User, Agent } = require('../models');
 const { transporter } = require('./smtp');
 require('dotenv').config();
 

@@ -17,12 +17,26 @@ export const verifyQrCode = async (data: { qrData: string; visitId: string }, to
 
 export const logVisitDetails = async (
     id: string,
-    data: { duration: number; checklistUpdates: Array<{ checklistID: string; checked: boolean }> },
+    data: {
+        duration: number;
+        checklistUpdates: Array<{ checklistID: string; checked: boolean }>;
+        photos: File[];
+        comment?: string;
+    },
     token: string
 ): Promise<LogVisitResponse> => {
     try {
-        const response = await api.put<LogVisitResponse>(`/visits/${id}/log`, data, {
-            headers: { Authorization: `Bearer ${token}` },
+        const formData = new FormData();
+        if (data.duration) formData.append('duration', data.duration.toString());
+        if (data.checklistUpdates) formData.append('checklistUpdates', JSON.stringify(data.checklistUpdates));
+        if (data.comment) formData.append('comment', data.comment);
+        data.photos.forEach((photo) => formData.append('photos', photo));
+
+        const response = await api.put<LogVisitResponse>(`/visits/${id}/log`, formData, {
+            headers: {
+                Authorization: `Bearer ${token}`,
+                'Content-Type': 'multipart/form-data',
+            },
         });
         return response.data;
     } catch (error) {
@@ -34,7 +48,7 @@ export const logVisitDetails = async (
 export const getVisitById = async (id: string, token: string): Promise<VisitByIdResponse> => {
     try {
         const response = await api.get<VisitByIdResponse>(`/visits/${id}`, {
-            headers: { Authorization: `Bearer ${token}` }, 
+            headers: { Authorization: `Bearer ${token}` },
         });
         return response.data;
     } catch (error) {

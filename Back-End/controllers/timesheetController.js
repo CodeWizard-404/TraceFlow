@@ -13,17 +13,6 @@ class TimesheetController {
             if (status && !['pending', 'validated'].includes(status)) {
                 return res.status(400).json({ error: 'Invalid status value. Must be "pending" or "validated"' });
             }
-            // Log req.user for debugging
-            console.log(`${new Date().toISOString()} - req.user:`, req.user);
-
-            // Flatten permissions from Roles
-            const userPermissions = req.user?.Roles?.flatMap(role => role.Permissions?.map(perm => perm.name) || []) || [];
-            const hasSupervisorPermission = userPermissions.includes('create_timesheets_for_supervisor');
-            console.log(`${new Date().toISOString()} - User permissions:`, userPermissions); 
-
-            if (status === 'validated' && !hasSupervisorPermission) {
-                return res.status(403).json({ error: 'Permission denied: Only users with create_timesheets_for_supervisor can set status to validated' });
-            }
 
             const timesheet = await TimesheetService.createTimesheet({ weekNumber, year, supervisorID, visits, status });
             res.status(201).json(timesheet);
@@ -77,6 +66,49 @@ class TimesheetController {
         } catch (error) {
             console.error(`${new Date().toISOString()} - Get timesheets by supervisor failed:`, error);
             res.status(error.status || 500).json({ error: error.message || 'Failed to retrieve timesheets for supervisor due to an internal error' });
+        }
+    }
+
+    static async updateTimesheet(req, res) {
+        try {
+            const { id } = req.params;
+            const { weekNumber, year, status, visits } = req.body;
+            const userPermissions = req.user?.Roles?.flatMap(role => role.Permissions?.map(perm => perm.name) || []) || [];
+            if (!userPermissions.includes('edit_timesheets_for_supervisor')) {
+                return res.status(403).json({ error: 'Permission denied: Only users with edit_timesheets_for_supervisor can update timesheets' });
+            }
+
+            // Parse visits if sent as a string (e.g., from form-data)
+            const parsedVisits = typeof visits === 'string' ? JSON.parse(visits) : visits;
+            const filesMap = {};
+            if (req.files) {
+                req.files.forEach(file => {
+                    const visitId = file.fieldname.split('.')[1]; // e.g., "photos.vis_123" -> "vis_123"
+                    if (!filesMap[visitId]) filesMap[visitId] = [];
+                    filesMap[visitId].push(file);
+                });
+            }
+
+            const timesheet = await TimesheetService.updateTimesheet(id, { weekNumber, year, status, visits: parsedVisits }, filesMap);
+            res.status(200).json(timesheet);
+        } catch (error) {
+            console.error(`${new Date().toISOString()} - Update timesheet failed:`, error);
+            res.status(error.status || 500).json({ error: error.message || 'Failed to update timesheet due to an internal error' });
+        }
+    }
+
+    static async deleteTimesheet(req, res) {
+        try {
+            const { id } = req.params;
+            const userPermissions = req.user?.Roles?.flatMap(role => role.Permissions?.map(perm => perm.name) || []) || [];
+            if (!userPermissions.includes('delete_timesheets_for_supervisor')) {
+                return res.status(403).json({ error: 'Permission denied: Only users with delete_timesheets_for_supervisor can delete timesheets' });
+            }
+            const result = await TimesheetService.deleteTimesheet(id);
+            res.status(200).json(result);
+        } catch (error) {
+            console.error(`${new Date().toISOString()} - Delete timesheet failed:`, error);
+            res.status(error.status || 500).json({ error: error.message || 'Failed to delete timesheet due to an internal error' });
         }
     }
 }
