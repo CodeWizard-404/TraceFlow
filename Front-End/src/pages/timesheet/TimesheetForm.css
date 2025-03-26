@@ -215,6 +215,7 @@
 .suggestion-item:hover {
     background-color: #f0f0f0;
 }
+
 .error-text {
     color: red;
     font-size: 0.9em;
@@ -222,3 +223,20 @@
 }
 
 
+/* Style for date input */
+input[type="date"]::-webkit-datetime-edit-day-field {
+    /* Base styling */
+}
+
+/* Unfortunately, we can't directly style individual dates in the calendar popup */
+/* The min attribute will prevent selection of past dates */
+/* Weekend disabling is handled programmatically in the handler */
+input[type="date"]:disabled {
+    opacity: 0.5;
+    cursor: not-allowed;
+}
+
+input[type="time"]:disabled {
+    opacity: 0.5;
+    cursor: not-allowed;
+}

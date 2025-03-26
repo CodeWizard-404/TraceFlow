@@ -1,5 +1,5 @@
 const bcrypt = require('bcrypt');
-const { User, Role, Permission, UserPermissionOverride } = require('../models');
+const { User, Role } = require('../models');
 
 class UserService {
     // Create a user (simplified for this example)
@@ -67,6 +67,10 @@ class UserService {
         try {
             const user = await User.findByPk(userID);
             if (!user) throw new Error('User not found');
+            if (userData.password) {
+                userData.password = await bcrypt.hash(userData.password, 10);
+            }
+
             await user.update(userData);
             return user;
         } catch (error) {
@@ -87,7 +91,7 @@ class UserService {
 
 
 
-    
+
     static async getSupervisorsByUser(userID) {
         try {
             const user = await User.findByPk(userID, {

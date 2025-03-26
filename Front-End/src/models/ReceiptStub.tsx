@@ -1,7 +1,9 @@
+import ReceiptStubtatus from "./Enum/ReceiptStubStatus";
+
 interface ReceiptStub {
     stubID: string;
     bookID: string;
-    status: "pending" | "collected" | "transmitted" | "archived";
+    status: ReceiptStubtatus
 }
 
 export default ReceiptStub;

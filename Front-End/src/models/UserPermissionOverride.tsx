@@ -1,9 +1,11 @@
+import PermissionsAction from "./Enum/PermissionsAction";
+
 interface UserPermissionOverride {
     overrideID: string;
     userID: string;
     roleID: string;
     permissionID: string;
-    action: "grant" | "revoke";
+    action: PermissionsAction
 }
 
 export default UserPermissionOverride;

@@ -52,7 +52,7 @@ export const AuthProvider: React.FC<{ children: ReactNode }> = ({ children }) =>
     const protectedRoutes: { [key: string]: string[] } = {
         "/admin": [ROLES.ADMIN, ROLES.SUPER_ADMIN],
         "/timesheet": [import.meta.env.VITE_PERMISSIONS_ACCESS_SUPERVISOR_TIMESHEETS],
-        "/timesheet-form": [import.meta.env.VITE_PERMISSIONS_CREATE_TIMESHEETS],
+        "/timesheet-form": [import.meta.env.VITE_PERMISSIONS_CREATE_TIMESHEETS, import.meta.env.VITE_PERMISSIONS_CREATE_TIMESHEETS_FOR_SUPERVISOR],
         "/qr-scan": [import.meta.env.VITE_PERMISSIONS_SCAN_VISITS],
         "/visit/:idVisit": [import.meta.env.VITE_PERMISSIONS_ACCESS_VISIT_DETAILS],
         "/visit/:idVisit/validate-checklist": [import.meta.env.VITE_PERMISSIONS_LOG_VISITS],
@@ -92,7 +92,7 @@ export const AuthProvider: React.FC<{ children: ReactNode }> = ({ children }) =>
         if (!permissionsLoaded) return;
 
         // Check if user has no roles or permissions
-        if ((!userRoles || userRoles.length === 0) && 
+        if ((!userRoles || userRoles.length === 0) &&
             (!effectivePermissions || effectivePermissions.length === 0)) {
             setNoAccess(true); // Show no access message
             return;

@@ -6,10 +6,12 @@ const {
     initializeSMS,
     initializeServer,
 } = require('./config');
-const { seedSuperAdmin } = require('./config/SeedSuperAdmin');
 const { sequelize } = require('./config/db');
 const { authenticateJWT } = require('./config/security');
-const { seedMissingPermissions } = require('./config/seedPermissions');
+
+const { seedSuperAdmin } = require('./scripts/SeedSuperAdmin');
+const { seedMissingPermissions } = require('./scripts/seedPermissions');
+
 const { setupAssociations } = require('./models');
 
 const agentRoutes = require('./routes/agentRoutes');

@@ -38,7 +38,7 @@
   display: block;
   font-size: 0.9rem;
   color: #4cb1c7;
-  margin-bottom: 0.25rem;
+  margin-bottom: 0 !important;
 }
 
 .qr-reader {
@@ -148,7 +148,8 @@
 
 /* Dark theme overrides */
 body.dark .transfer-receipt-book-container {
-  background: none; /* Remove background to align with body.dark gradient */
+  background: none;
+  /* Remove background to align with body.dark gradient */
 }
 
 body.dark .transfer-header {
@@ -187,7 +188,8 @@ body.dark .error {
 
 body.dark .error-above-camera {
   color: #f68787;
-  background: rgba(38, 38, 38, 0.9); /* Match dark theme background */
+  background: rgba(38, 38, 38, 0.9);
+  /* Match dark theme background */
 }
 
 body.dark .back-btn {
@@ -218,13 +220,13 @@ body.dark .scanned-list li button {
 
 body.dark .scanned-list li button:hover {
   background: #d53f3f;
-} 
+}
 
 
 .book-selection-section ul.book-list {
   list-style: none;
   padding: 0;
-  margin: 0;
+  margin: 1rem 0;
   max-height: 300px;
   overflow-y: auto;
 }
@@ -283,18 +285,18 @@ body.dark .scanned-list li button:hover {
   transition: all 0.2s ease;
 }
 
-.book-selection-section .custom-checkbox-input:checked + .custom-checkbox {
+.book-selection-section .custom-checkbox-input:checked+.custom-checkbox {
   background: #4cb1c7;
   border-color: #4cb1c7;
   transform: scale(1.1);
 }
 
-.book-selection-section .custom-checkbox-input:checked + .custom-checkbox .check-icon {
+.book-selection-section .custom-checkbox-input:checked+.custom-checkbox .check-icon {
   opacity: 1;
   transform: scale(1);
 }
 
-.book-selection-section .custom-checkbox-input:focus + .custom-checkbox {
+.book-selection-section .custom-checkbox-input:focus+.custom-checkbox {
   box-shadow: 0 0 0 3px rgba(76, 177, 199, 0.3);
 }
 
@@ -329,12 +331,12 @@ body.dark .book-selection-section .custom-checkbox {
   background: #262626;
 }
 
-body.dark .book-selection-section .custom-checkbox-input:checked + .custom-checkbox {
+body.dark .book-selection-section .custom-checkbox-input:checked+.custom-checkbox {
   background: #63b3ed;
   border-color: #63b3ed;
 }
 
-body.dark .book-selection-section .custom-checkbox-input:focus + .custom-checkbox {
+body.dark .book-selection-section .custom-checkbox-input:focus+.custom-checkbox {
   box-shadow: 0 0 0 3px rgba(99, 179, 237, 0.3);
 }
 

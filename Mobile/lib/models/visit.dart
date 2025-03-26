@@ -1,5 +1,5 @@
-import 'package:visit_management/models/reason.dart';
-import 'package:visit_management/models/checklist.dart';
+import 'package:TraceFlow/models/reason.dart';
+import 'package:TraceFlow/models/checklist.dart';
 
 class Visit {
   final String? visitID;

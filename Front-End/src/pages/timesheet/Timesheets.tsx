@@ -15,11 +15,16 @@ import TimesheetStatus from "../../models/Enum/TimesheetStatus";
 const PERMISSIONS = {
   ACCESS_TIMESHEETS: import.meta.env.VITE_PERMISSIONS_ACCESS_TIMESHEETS,
   ACCESS_SUPERVISOR_TIMESHEETS: import.meta.env.VITE_PERMISSIONS_ACCESS_SUPERVISOR_TIMESHEETS,
+
   ACCESS_TIMESHEET_DETAILS: import.meta.env.VITE_PERMISSIONS_ACCESS_TIMESHEET_DETAILS,
+
   CREATE_TIMESHEETS: import.meta.env.VITE_PERMISSIONS_CREATE_TIMESHEETS,
+  CREATE_SUPERVISOR_TIMESHEETS: import.meta.env.VITE_PERMISSIONS_CREATE_TIMESHEETS_FOR_SUPERVISOR,
   VALIDATE_TIMESHEETS: import.meta.env.VITE_PERMISSIONS_VALIDATE_TIMESHEETS,
+
   READ_USERS: import.meta.env.VITE_PERMISSIONS_READ_USERS,
   READ_SUPERVISORS: import.meta.env.VITE_PERMISSIONS_READ_SUPERVISORS,
+
   ACCESS_RECEIPT_BOOKS: import.meta.env.VITE_PERMISSIONS_ACCESS_RECEIPT_BOOKS,
 };
 
@@ -60,9 +65,14 @@ const Timesheets: React.FC = () => {
   const userPermissions = useMemo(() => ({
     canAccessTimesheets: effectivePermissions?.some(p => p.name === PERMISSIONS.ACCESS_TIMESHEETS),
     canAccessSupervisorTimesheets: effectivePermissions?.some(p => p.name === PERMISSIONS.ACCESS_SUPERVISOR_TIMESHEETS),
+
     canAccessTimesheetDetails: effectivePermissions?.some(p => p.name === PERMISSIONS.ACCESS_TIMESHEET_DETAILS),
+
     canCreateTimesheets: effectivePermissions?.some(p => p.name === PERMISSIONS.CREATE_TIMESHEETS),
+    canCreateSupervisorTimesheets: effectivePermissions?.some(p => p.name === PERMISSIONS.CREATE_SUPERVISOR_TIMESHEETS),
+
     canValidateTimesheets: effectivePermissions?.some(p => p.name === PERMISSIONS.VALIDATE_TIMESHEETS),
+
     canReadUsers: effectivePermissions?.some(p => p.name === PERMISSIONS.READ_USERS),
     canReadSupervisors: effectivePermissions?.some(p => p.name === PERMISSIONS.READ_SUPERVISORS),
     canAccessReceiptBooks: effectivePermissions?.some(p => p.name === PERMISSIONS.ACCESS_RECEIPT_BOOKS),
@@ -288,8 +298,8 @@ const Timesheets: React.FC = () => {
   if (!permissionsLoaded) return <div className="loading">Loading permissions...</div>;
   if (!token || !userPermissions.canAccessSupervisorTimesheets) {
     navigate("/access-denied");
-    return null;               
-}
+    return null;
+  }
   if (loading) return <div className="loading">Loading Timesheets...</div>;
 
   // Render
@@ -309,7 +319,8 @@ const Timesheets: React.FC = () => {
           <button className="nav-btn" onClick={() => setCurrentYear(prev => prev + 1)}><span>→</span></button>
         </div>
         <div className="action-buttons">
-          {userPermissions.canCreateTimesheets && (
+          {(userPermissions.canCreateTimesheets || userPermissions.canCreateSupervisorTimesheets) && (
+
             <button className="create-btn" onClick={() => navigate("/timesheet-form", { state: { year: currentYear } })}>
               Schedule Visit
             </button>

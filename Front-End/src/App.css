@@ -2,26 +2,27 @@
 .app-container {
   display: flex;
   flex-direction: column;
-  flex: 1; /* Grow to fill the body’s height */
+  flex: 1;
+  /* Grow to fill the body’s height */
   height: 100vh;
 
 }
 
 main {
-  flex: 1 0 auto; /* Grow to fill available space and push footer down */
-  padding-bottom: 2rem; /* Optional: Add some space before the footer */
+  flex: 1 0 auto;
+  /* Grow to fill available space and push footer down */
+  /* Optional: Add some space before the footer */
 }
 
 .footer {
-  flex-shrink: 0; /* Prevent shrinking */
-  position: fixed;
-  bottom: 0;
-  left: 0;
+  flex-shrink: 0;
+  /* Prevent shrinking */
   width: 100%;
-  flex-shrink: 0; /* Prevent shrinking */
-  background: #f8fafc; /* Ensure it’s visible over content; adjust as needed */
-  z-index: 10; /* Ensure it stays above other content */
-  padding: 1rem; /* Add some padding for better appearance */
+  background: #f8fafc;
+  padding: 1rem;
+  /* Add some padding for better appearance */
+  z-index: 10;
+  /* Ensure it stays above other content if needed */
 }
 
 /* Default styles (Light theme) */
@@ -122,7 +123,8 @@ body.dark .timesheet-form-container .form-group select {
 
 body.dark input[type="date"]::-webkit-calendar-picker-indicator,
 body.dark input[type="time"]::-webkit-calendar-picker-indicator {
-  filter: invert(1) hue-rotate(180deg); /* Alternative way to adjust color */
+  filter: invert(1) hue-rotate(180deg);
+  /* Alternative way to adjust color */
 }
 
 body.dark .timesheet-form-container .submit-btn {
@@ -171,6 +173,7 @@ body.dark .timesheets-container .current-btn {
   color: #63b3ed;
   border-color: #63b3ed;
 }
+
 body.dark .timesheets-container .create-btn {
   background: #63b3ed;
   border: 1px solid #262626;
@@ -206,10 +209,11 @@ body.dark .timesheets-container .week-details {
   color: #e2e8f0;
   box-shadow: 0 0.1rem 0.5rem rgba(0, 0, 0, 0.185);
 }
-body.dark .timesheets-container .week-tile, 
+
+body.dark .timesheets-container .week-tile,
 body.dark .timesheets-container .week-tile,
 body.dark .timesheets-container .day-tile,
-body.dark .timesheets-container .visit-card{
+body.dark .timesheets-container .visit-card {
   background: #353535;
   box-shadow: 0 0.1rem 0.5rem rgba(0, 0, 0, 0.185);
 }
@@ -220,7 +224,7 @@ body.dark .timesheets-container .visit-card .visit-time {
   color: #e2e8f0;
 }
 
-body.dark .timesheets-container .week-tile:hover ,
+body.dark .timesheets-container .week-tile:hover,
 body.dark .timesheets-container .day-tile:hover {
   background: #63b3ed;
 }
@@ -274,15 +278,17 @@ body.dark .visit-details-container .visit-details-back-btn,
 body.dark .visit-details-container .validate-visit-btn {
   background: #63b3ed;
 }
+
 body.dark .visit-details-container .reject-visit-btn {
   background: #d02f70;
 }
 
 body.dark .visit-details-container .visit-details-log-btn:hover,
 body.dark .visit-details-container .visit-details-back-btn:hover,
-body.dark .visit-details-container .validate-visit-btn:hover{
+body.dark .visit-details-container .validate-visit-btn:hover {
   background: #4299e1;
 }
+
 body.dark .visit-details-container .reject-visit-btn:hover {
   background: #b70a4f;
 }
@@ -358,10 +364,9 @@ body.dark .visit-validation-container .visit-card {
 
 body.dark .visit-validation-container .details-section,
 body.dark .visit-validation-container .reasons-section,
-body.dark .visit-validation-container .checklist-section, 
-body.dark .visit-validation-container .checklist-section .custom-checkbox-input:checked + .custom-checkbox, 
-body.dark .visit-validation-container .checklist-section .custom-checkbox
-body.dark .visit-validation-container .checklist-section li.checked {
+body.dark .visit-validation-container .checklist-section,
+body.dark .visit-validation-container .checklist-section .custom-checkbox-input:checked+.custom-checkbox,
+body.dark .visit-validation-container .checklist-section .custom-checkbox body.dark .visit-validation-container .checklist-section li.checked {
   background: #333333;
   border-color: #63b3ed;
 }
@@ -463,4 +468,3 @@ body.dark .form-control {
   color: #e2e8f0;
   border-color: #4a5568;
 }
-

@@ -58,6 +58,8 @@ class UserController {
         try {
             const { userID } = req.params;
             const userData = req.body;
+            console.log(userID);
+            console.log(userData);
             if (!userID) {
                 return res.status(400).json({ error: 'User ID is required' });
             }
@@ -85,7 +87,7 @@ class UserController {
 
 
 
-    
+
 
     static async assignSupervisorsToManager(req, res) {
         try {

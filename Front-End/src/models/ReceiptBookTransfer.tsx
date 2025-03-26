@@ -1,20 +1,14 @@
+import ReceiptBookTransferStatus from "./Enum/ReceiptBookTransferStatus";
+import ReceiptBookTransferType from "./Enum/ReceiptBookTransferType";
+
 interface ReceiptBookTransfer {
     transferID: string;
     bookID: string;
     fromUserID?: string;
     toUserID?: string;
     toAgentID?: string;
-    status: "Pending" | "Validated";
-    transferType:
-    | "ToSupplier"
-    | "ToRegionalManager"
-    | "ToSupervisor"
-    | "ToAgent"
-    | "StubToSupervisor"
-    | "ToRegionalManagerFromSupervisor"
-    | "ToStockManager"
-    | "Archived"
-    | "FromSupplier"; 
+    status: ReceiptBookTransferStatus
+    transferType: ReceiptBookTransferType
     transferDate: string;
 }
 

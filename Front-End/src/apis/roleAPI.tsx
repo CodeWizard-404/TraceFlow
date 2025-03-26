@@ -10,20 +10,7 @@ import {
     RevokeRoleResponse,
 } from ".";
 
-export const createRole = async (
-    data: { name: string; description?: string },
-    token: string
-): Promise<CreateRoleResponse> => {
-    try {
-        const response = await api.post<CreateRoleResponse>("/roles", data, {
-            headers: { Authorization: `Bearer ${token}` },
-        });
-        return response.data;
-    } catch (error) {
-        console.error("Error creating role:", error);
-        throw error;
-    }
-};
+
 
 export const getAllRoles = async (token: string): Promise<ListRolesResponse> => {
     try {
@@ -45,6 +32,23 @@ export const getRoleById = async (roleID: string, token: string): Promise<RoleBy
         return response.data;
     } catch (error) {
         console.error(`Error fetching role by ID (${roleID}):`, error);
+        throw error;
+    }
+};
+
+
+
+export const createRole = async (
+    data: { name: string; description?: string },
+    token: string
+): Promise<CreateRoleResponse> => {
+    try {
+        const response = await api.post<CreateRoleResponse>("/roles", data, {
+            headers: { Authorization: `Bearer ${token}` },
+        });
+        return response.data;
+    } catch (error) {
+        console.error("Error creating role:", error);
         throw error;
     }
 };
@@ -76,6 +80,9 @@ export const deleteRole = async (roleID: string, token: string): Promise<DeleteR
         throw error;
     }
 };
+
+
+
 
 export const assignRolesToUser = async (
     userID: string,

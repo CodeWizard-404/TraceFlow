@@ -2,34 +2,6 @@
 const VisitService = require('../services/visitService');
 
 class VisitController {
-    static async createVisit(req, res) {
-        try {
-            const { date, time, agentID, supervisorID, timesheetID, reasons, checklists } = req.body;
-            if (!date || !time || !agentID || !supervisorID || !timesheetID) {
-                return res.status(400).json({ error: 'Missing required fields: date, time, agentID, supervisorID, and timesheetID are mandatory' });
-            }
-            if (!Array.isArray(reasons) || reasons.length === 0) {
-                return res.status(400).json({ error: 'At least one reason is required' });
-            }
-            if (!Array.isArray(checklists) || checklists.length === 0) {
-                return res.status(400).json({ error: 'At least one checklist item is required' });
-            }
-            const visit = await VisitService.createVisit({
-                date,
-                time,
-                agentID,
-                supervisorID,
-                timesheetID,
-                reasons,
-                checklists,
-            });
-            res.status(201).json(visit);
-        } catch (error) {
-            console.error(`${new Date().toISOString()} - Create visit failed:`, error);
-            res.status(error.status || 500).json({ error: error.message || 'Failed to create visit due to an internal error' });
-        }
-    }
-
     static async verifyQRCode(req, res) {
         try {
             const { qrData, visitId } = req.body;

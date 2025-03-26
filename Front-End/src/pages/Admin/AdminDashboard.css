@@ -55,7 +55,7 @@ body.dark .dashboard-header h1 {
 
 
 body.dark .search-container {
-    background: #363636;    
+    background: #363636;
     border-color: #4b5563;
 }
 
@@ -67,7 +67,7 @@ body.dark .search-container input {
 }
 
 body.dark .search-container::placeholder {
-    color: #e5e7ebb8 ;
+    color: #e5e7ebb8;
 }
 
 body.dark .search-container select {
@@ -153,7 +153,7 @@ body.dark .back-button:hover {
 
 .filter-card, .sort-card, .role-filter-card {
     background: #fff;
-    padding: 1rem 1rem 0 1rem  !important;
+    padding: 1rem 1rem 0 1rem !important;
     border-radius: 0.75rem;
     box-shadow: 0 0.375rem 1.25rem rgba(0, 0, 0, 0.05);
     transition: transform 0.3s ease;
@@ -162,7 +162,7 @@ body.dark .back-button:hover {
 body.dark .filter-card, body.dark .sort-card, body.dark .role-filter-card {
     background: #222222;
     box-shadow: 0 0.375rem 1.25rem rgba(0, 0, 0, 0.3);
-    border: 1px solid rgba(107, 114, 128, 0.5) ;
+    border: 1px solid rgba(107, 114, 128, 0.5);
 }
 
 .filter-card:hover, .sort-card:hover, .role-filter-card:hover {
@@ -206,6 +206,8 @@ body.dark .filter-card button {
 
 body.dark .filter-card button.active {
     background: #63b3ed;
+    color: #222222;
+    font-weight: bolder;
 }
 
 .filter-card button:hover:not(.active) {
@@ -330,6 +332,8 @@ body.dark .action-button:hover {
 body.dark .table-card, body.dark .form-card, body.dark .details-card {
     background: #222222;
     box-shadow: 0 0.375rem 1.25rem rgba(0, 0, 0, 0.3);
+    border: 1px solid #4b5563;
+
 }
 
 .table-card h2 {
@@ -676,7 +680,7 @@ body.dark .role-info-icon {
     display: grid;
     gap: 1.5rem;
     border-radius: 0.75rem;
-    max-height: 40rem;
+    max-height: 20rem;
     overflow-y: auto;
 }
 
@@ -691,14 +695,14 @@ body.dark .role-info-icon {
 .permissions-list::-webkit-scrollbar-track,
 .permission-list::-webkit-scrollbar-track,
 .role-info-popup::-webkit-scrollbar-track {
-    background: #f8fafc;
+    background: none;
 }
 
 body.dark .permissions-grid::-webkit-scrollbar-track,
 body.dark .permissions-list::-webkit-scrollbar-track,
 body.dark .permission-list::-webkit-scrollbar-track,
 body.dark .role-info-popup::-webkit-scrollbar-track {
-    background: #2b2b2b;
+    background: none !important;
 }
 
 .permissions-grid::-webkit-scrollbar-thumb,
@@ -731,11 +735,15 @@ body.dark .role-info-popup::-webkit-scrollbar-thumb {
     display: flex;
     justify-content: space-between;
     align-items: center;
-
+    margin-bottom: 0.5rem !important;
 }
+
+.permission-class-header h4 {
+    margin-bottom: 0 !important;
+}
+
 .toggle-all-button {
-    margin-left: 10px;
-    padding: 5px 10px;
+    padding: 2px 10px;
     font-size: 12px;
     background: #f8fafc;
     border: 1px solid #ddd;
@@ -757,6 +765,7 @@ body.dark .toggle-all-button {
     color: #f8fafc;
 
 }
+
 body.dark .toggle-all-button:hover {
     background: #303030;
     border-color: #63b3ed;
@@ -799,8 +808,6 @@ body.dark .permission-type h5 {
     border-radius: 0.75rem;
     color: #1f2937;
     cursor: pointer;
-    margin-right: 0.75rem;
-    margin-bottom: 0.75rem;
     transition: all 0.3s ease;
 }
 
@@ -819,6 +826,8 @@ body.dark .permission-button {
 body.dark .permission-button.assigned {
     background: #63b3ed;
     border-color: #60aadc;
+    color: #222222;
+    font-weight: bolder;
 }
 
 .permission-button:hover:not(.assigned) {
@@ -834,7 +843,7 @@ body.dark .permission-button:hover:not(.assigned) {
 .permissions-filter-section {
     background: #f8fafc;
     border-radius: 0.75rem;
-    padding: 1.25rem;
+    padding: 1rem !important;
     margin-bottom: 1.5rem;
 }
 
@@ -845,7 +854,7 @@ body.dark .permissions-filter-section {
 .permissions-filter-header {
     display: flex;
     align-items: center;
-    margin-bottom: 1rem;
+    margin-bottom: 0.5rem !important;
     gap: 0.5rem;
 }
 
@@ -853,7 +862,7 @@ body.dark .permissions-filter-section {
     font-size: 1rem;
     font-weight: 600;
     color: #4cb1c7;
-    margin: 0;
+    margin: 0 !important;
 }
 
 body.dark .permissions-filter-header label {
@@ -892,6 +901,7 @@ body.dark .permissions-search input {
     color: #e5e7eb;
     border-color: #4b5563;
 }
+
 body.dark .permissions-search::placeholder {
     color: #e5e7eb !important;
 }
@@ -1039,7 +1049,8 @@ body.dark .permission-list {
 
 /* Add new styles for expanded state */
 .permission-list.expanded {
-    max-height: 500px; /* Adjust based on your needs */
+    max-height: 500px;
+    /* Adjust based on your needs */
     opacity: 1;
     padding: 0.5rem 1rem;
     margin-top: 0.5rem;
@@ -1057,25 +1068,81 @@ body.dark .permission-list {
 }
 
 /* Add delay for each subsequent list item */
-.permission-list li:nth-child(1) { transition-delay: 0.1s; }
-.permission-list li:nth-child(2) { transition-delay: 0.15s; }
-.permission-list li:nth-child(3) { transition-delay: 0.2s; }
-.permission-list li:nth-child(4) { transition-delay: 0.25s; }
-.permission-list li:nth-child(5) { transition-delay: 0.3s; }
-.permission-list li:nth-child(6) { transition-delay: 0.35s; }
-.permission-list li:nth-child(7) { transition-delay: 0.4s; }
-.permission-list li:nth-child(8) { transition-delay: 0.45s; }
-.permission-list li:nth-child(9) { transition-delay: 0.5s; }
-.permission-list li:nth-child(10) { transition-delay: 0.55s; }
-.permission-list li:nth-child(11) { transition-delay: 0.6s; }
-.permission-list li:nth-child(12) { transition-delay: 0.65s; }
-.permission-list li:nth-child(13) { transition-delay: 0.7s; }
-.permission-list li:nth-child(14) { transition-delay: 0.75s; }
-.permission-list li:nth-child(15) { transition-delay: 0.8s; }
-.permission-list li:nth-child(16) { transition-delay: 0.85s; }
-.permission-list li:nth-child(17) { transition-delay: 0.9s; }
-.permission-list li:nth-child(18) { transition-delay: 0.95s; }
-.permission-list li:nth-child(19) { transition-delay: 1s; }
+.permission-list li:nth-child(1) {
+    transition-delay: 0.1s;
+}
+
+.permission-list li:nth-child(2) {
+    transition-delay: 0.15s;
+}
+
+.permission-list li:nth-child(3) {
+    transition-delay: 0.2s;
+}
+
+.permission-list li:nth-child(4) {
+    transition-delay: 0.25s;
+}
+
+.permission-list li:nth-child(5) {
+    transition-delay: 0.3s;
+}
+
+.permission-list li:nth-child(6) {
+    transition-delay: 0.35s;
+}
+
+.permission-list li:nth-child(7) {
+    transition-delay: 0.4s;
+}
+
+.permission-list li:nth-child(8) {
+    transition-delay: 0.45s;
+}
+
+.permission-list li:nth-child(9) {
+    transition-delay: 0.5s;
+}
+
+.permission-list li:nth-child(10) {
+    transition-delay: 0.55s;
+}
+
+.permission-list li:nth-child(11) {
+    transition-delay: 0.6s;
+}
+
+.permission-list li:nth-child(12) {
+    transition-delay: 0.65s;
+}
+
+.permission-list li:nth-child(13) {
+    transition-delay: 0.7s;
+}
+
+.permission-list li:nth-child(14) {
+    transition-delay: 0.75s;
+}
+
+.permission-list li:nth-child(15) {
+    transition-delay: 0.8s;
+}
+
+.permission-list li:nth-child(16) {
+    transition-delay: 0.85s;
+}
+
+.permission-list li:nth-child(17) {
+    transition-delay: 0.9s;
+}
+
+.permission-list li:nth-child(18) {
+    transition-delay: 0.95s;
+}
+
+.permission-list li:nth-child(19) {
+    transition-delay: 1s;
+}
 
 
 
@@ -1206,15 +1273,17 @@ body.dark .role-card.premade {
 
 .role-info-icon {
     font-size: 1.2em;
-    color: #666; 
+    color: #666;
     cursor: pointer;
     transition: color 0.2s;
 }
+
 .role-info-icon :hover {
-    color: #ffffff; 
+    color: #ffffff;
 }
+
 body.dark .role-info-icon {
-    color: #ffffff; 
+    color: #ffffff;
 }
 
 
@@ -1273,12 +1342,13 @@ body.dark .role-info-icon {
     margin-top: 0.25rem;
     display: block;
 }
+
 body.dark .error {
     color: #ff6b6b;
 }
 
 
-.form-card-0{
+.form-card-0 {
     max-width: none !important;
 }
 
@@ -1424,19 +1494,19 @@ body.dark .pagination span {
 }
 
 .override-button {
-    padding: 0.3rem;
+    padding: 0rem;
+    padding-left: 0;
     font-size: 0.75rem;
-    border-radius: 0 0.5rem 0.5rem 0 ;
+    border-radius: 0 0.5rem 0.5rem 0;
     border: none;
     cursor: pointer;
-    width: 1.5rem;
+    width: 1.2rem;
     height: 1.5rem;
     display: flex;
     align-items: center;
     justify-content: center;
     transition: all 0.3s ease;
-    margin-left: -1.3rem;
-    margin-top: -0.7rem;
+    margin-left: -0.5rem;
 }
 
 .override-button.grant {
@@ -1461,14 +1531,17 @@ body.dark .pagination span {
 
 body.dark .override-button.grant {
     background: #48bb78;
+    color: #222222;
 }
 
 body.dark .override-button.revoke {
     background: #63b3ed;
+    color: #222222;
 }
 
 body.dark .override-button.remove {
     background: #e81f76;
+    color: #222222;
 }
 
 /* Align Filter/Search with Role Selection */
@@ -1558,21 +1631,27 @@ body.dark .permissions-category select:focus {
 
 /* Individual Dropdown */
 .dropdown-unit {
-    background: rgba(255, 255, 255, 0.9); /* Glassy white */
-    border: 1px solid rgba(229, 231, 235, 0.5); /* Subtle border */
-    border-radius: 16px; /* Smooth, futuristic corners */
+    background: rgba(255, 255, 255, 0.9);
+    /* Glassy white */
+    border: 1px solid rgba(229, 231, 235, 0.5);
+    /* Subtle border */
+    border-radius: 16px;
+    /* Smooth, futuristic corners */
     overflow: hidden;
     transition: transform 0.2s ease, box-shadow 0.2s ease;
 }
 
 body.dark .dropdown-unit {
-    background: #222222; /* Glassy dark */
+    background: #222222;
+    /* Glassy dark */
     border-color: #363636;
 }
 
 .dropdown-unit:hover {
-    transform: translateY(-4px); /* Lift effect */
-    box-shadow: 0 8px 24px rgba(0, 0, 0, 0.15); /* Bold shadow */
+    transform: translateY(-4px);
+    /* Lift effect */
+    box-shadow: 0 8px 24px rgba(0, 0, 0, 0.15);
+    /* Bold shadow */
 }
 
 body.dark .dropdown-unit:hover {
@@ -1606,18 +1685,23 @@ body.dark .dropdown-unit:hover {
 
 .dropdown-bar h3 {
     margin: 0;
-    font-size: 1.3rem; /* Big and bold */
-    font-weight: 800; /* Extra punch */
+    font-size: 1.3rem;
+    /* Big and bold */
+    font-weight: 800;
+    /* Extra punch */
     color: #1e293b;
-    flex-grow: 1; /* Full width, no crop */
-    letter-spacing: 0.05rem; /* Spaced out */
+    flex-grow: 1;
+    /* Full width, no crop */
+    letter-spacing: 0.05rem;
+    /* Spaced out */
 }
 
 
 
 /* Icon */
 .dropdown-bar .dropdown-icon {
-    margin-left: 1rem; /* Clear separation */
+    margin-left: 1rem;
+    /* Clear separation */
     transition: transform 0.25s ease-out;
 }
 
@@ -1629,21 +1713,26 @@ body.dark .dropdown-unit:hover {
 
 /* Content Area */
 .dropdown-body {
-    padding: 0 1rem 1rem 1rem; /* Spacing */
-    background: transparent; /* Glass carries through */
+    padding: 0 1rem 1rem 1rem;
+    /* Spacing */
+    background: transparent;
+    /* Glass carries through */
     animation: expand 0.25s ease-out;
 }
 
 @keyframes expand {
     from {
         opacity: 0;
-        transform: scale(0.98); /* Slight zoom-in effect */
+        transform: scale(0.98);
+        /* Slight zoom-in effect */
         max-height: 0;
     }
+
     to {
         opacity: 1;
         transform: scale(1);
-        max-height: 700px; /* Adjusted for content */
+        max-height: 700px;
+        /* Adjusted for content */
     }
 }
 
@@ -1854,13 +1943,20 @@ body.dark .delete-button:hover {
     display: flex;
     flex-direction: column;
     gap: 1.5rem;
+    background: #fff;
+    padding: 1.5rem;
+    border-radius: 0.75rem;
+    box-shadow: 0 0.375rem 1.25rem rgba(0, 0, 0, 0.1);
+    transition: all 0.3s ease;
+    max-height: 50rem !important;
 }
 
-.permissions-grid {
-    display: grid;
-    grid-template-columns: repeat(auto-fill, minmax(220px, 1fr));
-    gap: 1.5rem;
+body.dark .permissions-management {
+    background-color: #222222;
+    border: 1px solid #4b5563;
+    box-shadow: 0 0.375rem 1.25rem rgba(0, 0, 0, 0.3);
 }
+
 
 .permission-card {
     background: #fff;
@@ -1872,7 +1968,7 @@ body.dark .delete-button:hover {
 }
 
 body.dark .permission-card {
-    background: #1f2937;
+    background: #333333;
     box-shadow: 0 0.375rem 1.25rem rgba(0, 0, 0, 0.3);
 }
 
@@ -2222,3 +2318,371 @@ body.dark .cancel-button {
 body.dark .cancel-button:hover {
     background: #7d123e;
 }
+
+
+.error-text {
+    color: #d32f2f;
+    font-size: 0.75rem;
+    margin-top: 4px;
+    display: block;
+}
+
+body.dark .error-text {
+    color: #ff5252;
+}
+
+
+.form-group input.touched:invalid {
+    border-color: #d32f2f;
+}
+
+@keyframes vibrate {
+    0% {
+        transform: translateX(0);
+    }
+
+    20% {
+        transform: translateX(-2px);
+    }
+
+    40% {
+        transform: translateX(2px);
+    }
+
+    60% {
+        transform: translateX(-2px);
+    }
+
+    80% {
+        transform: translateX(2px);
+    }
+
+    100% {
+        transform: translateX(0);
+    }
+}
+
+.form-group input.invalid-vibrate {
+    animation: vibrate 0.3s ease-in-out;
+}
+
+
+.permissions-container {
+    display: flex;
+    flex-direction: row;
+    flex-wrap: wrap;
+    /* Allows wrapping if there are too many permissions */
+    gap: 10px;
+    /* Adds spacing between permission items */
+}
+
+.permission-item {
+    display: flex;
+    align-items: center;
+    /* Vertically aligns button and override controls */
+    gap: 5px;
+    /* Space between button and controls */
+}
+
+.permission-button {
+    /* Ensure buttons don’t grow too wide */
+    padding: 5px 10px;
+    white-space: nowrap;
+    /* Prevents text wrapping inside buttons */
+}
+
+.override-controls {
+    display: flex;
+    gap: 5px;
+    /* Space between override buttons */
+}
+
+.permissions-grid-0 {
+    max-height: 50rem !important;
+}
+
+
+/* Previous imports and styles remain unchanged until permissions-related sections */
+
+/* Updated permissions management styles to match theme */
+.permissions-filter-section {
+    background: #f8fafc;
+    border-radius: 0.75rem;
+    padding: 1.25rem;
+    margin-bottom: 1.5rem;
+    box-shadow: 0 0.375rem 1.25rem rgba(0, 0, 0, 0.05);
+}
+
+body.dark .permissions-filter-section {
+    background: #2b2b2b;
+    box-shadow: 0 0.375rem 1.25rem rgba(0, 0, 0, 0.3);
+    border: 1px solid #4b5563;
+}
+
+.permissions-filter-header {
+    display: flex;
+    align-items: center;
+    gap: 0.5rem;
+    margin-bottom: 1rem;
+}
+
+.permissions-filter-header label {
+    font-size: 1rem;
+    font-weight: 600;
+    color: #4cb1c7;
+    margin: 0;
+}
+
+body.dark .permissions-filter-header label {
+    color: #60a0dc;
+}
+
+.permissions-filter-controls {
+    display: grid;
+    grid-template-columns: 1fr 1fr;
+    gap: 1rem;
+}
+
+@media (max-width: 640px) {
+    .permissions-filter-controls {
+        grid-template-columns: 1fr;
+    }
+}
+
+.permissions-search {
+    position: relative;
+}
+
+.permissions-search .search-icon {
+    position: absolute;
+    left: 10px;
+    top: 50%;
+    transform: translateY(-50%);
+    color: #6b7280;
+}
+
+body.dark .permissions-search .search-icon {
+    color: #9ca3af;
+}
+
+.permissions-search input {
+    width: 100%;
+    padding: 0.75rem 0.75rem 0.75rem 2.5rem;
+    font-size: 0.875rem;
+    border: 1px solid #ddd;
+    border-radius: 0.75rem;
+    background: #fff;
+    color: #1f2937;
+    transition: border-color 0.3s ease;
+}
+
+body.dark .permissions-search input {
+    background: #363636;
+    color: #e5e7eb;
+    border-color: #4b5563;
+}
+
+.permissions-search input:focus {
+    border-color: #4cb1c7;
+    outline: none;
+}
+
+body.dark .permissions-search input:focus {
+    border-color: #60a0dc;
+}
+
+.permissions-category select {
+    width: 100%;
+    padding: 0.75rem;
+    font-size: 0.875rem;
+    border: 1px solid #ddd;
+    border-radius: 0.75rem;
+    background: #fff;
+    color: #1f2937;
+    transition: border-color 0.3s ease;
+}
+
+body.dark .permissions-category select {
+    background: #363636;
+    color: #e5e7eb;
+    border-color: #4b5563;
+}
+
+.permissions-category select:focus {
+    border-color: #4cb1c7;
+    outline: none;
+}
+
+body.dark .permissions-category select:focus {
+    border-color: #60a0dc;
+}
+
+.permission-class-section {
+    margin-bottom: 1.5rem;
+}
+
+.permission-class-title {
+    font-size: 1.125rem;
+    font-weight: 600;
+    color: #4cb1c7;
+    padding: 0.75rem;
+    background: #f0f4f8;
+    border-radius: 0.75rem 0.75rem 0 0;
+    margin: 0;
+}
+
+body.dark .permission-class-title {
+    color: #60a0dc;
+    background: #2d3748;
+}
+
+.permission-class-grid {
+    display: grid;
+    grid-template-columns: repeat(auto-fill, minmax(250px, 1fr));
+    gap: 1rem;
+    padding: 1rem;
+    background: #f8fafc;
+    border-radius: 0 0 0.75rem 0.75rem;
+}
+
+body.dark .permission-class-grid {
+    background: #333333;
+}
+
+.permission-card {
+    background: #fff;
+    border: 1px solid #ddd;
+    border-radius: 0.75rem;
+    padding: 1rem;
+    transition: all 0.3s ease;
+    cursor: pointer;
+    box-shadow: 0 0.375rem 1.25rem rgba(0, 0, 0, 0.05);
+}
+
+body.dark .permission-card {
+    background: #363636;
+    border-color: #4b5563;
+    box-shadow: 0 0.375rem 1.25rem rgba(0, 0, 0, 0.3);
+}
+
+.permission-card:hover {
+    transform: translateY(-0.3125rem);
+    border-color: #4cb1c7;
+    box-shadow: 0 0.5rem 1.5rem rgba(76, 177, 199, 0.2);
+}
+
+body.dark .permission-card:hover {
+    border-color: #63b3ed;
+    box-shadow: 0 0.5rem 1.5rem rgba(99, 179, 237, 0.2);
+}
+
+.permission-card.selected {
+    background: #4cb1c7;
+    border-color: #4cb1c7;
+    color: #fff;
+}
+
+body.dark .permission-card.selected {
+    background: #63b3ed;
+    border-color: #63b3ed;
+}
+
+.permission-card h4 {
+    font-size: 1rem;
+    font-weight: 600;
+    margin: 0 0 0.5rem;
+    color: #1f2937;
+}
+
+body.dark .permission-card h4 {
+    color: #e5e7eb;
+}
+
+.permission-card.selected h4 {
+    color: #fff;
+}
+
+.permission-card p {
+    font-size: 0.875rem;
+    margin: 0;
+    color: #6b7280;
+}
+
+body.dark .permission-card p {
+    color: #9ca3af;
+}
+
+.permission-card.selected p {
+    color: #f8fafc;
+}
+
+.permission-edit-header {
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    margin-bottom: 1rem;
+}
+
+.permission-edit-header h2 {
+    font-size: 1.25rem;
+    font-weight: 600;
+    color: #4cb1c7;
+    margin: 0;
+}
+
+body.dark .permission-edit-header h2 {
+    color: #60a0dc;
+}
+
+.close-button {
+    background: none;
+    border: none;
+    cursor: pointer;
+    font-size: 1.2rem;
+    color: #6b7280;
+    padding: 0.25rem;
+    transition: color 0.3s ease;
+}
+
+body.dark .close-button {
+    color: #9ca3af;
+}
+
+.close-button:hover {
+    color: #e81f76;
+}
+
+body.dark .close-button:hover {
+    color: #ff6b6b;
+}
+
+/* Ensure other existing styles remain intact and add any missing ones from your original request */
+.permissions-grid-0 {
+    max-height: 50rem;
+    overflow-y: auto;
+}
+
+.permissions-grid-0::-webkit-scrollbar {
+    width: 12px;
+}
+
+.permissions-grid-0::-webkit-scrollbar-track {
+    background: none;
+}
+
+body.dark .permissions-grid-0::-webkit-scrollbar-track {
+    background: none;
+}
+
+.permissions-grid-0::-webkit-scrollbar-thumb {
+    background-color: #4cb1c7;
+    border-radius: 6px;
+    border: 3px solid #f8fafc;
+}
+
+body.dark .permissions-grid-0::-webkit-scrollbar-thumb {
+    background-color: #63b3ed;
+    border: 3px solid #2b2b2b;
+}
+
+/* Rest of your original CSS remains unchanged */

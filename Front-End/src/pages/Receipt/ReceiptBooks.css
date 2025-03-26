@@ -377,7 +377,6 @@ body.dark .form-group select:focus {
     justify-content: center;
     gap: 0.5rem;
     transition: all 0.3s ease;
-    margin-top: 1rem;
 }
 
 body.dark .back-button {
@@ -393,6 +392,7 @@ body.dark .back-button {
 
 body.dark .back-button:hover {
     background: #63b3ed;
+    color: #fff;
 }
 
 /* Pagination */
@@ -526,13 +526,13 @@ body.dark .loading-text {
 
 /* Ensure table includes QR code column */
 .table-row-1 {
-    grid-template-columns: 0.5fr 1fr 1.3fr 1.3fr 0.7fr 1fr ;
-    padding: 0 1rem  !important;
+    grid-template-columns: 0.5fr 1fr 1.3fr 1.3fr 0.7fr 1fr;
+    padding: 0 1rem !important;
     /* Adjusted for select and QR code */
 }
 
 .table-row-2 {
-    grid-template-columns: 1fr 1fr 1fr 1fr !important ;
+    grid-template-columns: 1fr 1fr 1fr 1fr !important;
     /* Adjusted for select and QR code */
 }
 
@@ -625,5 +625,42 @@ body.dark .receipt-books-btn:hover {
     border-color: #63b3ed;
 }
 
+.form-card-0 {
+    max-width: none !important;
+}
 
-  
+
+/* Add a container for form buttons */
+.form-actions {
+    display: flex;
+    gap: 1rem;
+    /* Space between buttons */
+    justify-content: flex-end;
+    /* Align buttons to the right */
+    margin-top: 1.5rem;
+    /* Space above the buttons */
+}
+
+/* Ensure buttons don’t grow too wide */
+.form-actions .action-button,
+.form-actions .back-button {
+    flex: 0 0 auto;
+    /* Prevent buttons from stretching */
+    min-width: 120px;
+    /* Optional: ensure consistent button width */
+}
+
+/* Responsive adjustments */
+@media (max-width: 480px) {
+    .form-actions {
+        flex-direction: column;
+        /* Stack buttons vertically on small screens */
+        gap: 0.75rem;
+    }
+
+    .form-actions .action-button,
+    .form-actions .back-button {
+        width: 100%;
+        /* Full width on small screens */
+    }
+}

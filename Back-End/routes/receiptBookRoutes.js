@@ -6,7 +6,7 @@ const ReceiptBookController = require('../controllers/receiptBookController');
 
 // CRUD Routes
 router.post('/', authenticateJWT, requirePermission('create_receipt_books'), ReceiptBookController.createReceiptBook);
-router.get('/', authenticateJWT, requirePermission('access_receipt_books'), ReceiptBookController.getAllReceiptBooks);
+router.get('/', authenticateJWT, requirePermission('access_all_receipt_books'), ReceiptBookController.getAllReceiptBooks);
 router.get('/:bookID', authenticateJWT, requirePermission('access_receipt_book_details'), ReceiptBookController.getReceiptBookById);
 router.put('/:bookID', authenticateJWT, requirePermission('update_receipt_books'), ReceiptBookController.updateReceiptBook);
 router.delete('/:bookID', authenticateJWT, requirePermission('delete_receipt_books'), ReceiptBookController.deleteReceiptBook);
@@ -14,6 +14,7 @@ router.delete('/:bookID', authenticateJWT, requirePermission('delete_receipt_boo
 // Transfer Routes
 router.post('/send', authenticateJWT, requirePermission('send_receipt_books'), ReceiptBookController.sendToSupplier);
 router.post('/receive', authenticateJWT, requirePermission('collect_supplier_receipt_books'), ReceiptBookController.collectFromSupplier);
+
 router.post('/transfer', authenticateJWT, requirePermission('transfer_receipt_books'), ReceiptBookController.transfer);
 router.post('/validate-transfer', authenticateJWT, requirePermission('validate_receipt_books_transfer'), ReceiptBookController.validateTransfer);
 router.get('/:bookID/history', authenticateJWT, requirePermission('access_receipt_book_history'), ReceiptBookController.getTransferHistory);

@@ -32,34 +32,40 @@ const PERMISSIONS = {
 
 // Main Component
 const TimesheetForm: React.FC = () => {
-  // Hooks
   const navigate = useNavigate();
   const { user, token, effectivePermissions, permissionsLoaded } = useAuth();
   const { setError } = useError();
 
   // State
-  const [date, setDate] = useState<string>(""); // Selected date for the timesheet
-  const [time, setTime] = useState<string>(""); // Selected time for the visit
-  const [locations, setLocations] = useState<string[]>([]); // List of available locations
-  const [selectedLocation, setSelectedLocation] = useState<string>(""); // Currently selected location
-  const [locationSearch, setLocationSearch] = useState<string>(""); // Search query for locations
-  const [agents, setAgents] = useState<Agent[]>([]); // List of agents for the selected location
-  const [selectedAgent, setSelectedAgent] = useState<string>(""); // Currently selected agent ID
-  const [agentSearch, setAgentSearch] = useState<string>(""); // Search query for agents
-  const [agentPhone, setAgentPhone] = useState<string>(""); // Agent phone number for lookup
-  const [reasons, setReasons] = useState<Reason[]>([]); // List of available reasons
-  const [selectedReasons, setSelectedReasons] = useState<Array<{ id?: string }>>([]); // Selected reasons for the timesheet
-  const [reasonSearch, setReasonSearch] = useState<string>(""); // Search query for reasons
-  const [checklists, setChecklists] = useState<Checklist[]>([]); // List of available checklists
-  const [selectedChecklists, setSelectedChecklists] = useState<Array<{ id?: string }>>([]); // Selected checklists for the timesheet
-  const [checklistSearch, setChecklistSearch] = useState<string>(""); // Search query for checklists
-  const [loading, setLoading] = useState<boolean>(false); // Loading state for async operations
-  const [supervisors, setSupervisors] = useState<User[]>([]); // List of supervisors for the current user
-  const [selectedSupervisor, setSelectedSupervisor] = useState<string>(""); // Currently selected supervisor ID
-  const [supervisorPhone, setSupervisorPhone] = useState<string>(""); // Supervisor phone number for lookup
-  const [supervisorSearch, setSupervisorSearch] = useState<string>(""); // Search query for supervisors
+  const [date, setDate] = useState<string>("");
+  const [time, setTime] = useState<string>("");
+  const [locations, setLocations] = useState<string[]>([]);
+  const [selectedLocation, setSelectedLocation] = useState<string>("");
+  const [locationSearch, setLocationSearch] = useState<string>("");
+  const [agents, setAgents] = useState<Agent[]>([]);
+  const [selectedAgent, setSelectedAgent] = useState<string>("");
+  const [agentSearch, setAgentSearch] = useState<string>("");
+  const [agentPhone, setAgentPhone] = useState<string>("");
+  const [reasons, setReasons] = useState<Reason[]>([]);
+  const [selectedReasons, setSelectedReasons] = useState<Array<{ id?: string }>>([]);
+  const [reasonSearch, setReasonSearch] = useState<string>("");
+  const [checklists, setChecklists] = useState<Checklist[]>([]);
+  const [selectedChecklists, setSelectedChecklists] = useState<Array<{ id?: string }>>([]);
+  const [checklistSearch, setChecklistSearch] = useState<string>("");
+  const [loading, setLoading] = useState<boolean>(false);
+  const [supervisors, setSupervisors] = useState<User[]>([]);
+  const [selectedSupervisor, setSelectedSupervisor] = useState<string>("");
+  const [supervisorPhone, setSupervisorPhone] = useState<string>("");
+  const [supervisorSearch, setSupervisorSearch] = useState<string>("");
 
-  // Permission Checks (Centralized)
+  // Current date/time setup (March 25, 2025)
+  const currentDateTime = new Date('2025-03-25');
+  const currentDate = currentDateTime.toISOString().split('T')[0];
+  const currentHours = currentDateTime.getHours().toString().padStart(2, '0');
+  const currentMinutes = currentDateTime.getMinutes().toString().padStart(2, '0');
+  const currentTime = `${currentHours}:${currentMinutes}`;
+
+  // Permission Checks
   const userPermissions = useMemo(() => ({
     canCreateTimesheets: effectivePermissions?.some(p => p.name === PERMISSIONS.CREATE_TIMESHEETS),
     canCreateTimesheetsForSupervisors: effectivePermissions?.some(p => p.name === PERMISSIONS.CREATE_TIMESHEETS_FOR_SUPERVISOR),
@@ -70,22 +76,37 @@ const TimesheetForm: React.FC = () => {
     canReadChecklists: effectivePermissions?.some(p => p.name === PERMISSIONS.READ_CHECKLISTS_ITEMS),
   }), [effectivePermissions]);
 
-  // Early Return for Permissions Loading or Access Denied
   if (!permissionsLoaded) return <div className="loading">Loading permissions...</div>;
-  if (!user || !token || !userPermissions.canCreateTimesheets) {
-    navigate("/access-denied");
-    return null;
-  }
+  if (!user || !token) return null;
 
-  // Determine supervisor ID based on permissions
   const supervisorID = userPermissions.canReadSupervisors && selectedSupervisor ? selectedSupervisor : user.userID;
+
+  // Date/Time Validation Functions
+  const isWeekend = (dateStr: string): boolean => {
+    const date = new Date(dateStr);
+    const day = date.getDay();
+    return day === 0 || day === 6; // 0 = Sunday, 6 = Saturday
+  };
+
+  const isValidTime = (timeStr: string, dateStr: string): boolean => {
+    const [hours, minutes] = timeStr.split(':').map(Number);
+    if (hours < 8 || (hours >= 17 && minutes > 0)) {
+      return false;
+    }
+    if (dateStr === currentDate) {
+      const [currentH, currentM] = currentTime.split(':').map(Number);
+      if (hours < currentH || (hours === currentH && minutes < currentM)) {
+        return false;
+      }
+    }
+    return true;
+  };
 
   // Fetch Initial Data
   useEffect(() => {
     const fetchData = async () => {
       setLoading(true);
       try {
-        // Fetch data concurrently based on permissions
         const promises = [
           userPermissions.canReadAgentsByLocation ? getAgentLocations(token) : Promise.resolve([]),
           userPermissions.canReadReasons ? getAllReasons(token) : Promise.resolve([]),
@@ -191,7 +212,6 @@ const TimesheetForm: React.FC = () => {
 
   // Utility Functions
   const getWeekNumber = (dateStr: string): number => {
-    // Calculate the ISO week number for a given date
     const date = new Date(dateStr);
     const utcDate = new Date(Date.UTC(date.getUTCFullYear(), date.getUTCMonth(), date.getUTCDate()));
     utcDate.setUTCDate(utcDate.getUTCDate() + 4 - (utcDate.getUTCDay() || 7));
@@ -200,8 +220,24 @@ const TimesheetForm: React.FC = () => {
   };
 
   // Handlers
+  const handleDateChange = (e: React.ChangeEvent<HTMLInputElement>) => {
+    const selectedDate = e.target.value;
+    if (selectedDate >= currentDate && !isWeekend(selectedDate)) {
+      setDate(selectedDate);
+      if (time && !isValidTime(time, selectedDate)) {
+        setTime('');
+      }
+    }
+  };
+
+  const handleTimeChange = (e: React.ChangeEvent<HTMLInputElement>) => {
+    const selectedTime = e.target.value;
+    if (date && isValidTime(selectedTime, date)) {
+      setTime(selectedTime);
+    }
+  };
+
   const handleReasonSelect = (reason: Reason) => {
-    // Add a reason to the selected reasons list if not already present
     if (!selectedReasons.some(r => r.id === reason.reasonID)) {
       setSelectedReasons([...selectedReasons, { id: reason.reasonID }]);
     }
@@ -209,7 +245,6 @@ const TimesheetForm: React.FC = () => {
   };
 
   const handleChecklistSelect = (checklist: Checklist) => {
-    // Add a checklist to the selected checklists list if not already present
     if (!selectedChecklists.some(c => c.id === checklist.checklistID)) {
       setSelectedChecklists([...selectedChecklists, { id: checklist.checklistID }]);
     }
@@ -217,7 +252,6 @@ const TimesheetForm: React.FC = () => {
   };
 
   const handleSubmit = async (e: React.FormEvent) => {
-    // Submit the timesheet form data to the API
     e.preventDefault();
     if (!userPermissions.canCreateTimesheets) {
       setError("You lack permission to create timesheets.");
@@ -240,7 +274,7 @@ const TimesheetForm: React.FC = () => {
         reasons: selectedReasons,
         checklists: selectedChecklists,
       }],
-      status: userPermissions.canCreateTimesheetsForSupervisors ? "validated" : "pending", // Set status based on permission
+      status: userPermissions.canCreateTimesheetsForSupervisors ? "validated" : "pending",
     };
 
     try {
@@ -254,7 +288,6 @@ const TimesheetForm: React.FC = () => {
     }
   };
 
-  // Memoized Form Completion Check
   const isFormComplete = useMemo(() => (
     date &&
     time &&
@@ -264,21 +297,15 @@ const TimesheetForm: React.FC = () => {
     (!userPermissions.canCreateTimesheetsForSupervisors || selectedSupervisor)
   ), [date, time, selectedAgent, selectedReasons, selectedChecklists, userPermissions.canCreateTimesheetsForSupervisors, selectedSupervisor]);
 
-  // Early Return for Loading State
   if (loading) return <div className="loading">Loading...</div>;
 
-  // Render
   return (
     <div className="timesheet-form-container">
       <header className="form-header">
         <h1>Create Visit</h1>
       </header>
       <section className="form-card">
-        {!userPermissions.canCreateTimesheets && (
-          <div className="access-denied">Access Denied: You lack permission to create timesheets.</div>
-        )}
         <form onSubmit={handleSubmit}>
-          {/* Supervisor Selection */}
           {userPermissions.canCreateTimesheetsForSupervisors && userPermissions.canReadSupervisors && (
             <div className="form-group">
               <label htmlFor="supervisor">Supervisor</label>
@@ -319,33 +346,43 @@ const TimesheetForm: React.FC = () => {
             </div>
           )}
 
-          {/* Date Input */}
           <div className="form-group">
             <label htmlFor="date">Date</label>
             <input
               type="date"
               id="date"
               value={date}
-              onChange={(e) => setDate(e.target.value)}
+              onChange={handleDateChange}
+              min={currentDate}
+              onInvalid={(e) => e.preventDefault()} // Prevents browser default validation popup
               required
-              disabled={!userPermissions.canCreateTimesheets}
             />
+            {/* Add custom style to visually disable weekends */}
+            <style>{`
+              input[type="date"]::-webkit-calendar-picker-indicator {
+                filter: opacity(1);
+              }
+              input[type="date"] {
+                position: relative;
+              }
+            `}</style>
           </div>
 
-          {/* Time Input */}
           <div className="form-group">
             <label htmlFor="time">Time</label>
             <input
               type="time"
               id="time"
               value={time}
-              onChange={(e) => setTime(e.target.value)}
+              onChange={handleTimeChange}
+              min={date === currentDate ? currentTime : "08:00"}
+              max="17:00"
+              step="300"
               required
-              disabled={!userPermissions.canCreateTimesheets}
+              disabled={!date} // Disable time until date is selected
             />
           </div>
 
-          {/* Agent Phone Lookup */}
           <div className="form-group">
             <label htmlFor="agentPhone">Agent Phone (Optional)</label>
             <input
@@ -359,7 +396,6 @@ const TimesheetForm: React.FC = () => {
             />
           </div>
 
-          {/* Location Selection */}
           <div className="form-group">
             <label htmlFor="location">Location</label>
             <input
@@ -389,7 +425,6 @@ const TimesheetForm: React.FC = () => {
             </select>
           </div>
 
-          {/* Agent Selection */}
           <div className="form-group">
             <label htmlFor="agent">Agent</label>
             <input
@@ -423,7 +458,6 @@ const TimesheetForm: React.FC = () => {
             </select>
           </div>
 
-          {/* Reasons Selection */}
           <div className="form-group">
             <label>Reasons</label>
             <input
@@ -465,7 +499,6 @@ const TimesheetForm: React.FC = () => {
             </div>
           </div>
 
-          {/* Checklists Selection */}
           <div className="form-group">
             <label>Checklists</label>
             <input
@@ -507,7 +540,6 @@ const TimesheetForm: React.FC = () => {
             </div>
           </div>
 
-          {/* Form Actions */}
           <div className="form-actions">
             <button
               type="submit"

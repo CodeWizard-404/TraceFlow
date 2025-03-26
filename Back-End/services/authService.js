@@ -26,7 +26,7 @@ class AuthService {
                     include: [{
                         model: Permission,
                         through: { attributes: [] },
-                        attributes: ['name', 'type', 'class'],
+                        attributes: ['name', 'class'],
                     }],
                 }],
             });
@@ -43,8 +43,8 @@ class AuthService {
 
             const token = jwt.sign(
                 { userID: user.userID, email: user.email, phone: user.phone, roles },  // Added phone to token
-                process.env.JWT_SECRET || 'your-secret-key',
-                { expiresIn: '1h' }
+                process.env.JWT_SECRET || 'secret-key',
+                { expiresIn: '12h' }
             );
 
             return { 

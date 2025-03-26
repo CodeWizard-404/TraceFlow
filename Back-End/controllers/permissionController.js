@@ -27,12 +27,13 @@ class PermissionController {
     }
 
     static async createPermission(req, res) {
+        console.log(req.body);
         try {
-            const { name, type, className, description } = req.body;
-            if (!name || !type || !className) {
-                return res.status(400).json({ error: 'Name, type, and className are required' });
+            const { name, className, description } = req.body;
+            if (!name || !className) {
+                return res.status(400).json({ error: 'Name and className are required' });
             }
-            const permission = await PermissionService.createPermission(name, type, className, description);
+            const permission = await PermissionService.createPermission(name, className, description);
             res.status(201).json(permission);
         } catch (error) {
             console.error(`${new Date().toISOString()} - Create permission failed:`, error);
@@ -43,11 +44,11 @@ class PermissionController {
     static async updatePermission(req, res) {
         try {
             const { permissionID } = req.params;
-            const { name, type, className, description } = req.body;
+            const { name, className, description } = req.body;
             if (!permissionID) {
                 return res.status(400).json({ error: 'Permission ID is required' });
             }
-            const permission = await PermissionService.updatePermission(permissionID, { name, type, className, description });
+            const permission = await PermissionService.updatePermission(permissionID, { name, className, description });
             res.status(200).json(permission);
         } catch (error) {
             console.error(`${new Date().toISOString()} - Update permission failed:`, error);
@@ -115,7 +116,7 @@ class PermissionController {
         }
     }
 
-    
+
 
     static async addPermissionOverride(req, res) {
         try {
@@ -150,7 +151,7 @@ class PermissionController {
         try {
             const { userID } = req.params;
             if (!userID) {
-                return res.status(400).json({ error: 'User ID is required'});
+                return res.status(400).json({ error: 'User ID is required' });
             }
             const permissions = await PermissionService.getEffectivePermissions(userID);
             res.status(200).json(permissions);

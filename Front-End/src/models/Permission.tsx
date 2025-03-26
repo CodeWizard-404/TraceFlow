@@ -1,8 +1,9 @@
+import PermissionsClass from "./Enum/PermissionsClass";
+
 interface Permission {
     permissionID: string;
     name: string;
-    type: "page" | "feature";
-    class: "User" | "Role" | "Timesheet" | "Visit" | "Checklist" | "Reason" | "ReceiptBook" | "ReceiptStub" | "Agent";
+    class: PermissionsClass
     description?: string;
 }
 

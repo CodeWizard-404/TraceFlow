@@ -58,6 +58,7 @@
     "sequelize-auto-migrations": "^1.0.3",
     "sequelize-cli": "^6.6.2",
     "sinon": "^19.0.4",
-    "supertest": "^7.1.0"
+    "supertest": "^7.1.0",
+    "vitest": "^3.0.9"
   }
 }

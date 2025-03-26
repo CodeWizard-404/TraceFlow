@@ -80,7 +80,6 @@ export type ValidateTimesheetResponse = Timesheet;
 export type TimesheetsBySupervisorResponse = Timesheet[];
 
 // Visit API Responses
-export type CreateVisitResponse = Visit;
 export interface VerifyQrResponse {valid: boolean; message: string;}
 export type LogVisitResponse = Visit;
 export type VisitByIdResponse = Visit;

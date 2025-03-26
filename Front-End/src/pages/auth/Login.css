@@ -115,11 +115,7 @@ body.dark .form-group label {
     color: #63b3ed;
 }
 
-body.dark .form-group input {
-    background: #e8f1ff;
-    border-color: #4a5568;
-    color: #1f2937;
-}
+
 
 body.dark .submit-btn {
     background: #63b3ed;

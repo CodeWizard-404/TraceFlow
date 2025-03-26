@@ -2,8 +2,8 @@ const { Permission, Role, User, UserPermissionOverride } = require('../models');
 
 class PermissionService {
     // Create a new permission
-    static async createPermission(name, type, className, description) {
-        const perm = await Permission.create({ name, type, className, description });
+    static async createPermission(name, className, description) {
+        const perm = await Permission.create({ name, className, description });
         return perm;
     }
 
@@ -110,7 +110,7 @@ class PermissionService {
                 include: [{
                     model: Permission,
                     through: { attributes: [] }, // Exclude junction table attributes
-                    attributes: ['permissionID', 'name', 'type', 'class', 'description'],
+                    attributes: ['permissionID', 'name', 'class', 'description'],
                 }],
             });
             if (!role) throw new Error('Role not found');
@@ -177,7 +177,7 @@ class PermissionService {
                     include: [{
                         model: Permission,
                         through: { attributes: [] },
-                        attributes: ['permissionID', 'name', 'type', 'class', 'description'],
+                        attributes: ['permissionID', 'name', 'class', 'description'],
                     }],
                 }, {
                     model: UserPermissionOverride,

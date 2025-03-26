@@ -1,14 +1,14 @@
 // lib/main.dart
 import 'package:flutter/material.dart';
 import 'package:provider/provider.dart';
-import 'package:visit_management/providers/agent_provider.dart';
-import 'package:visit_management/providers/checklist_provider.dart';
-import 'package:visit_management/providers/reason_provider.dart';
-import 'package:visit_management/providers/timesheet_provider.dart';
-import 'package:visit_management/providers/visit_provider.dart';
-import 'package:visit_management/providers/theme_provider.dart';
-import 'package:visit_management/screens/Timesheet/Timesheet_details.dart';
-import 'package:visit_management/screens/Error.dart';
+import 'package:TraceFlow/providers/agent_provider.dart';
+import 'package:TraceFlow/providers/checklist_provider.dart';
+import 'package:TraceFlow/providers/reason_provider.dart';
+import 'package:TraceFlow/providers/timesheet_provider.dart';
+import 'package:TraceFlow/providers/visit_provider.dart';
+import 'package:TraceFlow/providers/theme_provider.dart';
+import 'package:TraceFlow/screens/Timesheet/Timesheet_details.dart';
+import 'package:TraceFlow/screens/Error.dart';
 import 'themes/app_themes.dart';
 
 void main() {

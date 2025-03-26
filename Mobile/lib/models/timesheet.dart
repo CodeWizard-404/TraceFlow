@@ -1,4 +1,4 @@
-import 'package:visit_management/models/visit.dart';
+import 'package:TraceFlow/models/visit.dart';
 
 class Timesheet {
   final String? timesheetID;

@@ -8,8 +8,8 @@ import {
 import { ThemeProvider, useTheme } from "./context/ThemeContext";
 import { AuthProvider, useAuth } from "./context/AuthContext";
 import { ErrorProvider } from "./context/ErrorContext";
-import Timesheets from "./pages/timesheet/Timesheets";
-import TimesheetForm from "./pages/timesheet/TimesheetForm";
+import Timesheets from "./pages/Timesheet/Timesheets";
+import TimesheetForm from "./pages/Timesheet/TimesheetForm";
 import QRScan from "./pages/visit/QRScan";
 import VisitDetails from "./pages/visit/VisitDetails";
 import VisitValidation from "./pages/visit/VisitValidation";
@@ -23,21 +23,19 @@ import ReceiptBookHistory from "./pages/Receipt/ReceiptBookHistory";
 import ErrorDisplay from "./pages/Error/ErrorDisplay";
 import AccessDenied from "./pages/Error/AccessDenied";
 import "./App.css";
-import LoginPage from "./pages/auth/Login";
+import LoginPage from "./pages/Auth/Login";
 
 // Static permissions and roles from .env
 const PERMISSIONS = {
-  ACCESS_SUPERVISOR_TIMESHEETS: import.meta.env
-    .VITE_PERMISSIONS_ACCESS_SUPERVISOR_TIMESHEETS,
+  ACCESS_SUPERVISOR_TIMESHEETS: import.meta.env.VITE_PERMISSIONS_ACCESS_SUPERVISOR_TIMESHEETS,
   CREATE_TIMESHEETS: import.meta.env.VITE_PERMISSIONS_CREATE_TIMESHEETS,
+  CREATE_SUPERVISOR_TIMESHEETS: import.meta.env.VITE_PERMISSIONS_CREATE_TIMESHEETS_FOR_SUPERVISOR,
   SCAN_VISITS: import.meta.env.VITE_PERMISSIONS_SCAN_VISITS,
   ACCESS_VISIT_DETAILS: import.meta.env.VITE_PERMISSIONS_ACCESS_VISIT_DETAILS,
   LOG_VISITS: import.meta.env.VITE_PERMISSIONS_LOG_VISITS,
   ACCESS_RECEIPT_BOOKS: import.meta.env.VITE_PERMISSIONS_ACCESS_RECEIPT_BOOKS,
-  ACCESS_RECEIPT_BOOK_HISTORY: import.meta.env
-    .VITE_PERMISSIONS_ACCESS_RECEIPT_BOOK_HISTORY,
-  TRANSFER_RECEIPT_BOOKS: import.meta.env
-    .VITE_PERMISSIONS_TRANSFER_RECEIPT_BOOKS,
+  ACCESS_RECEIPT_BOOK_HISTORY: import.meta.env.VITE_PERMISSIONS_ACCESS_RECEIPT_BOOK_HISTORY,
+  TRANSFER_RECEIPT_BOOKS: import.meta.env.VITE_PERMISSIONS_TRANSFER_RECEIPT_BOOKS,
 };
 
 const ROLES = {
@@ -142,7 +140,7 @@ const AppContent: React.FC = () => {
             path="/timesheet-form"
             element={
               <ProtectedRoute
-                requiredPermissions={[PERMISSIONS.CREATE_TIMESHEETS]}
+                requiredPermissions={[PERMISSIONS.CREATE_TIMESHEETS, PERMISSIONS.CREATE_SUPERVISOR_TIMESHEETS]}
               >
                 <TimesheetForm />
               </ProtectedRoute>

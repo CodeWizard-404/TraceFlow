@@ -1,4 +1,4 @@
-import 'package:visit_management/models/visit_checklist.dart';
+import 'package:TraceFlow/models/visit_checklist.dart';
 
 class Checklist {
   final String? checklistID;

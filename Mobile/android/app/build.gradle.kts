@@ -5,7 +5,7 @@ plugins {
 }
 
 android {
-    namespace = "enda.tao.visit_management"
+    namespace = "enda.tao.TraceFlow"
     compileSdk = flutter.compileSdkVersion
     ndkVersion = "27.0.12077973"
 
@@ -20,12 +20,12 @@ android {
     }
 
     defaultConfig {
-        applicationId = "enda.tao.visit_management"
+        applicationId = "enda.tao.TraceFlow"
         minSdk = flutter.minSdkVersion
         targetSdk = flutter.targetSdkVersion
         versionCode = flutter.versionCode
         versionName = flutter.versionName
-        manifestPlaceholders.putAll(mapOf("visit_management" to "TraceFlow"))
+        manifestPlaceholders.putAll(mapOf("TraceFlow" to "TraceFlow"))
     }
 
     buildTypes {

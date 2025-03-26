@@ -39,7 +39,7 @@ export const getPermissionById = async (permissionID: string, token: string): Pr
 };
 
 export const createPermission = async (
-    permissionData: { name: string; type: "page" | "feature"; className: string; description?: string },
+    permissionData: { name: string; className: string; description?: string },
     token: string
 ): Promise<CreatePermissionResponse> => {
     try {
@@ -55,7 +55,7 @@ export const createPermission = async (
 
 export const updatePermission = async (
     permissionID: string,
-    permissionData: { name?: string; type?: "page" | "feature"; className?: string; description?: string },
+    permissionData: { name?: string; className?: string; description?: string },
     token: string
 ): Promise<UpdatePermissionResponse> => {
     try {
@@ -80,6 +80,8 @@ export const deletePermission = async (permissionID: string, token: string): Pro
         throw error;
     }
 };
+
+
 
 export const assignPermissionsToRole = async (
     roleID: string,
@@ -125,6 +127,9 @@ export const getPermissionsByRole = async (roleID: string, token: string): Promi
     }
 };
 
+
+
+
 export const addPermissionOverride = async (
     userID: string,
     data: { roleID: string; permissionID: string; action: "grant" | "revoke" },
@@ -156,6 +161,9 @@ export const removePermissionOverride = async (
     }
 };
 
+
+
+
 export const getEffectivePermissions = async (userID: string, token: string): Promise<EffectivePermissionsResponse> => {
     try {
         const response = await api.get<EffectivePermissionsResponse>(`/permissions/effective/${userID}`, {
@@ -168,7 +176,6 @@ export const getEffectivePermissions = async (userID: string, token: string): Pr
     }
 };
 
-// Add this after getEffectivePermissions
 export const getPermissionOverridesByUser = async (userID: string, token: string): Promise<UserPermissionOverrideResponse[]> => {
     try {
         const response = await api.get<UserPermissionOverrideResponse[]>(`/permissions/override/${userID}`, {

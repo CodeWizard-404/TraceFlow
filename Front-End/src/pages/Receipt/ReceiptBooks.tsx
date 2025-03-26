@@ -16,15 +16,21 @@ const PERMISSIONS = {
     UPDATE_RECEIPT_BOOKS: import.meta.env.VITE_PERMISSIONS_UPDATE_RECEIPT_BOOKS,
     DELETE_RECEIPT_BOOKS: import.meta.env.VITE_PERMISSIONS_DELETE_RECEIPT_BOOKS,
     TRANSFER_RECEIPT_BOOKS: import.meta.env.VITE_PERMISSIONS_TRANSFER_RECEIPT_BOOKS,
-  };
-  
-  const ROLES = {
+};
+
+const ROLES = {
     SUPERVISOR: import.meta.env.VITE_ROLES_SUPERVISOR,
     STOCK_MANAGER: import.meta.env.VITE_ROLES_STOCK_MANAGER,
-  };
+};
 
 
 const ITEMS_PER_PAGE = 10;
+
+const padNumber = (value: string): string => {
+    const numericValue = value.replace(/\D/g, ""); // Remove non-digits
+    if (numericValue.length > 6) return numericValue.slice(0, 6); // Limit to 6 digits
+    return numericValue.padStart(6, "0"); // Pad with zeros to 6 digits
+};
 
 // Main Component
 const ReceiptBooks: React.FC = () => {
@@ -46,9 +52,10 @@ const ReceiptBooks: React.FC = () => {
     const [loading, setLoading] = useState(false); // Loading state for async operations
     const [currentPage, setCurrentPage] = useState(1); // Current page for pagination
     const [holdersMap, setHoldersMap] = useState<Map<string, string>>(new Map()); // Map of holder IDs to names
+    const [formError, setFormError] = useState<string | null>(null); // Error message for form validation
 
     // Permission Checks 
-const userPermissions = useMemo(() => ({
+    const userPermissions = useMemo(() => ({
         canView: effectivePermissions?.some(p => p.name === PERMISSIONS.ACCESS_RECEIPT_BOOKS),
         canViewDetails: effectivePermissions?.some(p => p.name === PERMISSIONS.ACCESS_RECEIPT_BOOK_DETAILS),
         canViewHistory: effectivePermissions?.some(p => p.name === PERMISSIONS.ACCESS_RECEIPT_BOOK_HISTORY),
@@ -60,10 +67,10 @@ const userPermissions = useMemo(() => ({
 
     // Role-Based Capabilities 
     const userCapabilities = useMemo(() => ({
-        isSupervisorLike: userRoles?.some(role => 
+        isSupervisorLike: userRoles?.some(role =>
             role.name === ROLES.SUPERVISOR
         ) || false,
-        isStockManagerLike: userRoles?.some(role => 
+        isStockManagerLike: userRoles?.some(role =>
             role.name === ROLES.STOCK_MANAGER
         ) || false,
     }), [userRoles]);
@@ -81,15 +88,15 @@ const userPermissions = useMemo(() => ({
                 let filteredBooks = receiptsData;
 
                 // Apply dynamic role-based filtering
-                if ((userCapabilities.isSupervisorLike && !userCapabilities.isStockManagerLike) ||(userCapabilities.isSupervisorLike && userCapabilities.isStockManagerLike)) {
+                if ((userCapabilities.isSupervisorLike && !userCapabilities.isStockManagerLike) || (userCapabilities.isSupervisorLike && userCapabilities.isStockManagerLike)) {
                     // Supervisor-like roles see only their own receipt books
                     filteredBooks = receiptsData.filter(r => r.currentHolderID === currentUserID);
                 } else if (userCapabilities.isStockManagerLike && !userCapabilities.isSupervisorLike) {
                     // Stock Manager-like roles exclude certain statuses
-                    filteredBooks = receiptsData.filter(r => 
+                    filteredBooks = receiptsData.filter(r =>
                         !["In Stock", "With Stock Manager", "Archived"].includes(r.status)
                     );
-                } 
+                }
                 // If neither capability applies (e.g., Admin), show all receipt books
 
                 setReceiptBooks(filteredBooks);
@@ -173,33 +180,76 @@ const userPermissions = useMemo(() => ({
     }, [filteredReceiptBooks, currentPage]);
 
     // Handlers
+
+
+
+    // Handler to filter non-numeric input during typing
+    const handleNumberChange = (value: string, isEdit: boolean) => {
+        const numericValue = value.replace(/\D/g, "").slice(0, 6); // Keep only digits, max 6
+        if (isEdit && editReceiptBook) {
+            setEditReceiptBook({ ...editReceiptBook, number: numericValue });
+        } else {
+            setNewReceiptBook({ ...newReceiptBook, number: numericValue });
+        }
+    };
+
+    // Handler to pad number on blur
+    const handleNumberBlur = (value: string, isEdit: boolean) => {
+        const paddedValue = padNumber(value);
+        if (isEdit && editReceiptBook) {
+            setEditReceiptBook({ ...editReceiptBook, number: paddedValue });
+        } else {
+            setNewReceiptBook({ ...newReceiptBook, number: paddedValue });
+        }
+    };
     const handleCreate = async () => {
-        // Create a new receipt book
         if (!userPermissions.canCreate) return;
+        setFormError(null);
+        const paddedNumber = padNumber(newReceiptBook.number || "");
         try {
-            if (newReceiptBook.number && newReceiptBook.type) {
-                const createdReceipt = await createReceiptBook({ number: newReceiptBook.number, type: newReceiptBook.type }, token!);
-                setReceiptBooks([...receiptBooks, createdReceipt]);
-                setNewReceiptBook({});
-                setView("list");
-            } else {
-                alert("Please fill in all required fields.");
+            if (!paddedNumber || !newReceiptBook.type) {
+                setFormError("Please fill in all required fields.");
+                return;
             }
+            if (paddedNumber.length !== 6) {
+                setFormError("Number must be exactly 6 digits.");
+                return;
+            }
+            const createdReceipt = await createReceiptBook(
+                { number: paddedNumber, type: newReceiptBook.type },
+                token!
+            );
+            setReceiptBooks([...receiptBooks, createdReceipt]);
+            setNewReceiptBook({});
+            setView("list");
         } catch (error) {
-            alert(`Failed to create receipt book: ${error}`);
+            setFormError(`Failed to create receipt book: ${error instanceof Error ? error.message : "Unknown error"}`);
         }
     };
 
     const handleUpdate = async () => {
-        // Update an existing receipt book
         if (!userPermissions.canUpdate || !editReceiptBook) return;
+        setFormError(null);
+        const paddedNumber = padNumber(editReceiptBook.number);
         try {
-            const updatedReceipt = await updateReceiptBook(editReceiptBook.bookID, editReceiptBook, token!);
+            if (!paddedNumber || !editReceiptBook.type) {
+                setFormError("Please fill in all required fields.");
+                return;
+            }
+            if (paddedNumber.length !== 6) {
+                setFormError("Number must be exactly 6 digits.");
+                return;
+            }
+            const updatedReceipt = await updateReceiptBook(
+                editReceiptBook.bookID,
+                { ...editReceiptBook, number: paddedNumber },
+                token!
+            );
             setReceiptBooks(receiptBooks.map(r => r.bookID === updatedReceipt.bookID ? updatedReceipt : r));
             setEditReceiptBook(null);
             setView("list");
         } catch (error) {
-            alert(`Failed to update receipt book: ${error}`);
+            setFormError(`Failed to update receipt book: ${error instanceof Error ? error.message : "Unknown error"}`);
         }
     };
 
@@ -221,12 +271,15 @@ const userPermissions = useMemo(() => ({
         }
     };
 
+
+
+
     // Early Returns for Loading and Access Denied
     if (!permissionsLoaded) return <div className="loading-text">Loading permissions...</div>;
     if (loading) return <div className="loading-text">Loading...</div>;
     if (!userPermissions.canView) {
         navigate("/access-denied");
-        return null;               
+        return null;
     }
 
     // Render
@@ -318,8 +371,8 @@ const userPermissions = useMemo(() => ({
                                                 {receipt.agentID
                                                     ? holdersMap.get(receipt.agentID) || "Loading..."
                                                     : receipt.currentHolderID
-                                                    ? holdersMap.get(receipt.currentHolderID) || "Loading..."
-                                                    : "N/A"}
+                                                        ? holdersMap.get(receipt.currentHolderID) || "Loading..."
+                                                        : "N/A"}
                                             </div>
                                             <div className="table-cell">
                                                 <img src={receipt.qrCode} alt="QR Code" style={{ width: "50px" }} />
@@ -364,46 +417,71 @@ const userPermissions = useMemo(() => ({
                     )}
 
                     {view === "create" && userPermissions.canCreate && (
-                        <div className="form-card">
+                        <div className="form-card form-card-0">
                             <h3>New Receipt</h3>
+                            {formError && <div className="error-message">{formError}</div>}
                             <div className="form-group">
                                 <label>Number</label>
                                 <input
+                                    type="text"
                                     value={newReceiptBook.number || ""}
-                                    onChange={(e: React.ChangeEvent<HTMLInputElement>) => setNewReceiptBook({ ...newReceiptBook, number: e.target.value })}
+                                    onChange={(e) => handleNumberChange(e.target.value, false)}
+                                    onBlur={(e) => handleNumberBlur(e.target.value, false)}
+                                    maxLength={6}
+                                    pattern="[0-9]*"
+                                    inputMode="numeric"
+                                    placeholder="000001"
                                 />
                             </div>
                             <div className="form-group">
                                 <label>Type</label>
-                                <input
+                                <select
                                     value={newReceiptBook.type || ""}
                                     onChange={(e) => setNewReceiptBook({ ...newReceiptBook, type: e.target.value })}
-                                />
+                                >
+                                    <option value="" disabled>Select Type</option>
+                                    <option value="Refund">Refund</option>
+                                    <option value="Transfer">Transfer</option>
+                                </select>
                             </div>
-                            <button className="action-button" onClick={handleCreate}>Create</button>
-                            <button className="back-button" onClick={() => setView("list")}>Cancel</button>
+                            <div className="form-actions">
+                                <button className="action-button" onClick={handleCreate}>Create</button>
+                                <button className="back-button" onClick={() => setView("list")}>Cancel</button>
+                            </div>
                         </div>
                     )}
 
                     {view === "edit" && editReceiptBook && userPermissions.canUpdate && (
-                        <div className="form-card">
+                        <div className="form-card form-card-0">
                             <h3>Edit Receipt #{editReceiptBook.number}</h3>
+                            {formError && <div className="error-message">{formError}</div>}
                             <div className="form-group">
                                 <label>Number</label>
                                 <input
+                                    type="text"
                                     value={editReceiptBook.number}
-                                    onChange={(e) => setEditReceiptBook({ ...editReceiptBook, number: e.target.value })}
+                                    onChange={(e) => handleNumberChange(e.target.value, true)}
+                                    onBlur={(e) => handleNumberBlur(e.target.value, true)}
+                                    maxLength={6}
+                                    pattern="[0-9]*"
+                                    inputMode="numeric"
+                                    placeholder="000001"
                                 />
                             </div>
                             <div className="form-group">
                                 <label>Type</label>
-                                <input
+                                <select
                                     value={editReceiptBook.type}
                                     onChange={(e) => setEditReceiptBook({ ...editReceiptBook, type: e.target.value })}
-                                />
+                                >
+                                    <option value="Refund">Refund</option>
+                                    <option value="Transfer">Transfer</option>
+                                </select>
                             </div>
-                            <button className="action-button" onClick={handleUpdate}>Save</button>
-                            <button className="back-button" onClick={() => setView("list")}>Cancel</button>
+                            <div className="form-actions">
+                                <button className="action-button" onClick={handleUpdate}>Save</button>
+                                <button className="back-button" onClick={() => setView("list")}>Cancel</button>
+                            </div>
                         </div>
                     )}
                 </main>

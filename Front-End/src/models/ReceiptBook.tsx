@@ -1,18 +1,11 @@
+import ReceiptBookStatus from "./Enum/ReceiptBookStatus";
+
 interface ReceiptBook {
     bookID: string;
     number: string;
     type: string;
     qrCode: string;
-    status:
-    | "In Stock"
-    | "Sent to Supplier"
-    | "Collect from Supplier"
-    | "With Regional Manager"
-    | "With Supervisor"
-    | "Assigned to Agent"
-    | "Stub Collected"
-    | "With Stock Manager"
-    | "Archived";
+    status: ReceiptBookStatus
     currentHolderID?: string;
     agentID?: string;
 }

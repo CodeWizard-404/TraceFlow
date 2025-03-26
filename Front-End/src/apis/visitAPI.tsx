@@ -1,28 +1,7 @@
 import api from "./axiosConfig";
-import { CreateVisitResponse, VerifyQrResponse, LogVisitResponse, VisitByIdResponse } from ".";
+import { VerifyQrResponse, LogVisitResponse, VisitByIdResponse } from ".";
 
-export const createVisit = async (
-    data: {
-        timesheetID: string;
-        supervisorID: string;
-        date: string;
-        time: string;
-        agentID: string;
-        reasons: Array<{ text?: string; id?: string }>;
-        checklists: Array<{ text?: string; id?: string }>;
-    },
-    token: string
-): Promise<CreateVisitResponse> => {
-    try {
-        const response = await api.post<CreateVisitResponse>("/visits", data, {
-            headers: { Authorization: `Bearer ${token}` },
-        });
-        return response.data;
-    } catch (error) {
-        console.error("Error creating visit:", error);
-        throw error;
-    }
-};
+
 
 export const verifyQrCode = async (data: { qrData: string; visitId: string }, token: string): Promise<VerifyQrResponse> => {
     try {
