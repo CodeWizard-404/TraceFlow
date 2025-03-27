@@ -1,24 +1,106 @@
-import 'package:flutter/cupertino.dart';
-import '../models/reason.dart';
+// lib/providers/visit_provider.dart
+import 'package:flutter/foundation.dart';
 import '../models/visit.dart';
 import '../services/visits_service.dart';
 
 class VisitProvider with ChangeNotifier {
-  final Map<String, bool> _checklistStatus = {};
-  List<Reason> _selectedReasons = [];
+  Visit? _currentVisit;
+  bool _isLoading = false;
   DateTime? _startTime;
 
-  Map<String, bool> get checklistStatus => _checklistStatus;
-  List<Reason> get selectedReasons => _selectedReasons;
+  Visit? get currentVisit => _currentVisit;
+  bool get isLoading => _isLoading;
 
-  void updateChecklistStatus(String checklistId, bool value) {
-    _checklistStatus[checklistId] = value;
+  Future<void> logVisit({
+    required String visitId,
+    required int duration,
+    required List<Map<String, dynamic>> checklistUpdates,
+    String? comment,
+    required String token,
+  }) async {
+    _isLoading = true;
     notifyListeners();
+    try {
+      _currentVisit = await VisitService.logVisit(
+        visitId: visitId,
+        duration: duration,
+        checklistUpdates: checklistUpdates,
+        comment: comment,
+        token: token,
+      );
+    } catch (e) {
+      throw Exception('Failed to log visit: $e');
+    } finally {
+      _isLoading = false;
+      notifyListeners();
+    }
   }
 
-  void setSelectedReasons(List<Reason> reasons) {
-    _selectedReasons = reasons;
+  Future<void> fetchVisitById(String visitId, String token) async {
+    _isLoading = true;
     notifyListeners();
+    try {
+      _currentVisit = await VisitService.fetchVisitById(visitId, token);
+    } catch (e) {
+      _currentVisit = null;
+      throw Exception('Failed to fetch visit: $e');
+    } finally {
+      _isLoading = false;
+      notifyListeners();
+    }
+  }
+
+  Future<void> updateVisit({
+    required String visitId,
+    String? date,
+    String? time,
+    int? duration,
+    String? location,
+    String? status,
+    String? comment,
+    String? agentID,
+    List<Map<String, dynamic>>? checklists,
+    List<Map<String, dynamic>>? reasons,
+    String? supervisorID,
+    required String token,
+  }) async {
+    _isLoading = true;
+    notifyListeners();
+    try {
+      _currentVisit = await VisitService.updateVisit(
+        visitId: visitId,
+        date: date,
+        time: time,
+        duration: duration,
+        location: location,
+        status: status,
+        comment: comment,
+        agentID: agentID,
+        checklists: checklists,
+        reasons: reasons,
+        supervisorID: supervisorID,
+        token: token,
+      );
+    } catch (e) {
+      throw Exception('Failed to update visit: $e');
+    } finally {
+      _isLoading = false;
+      notifyListeners();
+    }
+  }
+
+  Future<void> deleteVisit(String visitId, String token) async {
+    _isLoading = true;
+    notifyListeners();
+    try {
+      await VisitService.deleteVisit(visitId, token);
+      _currentVisit = null;
+    } catch (e) {
+      throw Exception('Failed to delete visit: $e');
+    } finally {
+      _isLoading = false;
+      notifyListeners();
+    }
   }
 
   void startVisitTimer() {
@@ -26,56 +108,7 @@ class VisitProvider with ChangeNotifier {
     notifyListeners();
   }
 
-  Duration? getElapsedTime() {
-    return _startTime != null ? DateTime.now().difference(_startTime!) : null;
-  }
-
-  Future<Visit> fetchVisitByID(String visitID) async {
-    try {
-      return await VisitService.fetchVisitByID(visitID);
-    } catch (e) {
-      throw Exception('Failed to fetch visit: $e');
-    }
-  }
-
-  Future<Visit> logVisit({
-    required String visitId,
-    required List<Map<String, dynamic>> checklistUpdates, required String visitID, required Map<String, Object> logData,
-  }) async {
-    try {
-      final duration = getElapsedTime()?.inMinutes ?? 0;
-      final response = await VisitService.logVisit(visitId, {
-        'duration': duration,
-        'checklistUpdates': checklistUpdates,
-      });
-      return response;
-    } catch (e) {
-      throw Exception('Failed to log visit: $e');
-    }
-  }
-
-  Future<void> createVisit({
-    required String timesheetID,
-    required String supervisorID,
-    required DateTime date,
-    required String time,
-    required String agentID,
-    required List<dynamic> reasons,
-    required List<dynamic> checklists,
-  }) async {
-    try {
-      await VisitService.createVisit({
-        'timesheetID': timesheetID,
-        'supervisorID': supervisorID,
-        'date': date.toIso8601String(),
-        'time': time,
-        'agentID': agentID,
-        'reasons': reasons,
-        'checklists': checklists,
-      });
-      notifyListeners();
-    } catch (e) {
-      throw Exception('Failed to create visit: $e');
-    }
+  int? getElapsedTimeInMinutes() {
+    return _startTime != null ? DateTime.now().difference(_startTime!).inMinutes : null;
   }
 }

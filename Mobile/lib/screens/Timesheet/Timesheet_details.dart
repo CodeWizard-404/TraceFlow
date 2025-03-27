@@ -1,12 +1,14 @@
-// lib/screens/Timesheet/home_screen.dart
+// lib/screens/Timesheet/Timesheet_details.dart
 import 'package:flutter/material.dart';
 import 'package:intl/intl.dart';
 import 'package:provider/provider.dart';
+import '../../providers/auth_provider.dart';
 import '../../providers/timesheet_provider.dart';
 import '../../providers/theme_provider.dart';
 import '../../widgets/Timesheet/day_view.dart';
 import '../../widgets/Timesheet/week_view.dart';
 import '../../widgets/Glass_Effect/GlassContainer.dart';
+import '../Error.dart';
 import '../Visit/create_visit.dart';
 
 class HomeScreen extends StatefulWidget {
@@ -41,17 +43,23 @@ class HomeScreenState extends State<HomeScreen> with SingleTickerProviderStateMi
   }
 
   void _fetchTimesheets() {
+    final authProvider = Provider.of<AuthProvider>(context, listen: false);
     final timesheetProvider = Provider.of<TimesheetProvider>(context, listen: false);
-    timesheetProvider.fetchTimesheets().catchError((error) {
-      ScaffoldMessenger.of(context).showSnackBar(
-        SnackBar(
-          content: Text('Failed to load timesheets: $error'),
-          backgroundColor: Theme.of(context).colorScheme.error.withOpacity(0.9),
-          behavior: SnackBarBehavior.floating,
-          shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(12)),
-        ),
-      );
-    });
+    if (authProvider.user?.userID != null && authProvider.token != null) {
+      timesheetProvider
+          .fetchTimesheetsBySupervisor(authProvider.user!.userID!, authProvider.token!)
+          .catchError((error) {
+        Navigator.push(
+          context,
+          MaterialPageRoute(
+            builder: (_) => ErrorPage(
+              errorMessage: 'Failed to load timesheets: $error',
+              onRetry: _fetchTimesheets,
+            ),
+          ),
+        );
+      });
+    }
   }
 
   int _getOffset(DateTime date) {
@@ -194,7 +202,6 @@ class HomeScreenState extends State<HomeScreen> with SingleTickerProviderStateMi
                                   ? Icons.light_mode
                                   : Icons.dark_mode,
                               onPressed: () {
-                                // Cycle through system -> light -> dark and show notification
                                 if (themeProvider.themeMode == ThemeMode.system) {
                                   themeProvider.setTheme(ThemeMode.light);
                                   _showThemeNotification("Light");
@@ -242,7 +249,7 @@ class HomeScreenState extends State<HomeScreen> with SingleTickerProviderStateMi
                         child: Text(
                           _isWeekView
                               ? 'Week ${_getWeekNumber(_currentDate)}'
-                              : ' ${_currentDate.day} ${DateFormat('MMMM').format(_currentDate)}',
+                              : '${_currentDate.day} ${DateFormat('MMMM').format(_currentDate)}',
                           key: ValueKey(_isWeekView),
                           style: Theme.of(context).textTheme.headlineSmall,
                         ),

@@ -1,14 +1,17 @@
+// lib/screens/Visit/log_visit_screen.dart
 import 'package:flutter/material.dart';
 import 'package:provider/provider.dart';
 import '../../models/agent.dart';
 import '../../models/checklist.dart';
 import '../../models/reason.dart';
+import '../../providers/auth_provider.dart';
 import '../../providers/agent_provider.dart';
 import '../../providers/checklist_provider.dart';
 import '../../providers/reason_provider.dart';
 import '../../providers/visit_provider.dart';
 import '../../widgets/Glass_Effect/GlassChip.dart';
 import '../../widgets/Glass_Effect/GlassContainer.dart';
+import '../Error.dart';
 
 class LogVisitScreen extends StatefulWidget {
   final String visitID;
@@ -38,15 +41,29 @@ class LogVisitScreenState extends State<LogVisitScreen> {
   }
 
   Future<void> _loadVisitData() async {
+    final authProvider = Provider.of<AuthProvider>(context, listen: false);
+    if (authProvider.token == null) {
+      _showError('Please log in first');
+      return;
+    }
     try {
       final visitProvider = Provider.of<VisitProvider>(context, listen: false);
-      final visit = await visitProvider.fetchVisitByID(widget.visitID);
-      final agent = await Provider.of<AgentProvider>(context, listen: false)
-          .fetchAgentById(visit.agentID!);
-      final checklist = await Provider.of<ChecklistProvider>(context, listen: false)
-          .getChecklistByVisit(widget.visitID);
-      final reasons = await Provider.of<ReasonProvider>(context, listen: false)
-          .getReasonsByVisit(widget.visitID);
+      final visit = await visitProvider.fetchVisitById(
+        widget.visitID,
+        authProvider.token!,
+      );
+      final agent = await Provider.of<AgentProvider>(
+        context,
+        listen: false,
+      ).fetchAgentById(visit.agentID!, authProvider.token!);
+      final checklist = await Provider.of<ChecklistProvider>(
+        context,
+        listen: false,
+      ).getChecklistsByVisitId(widget.visitID, authProvider.token!);
+      final reasons = await Provider.of<ReasonProvider>(
+        context,
+        listen: false,
+      ).getReasonsByVisitId(widget.visitID, authProvider.token!);
 
       setState(() {
         _agent = agent;
@@ -56,9 +73,61 @@ class LogVisitScreenState extends State<LogVisitScreen> {
 
       visitProvider.startVisitTimer();
     } catch (error) {
-      ScaffoldMessenger.of(context).showSnackBar(
-        SnackBar(content: Text('Error loading visit data: $error'), backgroundColor: Theme.of(context).colorScheme.error),
+      _showError('Error loading visit data: $error');
+    }
+  }
+
+  void _showError(String message) {
+    Navigator.push(
+      context,
+      MaterialPageRoute(
+        builder:
+            (_) => ErrorPage(errorMessage: message, onRetry: _loadVisitData),
+      ),
+    );
+  }
+
+  Future<void> _completeVisit() async {
+    final authProvider = Provider.of<AuthProvider>(context, listen: false);
+    final visitProvider = Provider.of<VisitProvider>(context, listen: false);
+    if (authProvider.token == null) {
+      _showError('Please log in first');
+      return;
+    }
+
+    try {
+      final duration = visitProvider.getElapsedTimeInMinutes() ?? 0;
+      final checklistUpdates =
+          _checklistItems
+              .where((item) => item.checklistID != null)
+              .map(
+                (item) => {
+                  'checklistID': item.checklistID!,
+                  'checked':
+                      visitProvider.checklistStatus[item.checklistID] ?? false,
+                },
+              )
+              .toList();
+
+      await visitProvider.logVisit(
+        visitId: widget.visitID,
+        duration: duration,
+        checklistUpdates: checklistUpdates,
+        token: authProvider.token!,
       );
+
+      if (mounted) {
+        Navigator.pop(context);
+        Navigator.pop(context);
+        ScaffoldMessenger.of(context).showSnackBar(
+          SnackBar(
+            content: const Text('Visit logged successfully'),
+            backgroundColor: Theme.of(context).colorScheme.primary,
+          ),
+        );
+      }
+    } catch (e) {
+      _showError('Error logging visit: $e');
     }
   }
 
@@ -75,7 +144,7 @@ class LogVisitScreenState extends State<LogVisitScreen> {
             floating: true,
             pinned: true,
             leading: Padding(
-              padding: const EdgeInsets.only(top: 19), // Padding before the icon
+              padding: const EdgeInsets.only(top: 19),
               child: IconButton(
                 icon: Icon(
                   Icons.arrow_back_ios_rounded,
@@ -85,7 +154,7 @@ class LogVisitScreenState extends State<LogVisitScreen> {
               ),
             ),
             title: Padding(
-              padding: const EdgeInsets.only(top: 18), // Padding before the title
+              padding: const EdgeInsets.only(top: 18),
               child: Text(
                 'Log Visit',
                 style: Theme.of(context).appBarTheme.titleTextStyle,
@@ -108,23 +177,13 @@ class LogVisitScreenState extends State<LogVisitScreen> {
                   ),
                   boxShadow: [
                     BoxShadow(
-                      color: Theme.of(context).colorScheme.onSurface.withOpacity(0.2),
+                      color: Theme.of(
+                        context,
+                      ).colorScheme.onSurface.withOpacity(0.2),
                       blurRadius: 20,
-                      offset: Offset(0, 4),
+                      offset: const Offset(0, 4),
                     ),
                   ],
-                ),
-                child: SafeArea(
-                  child: Padding(
-                    padding: const EdgeInsets.all(16),
-                    child: Column(
-                      crossAxisAlignment: CrossAxisAlignment.start,
-                      mainAxisAlignment: MainAxisAlignment.center,
-                      children: [
-                        SizedBox(height: 16), // Space to align content below title
-                      ],
-                    ),
-                  ),
                 ),
               ),
             ),
@@ -146,9 +205,15 @@ class LogVisitScreenState extends State<LogVisitScreen> {
                               padding: const EdgeInsets.all(6),
                               decoration: BoxDecoration(
                                 shape: BoxShape.circle,
-                                color: Theme.of(context).colorScheme.primary.withOpacity(0.1),
+                                color: Theme.of(
+                                  context,
+                                ).colorScheme.primary.withOpacity(0.1),
                               ),
-                              child: Icon(Icons.person, color: Theme.of(context).colorScheme.primary, size: 20),
+                              child: Icon(
+                                Icons.person,
+                                color: Theme.of(context).colorScheme.primary,
+                                size: 20,
+                              ),
                             ),
                             const SizedBox(width: 12),
                             Text(
@@ -178,9 +243,15 @@ class LogVisitScreenState extends State<LogVisitScreen> {
                               padding: const EdgeInsets.all(6),
                               decoration: BoxDecoration(
                                 shape: BoxShape.circle,
-                                color: Theme.of(context).colorScheme.primary.withOpacity(0.1),
+                                color: Theme.of(
+                                  context,
+                                ).colorScheme.primary.withOpacity(0.1),
                               ),
-                              child: Icon(Icons.notes, color: Theme.of(context).colorScheme.primary, size: 20),
+                              child: Icon(
+                                Icons.notes,
+                                color: Theme.of(context).colorScheme.primary,
+                                size: 20,
+                              ),
                             ),
                             const SizedBox(width: 12),
                             Text(
@@ -193,17 +264,26 @@ class LogVisitScreenState extends State<LogVisitScreen> {
                         if (_reasonItems.isEmpty)
                           Text(
                             'No reasons provided',
-                            style: Theme.of(context).textTheme.bodyMedium?.copyWith(
-                              color: Theme.of(context).colorScheme.onSurface.withOpacity(0.6),
+                            style: Theme.of(
+                              context,
+                            ).textTheme.bodyMedium?.copyWith(
+                              color: Theme.of(
+                                context,
+                              ).colorScheme.onSurface.withOpacity(0.6),
                             ),
                           )
                         else
                           Wrap(
                             spacing: 8,
                             runSpacing: 8,
-                            children: _reasonItems
-                                .map((reason) => GlassChip(label: reason.item ?? 'N/A'))
-                                .toList(),
+                            children:
+                                _reasonItems
+                                    .map(
+                                      (reason) => GlassChip(
+                                        label: reason.item ?? 'N/A',
+                                      ),
+                                    )
+                                    .toList(),
                           ),
                       ],
                     ),
@@ -219,9 +299,15 @@ class LogVisitScreenState extends State<LogVisitScreen> {
                               padding: const EdgeInsets.all(6),
                               decoration: BoxDecoration(
                                 shape: BoxShape.circle,
-                                color: Theme.of(context).colorScheme.primary.withOpacity(0.1),
+                                color: Theme.of(
+                                  context,
+                                ).colorScheme.primary.withOpacity(0.1),
                               ),
-                              child: Icon(Icons.checklist, color: Theme.of(context).colorScheme.primary, size: 20),
+                              child: Icon(
+                                Icons.checklist,
+                                color: Theme.of(context).colorScheme.primary,
+                                size: 20,
+                              ),
                             ),
                             const SizedBox(width: 12),
                             Text(
@@ -232,26 +318,32 @@ class LogVisitScreenState extends State<LogVisitScreen> {
                         ),
                         const SizedBox(height: 16),
                         ..._checklistItems.map((item) {
-                          if (item.checklistID == null) return const SizedBox.shrink();
+                          if (item.checklistID == null)
+                            return const SizedBox.shrink();
                           return Padding(
                             padding: const EdgeInsets.symmetric(vertical: 8),
                             child: Row(
                               children: [
                                 Checkbox(
-                                  value: visitProvider.checklistStatus[item.checklistID] ?? false,
+                                  value:
+                                      visitProvider.checklistStatus[item
+                                          .checklistID] ??
+                                      false,
                                   onChanged: (value) {
                                     visitProvider.updateChecklistStatus(
                                       item.checklistID!,
                                       value ?? false,
                                     );
                                   },
-                                  activeColor: Theme.of(context).colorScheme.primary,
+                                  activeColor:
+                                      Theme.of(context).colorScheme.primary,
                                 ),
                                 const SizedBox(width: 12),
                                 Expanded(
                                   child: Text(
                                     item.item ?? 'N/A',
-                                    style: Theme.of(context).textTheme.bodyMedium,
+                                    style:
+                                        Theme.of(context).textTheme.bodyMedium,
                                   ),
                                 ),
                               ],
@@ -264,47 +356,14 @@ class LogVisitScreenState extends State<LogVisitScreen> {
                   const SizedBox(height: 24),
                   Center(
                     child: GestureDetector(
-                      onTap: () async {
-                        try {
-                          final duration = visitProvider.getElapsedTime()?.inMinutes ?? 0;
-                          final checklistUpdates = _checklistItems
-                              .where((item) => item.checklistID != null)
-                              .map((item) => {
-                            'checklistID': item.checklistID!,
-                            'checked': visitProvider.checklistStatus[item.checklistID] ?? false,
-                          })
-                              .toList();
-
-                          await visitProvider.logVisit(
-                            visitID: widget.visitID,
-                            logData: {
-                              'duration': duration,
-                              'checklistUpdates': checklistUpdates,
-                            },
-                            visitId: widget.visitID,
-                            checklistUpdates: checklistUpdates,
-                          );
-
-                          if (mounted) {
-                            Navigator.pop(context);
-                            Navigator.pop(context);
-                            ScaffoldMessenger.of(context).showSnackBar(
-                              SnackBar(
-                                content: Text('Visit logged successfully'),
-                                backgroundColor: Theme.of(context).colorScheme.primary,
-                              ),
-                            );
-                          }
-                        } catch (e) {
-                          ScaffoldMessenger.of(context).showSnackBar(
-                            SnackBar(content: Text('Error: $e'), backgroundColor: Theme.of(context).colorScheme.error),
-                          );
-                        }
-                      },
+                      onTap: _completeVisit,
                       child: AnimatedContainer(
                         duration: const Duration(milliseconds: 300),
                         curve: Curves.easeInOut,
-                        padding: const EdgeInsets.symmetric(horizontal: 32, vertical: 12),
+                        padding: const EdgeInsets.symmetric(
+                          horizontal: 32,
+                          vertical: 12,
+                        ),
                         decoration: BoxDecoration(
                           gradient: LinearGradient(
                             colors: [
@@ -317,7 +376,9 @@ class LogVisitScreenState extends State<LogVisitScreen> {
                           borderRadius: BorderRadius.circular(16),
                           boxShadow: [
                             BoxShadow(
-                              color: Theme.of(context).colorScheme.secondary.withOpacity(0.4),
+                              color: Theme.of(
+                                context,
+                              ).colorScheme.secondary.withOpacity(0.4),
                               blurRadius: 12,
                               offset: const Offset(0, 4),
                             ),
@@ -325,8 +386,9 @@ class LogVisitScreenState extends State<LogVisitScreen> {
                         ),
                         child: Text(
                           'Complete Visit',
-                          style: TextStyle(
-                            fontSize: 16,
+                          style: Theme.of(
+                            context,
+                          ).textTheme.bodyMedium?.copyWith(
                             color: Theme.of(context).colorScheme.onPrimary,
                             fontWeight: FontWeight.bold,
                           ),
@@ -356,10 +418,7 @@ class LogVisitScreenState extends State<LogVisitScreen> {
         ),
         const SizedBox(width: 12),
         Expanded(
-          child: Text(
-            value,
-            style: Theme.of(context).textTheme.bodyMedium,
-          ),
+          child: Text(value, style: Theme.of(context).textTheme.bodyMedium),
         ),
       ],
     );

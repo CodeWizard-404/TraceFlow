@@ -1,4 +1,4 @@
-import 'dart:convert';
+// lib/providers/timesheet_provider.dart
 import 'package:flutter/foundation.dart';
 import '../models/timesheet.dart';
 import '../services/timesheet_service.dart';
@@ -6,67 +6,64 @@ import '../services/timesheet_service.dart';
 class TimesheetProvider with ChangeNotifier {
   List<Timesheet> _timesheets = [];
   Timesheet? _currentTimesheet;
+  bool _isLoading = false;
 
   List<Timesheet> get timesheets => _timesheets;
   Timesheet? get currentTimesheet => _currentTimesheet;
-
-  Future<void> fetchTimesheets() async {
-    try {
-      _timesheets = await TimesheetService.fetchAllTimesheets();
-      notifyListeners();
-    } catch (e) {
-      throw Exception('Failed to fetch timesheets: $e');
-    }
-  }
+  bool get isLoading => _isLoading;
 
   Future<void> createTimesheet({
     required int weekNumber,
     required int year,
     required String supervisorID,
     required List<Map<String, dynamic>> visits,
+    required String token,
   }) async {
-
+    _isLoading = true;
+    notifyListeners();
     try {
-      final response = await TimesheetService.createTimesheet({
-        'weekNumber': weekNumber,
-        'year': year,
-        'supervisorID': supervisorID,
-        'visits': visits.map((v) => {
-          'date': v['date'],
-          'time': v['time'],
-          'agentID': v['agentID'],
-          'location': v['location'],
-          'reasons': v['reasons'],
-          'checklists': v['checklists'],
-        }).toList(),
-      });
-
-      if (response.statusCode == 201) {
-        // Refresh the timesheets list to include the new timesheet and its visits
-        await fetchTimesheets();
-      } else {
-        throw Exception('Failed to create timesheet: ${json.decode(response.body)}');
-      }
+      final timesheet = await TimesheetService.createTimesheet(
+        weekNumber: weekNumber,
+        year: year,
+        supervisorID: supervisorID,
+        visits: visits,
+        token: token,
+      );
+      _timesheets.add(timesheet);
+      _currentTimesheet = timesheet;
     } catch (e) {
-      throw Exception('Error creating timesheet: $e');
+      throw Exception('Failed to create timesheet: $e');
+    } finally {
+      _isLoading = false;
+      notifyListeners();
     }
   }
 
-  Future<void> fetchTimesheetById(String id) async {
+  Future<void> fetchTimesheetsBySupervisor(String supervisorID, String token) async {
+    _isLoading = true;
+    notifyListeners();
     try {
-      _currentTimesheet = await TimesheetService.fetchTimesheetById(id);
-      notifyListeners();
+      _timesheets = await TimesheetService.fetchTimesheetsBySupervisor(supervisorID, token);
     } catch (e) {
+      _timesheets = [];
+      throw Exception('Failed to fetch timesheets: $e');
+    } finally {
+      _isLoading = false;
+      notifyListeners();
+    }
+  }
+
+  Future<void> fetchTimesheetById(String id, String token) async {
+    _isLoading = true;
+    notifyListeners();
+    try {
+      _currentTimesheet = await TimesheetService.fetchTimesheetById(id, token);
+    } catch (e) {
+      _currentTimesheet = null;
       throw Exception('Failed to fetch timesheet: $e');
-    }
-  }
-
-  Future<void> fetchTimesheetsBySupervisor(String supervisorID) async {
-    try {
-      _timesheets = await TimesheetService.fetchTimesheetsBySupervisor(supervisorID);
+    } finally {
+      _isLoading = false;
       notifyListeners();
-    } catch (e) {
-      throw Exception('Failed to fetch timesheets by supervisor: $e');
     }
   }
 

@@ -1,12 +1,15 @@
+// lib/screens/Visit/visit_details.dart
 import 'package:flutter/material.dart';
 import 'package:provider/provider.dart';
 import '../../models/agent.dart';
 import '../../models/visit.dart';
+import '../../providers/auth_provider.dart';
 import '../../providers/agent_provider.dart';
-import '../../services/visits_service.dart';
+import '../../providers/visit_provider.dart';
 import '../../widgets/qr_scanner_widget.dart';
 import '../Error.dart';
 import 'log_visit_screen.dart';
+import '../../utils/helpers.dart';
 
 class VisitDetailsScreen extends StatelessWidget {
   final Visit visit;
@@ -15,10 +18,7 @@ class VisitDetailsScreen extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
-    Future.microtask(() {
-      debugPrint("Visit Details: ${visit.toJson()}");
-    });
-
+    final authProvider = Provider.of<AuthProvider>(context);
     final agentProvider = Provider.of<AgentProvider>(context, listen: false);
 
     return Scaffold(
@@ -55,17 +55,17 @@ class VisitDetailsScreen extends StatelessWidget {
                     BoxShadow(
                       color: Theme.of(context).colorScheme.onSurface.withOpacity(0.2),
                       blurRadius: 20,
-                      offset: Offset(0, 4),
+                      offset: const Offset(0, 4),
                     ),
                   ],
-                  borderRadius: BorderRadius.only(
+                  borderRadius: const BorderRadius.only(
                     bottomLeft: Radius.circular(30),
                     bottomRight: Radius.circular(30),
                   ),
                 ),
                 child: SafeArea(
                   child: Padding(
-                    padding: EdgeInsets.all(16),
+                    padding: const EdgeInsets.all(16),
                     child: Row(
                       crossAxisAlignment: CrossAxisAlignment.center,
                       children: [
@@ -74,11 +74,11 @@ class VisitDetailsScreen extends StatelessWidget {
                             crossAxisAlignment: CrossAxisAlignment.start,
                             mainAxisAlignment: MainAxisAlignment.center,
                             children: [
-                              SizedBox(height: 16), // Space to align with title
+                              const SizedBox(height: 16),
                               Row(
                                 children: [
                                   Container(
-                                    padding: EdgeInsets.all(6),
+                                    padding: const EdgeInsets.all(6),
                                     decoration: BoxDecoration(
                                       shape: BoxShape.circle,
                                       color: Theme.of(context).colorScheme.onPrimary.withOpacity(0.2),
@@ -89,7 +89,7 @@ class VisitDetailsScreen extends StatelessWidget {
                                       size: 20,
                                     ),
                                   ),
-                                  SizedBox(width: 12),
+                                  const SizedBox(width: 12),
                                   Expanded(
                                     child: Text(
                                       visit.location ?? 'N/A',
@@ -101,11 +101,11 @@ class VisitDetailsScreen extends StatelessWidget {
                                   ),
                                 ],
                               ),
-                              SizedBox(height: 12),
+                              const SizedBox(height: 12),
                               Row(
                                 children: [
                                   Container(
-                                    padding: EdgeInsets.all(6),
+                                    padding: const EdgeInsets.all(6),
                                     decoration: BoxDecoration(
                                       shape: BoxShape.circle,
                                       color: Theme.of(context).colorScheme.onPrimary.withOpacity(0.2),
@@ -116,9 +116,11 @@ class VisitDetailsScreen extends StatelessWidget {
                                       size: 20,
                                     ),
                                   ),
-                                  SizedBox(width: 12),
+                                  const SizedBox(width: 12),
                                   Text(
-                                    '${visit.date?.day}/${visit.date?.month}/${visit.date?.year} - ${visit.time}',
+                                    visit.date != null
+                                        ? '${visit.date!.day}/${visit.date!.month}/${visit.date!.year} - ${visit.time ?? 'N/A'}'
+                                        : 'N/A',
                                     style: Theme.of(context).textTheme.bodyMedium?.copyWith(
                                       color: Theme.of(context).appBarTheme.iconTheme!.color,
                                       fontWeight: FontWeight.w500,
@@ -129,8 +131,7 @@ class VisitDetailsScreen extends StatelessWidget {
                             ],
                           ),
                         ),
-                        if (visit.status == "visited")
-                          _buildDurationClock(context, visit.duration ?? 0),
+                        if (visit.status == "visited") _buildDurationClock(context, visit.duration ?? 0),
                       ],
                     ),
                   ),
@@ -139,14 +140,16 @@ class VisitDetailsScreen extends StatelessWidget {
             ),
           ),
           SliverPadding(
-            padding: EdgeInsets.all(16),
+            padding: const EdgeInsets.all(16),
             sliver: SliverList(
               delegate: SliverChildListDelegate([
                 FutureBuilder<Agent>(
-                  future: agentProvider.fetchAgentById(visit.agentID!),
+                  future: authProvider.token != null
+                      ? agentProvider.fetchAgentById(visit.agentID!, authProvider.token!)
+                      : Future.error('No token'),
                   builder: (context, snapshot) {
                     if (snapshot.connectionState == ConnectionState.waiting) {
-                      return Center(child: CircularProgressIndicator());
+                      return const Center(child: CircularProgressIndicator());
                     }
                     if (snapshot.hasError) {
                       return _buildGlassCard(
@@ -155,7 +158,7 @@ class VisitDetailsScreen extends StatelessWidget {
                         icon: Icons.person,
                         content: [
                           Text(
-                            'Error loading agent data',
+                            'Error loading agent data: ${snapshot.error}',
                             style: TextStyle(color: Theme.of(context).colorScheme.error),
                           ),
                         ],
@@ -166,9 +169,7 @@ class VisitDetailsScreen extends StatelessWidget {
                         context,
                         title: 'Agent Information',
                         icon: Icons.person,
-                        content: [
-                          Text('No agent data available'),
-                        ],
+                        content: [const Text('No agent data available')],
                       );
                     }
 
@@ -178,19 +179,19 @@ class VisitDetailsScreen extends StatelessWidget {
                       title: 'Agent Information',
                       icon: Icons.person,
                       content: [
-                        _buildDetailRow(context, 'Name:', '${agent.name} ${agent.lastname}'),
+                        _buildDetailRow(context, 'Name:', '${agent.name ?? ''} ${agent.lastname ?? ''}'),
                         _buildDetailRow(context, 'Phone:', agent.phone ?? 'N/A'),
                         _buildDetailRow(
                           context,
                           'Status:',
                           visit.status ?? 'N/A',
-                          statusColor: _getStatusColor(context, visit.status),
+                          statusColor: getStatusColor(context, visit.status),
                         ),
                       ],
                     );
                   },
                 ),
-                SizedBox(height: 16),
+                const SizedBox(height: 16),
                 _buildGlassCard(
                   context,
                   title: 'Checklists',
@@ -213,7 +214,7 @@ class VisitDetailsScreen extends StatelessWidget {
                       ),
                   ],
                 ),
-                SizedBox(height: 16),
+                const SizedBox(height: 16),
                 _buildGlassCard(
                   context,
                   title: 'Reasons',
@@ -232,7 +233,7 @@ class VisitDetailsScreen extends StatelessWidget {
                       ),
                   ],
                 ),
-                SizedBox(height: 24),
+                const SizedBox(height: 24),
                 Row(
                   mainAxisAlignment: MainAxisAlignment.spaceEvenly,
                   children: [
@@ -244,7 +245,7 @@ class VisitDetailsScreen extends StatelessWidget {
                         Navigator.push(
                           context,
                           MaterialPageRoute(
-                            builder: (_) => const ErrorPage(errorMessage: 'Page not available yet'),
+                            builder: (_) => const ErrorPage(errorMessage: 'Edit functionality not implemented yet'),
                           ),
                         );
                       },
@@ -261,10 +262,17 @@ class VisitDetailsScreen extends StatelessWidget {
                         if (visit.date == null) {
                           ScaffoldMessenger.of(context).showSnackBar(
                             SnackBar(
-                              content: Text('Visit date is missing. Cannot log visit.'),
+                              content: const Text('Visit date is missing. Cannot log visit.'),
                               backgroundColor: Theme.of(context).colorScheme.error.withOpacity(0.9),
-                              behavior: SnackBarBehavior.floating,
-                              shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(12)),
+                            ),
+                          );
+                          return;
+                        }
+                        if (authProvider.token == null) {
+                          Navigator.push(
+                            context,
+                            MaterialPageRoute(
+                              builder: (_) => const ErrorPage(errorMessage: 'Please log in first'),
                             ),
                           );
                           return;
@@ -272,31 +280,38 @@ class VisitDetailsScreen extends StatelessWidget {
 
                         final scannedData = await Navigator.push(
                           context,
-                          MaterialPageRoute(builder: (_) => QRScannerWidget()),
+                          MaterialPageRoute(builder: (_) => const QRScannerWidget()),
                         );
 
                         if (scannedData != null) {
-                          final verificationResult = await VisitService.verifyQRCode(
-                            qrData: scannedData,
-                            visitId: visit.visitID!,
-                          );
-
-                          if (verificationResult['valid'] == true) {
+                          final visitProvider = Provider.of<VisitProvider>(context, listen: false);
+                          try {
+                            final isValid = await visitProvider.verifyQRCode(
+                              qrData: scannedData,
+                              visitId: visit.visitID!,
+                              token: authProvider.token!,
+                            );
+                            if (isValid) {
+                              Navigator.push(
+                                context,
+                                MaterialPageRoute(
+                                  builder: (_) => LogVisitScreen(
+                                    visitID: visit.visitID!,
+                                    weekNumber: _getWeekNumber(visit.date!),
+                                    year: visit.date!.year,
+                                  ),
+                                ),
+                              );
+                            } else {
+                              ScaffoldMessenger.of(context).showSnackBar(
+                                const SnackBar(content: Text('Invalid QR code')),
+                              );
+                            }
+                          } catch (e) {
                             Navigator.push(
                               context,
                               MaterialPageRoute(
-                                builder: (_) => LogVisitScreen(
-                                  visitID: visit.visitID!,
-                                  weekNumber: _getWeekNumber(visit.date!),
-                                  year: visit.date!.year,
-                                ),
-                              ),
-                            );
-                          } else {
-                            ScaffoldMessenger.of(context).showSnackBar(
-                              SnackBar(
-                                content: Text(verificationResult['message'] ?? 'Invalid QR code'),
-                                backgroundColor: Theme.of(context).colorScheme.error.withOpacity(0.9),
+                                builder: (_) => ErrorPage(errorMessage: 'Error verifying QR code: $e'),
                               ),
                             );
                           }
@@ -313,10 +328,9 @@ class VisitDetailsScreen extends StatelessWidget {
     );
   }
 
-  // Helper methods remain unchanged below this point; included for completeness
   Widget _buildDurationClock(BuildContext context, int duration) {
     return Container(
-      padding: EdgeInsets.all(12),
+      padding: const EdgeInsets.all(12),
       child: Column(
         mainAxisSize: MainAxisSize.min,
         children: [
@@ -329,7 +343,8 @@ class VisitDetailsScreen extends StatelessWidget {
                 child: CircularProgressIndicator(
                   value: 1.0,
                   strokeWidth: 4,
-                  valueColor: AlwaysStoppedAnimation<Color>(Theme.of(context).colorScheme.onPrimary.withOpacity(0.2)),
+                  valueColor:
+                  AlwaysStoppedAnimation<Color>(Theme.of(context).colorScheme.onPrimary.withOpacity(0.2)),
                 ),
               ),
               Icon(
@@ -363,7 +378,7 @@ class VisitDetailsScreen extends StatelessWidget {
         required List<Widget> content,
       }) {
     return AnimatedContainer(
-      duration: Duration(milliseconds: 300),
+      duration: const Duration(milliseconds: 300),
       curve: Curves.easeInOut,
       decoration: BoxDecoration(
         borderRadius: BorderRadius.circular(20),
@@ -379,33 +394,30 @@ class VisitDetailsScreen extends StatelessWidget {
           BoxShadow(
             color: Theme.of(context).colorScheme.primary.withOpacity(0.1),
             blurRadius: 12,
-            offset: Offset(0, 4),
+            offset: const Offset(0, 4),
           ),
         ],
       ),
       child: Padding(
-        padding: EdgeInsets.all(16),
+        padding: const EdgeInsets.all(16),
         child: Column(
           crossAxisAlignment: CrossAxisAlignment.start,
           children: [
             Row(
               children: [
                 Container(
-                  padding: EdgeInsets.all(6),
+                  padding: const EdgeInsets.all(6),
                   decoration: BoxDecoration(
                     shape: BoxShape.circle,
                     color: Theme.of(context).colorScheme.primary.withOpacity(0.1),
                   ),
                   child: Icon(icon, color: Theme.of(context).colorScheme.primary, size: 20),
                 ),
-                SizedBox(width: 12),
-                Text(
-                  title,
-                  style: Theme.of(context).textTheme.headlineSmall,
-                ),
+                const SizedBox(width: 12),
+                Text(title, style: Theme.of(context).textTheme.headlineSmall),
               ],
             ),
-            SizedBox(height: 16),
+            const SizedBox(height: 16),
             ...content,
           ],
         ),
@@ -420,7 +432,7 @@ class VisitDetailsScreen extends StatelessWidget {
         Color? statusColor,
       }) {
     return Padding(
-      padding: EdgeInsets.symmetric(vertical: 6),
+      padding: const EdgeInsets.symmetric(vertical: 6),
       child: Row(
         crossAxisAlignment: CrossAxisAlignment.start,
         children: [
@@ -430,24 +442,21 @@ class VisitDetailsScreen extends StatelessWidget {
               color: Theme.of(context).colorScheme.onSurface.withOpacity(0.7),
             ),
           ),
-          SizedBox(width: 12),
+          const SizedBox(width: 12),
           Expanded(
             child: statusColor != null
                 ? Container(
-              padding: EdgeInsets.symmetric(horizontal: 12, vertical: 6),
+              padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 6),
               decoration: BoxDecoration(
                 borderRadius: BorderRadius.circular(16),
                 gradient: LinearGradient(
-                  colors: [
-                    statusColor.withOpacity(0.2),
-                    statusColor.withOpacity(0.1),
-                  ],
+                  colors: [statusColor.withOpacity(0.2), statusColor.withOpacity(0.1)],
                 ),
                 boxShadow: [
                   BoxShadow(
                     color: statusColor.withOpacity(0.2),
                     blurRadius: 8,
-                    offset: Offset(0, 2),
+                    offset: const Offset(0, 2),
                   ),
                 ],
               ),
@@ -459,10 +468,7 @@ class VisitDetailsScreen extends StatelessWidget {
                 ),
               ),
             )
-                : Text(
-              value,
-              style: Theme.of(context).textTheme.bodyMedium,
-            ),
+                : Text(value, style: Theme.of(context).textTheme.bodyMedium),
           ),
         ],
       ),
@@ -471,11 +477,11 @@ class VisitDetailsScreen extends StatelessWidget {
 
   Widget _buildChecklistRow(BuildContext context, String item, bool isChecked) {
     return Padding(
-      padding: EdgeInsets.symmetric(vertical: 6),
+      padding: const EdgeInsets.symmetric(vertical: 6),
       child: Row(
         children: [
           Container(
-            padding: EdgeInsets.all(4),
+            padding: const EdgeInsets.all(4),
             decoration: BoxDecoration(
               shape: BoxShape.circle,
               color: isChecked
@@ -488,12 +494,9 @@ class VisitDetailsScreen extends StatelessWidget {
               size: 18,
             ),
           ),
-          SizedBox(width: 12),
+          const SizedBox(width: 12),
           Expanded(
-            child: Text(
-              item,
-              style: Theme.of(context).textTheme.bodyMedium,
-            ),
+            child: Text(item, style: Theme.of(context).textTheme.bodyMedium),
           ),
         ],
       ),
@@ -516,9 +519,9 @@ class VisitDetailsScreen extends StatelessWidget {
     return GestureDetector(
       onTap: onPressed,
       child: AnimatedContainer(
-        duration: Duration(milliseconds: 300),
+        duration: const Duration(milliseconds: 300),
         curve: Curves.easeInOut,
-        padding: EdgeInsets.symmetric(horizontal: 20, vertical: 12),
+        padding: const EdgeInsets.symmetric(horizontal: 20, vertical: 12),
         decoration: BoxDecoration(
           gradient: LinearGradient(
             colors: colors,
@@ -530,7 +533,7 @@ class VisitDetailsScreen extends StatelessWidget {
             BoxShadow(
               color: colors[0].withOpacity(0.4),
               blurRadius: 12,
-              offset: Offset(0, 4),
+              offset: const Offset(0, 4),
             ),
           ],
         ),
@@ -538,7 +541,7 @@ class VisitDetailsScreen extends StatelessWidget {
           mainAxisSize: MainAxisSize.min,
           children: [
             Icon(icon, color: Theme.of(context).colorScheme.onPrimary, size: 20),
-            SizedBox(width: 8),
+            const SizedBox(width: 8),
             Text(
               label,
               style: Theme.of(context).textTheme.bodyMedium?.copyWith(
@@ -550,19 +553,6 @@ class VisitDetailsScreen extends StatelessWidget {
         ),
       ),
     );
-  }
-
-  Color? _getStatusColor(BuildContext context, String? status) {
-    switch (status?.toLowerCase()) {
-      case 'visited':
-        return Colors.green;
-      case 'pending':
-        return Colors.orange;
-      case 'rejected':
-        return Colors.red;
-      default:
-        return Theme.of(context).colorScheme.onSurface.withOpacity(0.6);
-    }
   }
 
   int _getWeekNumber(DateTime date) {

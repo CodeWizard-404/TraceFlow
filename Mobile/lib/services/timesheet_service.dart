@@ -1,57 +1,63 @@
-import 'package:http/http.dart' as http;
+// lib/services/timesheet_service.dart
 import 'dart:convert';
+import 'package:http/http.dart' as http;
 import '../models/timesheet.dart';
 import '../utils/constants.dart';
 
 class TimesheetService {
-  static Future<List<Timesheet>> fetchAllTimesheets() async {
-    final response = await http.get(Uri.parse('$baseUrl/timesheets'));
+  // Create a new timesheet with visits
+  static Future<Timesheet> createTimesheet({
+    required int weekNumber,
+    required int year,
+    required String supervisorID,
+    required List<Map<String, dynamic>> visits,
+    required String token,
+  }) async {
+    final response = await http.post(
+      Uri.parse('$baseUrl/timesheets'),
+      headers: {
+        'Content-Type': 'application/json',
+        'Authorization': 'Bearer $token',
+      },
+      body: json.encode({
+        'weekNumber': weekNumber,
+        'year': year,
+        'supervisorID': supervisorID,
+        'visits': visits,
+        'status': 'pending', // Default status
+      }),
+    );
+    if (response.statusCode == 201) {
+      return Timesheet.fromJson(json.decode(response.body));
+    } else {
+      throw Exception('Failed to create timesheet: ${response.body}');
+    }
+  }
+
+  // Fetch timesheets by supervisor (only their own)
+  static Future<List<Timesheet>> fetchTimesheetsBySupervisor(String supervisorID, String token) async {
+    final response = await http.get(
+      Uri.parse('$baseUrl/timesheets/supervisor/$supervisorID'),
+      headers: {'Authorization': 'Bearer $token'},
+    );
     if (response.statusCode == 200) {
       final List<dynamic> decodedData = json.decode(response.body);
       return decodedData.map((json) => Timesheet.fromJson(json)).toList();
     } else {
-      throw Exception('Failed to load timesheets: ${response.statusCode}');
+      throw Exception('Failed to fetch timesheets: ${response.body}');
     }
   }
-  static Future<http.Response> createTimesheet(Map<String, dynamic> payload) async {
-    final response = await http.post(
-      Uri.parse('$baseUrl/timesheets'),
-      headers: {'Content-Type': 'application/json'},
-      body: json.encode(payload),
-    );
-    return response;
-  }
 
-  static Future<Timesheet> fetchTimesheetById(String id) async {
-    final response = await http.get(Uri.parse('$baseUrl/timesheets/$id'));
+  // Fetch a specific timesheet by ID
+  static Future<Timesheet> fetchTimesheetById(String id, String token) async {
+    final response = await http.get(
+      Uri.parse('$baseUrl/timesheets/$id'),
+      headers: {'Authorization': 'Bearer $token'},
+    );
     if (response.statusCode == 200) {
       return Timesheet.fromJson(json.decode(response.body));
     } else {
-      throw Exception('Failed to fetch timesheet');
-    }
-  }
-
-  static Future<void> validateTimesheet(String id, List<String> visitIDs, String status) async {
-    final response = await http.put(
-      Uri.parse('$baseUrl/timesheets/$id/validate'),
-      headers: {'Content-Type': 'application/json'},
-      body: json.encode({
-        'visitIDs': visitIDs,
-        'status': status,
-      }),
-    );
-    if (response.statusCode != 200) {
-      throw Exception('Failed to validate timesheet');
-    }
-  }
-
-  static Future<List<Timesheet>> fetchTimesheetsBySupervisor(String supervisorID) async {
-    final response = await http.get(Uri.parse('$baseUrl/timesheets/supervisor/$supervisorID'));
-    if (response.statusCode == 200) {
-      final List<dynamic> decodedData = json.decode(response.body);
-      return decodedData.map((json) => Timesheet.fromJson(json)).toList();
-    } else {
-      throw Exception('Failed to fetch timesheets by supervisor: ${response.statusCode}');
+      throw Exception('Failed to fetch timesheet: ${response.body}');
     }
   }
 }

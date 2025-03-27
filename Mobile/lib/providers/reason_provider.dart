@@ -1,15 +1,41 @@
+// lib/providers/reason_provider.dart
 import 'package:flutter/foundation.dart';
 import '../models/reason.dart';
 import '../services/reason_service.dart';
 
 class ReasonProvider with ChangeNotifier {
-  Future<List<Reason>> getReasonsByVisit(String visitID) async {
-    final response = await ReasonService.getReasonsByVisitId(visitID);
-    return response; // Already a List<Reason>
+  List<Reason> _reasons = [];
+  bool _isLoading = false;
+
+  List<Reason> get reasons => _reasons;
+  bool get isLoading => _isLoading;
+
+
+  Future<void> getReasonsByVisitId(String visitId, String token) async {
+    _isLoading = true;
+    notifyListeners();
+    try {
+      _reasons = await ReasonService.getReasonsByVisitId(visitId, token);
+    } catch (e) {
+      _reasons = [];
+      throw Exception('Failed to fetch reasons: $e');
+    } finally {
+      _isLoading = false;
+      notifyListeners();
+    }
   }
 
-  Future<List<Reason>> getAllReasons() async {
-    final response = await ReasonService.getAllReasons();
-    return response; // Already a List<Reason>
+  Future<void> getAllReasons(String token) async {
+    _isLoading = true;
+    notifyListeners();
+    try {
+      _reasons = await ReasonService.getAllReasons(token);
+    } catch (e) {
+      _reasons = [];
+      throw Exception('Failed to fetch all reasons: $e');
+    } finally {
+      _isLoading = false;
+      notifyListeners();
+    }
   }
 }
