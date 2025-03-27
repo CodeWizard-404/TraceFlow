@@ -7,5 +7,7 @@ const upload = require('../config/multer');
 router.post('/verify-qr', authenticateJWT, requirePermission('scan_visits'), VisitController.verifyQRCode);
 router.put('/:id/log', authenticateJWT, requirePermission('log_visits'), upload.array('photos'), VisitController.logVisit);
 router.get('/:id', authenticateJWT, requirePermission('access_visit_details'), VisitController.getVisitByID);
+router.put('/:id', authenticateJWT, requirePermission('edit_visit_details'), upload.array('photos'), VisitController.updateVisit);
+router.delete('/:id', authenticateJWT, requirePermission('delete_visit'), VisitController.deleteVisit);
 
 module.exports = router;

@@ -1,4 +1,3 @@
-// controllers/timesheetController.js
 const { Timesheet } = require('../models');
 const TimesheetService = require('../services/timesheetService');
 
@@ -9,7 +8,6 @@ class TimesheetController {
             if (!weekNumber || !year || !supervisorID || !Array.isArray(visits)) {
                 return res.status(400).json({ error: 'Missing required fields: weekNumber, year, supervisorID, and visits array are mandatory' });
             }
-            // Validate status if provided
             if (status && !['pending', 'validated'].includes(status)) {
                 return res.status(400).json({ error: 'Invalid status value. Must be "pending" or "validated"' });
             }
@@ -78,7 +76,6 @@ class TimesheetController {
                 return res.status(403).json({ error: 'Permission denied: Only users with edit_timesheets_for_supervisor can update timesheets' });
             }
 
-            // Parse visits if sent as a string (e.g., from form-data)
             const parsedVisits = typeof visits === 'string' ? JSON.parse(visits) : visits;
             const filesMap = {};
             if (req.files) {

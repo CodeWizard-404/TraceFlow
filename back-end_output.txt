@@ -66,6 +66,84 @@ module.exports = {
 };
 
 ==================================================
+File contents: C:\Users\Kayto\Desktop\IT\Projects\Stage\Stage PFE\TraceFlow\Back-End\config\multer.js
+==================================================
+const multer = require('multer');
+const path = require('path');
+const fs = require('fs');
+const { Timesheet, User } = require('../models');
+
+// Use a request-scoped counter to track file indices
+const storage = multer.diskStorage({
+    destination: async (req, file, cb) => {
+        const { id } = req.params; // visitID from the route
+        try {
+            const visit = await require('../models').Visit.findByPk(id, {
+                include: [{ model: Timesheet, include: [User] }],
+            });
+            if (!visit) {
+                return cb(new Error('Visit not found'));
+            }
+
+            const date = visit.date; // e.g., "2025-03-27"
+            const time = visit.time.replace(/:/g, '-'); // e.g., "10-00"
+            const supervisorName = `${visit.Timesheet.User.firstname.toLowerCase()}_${visit.Timesheet.User.lastname.toLowerCase()}`; // e.g., "supervisor_user"
+            const folderName = `${date}_${time}_${supervisorName}`; // e.g., "2025-03-27_10-00_supervisor_user"
+            const uploadPath = path.join(__dirname, '../uploads/photos', folderName);
+
+            if (!fs.existsSync(uploadPath)) {
+                fs.mkdirSync(uploadPath, { recursive: true });
+            }
+
+            cb(null, uploadPath);
+        } catch (error) {
+            cb(error);
+        }
+    },
+    filename: (req, file, cb) => {
+        // Initialize a counter on the request object if it doesn’t exist
+        if (!req.fileCounter) {
+            req.fileCounter = 0;
+        }
+
+        // Generate a base timestamp (once per request)
+        if (!req.timestamp) {
+            req.timestamp = new Date().toISOString()
+                .replace(/T/, '_')
+                .replace(/:/g, '-')
+                .replace(/\..+/, '');
+        }
+
+        // Use the counter to create a unique suffix and increment it
+        const fileIndex = req.fileCounter;
+        const uniqueSuffix = `${req.timestamp}_${fileIndex}`; // e.g., "2025-03-26_17-27-42_0", "..._1", etc.
+        const ext = path.extname(file.originalname).toLowerCase();
+        cb(null, `${uniqueSuffix}${ext}`);
+
+        // Increment the counter for the next file
+        req.fileCounter += 1;
+    },
+});
+
+const fileFilter = (req, file, cb) => {
+    const allowedTypes = /jpeg|jpg|png/;
+    const extname = allowedTypes.test(path.extname(file.originalname).toLowerCase());
+    const mimetype = allowedTypes.test(file.mimetype);
+    if (extname && mimetype) {
+        return cb(null, true);
+    }
+    cb(new Error('Only JPEG/JPG/PNG images are allowed'), false);
+};
+
+const upload = multer({
+    storage,
+    fileFilter,
+    limits: { fileSize: 5 * 1024 * 1024 }, // 5MB limit
+});
+
+module.exports = upload;
+
+==================================================
 File contents: C:\Users\Kayto\Desktop\IT\Projects\Stage\Stage PFE\TraceFlow\Back-End\config\security.js
 ==================================================
 const jwt = require('jsonwebtoken');
@@ -163,7 +241,7 @@ module.exports = { initializeServer };
 File contents: C:\Users\Kayto\Desktop\IT\Projects\Stage\Stage PFE\TraceFlow\Back-End\config\sms.js
 ==================================================
 const axios = require('axios');
-const { User, Agent } = require('../models'); 
+const { User, Agent } = require('../models');
 const { transporter } = require('./smtp');
 require('dotenv').config();
 
@@ -236,7 +314,7 @@ require('dotenv').config();
 const transporter = nodemailer.createTransport({
     host: process.env.SMTP_HOST,
     port: process.env.SMTP_PORT,
-    secure: false,  
+    secure: false,
     auth: {
         user: process.env.SMTP_USER,
         pass: process.env.SMTP_PASS,
@@ -961,7 +1039,6 @@ module.exports = RoleController;
 ==================================================
 File contents: C:\Users\Kayto\Desktop\IT\Projects\Stage\Stage PFE\TraceFlow\Back-End\controllers\timesheetController.js
 ==================================================
-// controllers/timesheetController.js
 const { Timesheet } = require('../models');
 const TimesheetService = require('../services/timesheetService');
 
@@ -972,20 +1049,8 @@ class TimesheetController {
             if (!weekNumber || !year || !supervisorID || !Array.isArray(visits)) {
                 return res.status(400).json({ error: 'Missing required fields: weekNumber, year, supervisorID, and visits array are mandatory' });
             }
-            // Validate status if provided
             if (status && !['pending', 'validated'].includes(status)) {
                 return res.status(400).json({ error: 'Invalid status value. Must be "pending" or "validated"' });
-            }
-            // Log req.user for debugging
-            console.log(`${new Date().toISOString()} - req.user:`, req.user);
-
-            // Flatten permissions from Roles
-            const userPermissions = req.user?.Roles?.flatMap(role => role.Permissions?.map(perm => perm.name) || []) || [];
-            const hasSupervisorPermission = userPermissions.includes('create_timesheets_for_supervisor');
-            console.log(`${new Date().toISOString()} - User permissions:`, userPermissions); 
-
-            if (status === 'validated' && !hasSupervisorPermission) {
-                return res.status(403).json({ error: 'Permission denied: Only users with create_timesheets_for_supervisor can set status to validated' });
             }
 
             const timesheet = await TimesheetService.createTimesheet({ weekNumber, year, supervisorID, visits, status });
@@ -1040,6 +1105,48 @@ class TimesheetController {
         } catch (error) {
             console.error(`${new Date().toISOString()} - Get timesheets by supervisor failed:`, error);
             res.status(error.status || 500).json({ error: error.message || 'Failed to retrieve timesheets for supervisor due to an internal error' });
+        }
+    }
+
+    static async updateTimesheet(req, res) {
+        try {
+            const { id } = req.params;
+            const { weekNumber, year, status, visits } = req.body;
+            const userPermissions = req.user?.Roles?.flatMap(role => role.Permissions?.map(perm => perm.name) || []) || [];
+            if (!userPermissions.includes('edit_timesheets_for_supervisor')) {
+                return res.status(403).json({ error: 'Permission denied: Only users with edit_timesheets_for_supervisor can update timesheets' });
+            }
+
+            const parsedVisits = typeof visits === 'string' ? JSON.parse(visits) : visits;
+            const filesMap = {};
+            if (req.files) {
+                req.files.forEach(file => {
+                    const visitId = file.fieldname.split('.')[1]; // e.g., "photos.vis_123" -> "vis_123"
+                    if (!filesMap[visitId]) filesMap[visitId] = [];
+                    filesMap[visitId].push(file);
+                });
+            }
+
+            const timesheet = await TimesheetService.updateTimesheet(id, { weekNumber, year, status, visits: parsedVisits }, filesMap);
+            res.status(200).json(timesheet);
+        } catch (error) {
+            console.error(`${new Date().toISOString()} - Update timesheet failed:`, error);
+            res.status(error.status || 500).json({ error: error.message || 'Failed to update timesheet due to an internal error' });
+        }
+    }
+
+    static async deleteTimesheet(req, res) {
+        try {
+            const { id } = req.params;
+            const userPermissions = req.user?.Roles?.flatMap(role => role.Permissions?.map(perm => perm.name) || []) || [];
+            if (!userPermissions.includes('delete_timesheets_for_supervisor')) {
+                return res.status(403).json({ error: 'Permission denied: Only users with delete_timesheets_for_supervisor can delete timesheets' });
+            }
+            const result = await TimesheetService.deleteTimesheet(id);
+            res.status(200).json(result);
+        } catch (error) {
+            console.error(`${new Date().toISOString()} - Delete timesheet failed:`, error);
+            res.status(error.status || 500).json({ error: error.message || 'Failed to delete timesheet due to an internal error' });
         }
     }
 }
@@ -1202,7 +1309,6 @@ module.exports = UserController;
 ==================================================
 File contents: C:\Users\Kayto\Desktop\IT\Projects\Stage\Stage PFE\TraceFlow\Back-End\controllers\visitController.js
 ==================================================
-// controllers/visitController.js
 const VisitService = require('../services/visitService');
 
 class VisitController {
@@ -1223,8 +1329,9 @@ class VisitController {
     static async logVisit(req, res) {
         try {
             const { id } = req.params;
-            const { duration, checklistUpdates, photos, comment } = req.body;
-            const visit = await VisitService.logVisit(id, { duration, checklistUpdates, photos, comment });
+            const { duration, checklistUpdates, comment } = req.body;
+            const files = req.files;
+            const visit = await VisitService.logVisit(id, { duration, checklistUpdates, comment }, files);
             res.status(200).json(visit);
         } catch (error) {
             console.error(`${new Date().toISOString()} - Log visit failed:`, error);
@@ -1242,10 +1349,41 @@ class VisitController {
             res.status(error.status || 500).json({ error: error.message || 'Failed to retrieve visit due to an internal error' });
         }
     }
+
+    static async updateVisit(req, res) {
+        try {
+            const { id } = req.params;
+            const userPermissions = req.user?.Roles?.flatMap(role => role.Permissions?.map(perm => perm.name) || []) || [];
+            if (!userPermissions.includes('edit_timesheets_for_supervisor')) {
+                return res.status(403).json({ error: 'Permission denied: Only users with edit_timesheets_for_supervisor can update visits' });
+            }
+            const data = req.body;
+            const files = req.files || [];
+            const visit = await VisitService.updateVisit(id, data, files);
+            res.status(200).json(visit);
+        } catch (error) {
+            console.error(`${new Date().toISOString()} - Update visit failed:`, error);
+            res.status(error.status || 500).json({ error: error.message || 'Failed to update visit due to an internal error' });
+        }
+    }
+
+    static async deleteVisit(req, res) {
+        try {
+            const { id } = req.params;
+            const userPermissions = req.user?.Roles?.flatMap(role => role.Permissions?.map(perm => perm.name) || []) || [];
+            if (!userPermissions.includes('delete_timesheets_for_supervisor')) {
+                return res.status(403).json({ error: 'Permission denied: Only users with delete_timesheets_for_supervisor can delete visits' });
+            }
+            const result = await VisitService.deleteVisit(id);
+            res.status(200).json(result);
+        } catch (error) {
+            console.error(`${new Date().toISOString()} - Delete visit failed:`, error);
+            res.status(error.status || 500).json({ error: error.message || 'Failed to delete visit due to an internal error' });
+        }
+    }
 }
 
 module.exports = VisitController;
-
 
 ==================================================
 File contents: C:\Users\Kayto\Desktop\IT\Projects\Stage\Stage PFE\TraceFlow\Back-End\middleware\RBAC_Middleware.js
@@ -1767,24 +1905,22 @@ const { nanoid } = require('nanoid');
 
 module.exports = (sequelize, DataTypes) => {
     return sequelize.define('Visit', {
-    visitID: { 
-        type: DataTypes.STRING,     
-        primaryKey: true,
-        defaultValue: () => `vis_${nanoid()}`,
-    },
-    date: { type: DataTypes.DATEONLY, allowNull: false },
-    time: { type: DataTypes.TIME, allowNull: false },
-    duration: { type: DataTypes.INTEGER}, 
-    location: { type: DataTypes.STRING},
-    status: { type: DataTypes.STRING,allowNull: false },
-    photos: { type: DataTypes.ARRAY(DataTypes.STRING), defaultValue: []},
-    comment: { type: DataTypes.TEXT},
-    agentID: { type: DataTypes.STRING, allowNull: false }, 
-    timesheetID: { type: DataTypes.STRING, allowNull: false }, 
-});
-
+        visitID: {
+            type: DataTypes.STRING,
+            primaryKey: true,
+            defaultValue: () => `vis_${nanoid()}`,
+        },
+        date: { type: DataTypes.DATEONLY, allowNull: false },
+        time: { type: DataTypes.TIME, allowNull: false },
+        duration: { type: DataTypes.INTEGER },
+        location: { type: DataTypes.STRING },
+        status: { type: DataTypes.STRING, allowNull: false },
+        photos: { type: DataTypes.ARRAY(DataTypes.STRING), defaultValue: [] },
+        comment: { type: DataTypes.TEXT },
+        agentID: { type: DataTypes.STRING, allowNull: false },
+        timesheetID: { type: DataTypes.STRING, allowNull: false },
+    });
 };
-
 
 ==================================================
 File contents: C:\Users\Kayto\Desktop\IT\Projects\Stage\Stage PFE\TraceFlow\Back-End\models\visit\VisitChecklists.js
@@ -1958,11 +2094,18 @@ const express = require('express');
 const router = express.Router();
 const { authenticateJWT, requirePermission } = require('../config/security');
 const TimesheetController = require('../controllers/timesheetController');
-
+const upload = require('../config/multer');
 
 router.post('/', authenticateJWT, requirePermission('create_self_timesheets'), TimesheetController.createTimesheet);
 router.post('/', authenticateJWT, requirePermission('create_timesheets_for_supervisor'), TimesheetController.createTimesheet);
 router.put('/:id/validate', authenticateJWT, requirePermission('validate_timesheets'), TimesheetController.validateTimesheet);
+router.put('/:id',
+    authenticateJWT,
+    requirePermission('edit_timesheets_for_supervisor'),
+    upload.any(), // Accept any field names (e.g., "photos.vis_123")
+    TimesheetController.updateTimesheet
+);
+router.delete('/:id', authenticateJWT, requirePermission('delete_timesheets_for_supervisor'), TimesheetController.deleteTimesheet);
 
 router.get('/', authenticateJWT, requirePermission('access_all_timesheets'), TimesheetController.getAllTimesheets);
 router.get('/:id', authenticateJWT, requirePermission('access_timesheet_details'), TimesheetController.getTimesheetById);
@@ -2002,10 +2145,13 @@ const express = require('express');
 const router = express.Router();
 const { authenticateJWT, requirePermission } = require('../config/security');
 const VisitController = require('../controllers/visitController');
+const upload = require('../config/multer');
 
 router.post('/verify-qr', authenticateJWT, requirePermission('scan_visits'), VisitController.verifyQRCode);
-router.put('/:id/log', authenticateJWT, requirePermission('log_visits'), VisitController.logVisit);
+router.put('/:id/log', authenticateJWT, requirePermission('log_visits'), upload.array('photos'), VisitController.logVisit);
 router.get('/:id', authenticateJWT, requirePermission('access_visit_details'), VisitController.getVisitByID);
+router.put('/:id', authenticateJWT, requirePermission('edit_visit_details'), upload.array('photos'), VisitController.updateVisit);
+router.delete('/:id', authenticateJWT, requirePermission('delete_visit'), VisitController.deleteVisit);
 
 module.exports = router;
 
@@ -3037,14 +3183,12 @@ class TimesheetService {
     static async createTimesheet(data) {
         const { weekNumber, year, supervisorID, visits, status = 'pending' } = data;
 
-        // Validate required fields
         if (!weekNumber || !year || !supervisorID || !Array.isArray(visits)) {
             const error = new Error('Invalid input data');
             error.status = 400;
             throw error;
         }
 
-        // Validate each visit structure
         for (const visit of visits) {
             if (!visit.date || !visit.time || !visit.agentID) {
                 const error = new Error('Invalid visit data structure');
@@ -3104,8 +3248,68 @@ class TimesheetService {
         }
     }
 
+    static async updateTimesheet(timesheetID, data, filesMap = {}) {
+        try {
+            const { weekNumber, year, status, visits } = data;
+            const timesheet = await Timesheet.findByPk(timesheetID, { include: [Visit] });
+            if (!timesheet) {
+                const error = new Error('Timesheet not found');
+                error.status = 404;
+                throw error;
+            }
+            timesheet.weekNumber = weekNumber || timesheet.weekNumber;
+            timesheet.year = year || timesheet.year;
+            timesheet.status = status || timesheet.status;
+            await timesheet.save();
+
+            if (visits && Array.isArray(visits)) {
+                for (const visitData of visits) {
+                    if (visitData.visitID) {
+                        const files = filesMap[visitData.visitID] || [];
+                        await VisitService.updateVisit(visitData.visitID, visitData, files);
+                    } else {
+                        await VisitService.createVisit({
+                            ...visitData,
+                            timesheetID,
+                            supervisorID: timesheet.supervisorID,
+                        });
+                    }
+                }
+            }
+            return timesheet.reload({
+                include: [
+                    {
+                        model: Visit,
+                        include: [Checklist, Reason],
+                    },
+                ],
+            });
+        } catch (error) {
+            const err = new Error('Failed to update timesheet: ' + error.message);
+            err.status = error.status || 500;
+            throw err;
+        }
+    }
+
+    static async deleteTimesheet(timesheetID) {
+        try {
+            const timesheet = await Timesheet.findByPk(timesheetID, { include: [Visit] });
+            if (!timesheet) {
+                const error = new Error('Timesheet not found');
+                error.status = 404;
+                throw error;
+            }
+            await Promise.all(timesheet.Visits.map(visit => VisitService.deleteVisit(visit.visitID)));
+            await timesheet.destroy();
+            return { message: 'Timesheet and associated visits deleted successfully' };
+        } catch (error) {
+            const err = new Error('Failed to delete timesheet: ' + error.message);
+            err.status = error.status || 500;
+            throw err;
+        }
+    }
+
     static async validateTimesheet(timesheetID, visitIDs = [], status) {
-        // Validate inputs
         if (!status || (Array.isArray(visitIDs) && visitIDs.some(id => typeof id !== 'string'))) {
             const error = new Error('Invalid input: status is required and visitIDs must be strings');
             error.status = 400;
@@ -3113,7 +3317,6 @@ class TimesheetService {
         }
 
         try {
-            // Fetch timesheet
             const timesheet = await Timesheet.findByPk(timesheetID);
             if (!timesheet) {
                 const error = new Error('Timesheet not found');
@@ -3121,38 +3324,29 @@ class TimesheetService {
                 throw error;
             }
 
-            // Fetch all visits for the timesheet
             const visits = await Visit.findAll({ where: { timesheetID } });
-
-            // Determine which visits to update (only pending or rejected)
             let visitsToUpdate;
             if (visitIDs.length === 0) {
-                // If no visitIDs provided, update all pending or rejected visits
                 visitsToUpdate = visits.filter(visit =>
                     visit.status === 'pending' || visit.status === 'rejected'
                 );
             } else {
-                // If visitIDs provided, update only those that are pending or rejected
                 const visitIdSet = new Set(visitIDs);
                 visitsToUpdate = visits.filter(visit =>
                     visitIdSet.has(visit.visitID) &&
                     (visit.status === 'pending' || visit.status === 'rejected')
                 );
-                // No error if some visitIDs don’t match—just skip them
             }
 
-            // If no visits to update, return the timesheet as-is
             if (visitsToUpdate.length === 0) {
                 return timesheet;
             }
 
-            // Update the status of matching visits
             await Promise.all(visitsToUpdate.map(async (visit) => {
                 visit.status = status;
                 await visit.save();
             }));
 
-            // Check if all visits are validated and update timesheet status if so
             const updatedVisits = await Visit.findAll({ where: { timesheetID } });
             if (updatedVisits.every(visit => visit.status === 'validated')) {
                 timesheet.status = 'validated';
@@ -3444,10 +3638,12 @@ module.exports = UserService;
 ==================================================
 File contents: C:\Users\Kayto\Desktop\IT\Projects\Stage\Stage PFE\TraceFlow\Back-End\services\visitService.js
 ==================================================
-const { Visit, Agent, Reason, Checklist } = require('../models');
+const { Visit, Agent, Reason, Checklist, Timesheet, User } = require('../models');
 const { parseTLV } = require('../utils/qrParser');
 const ChecklistService = require('./checklistService');
 const ReasonService = require('./reasonService');
+const path = require('path');
+const fs = require('fs');
 
 class VisitService {
     static async createVisit(data) {
@@ -3470,14 +3666,18 @@ class VisitService {
                 location: agent.location,
                 agentID,
                 timesheetID,
-                status, 
+                status,
             });
-            const reasonIds = reasons.map(r => r.id);
-            const createdReasons = await ReasonService.getItemsByIds(reasonIds);
-            await visit.setReasons(createdReasons);
-            const checklistIds = checklists.map(c => c.id);
-            const createdChecklists = await ChecklistService.getItemsByIds(checklistIds);
-            await visit.setChecklists(createdChecklists);
+            if (reasons && reasons.length > 0) {
+                const reasonIds = reasons.map(r => r.id);
+                const createdReasons = await ReasonService.getItemsByIds(reasonIds);
+                await visit.setReasons(createdReasons);
+            }
+            if (checklists && checklists.length > 0) {
+                const checklistIds = checklists.map(c => c.id);
+                const createdChecklists = await ChecklistService.getItemsByIds(checklistIds);
+                await visit.setChecklists(createdChecklists);
+            }
             return visit.reload({ include: [Reason, Checklist] });
         } catch (error) {
             const err = new Error('Failed to create visit: ' + error.message);
@@ -3525,28 +3725,222 @@ class VisitService {
         }
     }
 
-    static async logVisit(visitID, data) {
+    static async logVisit(visitID, data, files) {
         try {
-            const { duration, checklistUpdates, photos, comment } = data;
-            const visit = await Visit.findByPk(visitID, { include: [Checklist] });
+            const { duration, checklistUpdates, comment } = data;
+            if (!files || files.length === 0) {
+                const error = new Error('At least one photo is required to log a visit');
+                error.status = 400;
+                throw error;
+            }
+
+            const visit = await Visit.findByPk(visitID, {
+                include: [{ model: Timesheet, include: [User] }],
+            });
             if (!visit) {
                 const error = new Error('Visit not found');
                 error.status = 404;
                 throw error;
             }
+            const date = visit.date;
+            const time = visit.time.replace(/:/g, '-');
+            const supervisorName = `${visit.Timesheet.User.firstname.toLowerCase()}_${visit.Timesheet.User.lastname.toLowerCase()}`;
+            const folderName = `${date}_${time}_${supervisorName}`;
+            const folderPath = path.join(__dirname, '../uploads/photos', folderName);
+            if (!fs.existsSync(folderPath)) fs.mkdirSync(folderPath, { recursive: true });
+            const photoPaths = files.map(file => `/uploads/photos/${folderName}/${file.filename}`);
+
             if (checklistUpdates && Array.isArray(checklistUpdates)) {
                 for (const update of checklistUpdates) {
                     await ChecklistService.updateChecklistStatus(visitID, update.checklistID, update.checked);
                 }
             }
-            visit.duration = duration;
-            visit.photos = photos;
-            visit.comment = comment;
+            visit.duration = duration || visit.duration;
+            visit.photos = photoPaths;
+            visit.comment = comment || visit.comment;
             visit.status = 'visited';
             await visit.save();
             return visit.reload({ include: [Checklist] });
         } catch (error) {
-            const err = new Error('Failed to log visit: ' + error.message);
+            console.error(`${new Date().toISOString()} - Log visit failed:`, error);
+            throw error;
+        }
+    }
+
+    static async updateVisit(visitID, data, files = []) {
+        try {
+            const { date, time, duration, location, status, comment, agentID, checklists, reasons, photosToRemove, supervisorID } = data;
+            const visit = await Visit.findByPk(visitID, {
+                include: [{ model: Timesheet, include: [User] }, Checklist, Reason],
+            });
+            if (!visit) {
+                const error = new Error('Visit not found');
+                error.status = 404;
+                throw error;
+            }
+
+            const oldDate = visit.date;
+            const oldTime = visit.time.replace(/:/g, '-');
+            const supervisorName = `${visit.Timesheet.User.firstname.toLowerCase()}_${visit.Timesheet.User.lastname.toLowerCase()}`;
+            const oldFolderName = `${oldDate}_${oldTime}_${supervisorName}`;
+            const oldFolderPath = path.join(__dirname, '../uploads/photos', oldFolderName);
+
+            const newDate = date || visit.date;
+            const newTime = (time || visit.time).replace(/:/g, '-'); // For folder naming
+            const newFolderName = `${newDate}_${newTime}_${supervisorName}`;
+            const newFolderPath = path.join(__dirname, '../uploads/photos', newFolderName);
+
+            // Handle photos
+            let photoPaths = visit.photos || [];
+            if (photosToRemove && Array.isArray(photosToRemove)) {
+                photoPaths = photoPaths.filter(p => !photosToRemove.includes(p));
+            }
+            if (files.length > 0) {
+                if (!fs.existsSync(newFolderPath)) fs.mkdirSync(newFolderPath, { recursive: true });
+                photoPaths = [...photoPaths, ...files.map(file => `/uploads/photos/${newFolderName}/${file.filename}`)];
+            }
+            if (oldFolderName !== newFolderName && fs.existsSync(oldFolderPath)) {
+                if (photoPaths.length > 0) {
+                    fs.renameSync(oldFolderPath, newFolderPath);
+                    photoPaths = photoPaths.map(p => p.replace(oldFolderName, newFolderName));
+                } else {
+                    fs.rmSync(oldFolderPath, { recursive: true, force: true });
+                }
+            }
+
+            // Calculate weekNumber and year from the visit's date
+            const newDateObj = new Date(newDate);
+            const newYear = newDateObj.getFullYear();
+            const newWeekNumber = this.getISOWeekNumber(newDateObj);
+            const oldTimesheet = visit.Timesheet;
+
+            // Handle supervisor change
+            let targetTimesheet = oldTimesheet;
+            if (supervisorID && supervisorID !== oldTimesheet.supervisorID) {
+                // Check if the new supervisor has a timesheet for this week/year
+                targetTimesheet = await Timesheet.findOne({
+                    where: {
+                        weekNumber: newWeekNumber,
+                        year: newYear,
+                        supervisorID: supervisorID,
+                    },
+                });
+                if (!targetTimesheet) {
+                    // Create a new timesheet for the new supervisor
+                    targetTimesheet = await Timesheet.create({
+                        weekNumber: newWeekNumber,
+                        year: newYear,
+                        supervisorID: supervisorID,
+                        status: 'pending',
+                    });
+                }
+                visit.timesheetID = targetTimesheet.timesheetID;
+            } else if (newWeekNumber !== oldTimesheet.weekNumber || newYear !== oldTimesheet.year) {
+                // If no supervisor change but date changed, check or create timesheet with old supervisor
+                targetTimesheet = await Timesheet.findOne({
+                    where: {
+                        weekNumber: newWeekNumber,
+                        year: newYear,
+                        supervisorID: oldTimesheet.supervisorID,
+                    },
+                });
+                if (!targetTimesheet) {
+                    targetTimesheet = await Timesheet.create({
+                        weekNumber: newWeekNumber,
+                        year: newYear,
+                        supervisorID: oldTimesheet.supervisorID,
+                        status: 'pending',
+                    });
+                }
+                visit.timesheetID = targetTimesheet.timesheetID;
+            }
+
+            // Update agent if changed
+            if (agentID && agentID !== visit.agentID) {
+                const agent = await Agent.findByPk(agentID);
+                if (!agent) {
+                    const error = new Error('Agent not found');
+                    error.status = 404;
+                    throw error;
+                }
+                visit.agentID = agentID;
+                visit.location = agent.location;
+            }
+
+            // Parse checklists and reasons
+            let parsedChecklists = checklists;
+            if (typeof checklists === 'string') parsedChecklists = JSON.parse(checklists);
+            let parsedReasons = reasons;
+            if (typeof reasons === 'string') parsedReasons = JSON.parse(reasons);
+
+            // Update checklists
+            if (parsedChecklists && Array.isArray(parsedChecklists)) {
+                const checklistIds = parsedChecklists.map(c => c.id);
+                const updatedChecklists = await ChecklistService.getItemsByIds(checklistIds);
+                await visit.setChecklists(updatedChecklists);
+                for (const checklist of parsedChecklists) {
+                    if (checklist.checked !== undefined) {
+                        await ChecklistService.updateChecklistStatus(visitID, checklist.id, checklist.checked);
+                    }
+                }
+            }
+
+            // Update reasons
+            if (parsedReasons && Array.isArray(parsedReasons)) {
+                const reasonIds = parsedReasons.map(r => r.id);
+                const updatedReasons = await ReasonService.getItemsByIds(reasonIds);
+                await visit.setReasons(updatedReasons);
+            }
+
+            // Update visit fields
+            visit.date = newDate;
+            visit.time = time || visit.time;
+            visit.duration = duration !== undefined ? duration : visit.duration;
+            visit.location = location || visit.location;
+            visit.status = status || visit.status;
+            visit.photos = photoPaths;
+            visit.comment = comment !== undefined ? comment : visit.comment;
+
+            await visit.save();
+            return visit.reload({ include: [Checklist, Reason] });
+        } catch (error) {
+            const err = new Error('Failed to update visit: ' + error.message);
+            err.status = error.status || 500;
+            throw err;
+        }
+    }
+
+    static getISOWeekNumber(date) {
+        const tempDate = new Date(Date.UTC(date.getUTCFullYear(), date.getUTCMonth(), date.getUTCDate()));
+        tempDate.setUTCDate(tempDate.getUTCDate() + 4 - (tempDate.getUTCDay() || 7));
+        const yearStart = new Date(Date.UTC(tempDate.getUTCFullYear(), 0, 1));
+        const weekNumber = Math.ceil(((tempDate - yearStart) / 86400000 + 1) / 7);
+        return weekNumber;
+    }
+
+    static async deleteVisit(visitID) {
+        try {
+            const visit = await Visit.findByPk(visitID, {
+                include: [{ model: Timesheet, include: [User] }],
+            });
+            if (!visit) {
+                const error = new Error('Visit not found');
+                error.status = 404;
+                throw error;
+            }
+            const date = visit.date;
+            const time = visit.time.replace(/:/g, '-');
+            const supervisorName = `${visit.Timesheet.User.firstname.toLowerCase()}_${visit.Timesheet.User.lastname.toLowerCase()}`;
+            const folderName = `${date}_${time}_${supervisorName}`;
+            const folderPath = path.join(__dirname, '../uploads/photos', folderName);
+
+            if (fs.existsSync(folderPath)) {
+                fs.rmSync(folderPath, { recursive: true, force: true });
+            }
+            await visit.destroy();
+            return { message: 'Visit and associated photos deleted successfully' };
+        } catch (error) {
+            const err = new Error('Failed to delete visit: ' + error.message);
             err.status = error.status || 500;
             throw err;
         }
@@ -3741,6 +4135,7 @@ File contents: C:\Users\Kayto\Desktop\IT\Projects\Stage\Stage PFE\TraceFlow\Back
 ==================================================
 const cors = require('cors');
 const express = require('express');
+const path = require('path');
 const {
     initializeDatabase,
     initializeSMTP,
@@ -3774,6 +4169,7 @@ const app = express();
 const allowedOrigins = [
     process.env.FRONTEND_URL || 'http://localhost:5173',
     'http://localhost:3000',
+    'http://192.168.1.11:5173',
 ];
 
 const corsOptions = {
@@ -3790,6 +4186,7 @@ const corsOptions = {
 };
 
 app.use(cors(corsOptions));
+app.use('/api/uploads', express.static(path.join(__dirname, 'uploads')));
 app.use(express.json());
 app.use((req, res, next) => {
     if (req.user) {

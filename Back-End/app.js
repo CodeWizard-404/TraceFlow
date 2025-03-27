@@ -1,5 +1,6 @@
 const cors = require('cors');
 const express = require('express');
+const path = require('path');
 const {
     initializeDatabase,
     initializeSMTP,
@@ -50,6 +51,7 @@ const corsOptions = {
 };
 
 app.use(cors(corsOptions));
+app.use('/api/uploads', express.static(path.join(__dirname, 'uploads')));
 app.use(express.json());
 app.use((req, res, next) => {
     if (req.user) {

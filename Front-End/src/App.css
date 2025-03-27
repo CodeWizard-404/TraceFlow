@@ -1,3 +1,8 @@
+/* @tailwind base;
+@tailwind components;
+@tailwind utilities; */
+
+
 /* src/App.css */
 .app-container {
   display: flex;
@@ -467,4 +472,8 @@ body.dark .form-control {
   background: #2d3748;
   color: #e2e8f0;
   border-color: #4a5568;
+}
+
+body.dark .form-control::placeholder {
+  color: #d1d3d739 !important;
 }

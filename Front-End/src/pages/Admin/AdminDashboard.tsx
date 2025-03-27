@@ -2119,6 +2119,7 @@ const AdminDashboard: React.FC = () => {
                     {view === "add-user" && userPermissions.canCreateUsers && (
                         <div className="form-card form-card-0">
                             <div className="form-section">
+
                                 <h3>Personal Information</h3>
                                 <div className="form-row">
                                     <div className="form-group">
@@ -2150,6 +2151,7 @@ const AdminDashboard: React.FC = () => {
                                 </div>
                             </div>
                             <div className="form-section">
+                                <hr />
                                 <h3>Contact Information</h3>
                                 <div className="form-row">
                                     <div className="form-group">
@@ -2182,6 +2184,7 @@ const AdminDashboard: React.FC = () => {
                                 </div>
                             </div>
                             <div className="form-section">
+                                <hr />
                                 <h3>Credentials</h3>
                                 <div className="form-row">
                                     <div className="form-group">
@@ -2240,6 +2243,7 @@ const AdminDashboard: React.FC = () => {
                             </div>
                             {userPermissions.canAssignRoles && (
                                 <div className="form-section">
+                                    <hr />
                                     <h3>Role Assignment</h3>
                                     <div className="form-group">
                                         <label>Assign Roles *</label>

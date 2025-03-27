@@ -73,7 +73,7 @@ export type UserPermissionOverrideResponse = UserPermissionOverride;
 
 
 // Timesheet API Responses
-export type CreateTimesheetResponse = { message: string; timesheet: Timesheet; };
+export type CreateTimesheetResponse = Timesheet;
 export type ListTimesheetsResponse = Timesheet[];
 export type TimesheetByIdResponse = Timesheet;
 export type ValidateTimesheetResponse = Timesheet;
@@ -85,7 +85,8 @@ export type DeleteTimesheetResponse = { message: string };
 export interface VerifyQrResponse { valid: boolean; message: string; }
 export type LogVisitResponse = Visit;
 export type VisitByIdResponse = Visit;
-
+export type UpdateVisitResponse = Visit;
+export type DeleteVisitResponse = { message: string };
 
 // Reason API Responses
 export type CreateReasonResponse = Reason;

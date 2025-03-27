@@ -5,14 +5,12 @@ class TimesheetService {
     static async createTimesheet(data) {
         const { weekNumber, year, supervisorID, visits, status = 'pending' } = data;
 
-        // Validate required fields
         if (!weekNumber || !year || !supervisorID || !Array.isArray(visits)) {
             const error = new Error('Invalid input data');
             error.status = 400;
             throw error;
         }
 
-        // Validate each visit structure
         for (const visit of visits) {
             if (!visit.date || !visit.time || !visit.agentID) {
                 const error = new Error('Invalid visit data structure');
@@ -72,27 +70,44 @@ class TimesheetService {
         }
     }
 
-    static async updateTimesheet(timesheetID, updatedData) {
-        const { weekNumber, year, status, supervisorID } = updatedData;
-
+    static async updateTimesheet(timesheetID, data, filesMap = {}) {
         try {
-            const timesheet = await Timesheet.findByPk(timesheetID);
+            const { weekNumber, year, status, visits } = data;
+            const timesheet = await Timesheet.findByPk(timesheetID, { include: [Visit] });
             if (!timesheet) {
                 const error = new Error('Timesheet not found');
                 error.status = 404;
                 throw error;
             }
-
-            // Only update fields if provided
-            if (weekNumber !== undefined) timesheet.weekNumber = weekNumber;
-            if (year !== undefined) timesheet.year = year;
-            if (status !== undefined) timesheet.status = status;
-            if (supervisorID !== undefined) timesheet.supervisorID = supervisorID;
-
+            timesheet.weekNumber = weekNumber || timesheet.weekNumber;
+            timesheet.year = year || timesheet.year;
+            timesheet.status = status || timesheet.status;
             await timesheet.save();
-            return timesheet.reload();
+
+            if (visits && Array.isArray(visits)) {
+                for (const visitData of visits) {
+                    if (visitData.visitID) {
+                        const files = filesMap[visitData.visitID] || [];
+                        await VisitService.updateVisit(visitData.visitID, visitData, files);
+                    } else {
+                        await VisitService.createVisit({
+                            ...visitData,
+                            timesheetID,
+                            supervisorID: timesheet.supervisorID,
+                        });
+                    }
+                }
+            }
+            return timesheet.reload({
+                include: [
+                    {
+                        model: Visit,
+                        include: [Checklist, Reason],
+                    },
+                ],
+            });
         } catch (error) {
-            const err = new Error(`Failed to update timesheet: ${error.message}`);
+            const err = new Error('Failed to update timesheet: ' + error.message);
             err.status = error.status || 500;
             throw err;
         }
@@ -100,32 +115,23 @@ class TimesheetService {
 
     static async deleteTimesheet(timesheetID) {
         try {
-            const timesheet = await Timesheet.findByPk(timesheetID);
+            const timesheet = await Timesheet.findByPk(timesheetID, { include: [Visit] });
             if (!timesheet) {
                 const error = new Error('Timesheet not found');
                 error.status = 404;
                 throw error;
             }
-
-            // Check if there are associated visits
-            const visitCount = await Visit.count({ where: { timesheetID } });
-            if (visitCount > 0) {
-                const error = new Error('Cannot delete timesheet with associated visits');
-                error.status = 400;
-                throw error;
-            }
-
+            await Promise.all(timesheet.Visits.map(visit => VisitService.deleteVisit(visit.visitID)));
             await timesheet.destroy();
-            return { message: 'Timesheet deleted successfully' };
+            return { message: 'Timesheet and associated visits deleted successfully' };
         } catch (error) {
-            const err = new Error(`Failed to delete timesheet: ${error.message}`);
+            const err = new Error('Failed to delete timesheet: ' + error.message);
             err.status = error.status || 500;
             throw err;
         }
     }
 
     static async validateTimesheet(timesheetID, visitIDs = [], status) {
-        // Validate inputs
         if (!status || (Array.isArray(visitIDs) && visitIDs.some(id => typeof id !== 'string'))) {
             const error = new Error('Invalid input: status is required and visitIDs must be strings');
             error.status = 400;
@@ -133,7 +139,6 @@ class TimesheetService {
         }
 
         try {
-            // Fetch timesheet
             const timesheet = await Timesheet.findByPk(timesheetID);
             if (!timesheet) {
                 const error = new Error('Timesheet not found');
@@ -141,38 +146,29 @@ class TimesheetService {
                 throw error;
             }
 
-            // Fetch all visits for the timesheet
             const visits = await Visit.findAll({ where: { timesheetID } });
-
-            // Determine which visits to update (only pending or rejected)
             let visitsToUpdate;
             if (visitIDs.length === 0) {
-                // If no visitIDs provided, update all pending or rejected visits
                 visitsToUpdate = visits.filter(visit =>
                     visit.status === 'pending' || visit.status === 'rejected'
                 );
             } else {
-                // If visitIDs provided, update only those that are pending or rejected
                 const visitIdSet = new Set(visitIDs);
                 visitsToUpdate = visits.filter(visit =>
                     visitIdSet.has(visit.visitID) &&
                     (visit.status === 'pending' || visit.status === 'rejected')
                 );
-                // No error if some visitIDs don’t match—just skip them
             }
 
-            // If no visits to update, return the timesheet as-is
             if (visitsToUpdate.length === 0) {
                 return timesheet;
             }
 
-            // Update the status of matching visits
             await Promise.all(visitsToUpdate.map(async (visit) => {
                 visit.status = status;
                 await visit.save();
             }));
 
-            // Check if all visits are validated and update timesheet status if so
             const updatedVisits = await Visit.findAll({ where: { timesheetID } });
             if (updatedVisits.every(visit => visit.status === 'validated')) {
                 timesheet.status = 'validated';
@@ -255,68 +251,6 @@ class TimesheetService {
         } catch (error) {
             const err = new Error('Failed to get timesheets by supervisorID: ' + error.message);
             err.status = 500;
-            throw err;
-        }
-    }
-
-
-    static async updateTimesheet(timesheetID, data, filesMap = {}) {
-        try {
-            const { weekNumber, year, status, visits } = data;
-            const timesheet = await Timesheet.findByPk(timesheetID, { include: [Visit] });
-            if (!timesheet) {
-                const error = new Error('Timesheet not found');
-                error.status = 404;
-                throw error;
-            }
-            timesheet.weekNumber = weekNumber || timesheet.weekNumber;
-            timesheet.year = year || timesheet.year;
-            timesheet.status = status || timesheet.status;
-            await timesheet.save();
-
-            if (visits && Array.isArray(visits)) {
-                for (const visitData of visits) {
-                    if (visitData.visitID) {
-                        const files = filesMap[visitData.visitID] || []; // Files specific to this visit
-                        await VisitService.updateVisit(visitData.visitID, visitData, files);
-                    } else {
-                        await VisitService.createVisit({
-                            ...visitData,
-                            timesheetID,
-                            supervisorID: timesheet.supervisorID,
-                        });
-                    }
-                }
-            }
-            return timesheet.reload({
-                include: [
-                    {
-                        model: Visit,
-                        include: [Checklist, Reason],
-                    },
-                ],
-            });
-        } catch (error) {
-            const err = new Error('Failed to update timesheet: ' + error.message);
-            err.status = error.status || 500;
-            throw err;
-        }
-    }
-
-    static async deleteTimesheet(timesheetID) {
-        try {
-            const timesheet = await Timesheet.findByPk(timesheetID, { include: [Visit] });
-            if (!timesheet) {
-                const error = new Error('Timesheet not found');
-                error.status = 404;
-                throw error;
-            }
-            await Promise.all(timesheet.Visits.map(visit => VisitService.deleteVisit(visit.visitID)));
-            await timesheet.destroy();
-            return { message: 'Timesheet and associated visits deleted successfully' };
-        } catch (error) {
-            const err = new Error('Failed to delete timesheet: ' + error.message);
-            err.status = error.status || 500;
             throw err;
         }
     }

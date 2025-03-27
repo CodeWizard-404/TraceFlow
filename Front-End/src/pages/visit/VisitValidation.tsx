@@ -28,6 +28,7 @@ const VisitValidation: React.FC = () => {
     const [isSubmitting, setIsSubmitting] = useState<boolean>(false);
     const [isCameraActive, setIsCameraActive] = useState<boolean>(false);
     const [selectedPhoto, setSelectedPhoto] = useState<string | null>(null);
+    const [flashEffect, setFlashEffect] = useState<boolean>(false);
 
     const videoRef = useRef<HTMLVideoElement>(null);
     const canvasRef = useRef<HTMLCanvasElement>(null);
@@ -86,9 +87,17 @@ const VisitValidation: React.FC = () => {
                 console.error("Video ref is null");
                 setError("Video element not found.");
             }
-        } catch (err) {
-            setError("Failed to access camera. Please ensure permissions are granted.");
-            console.error("Camera access error:", err);
+        } catch (err: unknown) {
+            if (err instanceof Error) {
+                const errorMessage = err.name === "NotReadableError"
+                    ? "Camera is in use by another app or unavailable. Please close other apps or check your device."
+                    : "Failed to access camera. Please ensure permissions are granted.";
+                setError(errorMessage);
+                console.error("Camera access error:", err.name, err.message);
+            } else {
+                setError("An unknown error occurred.");
+                console.error("Unknown error:", err);
+            }
         }
     };
 
@@ -131,6 +140,8 @@ const VisitValidation: React.FC = () => {
                     if (blob) {
                         const file = new File([blob], `photo-${Date.now()}.jpg`, { type: "image/jpeg" });
                         setPhotos((prev) => [...prev, file]);
+                        setFlashEffect(true);
+                        setTimeout(() => setFlashEffect(false), 300);
                     }
                 }, "image/jpeg");
             }
@@ -194,6 +205,7 @@ const VisitValidation: React.FC = () => {
 
     const completedItems = useMemo(() => checklist.filter((item) => item.checked).length, [checklist]);
     const totalItems = checklist.length;
+    const lastPhotoUrl = photos.length > 0 ? URL.createObjectURL(photos[photos.length - 1]) : null;
 
     if (!permissionsLoaded) return <div className="visit-validation-container">Loading permissions...</div>;
     if (loading) return <div className="loading">Loading...</div>;
@@ -285,19 +297,30 @@ const VisitValidation: React.FC = () => {
                             <FaCamera /> Start Camera
                         </button>
                         <div className={`camera-container ${isCameraActive ? 'active' : ''}`}>
-                            <video
-                                ref={videoRef}
-                                className="camera-preview"
-                                muted
-                                playsInline
-                            />
+                            <div className="camera-frame">
+                                <video
+                                    ref={videoRef}
+                                    className="camera-preview"
+                                    muted
+                                    playsInline
+                                />
+                                <div className={`flash-overlay ${flashEffect ? 'active' : ''}`}></div>
+                                <div className="photo-counter">
+                                    <FaCamera /> {photos.length}
+                                </div>
+                                {lastPhotoUrl && (
+                                    <div className="thumbnail-preview">
+                                        <img src={lastPhotoUrl} alt="Last captured" />
+                                    </div>
+                                )}
+                            </div>
                             {isCameraActive && (
                                 <>
                                     <button className="stop-camera-btn" onClick={stopCamera}>
                                         <FaTimes />
                                     </button>
                                     <button className="capture-btn" onClick={capturePhoto}>
-                                        Capture Photo
+                                        <FaCamera />
                                     </button>
                                 </>
                             )}

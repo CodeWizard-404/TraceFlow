@@ -541,6 +541,7 @@ const TimesheetForm: React.FC = () => {
           </div>
 
           <div className="form-actions">
+            <button type="button" className="submit-btn" onClick={() => navigate(-1)}>Back</button>
             <button
               type="submit"
               className="submit-btn"

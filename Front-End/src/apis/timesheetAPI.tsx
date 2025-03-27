@@ -1,6 +1,5 @@
 import api from "./axiosConfig";
-import { CreateTimesheetResponse, ListTimesheetsResponse, TimesheetByIdResponse, ValidateTimesheetResponse, TimesheetsBySupervisorResponse } from ".";
-
+import { CreateTimesheetResponse, ListTimesheetsResponse, TimesheetByIdResponse, ValidateTimesheetResponse, TimesheetsBySupervisorResponse, DeleteTimesheetResponse } from ".";
 
 export const createTimesheet = async (
   data: {
@@ -28,7 +27,6 @@ export const createTimesheet = async (
     throw error;
   }
 };
-
 
 export const updateTimesheet = async (
   id: string,
@@ -64,7 +62,6 @@ export const updateTimesheet = async (
       });
       formData.append('visits', JSON.stringify(visitsData));
 
-      // Append photos with visit-specific field names
       data.visits.forEach((visit) => {
         if (visit.photos && visit.visitID) {
           visit.photos.forEach((photo) => {
@@ -87,9 +84,9 @@ export const updateTimesheet = async (
   }
 };
 
-export const deleteTimesheet = async (id: string, token: string): Promise<{ message: string }> => {
+export const deleteTimesheet = async (id: string, token: string): Promise<DeleteTimesheetResponse> => {
   try {
-    const response = await api.delete<{ message: string }>(`/timesheets/${id}`, {
+    const response = await api.delete<DeleteTimesheetResponse>(`/timesheets/${id}`, {
       headers: { Authorization: `Bearer ${token}` },
     });
     return response.data;

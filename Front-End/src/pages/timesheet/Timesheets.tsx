@@ -241,10 +241,17 @@ const Timesheets: React.FC = () => {
 
   const generateWeekData = () => {
     const matchingTimesheets = filteredTimesheets.filter(ts => ts.weekNumber === currentWeek);
+    const weekDays = getWeekDays(currentYear, currentWeek);
     return {
       weekNumber: currentWeek,
-      days: getWeekDays(currentYear, currentWeek),
-      visits: matchingTimesheets.flatMap(ts => (ts.Visits || []).map(visit => ({ ...visit, supervisorID: ts.supervisorID }))),
+      days: weekDays,
+      visits: matchingTimesheets.flatMap(ts =>
+        (ts.Visits || []).map(visit => ({
+          ...visit,
+          supervisorID: ts.supervisorID,
+          date: new Date(new Date(visit.date).getTime() - (24 * 60 * 60 * 1000)).toISOString()
+        }))
+      ),
       status: matchingTimesheets[0]?.status || "Not Scheduled",
       supervisorID: matchingTimesheets[0]?.supervisorID,
       supervisorCount: new Set(matchingTimesheets.map(ts => ts.supervisorID)).size,
