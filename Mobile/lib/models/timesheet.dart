@@ -2,30 +2,30 @@ import 'package:TraceFlow/models/visit.dart';
 
 class Timesheet {
   final String? timesheetID;
-  final int? weekNumber;
-  final int? year;
-  final String? status;
-  final String? supervisorID;
+  final int weekNumber;       // Required
+  final int year;             // Required
+  final String status;        // Required
+  final String supervisorID;  // Required
   final List<Visit>? visits;
 
   Timesheet({
     this.timesheetID,
-    this.weekNumber,
-    this.year,
-    this.status,
-    this.supervisorID,
+    required this.weekNumber,
+    required this.year,
+    required this.status,
+    required this.supervisorID,
     this.visits,
   });
 
   factory Timesheet.fromJson(Map<String, dynamic> json) {
     return Timesheet(
-      timesheetID: json['timesheetID'],
-      weekNumber: json['weekNumber'],
-      year: json['year'],
-      status: json['status'],
-      supervisorID: json['supervisorID'],
-      visits: (json['Visits'] as List?)
-          ?.map((e) => Visit.fromJson(e))
+      timesheetID: json['timesheetID'] as String?,
+      weekNumber: json['weekNumber'] as int,
+      year: json['year'] as int,
+      status: json['status'] as String,
+      supervisorID: json['supervisorID'] as String,
+      visits: (json['Visits'] as List<dynamic>?)
+          ?.map((e) => Visit.fromJson(e as Map<String, dynamic>))
           .toList(),
     );
   }

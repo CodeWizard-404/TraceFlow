@@ -1,4 +1,3 @@
-// lib/services/auth_service.dart
 import 'dart:convert';
 import 'package:http/http.dart' as http;
 import '../models/user.dart';
@@ -12,22 +11,22 @@ class AuthService {
       body: json.encode({'identifier': identifier, 'password': password}),
     );
     if (response.statusCode == 200) {
-      return json.decode(response.body); // { token, user }
+      return json.decode(response.body);
     } else {
-      throw Exception('Login failed: ${response.body}');
+      throw Exception('Login failed: ${json.decode(response.body)['error']}');
     }
   }
 
-  static Future<String> verify2FA(String userID, String otpCode) async {
+  static Future<Map<String, dynamic>> verify2FA(String userID, String otpCode) async {
     final response = await http.post(
       Uri.parse('$baseUrl/auth/verify-2fa'),
       headers: {'Content-Type': 'application/json'},
       body: json.encode({'userID': userID, 'otpCode': otpCode}),
     );
     if (response.statusCode == 200) {
-      return json.decode(response.body)['token']; // Authenticated token
+      return json.decode(response.body);
     } else {
-      throw Exception('2FA verification failed: ${response.body}');
+      throw Exception('2FA verification failed: ${json.decode(response.body)['error']}');
     }
   }
 
@@ -38,7 +37,7 @@ class AuthService {
       body: json.encode({'userID': userID}),
     );
     if (response.statusCode != 200) {
-      throw Exception('Failed to resend 2FA: ${response.body}');
+      throw Exception('Failed to resend 2FA: ${json.decode(response.body)['error']}');
     }
   }
 }

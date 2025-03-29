@@ -10,7 +10,6 @@ import '../../widgets/Timesheet/week_view.dart';
 import '../../widgets/Glass_Effect/GlassContainer.dart';
 import '../Error.dart';
 import '../Visit/create_visit.dart';
-// import 'timesheet_list_screen.dart'; // Uncomment when implemented
 
 class HomeScreen extends StatefulWidget {
   const HomeScreen({super.key});
@@ -19,8 +18,7 @@ class HomeScreen extends StatefulWidget {
   HomeScreenState createState() => HomeScreenState();
 }
 
-class HomeScreenState extends State<HomeScreen>
-    with SingleTickerProviderStateMixin {
+class HomeScreenState extends State<HomeScreen> with SingleTickerProviderStateMixin {
   DateTime _currentDate = DateTime.now();
   late PageController _pageController;
   late AnimationController _animationController;
@@ -46,36 +44,21 @@ class HomeScreenState extends State<HomeScreen>
 
   void _fetchTimesheets() {
     final authProvider = Provider.of<AuthProvider>(context, listen: false);
-    final timesheetProvider = Provider.of<TimesheetProvider>(
-      context,
-      listen: false,
-    );
+    final timesheetProvider = Provider.of<TimesheetProvider>(context, listen: false);
     if (authProvider.user?.userID != null && authProvider.token != null) {
       timesheetProvider
-          .fetchTimesheetsBySupervisor(
-            authProvider.user!.userID!,
-            authProvider.token!,
-          )
-          .then((_) {
-            // Set the current timesheet to the latest one (optional)
-            if (timesheetProvider.timesheets.isNotEmpty) {
-              timesheetProvider.setCurrentTimesheet(
-                timesheetProvider.timesheets.last,
-              );
-            }
-          })
+          .fetchTimesheetsBySupervisor(authProvider.user!.userID!, authProvider.token!)
           .catchError((error) {
-            Navigator.push(
-              context,
-              MaterialPageRoute(
-                builder:
-                    (_) => ErrorPage(
-                      errorMessage: 'Failed to load timesheets: $error',
-                      onRetry: _fetchTimesheets,
-                    ),
-              ),
-            );
-          });
+        Navigator.push(
+          context,
+          MaterialPageRoute(
+            builder: (_) => ErrorPage(
+              errorMessage: 'Failed to load timesheets: $error',
+              onRetry: _fetchTimesheets,
+            ),
+          ),
+        );
+      });
     }
   }
 
@@ -93,15 +76,9 @@ class HomeScreenState extends State<HomeScreen>
   void _navigateToDate(int offset) {
     setState(() {
       if (_isWeekView) {
-        _currentDate = _getStartOfWeek(
-          DateTime(_currentDate.year, 1, 1).add(Duration(days: offset * 7)),
-        );
+        _currentDate = _getStartOfWeek(DateTime(_currentDate.year, 1, 1).add(Duration(days: offset * 7)));
       } else {
-        _currentDate = DateTime(
-          _currentDate.year,
-          1,
-          1,
-        ).add(Duration(days: offset));
+        _currentDate = DateTime(_currentDate.year, 1, 1).add(Duration(days: offset));
       }
     });
   }
@@ -111,8 +88,7 @@ class HomeScreenState extends State<HomeScreen>
     _animationController.forward(from: 0);
     setState(() {
       _isWeekView = !_isWeekView;
-      _currentDate =
-          _isWeekView ? _getStartOfWeek(DateTime.now()) : DateTime.now();
+      _currentDate = _isWeekView ? _getStartOfWeek(DateTime.now()) : DateTime.now();
       _pageController.animateToPage(
         _getOffset(_currentDate),
         duration: const Duration(milliseconds: 600),
@@ -125,8 +101,7 @@ class HomeScreenState extends State<HomeScreen>
     if (_animationController.isAnimating) return;
     _animationController.forward(from: 0);
     setState(() {
-      _currentDate =
-          _isWeekView ? _getStartOfWeek(DateTime.now()) : DateTime.now();
+      _currentDate = _isWeekView ? _getStartOfWeek(DateTime.now()) : DateTime.now();
       _pageController.animateToPage(
         _getOffset(_currentDate),
         duration: const Duration(milliseconds: 600),
@@ -151,81 +126,9 @@ class HomeScreenState extends State<HomeScreen>
     );
   }
 
-  void _editTimesheet() {
-    // Placeholder for edit screen navigation
-    ScaffoldMessenger.of(context).showSnackBar(
-      const SnackBar(content: Text('Edit timesheet feature coming soon!')),
-    );
-    // Uncomment when edit_timesheet_screen.dart is implemented
-    // Navigator.push(
-    //   context,
-    //   MaterialPageRoute(builder: (_) => EditTimesheetScreen()),
-    // );
-  }
-
-  void _deleteTimesheet() {
-    final authProvider = Provider.of<AuthProvider>(context, listen: false);
-    final timesheetProvider = Provider.of<TimesheetProvider>(
-      context,
-      listen: false,
-    );
-    if (timesheetProvider.currentTimesheet?.timesheetID != null &&
-        authProvider.token != null) {
-      showDialog(
-        context: context,
-        builder:
-            (context) => AlertDialog(
-              title: const Text('Confirm Deletion'),
-              content: const Text(
-                'Are you sure you want to delete this timesheet?',
-              ),
-              actions: [
-                TextButton(
-                  onPressed: () => Navigator.pop(context),
-                  child: const Text('Cancel'),
-                ),
-                TextButton(
-                  onPressed: () async {
-                    try {
-                      await timesheetProvider.deleteTimesheet(
-                        timesheetProvider.currentTimesheet!.timesheetID!,
-                        authProvider.token!,
-                      );
-                      Navigator.pop(context);
-                      ScaffoldMessenger.of(context).showSnackBar(
-                        const SnackBar(
-                          content: Text('Timesheet deleted successfully'),
-                        ),
-                      );
-                    } catch (e) {
-                      Navigator.pop(context);
-                      Navigator.push(
-                        context,
-                        MaterialPageRoute(
-                          builder:
-                              (_) => ErrorPage(
-                                errorMessage: 'Failed to delete timesheet: $e',
-                                onRetry: _deleteTimesheet,
-                              ),
-                        ),
-                      );
-                    }
-                  },
-                  child: const Text(
-                    'Delete',
-                    style: TextStyle(color: Colors.red),
-                  ),
-                ),
-              ],
-            ),
-      );
-    }
-  }
-
   @override
   Widget build(BuildContext context) {
     final themeProvider = Provider.of<ThemeProvider>(context);
-    final timesheetProvider = Provider.of<TimesheetProvider>(context);
     return Scaffold(
       backgroundColor: Theme.of(context).scaffoldBackgroundColor,
       body: CustomScrollView(
@@ -247,9 +150,7 @@ class HomeScreenState extends State<HomeScreen>
                   ),
                   boxShadow: [
                     BoxShadow(
-                      color: Theme.of(
-                        context,
-                      ).colorScheme.onSurface.withOpacity(0.2),
+                      color: Theme.of(context).colorScheme.onSurface.withOpacity(0.2),
                       blurRadius: 20,
                       offset: const Offset(0, 4),
                     ),
@@ -270,8 +171,7 @@ class HomeScreenState extends State<HomeScreen>
                           children: [
                             Text(
                               "TraceFlow",
-                              style:
-                                  Theme.of(context).appBarTheme.titleTextStyle,
+                              style: Theme.of(context).appBarTheme.titleTextStyle,
                             ),
                             const SizedBox(width: 8),
                           ],
@@ -286,10 +186,7 @@ class HomeScreenState extends State<HomeScreen>
                             ),
                             const SizedBox(width: 8),
                             _buildAnimatedIconButton(
-                              icon:
-                                  _isWeekView
-                                      ? Icons.view_week
-                                      : Icons.view_day,
+                              icon: _isWeekView ? Icons.view_week : Icons.view_day,
                               onPressed: _toggleView,
                             ),
                             const SizedBox(width: 8),
@@ -299,43 +196,22 @@ class HomeScreenState extends State<HomeScreen>
                             ),
                             const SizedBox(width: 8),
                             _buildAnimatedIconButton(
-                              icon:
-                                  themeProvider.themeMode == ThemeMode.system
-                                      ? Icons.brightness_auto
-                                      : themeProvider.isDarkMode
-                                      ? Icons.light_mode
-                                      : Icons.dark_mode,
+                              icon: themeProvider.themeMode == ThemeMode.system
+                                  ? Icons.brightness_auto
+                                  : themeProvider.isDarkMode
+                                  ? Icons.light_mode
+                                  : Icons.dark_mode,
                               onPressed: () {
-                                if (themeProvider.themeMode ==
-                                    ThemeMode.system) {
+                                if (themeProvider.themeMode == ThemeMode.system) {
                                   themeProvider.setTheme(ThemeMode.light);
                                   _showThemeNotification("Light");
-                                } else if (themeProvider.themeMode ==
-                                    ThemeMode.light) {
+                                } else if (themeProvider.themeMode == ThemeMode.light) {
                                   themeProvider.setTheme(ThemeMode.dark);
                                   _showThemeNotification("Dark");
                                 } else {
                                   themeProvider.setTheme(ThemeMode.system);
                                   _showThemeNotification("System");
                                 }
-                              },
-                            ),
-                            const SizedBox(width: 8),
-                            _buildAnimatedIconButton(
-                              icon: Icons.list,
-                              onPressed: () {
-                                // Uncomment when timesheet_list_screen.dart is implemented
-                                // Navigator.push(
-                                //   context,
-                                //   MaterialPageRoute(builder: (_) => TimesheetListScreen()),
-                                // );
-                                ScaffoldMessenger.of(context).showSnackBar(
-                                  const SnackBar(
-                                    content: Text(
-                                      'Timesheet list coming soon!',
-                                    ),
-                                  ),
-                                );
                               },
                             ),
                           ],
@@ -350,98 +226,70 @@ class HomeScreenState extends State<HomeScreen>
           SliverToBoxAdapter(
             child: Padding(
               padding: const EdgeInsets.all(16),
-              child: Column(
-                children: [
-                  ScaleTransition(
-                    scale: Tween(begin: 0.95, end: 1.0).animate(
-                      CurvedAnimation(
-                        parent: _animationController,
-                        curve: Curves.easeOutCubic,
+              child: ScaleTransition(
+                scale: Tween(begin: 0.95, end: 1.0).animate(
+                  CurvedAnimation(parent: _animationController, curve: Curves.easeOutCubic),
+                ),
+                child: GlassContainer(
+                  child: Row(
+                    mainAxisAlignment: MainAxisAlignment.spaceBetween,
+                    children: [
+                      _buildNavigationButton(Icons.arrow_back_ios, () {
+                        _pageController.previousPage(
+                          duration: const Duration(milliseconds: 600),
+                          curve: Curves.easeInOutCubic,
+                        );
+                      }),
+                      AnimatedSwitcher(
+                        duration: const Duration(milliseconds: 400),
+                        transitionBuilder: (child, animation) => FadeTransition(
+                          opacity: animation,
+                          child: ScaleTransition(scale: animation, child: child),
+                        ),
+                        child: Text(
+                          _isWeekView
+                              ? 'Week ${_getWeekNumber(_currentDate)}'
+                              : '${_currentDate.day} ${DateFormat('MMMM').format(_currentDate)}',
+                          key: ValueKey(_isWeekView),
+                          style: Theme.of(context).textTheme.headlineSmall,
+                        ),
                       ),
-                    ),
-                    child: GlassContainer(
-                      child: Row(
-                        mainAxisAlignment: MainAxisAlignment.spaceBetween,
-                        children: [
-                          _buildNavigationButton(Icons.arrow_back_ios, () {
-                            _pageController.previousPage(
-                              duration: const Duration(milliseconds: 600),
-                              curve: Curves.easeInOutCubic,
-                            );
-                          }),
-                          AnimatedSwitcher(
-                            duration: const Duration(milliseconds: 400),
-                            transitionBuilder:
-                                (child, animation) => FadeTransition(
-                                  opacity: animation,
-                                  child: ScaleTransition(
-                                    scale: animation,
-                                    child: child,
-                                  ),
-                                ),
-                            child: Text(
-                              _isWeekView
-                                  ? 'Week ${_getWeekNumber(_currentDate)}'
-                                  : '${_currentDate.day} ${DateFormat('MMMM').format(_currentDate)}',
-                              key: ValueKey(_isWeekView),
-                              style: Theme.of(context).textTheme.headlineSmall,
-                            ),
-                          ),
-                          _buildNavigationButton(Icons.arrow_forward_ios, () {
-                            _pageController.nextPage(
-                              duration: const Duration(milliseconds: 600),
-                              curve: Curves.easeInOutCubic,
-                            );
-                          }),
-                        ],
-                      ),
-                    ),
+                      _buildNavigationButton(Icons.arrow_forward_ios, () {
+                        _pageController.nextPage(
+                          duration: const Duration(milliseconds: 600),
+                          curve: Curves.easeInOutCubic,
+                        );
+                      }),
+                    ],
                   ),
-                  if (timesheetProvider.currentTimesheet != null) ...[
-                    const SizedBox(height: 16),
-                    Row(
-                      mainAxisAlignment: MainAxisAlignment.center,
-                      children: [
-                        _buildAnimatedIconButton(
-                          icon: Icons.edit,
-                          onPressed: _editTimesheet,
-                        ),
-                        const SizedBox(width: 16),
-                        _buildAnimatedIconButton(
-                          icon: Icons.delete,
-                          onPressed: _deleteTimesheet,
-                        ),
-                      ],
-                    ),
-                  ],
-                ],
+                ),
               ),
             ),
           ),
           SliverFillRemaining(
-            child: PageView.builder(
-              controller: _pageController,
-              onPageChanged: _navigateToDate,
-              itemBuilder: (context, index) {
-                final date = DateTime(
-                  _currentDate.year,
-                  1,
-                  1,
-                ).add(Duration(days: _isWeekView ? index * 7 : index));
-                return Padding(
-                  padding: const EdgeInsets.symmetric(horizontal: 16),
-                  child: AnimatedSwitcher(
-                    duration: const Duration(milliseconds: 400),
-                    transitionBuilder:
-                        (child, animation) => FadeTransition(
+            child: Consumer<TimesheetProvider>(
+              builder: (context, provider, child) {
+                if (provider.isLoading) {
+                  return const Center(child: CircularProgressIndicator());
+                }
+                return PageView.builder(
+                  controller: _pageController,
+                  onPageChanged: _navigateToDate,
+                  itemBuilder: (context, index) {
+                    final date = DateTime(_currentDate.year, 1, 1)
+                        .add(Duration(days: _isWeekView ? index * 7 : index));
+                    return Padding(
+                      padding: const EdgeInsets.symmetric(horizontal: 16),
+                      child: AnimatedSwitcher(
+                        duration: const Duration(milliseconds: 400),
+                        transitionBuilder: (child, animation) => FadeTransition(
                           opacity: animation,
-                          child: ScaleTransition(
-                            scale: animation,
-                            child: child,
-                          ),
+                          child: ScaleTransition(scale: animation, child: child),
                         ),
-                    child: _isWeekView ? WeekView(date) : DayView(date),
-                  ),
+                        child: _isWeekView ? WeekView(date) : DayView(date),
+                      ),
+                    );
+                  },
                 );
               },
             ),
@@ -453,11 +301,10 @@ class HomeScreenState extends State<HomeScreen>
           Navigator.push(
             context,
             MaterialPageRoute(
-              builder:
-                  (_) => CreateVisitScreen(
-                    weekNumber: _getWeekNumber(_currentDate),
-                    year: _currentDate.year,
-                  ),
+              builder: (_) => CreateVisitScreen(
+                weekNumber: _getWeekNumber(_currentDate),
+                year: _currentDate.year,
+              ),
             ),
           );
         },
@@ -482,20 +329,13 @@ class HomeScreenState extends State<HomeScreen>
               ),
             ],
           ),
-          child: Icon(
-            Icons.add,
-            color: Theme.of(context).appBarTheme.iconTheme!.color,
-            size: 32,
-          ),
+          child: Icon(Icons.add, color: Theme.of(context).appBarTheme.iconTheme!.color, size: 32),
         ),
       ),
     );
   }
 
-  Widget _buildAnimatedIconButton({
-    required IconData icon,
-    required VoidCallback onPressed,
-  }) {
+  Widget _buildAnimatedIconButton({required IconData icon, required VoidCallback onPressed}) {
     return GestureDetector(
       onTap: onPressed,
       child: AnimatedContainer(
@@ -513,11 +353,7 @@ class HomeScreenState extends State<HomeScreen>
             ),
           ],
         ),
-        child: Icon(
-          icon,
-          color: Theme.of(context).appBarTheme.iconTheme!.color,
-          size: 24,
-        ),
+        child: Icon(icon, color: Theme.of(context).appBarTheme.iconTheme!.color, size: 24),
       ),
     );
   }
@@ -545,11 +381,7 @@ class HomeScreenState extends State<HomeScreen>
             ),
           ],
         ),
-        child: Icon(
-          icon,
-          color: Theme.of(context).appBarTheme.iconTheme!.color,
-          size: 20,
-        ),
+        child: Icon(icon, color: Theme.of(context).appBarTheme.iconTheme!.color, size: 20),
       ),
     );
   }
