@@ -29,6 +29,7 @@ class CreateVisitScreen extends StatefulWidget {
 
 class _CreateVisitScreenState extends State<CreateVisitScreen> {
   final _formKey = GlobalKey<FormState>();
+  List<Map<String, dynamic>> _visits = [];
   DateTime? _selectedDate;
   TimeOfDay? _selectedTime;
   String? _selectedAgentId;
@@ -107,213 +108,52 @@ class _CreateVisitScreenState extends State<CreateVisitScreen> {
     }
   }
 
-  Future<void> _showLocationDialog(BuildContext context, AgentProvider agentProvider) async {
-    final authProvider = Provider.of<AuthProvider>(context, listen: false);
-    final locations = agentProvider.uniqueLocations;
-    final TextEditingController searchController = TextEditingController();
-    List<String> filteredLocations = List.from(locations);
-
-    await showDialog(
-      context: context,
-      builder: (context) {
-        return StatefulBuilder(
-          builder: (context, setDialogState) {
-            return AlertDialog(
-              title: Text('Select Location', style: Theme.of(context).textTheme.headlineSmall),
-              content: SizedBox(
-                width: double.maxFinite,
-                child: Column(
-                  mainAxisSize: MainAxisSize.min,
-                  children: [
-                    TextField(
-                      controller: searchController,
-                      decoration: InputDecoration(
-                        hintText: 'Search locations...',
-                        prefixIcon: Icon(Icons.search, color: Theme.of(context).colorScheme.primary),
-                        border: OutlineInputBorder(borderRadius: BorderRadius.circular(12)),
-                      ),
-                      onChanged: (value) {
-                        setDialogState(() {
-                          filteredLocations = locations
-                              .where((location) => location.toLowerCase().contains(value.toLowerCase()))
-                              .toList();
-                        });
-                      },
-                    ),
-                    const SizedBox(height: 12),
-                    SizedBox(
-                      height: 300,
-                      child: ListView.builder(
-                        itemCount: filteredLocations.length,
-                        itemBuilder: (context, index) {
-                          final location = filteredLocations[index];
-                          return RadioListTile<String>(
-                            title: Text(location),
-                            value: location,
-                            groupValue: _location,
-                            onChanged: (value) {
-                              setDialogState(() => _location = value);
-                              setState(() {
-                                _location = value;
-                                _selectedAgentId = null;
-                              });
-                              if (authProvider.token != null) {
-                                agentProvider.fetchAgentsByLocation(value!, authProvider.token!);
-                              }
-                              Navigator.pop(context);
-                            },
-                            activeColor: Theme.of(context).colorScheme.primary,
-                          );
-                        },
-                      ),
-                    ),
-                  ],
-                ),
-              ),
-              actions: [
-                TextButton(
-                  onPressed: () => Navigator.pop(context),
-                  child: Text('Cancel', style: Theme.of(context).textTheme.bodyMedium),
-                ),
-              ],
-            );
-          },
-        );
-      },
-    );
-  }
-
-  Future<void> _showAgentDialog(BuildContext context, AgentProvider agentProvider) async {
-    final agents = agentProvider.agents;
-    final TextEditingController searchController = TextEditingController();
-    List<Agent> filteredAgents = List.from(agents);
-
-    await showDialog(
-      context: context,
-      builder: (context) {
-        return StatefulBuilder(
-          builder: (context, setDialogState) {
-            return AlertDialog(
-              title: Text('Select Agent', style: Theme.of(context).textTheme.headlineSmall),
-              content: SizedBox(
-                width: double.maxFinite,
-                child: Column(
-                  mainAxisSize: MainAxisSize.min,
-                  children: [
-                    TextField(
-                      controller: searchController,
-                      decoration: InputDecoration(
-                        hintText: 'Search agents...',
-                        prefixIcon: Icon(Icons.search, color: Theme.of(context).colorScheme.primary),
-                        border: OutlineInputBorder(borderRadius: BorderRadius.circular(12)),
-                      ),
-                      onChanged: (value) {
-                        setDialogState(() {
-                          filteredAgents = agents
-                              .where((agent) =>
-                          (agent.name?.toLowerCase().contains(value.toLowerCase()) ?? false) ||
-                              (agent.lastname?.toLowerCase().contains(value.toLowerCase()) ?? false))
-                              .toList();
-                        });
-                      },
-                    ),
-                    const SizedBox(height: 12),
-                    SizedBox(
-                      height: 300,
-                      child: ListView.builder(
-                        itemCount: filteredAgents.length,
-                        itemBuilder: (context, index) {
-                          final agent = filteredAgents[index];
-                          return RadioListTile<String>(
-                            title: Text('${agent.name ?? ''} ${agent.lastname ?? ''}'),
-                            subtitle: Text(agent.phone ?? ''),
-                            value: agent.agentID!,
-                            groupValue: _selectedAgentId,
-                            onChanged: (value) {
-                              setState(() => _selectedAgentId = value);
-                              Navigator.pop(context);
-                            },
-                            activeColor: Theme.of(context).colorScheme.primary,
-                          );
-                        },
-                      ),
-                    ),
-                  ],
-                ),
-              ),
-              actions: [
-                TextButton(
-                  onPressed: () => Navigator.pop(context),
-                  child: Text('Cancel', style: Theme.of(context).textTheme.bodyMedium),
-                ),
-              ],
-            );
-          },
-        );
-      },
-    );
-  }
-
-  void _onPhoneChanged(String value) {
-    if (_debounce?.isActive ?? false) _debounce!.cancel();
-    _debounce = Timer(const Duration(milliseconds: 500), () async {
-      final authProvider = Provider.of<AuthProvider>(context, listen: false);
-      if (value.length >= 10 && authProvider.token != null) {
-        try {
-          final agent = await Provider.of<AgentProvider>(context, listen: false)
-              .fetchAgentByPhone(value, authProvider.token!);
-          setState(() {
-            _selectedAgentId = agent.agentID;
-            _location = agent.location;
-            _phoneError = null;
-          });
-        } catch (e) {
-          setState(() {
-            _phoneError = 'Agent not found';
-            _selectedAgentId = null;
-          });
-        }
-      }
-    });
-  }
-
-  Future<void> _submitForm() async {
-    if (_formKey.currentState!.validate()) {
-      final authProvider = Provider.of<AuthProvider>(context, listen: false);
-      final timesheetProvider = Provider.of<TimesheetProvider>(context, listen: false);
-      if (authProvider.token == null || authProvider.user?.userID == null) {
-        _showError('Please log in first');
-        return;
-      }
-
-      final visitData = {
-        'date': _selectedDate?.toIso8601String().split('T')[0],
-        'time': _selectedTime?.format(context),
+  void _addVisit() {
+    if (_formKey.currentState!.validate() && _selectedDate != null && _selectedTime != null) {
+      final visit = {
+        'date': _selectedDate!.toIso8601String(),
+        'time': _selectedTime!.format(context),
         'location': _location,
         'agentID': _selectedAgentId,
         'checklists': _selectedChecklistIds.map((id) => {'checklistID': id, 'checked': false}).toList(),
         'reasons': _selectedReasonIds.map((id) => {'reasonID': id}).toList(),
         'status': 'pending',
       };
+      setState(() {
+        _visits.add(visit);
+        _selectedAgentId = null;
+        _selectedChecklistIds.clear();
+        _selectedReasonIds.clear();
+        _location = null;
+        _phoneController.clear();
+      });
+    }
+  }
 
-      try {
-        await timesheetProvider.createTimesheet(
-          weekNumber: widget.weekNumber,
-          year: widget.year,
-          supervisorID: authProvider.user!.userID!,
-          visits: [visitData],
-          token: authProvider.token!,
+  void _submitTimesheet() {
+    final authProvider = Provider.of<AuthProvider>(context, listen: false);
+    final timesheetProvider = Provider.of<TimesheetProvider>(context, listen: false);
+    if (_visits.isNotEmpty && authProvider.token != null && authProvider.user?.userID != null) {
+      timesheetProvider
+          .createTimesheet(
+        weekNumber: widget.weekNumber,
+        year: widget.year,
+        supervisorID: authProvider.user!.userID!,
+        visits: _visits,
+        token: authProvider.token!,
+      )
+          .then((_) {
+        ScaffoldMessenger.of(context).showSnackBar(
+          const SnackBar(content: Text('Timesheet created successfully')),
         );
         Navigator.pop(context);
-        ScaffoldMessenger.of(context).showSnackBar(
-          SnackBar(
-            content: const Text('Visit created successfully'),
-            backgroundColor: Theme.of(context).colorScheme.primary,
-          ),
-        );
-      } catch (e) {
-        _showError('Failed to create visit: $e');
-      }
+      }).catchError((e) {
+        _showError(e);
+      });
+    } else {
+      ScaffoldMessenger.of(context).showSnackBar(
+        const SnackBar(content: Text('Add at least one visit to create a timesheet')),
+      );
     }
   }
 
@@ -325,7 +165,8 @@ class _CreateVisitScreenState extends State<CreateVisitScreen> {
 
     return Scaffold(
       appBar: AppBar(
-        title: const Text('Create Visit'),
+        title: const Text('Create Timesheet'),
+        backgroundColor: Theme.of(context).colorScheme.primary,
       ),
       body: Padding(
         padding: const EdgeInsets.all(16.0),
@@ -335,84 +176,85 @@ class _CreateVisitScreenState extends State<CreateVisitScreen> {
             child: Column(
               crossAxisAlignment: CrossAxisAlignment.start,
               children: [
-                TextFormField(
-                  controller: _phoneController,
-                  decoration: InputDecoration(
-                    labelText: 'Agent Phone',
-                    errorText: _phoneError,
-                  ),
-                  keyboardType: TextInputType.phone,
-                  onChanged: _onPhoneChanged,
-                ),
+                Text('Week ${widget.weekNumber}, ${widget.year}', style: Theme.of(context).textTheme.headlineSmall),
                 const SizedBox(height: 16),
+                // Date Picker
                 ListTile(
-                  title: Text(
-                    _selectedDate == null
-                        ? 'Select Date'
-                        : DateFormat('yyyy-MM-dd').format(_selectedDate!),
-                  ),
+                  title: Text(_selectedDate == null
+                      ? 'Select Date'
+                      : DateFormat('yyyy-MM-dd').format(_selectedDate!)),
                   trailing: const Icon(Icons.calendar_today),
                   onTap: () => _selectDate(context),
                 ),
+                // Time Picker
                 ListTile(
-                  title: Text(
-                    _selectedTime == null ? 'Select Time' : _selectedTime!.format(context),
-                  ),
+                  title: Text(_selectedTime == null ? 'Select Time' : _selectedTime!.format(context)),
                   trailing: const Icon(Icons.access_time),
                   onTap: () => _selectTime(context),
                 ),
-                ListTile(
-                  title: Text(_location ?? 'Select Location'),
-                  trailing: const Icon(Icons.location_on),
-                  onTap: () => _showLocationDialog(context, agentProvider),
+                // Agent Selection
+                DropdownButtonFormField<String>(
+                  value: _selectedAgentId,
+                  hint: const Text('Select Agent'),
+                  items: agentProvider.agents
+                      .map((agent) => DropdownMenuItem(
+                            value: agent.agentID,
+                            child: Text('${agent.name} ${agent.lastname}'),
+                          ))
+                      .toList(),
+                  onChanged: (value) => setState(() => _selectedAgentId = value),
+                  validator: (value) => value == null ? 'Please select an agent' : null,
                 ),
-                if (_location != null)
-                  ListTile(
-                    title: Text(
-                      _selectedAgentId == null ? 'Select Agent' : 'Agent: $_selectedAgentId',
-                    ),
-                    trailing: const Icon(Icons.person),
-                    onTap: () => _showAgentDialog(context, agentProvider),
-                  ),
+                const SizedBox(height: 16),
+                // Location
+                TextFormField(
+                  decoration: const InputDecoration(labelText: 'Location'),
+                  onChanged: (value) => _location = value,
+                  validator: (value) => value!.isEmpty ? 'Please enter a location' : null,
+                ),
+                // Checklists
                 const SizedBox(height: 16),
                 Text('Checklists', style: Theme.of(context).textTheme.headlineSmall),
-                ...checklistProvider.checklists.map((checklist) {
-                  return CheckboxListTile(
-                    title: Text(checklist.item ?? ''),
-                    value: _selectedChecklistIds.contains(checklist.checklistID),
-                    onChanged: (bool? value) {
-                      setState(() {
-                        if (value == true) {
-                          _selectedChecklistIds.add(checklist.checklistID!);
-                        } else {
-                          _selectedChecklistIds.remove(checklist.checklistID);
-                        }
-                      });
-                    },
-                  );
-                }),
+                ...checklistProvider.checklists.map((checklist) => CheckboxListTile(
+                      title: Text(checklist.item ?? ''),
+                      value: _selectedChecklistIds.contains(checklist.checklistID),
+                      onChanged: (bool? value) {
+                        setState(() {
+                          if (value == true) {
+                            _selectedChecklistIds.add(checklist.checklistID!);
+                          } else {
+                            _selectedChecklistIds.remove(checklist.checklistID!);
+                          }
+                        });
+                      },
+                    )),
+                // Reasons
                 const SizedBox(height: 16),
                 Text('Reasons', style: Theme.of(context).textTheme.headlineSmall),
-                ...reasonProvider.reasons.map((reason) {
-                  return CheckboxListTile(
-                    title: Text(reason.item ?? ''),
-                    value: _selectedReasonIds.contains(reason.reasonID),
-                    onChanged: (bool? value) {
-                      setState(() {
-                        if (value == true) {
-                          _selectedReasonIds.add(reason.reasonID!);
-                        } else {
-                          _selectedReasonIds.remove(reason.reasonID);
-                        }
-                      });
-                    },
-                  );
-                }),
-                const SizedBox(height: 20),
+                ...reasonProvider.reasons.map((reason) => CheckboxListTile(
+                      title: Text(reason.item ?? ''),
+                      value: _selectedReasonIds.contains(reason.reasonID),
+                      onChanged: (bool? value) {
+                        setState(() {
+                          if (value == true) {
+                            _selectedReasonIds.add(reason.reasonID!);
+                          } else {
+                            _selectedReasonIds.remove(reason.reasonID!);
+                          }
+                        });
+                      },
+                    )),
+                const SizedBox(height: 16),
                 ElevatedButton(
-                  onPressed: _submitForm,
-                  style: Theme.of(context).elevatedButtonTheme.style,
-                  child: const Text('Create Visit'),
+                  onPressed: _addVisit,
+                  child: const Text('Add Visit'),
+                ),
+                const SizedBox(height: 16),
+                Text('Visits Added: ${_visits.length}', style: Theme.of(context).textTheme.bodyMedium),
+                const SizedBox(height: 16),
+                ElevatedButton(
+                  onPressed: _submitTimesheet,
+                  child: const Text('Create Timesheet'),
                 ),
               ],
             ),
