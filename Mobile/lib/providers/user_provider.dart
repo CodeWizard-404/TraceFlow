@@ -1,0 +1,72 @@
+// lib/providers/user_provider.dart
+import 'package:flutter/foundation.dart';
+import '../models/user.dart';
+import '../services/user_service.dart';
+
+class UserProvider with ChangeNotifier {
+  List<User> _users = [];
+  User? _currentUser;
+  List<User> _managers = [];
+  bool _isLoading = false;
+
+  List<User> get users => _users;
+  User? get currentUser => _currentUser;
+  List<User> get managers => _managers;
+  bool get isLoading => _isLoading;
+
+  Future<void> fetchUserById(String userID, String token) async {
+    _isLoading = true;
+    notifyListeners();
+    try {
+      _currentUser = await UserService.fetchUserById(userID, token);
+    } catch (e) {
+      _currentUser = null;
+      throw Exception('Failed to fetch user: $e');
+    } finally {
+      _isLoading = false;
+      notifyListeners();
+    }
+  }
+
+  Future<void> getAllUsers(String token) async {
+    _isLoading = true;
+    notifyListeners();
+    try {
+      _users = await UserService.getAllUsers(token);
+    } catch (e) {
+      _users = [];
+      throw Exception('Failed to fetch all users: $e');
+    } finally {
+      _isLoading = false;
+      notifyListeners();
+    }
+  }
+
+  Future<void> getUserByPhoneNumber(String phone, String token) async {
+    _isLoading = true;
+    notifyListeners();
+    try {
+      _currentUser = await UserService.getUserByPhoneNumber(phone, token);
+    } catch (e) {
+      _currentUser = null;
+      throw Exception('Failed to fetch user by phone: $e');
+    } finally {
+      _isLoading = false;
+      notifyListeners();
+    }
+  }
+
+  Future<void> getManagersByUser(String userID, String token) async {
+    _isLoading = true;
+    notifyListeners();
+    try {
+      _managers = await UserService.getManagersByUser(userID, token);
+    } catch (e) {
+      _managers = [];
+      throw Exception('Failed to fetch managers: $e');
+    } finally {
+      _isLoading = false;
+      notifyListeners();
+    }
+  }
+}

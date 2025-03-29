@@ -1,4 +1,3 @@
-// lib/screens/Timesheet/Timesheet_details.dart
 import 'package:flutter/material.dart';
 import 'package:intl/intl.dart';
 import 'package:provider/provider.dart';
@@ -11,14 +10,14 @@ import '../../widgets/Glass_Effect/GlassContainer.dart';
 import '../Error.dart';
 import '../Visit/create_visit.dart';
 
-class HomeScreen extends StatefulWidget {
-  const HomeScreen({super.key});
+class TimesheetDetailsScreen extends StatefulWidget {
+  const TimesheetDetailsScreen({super.key});
 
   @override
-  HomeScreenState createState() => HomeScreenState();
+  TimesheetDetailsScreenState createState() => TimesheetDetailsScreenState();
 }
 
-class HomeScreenState extends State<HomeScreen> with SingleTickerProviderStateMixin {
+class TimesheetDetailsScreenState extends State<TimesheetDetailsScreen> with SingleTickerProviderStateMixin {
   DateTime _currentDate = DateTime.now();
   late PageController _pageController;
   late AnimationController _animationController;
@@ -170,7 +169,7 @@ class HomeScreenState extends State<HomeScreen> with SingleTickerProviderStateMi
                           mainAxisAlignment: MainAxisAlignment.spaceBetween,
                           children: [
                             Text(
-                              "TraceFlow",
+                              "Timesheets",
                               style: Theme.of(context).appBarTheme.titleTextStyle,
                             ),
                             const SizedBox(width: 8),
@@ -272,6 +271,9 @@ class HomeScreenState extends State<HomeScreen> with SingleTickerProviderStateMi
                 if (provider.isLoading) {
                   return const Center(child: CircularProgressIndicator());
                 }
+                if (provider.timesheets.isEmpty) {
+                  return const Center(child: Text('No timesheets available'));
+                }
                 return PageView.builder(
                   controller: _pageController,
                   onPageChanged: _navigateToDate,
@@ -306,7 +308,7 @@ class HomeScreenState extends State<HomeScreen> with SingleTickerProviderStateMi
                 year: _currentDate.year,
               ),
             ),
-          );
+          ).then((_) => _fetchTimesheets()); // Refresh after creating a visit
         },
         backgroundColor: Colors.transparent,
         elevation: 0,
@@ -388,6 +390,10 @@ class HomeScreenState extends State<HomeScreen> with SingleTickerProviderStateMi
 
   int _getWeekNumber(DateTime date) {
     final startOfYear = DateTime(date.year, 1, 1);
-    return (date.difference(startOfYear).inDays / 7).ceil();
+    final firstMonday = startOfYear.weekday <= 4
+        ? startOfYear.subtract(Duration(days: startOfYear.weekday - 1))
+        : startOfYear.add(Duration(days: 8 - startOfYear.weekday));
+    final daysSinceFirstMonday = date.difference(firstMonday).inDays;
+    return (daysSinceFirstMonday ~/ 7) + 1;
   }
 }

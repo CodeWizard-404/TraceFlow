@@ -17,15 +17,13 @@ class DayView extends StatelessWidget {
         .where((visit) {
       final visitDate = visit.date != null
           ? DateTime(
-        visit.date!.toLocal().year,
-        visit.date!.toLocal().month,
-        visit.date!.toLocal().day,
-      )
+              visit.date!.year,
+              visit.date!.month,
+              visit.date!.day,
+            )
           : null;
       return visitDate != null && visitDate.isAtSameMomentAs(localDayStart);
-    })
-        .toList()
-        .cast<Visit>();
+    }).toList();
 
     allVisits.sort((a, b) {
       if (a.time == null && b.time == null) return 0;
@@ -66,12 +64,12 @@ class DayView extends StatelessWidget {
                             color: Theme.of(context).colorScheme.primary,
                           ),
                         ),
-                        SizedBox(width: 8),
+                        const SizedBox(width: 8),
                         Text(
                           'No visits scheduled',
                           style: Theme.of(context).textTheme.bodyMedium?.copyWith(
-                            color: Theme.of(context).colorScheme.onSurface.withOpacity(0.6),
-                          ),
+                                color: Theme.of(context).colorScheme.onSurface.withOpacity(0.6),
+                              ),
                         ),
                       ],
                     ),

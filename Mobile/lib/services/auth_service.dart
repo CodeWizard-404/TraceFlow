@@ -13,31 +13,31 @@ class AuthService {
     if (response.statusCode == 200) {
       return json.decode(response.body);
     } else {
-      throw Exception('Login failed: ${json.decode(response.body)['error']}');
+      throw Exception('Login failed: ${response.body}');
     }
   }
 
-  static Future<Map<String, dynamic>> verify2FA(String userID, String otpCode) async {
+  static Future<String> verify2FA(String userID, String otpCode) async {
     final response = await http.post(
       Uri.parse('$baseUrl/auth/verify-2fa'),
       headers: {'Content-Type': 'application/json'},
       body: json.encode({'userID': userID, 'otpCode': otpCode}),
     );
     if (response.statusCode == 200) {
-      return json.decode(response.body);
+      return json.decode(response.body)['token'];
     } else {
-      throw Exception('2FA verification failed: ${json.decode(response.body)['error']}');
+      throw Exception('2FA verification failed: ${response.body}');
     }
   }
 
   static Future<void> resend2FA(String userID) async {
     final response = await http.post(
-      Uri.parse('$baseUrl/auth/resend-2fa'),
+      Uri.parse('$baseUrl/auth/resend-2fa'), // Ensure this is routed in backend
       headers: {'Content-Type': 'application/json'},
       body: json.encode({'userID': userID}),
     );
     if (response.statusCode != 200) {
-      throw Exception('Failed to resend 2FA: ${json.decode(response.body)['error']}');
+      throw Exception('Failed to resend 2FA: ${response.body}');
     }
   }
 }

@@ -16,6 +16,7 @@ class VisitProvider with ChangeNotifier {
     required int duration,
     required List<Map<String, dynamic>> checklistUpdates,
     String? comment,
+    List<String>? photoPaths,
     required String token,
   }) async {
     _isLoading = true;
@@ -26,6 +27,7 @@ class VisitProvider with ChangeNotifier {
         duration: duration,
         checklistUpdates: checklistUpdates,
         comment: comment,
+        photoPaths: photoPaths,
         token: token,
       );
     } catch (e) {
@@ -61,7 +63,7 @@ class VisitProvider with ChangeNotifier {
     String? agentID,
     List<Map<String, dynamic>>? checklists,
     List<Map<String, dynamic>>? reasons,
-    String? supervisorID,
+    List<String>? photoPaths,
     required String token,
   }) async {
     _isLoading = true;
@@ -78,7 +80,7 @@ class VisitProvider with ChangeNotifier {
         agentID: agentID,
         checklists: checklists,
         reasons: reasons,
-        supervisorID: supervisorID,
+        photoPaths: photoPaths,
         token: token,
       );
     } catch (e) {
@@ -97,6 +99,28 @@ class VisitProvider with ChangeNotifier {
       _currentVisit = null;
     } catch (e) {
       throw Exception('Failed to delete visit: $e');
+    } finally {
+      _isLoading = false;
+      notifyListeners();
+    }
+  }
+
+  Future<Map<String, dynamic>> verifyQRCode({
+    required String qrData,
+    required String visitId,
+    required String token,
+  }) async {
+    _isLoading = true;
+    notifyListeners();
+    try {
+      final result = await VisitService.verifyQRCode(
+        qrData: qrData,
+        visitId: visitId,
+        token: token,
+      );
+      return result;
+    } catch (e) {
+      throw Exception('Failed to verify QR code: $e');
     } finally {
       _isLoading = false;
       notifyListeners();

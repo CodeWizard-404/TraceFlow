@@ -14,7 +14,7 @@ class VisitItem extends StatelessWidget {
     String formattedTime = visit.time?.split(':').take(2).join(':') ?? 'N/A';
 
     return Padding(
-      padding: EdgeInsets.symmetric(vertical: 8, horizontal: 1),
+      padding: const EdgeInsets.symmetric(vertical: 8, horizontal: 1),
       child: GestureDetector(
         onTap: () {
           Navigator.push(
@@ -25,7 +25,7 @@ class VisitItem extends StatelessWidget {
           );
         },
         child: AnimatedContainer(
-          duration: Duration(milliseconds: 300),
+          duration: const Duration(milliseconds: 300),
           curve: Curves.easeInOut,
           decoration: BoxDecoration(
             borderRadius: BorderRadius.circular(20),
@@ -45,12 +45,12 @@ class VisitItem extends StatelessWidget {
               BoxShadow(
                 color: Theme.of(context).colorScheme.primary.withOpacity(0.1),
                 blurRadius: 12,
-                offset: Offset(0, 4),
+                offset: const Offset(0, 4),
               ),
             ],
           ),
           child: Padding(
-            padding: EdgeInsets.all(16),
+            padding: const EdgeInsets.all(16),
             child: Column(
               crossAxisAlignment: CrossAxisAlignment.start,
               children: [
@@ -69,18 +69,16 @@ class VisitItem extends StatelessWidget {
                     ),
                   ],
                 ),
-                SizedBox(height: 16),
+                const SizedBox(height: 16),
                 _buildInfoRow(context, Icons.location_on, 'Location: ${visit.location ?? 'N/A'}'),
-                SizedBox(height: 12),
+                const SizedBox(height: 12),
                 _buildInfoRow(context, Icons.access_time, 'Time: $formattedTime'),
-                SizedBox(height: 16),
+                const SizedBox(height: 16),
                 Wrap(
                   spacing: 8,
                   runSpacing: 8,
                   children: (visit.reasons ?? [])
-                      .map((reason) => GlassChip(
-                    label: reason.item ?? 'N/A',
-                  ))
+                      .map((reason) => GlassChip(label: reason.item ?? 'N/A'))
                       .toList(),
                 ),
               ],
@@ -95,14 +93,14 @@ class VisitItem extends StatelessWidget {
     return Row(
       children: [
         Container(
-          padding: EdgeInsets.all(6),
+          padding: const EdgeInsets.all(6),
           decoration: BoxDecoration(
             shape: BoxShape.circle,
             color: Theme.of(context).colorScheme.primary.withOpacity(0.1),
           ),
           child: Icon(icon, size: 18, color: Theme.of(context).colorScheme.primary),
         ),
-        SizedBox(width: 12),
+        const SizedBox(width: 12),
         Expanded(
           child: Text(
             text,

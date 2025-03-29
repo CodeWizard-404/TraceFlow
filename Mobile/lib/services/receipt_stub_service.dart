@@ -1,11 +1,9 @@
-// lib/services/receipt_stub_service.dart
 import 'dart:convert';
 import 'package:http/http.dart' as http;
 import '../models/receipt_stub.dart';
 import '../utils/constants.dart';
 
 class ReceiptStubService {
-  // Initiate stub collection
   static Future<void> collectStub(String bookID, String token) async {
     final response = await http.post(
       Uri.parse('$baseUrl/receipt-stubs/$bookID/collect'),
@@ -16,7 +14,6 @@ class ReceiptStubService {
     }
   }
 
-  // Validate stub collection with OTP
   static Future<ReceiptStub> validateStubCollection(String bookID, String otpCode, String token) async {
     final response = await http.post(
       Uri.parse('$baseUrl/receipt-stubs/$bookID/validate-collection'),

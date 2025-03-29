@@ -10,7 +10,6 @@ class ChecklistProvider with ChangeNotifier {
   List<Checklist> get checklists => _checklists;
   bool get isLoading => _isLoading;
 
-
   Future<void> getChecklistsByVisitId(String visitId, String token) async {
     _isLoading = true;
     notifyListeners();

@@ -1518,7 +1518,7 @@ body.dark .pagination span {
 }
 
 .override-button.revoke {
-    background: #63b3ed;
+    background: #4cb1c7;
     color: #fff;
 }
 
@@ -2568,15 +2568,30 @@ body.dark .permission-card {
     box-shadow: 0 0.375rem 1.25rem rgba(0, 0, 0, 0.3);
 }
 
-.permission-card:hover {
+.permission-card:hover{
     transform: translateY(-0.3125rem);
     border-color: #4cb1c7;
     box-shadow: 0 0.5rem 1.5rem rgba(76, 177, 199, 0.2);
 }
 
-body.dark .permission-card:hover {
+.permission-card:hover p{
+    color: rgb(240, 240, 240) ;
+}
+.permission-card:hover h4{
+    color: rgb(255, 255, 255) ;
+}
+
+body.dark .permission-card:hover{
     border-color: #63b3ed;
     box-shadow: 0 0.5rem 1.5rem rgba(99, 179, 237, 0.2);
+}
+
+body.dark .permission-card:hover p{
+    color: rgb(41, 41, 41) ;
+}
+
+body.dark .permission-card:hover h4{
+    color: #222222;
 }
 
 .permission-card.selected {

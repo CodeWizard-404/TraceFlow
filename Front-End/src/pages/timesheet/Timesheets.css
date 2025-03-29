@@ -10,7 +10,7 @@ html {
 .timesheets-container {
   padding: 1.25rem;
   /* 20px at 16px base */
-  max-width: 1280px;
+  max-width: 1440px;
   margin: 0 auto;
   font-family: 'Inter', sans-serif;
   background: linear-gradient(135deg, #f8fafc 0%, #eef2f6 100%);
@@ -375,7 +375,7 @@ html {
   color: #fff;
 }
 
-hr {
+.hr {
   margin: 0 0 0.5rem 0 !important;
 }
 

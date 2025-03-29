@@ -12,14 +12,16 @@ class ReceiptBookProvider with ChangeNotifier {
   ReceiptBook? get currentReceiptBook => _currentReceiptBook;
   bool get isLoading => _isLoading;
 
-  Future<void> fetchReceiptBooksByHolder(String userID, String token) async {
+  // Fetch all receipt books and filter by holder (userID) locally in the frontend
+  Future<void> fetchAndFilterReceiptBooksByHolder(String userID, String token) async {
     _isLoading = true;
     notifyListeners();
     try {
-      _receiptBooks = await ReceiptBookService.fetchReceiptBooksByHolder(userID, token);
+      final allBooks = await ReceiptBookService.fetchAllReceiptBooks(token);
+      _receiptBooks = allBooks.where((book) => book.currentHolderID == userID).toList();
     } catch (e) {
       _receiptBooks = [];
-      throw Exception('Failed to fetch receipt books: $e');
+      throw Exception('Failed to fetch and filter receipt books: $e');
     } finally {
       _isLoading = false;
       notifyListeners();
@@ -56,7 +58,7 @@ class ReceiptBookProvider with ChangeNotifier {
         token: token,
       );
       // Refresh the list after transfer
-      await fetchReceiptBooksByHolder(_currentReceiptBook?.currentHolderID ?? '', token);
+      await fetchAndFilterReceiptBooksByHolder(_currentReceiptBook?.currentHolderID ?? '', token);
     } catch (e) {
       throw Exception('Failed to transfer receipt books: $e');
     } finally {
@@ -83,7 +85,7 @@ class ReceiptBookProvider with ChangeNotifier {
         token: token,
       );
       // Refresh the list after validation
-      await fetchReceiptBooksByHolder(_currentReceiptBook?.currentHolderID ?? '', token);
+      await fetchAndFilterReceiptBooksByHolder(_currentReceiptBook?.currentHolderID ?? '', token);
     } catch (e) {
       throw Exception('Failed to validate transfer: $e');
     } finally {

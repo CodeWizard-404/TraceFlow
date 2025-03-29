@@ -1,11 +1,9 @@
-// lib/services/timesheet_service.dart
 import 'dart:convert';
 import 'package:http/http.dart' as http;
 import '../models/timesheet.dart';
 import '../utils/constants.dart';
 
 class TimesheetService {
-  // Create a new timesheet with visits
   static Future<Timesheet> createTimesheet({
     required int weekNumber,
     required int year,
@@ -24,7 +22,7 @@ class TimesheetService {
         'year': year,
         'supervisorID': supervisorID,
         'visits': visits,
-        'status': 'pending', // Default status
+        'status': 'pending',
       }),
     );
     if (response.statusCode == 201) {
@@ -34,7 +32,6 @@ class TimesheetService {
     }
   }
 
-  // Fetch timesheets by supervisor (only their own)
   static Future<List<Timesheet>> fetchTimesheetsBySupervisor(String supervisorID, String token) async {
     final response = await http.get(
       Uri.parse('$baseUrl/timesheets/supervisor/$supervisorID'),
@@ -48,7 +45,6 @@ class TimesheetService {
     }
   }
 
-  // Fetch a specific timesheet by ID
   static Future<Timesheet> fetchTimesheetById(String id, String token) async {
     final response = await http.get(
       Uri.parse('$baseUrl/timesheets/$id'),

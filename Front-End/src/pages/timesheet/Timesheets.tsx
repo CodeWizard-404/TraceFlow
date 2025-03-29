@@ -476,7 +476,7 @@ const Timesheets: React.FC = () => {
                                     <FaRegUser /> {users.find(u => u.userID === visit.supervisorID)?.firstname} {users.find(u => u.userID === visit.supervisorID)?.lastname}
                                   </p>
                                 )}
-                                <hr />
+                                <hr className="hr" />
                                 <div className="visit-header">
                                   {visit.time && <span className="visit-time"><FaClock /> {visit.time.split(":").slice(0, 2).join(":")}</span>}
                                   <span className={`visit-status status-${visit.status.toLowerCase()}`}>{visit.status}</span>

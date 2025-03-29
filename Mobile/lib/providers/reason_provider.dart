@@ -10,7 +10,6 @@ class ReasonProvider with ChangeNotifier {
   List<Reason> get reasons => _reasons;
   bool get isLoading => _isLoading;
 
-
   Future<void> getReasonsByVisitId(String visitId, String token) async {
     _isLoading = true;
     notifyListeners();
