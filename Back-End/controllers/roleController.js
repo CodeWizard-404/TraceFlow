@@ -3,6 +3,7 @@ const RoleService = require('../services/roleService');
 
 class RoleController {
     static async createRole(req, res) {
+        console.log('create role', req.body);
         try {
             const { name, description } = req.body;
             if (!name) {
@@ -17,6 +18,7 @@ class RoleController {
     }
 
     static async getAllRoles(req, res) {
+        console.log('get all roles', true);
         try {
             const roles = await RoleService.getAllRoles();
             res.status(200).json(roles);
@@ -27,6 +29,7 @@ class RoleController {
     }
 
     static async getRoleById(req, res) {
+        console.log('get role by id', req.params);
         try {
             const { roleID } = req.params;
             if (!roleID) {
@@ -41,6 +44,7 @@ class RoleController {
     }
 
     static async updateRole(req, res) {
+        console.log('update role', req.params && req.body);
         try {
             const { roleID } = req.params;
             const { name, description } = req.body;
@@ -56,6 +60,7 @@ class RoleController {
     }
 
     static async deleteRole(req, res) {
+        console.log('delete role', req.params);
         try {
             const { roleID } = req.params;
             if (!roleID) {
@@ -72,8 +77,9 @@ class RoleController {
 
 
 
-    
+
     static async assignRolesToUser(req, res) {
+        console.log('assign roles to user', req.params, req.body);
         try {
             const { userID } = req.params;
             const { roleIDs } = req.body;
@@ -88,7 +94,8 @@ class RoleController {
         }
     }
 
-    static async revokeRolesFromUser(req, res) { 
+    static async revokeRolesFromUser(req, res) {
+        console.log('revoke roles from user', req.params, req.body);
         try {
             const { userID } = req.params;
             const { roleIDs } = req.body;
@@ -104,6 +111,7 @@ class RoleController {
     }
 
     static async getRolesByUser(req, res) {
+        console.log('get roles by user', req.params);
         try {
             const { userID } = req.params;
             if (!userID) {

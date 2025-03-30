@@ -3,6 +3,8 @@ const AuthService = require('../services/authService');
 
 class AuthController {
     static async login(req, res) {
+
+        console.log('login', req.body);
         try {
             const { identifier, password } = req.body;
             if (!identifier || !password) {
@@ -17,6 +19,8 @@ class AuthController {
     }
 
     static async verify2FA(req, res) {
+
+        console.log('verify2FA', req.body);
         try {
             const { userID, otpCode } = req.body;
             if (!userID || !otpCode) {
@@ -31,6 +35,8 @@ class AuthController {
     }
 
     static async resend2FA(req, res) {
+
+        console.log('resend2FA', req.body);
         try {
             const { userID } = req.body;
             if (!userID) {

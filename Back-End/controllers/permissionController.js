@@ -3,6 +3,8 @@ const PermissionService = require('../services/permissionService');
 
 class PermissionController {
     static async getAllPermissions(req, res) {
+
+        console.log('getAllPermissions', true);
         try {
             const permissions = await PermissionService.getAllPermissions();
             res.status(200).json(permissions);
@@ -13,6 +15,8 @@ class PermissionController {
     }
 
     static async getPermissionById(req, res) {
+
+        console.log('getPermissionById', req.params);
         try {
             const { permissionID } = req.params;
             if (!permissionID) {
@@ -27,7 +31,7 @@ class PermissionController {
     }
 
     static async createPermission(req, res) {
-        console.log(req.body);
+        console.log('createPermission', req.body);
         try {
             const { name, className, description } = req.body;
             if (!name || !className) {
@@ -42,6 +46,7 @@ class PermissionController {
     }
 
     static async updatePermission(req, res) {
+        console.log('updatePermission', req.params, req.body);
         try {
             const { permissionID } = req.params;
             const { name, className, description } = req.body;
@@ -57,6 +62,7 @@ class PermissionController {
     }
 
     static async deletePermission(req, res) {
+        console.log('deletePermission', req.params);
         try {
             const { permissionID } = req.params;
             if (!permissionID) {
@@ -73,6 +79,7 @@ class PermissionController {
 
 
     static async assignPermissionsToRole(req, res) {
+        console.log('assignPermissionsToRole', req.params, req.body);
         try {
             const { roleID } = req.params;
             const { permissionIDs } = req.body;
@@ -88,6 +95,7 @@ class PermissionController {
     }
 
     static async revokePermissionsFromRole(req, res) {
+        console.log('revokePermissionsFromRole', req.params, req.body);
         try {
             const { roleID } = req.params;
             const { permissionIDs } = req.body;
@@ -103,6 +111,7 @@ class PermissionController {
     }
 
     static async getPermissionsByRole(req, res) {
+        console.log('getPermissionsByRole', req.params);
         try {
             const { roleID } = req.params;
             if (!roleID) {
@@ -119,6 +128,7 @@ class PermissionController {
 
 
     static async addPermissionOverride(req, res) {
+        console.log('addPermissionOverride', req.params, req.body);
         try {
             const { userID } = req.params;
             const { roleID, permissionID, action } = req.body;
@@ -134,6 +144,7 @@ class PermissionController {
     }
 
     static async removePermissionOverride(req, res) {
+        console.log('removePermissionOverride', req.params);
         try {
             const { overrideID } = req.params;
             if (!overrideID) {
@@ -148,6 +159,7 @@ class PermissionController {
     }
 
     static async getEffectivePermissions(req, res) {
+        console.log('getEffectivePermissions', req.params);
         try {
             const { userID } = req.params;
             if (!userID) {
@@ -162,6 +174,7 @@ class PermissionController {
     }
 
     static async getPermissionOverrides(req, res) {
+        console.log('getPermissionOverrides', req.params);
         try {
             const { userID } = req.params;
             if (!userID) {

@@ -4,6 +4,8 @@ const { authenticateJWT, requirePermission } = require('../config/security');
 
 class ChecklistController {
     static async createChecklist(req, res) {
+
+        console.log('Creating Checklist', req.body);
         try {
             const { text } = req.body;
             if (!text) {
@@ -18,6 +20,8 @@ class ChecklistController {
     }
 
     static async getChecklistsByVisitID(req, res) {
+
+        console.log('Getting Checklists by Visit ID', req.params);
         try {
             const { id: visitID } = req.params;
             if (!visitID) {
@@ -32,6 +36,8 @@ class ChecklistController {
     }
 
     static async getAllChecklists(req, res) {
+
+        console.log('Getting all Checklists', true);
         try {
             const checklists = await ChecklistService.getAllChecklists();
             res.status(200).json(checklists);

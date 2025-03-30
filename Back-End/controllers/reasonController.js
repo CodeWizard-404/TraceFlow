@@ -3,6 +3,7 @@ const ReasonService = require('../services/reasonService');
 
 class ReasonController {
     static async createReason(req, res) {
+        console.log('create reason', req.body);
         try {
             const { text } = req.body;
             if (!text) {
@@ -17,6 +18,7 @@ class ReasonController {
     }
 
     static async getReasonsByVisitID(req, res) {
+        console.log('get reasons by visit id', req.params);
         try {
             const { id: visitID } = req.params;
             if (!visitID) {
@@ -31,6 +33,7 @@ class ReasonController {
     }
 
     static async getAllReasons(req, res) {
+        console.log('get all reasons', true);
         try {
             const reasons = await ReasonService.getAllReasons();
             res.status(200).json(reasons);

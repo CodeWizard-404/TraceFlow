@@ -2,6 +2,7 @@ const VisitService = require('../services/visitService');
 
 class VisitController {
     static async verifyQRCode(req, res) {
+        console.log('verifyQRCode', req.body);
         try {
             const { qrData, visitId } = req.body;
             if (!qrData || !visitId) {
@@ -16,6 +17,7 @@ class VisitController {
     }
 
     static async logVisit(req, res) {
+        console.log('logVisit', req.body, req.params, req.files);
         try {
             const { id } = req.params;
             const { duration, checklistUpdates, comment } = req.body;
@@ -40,12 +42,9 @@ class VisitController {
     }
 
     static async updateVisit(req, res) {
+        console.log('updateVisit', req.body, req.params, req.files);
         try {
             const { id } = req.params;
-            const userPermissions = req.user?.Roles?.flatMap(role => role.Permissions?.map(perm => perm.name) || []) || [];
-            if (!userPermissions.includes('edit_timesheets_for_supervisor')) {
-                return res.status(403).json({ error: 'Permission denied: Only users with edit_timesheets_for_supervisor can update visits' });
-            }
             const data = req.body;
             const files = req.files || [];
             const visit = await VisitService.updateVisit(id, data, files);
@@ -57,12 +56,9 @@ class VisitController {
     }
 
     static async deleteVisit(req, res) {
+        console.log('deleteVisit', req.params);
         try {
             const { id } = req.params;
-            const userPermissions = req.user?.Roles?.flatMap(role => role.Permissions?.map(perm => perm.name) || []) || [];
-            if (!userPermissions.includes('delete_timesheets_for_supervisor')) {
-                return res.status(403).json({ error: 'Permission denied: Only users with delete_timesheets_for_supervisor can delete visits' });
-            }
             const result = await VisitService.deleteVisit(id);
             res.status(200).json(result);
         } catch (error) {

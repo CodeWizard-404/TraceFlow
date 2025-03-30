@@ -3,6 +3,7 @@ const ReceiptStubService = require('../services/receiptStubService');
 
 class ReceiptStubController {
     static async collectStub(req, res) {
+        console.log('Collecting stub for book ID:', req.params);
         try {
             const { bookID } = req.params;
             if (!bookID) return res.status(400).json({ error: 'Book ID is required' });
@@ -15,6 +16,7 @@ class ReceiptStubController {
     }
 
     static async validateStubCollection(req, res) {
+        console.log('Validating stub collection for book ID:', req.params);
         try {
             const { bookID } = req.params;
             const { otpCode } = req.body;
@@ -28,6 +30,7 @@ class ReceiptStubController {
     }
 
     static async archiveStub(req, res) {
+        console.log('Archiving stub for book ID:', req.params);
         try {
             const { bookID } = req.params;
             if (!bookID) return res.status(400).json({ error: 'Book ID is required' });

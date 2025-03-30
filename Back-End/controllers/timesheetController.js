@@ -3,6 +3,7 @@ const TimesheetService = require('../services/timesheetService');
 
 class TimesheetController {
     static async createTimesheet(req, res) {
+        console.log(`Create timesheet request received:`, req.body);
         try {
             const { weekNumber, year, supervisorID, visits, status = 'pending' } = req.body;
             if (!weekNumber || !year || !supervisorID || !Array.isArray(visits)) {
@@ -21,6 +22,8 @@ class TimesheetController {
     }
 
     static async validateTimesheet(req, res) {
+
+        console.log(`Validate timesheet request received:`, req.params, req.body);
         try {
             const { id } = req.params;
             const { visitIDs = [], status } = req.body;
@@ -36,6 +39,7 @@ class TimesheetController {
     }
 
     static async getAllTimesheets(req, res) {
+        console.log(`Get all timesheets request received`, true);
         try {
             const timesheets = await TimesheetService.listTimesheets();
             res.status(200).json(timesheets);
@@ -46,6 +50,7 @@ class TimesheetController {
     }
 
     static async getTimesheetById(req, res) {
+        console.log(`Get timesheet request received:`, req.params);
         try {
             const { id } = req.params;
             const timesheet = await TimesheetService.viewTimesheet(id);
@@ -57,6 +62,7 @@ class TimesheetController {
     }
 
     static async getTimesheetsBySupervisor(req, res) {
+        console.log(`Get timesheets by supervisor request received:`, req.params);
         try {
             const { supervisorID } = req.params;
             const timesheets = await TimesheetService.getTimesheetsBySupervisor(supervisorID);
@@ -68,14 +74,10 @@ class TimesheetController {
     }
 
     static async updateTimesheet(req, res) {
+        console.log(`Update timesheet request received:`, req.params, req.body);
         try {
             const { id } = req.params;
             const { weekNumber, year, status, visits } = req.body;
-            const userPermissions = req.user?.Roles?.flatMap(role => role.Permissions?.map(perm => perm.name) || []) || [];
-            if (!userPermissions.includes('edit_timesheets_for_supervisor')) {
-                return res.status(403).json({ error: 'Permission denied: Only users with edit_timesheets_for_supervisor can update timesheets' });
-            }
-
             const parsedVisits = typeof visits === 'string' ? JSON.parse(visits) : visits;
             const filesMap = {};
             if (req.files) {
@@ -95,12 +97,9 @@ class TimesheetController {
     }
 
     static async deleteTimesheet(req, res) {
+        console.log(`Delete timesheet request received:`, req.params);
         try {
             const { id } = req.params;
-            const userPermissions = req.user?.Roles?.flatMap(role => role.Permissions?.map(perm => perm.name) || []) || [];
-            if (!userPermissions.includes('delete_timesheets_for_supervisor')) {
-                return res.status(403).json({ error: 'Permission denied: Only users with delete_timesheets_for_supervisor can delete timesheets' });
-            }
             const result = await TimesheetService.deleteTimesheet(id);
             res.status(200).json(result);
         } catch (error) {

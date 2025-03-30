@@ -3,7 +3,6 @@ import { To, useNavigate } from "react-router-dom"; // Add useNavigate for progr
 import { useTheme } from "../context/ThemeContext";
 import { useAuth } from "../context/AuthContext";
 import { FaSun, FaMoon, FaSignOutAlt } from "react-icons/fa";
-import logo from "../assets/Logo.png";
 import "./CMP.css";
 
 function Header() {
@@ -36,9 +35,9 @@ function Header() {
   };
 
   // Permission and role checks
-  const hasPermission = (permission: string) => 
+  const hasPermission = (permission: string) =>
     permissionsLoaded && effectivePermissions?.some(p => p.name === permission);
-  const hasRole = (role: string) => 
+  const hasRole = (role: string) =>
     permissionsLoaded && userRoles?.some(r => r.name === role);
 
   // Navigation items with conditions
@@ -68,7 +67,12 @@ function Header() {
   return (
     <header className={`header ${theme === "dark" ? "dark" : ""}`}>
       <div className="header-container">
-        <img className="logo" src={logo} alt="LOGO" onClick={() => navigate("/")} />
+        <img
+          className="logo"
+          src={theme === "dark" ? "../../public/Banner-wd.png" : "../../public/Banner-bl.png"}
+          alt="LOGO"
+          onClick={() => navigate("/")}
+        />
         <button
           className="menu-toggle"
           onClick={toggleMenu}

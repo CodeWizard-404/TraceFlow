@@ -146,7 +146,7 @@ class VisitService {
             const oldFolderPath = path.join(__dirname, '../uploads/photos', oldFolderName);
 
             const newDate = date || visit.date;
-            const newTime = (time || visit.time).replace(/:/g, '-'); // For folder naming
+            const newTime = (time || visit.time).replace(/:/g, '-');
             const newFolderName = `${newDate}_${newTime}_${supervisorName}`;
             const newFolderPath = path.join(__dirname, '../uploads/photos', newFolderName);
 
@@ -154,10 +154,22 @@ class VisitService {
             let photoPaths = visit.photos || [];
             if (photosToRemove && Array.isArray(photosToRemove)) {
                 photoPaths = photoPaths.filter(p => !photosToRemove.includes(p));
+                // Remove deleted photos from the filesystem
+                photosToRemove.forEach(photo => {
+                    const photoPath = path.join(__dirname, '..', photo);
+                    if (fs.existsSync(photoPath)) {
+                        fs.unlinkSync(photoPath);
+                    }
+                });
             }
             if (files.length > 0) {
                 if (!fs.existsSync(newFolderPath)) fs.mkdirSync(newFolderPath, { recursive: true });
-                photoPaths = [...photoPaths, ...files.map(file => `/uploads/photos/${newFolderName}/${file.filename}`)];
+                // Move uploaded files to the folder and update paths
+                files.forEach(file => {
+                    const destPath = path.join(newFolderPath, file.filename);
+                    fs.renameSync(file.path, destPath); // Move file from temp upload to folder
+                    photoPaths.push(`/uploads/photos/${newFolderName}/${file.filename}`);
+                });
             }
             if (oldFolderName !== newFolderName && fs.existsSync(oldFolderPath)) {
                 if (photoPaths.length > 0) {

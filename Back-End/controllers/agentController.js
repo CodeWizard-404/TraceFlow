@@ -3,6 +3,8 @@ const AgentService = require('../services/agentService');
 
 class AgentController {
     static async getAgentById(req, res) {
+
+        console.log('getAgentById:', req.params);
         try {
             const { id } = req.params;
             if (!id) {
@@ -17,6 +19,8 @@ class AgentController {
     }
 
     static async getAgentByPhone(req, res) {
+
+        console.log('getAgentByPhone:', req.params);
         try {
             const { phone } = req.params;
             if (!phone) {
@@ -31,6 +35,8 @@ class AgentController {
     }
 
     static async getAgentsByLocation(req, res) {
+
+        console.log('getAgentsByLocation:', req.query);
         try {
             const { location } = req.query;
             if (!location) {
@@ -45,6 +51,8 @@ class AgentController {
     }
 
     static async getAllUniqueLocations(req, res) {
+
+        console.log('getAllUniqueLocations', true);
         try {
             const locations = await AgentService.getAllUniqueLocations();
             res.json(locations);

@@ -3,6 +3,7 @@ const ReceiptBookService = require('../services/receiptBookService');
 
 class ReceiptBookController {
     static async createReceiptBook(req, res) {
+        console.log('Creating receipt book', req.body);
         try {
             const { number, type } = req.body;
             if (!number || !type) return res.status(400).json({ error: 'Number and type are required' });
@@ -15,6 +16,7 @@ class ReceiptBookController {
     }
 
     static async getAllReceiptBooks(req, res) {
+        console.log('Getting all receipt books', true);
         try {
             const receiptBooks = await ReceiptBookService.getAllReceiptBooks();
             res.json(receiptBooks);
@@ -25,6 +27,7 @@ class ReceiptBookController {
     }
 
     static async getReceiptBookById(req, res) {
+        console.log('Getting receipt book by ID', req.params);
         try {
             const { bookID } = req.params;
             const receiptBook = await ReceiptBookService.getReceiptBookById(bookID);
@@ -36,6 +39,7 @@ class ReceiptBookController {
     }
 
     static async sendToSupplier(req, res) {
+        console.log('Sending to supplier', req.body);
         try {
             const { bookIDs, supplierEmail } = req.body;
             if (!Array.isArray(bookIDs) || !supplierEmail) return res.status(400).json({ error: 'Book IDs (array) and supplier email are required' });
@@ -48,6 +52,7 @@ class ReceiptBookController {
     }
 
     static async transfer(req, res) {
+        console.log('Transfering books', req.body);
         try {
             const { bookIDs, recipientID, recipientType = 'user' } = req.body;
             if (!Array.isArray(bookIDs) || !recipientID) return res.status(400).json({ error: 'Book IDs (array) and recipient ID are required' });
@@ -58,8 +63,9 @@ class ReceiptBookController {
             res.status(400).json({ error: error.message || 'Failed to initiate transfer' });
         }
     }
-    
+
     static async collectFromSupplier(req, res) {
+        console.log('Collecting from supplier', req.body);
         try {
             const { bookIDs, userID } = req.body;
             if (!Array.isArray(bookIDs) || !userID) return res.status(400).json({ error: 'Book IDs (array) and user ID are required' });
@@ -73,6 +79,7 @@ class ReceiptBookController {
 
 
     static async validateTransfer(req, res) {
+        console.log('Validating transfer', req.body);
         try {
             const { bookIDs, recipientID, otpCode, recipientType = 'user' } = req.body;
             if (!Array.isArray(bookIDs) || !recipientID || !otpCode) {
@@ -87,6 +94,7 @@ class ReceiptBookController {
     }
 
     static async getTransferHistory(req, res) {
+        console.log('Getting transfer history', req.params);
         try {
             const { bookID } = req.params;
             const history = await ReceiptBookService.getTransferHistory(bookID);
@@ -98,6 +106,7 @@ class ReceiptBookController {
     }
 
     static async updateReceiptBook(req, res) {
+        console.log('Updating receipt book', req.body);
         try {
             const { bookID } = req.params;
             const updates = req.body;
@@ -114,6 +123,7 @@ class ReceiptBookController {
     }
 
     static async deleteReceiptBook(req, res) {
+        console.log('Deleting receipt book', req.params);
         try {
             const { bookID } = req.params;
             if (!bookID) {

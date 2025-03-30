@@ -53,7 +53,7 @@ class VisitService {
     }
   }
 
-  static Future<Visit> updateVisit({
+static Future<Visit> updateVisit({
     required String visitId,
     String? date,
     String? time,
@@ -64,7 +64,7 @@ class VisitService {
     String? agentID,
     List<Map<String, dynamic>>? checklists,
     List<Map<String, dynamic>>? reasons,
-    List<String>? photoPaths,
+    List<String>? photoPaths, // Used for both new photos and photos to remove
     required String token,
   }) async {
     var request = http.MultipartRequest(
@@ -80,11 +80,25 @@ class VisitService {
     if (status != null) request.fields['status'] = status;
     if (comment != null) request.fields['comment'] = comment;
     if (agentID != null) request.fields['agentID'] = agentID;
-    if (checklists != null)
-      request.fields['checklists'] = json.encode(checklists);
+    if (checklists != null) request.fields['checklists'] = json.encode(checklists);
     if (reasons != null) request.fields['reasons'] = json.encode(reasons);
+
     if (photoPaths != null && photoPaths.isNotEmpty) {
-      request.fields['photosToRemove'] = json.encode(photoPaths);
+      // If paths are from camera (local files), send as multipart files
+      if (photoPaths.any((path) => !path.startsWith('/uploads/photos'))) {
+        for (var path in photoPaths) {
+          request.files.add(
+            await http.MultipartFile.fromPath(
+              'photos', // Match backend expectation
+              path,
+              contentType: MediaType('image', 'jpeg'),
+            ),
+          );
+        }
+      } else {
+        // If paths are server paths (to remove), send as photosToRemove
+        request.fields['photosToRemove'] = json.encode(photoPaths);
+      }
     }
 
     final response = await request.send();

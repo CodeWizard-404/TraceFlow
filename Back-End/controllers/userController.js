@@ -3,6 +3,7 @@ const UserService = require('../services/userService');
 
 class UserController {
     static async createUser(req, res) {
+        console.log('Received request to create user:', req.body);
         try {
             const { email, password, firstname, lastname, phone, wallet } = req.body;
             if (!email || !password || !firstname || !lastname || !phone || !wallet) {
@@ -17,6 +18,7 @@ class UserController {
     }
 
     static async getAllUsers(req, res) {
+        console.log('Received request to get all users', true);
         try {
             const users = await UserService.getAllUsers();
             res.status(200).json(users);
@@ -27,6 +29,7 @@ class UserController {
     }
 
     static async getUserByPhoneNumber(req, res) {
+        console.log('Received request to get user by phone number', req.params);
         try {
             const { phone } = req.params;
             if (!phone) {
@@ -41,6 +44,7 @@ class UserController {
     }
 
     static async getUserById(req, res) {
+        console.log('Received request to get user by ID', req.params);
         try {
             const { userID } = req.params;
             if (!userID) {
@@ -55,11 +59,10 @@ class UserController {
     }
 
     static async updateUser(req, res) {
+        console.log('Received request to update user', req.params, req.body);
         try {
             const { userID } = req.params;
             const userData = req.body;
-            console.log(userID);
-            console.log(userData);
             if (!userID) {
                 return res.status(400).json({ error: 'User ID is required' });
             }
@@ -72,6 +75,7 @@ class UserController {
     }
 
     static async deleteUser(req, res) {
+        console.log('Received request to delete user', req.params);
         try {
             const { userID } = req.params;
             if (!userID) {
@@ -90,6 +94,7 @@ class UserController {
 
 
     static async assignSupervisorsToManager(req, res) {
+        console.log('Received request to assign supervisors to manager', req.body);
         try {
             const { managerID, supervisorIDs } = req.body;
             if (!managerID || !Array.isArray(supervisorIDs)) {
@@ -104,6 +109,7 @@ class UserController {
     }
 
     static async revokeSupervisorsFromManager(req, res) {
+        console.log('Received request to revoke supervisors from manager', req.body);
         try {
             const { managerID, supervisorIDs } = req.body;
             if (!managerID || !Array.isArray(supervisorIDs)) {
@@ -118,6 +124,7 @@ class UserController {
     }
 
     static async getSupervisorsByUser(req, res) {
+        console.log('Received request to get supervisors by user', req.params);
         try {
             const { userID } = req.params;
             if (!userID) {
@@ -132,6 +139,7 @@ class UserController {
     }
 
     static async getManagersByUser(req, res) {
+        console.log('Received request to get managers by user', req.params);
         try {
             const { userID } = req.params;
             if (!userID) {
