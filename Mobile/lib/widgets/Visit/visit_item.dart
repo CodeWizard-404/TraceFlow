@@ -19,9 +19,7 @@ class VisitItem extends StatelessWidget {
         onTap: () {
           Navigator.push(
             context,
-            MaterialPageRoute(
-              builder: (_) => VisitDetailsScreen(visit: visit),
-            ),
+            MaterialPageRoute(builder: (_) => VisitDetailsScreen(visit: visit)),
           );
         },
         child: AnimatedContainer(
@@ -70,16 +68,27 @@ class VisitItem extends StatelessWidget {
                   ],
                 ),
                 const SizedBox(height: 16),
-                _buildInfoRow(context, Icons.location_on, 'Location: ${visit.location ?? 'N/A'}'),
+                _buildInfoRow(
+                  context,
+                  Icons.location_on,
+                  'Location: ${visit.location ?? 'N/A'}',
+                ),
                 const SizedBox(height: 12),
-                _buildInfoRow(context, Icons.access_time, 'Time: $formattedTime'),
+                _buildInfoRow(
+                  context,
+                  Icons.access_time,
+                  'Time: $formattedTime',
+                ),
                 const SizedBox(height: 16),
                 Wrap(
                   spacing: 8,
                   runSpacing: 8,
-                  children: (visit.reasons ?? [])
-                      .map((reason) => GlassChip(label: reason.item ?? 'N/A'))
-                      .toList(),
+                  children:
+                      (visit.reasons ?? [])
+                          .map(
+                            (reason) => GlassChip(label: reason.item ?? 'N/A'),
+                          )
+                          .toList(),
                 ),
               ],
             ),
@@ -98,14 +107,15 @@ class VisitItem extends StatelessWidget {
             shape: BoxShape.circle,
             color: Theme.of(context).colorScheme.primary.withOpacity(0.1),
           ),
-          child: Icon(icon, size: 18, color: Theme.of(context).colorScheme.primary),
+          child: Icon(
+            icon,
+            size: 18,
+            color: Theme.of(context).colorScheme.primary,
+          ),
         ),
         const SizedBox(width: 12),
         Expanded(
-          child: Text(
-            text,
-            style: Theme.of(context).textTheme.bodyMedium,
-          ),
+          child: Text(text, style: Theme.of(context).textTheme.bodyMedium),
         ),
       ],
     );

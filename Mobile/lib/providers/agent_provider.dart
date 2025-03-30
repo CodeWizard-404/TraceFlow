@@ -1,17 +1,17 @@
 // lib/providers/agent_provider.dart
 import 'package:flutter/foundation.dart';
 import '../models/agent.dart';
-import '../services/agent_service.dart';
+import '../services/agent_service.dart'; // Assuming you have an Agent model
 
 class AgentProvider with ChangeNotifier {
   List<Agent> _agents = [];
-  Agent? _currentAgent;
   List<String> _uniqueLocations = [];
+  Agent? _currentAgent;
   bool _isLoading = false;
 
   List<Agent> get agents => _agents;
-  Agent? get currentAgent => _currentAgent;
   List<String> get uniqueLocations => _uniqueLocations;
+  Agent? get currentAgent => _currentAgent;
   bool get isLoading => _isLoading;
 
   Future<void> fetchAgentById(String id, String token) async {
@@ -28,14 +28,14 @@ class AgentProvider with ChangeNotifier {
     }
   }
 
-  Future<void> fetchAgentByPhone(String phone, String token) async {
+  Future<void> fetchUniqueLocations(String token) async {
+    if (_uniqueLocations.isNotEmpty) return;
     _isLoading = true;
-    notifyListeners();
     try {
-      _currentAgent = await AgentService.fetchAgentByPhone(phone, token);
+      _uniqueLocations = await AgentService.fetchUniqueLocations(token); // Implement this in your service
     } catch (e) {
-      _currentAgent = null;
-      throw Exception('Failed to fetch agent by phone: $e');
+      _uniqueLocations = [];
+      throw Exception('Failed to fetch locations: $e');
     } finally {
       _isLoading = false;
       notifyListeners();
@@ -44,26 +44,24 @@ class AgentProvider with ChangeNotifier {
 
   Future<void> fetchAgentsByLocation(String location, String token) async {
     _isLoading = true;
-    notifyListeners();
     try {
-      _agents = await AgentService.fetchAgentsByLocation(location, token);
+      _agents = await AgentService.fetchAgentsByLocation(location, token); // Implement this in your service
     } catch (e) {
       _agents = [];
-      throw Exception('Failed to fetch agents by location: $e');
+      throw Exception('Failed to fetch agents: $e');
     } finally {
       _isLoading = false;
       notifyListeners();
     }
   }
 
-  Future<void> fetchUniqueLocations(String token) async {
+  Future<void> fetchAgentByPhone(String phone, String token) async {
     _isLoading = true;
-    notifyListeners();
     try {
-      _uniqueLocations = await AgentService.fetchUniqueLocations(token);
+      _currentAgent = await AgentService.fetchAgentByPhone(phone, token); // Implement this in your service
     } catch (e) {
-      _uniqueLocations = [];
-      throw Exception('Failed to fetch unique locations: $e');
+      _currentAgent = null;
+      throw Exception('Failed to fetch agent by phone: $e');
     } finally {
       _isLoading = false;
       notifyListeners();

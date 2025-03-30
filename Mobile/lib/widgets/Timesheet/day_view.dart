@@ -10,7 +10,7 @@ class DayView extends StatelessWidget {
 
   const DayView(this.day, {super.key});
 
-  List<Visit> getVisitsForDay(DateTime day, List<Timesheet> timesheets) {
+  List getVisitsForDay(DateTime day, List<Timesheet> timesheets) {
     final localDayStart = DateTime(day.year, day.month, day.day);
     final allVisits = timesheets
         .expand((timesheet) => timesheet.visits ?? [])

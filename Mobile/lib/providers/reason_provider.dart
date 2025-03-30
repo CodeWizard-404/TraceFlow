@@ -1,13 +1,14 @@
-// lib/providers/reason_provider.dart
 import 'package:flutter/foundation.dart';
 import '../models/reason.dart';
 import '../services/reason_service.dart';
 
 class ReasonProvider with ChangeNotifier {
   List<Reason> _reasons = [];
+  List<Reason> _allReasons = [];
   bool _isLoading = false;
 
   List<Reason> get reasons => _reasons;
+  List<Reason> get allReasons => _allReasons;
   bool get isLoading => _isLoading;
 
   Future<void> getReasonsByVisitId(String visitId, String token) async {
@@ -28,9 +29,9 @@ class ReasonProvider with ChangeNotifier {
     _isLoading = true;
     notifyListeners();
     try {
-      _reasons = await ReasonService.getAllReasons(token);
+      _allReasons = await ReasonService.getAllReasons(token);
     } catch (e) {
-      _reasons = [];
+      _allReasons = [];
       throw Exception('Failed to fetch all reasons: $e');
     } finally {
       _isLoading = false;

@@ -23,11 +23,13 @@ class VisitService {
     if (comment != null) request.fields['comment'] = comment;
     if (photoPaths != null) {
       for (var path in photoPaths) {
-        request.files.add(await http.MultipartFile.fromPath(
-          'photos',
-          path,
-          contentType: MediaType('image', 'jpeg'),
-        ));
+        request.files.add(
+          await http.MultipartFile.fromPath(
+            'photos',
+            path,
+            contentType: MediaType('image', 'jpeg'),
+          ),
+        );
       }
     }
     final response = await request.send();
@@ -70,6 +72,7 @@ class VisitService {
       Uri.parse('$baseUrl/visits/$visitId'),
     );
     request.headers['Authorization'] = 'Bearer $token';
+
     if (date != null) request.fields['date'] = date;
     if (time != null) request.fields['time'] = time;
     if (duration != null) request.fields['duration'] = duration.toString();
@@ -77,19 +80,16 @@ class VisitService {
     if (status != null) request.fields['status'] = status;
     if (comment != null) request.fields['comment'] = comment;
     if (agentID != null) request.fields['agentID'] = agentID;
-    if (checklists != null) request.fields['checklists'] = json.encode(checklists);
+    if (checklists != null)
+      request.fields['checklists'] = json.encode(checklists);
     if (reasons != null) request.fields['reasons'] = json.encode(reasons);
-    if (photoPaths != null) {
-      for (var path in photoPaths) {
-        request.files.add(await http.MultipartFile.fromPath(
-          'photos',
-          path,
-          contentType: MediaType('image', 'jpeg'),
-        ));
-      }
+    if (photoPaths != null && photoPaths.isNotEmpty) {
+      request.fields['photosToRemove'] = json.encode(photoPaths);
     }
+
     final response = await request.send();
     final responseBody = await response.stream.bytesToString();
+
     if (response.statusCode == 200) {
       return Visit.fromJson(json.decode(responseBody));
     } else {
@@ -118,10 +118,7 @@ class VisitService {
         'Content-Type': 'application/json',
         'Authorization': 'Bearer $token',
       },
-      body: json.encode({
-        'qrData': qrData,
-        'visitId': visitId,
-      }),
+      body: json.encode({'qrData': qrData, 'visitId': visitId}),
     );
     if (response.statusCode == 200) {
       return json.decode(response.body);

@@ -90,7 +90,7 @@ const TimesheetForm: React.FC = () => {
 
   const isValidTime = (timeStr: string, dateStr: string): boolean => {
     const [hours, minutes] = timeStr.split(':').map(Number);
-    if (hours < 8 || (hours >= 17 && minutes > 0)) {
+    if (hours < 8 || (hours >= 16 && minutes > 30)) {
       return false;
     }
     if (dateStr === currentDate) {

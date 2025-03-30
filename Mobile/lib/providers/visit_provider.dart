@@ -66,8 +66,7 @@ class VisitProvider with ChangeNotifier {
     List<String>? photoPaths,
     required String token,
   }) async {
-    _isLoading = true;
-    notifyListeners();
+    _setLoading(true);
     try {
       _currentVisit = await VisitService.updateVisit(
         visitId: visitId,
@@ -86,9 +85,13 @@ class VisitProvider with ChangeNotifier {
     } catch (e) {
       throw Exception('Failed to update visit: $e');
     } finally {
-      _isLoading = false;
-      notifyListeners();
+      _setLoading(false);
     }
+  }
+
+  void _setLoading(bool value) {
+    _isLoading = value;
+    notifyListeners();
   }
 
   Future<void> deleteVisit(String visitId, String token) async {
@@ -133,6 +136,8 @@ class VisitProvider with ChangeNotifier {
   }
 
   int? getElapsedTimeInMinutes() {
-    return _startTime != null ? DateTime.now().difference(_startTime!).inMinutes : null;
+    return _startTime != null
+        ? DateTime.now().difference(_startTime!).inMinutes
+        : null;
   }
 }

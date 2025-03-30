@@ -1,23 +1,23 @@
 // models/agent.dart
 class Agent {
-  final String? agentID;
-  final String? name;
-  final String? lastname;
+  final String agentID;
+  final String name;
+  final String lastname;
   final String? cin;
   final String? email;
   final String? phone;
   final String? wallet;
-  final String? location;
+  final String location;
 
   Agent({
-    this.agentID,
-    this.name,
-    this.lastname,
+    required this.agentID,
+    required this.name,
+    required this.lastname,
     this.cin,
     this.email,
     this.phone,
     this.wallet,
-    this.location,
+    required this.location,
   });
 
   // Convert JSON to Agent object

@@ -1,59 +1,114 @@
-import 'dart:async';
-import 'dart:convert';
 import 'package:flutter/material.dart';
 import 'package:flutter/services.dart';
+import 'package:intl/intl.dart';
 import 'package:provider/provider.dart';
+import 'package:image_picker/image_picker.dart'; // Add this for camera
+import 'dart:io'; // For File
+import '../../models/visit.dart';
 import '../../models/checklist.dart';
 import '../../models/reason.dart';
 import '../../models/agent.dart';
+import '../../models/visit_checklist.dart';
 import '../../providers/auth_provider.dart';
-import '../../providers/timesheet_provider.dart';
-import '../../providers/agent_provider.dart';
+import '../../providers/visit_provider.dart';
 import '../../providers/checklist_provider.dart';
 import '../../providers/reason_provider.dart';
+import '../../providers/agent_provider.dart';
+import '../../utils/constants.dart';
 
-class CreateVisitScreen extends StatefulWidget {
-  final int weekNumber;
-  final int year;
+class EditVisitScreen extends StatefulWidget {
+  final Visit visit;
 
-  const CreateVisitScreen({
-    super.key,
-    required this.weekNumber,
-    required this.year,
-  });
+  const EditVisitScreen({super.key, required this.visit});
 
   @override
-  _CreateVisitScreenState createState() => _CreateVisitScreenState();
+  State<EditVisitScreen> createState() => _EditVisitScreenState();
 }
 
-class _CreateVisitScreenState extends State<CreateVisitScreen> {
-  final _formKey = GlobalKey<FormState>();
-  DateTime? _selectedDate;
-  TimeOfDay? _selectedTime;
+class _EditVisitScreenState extends State<EditVisitScreen> {
+  late Visit _visit;
+  late TextEditingController _dateController;
+  late TextEditingController _timeController;
+  late TextEditingController _agentPhoneController;
+  late TextEditingController _commentController;
+  String? _selectedLocation;
   String? _selectedAgentId;
-  List<Checklist> _selectedChecklists = [];
-  List<Reason> _selectedReasons = [];
-  String? _location;
-  String _agentPhone = '';
-  String? _phoneError;
-  Timer? _debounce;
-  final TextEditingController _phoneController = TextEditingController();
+  List<Checklist> _visitChecklists = [];
+  List<Reason> _visitReasons = [];
+  List<String> _photosToRemove = [];
+  List<File> _newPhotos = []; // Store new photos taken by camera
   bool _isLoading = false;
+  bool _isInitialized = false;
+  DateTime? _editStartTime;
+  int _additionalDuration = 0;
 
   @override
   void initState() {
     super.initState();
-    _selectedDate = DateTime(widget.year, 1, 1).add(Duration(days: (widget.weekNumber - 1) * 7));
+    _visit = widget.visit;
+    _dateController = TextEditingController(text: DateFormat('yyyy-MM-dd').format(_visit.date));
+    _timeController = TextEditingController(text: _visit.time);
+    _agentPhoneController = TextEditingController();
+    _commentController = TextEditingController(text: _visit.comment ?? '');
+    _selectedLocation = _visit.location;
+    _selectedAgentId = _visit.agentID;
+    _visitChecklists = _visit.checklists != null ? List.from(_visit.checklists!) : [];
+    _visitReasons = _visit.reasons != null ? List.from(_visit.reasons!) : [];
+
+    _agentPhoneController.addListener(_onPhoneNumberChanged);
+
     WidgetsBinding.instance.addPostFrameCallback((_) {
-      _loadInitialData();
+      if (mounted && !_isInitialized) {
+        _loadInitialData();
+      }
+      if (_visit.status == 'visited') {
+        _startEditTimer();
+      }
     });
   }
 
   @override
   void dispose() {
-    _debounce?.cancel();
-    _phoneController.dispose();
+    _agentPhoneController.removeListener(_onPhoneNumberChanged);
+    _dateController.dispose();
+    _timeController.dispose();
+    _agentPhoneController.dispose();
+    _commentController.dispose();
     super.dispose();
+  }
+
+  void _startEditTimer() {
+    _editStartTime = DateTime.now();
+  }
+
+  void _onPhoneNumberChanged() {
+    final phone = _agentPhoneController.text;
+    if (phone.length == 8 && phone.contains(RegExp(r'^[0-9]+$'))) {
+      _fetchAgentByPhone(phone);
+    }
+  }
+
+  Future<void> _fetchAgentByPhone(String phone) async {
+    final authProvider = Provider.of<AuthProvider>(context, listen: false);
+    final agentProvider = Provider.of<AgentProvider>(context, listen: false);
+    final token = authProvider.token;
+
+    if (token == null) return;
+
+    setState(() => _isLoading = true);
+    try {
+      await agentProvider.fetchAgentByPhone(phone, token);
+      final newAgent = agentProvider.currentAgent;
+      if (newAgent != null && newAgent.agentID != null) {
+        setState(() => _selectedAgentId = newAgent.agentID);
+      } else {
+        _showSnackBar('No agent found with this phone number');
+      }
+    } catch (e) {
+      _showSnackBar('Error fetching agent: $e');
+    } finally {
+      if (mounted) setState(() => _isLoading = false);
+    }
   }
 
   Future<void> _loadInitialData() async {
@@ -63,15 +118,22 @@ class _CreateVisitScreenState extends State<CreateVisitScreen> {
       final token = authProvider.token;
       if (token == null) throw Exception('No authentication token');
 
-      final agentProvider = Provider.of<AgentProvider>(context, listen: false);
       final checklistProvider = Provider.of<ChecklistProvider>(context, listen: false);
       final reasonProvider = Provider.of<ReasonProvider>(context, listen: false);
+      final agentProvider = Provider.of<AgentProvider>(context, listen: false);
 
       await Future.wait([
-        agentProvider.fetchUniqueLocations(token),
         checklistProvider.getAllChecklists(token),
         reasonProvider.getAllReasons(token),
+        agentProvider.fetchUniqueLocations(token),
+        if (_selectedLocation != null) agentProvider.fetchAgentsByLocation(_selectedLocation!, token),
       ]);
+
+      if (agentProvider.agents.isNotEmpty && !agentProvider.agents.any((a) => a.agentID == _selectedAgentId)) {
+        setState(() => _selectedAgentId = agentProvider.agents.first.agentID);
+      }
+
+      _isInitialized = true;
     } catch (e) {
       _showSnackBar('Failed to load initial data: $e');
     } finally {
@@ -80,31 +142,244 @@ class _CreateVisitScreenState extends State<CreateVisitScreen> {
   }
 
   int _getWeekNumber(DateTime date) {
-    // Create a UTC version of the input date (ignoring time)
     final utcDate = DateTime.utc(date.year, date.month, date.day);
-
-    // Adjust to the nearest Thursday: add 4 - (day of week or 7 if Sunday)
-    final dayOfWeek = utcDate.weekday % 7; // Dart: 1 = Mon, 7 = Sun; JS: 0 = Sun, 6 = Sat
+    final dayOfWeek = utcDate.weekday % 7;
     final adjustedDate = utcDate.add(Duration(days: 4 - (dayOfWeek == 0 ? 7 : dayOfWeek)));
-
-    // Get the start of the year (Jan 1st) in UTC
     final yearStart = DateTime.utc(adjustedDate.year, 1, 1);
-
-    // Calculate the difference in milliseconds, convert to days, and compute week number
     final diffMillis = adjustedDate.millisecondsSinceEpoch - yearStart.millisecondsSinceEpoch;
-    final diffDays = diffMillis / 86400000; // 86,400,000 ms = 1 day
+    final diffDays = diffMillis / 86400000;
     return ((diffDays + 1) / 7).ceil();
   }
 
-  Future<void> _selectDate(BuildContext context) async {
+  Future<void> _saveChanges() async {
+    if (_isLoading) return;
+
+    if (!_validateInputs()) return;
+
+    setState(() => _isLoading = true);
+
+    final authProvider = Provider.of<AuthProvider>(context, listen: false);
+    final visitProvider = Provider.of<VisitProvider>(context, listen: false);
+    final agentProvider = Provider.of<AgentProvider>(context, listen: false);
+    final token = authProvider.token;
+
+    if (token == null) {
+      _showSnackBar('Please log in first');
+      setState(() => _isLoading = false);
+      return;
+    }
+
+    try {
+      String? agentId = _selectedAgentId;
+      if (_agentPhoneController.text.isNotEmpty && _visit.status != 'visited') {
+        await agentProvider.fetchAgentByPhone(_agentPhoneController.text, token);
+        agentId = agentProvider.currentAgent?.agentID ?? _selectedAgentId;
+      }
+
+      final checklistUpdates = _visitChecklists
+          .map((c) => {
+        'id': c.checklistID,
+        'checked': c.visitChecklist?.checked ?? false,
+      })
+          .toList();
+
+      final reasonUpdates = _visitReasons.map((r) => {'id': r.reasonID}).toList();
+
+      int? updatedDuration = _visit.duration;
+      if (_visit.status == 'visited' && _editStartTime != null) {
+        _additionalDuration = DateTime.now().difference(_editStartTime!).inMinutes;
+        updatedDuration = (_visit.duration ?? 0) + _additionalDuration;
+      }
+
+      final newStatus = _visit.status == 'visited' ? 'visited' : 'pending';
+      final formattedDate = _visit.status == 'visited'
+          ? DateFormat('yyyy-MM-dd').format(_visit.date)
+          : _dateController.text;
+
+      // Handle new photos (assuming VisitProvider.uploadPhotos returns paths)
+      List<String> newPhotoPaths = [];
+      if (_newPhotos.isNotEmpty) {
+        newPhotoPaths = await visitProvider.uploadPhotos(_newPhotos, _visit.visitID!, token);
+      }
+
+      await visitProvider.updateVisit(
+        visitId: _visit.visitID!,
+        date: formattedDate,
+        time: _visit.status == 'visited' ? _visit.time : _timeController.text,
+        location: _visit.status == 'visited' ? _visit.location : _selectedLocation,
+        status: newStatus,
+        comment: _visit.status == 'visited' && _commentController.text.isNotEmpty ? _commentController.text : _visit.comment,
+        agentID: _visit.status == 'visited' ? _visit.agentID : agentId,
+        checklists: checklistUpdates,
+        reasons: reasonUpdates,
+        photoPaths: _photosToRemove.isNotEmpty ? _photosToRemove : null,
+        newPhotos: newPhotoPaths.isNotEmpty ? newPhotoPaths : null, // Send new photos
+        duration: updatedDuration,
+        token: token,
+      );
+
+      _showSnackBar('Visit updated successfully');
+      if (mounted) Navigator.pop(context);
+    } catch (e) {
+      _showSnackBar('Failed to update visit: $e');
+    } finally {
+      if (mounted) setState(() => _isLoading = false);
+    }
+  }
+
+  bool _validateInputs() {
+    if (_visit.status != 'visited') {
+      final now = DateTime.now();
+      final selectedDate = DateTime.parse(_dateController.text);
+      final selectedTime = DateFormat('HH:mm').parse(_timeController.text);
+      final selectedDateTime = DateTime(
+        selectedDate.year,
+        selectedDate.month,
+        selectedDate.day,
+        selectedTime.hour,
+        selectedTime.minute,
+      );
+
+      if (selectedDate.weekday == DateTime.saturday || selectedDate.weekday == DateTime.sunday) {
+        _showSnackBar('Date cannot be a Saturday or Sunday');
+        return false;
+      }
+      if (selectedDate.isBefore(DateTime(now.year, now.month, now.day))) {
+        _showSnackBar('Date cannot be before today');
+        return false;
+      }
+
+      final startTime = DateTime(selectedDate.year, selectedDate.month, selectedDate.day, 8, 0);
+      final endTime = DateTime(selectedDate.year, selectedDate.month, selectedDate.day, 17, 0);
+      if (selectedDateTime.isBefore(startTime) || selectedDateTime.isAfter(endTime)) {
+        _showSnackBar('Time must be between 08:00 and 17:00');
+        return false;
+      }
+      if (selectedDate.day == now.day && selectedDateTime.isBefore(now)) {
+        _showSnackBar('Time cannot be before now for today');
+        return false;
+      }
+
+      if (_selectedAgentId == null) {
+        _showSnackBar('An agent must be selected');
+        return false;
+      }
+    }
+
+    if (_visitChecklists.isEmpty) {
+      _showSnackBar('At least one checklist item is required');
+      return false;
+    }
+    if (_visitReasons.isEmpty) {
+      _showSnackBar('At least one reason is required');
+      return false;
+    }
+
+    return true;
+  }
+
+  void _showSnackBar(String message) {
+    if (mounted) {
+      ScaffoldMessenger.of(context).showSnackBar(SnackBar(content: Text(message)));
+    }
+  }
+
+  void _toggleChecklist(Checklist checklist, bool? value) {
+    if (_visit.status != 'visited') return; // Only for 'visited'
+    setState(() {
+      final index = _visitChecklists.indexWhere((c) => c.checklistID == checklist.checklistID);
+      if (index != -1) {
+        _visitChecklists[index] = Checklist(
+          checklistID: checklist.checklistID,
+          item: checklist.item,
+          visitChecklist: VisitChecklist(
+            checked: value ?? false,
+            visitID: _visit.visitID,
+            checklistID: checklist.checklistID,
+          ),
+        );
+      }
+    });
+  }
+
+  void _addChecklist(Checklist checklist) {
+    if (!_visitChecklists.any((c) => c.checklistID == checklist.checklistID)) {
+      setState(() {
+        _visitChecklists.add(Checklist(
+          checklistID: checklist.checklistID,
+          item: checklist.item,
+          visitChecklist: VisitChecklist(
+            checked: false,
+            visitID: _visit.visitID,
+            checklistID: checklist.checklistID,
+          ),
+        ));
+      });
+    }
+  }
+
+  void _removeChecklist(String checklistId) {
+    setState(() => _visitChecklists.removeWhere((c) => c.checklistID == checklistId));
+  }
+
+  void _addReason(Reason reason) {
+    if (!_visitReasons.any((r) => r.reasonID == reason.reasonID)) {
+      setState(() => _visitReasons.add(reason));
+    }
+  }
+
+  void _removeReason(String reasonId) {
+    setState(() => _visitReasons.removeWhere((r) => r.reasonID == reasonId));
+  }
+
+  void _removePhoto(String photo) {
+    setState(() => _photosToRemove.add(photo));
+  }
+
+  Future<void> _addNewPhoto() async {
+    if (_visit.status != 'visited') return; // Only for 'visited'
+    final picker = ImagePicker();
+    final pickedFile = await picker.pickImage(source: ImageSource.camera);
+    if (pickedFile != null) {
+      setState(() {
+        _newPhotos.add(File(pickedFile.path));
+      });
+    }
+  }
+
+  void _viewPhotoFullScreen(String photoPath) {
+    Navigator.push(
+      context,
+      MaterialPageRoute(
+        builder: (_) => Scaffold(
+          appBar: AppBar(
+            backgroundColor: Colors.black,
+            leading: IconButton(
+              icon: const Icon(Icons.close, color: Colors.white),
+              onPressed: () => Navigator.pop(context),
+            ),
+          ),
+          body: Center(
+            child: Image.network(
+              photoPath.startsWith('http') ? photoPath : '$baseUrl$photoPath',
+              fit: BoxFit.contain,
+              errorBuilder: (context, error, stackTrace) => const Icon(Icons.error, color: Colors.white, size: 50),
+            ),
+          ),
+          backgroundColor: Colors.black,
+        ),
+      ),
+    );
+  }
+
+  Future<void> _pickDate() async {
     final now = DateTime.now();
-    final DateTime? picked = await showDatePicker(
+    final date = await showDatePicker(
       context: context,
-      initialDate: _selectedDate ?? DateTime.now(),
+      initialDate: _visit.date,
       firstDate: DateTime(now.year, now.month, now.day),
       lastDate: DateTime.now().add(const Duration(days: 365)),
-      selectableDayPredicate: (DateTime date) =>
-      date.weekday != DateTime.saturday && date.weekday != DateTime.sunday,
+      selectableDayPredicate: (DateTime date) => date.weekday != DateTime.saturday && date.weekday != DateTime.sunday,
       builder: (context, child) {
         return Theme(
           data: Theme.of(context).copyWith(
@@ -119,16 +394,17 @@ class _CreateVisitScreenState extends State<CreateVisitScreen> {
         );
       },
     );
-    if (picked != null && picked != _selectedDate) {
-      setState(() => _selectedDate = picked);
+    if (date != null && mounted) {
+      setState(() => _dateController.text = DateFormat('yyyy-MM-dd').format(date));
     }
   }
 
-  Future<void> _selectTime(BuildContext context) async {
+  Future<void> _pickTime() async {
     final now = DateTime.now();
-    final TimeOfDay? picked = await showTimePicker(
+    final initialTime = TimeOfDay.fromDateTime(DateFormat('HH:mm').parse(_timeController.text));
+    final time = await showTimePicker(
       context: context,
-      initialTime: _selectedTime ?? TimeOfDay.now(),
+      initialTime: initialTime,
       builder: (context, child) {
         return Theme(
           data: Theme.of(context).copyWith(
@@ -141,28 +417,21 @@ class _CreateVisitScreenState extends State<CreateVisitScreen> {
         );
       },
     );
-    if (picked != null && picked != _selectedTime) {
-      final selectedDate = _selectedDate ?? now;
-      final selectedDateTime = DateTime(
-        selectedDate.year,
-        selectedDate.month,
-        selectedDate.day,
-        picked.hour,
-        picked.minute,
-      );
-      final startTime = DateTime(selectedDate.year, selectedDate.month, selectedDate.day, 8, 0);
-      final endTime = DateTime(selectedDate.year, selectedDate.month, selectedDate.day, 17, 0);
+    if (time != null && mounted) {
+      final selectedDate = DateTime.parse(_dateController.text);
+      final selectedDateTime = DateTime(selectedDate.year, selectedDate.month, selectedDate.day, time.hour, time.minute);
+      final isToday = selectedDate.day == now.day;
 
-      if (picked.hour < 8 || picked.hour >= 17 || (picked.hour == 17 && picked.minute > 0)) {
+      if (time.hour < 8 || time.hour >= 17 || (time.hour == 17 && time.minute > 0)) {
         _showSnackBar('Time must be between 08:00 and 17:00');
         return;
       }
-      if (selectedDate.day == now.day && selectedDateTime.isBefore(now)) {
+      if (isToday && selectedDateTime.isBefore(now)) {
         _showSnackBar('Time cannot be before now for today');
         return;
       }
 
-      setState(() => _selectedTime = picked);
+      setState(() => _timeController.text = '${time.hour.toString().padLeft(2, '0')}:${time.minute.toString().padLeft(2, '0')}');
     }
   }
 
@@ -208,10 +477,10 @@ class _CreateVisitScreenState extends State<CreateVisitScreen> {
                           return RadioListTile<String>(
                             title: Text(location),
                             value: location,
-                            groupValue: _location,
+                            groupValue: _selectedLocation,
                             onChanged: (value) {
                               setState(() {
-                                _location = value;
+                                _selectedLocation = value;
                                 _selectedAgentId = null;
                                 agentProvider.fetchAgentsByLocation(value!, Provider.of<AuthProvider>(context, listen: false).token!);
                               });
@@ -310,7 +579,7 @@ class _CreateVisitScreenState extends State<CreateVisitScreen> {
 
   Future<void> _showChecklistDialog(BuildContext context, ChecklistProvider checklistProvider) async {
     final allChecklists = checklistProvider.allChecklists;
-    final selectedChecklists = List<Checklist>.from(_selectedChecklists);
+    final selectedChecklists = List<Checklist>.from(_visitChecklists);
     final TextEditingController searchController = TextEditingController();
     List<Checklist> filteredChecklists = List.from(allChecklists);
 
@@ -355,7 +624,15 @@ class _CreateVisitScreenState extends State<CreateVisitScreen> {
                             onChanged: (value) {
                               setDialogState(() {
                                 if (value == true) {
-                                  selectedChecklists.add(checklist);
+                                  selectedChecklists.add(Checklist(
+                                    checklistID: checklist.checklistID,
+                                    item: checklist.item,
+                                    visitChecklist: VisitChecklist(
+                                      checked: false,
+                                      visitID: _visit.visitID,
+                                      checklistID: checklist.checklistID,
+                                    ),
+                                  ));
                                 } else {
                                   selectedChecklists.removeWhere((c) => c.checklistID == checklist.checklistID);
                                 }
@@ -376,7 +653,7 @@ class _CreateVisitScreenState extends State<CreateVisitScreen> {
                 ),
                 ElevatedButton(
                   onPressed: () {
-                    setState(() => _selectedChecklists = selectedChecklists);
+                    setState(() => _visitChecklists = selectedChecklists);
                     Navigator.pop(context);
                   },
                   style: Theme.of(context).elevatedButtonTheme.style,
@@ -392,7 +669,7 @@ class _CreateVisitScreenState extends State<CreateVisitScreen> {
 
   Future<void> _showReasonDialog(BuildContext context, ReasonProvider reasonProvider) async {
     final allReasons = reasonProvider.allReasons;
-    final selectedReasons = List<Reason>.from(_selectedReasons);
+    final selectedReasons = List<Reason>.from(_visitReasons);
     final TextEditingController searchController = TextEditingController();
     List<Reason> filteredReasons = List.from(allReasons);
 
@@ -458,7 +735,7 @@ class _CreateVisitScreenState extends State<CreateVisitScreen> {
                 ),
                 ElevatedButton(
                   onPressed: () {
-                    setState(() => _selectedReasons = selectedReasons);
+                    setState(() => _visitReasons = selectedReasons);
                     Navigator.pop(context);
                   },
                   style: Theme.of(context).elevatedButtonTheme.style,
@@ -470,165 +747,6 @@ class _CreateVisitScreenState extends State<CreateVisitScreen> {
         );
       },
     );
-  }
-
-  void _onPhoneChanged(String value, AgentProvider agentProvider) {
-    setState(() {
-      _agentPhone = value;
-      _phoneError = null;
-    });
-
-    if (_debounce?.isActive ?? false) _debounce!.cancel();
-    _debounce = Timer(const Duration(milliseconds: 500), () async {
-      if (value.isEmpty) {
-        setState(() {
-          _selectedAgentId = null;
-          _location = null;
-          agentProvider.agents.clear();
-        });
-      } else if (value.length >= 8) {
-        try {
-          final authProvider = Provider.of<AuthProvider>(context, listen: false);
-          await agentProvider.fetchAgentByPhone(value, authProvider.token!);
-          final agent = agentProvider.currentAgent;
-          if (agent != null) {
-            setState(() {
-              _selectedAgentId = agent.agentID;
-              _location = agent.location;
-              agentProvider.agents.clear();
-              agentProvider.agents.add(agent);
-            });
-          } else {
-            setState(() {
-              _phoneError = 'Agent not found with this phone number';
-              _selectedAgentId = null;
-              _location = null;
-              agentProvider.agents.clear();
-            });
-          }
-        } catch (e) {
-          setState(() {
-            _phoneError = 'Error fetching agent: $e';
-            _selectedAgentId = null;
-            _location = null;
-            agentProvider.agents.clear();
-          });
-        }
-      }
-    });
-  }
-
-  bool _validateInputs() {
-    final now = DateTime.now();
-    final selectedDate = _selectedDate ?? now;
-    final selectedTime = _selectedTime ?? TimeOfDay.now();
-    final selectedDateTime = DateTime(
-      selectedDate.year,
-      selectedDate.month,
-      selectedDate.day,
-      selectedTime.hour,
-      selectedTime.minute,
-    );
-
-    if (selectedDate.weekday == DateTime.saturday || selectedDate.weekday == DateTime.sunday) {
-      _showSnackBar('Date cannot be a Saturday or Sunday');
-      return false;
-    }
-    if (selectedDate.isBefore(DateTime(now.year, now.month, now.day))) {
-      _showSnackBar('Date cannot be before today');
-      return false;
-    }
-
-    final startTime = DateTime(selectedDate.year, selectedDate.month, selectedDate.day, 8, 0);
-    final endTime = DateTime(selectedDate.year, selectedDate.month, selectedDate.day, 17, 0);
-    if (selectedDateTime.isBefore(startTime) || selectedDateTime.isAfter(endTime)) {
-      _showSnackBar('Time must be between 08:00 and 17:00');
-      return false;
-    }
-    if (selectedDate.day == now.day && selectedDateTime.isBefore(now)) {
-      _showSnackBar('Time cannot be before now for today');
-      return false;
-    }
-
-    if (_selectedAgentId == null) {
-      _showSnackBar('An agent must be selected');
-      return false;
-    }
-    if (_location == null) {
-      _showSnackBar('A location must be selected');
-      return false;
-    }
-    if (_selectedChecklists.isEmpty) {
-      _showSnackBar('At least one checklist item is required');
-      return false;
-    }
-    if (_selectedReasons.isEmpty) {
-      _showSnackBar('At least one reason is required');
-      return false;
-    }
-
-    return true;
-  }
-
-  void _submitVisit() async {
-    if (_isLoading) return;
-
-    if (_formKey.currentState!.validate() && _validateInputs()) {
-      setState(() => _isLoading = true);
-
-      final authProvider = Provider.of<AuthProvider>(context, listen: false);
-      final timesheetProvider = Provider.of<TimesheetProvider>(context, listen: false);
-      final token = authProvider.token;
-      final supervisorID = authProvider.user?.userID;
-
-      if (token == null || supervisorID == null) {
-        _showSnackBar('Please log in first');
-        setState(() => _isLoading = false);
-        return;
-      }
-
-      try {
-        final checklistUpdates = _selectedChecklists.map((c) => {'id': c.checklistID}).toList();
-        final reasonUpdates = _selectedReasons.map((r) => {'id': r.reasonID}).toList();
-
-        final visit = {
-          'date': _selectedDate!.toIso8601String().split('T')[0],
-          'time': _selectedTime!.format(context).toLowerCase().replaceAll(' ', ''),
-          'agentID': _selectedAgentId!,
-          'location': _location!,
-          'reasons': reasonUpdates,
-          'checklists': checklistUpdates,
-        };
-
-        print('Submitting visit payload: ${json.encode(visit)}');
-
-        await timesheetProvider.createTimesheet(
-          weekNumber: _getWeekNumber(_selectedDate!),
-          year: _selectedDate!.year,
-          supervisorID: supervisorID,
-          visits: [visit],
-          token: token,
-        );
-
-        Navigator.pop(context);
-        _showSnackBar('Visit created successfully');
-      } catch (e) {
-        _showSnackBar('Failed to create visit: $e');
-      } finally {
-        if (mounted) setState(() => _isLoading = false);
-      }
-    }
-  }
-
-  void _showSnackBar(String message) {
-    if (mounted) {
-      ScaffoldMessenger.of(context).showSnackBar(
-        SnackBar(
-          content: Text(message),
-          backgroundColor: message.contains('successfully') ? Theme.of(context).colorScheme.primary : Theme.of(context).colorScheme.error,
-        ),
-      );
-    }
   }
 
   @override
@@ -652,7 +770,7 @@ class _CreateVisitScreenState extends State<CreateVisitScreen> {
             backgroundColor: Colors.transparent,
             elevation: 0,
             title: Text(
-              'Create Visit',
+              _visit.status == 'visited' ? 'Review Visit' : 'Edit Visit',
               style: Theme.of(context).appBarTheme.titleTextStyle,
             ),
             centerTitle: true,
@@ -674,28 +792,25 @@ class _CreateVisitScreenState extends State<CreateVisitScreen> {
         color: Theme.of(context).scaffoldBackgroundColor,
         child: Padding(
           padding: const EdgeInsets.all(16.0),
-          child: _isLoading
+          child: _isLoading && !_isInitialized
               ? const Center(child: CircularProgressIndicator())
-              : Form(
-            key: _formKey,
-            child: ListView(
-              children: [
+              : ListView(
+            children: [
+              if (_visit.status != 'visited') ...[
                 _buildSectionCard(
                   title: 'Date & Time',
                   child: Column(
                     children: [
                       _buildTile(
                         icon: Icons.calendar_today,
-                        title: _selectedDate == null
-                            ? 'Select Date'
-                            : '${_selectedDate!.day}/${_selectedDate!.month}/${_selectedDate!.year}',
-                        onTap: () => _selectDate(context),
+                        title: _dateController.text,
+                        onTap: _pickDate,
                       ),
                       const SizedBox(height: 12),
                       _buildTile(
                         icon: Icons.access_time,
-                        title: _selectedTime == null ? 'Select Time' : _selectedTime!.format(context),
-                        onTap: () => _selectTime(context),
+                        title: _timeController.text,
+                        onTap: _pickTime,
                       ),
                     ],
                   ),
@@ -721,57 +836,50 @@ class _CreateVisitScreenState extends State<CreateVisitScreen> {
                                 const SizedBox(width: 12),
                                 Expanded(
                                   child: TextField(
-                                    controller: _phoneController,
-                                    keyboardType: TextInputType.number, // Numeric keyboard
+                                    controller: _agentPhoneController,
+                                    keyboardType: TextInputType.number,
                                     inputFormatters: [
-                                      FilteringTextInputFormatter.digitsOnly, // Only allows numbers
+                                      FilteringTextInputFormatter.digitsOnly,
                                     ],
-                                    maxLength: 8, // Limits to 8 digits
+                                    maxLength: 8,
                                     decoration: InputDecoration(
                                       hintText: 'Enter agent\'s phone number',
                                       border: InputBorder.none,
                                       hintStyle: TextStyle(color: Theme.of(context).colorScheme.onSurface.withOpacity(0.6)),
-                                      counterText: '', // Hides the character counter
+                                      counterText: '',
                                     ),
                                     style: TextStyle(fontSize: 16, color: Theme.of(context).colorScheme.onSurface),
-                                    onChanged: (value) => _onPhoneChanged(value, agentProvider),
                                   ),
                                 ),
                               ],
                             ),
                           ),
-                          if (_phoneError != null) ...[
-                            const SizedBox(height: 8),
-                            Text(
-                              _phoneError!,
-                              style: TextStyle(color: Theme.of(context).colorScheme.error, fontSize: 12),
-                            ),
-                          ],
                           const SizedBox(height: 12),
                           GestureDetector(
-                            onTap: _agentPhone.isNotEmpty ? null : () => _showLocationDialog(context, agentProvider),
+                            onTap: _agentPhoneController.text.isNotEmpty ? null : () => _showLocationDialog(context, agentProvider),
                             child: Container(
                               padding: const EdgeInsets.all(12),
                               decoration: BoxDecoration(
                                 color: Theme.of(context).colorScheme.surface,
                                 borderRadius: BorderRadius.circular(12),
                                 border: Border.all(color: Theme.of(context).colorScheme.onSurface.withOpacity(0.2)),
-                                backgroundBlendMode: _agentPhone.isNotEmpty ? BlendMode.saturation : null,
+                                backgroundBlendMode: _agentPhoneController.text.isNotEmpty ? BlendMode.saturation : null,
                               ),
                               child: Row(
                                 children: [
                                   Icon(
                                     Icons.location_on,
-                                    color: _agentPhone.isNotEmpty
+                                    color: _agentPhoneController.text.isNotEmpty
                                         ? Theme.of(context).colorScheme.onSurface.withOpacity(0.6)
                                         : Theme.of(context).colorScheme.primary,
                                   ),
                                   const SizedBox(width: 12),
                                   Expanded(
                                     child: Text(
-                                      _location ?? (_agentPhone.isNotEmpty ? 'Selected via phone' : 'Select Location'),
+                                      _selectedLocation ??
+                                          (_agentPhoneController.text.isNotEmpty ? 'Selected via phone' : 'Select Location'),
                                       style: TextStyle(
-                                        color: _agentPhone.isNotEmpty
+                                        color: _agentPhoneController.text.isNotEmpty
                                             ? Theme.of(context).colorScheme.onSurface.withOpacity(0.6)
                                             : Theme.of(context).colorScheme.onSurface,
                                       ),
@@ -787,7 +895,7 @@ class _CreateVisitScreenState extends State<CreateVisitScreen> {
                           ),
                           const SizedBox(height: 12),
                           GestureDetector(
-                            onTap: _agentPhone.isNotEmpty || _location == null
+                            onTap: _agentPhoneController.text.isNotEmpty || _selectedLocation == null
                                 ? null
                                 : () => _showAgentDialog(context, agentProvider),
                             child: Container(
@@ -796,13 +904,14 @@ class _CreateVisitScreenState extends State<CreateVisitScreen> {
                                 color: Theme.of(context).colorScheme.surface,
                                 borderRadius: BorderRadius.circular(12),
                                 border: Border.all(color: Theme.of(context).colorScheme.onSurface.withOpacity(0.2)),
-                                backgroundBlendMode: _agentPhone.isNotEmpty || _location == null ? BlendMode.saturation : null,
+                                backgroundBlendMode:
+                                _agentPhoneController.text.isNotEmpty || _selectedLocation == null ? BlendMode.saturation : null,
                               ),
                               child: Row(
                                 children: [
                                   Icon(
                                     Icons.person,
-                                    color: _agentPhone.isNotEmpty || _location == null
+                                    color: _agentPhoneController.text.isNotEmpty || _selectedLocation == null
                                         ? Theme.of(context).colorScheme.onSurface.withOpacity(0.6)
                                         : Theme.of(context).colorScheme.primary,
                                   ),
@@ -810,22 +919,20 @@ class _CreateVisitScreenState extends State<CreateVisitScreen> {
                                   Expanded(
                                     child: Text(
                                       _selectedAgentId == null
-                                          ? (_agentPhone.isNotEmpty
+                                          ? (_agentPhoneController.text.isNotEmpty
                                           ? 'Selected via phone'
-                                          : _location == null
+                                          : _selectedLocation == null
                                           ? 'Select a location first'
                                           : 'Select Agent')
-                                          : agentProvider.agents.firstWhere(
+                                          : '${agentProvider.agents.firstWhere(
                                             (agent) => agent.agentID == _selectedAgentId,
                                         orElse: () => Agent(agentID: _selectedAgentId!, name: 'Loading', lastname: '...', location: ''),
-                                      ).name +
-                                          ' ' +
-                                          agentProvider.agents.firstWhere(
-                                                (agent) => agent.agentID == _selectedAgentId,
-                                            orElse: () => Agent(agentID: _selectedAgentId!, name: 'Loading', lastname: '...', location: ''),
-                                          ).lastname,
+                                      ).name} ${agentProvider.agents.firstWhere(
+                                            (agent) => agent.agentID == _selectedAgentId,
+                                        orElse: () => Agent(agentID: _selectedAgentId!, name: 'Loading', lastname: '...', location: ''),
+                                      ).lastname}',
                                       style: TextStyle(
-                                        color: _agentPhone.isNotEmpty || _location == null
+                                        color: _agentPhoneController.text.isNotEmpty || _selectedLocation == null
                                             ? Theme.of(context).colorScheme.onSurface.withOpacity(0.6)
                                             : Theme.of(context).colorScheme.onSurface,
                                       ),
@@ -844,14 +951,47 @@ class _CreateVisitScreenState extends State<CreateVisitScreen> {
                     },
                   ),
                 ),
+              ],
+              if (_visit.status == 'visited' && _visit.comment != null) ...[
                 const SizedBox(height: 16),
                 _buildSectionCard(
-                  title: 'Checklists',
-                  child: Consumer<ChecklistProvider>(
-                    builder: (context, checklistProvider, child) {
-                      return Column(
-                        crossAxisAlignment: CrossAxisAlignment.start,
-                        children: [
+                  title: 'Details',
+                  child: Container(
+                    padding: const EdgeInsets.symmetric(vertical: 0, horizontal: 16),
+                    decoration: BoxDecoration(
+                      color: Theme.of(context).colorScheme.surface,
+                      borderRadius: BorderRadius.circular(12),
+                      border: Border.all(color: Theme.of(context).colorScheme.onSurface.withOpacity(0.2)),
+                    ),
+                    child: Row(
+                      children: [
+                        Icon(Icons.comment, color: Theme.of(context).colorScheme.primary, size: 24),
+                        const SizedBox(width: 12),
+                        Expanded(
+                          child: TextField(
+                            controller: _commentController,
+                            decoration: InputDecoration(
+                              hintText: 'Enter comment',
+                              border: InputBorder.none,
+                              hintStyle: TextStyle(color: Theme.of(context).colorScheme.onSurface.withOpacity(0.6)),
+                            ),
+                            style: TextStyle(fontSize: 16, color: Theme.of(context).colorScheme.onSurface),
+                          ),
+                        ),
+                      ],
+                    ),
+                  ),
+                ),
+              ],
+              const SizedBox(height: 16),
+              _buildSectionCard(
+                title: 'Checklists',
+                child: Consumer<ChecklistProvider>(
+                  builder: (context, checklistProvider, child) {
+                    return Column(
+                      crossAxisAlignment: CrossAxisAlignment.start,
+                      children: [
+                        if (_visit.status != 'visited') // Selector for non-'visited'
                           GestureDetector(
                             onTap: () => _showChecklistDialog(context, checklistProvider),
                             child: Container(
@@ -867,9 +1007,9 @@ class _CreateVisitScreenState extends State<CreateVisitScreen> {
                                   const SizedBox(width: 12),
                                   Expanded(
                                     child: Text(
-                                      _selectedChecklists.isEmpty
+                                      _visitChecklists.isEmpty
                                           ? 'Select Checklists'
-                                          : '${_selectedChecklists.length} selected',
+                                          : '${_visitChecklists.length} selected',
                                       style: Theme.of(context).textTheme.bodyMedium,
                                     ),
                                   ),
@@ -878,95 +1018,196 @@ class _CreateVisitScreenState extends State<CreateVisitScreen> {
                               ),
                             ),
                           ),
-                          if (_selectedChecklists.isNotEmpty) ...[
-                            const SizedBox(height: 8),
-                            Wrap(
-                              spacing: 8,
-                              runSpacing: 8,
-                              children: _selectedChecklists.map((checklist) {
-                                return Chip(
-                                  label: Text(checklist.item),
-                                  deleteIcon: const Icon(Icons.close, size: 18),
-                                  onDeleted: () {
-                                    setState(() => _selectedChecklists.remove(checklist));
-                                  },
-                                  backgroundColor: Theme.of(context).colorScheme.primary.withOpacity(0.1),
-                                  labelStyle: TextStyle(color: Theme.of(context).colorScheme.primary),
-                                );
-                              }).toList(),
-                            ),
-                          ],
-                        ],
-                      );
-                    },
-                  ),
+                        if (_visitChecklists.isNotEmpty) ...[
+                          const SizedBox(height: 8),
+                          Column(
+                            children: _visitChecklists.map((checklist) {
+                              return CheckboxListTile(
+                                title: Text(checklist.item),
+                                value: checklist.visitChecklist?.checked ?? false,
+                                onChanged: _visit.status == 'visited'
+                                    ? (value) => _toggleChecklist(checklist, value)
+                                    : null,
+                                activeColor: Theme.of(context).colorScheme.primary,
+                                enabled: _visit.status == 'visited',
+                                controlAffinity: ListTileControlAffinity.leading,
+                                dense: true,
+                              );
+                            }).toList(),
+                          ),
+                        ] else if (_visit.status == 'visited')
+                          Text(
+                            'No checklists available',
+                            style: TextStyle(color: Theme.of(context).colorScheme.onSurface.withOpacity(0.6)),
+                          ),
+                      ],
+                    );
+                  },
                 ),
+              ),
+              const SizedBox(height: 16),
+              _buildSectionCard(
+                title: 'Reasons',
+                child: Consumer<ReasonProvider>(
+                  builder: (context, reasonProvider, child) {
+                    return Column(
+                      crossAxisAlignment: CrossAxisAlignment.start,
+                      children: [
+                        GestureDetector(
+                          onTap: () => _showReasonDialog(context, reasonProvider),
+                          child: Container(
+                            padding: const EdgeInsets.all(12),
+                            decoration: BoxDecoration(
+                              color: Theme.of(context).colorScheme.surface,
+                              borderRadius: BorderRadius.circular(12),
+                              border: Border.all(color: Theme.of(context).colorScheme.onSurface.withOpacity(0.2)),
+                            ),
+                            child: Row(
+                              children: [
+                                Icon(Icons.list_alt, color: Theme.of(context).colorScheme.primary),
+                                const SizedBox(width: 12),
+                                Expanded(
+                                  child: Text(
+                                    _visitReasons.isEmpty ? 'Select Reasons' : '${_visitReasons.length} selected',
+                                    style: Theme.of(context).textTheme.bodyMedium,
+                                  ),
+                                ),
+                                Icon(Icons.arrow_drop_down, color: Theme.of(context).colorScheme.onSurface.withOpacity(0.6)),
+                              ],
+                            ),
+                          ),
+                        ),
+                        if (_visitReasons.isNotEmpty) ...[
+                          const SizedBox(height: 8),
+                          Wrap(
+                            spacing: 8,
+                            runSpacing: 8,
+                            children: _visitReasons.map((reason) {
+                              return Chip(
+                                label: Text(reason.item),
+                                deleteIcon: const Icon(Icons.close, size: 18),
+                                onDeleted: () => _removeReason(reason.reasonID!),
+                                backgroundColor: Theme.of(context).colorScheme.primary.withOpacity(0.1),
+                                labelStyle: TextStyle(color: Theme.of(context).colorScheme.primary),
+                              );
+                            }).toList(),
+                          ),
+                        ],
+                      ],
+                    );
+                  },
+                ),
+              ),
+              if (_visit.photos != null || _newPhotos.isNotEmpty) ...[
                 const SizedBox(height: 16),
                 _buildSectionCard(
-                  title: 'Reasons',
-                  child: Consumer<ReasonProvider>(
-                    builder: (context, reasonProvider, child) {
-                      return Column(
-                        crossAxisAlignment: CrossAxisAlignment.start,
+                  title: 'Photos',
+                  child: Column(
+                    crossAxisAlignment: CrossAxisAlignment.start,
+                    children: [
+                      if (_visit.status == 'visited')
+                        ElevatedButton.icon(
+                          onPressed: _addNewPhoto,
+                          icon: const Icon(Icons.camera_alt),
+                          label: const Text('Take Photo'),
+                          style: ElevatedButton.styleFrom(
+                            backgroundColor: Theme.of(context).colorScheme.primary,
+                            foregroundColor: Theme.of(context).colorScheme.onPrimary,
+                          ),
+                        ),
+                      const SizedBox(height: 8),
+                      Wrap(
+                        spacing: 8,
+                        runSpacing: 8,
                         children: [
-                          GestureDetector(
-                            onTap: () => _showReasonDialog(context, reasonProvider),
-                            child: Container(
-                              padding: const EdgeInsets.all(12),
-                              decoration: BoxDecoration(
-                                color: Theme.of(context).colorScheme.surface,
-                                borderRadius: BorderRadius.circular(12),
-                                border: Border.all(color: Theme.of(context).colorScheme.onSurface.withOpacity(0.2)),
+                          // Existing photos
+                          if (_visit.photos != null)
+                            ..._visit.photos!.where((p) => !_photosToRemove.contains(p)).map((photo) {
+                              return GestureDetector(
+                                onTap: () => _viewPhotoFullScreen(photo),
+                                child: Stack(
+                                  children: [
+                                    Image.network(
+                                      photo.startsWith('http') ? photo : '$baseUrl$photo',
+                                      width: 100,
+                                      height: 100,
+                                      fit: BoxFit.cover,
+                                      errorBuilder: (_, __, ___) => const Icon(Icons.error, size: 100),
+                                    ),
+                                    Positioned(
+                                      top: 0,
+                                      right: 0,
+                                      child: IconButton(
+                                        icon: const Icon(Icons.close, color: Colors.red),
+                                        onPressed: () => _removePhoto(photo),
+                                      ),
+                                    ),
+                                  ],
+                                ),
+                              );
+                            }).toList(),
+                          // New photos from camera
+                          ..._newPhotos.map((photo) {
+                            return GestureDetector(
+                              onTap: () => Navigator.push(
+                                context,
+                                MaterialPageRoute(
+                                  builder: (_) => Scaffold(
+                                    appBar: AppBar(
+                                      backgroundColor: Colors.black,
+                                      leading: IconButton(
+                                        icon: const Icon(Icons.close, color: Colors.white),
+                                        onPressed: () => Navigator.pop(context),
+                                      ),
+                                    ),
+                                    body: Center(
+                                      child: Image.file(
+                                        photo,
+                                        fit: BoxFit.contain,
+                                        errorBuilder: (_, __, ___) => const Icon(Icons.error, color: Colors.white, size: 50),
+                                      ),
+                                    ),
+                                    backgroundColor: Colors.black,
+                                  ),
+                                ),
                               ),
-                              child: Row(
+                              child: Stack(
                                 children: [
-                                  Icon(Icons.list_alt, color: Theme.of(context).colorScheme.primary),
-                                  const SizedBox(width: 12),
-                                  Expanded(
-                                    child: Text(
-                                      _selectedReasons.isEmpty ? 'Select Reasons' : '${_selectedReasons.length} selected',
-                                      style: Theme.of(context).textTheme.bodyMedium,
+                                  Image.file(
+                                    photo,
+                                    width: 100,
+                                    height: 100,
+                                    fit: BoxFit.cover,
+                                    errorBuilder: (_, __, ___) => const Icon(Icons.error, size: 100),
+                                  ),
+                                  Positioned(
+                                    top: 0,
+                                    right: 0,
+                                    child: IconButton(
+                                      icon: const Icon(Icons.close, color: Colors.red),
+                                      onPressed: () => setState(() => _newPhotos.remove(photo)),
                                     ),
                                   ),
-                                  Icon(Icons.arrow_drop_down, color: Theme.of(context).colorScheme.onSurface.withOpacity(0.6)),
                                 ],
                               ),
-                            ),
-                          ),
-                          if (_selectedReasons.isNotEmpty) ...[
-                            const SizedBox(height: 8),
-                            Wrap(
-                              spacing: 8,
-                              runSpacing: 8,
-                              children: _selectedReasons.map((reason) {
-                                return Chip(
-                                  label: Text(reason.item),
-                                  deleteIcon: const Icon(Icons.close, size: 18),
-                                  onDeleted: () {
-                                    setState(() => _selectedReasons.remove(reason));
-                                  },
-                                  backgroundColor: Theme.of(context).colorScheme.primary.withOpacity(0.1),
-                                  labelStyle: TextStyle(color: Theme.of(context).colorScheme.primary),
-                                );
-                              }).toList(),
-                            ),
-                          ],
+                            );
+                          }).toList(),
                         ],
-                      );
-                    },
-                  ),
-                ),
-                const SizedBox(height: 24),
-                ElevatedButton(
-                  onPressed: _submitVisit,
-                  style: Theme.of(context).elevatedButtonTheme.style,
-                  child: Text(
-                    'Create Visit',
-                    style: TextStyle(fontSize: 18, fontWeight: FontWeight.w600, color: Theme.of(context).colorScheme.onPrimary),
+                      ),
+                    ],
                   ),
                 ),
               ],
-            ),
+              const SizedBox(height: 24),
+              ElevatedButton(
+                onPressed: _saveChanges,
+                style: Theme.of(context).elevatedButtonTheme.style,
+                child: Text(
+                  'Save Changes',
+                  style: TextStyle(fontSize: 18, fontWeight: FontWeight.w600, color: Theme.of(context).colorScheme.onPrimary),
+                ),
+              ),
+            ],
           ),
         ),
       ),
