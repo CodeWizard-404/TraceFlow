@@ -253,10 +253,6 @@ const TimesheetForm: React.FC = () => {
 
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
-    if (!userPermissions.canCreateTimesheets) {
-      setError("You lack permission to create timesheets.");
-      return;
-    }
     setLoading(true);
     setError(null);
 
@@ -545,7 +541,11 @@ const TimesheetForm: React.FC = () => {
             <button
               type="submit"
               className="submit-btn"
-              disabled={!isFormComplete || loading || !userPermissions.canCreateTimesheets}
+              disabled={
+                !isFormComplete ||
+                loading ||
+                !(userPermissions.canCreateTimesheets || userPermissions.canCreateTimesheetsForSupervisors)
+              }
             >
               {loading ? "Submitting..." : "Create Timesheet"}
             </button>

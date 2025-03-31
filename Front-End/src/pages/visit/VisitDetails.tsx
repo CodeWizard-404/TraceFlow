@@ -41,7 +41,13 @@ const PERMISSIONS = {
   CREATE_TIMESHEETS_FOR_SUPERVISORS: import.meta.env.VITE_PERMISSIONS_CREATE_TIMESHEETS_FOR_SUPERVISOR,
 } as const;
 
-// Interface for edit form state
+// Interface for edit tracking
+interface EditTracking {
+  startTime: number | null;
+  durationAccumulator: number; // in minutes
+}
+
+// Interface for edit form state with original values
 interface EditFormState {
   date: string;
   time: string;
@@ -57,6 +63,16 @@ interface EditFormState {
   checklists: Array<{ id: string; checked: boolean }>;
   reasons: Array<{ id: string }>;
   photosToRemove: string[];
+  original: {
+    date: string;
+    time: string;
+    location: string;
+    status: string;
+    comment: string;
+    agentID: string;
+    checklists: Array<{ id: string; checked: boolean }>;
+    reasons: Array<{ id: string }>;
+  };
 }
 
 /**
@@ -64,14 +80,10 @@ interface EditFormState {
  * and fullscreen image preview.
  */
 const VisitDetails: React.FC = () => {
-  // Navigation and route params
   const { idVisit } = useParams<{ idVisit: string }>();
   const navigate = useNavigate();
-
-  // Authentication context
   const { token, user, effectivePermissions, permissionsLoaded } = useAuth();
 
-  // Component state
   const [visit, setVisit] = useState<Visit | null>(null);
   const [agent, setAgent] = useState<Agent | null>(null);
   const [supervisors, setSupervisors] = useState<User[]>([]);
@@ -82,10 +94,14 @@ const VisitDetails: React.FC = () => {
   const [loading, setLoading] = useState<boolean>(true);
   const [error, setError] = useState<string | null>(null);
   const [isEditing, setIsEditing] = useState<boolean>(false);
-  const [selectedImage, setSelectedImage] = useState<string | null>(null); // Fullscreen image preview
+  const [selectedImage, setSelectedImage] = useState<string | null>(null);
   const [selectedSupervisor, setSelectedSupervisor] = useState<string>("");
   const [supervisorPhone, setSupervisorPhone] = useState<string>("");
   const [supervisorSearch, setSupervisorSearch] = useState<string>("");
+  const [editTracking, setEditTracking] = useState<EditTracking>({
+    startTime: null,
+    durationAccumulator: 0
+  });
   const [editForm, setEditForm] = useState<EditFormState>({
     date: "",
     time: "",
@@ -101,9 +117,18 @@ const VisitDetails: React.FC = () => {
     checklists: [],
     reasons: [],
     photosToRemove: [],
+    original: {
+      date: "",
+      time: "",
+      location: "",
+      status: "",
+      comment: "",
+      agentID: "",
+      checklists: [],
+      reasons: []
+    }
   });
 
-  // Memoized permissions for performance
   const userPermissions = useMemo(() => ({
     canAccessVisitDetails: effectivePermissions?.some(p => p.name === PERMISSIONS.ACCESS_VISIT_DETAILS),
     canLogVisits: effectivePermissions?.some(p => p.name === PERMISSIONS.LOG_VISITS),
@@ -118,7 +143,6 @@ const VisitDetails: React.FC = () => {
     canCreateTimesheetsForSupervisors: effectivePermissions?.some(p => p.name === PERMISSIONS.CREATE_TIMESHEETS_FOR_SUPERVISORS),
   }), [effectivePermissions]);
 
-  // Utility functions
   const getCurrentDateTime = () => {
     const now = new Date();
     return {
@@ -140,7 +164,6 @@ const VisitDetails: React.FC = () => {
     return true;
   };
 
-  // Data fetching
   const fetchVisitData = useCallback(async () => {
     if (!idVisit || !token || !userPermissions.canAccessVisitDetails) {
       navigate("/access-denied");
@@ -174,6 +197,19 @@ const VisitDetails: React.FC = () => {
         })) || [],
         reasons: visitData.Reasons?.map(r => ({ id: r.reasonID })) || [],
         photosToRemove: [],
+        original: {
+          date: visitData.date,
+          time: visitData.time.slice(0, 5),
+          location: visitData.location || "",
+          status: visitData.status,
+          comment: visitData.comment || "",
+          agentID: visitData.agentID,
+          checklists: visitData.Checklists?.map(c => ({
+            id: c.checklistID,
+            checked: c.VisitChecklist?.checked || false,
+          })) || [],
+          reasons: visitData.Reasons?.map(r => ({ id: r.reasonID })) || [],
+        }
       });
       setSelectedSupervisor("");
 
@@ -200,7 +236,6 @@ const VisitDetails: React.FC = () => {
     if (permissionsLoaded) fetchVisitData();
   }, [fetchVisitData, permissionsLoaded]);
 
-  // Debounced API calls
   const fetchAgentByPhone = useCallback(
     debounce(async (phone: string) => {
       if (phone.length < 7 || !userPermissions.canReadAgentsByPhone || !token) return;
@@ -265,7 +300,6 @@ const VisitDetails: React.FC = () => {
     }
   }, [editForm.location, editForm.agentPhone, userPermissions.canReadAgentsByLocation, token]);
 
-  // Event handlers
   const handleLogVisit = () => {
     if (visit && userPermissions.canLogVisits) {
       navigate("/qr-scan", { state: { visit } });
@@ -292,15 +326,46 @@ const VisitDetails: React.FC = () => {
     }
   };
 
-  const handleEditToggle = () => setIsEditing(prev => !prev);
+  const handleEditToggle = () => {
+    if (!isEditing && visit?.status === VisitStatus.VISITED) {
+      setEditTracking({
+        startTime: Date.now(),
+        durationAccumulator: visit.duration || 0
+      });
+    }
+    setIsEditing(prev => {
+      if (prev) {
+        setEditForm(prevForm => ({
+          ...prevForm,
+          date: prevForm.original.date,
+          time: prevForm.original.time,
+          location: prevForm.original.location,
+          status: prevForm.original.status,
+          comment: prevForm.original.comment,
+          agentID: prevForm.original.agentID,
+          checklists: [...prevForm.original.checklists],
+          reasons: [...prevForm.original.reasons],
+          photosToRemove: []
+        }));
+        setEditTracking({ startTime: null, durationAccumulator: 0 });
+      }
+      return !prev;
+    });
+  };
 
   const handleEditSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
     if (!visit || !userPermissions.canEditTimesheets || !token || !editForm.date || !editForm.time) return;
 
     let newStatus = editForm.status;
+    let updatedDuration = visit.duration || 0;
+
     if (visit.status === VisitStatus.VISITED) {
       newStatus = VisitStatus.VISITED;
+      if (editTracking.startTime) {
+        const editDurationMinutes = Math.round((Date.now() - editTracking.startTime) / 60000);
+        updatedDuration = editTracking.durationAccumulator + editDurationMinutes;
+      }
     } else if (userPermissions.canCreateTimesheetsForSupervisors && selectedSupervisor) {
       newStatus = VisitStatus.VALIDATED;
     } else if ([VisitStatus.VALIDATED, VisitStatus.REJECTED].includes(visit.status as VisitStatus)) {
@@ -319,9 +384,11 @@ const VisitDetails: React.FC = () => {
         reasons: editForm.reasons,
         photosToRemove: editForm.photosToRemove,
         supervisorID: selectedSupervisor && userPermissions.canCreateTimesheetsForSupervisors ? selectedSupervisor : undefined,
+        duration: updatedDuration
       }, token);
 
       setVisit(updatedVisit);
+      setEditTracking({ startTime: null, durationAccumulator: 0 });
       setIsEditing(false);
     } catch (err) {
       setError("Failed to update visit.");
@@ -405,7 +472,6 @@ const VisitDetails: React.FC = () => {
     }
   };
 
-  // Conditional rendering based on state
   if (!permissionsLoaded) {
     return <div className="visit-details-loading">Loading permissions...</div>;
   }
@@ -447,7 +513,7 @@ const VisitDetails: React.FC = () => {
                   cx="18"
                   cy="18"
                   r="16"
-                  strokeDasharray={`${Math.min(visit.duration / 60 * 100, 100)} 100`}
+                  strokeDasharray={`${Math.min(visit.duration! / 60 * 100, 100)} 100`}
                 />
               </svg>
               <span className="duration-text">{visit.duration}m</span>
