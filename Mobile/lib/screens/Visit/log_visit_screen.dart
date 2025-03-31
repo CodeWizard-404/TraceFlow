@@ -1,9 +1,7 @@
-// lib/screens/Visit/log_visit_screen.dart
 import 'dart:io';
 import 'package:camera/camera.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter/services.dart';
-import 'package:google_mlkit_barcode_scanning/google_mlkit_barcode_scanning.dart';
 import 'package:provider/provider.dart';
 import '../../models/checklist.dart';
 import '../../models/visit.dart';
@@ -29,13 +27,10 @@ class LogVisitScreen extends StatefulWidget {
   _LogVisitScreenState createState() => _LogVisitScreenState();
 }
 
-class _LogVisitScreenState extends State<LogVisitScreen> {
+class _LogVisitScreenState extends State<LogVisitScreen>
+    with WidgetsBindingObserver {
   late CameraController _cameraController;
-  final BarcodeScanner _barcodeScanner = BarcodeScanner(
-    formats: [BarcodeFormat.qrCode],
-  );
   bool _isCameraInitialized = false;
-  bool _isScanning = false;
   bool _isCameraActive = false;
   List<Checklist> _checklists = [];
   List<XFile> _photos = [];
@@ -46,9 +41,19 @@ class _LogVisitScreenState extends State<LogVisitScreen> {
   @override
   void initState() {
     super.initState();
+    WidgetsBinding.instance.addObserver(this);
     _initializeCamera();
     _fetchVisitData();
     _entryTime = DateTime.now();
+  }
+
+  @override
+  void didChangeAppLifecycleState(AppLifecycleState state) {
+    if (state == AppLifecycleState.resumed && _isCameraInitialized) {
+      _cameraController.initialize().then((_) {
+        if (mounted) setState(() {});
+      });
+    }
   }
 
   Future<void> _initializeCamera() async {
@@ -61,9 +66,6 @@ class _LogVisitScreenState extends State<LogVisitScreen> {
       enableAudio: false,
     );
     await _cameraController.initialize();
-    await _cameraController.lockCaptureOrientation(
-      DeviceOrientation.portraitUp,
-    );
     setState(() {
       _isCameraInitialized = true;
     });
@@ -101,8 +103,8 @@ class _LogVisitScreenState extends State<LogVisitScreen> {
 
   @override
   void dispose() {
+    WidgetsBinding.instance.removeObserver(this);
     _cameraController.dispose();
-    _barcodeScanner.close();
     super.dispose();
   }
 
@@ -124,6 +126,7 @@ class _LogVisitScreenState extends State<LogVisitScreen> {
 
   Future<void> _startCamera() async {
     if (!_isCameraInitialized) return;
+    await _cameraController.setFlashMode(FlashMode.off);
     setState(() {
       _isCameraActive = true;
     });
@@ -133,49 +136,6 @@ class _LogVisitScreenState extends State<LogVisitScreen> {
     setState(() {
       _isCameraActive = false;
     });
-  }
-
-  Future<void> _scanQRCode() async {
-    if (!_isCameraInitialized || _isScanning) return;
-    setState(() => _isScanning = true);
-    try {
-      final image = await _cameraController.takePicture();
-      final inputImage = InputImage.fromFilePath(image.path);
-      final barcodes = await _barcodeScanner.processImage(inputImage);
-      for (final barcode in barcodes) {
-        if (barcode.rawValue != null) {
-          final authProvider = Provider.of<AuthProvider>(
-            context,
-            listen: false,
-          );
-          final visitProvider = Provider.of<VisitProvider>(
-            context,
-            listen: false,
-          );
-          if (authProvider.token != null) {
-            final isValid = await visitProvider.verifyQRCode(
-              visitId: widget.visitID,
-              qrData: barcode.rawValue!,
-              token: authProvider.token!,
-            );
-            if (isValid['valid'] == true) {
-              if (!mounted) return;
-              ScaffoldMessenger.of(context).showSnackBar(
-                const SnackBar(content: Text('QR code verified successfully')),
-              );
-              return;
-            } else {
-              _showSnackBar('Invalid QR code');
-            }
-          }
-        }
-      }
-      _showSnackBar('No valid QR code detected');
-    } catch (e) {
-      _showSnackBar('Error scanning QR code: $e');
-    } finally {
-      setState(() => _isScanning = false);
-    }
   }
 
   Future<void> _capturePhoto() async {
@@ -196,19 +156,51 @@ class _LogVisitScreenState extends State<LogVisitScreen> {
     });
   }
 
+  void _viewPhotoFullScreen(XFile photo) {
+    Navigator.push(
+      context,
+      MaterialPageRoute(
+        builder:
+            (_) => Scaffold(
+              appBar: AppBar(
+                backgroundColor: Colors.black,
+                leading: IconButton(
+                  icon: const Icon(Icons.close, color: Colors.white),
+                  onPressed: () => Navigator.pop(context),
+                ),
+              ),
+              body: Center(
+                child: Image.file(
+                  File(photo.path),
+                  fit: BoxFit.contain,
+                  errorBuilder:
+                      (_, __, ___) => const Icon(
+                        Icons.error,
+                        color: Colors.white,
+                        size: 50,
+                      ),
+                ),
+              ),
+              backgroundColor: Colors.black,
+            ),
+      ),
+    );
+  }
+
   void _toggleChecklist(String checklistId, bool checked) {
     setState(() {
-      _checklists =
-          _checklists.map((c) {
-            if (c.checklistID == checklistId) {
-              return Checklist(
-                checklistID: c.checklistID,
-                item: c.item,
-                visitChecklist: VisitChecklist(checked: checked),
-              );
-            }
-            return c;
-          }).toList();
+      final index = _checklists.indexWhere((c) => c.checklistID == checklistId);
+      if (index != -1) {
+        _checklists[index] = Checklist(
+          checklistID: checklistId,
+          item: _checklists[index].item,
+          visitChecklist: VisitChecklist(
+            checked: checked,
+            visitID: widget.visitID,
+            checklistID: checklistId,
+          ),
+        );
+      }
     });
   }
 
@@ -232,11 +224,21 @@ class _LogVisitScreenState extends State<LogVisitScreen> {
               ? DateTime.now().difference(_entryTime!).inMinutes
               : 0;
 
+      final checklistUpdates =
+          _checklists
+              .map(
+                (c) => {
+                  'id': c.checklistID,
+                  'checked': c.visitChecklist?.checked ?? false,
+                },
+              )
+              .toList();
+
       await visitProvider.logVisit(
         visitId: widget.visitID,
         token: authProvider.token!,
         duration: duration,
-        checklistUpdates: _checklists.map((c) => c.toJson()).toList(),
+        checklistUpdates: checklistUpdates,
         photoPaths: _photos.map((p) => p.path).toList(),
         comment: _comment,
       );
@@ -296,191 +298,220 @@ class _LogVisitScreenState extends State<LogVisitScreen> {
                   checklistProvider.isLoading ||
                   !_isCameraInitialized
               ? const Center(child: CircularProgressIndicator())
-              : SingleChildScrollView(
-                padding: const EdgeInsets.all(16.0),
-                child: Column(
-                  crossAxisAlignment: CrossAxisAlignment.start,
-                  children: [
-                    if (!_isCameraActive) ...[
+              : RefreshIndicator(
+                onRefresh: _fetchVisitData,
+                child: SingleChildScrollView(
+                  padding: const EdgeInsets.all(16.0),
+                  physics: const AlwaysScrollableScrollPhysics(),
+                  child: Column(
+                    crossAxisAlignment: CrossAxisAlignment.start,
+                    children: [
+                      if (!_isCameraActive) ...[
+                        _buildGlassCard(
+                          context,
+                          title: 'Visit Details',
+                          icon: Icons.person,
+                          content: [
+                            _buildDetailRow(
+                              context,
+                              'Agent ID:',
+                              _visit?.agentID ?? 'N/A',
+                            ),
+                            _buildDetailRow(
+                              context,
+                              'Location:',
+                              _visit?.location ?? 'N/A',
+                            ),
+                          ],
+                        ),
+                        const SizedBox(height: 16),
+                        _buildGlassCard(
+                          context,
+                          title: 'Reasons',
+                          icon: Icons.question_answer,
+                          content:
+                              _visit?.reasons?.isEmpty ?? true
+                                  ? [const Text('No reasons specified')]
+                                  : _visit!.reasons!
+                                      .map((r) => Text(r.item ?? 'N/A'))
+                                      .toList(),
+                        ),
+                        const SizedBox(height: 16),
+                      ],
                       _buildGlassCard(
                         context,
-                        title: 'Visit Details',
-                        icon: Icons.person,
+                        title: 'Camera & Photos',
+                        icon: Icons.camera_alt,
                         content: [
-                          _buildDetailRow(
-                            context,
-                            'Agent ID:',
-                            _visit?.agentID ?? 'N/A',
-                          ),
-                          _buildDetailRow(
-                            context,
-                            'Location:',
-                            _visit?.location ?? 'N/A',
-                          ),
-                        ],
-                      ),
-                      const SizedBox(height: 16),
-                      _buildGlassCard(
-                        context,
-                        title: 'Reasons',
-                        icon: Icons.question_answer,
-                        content:
-                            _visit?.reasons?.isEmpty ?? true
-                                ? [const Text('No reasons specified')]
-                                : _visit!.reasons!
-                                    .map((r) => Text(r.item ?? 'N/A'))
-                                    .toList(),
-                      ),
-                      const SizedBox(height: 16),
-                    ],
-                    _buildGlassCard(
-                      context,
-                      title: 'QR Scanner & Photos',
-                      icon: Icons.qr_code_scanner,
-                      content: [
-                        if (!_isCameraActive)
-                          ElevatedButton(
-                            onPressed: _startCamera,
-                            child: const Text('Start Camera'),
-                          )
-                        else ...[
-                          SizedBox(
-                            height: 300,
-                            child: Stack(
+                          if (!_isCameraActive)
+                            ElevatedButton(
+                              onPressed: _startCamera,
+                              style: ElevatedButton.styleFrom(
+                                backgroundColor:
+                                    Theme.of(context).colorScheme.primary,
+                                foregroundColor:
+                                    Theme.of(context).colorScheme.onPrimary,
+                                shape: RoundedRectangleBorder(
+                                  borderRadius: BorderRadius.circular(12),
+                                ),
+                              ),
+                              child: const Text('Start Camera'),
+                            )
+                          else ...[
+                            SizedBox(
+                              height: MediaQuery.of(context).size.height * 0.8,
+                              child: CameraPreview(_cameraController),
+                            ),
+                            const SizedBox(height: 12),
+                            Row(
+                              mainAxisAlignment: MainAxisAlignment.spaceEvenly,
                               children: [
-                                CameraPreview(_cameraController),
-                                if (_isScanning)
-                                  const Center(
-                                    child: CircularProgressIndicator(),
+                                ElevatedButton(
+                                  onPressed: _stopCamera,
+                                  style: ElevatedButton.styleFrom(
+                                    backgroundColor: Colors.red,
+                                    foregroundColor: Colors.white,
+                                    shape: RoundedRectangleBorder(
+                                      borderRadius: BorderRadius.circular(12),
+                                    ),
                                   ),
-                                Positioned(
-                                  bottom: 10,
-                                  right: 10,
-                                  child: FloatingActionButton(
-                                    onPressed: _capturePhoto,
-                                    child: const Icon(Icons.camera),
+                                  child: const Text('Stop Camera'),
+                                ),
+                                ElevatedButton(
+                                  onPressed: _capturePhoto,
+                                  style: ElevatedButton.styleFrom(
+                                    backgroundColor:
+                                        Theme.of(context).colorScheme.primary,
+                                    foregroundColor:
+                                        Theme.of(context).colorScheme.onPrimary,
+                                    shape: RoundedRectangleBorder(
+                                      borderRadius: BorderRadius.circular(12),
+                                    ),
                                   ),
+                                  child: const Text('Capture Photo'),
                                 ),
                               ],
                             ),
-                          ),
-                          const SizedBox(height: 12),
-                          ElevatedButton(
-                            onPressed: _stopCamera,
-                            style: ElevatedButton.styleFrom(
-                              backgroundColor: Colors.red,
-                            ),
-                            child: const Text('Stop Camera'),
-                          ),
-                          const SizedBox(height: 12),
-                          ElevatedButton(
-                            onPressed: _scanQRCode,
-                            child: Text(
-                              _isScanning ? 'Scanning...' : 'Scan QR Code',
-                            ),
-                          ),
-                          if (_photos.isNotEmpty) ...[
-                            const SizedBox(height: 12),
-                            Wrap(
-                              spacing: 8,
-                              runSpacing: 8,
-                              children:
-                                  _photos.asMap().entries.map((entry) {
-                                    final index = entry.key;
-                                    final photo = entry.value;
-                                    return Stack(
-                                      children: [
-                                        Image.file(
-                                          File(photo.path),
-                                          width: 100,
-                                          height: 100,
-                                          fit: BoxFit.cover,
-                                        ),
-                                        Positioned(
-                                          top: 0,
-                                          right: 0,
-                                          child: IconButton(
-                                            icon: const Icon(
-                                              Icons.close,
-                                              color: Colors.red,
+                            if (_photos.isNotEmpty) ...[
+                              const SizedBox(height: 12),
+                              Wrap(
+                                spacing: 8,
+                                runSpacing: 8,
+                                children:
+                                    _photos.asMap().entries.map((entry) {
+                                      final index = entry.key;
+                                      final photo = entry.value;
+                                      return GestureDetector(
+                                        onTap:
+                                            () => _viewPhotoFullScreen(photo),
+                                        child: Stack(
+                                          children: [
+                                            Image.file(
+                                              File(photo.path),
+                                              width: 100,
+                                              height: 100,
+                                              fit: BoxFit.cover,
                                             ),
-                                            onPressed:
-                                                () => _removePhoto(index),
-                                          ),
+                                            Positioned(
+                                              top: 0,
+                                              right: 0,
+                                              child: IconButton(
+                                                icon: const Icon(
+                                                  Icons.close,
+                                                  color: Colors.red,
+                                                ),
+                                                onPressed:
+                                                    () => _removePhoto(index),
+                                              ),
+                                            ),
+                                          ],
                                         ),
-                                      ],
-                                    );
-                                  }).toList(),
-                            ),
+                                      );
+                                    }).toList(),
+                              ),
+                            ],
                           ],
                         ],
-                      ],
-                    ),
-                    if (!_isCameraActive) ...[
-                      const SizedBox(height: 16),
-                      _buildGlassCard(
-                        context,
-                        title:
-                            'Checklist (${_checklists.where((c) => c.visitChecklist?.checked ?? false).length}/${_checklists.length})',
-                        icon: Icons.checklist,
-                        content:
-                            _checklists.isEmpty
-                                ? [const Text('No checklist items available')]
-                                : _checklists
-                                    .map(
-                                      (c) => CheckboxListTile(
-                                        title: Text(c.item ?? 'N/A'),
-                                        value:
-                                            c.visitChecklist?.checked ?? false,
-                                        onChanged:
-                                            (value) => _toggleChecklist(
-                                              c.checklistID!,
-                                              value ?? false,
-                                            ),
-                                      ),
-                                    )
-                                    .toList(),
                       ),
-                      const SizedBox(height: 16),
-                      _buildGlassCard(
-                        context,
-                        title: 'Comment',
-                        icon: Icons.comment,
-                        content: [
-                          TextField(
-                            onChanged: (value) => _comment = value,
-                            decoration: const InputDecoration(
-                              labelText: 'Add a comment (optional)',
-                              border: OutlineInputBorder(),
+                      if (!_isCameraActive) ...[
+                        const SizedBox(height: 16),
+                        _buildGlassCard(
+                          context,
+                          title:
+                              'Checklist (${_checklists.where((c) => c.visitChecklist?.checked ?? false).length}/${_checklists.length})',
+                          icon: Icons.checklist,
+                          content:
+                              _checklists.isEmpty
+                                  ? [const Text('No checklist items available')]
+                                  : _checklists
+                                      .map(
+                                        (c) => CheckboxListTile(
+                                          title: Text(c.item ?? 'N/A'),
+                                          value:
+                                              c.visitChecklist?.checked ??
+                                              false,
+                                          onChanged:
+                                              (value) => _toggleChecklist(
+                                                c.checklistID!,
+                                                value ?? false,
+                                              ),
+                                          activeColor:
+                                              Theme.of(
+                                                context,
+                                              ).colorScheme.primary,
+                                          controlAffinity:
+                                              ListTileControlAffinity.leading,
+                                          dense: true,
+                                        ),
+                                      )
+                                      .toList(),
+                        ),
+                        const SizedBox(height: 16),
+                        _buildGlassCard(
+                          context,
+                          title: 'Comment',
+                          icon: Icons.comment,
+                          content: [
+                            TextField(
+                              onChanged: (value) => _comment = value,
+                              decoration: InputDecoration(
+                                labelText: 'Add a comment (optional)',
+                                border: OutlineInputBorder(
+                                  borderRadius: BorderRadius.circular(12),
+                                ),
+                              ),
+                              maxLines: 3,
                             ),
-                            maxLines: 3,
-                          ),
-                        ],
-                      ),
-                      const SizedBox(height: 24),
-                      Row(
-                        mainAxisAlignment: MainAxisAlignment.spaceEvenly,
-                        children: [
-                          _buildActionButton(
-                            context,
-                            icon: Icons.check,
-                            label: 'Validate Visit',
-                            onPressed: _validateVisit,
-                          ),
-                          _buildActionButton(
-                            context,
-                            icon: Icons.arrow_back,
-                            label: 'Back',
-                            onPressed: () {
-                              _stopCamera();
-                              Navigator.pop(context);
-                            },
-                            gradientColors: [Colors.grey, Colors.grey.shade700],
-                          ),
-                        ],
-                      ),
+                          ],
+                        ),
+                        const SizedBox(height: 24),
+                        Row(
+                          mainAxisAlignment: MainAxisAlignment.spaceEvenly,
+                          children: [
+                            _buildActionButton(
+                              context,
+                              icon: Icons.check,
+                              label: 'Validate Visit',
+                              onPressed: _validateVisit,
+                            ),
+                            _buildActionButton(
+                              context,
+                              icon: Icons.arrow_back,
+                              label: 'Back',
+                              onPressed: () {
+                                _stopCamera();
+                                Navigator.pop(context);
+                              },
+                              gradientColors: [
+                                Colors.grey,
+                                Colors.grey.shade700,
+                              ],
+                            ),
+                          ],
+                        ),
+                      ],
                     ],
-                  ],
+                  ),
                 ),
               ),
     );
