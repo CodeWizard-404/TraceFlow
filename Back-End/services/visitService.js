@@ -142,45 +142,55 @@ class VisitService {
             const oldDate = visit.date;
             const oldTime = visit.time.replace(/:/g, '-');
             const supervisorName = `${visit.Timesheet.User.firstname.toLowerCase()}_${visit.Timesheet.User.lastname.toLowerCase()}`;
-            const oldFolderName = `${oldDate}_${oldTime}_${supervisorName}`;
-            const oldFolderPath = path.join(__dirname, '../uploads/photos', oldFolderName);
+            const folderName = `${oldDate}_${oldTime}_${supervisorName}`;
+            const folderPath = path.join(__dirname, '../uploads/photos', folderName);
 
-            const newDate = date || visit.date;
-            const newTime = (time || visit.time).replace(/:/g, '-');
-            const newFolderName = `${newDate}_${newTime}_${supervisorName}`;
-            const newFolderPath = path.join(__dirname, '../uploads/photos', newFolderName);
+            // Log initial state
+            console.log('Initial visit.photos:', visit.photos);
 
             // Handle photos
-            let photoPaths = visit.photos || [];
-            if (photosToRemove && Array.isArray(photosToRemove)) {
-                photoPaths = photoPaths.filter(p => !photosToRemove.includes(p));
-                // Remove deleted photos from the filesystem
-                photosToRemove.forEach(photo => {
-                    const photoPath = path.join(__dirname, '..', photo);
-                    if (fs.existsSync(photoPath)) {
-                        fs.unlinkSync(photoPath);
-                    }
-                });
-            }
-            if (files.length > 0) {
-                if (!fs.existsSync(newFolderPath)) fs.mkdirSync(newFolderPath, { recursive: true });
-                // Move uploaded files to the folder and update paths
-                files.forEach(file => {
-                    const destPath = path.join(newFolderPath, file.filename);
-                    fs.renameSync(file.path, destPath); // Move file from temp upload to folder
-                    photoPaths.push(`/uploads/photos/${newFolderName}/${file.filename}`);
-                });
-            }
-            if (oldFolderName !== newFolderName && fs.existsSync(oldFolderPath)) {
-                if (photoPaths.length > 0) {
-                    fs.renameSync(oldFolderPath, newFolderPath);
-                    photoPaths = photoPaths.map(p => p.replace(oldFolderName, newFolderName));
-                } else {
-                    fs.rmSync(oldFolderPath, { recursive: true, force: true });
+            let photoPaths = visit.photos ? [...visit.photos] : [];
+
+            // Parse photosToRemove if it’s a string
+            let photosToRemoveArray = photosToRemove;
+            if (typeof photosToRemove === 'string') {
+                try {
+                    photosToRemoveArray = JSON.parse(photosToRemove);
+                } catch (e) {
+                    console.error('Failed to parse photosToRemove:', photosToRemove);
                 }
             }
 
+            if (photosToRemoveArray && Array.isArray(photosToRemoveArray)) {
+                console.log('Photos to remove:', photosToRemoveArray);
+                photoPaths = photoPaths.filter(p => !photosToRemoveArray.includes(p));
+                photosToRemoveArray.forEach(photo => {
+                    const photoPath = path.join(__dirname, '..', photo);
+                    if (fs.existsSync(photoPath)) {
+                        fs.unlinkSync(photoPath);
+                        console.log(`Deleted photo from filesystem: ${photo}`);
+                    } else {
+                        console.log(`Photo not found in filesystem: ${photo}`);
+                    }
+                });
+            }
+            console.log('After removal, photoPaths:', photoPaths);
+
+            // Add new photos to the existing folder
+            if (files.length > 0) {
+                if (!fs.existsSync(folderPath)) fs.mkdirSync(folderPath, { recursive: true });
+                files.forEach(file => {
+                    const destPath = path.join(folderPath, file.filename);
+                    fs.renameSync(file.path, destPath);
+                    const newPhotoPath = `/uploads/photos/${folderName}/${file.filename}`;
+                    photoPaths.push(newPhotoPath);
+                    console.log(`Added new photo: ${newPhotoPath}`);
+                });
+            }
+            console.log('After adding new photos, photoPaths:', photoPaths);
+
             // Calculate weekNumber and year from the visit's date
+            const newDate = date || visit.date;
             const newDateObj = new Date(newDate);
             const newYear = newDateObj.getFullYear();
             const newWeekNumber = this.getISOWeekNumber(newDateObj);
@@ -189,7 +199,6 @@ class VisitService {
             // Handle supervisor change
             let targetTimesheet = oldTimesheet;
             if (supervisorID && supervisorID !== oldTimesheet.supervisorID) {
-                // Check if the new supervisor has a timesheet for this week/year
                 targetTimesheet = await Timesheet.findOne({
                     where: {
                         weekNumber: newWeekNumber,
@@ -198,7 +207,6 @@ class VisitService {
                     },
                 });
                 if (!targetTimesheet) {
-                    // Create a new timesheet for the new supervisor
                     targetTimesheet = await Timesheet.create({
                         weekNumber: newWeekNumber,
                         year: newYear,
@@ -208,7 +216,6 @@ class VisitService {
                 }
                 visit.timesheetID = targetTimesheet.timesheetID;
             } else if (newWeekNumber !== oldTimesheet.weekNumber || newYear !== oldTimesheet.year) {
-                // If no supervisor change but date changed, check or create timesheet with old supervisor
                 targetTimesheet = await Timesheet.findOne({
                     where: {
                         weekNumber: newWeekNumber,
@@ -273,9 +280,15 @@ class VisitService {
             visit.photos = photoPaths;
             visit.comment = comment !== undefined ? comment : visit.comment;
 
+            console.log('Before save, visit.photos:', visit.photos);
+
             await visit.save();
+
+            console.log('After save, visit.photos:', visit.photos);
+
             return visit.reload({ include: [Checklist, Reason] });
         } catch (error) {
+            console.error('Failed to update visit:', error);
             const err = new Error('Failed to update visit: ' + error.message);
             err.status = error.status || 500;
             throw err;
