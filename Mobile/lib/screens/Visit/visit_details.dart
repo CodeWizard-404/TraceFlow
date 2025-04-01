@@ -473,69 +473,103 @@ class _VisitDetailsScreenState extends State<VisitDetailsScreen> {
   }
 
   List<Widget> _buildAppBarActions(
-    BuildContext context,
-    Visit visit,
-    VisitProvider visitProvider,
-    String token,
-  ) {
-    final actions = <Widget>[];
-
-    if ([
+      BuildContext context,
+      Visit visit,
+      VisitProvider visitProvider,
+      String token,
+      ) {
+    if (![
       'pending',
       'visited',
       'validated',
       'rejected',
     ].contains(visit.status.toLowerCase())) {
-      actions.add(
-        GestureDetector(
-          onTap: () {
+      return [];
+    }
+
+    return [
+      Tooltip(
+        message: 'Edit Visit',
+        child: IconButton(
+          onPressed: () {
             Navigator.push(
               context,
               MaterialPageRoute(builder: (_) => EditVisitScreen(visit: visit)),
             );
           },
-          child: Container(
-            margin: const EdgeInsets.symmetric(horizontal: 8),
-            padding: const EdgeInsets.all(10),
+          icon: Container(
+            padding: const EdgeInsets.all(8),
             decoration: BoxDecoration(
-              color: Theme.of(context).colorScheme.primary.withOpacity(0.9),
-              borderRadius: BorderRadius.circular(12),
+              shape: BoxShape.circle,
+              gradient: LinearGradient(
+                colors: [
+                  Colors.blue.shade700,
+                  Colors.blue.shade500,
+                ],
+                begin: Alignment.topLeft,
+                end: Alignment.bottomRight,
+              ),
               boxShadow: [
                 BoxShadow(
-                  color: Theme.of(context).colorScheme.primary.withOpacity(0.3),
+                  color: Colors.blue.shade700.withOpacity(0.3),
                   blurRadius: 6,
                   offset: const Offset(0, 2),
                 ),
               ],
             ),
-            child: Icon(Icons.edit, color: Colors.white, size: 22),
+            child: const Icon(
+              Icons.edit,
+              color: Colors.white,
+              size: 20,
+            ),
+          ),
+          style: IconButton.styleFrom(
+            padding: EdgeInsets.zero,
+            minimumSize: const Size(40, 40),
+            tapTargetSize: MaterialTapTargetSize.shrinkWrap,
           ),
         ),
-      );
-      actions.add(
-        GestureDetector(
-          onTap: () => _deleteVisit(context, visit, visitProvider, token),
-          child: Container(
-            margin: const EdgeInsets.symmetric(horizontal: 8),
-            padding: const EdgeInsets.all(10),
+      ),
+      const SizedBox(width: 12),
+      Tooltip(
+        message: 'Delete Visit',
+        child: IconButton(
+          onPressed: () => _deleteVisit(context, visit, visitProvider, token),
+          icon: Container(
+            padding: const EdgeInsets.all(8),
             decoration: BoxDecoration(
-              color: Colors.redAccent.withOpacity(0.9),
-              borderRadius: BorderRadius.circular(12),
+              shape: BoxShape.circle,
+              gradient: LinearGradient(
+                colors: [
+                  Colors.red.shade700,
+                  Colors.red.shade500,
+                ],
+                begin: Alignment.topLeft,
+                end: Alignment.bottomRight,
+              ),
               boxShadow: [
                 BoxShadow(
-                  color: Colors.redAccent.withOpacity(0.3),
+                  color: Colors.red.shade700.withOpacity(0.3),
                   blurRadius: 6,
                   offset: const Offset(0, 2),
                 ),
               ],
             ),
-            child: Icon(Icons.delete, color: Colors.white, size: 22),
+            child: const Icon(
+              Icons.delete,
+              color: Colors.white,
+              size: 20,
+            ),
+          ),
+          style: IconButton.styleFrom(
+            padding: EdgeInsets.zero,
+            minimumSize: const Size(40, 40),
+            tapTargetSize: MaterialTapTargetSize.shrinkWrap,
           ),
         ),
-      );
-    }
-
-    return actions;
+      ),
+      const SizedBox(width: 12),
+    ];
   }
 
   Future<void> _deleteVisit(
@@ -776,18 +810,18 @@ class _VisitDetailsScreenState extends State<VisitDetailsScreen> {
     );
   }
 
-  Color _getStatusColor(BuildContext context, String status) {
-    switch (status.toLowerCase()) {
+  Color? _getStatusColor(BuildContext context, String? status) {
+    switch (status?.toLowerCase()) {
+      case 'visited':
+        return Colors.lightBlue;
       case 'pending':
         return Colors.orange;
-      case 'visited':
-        return Theme.of(context).colorScheme.primary;
-      case 'validated':
-        return Colors.green;
       case 'rejected':
         return Colors.red;
+      case 'validated':
+        return Colors.pink;
       default:
-        return Theme.of(context).colorScheme.onSurface;
+        return Theme.of(context).colorScheme.onSurface.withOpacity(0.6);
     }
   }
 

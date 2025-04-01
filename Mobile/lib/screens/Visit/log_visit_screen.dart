@@ -228,7 +228,7 @@ class _LogVisitScreenState extends State<LogVisitScreen>
           _checklists
               .map(
                 (c) => {
-                  'id': c.checklistID,
+                  'checklistID': c.checklistID,
                   'checked': c.visitChecklist?.checked ?? false,
                 },
               )

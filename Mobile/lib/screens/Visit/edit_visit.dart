@@ -40,7 +40,6 @@ class _EditVisitScreenState extends State<EditVisitScreen> {
   bool _isLoading = false;
   bool _isInitialized = false;
   DateTime? _editStartTime;
-  int _additionalDuration = 0;
 
   @override
   void initState() {
@@ -55,7 +54,7 @@ class _EditVisitScreenState extends State<EditVisitScreen> {
     _selectedLocation = _visit.location;
     _selectedAgentId = _visit.agentID;
     _visitChecklists =
-        _visit.checklists != null ? List.from(_visit.checklists!) : [];
+    _visit.checklists != null ? List.from(_visit.checklists!) : [];
     _visitReasons = _visit.reasons != null ? List.from(_visit.reasons!) : [];
 
     _agentPhoneController.addListener(_onPhoneNumberChanged);
@@ -181,49 +180,49 @@ class _EditVisitScreenState extends State<EditVisitScreen> {
       }
 
       final checklistUpdates =
-          _visitChecklists
-              .map(
-                (c) => {
-                  'id': c.checklistID,
-                  'checked': c.visitChecklist?.checked ?? false,
-                },
-              )
-              .toList();
+      _visitChecklists
+          .map(
+            (c) => {
+          'id': c.checklistID,
+          'checked': c.visitChecklist?.checked ?? false,
+        },
+      )
+          .toList();
 
       final reasonUpdates =
-          _visitReasons.map((r) => {'id': r.reasonID}).toList();
+      _visitReasons.map((r) => {'id': r.reasonID}).toList();
 
       int? updatedDuration = _visit.duration;
       if (_visit.status == 'visited' && _editStartTime != null) {
-        _additionalDuration =
-            DateTime.now().difference(_editStartTime!).inMinutes;
-        updatedDuration = (_visit.duration ?? 0) + _additionalDuration;
+        final editDuration = DateTime.now().difference(_editStartTime!).inMinutes;
+        updatedDuration = (_visit.duration ?? 0) + editDuration;
       }
 
       final newStatus = _visit.status == 'visited' ? 'visited' : 'pending';
       final formattedDate =
-          _visit.status == 'visited'
-              ? DateFormat('yyyy-MM-dd').format(_visit.date)
-              : _dateController.text;
+      _visit.status == 'visited'
+          ? DateFormat('yyyy-MM-dd').format(_visit.date)
+          : _dateController.text;
 
       await visitProvider.updateVisit(
         visitId: _visit.visitID!,
         date: formattedDate,
         time: _visit.status == 'visited' ? _visit.time : _timeController.text,
         location:
-            _visit.status == 'visited' ? _visit.location : _selectedLocation,
+        _visit.status == 'visited' ? _visit.location : _selectedLocation,
         status: newStatus,
+        duration: updatedDuration,
         comment:
-            _visit.status == 'visited' && _commentController.text.isNotEmpty
-                ? _commentController.text
-                : _visit.comment,
+        _visit.status == 'visited' && _commentController.text.isNotEmpty
+            ? _commentController.text
+            : _visit.comment,
         agentID: _visit.status == 'visited' ? _visit.agentID : agentId,
         checklists: checklistUpdates,
         reasons: reasonUpdates,
         photoPaths:
-            _newPhotos.isNotEmpty
-                ? _newPhotos.map((p) => p.path).toList()
-                : (_photosToRemove.isNotEmpty ? _photosToRemove : null),
+        _newPhotos.isNotEmpty
+            ? _newPhotos.map((p) => p.path).toList()
+            : (_photosToRemove.isNotEmpty ? _photosToRemove : null),
         token: token,
       );
 
@@ -313,7 +312,7 @@ class _EditVisitScreenState extends State<EditVisitScreen> {
     if (_visit.status != 'visited') return;
     setState(() {
       final index = _visitChecklists.indexWhere(
-        (c) => c.checklistID == checklist.checklistID,
+            (c) => c.checklistID == checklist.checklistID,
       );
       if (index != -1) {
         _visitChecklists[index] = Checklist(
@@ -349,7 +348,7 @@ class _EditVisitScreenState extends State<EditVisitScreen> {
 
   void _removeChecklist(String checklistId) {
     setState(
-      () => _visitChecklists.removeWhere((c) => c.checklistID == checklistId),
+          () => _visitChecklists.removeWhere((c) => c.checklistID == checklistId),
     );
   }
 
@@ -384,29 +383,29 @@ class _EditVisitScreenState extends State<EditVisitScreen> {
       MaterialPageRoute(
         builder:
             (_) => Scaffold(
-              appBar: AppBar(
-                backgroundColor: Colors.black,
-                leading: IconButton(
-                  icon: const Icon(Icons.close, color: Colors.white),
-                  onPressed: () => Navigator.pop(context),
-                ),
-              ),
-              body: Center(
-                child: Image.network(
-                  photoPath.startsWith('http')
-                      ? photoPath
-                      : '$baseUrl$photoPath',
-                  fit: BoxFit.contain,
-                  errorBuilder:
-                      (context, error, stackTrace) => const Icon(
-                        Icons.error,
-                        color: Colors.white,
-                        size: 50,
-                      ),
-                ),
-              ),
-              backgroundColor: Colors.black,
+          appBar: AppBar(
+            backgroundColor: Colors.black,
+            leading: IconButton(
+              icon: const Icon(Icons.close, color: Colors.white),
+              onPressed: () => Navigator.pop(context),
             ),
+          ),
+          body: Center(
+            child: Image.network(
+              photoPath.startsWith('http')
+                  ? photoPath
+                  : '$baseUrl$photoPath',
+              fit: BoxFit.contain,
+              errorBuilder:
+                  (context, error, stackTrace) => const Icon(
+                Icons.error,
+                color: Colors.white,
+                size: 50,
+              ),
+            ),
+          ),
+          backgroundColor: Colors.black,
+        ),
       ),
     );
   }
@@ -420,8 +419,8 @@ class _EditVisitScreenState extends State<EditVisitScreen> {
       lastDate: DateTime.now().add(const Duration(days: 365)),
       selectableDayPredicate:
           (DateTime date) =>
-              date.weekday != DateTime.saturday &&
-              date.weekday != DateTime.sunday,
+      date.weekday != DateTime.saturday &&
+          date.weekday != DateTime.sunday,
       builder: (context, child) {
         return Theme(
           data: Theme.of(context).copyWith(
@@ -438,7 +437,7 @@ class _EditVisitScreenState extends State<EditVisitScreen> {
     );
     if (date != null && mounted) {
       setState(
-        () => _dateController.text = DateFormat('yyyy-MM-dd').format(date),
+            () => _dateController.text = DateFormat('yyyy-MM-dd').format(date),
       );
     }
   }
@@ -486,17 +485,17 @@ class _EditVisitScreenState extends State<EditVisitScreen> {
       }
 
       setState(
-        () =>
-            _timeController.text =
-                '${time.hour.toString().padLeft(2, '0')}:${time.minute.toString().padLeft(2, '0')}',
+            () =>
+        _timeController.text =
+        '${time.hour.toString().padLeft(2, '0')}:${time.minute.toString().padLeft(2, '0')}',
       );
     }
   }
 
   Future<void> _showLocationDialog(
-    BuildContext context,
-    AgentProvider agentProvider,
-  ) async {
+      BuildContext context,
+      AgentProvider agentProvider,
+      ) async {
     final locations = agentProvider.uniqueLocations;
     final TextEditingController searchController = TextEditingController();
     List<String> filteredLocations = List.from(locations);
@@ -534,9 +533,9 @@ class _EditVisitScreenState extends State<EditVisitScreen> {
                               locations
                                   .where(
                                     (location) => location
-                                        .toLowerCase()
-                                        .contains(value.toLowerCase()),
-                                  )
+                                    .toLowerCase()
+                                    .contains(value.toLowerCase()),
+                              )
                                   .toList();
                         });
                       },
@@ -595,9 +594,9 @@ class _EditVisitScreenState extends State<EditVisitScreen> {
   }
 
   Future<void> _showAgentDialog(
-    BuildContext context,
-    AgentProvider agentProvider,
-  ) async {
+      BuildContext context,
+      AgentProvider agentProvider,
+      ) async {
     final agents = agentProvider.agents;
     final TextEditingController searchController = TextEditingController();
     List<Agent> filteredAgents = List.from(agents);
@@ -635,13 +634,13 @@ class _EditVisitScreenState extends State<EditVisitScreen> {
                               agents
                                   .where(
                                     (agent) =>
-                                        '${agent.name} ${agent.lastname}'
-                                            .toLowerCase()
-                                            .contains(value.toLowerCase()) ||
-                                        agent.agentID!.toLowerCase().contains(
-                                          value.toLowerCase(),
-                                        ),
-                                  )
+                                '${agent.name} ${agent.lastname}'
+                                    .toLowerCase()
+                                    .contains(value.toLowerCase()) ||
+                                    agent.agentID!.toLowerCase().contains(
+                                      value.toLowerCase(),
+                                    ),
+                              )
                                   .toList();
                         });
                       },
@@ -690,9 +689,9 @@ class _EditVisitScreenState extends State<EditVisitScreen> {
   }
 
   Future<void> _showChecklistDialog(
-    BuildContext context,
-    ChecklistProvider checklistProvider,
-  ) async {
+      BuildContext context,
+      ChecklistProvider checklistProvider,
+      ) async {
     final allChecklists = checklistProvider.allChecklists;
     final selectedChecklists = List<Checklist>.from(_visitChecklists);
     final TextEditingController searchController = TextEditingController();
@@ -731,9 +730,9 @@ class _EditVisitScreenState extends State<EditVisitScreen> {
                               allChecklists
                                   .where(
                                     (checklist) => checklist.item
-                                        .toLowerCase()
-                                        .contains(value.toLowerCase()),
-                                  )
+                                    .toLowerCase()
+                                    .contains(value.toLowerCase()),
+                              )
                                   .toList();
                         });
                       },
@@ -746,7 +745,7 @@ class _EditVisitScreenState extends State<EditVisitScreen> {
                         itemBuilder: (context, index) {
                           final checklist = filteredChecklists[index];
                           final isSelected = selectedChecklists.any(
-                            (c) => c.checklistID == checklist.checklistID,
+                                (c) => c.checklistID == checklist.checklistID,
                           );
                           return CheckboxListTile(
                             title: Text(checklist.item),
@@ -767,8 +766,8 @@ class _EditVisitScreenState extends State<EditVisitScreen> {
                                   );
                                 } else {
                                   selectedChecklists.removeWhere(
-                                    (c) =>
-                                        c.checklistID == checklist.checklistID,
+                                        (c) =>
+                                    c.checklistID == checklist.checklistID,
                                   );
                                 }
                               });
@@ -815,9 +814,9 @@ class _EditVisitScreenState extends State<EditVisitScreen> {
   }
 
   Future<void> _showReasonDialog(
-    BuildContext context,
-    ReasonProvider reasonProvider,
-  ) async {
+      BuildContext context,
+      ReasonProvider reasonProvider,
+      ) async {
     final allReasons = reasonProvider.allReasons;
     final selectedReasons = List<Reason>.from(_visitReasons);
     final TextEditingController searchController = TextEditingController();
@@ -856,9 +855,9 @@ class _EditVisitScreenState extends State<EditVisitScreen> {
                               allReasons
                                   .where(
                                     (reason) => reason.item
-                                        .toLowerCase()
-                                        .contains(value.toLowerCase()),
-                                  )
+                                    .toLowerCase()
+                                    .contains(value.toLowerCase()),
+                              )
                                   .toList();
                         });
                       },
@@ -871,7 +870,7 @@ class _EditVisitScreenState extends State<EditVisitScreen> {
                         itemBuilder: (context, index) {
                           final reason = filteredReasons[index];
                           final isSelected = selectedReasons.any(
-                            (r) => r.reasonID == reason.reasonID,
+                                (r) => r.reasonID == reason.reasonID,
                           );
                           return CheckboxListTile(
                             title: Text(reason.item),
@@ -882,7 +881,7 @@ class _EditVisitScreenState extends State<EditVisitScreen> {
                                   selectedReasons.add(reason);
                                 } else {
                                   selectedReasons.removeWhere(
-                                    (r) => r.reasonID == reason.reasonID,
+                                        (r) => r.reasonID == reason.reasonID,
                                   );
                                 }
                               });
@@ -961,7 +960,10 @@ class _EditVisitScreenState extends State<EditVisitScreen> {
                 color: Theme.of(context).appBarTheme.iconTheme!.color,
                 size: 24,
               ),
-              onPressed: () => Navigator.pop(context),
+              onPressed: () {
+                _editStartTime = null; // Cancel timer on back press
+                Navigator.pop(context);
+              },
             ),
             actions: [
               if (_isLoading)
@@ -980,317 +982,79 @@ class _EditVisitScreenState extends State<EditVisitScreen> {
           child: Padding(
             padding: const EdgeInsets.all(16.0),
             child:
-                _isLoading && !_isInitialized
-                    ? const Center(child: CircularProgressIndicator())
-                    : ListView(
+            _isLoading && !_isInitialized
+                ? const Center(child: CircularProgressIndicator())
+                : ListView(
+              children: [
+                if (_visit.status != 'visited') ...[
+                  _buildSectionCard(
+                    title: 'Date & Time',
+                    child: Column(
                       children: [
-                        if (_visit.status != 'visited') ...[
-                          _buildSectionCard(
-                            title: 'Date & Time',
-                            child: Column(
-                              children: [
-                                _buildTile(
-                                  icon: Icons.calendar_today,
-                                  title: _dateController.text,
-                                  onTap: _pickDate,
-                                ),
-                                const SizedBox(height: 12),
-                                _buildTile(
-                                  icon: Icons.access_time,
-                                  title: _timeController.text,
-                                  onTap: _pickTime,
-                                ),
-                              ],
-                            ),
-                          ),
-                          const SizedBox(height: 16),
-                          _buildSectionCard(
-                            title: 'Location & Agent',
-                            child: Consumer<AgentProvider>(
-                              builder: (context, agentProvider, child) {
-                                return Column(
-                                  crossAxisAlignment: CrossAxisAlignment.start,
-                                  children: [
-                                    Container(
-                                      padding: const EdgeInsets.symmetric(
-                                        vertical: 0,
-                                        horizontal: 16,
-                                      ),
-                                      decoration: BoxDecoration(
-                                        color:
-                                            Theme.of(
-                                              context,
-                                            ).colorScheme.surface,
-                                        borderRadius: BorderRadius.circular(12),
-                                        border: Border.all(
-                                          color: Theme.of(context)
-                                              .colorScheme
-                                              .onSurface
-                                              .withOpacity(0.2),
-                                        ),
-                                      ),
-                                      child: Row(
-                                        children: [
-                                          Icon(
-                                            Icons.phone,
-                                            color:
-                                                Theme.of(
-                                                  context,
-                                                ).colorScheme.primary,
-                                            size: 24,
-                                          ),
-                                          const SizedBox(width: 12),
-                                          Expanded(
-                                            child: TextField(
-                                              controller: _agentPhoneController,
-                                              keyboardType:
-                                                  TextInputType.number,
-                                              inputFormatters: [
-                                                FilteringTextInputFormatter
-                                                    .digitsOnly,
-                                              ],
-                                              maxLength: 8,
-                                              decoration: InputDecoration(
-                                                hintText:
-                                                    'Enter agent\'s phone number',
-                                                border: InputBorder.none,
-                                                hintStyle: TextStyle(
-                                                  color: Theme.of(context)
-                                                      .colorScheme
-                                                      .onSurface
-                                                      .withOpacity(0.6),
-                                                ),
-                                                counterText: '',
-                                              ),
-                                              style: TextStyle(
-                                                fontSize: 16,
-                                                color:
-                                                    Theme.of(
-                                                      context,
-                                                    ).colorScheme.onSurface,
-                                              ),
-                                            ),
-                                          ),
-                                        ],
-                                      ),
-                                    ),
-                                    const SizedBox(height: 12),
-                                    GestureDetector(
-                                      onTap:
-                                          _agentPhoneController.text.isNotEmpty
-                                              ? null
-                                              : () => _showLocationDialog(
-                                                context,
-                                                agentProvider,
-                                              ),
-                                      child: Container(
-                                        padding: const EdgeInsets.all(12),
-                                        decoration: BoxDecoration(
-                                          color:
-                                              Theme.of(
-                                                context,
-                                              ).colorScheme.surface,
-                                          borderRadius: BorderRadius.circular(
-                                            12,
-                                          ),
-                                          border: Border.all(
-                                            color: Theme.of(context)
-                                                .colorScheme
-                                                .onSurface
-                                                .withOpacity(0.2),
-                                          ),
-                                          backgroundBlendMode:
-                                              _agentPhoneController
-                                                      .text
-                                                      .isNotEmpty
-                                                  ? BlendMode.saturation
-                                                  : null,
-                                        ),
-                                        child: Row(
-                                          children: [
-                                            Icon(
-                                              Icons.location_on,
-                                              color:
-                                                  _agentPhoneController
-                                                          .text
-                                                          .isNotEmpty
-                                                      ? Theme.of(context)
-                                                          .colorScheme
-                                                          .onSurface
-                                                          .withOpacity(0.6)
-                                                      : Theme.of(
-                                                        context,
-                                                      ).colorScheme.primary,
-                                            ),
-                                            const SizedBox(width: 12),
-                                            Expanded(
-                                              child: Text(
-                                                _selectedLocation ??
-                                                    (_agentPhoneController
-                                                            .text
-                                                            .isNotEmpty
-                                                        ? 'Selected via phone'
-                                                        : 'Select Location'),
-                                                style: TextStyle(
-                                                  color:
-                                                      _agentPhoneController
-                                                              .text
-                                                              .isNotEmpty
-                                                          ? Theme.of(context)
-                                                              .colorScheme
-                                                              .onSurface
-                                                              .withOpacity(0.6)
-                                                          : Theme.of(context)
-                                                              .colorScheme
-                                                              .onSurface,
-                                                ),
-                                              ),
-                                            ),
-                                            Icon(
-                                              Icons.arrow_drop_down,
-                                              color: Theme.of(context)
-                                                  .colorScheme
-                                                  .onSurface
-                                                  .withOpacity(0.6),
-                                            ),
-                                          ],
-                                        ),
-                                      ),
-                                    ),
-                                    const SizedBox(height: 12),
-                                    GestureDetector(
-                                      onTap:
-                                          _agentPhoneController
-                                                      .text
-                                                      .isNotEmpty ||
-                                                  _selectedLocation == null
-                                              ? null
-                                              : () => _showAgentDialog(
-                                                context,
-                                                agentProvider,
-                                              ),
-                                      child: Container(
-                                        padding: const EdgeInsets.all(12),
-                                        decoration: BoxDecoration(
-                                          color:
-                                              Theme.of(
-                                                context,
-                                              ).colorScheme.surface,
-                                          borderRadius: BorderRadius.circular(
-                                            12,
-                                          ),
-                                          border: Border.all(
-                                            color: Theme.of(context)
-                                                .colorScheme
-                                                .onSurface
-                                                .withOpacity(0.2),
-                                          ),
-                                          backgroundBlendMode:
-                                              _agentPhoneController
-                                                          .text
-                                                          .isNotEmpty ||
-                                                      _selectedLocation == null
-                                                  ? BlendMode.saturation
-                                                  : null,
-                                        ),
-                                        child: Row(
-                                          children: [
-                                            Icon(
-                                              Icons.person,
-                                              color:
-                                                  _agentPhoneController
-                                                              .text
-                                                              .isNotEmpty ||
-                                                          _selectedLocation ==
-                                                              null
-                                                      ? Theme.of(context)
-                                                          .colorScheme
-                                                          .onSurface
-                                                          .withOpacity(0.6)
-                                                      : Theme.of(
-                                                        context,
-                                                      ).colorScheme.primary,
-                                            ),
-                                            const SizedBox(width: 12),
-                                            Expanded(
-                                              child: Text(
-                                                _selectedAgentId == null
-                                                    ? (_agentPhoneController
-                                                            .text
-                                                            .isNotEmpty
-                                                        ? 'Selected via phone'
-                                                        : _selectedLocation ==
-                                                            null
-                                                        ? 'Select a location first'
-                                                        : 'Select Agent')
-                                                    : '${agentProvider.agents.firstWhere((agent) => agent.agentID == _selectedAgentId, orElse: () => Agent(agentID: _selectedAgentId!, name: 'Loading', lastname: '...', location: '')).name} ${agentProvider.agents.firstWhere((agent) => agent.agentID == _selectedAgentId, orElse: () => Agent(agentID: _selectedAgentId!, name: 'Loading', lastname: '...', location: '')).lastname}',
-                                                style: TextStyle(
-                                                  color:
-                                                      _agentPhoneController
-                                                                  .text
-                                                                  .isNotEmpty ||
-                                                              _selectedLocation ==
-                                                                  null
-                                                          ? Theme.of(context)
-                                                              .colorScheme
-                                                              .onSurface
-                                                              .withOpacity(0.6)
-                                                          : Theme.of(context)
-                                                              .colorScheme
-                                                              .onSurface,
-                                                ),
-                                              ),
-                                            ),
-                                            Icon(
-                                              Icons.arrow_drop_down,
-                                              color: Theme.of(context)
-                                                  .colorScheme
-                                                  .onSurface
-                                                  .withOpacity(0.6),
-                                            ),
-                                          ],
-                                        ),
-                                      ),
-                                    ),
-                                  ],
-                                );
-                              },
-                            ),
-                          ),
-                        ],
-                        if (_visit.status == 'visited' &&
-                            _visit.comment != null) ...[
-                          const SizedBox(height: 16),
-                          _buildSectionCard(
-                            title: 'Details',
-                            child: Container(
+                        _buildTile(
+                          icon: Icons.calendar_today,
+                          title: _dateController.text,
+                          onTap: _pickDate,
+                        ),
+                        const SizedBox(height: 12),
+                        _buildTile(
+                          icon: Icons.access_time,
+                          title: _timeController.text,
+                          onTap: _pickTime,
+                        ),
+                      ],
+                    ),
+                  ),
+                  const SizedBox(height: 16),
+                  _buildSectionCard(
+                    title: 'Location & Agent',
+                    child: Consumer<AgentProvider>(
+                      builder: (context, agentProvider, child) {
+                        return Column(
+                          crossAxisAlignment: CrossAxisAlignment.start,
+                          children: [
+                            Container(
                               padding: const EdgeInsets.symmetric(
                                 vertical: 0,
                                 horizontal: 16,
                               ),
                               decoration: BoxDecoration(
-                                color: Theme.of(context).colorScheme.surface,
+                                color:
+                                Theme.of(
+                                  context,
+                                ).colorScheme.surface,
                                 borderRadius: BorderRadius.circular(12),
                                 border: Border.all(
-                                  color: Theme.of(
-                                    context,
-                                  ).colorScheme.onSurface.withOpacity(0.2),
+                                  color: Theme.of(context)
+                                      .colorScheme
+                                      .onSurface
+                                      .withOpacity(0.2),
                                 ),
                               ),
                               child: Row(
                                 children: [
                                   Icon(
-                                    Icons.comment,
+                                    Icons.phone,
                                     color:
-                                        Theme.of(context).colorScheme.primary,
+                                    Theme.of(
+                                      context,
+                                    ).colorScheme.primary,
                                     size: 24,
                                   ),
                                   const SizedBox(width: 12),
                                   Expanded(
                                     child: TextField(
-                                      controller: _commentController,
+                                      controller: _agentPhoneController,
+                                      keyboardType:
+                                      TextInputType.number,
+                                      inputFormatters: [
+                                        FilteringTextInputFormatter
+                                            .digitsOnly,
+                                      ],
+                                      maxLength: 8,
                                       decoration: InputDecoration(
-                                        hintText: 'Enter comment',
+                                        hintText:
+                                        'Enter agent\'s phone number',
                                         border: InputBorder.none,
                                         hintStyle: TextStyle(
                                           color: Theme.of(context)
@@ -1298,416 +1062,682 @@ class _EditVisitScreenState extends State<EditVisitScreen> {
                                               .onSurface
                                               .withOpacity(0.6),
                                         ),
+                                        counterText: '',
                                       ),
                                       style: TextStyle(
                                         fontSize: 16,
                                         color:
-                                            Theme.of(
-                                              context,
-                                            ).colorScheme.onSurface,
+                                        Theme.of(
+                                          context,
+                                        ).colorScheme.onSurface,
                                       ),
                                     ),
                                   ),
                                 ],
                               ),
                             ),
-                          ),
-                        ],
-                        const SizedBox(height: 16),
-                        _buildSectionCard(
-                          title: 'Checklists',
-                          child: Consumer<ChecklistProvider>(
-                            builder: (context, checklistProvider, child) {
-                              return Column(
-                                crossAxisAlignment: CrossAxisAlignment.start,
-                                children: [
-                                  if (_visit.status != 'visited')
-                                    GestureDetector(
-                                      onTap:
-                                          () => _showChecklistDialog(
-                                            context,
-                                            checklistProvider,
-                                          ),
-                                      child: Container(
-                                        padding: const EdgeInsets.all(12),
-                                        decoration: BoxDecoration(
+                            const SizedBox(height: 12),
+                            GestureDetector(
+                              onTap:
+                              _agentPhoneController.text.isNotEmpty
+                                  ? null
+                                  : () => _showLocationDialog(
+                                context,
+                                agentProvider,
+                              ),
+                              child: Container(
+                                padding: const EdgeInsets.all(12),
+                                decoration: BoxDecoration(
+                                  color:
+                                  Theme.of(
+                                    context,
+                                  ).colorScheme.surface,
+                                  borderRadius: BorderRadius.circular(
+                                    12,
+                                  ),
+                                  border: Border.all(
+                                    color: Theme.of(context)
+                                        .colorScheme
+                                        .onSurface
+                                        .withOpacity(0.2),
+                                  ),
+                                  backgroundBlendMode:
+                                  _agentPhoneController
+                                      .text
+                                      .isNotEmpty
+                                      ? BlendMode.saturation
+                                      : null,
+                                ),
+                                child: Row(
+                                  children: [
+                                    Icon(
+                                      Icons.location_on,
+                                      color:
+                                      _agentPhoneController
+                                          .text
+                                          .isNotEmpty
+                                          ? Theme.of(context)
+                                          .colorScheme
+                                          .onSurface
+                                          .withOpacity(0.6)
+                                          : Theme.of(
+                                        context,
+                                      ).colorScheme.primary,
+                                    ),
+                                    const SizedBox(width: 12),
+                                    Expanded(
+                                      child: Text(
+                                        _selectedLocation ??
+                                            (_agentPhoneController
+                                                .text
+                                                .isNotEmpty
+                                                ? 'Selected via phone'
+                                                : 'Select Location'),
+                                        style: TextStyle(
                                           color:
-                                              Theme.of(
-                                                context,
-                                              ).colorScheme.surface,
-                                          borderRadius: BorderRadius.circular(
-                                            12,
-                                          ),
-                                          border: Border.all(
-                                            color: Theme.of(context)
-                                                .colorScheme
-                                                .onSurface
-                                                .withOpacity(0.2),
-                                          ),
-                                        ),
-                                        child: Row(
-                                          children: [
-                                            Icon(
-                                              Icons.checklist,
-                                              color:
-                                                  Theme.of(
-                                                    context,
-                                                  ).colorScheme.primary,
-                                            ),
-                                            const SizedBox(width: 12),
-                                            Expanded(
-                                              child: Text(
-                                                _visitChecklists.isEmpty
-                                                    ? 'Select Checklists'
-                                                    : '${_visitChecklists.length} selected',
-                                                style:
-                                                    Theme.of(
-                                                      context,
-                                                    ).textTheme.bodyMedium,
-                                              ),
-                                            ),
-                                            Icon(
-                                              Icons.arrow_drop_down,
-                                              color: Theme.of(context)
-                                                  .colorScheme
-                                                  .onSurface
-                                                  .withOpacity(0.6),
-                                            ),
-                                          ],
-                                        ),
-                                      ),
-                                    ),
-                                  if (_visitChecklists.isNotEmpty) ...[
-                                    const SizedBox(height: 8),
-                                    Column(
-                                      children:
-                                          _visitChecklists.map((checklist) {
-                                            return CheckboxListTile(
-                                              title: Text(checklist.item),
-                                              value:
-                                                  checklist
-                                                      .visitChecklist
-                                                      ?.checked ??
-                                                  false,
-                                              onChanged:
-                                                  _visit.status == 'visited'
-                                                      ? (value) =>
-                                                          _toggleChecklist(
-                                                            checklist,
-                                                            value,
-                                                          )
-                                                      : null,
-                                              activeColor:
-                                                  Theme.of(
-                                                    context,
-                                                  ).colorScheme.primary,
-                                              enabled:
-                                                  _visit.status == 'visited',
-                                              controlAffinity:
-                                                  ListTileControlAffinity
-                                                      .leading,
-                                              dense: true,
-                                            );
-                                          }).toList(),
-                                    ),
-                                  ] else if (_visit.status == 'visited')
-                                    Text(
-                                      'No checklists available',
-                                      style: TextStyle(
-                                        color: Theme.of(context)
-                                            .colorScheme
-                                            .onSurface
-                                            .withOpacity(0.6),
-                                      ),
-                                    ),
-                                ],
-                              );
-                            },
-                          ),
-                        ),
-                        const SizedBox(height: 16),
-                        _buildSectionCard(
-                          title: 'Reasons',
-                          child: Consumer<ReasonProvider>(
-                            builder: (context, reasonProvider, child) {
-                              return Column(
-                                crossAxisAlignment: CrossAxisAlignment.start,
-                                children: [
-                                  GestureDetector(
-                                    onTap:
-                                        () => _showReasonDialog(
-                                          context,
-                                          reasonProvider,
-                                        ),
-                                    child: Container(
-                                      padding: const EdgeInsets.all(12),
-                                      decoration: BoxDecoration(
-                                        color:
-                                            Theme.of(
-                                              context,
-                                            ).colorScheme.surface,
-                                        borderRadius: BorderRadius.circular(12),
-                                        border: Border.all(
-                                          color: Theme.of(context)
+                                          _agentPhoneController
+                                              .text
+                                              .isNotEmpty
+                                              ? Theme.of(context)
                                               .colorScheme
                                               .onSurface
-                                              .withOpacity(0.2),
+                                              .withOpacity(0.6)
+                                              : Theme.of(context)
+                                              .colorScheme
+                                              .onSurface,
                                         ),
                                       ),
-                                      child: Row(
-                                        children: [
-                                          Icon(
-                                            Icons.list_alt,
-                                            color:
-                                                Theme.of(
-                                                  context,
-                                                ).colorScheme.primary,
-                                          ),
-                                          const SizedBox(width: 12),
-                                          Expanded(
-                                            child: Text(
-                                              _visitReasons.isEmpty
-                                                  ? 'Select Reasons'
-                                                  : '${_visitReasons.length} selected',
-                                              style:
-                                                  Theme.of(
-                                                    context,
-                                                  ).textTheme.bodyMedium,
-                                            ),
-                                          ),
-                                          Icon(
-                                            Icons.arrow_drop_down,
-                                            color: Theme.of(context)
-                                                .colorScheme
-                                                .onSurface
-                                                .withOpacity(0.6),
-                                          ),
-                                        ],
-                                      ),
                                     ),
-                                  ),
-                                  if (_visitReasons.isNotEmpty) ...[
-                                    const SizedBox(height: 8),
-                                    Wrap(
-                                      spacing: 8,
-                                      runSpacing: 8,
-                                      children:
-                                          _visitReasons.map((reason) {
-                                            return Chip(
-                                              label: Text(reason.item),
-                                              deleteIcon: const Icon(
-                                                Icons.close,
-                                                size: 18,
-                                              ),
-                                              onDeleted:
-                                                  () => _removeReason(
-                                                    reason.reasonID!,
-                                                  ),
-                                              backgroundColor: Theme.of(context)
-                                                  .colorScheme
-                                                  .primary
-                                                  .withOpacity(0.1),
-                                              labelStyle: TextStyle(
-                                                color:
-                                                    Theme.of(
-                                                      context,
-                                                    ).colorScheme.primary,
-                                              ),
-                                            );
-                                          }).toList(),
+                                    Icon(
+                                      Icons.arrow_drop_down,
+                                      color: Theme.of(context)
+                                          .colorScheme
+                                          .onSurface
+                                          .withOpacity(0.6),
                                     ),
-                                  ],
-                                ],
-                              );
-                            },
-                          ),
-                        ),
-                        if (_visit.photos != null &&
-                                _visit.photos!.isNotEmpty ||
-                            _newPhotos.isNotEmpty) ...[
-                          const SizedBox(height: 16),
-                          _buildSectionCard(
-                            title: 'Photos',
-                            child: Column(
-                              crossAxisAlignment: CrossAxisAlignment.start,
-                              children: [
-                                if (_visit.status == 'visited')
-                                  ElevatedButton.icon(
-                                    onPressed: _addNewPhoto,
-                                    icon: const Icon(Icons.camera_alt),
-                                    label: const Text('Take Photo'),
-                                    style: ElevatedButton.styleFrom(
-                                      backgroundColor:
-                                          Theme.of(context).colorScheme.primary,
-                                      foregroundColor:
-                                          Theme.of(
-                                            context,
-                                          ).colorScheme.onPrimary,
-                                      shape: RoundedRectangleBorder(
-                                        borderRadius: BorderRadius.circular(12),
-                                      ),
-                                    ),
-                                  ),
-                                const SizedBox(height: 8),
-                                Wrap(
-                                  spacing: 8,
-                                  runSpacing: 8,
-                                  children: [
-                                    if (_visit.photos != null)
-                                      ..._visit.photos!
-                                          .where(
-                                            (p) => !_photosToRemove.contains(p),
-                                          )
-                                          .map((photo) {
-                                            return GestureDetector(
-                                              onTap:
-                                                  () => _viewPhotoFullScreen(
-                                                    photo,
-                                                  ),
-                                              child: Stack(
-                                                children: [
-                                                  Image.network(
-                                                    photo.startsWith('http')
-                                                        ? photo
-                                                        : '$baseUrl$photo',
-                                                    width: 100,
-                                                    height: 100,
-                                                    fit: BoxFit.cover,
-                                                    errorBuilder:
-                                                        (_, __, ___) =>
-                                                            const Icon(
-                                                              Icons.error,
-                                                              size: 100,
-                                                            ),
-                                                  ),
-                                                  Positioned(
-                                                    top: 0,
-                                                    right: 0,
-                                                    child: IconButton(
-                                                      icon: const Icon(
-                                                        Icons.close,
-                                                        color: Colors.red,
-                                                      ),
-                                                      onPressed:
-                                                          () => _removePhoto(
-                                                            photo,
-                                                          ),
-                                                    ),
-                                                  ),
-                                                ],
-                                              ),
-                                            );
-                                          })
-                                          .toList(),
-                                    ..._newPhotos.map((photo) {
-                                      return GestureDetector(
-                                        onTap:
-                                            () => Navigator.push(
-                                              context,
-                                              MaterialPageRoute(
-                                                builder:
-                                                    (_) => Scaffold(
-                                                      appBar: AppBar(
-                                                        backgroundColor:
-                                                            Colors.black,
-                                                        leading: IconButton(
-                                                          icon: const Icon(
-                                                            Icons.close,
-                                                            color: Colors.white,
-                                                          ),
-                                                          onPressed:
-                                                              () =>
-                                                                  Navigator.pop(
-                                                                    context,
-                                                                  ),
-                                                        ),
-                                                      ),
-                                                      body: Center(
-                                                        child: Image.file(
-                                                          photo,
-                                                          fit: BoxFit.contain,
-                                                          errorBuilder:
-                                                              (
-                                                                _,
-                                                                __,
-                                                                ___,
-                                                              ) => const Icon(
-                                                                Icons.error,
-                                                                color:
-                                                                    Colors
-                                                                        .white,
-                                                                size: 50,
-                                                              ),
-                                                        ),
-                                                      ),
-                                                      backgroundColor:
-                                                          Colors.black,
-                                                    ),
-                                              ),
-                                            ),
-                                        child: Stack(
-                                          children: [
-                                            Image.file(
-                                              photo,
-                                              width: 100,
-                                              height: 100,
-                                              fit: BoxFit.cover,
-                                              errorBuilder:
-                                                  (_, __, ___) => const Icon(
-                                                    Icons.error,
-                                                    size: 100,
-                                                  ),
-                                            ),
-                                            Positioned(
-                                              top: 0,
-                                              right: 0,
-                                              child: IconButton(
-                                                icon: const Icon(
-                                                  Icons.close,
-                                                  color: Colors.red,
-                                                ),
-                                                onPressed:
-                                                    () => setState(
-                                                      () => _newPhotos.remove(
-                                                        photo,
-                                                      ),
-                                                    ),
-                                              ),
-                                            ),
-                                          ],
-                                        ),
-                                      );
-                                    }).toList(),
                                   ],
                                 ),
-                              ],
+                              ),
+                            ),
+                            const SizedBox(height: 12),
+                            GestureDetector(
+                              onTap:
+                              _agentPhoneController
+                                  .text
+                                  .isNotEmpty ||
+                                  _selectedLocation == null
+                                  ? null
+                                  : () => _showAgentDialog(
+                                context,
+                                agentProvider,
+                              ),
+                              child: Container(
+                                padding: const EdgeInsets.all(12),
+                                decoration: BoxDecoration(
+                                  color:
+                                  Theme.of(
+                                    context,
+                                  ).colorScheme.surface,
+                                  borderRadius: BorderRadius.circular(
+                                    12,
+                                  ),
+                                  border: Border.all(
+                                    color: Theme.of(context)
+                                        .colorScheme
+                                        .onSurface
+                                        .withOpacity(0.2),
+                                  ),
+                                  backgroundBlendMode:
+                                  _agentPhoneController
+                                      .text
+                                      .isNotEmpty ||
+                                      _selectedLocation == null
+                                      ? BlendMode.saturation
+                                      : null,
+                                ),
+                                child: Row(
+                                  children: [
+                                    Icon(
+                                      Icons.person,
+                                      color:
+                                      _agentPhoneController
+                                          .text
+                                          .isNotEmpty ||
+                                          _selectedLocation ==
+                                              null
+                                          ? Theme.of(context)
+                                          .colorScheme
+                                          .onSurface
+                                          .withOpacity(0.6)
+                                          : Theme.of(
+                                        context,
+                                      ).colorScheme.primary,
+                                    ),
+                                    const SizedBox(width: 12),
+                                    Expanded(
+                                      child: Text(
+                                        _selectedAgentId == null
+                                            ? (_agentPhoneController
+                                            .text
+                                            .isNotEmpty
+                                            ? 'Selected via phone'
+                                            : _selectedLocation ==
+                                            null
+                                            ? 'Select a location first'
+                                            : 'Select Agent')
+                                            : '${agentProvider.agents.firstWhere((agent) => agent.agentID == _selectedAgentId, orElse: () => Agent(agentID: _selectedAgentId!, name: 'Loading', lastname: '...', location: '')).name} ${agentProvider.agents.firstWhere((agent) => agent.agentID == _selectedAgentId, orElse: () => Agent(agentID: _selectedAgentId!, name: 'Loading', lastname: '...', location: '')).lastname}',
+                                        style: TextStyle(
+                                          color:
+                                          _agentPhoneController
+                                              .text
+                                              .isNotEmpty ||
+                                              _selectedLocation ==
+                                                  null
+                                              ? Theme.of(context)
+                                              .colorScheme
+                                              .onSurface
+                                              .withOpacity(0.6)
+                                              : Theme.of(context)
+                                              .colorScheme
+                                              .onSurface,
+                                        ),
+                                      ),
+                                    ),
+                                    Icon(
+                                      Icons.arrow_drop_down,
+                                      color: Theme.of(context)
+                                          .colorScheme
+                                          .onSurface
+                                          .withOpacity(0.6),
+                                    ),
+                                  ],
+                                ),
+                              ),
+                            ),
+                          ],
+                        );
+                      },
+                    ),
+                  ),
+                ],
+                if (_visit.status == 'visited' &&
+                    _visit.comment != null) ...[
+                  const SizedBox(height: 16),
+                  _buildSectionCard(
+                    title: 'Details',
+                    child: Container(
+                      padding: const EdgeInsets.symmetric(
+                        vertical: 0,
+                        horizontal: 16,
+                      ),
+                      decoration: BoxDecoration(
+                        color: Theme.of(context).colorScheme.surface,
+                        borderRadius: BorderRadius.circular(12),
+                        border: Border.all(
+                          color: Theme.of(
+                            context,
+                          ).colorScheme.onSurface.withOpacity(0.2),
+                        ),
+                      ),
+                      child: Row(
+                        children: [
+                          Icon(
+                            Icons.comment,
+                            color:
+                            Theme.of(context).colorScheme.primary,
+                            size: 24,
+                          ),
+                          const SizedBox(width: 12),
+                          Expanded(
+                            child: TextField(
+                              controller: _commentController,
+                              decoration: InputDecoration(
+                                hintText: 'Enter comment',
+                                border: InputBorder.none,
+                                hintStyle: TextStyle(
+                                  color: Theme.of(context)
+                                      .colorScheme
+                                      .onSurface
+                                      .withOpacity(0.6),
+                                ),
+                              ),
+                              style: TextStyle(
+                                fontSize: 16,
+                                color:
+                                Theme.of(
+                                  context,
+                                ).colorScheme.onSurface,
+                              ),
                             ),
                           ),
                         ],
-                        const SizedBox(height: 24),
-                        ElevatedButton(
-                          onPressed: _saveChanges,
-                          style: ElevatedButton.styleFrom(
-                            backgroundColor:
-                                Theme.of(context).colorScheme.primary,
-                            foregroundColor:
-                                Theme.of(context).colorScheme.onPrimary,
-                            shape: RoundedRectangleBorder(
-                              borderRadius: BorderRadius.circular(12),
+                      ),
+                    ),
+                  ),
+                ],
+                const SizedBox(height: 16),
+                _buildSectionCard(
+                  title: 'Checklists',
+                  child: Consumer<ChecklistProvider>(
+                    builder: (context, checklistProvider, child) {
+                      return Column(
+                        crossAxisAlignment: CrossAxisAlignment.start,
+                        children: [
+                          GestureDetector(
+                            onTap:
+                                () => _showChecklistDialog(
+                              context,
+                              checklistProvider,
                             ),
-                            padding: const EdgeInsets.symmetric(vertical: 16),
-                          ),
-                          child: Text(
-                            'Save Changes',
-                            style: TextStyle(
-                              fontSize: 18,
-                              fontWeight: FontWeight.w600,
-                              color: Theme.of(context).colorScheme.onPrimary,
+                            child: Container(
+                              padding: const EdgeInsets.all(12),
+                              decoration: BoxDecoration(
+                                color:
+                                Theme.of(
+                                  context,
+                                ).colorScheme.surface,
+                                borderRadius: BorderRadius.circular(
+                                  12,
+                                ),
+                                border: Border.all(
+                                  color: Theme.of(context)
+                                      .colorScheme
+                                      .onSurface
+                                      .withOpacity(0.2),
+                                ),
+                              ),
+                              child: Row(
+                                children: [
+                                  Icon(
+                                    Icons.checklist,
+                                    color:
+                                    Theme.of(
+                                      context,
+                                    ).colorScheme.primary,
+                                  ),
+                                  const SizedBox(width: 12),
+                                  Expanded(
+                                    child: Text(
+                                      _visitChecklists.isEmpty
+                                          ? 'Select Checklists'
+                                          : '${_visitChecklists.length} selected',
+                                      style:
+                                      Theme.of(
+                                        context,
+                                      ).textTheme.bodyMedium,
+                                    ),
+                                  ),
+                                  Icon(
+                                    Icons.arrow_drop_down,
+                                    color: Theme.of(context)
+                                        .colorScheme
+                                        .onSurface
+                                        .withOpacity(0.6),
+                                  ),
+                                ],
+                              ),
                             ),
                           ),
+                          if (_visitChecklists.isNotEmpty) ...[
+                            const SizedBox(height: 8),
+                            Column(
+                              children:
+                              _visitChecklists.map((checklist) {
+                                return CheckboxListTile(
+                                  title: Text(checklist.item),
+                                  value:
+                                  checklist
+                                      .visitChecklist
+                                      ?.checked ??
+                                      false,
+                                  onChanged:
+                                  _visit.status == 'visited'
+                                      ? (value) =>
+                                      _toggleChecklist(
+                                        checklist,
+                                        value,
+                                      )
+                                      : null,
+                                  activeColor:
+                                  Theme.of(
+                                    context,
+                                  ).colorScheme.primary,
+                                  enabled:
+                                  _visit.status == 'visited',
+                                  controlAffinity:
+                                  ListTileControlAffinity
+                                      .leading,
+                                  dense: true,
+                                );
+                              }).toList(),
+                            ),
+                          ] else if (_visit.status == 'visited')
+                            Text(
+                              'No checklists available',
+                              style: TextStyle(
+                                color: Theme.of(context)
+                                    .colorScheme
+                                    .onSurface
+                                    .withOpacity(0.6),
+                              ),
+                            ),
+                        ],
+                      );
+                    },
+                  ),
+                ),
+                const SizedBox(height: 16),
+                _buildSectionCard(
+                  title: 'Reasons',
+                  child: Consumer<ReasonProvider>(
+                    builder: (context, reasonProvider, child) {
+                      return Column(
+                        crossAxisAlignment: CrossAxisAlignment.start,
+                        children: [
+                          GestureDetector(
+                            onTap:
+                                () => _showReasonDialog(
+                              context,
+                              reasonProvider,
+                            ),
+                            child: Container(
+                              padding: const EdgeInsets.all(12),
+                              decoration: BoxDecoration(
+                                color:
+                                Theme.of(
+                                  context,
+                                ).colorScheme.surface,
+                                borderRadius: BorderRadius.circular(12),
+                                border: Border.all(
+                                  color: Theme.of(context)
+                                      .colorScheme
+                                      .onSurface
+                                      .withOpacity(0.2),
+                                ),
+                              ),
+                              child: Row(
+                                children: [
+                                  Icon(
+                                    Icons.list_alt,
+                                    color:
+                                    Theme.of(
+                                      context,
+                                    ).colorScheme.primary,
+                                  ),
+                                  const SizedBox(width: 12),
+                                  Expanded(
+                                    child: Text(
+                                      _visitReasons.isEmpty
+                                          ? 'Select Reasons'
+                                          : '${_visitReasons.length} selected',
+                                      style:
+                                      Theme.of(
+                                        context,
+                                      ).textTheme.bodyMedium,
+                                    ),
+                                  ),
+                                  Icon(
+                                    Icons.arrow_drop_down,
+                                    color: Theme.of(context)
+                                        .colorScheme
+                                        .onSurface
+                                        .withOpacity(0.6),
+                                  ),
+                                ],
+                              ),
+                            ),
+                          ),
+                          if (_visitReasons.isNotEmpty) ...[
+                            const SizedBox(height: 8),
+                            Wrap(
+                              spacing: 8,
+                              runSpacing: 8,
+                              children:
+                              _visitReasons.map((reason) {
+                                return Chip(
+                                  label: Text(reason.item),
+                                  deleteIcon: const Icon(
+                                    Icons.close,
+                                    size: 18,
+                                  ),
+                                  onDeleted:
+                                      () => _removeReason(
+                                    reason.reasonID!,
+                                  ),
+                                  backgroundColor: Theme.of(context)
+                                      .colorScheme
+                                      .primary
+                                      .withOpacity(0.1),
+                                  labelStyle: TextStyle(
+                                    color:
+                                    Theme.of(
+                                      context,
+                                    ).colorScheme.primary,
+                                  ),
+                                );
+                              }).toList(),
+                            ),
+                          ],
+                        ],
+                      );
+                    },
+                  ),
+                ),
+                if (_visit.photos != null &&
+                    _visit.photos!.isNotEmpty ||
+                    _newPhotos.isNotEmpty) ...[
+                  const SizedBox(height: 16),
+                  _buildSectionCard(
+                    title: 'Photos',
+                    child: Column(
+                      crossAxisAlignment: CrossAxisAlignment.start,
+                      children: [
+                        if (_visit.status == 'visited')
+                          ElevatedButton.icon(
+                            onPressed: _addNewPhoto,
+                            icon: const Icon(Icons.camera_alt),
+                            label: const Text('Take Photo'),
+                            style: ElevatedButton.styleFrom(
+                              backgroundColor:
+                              Theme.of(context).colorScheme.primary,
+                              foregroundColor:
+                              Theme.of(
+                                context,
+                              ).colorScheme.onPrimary,
+                              shape: RoundedRectangleBorder(
+                                borderRadius: BorderRadius.circular(12),
+                              ),
+                            ),
+                          ),
+                        const SizedBox(height: 8),
+                        Wrap(
+                          spacing: 8,
+                          runSpacing: 8,
+                          children: [
+                            if (_visit.photos != null)
+                              ..._visit.photos!
+                                  .where(
+                                    (p) => !_photosToRemove.contains(p),
+                              )
+                                  .map((photo) {
+                                return GestureDetector(
+                                  onTap:
+                                      () => _viewPhotoFullScreen(
+                                    photo,
+                                  ),
+                                  child: Stack(
+                                    children: [
+                                      Image.network(
+                                        photo.startsWith('http')
+                                            ? photo
+                                            : '$baseUrl$photo',
+                                        width: 100,
+                                        height: 100,
+                                        fit: BoxFit.cover,
+                                        errorBuilder:
+                                            (_, __, ___) =>
+                                        const Icon(
+                                          Icons.error,
+                                          size: 100,
+                                        ),
+                                      ),
+                                      Positioned(
+                                        top: 0,
+                                        right: 0,
+                                        child: IconButton(
+                                          icon: const Icon(
+                                            Icons.close,
+                                            color: Colors.red,
+                                          ),
+                                          onPressed:
+                                              () => _removePhoto(
+                                            photo,
+                                          ),
+                                        ),
+                                      ),
+                                    ],
+                                  ),
+                                );
+                              })
+                                  .toList(),
+                            ..._newPhotos.map((photo) {
+                              return GestureDetector(
+                                onTap:
+                                    () => Navigator.push(
+                                  context,
+                                  MaterialPageRoute(
+                                    builder:
+                                        (_) => Scaffold(
+                                      appBar: AppBar(
+                                        backgroundColor:
+                                        Colors.black,
+                                        leading: IconButton(
+                                          icon: const Icon(
+                                            Icons.close,
+                                            color: Colors.white,
+                                          ),
+                                          onPressed:
+                                              () =>
+                                              Navigator.pop(
+                                                context,
+                                              ),
+                                        ),
+                                      ),
+                                      body: Center(
+                                        child: Image.file(
+                                          photo,
+                                          fit: BoxFit.contain,
+                                          errorBuilder:
+                                              (
+                                              _,
+                                              __,
+                                              ___,
+                                              ) => const Icon(
+                                            Icons.error,
+                                            color:
+                                            Colors
+                                                .white,
+                                            size: 50,
+                                          ),
+                                        ),
+                                      ),
+                                      backgroundColor:
+                                      Colors.black,
+                                    ),
+                                  ),
+                                ),
+                                child: Stack(
+                                  children: [
+                                    Image.file(
+                                      photo,
+                                      width: 100,
+                                      height: 100,
+                                      fit: BoxFit.cover,
+                                      errorBuilder:
+                                          (_, __, ___) => const Icon(
+                                        Icons.error,
+                                        size: 100,
+                                      ),
+                                    ),
+                                    Positioned(
+                                      top: 0,
+                                      right: 0,
+                                      child: IconButton(
+                                        icon: const Icon(
+                                          Icons.close,
+                                          color: Colors.red,
+                                        ),
+                                        onPressed:
+                                            () => setState(
+                                              () => _newPhotos.remove(
+                                            photo,
+                                          ),
+                                        ),
+                                      ),
+                                    ),
+                                  ],
+                                ),
+                              );
+                            }).toList(),
+                          ],
                         ),
                       ],
                     ),
+                  ),
+                ],
+                const SizedBox(height: 24),
+                Row(
+                  mainAxisAlignment: MainAxisAlignment.spaceBetween,
+                  children: [
+                    ElevatedButton(
+                      onPressed: () {
+                        _editStartTime = null; // Cancel timer
+                        Navigator.pop(context);
+                      },
+                      style: ElevatedButton.styleFrom(
+                        backgroundColor:
+                        Theme.of(context).colorScheme.error,
+                        foregroundColor:
+                        Theme.of(context).colorScheme.onError,
+                        shape: RoundedRectangleBorder(
+                          borderRadius: BorderRadius.circular(12),
+                        ),
+                        padding:
+                        const EdgeInsets.symmetric(vertical: 16, horizontal: 32),
+                      ),
+                      child: const Text(
+                        'Cancel',
+                        style: TextStyle(
+                          fontSize: 18,
+                          fontWeight: FontWeight.w600,
+                        ),
+                      ),
+                    ),
+                    ElevatedButton(
+                      onPressed: _saveChanges,
+                      style: ElevatedButton.styleFrom(
+                        backgroundColor:
+                        Theme.of(context).colorScheme.primary,
+                        foregroundColor:
+                        Theme.of(context).colorScheme.onPrimary,
+                        shape: RoundedRectangleBorder(
+                          borderRadius: BorderRadius.circular(12),
+                        ),
+                        padding:
+                        const EdgeInsets.symmetric(vertical: 16, horizontal: 32),
+                      ),
+                      child: const Text(
+                        'Save Changes',
+                        style: TextStyle(
+                          fontSize: 18,
+                          fontWeight: FontWeight.w600,
+                        ),
+                      ),
+                    ),
+                  ],
+                ),
+              ],
+            ),
           ),
         ),
       ),
