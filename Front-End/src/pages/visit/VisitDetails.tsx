@@ -1,4 +1,4 @@
-import React, { useState, useEffect, useMemo, useCallback } from "react";
+import React, { useState, useEffect, useMemo, useCallback, useRef } from "react";
 import { useNavigate, useParams } from "react-router-dom";
 import { debounce } from "lodash";
 import {
@@ -98,10 +98,6 @@ const VisitDetails: React.FC = () => {
   const [selectedSupervisor, setSelectedSupervisor] = useState<string>("");
   const [supervisorPhone, setSupervisorPhone] = useState<string>("");
   const [supervisorSearch, setSupervisorSearch] = useState<string>("");
-  const [editTracking, setEditTracking] = useState<EditTracking>({
-    startTime: null,
-    durationAccumulator: 0
-  });
   const [editForm, setEditForm] = useState<EditFormState>({
     date: "",
     time: "",
@@ -236,6 +232,7 @@ const VisitDetails: React.FC = () => {
     if (permissionsLoaded) fetchVisitData();
   }, [fetchVisitData, permissionsLoaded]);
 
+  // Debounced API calls
   const fetchAgentByPhone = useCallback(
     debounce(async (phone: string) => {
       if (phone.length < 7 || !userPermissions.canReadAgentsByPhone || !token) return;
@@ -382,13 +379,13 @@ const VisitDetails: React.FC = () => {
         agentID: editForm.agentID,
         checklists: editForm.checklists,
         reasons: editForm.reasons,
+        photos: newPhotos,
         photosToRemove: editForm.photosToRemove,
         supervisorID: selectedSupervisor && userPermissions.canCreateTimesheetsForSupervisors ? selectedSupervisor : undefined,
         duration: updatedDuration
       }, token);
 
       setVisit(updatedVisit);
-      setEditTracking({ startTime: null, durationAccumulator: 0 });
       setIsEditing(false);
     } catch (err) {
       setError("Failed to update visit.");
@@ -462,7 +459,7 @@ const VisitDetails: React.FC = () => {
     if (!visit) return false;
     switch (visit.status) {
       case "visited":
-        return ["comment", "checklists", "photosToRemove"].includes(field);
+        return ["comment", "checklists", "photos"].includes(field);
       case "pending":
       case "validated":
       case "rejected":
@@ -599,18 +596,18 @@ const VisitDetails: React.FC = () => {
               </div>
 
               {visit.photos?.length ? (
-                <div className="visit-details-card">
-                  <h2><FaCamera /> Photos</h2>
+                <div className="visit-details-card photos-section">
+                  <h2><FaCamera /> Photos ({visit.photos.length})</h2>
                   <div className="card-content photo-gallery">
                     {visit.photos.map((photo, index) => (
-                      <img
-                        key={index}
-                        src={`${BASE_URL}${photo}`}
-                        alt={`Visit photo ${index + 1}`}
-                        className="visit-photo"
-                        onClick={() => handleImageClick(photo)}
-                        style={{ cursor: "pointer" }}
-                      />
+                      <div key={index} className="photo-container">
+                        <img
+                          src={`${BASE_URL}${photo}`}
+                          alt={`Visit photo ${index + 1}`}
+                          className="photo-preview"
+                          onClick={() => handleImageClick(photo)}
+                        />
+                      </div>
                     ))}
                   </div>
                 </div>
@@ -878,29 +875,78 @@ const VisitDetails: React.FC = () => {
               </div>
             )}
 
-            {canEditField("photosToRemove") && visit.photos?.length ? (
-              <div className="form-group">
-                <label>Photos</label>
-                <div className="photo-preview">
-                  {visit.photos.filter(p => !editForm.photosToRemove.includes(p)).map((photo, index) => (
-                    <div key={index} className="photo-item">
-                      <img
-                        src={`${BASE_URL}${photo}`}
-                        alt={`Photo ${index + 1}`}
-                        className="visit-photo"
-                        onClick={() => handleImageClick(photo)}
-                        style={{ cursor: "pointer" }}
-                      />
-                      <button
-                        type="button"
-                        className="remove-photo-btn"
-                        onClick={() => handleRemovePhoto(photo)}
-                      >
-                        <FaTimes />
-                      </button>
+            {canEditField("photos") && (visit.photos?.length || newPhotos.length) ? (
+              <div className="form-group photos-section">
+                <h2><FaCamera /> Photos ({(visit.photos?.filter(p => !editForm.photosToRemove.includes(p)).length || 0) + newPhotos.length})</h2>
+                {visit.status === VisitStatus.VISITED && (
+                  <div className="camera-controls">
+                    <button type="button" className="camera-btn" onClick={startCamera} disabled={isCameraActive}>
+                      <FaCamera /> Start Camera
+                    </button>
+                    <div className={`camera-container ${isCameraActive ? 'active' : ''}`}>
+                      <div className="camera-frame">
+                        <video ref={videoRef} className="camera-preview" muted playsInline />
+                        <div className={`flash-overlay ${flashEffect ? 'active' : ''}`}></div>
+                        <div className="photo-counter">
+                          <FaCamera /> {newPhotos.length}
+                        </div>
+                        {newPhotos.length > 0 && (
+                          <div className="thumbnail-preview">
+                            <img src={URL.createObjectURL(newPhotos[newPhotos.length - 1])} alt="Last captured" />
+                          </div>
+                        )}
+                      </div>
+                      {isCameraActive && (
+                        <>
+                          <button type="button" className="stop-camera-btn" onClick={stopCamera}>
+                            <FaTimes />
+                          </button>
+                          <button type="button" className="capture-btn" onClick={capturePhoto}>
+                            <FaCamera />
+                          </button>
+                        </>
+                      )}
                     </div>
-                  ))}
-                </div>
+                  </div>
+                )}
+                {(visit.photos?.length || newPhotos.length) && (
+                  <div className="photo-previews">
+                    {visit.photos!.filter(p => !editForm.photosToRemove.includes(p)).map((photo, index) => (
+                      <div key={`existing-${index}`} className="photo-container">
+                        <img
+                          src={`${BASE_URL}${photo}`}
+                          alt={`Photo ${index + 1}`}
+                          className="photo-preview"
+                          onClick={() => handleImageClick(photo)}
+                        />
+                        <button
+                          type="button"
+                          className="remove-photo-btn"
+                          onClick={() => handleRemovePhoto(photo)}
+                        >
+                          <FaTimes />
+                        </button>
+                      </div>
+                    ))}
+                    {newPhotos.map((photo, index) => (
+                      <div key={`new-${index}`} className="photo-container">
+                        <img
+                          src={URL.createObjectURL(photo)}
+                          alt={`New photo ${index + 1}`}
+                          className="photo-preview"
+                          onClick={() => setSelectedImage(URL.createObjectURL(photo))}
+                        />
+                        <button
+                          type="button"
+                          className="remove-photo-btn"
+                          onClick={() => removeNewPhoto(index)}
+                        >
+                          <FaTimes />
+                        </button>
+                      </div>
+                    ))}
+                  </div>
+                )}
               </div>
             ) : null}
 
@@ -929,6 +975,7 @@ const VisitDetails: React.FC = () => {
             </button>
           </div>
         )}
+        <canvas ref={canvasRef} style={{ display: "none" }} />
       </section>
     </div>
   );
