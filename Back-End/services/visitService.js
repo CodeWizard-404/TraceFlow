@@ -110,11 +110,25 @@ class VisitService {
             if (!fs.existsSync(folderPath)) fs.mkdirSync(folderPath, { recursive: true });
             const photoPaths = files.map(file => `/uploads/photos/${folderName}/${file.filename}`);
 
-            if (checklistUpdates && Array.isArray(checklistUpdates)) {
-                for (const update of checklistUpdates) {
+            // Parse checklistUpdates if it’s a string
+            let parsedChecklistUpdates = checklistUpdates;
+            if (typeof checklistUpdates === 'string') {
+                try {
+                    parsedChecklistUpdates = JSON.parse(checklistUpdates);
+                } catch (e) {
+                    console.error('Failed to parse checklistUpdates:', checklistUpdates, e);
+                    const error = new Error('Invalid checklistUpdates format');
+                    error.status = 400;
+                    throw error;
+                }
+            }
+
+            if (parsedChecklistUpdates && Array.isArray(parsedChecklistUpdates)) {
+                for (const update of parsedChecklistUpdates) {
                     await ChecklistService.updateChecklistStatus(visitID, update.checklistID, update.checked);
                 }
             }
+
             visit.duration = duration || visit.duration;
             visit.photos = photoPaths;
             visit.comment = comment || visit.comment;
@@ -129,7 +143,20 @@ class VisitService {
 
     static async updateVisit(visitID, data, files = []) {
         try {
-            const { date, time, duration, location, status, comment, agentID, checklists, reasons, photosToRemove, supervisorID } = data;
+            const {
+                date,
+                time,
+                duration,
+                location,
+                status,
+                comment,
+                agentID,
+                checklists,
+                reasons,
+                photosToRemove,
+                supervisorID
+            } = data;
+
             const visit = await Visit.findByPk(visitID, {
                 include: [{ model: Timesheet, include: [User] }, Checklist, Reason],
             });
@@ -152,19 +179,20 @@ class VisitService {
             let photoPaths = visit.photos ? [...visit.photos] : [];
 
             // Parse photosToRemove if it’s a string
-            let photosToRemoveArray = photosToRemove;
+            let photosArray = photosToRemove;
             if (typeof photosToRemove === 'string') {
                 try {
-                    photosToRemoveArray = JSON.parse(photosToRemove);
+                    photosArray = JSON.parse(photosToRemove);
                 } catch (e) {
-                    console.error('Failed to parse photosToRemove:', photosToRemove);
+                    console.error('Failed to parse photosToRemove:', photosToRemove, e);
+                    photosArray = [];
                 }
             }
 
-            if (photosToRemoveArray && Array.isArray(photosToRemoveArray)) {
-                console.log('Photos to remove:', photosToRemoveArray);
-                photoPaths = photoPaths.filter(p => !photosToRemoveArray.includes(p));
-                photosToRemoveArray.forEach(photo => {
+            if (photosArray && Array.isArray(photosArray) && photosArray.length > 0) {
+                console.log('Photos to remove:', photosArray);
+                photoPaths = photoPaths.filter(p => !photosArray.includes(p));
+                photosArray.forEach(photo => {
                     const photoPath = path.join(__dirname, '..', photo);
                     if (fs.existsSync(photoPath)) {
                         fs.unlinkSync(photoPath);
@@ -177,8 +205,10 @@ class VisitService {
             console.log('After removal, photoPaths:', photoPaths);
 
             // Add new photos to the existing folder
-            if (files.length > 0) {
-                if (!fs.existsSync(folderPath)) fs.mkdirSync(folderPath, { recursive: true });
+            if (files && files.length > 0) {
+                if (!fs.existsSync(folderPath)) {
+                    fs.mkdirSync(folderPath, { recursive: true });
+                }
                 files.forEach(file => {
                     const destPath = path.join(folderPath, file.filename);
                     fs.renameSync(file.path, destPath);
@@ -248,9 +278,13 @@ class VisitService {
 
             // Parse checklists and reasons
             let parsedChecklists = checklists;
-            if (typeof checklists === 'string') parsedChecklists = JSON.parse(checklists);
+            if (typeof checklists === 'string') {
+                parsedChecklists = JSON.parse(checklists);
+            }
             let parsedReasons = reasons;
-            if (typeof reasons === 'string') parsedReasons = JSON.parse(reasons);
+            if (typeof reasons === 'string') {
+                parsedReasons = JSON.parse(reasons);
+            }
 
             // Update checklists
             if (parsedChecklists && Array.isArray(parsedChecklists)) {

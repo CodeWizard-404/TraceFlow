@@ -1,4 +1,4 @@
-import React, { useState, useEffect, useMemo, useCallback } from "react";
+import React, { useState, useEffect, useMemo, useCallback, useRef } from "react";
 import { useNavigate, useParams } from "react-router-dom";
 import { debounce } from "lodash";
 import {
@@ -86,6 +86,12 @@ const VisitDetails: React.FC = () => {
   const [selectedSupervisor, setSelectedSupervisor] = useState<string>("");
   const [supervisorPhone, setSupervisorPhone] = useState<string>("");
   const [supervisorSearch, setSupervisorSearch] = useState<string>("");
+  const [isCameraActive, setIsCameraActive] = useState<boolean>(false);
+  const [newPhotos, setNewPhotos] = useState<File[]>([]);
+  const [flashEffect, setFlashEffect] = useState<boolean>(false);
+  const videoRef = useRef<HTMLVideoElement>(null);
+  const canvasRef = useRef<HTMLCanvasElement>(null);
+
   const [editForm, setEditForm] = useState<EditFormState>({
     date: "",
     time: "",
@@ -199,6 +205,65 @@ const VisitDetails: React.FC = () => {
   useEffect(() => {
     if (permissionsLoaded) fetchVisitData();
   }, [fetchVisitData, permissionsLoaded]);
+
+
+  const startCamera = async () => {
+    try {
+      const stream = await navigator.mediaDevices.getUserMedia({ video: { facingMode: "environment" } });
+      if (videoRef.current) {
+        videoRef.current.srcObject = stream;
+        setIsCameraActive(true);
+      }
+    } catch (err) {
+      setError("Failed to access camera. Please ensure permissions are granted.");
+      console.error("Camera access error:", err);
+    }
+  };
+
+  const stopCamera = () => {
+    if (videoRef.current && videoRef.current.srcObject) {
+      const stream = videoRef.current.srcObject as MediaStream;
+      stream.getTracks().forEach(track => track.stop());
+      videoRef.current.srcObject = null;
+      setIsCameraActive(false);
+    }
+  };
+
+  useEffect(() => {
+    if (isCameraActive && videoRef.current) {
+      videoRef.current.play().catch((err: unknown) => {
+        setError("Failed to play camera stream.");
+        console.error("Video play failed:", err);
+      });
+    }
+  }, [isCameraActive]);
+
+  const capturePhoto = () => {
+    if (videoRef.current && canvasRef.current) {
+      const video = videoRef.current;
+      const canvas = canvasRef.current;
+      canvas.width = video.videoWidth;
+      canvas.height = video.videoHeight;
+      const context = canvas.getContext("2d");
+      if (context) {
+        context.drawImage(video, 0, 0, canvas.width, canvas.height);
+        canvas.toBlob((blob) => {
+          if (blob) {
+            const file = new File([blob], `photo-${Date.now()}.jpg`, { type: "image/jpeg" });
+            setNewPhotos((prev) => [...prev, file]);
+            setFlashEffect(true);
+            setTimeout(() => setFlashEffect(false), 300);
+          } else {
+            console.error("Failed to create blob from canvas.");
+          }
+        }, "image/jpeg");
+      }
+    }
+  };
+
+  const removeNewPhoto = (index: number) => {
+    setNewPhotos((prev) => prev.filter((_, i) => i !== index));
+  };
 
   // Debounced API calls
   const fetchAgentByPhone = useCallback(
@@ -317,11 +382,14 @@ const VisitDetails: React.FC = () => {
         agentID: editForm.agentID,
         checklists: editForm.checklists,
         reasons: editForm.reasons,
+        photos: newPhotos,
         photosToRemove: editForm.photosToRemove,
         supervisorID: selectedSupervisor && userPermissions.canCreateTimesheetsForSupervisors ? selectedSupervisor : undefined,
       }, token);
 
       setVisit(updatedVisit);
+      setNewPhotos([]);
+      stopCamera();
       setIsEditing(false);
     } catch (err) {
       setError("Failed to update visit.");
@@ -395,7 +463,7 @@ const VisitDetails: React.FC = () => {
     if (!visit) return false;
     switch (visit.status) {
       case "visited":
-        return ["comment", "checklists", "photosToRemove"].includes(field);
+        return ["comment", "checklists", "photos"].includes(field);
       case "pending":
       case "validated":
       case "rejected":
@@ -447,7 +515,7 @@ const VisitDetails: React.FC = () => {
                   cx="18"
                   cy="18"
                   r="16"
-                  strokeDasharray={`${Math.min(visit.duration / 60 * 100, 100)} 100`}
+                  strokeDasharray={`${Math.min(visit.duration! / 60 * 100, 100)} 100`}
                 />
               </svg>
               <span className="duration-text">{visit.duration}m</span>
@@ -533,18 +601,18 @@ const VisitDetails: React.FC = () => {
               </div>
 
               {visit.photos?.length ? (
-                <div className="visit-details-card">
-                  <h2><FaCamera /> Photos</h2>
+                <div className="visit-details-card photos-section">
+                  <h2><FaCamera /> Photos ({visit.photos.length})</h2>
                   <div className="card-content photo-gallery">
                     {visit.photos.map((photo, index) => (
-                      <img
-                        key={index}
-                        src={`${BASE_URL}${photo}`}
-                        alt={`Visit photo ${index + 1}`}
-                        className="visit-photo"
-                        onClick={() => handleImageClick(photo)}
-                        style={{ cursor: "pointer" }}
-                      />
+                      <div key={index} className="photo-container">
+                        <img
+                          src={`${BASE_URL}${photo}`}
+                          alt={`Visit photo ${index + 1}`}
+                          className="photo-preview"
+                          onClick={() => handleImageClick(photo)}
+                        />
+                      </div>
                     ))}
                   </div>
                 </div>
@@ -812,29 +880,78 @@ const VisitDetails: React.FC = () => {
               </div>
             )}
 
-            {canEditField("photosToRemove") && visit.photos?.length ? (
-              <div className="form-group">
-                <label>Photos</label>
-                <div className="photo-preview">
-                  {visit.photos.filter(p => !editForm.photosToRemove.includes(p)).map((photo, index) => (
-                    <div key={index} className="photo-item">
-                      <img
-                        src={`${BASE_URL}${photo}`}
-                        alt={`Photo ${index + 1}`}
-                        className="visit-photo"
-                        onClick={() => handleImageClick(photo)}
-                        style={{ cursor: "pointer" }}
-                      />
-                      <button
-                        type="button"
-                        className="remove-photo-btn"
-                        onClick={() => handleRemovePhoto(photo)}
-                      >
-                        <FaTimes />
-                      </button>
+            {canEditField("photos") && (visit.photos?.length || newPhotos.length) ? (
+              <div className="form-group photos-section">
+                <h2><FaCamera /> Photos ({(visit.photos?.filter(p => !editForm.photosToRemove.includes(p)).length || 0) + newPhotos.length})</h2>
+                {visit.status === VisitStatus.VISITED && (
+                  <div className="camera-controls">
+                    <button type="button" className="camera-btn" onClick={startCamera} disabled={isCameraActive}>
+                      <FaCamera /> Start Camera
+                    </button>
+                    <div className={`camera-container ${isCameraActive ? 'active' : ''}`}>
+                      <div className="camera-frame">
+                        <video ref={videoRef} className="camera-preview" muted playsInline />
+                        <div className={`flash-overlay ${flashEffect ? 'active' : ''}`}></div>
+                        <div className="photo-counter">
+                          <FaCamera /> {newPhotos.length}
+                        </div>
+                        {newPhotos.length > 0 && (
+                          <div className="thumbnail-preview">
+                            <img src={URL.createObjectURL(newPhotos[newPhotos.length - 1])} alt="Last captured" />
+                          </div>
+                        )}
+                      </div>
+                      {isCameraActive && (
+                        <>
+                          <button type="button" className="stop-camera-btn" onClick={stopCamera}>
+                            <FaTimes />
+                          </button>
+                          <button type="button" className="capture-btn" onClick={capturePhoto}>
+                            <FaCamera />
+                          </button>
+                        </>
+                      )}
                     </div>
-                  ))}
-                </div>
+                  </div>
+                )}
+                {(visit.photos?.length || newPhotos.length) && (
+                  <div className="photo-previews">
+                    {visit.photos!.filter(p => !editForm.photosToRemove.includes(p)).map((photo, index) => (
+                      <div key={`existing-${index}`} className="photo-container">
+                        <img
+                          src={`${BASE_URL}${photo}`}
+                          alt={`Photo ${index + 1}`}
+                          className="photo-preview"
+                          onClick={() => handleImageClick(photo)}
+                        />
+                        <button
+                          type="button"
+                          className="remove-photo-btn"
+                          onClick={() => handleRemovePhoto(photo)}
+                        >
+                          <FaTimes />
+                        </button>
+                      </div>
+                    ))}
+                    {newPhotos.map((photo, index) => (
+                      <div key={`new-${index}`} className="photo-container">
+                        <img
+                          src={URL.createObjectURL(photo)}
+                          alt={`New photo ${index + 1}`}
+                          className="photo-preview"
+                          onClick={() => setSelectedImage(URL.createObjectURL(photo))}
+                        />
+                        <button
+                          type="button"
+                          className="remove-photo-btn"
+                          onClick={() => removeNewPhoto(index)}
+                        >
+                          <FaTimes />
+                        </button>
+                      </div>
+                    ))}
+                  </div>
+                )}
               </div>
             ) : null}
 
@@ -863,6 +980,7 @@ const VisitDetails: React.FC = () => {
             </button>
           </div>
         )}
+        <canvas ref={canvasRef} style={{ display: "none" }} />
       </section>
     </div>
   );
