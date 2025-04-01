@@ -98,6 +98,18 @@ const VisitDetails: React.FC = () => {
   const [selectedSupervisor, setSelectedSupervisor] = useState<string>("");
   const [supervisorPhone, setSupervisorPhone] = useState<string>("");
   const [supervisorSearch, setSupervisorSearch] = useState<string>("");
+
+  const [isCameraActive, setIsCameraActive] = useState<boolean>(false);
+  const [newPhotos, setNewPhotos] = useState<File[]>([]);
+  const [flashEffect, setFlashEffect] = useState<boolean>(false);
+  const videoRef = useRef<HTMLVideoElement>(null);
+  const canvasRef = useRef<HTMLCanvasElement>(null);
+
+  const [editTracking, setEditTracking] = useState<EditTracking>({
+    startTime: null,
+    durationAccumulator: 0
+  });
+
   const [editForm, setEditForm] = useState<EditFormState>({
     date: "",
     time: "",
@@ -232,7 +244,68 @@ const VisitDetails: React.FC = () => {
     if (permissionsLoaded) fetchVisitData();
   }, [fetchVisitData, permissionsLoaded]);
 
+
+
+  const startCamera = async () => {
+    try {
+      const stream = await navigator.mediaDevices.getUserMedia({ video: { facingMode: "environment" } });
+      if (videoRef.current) {
+        videoRef.current.srcObject = stream;
+        setIsCameraActive(true);
+      }
+    } catch (err) {
+      setError("Failed to access camera. Please ensure permissions are granted.");
+      console.error("Camera access error:", err);
+    }
+  };
+
+  const stopCamera = () => {
+    if (videoRef.current && videoRef.current.srcObject) {
+      const stream = videoRef.current.srcObject as MediaStream;
+      stream.getTracks().forEach(track => track.stop());
+      videoRef.current.srcObject = null;
+      setIsCameraActive(false);
+    }
+  };
+
+  useEffect(() => {
+    if (isCameraActive && videoRef.current) {
+      videoRef.current.play().catch((err: unknown) => {
+        setError("Failed to play camera stream.");
+        console.error("Video play failed:", err);
+      });
+    }
+  }, [isCameraActive]);
+
+  const capturePhoto = () => {
+    if (videoRef.current && canvasRef.current) {
+      const video = videoRef.current;
+      const canvas = canvasRef.current;
+      canvas.width = video.videoWidth;
+      canvas.height = video.videoHeight;
+      const context = canvas.getContext("2d");
+      if (context) {
+        context.drawImage(video, 0, 0, canvas.width, canvas.height);
+        canvas.toBlob((blob) => {
+          if (blob) {
+            const file = new File([blob], `photo-${Date.now()}.jpg`, { type: "image/jpeg" });
+            setNewPhotos((prev) => [...prev, file]);
+            setFlashEffect(true);
+            setTimeout(() => setFlashEffect(false), 300);
+          } else {
+            console.error("Failed to create blob from canvas.");
+          }
+        }, "image/jpeg");
+      }
+    }
+  };
+
+  const removeNewPhoto = (index: number) => {
+    setNewPhotos((prev) => prev.filter((_, i) => i !== index));
+  };
+
   // Debounced API calls
+
   const fetchAgentByPhone = useCallback(
     debounce(async (phone: string) => {
       if (phone.length < 7 || !userPermissions.canReadAgentsByPhone || !token) return;
@@ -355,9 +428,9 @@ const VisitDetails: React.FC = () => {
     if (!visit || !userPermissions.canEditTimesheets || !token || !editForm.date || !editForm.time) return;
 
     let newStatus = editForm.status;
-    let updatedDuration = visit.duration || 0;
+    let updatedDuration: number | undefined = visit.duration || undefined;
 
-    if (visit.status === VisitStatus.VISITED) {
+    if (visit.status === VisitStatus.VISITED && userPermissions.canLogVisits) {
       newStatus = VisitStatus.VISITED;
       if (editTracking.startTime) {
         const editDurationMinutes = Math.round((Date.now() - editTracking.startTime) / 60000);
@@ -386,6 +459,11 @@ const VisitDetails: React.FC = () => {
       }, token);
 
       setVisit(updatedVisit);
+      setNewPhotos([]);
+      stopCamera();
+
+      setEditTracking({ startTime: null, durationAccumulator: 0 });
+
       setIsEditing(false);
     } catch (err) {
       setError("Failed to update visit.");
