@@ -1,5 +1,5 @@
 FRONT-END PROJECT FILES
-Generated on: 1742804382.3710532
+Generated on: 1742409167.4223557
 ==================================================
 
 ==================================================
@@ -1779,7 +1779,6 @@ import { To, useNavigate } from "react-router-dom"; // Add useNavigate for progr
 import { useTheme } from "../context/ThemeContext";
 import { useAuth } from "../context/AuthContext";
 import { FaSun, FaMoon, FaSignOutAlt } from "react-icons/fa";
-import logo from "../assets/Logo.png";
 import "./CMP.css";
 
 function Header() {
@@ -1812,9 +1811,9 @@ function Header() {
   };
 
   // Permission and role checks
-  const hasPermission = (permission: string) => 
+  const hasPermission = (permission: string) =>
     permissionsLoaded && effectivePermissions?.some(p => p.name === permission);
-  const hasRole = (role: string) => 
+  const hasRole = (role: string) =>
     permissionsLoaded && userRoles?.some(r => r.name === role);
 
   // Navigation items with conditions
@@ -1844,7 +1843,12 @@ function Header() {
   return (
     <header className={`header ${theme === "dark" ? "dark" : ""}`}>
       <div className="header-container">
-        <img className="logo" src={logo} alt="LOGO" onClick={() => navigate("/")} />
+        <img
+          className="logo"
+          src={theme === "dark" ? "../../public/Banner-wd.png" : "../../public/Banner-bl.png"}
+          alt="LOGO"
+          onClick={() => navigate("/")}
+        />
         <button
           className="menu-toggle"
           onClick={toggleMenu}
@@ -3715,12 +3719,11 @@ hr {
     font-weight: 600;
     color: #4cb1c7;
     margin-left: 0.4rem;
-    margin-bottom: 0rem;
+    margin-bottom: 0.1rem;
 }
 
 body.dark .form-group label {
     color: #6a9ac9 !important;
-    margin-bottom: -0.2rem !important;
 }
 
 .form-group input, .form-group textarea {
@@ -4711,7 +4714,7 @@ body.dark .pagination span {
 }
 
 .override-button.revoke {
-    background: #63b3ed;
+    background: #4cb1c7;
     color: #fff;
 }
 
@@ -5767,9 +5770,25 @@ body.dark .permission-card {
     box-shadow: 0 0.5rem 1.5rem rgba(76, 177, 199, 0.2);
 }
 
+.permission-card:hover p {
+    color: rgb(240, 240, 240);
+}
+
+.permission-card:hover h4 {
+    color: rgb(255, 255, 255);
+}
+
 body.dark .permission-card:hover {
     border-color: #63b3ed;
     box-shadow: 0 0.5rem 1.5rem rgba(99, 179, 237, 0.2);
+}
+
+body.dark .permission-card:hover p {
+    color: rgb(41, 41, 41);
+}
+
+body.dark .permission-card:hover h4 {
+    color: #222222;
 }
 
 .permission-card.selected {
@@ -8809,7 +8828,7 @@ const AdminDashboard: React.FC = () => {
 export default AdminDashboard;
 
 ==================================================
-File contents: C:\Users\Kayto\Desktop\IT\Projects\Stage\Stage PFE\TraceFlow\Front-End\src\pages\auth\Login.css
+File contents: C:\Users\Kayto\Desktop\IT\Projects\Stage\Stage PFE\TraceFlow\Front-End\src\pages\Auth\Login.css
 ==================================================
 @import url('https://fonts.googleapis.com/css2?family=Inter:wght@400;600;700&display=swap');
 
@@ -8967,7 +8986,7 @@ body.dark .error {
 }
 
 ==================================================
-File contents: C:\Users\Kayto\Desktop\IT\Projects\Stage\Stage PFE\TraceFlow\Front-End\src\pages\auth\Login.tsx
+File contents: C:\Users\Kayto\Desktop\IT\Projects\Stage\Stage PFE\TraceFlow\Front-End\src\pages\Auth\Login.tsx
 ==================================================
 // LoginPage.tsx
 import React, { useState } from "react";
@@ -12578,7 +12597,7 @@ const TransferReceiptBook: React.FC = () => {
 export default TransferReceiptBook;
 
 ==================================================
-File contents: C:\Users\Kayto\Desktop\IT\Projects\Stage\Stage PFE\TraceFlow\Front-End\src\pages\timesheet\TimesheetForm.css
+File contents: C:\Users\Kayto\Desktop\IT\Projects\Stage\Stage PFE\TraceFlow\Front-End\src\pages\Timesheet\TimesheetForm.css
 ==================================================
 /* src/pages/timesheet/TimesheetForm.css */
 @import url('https://fonts.googleapis.com/css2?family=Inter:wght@400;600;700&display=swap');
@@ -12822,7 +12841,7 @@ input[type="time"]:disabled {
 }
 
 ==================================================
-File contents: C:\Users\Kayto\Desktop\IT\Projects\Stage\Stage PFE\TraceFlow\Front-End\src\pages\timesheet\TimesheetForm.tsx
+File contents: C:\Users\Kayto\Desktop\IT\Projects\Stage\Stage PFE\TraceFlow\Front-End\src\pages\Timesheet\TimesheetForm.tsx
 ==================================================
 /* eslint-disable react-hooks/rules-of-hooks */
 /* eslint-disable react-hooks/exhaustive-deps */
@@ -12916,7 +12935,7 @@ const TimesheetForm: React.FC = () => {
 
   const isValidTime = (timeStr: string, dateStr: string): boolean => {
     const [hours, minutes] = timeStr.split(':').map(Number);
-    if (hours < 8 || (hours >= 17 && minutes > 0)) {
+    if (hours < 8 || (hours >= 16 && minutes > 30)) {
       return false;
     }
     if (dateStr === currentDate) {
@@ -13079,10 +13098,6 @@ const TimesheetForm: React.FC = () => {
 
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
-    if (!userPermissions.canCreateTimesheets) {
-      setError("You lack permission to create timesheets.");
-      return;
-    }
     setLoading(true);
     setError(null);
 
@@ -13371,7 +13386,11 @@ const TimesheetForm: React.FC = () => {
             <button
               type="submit"
               className="submit-btn"
-              disabled={!isFormComplete || loading || !userPermissions.canCreateTimesheets}
+              disabled={
+                !isFormComplete ||
+                loading ||
+                !(userPermissions.canCreateTimesheets || userPermissions.canCreateTimesheetsForSupervisors)
+              }
             >
               {loading ? "Submitting..." : "Create Timesheet"}
             </button>
@@ -13385,7 +13404,7 @@ const TimesheetForm: React.FC = () => {
 export default TimesheetForm;
 
 ==================================================
-File contents: C:\Users\Kayto\Desktop\IT\Projects\Stage\Stage PFE\TraceFlow\Front-End\src\pages\timesheet\Timesheets.css
+File contents: C:\Users\Kayto\Desktop\IT\Projects\Stage\Stage PFE\TraceFlow\Front-End\src\pages\Timesheet\Timesheets.css
 ==================================================
 @import url('https://fonts.googleapis.com/css2?family=Inter:wght@400;600;700&display=swap');
 
@@ -13399,7 +13418,7 @@ html {
 .timesheets-container {
   padding: 1.25rem;
   /* 20px at 16px base */
-  max-width: 1280px;
+  max-width: 1440px;
   margin: 0 auto;
   font-family: 'Inter', sans-serif;
   background: linear-gradient(135deg, #f8fafc 0%, #eef2f6 100%);
@@ -13735,11 +13754,11 @@ html {
   padding: 0.625rem;
   box-shadow: 0 0.25rem 0.75rem rgba(0, 0, 0, 0.05);
   cursor: pointer;
-  transition: all 0.3s ease;
+  /* transition: all 0.3s ease; */
 }
 
 .visit-card:hover {
-  transform: translateY(-0.1875rem);
+  /* transform: translateY(-0.1875rem); */
   box-shadow: 0 0.375rem 1rem rgba(76, 177, 199, 0.2);
 }
 
@@ -13764,7 +13783,7 @@ html {
   color: #fff;
 }
 
-hr {
+.hr {
   margin: 0 0 0.5rem 0 !important;
 }
 
@@ -14318,7 +14337,7 @@ body.dark .filter-panel {
 }
 
 ==================================================
-File contents: C:\Users\Kayto\Desktop\IT\Projects\Stage\Stage PFE\TraceFlow\Front-End\src\pages\timesheet\Timesheets.tsx
+File contents: C:\Users\Kayto\Desktop\IT\Projects\Stage\Stage PFE\TraceFlow\Front-End\src\pages\Timesheet\Timesheets.tsx
 ==================================================
 /* eslint-disable react-hooks/exhaustive-deps */
 import React, { useEffect, useState, useMemo } from "react";
@@ -14798,7 +14817,7 @@ const Timesheets: React.FC = () => {
                                     <FaRegUser /> {users.find(u => u.userID === visit.supervisorID)?.firstname} {users.find(u => u.userID === visit.supervisorID)?.lastname}
                                   </p>
                                 )}
-                                <hr />
+                                <hr className="hr" />
                                 <div className="visit-header">
                                   {visit.time && <span className="visit-time"><FaClock /> {visit.time.split(":").slice(0, 2).join(":")}</span>}
                                   <span className={`visit-status status-${visit.status.toLowerCase()}`}>{visit.status}</span>
@@ -16311,7 +16330,7 @@ input[type="date"], input[type="time"] {
 ==================================================
 File contents: C:\Users\Kayto\Desktop\IT\Projects\Stage\Stage PFE\TraceFlow\Front-End\src\pages\visit\VisitDetails.tsx
 ==================================================
-import React, { useState, useEffect, useMemo, useCallback } from "react";
+import React, { useState, useEffect, useMemo, useCallback, useRef } from "react";
 import { useNavigate, useParams } from "react-router-dom";
 import { debounce } from "lodash";
 import {
@@ -16354,7 +16373,13 @@ const PERMISSIONS = {
   CREATE_TIMESHEETS_FOR_SUPERVISORS: import.meta.env.VITE_PERMISSIONS_CREATE_TIMESHEETS_FOR_SUPERVISOR,
 } as const;
 
-// Interface for edit form state
+// Interface for edit tracking
+interface EditTracking {
+  startTime: number | null;
+  durationAccumulator: number; // in minutes
+}
+
+// Interface for edit form state with original values
 interface EditFormState {
   date: string;
   time: string;
@@ -16370,6 +16395,16 @@ interface EditFormState {
   checklists: Array<{ id: string; checked: boolean }>;
   reasons: Array<{ id: string }>;
   photosToRemove: string[];
+  original: {
+    date: string;
+    time: string;
+    location: string;
+    status: string;
+    comment: string;
+    agentID: string;
+    checklists: Array<{ id: string; checked: boolean }>;
+    reasons: Array<{ id: string }>;
+  };
 }
 
 /**
@@ -16377,14 +16412,10 @@ interface EditFormState {
  * and fullscreen image preview.
  */
 const VisitDetails: React.FC = () => {
-  // Navigation and route params
   const { idVisit } = useParams<{ idVisit: string }>();
   const navigate = useNavigate();
-
-  // Authentication context
   const { token, user, effectivePermissions, permissionsLoaded } = useAuth();
 
-  // Component state
   const [visit, setVisit] = useState<Visit | null>(null);
   const [agent, setAgent] = useState<Agent | null>(null);
   const [supervisors, setSupervisors] = useState<User[]>([]);
@@ -16395,10 +16426,22 @@ const VisitDetails: React.FC = () => {
   const [loading, setLoading] = useState<boolean>(true);
   const [error, setError] = useState<string | null>(null);
   const [isEditing, setIsEditing] = useState<boolean>(false);
-  const [selectedImage, setSelectedImage] = useState<string | null>(null); // Fullscreen image preview
+  const [selectedImage, setSelectedImage] = useState<string | null>(null);
   const [selectedSupervisor, setSelectedSupervisor] = useState<string>("");
   const [supervisorPhone, setSupervisorPhone] = useState<string>("");
   const [supervisorSearch, setSupervisorSearch] = useState<string>("");
+
+  const [isCameraActive, setIsCameraActive] = useState<boolean>(false);
+  const [newPhotos, setNewPhotos] = useState<File[]>([]);
+  const [flashEffect, setFlashEffect] = useState<boolean>(false);
+  const videoRef = useRef<HTMLVideoElement>(null);
+  const canvasRef = useRef<HTMLCanvasElement>(null);
+
+  const [editTracking, setEditTracking] = useState<EditTracking>({
+    startTime: null,
+    durationAccumulator: 0
+  });
+
   const [editForm, setEditForm] = useState<EditFormState>({
     date: "",
     time: "",
@@ -16414,9 +16457,18 @@ const VisitDetails: React.FC = () => {
     checklists: [],
     reasons: [],
     photosToRemove: [],
+    original: {
+      date: "",
+      time: "",
+      location: "",
+      status: "",
+      comment: "",
+      agentID: "",
+      checklists: [],
+      reasons: []
+    }
   });
 
-  // Memoized permissions for performance
   const userPermissions = useMemo(() => ({
     canAccessVisitDetails: effectivePermissions?.some(p => p.name === PERMISSIONS.ACCESS_VISIT_DETAILS),
     canLogVisits: effectivePermissions?.some(p => p.name === PERMISSIONS.LOG_VISITS),
@@ -16431,7 +16483,6 @@ const VisitDetails: React.FC = () => {
     canCreateTimesheetsForSupervisors: effectivePermissions?.some(p => p.name === PERMISSIONS.CREATE_TIMESHEETS_FOR_SUPERVISORS),
   }), [effectivePermissions]);
 
-  // Utility functions
   const getCurrentDateTime = () => {
     const now = new Date();
     return {
@@ -16453,7 +16504,6 @@ const VisitDetails: React.FC = () => {
     return true;
   };
 
-  // Data fetching
   const fetchVisitData = useCallback(async () => {
     if (!idVisit || !token || !userPermissions.canAccessVisitDetails) {
       navigate("/access-denied");
@@ -16487,6 +16537,19 @@ const VisitDetails: React.FC = () => {
         })) || [],
         reasons: visitData.Reasons?.map(r => ({ id: r.reasonID })) || [],
         photosToRemove: [],
+        original: {
+          date: visitData.date,
+          time: visitData.time.slice(0, 5),
+          location: visitData.location || "",
+          status: visitData.status,
+          comment: visitData.comment || "",
+          agentID: visitData.agentID,
+          checklists: visitData.Checklists?.map(c => ({
+            id: c.checklistID,
+            checked: c.VisitChecklist?.checked || false,
+          })) || [],
+          reasons: visitData.Reasons?.map(r => ({ id: r.reasonID })) || [],
+        }
       });
       setSelectedSupervisor("");
 
@@ -16513,7 +16576,68 @@ const VisitDetails: React.FC = () => {
     if (permissionsLoaded) fetchVisitData();
   }, [fetchVisitData, permissionsLoaded]);
 
+
+
+  const startCamera = async () => {
+    try {
+      const stream = await navigator.mediaDevices.getUserMedia({ video: { facingMode: "environment" } });
+      if (videoRef.current) {
+        videoRef.current.srcObject = stream;
+        setIsCameraActive(true);
+      }
+    } catch (err) {
+      setError("Failed to access camera. Please ensure permissions are granted.");
+      console.error("Camera access error:", err);
+    }
+  };
+
+  const stopCamera = () => {
+    if (videoRef.current && videoRef.current.srcObject) {
+      const stream = videoRef.current.srcObject as MediaStream;
+      stream.getTracks().forEach(track => track.stop());
+      videoRef.current.srcObject = null;
+      setIsCameraActive(false);
+    }
+  };
+
+  useEffect(() => {
+    if (isCameraActive && videoRef.current) {
+      videoRef.current.play().catch((err: unknown) => {
+        setError("Failed to play camera stream.");
+        console.error("Video play failed:", err);
+      });
+    }
+  }, [isCameraActive]);
+
+  const capturePhoto = () => {
+    if (videoRef.current && canvasRef.current) {
+      const video = videoRef.current;
+      const canvas = canvasRef.current;
+      canvas.width = video.videoWidth;
+      canvas.height = video.videoHeight;
+      const context = canvas.getContext("2d");
+      if (context) {
+        context.drawImage(video, 0, 0, canvas.width, canvas.height);
+        canvas.toBlob((blob) => {
+          if (blob) {
+            const file = new File([blob], `photo-${Date.now()}.jpg`, { type: "image/jpeg" });
+            setNewPhotos((prev) => [...prev, file]);
+            setFlashEffect(true);
+            setTimeout(() => setFlashEffect(false), 300);
+          } else {
+            console.error("Failed to create blob from canvas.");
+          }
+        }, "image/jpeg");
+      }
+    }
+  };
+
+  const removeNewPhoto = (index: number) => {
+    setNewPhotos((prev) => prev.filter((_, i) => i !== index));
+  };
+
   // Debounced API calls
+
   const fetchAgentByPhone = useCallback(
     debounce(async (phone: string) => {
       if (phone.length < 7 || !userPermissions.canReadAgentsByPhone || !token) return;
@@ -16578,7 +16702,6 @@ const VisitDetails: React.FC = () => {
     }
   }, [editForm.location, editForm.agentPhone, userPermissions.canReadAgentsByLocation, token]);
 
-  // Event handlers
   const handleLogVisit = () => {
     if (visit && userPermissions.canLogVisits) {
       navigate("/qr-scan", { state: { visit } });
@@ -16605,15 +16728,46 @@ const VisitDetails: React.FC = () => {
     }
   };
 
-  const handleEditToggle = () => setIsEditing(prev => !prev);
+  const handleEditToggle = () => {
+    if (!isEditing && visit?.status === VisitStatus.VISITED) {
+      setEditTracking({
+        startTime: Date.now(),
+        durationAccumulator: visit.duration || 0
+      });
+    }
+    setIsEditing(prev => {
+      if (prev) {
+        setEditForm(prevForm => ({
+          ...prevForm,
+          date: prevForm.original.date,
+          time: prevForm.original.time,
+          location: prevForm.original.location,
+          status: prevForm.original.status,
+          comment: prevForm.original.comment,
+          agentID: prevForm.original.agentID,
+          checklists: [...prevForm.original.checklists],
+          reasons: [...prevForm.original.reasons],
+          photosToRemove: []
+        }));
+        setEditTracking({ startTime: null, durationAccumulator: 0 });
+      }
+      return !prev;
+    });
+  };
 
   const handleEditSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
     if (!visit || !userPermissions.canEditTimesheets || !token || !editForm.date || !editForm.time) return;
 
     let newStatus = editForm.status;
-    if (visit.status === VisitStatus.VISITED) {
+    let updatedDuration: number | undefined = visit.duration || undefined;
+
+    if (visit.status === VisitStatus.VISITED && userPermissions.canLogVisits) {
       newStatus = VisitStatus.VISITED;
+      if (editTracking.startTime) {
+        const editDurationMinutes = Math.round((Date.now() - editTracking.startTime) / 60000);
+        updatedDuration = editTracking.durationAccumulator + editDurationMinutes;
+      }
     } else if (userPermissions.canCreateTimesheetsForSupervisors && selectedSupervisor) {
       newStatus = VisitStatus.VALIDATED;
     } else if ([VisitStatus.VALIDATED, VisitStatus.REJECTED].includes(visit.status as VisitStatus)) {
@@ -16630,11 +16784,18 @@ const VisitDetails: React.FC = () => {
         agentID: editForm.agentID,
         checklists: editForm.checklists,
         reasons: editForm.reasons,
+        photos: newPhotos,
         photosToRemove: editForm.photosToRemove,
         supervisorID: selectedSupervisor && userPermissions.canCreateTimesheetsForSupervisors ? selectedSupervisor : undefined,
+        duration: updatedDuration
       }, token);
 
       setVisit(updatedVisit);
+      setNewPhotos([]);
+      stopCamera();
+
+      setEditTracking({ startTime: null, durationAccumulator: 0 });
+
       setIsEditing(false);
     } catch (err) {
       setError("Failed to update visit.");
@@ -16708,7 +16869,7 @@ const VisitDetails: React.FC = () => {
     if (!visit) return false;
     switch (visit.status) {
       case "visited":
-        return ["comment", "checklists", "photosToRemove"].includes(field);
+        return ["comment", "checklists", "photos"].includes(field);
       case "pending":
       case "validated":
       case "rejected":
@@ -16718,7 +16879,6 @@ const VisitDetails: React.FC = () => {
     }
   };
 
-  // Conditional rendering based on state
   if (!permissionsLoaded) {
     return <div className="visit-details-loading">Loading permissions...</div>;
   }
@@ -16760,7 +16920,7 @@ const VisitDetails: React.FC = () => {
                   cx="18"
                   cy="18"
                   r="16"
-                  strokeDasharray={`${Math.min(visit.duration / 60 * 100, 100)} 100`}
+                  strokeDasharray={`${Math.min(visit.duration! / 60 * 100, 100)} 100`}
                 />
               </svg>
               <span className="duration-text">{visit.duration}m</span>
@@ -16846,18 +17006,18 @@ const VisitDetails: React.FC = () => {
               </div>
 
               {visit.photos?.length ? (
-                <div className="visit-details-card">
-                  <h2><FaCamera /> Photos</h2>
+                <div className="visit-details-card photos-section">
+                  <h2><FaCamera /> Photos ({visit.photos.length})</h2>
                   <div className="card-content photo-gallery">
                     {visit.photos.map((photo, index) => (
-                      <img
-                        key={index}
-                        src={`${BASE_URL}${photo}`}
-                        alt={`Visit photo ${index + 1}`}
-                        className="visit-photo"
-                        onClick={() => handleImageClick(photo)}
-                        style={{ cursor: "pointer" }}
-                      />
+                      <div key={index} className="photo-container">
+                        <img
+                          src={`${BASE_URL}${photo}`}
+                          alt={`Visit photo ${index + 1}`}
+                          className="photo-preview"
+                          onClick={() => handleImageClick(photo)}
+                        />
+                      </div>
                     ))}
                   </div>
                 </div>
@@ -17125,29 +17285,78 @@ const VisitDetails: React.FC = () => {
               </div>
             )}
 
-            {canEditField("photosToRemove") && visit.photos?.length ? (
-              <div className="form-group">
-                <label>Photos</label>
-                <div className="photo-preview">
-                  {visit.photos.filter(p => !editForm.photosToRemove.includes(p)).map((photo, index) => (
-                    <div key={index} className="photo-item">
-                      <img
-                        src={`${BASE_URL}${photo}`}
-                        alt={`Photo ${index + 1}`}
-                        className="visit-photo"
-                        onClick={() => handleImageClick(photo)}
-                        style={{ cursor: "pointer" }}
-                      />
-                      <button
-                        type="button"
-                        className="remove-photo-btn"
-                        onClick={() => handleRemovePhoto(photo)}
-                      >
-                        <FaTimes />
-                      </button>
+            {canEditField("photos") && (visit.photos?.length || newPhotos.length) ? (
+              <div className="form-group photos-section">
+                <h2><FaCamera /> Photos ({(visit.photos?.filter(p => !editForm.photosToRemove.includes(p)).length || 0) + newPhotos.length})</h2>
+                {visit.status === VisitStatus.VISITED && (
+                  <div className="camera-controls">
+                    <button type="button" className="camera-btn" onClick={startCamera} disabled={isCameraActive}>
+                      <FaCamera /> Start Camera
+                    </button>
+                    <div className={`camera-container ${isCameraActive ? 'active' : ''}`}>
+                      <div className="camera-frame">
+                        <video ref={videoRef} className="camera-preview" muted playsInline />
+                        <div className={`flash-overlay ${flashEffect ? 'active' : ''}`}></div>
+                        <div className="photo-counter">
+                          <FaCamera /> {newPhotos.length}
+                        </div>
+                        {newPhotos.length > 0 && (
+                          <div className="thumbnail-preview">
+                            <img src={URL.createObjectURL(newPhotos[newPhotos.length - 1])} alt="Last captured" />
+                          </div>
+                        )}
+                      </div>
+                      {isCameraActive && (
+                        <>
+                          <button type="button" className="stop-camera-btn" onClick={stopCamera}>
+                            <FaTimes />
+                          </button>
+                          <button type="button" className="capture-btn" onClick={capturePhoto}>
+                            <FaCamera />
+                          </button>
+                        </>
+                      )}
                     </div>
-                  ))}
-                </div>
+                  </div>
+                )}
+                {(visit.photos?.length || newPhotos.length) && (
+                  <div className="photo-previews">
+                    {visit.photos!.filter(p => !editForm.photosToRemove.includes(p)).map((photo, index) => (
+                      <div key={`existing-${index}`} className="photo-container">
+                        <img
+                          src={`${BASE_URL}${photo}`}
+                          alt={`Photo ${index + 1}`}
+                          className="photo-preview"
+                          onClick={() => handleImageClick(photo)}
+                        />
+                        <button
+                          type="button"
+                          className="remove-photo-btn"
+                          onClick={() => handleRemovePhoto(photo)}
+                        >
+                          <FaTimes />
+                        </button>
+                      </div>
+                    ))}
+                    {newPhotos.map((photo, index) => (
+                      <div key={`new-${index}`} className="photo-container">
+                        <img
+                          src={URL.createObjectURL(photo)}
+                          alt={`New photo ${index + 1}`}
+                          className="photo-preview"
+                          onClick={() => setSelectedImage(URL.createObjectURL(photo))}
+                        />
+                        <button
+                          type="button"
+                          className="remove-photo-btn"
+                          onClick={() => removeNewPhoto(index)}
+                        >
+                          <FaTimes />
+                        </button>
+                      </div>
+                    ))}
+                  </div>
+                )}
               </div>
             ) : null}
 
@@ -17176,6 +17385,7 @@ const VisitDetails: React.FC = () => {
             </button>
           </div>
         )}
+        <canvas ref={canvasRef} style={{ display: "none" }} />
       </section>
     </div>
   );
@@ -17188,763 +17398,770 @@ File contents: C:\Users\Kayto\Desktop\IT\Projects\Stage\Stage PFE\TraceFlow\Fron
 ==================================================
 @import url('https://fonts.googleapis.com/css2?family=Inter:wght@400;600;700&display=swap');
 
-/* Global Styles */
-body {
-  margin: 0;
-  font-family: 'Inter', sans-serif;
-}
-
-/* Container Styles */
-.visit-details-container {
-  padding: 1rem;
-  max-width: 1200px;
-  margin: 0 auto;
-  background: #f0f4f8;
-  min-height: 100vh;
+/* Base Container */
+.visit-validation-container {
+  align-items: center;
+  background: linear-gradient(135deg, #f8fafc 0%, #eef2f6 100%);
   display: flex;
   flex-direction: column;
-  gap: 1rem;
+  font-family: 'Inter', sans-serif;
+  margin: 0 auto;
+  max-width: 1280px;
+  min-height: 100vh;
+  padding: 1.25rem;
 }
 
-/* Header Styles */
-.visit-details-header {
-  background: linear-gradient(135deg, #4cb1c7 0%, #3a8fa2 100%);
-  color: #fff;
-  padding: 1rem;
-  border-radius: 0.75rem;
-  text-align: center;
-  position: relative;
-  overflow: hidden;
-}
-
-.visit-details-header::before {
-  content: '';
-  position: absolute;
-  top: -50%;
-  left: -50%;
-  width: 200%;
-  height: 200%;
-  background: rgba(255, 255, 255, 0.1);
-  transform: rotate(30deg);
-  pointer-events: none;
-}
-
-.visit-details-header h1 {
+.visit-validation-container.camera-active {
   margin: 0;
-  font-size: 1.5rem;
-  font-weight: 700;
-  display: flex;
-  align-items: center;
-  justify-content: center;
-  gap: 0.5rem;
-  z-index: 1;
+  padding: 0;
+  position: absolute;
+  z-index: 5000;
 }
 
-/* Status Indicators */
+/* Header */
+.visit-header-0 {
+  background: linear-gradient(135deg, #4cb1c7 0%, #3a8fa2 100%);
+  border-radius: 0.75rem;
+  box-shadow: 0 0.25rem 0.75rem rgba(76, 177, 199, 0.3);
+  color: #fff;
+  margin-bottom: 1rem;
+  max-width: 600px;
+  padding: 1.5rem;
+  text-align: center;
+  width: 100%;
+}
+
+.visit-header-0 h1 {
+  align-items: center;
+  display: flex;
+  font-size: 1.75rem;
+  font-weight: 700;
+  gap: 0.5rem;
+  justify-content: center;
+  margin: 0;
+}
+
+.visit-header-0 p {
+  font-size: 0.875rem;
+  margin: 0.5rem 0 0;
+  opacity: 0.9;
+}
+
+/* Status Dot */
 .status-dot {
-  display: inline-block;
-  width: 0.5rem;
-  height: 0.5rem;
   border-radius: 50%;
+  display: inline-block;
+  height: 0.5rem;
   margin-left: 0.5rem;
+  width: 0.5rem;
 }
 
 .status-pending {
   background: #f59e0b;
 }
 
-.status-completed,
 .status-validated {
   background: #10b981;
 }
 
 .status-rejected {
-  background: #ef4444;
+  background: #b70a4f;
 }
 
 .status-visited {
-  background: #3b82f6;
+  background: #4cb1c7;
 }
 
-/* Section Styles */
-.visit-details-section {
+/* Visit Card */
+.visit-card {
   background: #fff;
+  border-radius: 1rem;
+  box-shadow: 0 0.375rem 1.25rem rgba(0, 0, 0, 0.05);
+  max-width: 600px;
+  padding: 0.5rem 1rem;
+  /* transition: transform 0.3s ease; */
+  width: 100%;
+}
+
+.visit-card:hover {
+  /* transform: translateY(-0.3125rem); */
+}
+
+/* Sections */
+.details-section,
+.reasons-section,
+.checklist-section,
+.photos-section,
+.comment-section {
+  background: #f8fafc;
   border-radius: 0.75rem;
-  padding: 1.5rem;
-  box-shadow: 0 4px 15px rgba(0, 0, 0, 0.05);
-  position: relative;
-}
-
-/* Actions and Buttons */
-.visit-details-actions-top {
-  position: absolute;
-  top: 1rem;
-  right: 1rem;
-  display: flex;
-  gap: 0.5rem;
-}
-
-.visit-details-actions {
-  display: flex;
-  gap: 0.75rem;
-  padding: 0 1rem;
-  flex-wrap: wrap;
-  margin-top: 1rem;
-}
-
-button:disabled {
-  opacity: 0.5;
-  cursor: not-allowed;
-}
-
-.visit-details-log-btn,
-.visit-details-back-btn,
-.validate-visit-btn,
-.reject-visit-btn,
-.visit-details-edit-btn,
-.visit-details-delete-btn,
-.visit-details-submit-btn,
-.visit-details-cancel-btn {
-  padding: 0.75rem;
-  font-size: 0.9rem;
-  font-weight: 600;
-  text-transform: uppercase;
-  color: #fff;
-  border: none;
-  border-radius: 0.5rem;
-  cursor: pointer;
-  flex: 1;
-  display: flex;
-  align-items: center;
-  justify-content: center;
-  gap: 0.5rem;
-  box-shadow: 0 3px 10px rgba(76, 177, 199, 0.3);
-  transition: all 0.2s ease;
-}
-
-.visit-details-log-btn,
-.visit-details-edit-btn,
-.visit-details-submit-btn {
-  background: linear-gradient(135deg, #4cb1c7 0%, #3a8fa2 100%);
-}
-
-.visit-details-back-btn,
-.visit-details-cancel-btn {
-  background: linear-gradient(135deg, #6b7280 0%, #4b5563 100%);
-}
-
-.validate-visit-btn {
-  background: linear-gradient(135deg, #10b981 0%, #059669 100%);
-}
-
-.reject-visit-btn,
-.visit-details-delete-btn {
-  background: linear-gradient(135deg, #f687b3 0%, #ff3c8a 100%);
-}
-
-.visit-details-log-btn:hover,
-.visit-details-edit-btn:hover,
-.visit-details-submit-btn:hover {
-  transform: scale(1.02);
-  box-shadow: 0 5px 15px rgba(76, 177, 199, 0.4);
-}
-
-.visit-details-back-btn:hover,
-.visit-details-cancel-btn:hover {
-  transform: scale(1.02);
-  box-shadow: 0 5px 15px rgba(107, 114, 128, 0.4);
-}
-
-.validate-visit-btn:hover {
-  transform: scale(1.02);
-  box-shadow: 0 5px 15px rgba(16, 185, 129, 0.4);
-}
-
-.reject-visit-btn:hover,
-.visit-details-delete-btn:hover {
-  transform: scale(1.02);
-  box-shadow: 0 5px 15px rgba(246, 135, 179, 0.4);
-}
-
-.visit-details-log-btn2 {
-  display: flex;
-  gap: 0.5rem;
-  flex: 1;
-  padding-left: 3rem;
-  padding-right: 1rem;
-}
-
-/* Grid and Card Styles */
-.visit-details-grid {
-  display: grid;
-  grid-template-columns: 1fr;
-  gap: 1rem;
-  padding-top: 3rem;
-}
-
-.visit-details-card {
-  background: #fff;
-  border-radius: 0.75rem;
+  margin-bottom: 1.5rem;
   padding: 1rem;
-  box-shadow: 0 4px 15px rgba(0, 0, 0, 0.05);
-  transition: transform 0.2s ease;
+  transition: box-shadow 0.3s ease;
 }
 
-.visit-details-card h2 {
-  font-size: 1.1rem;
-  font-weight: 600;
+.details-section:hover,
+.reasons-section:hover,
+.checklist-section:hover,
+.photos-section:hover,
+.comment-section:hover {
+  box-shadow: 0 0.25rem 0.75rem rgba(0, 0, 0, 0.05);
+}
+
+.details-section h2,
+.reasons-section h2,
+.checklist-section h2,
+.photos-section h2,
+.comment-section h2 {
+  align-items: center;
   color: #4cb1c7;
-  margin: 0 0 0.75rem;
   display: flex;
-  align-items: center;
+  font-size: 1.125rem;
+  font-weight: 600;
   gap: 0.5rem;
+  margin-bottom: 0.75rem;
 }
 
-.card-content p {
-  margin: 0.5rem 0;
-  font-size: 0.9rem;
-  color: #1f2937;
-  display: flex;
-  align-items: center;
-  gap: 0.5rem;
-}
-
-.card-content ul {
-  list-style: none;
-  padding: 0;
-  margin: 0;
-}
-
-.card-content li {
-  font-size: 0.9rem;
-  color: #1f2937;
-  padding: 0.5rem 0;
+/* Details Section */
+.detail-item {
   border-bottom: 1px solid #e5e7eb;
+  display: flex;
+  justify-content: space-between;
+  padding: 0.5rem 0;
 }
 
-.card-content li:last-child {
+.detail-item:last-child {
   border-bottom: none;
 }
 
-.checklist li {
-  display: flex;
+.detail-item span {
   align-items: center;
-  gap: 0.5rem;
-}
-
-.check-icon {
-  color: #d1d5db;
-  font-size: 1rem;
-}
-
-.check-icon.checked {
-  color: #10b981;
-}
-
-.no-data {
   color: #6b7280;
-  font-size: 0.85rem;
-  font-style: italic;
-}
-
-/* Form Styles */
-.visit-edit-form {
   display: flex;
-  flex-direction: column;
-  gap: 1rem;
-}
-
-.form-group label {
-  display: block;
-  font-weight: 600;
-  color: #4cb1c7;
-  margin-bottom: 0.5rem;
-}
-
-.form-group input,
-.form-group select,
-.form-group textarea {
-  width: 100%;
-  padding: 0.5rem;
-  border: 1px solid #e5e7eb;
-  border-radius: 0.5rem;
-  font-size: 0.9rem;
-  background: #fff;
-}
-
-.form-group textarea {
-  min-height: 100px;
-}
-
-.search-input {
-  margin-bottom: 0rem;
-}
-
-.selected-items {
-  margin-top: 0.5rem;
-  display: flex;
-  flex-wrap: wrap;
+  font-size: 0.875rem;
   gap: 0.5rem;
 }
 
-.selected-item {
-  background: #e5e7eb;
-  padding: 0.25rem 0.5rem;
-  border-radius: 0.25rem;
-  font-size: 0.85rem;
-  cursor: pointer;
+.detail-item p {
+  color: #1f2937;
+  font-size: 0.875rem;
+  margin: 0;
 }
 
-.selected-item:hover {
-  background: #d1d5db;
+/* Reasons Section */
+.reasons-section ul {
+  list-style: none;
+  margin: 0;
+  padding: 0;
 }
 
-.checklist-item {
-  background: #e5e7eb;
-  padding: 0.25rem 0.5rem;
-  border-radius: 0.25rem;
-  font-size: 0.85rem;
-  display: flex;
+.reasons-section li {
+  border-bottom: 1px solid #e5e7eb;
+  color: #1f2937;
+  font-size: 0.875rem;
+  padding: 0.5rem 0;
+}
+
+.reasons-section li:last-child {
+  border-bottom: none;
+}
+
+/* Checklist Section */
+.checklist-section ul.checklist {
+  list-style: none;
+  margin: 0;
+  padding: 0;
+}
+
+.checklist-section li {
   align-items: center;
-  gap: 0.25rem;
-}
-
-.checklist-item:hover {
-  background: #d1d5db;
-}
-
-.checklist-item .remove-item {
-  cursor: pointer;
-  font-weight: bold;
-}
-
-.checklist-item input[type="checkbox"] {
-  width: 1rem;
-  height: 1rem;
-}
-
-.form-actions {
+  border-bottom: 1px solid #e5e7eb;
   display: flex;
-  gap: 0.75rem;
-  margin-top: 1rem;
-}
-
-/* Photo Styles */
-.photo-gallery,
-.photo-preview {
-  display: flex;
-  flex-wrap: wrap;
-  gap: 0.5rem;
-}
-
-.photo-item {
-  position: relative;
-}
-
-.visit-photo {
-  max-width: 100px;
-  height: auto;
-  border-radius: 0.5rem;
-  object-fit: cover;
-}
-
-.remove-photo-btn {
-  position: absolute;
-  top: 5px;
-  right: 5px;
-  background: rgba(239, 68, 68, 0.8);
-  border: none;
-  border-radius: 50%;
-  width: 20px;
-  height: 20px;
-  display: flex;
-  align-items: center;
-  justify-content: center;
-  color: #fff;
-  cursor: pointer;
+  padding: 0.5rem 0;
   transition: background 0.2s ease;
 }
 
-.remove-photo-btn:hover {
-  background: rgba(239, 68, 68, 1);
+.checklist-section li:last-child {
+  border-bottom: none;
 }
 
-/* Fullscreen Image Preview */
-.fullscreen-image-overlay {
+.checklist-section li.checked {
+  background: rgba(76, 177, 199, 0.1);
+  border-radius: 0.5rem;
+}
+
+.checklist-section .custom-checkbox-label {
+  align-items: center;
+  cursor: pointer;
+  display: flex;
+  gap: 0.75rem;
+  padding-left: 0.5rem;
+  position: relative;
+  width: 100%;
+}
+
+.checklist-section .custom-checkbox-input {
+  height: 0;
+  opacity: 0;
+  position: absolute;
+  width: 0;
+}
+
+.checklist-section .custom-checkbox {
+  align-items: center;
+  background: #fff;
+  border: 2px solid #4cb1c7;
+  border-radius: 0.375rem;
+  display: flex;
+  height: 1.25rem;
+  justify-content: center;
+  transition: all 0.3s ease;
+  width: 1.25rem;
+}
+
+.checklist-section .custom-checkbox .check-icon {
+  color: #fff;
+  font-size: 0.875rem;
+  opacity: 0;
+  transform: scale(0);
+  transition: all 0.2s ease;
+}
+
+.checklist-section .custom-checkbox-input:checked+.custom-checkbox {
+  background: #4cb1c7;
+  border-color: #4cb1c7;
+  transform: scale(1.1);
+}
+
+.checklist-section .custom-checkbox-input:checked+.custom-checkbox .check-icon {
+  opacity: 1;
+  transform: scale(1);
+}
+
+.checklist-section .custom-checkbox-input:focus+.custom-checkbox {
+  box-shadow: 0 0 0 3px rgba(76, 177, 199, 0.3);
+}
+
+.checklist-section .custom-checkbox-label:hover .custom-checkbox {
+  border-color: #3a8fa2;
+}
+
+.checklist-section .checklist-text {
+  color: #1f2937;
+  flex-grow: 1;
+  font-size: 0.875rem;
+}
+
+.progress-bar {
+  background: #e5e7eb;
+  border-radius: 0.25rem;
+  height: 0.5rem;
+  margin-top: 0.75rem;
+  overflow: hidden;
+}
+
+.progress-fill {
+  background: #4cb1c7;
+  height: 100%;
+  transition: width 0.3s ease;
+}
+
+/* Photos Section */
+.photos-section {
+  position: relative;
+}
+
+.camera-controls {
+  align-items: center;
+  display: flex;
+  flex-direction: column;
+  gap: 0.5rem;
+}
+
+.camera-container {
+  display: none;
+}
+
+.camera-container.active {
+  display: block;
+  height: 100vh;
+  left: 0;
   position: fixed;
   top: 0;
-  left: 0;
-  width: 100vw;
-  height: 100vh;
-  background-color: rgba(0, 0, 0, 0.9);
-  display: flex;
-  justify-content: center;
-  align-items: center;
+  width: 99vw;
   z-index: 1000;
+  background: #000; /* Added to ensure full-screen black background */
 }
 
-.fullscreen-image {
-  max-width: 90%;
-  max-height: 90%;
-  object-fit: contain;
-}
 
-.fullscreen-close-btn {
-  position: absolute;
-  top: 20px;
-  right: 20px;
-  background: none;
-  border: none;
-  color: white;
-  font-size: 2rem;
-  cursor: pointer;
-}
-
-.fullscreen-close-btn:hover {
-  color: #ccc;
-}
-
-/* Duration Clock */
-.duration-clock {
-  display: inline-flex;
-  align-items: center;
-  margin-left: 1rem;
+/* Added frame around camera preview */
+.camera-frame {
+  border: 10px solid #4cb1c7;
+  box-shadow: 0 0 10px rgba(0, 0, 0, 0.5);
   position: relative;
-  width: 2rem;
-  height: 2rem;
-}
-
-.clock-circle {
-  width: 100%;
-  height: 100%;
-  transform: rotate(-90deg);
-}
-
-.clock-base {
-  fill: none;
-  stroke: rgba(255, 255, 255, 0.2);
-  stroke-width: 2;
-}
-
-.clock-progress {
-  fill: none;
-  stroke: #fff;
-  stroke-width: 2;
-  stroke-linecap: round;
-  transition: stroke-dasharray 0.3s ease;
-}
-
-.duration-text {
-  position: absolute;
   top: 50%;
   left: 50%;
   transform: translate(-50%, -50%);
-  font-size: 0.75rem;
-  font-weight: 600;
+  width: 100%;
+  height: 100%;
+}
+
+.camera-preview {
+  background: rgb(222, 222, 222);
+  height: 100%;
+  width: 100%;
+}
+
+body.dark .camera-frame {
+  border-color: #63b3ed;
+}
+body.dark .camera-preview {
+  background: rgb(0, 0, 0);
+}
+
+/* Added flash effect */
+.flash-overlay {
+  position: absolute;
+  top: 0;
+  left: 0;
+  width: 100%;
+  height: 100%;
+  background: transparent;
+  transition: background 0.3s ease;
+  pointer-events: none;
+}
+
+.flash-overlay.active {
+  background: rgba(255, 255, 255, 0.8);
+  animation: flash 0.3s ease-out;
+}
+
+@keyframes flash {
+  0% { background: rgba(255, 255, 255, 0.8); }
+  100% { background: transparent; }
+}
+
+/* Added photo counter styling */
+.photo-counter {
+  position: absolute;
+  top: 20px;
+  left: 20px;
+  background: rgba(0, 0, 0, 0.7);
   color: #fff;
-}
-
-/* Loading and Error States */
-.visit-details-loading {
-  flex: 1;
+  padding: 5px 10px;
+  border-radius: 20px;
+  font-size: 0.875rem;
   display: flex;
-  justify-content: center;
   align-items: center;
+  gap: 5px;
 }
 
-.spinner {
-  width: 2rem;
-  height: 2rem;
-  border: 3px solid #4cb1c7;
-  border-top: 3px solid transparent;
+/* Added picture preview in the corner */
+.thumbnail-preview {
+  position: absolute;
+  bottom: 10px;
+  right: 10px;
+  width: 80px;
+  height: 80px;
+  border-radius: 8px;
+  overflow: hidden;
+  border: 2px solid #fff;
+  box-shadow: 0 2px 8px rgba(0, 0, 0, 0.3);
+}
+
+.thumbnail-preview img {
+  width: 100%;
+  height: 100%;
+  object-fit: cover;
+}
+
+/* Adjusted stop camera button for correct placement */
+.stop-camera-btn {
+  align-items: center;
+  background: #e81f76;
+  border: none;
   border-radius: 50%;
-  animation: spin 1s linear infinite;
+  color: #fff;
+  cursor: pointer;
+  display: flex;
+  font-size: 20px; /* Slightly larger for visibility */
+  height: 40px; /* Circular and larger */
+  justify-content: center;
+  position: absolute;
+  right: 20px;
+  top: 20px;
+  transition: background 0.3s ease;
+  width: 40px;
 }
 
-.visit-details-error-card {
+.stop-camera-btn:hover {
+  background: #b70a4f;
+}
+
+/* Adjusted capture button for correct placement */
+.capture-btn {
+  align-items: center;
+  background: #4cb1c7;
+  border: none;
+  border-radius: 50%; /* Made circular */
+  bottom: 30px; /* Slightly higher from bottom */
+  color: #fff;
+  cursor: pointer;
+  display: flex;
+  font-size: 24px; /* Larger icon */
+  height: 60px; /* Larger button */
+  justify-content: center;
+  left: 50%;
+  position: absolute;
+  transform: translateX(-50%);
+  transition: background 0.3s ease;
+  width: 60px;
+  box-shadow: 0 4px 12px rgba(0, 0, 0, 0.3); /* Added shadow for depth */
+}
+
+.capture-btn:hover {
+  background: #3a8fa2;
+}
+
+.photo-previews {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 0.5rem;
+  margin-top: 0.75rem;
+}
+
+.photo-container {
+  display: inline-block;
+  position: relative;
+}
+
+.photo-preview {
+  border: 1px solid #e5e7eb;
+  border-radius: 0.5rem;
+  cursor: pointer;
+  height: 100px;
+  object-fit: cover;
+  width: 100px;
+}
+
+.photo-note {
+  color: #6b7280;
+  font-size: 0.75rem;
+  margin-top: 0.5rem;
+}
+
+.remove-photo-btn {
+  align-items: center;
+  background: #e81f76;
+  border: none;
+  border-radius: 50%;
+  color: #fff;
+  cursor: pointer;
+  display: flex;
+  font-size: 12px;
+  height: 20px;
+  justify-content: center;
+  padding: 0;
+  position: absolute;
+  right: -8px;
+  top: -8px;
+  transition: background 0.3s ease;
+  width: 20px;
+}
+
+.remove-photo-btn:hover {
+  background: #b70a4f;
+}
+
+/* Full-Screen Photo Preview */
+.photo-fullscreen-preview {
+  align-items: center;
+  background: rgba(0, 0, 0, 0.9);
+  display: flex;
+  height: 100vh;
+  justify-content: center;
+  left: 0;
+  position: fixed;
+  top: 0;
+  width: 100vw;
+  z-index: 2000;
+}
+
+.fullscreen-image {
+  max-height: 90%;
+  max-width: 90%;
+  object-fit: contain;
+}
+
+.close-preview-btn {
+  align-items: center;
+  background: #e81f76;
+  border: none;
+  border-radius: 50%;
+  color: #fff;
+  cursor: pointer;
+  display: flex;
+  font-size: 16px;
+  height: 30px;
+  justify-content: center;
+  position: absolute;
+  right: 20px;
+  top: 20px;
+  transition: background 0.3s ease;
+  width: 30px;
+}
+
+.close-preview-btn:hover {
+  background: #b70a4f;
+}
+
+/* Comment Section */
+.comment-input {
+  border: 1px solid #e5e7eb;
+  border-radius: 0.5rem;
+  font-family: 'Inter', sans-serif;
+  font-size: 0.875rem;
+  min-height: 80px;
+  padding: 0.5rem;
+  resize: vertical;
+  width: 100%;
+}
+
+.comment-input:focus {
+  border-color: #4cb1c7;
+  box-shadow: 0 0 0 2px rgba(76, 177, 199, 0.2);
+  outline: none;
+}
+
+/* Buttons */
+.camera-btn,
+.validate-btn,
+.back-btn {
+  align-items: center;
+  background: #4cb1c7;
+  border: none;
+  border-radius: 0.5rem;
+  box-shadow: 0 0.25rem 0.75rem rgba(76, 177, 199, 0.3);
+  color: #fff;
+  cursor: pointer;
+  display: flex;
+  font-size: 0.875rem;
+  font-weight: 600;
+  gap: 0.5rem;
+  padding: 0.5rem 1rem;
+  transition: all 0.3s ease;
+}
+
+.validate-btn,
+.back-btn {
+  border-radius: 3.125rem;
+  letter-spacing: 0.03125rem;
+  padding: 0.75rem 1.5rem;
+  text-transform: uppercase;
+}
+
+.camera-btn:hover,
+.validate-btn:hover:not(:disabled),
+.back-btn:hover:not(:disabled) {
+  background: #3a8fa2;
+  transform: scale(1.05);
+}
+
+.validate-btn:disabled,
+.back-btn:disabled {
+  background: #ccc;
+  box-shadow: none;
+  cursor: not-allowed;
+}
+
+.validate-btn.submitting {
+  animation: pulse 1s infinite;
+}
+
+/* Visit Actions */
+.visit-actions {
+  display: flex;
+  gap: 1rem;
+  justify-content: center;
+}
+
+/* Utility */
+.no-data {
+  color: #6b7280;
+  font-size: 0.875rem;
+  font-style: italic;
+}
+
+.loading {
+  color: #6b7280;
+  font-size: 1rem;
+  padding: 1rem;
+  text-align: center;
+}
+
+.error {
   background: #fff;
   border-radius: 0.75rem;
-  padding: 1.5rem;
-  text-align: center;
-  box-shadow: 0 4px 15px rgba(0, 0, 0, 0.05);
-  border: 1px dashed #e81f76;
-}
-
-.visit-details-error-card h2 {
+  box-shadow: 0 0.25rem 0.75rem rgba(0, 0, 0, 0.05);
   color: #e81f76;
-  font-size: 1.5rem;
-  margin: 0 0 0.5rem;
-}
-
-.visit-details-error-card p {
-  color: #6b7280;
-  font-size: 0.9rem;
-  margin: 0 0 1rem;
-}
-
-/* DateTime Group */
-.datetime-group {
-  display: flex;
-  flex-direction: column;
-  gap: 1rem;
+  font-size: 0.875rem;
+  margin-top: 1rem;
+  padding: 1rem;
+  text-align: center;
 }
 
 /* Animations */
-@keyframes spin {
+@keyframes pulse {
   0% {
-    transform: rotate(0deg);
+    transform: scale(1);
   }
-
+  50% {
+    transform: scale(1.05);
+  }
   100% {
-    transform: rotate(360deg);
-  }
-}
-
-/* Responsive Design */
-@media (min-width: 768px) {
-  .visit-details-container {
-    padding: 2rem;
-  }
-
-  .visit-details-header {
-    padding: 1.5rem;
-  }
-
-  .visit-details-header h1 {
-    font-size: 1.75rem;
-  }
-
-  .visit-details-grid {
-    grid-template-columns: repeat(2, 1fr);
-  }
-
-  .visit-details-card {
-    padding: 1.5rem;
-  }
-
-  .visit-details-card h2 {
-    font-size: 1.25rem;
-  }
-
-  .card-content p, .card-content li {
-    font-size: 1rem;
-  }
-
-  .photo-gallery, .photo-preview {
-    gap: 1rem;
-  }
-
-  .visit-photo {
-    max-width: 150px;
-  }
-
-  .form-group textarea {
-    min-height: 150px;
-  }
-
-  .datetime-group {
-    flex-direction: row;
-    gap: 2rem;
-  }
-}
-
-@media (min-width: 1024px) {
-  .visit-details-header {
-    padding: 2rem;
-  }
-
-  .visit-details-header h1 {
-    font-size: 2rem;
-  }
-
-  .visit-details-card:hover {
-    transform: translateY(-5px);
-  }
-}
-
-@media (max-width: 768px) {
-  .visit-details-actions-top {
-    flex-direction: row;
-    gap: 0.25rem;
-  }
-
-  .duration-clock {
-    width: 1.75rem;
-    height: 1.75rem;
-  }
-
-  .duration-text {
-    font-size: 0.65rem;
-  }
-}
-
-@media (max-width: 480px) {
-  .duration-clock {
-    width: 1.5rem;
-    height: 1.5rem;
-  }
-
-  .duration-text {
-    font-size: 0.55rem;
+    transform: scale(1);
   }
 }
 
 /* Dark Mode */
-body.dark .visit-details-container {
-  background: #1a202c;
+body.dark .visit-validation-container {
+  background: none;
 }
 
-body.dark .visit-details-header {
+body.dark .visit-header-0 {
   background: linear-gradient(135deg, #63b3ed 0%, #4299e1 100%);
 }
 
-body.dark .visit-details-header h1 {
+body.dark .visit-header-0 h1,
+body.dark .visit-header-0 p {
   color: #e2e8f0;
 }
 
-body.dark .visit-details-section {
-  background: #353535;
-  box-shadow: 0 4px 15px rgba(0, 0, 0, 0.2);
+body.dark .visit-card {
+  background: #222222;
+  box-shadow: 0 0.375rem 1.25rem rgba(0, 0, 0, 0.3);
+  color: #e2e8f0;
 }
 
-body.dark .visit-details-card {
-  background: #252525;
-  box-shadow: 0 4px 15px rgba(0, 0, 0, 0.2);
+body.dark .details-section,
+body.dark .reasons-section,
+body.dark .checklist-section,
+body.dark .photos-section,
+body.dark .comment-section {
+  background: #333333;
 }
 
-body.dark .visit-details-card h2 {
+body.dark .details-section h2,
+body.dark .reasons-section h2,
+body.dark .checklist-section h2,
+body.dark .photos-section h2,
+body.dark .comment-section h2 {
   color: #63b3ed;
 }
 
-body.dark .card-content p,
-body.dark .card-content li {
-  color: #e2e8f0;
-}
-
-body.dark .card-content li {
-  border-bottom: 1px solid #4a5568;
-}
-
-body.dark .check-icon {
-  color: #a0aec0;
-}
-
-body.dark .check-icon.checked {
-  color: #10b981;
-}
-
+body.dark .detail-item span,
+body.dark .photo-note,
 body.dark .no-data {
   color: #a0aec0;
 }
 
-body.dark .visit-details-log-btn,
-body.dark .visit-details-submit-btn,
-body.dark .visit-details-edit-btn {
-  background: linear-gradient(135deg, #63b3ed 0%, #4299e1 100%);
-  box-shadow: 0 3px 10px rgba(99, 179, 237, 0.3);
+body.dark .detail-item p,
+body.dark .reasons-section li,
+body.dark .checklist-section .checklist-text {
+  color: #e2e8f0;
 }
 
-body.dark .visit-details-log-btn:hover,
-body.dark .visit-details-submit-btn:hover,
-body.dark .visit-details-edit-btn:hover {
-  box-shadow: 0 5px 15px rgba(99, 179, 237, 0.4);
+body.dark .checklist-section .custom-checkbox {
+  border-color: #63b3ed;
 }
 
-body.dark .visit-details-back-btn,
-body.dark .visit-details-cancel-btn {
-  background: linear-gradient(135deg, #718096 0%, #4a5568 100%);
-  box-shadow: 0 3px 10px rgba(113, 128, 150, 0.3);
+body.dark .checklist-section .custom-checkbox-input:checked+.custom-checkbox {
+  background: #63b3ed;
+  border-color: #63b3ed;
 }
 
-body.dark .visit-details-back-btn:hover,
-body.dark .visit-details-cancel-btn:hover {
-  box-shadow: 0 5px 15px rgba(113, 128, 150, 0.4);
+body.dark .checklist-section li.checked {
+  background: rgba(99, 179, 237, 0.1);
 }
 
-body.dark .validate-visit-btn {
-  background: linear-gradient(135deg, #10b981 0%, #059669 100%);
-  box-shadow: 0 3px 10px rgba(16, 185, 129, 0.3);
+body.dark .progress-fill {
+  background: #63b3ed;
 }
 
-body.dark .validate-visit-btn:hover {
-  box-shadow: 0 5px 15px rgba(16, 185, 129, 0.4);
+body.dark .camera-btn,
+body.dark .capture-btn,
+body.dark .validate-btn,
+body.dark .back-btn {
+  background: #63b3ed;
+  color: #ffffff;
 }
 
-body.dark .reject-visit-btn,
-body.dark .visit-details-delete-btn {
-  background: linear-gradient(135deg, #f687b3 0%, #d53f8c 100%);
-  box-shadow: 0 3px 10px rgba(246, 135, 179, 0.3);
+body.dark .camera-btn:hover,
+body.dark .capture-btn:hover,
+body.dark .validate-btn:hover:not(:disabled),
+body.dark .back-btn:hover:not(:disabled) {
+  background: #4299e1;
 }
 
-body.dark .reject-visit-btn:hover,
-body.dark .visit-details-delete-btn:hover {
-  box-shadow: 0 5px 15px rgba(246, 135, 179, 0.4);
+body.dark .photo-preview {
+  border-color: #4a5568;
 }
 
-body.dark .visit-details-error-card {
-  background: #2d3748;
-  border-color: #f687b3;
-  box-shadow: 0 4px 15px rgba(0, 0, 0, 0.2);
+body.dark .remove-photo-btn,
+body.dark .close-preview-btn,
+body.dark .stop-camera-btn {
+  background: #f87171;
 }
 
-body.dark .visit-details-error-card h2 {
-  color: #f687b3;
+body.dark .remove-photo-btn:hover,
+body.dark .close-preview-btn:hover,
+body.dark .stop-camera-btn:hover {
+  background: #e53e3e;
 }
 
-body.dark .visit-details-error-card p {
-  color: #a0aec0;
-}
-
-body.dark .spinner {
-  border: 3px solid #63b3ed;
-  border-top: 3px solid transparent;
-}
-
-body.dark .form-group label {
-  color: #63b3ed;
-}
-
-body.dark .form-group input,
-body.dark .form-group select,
-body.dark .form-group textarea {
-  background: #2d3748;
+body.dark .comment-input {
+  background: #282828;
   border-color: #4a5568;
   color: #e2e8f0;
 }
 
-body.dark .selected-item,
-body.dark .checklist-item {
-  background: #63b3ed;
-  color: #e2e8f0;
+body.dark .comment-input:focus {
+  border-color: #63b3ed;
+  box-shadow: 0 0 0 2px rgba(99, 179, 237, 0.2);
 }
 
-body.dark .selected-item:hover,
-body.dark .checklist-item:hover {
-  background: #718096;
+body.dark .error {
+  background: linear-gradient(135deg, #181818 0%, #1e1e1e00 100%);
+  color: #f87171;
 }
 
-body.dark .checklist-item .remove-item {
-  color: #f56565;
+body.dark .status-visited {
+  background: #4299e1;
 }
 
-body.dark .remove-photo-btn {
-  background: rgba(245, 101, 101, 0.8);
-}
-
-body.dark .remove-photo-btn:hover {
-  background: rgba(245, 101, 101, 1);
-}
-
-body.dark .clock-base {
-  stroke: rgba(255, 255, 255, 0.2);
-}
-
-body.dark .clock-progress {
-  stroke: #e2e8f0;
-}
-
-body.dark .duration-text {
-  color: #e2e8f0;
+/* Media Queries */
+@media (max-width: 768px) {
+  .visit-validation-container {
+    padding: 1rem;
+  }
+  .visit-header-0 {
+    padding: 1rem;
+  }
+  .visit-header-0 h1 {
+    font-size: 1.5rem;
+  }
+  .visit-card {
+    padding: 1rem;
+  }
+  .photo-preview {
+    height: 80px;
+    width: 80px;
+  }
+  .validate-btn,
+  .back-btn {
+    font-size: 0.75rem;
+    padding: 0.625rem 1.25rem;
+  }
 }
 
 ==================================================

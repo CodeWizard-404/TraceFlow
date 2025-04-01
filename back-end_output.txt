@@ -1,5 +1,5 @@
 BACK-END PROJECT FILES
-Generated on: 1742804382.3710532
+Generated on: 1742409167.4223557
 ==================================================
 
 ==================================================
@@ -340,6 +340,8 @@ const AgentService = require('../services/agentService');
 
 class AgentController {
     static async getAgentById(req, res) {
+
+        console.log('getAgentById:', req.params);
         try {
             const { id } = req.params;
             if (!id) {
@@ -354,6 +356,8 @@ class AgentController {
     }
 
     static async getAgentByPhone(req, res) {
+
+        console.log('getAgentByPhone:', req.params);
         try {
             const { phone } = req.params;
             if (!phone) {
@@ -368,6 +372,8 @@ class AgentController {
     }
 
     static async getAgentsByLocation(req, res) {
+
+        console.log('getAgentsByLocation:', req.query);
         try {
             const { location } = req.query;
             if (!location) {
@@ -382,6 +388,8 @@ class AgentController {
     }
 
     static async getAllUniqueLocations(req, res) {
+
+        console.log('getAllUniqueLocations', true);
         try {
             const locations = await AgentService.getAllUniqueLocations();
             res.json(locations);
@@ -402,6 +410,8 @@ const AuthService = require('../services/authService');
 
 class AuthController {
     static async login(req, res) {
+
+        console.log('login', req.body);
         try {
             const { identifier, password } = req.body;
             if (!identifier || !password) {
@@ -416,6 +426,8 @@ class AuthController {
     }
 
     static async verify2FA(req, res) {
+
+        console.log('verify2FA', req.body);
         try {
             const { userID, otpCode } = req.body;
             if (!userID || !otpCode) {
@@ -430,6 +442,8 @@ class AuthController {
     }
 
     static async resend2FA(req, res) {
+
+        console.log('resend2FA', req.body);
         try {
             const { userID } = req.body;
             if (!userID) {
@@ -455,6 +469,8 @@ const { authenticateJWT, requirePermission } = require('../config/security');
 
 class ChecklistController {
     static async createChecklist(req, res) {
+
+        console.log('Creating Checklist', req.body);
         try {
             const { text } = req.body;
             if (!text) {
@@ -469,6 +485,8 @@ class ChecklistController {
     }
 
     static async getChecklistsByVisitID(req, res) {
+
+        console.log('Getting Checklists by Visit ID', req.params);
         try {
             const { id: visitID } = req.params;
             if (!visitID) {
@@ -483,6 +501,8 @@ class ChecklistController {
     }
 
     static async getAllChecklists(req, res) {
+
+        console.log('Getting all Checklists', true);
         try {
             const checklists = await ChecklistService.getAllChecklists();
             res.status(200).json(checklists);
@@ -503,6 +523,8 @@ const PermissionService = require('../services/permissionService');
 
 class PermissionController {
     static async getAllPermissions(req, res) {
+
+        console.log('getAllPermissions', true);
         try {
             const permissions = await PermissionService.getAllPermissions();
             res.status(200).json(permissions);
@@ -513,6 +535,8 @@ class PermissionController {
     }
 
     static async getPermissionById(req, res) {
+
+        console.log('getPermissionById', req.params);
         try {
             const { permissionID } = req.params;
             if (!permissionID) {
@@ -527,7 +551,7 @@ class PermissionController {
     }
 
     static async createPermission(req, res) {
-        console.log(req.body);
+        console.log('createPermission', req.body);
         try {
             const { name, className, description } = req.body;
             if (!name || !className) {
@@ -542,6 +566,7 @@ class PermissionController {
     }
 
     static async updatePermission(req, res) {
+        console.log('updatePermission', req.params, req.body);
         try {
             const { permissionID } = req.params;
             const { name, className, description } = req.body;
@@ -557,6 +582,7 @@ class PermissionController {
     }
 
     static async deletePermission(req, res) {
+        console.log('deletePermission', req.params);
         try {
             const { permissionID } = req.params;
             if (!permissionID) {
@@ -573,6 +599,7 @@ class PermissionController {
 
 
     static async assignPermissionsToRole(req, res) {
+        console.log('assignPermissionsToRole', req.params, req.body);
         try {
             const { roleID } = req.params;
             const { permissionIDs } = req.body;
@@ -588,6 +615,7 @@ class PermissionController {
     }
 
     static async revokePermissionsFromRole(req, res) {
+        console.log('revokePermissionsFromRole', req.params, req.body);
         try {
             const { roleID } = req.params;
             const { permissionIDs } = req.body;
@@ -603,6 +631,7 @@ class PermissionController {
     }
 
     static async getPermissionsByRole(req, res) {
+        console.log('getPermissionsByRole', req.params);
         try {
             const { roleID } = req.params;
             if (!roleID) {
@@ -619,6 +648,7 @@ class PermissionController {
 
 
     static async addPermissionOverride(req, res) {
+        console.log('addPermissionOverride', req.params, req.body);
         try {
             const { userID } = req.params;
             const { roleID, permissionID, action } = req.body;
@@ -634,6 +664,7 @@ class PermissionController {
     }
 
     static async removePermissionOverride(req, res) {
+        console.log('removePermissionOverride', req.params);
         try {
             const { overrideID } = req.params;
             if (!overrideID) {
@@ -648,6 +679,7 @@ class PermissionController {
     }
 
     static async getEffectivePermissions(req, res) {
+        console.log('getEffectivePermissions', req.params);
         try {
             const { userID } = req.params;
             if (!userID) {
@@ -662,6 +694,7 @@ class PermissionController {
     }
 
     static async getPermissionOverrides(req, res) {
+        console.log('getPermissionOverrides', req.params);
         try {
             const { userID } = req.params;
             if (!userID) {
@@ -687,6 +720,7 @@ const ReasonService = require('../services/reasonService');
 
 class ReasonController {
     static async createReason(req, res) {
+        console.log('create reason', req.body);
         try {
             const { text } = req.body;
             if (!text) {
@@ -701,6 +735,7 @@ class ReasonController {
     }
 
     static async getReasonsByVisitID(req, res) {
+        console.log('get reasons by visit id', req.params);
         try {
             const { id: visitID } = req.params;
             if (!visitID) {
@@ -715,6 +750,7 @@ class ReasonController {
     }
 
     static async getAllReasons(req, res) {
+        console.log('get all reasons', true);
         try {
             const reasons = await ReasonService.getAllReasons();
             res.status(200).json(reasons);
@@ -735,6 +771,7 @@ const ReceiptBookService = require('../services/receiptBookService');
 
 class ReceiptBookController {
     static async createReceiptBook(req, res) {
+        console.log('Creating receipt book', req.body);
         try {
             const { number, type } = req.body;
             if (!number || !type) return res.status(400).json({ error: 'Number and type are required' });
@@ -747,6 +784,7 @@ class ReceiptBookController {
     }
 
     static async getAllReceiptBooks(req, res) {
+        console.log('Getting all receipt books', true);
         try {
             const receiptBooks = await ReceiptBookService.getAllReceiptBooks();
             res.json(receiptBooks);
@@ -757,6 +795,7 @@ class ReceiptBookController {
     }
 
     static async getReceiptBookById(req, res) {
+        console.log('Getting receipt book by ID', req.params);
         try {
             const { bookID } = req.params;
             const receiptBook = await ReceiptBookService.getReceiptBookById(bookID);
@@ -768,6 +807,7 @@ class ReceiptBookController {
     }
 
     static async sendToSupplier(req, res) {
+        console.log('Sending to supplier', req.body);
         try {
             const { bookIDs, supplierEmail } = req.body;
             if (!Array.isArray(bookIDs) || !supplierEmail) return res.status(400).json({ error: 'Book IDs (array) and supplier email are required' });
@@ -780,6 +820,7 @@ class ReceiptBookController {
     }
 
     static async transfer(req, res) {
+        console.log('Transfering books', req.body);
         try {
             const { bookIDs, recipientID, recipientType = 'user' } = req.body;
             if (!Array.isArray(bookIDs) || !recipientID) return res.status(400).json({ error: 'Book IDs (array) and recipient ID are required' });
@@ -790,8 +831,9 @@ class ReceiptBookController {
             res.status(400).json({ error: error.message || 'Failed to initiate transfer' });
         }
     }
-    
+
     static async collectFromSupplier(req, res) {
+        console.log('Collecting from supplier', req.body);
         try {
             const { bookIDs, userID } = req.body;
             if (!Array.isArray(bookIDs) || !userID) return res.status(400).json({ error: 'Book IDs (array) and user ID are required' });
@@ -805,6 +847,7 @@ class ReceiptBookController {
 
 
     static async validateTransfer(req, res) {
+        console.log('Validating transfer', req.body);
         try {
             const { bookIDs, recipientID, otpCode, recipientType = 'user' } = req.body;
             if (!Array.isArray(bookIDs) || !recipientID || !otpCode) {
@@ -819,6 +862,7 @@ class ReceiptBookController {
     }
 
     static async getTransferHistory(req, res) {
+        console.log('Getting transfer history', req.params);
         try {
             const { bookID } = req.params;
             const history = await ReceiptBookService.getTransferHistory(bookID);
@@ -830,6 +874,7 @@ class ReceiptBookController {
     }
 
     static async updateReceiptBook(req, res) {
+        console.log('Updating receipt book', req.body);
         try {
             const { bookID } = req.params;
             const updates = req.body;
@@ -846,6 +891,7 @@ class ReceiptBookController {
     }
 
     static async deleteReceiptBook(req, res) {
+        console.log('Deleting receipt book', req.params);
         try {
             const { bookID } = req.params;
             if (!bookID) {
@@ -872,6 +918,7 @@ const ReceiptStubService = require('../services/receiptStubService');
 
 class ReceiptStubController {
     static async collectStub(req, res) {
+        console.log('Collecting stub for book ID:', req.params);
         try {
             const { bookID } = req.params;
             if (!bookID) return res.status(400).json({ error: 'Book ID is required' });
@@ -884,6 +931,7 @@ class ReceiptStubController {
     }
 
     static async validateStubCollection(req, res) {
+        console.log('Validating stub collection for book ID:', req.params);
         try {
             const { bookID } = req.params;
             const { otpCode } = req.body;
@@ -897,6 +945,7 @@ class ReceiptStubController {
     }
 
     static async archiveStub(req, res) {
+        console.log('Archiving stub for book ID:', req.params);
         try {
             const { bookID } = req.params;
             if (!bookID) return res.status(400).json({ error: 'Book ID is required' });
@@ -919,6 +968,7 @@ const RoleService = require('../services/roleService');
 
 class RoleController {
     static async createRole(req, res) {
+        console.log('create role', req.body);
         try {
             const { name, description } = req.body;
             if (!name) {
@@ -933,6 +983,7 @@ class RoleController {
     }
 
     static async getAllRoles(req, res) {
+        console.log('get all roles', true);
         try {
             const roles = await RoleService.getAllRoles();
             res.status(200).json(roles);
@@ -943,6 +994,7 @@ class RoleController {
     }
 
     static async getRoleById(req, res) {
+        console.log('get role by id', req.params);
         try {
             const { roleID } = req.params;
             if (!roleID) {
@@ -957,6 +1009,7 @@ class RoleController {
     }
 
     static async updateRole(req, res) {
+        console.log('update role', req.params && req.body);
         try {
             const { roleID } = req.params;
             const { name, description } = req.body;
@@ -972,6 +1025,7 @@ class RoleController {
     }
 
     static async deleteRole(req, res) {
+        console.log('delete role', req.params);
         try {
             const { roleID } = req.params;
             if (!roleID) {
@@ -988,8 +1042,9 @@ class RoleController {
 
 
 
-    
+
     static async assignRolesToUser(req, res) {
+        console.log('assign roles to user', req.params, req.body);
         try {
             const { userID } = req.params;
             const { roleIDs } = req.body;
@@ -1004,7 +1059,8 @@ class RoleController {
         }
     }
 
-    static async revokeRolesFromUser(req, res) { 
+    static async revokeRolesFromUser(req, res) {
+        console.log('revoke roles from user', req.params, req.body);
         try {
             const { userID } = req.params;
             const { roleIDs } = req.body;
@@ -1020,6 +1076,7 @@ class RoleController {
     }
 
     static async getRolesByUser(req, res) {
+        console.log('get roles by user', req.params);
         try {
             const { userID } = req.params;
             if (!userID) {
@@ -1044,6 +1101,7 @@ const TimesheetService = require('../services/timesheetService');
 
 class TimesheetController {
     static async createTimesheet(req, res) {
+        console.log(`Create timesheet request received:`, req.body);
         try {
             const { weekNumber, year, supervisorID, visits, status = 'pending' } = req.body;
             if (!weekNumber || !year || !supervisorID || !Array.isArray(visits)) {
@@ -1062,6 +1120,8 @@ class TimesheetController {
     }
 
     static async validateTimesheet(req, res) {
+
+        console.log(`Validate timesheet request received:`, req.params, req.body);
         try {
             const { id } = req.params;
             const { visitIDs = [], status } = req.body;
@@ -1077,6 +1137,7 @@ class TimesheetController {
     }
 
     static async getAllTimesheets(req, res) {
+        console.log(`Get all timesheets request received`, true);
         try {
             const timesheets = await TimesheetService.listTimesheets();
             res.status(200).json(timesheets);
@@ -1087,6 +1148,7 @@ class TimesheetController {
     }
 
     static async getTimesheetById(req, res) {
+        console.log(`Get timesheet request received:`, req.params);
         try {
             const { id } = req.params;
             const timesheet = await TimesheetService.viewTimesheet(id);
@@ -1098,6 +1160,7 @@ class TimesheetController {
     }
 
     static async getTimesheetsBySupervisor(req, res) {
+        console.log(`Get timesheets by supervisor request received:`, req.params);
         try {
             const { supervisorID } = req.params;
             const timesheets = await TimesheetService.getTimesheetsBySupervisor(supervisorID);
@@ -1109,14 +1172,10 @@ class TimesheetController {
     }
 
     static async updateTimesheet(req, res) {
+        console.log(`Update timesheet request received:`, req.params, req.body);
         try {
             const { id } = req.params;
             const { weekNumber, year, status, visits } = req.body;
-            const userPermissions = req.user?.Roles?.flatMap(role => role.Permissions?.map(perm => perm.name) || []) || [];
-            if (!userPermissions.includes('edit_timesheets_for_supervisor')) {
-                return res.status(403).json({ error: 'Permission denied: Only users with edit_timesheets_for_supervisor can update timesheets' });
-            }
-
             const parsedVisits = typeof visits === 'string' ? JSON.parse(visits) : visits;
             const filesMap = {};
             if (req.files) {
@@ -1136,12 +1195,9 @@ class TimesheetController {
     }
 
     static async deleteTimesheet(req, res) {
+        console.log(`Delete timesheet request received:`, req.params);
         try {
             const { id } = req.params;
-            const userPermissions = req.user?.Roles?.flatMap(role => role.Permissions?.map(perm => perm.name) || []) || [];
-            if (!userPermissions.includes('delete_timesheets_for_supervisor')) {
-                return res.status(403).json({ error: 'Permission denied: Only users with delete_timesheets_for_supervisor can delete timesheets' });
-            }
             const result = await TimesheetService.deleteTimesheet(id);
             res.status(200).json(result);
         } catch (error) {
@@ -1161,6 +1217,7 @@ const UserService = require('../services/userService');
 
 class UserController {
     static async createUser(req, res) {
+        console.log('Received request to create user:', req.body);
         try {
             const { email, password, firstname, lastname, phone, wallet } = req.body;
             if (!email || !password || !firstname || !lastname || !phone || !wallet) {
@@ -1175,6 +1232,7 @@ class UserController {
     }
 
     static async getAllUsers(req, res) {
+        console.log('Received request to get all users', true);
         try {
             const users = await UserService.getAllUsers();
             res.status(200).json(users);
@@ -1185,6 +1243,7 @@ class UserController {
     }
 
     static async getUserByPhoneNumber(req, res) {
+        console.log('Received request to get user by phone number', req.params);
         try {
             const { phone } = req.params;
             if (!phone) {
@@ -1199,6 +1258,7 @@ class UserController {
     }
 
     static async getUserById(req, res) {
+        console.log('Received request to get user by ID', req.params);
         try {
             const { userID } = req.params;
             if (!userID) {
@@ -1213,11 +1273,10 @@ class UserController {
     }
 
     static async updateUser(req, res) {
+        console.log('Received request to update user', req.params, req.body);
         try {
             const { userID } = req.params;
             const userData = req.body;
-            console.log(userID);
-            console.log(userData);
             if (!userID) {
                 return res.status(400).json({ error: 'User ID is required' });
             }
@@ -1230,6 +1289,7 @@ class UserController {
     }
 
     static async deleteUser(req, res) {
+        console.log('Received request to delete user', req.params);
         try {
             const { userID } = req.params;
             if (!userID) {
@@ -1248,6 +1308,7 @@ class UserController {
 
 
     static async assignSupervisorsToManager(req, res) {
+        console.log('Received request to assign supervisors to manager', req.body);
         try {
             const { managerID, supervisorIDs } = req.body;
             if (!managerID || !Array.isArray(supervisorIDs)) {
@@ -1262,6 +1323,7 @@ class UserController {
     }
 
     static async revokeSupervisorsFromManager(req, res) {
+        console.log('Received request to revoke supervisors from manager', req.body);
         try {
             const { managerID, supervisorIDs } = req.body;
             if (!managerID || !Array.isArray(supervisorIDs)) {
@@ -1276,6 +1338,7 @@ class UserController {
     }
 
     static async getSupervisorsByUser(req, res) {
+        console.log('Received request to get supervisors by user', req.params);
         try {
             const { userID } = req.params;
             if (!userID) {
@@ -1290,6 +1353,7 @@ class UserController {
     }
 
     static async getManagersByUser(req, res) {
+        console.log('Received request to get managers by user', req.params);
         try {
             const { userID } = req.params;
             if (!userID) {
@@ -1313,6 +1377,7 @@ const VisitService = require('../services/visitService');
 
 class VisitController {
     static async verifyQRCode(req, res) {
+        console.log('verifyQRCode', req.body);
         try {
             const { qrData, visitId } = req.body;
             if (!qrData || !visitId) {
@@ -1327,6 +1392,7 @@ class VisitController {
     }
 
     static async logVisit(req, res) {
+        console.log('logVisit', req.body, req.params, req.files);
         try {
             const { id } = req.params;
             const { duration, checklistUpdates, comment } = req.body;
@@ -1351,12 +1417,9 @@ class VisitController {
     }
 
     static async updateVisit(req, res) {
+        console.log('updateVisit', req.body, req.params, req.files);
         try {
             const { id } = req.params;
-            const userPermissions = req.user?.Roles?.flatMap(role => role.Permissions?.map(perm => perm.name) || []) || [];
-            if (!userPermissions.includes('edit_timesheets_for_supervisor')) {
-                return res.status(403).json({ error: 'Permission denied: Only users with edit_timesheets_for_supervisor can update visits' });
-            }
             const data = req.body;
             const files = req.files || [];
             const visit = await VisitService.updateVisit(id, data, files);
@@ -1368,12 +1431,9 @@ class VisitController {
     }
 
     static async deleteVisit(req, res) {
+        console.log('deleteVisit', req.params);
         try {
             const { id } = req.params;
-            const userPermissions = req.user?.Roles?.flatMap(role => role.Permissions?.map(perm => perm.name) || []) || [];
-            if (!userPermissions.includes('delete_timesheets_for_supervisor')) {
-                return res.status(403).json({ error: 'Permission denied: Only users with delete_timesheets_for_supervisor can delete visits' });
-            }
             const result = await VisitService.deleteVisit(id);
             res.status(200).json(result);
         } catch (error) {
@@ -2096,8 +2156,8 @@ const { authenticateJWT, requirePermission } = require('../config/security');
 const TimesheetController = require('../controllers/timesheetController');
 const upload = require('../config/multer');
 
-router.post('/', authenticateJWT, requirePermission('create_self_timesheets'), TimesheetController.createTimesheet);
 router.post('/', authenticateJWT, requirePermission('create_timesheets_for_supervisor'), TimesheetController.createTimesheet);
+router.post('/', authenticateJWT, requirePermission('create_self_timesheets'), TimesheetController.createTimesheet);
 router.put('/:id/validate', authenticateJWT, requirePermission('validate_timesheets'), TimesheetController.validateTimesheet);
 router.put('/:id',
     authenticateJWT,
@@ -3750,11 +3810,25 @@ class VisitService {
             if (!fs.existsSync(folderPath)) fs.mkdirSync(folderPath, { recursive: true });
             const photoPaths = files.map(file => `/uploads/photos/${folderName}/${file.filename}`);
 
-            if (checklistUpdates && Array.isArray(checklistUpdates)) {
-                for (const update of checklistUpdates) {
+            // Parse checklistUpdates if it’s a string
+            let parsedChecklistUpdates = checklistUpdates;
+            if (typeof checklistUpdates === 'string') {
+                try {
+                    parsedChecklistUpdates = JSON.parse(checklistUpdates);
+                } catch (e) {
+                    console.error('Failed to parse checklistUpdates:', checklistUpdates, e);
+                    const error = new Error('Invalid checklistUpdates format');
+                    error.status = 400;
+                    throw error;
+                }
+            }
+
+            if (parsedChecklistUpdates && Array.isArray(parsedChecklistUpdates)) {
+                for (const update of parsedChecklistUpdates) {
                     await ChecklistService.updateChecklistStatus(visitID, update.checklistID, update.checked);
                 }
             }
+
             visit.duration = duration || visit.duration;
             visit.photos = photoPaths;
             visit.comment = comment || visit.comment;
@@ -3769,7 +3843,20 @@ class VisitService {
 
     static async updateVisit(visitID, data, files = []) {
         try {
-            const { date, time, duration, location, status, comment, agentID, checklists, reasons, photosToRemove, supervisorID } = data;
+            const {
+                date,
+                time,
+                duration,
+                location,
+                status,
+                comment,
+                agentID,
+                checklists,
+                reasons,
+                photosToRemove,
+                supervisorID
+            } = data;
+
             const visit = await Visit.findByPk(visitID, {
                 include: [{ model: Timesheet, include: [User] }, Checklist, Reason],
             });
@@ -3782,33 +3869,58 @@ class VisitService {
             const oldDate = visit.date;
             const oldTime = visit.time.replace(/:/g, '-');
             const supervisorName = `${visit.Timesheet.User.firstname.toLowerCase()}_${visit.Timesheet.User.lastname.toLowerCase()}`;
-            const oldFolderName = `${oldDate}_${oldTime}_${supervisorName}`;
-            const oldFolderPath = path.join(__dirname, '../uploads/photos', oldFolderName);
+            const folderName = `${oldDate}_${oldTime}_${supervisorName}`;
+            const folderPath = path.join(__dirname, '../uploads/photos', folderName);
 
-            const newDate = date || visit.date;
-            const newTime = (time || visit.time).replace(/:/g, '-'); // For folder naming
-            const newFolderName = `${newDate}_${newTime}_${supervisorName}`;
-            const newFolderPath = path.join(__dirname, '../uploads/photos', newFolderName);
+            // Log initial state
+            console.log('Initial visit.photos:', visit.photos);
 
             // Handle photos
-            let photoPaths = visit.photos || [];
-            if (photosToRemove && Array.isArray(photosToRemove)) {
-                photoPaths = photoPaths.filter(p => !photosToRemove.includes(p));
-            }
-            if (files.length > 0) {
-                if (!fs.existsSync(newFolderPath)) fs.mkdirSync(newFolderPath, { recursive: true });
-                photoPaths = [...photoPaths, ...files.map(file => `/uploads/photos/${newFolderName}/${file.filename}`)];
-            }
-            if (oldFolderName !== newFolderName && fs.existsSync(oldFolderPath)) {
-                if (photoPaths.length > 0) {
-                    fs.renameSync(oldFolderPath, newFolderPath);
-                    photoPaths = photoPaths.map(p => p.replace(oldFolderName, newFolderName));
-                } else {
-                    fs.rmSync(oldFolderPath, { recursive: true, force: true });
+            let photoPaths = visit.photos ? [...visit.photos] : [];
+
+            // Parse photosToRemove if it’s a string
+            let photosArray = photosToRemove;
+            if (typeof photosToRemove === 'string') {
+                try {
+                    photosArray = JSON.parse(photosToRemove);
+                } catch (e) {
+                    console.error('Failed to parse photosToRemove:', photosToRemove, e);
+                    photosArray = [];
                 }
             }
 
+            if (photosArray && Array.isArray(photosArray) && photosArray.length > 0) {
+                console.log('Photos to remove:', photosArray);
+                photoPaths = photoPaths.filter(p => !photosArray.includes(p));
+                photosArray.forEach(photo => {
+                    const photoPath = path.join(__dirname, '..', photo);
+                    if (fs.existsSync(photoPath)) {
+                        fs.unlinkSync(photoPath);
+                        console.log(`Deleted photo from filesystem: ${photo}`);
+                    } else {
+                        console.log(`Photo not found in filesystem: ${photo}`);
+                    }
+                });
+            }
+            console.log('After removal, photoPaths:', photoPaths);
+
+            // Add new photos to the existing folder
+            if (files && files.length > 0) {
+                if (!fs.existsSync(folderPath)) {
+                    fs.mkdirSync(folderPath, { recursive: true });
+                }
+                files.forEach(file => {
+                    const destPath = path.join(folderPath, file.filename);
+                    fs.renameSync(file.path, destPath);
+                    const newPhotoPath = `/uploads/photos/${folderName}/${file.filename}`;
+                    photoPaths.push(newPhotoPath);
+                    console.log(`Added new photo: ${newPhotoPath}`);
+                });
+            }
+            console.log('After adding new photos, photoPaths:', photoPaths);
+
             // Calculate weekNumber and year from the visit's date
+            const newDate = date || visit.date;
             const newDateObj = new Date(newDate);
             const newYear = newDateObj.getFullYear();
             const newWeekNumber = this.getISOWeekNumber(newDateObj);
@@ -3817,7 +3929,6 @@ class VisitService {
             // Handle supervisor change
             let targetTimesheet = oldTimesheet;
             if (supervisorID && supervisorID !== oldTimesheet.supervisorID) {
-                // Check if the new supervisor has a timesheet for this week/year
                 targetTimesheet = await Timesheet.findOne({
                     where: {
                         weekNumber: newWeekNumber,
@@ -3826,7 +3937,6 @@ class VisitService {
                     },
                 });
                 if (!targetTimesheet) {
-                    // Create a new timesheet for the new supervisor
                     targetTimesheet = await Timesheet.create({
                         weekNumber: newWeekNumber,
                         year: newYear,
@@ -3836,7 +3946,6 @@ class VisitService {
                 }
                 visit.timesheetID = targetTimesheet.timesheetID;
             } else if (newWeekNumber !== oldTimesheet.weekNumber || newYear !== oldTimesheet.year) {
-                // If no supervisor change but date changed, check or create timesheet with old supervisor
                 targetTimesheet = await Timesheet.findOne({
                     where: {
                         weekNumber: newWeekNumber,
@@ -3869,9 +3978,13 @@ class VisitService {
 
             // Parse checklists and reasons
             let parsedChecklists = checklists;
-            if (typeof checklists === 'string') parsedChecklists = JSON.parse(checklists);
+            if (typeof checklists === 'string') {
+                parsedChecklists = JSON.parse(checklists);
+            }
             let parsedReasons = reasons;
-            if (typeof reasons === 'string') parsedReasons = JSON.parse(reasons);
+            if (typeof reasons === 'string') {
+                parsedReasons = JSON.parse(reasons);
+            }
 
             // Update checklists
             if (parsedChecklists && Array.isArray(parsedChecklists)) {
@@ -3901,9 +4014,15 @@ class VisitService {
             visit.photos = photoPaths;
             visit.comment = comment !== undefined ? comment : visit.comment;
 
+            console.log('Before save, visit.photos:', visit.photos);
+
             await visit.save();
+
+            console.log('After save, visit.photos:', visit.photos);
+
             return visit.reload({ include: [Checklist, Reason] });
         } catch (error) {
+            console.error('Failed to update visit:', error);
             const err = new Error('Failed to update visit: ' + error.message);
             err.status = error.status || 500;
             throw err;
