@@ -1,6 +1,8 @@
 import 'package:flutter/material.dart';
 import 'package:provider/provider.dart';
 import '../../providers/theme_provider.dart';
+import '../../providers/auth_provider.dart';
+import '../../screens/Auth/login_screen.dart'; // Adjust path as needed
 
 class AppSidebar extends StatelessWidget {
   const AppSidebar({super.key});
@@ -8,8 +10,10 @@ class AppSidebar extends StatelessWidget {
   @override
   Widget build(BuildContext context) {
     final theme = Theme.of(context);
+    final authProvider = Provider.of<AuthProvider>(context);
+
     return AnimatedSwitcher(
-      duration: const Duration(milliseconds: 600), // Increased for smoother transition
+      duration: const Duration(milliseconds: 600),
       transitionBuilder: (child, animation) => SlideTransition(
         position: Tween<Offset>(begin: const Offset(-1, 0), end: Offset.zero).animate(
           CurvedAnimation(parent: animation, curve: Curves.easeInOut),
@@ -17,7 +21,7 @@ class AppSidebar extends StatelessWidget {
         child: child,
       ),
       child: Drawer(
-        key: const ValueKey('sidebar'), // Static key since no dynamic content
+        key: const ValueKey('sidebar'),
         width: 280,
         backgroundColor: theme.scaffoldBackgroundColor,
         shape: const RoundedRectangleBorder(
@@ -46,16 +50,37 @@ class AppSidebar extends StatelessWidget {
                 margin: const EdgeInsets.symmetric(horizontal: 16),
               ),
               const Spacer(),
+              // Theme Switcher Button (moved before Logout)
               Padding(
-                padding: const EdgeInsets.all(16),
+                padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 8),
                 child: Consumer<ThemeProvider>(
-                  builder: (context, themeProvider, _) => IconButton(
-                    icon: Icon(_getThemeIcon(themeProvider.themeMode)),
-                    onPressed: () {
+                  builder: (context, themeProvider, _) => ListTile(
+                    leading: Icon(_getThemeIcon(themeProvider.themeMode)),
+                    title: const Text('Theme'),
+                    onTap: () {
                       final nextMode = _getNextThemeMode(themeProvider.themeMode);
                       themeProvider.setTheme(nextMode);
                     },
                   ),
+                ),
+              ),
+              // Logout Button
+              Padding(
+                padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 8),
+                child: ListTile(
+                  leading: const Icon(Icons.logout, color: Colors.redAccent),
+                  title: const Text(
+                    'Logout',
+                    style: TextStyle(color: Colors.redAccent),
+                  ),
+                  onTap: () {
+                    authProvider.logout();
+                    Navigator.pushAndRemoveUntil(
+                      context,
+                      MaterialPageRoute(builder: (_) => const LoginScreen()),
+                          (route) => false,
+                    );
+                  },
                 ),
               ),
             ],

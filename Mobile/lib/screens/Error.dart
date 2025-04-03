@@ -1,6 +1,7 @@
-// lib/screens/Error.dart
 import 'package:flutter/material.dart';
-import 'dart:math' as math;
+import '../widgets/commen/button.dart';
+import '../widgets/Glass_Effect/GlassContainer.dart';
+import '../widgets/commen/spacer.dart';
 
 class ErrorPage extends StatefulWidget {
   final String errorMessage;
@@ -17,262 +18,122 @@ class ErrorPage extends StatefulWidget {
 }
 
 class _ErrorPageState extends State<ErrorPage> with TickerProviderStateMixin {
-  late AnimationController _rocketController;
-  late AnimationController _glitchController;
-  late Animation<double> _rocketAnimation;
+  late AnimationController _fadeController;
+  late Animation<double> _fadeAnimation;
 
   @override
   void initState() {
     super.initState();
-    _rocketController = AnimationController(
-      duration: const Duration(seconds: 4),
+    _fadeController = AnimationController(
+      duration: const Duration(milliseconds: 800),
       vsync: this,
-    )..repeat(reverse: true);
-    _rocketAnimation = Tween<double>(begin: 0, end: -20).animate(
-      CurvedAnimation(parent: _rocketController, curve: Curves.easeInOut),
+    )..forward();
+    _fadeAnimation = CurvedAnimation(
+      parent: _fadeController,
+      curve: Curves.easeInOut,
     );
-
-    _glitchController = AnimationController(
-      duration: const Duration(seconds: 2),
-      vsync: this,
-    )..repeat();
   }
 
   @override
   void dispose() {
-    _rocketController.dispose();
-    _glitchController.dispose();
+    _fadeController.dispose();
     super.dispose();
   }
 
   @override
   Widget build(BuildContext context) {
+    final theme = Theme.of(context);
     return Scaffold(
-      body: Stack(
-        children: [
-          Container(
-            decoration: BoxDecoration(
-              gradient: LinearGradient(
-                begin: Alignment.topLeft,
-                end: Alignment.bottomRight,
-                colors: [
-                  Theme.of(context).colorScheme.primary.withOpacity(0.2),
-                  Theme.of(context).colorScheme.secondary.withOpacity(0.2),
-                ],
+      backgroundColor: theme.scaffoldBackgroundColor,
+      body: SafeArea(
+        child: Center(
+          child: SingleChildScrollView(
+            child: FadeTransition(
+              opacity: _fadeAnimation,
+              child: GlassContainer(
+                width: MediaQuery.of(context).size.width * 0.85,
+                child: Padding(
+                  padding: const EdgeInsets.all(24.0),
+                  child: Column(
+                    mainAxisSize: MainAxisSize.min,
+                    crossAxisAlignment: CrossAxisAlignment.center,
+                    children: [
+                      // 404 Icon and Text
+                      Container(
+                        padding: const EdgeInsets.all(16),
+                        decoration: BoxDecoration(
+                          shape: BoxShape.circle,
+                          gradient: LinearGradient(
+                            colors: [
+                              theme.colorScheme.primary.withOpacity(0.3),
+                              theme.colorScheme.primary.withOpacity(0.1),
+                            ],
+                            begin: Alignment.topLeft,
+                            end: Alignment.bottomRight,
+                          ),
+                        ),
+                        child: Icon(
+                          Icons.warning_rounded,
+                          size: 60,
+                          color: theme.colorScheme.primary,
+                        ),
+                      ),
+                      const CustomSpacer(height: 20),
+                      Text(
+                        '404',
+                        style: TextStyle(
+                          fontSize: 64,
+                          fontWeight: FontWeight.bold,
+                          color: theme.colorScheme.primary,
+                          fontFamily: 'Inter',
+                          letterSpacing: 2,
+                        ),
+                      ),
+                      Text(
+                        'Page Not Found',
+                        style: theme.textTheme.headlineSmall?.copyWith(
+                          color: theme.colorScheme.onSurface,
+                          fontWeight: FontWeight.w600,
+                        ),
+                      ),
+                      const CustomSpacer(height: 16),
+                      // Error Message
+                      Text(
+                        widget.errorMessage,
+                        textAlign: TextAlign.center,
+                        style: theme.textTheme.bodyMedium?.copyWith(
+                          color: theme.colorScheme.onSurface.withOpacity(0.7),
+                        ),
+                      ),
+                      const CustomSpacer(height: 32),
+                      // Buttons
+                      Row(
+                        mainAxisAlignment: MainAxisAlignment.center,
+                        children: [
+                          if (widget.onRetry != null) ...[
+                            CustomButton(
+                              label: 'Retry',
+                              icon: Icons.refresh,
+                              onPressed: widget.onRetry!,
+                            ),
+                            const CustomSpacer(width: 16),
+                          ],
+                          CustomButton(
+                            label: 'Back Home',
+                            icon: Icons.arrow_back,
+                            isOutlined: true,
+                            onPressed: () => Navigator.of(context).popUntil((route) => route.isFirst),
+                          ),
+                        ],
+                      ),
+                    ],
+                  ),
+                ),
               ),
             ),
-            child: CustomPaint(
-              painter: StarsPainter(),
-              child: const SizedBox.expand(),
-            ),
           ),
-          Center(
-            child: Column(
-              mainAxisAlignment: MainAxisAlignment.center,
-              children: [
-                AnimatedBuilder(
-                  animation: _rocketAnimation,
-                  builder: (context, child) {
-                    return Stack(
-                      alignment: Alignment.center,
-                      children: [
-                        Container(
-                          width: 2,
-                          height: 50,
-                          decoration: BoxDecoration(
-                            gradient: LinearGradient(
-                              begin: Alignment.topCenter,
-                              end: Alignment.bottomCenter,
-                              colors: [
-                                Theme.of(context).colorScheme.primary,
-                                Colors.transparent,
-                              ],
-                            ),
-                          ),
-                        ),
-                        Transform.translate(
-                          offset: Offset(0, _rocketAnimation.value),
-                          child: Transform.rotate(
-                            angle: math.pi / 4,
-                            child: Icon(
-                              Icons.rocket_launch,
-                              size: 80,
-                              color: Theme.of(context).colorScheme.primary,
-                            ),
-                          ),
-                        ),
-                      ],
-                    );
-                  },
-                ),
-                const SizedBox(height: 20),
-                AnimatedBuilder(
-                  animation: _glitchController,
-                  builder: (context, child) {
-                    return Stack(
-                      alignment: Alignment.center,
-                      children: [
-                        Text(
-                          '404',
-                          style: TextStyle(
-                            fontSize: 100,
-                            fontWeight: FontWeight.bold,
-                            color: Theme.of(context).colorScheme.onSurface.withOpacity(0.8),
-                          ),
-                        ),
-                        Transform.translate(
-                          offset: Offset(math.sin(_glitchController.value * 2 * math.pi) * 4, 0),
-                          child: ClipRect(
-                            child: Align(
-                              alignment: Alignment.topCenter,
-                              heightFactor: 0.33,
-                              child: Text(
-                                '404',
-                                style: TextStyle(
-                                  fontSize: 100,
-                                  fontWeight: FontWeight.bold,
-                                  color: Theme.of(context).colorScheme.primary,
-                                ),
-                              ),
-                            ),
-                          ),
-                        ),
-                        Transform.translate(
-                          offset: Offset(math.cos(_glitchController.value * 1.5 * math.pi) * 4, 0),
-                          child: ClipRect(
-                            child: Align(
-                              alignment: Alignment.bottomCenter,
-                              heightFactor: 0.33,
-                              child: Text(
-                                '404',
-                                style: const TextStyle(
-                                  fontSize: 100,
-                                  fontWeight: FontWeight.bold,
-                                  color: Color(0xFFE81F76),
-                                ),
-                              ),
-                            ),
-                          ),
-                        ),
-                      ],
-                    );
-                  },
-                ),
-                Text(
-                  'Lost in Space',
-                  style: Theme.of(context).textTheme.headlineSmall?.copyWith(
-                    color: Theme.of(context).colorScheme.onSurface.withOpacity(0.7),
-                  ),
-                ),
-                const SizedBox(height: 20),
-                Padding(
-                  padding: const EdgeInsets.symmetric(horizontal: 16.0),
-                  child: Text(
-                    widget.errorMessage,
-                    textAlign: TextAlign.center,
-                    style: Theme.of(context).textTheme.bodyMedium?.copyWith(
-                      color: Theme.of(context).colorScheme.onSurface.withOpacity(0.7),
-                    ),
-                  ),
-                ),
-                const SizedBox(height: 30),
-                Row(
-                  mainAxisAlignment: MainAxisAlignment.center,
-                  children: [
-                    if (widget.onRetry != null)
-                      ElevatedButton.icon(
-                        onPressed: widget.onRetry,
-                        icon: const Icon(Icons.refresh),
-                        label: const Text('Retry'),
-                        style: Theme.of(context).elevatedButtonTheme.style,
-                      ),
-                    if (widget.onRetry != null) const SizedBox(width: 16),
-                    OutlinedButton.icon(
-                      onPressed: () => Navigator.of(context).popUntil((route) => route.isFirst),
-                      icon: Icon(Icons.arrow_back, color: Theme.of(context).colorScheme.primary),
-                      label: Text(
-                        'Return to Orbit',
-                        style: TextStyle(color: Theme.of(context).colorScheme.primary),
-                      ),
-                      style: OutlinedButton.styleFrom(
-                        side: BorderSide(color: Theme.of(context).colorScheme.primary, width: 2),
-                        padding: const EdgeInsets.symmetric(horizontal: 24, vertical: 12),
-                        shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(30)),
-                      ),
-                    ),
-                  ],
-                ),
-              ],
-            ),
-          ),
-          Positioned(
-            bottom: 0,
-            left: 0,
-            right: 0,
-            child: CustomPaint(
-              painter: CosmicWavesPainter(),
-              child: const SizedBox(height: 200),
-            ),
-          ),
-        ],
+        ),
       ),
     );
   }
-}
-
-class StarsPainter extends CustomPainter {
-  @override
-  void paint(Canvas canvas, Size size) {
-    final random = math.Random();
-    final paint = Paint()..color = Colors.white;
-    for (int i = 0; i < 100; i++) {
-      final x = random.nextDouble() * size.width;
-      final y = random.nextDouble() * size.height;
-      final radius = random.nextDouble() * 3 + 1;
-      canvas.drawCircle(
-        Offset(x, y),
-        radius,
-        paint..color = Colors.white.withOpacity(random.nextDouble()),
-      );
-    }
-  }
-
-  @override
-  bool shouldRepaint(covariant CustomPainter oldDelegate) => true;
-}
-
-class CosmicWavesPainter extends CustomPainter {
-  @override
-  void paint(Canvas canvas, Size size) {
-    final paint = Paint()..style = PaintingStyle.fill;
-    final path1 = Path()
-      ..moveTo(0, size.height)
-      ..quadraticBezierTo(size.width * 0.25, size.height * 0.7, size.width * 0.5, size.height)
-      ..quadraticBezierTo(size.width * 0.75, size.height * 1.3, size.width, size.height)
-      ..lineTo(size.width, 0)
-      ..lineTo(0, 0)
-      ..close();
-    canvas.drawPath(path1, paint..color = const Color(0xFF4CB1C7).withOpacity(0.1));
-
-    final path2 = Path()
-      ..moveTo(0, size.height)
-      ..quadraticBezierTo(size.width * 0.3, size.height * 0.6, size.width * 0.6, size.height)
-      ..quadraticBezierTo(size.width * 0.9, size.height * 1.2, size.width, size.height)
-      ..lineTo(size.width, 0)
-      ..lineTo(0, 0)
-      ..close();
-    canvas.drawPath(path2, paint..color = const Color(0xFFE81F76).withOpacity(0.1));
-
-    final path3 = Path()
-      ..moveTo(0, size.height)
-      ..quadraticBezierTo(size.width * 0.2, size.height * 0.8, size.width * 0.4, size.height)
-      ..quadraticBezierTo(size.width * 0.7, size.height * 1.1, size.width, size.height)
-      ..lineTo(size.width, 0)
-      ..lineTo(0, 0)
-      ..close();
-    canvas.drawPath(path3, paint..color = const Color(0xFFF59E0B).withOpacity(0.1));
-  }
-
-  @override
-  bool shouldRepaint(covariant CustomPainter oldDelegate) => false;
 }
