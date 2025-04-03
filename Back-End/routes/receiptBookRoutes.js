@@ -8,6 +8,7 @@ const ReceiptBookController = require('../controllers/receiptBookController');
 router.post('/', authenticateJWT, requirePermission('create_receipt_books'), ReceiptBookController.createReceiptBook);
 router.get('/', authenticateJWT, requirePermission('access_all_receipt_books'), ReceiptBookController.getAllReceiptBooks);
 router.get('/:bookID', authenticateJWT, requirePermission('access_receipt_book_details'), ReceiptBookController.getReceiptBookById);
+router.post('/holder/:holderID', authenticateJWT, requirePermission('access_receipt_books_by_holder'), ReceiptBookController.getReceiptBooksByHolder);
 router.put('/:bookID', authenticateJWT, requirePermission('update_receipt_books'), ReceiptBookController.updateReceiptBook);
 router.delete('/:bookID', authenticateJWT, requirePermission('delete_receipt_books'), ReceiptBookController.deleteReceiptBook);
 
@@ -20,7 +21,6 @@ router.post('/validate-transfer', authenticateJWT, requirePermission('validate_r
 router.get('/:bookID/history', authenticateJWT, requirePermission('access_receipt_book_history'), ReceiptBookController.getTransferHistory);
 
 
-// CRUD Routes
 
 
 

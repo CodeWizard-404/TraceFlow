@@ -36,8 +36,8 @@ const padNumber = (value: string): string => {
 const ReceiptBooks: React.FC = () => {
     // Hooks
     const navigate = useNavigate();
-    const { token, effectivePermissions, userRoles, permissionsLoaded } = useAuth();
-    const currentUserID = token ? JSON.parse(atob(token.split('.')[1])).sub : ""; // Current user's ID from token
+    const { token, effectivePermissions, userRoles, permissionsLoaded, user } = useAuth();
+    const currentUserID = user!.userID;
 
     // State
     const [receiptBooks, setReceiptBooks] = useState<ReceiptBook[]>([]); // List of all receipt books
@@ -88,9 +88,11 @@ const ReceiptBooks: React.FC = () => {
                 let filteredBooks = receiptsData;
 
                 // Apply dynamic role-based filtering
-                if ((userCapabilities.isSupervisorLike && !userCapabilities.isStockManagerLike) || (userCapabilities.isSupervisorLike && userCapabilities.isStockManagerLike)) {
+                if ((userCapabilities.isSupervisorLike && !userCapabilities.isStockManagerLike)) {
                     // Supervisor-like roles see only their own receipt books
+
                     filteredBooks = receiptsData.filter(r => r.currentHolderID === currentUserID);
+
                 } else if (userCapabilities.isStockManagerLike && !userCapabilities.isSupervisorLike) {
                     // Stock Manager-like roles exclude certain statuses
                     filteredBooks = receiptsData.filter(r =>
@@ -355,7 +357,8 @@ const ReceiptBooks: React.FC = () => {
                                     <div className="table-row table-row-1">
                                         <div className="table-cell">Number</div>
                                         <div className="table-cell">Type</div>
-                                        <div className="table-cell">Status</div>
+                                        <div className="table-cell">Book Status</div>
+                                        <div className="table-cell">Stub Status</div>
                                         <div className="table-cell">Holder</div>
                                         <div className="table-cell">QR Code</div>
                                         <div className="table-cell">Actions</div>
@@ -367,6 +370,7 @@ const ReceiptBooks: React.FC = () => {
                                             <div className="table-cell">{receipt.number}</div>
                                             <div className="table-cell">{receipt.type}</div>
                                             <div className="table-cell">{receipt.status}</div>
+                                            <div className="table-cell">{receipt.ReceiptStub?.status || "N/A"}</div>
                                             <div className="table-cell">
                                                 {receipt.agentID
                                                     ? holdersMap.get(receipt.agentID) || "Loading..."

@@ -1,4 +1,5 @@
 import ReceiptBookStatus from "./Enum/ReceiptBookStatus";
+import ReceiptStub from "./ReceiptStub";
 
 interface ReceiptBook {
     bookID: string;
@@ -8,6 +9,7 @@ interface ReceiptBook {
     status: ReceiptBookStatus
     currentHolderID?: string;
     agentID?: string;
+    ReceiptStub?: ReceiptStub;
 }
 
 export default ReceiptBook;

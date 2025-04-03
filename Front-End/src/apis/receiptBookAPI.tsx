@@ -51,6 +51,21 @@ export const getReceiptBookById = async (bookID: string, token: string): Promise
         throw error;
     }
 };
+export const getReceiptBooksByHolder = async (
+    holderID: string,
+    token: string,
+    userType: string
+): Promise<ReceiptBook[]> => {
+    try {
+        const response = await api.post<ListReceiptBooksResponse>(`/receipt-books/holder/${holderID}`, { userType }, {
+            headers: { Authorization: `Bearer ${token}` },
+        });
+        return response.data;
+    } catch (error) {
+        console.error(`Error fetching receipt books by holder (${holderID}):`, error);
+        throw error;
+    }
+};
 
 export const updateReceiptBook = async (
     bookID: string,

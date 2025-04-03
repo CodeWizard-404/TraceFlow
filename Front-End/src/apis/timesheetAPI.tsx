@@ -18,13 +18,21 @@ export const createTimesheet = async (
   token: string
 ): Promise<CreateTimesheetResponse> => {
   try {
-    const response = await api.post<CreateTimesheetResponse>("/timesheets", data, {
+    const response = await api.post<CreateTimesheetResponse>("/timesheets/supervisor", data, {
       headers: { Authorization: `Bearer ${token}` },
     });
     return response.data;
   } catch (error) {
-    console.error("Error creating timesheet:", error);
-    throw error;
+    console.error("switching to manager route:", error);
+    try {
+      const fallbackResponse = await api.post<CreateTimesheetResponse>("/timesheets/manager", data, {
+        headers: { Authorization: `Bearer ${token}` },
+      });
+      return fallbackResponse.data;
+    } catch (fallbackError) {
+      console.error("Error creating timesheet :", fallbackError);
+      throw fallbackError;
+    }
   }
 };
 
