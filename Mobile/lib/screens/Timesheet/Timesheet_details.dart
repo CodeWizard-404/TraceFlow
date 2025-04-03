@@ -1,12 +1,21 @@
 import 'package:flutter/material.dart';
-import 'package:intl/intl.dart';
 import 'package:provider/provider.dart';
+import 'package:intl/intl.dart';
+
 import '../../providers/auth_provider.dart';
 import '../../providers/timesheet_provider.dart';
-import '../../providers/theme_provider.dart';
 import '../../widgets/Timesheet/day_view.dart';
-import '../../widgets/Timesheet/week_view.dart';
-import '../../widgets/Glass_Effect/GlassContainer.dart';
+import '../../widgets/Timesheet/navigation_bar.dart';
+import '../../widgets/Timesheet/week_view_list.dart';
+import '../../widgets/Timesheet/week_view_calendar.dart';
+import '../../widgets/Timesheet/month_view.dart';
+import '../../widgets/Timesheet/year_view.dart';
+import '../../widgets/appbar/app_bar.dart';
+import '../../widgets/appbar/sidebar.dart';
+import '../../widgets/commen/ViewSelector.dart';
+import '../../widgets/commen/empty_state.dart';
+import '../../widgets/commen/floating_action_button.dart';
+import '../../widgets/commen/progress_indicator.dart';
 import '../Error.dart';
 import '../Visit/create_visit.dart';
 
@@ -21,7 +30,7 @@ class TimesheetDetailsScreenState extends State<TimesheetDetailsScreen> with Sin
   DateTime _currentDate = DateTime.now();
   late PageController _pageController;
   late AnimationController _animationController;
-  bool _isWeekView = true;
+  String _currentView = 'week1';
 
   @override
   void initState() {
@@ -29,9 +38,9 @@ class TimesheetDetailsScreenState extends State<TimesheetDetailsScreen> with Sin
     _pageController = PageController(initialPage: _getOffset(_currentDate));
     _animationController = AnimationController(
       vsync: this,
-      duration: const Duration(milliseconds: 600),
+      duration: const Duration(milliseconds: 300),
     );
-    _fetchTimesheets();
+    WidgetsBinding.instance.addPostFrameCallback((_) => _fetchTimesheets());
   }
 
   @override
@@ -41,11 +50,85 @@ class TimesheetDetailsScreenState extends State<TimesheetDetailsScreen> with Sin
     super.dispose();
   }
 
-  void _fetchTimesheets() {
+  int _getOffset(DateTime date) {
+    final now = DateTime.now();
+    switch (_currentView) {
+      case 'day':
+        return date.difference(DateTime(now.year - 100, 1, 1)).inDays;
+      case 'week1':
+      case 'week2':
+        final firstMonday = _getFirstMondayOfYear(now.year - 100);
+        return (date.difference(firstMonday).inDays / 7).floor();
+      case 'month':
+      // Calculate total months from a fixed past date (e.g., 100 years ago)
+        final baseDate = DateTime(now.year - 100, 1, 1);
+        final totalMonths = (date.year - baseDate.year) * 12 + date.month - baseDate.month;
+        return totalMonths;
+      case 'year':
+        return date.year - now.year;
+      default:
+        return 0;
+    }
+  }
+
+  DateTime _getFirstMondayOfYear(int year) {
+    final firstDay = DateTime(year, 1, 1);
+    final daysOffset = (firstDay.weekday - 1) % 7;
+    return firstDay.subtract(Duration(days: daysOffset));
+  }
+
+  void _navigateToDate(int index) {
+    setState(() {
+      final now = DateTime.now();
+      switch (_currentView) {
+        case 'day':
+          _currentDate = DateTime(now.year - 100, 1, 1).add(Duration(days: index));
+          break;
+        case 'week1':
+        case 'week2':
+          final firstMonday = _getFirstMondayOfYear(now.year - 100);
+          _currentDate = firstMonday.add(Duration(days: index * 7));
+          break;
+        case 'month':
+        // Use a fixed base date to calculate the new month
+          final baseDate = DateTime(now.year - 100, 1, 1);
+          final totalMonths = index;
+          final newYear = baseDate.year + (totalMonths ~/ 12);
+          final newMonth = (baseDate.month + (totalMonths % 12) - 1) % 12 + 1;
+          _currentDate = DateTime(newYear, newMonth, 1);
+          break;
+        case 'year':
+          _currentDate = DateTime(now.year + index, 1, 1);
+          break;
+      }
+    });
+    _animationController.forward(from: 0);
+  }
+
+  void _setView(String view, {DateTime? specificDate}) {
+    setState(() {
+      _currentView = view;
+      if (specificDate != null) _currentDate = specificDate;
+      _pageController.jumpToPage(_getOffset(_currentDate));
+    });
+  }
+
+  void _jumpToNow() {
+    setState(() {
+      _currentDate = DateTime.now();
+      _pageController.animateToPage(
+        _getOffset(_currentDate),
+        duration: const Duration(milliseconds: 300),
+        curve: Curves.easeInOut,
+      );
+    });
+  }
+
+  Future<void> _fetchTimesheets() async {
     final authProvider = Provider.of<AuthProvider>(context, listen: false);
     final timesheetProvider = Provider.of<TimesheetProvider>(context, listen: false);
     if (authProvider.user?.userID != null && authProvider.token != null) {
-      timesheetProvider
+      await timesheetProvider
           .fetchTimesheetsBySupervisor(authProvider.user!.userID!, authProvider.token!)
           .catchError((error) {
         Navigator.push(
@@ -61,244 +144,102 @@ class TimesheetDetailsScreenState extends State<TimesheetDetailsScreen> with Sin
     }
   }
 
-  int _getOffset(DateTime date) {
-    if (_isWeekView) {
-      DateTime monday = _getStartOfWeek(date);
-      final startOfYear = DateTime(monday.year, 1, 1);
-      return monday.difference(startOfYear).inDays ~/ 7;
-    } else {
-      final startOfYear = DateTime(date.year, 1, 1);
-      return date.difference(startOfYear).inDays;
+  Widget _buildView(DateTime date) {
+    switch (_currentView) {
+      case 'day':
+        return DayView(date);
+      case 'week1':
+        return WeekViewList(
+          date,
+          onDayTap: (day) => _setView('day', specificDate: day),
+        );
+      case 'week2':
+        return WeekViewCalendar(
+          date,
+          onDayTap: (day) => _setView('day', specificDate: day),
+        );
+      case 'month':
+        return MonthView(
+          date: date,
+          onDayTap: (day) => _setView('day', specificDate: day),
+        );
+      case 'year':
+        return YearView(
+          date: date,
+          onMonthTap: (month) => _setView('month', specificDate: month),
+        );
+      default:
+        return const EmptyState(text: 'Invalid view');
     }
-  }
-
-  void _navigateToDate(int offset) {
-    setState(() {
-      if (_isWeekView) {
-        _currentDate = _getStartOfWeek(DateTime(_currentDate.year, 1, 1).add(Duration(days: offset * 7)));
-      } else {
-        _currentDate = DateTime(_currentDate.year, 1, 1).add(Duration(days: offset));
-      }
-    });
-  }
-
-  void _toggleView() {
-    if (_animationController.isAnimating) return;
-    _animationController.forward(from: 0);
-    setState(() {
-      _isWeekView = !_isWeekView;
-      _currentDate = _isWeekView ? _getStartOfWeek(DateTime.now()) : DateTime.now();
-      _pageController.animateToPage(
-        _getOffset(_currentDate),
-        duration: const Duration(milliseconds: 600),
-        curve: Curves.easeInOutCubic,
-      );
-    });
-  }
-
-  void _goToTodayOrThisWeek() {
-    if (_animationController.isAnimating) return;
-    _animationController.forward(from: 0);
-    setState(() {
-      _currentDate = _isWeekView ? _getStartOfWeek(DateTime.now()) : DateTime.now();
-      _pageController.animateToPage(
-        _getOffset(_currentDate),
-        duration: const Duration(milliseconds: 600),
-        curve: Curves.easeInOutCubic,
-      );
-    });
-  }
-
-  DateTime _getStartOfWeek(DateTime date) {
-    return date.subtract(Duration(days: date.weekday - 1));
-  }
-
-  void _showThemeNotification(String themeName) {
-    ScaffoldMessenger.of(context).showSnackBar(
-      SnackBar(
-        content: Text('Switched to $themeName theme'),
-        backgroundColor: Theme.of(context).colorScheme.primary.withOpacity(0.9),
-        behavior: SnackBarBehavior.floating,
-        shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(12)),
-        duration: const Duration(seconds: 2),
-      ),
-    );
   }
 
   @override
   Widget build(BuildContext context) {
-    final themeProvider = Provider.of<ThemeProvider>(context);
+    final appBarHeight = 60.0;
+    final navBarHeight = 40.0;
+    final totalHeaderHeight = appBarHeight + navBarHeight + MediaQuery.of(context).padding.top;
+
     return Scaffold(
-      backgroundColor: Theme.of(context).scaffoldBackgroundColor,
-      body: CustomScrollView(
-        slivers: [
-          SliverAppBar(
-            expandedHeight: 140,
-            floating: true,
-            pinned: false,
-            flexibleSpace: FlexibleSpaceBar(
-              background: Container(
-                decoration: BoxDecoration(
-                  gradient: LinearGradient(
-                    colors: [
-                      Theme.of(context).colorScheme.primary,
-                      Theme.of(context).colorScheme.secondary,
-                    ],
-                    begin: Alignment.topLeft,
-                    end: Alignment.bottomRight,
-                  ),
-                  boxShadow: [
-                    BoxShadow(
-                      color: Theme.of(context).colorScheme.onSurface.withOpacity(0.2),
-                      blurRadius: 20,
-                      offset: const Offset(0, 4),
-                    ),
-                  ],
-                  borderRadius: const BorderRadius.only(
-                    bottomLeft: Radius.circular(30),
-                    bottomRight: Radius.circular(30),
-                  ),
+      drawer: const AppSidebar(),
+      body: RefreshIndicator(
+        onRefresh: _fetchTimesheets,
+        child: CustomScrollView(
+          physics: const AlwaysScrollableScrollPhysics(),
+          slivers: [
+            SliverToBoxAdapter(
+              child: CustomAppBar(
+                title: 'Timesheets',
+                showBackButton: false,
+                viewSelector: CustomViewSelector(
+                  value: _currentView,
+                  onChanged: (value) => _setView(value),
                 ),
-                child: SafeArea(
-                  child: Padding(
-                    padding: const EdgeInsets.all(16),
-                    child: Column(
-                      crossAxisAlignment: CrossAxisAlignment.start,
-                      children: [
-                        Row(
-                          mainAxisAlignment: MainAxisAlignment.spaceBetween,
-                          children: [
-                            Text(
-                              "Timesheets",
-                              style: Theme.of(context).appBarTheme.titleTextStyle,
-                            ),
-                            const SizedBox(width: 8),
-                          ],
-                        ),
-                        const SizedBox(height: 8),
-                        Row(
-                          mainAxisAlignment: MainAxisAlignment.end,
-                          children: [
-                            _buildAnimatedIconButton(
-                              icon: Icons.refresh,
-                              onPressed: _fetchTimesheets,
-                            ),
-                            const SizedBox(width: 8),
-                            _buildAnimatedIconButton(
-                              icon: _isWeekView ? Icons.view_week : Icons.view_day,
-                              onPressed: _toggleView,
-                            ),
-                            const SizedBox(width: 8),
-                            _buildAnimatedIconButton(
-                              icon: Icons.today,
-                              onPressed: _goToTodayOrThisWeek,
-                            ),
-                            const SizedBox(width: 8),
-                            _buildAnimatedIconButton(
-                              icon: themeProvider.themeMode == ThemeMode.system
-                                  ? Icons.brightness_auto
-                                  : themeProvider.isDarkMode
-                                  ? Icons.light_mode
-                                  : Icons.dark_mode,
-                              onPressed: () {
-                                if (themeProvider.themeMode == ThemeMode.system) {
-                                  themeProvider.setTheme(ThemeMode.light);
-                                  _showThemeNotification("Light");
-                                } else if (themeProvider.themeMode == ThemeMode.light) {
-                                  themeProvider.setTheme(ThemeMode.dark);
-                                  _showThemeNotification("Dark");
-                                } else {
-                                  themeProvider.setTheme(ThemeMode.system);
-                                  _showThemeNotification("System");
-                                }
-                              },
-                            ),
-                          ],
-                        ),
-                      ],
-                    ),
-                  ),
+                onJumpToNow: _jumpToNow,
+              ),
+            ),
+            SliverToBoxAdapter(
+              child: TimesheetNavigationBar(
+                currentView: _currentView,
+                currentDate: _currentDate,
+                onPrevious: () => _pageController.previousPage(
+                  duration: const Duration(milliseconds: 300),
+                  curve: Curves.easeInOut,
+                ),
+                onNext: () => _pageController.nextPage(
+                  duration: const Duration(milliseconds: 300),
+                  curve: Curves.easeInOut,
                 ),
               ),
             ),
-          ),
-          SliverToBoxAdapter(
-            child: Padding(
-              padding: const EdgeInsets.all(16),
-              child: ScaleTransition(
-                scale: Tween(begin: 0.95, end: 1.0).animate(
-                  CurvedAnimation(parent: _animationController, curve: Curves.easeOutCubic),
-                ),
-                child: GlassContainer(
-                  child: Row(
-                    mainAxisAlignment: MainAxisAlignment.spaceBetween,
-                    children: [
-                      _buildNavigationButton(Icons.arrow_back_ios, () {
-                        _pageController.previousPage(
-                          duration: const Duration(milliseconds: 600),
-                          curve: Curves.easeInOutCubic,
+            SliverToBoxAdapter(
+              child: Consumer<TimesheetProvider>(
+                builder: (context, provider, child) {
+                  if (provider.isLoading) return const CustomProgressIndicator();
+                  if (provider.timesheets.isEmpty) return const EmptyState(text: 'No timesheets available');
+                  return SizedBox(
+                    height: MediaQuery.of(context).size.height - totalHeaderHeight - 20,
+                    child: PageView.builder(
+                      controller: _pageController,
+                      onPageChanged: _navigateToDate,
+                      itemBuilder: (context, index) {
+                        final date = _getDateForIndex(index);
+                        return SingleChildScrollView(
+                          physics: const AlwaysScrollableScrollPhysics(),
+                          child: Padding(
+                            padding: const EdgeInsets.fromLTRB(8, 0, 8, 8),
+                            child: _buildView(date),
+                          ),
                         );
-                      }),
-                      AnimatedSwitcher(
-                        duration: const Duration(milliseconds: 400),
-                        transitionBuilder: (child, animation) => FadeTransition(
-                          opacity: animation,
-                          child: ScaleTransition(scale: animation, child: child),
-                        ),
-                        child: Text(
-                          _isWeekView
-                              ? 'Week ${_getWeekNumber(_currentDate)}'
-                              : '${_currentDate.day} ${DateFormat('MMMM').format(_currentDate)}',
-                          key: ValueKey(_isWeekView),
-                          style: Theme.of(context).textTheme.headlineSmall,
-                        ),
-                      ),
-                      _buildNavigationButton(Icons.arrow_forward_ios, () {
-                        _pageController.nextPage(
-                          duration: const Duration(milliseconds: 600),
-                          curve: Curves.easeInOutCubic,
-                        );
-                      }),
-                    ],
-                  ),
-                ),
+                      },
+                    ),
+                  );
+                },
               ),
             ),
-          ),
-          SliverFillRemaining(
-            child: Consumer<TimesheetProvider>(
-              builder: (context, provider, child) {
-                if (provider.isLoading) {
-                  return const Center(child: CircularProgressIndicator());
-                }
-                if (provider.timesheets.isEmpty) {
-                  return const Center(child: Text('No timesheets available'));
-                }
-                return PageView.builder(
-                  controller: _pageController,
-                  onPageChanged: _navigateToDate,
-                  itemBuilder: (context, index) {
-                    final date = DateTime(_currentDate.year, 1, 1)
-                        .add(Duration(days: _isWeekView ? index * 7 : index));
-                    return Padding(
-                      padding: const EdgeInsets.symmetric(horizontal: 16),
-                      child: AnimatedSwitcher(
-                        duration: const Duration(milliseconds: 400),
-                        transitionBuilder: (child, animation) => FadeTransition(
-                          opacity: animation,
-                          child: ScaleTransition(scale: animation, child: child),
-                        ),
-                        child: _isWeekView ? WeekView(date) : DayView(date),
-                      ),
-                    );
-                  },
-                );
-              },
-            ),
-          ),
-        ],
+          ],
+        ),
       ),
-      floatingActionButton: FloatingActionButton(
+      floatingActionButton: CustomFloatingActionButton(
         onPressed: () {
           Navigator.push(
             context,
@@ -308,92 +249,39 @@ class TimesheetDetailsScreenState extends State<TimesheetDetailsScreen> with Sin
                 year: _currentDate.year,
               ),
             ),
-          ).then((_) => _fetchTimesheets()); // Refresh after creating a visit
+          ).then((_) => _fetchTimesheets());
         },
-        backgroundColor: Colors.transparent,
-        elevation: 0,
-        child: Container(
-          decoration: BoxDecoration(
-            gradient: LinearGradient(
-              colors: [
-                Theme.of(context).colorScheme.primary,
-                Theme.of(context).colorScheme.secondary,
-              ],
-              begin: Alignment.topLeft,
-              end: Alignment.bottomRight,
-            ),
-            shape: BoxShape.circle,
-            boxShadow: [
-              BoxShadow(
-                color: Theme.of(context).colorScheme.primary.withOpacity(0.4),
-                blurRadius: 12,
-                offset: const Offset(0, 4),
-              ),
-            ],
-          ),
-          child: Icon(Icons.add, color: Theme.of(context).appBarTheme.iconTheme!.color, size: 32),
-        ),
+        icon: Icons.add,
       ),
     );
   }
 
-  Widget _buildAnimatedIconButton({required IconData icon, required VoidCallback onPressed}) {
-    return GestureDetector(
-      onTap: onPressed,
-      child: AnimatedContainer(
-        duration: const Duration(milliseconds: 300),
-        curve: Curves.easeInOut,
-        padding: const EdgeInsets.all(12),
-        decoration: BoxDecoration(
-          shape: BoxShape.circle,
-          color: Theme.of(context).colorScheme.onPrimary.withOpacity(0.2),
-          boxShadow: [
-            BoxShadow(
-              color: Theme.of(context).colorScheme.onPrimary.withOpacity(0.1),
-              blurRadius: 8,
-              offset: const Offset(0, 2),
-            ),
-          ],
-        ),
-        child: Icon(icon, color: Theme.of(context).appBarTheme.iconTheme!.color, size: 24),
-      ),
-    );
-  }
-
-  Widget _buildNavigationButton(IconData icon, VoidCallback onPressed) {
-    return GestureDetector(
-      onTap: onPressed,
-      child: AnimatedContainer(
-        duration: const Duration(milliseconds: 300),
-        curve: Curves.easeInOut,
-        padding: const EdgeInsets.all(12),
-        decoration: BoxDecoration(
-          shape: BoxShape.circle,
-          gradient: LinearGradient(
-            colors: [
-              Theme.of(context).colorScheme.primary.withOpacity(0.2),
-              Theme.of(context).colorScheme.secondary.withOpacity(0.2),
-            ],
-          ),
-          boxShadow: [
-            BoxShadow(
-              color: Theme.of(context).colorScheme.primary.withOpacity(0.2),
-              blurRadius: 8,
-              offset: const Offset(0, 2),
-            ),
-          ],
-        ),
-        child: Icon(icon, color: Theme.of(context).appBarTheme.iconTheme!.color, size: 20),
-      ),
-    );
+  DateTime _getDateForIndex(int index) {
+    final now = DateTime.now();
+    switch (_currentView) {
+      case 'day':
+        return DateTime(now.year - 100, 1, 1).add(Duration(days: index));
+      case 'week1':
+      case 'week2':
+        final firstMonday = _getFirstMondayOfYear(now.year - 100);
+        return firstMonday.add(Duration(days: index * 7));
+      case 'month':
+        final baseDate = DateTime(now.year - 100, 1, 1);
+        final totalMonths = index;
+        final newYear = baseDate.year + (totalMonths ~/ 12);
+        final newMonth = (baseDate.month + (totalMonths % 12) - 1) % 12 + 1;
+        return DateTime(newYear, newMonth, 1);
+      case 'year':
+        return DateTime(now.year + index, 1, 1);
+      default:
+        return now;
+    }
   }
 
   int _getWeekNumber(DateTime date) {
-    final startOfYear = DateTime(date.year, 1, 1);
-    final firstMonday = startOfYear.weekday <= 4
-        ? startOfYear.subtract(Duration(days: startOfYear.weekday - 1))
-        : startOfYear.add(Duration(days: 8 - startOfYear.weekday));
-    final daysSinceFirstMonday = date.difference(firstMonday).inDays;
-    return (daysSinceFirstMonday ~/ 7) + 1;
+    final firstDayOfYear = DateTime(date.year, 1, 1);
+    final daysOffset = firstDayOfYear.weekday - 1;
+    final firstMonday = firstDayOfYear.subtract(Duration(days: daysOffset));
+    return (date.difference(firstMonday).inDays / 7).ceil();
   }
 }

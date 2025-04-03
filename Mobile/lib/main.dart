@@ -60,14 +60,7 @@ class MyApp extends StatelessWidget {
           theme: AppThemes.lightTheme,
           darkTheme: AppThemes.darkTheme,
           themeMode: themeProvider.themeMode,
-          home: Consumer<AuthProvider>(
-            builder: (context, authProvider, child) {
-              // If no token, show login screen; otherwise, show timesheet details
-              return authProvider.token == null
-                  ? const LoginScreen()
-                  : const TimesheetDetailsScreen();
-            },
-          ),
+          home: const AuthWrapper(),
           routes: {
             '/login': (context) => const LoginScreen(),
             '/timesheet-details': (context) => const TimesheetDetailsScreen(),
@@ -85,5 +78,33 @@ class MyApp extends StatelessWidget {
         );
       },
     );
+  }
+}
+
+class AuthWrapper extends StatelessWidget {
+  const AuthWrapper({super.key});
+
+  @override
+  Widget build(BuildContext context) {
+    final authProvider = Provider.of<AuthProvider>(context);
+
+    // Show a loading screen while auth data is being loaded
+    if (authProvider.token == null && authProvider.isLoading) {
+      return const Scaffold(
+        body: Center(child: CircularProgressIndicator()),
+      );
+    }
+
+    // If no token or user, or if user is not a Supervisor, show login screen
+    if (authProvider.token == null || authProvider.user == null || !authProvider.isSupervisor) {
+      if (authProvider.token != null && !authProvider.isSupervisor) {
+        // Clear invalid state (non-Supervisor with token)
+        authProvider.logout();
+      }
+      return const LoginScreen();
+    }
+
+    // If token exists and user is a Supervisor, show TimesheetDetailsScreen
+    return const TimesheetDetailsScreen();
   }
 }

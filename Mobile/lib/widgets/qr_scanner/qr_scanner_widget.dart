@@ -2,6 +2,11 @@ import 'package:flutter/material.dart';
 import 'package:camera/camera.dart';
 import 'package:flutter/services.dart';
 import 'package:google_mlkit_barcode_scanning/google_mlkit_barcode_scanning.dart';
+import '../../widgets/appbar/app_bar.dart';
+import '../../widgets/commen/button.dart';
+import '../../widgets/commen/progress_indicator.dart';
+import '../../widgets/commen/spacer.dart';
+import '../commen/snack_bar.dar.dart';
 
 class QRScannerWidget extends StatefulWidget {
   const QRScannerWidget({super.key});
@@ -15,7 +20,7 @@ class QRScannerWidgetState extends State<QRScannerWidget> {
   final BarcodeScanner _barcodeScanner = BarcodeScanner(formats: [BarcodeFormat.qrCode]);
   bool _isInitialized = false;
   bool _isScanning = false;
-  double _appBarHeight = 0.0; // To store the app bar height for alignment
+  double _appBarHeight = 0.0;
 
   @override
   void initState() {
@@ -59,33 +64,30 @@ class QRScannerWidgetState extends State<QRScannerWidget> {
           return;
         }
       }
-      _showSnackBar('No valid QR code detected');
+      CustomSnackBar.show(
+        context: context,
+        message: 'No valid QR code detected',
+        backgroundColor: Theme.of(context).colorScheme.error.withOpacity(0.9),
+      );
     } catch (e) {
-      _showSnackBar('Error scanning QR code: $e');
+      CustomSnackBar.show(
+        context: context,
+        message: 'Error scanning QR code: $e',
+        backgroundColor: Theme.of(context).colorScheme.error.withOpacity(0.9),
+      );
     } finally {
       setState(() => _isScanning = false);
     }
   }
 
-  void _showSnackBar(String message) {
-    ScaffoldMessenger.of(context).showSnackBar(
-      SnackBar(
-        content: Text(message),
-        backgroundColor: Colors.red.withOpacity(0.9),
-        behavior: SnackBarBehavior.floating,
-        shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(12)),
-        duration: const Duration(seconds: 2),
-      ),
-    );
-  }
-
   @override
   Widget build(BuildContext context) {
+    final theme = Theme.of(context);
     return Scaffold(
-      backgroundColor: Colors.black,
+      backgroundColor: Colors.black, // Kept as black for camera overlay
       body: Stack(
         children: [
-          // Camera Preview
+          // Camera Preview (unchanged for precision)
           if (_isInitialized)
             Positioned.fill(
               child: OverflowBox(
@@ -105,68 +107,31 @@ class QRScannerWidgetState extends State<QRScannerWidget> {
           if (_isInitialized)
             Positioned.fill(
               child: CustomPaint(
-                painter: QROverlayPainter(appBarHeight: _appBarHeight),
+                painter: QROverlayPainter(appBarHeight: _appBarHeight, theme: theme),
               ),
             ),
           // AppBar and content
           Column(
             children: [
-              Container(
-                decoration: const BoxDecoration(
-                  gradient: LinearGradient(
-                    colors: [Color(0xFF4CB1C7), Color(0xFF64C9D1)],
-                    begin: Alignment.topLeft,
-                    end: Alignment.bottomRight,
+              CustomAppBar(
+                title: 'QR Scanner',
+                showBackButton: true,
+                onJumpToNow: null,
+              ),
+              Padding(
+                padding: const EdgeInsets.symmetric(horizontal: 16.0, vertical: 8.0),
+                child: Text(
+                  'Align the QR code within the frame',
+                  style: theme.textTheme.bodyMedium?.copyWith(
+                    color: theme.colorScheme.onSurface.withOpacity(0.9),
+                    fontWeight: FontWeight.w500,
                   ),
-                  borderRadius: BorderRadius.only(
-                    bottomLeft: Radius.circular(30),
-                    bottomRight: Radius.circular(30),
-                  ),
-                ),
-                child: SafeArea(
-                  bottom: false,
-                  child: Padding(
-                    padding: const EdgeInsets.all(20),
-                    child: Column(
-                      crossAxisAlignment: CrossAxisAlignment.start,
-                      children: [
-                        Row(
-                          children: [
-                            IconButton(
-                              icon: const Icon(Icons.arrow_back_ios_rounded, color: Colors.white),
-                              onPressed: () => Navigator.of(context).pop(),
-                            ),
-                          ],
-                        ),
-                        const Text(
-                          'QR Scanner',
-                          style: TextStyle(
-                            fontSize: 32,
-                            fontWeight: FontWeight.bold,
-                            color: Colors.white,
-                            letterSpacing: 1.2,
-                            shadows: [Shadow(color: Colors.black45, blurRadius: 4, offset: Offset(0, 2))],
-                          ),
-                        ),
-                        const SizedBox(height: 12),
-                        Text(
-                          'Align the QR code within the frame',
-                          style: TextStyle(
-                            fontSize: 16,
-                            color: Colors.white.withOpacity(0.9),
-                            fontWeight: FontWeight.w500,
-                          ),
-                        ),
-                        const SizedBox(height: 20),
-                      ],
-                    ),
-                  ),
+                  textAlign: TextAlign.center,
                 ),
               ),
               Expanded(
                 child: LayoutBuilder(
                   builder: (context, constraints) {
-                    // Calculate app bar height after layout
                     WidgetsBinding.instance.addPostFrameCallback((_) {
                       final appBarRenderBox = context.findRenderObject() as RenderBox?;
                       if (appBarRenderBox != null && _appBarHeight != appBarRenderBox.size.height) {
@@ -180,9 +145,8 @@ class QRScannerWidgetState extends State<QRScannerWidget> {
                       mainAxisAlignment: MainAxisAlignment.center,
                       children: [
                         if (!_isInitialized)
-                          const CircularProgressIndicator(
-                            color: Color(0xFF4CB1C7),
-                            strokeWidth: 3,
+                          CustomProgressIndicator(
+                            color: theme.colorScheme.primary,
                           )
                         else
                           Stack(
@@ -196,14 +160,14 @@ class QRScannerWidgetState extends State<QRScannerWidget> {
                                     Positioned(
                                       top: 0,
                                       left: 0,
-                                      child: _buildStaticCorner(),
+                                      child: _buildStaticCorner(theme),
                                     ),
                                     Positioned(
                                       top: 0,
                                       right: 0,
                                       child: Transform.rotate(
                                         angle: 1.5708,
-                                        child: _buildStaticCorner(),
+                                        child: _buildStaticCorner(theme),
                                       ),
                                     ),
                                     Positioned(
@@ -211,7 +175,7 @@ class QRScannerWidgetState extends State<QRScannerWidget> {
                                       left: 0,
                                       child: Transform.rotate(
                                         angle: -1.5708,
-                                        child: _buildStaticCorner(),
+                                        child: _buildStaticCorner(theme),
                                       ),
                                     ),
                                     Positioned(
@@ -219,7 +183,7 @@ class QRScannerWidgetState extends State<QRScannerWidget> {
                                       right: 0,
                                       child: Transform.rotate(
                                         angle: 3.1416,
-                                        child: _buildStaticCorner(),
+                                        child: _buildStaticCorner(theme),
                                       ),
                                     ),
                                   ],
@@ -233,63 +197,33 @@ class QRScannerWidgetState extends State<QRScannerWidget> {
                                     shape: BoxShape.circle,
                                     gradient: RadialGradient(
                                       colors: [
-                                        Colors.black.withOpacity(0.6),
-                                        Colors.black.withOpacity(0.3),
+                                        theme.colorScheme.background.withOpacity(0.6),
+                                        theme.colorScheme.background.withOpacity(0.3),
                                       ],
                                     ),
                                   ),
-                                  child: const CircularProgressIndicator(
-                                    color: Color(0xFF4CB1C7),
-                                    strokeWidth: 4,
+                                  child: CustomProgressIndicator(
+                                    color: theme.colorScheme.primary,
                                   ),
                                 ),
                             ],
                           ),
-                        const SizedBox(height: 48),
-                        GestureDetector(
-                          onTap: _scanQRCode,
-                          child: AnimatedContainer(
-                            duration: const Duration(milliseconds: 300),
-                            curve: Curves.easeInOut,
-                            padding: const EdgeInsets.symmetric(horizontal: 48, vertical: 18),
-                            decoration: BoxDecoration(
-                              gradient: LinearGradient(
-                                colors: _isScanning
-                                    ? [Colors.grey.shade600, Colors.grey.shade700]
-                                    : [const Color(0xFF4CB1C7), const Color(0xFF64C9D1)],
-                                begin: Alignment.topLeft,
-                                end: Alignment.bottomRight,
-                              ),
-                              borderRadius: BorderRadius.circular(40),
-                            ),
-                            child: Row(
-                              mainAxisSize: MainAxisSize.min,
-                              children: [
-                                Icon(
-                                  Icons.qr_code_scanner,
-                                  color: Colors.white.withOpacity(_isScanning ? 0.7 : 1.0),
-                                  size: 28,
-                                ),
-                                const SizedBox(width: 16),
-                                Text(
-                                  _isScanning ? 'Scanning...' : 'Scan QR',
-                                  style: TextStyle(
-                                    fontSize: 20,
-                                    color: Colors.white.withOpacity(_isScanning ? 0.7 : 1.0),
-                                    fontWeight: FontWeight.bold,
-                                    letterSpacing: 1.1,
-                                  ),
-                                ),
-                              ],
-                            ),
-                          ),
+                        const CustomSpacer(height: 0),
+                        CustomButton(
+                          label: _isScanning ? 'Scanning...' : 'Scan QR',
+                          icon: Icons.qr_code_scanner,
+                          onPressed: _scanQRCode,
+                          isLoading: _isScanning,
+                          backgroundColor: _isScanning
+                              ? theme.colorScheme.secondary.withOpacity(0.6)
+                              : theme.colorScheme.primary,
+                          textColor: theme.elevatedButtonTheme.style?.foregroundColor?.resolve({}),
                         ),
-                        const SizedBox(height: 24),
+                        const CustomSpacer(height: 0),
                         Text(
                           _isScanning ? 'Analyzing code...' : 'Tap to initiate scan',
-                          style: TextStyle(
-                            fontSize: 16,
-                            color: Colors.white.withOpacity(0.8),
+                          style: theme.textTheme.bodyMedium?.copyWith(
+                            color: theme.colorScheme.onSurface.withOpacity(0.8),
                             fontWeight: FontWeight.w500,
                           ),
                         ),
@@ -305,14 +239,14 @@ class QRScannerWidgetState extends State<QRScannerWidget> {
     );
   }
 
-  Widget _buildStaticCorner() {
+  Widget _buildStaticCorner(ThemeData theme) {
     return Container(
       width: 40,
       height: 40,
       decoration: BoxDecoration(
         border: Border(
-          top: BorderSide(color: const Color(0xFF4CB1C7), width: 5),
-          left: BorderSide(color: const Color(0xFF4CB1C7), width: 5),
+          top: BorderSide(color: theme.colorScheme.primary, width: 5),
+          left: BorderSide(color: theme.colorScheme.primary, width: 5),
         ),
         borderRadius: const BorderRadius.only(
           topLeft: Radius.circular(12),
@@ -324,15 +258,15 @@ class QRScannerWidgetState extends State<QRScannerWidget> {
 
 class QROverlayPainter extends CustomPainter {
   final double appBarHeight;
+  final ThemeData theme;
 
-  QROverlayPainter({required this.appBarHeight});
+  QROverlayPainter({required this.appBarHeight, required this.theme});
 
   @override
   void paint(Canvas canvas, Size size) {
     final paint = Paint()..color = Colors.black.withOpacity(0.85);
 
     const qrSize = 313.0;
-    // Center the frame in the space below the app bar
     final availableHeight = size.height - appBarHeight;
     final qrRect = Rect.fromCenter(
       center: Offset(size.width / 2, size.height / 1.87),
@@ -357,7 +291,7 @@ class QROverlayPainter extends CustomPainter {
         center: Alignment.center,
         radius: qrSize / 2 + 20,
         colors: [
-          const Color(0xFF4CB1C7).withOpacity(0.1),
+          theme.colorScheme.primary.withOpacity(0.1),
           Colors.transparent,
         ],
       ).createShader(qrRect);

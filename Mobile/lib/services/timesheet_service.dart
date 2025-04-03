@@ -12,7 +12,7 @@ class TimesheetService {
     required String token,
   }) async {
     final response = await http.post(
-      Uri.parse('$baseUrl/timesheets'),
+      Uri.parse('$baseUrl/timesheets/supervisor'),
       headers: {
         'Content-Type': 'application/json',
         'Authorization': 'Bearer $token',
