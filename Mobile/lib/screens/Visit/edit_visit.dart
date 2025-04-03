@@ -1,3 +1,4 @@
+import 'package:TraceFlow/widgets/appbar/sidebar.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter/services.dart';
 import 'package:intl/intl.dart';
@@ -15,6 +16,14 @@ import '../../providers/checklist_provider.dart';
 import '../../providers/reason_provider.dart';
 import '../../providers/agent_provider.dart';
 import '../../utils/constants.dart';
+import '../../widgets/appbar/app_bar.dart';
+import '../../widgets/commen/button.dart';
+import '../../widgets/commen/card.dart';
+import '../../widgets/commen/icon_button.dart';
+import '../../widgets/commen/progress_indicator.dart';
+import '../../widgets/commen/spacer.dart';
+import '../../widgets/commen/text_field.dart';
+import '../../widgets/commen/list_tile.dart';
 
 class EditVisitScreen extends StatefulWidget {
   final Visit visit;
@@ -40,6 +49,7 @@ class _EditVisitScreenState extends State<EditVisitScreen> {
   bool _isLoading = false;
   bool _isInitialized = false;
   DateTime? _editStartTime;
+  bool _hasChanges = false; // Track if anything has changed
 
   @override
   void initState() {
@@ -54,10 +64,14 @@ class _EditVisitScreenState extends State<EditVisitScreen> {
     _selectedLocation = _visit.location;
     _selectedAgentId = _visit.agentID;
     _visitChecklists =
-    _visit.checklists != null ? List.from(_visit.checklists!) : [];
+        _visit.checklists != null ? List.from(_visit.checklists!) : [];
     _visitReasons = _visit.reasons != null ? List.from(_visit.reasons!) : [];
 
     _agentPhoneController.addListener(_onPhoneNumberChanged);
+    _dateController.addListener(_checkForChanges);
+    _timeController.addListener(_checkForChanges);
+    _agentPhoneController.addListener(_checkForChanges);
+    _commentController.addListener(_checkForChanges);
 
     WidgetsBinding.instance.addPostFrameCallback((_) {
       if (mounted && !_isInitialized) {
@@ -72,6 +86,10 @@ class _EditVisitScreenState extends State<EditVisitScreen> {
   @override
   void dispose() {
     _agentPhoneController.removeListener(_onPhoneNumberChanged);
+    _dateController.removeListener(_checkForChanges);
+    _timeController.removeListener(_checkForChanges);
+    _agentPhoneController.removeListener(_checkForChanges);
+    _commentController.removeListener(_checkForChanges);
     _dateController.dispose();
     _timeController.dispose();
     _agentPhoneController.dispose();
@@ -88,6 +106,40 @@ class _EditVisitScreenState extends State<EditVisitScreen> {
     if (phone.length == 8 && phone.contains(RegExp(r'^[0-9]+$'))) {
       _fetchAgentByPhone(phone);
     }
+    _checkForChanges();
+  }
+
+  void _checkForChanges() {
+    setState(() {
+      _hasChanges =
+          _dateController.text !=
+              DateFormat('yyyy-MM-dd').format(_visit.date) ||
+          _timeController.text != _visit.time ||
+          _agentPhoneController.text.isNotEmpty ||
+          _commentController.text != (_visit.comment ?? '') ||
+          _selectedLocation != _visit.location ||
+          _selectedAgentId != _visit.agentID ||
+          _visitChecklists.length != (_visit.checklists?.length ?? 0) ||
+          _visitReasons.length != (_visit.reasons?.length ?? 0) ||
+          _photosToRemove.isNotEmpty ||
+          _newPhotos.isNotEmpty ||
+          _visitChecklists.any(
+            (c) =>
+                c.visitChecklist?.checked !=
+                (_visit.checklists
+                        ?.firstWhere(
+                          (vc) => vc.checklistID == c.checklistID,
+                          orElse:
+                              () => Checklist(
+                                checklistID: c.checklistID,
+                                item: c.item,
+                              ),
+                        )
+                        .visitChecklist
+                        ?.checked ??
+                    false),
+          );
+    });
   }
 
   Future<void> _fetchAgentByPhone(String phone) async {
@@ -111,6 +163,7 @@ class _EditVisitScreenState extends State<EditVisitScreen> {
     } finally {
       if (mounted) setState(() => _isLoading = false);
     }
+    _checkForChanges();
   }
 
   Future<void> _loadInitialData() async {
@@ -152,7 +205,7 @@ class _EditVisitScreenState extends State<EditVisitScreen> {
   }
 
   Future<void> _saveChanges() async {
-    if (_isLoading) return;
+    if (_isLoading || !_hasChanges) return;
 
     if (!_validateInputs()) return;
 
@@ -180,49 +233,50 @@ class _EditVisitScreenState extends State<EditVisitScreen> {
       }
 
       final checklistUpdates =
-      _visitChecklists
-          .map(
-            (c) => {
-          'id': c.checklistID,
-          'checked': c.visitChecklist?.checked ?? false,
-        },
-      )
-          .toList();
+          _visitChecklists
+              .map(
+                (c) => {
+                  'id': c.checklistID,
+                  'checked': c.visitChecklist?.checked ?? false,
+                },
+              )
+              .toList();
 
       final reasonUpdates =
-      _visitReasons.map((r) => {'id': r.reasonID}).toList();
+          _visitReasons.map((r) => {'id': r.reasonID}).toList();
 
       int? updatedDuration = _visit.duration;
       if (_visit.status == 'visited' && _editStartTime != null) {
-        final editDuration = DateTime.now().difference(_editStartTime!).inMinutes;
+        final editDuration =
+            DateTime.now().difference(_editStartTime!).inMinutes;
         updatedDuration = (_visit.duration ?? 0) + editDuration;
       }
 
       final newStatus = _visit.status == 'visited' ? 'visited' : 'pending';
       final formattedDate =
-      _visit.status == 'visited'
-          ? DateFormat('yyyy-MM-dd').format(_visit.date)
-          : _dateController.text;
+          _visit.status == 'visited'
+              ? DateFormat('yyyy-MM-dd').format(_visit.date)
+              : _dateController.text;
 
       await visitProvider.updateVisit(
         visitId: _visit.visitID!,
         date: formattedDate,
         time: _visit.status == 'visited' ? _visit.time : _timeController.text,
         location:
-        _visit.status == 'visited' ? _visit.location : _selectedLocation,
+            _visit.status == 'visited' ? _visit.location : _selectedLocation,
         status: newStatus,
         duration: updatedDuration,
         comment:
-        _visit.status == 'visited' && _commentController.text.isNotEmpty
-            ? _commentController.text
-            : _visit.comment,
+            _visit.status == 'visited' && _commentController.text.isNotEmpty
+                ? _commentController.text
+                : _visit.comment,
         agentID: _visit.status == 'visited' ? _visit.agentID : agentId,
         checklists: checklistUpdates,
         reasons: reasonUpdates,
         photoPaths:
-        _newPhotos.isNotEmpty
-            ? _newPhotos.map((p) => p.path).toList()
-            : (_photosToRemove.isNotEmpty ? _photosToRemove : null),
+            _newPhotos.isNotEmpty
+                ? _newPhotos.map((p) => p.path).toList()
+                : (_photosToRemove.isNotEmpty ? _photosToRemove : null),
         token: token,
       );
 
@@ -312,7 +366,7 @@ class _EditVisitScreenState extends State<EditVisitScreen> {
     if (_visit.status != 'visited') return;
     setState(() {
       final index = _visitChecklists.indexWhere(
-            (c) => c.checklistID == checklist.checklistID,
+        (c) => c.checklistID == checklist.checklistID,
       );
       if (index != -1) {
         _visitChecklists[index] = Checklist(
@@ -325,6 +379,7 @@ class _EditVisitScreenState extends State<EditVisitScreen> {
           ),
         );
       }
+      _checkForChanges();
     });
   }
 
@@ -342,28 +397,39 @@ class _EditVisitScreenState extends State<EditVisitScreen> {
             ),
           ),
         );
+        _checkForChanges();
       });
     }
   }
 
   void _removeChecklist(String checklistId) {
-    setState(
-          () => _visitChecklists.removeWhere((c) => c.checklistID == checklistId),
-    );
+    setState(() {
+      _visitChecklists.removeWhere((c) => c.checklistID == checklistId);
+      _checkForChanges();
+    });
   }
 
   void _addReason(Reason reason) {
     if (!_visitReasons.any((r) => r.reasonID == reason.reasonID)) {
-      setState(() => _visitReasons.add(reason));
+      setState(() {
+        _visitReasons.add(reason);
+        _checkForChanges();
+      });
     }
   }
 
   void _removeReason(String reasonId) {
-    setState(() => _visitReasons.removeWhere((r) => r.reasonID == reasonId));
+    setState(() {
+      _visitReasons.removeWhere((r) => r.reasonID == reasonId);
+      _checkForChanges();
+    });
   }
 
   void _removePhoto(String photo) {
-    setState(() => _photosToRemove.add(photo));
+    setState(() {
+      _photosToRemove.add(photo);
+      _checkForChanges();
+    });
   }
 
   Future<void> _addNewPhoto() async {
@@ -373,6 +439,7 @@ class _EditVisitScreenState extends State<EditVisitScreen> {
     if (pickedFile != null) {
       setState(() {
         _newPhotos.add(File(pickedFile.path));
+        _checkForChanges();
       });
     }
   }
@@ -383,29 +450,23 @@ class _EditVisitScreenState extends State<EditVisitScreen> {
       MaterialPageRoute(
         builder:
             (_) => Scaffold(
-          appBar: AppBar(
-            backgroundColor: Colors.black,
-            leading: IconButton(
-              icon: const Icon(Icons.close, color: Colors.white),
-              onPressed: () => Navigator.pop(context),
-            ),
-          ),
-          body: Center(
-            child: Image.network(
-              photoPath.startsWith('http')
-                  ? photoPath
-                  : '$baseUrl$photoPath',
-              fit: BoxFit.contain,
-              errorBuilder:
-                  (context, error, stackTrace) => const Icon(
-                Icons.error,
-                color: Colors.white,
-                size: 50,
+              appBar: CustomAppBar(title: 'Photo View', showBackButton: true),
+              body: Center(
+                child: Image.network(
+                  photoPath.startsWith('http')
+                      ? photoPath
+                      : '$baseUrl$photoPath',
+                  fit: BoxFit.contain,
+                  errorBuilder:
+                      (context, error, stackTrace) => const Icon(
+                        Icons.error,
+                        color: Colors.white,
+                        size: 50,
+                      ),
+                ),
               ),
+              backgroundColor: Colors.black,
             ),
-          ),
-          backgroundColor: Colors.black,
-        ),
       ),
     );
   }
@@ -419,8 +480,8 @@ class _EditVisitScreenState extends State<EditVisitScreen> {
       lastDate: DateTime.now().add(const Duration(days: 365)),
       selectableDayPredicate:
           (DateTime date) =>
-      date.weekday != DateTime.saturday &&
-          date.weekday != DateTime.sunday,
+              date.weekday != DateTime.saturday &&
+              date.weekday != DateTime.sunday,
       builder: (context, child) {
         return Theme(
           data: Theme.of(context).copyWith(
@@ -436,9 +497,10 @@ class _EditVisitScreenState extends State<EditVisitScreen> {
       },
     );
     if (date != null && mounted) {
-      setState(
-            () => _dateController.text = DateFormat('yyyy-MM-dd').format(date),
-      );
+      setState(() {
+        _dateController.text = DateFormat('yyyy-MM-dd').format(date);
+        _checkForChanges();
+      });
     }
   }
 
@@ -484,18 +546,18 @@ class _EditVisitScreenState extends State<EditVisitScreen> {
         return;
       }
 
-      setState(
-            () =>
+      setState(() {
         _timeController.text =
-        '${time.hour.toString().padLeft(2, '0')}:${time.minute.toString().padLeft(2, '0')}',
-      );
+            '${time.hour.toString().padLeft(2, '0')}:${time.minute.toString().padLeft(2, '0')}';
+        _checkForChanges();
+      });
     }
   }
 
   Future<void> _showLocationDialog(
-      BuildContext context,
-      AgentProvider agentProvider,
-      ) async {
+    BuildContext context,
+    AgentProvider agentProvider,
+  ) async {
     final locations = agentProvider.uniqueLocations;
     final TextEditingController searchController = TextEditingController();
     List<String> filteredLocations = List.from(locations);
@@ -515,57 +577,37 @@ class _EditVisitScreenState extends State<EditVisitScreen> {
                 child: Column(
                   mainAxisSize: MainAxisSize.min,
                   children: [
-                    TextField(
+                    CustomTextField(
                       controller: searchController,
-                      decoration: InputDecoration(
-                        hintText: 'Search locations...',
-                        prefixIcon: Icon(
-                          Icons.search,
-                          color: Theme.of(context).colorScheme.primary,
-                        ),
-                        border: OutlineInputBorder(
-                          borderRadius: BorderRadius.circular(12),
-                        ),
-                      ),
-                      onChanged: (value) {
-                        setDialogState(() {
-                          filteredLocations =
-                              locations
-                                  .where(
-                                    (location) => location
-                                    .toLowerCase()
-                                    .contains(value.toLowerCase()),
-                              )
-                                  .toList();
-                        });
-                      },
+                      label: 'Search locations...',
+                      prefixIcon: Icons.search,
+                      onSuffixPressed: null,
                     ),
-                    const SizedBox(height: 12),
+                    const CustomSpacer(height: 12),
                     SizedBox(
                       height: 300,
                       child: ListView.builder(
                         itemCount: filteredLocations.length,
                         itemBuilder: (context, index) {
                           final location = filteredLocations[index];
-                          return RadioListTile<String>(
-                            title: Text(location),
-                            value: location,
-                            groupValue: _selectedLocation,
-                            onChanged: (value) {
+                          return CustomListTile(
+                            title: location,
+                            leadingIcon: Icons.location_on,
+                            onTap: () {
                               setState(() {
-                                _selectedLocation = value;
+                                _selectedLocation = location;
                                 _selectedAgentId = null;
                                 agentProvider.fetchAgentsByLocation(
-                                  value!,
+                                  location,
                                   Provider.of<AuthProvider>(
                                     context,
                                     listen: false,
                                   ).token!,
                                 );
+                                _checkForChanges();
                               });
                               Navigator.pop(context);
                             },
-                            activeColor: Theme.of(context).colorScheme.primary,
                           );
                         },
                       ),
@@ -574,16 +616,10 @@ class _EditVisitScreenState extends State<EditVisitScreen> {
                 ),
               ),
               actions: [
-                TextButton(
+                CustomButton(
+                  label: 'Cancel',
                   onPressed: () => Navigator.pop(context),
-                  child: Text(
-                    'Cancel',
-                    style: TextStyle(
-                      color: Theme.of(
-                        context,
-                      ).colorScheme.onSurface.withOpacity(0.6),
-                    ),
-                  ),
+                  backgroundColor: Theme.of(context).cardTheme.color,
                 ),
               ],
             );
@@ -594,9 +630,9 @@ class _EditVisitScreenState extends State<EditVisitScreen> {
   }
 
   Future<void> _showAgentDialog(
-      BuildContext context,
-      AgentProvider agentProvider,
-      ) async {
+    BuildContext context,
+    AgentProvider agentProvider,
+  ) async {
     final agents = agentProvider.agents;
     final TextEditingController searchController = TextEditingController();
     List<Agent> filteredAgents = List.from(agents);
@@ -616,51 +652,29 @@ class _EditVisitScreenState extends State<EditVisitScreen> {
                 child: Column(
                   mainAxisSize: MainAxisSize.min,
                   children: [
-                    TextField(
+                    CustomTextField(
                       controller: searchController,
-                      decoration: InputDecoration(
-                        hintText: 'Search agents...',
-                        prefixIcon: Icon(
-                          Icons.search,
-                          color: Theme.of(context).colorScheme.primary,
-                        ),
-                        border: OutlineInputBorder(
-                          borderRadius: BorderRadius.circular(12),
-                        ),
-                      ),
-                      onChanged: (value) {
-                        setDialogState(() {
-                          filteredAgents =
-                              agents
-                                  .where(
-                                    (agent) =>
-                                '${agent.name} ${agent.lastname}'
-                                    .toLowerCase()
-                                    .contains(value.toLowerCase()) ||
-                                    agent.agentID!.toLowerCase().contains(
-                                      value.toLowerCase(),
-                                    ),
-                              )
-                                  .toList();
-                        });
-                      },
+                      label: 'Search agents...',
+                      prefixIcon: Icons.search,
+                      onSuffixPressed: null,
                     ),
-                    const SizedBox(height: 12),
+                    const CustomSpacer(height: 12),
                     SizedBox(
                       height: 300,
                       child: ListView.builder(
                         itemCount: filteredAgents.length,
                         itemBuilder: (context, index) {
                           final agent = filteredAgents[index];
-                          return RadioListTile<String>(
-                            title: Text('${agent.name} ${agent.lastname}'),
-                            value: agent.agentID!,
-                            groupValue: _selectedAgentId,
-                            onChanged: (value) {
-                              setState(() => _selectedAgentId = value);
+                          return CustomListTile(
+                            title: '${agent.name} ${agent.lastname}',
+                            leadingIcon: Icons.person,
+                            onTap: () {
+                              setState(() {
+                                _selectedAgentId = agent.agentID;
+                                _checkForChanges();
+                              });
                               Navigator.pop(context);
                             },
-                            activeColor: Theme.of(context).colorScheme.primary,
                           );
                         },
                       ),
@@ -669,16 +683,11 @@ class _EditVisitScreenState extends State<EditVisitScreen> {
                 ),
               ),
               actions: [
-                TextButton(
+                CustomButton(
+                  label: 'Cancel',
                   onPressed: () => Navigator.pop(context),
-                  child: Text(
-                    'Cancel',
-                    style: TextStyle(
-                      color: Theme.of(
-                        context,
-                      ).colorScheme.onSurface.withOpacity(0.6),
-                    ),
-                  ),
+                  backgroundColor: Theme.of(context).cardTheme.color,
+
                 ),
               ],
             );
@@ -689,13 +698,11 @@ class _EditVisitScreenState extends State<EditVisitScreen> {
   }
 
   Future<void> _showChecklistDialog(
-      BuildContext context,
-      ChecklistProvider checklistProvider,
-      ) async {
+    BuildContext context,
+    ChecklistProvider checklistProvider,
+  ) async {
     final allChecklists = checklistProvider.allChecklists;
     final selectedChecklists = List<Checklist>.from(_visitChecklists);
-    final TextEditingController searchController = TextEditingController();
-    List<Checklist> filteredChecklists = List.from(allChecklists);
 
     await showDialog(
       context: context,
@@ -712,40 +719,21 @@ class _EditVisitScreenState extends State<EditVisitScreen> {
                 child: Column(
                   mainAxisSize: MainAxisSize.min,
                   children: [
-                    TextField(
-                      controller: searchController,
-                      decoration: InputDecoration(
-                        hintText: 'Search checklists...',
-                        prefixIcon: Icon(
-                          Icons.search,
-                          color: Theme.of(context).colorScheme.primary,
-                        ),
-                        border: OutlineInputBorder(
-                          borderRadius: BorderRadius.circular(12),
-                        ),
-                      ),
-                      onChanged: (value) {
-                        setDialogState(() {
-                          filteredChecklists =
-                              allChecklists
-                                  .where(
-                                    (checklist) => checklist.item
-                                    .toLowerCase()
-                                    .contains(value.toLowerCase()),
-                              )
-                                  .toList();
-                        });
-                      },
+                    CustomTextField(
+                      controller: TextEditingController(),
+                      label: 'Search checklists...',
+                      prefixIcon: Icons.search,
+                      onSuffixPressed: null,
                     ),
-                    const SizedBox(height: 12),
+                    const CustomSpacer(height: 12),
                     SizedBox(
                       height: 300,
                       child: ListView.builder(
-                        itemCount: filteredChecklists.length,
+                        itemCount: allChecklists.length,
                         itemBuilder: (context, index) {
-                          final checklist = filteredChecklists[index];
+                          final checklist = allChecklists[index];
                           final isSelected = selectedChecklists.any(
-                                (c) => c.checklistID == checklist.checklistID,
+                            (c) => c.checklistID == checklist.checklistID,
                           );
                           return CheckboxListTile(
                             title: Text(checklist.item),
@@ -766,8 +754,8 @@ class _EditVisitScreenState extends State<EditVisitScreen> {
                                   );
                                 } else {
                                   selectedChecklists.removeWhere(
-                                        (c) =>
-                                    c.checklistID == checklist.checklistID,
+                                    (c) =>
+                                        c.checklistID == checklist.checklistID,
                                   );
                                 }
                               });
@@ -781,29 +769,21 @@ class _EditVisitScreenState extends State<EditVisitScreen> {
                 ),
               ),
               actions: [
-                TextButton(
+                CustomButton(
+                  label: 'Cancel',
                   onPressed: () => Navigator.pop(context),
-                  child: Text(
-                    'Cancel',
-                    style: TextStyle(
-                      color: Theme.of(
-                        context,
-                      ).colorScheme.onSurface.withOpacity(0.6),
-                    ),
-                  ),
+                  backgroundColor: Theme.of(context).cardTheme.color,
+
                 ),
-                ElevatedButton(
+                CustomButton(
+                  label: 'Confirm',
                   onPressed: () {
-                    setState(() => _visitChecklists = selectedChecklists);
+                    setState(() {
+                      _visitChecklists = selectedChecklists;
+                      _checkForChanges();
+                    });
                     Navigator.pop(context);
                   },
-                  style: Theme.of(context).elevatedButtonTheme.style,
-                  child: Text(
-                    'Confirm',
-                    style: TextStyle(
-                      color: Theme.of(context).colorScheme.onPrimary,
-                    ),
-                  ),
                 ),
               ],
             );
@@ -814,13 +794,11 @@ class _EditVisitScreenState extends State<EditVisitScreen> {
   }
 
   Future<void> _showReasonDialog(
-      BuildContext context,
-      ReasonProvider reasonProvider,
-      ) async {
+    BuildContext context,
+    ReasonProvider reasonProvider,
+  ) async {
     final allReasons = reasonProvider.allReasons;
     final selectedReasons = List<Reason>.from(_visitReasons);
-    final TextEditingController searchController = TextEditingController();
-    List<Reason> filteredReasons = List.from(allReasons);
 
     await showDialog(
       context: context,
@@ -837,40 +815,21 @@ class _EditVisitScreenState extends State<EditVisitScreen> {
                 child: Column(
                   mainAxisSize: MainAxisSize.min,
                   children: [
-                    TextField(
-                      controller: searchController,
-                      decoration: InputDecoration(
-                        hintText: 'Search reasons...',
-                        prefixIcon: Icon(
-                          Icons.search,
-                          color: Theme.of(context).colorScheme.primary,
-                        ),
-                        border: OutlineInputBorder(
-                          borderRadius: BorderRadius.circular(12),
-                        ),
-                      ),
-                      onChanged: (value) {
-                        setDialogState(() {
-                          filteredReasons =
-                              allReasons
-                                  .where(
-                                    (reason) => reason.item
-                                    .toLowerCase()
-                                    .contains(value.toLowerCase()),
-                              )
-                                  .toList();
-                        });
-                      },
+                    CustomTextField(
+                      controller: TextEditingController(),
+                      label: 'Search reasons...',
+                      prefixIcon: Icons.search,
+                      onSuffixPressed: null,
                     ),
-                    const SizedBox(height: 12),
+                    const CustomSpacer(height: 12),
                     SizedBox(
                       height: 300,
                       child: ListView.builder(
-                        itemCount: filteredReasons.length,
+                        itemCount: allReasons.length,
                         itemBuilder: (context, index) {
-                          final reason = filteredReasons[index];
+                          final reason = allReasons[index];
                           final isSelected = selectedReasons.any(
-                                (r) => r.reasonID == reason.reasonID,
+                            (r) => r.reasonID == reason.reasonID,
                           );
                           return CheckboxListTile(
                             title: Text(reason.item),
@@ -881,7 +840,7 @@ class _EditVisitScreenState extends State<EditVisitScreen> {
                                   selectedReasons.add(reason);
                                 } else {
                                   selectedReasons.removeWhere(
-                                        (r) => r.reasonID == reason.reasonID,
+                                    (r) => r.reasonID == reason.reasonID,
                                   );
                                 }
                               });
@@ -895,29 +854,21 @@ class _EditVisitScreenState extends State<EditVisitScreen> {
                 ),
               ),
               actions: [
-                TextButton(
+                CustomButton(
+                  label: 'Cancel',
                   onPressed: () => Navigator.pop(context),
-                  child: Text(
-                    'Cancel',
-                    style: TextStyle(
-                      color: Theme.of(
-                        context,
-                      ).colorScheme.onSurface.withOpacity(0.6),
-                    ),
-                  ),
+                  backgroundColor: Theme.of(context).cardTheme.color,
+
                 ),
-                ElevatedButton(
+                CustomButton(
+                  label: 'Confirm',
                   onPressed: () {
-                    setState(() => _visitReasons = selectedReasons);
+                    setState(() {
+                      _visitReasons = selectedReasons;
+                      _checkForChanges();
+                    });
                     Navigator.pop(context);
                   },
-                  style: Theme.of(context).elevatedButtonTheme.style,
-                  child: Text(
-                    'Confirm',
-                    style: TextStyle(
-                      color: Theme.of(context).colorScheme.onPrimary,
-                    ),
-                  ),
                 ),
               ],
             );
@@ -930,868 +881,371 @@ class _EditVisitScreenState extends State<EditVisitScreen> {
   @override
   Widget build(BuildContext context) {
     return Scaffold(
-      appBar: PreferredSize(
-        preferredSize: const Size.fromHeight(80),
-        child: Container(
-          decoration: BoxDecoration(
-            gradient: LinearGradient(
-              colors: [
-                Theme.of(context).colorScheme.primary,
-                Theme.of(context).colorScheme.secondary,
-              ],
-              begin: Alignment.topLeft,
-              end: Alignment.bottomRight,
-            ),
-            borderRadius: const BorderRadius.vertical(
-              bottom: Radius.circular(20),
-            ),
-          ),
-          child: AppBar(
-            backgroundColor: Colors.transparent,
-            elevation: 0,
-            title: Text(
-              _visit.status == 'visited' ? 'Review Visit' : 'Edit Visit',
-              style: Theme.of(context).appBarTheme.titleTextStyle,
-            ),
-            centerTitle: true,
-            leading: IconButton(
-              icon: Icon(
-                Icons.arrow_back_ios_rounded,
-                color: Theme.of(context).appBarTheme.iconTheme!.color,
-                size: 24,
-              ),
-              onPressed: () {
-                _editStartTime = null; // Cancel timer on back press
-                Navigator.pop(context);
-              },
-            ),
-            actions: [
-              if (_isLoading)
-                const Padding(
-                  padding: EdgeInsets.all(8.0),
-                  child: CircularProgressIndicator(color: Colors.white),
-                ),
-            ],
-          ),
-        ),
+      appBar: CustomAppBar(
+        title: _visit.status == 'visited' ? 'Review Visit' : 'Edit Visit',
+        showBackButton: true,
       ),
-      body: Container(
-        color: Theme.of(context).scaffoldBackgroundColor,
-        child: RefreshIndicator(
-          onRefresh: _loadInitialData,
-          child: Padding(
-            padding: const EdgeInsets.all(16.0),
-            child:
+      drawer: const AppSidebar(),
+      body: RefreshIndicator(
+        onRefresh: _loadInitialData,
+        child:
             _isLoading && !_isInitialized
-                ? const Center(child: CircularProgressIndicator())
-                : ListView(
-              children: [
-                if (_visit.status != 'visited') ...[
-                  _buildSectionCard(
-                    title: 'Date & Time',
-                    child: Column(
-                      children: [
-                        _buildTile(
-                          icon: Icons.calendar_today,
-                          title: _dateController.text,
-                          onTap: _pickDate,
-                        ),
-                        const SizedBox(height: 12),
-                        _buildTile(
-                          icon: Icons.access_time,
-                          title: _timeController.text,
-                          onTap: _pickTime,
-                        ),
-                      ],
-                    ),
-                  ),
-                  const SizedBox(height: 16),
-                  _buildSectionCard(
-                    title: 'Location & Agent',
-                    child: Consumer<AgentProvider>(
-                      builder: (context, agentProvider, child) {
-                        return Column(
-                          crossAxisAlignment: CrossAxisAlignment.start,
-                          children: [
-                            Container(
-                              padding: const EdgeInsets.symmetric(
-                                vertical: 0,
-                                horizontal: 16,
+                ? const Center(child: CustomProgressIndicator())
+                : Padding(
+                  padding: const EdgeInsets.all(16.0),
+                  child: ListView(
+                    children: [
+                      if (_visit.status != 'visited') ...[
+                        CustomCard(
+                          title: 'Date & Time',
+                          child: Column(
+                            children: [
+                              CustomListTile(
+                                title: _dateController.text,
+                                leadingIcon: Icons.calendar_today,
+                                onTap: _pickDate,
                               ),
-                              decoration: BoxDecoration(
-                                color:
-                                Theme.of(
-                                  context,
-                                ).colorScheme.surface,
-                                borderRadius: BorderRadius.circular(12),
-                                border: Border.all(
-                                  color: Theme.of(context)
-                                      .colorScheme
-                                      .onSurface
-                                      .withOpacity(0.2),
-                                ),
+                              const CustomSpacer(height: 12),
+                              CustomListTile(
+                                title: _timeController.text,
+                                leadingIcon: Icons.access_time,
+                                onTap: _pickTime,
                               ),
-                              child: Row(
+                            ],
+                          ),
+                        ),
+                        const CustomSpacer(height: 16),
+                        CustomCard(
+                          title: 'Location & Agent',
+                          child: Consumer<AgentProvider>(
+                            builder: (context, agentProvider, child) {
+                              return Column(
+                                crossAxisAlignment: CrossAxisAlignment.start,
                                 children: [
-                                  Icon(
-                                    Icons.phone,
-                                    color:
-                                    Theme.of(
-                                      context,
-                                    ).colorScheme.primary,
-                                    size: 24,
+                                  CustomTextField(
+                                    controller: _agentPhoneController,
+                                    label: 'Enter agent\'s phone number',
+                                    prefixIcon: Icons.phone,
+                                    keyboardType: TextInputType.number,
+                                    validator: (value) {
+                                      if (value!.length != 8 ||
+                                          !RegExp(
+                                            r'^[0-9]+$',
+                                          ).hasMatch(value)) {
+                                        return 'Enter a valid 8-digit phone number';
+                                      }
+                                      return null;
+                                    },
                                   ),
-                                  const SizedBox(width: 12),
-                                  Expanded(
-                                    child: TextField(
-                                      controller: _agentPhoneController,
-                                      keyboardType:
-                                      TextInputType.number,
-                                      inputFormatters: [
-                                        FilteringTextInputFormatter
-                                            .digitsOnly,
-                                      ],
-                                      maxLength: 8,
-                                      decoration: InputDecoration(
-                                        hintText:
-                                        'Enter agent\'s phone number',
-                                        border: InputBorder.none,
-                                        hintStyle: TextStyle(
-                                          color: Theme.of(context)
-                                              .colorScheme
-                                              .onSurface
-                                              .withOpacity(0.6),
-                                        ),
-                                        counterText: '',
-                                      ),
-                                      style: TextStyle(
-                                        fontSize: 16,
-                                        color:
-                                        Theme.of(
-                                          context,
-                                        ).colorScheme.onSurface,
-                                      ),
-                                    ),
+                                  const CustomSpacer(height: 12),
+                                  CustomListTile(
+                                    title:
+                                        _selectedLocation ?? 'Select Location',
+                                    leadingIcon: Icons.location_on,
+                                    onTap:
+                                        _agentPhoneController.text.isNotEmpty
+                                            ? null
+                                            : () => _showLocationDialog(
+                                              context,
+                                              agentProvider,
+                                            ),
                                   ),
-                                ],
-                              ),
-                            ),
-                            const SizedBox(height: 12),
-                            GestureDetector(
-                              onTap:
-                              _agentPhoneController.text.isNotEmpty
-                                  ? null
-                                  : () => _showLocationDialog(
-                                context,
-                                agentProvider,
-                              ),
-                              child: Container(
-                                padding: const EdgeInsets.all(12),
-                                decoration: BoxDecoration(
-                                  color:
-                                  Theme.of(
-                                    context,
-                                  ).colorScheme.surface,
-                                  borderRadius: BorderRadius.circular(
-                                    12,
-                                  ),
-                                  border: Border.all(
-                                    color: Theme.of(context)
-                                        .colorScheme
-                                        .onSurface
-                                        .withOpacity(0.2),
-                                  ),
-                                  backgroundBlendMode:
-                                  _agentPhoneController
-                                      .text
-                                      .isNotEmpty
-                                      ? BlendMode.saturation
-                                      : null,
-                                ),
-                                child: Row(
-                                  children: [
-                                    Icon(
-                                      Icons.location_on,
-                                      color:
-                                      _agentPhoneController
-                                          .text
-                                          .isNotEmpty
-                                          ? Theme.of(context)
-                                          .colorScheme
-                                          .onSurface
-                                          .withOpacity(0.6)
-                                          : Theme.of(
-                                        context,
-                                      ).colorScheme.primary,
-                                    ),
-                                    const SizedBox(width: 12),
-                                    Expanded(
-                                      child: Text(
-                                        _selectedLocation ??
-                                            (_agentPhoneController
-                                                .text
-                                                .isNotEmpty
-                                                ? 'Selected via phone'
-                                                : 'Select Location'),
-                                        style: TextStyle(
-                                          color:
-                                          _agentPhoneController
-                                              .text
-                                              .isNotEmpty
-                                              ? Theme.of(context)
-                                              .colorScheme
-                                              .onSurface
-                                              .withOpacity(0.6)
-                                              : Theme.of(context)
-                                              .colorScheme
-                                              .onSurface,
-                                        ),
-                                      ),
-                                    ),
-                                    Icon(
-                                      Icons.arrow_drop_down,
-                                      color: Theme.of(context)
-                                          .colorScheme
-                                          .onSurface
-                                          .withOpacity(0.6),
-                                    ),
-                                  ],
-                                ),
-                              ),
-                            ),
-                            const SizedBox(height: 12),
-                            GestureDetector(
-                              onTap:
-                              _agentPhoneController
-                                  .text
-                                  .isNotEmpty ||
-                                  _selectedLocation == null
-                                  ? null
-                                  : () => _showAgentDialog(
-                                context,
-                                agentProvider,
-                              ),
-                              child: Container(
-                                padding: const EdgeInsets.all(12),
-                                decoration: BoxDecoration(
-                                  color:
-                                  Theme.of(
-                                    context,
-                                  ).colorScheme.surface,
-                                  borderRadius: BorderRadius.circular(
-                                    12,
-                                  ),
-                                  border: Border.all(
-                                    color: Theme.of(context)
-                                        .colorScheme
-                                        .onSurface
-                                        .withOpacity(0.2),
-                                  ),
-                                  backgroundBlendMode:
-                                  _agentPhoneController
-                                      .text
-                                      .isNotEmpty ||
-                                      _selectedLocation == null
-                                      ? BlendMode.saturation
-                                      : null,
-                                ),
-                                child: Row(
-                                  children: [
-                                    Icon(
-                                      Icons.person,
-                                      color:
-                                      _agentPhoneController
-                                          .text
-                                          .isNotEmpty ||
-                                          _selectedLocation ==
-                                              null
-                                          ? Theme.of(context)
-                                          .colorScheme
-                                          .onSurface
-                                          .withOpacity(0.6)
-                                          : Theme.of(
-                                        context,
-                                      ).colorScheme.primary,
-                                    ),
-                                    const SizedBox(width: 12),
-                                    Expanded(
-                                      child: Text(
+                                  const CustomSpacer(height: 12),
+                                  CustomListTile(
+                                    title:
                                         _selectedAgentId == null
                                             ? (_agentPhoneController
-                                            .text
-                                            .isNotEmpty
-                                            ? 'Selected via phone'
-                                            : _selectedLocation ==
-                                            null
-                                            ? 'Select a location first'
-                                            : 'Select Agent')
+                                                    .text
+                                                    .isNotEmpty
+                                                ? 'Selected via phone'
+                                                : _selectedLocation == null
+                                                ? 'Select a location first'
+                                                : 'Select Agent')
                                             : '${agentProvider.agents.firstWhere((agent) => agent.agentID == _selectedAgentId, orElse: () => Agent(agentID: _selectedAgentId!, name: 'Loading', lastname: '...', location: '')).name} ${agentProvider.agents.firstWhere((agent) => agent.agentID == _selectedAgentId, orElse: () => Agent(agentID: _selectedAgentId!, name: 'Loading', lastname: '...', location: '')).lastname}',
-                                        style: TextStyle(
-                                          color:
-                                          _agentPhoneController
-                                              .text
-                                              .isNotEmpty ||
-                                              _selectedLocation ==
-                                                  null
-                                              ? Theme.of(context)
-                                              .colorScheme
-                                              .onSurface
-                                              .withOpacity(0.6)
-                                              : Theme.of(context)
-                                              .colorScheme
-                                              .onSurface,
-                                        ),
-                                      ),
-                                    ),
-                                    Icon(
-                                      Icons.arrow_drop_down,
-                                      color: Theme.of(context)
-                                          .colorScheme
-                                          .onSurface
-                                          .withOpacity(0.6),
-                                    ),
-                                  ],
-                                ),
-                              ),
-                            ),
-                          ],
-                        );
-                      },
-                    ),
-                  ),
-                ],
-                if (_visit.status == 'visited' &&
-                    _visit.comment != null) ...[
-                  const SizedBox(height: 16),
-                  _buildSectionCard(
-                    title: 'Details',
-                    child: Container(
-                      padding: const EdgeInsets.symmetric(
-                        vertical: 0,
-                        horizontal: 16,
-                      ),
-                      decoration: BoxDecoration(
-                        color: Theme.of(context).colorScheme.surface,
-                        borderRadius: BorderRadius.circular(12),
-                        border: Border.all(
-                          color: Theme.of(
-                            context,
-                          ).colorScheme.onSurface.withOpacity(0.2),
-                        ),
-                      ),
-                      child: Row(
-                        children: [
-                          Icon(
-                            Icons.comment,
-                            color:
-                            Theme.of(context).colorScheme.primary,
-                            size: 24,
-                          ),
-                          const SizedBox(width: 12),
-                          Expanded(
-                            child: TextField(
-                              controller: _commentController,
-                              decoration: InputDecoration(
-                                hintText: 'Enter comment',
-                                border: InputBorder.none,
-                                hintStyle: TextStyle(
-                                  color: Theme.of(context)
-                                      .colorScheme
-                                      .onSurface
-                                      .withOpacity(0.6),
-                                ),
-                              ),
-                              style: TextStyle(
-                                fontSize: 16,
-                                color:
-                                Theme.of(
-                                  context,
-                                ).colorScheme.onSurface,
-                              ),
-                            ),
-                          ),
-                        ],
-                      ),
-                    ),
-                  ),
-                ],
-                const SizedBox(height: 16),
-                _buildSectionCard(
-                  title: 'Checklists',
-                  child: Consumer<ChecklistProvider>(
-                    builder: (context, checklistProvider, child) {
-                      return Column(
-                        crossAxisAlignment: CrossAxisAlignment.start,
-                        children: [
-                          GestureDetector(
-                            onTap:
-                                () => _showChecklistDialog(
-                              context,
-                              checklistProvider,
-                            ),
-                            child: Container(
-                              padding: const EdgeInsets.all(12),
-                              decoration: BoxDecoration(
-                                color:
-                                Theme.of(
-                                  context,
-                                ).colorScheme.surface,
-                                borderRadius: BorderRadius.circular(
-                                  12,
-                                ),
-                                border: Border.all(
-                                  color: Theme.of(context)
-                                      .colorScheme
-                                      .onSurface
-                                      .withOpacity(0.2),
-                                ),
-                              ),
-                              child: Row(
-                                children: [
-                                  Icon(
-                                    Icons.checklist,
-                                    color:
-                                    Theme.of(
-                                      context,
-                                    ).colorScheme.primary,
+                                    leadingIcon: Icons.person,
+                                    onTap:
+                                        _agentPhoneController.text.isNotEmpty ||
+                                                _selectedLocation == null
+                                            ? null
+                                            : () => _showAgentDialog(
+                                              context,
+                                              agentProvider,
+                                            ),
                                   ),
-                                  const SizedBox(width: 12),
-                                  Expanded(
-                                    child: Text(
+                                ],
+                              );
+                            },
+                          ),
+                        ),
+                      ],
+                      if (_visit.status == 'visited' &&
+                          _visit.comment != null) ...[
+                        const CustomSpacer(height: 16),
+                        CustomCard(
+                          title: 'Details',
+                          child: CustomTextField(
+                            controller: _commentController,
+                            label: 'Enter comment',
+                            prefixIcon: Icons.comment,
+                          ),
+                        ),
+                      ],
+                      const CustomSpacer(height: 16),
+                      CustomCard(
+                        title: 'Checklists',
+                        child: Consumer<ChecklistProvider>(
+                          builder: (context, checklistProvider, child) {
+                            return Column(
+                              crossAxisAlignment: CrossAxisAlignment.start,
+                              children: [
+                                CustomListTile(
+                                  title:
                                       _visitChecklists.isEmpty
                                           ? 'Select Checklists'
                                           : '${_visitChecklists.length} selected',
-                                      style:
-                                      Theme.of(
+                                  leadingIcon: Icons.checklist,
+                                  onTap:
+                                      () => _showChecklistDialog(
                                         context,
-                                      ).textTheme.bodyMedium,
-                                    ),
-                                  ),
-                                  Icon(
-                                    Icons.arrow_drop_down,
-                                    color: Theme.of(context)
-                                        .colorScheme
-                                        .onSurface
-                                        .withOpacity(0.6),
+                                        checklistProvider,
+                                      ),
+                                ),
+                                if (_visitChecklists.isNotEmpty) ...[
+                                  const CustomSpacer(height: 8),
+                                  Column(
+                                    children:
+                                        _visitChecklists.map((checklist) {
+                                          return CheckboxListTile(
+                                            title: Text(checklist.item),
+                                            value:
+                                                checklist
+                                                    .visitChecklist
+                                                    ?.checked ??
+                                                false,
+                                            onChanged:
+                                                _visit.status == 'visited'
+                                                    ? (value) =>
+                                                        _toggleChecklist(
+                                                          checklist,
+                                                          value,
+                                                        )
+                                                    : null,
+                                            activeColor:
+                                                Theme.of(
+                                                  context,
+                                                ).colorScheme.primary,
+                                            enabled: _visit.status == 'visited',
+                                            controlAffinity:
+                                                ListTileControlAffinity.leading,
+                                            dense: true,
+                                          );
+                                        }).toList(),
                                   ),
                                 ],
-                              ),
-                            ),
-                          ),
-                          if (_visitChecklists.isNotEmpty) ...[
-                            const SizedBox(height: 8),
-                            Column(
-                              children:
-                              _visitChecklists.map((checklist) {
-                                return CheckboxListTile(
-                                  title: Text(checklist.item),
-                                  value:
-                                  checklist
-                                      .visitChecklist
-                                      ?.checked ??
-                                      false,
-                                  onChanged:
-                                  _visit.status == 'visited'
-                                      ? (value) =>
-                                      _toggleChecklist(
-                                        checklist,
-                                        value,
-                                      )
-                                      : null,
-                                  activeColor:
-                                  Theme.of(
-                                    context,
-                                  ).colorScheme.primary,
-                                  enabled:
-                                  _visit.status == 'visited',
-                                  controlAffinity:
-                                  ListTileControlAffinity
-                                      .leading,
-                                  dense: true,
-                                );
-                              }).toList(),
-                            ),
-                          ] else if (_visit.status == 'visited')
-                            Text(
-                              'No checklists available',
-                              style: TextStyle(
-                                color: Theme.of(context)
-                                    .colorScheme
-                                    .onSurface
-                                    .withOpacity(0.6),
-                              ),
-                            ),
-                        ],
-                      );
-                    },
-                  ),
-                ),
-                const SizedBox(height: 16),
-                _buildSectionCard(
-                  title: 'Reasons',
-                  child: Consumer<ReasonProvider>(
-                    builder: (context, reasonProvider, child) {
-                      return Column(
-                        crossAxisAlignment: CrossAxisAlignment.start,
-                        children: [
-                          GestureDetector(
-                            onTap:
-                                () => _showReasonDialog(
-                              context,
-                              reasonProvider,
-                            ),
-                            child: Container(
-                              padding: const EdgeInsets.all(12),
-                              decoration: BoxDecoration(
-                                color:
-                                Theme.of(
-                                  context,
-                                ).colorScheme.surface,
-                                borderRadius: BorderRadius.circular(12),
-                                border: Border.all(
-                                  color: Theme.of(context)
-                                      .colorScheme
-                                      .onSurface
-                                      .withOpacity(0.2),
-                                ),
-                              ),
-                              child: Row(
-                                children: [
-                                  Icon(
-                                    Icons.list_alt,
-                                    color:
-                                    Theme.of(
-                                      context,
-                                    ).colorScheme.primary,
-                                  ),
-                                  const SizedBox(width: 12),
-                                  Expanded(
-                                    child: Text(
+                              ],
+                            );
+                          },
+                        ),
+                      ),
+                      const CustomSpacer(height: 16),
+                      CustomCard(
+                        title: 'Reasons',
+                        child: Consumer<ReasonProvider>(
+                          builder: (context, reasonProvider, child) {
+                            return Column(
+                              crossAxisAlignment: CrossAxisAlignment.start,
+                              children: [
+                                CustomListTile(
+                                  title:
                                       _visitReasons.isEmpty
                                           ? 'Select Reasons'
                                           : '${_visitReasons.length} selected',
-                                      style:
-                                      Theme.of(
+                                  leadingIcon: Icons.list_alt,
+                                  onTap:
+                                      () => _showReasonDialog(
                                         context,
-                                      ).textTheme.bodyMedium,
-                                    ),
-                                  ),
-                                  Icon(
-                                    Icons.arrow_drop_down,
-                                    color: Theme.of(context)
-                                        .colorScheme
-                                        .onSurface
-                                        .withOpacity(0.6),
+                                        reasonProvider,
+                                      ),
+                                ),
+                                if (_visitReasons.isNotEmpty) ...[
+                                  const CustomSpacer(height: 8),
+                                  Wrap(
+                                    spacing: 8,
+                                    runSpacing: 8,
+                                    children:
+                                        _visitReasons.map((reason) {
+                                          return Chip(
+                                            label: Text(reason.item),
+                                            deleteIcon: const Icon(
+                                              Icons.close,
+                                              size: 18,
+                                            ),
+                                            onDeleted:
+                                                () => _removeReason(
+                                                  reason.reasonID!,
+                                                ),
+                                            backgroundColor: Theme.of(context).cardTheme.color,
+
+                                            labelStyle: TextStyle(
+                                              color:
+                                                  Theme.of(
+                                                    context,
+                                                  ).colorScheme.primary,
+                                            ),
+                                          );
+                                        }).toList(),
                                   ),
                                 ],
-                              ),
-                            ),
-                          ),
-                          if (_visitReasons.isNotEmpty) ...[
-                            const SizedBox(height: 8),
-                            Wrap(
-                              spacing: 8,
-                              runSpacing: 8,
-                              children:
-                              _visitReasons.map((reason) {
-                                return Chip(
-                                  label: Text(reason.item),
-                                  deleteIcon: const Icon(
-                                    Icons.close,
-                                    size: 18,
-                                  ),
-                                  onDeleted:
-                                      () => _removeReason(
-                                    reason.reasonID!,
-                                  ),
-                                  backgroundColor: Theme.of(context)
-                                      .colorScheme
-                                      .primary
-                                      .withOpacity(0.1),
-                                  labelStyle: TextStyle(
-                                    color:
-                                    Theme.of(
-                                      context,
-                                    ).colorScheme.primary,
-                                  ),
-                                );
-                              }).toList(),
-                            ),
-                          ],
-                        ],
-                      );
-                    },
-                  ),
-                ),
-                if (_visit.photos != null &&
-                    _visit.photos!.isNotEmpty ||
-                    _newPhotos.isNotEmpty) ...[
-                  const SizedBox(height: 16),
-                  _buildSectionCard(
-                    title: 'Photos',
-                    child: Column(
-                      crossAxisAlignment: CrossAxisAlignment.start,
-                      children: [
-                        if (_visit.status == 'visited')
-                          ElevatedButton.icon(
-                            onPressed: _addNewPhoto,
-                            icon: const Icon(Icons.camera_alt),
-                            label: const Text('Take Photo'),
-                            style: ElevatedButton.styleFrom(
-                              backgroundColor:
-                              Theme.of(context).colorScheme.primary,
-                              foregroundColor:
-                              Theme.of(
-                                context,
-                              ).colorScheme.onPrimary,
-                              shape: RoundedRectangleBorder(
-                                borderRadius: BorderRadius.circular(12),
-                              ),
-                            ),
-                          ),
-                        const SizedBox(height: 8),
-                        Wrap(
-                          spacing: 8,
-                          runSpacing: 8,
-                          children: [
-                            if (_visit.photos != null)
-                              ..._visit.photos!
-                                  .where(
-                                    (p) => !_photosToRemove.contains(p),
-                              )
-                                  .map((photo) {
-                                return GestureDetector(
-                                  onTap:
-                                      () => _viewPhotoFullScreen(
-                                    photo,
-                                  ),
-                                  child: Stack(
-                                    children: [
-                                      Image.network(
-                                        photo.startsWith('http')
-                                            ? photo
-                                            : '$baseUrl$photo',
-                                        width: 100,
-                                        height: 100,
-                                        fit: BoxFit.cover,
-                                        errorBuilder:
-                                            (_, __, ___) =>
-                                        const Icon(
-                                          Icons.error,
-                                          size: 100,
-                                        ),
-                                      ),
-                                      Positioned(
-                                        top: 0,
-                                        right: 0,
-                                        child: IconButton(
-                                          icon: const Icon(
-                                            Icons.close,
-                                            color: Colors.red,
-                                          ),
-                                          onPressed:
-                                              () => _removePhoto(
-                                            photo,
-                                          ),
-                                        ),
-                                      ),
-                                    ],
-                                  ),
-                                );
-                              })
-                                  .toList(),
-                            ..._newPhotos.map((photo) {
-                              return GestureDetector(
-                                onTap:
-                                    () => Navigator.push(
-                                  context,
-                                  MaterialPageRoute(
-                                    builder:
-                                        (_) => Scaffold(
-                                      appBar: AppBar(
-                                        backgroundColor:
-                                        Colors.black,
-                                        leading: IconButton(
-                                          icon: const Icon(
-                                            Icons.close,
-                                            color: Colors.white,
-                                          ),
-                                          onPressed:
-                                              () =>
-                                              Navigator.pop(
-                                                context,
-                                              ),
-                                        ),
-                                      ),
-                                      body: Center(
-                                        child: Image.file(
-                                          photo,
-                                          fit: BoxFit.contain,
-                                          errorBuilder:
-                                              (
-                                              _,
-                                              __,
-                                              ___,
-                                              ) => const Icon(
-                                            Icons.error,
-                                            color:
-                                            Colors
-                                                .white,
-                                            size: 50,
-                                          ),
-                                        ),
-                                      ),
-                                      backgroundColor:
-                                      Colors.black,
-                                    ),
-                                  ),
+                              ],
+                            );
+                          },
+                        ),
+                      ),
+                      if (_visit.photos != null && _visit.photos!.isNotEmpty ||
+                          _newPhotos.isNotEmpty) ...[
+                        const CustomSpacer(height: 16),
+                        CustomCard(
+                          title: 'Photos',
+                          child: Column(
+                            crossAxisAlignment: CrossAxisAlignment.start,
+                            children: [
+                              if (_visit.status == 'visited')
+                                CustomButton(
+                                  label: 'Add Photo',
+                                  onPressed: _addNewPhoto,
                                 ),
-                                child: Stack(
-                                  children: [
-                                    Image.file(
-                                      photo,
-                                      width: 100,
-                                      height: 100,
-                                      fit: BoxFit.cover,
-                                      errorBuilder:
-                                          (_, __, ___) => const Icon(
-                                        Icons.error,
-                                        size: 100,
-                                      ),
-                                    ),
-                                    Positioned(
-                                      top: 0,
-                                      right: 0,
-                                      child: IconButton(
-                                        icon: const Icon(
-                                          Icons.close,
-                                          color: Colors.red,
-                                        ),
-                                        onPressed:
-                                            () => setState(
-                                              () => _newPhotos.remove(
-                                            photo,
+                              const CustomSpacer(height: 8),
+                              Wrap(
+                                spacing: 8,
+                                runSpacing: 8,
+                                children: [
+                                  if (_visit.photos != null)
+                                    ..._visit.photos!
+                                        .where(
+                                          (p) => !_photosToRemove.contains(p),
+                                        )
+                                        .map((photo) {
+                                          return GestureDetector(
+                                            onTap:
+                                                () =>
+                                                    _viewPhotoFullScreen(photo),
+                                            child: Stack(
+                                              children: [
+                                                Image.network(
+                                                  photo.startsWith('http')
+                                                      ? photo
+                                                      : '$baseUrl$photo',
+                                                  width: 100,
+                                                  height: 100,
+                                                  fit: BoxFit.cover,
+                                                  errorBuilder:
+                                                      (_, __, ___) =>
+                                                          const Icon(
+                                                            Icons.error,
+                                                            size: 100,
+                                                          ),
+                                                ),
+                                                Positioned(
+                                                  top: 0,
+                                                  right: 0,
+                                                  child: CustomIconButton(
+                                                    icon: Icons.close,
+                                                    onPressed:
+                                                        () =>
+                                                            _removePhoto(photo),
+                                                  ),
+                                                ),
+                                              ],
+                                            ),
+                                          );
+                                        })
+                                        .toList(),
+                                  ..._newPhotos.map((photo) {
+                                    return GestureDetector(
+                                      onTap:
+                                          () => Navigator.push(
+                                            context,
+                                            MaterialPageRoute(
+                                              builder:
+                                                  (_) => Scaffold(
+                                                    appBar: CustomAppBar(
+                                                      title: 'Photo Preview',
+                                                      showBackButton: true,
+                                                    ),
+                                                    body: Center(
+                                                      child: Image.file(
+                                                        photo,
+                                                        fit: BoxFit.contain,
+                                                      ),
+                                                    ),
+                                                    backgroundColor:
+                                                        Colors.black,
+                                                  ),
+                                            ),
                                           ),
-                                        ),
+                                      child: Stack(
+                                        children: [
+                                          Image.file(
+                                            photo,
+                                            width: 100,
+                                            height: 100,
+                                            fit: BoxFit.cover,
+                                            errorBuilder:
+                                                (_, __, ___) => const Icon(
+                                                  Icons.error,
+                                                  size: 100,
+                                                ),
+                                          ),
+                                          Positioned(
+                                            top: 0,
+                                            right: 0,
+                                            child: CustomIconButton(
+                                              icon: Icons.close,
+                                              onPressed:
+                                                  () => setState(
+                                                    () => _newPhotos.remove(
+                                                      photo,
+                                                    ),
+                                                  ),
+                                            ),
+                                          ),
+                                        ],
                                       ),
-                                    ),
-                                  ],
-                                ),
-                              );
-                            }).toList(),
-                          ],
+                                    );
+                                  }).toList(),
+                                ],
+                              ),
+                            ],
+                          ),
                         ),
                       ],
-                    ),
+                      const CustomSpacer(height: 24),
+                      Row(
+                        mainAxisAlignment: MainAxisAlignment.center,
+                        children: [
+                          SizedBox(
+                            child: CustomButton(
+                              label: 'Cancel',
+                              onPressed: () {
+                                _editStartTime = null;
+                                Navigator.pop(context);
+                              },
+                            ),
+                          ),
+                          const CustomSpacer(width: 8),
+                          SizedBox(
+                            child: CustomButton(
+                              label: 'Save Changes',
+                              onPressed:
+                                  _hasChanges ? () => _saveChanges() : () {},
+                              isLoading: _isLoading,
+                            ),
+                          ),
+                        ],
+                      ),
+                    ],
                   ),
-                ],
-                const SizedBox(height: 24),
-                Row(
-                  mainAxisAlignment: MainAxisAlignment.spaceBetween,
-                  children: [
-                    ElevatedButton(
-                      onPressed: () {
-                        _editStartTime = null; // Cancel timer
-                        Navigator.pop(context);
-                      },
-                      style: ElevatedButton.styleFrom(
-                        backgroundColor:
-                        Theme.of(context).colorScheme.error,
-                        foregroundColor:
-                        Theme.of(context).colorScheme.onError,
-                        shape: RoundedRectangleBorder(
-                          borderRadius: BorderRadius.circular(12),
-                        ),
-                        padding:
-                        const EdgeInsets.symmetric(vertical: 16, horizontal: 32),
-                      ),
-                      child: const Text(
-                        'Cancel',
-                        style: TextStyle(
-                          fontSize: 18,
-                          fontWeight: FontWeight.w600,
-                        ),
-                      ),
-                    ),
-                    ElevatedButton(
-                      onPressed: _saveChanges,
-                      style: ElevatedButton.styleFrom(
-                        backgroundColor:
-                        Theme.of(context).colorScheme.primary,
-                        foregroundColor:
-                        Theme.of(context).colorScheme.onPrimary,
-                        shape: RoundedRectangleBorder(
-                          borderRadius: BorderRadius.circular(12),
-                        ),
-                        padding:
-                        const EdgeInsets.symmetric(vertical: 16, horizontal: 32),
-                      ),
-                      child: const Text(
-                        'Save Changes',
-                        style: TextStyle(
-                          fontSize: 18,
-                          fontWeight: FontWeight.w600,
-                        ),
-                      ),
-                    ),
-                  ],
                 ),
-              ],
-            ),
-          ),
-        ),
-      ),
-    );
-  }
-
-  Widget _buildSectionCard({required String title, required Widget child}) {
-    return Card(
-      elevation: 2,
-      shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(16)),
-      color: Theme.of(context).cardTheme.color,
-      child: Padding(
-        padding: const EdgeInsets.all(16.0),
-        child: Column(
-          crossAxisAlignment: CrossAxisAlignment.start,
-          children: [
-            Text(title, style: Theme.of(context).textTheme.headlineSmall),
-            const SizedBox(height: 12),
-            child,
-          ],
-        ),
-      ),
-    );
-  }
-
-  Widget _buildTile({
-    required IconData icon,
-    required String title,
-    required VoidCallback onTap,
-  }) {
-    return GestureDetector(
-      onTap: onTap,
-      child: Container(
-        padding: const EdgeInsets.symmetric(vertical: 12, horizontal: 16),
-        decoration: BoxDecoration(
-          color: Theme.of(context).colorScheme.surface,
-          borderRadius: BorderRadius.circular(12),
-          border: Border.all(
-            color: Theme.of(context).colorScheme.onSurface.withOpacity(0.2),
-          ),
-        ),
-        child: Row(
-          children: [
-            Icon(icon, color: Theme.of(context).colorScheme.primary, size: 24),
-            const SizedBox(width: 12),
-            Expanded(
-              child: Text(title, style: Theme.of(context).textTheme.bodyMedium),
-            ),
-            Icon(
-              Icons.arrow_drop_down,
-              color: Theme.of(context).colorScheme.onSurface.withOpacity(0.6),
-            ),
-          ],
-        ),
       ),
     );
   }

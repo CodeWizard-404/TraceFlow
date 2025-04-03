@@ -8,7 +8,15 @@ import '../../providers/agent_provider.dart';
 import '../../providers/visit_provider.dart';
 import '../../providers/checklist_provider.dart';
 import '../../providers/reason_provider.dart';
-import '../../widgets/qr_scanner_widget.dart';
+import '../../widgets/appbar/app_bar.dart';
+import '../../widgets/appbar/sidebar.dart';
+import '../../widgets/commen/button.dart';
+import '../../widgets/commen/empty_state.dart';
+import '../../widgets/commen/icon_button.dart';
+import '../../widgets/commen/info_row.dart';
+import '../../widgets/commen/progress_indicator.dart';
+import '../../widgets/commen/spacer.dart';
+import '../../widgets/qr_scanner/qr_scanner_widget.dart';
 import '../Error.dart';
 import 'log_visit_screen.dart';
 import 'edit_visit.dart';
@@ -53,9 +61,7 @@ class _VisitDetailsScreenState extends State<VisitDetailsScreen> {
       agentProvider.fetchAgentById(widget.visit.agentID, token),
     ]);
 
-    if (mounted) {
-      setState(() {});
-    }
+    if (mounted) setState(() {});
   }
 
   void _viewPhotoFullScreen(String photoPath) {
@@ -64,13 +70,7 @@ class _VisitDetailsScreenState extends State<VisitDetailsScreen> {
       MaterialPageRoute(
         builder:
             (_) => Scaffold(
-              appBar: AppBar(
-                backgroundColor: Colors.black,
-                leading: IconButton(
-                  icon: const Icon(Icons.close, color: Colors.white),
-                  onPressed: () => Navigator.pop(context),
-                ),
-              ),
+              appBar: CustomAppBar(title: 'Photo View', showBackButton: true),
               body: Center(
                 child: Image.network(
                   photoPath.startsWith('http')
@@ -78,14 +78,11 @@ class _VisitDetailsScreenState extends State<VisitDetailsScreen> {
                       : '$baseUrl$photoPath',
                   fit: BoxFit.contain,
                   errorBuilder:
-                      (context, error, stackTrace) => const Icon(
-                        Icons.error,
-                        color: Colors.white,
-                        size: 50,
-                      ),
+                      (context, error, stackTrace) =>
+                          const Icon(Icons.error, size: 50),
                 ),
               ),
-              backgroundColor: Colors.black,
+              backgroundColor: Theme.of(context).scaffoldBackgroundColor,
             ),
       ),
     );
@@ -93,15 +90,18 @@ class _VisitDetailsScreenState extends State<VisitDetailsScreen> {
 
   @override
   Widget build(BuildContext context) {
+    final theme = Theme.of(context);
     return Scaffold(
-      backgroundColor: Theme.of(context).scaffoldBackgroundColor,
+      backgroundColor: theme.scaffoldBackgroundColor,
+      appBar: CustomAppBar(title: 'Visit Details', showBackButton: true),
+      drawer: const AppSidebar(), // Added your sidebar here
       body: RefreshIndicator(
         onRefresh: _fetchVisitDetails,
         child: FutureBuilder(
           future: _fetchDataFuture,
           builder: (context, snapshot) {
             if (snapshot.connectionState == ConnectionState.waiting) {
-              return const Center(child: CircularProgressIndicator());
+              return const CustomProgressIndicator();
             }
             if (snapshot.hasError) {
               return ErrorPage(
@@ -138,318 +138,267 @@ class _VisitDetailsScreenState extends State<VisitDetailsScreen> {
                 final checklists = checklistProvider.checklists;
                 final reasons = reasonProvider.reasons;
 
-                return CustomScrollView(
+                return SingleChildScrollView(
                   physics: const AlwaysScrollableScrollPhysics(),
-                  slivers: [
-                    SliverAppBar(
-                      expandedHeight: 200,
-                      floating: true,
-                      pinned: true,
-                      leading: IconButton(
-                        icon: Icon(
-                          Icons.arrow_back_ios_rounded,
-                          color: Theme.of(context).appBarTheme.iconTheme!.color,
-                        ),
-                        onPressed: () => Navigator.of(context).pop(),
-                      ),
-                      title: Text(
-                        'Visit Details',
-                        style: Theme.of(context).appBarTheme.titleTextStyle,
-                      ),
-                      actions: _buildAppBarActions(
-                        context,
-                        visit,
-                        visitProvider,
-                        token,
-                      ),
-                      flexibleSpace: FlexibleSpaceBar(
-                        background: Container(
-                          decoration: BoxDecoration(
-                            gradient: LinearGradient(
-                              colors: [
-                                Theme.of(context).colorScheme.primary,
-                                Theme.of(context).colorScheme.secondary,
-                              ],
-                              begin: Alignment.topLeft,
-                              end: Alignment.bottomRight,
-                            ),
-                            boxShadow: [
-                              BoxShadow(
-                                color: Theme.of(
-                                  context,
-                                ).colorScheme.onSurface.withOpacity(0.2),
-                                blurRadius: 20,
-                                offset: const Offset(0, 4),
+                  child: Padding(
+                    padding: const EdgeInsets.all(16),
+                    child: Column(
+                      crossAxisAlignment: CrossAxisAlignment.start,
+                      children: [
+                        if ([
+                          'pending',
+                          'visited',
+                          'validated',
+                          'rejected',
+                        ].contains(visit.status.toLowerCase()))
+                          Row(
+                            mainAxisAlignment: MainAxisAlignment.end,
+                            children: [
+                              CustomIconButton(
+                                icon: Icons.edit,
+                                onPressed: () {
+                                  Navigator.push(
+                                    context,
+                                    MaterialPageRoute(
+                                      builder:
+                                          (_) => EditVisitScreen(visit: visit),
+                                    ),
+                                  );
+                                },
+                                size: 28,
+                              ),
+                              const CustomSpacer(width: 12),
+                              CustomIconButton(
+                                icon: Icons.delete,
+                                onPressed:
+                                    () => _deleteVisit(
+                                      context,
+                                      visit,
+                                      visitProvider,
+                                      token,
+                                    ),
+                                size: 28,
                               ),
                             ],
-                            borderRadius: const BorderRadius.only(
-                              bottomLeft: Radius.circular(30),
-                              bottomRight: Radius.circular(30),
+                          ),
+                        const CustomSpacer(height: 16),
+                        Card(
+                          color: theme.cardTheme.color,
+                          child: Padding(
+                            padding: const EdgeInsets.all(16),
+                            child: Row(
+                              crossAxisAlignment: CrossAxisAlignment.center,
+                              children: [
+                                Expanded(
+                                  child: Column(
+                                    crossAxisAlignment:
+                                        CrossAxisAlignment.start,
+                                    children: [
+                                      InfoRow(
+                                        icon: Icons.location_on,
+                                        text: visit.location ?? 'N/A',
+                                      ),
+                                      const CustomSpacer(height: 12),
+                                      InfoRow(
+                                        icon: Icons.access_time,
+                                        text:
+                                            '${visit.date.day}/${visit.date.month}/${visit.date.year} - ${visit.time}',
+                                      ),
+                                    ],
+                                  ),
+                                ),
+                                if (visit.status == "visited")
+                                  _buildDurationClock(
+                                    context,
+                                    visit.duration ?? 0,
+                                  ),
+                              ],
                             ),
                           ),
-                          child: SafeArea(
+                        ),
+                        const CustomSpacer(height: 16),
+                        Card(
+                          color: theme.cardTheme.color,
+                          child: Padding(
+                            padding: const EdgeInsets.all(16),
+                            child: Column(
+                              crossAxisAlignment: CrossAxisAlignment.start,
+                              children: [
+                                _buildSectionHeader(
+                                  context,
+                                  'Agent Information',
+                                  Icons.person,
+                                ),
+                                const CustomSpacer(height: 16),
+                                if (agent == null)
+                                  const EmptyState(
+                                    text: 'No agent data available',
+                                  )
+                                else ...[
+                                  InfoRow(
+                                    icon: Icons.person,
+                                    text: '${agent.name} ${agent.lastname}',
+                                  ),
+                                  const CustomSpacer(height: 8),
+                                  InfoRow(
+                                    icon: Icons.phone,
+                                    text: agent.phone ?? 'N/A',
+                                  ),
+                                  const CustomSpacer(height: 8),
+                                  Row(
+                                    children: [
+                                      Text(
+                                        'Status:',
+                                        style: theme.textTheme.bodyMedium,
+                                      ),
+                                      const CustomSpacer(width: 8),
+                                      _buildStatusChip(context, visit.status),
+                                    ],
+                                  ),
+                                ],
+                              ],
+                            ),
+                          ),
+                        ),
+                        const CustomSpacer(height: 16),
+                        Card(
+                          color: theme.cardTheme.color,
+                          child: Padding(
+                            padding: const EdgeInsets.all(16),
+                            child: Column(
+                              crossAxisAlignment: CrossAxisAlignment.start,
+                              children: [
+                                _buildSectionHeader(
+                                  context,
+                                  'Checklists',
+                                  Icons.checklist,
+                                ),
+                                const CustomSpacer(height: 16),
+                                if (checklists.isEmpty)
+                                  const EmptyState(
+                                    text: 'No checklists available',
+                                  )
+                                else
+                                  ...checklists.map(
+                                    (checklist) => _buildChecklistRow(
+                                      context,
+                                      checklist.item ?? 'N/A',
+                                      checklist.visitChecklist?.checked ??
+                                          false,
+                                    ),
+                                  ),
+                              ],
+                            ),
+                          ),
+                        ),
+                        const CustomSpacer(height: 16),
+                        Card(
+                          color: theme.cardTheme.color,
+                          child: Padding(
+                            padding: const EdgeInsets.all(16),
+                            child: Column(
+                              crossAxisAlignment: CrossAxisAlignment.start,
+                              children: [
+                                _buildSectionHeader(
+                                  context,
+                                  'Reasons',
+                                  Icons.notes,
+                                ),
+                                const CustomSpacer(height: 16),
+                                if (reasons.isEmpty)
+                                  const EmptyState(text: 'No reasons provided')
+                                else
+                                  ...reasons.map(
+                                    (reason) => InfoRow(
+                                      icon: Icons.circle,
+                                      text: reason.item ?? 'N/A',
+                                    ),
+                                  ),
+                              ],
+                            ),
+                          ),
+                        ),
+                        if (visit.photos != null &&
+                            visit.photos!.isNotEmpty) ...[
+                          const CustomSpacer(height: 16),
+                          Card(
+                            color: theme.cardTheme.color,
                             child: Padding(
                               padding: const EdgeInsets.all(16),
-                              child: Row(
-                                crossAxisAlignment: CrossAxisAlignment.center,
+                              child: Column(
+                                crossAxisAlignment: CrossAxisAlignment.start,
                                 children: [
-                                  Expanded(
-                                    child: Column(
-                                      crossAxisAlignment:
-                                          CrossAxisAlignment.start,
-                                      mainAxisAlignment:
-                                          MainAxisAlignment.center,
-                                      children: [
-                                        const SizedBox(height: 16),
-                                        Row(
-                                          children: [
-                                            Container(
-                                              padding: const EdgeInsets.all(6),
-                                              decoration: BoxDecoration(
-                                                shape: BoxShape.circle,
-                                                color: Theme.of(context)
-                                                    .colorScheme
-                                                    .onPrimary
-                                                    .withOpacity(0.2),
-                                              ),
-                                              child: Icon(
-                                                Icons.location_on,
-                                                color:
-                                                    Theme.of(context)
-                                                        .appBarTheme
-                                                        .iconTheme!
-                                                        .color,
-                                                size: 20,
-                                              ),
-                                            ),
-                                            const SizedBox(width: 12),
-                                            Expanded(
-                                              child: Text(
-                                                visit.location ?? 'N/A',
-                                                style: Theme.of(context)
-                                                    .textTheme
-                                                    .bodyMedium
-                                                    ?.copyWith(
-                                                      color:
-                                                          Theme.of(context)
-                                                              .appBarTheme
-                                                              .iconTheme!
-                                                              .color,
-                                                      fontWeight:
-                                                          FontWeight.w500,
-                                                    ),
-                                              ),
-                                            ),
-                                          ],
-                                        ),
-                                        const SizedBox(height: 12),
-                                        Row(
-                                          children: [
-                                            Container(
-                                              padding: const EdgeInsets.all(6),
-                                              decoration: BoxDecoration(
-                                                shape: BoxShape.circle,
-                                                color: Theme.of(context)
-                                                    .colorScheme
-                                                    .onPrimary
-                                                    .withOpacity(0.2),
-                                              ),
-                                              child: Icon(
-                                                Icons.access_time,
-                                                color:
-                                                    Theme.of(context)
-                                                        .appBarTheme
-                                                        .iconTheme!
-                                                        .color,
-                                                size: 20,
-                                              ),
-                                            ),
-                                            const SizedBox(width: 12),
-                                            Text(
-                                              '${visit.date.day}/${visit.date.month}/${visit.date.year} - ${visit.time}',
-                                              style: Theme.of(
-                                                context,
-                                              ).textTheme.bodyMedium?.copyWith(
-                                                color:
-                                                    Theme.of(context)
-                                                        .appBarTheme
-                                                        .iconTheme!
-                                                        .color,
-                                                fontWeight: FontWeight.w500,
-                                              ),
-                                            ),
-                                          ],
-                                        ),
-                                      ],
-                                    ),
+                                  _buildSectionHeader(
+                                    context,
+                                    'Photos',
+                                    Icons.photo,
                                   ),
-                                  if (visit.status == "visited")
-                                    _buildDurationClock(
-                                      context,
-                                      visit.duration ?? 0,
-                                    ),
+                                  const CustomSpacer(height: 16),
+                                  Wrap(
+                                    spacing: 8,
+                                    runSpacing: 8,
+                                    children:
+                                        visit.photos!.map((photoPath) {
+                                          return GestureDetector(
+                                            onTap:
+                                                () => _viewPhotoFullScreen(
+                                                  photoPath,
+                                                ),
+                                            child: Image.network(
+                                              photoPath.startsWith('http')
+                                                  ? photoPath
+                                                  : '$baseUrl$photoPath',
+                                              width: 100,
+                                              height: 100,
+                                              fit: BoxFit.cover,
+                                              errorBuilder:
+                                                  (
+                                                    context,
+                                                    error,
+                                                    stackTrace,
+                                                  ) => const Icon(Icons.error),
+                                            ),
+                                          );
+                                        }).toList(),
+                                  ),
                                 ],
                               ),
                             ),
                           ),
-                        ),
-                      ),
-                    ),
-                    SliverPadding(
-                      padding: const EdgeInsets.all(16),
-                      sliver: SliverList(
-                        delegate: SliverChildListDelegate([
-                          _buildGlassCard(
-                            context,
-                            title: 'Agent Information',
-                            icon: Icons.person,
-                            content: [
-                              if (agent == null)
-                                const Text('No agent data available')
-                              else ...[
-                                _buildDetailRow(
-                                  context,
-                                  'Name:',
-                                  '${agent.name} ${agent.lastname}',
-                                ),
-                                _buildDetailRow(
-                                  context,
-                                  'Phone:',
-                                  agent.phone ?? 'N/A',
-                                ),
-                                _buildDetailRow(
-                                  context,
-                                  'Status:',
-                                  visit.status,
-                                  statusColor: _getStatusColor(
+                        ],
+                        if (visit.status == 'visited' &&
+                            visit.comment != null) ...[
+                          const CustomSpacer(height: 16),
+                          Card(
+                            color: theme.cardTheme.color,
+                            child: Padding(
+                              padding: const EdgeInsets.all(16),
+                              child: Column(
+                                crossAxisAlignment: CrossAxisAlignment.start,
+                                children: [
+                                  _buildSectionHeader(
                                     context,
-                                    visit.status,
+                                    'Comments',
+                                    Icons.comment,
                                   ),
-                                ),
-                              ],
-                            ],
-                          ),
-                          const SizedBox(height: 16),
-                          _buildGlassCard(
-                            context,
-                            title: 'Checklists',
-                            icon: Icons.checklist,
-                            content: [
-                              if (checklists.isEmpty)
-                                Text(
-                                  'No checklists available',
-                                  style: Theme.of(
-                                    context,
-                                  ).textTheme.bodyMedium?.copyWith(
-                                    color: Theme.of(
-                                      context,
-                                    ).colorScheme.onSurface.withOpacity(0.6),
+                                  const CustomSpacer(height: 16),
+                                  Text(
+                                    visit.comment ?? 'No comments provided',
+                                    style: theme.textTheme.bodyMedium,
                                   ),
-                                )
-                              else
-                                ...checklists.map(
-                                  (checklist) => _buildChecklistRow(
-                                    context,
-                                    checklist.item ?? 'N/A',
-                                    checklist.visitChecklist?.checked ?? false,
-                                  ),
-                                ),
-                            ],
-                          ),
-                          const SizedBox(height: 16),
-                          _buildGlassCard(
-                            context,
-                            title: 'Reasons',
-                            icon: Icons.notes,
-                            content: [
-                              if (reasons.isEmpty)
-                                Text(
-                                  'No reasons provided',
-                                  style: Theme.of(
-                                    context,
-                                  ).textTheme.bodyMedium?.copyWith(
-                                    color: Theme.of(
-                                      context,
-                                    ).colorScheme.onSurface.withOpacity(0.6),
-                                  ),
-                                )
-                              else
-                                ...reasons.map(
-                                  (reason) => _buildDetailRow(
-                                    context,
-                                    '•',
-                                    reason.item ?? 'N/A',
-                                  ),
-                                ),
-                            ],
-                          ),
-                          if (visit.photos != null &&
-                              visit.photos!.isNotEmpty) ...[
-                            const SizedBox(height: 16),
-                            _buildGlassCard(
-                              context,
-                              title: 'Photos',
-                              icon: Icons.photo,
-                              content: [
-                                Wrap(
-                                  spacing: 8,
-                                  runSpacing: 8,
-                                  children:
-                                      visit.photos!.map((photoPath) {
-                                        return GestureDetector(
-                                          onTap:
-                                              () => _viewPhotoFullScreen(
-                                                photoPath,
-                                              ),
-                                          child: Image.network(
-                                            photoPath.startsWith('http')
-                                                ? photoPath
-                                                : '$baseUrl$photoPath',
-                                            width: 100,
-                                            height: 100,
-                                            fit: BoxFit.cover,
-                                            errorBuilder:
-                                                (context, error, stackTrace) =>
-                                                    const Icon(Icons.error),
-                                          ),
-                                        );
-                                      }).toList(),
-                                ),
-                              ],
-                            ),
-                          ],
-                          if (visit.status == 'visited' &&
-                              visit.comment != null) ...[
-                            const SizedBox(height: 16),
-                            _buildGlassCard(
-                              context,
-                              title: 'Comments',
-                              icon: Icons.comment,
-                              content: [
-                                Text(
-                                  visit.comment ?? 'No comments provided',
-                                  style: Theme.of(
-                                    context,
-                                  ).textTheme.bodyMedium?.copyWith(
-                                    color: Theme.of(
-                                      context,
-                                    ).colorScheme.onSurface.withOpacity(0.6),
-                                  ),
-                                ),
-                              ],
-                            ),
-                          ],
-                          if (visit.status == 'validated')
-                            Padding(
-                              padding: const EdgeInsets.only(top: 24),
-                              child: _buildActionButton(
-                                context,
-                                icon: Icons.check_circle,
-                                label: 'Log Visit',
-                                gradientColors: [
-                                  Theme.of(context).colorScheme.secondary,
-                                  Theme.of(context).colorScheme.primary,
                                 ],
+                              ),
+                            ),
+                          ),
+                        ],
+                        if (visit.status == 'validated') ...[
+                          const CustomSpacer(height: 24),
+                          Center(
+                            child: SizedBox(
+                              width: 360,
+                              child: CustomButton(
+                                label: 'Log Visit',
+                                icon: Icons.check_circle,
                                 onPressed:
                                     () => _logVisit(
                                       context,
@@ -459,10 +408,11 @@ class _VisitDetailsScreenState extends State<VisitDetailsScreen> {
                                     ),
                               ),
                             ),
-                        ]),
-                      ),
+                          ),
+                        ],
+                      ],
                     ),
-                  ],
+                  ),
                 );
               },
             );
@@ -472,126 +422,40 @@ class _VisitDetailsScreenState extends State<VisitDetailsScreen> {
     );
   }
 
-  List<Widget> _buildAppBarActions(
-      BuildContext context,
-      Visit visit,
-      VisitProvider visitProvider,
-      String token,
-      ) {
-    if (![
-      'pending',
-      'visited',
-      'validated',
-      'rejected',
-    ].contains(visit.status.toLowerCase())) {
-      return [];
-    }
-
-    return [
-      Tooltip(
-        message: 'Edit Visit',
-        child: IconButton(
-          onPressed: () {
-            Navigator.push(
-              context,
-              MaterialPageRoute(builder: (_) => EditVisitScreen(visit: visit)),
-            );
-          },
-          icon: Container(
-            padding: const EdgeInsets.all(8),
-            decoration: BoxDecoration(
-              shape: BoxShape.circle,
-              gradient: LinearGradient(
-                colors: [
-                  Colors.blue.shade700,
-                  Colors.blue.shade500,
-                ],
-                begin: Alignment.topLeft,
-                end: Alignment.bottomRight,
-              ),
-              boxShadow: [
-                BoxShadow(
-                  color: Colors.blue.shade700.withOpacity(0.3),
-                  blurRadius: 6,
-                  offset: const Offset(0, 2),
-                ),
-              ],
-            ),
-            child: const Icon(
-              Icons.edit,
-              color: Colors.white,
-              size: 20,
-            ),
-          ),
-          style: IconButton.styleFrom(
-            padding: EdgeInsets.zero,
-            minimumSize: const Size(40, 40),
-            tapTargetSize: MaterialTapTargetSize.shrinkWrap,
-          ),
-        ),
-      ),
-      const SizedBox(width: 12),
-      Tooltip(
-        message: 'Delete Visit',
-        child: IconButton(
-          onPressed: () => _deleteVisit(context, visit, visitProvider, token),
-          icon: Container(
-            padding: const EdgeInsets.all(8),
-            decoration: BoxDecoration(
-              shape: BoxShape.circle,
-              gradient: LinearGradient(
-                colors: [
-                  Colors.red.shade700,
-                  Colors.red.shade500,
-                ],
-                begin: Alignment.topLeft,
-                end: Alignment.bottomRight,
-              ),
-              boxShadow: [
-                BoxShadow(
-                  color: Colors.red.shade700.withOpacity(0.3),
-                  blurRadius: 6,
-                  offset: const Offset(0, 2),
-                ),
-              ],
-            ),
-            child: const Icon(
-              Icons.delete,
-              color: Colors.white,
-              size: 20,
-            ),
-          ),
-          style: IconButton.styleFrom(
-            padding: EdgeInsets.zero,
-            minimumSize: const Size(40, 40),
-            tapTargetSize: MaterialTapTargetSize.shrinkWrap,
-          ),
-        ),
-      ),
-      const SizedBox(width: 12),
-    ];
-  }
-
   Future<void> _deleteVisit(
     BuildContext context,
     Visit visit,
     VisitProvider visitProvider,
     String token,
   ) async {
+    final theme = Theme.of(context);
     final confirm = await showDialog<bool>(
       context: context,
       builder:
           (context) => AlertDialog(
-            title: const Text('Confirm Deletion'),
-            content: const Text('Are you sure you want to delete this visit?'),
+            backgroundColor: theme.cardTheme.color,
+            title: Text(
+              'Confirm Deletion',
+              style: theme.textTheme.headlineSmall,
+            ),
+            content: Text(
+              'Are you sure you want to delete this visit?',
+              style: theme.textTheme.bodyMedium,
+            ),
             actions: [
               TextButton(
                 onPressed: () => Navigator.pop(context, false),
-                child: const Text('Cancel'),
+                child: Text(
+                  'Cancel',
+                  style: TextStyle(color: theme.colorScheme.primary),
+                ),
               ),
               TextButton(
                 onPressed: () => Navigator.pop(context, true),
-                child: const Text('Delete'),
+                child: Text(
+                  'Delete',
+                  style: TextStyle(color: theme.colorScheme.error),
+                ),
               ),
             ],
           ),
@@ -602,12 +466,24 @@ class _VisitDetailsScreenState extends State<VisitDetailsScreen> {
         await visitProvider.deleteVisit(visit.visitID!, token);
         Navigator.pop(context);
         ScaffoldMessenger.of(context).showSnackBar(
-          const SnackBar(content: Text('Visit deleted successfully')),
+          SnackBar(
+            content: Text(
+              'Visit deleted successfully',
+              style: TextStyle(color: theme.colorScheme.onSurface),
+            ),
+            backgroundColor: theme.cardTheme.color,
+          ),
         );
       } catch (e) {
-        ScaffoldMessenger.of(
-          context,
-        ).showSnackBar(SnackBar(content: Text('Failed to delete visit: $e')));
+        ScaffoldMessenger.of(context).showSnackBar(
+          SnackBar(
+            content: Text(
+              'Failed to delete visit: $e',
+              style: TextStyle(color: theme.colorScheme.onSurface),
+            ),
+            backgroundColor: theme.colorScheme.error,
+          ),
+        );
       }
     }
   }
@@ -618,15 +494,15 @@ class _VisitDetailsScreenState extends State<VisitDetailsScreen> {
     VisitProvider visitProvider,
     String token,
   ) async {
+    final theme = Theme.of(context);
     if (visit.date == null) {
       ScaffoldMessenger.of(context).showSnackBar(
         SnackBar(
-          content: const Text('Visit date is missing. Cannot log visit.'),
-          backgroundColor: Theme.of(context).colorScheme.error.withOpacity(0.9),
-          behavior: SnackBarBehavior.floating,
-          shape: RoundedRectangleBorder(
-            borderRadius: BorderRadius.circular(12),
+          content: Text(
+            'Visit date is missing. Cannot log visit.',
+            style: TextStyle(color: theme.colorScheme.onSurface),
           ),
+          backgroundColor: theme.colorScheme.error,
         ),
       );
       return;
@@ -636,7 +512,6 @@ class _VisitDetailsScreenState extends State<VisitDetailsScreen> {
       context,
       MaterialPageRoute(builder: (_) => QRScannerWidget()),
     );
-
     if (scannedData != null) {
       try {
         final result = await visitProvider.verifyQRCode(
@@ -644,7 +519,6 @@ class _VisitDetailsScreenState extends State<VisitDetailsScreen> {
           qrData: scannedData,
           token: token,
         );
-
         if (result['valid'] == true) {
           final weekNumber = _getWeekNumber(visit.date);
           Navigator.pushReplacement(
@@ -661,28 +535,22 @@ class _VisitDetailsScreenState extends State<VisitDetailsScreen> {
         } else {
           ScaffoldMessenger.of(context).showSnackBar(
             SnackBar(
-              content: Text(result['message'] ?? 'Invalid QR code'),
-              backgroundColor: Theme.of(
-                context,
-              ).colorScheme.error.withOpacity(0.9),
-              behavior: SnackBarBehavior.floating,
-              shape: RoundedRectangleBorder(
-                borderRadius: BorderRadius.circular(12),
+              content: Text(
+                result['message'] ?? 'Invalid QR code',
+                style: TextStyle(color: theme.colorScheme.onSurface),
               ),
+              backgroundColor: theme.colorScheme.error,
             ),
           );
         }
       } catch (e) {
         ScaffoldMessenger.of(context).showSnackBar(
           SnackBar(
-            content: Text('Error verifying QR code: $e'),
-            backgroundColor: Theme.of(
-              context,
-            ).colorScheme.error.withOpacity(0.9),
-            behavior: SnackBarBehavior.floating,
-            shape: RoundedRectangleBorder(
-              borderRadius: BorderRadius.circular(12),
+            content: Text(
+              'Error verifying QR code: $e',
+              style: TextStyle(color: theme.colorScheme.onSurface),
             ),
+            backgroundColor: theme.colorScheme.error,
           ),
         );
       }
@@ -697,98 +565,23 @@ class _VisitDetailsScreenState extends State<VisitDetailsScreen> {
     return (daysSinceFirstMonday / 7).ceil() + (daysOffset > 3 ? 1 : 0);
   }
 
-  Widget _buildGlassCard(
-    BuildContext context, {
-    required String title,
-    required IconData icon,
-    required List<Widget> content,
-  }) {
-    return AnimatedContainer(
-      duration: const Duration(milliseconds: 300),
-      curve: Curves.easeInOut,
-      decoration: BoxDecoration(
-        borderRadius: BorderRadius.circular(20),
-        gradient: LinearGradient(
-          begin: Alignment.topLeft,
-          end: Alignment.bottomRight,
-          colors: [
-            Theme.of(context).colorScheme.surface.withOpacity(0.9),
-            Theme.of(context).colorScheme.surface.withOpacity(0.7),
-          ],
-        ),
-        boxShadow: [
-          BoxShadow(
-            color: Theme.of(context).colorScheme.primary.withOpacity(0.1),
-            blurRadius: 12,
-            offset: const Offset(0, 4),
-          ),
-        ],
-      ),
-      child: Padding(
-        padding: const EdgeInsets.all(16),
-        child: Column(
-          crossAxisAlignment: CrossAxisAlignment.start,
-          children: [
-            Row(
-              children: [
-                Container(
-                  padding: const EdgeInsets.all(6),
-                  decoration: BoxDecoration(
-                    shape: BoxShape.circle,
-                    color: Theme.of(
-                      context,
-                    ).colorScheme.primary.withOpacity(0.1),
-                  ),
-                  child: Icon(
-                    icon,
-                    color: Theme.of(context).colorScheme.primary,
-                    size: 20,
-                  ),
-                ),
-                const SizedBox(width: 12),
-                Text(title, style: Theme.of(context).textTheme.headlineSmall),
-              ],
-            ),
-            const SizedBox(height: 16),
-            ...content,
-          ],
-        ),
-      ),
-    );
-  }
-
-  Widget _buildDetailRow(
+  Widget _buildSectionHeader(
     BuildContext context,
-    String label,
-    String value, {
-    Color? statusColor,
-  }) {
-    return Padding(
-      padding: const EdgeInsets.symmetric(vertical: 6),
-      child: Row(
-        crossAxisAlignment: CrossAxisAlignment.start,
-        children: [
-          Text(
-            label,
-            style: Theme.of(context).textTheme.bodyMedium?.copyWith(
-              color: Theme.of(context).colorScheme.onSurface.withOpacity(0.7),
-            ),
-          ),
-          const SizedBox(width: 12),
-          Expanded(
-            child: Text(
-              value,
-              style: Theme.of(context).textTheme.bodyMedium?.copyWith(
-                color: statusColor ?? Theme.of(context).colorScheme.onSurface,
-              ),
-            ),
-          ),
-        ],
-      ),
+    String title,
+    IconData icon,
+  ) {
+    final theme = Theme.of(context);
+    return Row(
+      children: [
+        Icon(icon, color: theme.colorScheme.primary),
+        const CustomSpacer(width: 12),
+        Text(title, style: theme.textTheme.headlineSmall),
+      ],
     );
   }
 
   Widget _buildChecklistRow(BuildContext context, String item, bool checked) {
+    final theme = Theme.of(context);
     return Padding(
       padding: const EdgeInsets.symmetric(vertical: 4),
       child: Row(
@@ -797,109 +590,68 @@ class _VisitDetailsScreenState extends State<VisitDetailsScreen> {
             checked ? Icons.check_circle : Icons.circle_outlined,
             color:
                 checked
-                    ? Theme.of(context).colorScheme.primary
-                    : Theme.of(context).colorScheme.onSurface.withOpacity(0.6),
+                    ? theme.colorScheme.primary
+                    : theme.colorScheme.onSurface.withOpacity(0.6),
             size: 20,
           ),
-          const SizedBox(width: 12),
-          Expanded(
-            child: Text(item, style: Theme.of(context).textTheme.bodyMedium),
-          ),
+          const CustomSpacer(width: 12),
+          Expanded(child: Text(item, style: theme.textTheme.bodyMedium)),
         ],
       ),
     );
   }
 
-  Color? _getStatusColor(BuildContext context, String? status) {
+  Widget _buildStatusChip(BuildContext context, String? status) {
+    final theme = Theme.of(context);
+    final statusData = _getStatusData(context, status);
+    return Container(
+      padding: const EdgeInsets.symmetric(horizontal: 10, vertical: 4),
+      decoration: BoxDecoration(
+        border: Border.all(color: statusData['color'], width: 1.5),
+        borderRadius: BorderRadius.circular(8),
+      ),
+      child: Text(
+        status ?? 'Unknown',
+        style: TextStyle(
+          fontSize: 14,
+          color: statusData['color'],
+          fontWeight: FontWeight.w500,
+        ),
+      ),
+    );
+  }
+
+  Map<String, dynamic> _getStatusData(BuildContext context, String? status) {
+    final theme = Theme.of(context);
     switch (status?.toLowerCase()) {
       case 'visited':
-        return Colors.lightBlue;
+        return {'color': theme.colorScheme.primary};
       case 'pending':
-        return Colors.orange;
+        return {'color': Colors.orange};
       case 'rejected':
-        return Colors.red;
+        return {'color': theme.colorScheme.error};
       case 'validated':
-        return Colors.pink;
+        return {'color': Colors.green};
       default:
-        return Theme.of(context).colorScheme.onSurface.withOpacity(0.6);
+        return {'color': theme.colorScheme.onSurface.withOpacity(0.7)};
     }
   }
 
   Widget _buildDurationClock(BuildContext context, int duration) {
+    final theme = Theme.of(context);
     return Column(
       mainAxisAlignment: MainAxisAlignment.center,
       children: [
-        Container(
-          padding: const EdgeInsets.all(10),
-          decoration: BoxDecoration(
-            shape: BoxShape.circle,
-            color: Theme.of(context).colorScheme.onPrimary.withOpacity(0.2),
-          ),
-          child: Icon(
-            Icons.timer,
-            color: Theme.of(context).appBarTheme.iconTheme!.color,
-            size: 30,
-          ),
-        ),
-        const SizedBox(height: 8),
+        Icon(Icons.timer, size: 30, color: theme.colorScheme.primary),
+        const CustomSpacer(height: 8),
         Text(
           '$duration min',
-          style: Theme.of(context).textTheme.bodyMedium?.copyWith(
-            color: Theme.of(context).appBarTheme.iconTheme!.color,
+          style: theme.textTheme.bodyMedium?.copyWith(
             fontWeight: FontWeight.bold,
+            color: theme.colorScheme.primary,
           ),
         ),
       ],
-    );
-  }
-
-  Widget _buildActionButton(
-    BuildContext context, {
-    required IconData icon,
-    required String label,
-    required VoidCallback onPressed,
-    required List<Color> gradientColors,
-  }) {
-    return GestureDetector(
-      onTap: onPressed,
-      child: AnimatedContainer(
-        duration: const Duration(milliseconds: 300),
-        curve: Curves.easeInOut,
-        padding: const EdgeInsets.symmetric(horizontal: 20, vertical: 12),
-        decoration: BoxDecoration(
-          gradient: LinearGradient(
-            colors: gradientColors,
-            begin: Alignment.topLeft,
-            end: Alignment.bottomRight,
-          ),
-          borderRadius: BorderRadius.circular(16),
-          boxShadow: [
-            BoxShadow(
-              color: gradientColors[0].withOpacity(0.4),
-              blurRadius: 12,
-              offset: const Offset(0, 4),
-            ),
-          ],
-        ),
-        child: Row(
-          mainAxisSize: MainAxisSize.min,
-          children: [
-            Icon(
-              icon,
-              color: Theme.of(context).colorScheme.onPrimary,
-              size: 20,
-            ),
-            const SizedBox(width: 8),
-            Text(
-              label,
-              style: Theme.of(context).textTheme.bodyMedium?.copyWith(
-                color: Theme.of(context).colorScheme.onPrimary,
-                fontWeight: FontWeight.bold,
-              ),
-            ),
-          ],
-        ),
-      ),
     );
   }
 }

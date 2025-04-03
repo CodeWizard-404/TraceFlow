@@ -8,15 +8,15 @@ class GlassStatusChip extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
-    final chipColor = color ?? Theme.of(context).colorScheme.onSurface.withOpacity(0.6); // Fallback to onSurface
-
+    final theme = Theme.of(context);
+    final chipColor = color ?? theme.colorScheme.onSurface.withOpacity(0.6);
     return Container(
       padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 6),
       decoration: BoxDecoration(
         borderRadius: BorderRadius.circular(16),
         gradient: LinearGradient(
           colors: [
-            chipColor.withOpacity(0.2),
+            chipColor.withOpacity(0.3),
             chipColor.withOpacity(0.1),
           ],
           begin: Alignment.topLeft,
@@ -34,8 +34,9 @@ class GlassStatusChip extends StatelessWidget {
         status,
         style: TextStyle(
           fontSize: 12,
-          color: chipColor, // Use the provided or fallback color
+          color: chipColor,
           fontWeight: FontWeight.bold,
+          letterSpacing: 0.5,
         ),
       ),
     );

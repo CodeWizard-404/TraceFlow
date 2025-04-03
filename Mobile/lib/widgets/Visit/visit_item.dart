@@ -1,8 +1,7 @@
 import 'package:flutter/material.dart';
 import '../../models/visit.dart';
-import '../../screens/Visit/visit_details.dart';
-import '../Glass_Effect/GlassChip.dart';
-import '../Glass_Effect/GlassStatusChip.dart';
+import '../../screens/visit/visit_details.dart';
+import '../commen/info_row.dart';
 
 class VisitItem extends StatelessWidget {
   final Visit visit;
@@ -11,85 +10,84 @@ class VisitItem extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
+    final theme = Theme.of(context);
     String formattedTime = visit.time?.split(':').take(2).join(':') ?? 'N/A';
-
-    return Padding(
-      padding: const EdgeInsets.symmetric(vertical: 8, horizontal: 1),
-      child: GestureDetector(
-        onTap: () {
-          Navigator.push(
-            context,
-            MaterialPageRoute(builder: (_) => VisitDetailsScreen(visit: visit)),
-          );
-        },
-        child: AnimatedContainer(
-          duration: const Duration(milliseconds: 300),
-          curve: Curves.easeInOut,
-          decoration: BoxDecoration(
-            borderRadius: BorderRadius.circular(20),
-            gradient: LinearGradient(
-              begin: Alignment.topLeft,
-              end: Alignment.bottomRight,
-              colors: [
-                Theme.of(context).colorScheme.surface.withOpacity(0.9),
-                Theme.of(context).colorScheme.surface.withOpacity(0.7),
-              ],
-            ),
-            border: Border.all(
-              color: Theme.of(context).colorScheme.primary.withOpacity(0.5),
-              width: 1,
-            ),
-            boxShadow: [
-              BoxShadow(
-                color: Theme.of(context).colorScheme.primary.withOpacity(0.1),
-                blurRadius: 12,
-                offset: const Offset(0, 4),
-              ),
-            ],
-          ),
+    return GestureDetector(
+      onTap: () => Navigator.push(
+        context,
+        MaterialPageRoute(builder: (_) => VisitDetailsScreen(visit: visit)),
+      ),
+      child: AnimatedContainer(
+        duration: const Duration(milliseconds: 300),
+        curve: Curves.easeInOut,
+        child: Card(
+          elevation: 2,
+          color: theme.cardTheme.color, // #F9FAFB or #1F262D
           child: Padding(
-            padding: const EdgeInsets.all(16),
+            padding: const EdgeInsets.all(20),
             child: Column(
               crossAxisAlignment: CrossAxisAlignment.start,
               children: [
                 Row(
                   mainAxisAlignment: MainAxisAlignment.spaceBetween,
                   children: [
-                    Flexible(
-                      child: Text(
-                        'Visit Details',
-                        style: Theme.of(context).textTheme.headlineSmall,
-                      ),
+                    Text(
+                      'Visit Details',
+                      style: theme.textTheme.headlineSmall, // Black/gray
                     ),
-                    GlassStatusChip(
-                      status: visit.status ?? 'Unknown',
-                      color: _getStatusColor(context, visit.status),
+                    Container(
+                      padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 6),
+                      decoration: BoxDecoration(
+                        color: _getStatusColor(context, visit.status).withOpacity(0.1),
+                        borderRadius: BorderRadius.circular(6),
+                      ),
+                      child: Text(
+                        visit.status ?? 'Unknown',
+                        style: TextStyle(
+                          fontSize: 12,
+                          color: _getStatusColor(context, visit.status),
+                          fontWeight: FontWeight.w500,
+                        ),
+                      ),
                     ),
                   ],
                 ),
-                const SizedBox(height: 16),
-                _buildInfoRow(
-                  context,
-                  Icons.location_on,
-                  'Location: ${visit.location ?? 'N/A'}',
-                ),
                 const SizedBox(height: 12),
-                _buildInfoRow(
-                  context,
-                  Icons.access_time,
-                  'Time: $formattedTime',
+                InfoRow(
+                  icon: Icons.location_on,
+                  text: 'Location: ${visit.location ?? 'N/A'}',
                 ),
-                const SizedBox(height: 16),
-                Wrap(
-                  spacing: 8,
-                  runSpacing: 8,
-                  children:
-                      (visit.reasons ?? [])
-                          .map(
-                            (reason) => GlassChip(label: reason.item ?? 'N/A'),
-                          )
-                          .toList(),
+                const SizedBox(height: 8),
+                InfoRow(
+                  icon: Icons.access_time,
+                  text: 'Time: $formattedTime',
                 ),
+                if (visit.reasons != null && visit.reasons!.isNotEmpty) ...[
+                  const SizedBox(height: 12),
+                  Wrap(
+                    spacing: 8,
+                    runSpacing: 8,
+                    children: visit.reasons!
+                        .map(
+                          (reason) => Container(
+                        padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 6),
+                        decoration: BoxDecoration(
+                          color: theme.colorScheme.onSurface.withOpacity(0.1), // Gray tint
+                          borderRadius: BorderRadius.circular(6),
+                        ),
+                        child: Text(
+                          reason.item ?? 'N/A',
+                          style: TextStyle(
+                            fontSize: 12,
+                            color: theme.colorScheme.onSurface, // Black/gray
+                            fontWeight: FontWeight.w500,
+                          ),
+                        ),
+                      ),
+                    )
+                        .toList(),
+                  ),
+                ],
               ],
             ),
           ),
@@ -98,41 +96,18 @@ class VisitItem extends StatelessWidget {
     );
   }
 
-  Widget _buildInfoRow(BuildContext context, IconData icon, String text) {
-    return Row(
-      children: [
-        Container(
-          padding: const EdgeInsets.all(6),
-          decoration: BoxDecoration(
-            shape: BoxShape.circle,
-            color: Theme.of(context).colorScheme.primary.withOpacity(0.1),
-          ),
-          child: Icon(
-            icon,
-            size: 18,
-            color: Theme.of(context).colorScheme.primary,
-          ),
-        ),
-        const SizedBox(width: 12),
-        Expanded(
-          child: Text(text, style: Theme.of(context).textTheme.bodyMedium),
-        ),
-      ],
-    );
-  }
-
-  Color? _getStatusColor(BuildContext context, String? status) {
+  Color _getStatusColor(BuildContext context, String? status) {
     switch (status?.toLowerCase()) {
       case 'visited':
-        return Colors.lightBlue;
+        return Theme.of(context).colorScheme.primary; // #63b3ed or #4cb1c7
       case 'pending':
-        return Colors.orange;
+        return const Color(0xFFF4B400); // Yellow
       case 'rejected':
-        return Colors.red;
+        return const Color(0xFFD93025); // Red
       case 'validated':
-        return Colors.pink;
+        return const Color(0xFF2EA44F); // Blue-green (your call if this stays)
       default:
-        return Theme.of(context).colorScheme.onSurface.withOpacity(0.6);
+        return Theme.of(context).colorScheme.onSurface.withOpacity(0.6); // Gray
     }
   }
 }

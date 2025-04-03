@@ -1,8 +1,15 @@
 import 'package:flutter/material.dart';
 import 'package:provider/provider.dart';
 import '../../providers/auth_provider.dart';
+import '../../widgets/commen/button.dart';
+import '../../widgets/commen/snack_bar.dar.dart';
+import '../../widgets/commen/spacer.dart';
+import '../../widgets/commen/text_button.dart';
+import '../../widgets/commen/text_field.dart';
+import '../../widgets/commen/title_text.dart';
 import '../Timesheet/Timesheet_details.dart';
 import '../Error.dart';
+
 
 class LoginScreen extends StatefulWidget {
   const LoginScreen({super.key});
@@ -46,9 +53,7 @@ class LoginScreenState extends State<LoginScreen> {
           MaterialPageRoute(
             builder: (_) => ErrorPage(
               errorMessage: 'Login failed: $e',
-              onRetry: () {
-                Navigator.pop(context);
-              },
+              onRetry: () => Navigator.pop(context),
             ),
           ),
         );
@@ -57,21 +62,16 @@ class LoginScreenState extends State<LoginScreen> {
   }
 
   void _showErrorSnackBar(String message) {
-    ScaffoldMessenger.of(context).showSnackBar(
-      SnackBar(
-        content: Text(message),
-        backgroundColor: Theme.of(context).colorScheme.error.withOpacity(0.9),
-        behavior: SnackBarBehavior.floating,
-        shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(12)),
-        duration: const Duration(seconds: 3),
-      ),
+    CustomSnackBar.show(
+      context: context,
+      message: message,
+      backgroundColor: Theme.of(context).colorScheme.error.withOpacity(0.9),
     );
   }
 
   @override
   Widget build(BuildContext context) {
     final authProvider = Provider.of<AuthProvider>(context);
-
     return Scaffold(
       backgroundColor: Theme.of(context).scaffoldBackgroundColor,
       body: SafeArea(
@@ -83,110 +83,37 @@ class LoginScreenState extends State<LoginScreen> {
               child: Column(
                 mainAxisAlignment: MainAxisAlignment.center,
                 children: [
-                  // App Logo or Title
-                  Text(
-                    'TraceFlow',
-                    style: Theme.of(context).textTheme.headlineLarge?.copyWith(
-                          fontWeight: FontWeight.bold,
-                          color: Theme.of(context).colorScheme.primary,
-                        ),
-                  ),
-                  const SizedBox(height: 48),
-
-                  // Identifier Field
-                  TextFormField(
+                  CustomTitleText(text: 'TraceFlow'),
+                  const CustomSpacer(height: 48),
+                  CustomTextField(
                     controller: _identifierController,
-                    decoration: InputDecoration(
-                      labelText: 'Email or Phone',
-                      prefixIcon: Icon(Icons.person, color: Theme.of(context).colorScheme.primary),
-                      border: OutlineInputBorder(
-                        borderRadius: BorderRadius.circular(12),
-                      ),
-                      filled: true,
-                      fillColor: Theme.of(context).colorScheme.surface.withOpacity(0.8),
-                    ),
+                    label: 'Email or Phone',
+                    prefixIcon: Icons.person,
                     keyboardType: TextInputType.emailAddress,
-                    validator: (value) {
-                      if (value == null || value.trim().isEmpty) {
-                        return 'Please enter your email or phone';
-                      }
-                      return null;
-                    },
+                    validator: (value) =>
+                    value?.trim().isEmpty ?? true ? 'Please enter your email or phone' : null,
                   ),
-                  const SizedBox(height: 16),
-
-                  // Password Field
-                  TextFormField(
+                  const CustomSpacer(height: 16),
+                  CustomTextField(
                     controller: _passwordController,
-                    decoration: InputDecoration(
-                      labelText: 'Password',
-                      prefixIcon: Icon(Icons.lock, color: Theme.of(context).colorScheme.primary),
-                      suffixIcon: IconButton(
-                        icon: Icon(
-                          _obscurePassword ? Icons.visibility : Icons.visibility_off,
-                          color: Theme.of(context).colorScheme.primary,
-                        ),
-                        onPressed: () {
-                          setState(() {
-                            _obscurePassword = !_obscurePassword;
-                          });
-                        },
-                      ),
-                      border: OutlineInputBorder(
-                        borderRadius: BorderRadius.circular(12),
-                      ),
-                      filled: true,
-                      fillColor: Theme.of(context).colorScheme.surface.withOpacity(0.8),
-                    ),
+                    label: 'Password',
+                    prefixIcon: Icons.lock,
+                    suffixIcon: _obscurePassword ? Icons.visibility : Icons.visibility_off,
                     obscureText: _obscurePassword,
-                    validator: (value) {
-                      if (value == null || value.trim().isEmpty) {
-                        return 'Please enter your password';
-                      }
-                      return null;
-                    },
+                    onSuffixPressed: () => setState(() => _obscurePassword = !_obscurePassword),
+                    validator: (value) =>
+                    value?.trim().isEmpty ?? true ? 'Please enter your password' : null,
                   ),
-                  const SizedBox(height: 24),
-
-                  // Login Button
-                  ElevatedButton(
-                    onPressed: authProvider.isLoading ? null : _login,
-                    style: ElevatedButton.styleFrom(
-                      padding: const EdgeInsets.symmetric(vertical: 16, horizontal: 32),
-                      shape: RoundedRectangleBorder(
-                        borderRadius: BorderRadius.circular(12),
-                      ),
-                      backgroundColor: Theme.of(context).colorScheme.primary,
-                    ),
-                    child: authProvider.isLoading
-                        ? const SizedBox(
-                            width: 20,
-                            height: 20,
-                            child: CircularProgressIndicator(
-                              strokeWidth: 2,
-                              valueColor: AlwaysStoppedAnimation(Colors.white),
-                            ),
-                          )
-                        : Text(
-                            'Login',
-                            style: Theme.of(context).textTheme.labelLarge?.copyWith(
-                                  color: Theme.of(context).colorScheme.onPrimary,
-                                  fontWeight: FontWeight.bold,
-                                ),
-                          ),
+                  const CustomSpacer(height: 24),
+                  CustomButton(
+                    label: 'Login',
+                    onPressed: _login,
+                    isLoading: authProvider.isLoading,
                   ),
-
-                  // Forgot Password (optional, not implemented)
-                  const SizedBox(height: 16),
-                  TextButton(
-                    onPressed: () {
-                      // TODO: Implement forgot password functionality
-                      _showErrorSnackBar('Forgot password not implemented yet');
-                    },
-                    child: Text(
-                      'Forgot Password?',
-                      style: TextStyle(color: Theme.of(context).colorScheme.primary),
-                    ),
+                  const CustomSpacer(height: 16),
+                  CustomTextButton(
+                    label: 'Forgot Password?',
+                    onPressed: () => _showErrorSnackBar('Forgot password not implemented yet'),
                   ),
                 ],
               ),

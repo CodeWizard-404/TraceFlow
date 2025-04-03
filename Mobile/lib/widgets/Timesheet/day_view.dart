@@ -1,9 +1,9 @@
 import 'package:flutter/material.dart';
 import 'package:provider/provider.dart';
 import '../../models/timesheet.dart';
-import '../../models/visit.dart';
 import '../../providers/timesheet_provider.dart';
 import '../Visit/visit_item.dart';
+import '../commen/empty_state.dart';
 
 class DayView extends StatelessWidget {
   final DateTime day;
@@ -16,11 +16,7 @@ class DayView extends StatelessWidget {
         .expand((timesheet) => timesheet.visits ?? [])
         .where((visit) {
       final visitDate = visit.date != null
-          ? DateTime(
-              visit.date!.year,
-              visit.date!.month,
-              visit.date!.day,
-            )
+          ? DateTime(visit.date!.year, visit.date!.month, visit.date!.day)
           : null;
       return visitDate != null && visitDate.isAtSameMomentAs(localDayStart);
     }).toList();
@@ -40,44 +36,21 @@ class DayView extends StatelessWidget {
     return Consumer<TimesheetProvider>(
       builder: (context, provider, child) {
         final visits = getVisitsForDay(day, provider.timesheets);
-        return SingleChildScrollView(
-          child: Padding(
-            padding: const EdgeInsets.symmetric(vertical: 16),
-            child: Column(
-              crossAxisAlignment: CrossAxisAlignment.start,
-              children: [
-                if (visits.isEmpty)
-                  Padding(
-                    padding: const EdgeInsets.symmetric(vertical: 16),
-                    child: Row(
-                      mainAxisAlignment: MainAxisAlignment.center,
-                      children: [
-                        Container(
-                          padding: const EdgeInsets.all(8),
-                          decoration: BoxDecoration(
-                            shape: BoxShape.circle,
-                            color: Theme.of(context).colorScheme.primary.withOpacity(0.1),
-                          ),
-                          child: Icon(
-                            Icons.event_busy,
-                            size: 20,
-                            color: Theme.of(context).colorScheme.primary,
-                          ),
-                        ),
-                        const SizedBox(width: 8),
-                        Text(
-                          'No visits scheduled',
-                          style: Theme.of(context).textTheme.bodyMedium?.copyWith(
-                                color: Theme.of(context).colorScheme.onSurface.withOpacity(0.6),
-                              ),
-                        ),
-                      ],
-                    ),
-                  )
-                else
-                  ...visits.map((visit) => VisitItem(visit)).toList(),
-              ],
-            ),
+        return visits.isEmpty
+            ? const Padding(
+          padding: EdgeInsets.symmetric(vertical: 16),
+          child: EmptyState(text: 'No visits scheduled'),
+        )
+            : ListView.separated(
+          shrinkWrap: true,
+          physics: NeverScrollableScrollPhysics(), // Disables internal scrolling
+
+          itemCount: visits.length,
+          separatorBuilder: (context, index) => const SizedBox(height: 0),
+          itemBuilder: (context, index) => AnimatedOpacity(
+            opacity: 1.0,
+            duration: const Duration(milliseconds: 300),
+            child: VisitItem(visits[index]),
           ),
         );
       },
