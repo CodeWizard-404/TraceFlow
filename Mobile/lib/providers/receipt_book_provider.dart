@@ -1,4 +1,3 @@
-// lib/providers/receipt_book_provider.dart
 import 'package:flutter/foundation.dart';
 import '../models/receipt_book.dart';
 import '../services/receipt_book_service.dart';
@@ -12,7 +11,6 @@ class ReceiptBookProvider with ChangeNotifier {
   ReceiptBook? get currentReceiptBook => _currentReceiptBook;
   bool get isLoading => _isLoading;
 
-  // Fetch all receipt books and filter by holder (userID) locally in the frontend
   Future<void> fetchAndFilterReceiptBooksByHolder(String userID, String token) async {
     _isLoading = true;
     notifyListeners();
@@ -57,7 +55,6 @@ class ReceiptBookProvider with ChangeNotifier {
         recipientType: recipientType,
         token: token,
       );
-      // Refresh the list after transfer
       await fetchAndFilterReceiptBooksByHolder(_currentReceiptBook?.currentHolderID ?? '', token);
     } catch (e) {
       throw Exception('Failed to transfer receipt books: $e');
@@ -84,7 +81,6 @@ class ReceiptBookProvider with ChangeNotifier {
         recipientType: recipientType,
         token: token,
       );
-      // Refresh the list after validation
       await fetchAndFilterReceiptBooksByHolder(_currentReceiptBook?.currentHolderID ?? '', token);
     } catch (e) {
       throw Exception('Failed to validate transfer: $e');

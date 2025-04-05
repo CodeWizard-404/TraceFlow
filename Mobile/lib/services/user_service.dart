@@ -29,6 +29,20 @@ class UserService {
     }
   }
 
+  static Future<List<User>> getUsersByRole(String role, String token) async {
+    final response = await http.get(
+      Uri.parse('$baseUrl/users/role/$role'),
+      headers: {'Authorization': 'Bearer $token'},
+    );
+    if (response.statusCode == 200) {
+      final List<dynamic> decodedData = json.decode(response.body);
+      print('Raw response for role $role: ${response.body}'); // Debug
+      return decodedData.map((json) => User.fromJson(json)).toList();
+    } else {
+      throw Exception('Failed to fetch users by role: ${response.body}');
+    }
+  }
+
   static Future<User> getUserByPhoneNumber(String phone, String token) async {
     final response = await http.get(
       Uri.parse('$baseUrl/users/phone/$phone'),

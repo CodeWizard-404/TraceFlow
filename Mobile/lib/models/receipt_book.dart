@@ -1,11 +1,14 @@
+import 'package:TraceFlow/models/receipt_stub.dart';
+
 class ReceiptBook {
   final String? bookID;
-  final String number;         // Required
-  final String type;           // Required
-  final String status;         // Required
-  final String qrCode;         // Required
+  final String number;
+  final String type;
+  final String status;
+  final String qrCode;
   final String? currentHolderID;
   final String? agentID;
+  final ReceiptStub? receiptStub;
 
   ReceiptBook({
     this.bookID,
@@ -15,6 +18,7 @@ class ReceiptBook {
     required this.qrCode,
     this.currentHolderID,
     this.agentID,
+    this.receiptStub,
   });
 
   factory ReceiptBook.fromJson(Map<String, dynamic> json) {
@@ -23,9 +27,12 @@ class ReceiptBook {
       number: json['number'] as String,
       type: json['type'] as String,
       status: json['status'] as String,
-      qrCode: json['qrCode'] as String,
+      qrCode: 'data:image/png;base64,${json['qrCode'] as String}',
       currentHolderID: json['currentHolderID'] as String?,
       agentID: json['agentID'] as String?,
+      receiptStub: json['ReceiptStub'] != null
+          ? ReceiptStub.fromJson(json['ReceiptStub'] as Map<String, dynamic>)
+          : null, // Parse ReceiptStub
     );
   }
 
@@ -35,9 +42,13 @@ class ReceiptBook {
       'number': number,
       'type': type,
       'status': status,
-      'qrCode': qrCode,
+      'qrCode': qrCode.startsWith('data:image/png;base64,')
+          ? qrCode.substring('data:image/png;base64,'.length)
+          : qrCode,
       'currentHolderID': currentHolderID,
       'agentID': agentID,
+      'ReceiptStub': receiptStub?.toJson(),
     };
   }
 }
+

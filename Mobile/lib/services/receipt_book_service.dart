@@ -6,6 +6,7 @@ import '../utils/constants.dart';
 
 class ReceiptBookService {
   // Fetch all receipt books from the backend
+// lib/services/receipt_book_service.dart
   static Future<List<ReceiptBook>> fetchAllReceiptBooks(String token) async {
     final response = await http.get(
       Uri.parse('$baseUrl/receipt-books'),
@@ -13,6 +14,7 @@ class ReceiptBookService {
     );
     if (response.statusCode == 200) {
       final List<dynamic> decodedData = json.decode(response.body);
+      print('Raw API response for receipt books: $decodedData'); // Debug print
       return decodedData.map((json) => ReceiptBook.fromJson(json)).toList();
     } else {
       throw Exception('Failed to fetch all receipt books: ${response.body}');

@@ -1,7 +1,7 @@
 class ReceiptStub {
   final String? stubID;
-  final String bookID;  // Required
-  final String status;  // Required
+  final String bookID;
+  final String status;
 
   ReceiptStub({
     this.stubID,

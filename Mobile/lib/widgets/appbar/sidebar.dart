@@ -2,7 +2,9 @@ import 'package:flutter/material.dart';
 import 'package:provider/provider.dart';
 import '../../providers/theme_provider.dart';
 import '../../providers/auth_provider.dart';
-import '../../screens/Auth/login_screen.dart'; // Adjust path as needed
+import '../../screens/Auth/login_screen.dart';
+import '../../screens/Receipt/receipt_books.dart';
+import '../../screens/Timesheet/Timesheet_details.dart';
 
 class AppSidebar extends StatelessWidget {
   const AppSidebar({super.key});
@@ -49,8 +51,33 @@ class AppSidebar extends StatelessWidget {
                 color: theme.dividerColor,
                 margin: const EdgeInsets.symmetric(horizontal: 16),
               ),
+              Padding(
+                padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 8),
+                child: ListTile(
+                  leading: Icon(Icons.schedule, color: theme.colorScheme.primary),
+                  title: const Text('Timesheet'),
+                  onTap: () {
+                    Navigator.pushReplacement(
+                      context,
+                      MaterialPageRoute(builder: (_) => const TimesheetDetailsScreen()),
+                    );
+                  },
+                ),
+              ),
+              Padding(
+                padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 8),
+                child: ListTile(
+                  leading: Icon(Icons.receipt_long_rounded, color: theme.colorScheme.primary),
+                  title: const Text('Receipt Books'),
+                  onTap: () {
+                    Navigator.pushReplacement(
+                      context,
+                      MaterialPageRoute(builder: (_) => const ReceiptBooksScreen()),
+                    );
+                  },
+                ),
+              ),
               const Spacer(),
-              // Theme Switcher Button (moved before Logout)
               Padding(
                 padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 8),
                 child: Consumer<ThemeProvider>(
@@ -64,7 +91,6 @@ class AppSidebar extends StatelessWidget {
                   ),
                 ),
               ),
-              // Logout Button
               Padding(
                 padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 8),
                 child: ListTile(

@@ -1,3 +1,5 @@
+import 'package:TraceFlow/screens/Receipt/receipt_books.dart';
+import 'package:TraceFlow/screens/Receipt/transfer_receipt_book.dart';
 import 'package:flutter/material.dart';
 import 'package:provider/provider.dart';
 import 'package:TraceFlow/providers/agent_provider.dart';
@@ -64,6 +66,8 @@ class MyApp extends StatelessWidget {
           routes: {
             '/login': (context) => const LoginScreen(),
             '/timesheet-details': (context) => const TimesheetDetailsScreen(),
+            '/receipt-books': (context) => const ReceiptBooksScreen(),
+            '/transfer-receipt-books': (context) => const TransferReceiptBookScreen(),
           },
           onUnknownRoute: (settings) {
             return MaterialPageRoute(
