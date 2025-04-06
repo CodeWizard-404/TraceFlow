@@ -2709,3 +2709,485 @@ body.dark .permissions-grid-0::-webkit-scrollbar-thumb {
 }
 
 /* Rest of your original CSS remains unchanged */
+
+
+
+
+
+/* Card Wrapper */
+.table-card {
+    background: #fff;
+    border-radius: 0.75rem;
+    padding: 1rem; /* Reduced from 1.5rem */
+    box-shadow: 0 0.375rem 1.25rem rgba(0, 0, 0, 0.05);
+}
+
+body.dark .table-card {
+    background: #222222;
+    box-shadow: 0 0.375rem 1.25rem rgba(0, 0, 0, 0.3);
+    border: 1px solid #4b5563;
+}
+
+/* List Styles */
+.hover-reveal-list {
+    display: flex;
+    flex-direction: column;
+    gap: 0.25rem; /* Reduced from 0.75rem */
+}
+
+.list-item-wrapper {
+    overflow: hidden;
+}
+
+.list-item {
+    background: #f8fafc;
+    border-radius: 0.5rem; /* Smaller radius */
+    padding: 0.5rem; /* Reduced from 1rem */
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    transition: transform 0.2s ease, background 0.2s ease; /* Faster transitions */
+}
+
+body.dark .list-item {
+    background: #333333;
+}
+
+.list-item:hover {
+    transform: translateX(0.25rem); /* Reduced from 0.5rem */
+    background: #4cb1c7; /* Flat color, no gradient */
+}
+
+body.dark .list-item:hover {
+    background: #63b3ed;
+}
+
+.list-item.editing {
+    background: #eef2f6;
+}
+
+body.dark .list-item.editing {
+    background: #4b5563;
+}
+
+.item-text {
+    font-weight: 600;
+    color: #1f2937;
+}
+
+body.dark .item-text {
+    color: #e5e7eb;
+}
+
+.list-item:hover .item-text {
+    color: #fff;
+}
+
+.edit-input {
+    flex: 1;
+    padding: 0.25rem 0.5rem; /* More compact */
+    border: 1px solid #ddd;
+    border-radius: 0.5rem;
+    background: #fff;
+    color: #1f2937;
+    transition: border-color 0.2s ease;
+}
+
+body.dark .edit-input {
+    background: #363636;
+    color: #e5e7eb;
+    border-color: #4b5563;
+}
+
+.edit-input:focus {
+    border-color: #4cb1c7;
+    outline: none;
+}
+
+body.dark .edit-input:focus {
+    border-color: #60a0dc;
+}
+
+.item-actions {
+    display: flex;
+    gap: 0.25rem; /* Tighter gap */
+    opacity: 0;
+    transform: translateX(10px); /* Reduced from 20px */
+    transition: opacity 0.2s ease, transform 0.2s ease;
+}
+
+.list-item:hover .item-actions,
+.list-item.editing .item-actions {
+    opacity: 1;
+    transform: translateX(0);
+}
+
+/* New Button Theme */
+.list-button {
+    height: 1.5rem;
+    border: none;
+    border-radius: 0.25rem; /* Sharper edges */
+    cursor: pointer;
+    transition: background 0.2s ease, transform 0.2s ease;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+}
+
+.list-button.edit {
+    color: #4cb1c7;
+}
+
+body.dark .list-button.edit {
+    color: #63b3ed;
+}
+
+.list-button.edit:hover {
+    background: #2d8a9e; /* Darker shade, no gradient */
+    color: #fff;
+    transform: scale(1.1);
+}
+
+body.dark .list-button.edit:hover {
+    background: #4a83ce;
+    color: #fff;
+}
+
+.list-button.delete {
+    background: #e81f76;
+    color: #fff;
+}
+
+body.dark .list-button.delete {
+    background: #9f174f;
+}
+
+.list-button.delete:hover {
+    background: #c81a65;
+    transform: scale(1.1);
+}
+
+body.dark .list-button.delete:hover {
+    background: #7d123e;
+}
+
+.list-button.save {
+    background: #4cb1c7;
+    color: #fff;
+}
+
+body.dark .list-button.save {
+    background: #63b3ed;
+}
+
+.list-button.save:hover {
+    background: #2d8a9e;
+    transform: scale(1.1);
+}
+
+body.dark .list-button.save:hover {
+    background: #4a83ce;
+}
+
+.list-button.cancel {
+    background: #6b7280;
+    color: #fff;
+}
+
+body.dark .list-button.cancel {
+    background: #4b5563;
+}
+
+.list-button.cancel:hover {
+    background: #4b5563;
+    transform: scale(1.1);
+}
+
+body.dark .list-button.cancel:hover {
+    background: #374151;
+}
+
+.list-header {
+    font-weight: 600;
+    color: #4cb1c7;
+    margin-bottom: 0.5rem; /* Reduced from 1rem */
+}
+
+body.dark .list-header {
+    color: #60a0dc;
+}
+
+.no-items {
+    padding: 0.5rem; /* Reduced from 1rem */
+    color: #6b7280;
+    text-align: center;
+}
+
+body.dark .no-items {
+    color: #9ca3af;
+}
+
+
+.item-text {
+    font-size: 0.75rem;
+    font-weight: 600;
+    color: #1f2937;
+    cursor: pointer; /* Indicates double-clickability */
+}
+
+body.dark .item-text {
+    color: #e5e7eb;
+}
+
+.list-item:hover .item-text {
+    color: #fff;
+}
+
+.validation-error {
+    font-size: 0.625rem; /* Smaller than item text */
+    color: #e81f76;
+    margin-left: 0.5rem;
+    white-space: nowrap;
+}
+
+body.dark .validation-error {
+    color: #ff6b6b;
+}
+
+
+.form-input {
+    width: 100%;
+    padding: 0.25rem 0.5rem;
+    font-size: 0.75rem;
+    border: 1px solid #ddd;
+    border-radius: 0.5rem;
+    background: #fff;
+    color: #1f2937;
+    transition: border-color 0.2s ease;
+}
+
+body.dark .form-input {
+    background: #363636;
+    color: #e5e7eb;
+    border-color: #4b5563;
+}
+
+.form-input:focus {
+    border-color: #4cb1c7;
+    outline: none;
+}
+
+body.dark .form-input:focus {
+    border-color: #60a0dc;
+}
+
+/* Ensure validation-error is already in CSS from previous update */
+.validation-error {
+    font-size: 0.625rem;
+    color: #e81f76;
+    margin-top: 0.25rem;
+    white-space: nowrap;
+}
+
+body.dark .validation-error {
+    color: #ff6b6b;
+}
+
+
+/* Form Card Enhancements */
+.form-card.add-form {
+    background: #fff;
+    border-radius: 0.75rem;
+    padding: 1rem;
+    box-shadow: 0 0.375rem 1.25rem rgba(0, 0, 0, 0.05);
+    border: 1px solid #e5e7eb;
+    max-width: 400px; /* Compact width */
+    margin: 0 auto;
+}
+
+body.dark .form-card.add-form {
+    background: #222222;
+    border: 1px solid #4b5563;
+    box-shadow: 0 0.375rem 1.25rem rgba(0, 0, 0, 0.3);
+}
+
+/* Form Section */
+.form-section {
+    display: flex;
+    flex-direction: column;
+    gap: 0.75rem;
+}
+
+/* Header */
+.form-header {
+    font-size: 1rem;
+    font-weight: 600;
+    color: #4cb1c7;
+    margin-bottom: 0.5rem;
+}
+
+body.dark .form-header {
+    color: #60a0dc;
+}
+
+/* Form Content */
+.form-content {
+    display: flex;
+    flex-direction: column;
+    gap: 1rem; /* Space between input and button */
+}
+
+/* Form Group */
+.form-group {
+    display: flex;
+    flex-direction: column;
+    gap: 0.25rem;
+}
+
+/* Label */
+.form-label {
+    font-size: 0.75rem;
+    font-weight: 500;
+    color: #1f2937;
+}
+
+body.dark .form-label {
+    color: #e5e7eb;
+}
+
+.required {
+    color: #e81f76;
+}
+
+/* Input (already styled, but tweak for consistency) */
+.form-input {
+    width: 100%;
+    padding: 0.5rem; /* Slightly larger for better usability */
+    font-size: 0.75rem;
+    border: 1px solid #ddd;
+    border-radius: 0.5rem;
+    background: #f8fafc;
+    color: #1f2937;
+    transition: border-color 0.2s ease;
+}
+
+body.dark .form-input {
+    background: #363636;
+    color: #e5e7eb;
+    border-color: #4b5563;
+}
+
+.form-input:focus {
+    border-color: #4cb1c7;
+    outline: none;
+}
+
+body.dark .form-input:focus {
+    border-color: #60a0dc;
+}
+
+.form-input::placeholder {
+    color: #9ca3af;
+}
+
+body.dark .form-input::placeholder {
+    color: #6b7280;
+}
+
+/* Validation Error (already styled, no change needed) */
+.validation-error {
+    font-size: 0.625rem;
+    color: #e81f76;
+    margin-top: 0.25rem;
+    white-space: nowrap;
+}
+
+body.dark .validation-error {
+    color: #ff6b6b;
+}
+
+/* Button */
+.action-button.create {
+    padding: 0.5rem 1rem;
+    font-size: 0.75rem;
+    font-weight: 600;
+    background: #4cb1c7;
+    color: #fff;
+    border: none;
+    border-radius: 0.5rem;
+    cursor: pointer;
+    transition: background 0.2s ease, transform 0.2s ease;
+    align-self: flex-start; /* Left-aligned */
+}
+
+body.dark .action-button.create {
+    background: #63b3ed;
+}
+
+.action-button.create:hover:not(:disabled) {
+    background: #3a8fa2;
+    transform: scale(1.05);
+}
+
+body.dark .action-button.create:hover:not(:disabled) {
+    background: #4a83ce;
+}
+
+.action-button.create:disabled {
+    background: #d1d5db;
+    cursor: not-allowed;
+    transform: none;
+}
+
+body.dark .action-button.create:disabled {
+    background: #4b5563;
+}
+
+.pagination {
+    display: flex;
+    justify-content: center;
+    align-items: center;
+    gap: 1rem;
+    margin-top: 1rem;
+    font-size: 0.75rem;
+    color: #1f2937;
+}
+
+body.dark .pagination {
+    color: #e5e7eb;
+}
+
+.pagination button {
+    padding: 0.5rem 1rem;
+    font-size: 0.75rem;
+    font-weight: 600;
+    background: #4cb1c7;
+    color: #fff;
+    border: none;
+    border-radius: 0.5rem;
+    cursor: pointer;
+    transition: background 0.2s ease, transform 0.2s ease;
+}
+
+body.dark .pagination button {
+    background: #63b3ed;
+}
+
+.pagination button:hover:not(:disabled) {
+    background: #3a8fa2;
+    transform: scale(1.05);
+}
+
+body.dark .pagination button:hover:not(:disabled) {
+    background: #4a83ce;
+}
+
+.pagination button:disabled {
+    background: #d1d5db;
+    cursor: not-allowed;
+    transform: none;
+}
+
+body.dark .pagination button:disabled {
+    background: #4b5563;
+}

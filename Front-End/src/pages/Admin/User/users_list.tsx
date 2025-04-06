@@ -5,18 +5,19 @@ import User from "../../../models/User";
 import "../AdminDashboard.css";
 import { getRolesByUser } from "../../../apis/roleAPI";
 import Role from "models/Role";
+import { SortField, SortOrder, ViewMode } from "../adminTypes";
 
 interface UsersListProps {
     users: User[];
     setUsers: React.Dispatch<React.SetStateAction<User[]>>;
-    view: "users" | "roles" | "permissions" | "add-user" | "add-role" | "add-permission" | "user-details";
+    view: ViewMode;
     token: string;
-    setView: (view: "users" | "roles" | "permissions" | "add-user" | "add-role" | "add-permission" | "user-details") => void;
+    setView: (view: ViewMode) => void;
     setSelectedUser: React.Dispatch<React.SetStateAction<User | null>>;
     setError: (error: string | null) => void;
     searchQuery: string;
-    sortField: "name" | "email" | "role";
-    sortOrder: "asc" | "desc";
+    sortField: SortField;
+    sortOrder: SortOrder;
     userRoles: Role[];
     roleFilter: string;
     currentPage: number;

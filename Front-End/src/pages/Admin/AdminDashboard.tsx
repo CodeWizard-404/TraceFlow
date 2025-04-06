@@ -1,16 +1,22 @@
+// AdminDashboard.tsx
 import React, { useState, useEffect, useMemo } from "react";
 import {
-    FaSearch, FaSort, FaUserPlus, FaArrowLeft, FaSignOutAlt,
-    FaPlus
+    FaSearch, FaSort, FaUserPlus, FaArrowLeft,
+    FaPlus,
+    FaTimes
 } from "react-icons/fa";
 import { useAuth } from "../../context/AuthContext";
 import { getAllUsers } from "../../apis/userAPI";
 import { getAllRoles } from "../../apis/roleAPI";
 import { getAllPermissions } from "../../apis/permissionAPI";
 import { getRolesByUser } from "../../apis/roleAPI";
+import { getAllChecklists } from "../../apis/checklistAPI";
+import { getAllReasons } from "../../apis/reasonAPI";
 import User from "../../models/User";
 import Role from "../../models/Role";
 import Permission from "../../models/Permission";
+import { Checklist } from "../../models/Checklist";
+import { Reason } from "../../models/Reason";
 import UserView from "./User/user_view";
 import UserAdd from "./User/user_add";
 import UsersList from "./User/users_list";
@@ -20,11 +26,14 @@ import RolesList from "./Role/roles_list";
 import PermView from "./Permission/perm_view";
 import PermAdd from "./Permission/perm_add";
 import PermsList from "./Permission/perms_list";
+import ChecklistView from "./Items/Checklists/ChecklistView";
+import { SortField, SortOrder, ViewMode } from "./adminTypes";
+import ChecklistAdd from "./Items/Checklists/ChecklistAdd";
+import ChecklistsList from "./Items/Checklists/ChecklistsList";
+import ReasonAdd from "./Items/Reasons/ReasonAdd";
+import ReasonsList from "./Items/Reasons/ReasonsList";
+import ReasonView from "./Items/Reasons/ReasonView";
 import "./AdminDashboard.css";
-
-type ViewMode = "users" | "roles" | "permissions" | "add-user" | "add-role" | "add-permission" | "user-details";
-type SortField = "name" | "email" | "role";
-type SortOrder = "asc" | "desc";
 
 const ITEMS_PER_PAGE = 10;
 
@@ -35,9 +44,13 @@ const AdminDashboard: React.FC = () => {
     const [users, setUsers] = useState<User[]>([]);
     const [roles, setRoles] = useState<Role[]>([]);
     const [permissionsList, setPermissionsList] = useState<Permission[]>([]);
+    const [checklists, setChecklists] = useState<Checklist[]>([]); // New state
+    const [reasons, setReasons] = useState<Reason[]>([]); // New state
     const [selectedUser, setSelectedUser] = useState<User | null>(null);
     const [selectedRole, setSelectedRole] = useState<Role | null>(null);
     const [selectedPermission, setSelectedPermission] = useState<Permission | null>(null);
+    const [selectedChecklist, setSelectedChecklist] = useState<Checklist | null>(null); // New state
+    const [selectedReason, setSelectedReason] = useState<Reason | null>(null); // New state
     const [view, setView] = useState<ViewMode>("users");
     const [searchQuery, setSearchQuery] = useState("");
     const [sortField, setSortField] = useState<SortField>("role");
@@ -55,6 +68,10 @@ const AdminDashboard: React.FC = () => {
         canCreateRoles: effectivePermissions?.some(p => p.name === import.meta.env.VITE_PERMISSIONS_CREATE_ROLES),
         canViewPermissions: effectivePermissions?.some(p => p.name === import.meta.env.VITE_PERMISSIONS_READ_PERMISSIONS),
         canCreatePermissions: effectivePermissions?.some(p => p.name === import.meta.env.VITE_PERMISSIONS_CREATE_PERMISSIONS),
+        canViewChecklists: effectivePermissions?.some(p => p.name === import.meta.env.VITE_PERMISSIONS_READ_CHECKLISTS_ITEMS),
+        canCreateChecklists: effectivePermissions?.some(p => p.name === import.meta.env.VITE_PERMISSIONS_CREATE_CHECKLISTS_ITEMS),
+        canViewReasons: effectivePermissions?.some(p => p.name === import.meta.env.VITE_PERMISSIONS_READ_REASON_ITEMS),
+        canCreateReasons: effectivePermissions?.some(p => p.name === import.meta.env.VITE_PERMISSIONS_CREATE_REASON_ITEMS),
     }), [effectivePermissions]);
 
     // Initial Data Fetch
@@ -62,10 +79,12 @@ const AdminDashboard: React.FC = () => {
         const fetchData = async () => {
             setLoading(true);
             try {
-                const [usersData, rolesData, permissionsData] = await Promise.all([
+                const [usersData, rolesData, permissionsData, checklistsData, reasonsData] = await Promise.all([
                     userPermissions.canViewUsers ? getAllUsers(token!) : Promise.resolve([]),
                     userPermissions.canViewRoles ? getAllRoles(token!) : Promise.resolve([]),
-                    userPermissions.canViewPermissions ? getAllPermissions(token!) : Promise.resolve([])
+                    userPermissions.canViewPermissions ? getAllPermissions(token!) : Promise.resolve([]),
+                    userPermissions.canViewChecklists ? getAllChecklists(token!) : Promise.resolve([]), // New fetch
+                    userPermissions.canViewReasons ? getAllReasons(token!) : Promise.resolve([]), // New fetch
                 ]);
                 const usersWithRoles = await Promise.all(
                     usersData.map(async (user) => {
@@ -77,6 +96,8 @@ const AdminDashboard: React.FC = () => {
                 setUsers(usersWithRoles);
                 setRoles(rolesData);
                 setPermissionsList(permissionsData);
+                setChecklists(checklistsData); // Set checklists
+                setReasons(reasonsData); // Set reasons
             } catch (err) {
                 console.error("Failed to fetch initial data:", err);
                 setError("Failed to load dashboard data.");
@@ -87,12 +108,24 @@ const AdminDashboard: React.FC = () => {
         if (token) fetchData();
     }, [token, userPermissions]);
 
+    useEffect(() => {
+        if (error) {
+            const timer = setTimeout(() => {
+                setError(null);
+            }, 3000); // Closes after 3 seconds
+
+            return () => clearTimeout(timer);
+        }
+    }, [error, setError]);
+
     // Handlers
     const handleViewChange = (newView: ViewMode) => {
         setView(newView);
         setSelectedUser(null);
         setSelectedRole(null);
         setSelectedPermission(null);
+        setSelectedChecklist(null); // Reset checklist selection
+        setSelectedReason(null); // Reset reason selection
         setCurrentPage(1);
     };
 
@@ -105,10 +138,11 @@ const AdminDashboard: React.FC = () => {
                 <div className="error-message">
                     <span>{error}</span>
                     <button className="close-error" onClick={() => setError(null)}>
-                        <FaSignOutAlt />
+                        <FaTimes />
                     </button>
                 </div>
             )}
+
 
             <header className="dashboard-header">
                 <h1>
@@ -119,8 +153,14 @@ const AdminDashboard: React.FC = () => {
                     {view === "add-role" && "Create New Role"}
                     {view === "add-permission" && "Create New Permission"}
                     {view === "user-details" && selectedUser && `${selectedUser.firstname} ${selectedUser.lastname}`}
+                    {view === "checklists" && "Checklists Management"}
+                    {view === "add-checklist" && "Add New Checklist"}
+                    {view === "checklist-details" && selectedChecklist && `Checklist: ${selectedChecklist.item}`}
+                    {view === "reasons" && "Reasons Management"}
+                    {view === "add-reason" && "Add New Reason"}
+                    {view === "reason-details" && selectedReason && `Reason: ${selectedReason.item}`}
                 </h1>
-                {(view === "users" || view === "roles" || view === "permissions") && (
+                {(view === "users" || view === "roles" || view === "permissions" || view === "checklists" || view === "reasons") && (
                     <div className="search-container">
                         <FaSearch className="search-icon" />
                         <input
@@ -132,11 +172,12 @@ const AdminDashboard: React.FC = () => {
                         />
                     </div>
                 )}
-                {(view === "add-user" || view === "add-role" || view === "add-permission" || view === "user-details") && (
-                    <button className="back-button" onClick={() => handleViewChange(view === "user-details" || view === "add-user" ? "users" : view === "add-role" ? "roles" : "permissions")}>
-                        <FaArrowLeft /> Back
-                    </button>
-                )}
+                {(view === "add-user" || view === "add-role" || view === "add-permission" || view === "user-details" ||
+                    view === "add-checklist" || view === "checklist-details" || view === "add-reason" || view === "reason-details") && (
+                        <button className="back-button" onClick={() => handleViewChange(view.includes("user") ? "users" : view.includes("role") ? "roles" : view.includes("permission") ? "permissions" : view.includes("checklist") ? "checklists" : "reasons")}>
+                            <FaArrowLeft /> Back
+                        </button>
+                    )}
             </header>
 
             <section className="dashboard-content">
@@ -156,6 +197,16 @@ const AdminDashboard: React.FC = () => {
                         {userPermissions.canViewPermissions && (
                             <button className={view === "permissions" || view === "add-permission" ? "active" : ""} onClick={() => handleViewChange("permissions")}>
                                 Permissions
+                            </button>
+                        )}
+                        {userPermissions.canViewChecklists && (
+                            <button className={view === "checklists" || view === "add-checklist" || view === "checklist-details" ? "active" : ""} onClick={() => handleViewChange("checklists")}>
+                                Checklists
+                            </button>
+                        )}
+                        {userPermissions.canViewReasons && (
+                            <button className={view === "reasons" || view === "add-reason" || view === "reason-details" ? "active" : ""} onClick={() => handleViewChange("reasons")}>
+                                Reasons
                             </button>
                         )}
                     </div>
@@ -196,6 +247,16 @@ const AdminDashboard: React.FC = () => {
                     {(view === "permissions") && userPermissions.canViewPermissions && (
                         <button className="action-button" onClick={() => handleViewChange("add-permission")}>
                             <FaPlus /> Add Permission
+                        </button>
+                    )}
+                    {(view === "checklists") && userPermissions.canViewChecklists && (
+                        <button className="action-button" onClick={() => handleViewChange("add-checklist")}>
+                            <FaPlus /> Add Checklist
+                        </button>
+                    )}
+                    {(view === "reasons") && userPermissions.canViewReasons && (
+                        <button className="action-button" onClick={() => handleViewChange("add-reason")}>
+                            <FaPlus /> Add Reason
                         </button>
                     )}
                 </aside>
@@ -289,6 +350,58 @@ const AdminDashboard: React.FC = () => {
                     <PermAdd
                         permissionsList={permissionsList}
                         setPermissionsList={setPermissionsList}
+                        view={view}
+                        token={token!}
+                        setView={setView}
+                        setError={setError}
+                    />
+                    <ChecklistsList
+                        checklists={checklists}
+                        setChecklists={setChecklists}
+                        view={view}
+                        token={token!}
+                        setSelectedChecklist={setSelectedChecklist}
+                        setError={setError}
+                        searchQuery={searchQuery}
+                    />
+                    <ChecklistView
+                        selectedChecklist={selectedChecklist}
+                        setSelectedChecklist={setSelectedChecklist}
+                        checklists={checklists}
+                        setChecklists={setChecklists}
+                        view={view}
+                        token={token!}
+                        setError={setError}
+                    />
+                    <ChecklistAdd
+                        checklists={checklists}
+                        setChecklists={setChecklists}
+                        view={view}
+                        token={token!}
+                        setView={setView}
+                        setError={setError}
+                    />
+                    <ReasonsList
+                        reasons={reasons}
+                        setReasons={setReasons}
+                        view={view}
+                        token={token!}
+                        setSelectedReason={setSelectedReason}
+                        setError={setError}
+                        searchQuery={searchQuery}
+                    />
+                    <ReasonView
+                        selectedReason={selectedReason}
+                        setSelectedReason={setSelectedReason}
+                        reasons={reasons}
+                        setReasons={setReasons}
+                        view={view}
+                        token={token!}
+                        setError={setError}
+                    />
+                    <ReasonAdd
+                        reasons={reasons}
+                        setReasons={setReasons}
                         view={view}
                         token={token!}
                         setView={setView}

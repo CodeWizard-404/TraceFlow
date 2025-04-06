@@ -6,6 +6,7 @@ import { useAuth } from "../../../context/AuthContext";
 import { createRole } from "../../../apis/roleAPI";
 import "../AdminDashboard.css";
 import { assignPermissionsToRole, getPermissionsByRole } from "../../../apis/permissionAPI";
+import { ViewMode } from "../adminTypes";
 
 interface RoleAddProps {
     roles: Role[];
@@ -13,7 +14,7 @@ interface RoleAddProps {
     permissionsList: Permission[];
     view: string;
     token: string;
-    setView: (view: "users" | "roles" | "permissions" | "add-user" | "add-role" | "add-permission" | "user-details") => void;
+    setView: (view: ViewMode) => void;
     setError: (error: string | null) => void;
 }
 

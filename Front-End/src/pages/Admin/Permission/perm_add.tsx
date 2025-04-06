@@ -4,13 +4,14 @@ import { createPermission } from "../../../apis/permissionAPI";
 import "../AdminDashboard.css";
 import PermissionsClass from "../../../models/Enum/PermissionsClass";
 import Permission from "../../../models/Permission";
+import { ViewMode } from "../adminTypes";
 
 interface PermAddProps {
     permissionsList: Permission[];
     setPermissionsList: (permissions: Permission[]) => void;
     view: string;
     token: string;
-    setView: (view: "users" | "roles" | "permissions" | "add-user" | "add-role" | "add-permission" | "user-details") => void;
+    setView: (view: ViewMode) => void;
     setError: (error: string | null) => void;
 }
 

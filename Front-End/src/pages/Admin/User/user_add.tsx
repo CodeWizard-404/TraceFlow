@@ -7,6 +7,7 @@ import Role from "../../../models/Role";
 import Permission from "../../../models/Permission";
 import "../AdminDashboard.css";
 import { assignRolesToUser, getRolesByUser } from "../../../apis/roleAPI";
+import { ViewMode } from "../adminTypes";
 
 interface UserAddProps {
     users: User[];
@@ -14,7 +15,7 @@ interface UserAddProps {
     roles: Role[];
     view: string;
     token: string;
-    setView: (view: "users" | "roles" | "permissions" | "add-user" | "add-role" | "add-permission" | "user-details") => void;
+    setView: (view: ViewMode) => void;
     setError: (error: string | null) => void;
 }
 

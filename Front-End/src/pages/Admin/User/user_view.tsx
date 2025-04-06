@@ -17,6 +17,7 @@ import {
     getPermissionsByRole
 } from "../../../apis/permissionAPI";
 import { revokeRolesFromUser, assignRolesToUser } from "../../../apis/roleAPI";
+import { ViewMode } from "../adminTypes";
 
 const ITEMS_PER_PAGE = 10;
 
@@ -27,11 +28,11 @@ interface UserViewProps {
     setUsers: React.Dispatch<React.SetStateAction<User[]>>;
     roles: Role[];
     permissionsList: Permission[];
-    view: "users" | "roles" | "permissions" | "add-user" | "add-role" | "add-permission" | "user-details";
+    view: ViewMode;
     effectivePermissions: Permission[];
     userRoles: Role[];
     token: string;
-    setView: (view: "users" | "roles" | "permissions" | "add-user" | "add-role" | "add-permission" | "user-details") => void;
+    setView: (view: ViewMode) => void;
     setError: (error: string | null) => void;
 }
 
