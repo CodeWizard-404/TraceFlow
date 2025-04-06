@@ -9,7 +9,7 @@ class ReceiptBookCard extends StatelessWidget {
   const ReceiptBookCard({required this.book, super.key});
 
   String _getDisplayStatus() {
-    if (book.status == "With Supervisor") {
+
       String? stubStatus;
       if (book.receiptStub is Map) {
         stubStatus = book.receiptStub['status'] as String?;
@@ -18,7 +18,7 @@ class ReceiptBookCard extends StatelessWidget {
       }
       if (stubStatus == "pending") return "To Agent";
       if (stubStatus == "collected") return "To Manager";
-    }
+
     return book.status ?? "Unknown"; // Fallback if status is null
   }
 

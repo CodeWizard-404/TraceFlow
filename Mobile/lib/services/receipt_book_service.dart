@@ -5,8 +5,6 @@ import '../models/receipt_book.dart';
 import '../utils/constants.dart';
 
 class ReceiptBookService {
-  // Fetch all receipt books from the backend
-// lib/services/receipt_book_service.dart
   static Future<List<ReceiptBook>> fetchAllReceiptBooks(String token) async {
     final response = await http.get(
       Uri.parse('$baseUrl/receipt-books'),
@@ -14,7 +12,7 @@ class ReceiptBookService {
     );
     if (response.statusCode == 200) {
       final List<dynamic> decodedData = json.decode(response.body);
-      print('Raw API response for receipt books: $decodedData'); // Debug print
+      print('Raw API response for receipt books: $decodedData');
       return decodedData.map((json) => ReceiptBook.fromJson(json)).toList();
     } else {
       throw Exception('Failed to fetch all receipt books: ${response.body}');
@@ -30,6 +28,18 @@ class ReceiptBookService {
       return ReceiptBook.fromJson(json.decode(response.body));
     } else {
       throw Exception('Failed to fetch receipt book: ${response.body}');
+    }
+  }
+
+  static Future<ReceiptBook> fetchReceiptBookByNumber(String number, String token) async {
+    final response = await http.get(
+      Uri.parse('$baseUrl/receipt-books/number/$number'),
+      headers: {'Authorization': 'Bearer $token'},
+    );
+    if (response.statusCode == 200) {
+      return ReceiptBook.fromJson(json.decode(response.body));
+    } else {
+      throw Exception('Failed to fetch receipt book by number: ${response.body}');
     }
   }
 

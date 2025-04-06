@@ -40,6 +40,20 @@ class ReceiptBookProvider with ChangeNotifier {
     }
   }
 
+  Future<void> fetchReceiptBookByNumber(String number, String token) async {
+    _isLoading = true;
+    notifyListeners();
+    try {
+      _currentReceiptBook = await ReceiptBookService.fetchReceiptBookByNumber(number, token);
+    } catch (e) {
+      _currentReceiptBook = null;
+      throw Exception('Failed to fetch receipt book by number: $e');
+    } finally {
+      _isLoading = false;
+      notifyListeners();
+    }
+  }
+
   Future<void> transferReceiptBooks({
     required List<String> bookIDs,
     required String recipientID,

@@ -7,12 +7,14 @@ import 'package:TraceFlow/widgets/commen/spacer.dart';
 class BookScanner extends StatelessWidget {
   final List<String> selectedBookIDs;
   final String? error;
+  final String? recipientType;
   final Future<void> Function() onScanQR;
   final void Function(String) onRemoveBook;
 
   const BookScanner({
     required this.selectedBookIDs,
     required this.error,
+    this.recipientType,
     required this.onScanQR,
     required this.onRemoveBook,
     super.key,
@@ -33,17 +35,31 @@ class BookScanner extends StatelessWidget {
         ),
         const CustomSpacer(height: 16),
         Text('Selected Books (${selectedBookIDs.length}):', style: theme.textTheme.titleMedium),
-        ...selectedBookIDs.map((bookID) {
-          final book = receiptBookProvider.receiptBooks.firstWhere((b) => b.bookID == bookID);
-          return ListTile(
-            title: Text('Receipt #${book.number}'),
-            subtitle: Text('Type: ${book.type} | Status: ${book.status}'),
-            trailing: IconButton(
-              icon: const Icon(Icons.remove_circle),
-              onPressed: () => onRemoveBook(bookID),
-            ),
-          );
-        }),
+        if (recipientType == "Stub Collection" && selectedBookIDs.isNotEmpty) ...[
+          if (receiptBookProvider.currentReceiptBook != null)
+            ListTile(
+              title: Text('Receipt #${receiptBookProvider.currentReceiptBook!.number}'),
+              subtitle: Text('Type: ${receiptBookProvider.currentReceiptBook!.type} | Status: ${receiptBookProvider.currentReceiptBook!.status}'),
+              trailing: IconButton(
+                icon: const Icon(Icons.remove_circle),
+                onPressed: () => onRemoveBook(selectedBookIDs.first),
+              ),
+            )
+          else
+            const Text('Loading book details...', style: TextStyle(color: Colors.grey)),
+        ] else ...[
+          ...selectedBookIDs.map((bookID) {
+            final book = receiptBookProvider.receiptBooks.firstWhere((b) => b.bookID == bookID);
+            return ListTile(
+              title: Text('Receipt #${book.number}'),
+              subtitle: Text('Type: ${book.type} | Status: ${book.status}'),
+              trailing: IconButton(
+                icon: const Icon(Icons.remove_circle),
+                onPressed: () => onRemoveBook(bookID),
+              ),
+            );
+          }),
+        ],
         if (error != null) ...[
           const CustomSpacer(height: 16),
           Text(error!, style: const TextStyle(color: Colors.red)),
