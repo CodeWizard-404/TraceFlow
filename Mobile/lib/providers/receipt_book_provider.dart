@@ -88,14 +88,18 @@ class ReceiptBookProvider with ChangeNotifier {
     _isLoading = true;
     notifyListeners();
     try {
-      _currentReceiptBook = await ReceiptBookService.validateTransfer(
+      await ReceiptBookService.validateTransfer(
         bookIDs: bookIDs,
         recipientID: recipientID,
         otpCode: otpCode,
         recipientType: recipientType,
         token: token,
       );
-      await fetchAndFilterReceiptBooksByHolder(_currentReceiptBook?.currentHolderID ?? '', token);
+      // Optionally refresh books list
+      final holderID = _currentReceiptBook?.currentHolderID ?? '';
+      if (holderID.isNotEmpty) {
+        await fetchAndFilterReceiptBooksByHolder(holderID, token);
+      }
     } catch (e) {
       throw Exception('Failed to validate transfer: $e');
     } finally {

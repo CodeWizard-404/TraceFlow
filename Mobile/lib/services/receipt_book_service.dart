@@ -66,7 +66,7 @@ class ReceiptBookService {
     }
   }
 
-  static Future<ReceiptBook> validateTransfer({
+  static Future<void> validateTransfer({
     required List<String> bookIDs,
     required String recipientID,
     required String otpCode,
@@ -75,21 +75,12 @@ class ReceiptBookService {
   }) async {
     final response = await http.post(
       Uri.parse('$baseUrl/receipt-books/validate-transfer'),
-      headers: {
-        'Content-Type': 'application/json',
-        'Authorization': 'Bearer $token',
-      },
-      body: json.encode({
-        'bookIDs': bookIDs,
-        'recipientID': recipientID,
-        'otpCode': otpCode,
-        'recipientType': recipientType,
-      }),
+      headers: {'Content-Type': 'application/json', 'Authorization': 'Bearer $token'},
+      body: json.encode({'bookIDs': bookIDs, 'recipientID': recipientID, 'otpCode': otpCode, 'recipientType': recipientType}),
     );
-    if (response.statusCode == 200) {
-      return ReceiptBook.fromJson(json.decode(response.body));
-    } else {
+    if (response.statusCode != 200) {
       throw Exception('Failed to validate transfer: ${response.body}');
     }
+    // No need to parse response since it’s just a message
   }
 }

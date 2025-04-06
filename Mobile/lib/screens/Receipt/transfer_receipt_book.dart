@@ -281,7 +281,7 @@ class _TransferReceiptBookScreenState extends State<TransferReceiptBookScreen> {
         );
       }
       _otpTimer?.cancel();
-      Navigator.pushNamed(context, '/receipt-books'); // Replaced pop with pushNamed
+      Navigator.pushNamed(context, '/receipt-books');
     } catch (e) {
       setState(() => _error = 'Failed to validate transfer: $e');
       print('Validation error details: $e');
