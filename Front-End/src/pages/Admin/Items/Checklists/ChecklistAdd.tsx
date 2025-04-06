@@ -3,13 +3,14 @@ import "../../AdminDashboard.css";
 import { createChecklist } from "../../../../apis/checklistAPI";
 import { useAuth } from "../../../../context/AuthContext";
 import { Checklist } from "../../../../models/Checklist";
+import { ViewMode } from "pages/Admin/adminTypes";
 
 interface ChecklistAddProps {
     checklists: Checklist[];
     setChecklists: React.Dispatch<React.SetStateAction<Checklist[]>>;
     view: string;
     token: string;
-    setView: (view: string) => void;
+    setView: (view: ViewMode) => void;
     setError: (error: string | null) => void;
 }
 

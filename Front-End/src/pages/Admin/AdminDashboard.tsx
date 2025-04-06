@@ -1,4 +1,3 @@
-// AdminDashboard.tsx
 import React, { useState, useEffect, useMemo } from "react";
 import {
     FaSearch, FaSort, FaUserPlus, FaArrowLeft,
@@ -44,19 +43,21 @@ const AdminDashboard: React.FC = () => {
     const [users, setUsers] = useState<User[]>([]);
     const [roles, setRoles] = useState<Role[]>([]);
     const [permissionsList, setPermissionsList] = useState<Permission[]>([]);
-    const [checklists, setChecklists] = useState<Checklist[]>([]); // New state
-    const [reasons, setReasons] = useState<Reason[]>([]); // New state
+    const [checklists, setChecklists] = useState<Checklist[]>([]);
+    const [reasons, setReasons] = useState<Reason[]>([]);
     const [selectedUser, setSelectedUser] = useState<User | null>(null);
     const [selectedRole, setSelectedRole] = useState<Role | null>(null);
     const [selectedPermission, setSelectedPermission] = useState<Permission | null>(null);
-    const [selectedChecklist, setSelectedChecklist] = useState<Checklist | null>(null); // New state
-    const [selectedReason, setSelectedReason] = useState<Reason | null>(null); // New state
+    const [selectedChecklist, setSelectedChecklist] = useState<Checklist | null>(null);
+    const [selectedReason, setSelectedReason] = useState<Reason | null>(null);
     const [view, setView] = useState<ViewMode>("users");
     const [searchQuery, setSearchQuery] = useState("");
     const [sortField, setSortField] = useState<SortField>("role");
     const [sortOrder, setSortOrder] = useState<SortOrder>("asc");
     const [roleFilter, setRoleFilter] = useState<string>("all");
-    const [currentPage, setCurrentPage] = useState(1);
+    const [usersPage, setUsersPage] = useState(1); // Separate page for UsersList
+    const [checklistsPage, setChecklistsPage] = useState(1); // Separate page for ChecklistsList
+    const [reasonsPage, setReasonsPage] = useState(1); // Separate page for ReasonsList
     const [loading, setLoading] = useState(false);
     const [error, setError] = useState<string | null>(null);
 
@@ -83,8 +84,8 @@ const AdminDashboard: React.FC = () => {
                     userPermissions.canViewUsers ? getAllUsers(token!) : Promise.resolve([]),
                     userPermissions.canViewRoles ? getAllRoles(token!) : Promise.resolve([]),
                     userPermissions.canViewPermissions ? getAllPermissions(token!) : Promise.resolve([]),
-                    userPermissions.canViewChecklists ? getAllChecklists(token!) : Promise.resolve([]), // New fetch
-                    userPermissions.canViewReasons ? getAllReasons(token!) : Promise.resolve([]), // New fetch
+                    userPermissions.canViewChecklists ? getAllChecklists(token!) : Promise.resolve([]),
+                    userPermissions.canViewReasons ? getAllReasons(token!) : Promise.resolve([]),
                 ]);
                 const usersWithRoles = await Promise.all(
                     usersData.map(async (user) => {
@@ -96,8 +97,8 @@ const AdminDashboard: React.FC = () => {
                 setUsers(usersWithRoles);
                 setRoles(rolesData);
                 setPermissionsList(permissionsData);
-                setChecklists(checklistsData); // Set checklists
-                setReasons(reasonsData); // Set reasons
+                setChecklists(checklistsData);
+                setReasons(reasonsData);
             } catch (err) {
                 console.error("Failed to fetch initial data:", err);
                 setError("Failed to load dashboard data.");
@@ -113,7 +114,6 @@ const AdminDashboard: React.FC = () => {
             const timer = setTimeout(() => {
                 setError(null);
             }, 3000); // Closes after 3 seconds
-
             return () => clearTimeout(timer);
         }
     }, [error, setError]);
@@ -124,9 +124,12 @@ const AdminDashboard: React.FC = () => {
         setSelectedUser(null);
         setSelectedRole(null);
         setSelectedPermission(null);
-        setSelectedChecklist(null); // Reset checklist selection
-        setSelectedReason(null); // Reset reason selection
-        setCurrentPage(1);
+        setSelectedChecklist(null);
+        setSelectedReason(null);
+        // Reset page based on view
+        if (newView === "users") setUsersPage(1);
+        else if (newView === "checklists") setChecklistsPage(1);
+        else if (newView === "reasons") setReasonsPage(1);
     };
 
     // Render
@@ -142,7 +145,6 @@ const AdminDashboard: React.FC = () => {
                     </button>
                 </div>
             )}
-
 
             <header className="dashboard-header">
                 <h1>
@@ -277,8 +279,8 @@ const AdminDashboard: React.FC = () => {
                         sortOrder={sortOrder}
                         userRoles={userRoles || []}
                         roleFilter={roleFilter}
-                        currentPage={currentPage}
-                        setCurrentPage={setCurrentPage}
+                        currentPage={usersPage}
+                        setCurrentPage={setUsersPage}
                         itemsPerPage={ITEMS_PER_PAGE}
                     />
                     <UserView
@@ -363,6 +365,9 @@ const AdminDashboard: React.FC = () => {
                         setSelectedChecklist={setSelectedChecklist}
                         setError={setError}
                         searchQuery={searchQuery}
+                        currentPage={checklistsPage}
+                        setCurrentPage={setChecklistsPage}
+                        itemsPerPage={ITEMS_PER_PAGE}
                     />
                     <ChecklistView
                         selectedChecklist={selectedChecklist}
@@ -389,6 +394,9 @@ const AdminDashboard: React.FC = () => {
                         setSelectedReason={setSelectedReason}
                         setError={setError}
                         searchQuery={searchQuery}
+                        currentPage={reasonsPage}
+                        setCurrentPage={setReasonsPage}
+                        itemsPerPage={ITEMS_PER_PAGE}
                     />
                     <ReasonView
                         selectedReason={selectedReason}

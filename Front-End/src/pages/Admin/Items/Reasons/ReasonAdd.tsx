@@ -3,13 +3,14 @@ import "../../AdminDashboard.css";
 import { createReason } from "../../../../apis/reasonAPI";
 import { useAuth } from "../../../../context/AuthContext";
 import { Reason } from "../../../../models/Reason";
+import { ViewMode } from "pages/Admin/adminTypes";
 
 interface ReasonAddProps {
     reasons: Reason[];
     setReasons: React.Dispatch<React.SetStateAction<Reason[]>>;
     view: string;
     token: string;
-    setView: (view: string) => void;
+    setView: (view: ViewMode) => void;
     setError: (error: string | null) => void;
 }
 
