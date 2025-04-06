@@ -25,10 +25,24 @@ class ReceiptBookService {
         return book;
     }
 
+    static async getReceiptBooksByHolder(holderID, holderType = 'user') {
+        const whereClause = holderType === 'user'
+            ? { currentHolderID: holderID }
+            : { agentID: holderID };
+
+        const book = await ReceiptBook.findOne({
+            where: whereClause,
+            include: [{ model: User, as: 'CurrentHolder' }, { model: ReceiptBookTransfer }, { model: Agent }, { model: ReceiptStub }],
+        });
+
+        if (!book) throw new Error(`No receipt book found for this ${holderType}`);
+        return book;
+    }
+
     static async sendToSupplier(bookIDs, supplierEmail, userID) {
         const books = await ReceiptBook.findAll({ where: { bookID: bookIDs, status: 'In Stock', currentHolderID: userID } });
         if (books.length !== bookIDs.length) throw new Error('Some books are not in stock or not held by you');
-    
+
         await Promise.all(books.map(async (book) => {
             // Check for existing Pending ToSupplier transfers
             const pendingTransfer = await ReceiptBookTransfer.findOne({
@@ -41,7 +55,7 @@ class ReceiptBookService {
             }
             await book.update({ status: 'Sent to Supplier', currentHolderID: null, supplierSentAt: new Date() });
         }));
-    
+
         const table = books.map(b => `${b.number} | ${b.type}`).join('\n');
         await transporter.sendMail({
             from: process.env.SMTP_USER,
@@ -50,7 +64,7 @@ class ReceiptBookService {
             text: `The following receipt books have been sent:\n${table}`,
             attachments: books.map(b => ({ filename: `${b.number}.png`, content: b.qrCode.split("base64,")[1], encoding: 'base64' })),
         });
-    
+
         return { message: `${books.length} books sent to supplier` };
     }
 
@@ -139,7 +153,7 @@ class ReceiptBookService {
 
         await Promise.all(books.map(book =>
             Promise.all([
-                book.update({ status: 'Collected from Supplier', currentHolderID: userID }),
+                book.update({ status: 'Collect from Supplier', currentHolderID: userID }), // Use the correct ENUM value
                 this.logTransfer(book.bookID, null, userID, 'Validated', 'FromSupplier')
             ])
         ));
@@ -173,7 +187,8 @@ class ReceiptBookService {
 
         return books.every(book =>
             (book.status === 'In Stock' && book.currentHolderID === senderID) ||
-            (book.status === 'Sent to Supplier' && !book.currentHolderID) || (book.status === 'Collect from Supplier' && !book.currentHolderID) ||
+            (book.status === 'Sent to Supplier' && !book.currentHolderID) ||
+            (book.status === 'Collect from Supplier' && book.currentHolderID === senderID) ||
             (['With Regional Manager', 'With Supervisor', 'Stub Collected'].includes(book.status) && book.currentHolderID === senderID)
         );
     }

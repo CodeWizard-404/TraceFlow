@@ -410,3 +410,31 @@ body.dark .pagination .page-btn:hover:not(:disabled) {
 body.dark .pagination .page-info {
   color: #9ca3af;
 }
+
+
+/* Add to existing styles */
+
+/* OTP Timer */
+.otp-timer {
+  text-align: center;
+  font-size: 0.9rem;
+  color: #4cb1c7;
+  margin-bottom: 0.5rem;
+}
+
+.otp-timer span {
+  font-weight: 600;
+}
+
+.timer-warning {
+  color: #e81f76; /* Red warning when 30 seconds or less remain */
+}
+
+/* Dark Theme Overrides */
+body.dark .otp-timer {
+  color: #63b3ed;
+}
+
+body.dark .timer-warning {
+  color: #f68787;
+}

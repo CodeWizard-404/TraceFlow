@@ -38,6 +38,19 @@ class ReceiptBookController {
         }
     }
 
+    static async getReceiptBooksByHolder(req, res) {
+        console.log('Getting receipt books by holder', req.params, req.body);
+        try {
+            const { holderID } = req.params;
+            const { userType } = req.body;
+            const receiptBooks = await ReceiptBookService.getReceiptBooksByHolder(holderID, userType);
+            res.json(receiptBooks);
+        } catch (error) {
+            console.error(`${new Date().toISOString()} - Get receipt books by holder failed:`, error);
+            res.status(404).json({ error: error.message || 'Receipt books not found' });
+        }
+    }
+
     static async sendToSupplier(req, res) {
         console.log('Sending to supplier', req.body);
         try {

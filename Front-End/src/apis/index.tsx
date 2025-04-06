@@ -103,6 +103,7 @@ export type ChecklistsByVisitResponse = VisitChecklist[];
 export type CreateReceiptBookResponse = ReceiptBook;
 export type ListReceiptBooksResponse = ReceiptBook[];
 export type ReceiptBookByIdResponse = ReceiptBook;
+export type ReceiptBooksByHolderResponse = ReceiptBook[];
 export type UpdateReceiptBookResponse = ReceiptBook;
 export interface DeleteReceiptBookResponse { message: string; }
 export interface SendToSupplierResponse { message: string; }

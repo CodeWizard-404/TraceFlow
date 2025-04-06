@@ -33,9 +33,10 @@ const ROLES = {
 
 const ROLE_TRANSFER_RULES = {
     [ROLES.PURCHASE_TEAM]: {
-        transferable: (book: ReceiptBook, userID: string) => 
-            (book.status === "In Stock" && book.currentHolderID === userID) || 
-            (book.status === "Sent to Supplier" && !book.currentHolderID),
+        transferable: (book: ReceiptBook, userID: string) =>
+            (book.status === "In Stock" && book.currentHolderID === userID) ||
+            (book.status === "Sent to Supplier" && !book.currentHolderID) ||
+            (book.status === "Collect from Supplier" && book.currentHolderID === userID),
         recipientOptions: ["Supplier", "Regional Manager", "Collect from Supplier"],
     },
     [ROLES.REGIONAL_MANAGER]: {
@@ -57,6 +58,8 @@ const ROLE_TRANSFER_RULES = {
 } as const;
 
 const ITEMS_PER_PAGE = 6;
+const OTP_EXPIRY_SECONDS = 600;
+const ERROR_DISPLAY_DURATION = 5000;
 
 const TransferReceiptBook: React.FC = () => {
     const navigate = useNavigate();
@@ -96,21 +99,75 @@ const TransferReceiptBook: React.FC = () => {
     const [isScannerRunning, setIsScannerRunning] = useState<boolean>(false);
     const [isScannerStarting, setIsScannerStarting] = useState<boolean>(false);
     const [currentPage, setCurrentPage] = useState<number>(1);
+    const [otpTimer, setOtpTimer] = useState<number>(OTP_EXPIRY_SECONDS);
     const qrScannerRef = useRef<Html5Qrcode | null>(null);
     const qrReaderRef = useRef<HTMLDivElement>(null);
     const scannedQRRef = useRef<Set<string>>(new Set());
     const stopLockRef = useRef<boolean>(false);
+    const scanLockRef = useRef<boolean>(false);
 
     const userPermissions = useMemo(() => ({
         canTransferReceiptBooks: effectivePermissions?.some(p => p.name === PERMISSIONS.TRANSFER_RECEIPT_BOOKS),
     }), [effectivePermissions]);
+
+    // Auto-clear error after duration
+    useEffect(() => {
+        if (!error) return;
+
+        const timer = setTimeout(() => {
+            setError(null);
+        }, ERROR_DISPLAY_DURATION);
+
+        return () => clearTimeout(timer); // Cleanup on unmount or new error
+    }, [error]);
+
+    // OTP Timer logic
+    useEffect(() => {
+        if (!transferInitiated) {
+            setOtpTimer(OTP_EXPIRY_SECONDS);
+            return;
+        }
+
+        const interval = setInterval(() => {
+            setOtpTimer((prev) => {
+                if (prev <= 0) {
+                    clearInterval(interval);
+                    setError("OTP has expired. Please initiate the transfer again.");
+                    return 0;
+                }
+                return prev - 1;
+            });
+        }, ERROR_DISPLAY_DURATION);
+
+        return () => clearInterval(interval);
+    }, [transferInitiated]);
+
+    const formatTime = (seconds: number) => {
+        const minutes = Math.floor(seconds / 60);
+        const secs = seconds % 60;
+        return `${minutes.toString().padStart(2, "0")}:${secs.toString().padStart(2, "0")}`;
+    };
+
+    const recipientDetails = useMemo(() => {
+        if (recipientType === "Agent") {
+            const agent = agents.find(a => a.agentID === recipientID);
+            return agent ? `${agent.name} ${agent.lastname} (${agent.phone})` : "Loading...";
+        } else if (recipientType === "Stub Collection") {
+            const book = receiptBooks.find(b => b.bookID === selectedBookIDs[0]);
+            const agent = agents.find(a => a.agentID === book?.agentID);
+            return agent ? `${agent.name} ${agent.lastname} (${agent.phone})` : "Loading...";
+        } else {
+            const user = users.find(u => u.userID === recipientID);
+            return user ? `${user.firstname} ${user.lastname} (${user.phone})` : "Loading...";
+        }
+    }, [recipientType, recipientID, users, agents, selectedBookIDs, receiptBooks]);
 
     const isTransferable = useCallback((book: ReceiptBook) => {
         if (recipientType === "Supplier") {
             return book.status === "In Stock" && book.currentHolderID === currentUserID;
         }
         if (recipientType === "Collect from Supplier") {
-            return book.status === "Sent to Supplier" && !book.currentHolderID;
+            return book.status === "Sent to Supplier" && book.currentHolderID === currentUserID;
         }
         return Array.from(userRoleSet).some(role => {
             const rule = ROLE_TRANSFER_RULES[role as unknown as keyof typeof ROLE_TRANSFER_RULES];
@@ -119,6 +176,9 @@ const TransferReceiptBook: React.FC = () => {
     }, [userRoleSet, currentUserID, recipientType]);
 
     const handleScanSuccess = useCallback(async (decodedText: string) => {
+        if (scanLockRef.current) return;
+        scanLockRef.current = true;
+
         try {
             const parseTLV = (text: string) => {
                 const numberLength = parseInt(text.slice(2, 4), 10);
@@ -137,8 +197,8 @@ const TransferReceiptBook: React.FC = () => {
                 return;
             }
 
-            if (scannedQRRef.current.has(decodedText)) {
-                setError(`QR code "${number}" has already been scanned.`);
+            if (scannedQRRef.current.has(decodedText) || selectedBookIDs.includes(matchingBook.bookID)) {
+                setError(`QR code "${number}" has already been scanned or selected.`);
                 return;
             }
 
@@ -149,6 +209,11 @@ const TransferReceiptBook: React.FC = () => {
 
             if (recipientType === "Stub Collection" && matchingBook.status !== "Assigned to Agent") {
                 setError(`Book "${number}" must be "Assigned to Agent" for stub collection.`);
+                return;
+            }
+
+            if (recipientType === "Stock Manager" && matchingBook.ReceiptStub?.status !== "collected") {
+                setError(`Stub "${number}" must be "collected" for stock management.`);
                 return;
             }
 
@@ -164,6 +229,8 @@ const TransferReceiptBook: React.FC = () => {
         } catch (err) {
             setError("Invalid QR code format. Please try again.");
             console.error("QR Parse Error:", err);
+        } finally {
+            scanLockRef.current = false;
         }
     }, [isTransferable, recipientType, selectedBookIDs, receiptBooks, userRoleSet]);
 
@@ -227,8 +294,8 @@ const TransferReceiptBook: React.FC = () => {
     }, [handleScanSuccess, isScannerRunning, isScannerStarting]);
 
     useEffect(() => {
-        if (!qrReaderRef.current || !recipientType || 
-            !(recipientID || recipientType === "Supplier" || recipientType === "Archive" || recipientType === "Stub Collection" || recipientType === "Collect from Supplier") || 
+        if (!qrReaderRef.current || !recipientType ||
+            !(recipientID || recipientType === "Supplier" || recipientType === "Archive" || recipientType === "Stub Collection" || recipientType === "Collect from Supplier") ||
             transferInitiated || recipientType === "Supplier") {
             return;
         }
@@ -334,7 +401,7 @@ const TransferReceiptBook: React.FC = () => {
     }, [agentPhone, recipientType, token]);
 
     useEffect(() => {
-        if (!searchQuery || recipientType === "Agent" || recipientType === "Supplier" || 
+        if (!searchQuery || recipientType === "Agent" || recipientType === "Supplier" ||
             recipientType === "Archive" || recipientType === "Stub Collection" || recipientType === "Collect from Supplier") return;
         const timeout = setTimeout(async () => {
             try {
@@ -372,7 +439,7 @@ const TransferReceiptBook: React.FC = () => {
     }, [users, recipientType, searchQuery]);
 
     const filteredBooks = useMemo(() => {
-        const inStockBooks = receiptBooks.filter(book => 
+        const inStockBooks = receiptBooks.filter(book =>
             book.status === "In Stock" && isTransferable(book)
         ).filter(book =>
             book.number.toLowerCase().includes(bookSearchQuery.toLowerCase()) ||
@@ -384,7 +451,7 @@ const TransferReceiptBook: React.FC = () => {
     }, [receiptBooks, bookSearchQuery, isTransferable, currentPage]);
 
     const totalPages = useMemo(() => {
-        const inStockBooks = receiptBooks.filter(book => 
+        const inStockBooks = receiptBooks.filter(book =>
             book.status === "In Stock" && isTransferable(book)
         ).filter(book =>
             book.number.toLowerCase().includes(bookSearchQuery.toLowerCase()) ||
@@ -394,11 +461,23 @@ const TransferReceiptBook: React.FC = () => {
     }, [receiptBooks, bookSearchQuery, isTransferable]);
 
     const handleBookSelection = (bookID: string) => {
-        setSelectedBookIDs(prev =>
-            prev.includes(bookID)
+        setSelectedBookIDs(prev => {
+            const newSelected = prev.includes(bookID)
                 ? prev.filter(id => id !== bookID)
-                : [...prev, bookID]
-        );
+                : [...prev, bookID];
+
+            const book = receiptBooks.find(b => b.bookID === bookID);
+            if (book?.qrCode) {
+                if (newSelected.includes(bookID)) {
+                    scannedQRRef.current.add(book.qrCode);
+                    setScannedQR(prev => [...prev, book.qrCode]);
+                } else {
+                    scannedQRRef.current.delete(book.qrCode);
+                    setScannedQR(prev => prev.filter(qr => qr !== book.qrCode));
+                }
+            }
+            return newSelected;
+        });
     };
 
     const handlePageChange = (page: number) => {
@@ -616,7 +695,7 @@ const TransferReceiptBook: React.FC = () => {
                                             <input
                                                 type="text"
                                                 value={bookSearchQuery}
-                                                onChange={(e) => {setBookSearchQuery(e.target.value); setCurrentPage(1);}}
+                                                onChange={(e) => { setBookSearchQuery(e.target.value); setCurrentPage(1); }}
                                                 placeholder="Search books by number or type"
                                             />
                                             <ul className="book-list">
@@ -750,7 +829,10 @@ const TransferReceiptBook: React.FC = () => {
                     <form onSubmit={handleValidateTransfer}>
                         {recipientType !== "Archive" && recipientType !== "Collect from Supplier" && (
                             <div className="form-group">
-                                <label>Enter OTP {recipientType === "Stub Collection" ? "(Sent to Agent)" : `(Sent to ${recipientType} ${recipientID})`}</label>
+                                <div className="otp-timer">
+                                    OTP expires in: <span className={otpTimer <= 30 ? "timer-warning" : ""}>{formatTime(otpTimer)}</span>
+                                </div>
+                                <label>Enter OTP (Sent to {recipientType} {recipientDetails})</label>
                                 <input
                                     type="text"
                                     value={otp}
