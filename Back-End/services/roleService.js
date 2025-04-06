@@ -33,7 +33,13 @@ class RoleService {
     // Get role by ID
     static async getRoleById(roleID) {
         try {
-            const role = await Role.findByPk(roleID);
+            const role = await Role.findByPk(roleID, {
+                include: [{
+                    model: Permission,
+                    through: { attributes: [] },
+                    attributes: ['name', 'description'],
+                }],
+            });
             if (!role) throw new Error('Role not found');
             return role;
         } catch (error) {

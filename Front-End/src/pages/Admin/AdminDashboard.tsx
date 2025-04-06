@@ -1,6 +1,7 @@
 import React, { useState, useEffect, useMemo } from "react";
 import {
-    FaSearch, FaSort, FaUserPlus, FaArrowLeft, FaSignOutAlt
+    FaSearch, FaSort, FaUserPlus, FaArrowLeft, FaSignOutAlt,
+    FaPlus
 } from "react-icons/fa";
 import { useAuth } from "../../context/AuthContext";
 import { getAllUsers } from "../../apis/userAPI";
@@ -13,6 +14,12 @@ import Permission from "../../models/Permission";
 import UserView from "./User/user_view";
 import UserAdd from "./User/user_add";
 import UsersList from "./User/users_list";
+import RoleView from "./Role/roles_view";
+import RoleAdd from "./Role/role_add";
+import RolesList from "./Role/roles_list";
+import PermView from "./Permission/perm_view";
+import PermAdd from "./Permission/perm_add";
+import PermsList from "./Permission/perms_list";
 import "./AdminDashboard.css";
 
 type ViewMode = "users" | "roles" | "permissions" | "add-user" | "add-role" | "add-permission" | "user-details";
@@ -29,6 +36,8 @@ const AdminDashboard: React.FC = () => {
     const [roles, setRoles] = useState<Role[]>([]);
     const [permissionsList, setPermissionsList] = useState<Permission[]>([]);
     const [selectedUser, setSelectedUser] = useState<User | null>(null);
+    const [selectedRole, setSelectedRole] = useState<Role | null>(null);
+    const [selectedPermission, setSelectedPermission] = useState<Permission | null>(null);
     const [view, setView] = useState<ViewMode>("users");
     const [searchQuery, setSearchQuery] = useState("");
     const [sortField, setSortField] = useState<SortField>("role");
@@ -48,8 +57,6 @@ const AdminDashboard: React.FC = () => {
         canCreatePermissions: effectivePermissions?.some(p => p.name === import.meta.env.VITE_PERMISSIONS_CREATE_PERMISSIONS),
     }), [effectivePermissions]);
 
-    //const isSuperAdmin = useMemo(() => userRoles?.some(r => r.name === import.meta.env.VITE_ROLES_SUPER_ADMIN), [userRoles]);
-
     // Initial Data Fetch
     useEffect(() => {
         const fetchData = async () => {
@@ -60,7 +67,6 @@ const AdminDashboard: React.FC = () => {
                     userPermissions.canViewRoles ? getAllRoles(token!) : Promise.resolve([]),
                     userPermissions.canViewPermissions ? getAllPermissions(token!) : Promise.resolve([])
                 ]);
-                // Fetch roles for each user
                 const usersWithRoles = await Promise.all(
                     usersData.map(async (user) => {
                         const userRoles = await getRolesByUser(user.userID, token!);
@@ -85,7 +91,9 @@ const AdminDashboard: React.FC = () => {
     const handleViewChange = (newView: ViewMode) => {
         setView(newView);
         setSelectedUser(null);
-        setCurrentPage(1); // Reset pagination when view changes
+        setSelectedRole(null);
+        setSelectedPermission(null);
+        setCurrentPage(1);
     };
 
     // Render
@@ -151,7 +159,7 @@ const AdminDashboard: React.FC = () => {
                             </button>
                         )}
                     </div>
-                    {(view === "users" || view === "add-user" || view === "user-details") && userPermissions.canViewUsers && (
+                    {(view === "users") && userPermissions.canViewUsers && (
                         <>
                             <div className="sort-card">
                                 <h3>Sort Users By</h3>
@@ -180,6 +188,16 @@ const AdminDashboard: React.FC = () => {
                             )}
                         </>
                     )}
+                    {(view === "roles") && userPermissions.canViewRoles && (
+                        <button className="action-button" onClick={() => handleViewChange("add-role")}>
+                            <FaPlus /> Add Role
+                        </button>
+                    )}
+                    {(view === "permissions") && userPermissions.canViewPermissions && (
+                        <button className="action-button" onClick={() => handleViewChange("add-permission")}>
+                            <FaPlus /> Add Permission
+                        </button>
+                    )}
                 </aside>
 
                 <main className="main-content">
@@ -189,7 +207,7 @@ const AdminDashboard: React.FC = () => {
                         users={users}
                         setUsers={setUsers}
                         view={view}
-                        token={token}
+                        token={token!}
                         setView={setView}
                         setSelectedUser={setSelectedUser}
                         setError={setError}
@@ -212,7 +230,7 @@ const AdminDashboard: React.FC = () => {
                         view={view}
                         effectivePermissions={effectivePermissions || []}
                         userRoles={userRoles || []}
-                        token={token}
+                        token={token!}
                         setView={setView}
                         setError={setError}
                     />
@@ -221,7 +239,58 @@ const AdminDashboard: React.FC = () => {
                         setUsers={setUsers}
                         roles={roles}
                         view={view}
-                        token={token}
+                        token={token!}
+                        setView={setView}
+                        setError={setError}
+                    />
+                    <RolesList
+                        roles={roles}
+                        setRoles={setRoles}
+                        view={view}
+                        token={token!}
+                        setSelectedRole={setSelectedRole}
+                        setError={setError}
+                        userRoles={userRoles || []}
+                        searchQuery={searchQuery}
+                    />
+                    <RoleView
+                        selectedRole={selectedRole}
+                        setSelectedRole={setSelectedRole}
+                        roles={roles}
+                        setRoles={setRoles}
+                        permissionsList={permissionsList}
+                        view={view}
+                        userRoles={userRoles || []}
+                        setError={setError}
+                    />
+                    <RoleAdd
+                        roles={roles}
+                        setRoles={setRoles}
+                        permissionsList={permissionsList}
+                        view={view}
+                        token={token!}
+                        setView={setView}
+                        setError={setError}
+                    />
+                    <PermsList
+                        permissionsList={permissionsList}
+                        view={view}
+                        setSelectedPermission={setSelectedPermission}
+                        searchQuery={searchQuery}
+                    />
+                    <PermView
+                        selectedPermission={selectedPermission}
+                        setSelectedPermission={setSelectedPermission}
+                        permissionsList={permissionsList}
+                        setPermissionsList={setPermissionsList}
+                        view={view}
+                        setError={setError}
+                    />
+                    <PermAdd
+                        permissionsList={permissionsList}
+                        setPermissionsList={setPermissionsList}
+                        view={view}
+                        token={token!}
                         setView={setView}
                         setError={setError}
                     />

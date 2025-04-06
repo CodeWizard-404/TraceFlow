@@ -18,9 +18,9 @@ export type AgentByPhoneResponse = Agent;
 export type AgentByIdResponse = Agent;
 
 // Auth API Responses
-export interface LoginResponse { token: string; user: User; }
-export interface Verify2FAResponse { token: string; userID: string; }
-export interface Resend2FAResponse { message: string; }
+export type LoginResponse = { token: string; user: User; }
+export type Verify2FAResponse = { token: string; userID: string; }
+export type Resend2FAResponse = { message: string; }
 
 
 
@@ -30,9 +30,9 @@ export type ListUsersResponse = User[];
 export type UserByPhoneResponse = User;
 export type UserByIdResponse = User;
 export type UpdateUserResponse = User;
-export interface DeleteUserResponse { message: string; }
-export interface AssignSupervisorsResponse { managerID: string; assignedSupervisors: string[]; message: string; }
-export interface RevokeSupervisorsResponse { managerID: string; revokedSupervisors: User[]; message: string; }
+export type DeleteUserResponse = { message: string; }
+export type AssignSupervisorsResponse = { managerID: string; assignedSupervisors: string[]; message: string; }
+export type RevokeSupervisorsResponse = { managerID: string; revokedSupervisors: User[]; message: string; }
 export type SupervisorsByUserResponse = User[];
 export type ManagersByUserResponse = User[];
 
@@ -42,9 +42,9 @@ export type CreateRoleResponse = Role;
 export type ListRolesResponse = Role[];
 export type RoleByIdResponse = Role;
 export type UpdateRoleResponse = Role;
-export interface DeleteRoleResponse { message: string; }
-export interface AssignRolesResponse { userID: string; assignedRoles: string[]; totalAssigned: number; }
-export interface RevokeRoleResponse { userID: string; revokedRole: Role; totalAssigned: number; message: string; }
+export type DeleteRoleResponse = { message: string; }
+export type AssignRolesResponse = { userID: string; assignedRoles: string[]; totalAssigned: number; }
+export type RevokeRoleResponse = { userID: string; revokedRole: Role; totalAssigned: number; message: string; }
 export type RolesByUserResponse = Role[];
 
 
@@ -53,12 +53,12 @@ export type ListPermissionsResponse = Permission[];
 export type PermissionByIdResponse = Permission;
 export type CreatePermissionResponse = Permission;
 export type UpdatePermissionResponse = Permission;
-export interface DeletePermissionResponse { message: string; }
-export interface AssignPermissionsResponse { roleID: string; assignedPermissions: Permission[]; totalAssigned: number }
-export interface RevokePermissionsResponse { roleID: string; revokedPermissions: Permission[]; totalAssigned: number; message: string; }
+export type DeletePermissionResponse = { message: string; }
+export type AssignPermissionsResponse = { roleID: string; assignedPermissions: Permission[]; totalAssigned: number }
+export type RevokePermissionsResponse = { roleID: string; revokedPermissions: Permission[]; totalAssigned: number; message: string; }
 export type PermissionsByRoleResponse = Permission[];
 export type AddPermissionOverrideResponse = UserPermissionOverride;
-export interface RemovePermissionOverrideResponse { message: string; }
+export type RemovePermissionOverrideResponse = { message: string; }
 export type EffectivePermissionsResponse = Permission[];
 export type UserPermissionOverrideResponse = UserPermissionOverride;
 
@@ -82,7 +82,7 @@ export type UpdateTimesheetResponse = Timesheet;
 export type DeleteTimesheetResponse = { message: string };
 
 // Visit API Responses
-export interface VerifyQrResponse { valid: boolean; message: string; }
+export type VerifyQrResponse = { valid: boolean; message: string; }
 export type LogVisitResponse = Visit;
 export type VisitByIdResponse = Visit;
 export type UpdateVisitResponse = Visit;
@@ -90,11 +90,17 @@ export type DeleteVisitResponse = { message: string };
 
 // Reason API Responses
 export type CreateReasonResponse = Reason;
+export type ReasonByIdResponse = Reason;
+export type UpdateReasonResponse = Reason;
+export type DeleteReasonResponse = { message: string; }
 export type ListReasonsResponse = Reason[];
 export type ReasonsByVisitResponse = VisitReason[];
 
 // Checklist API Responses
 export type CreateChecklistResponse = Checklist;
+export type ChecklistByIdResponse = Checklist;
+export type UpdateChecklistResponse = Checklist;
+export type DeleteChecklistResponse = { message: string; }
 export type ListChecklistsResponse = Checklist[];
 export type ChecklistsByVisitResponse = VisitChecklist[];
 
@@ -105,15 +111,15 @@ export type ListReceiptBooksResponse = ReceiptBook[];
 export type ReceiptBookByIdResponse = ReceiptBook;
 export type ReceiptBooksByHolderResponse = ReceiptBook[];
 export type UpdateReceiptBookResponse = ReceiptBook;
-export interface DeleteReceiptBookResponse { message: string; }
-export interface SendToSupplierResponse { message: string; }
-export interface ReceiveFromSupplierResponse { message: string; }
-export interface TransferResponse { message: string; }
+export type DeleteReceiptBookResponse = { message: string; }
+export type SendToSupplierResponse = { message: string; }
+export type ReceiveFromSupplierResponse = { message: string; }
+export type TransferResponse = { message: string; }
 export type ValidateTransferResponse = ReceiptBook;
 export type TransferHistoryResponse = ReceiptBookTransfer[];
 
 // Receipt Stub API Responses
-export interface CollectStubResponse { message: string; }
+export type CollectStubResponse = { message: string; }
 export type ValidateStubCollectionResponse = ReceiptStub;
 export type ArchiveStubResponse = ReceiptStub;
 

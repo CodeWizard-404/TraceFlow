@@ -5,6 +5,25 @@ class ChecklistService {
         return Checklist.create({ item: text });
     }
 
+    static async updateItem(id, text) {
+        const item = await Checklist.findByPk(id);
+        if (!item) throw new Error('Checklist item not found');
+        item.item = text;
+        return item.save();
+    }
+
+    static async deleteItem(id) {
+        const item = await Checklist.findByPk(id);
+        if (!item) throw new Error('Checklist item not found');
+        return item.destroy();
+    }
+
+    static async getItemById(id) {
+        const item = await Checklist.findByPk(id);
+        if (!item) throw new Error('Checklist item not found');
+        return item;
+    }
+
     static async getItemsByIds(ids) {
         const items = await Checklist.findAll({ where: { checklistID: ids } });
         if (items.length !== ids.length) {

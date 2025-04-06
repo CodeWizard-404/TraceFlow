@@ -6,7 +6,7 @@ import '../utils/constants.dart';
 class ReasonService {
   static Future<List<Reason>> getReasonsByVisitId(String visitId, String token) async {
     final response = await http.get(
-      Uri.parse('$baseUrl/reasons/$visitId'),
+      Uri.parse('$baseUrl/reasons/visit/$visitId'),
       headers: {'Authorization': 'Bearer $token'},
     );
     if (response.statusCode == 200) {

@@ -763,11 +763,11 @@ const UserView: React.FC<UserViewProps> = ({
                                                 onClick={() => handleToggleRole(role)}
                                                 disabled={
                                                     loading ||
-                                                    role.name === import.meta.env.VITE_ROLES_SUPER_ADMIN || // Disable Super Admin
+                                                    role.name === import.meta.env.VITE_ROLES_SUPER_ADMIN ||
                                                     (selectedUser.userID === currentUser?.userID &&
                                                         role.name === import.meta.env.VITE_ROLES_ADMIN &&
                                                         !isSuperAdmin &&
-                                                        tempRoles.some(r => r.name === import.meta.env.VITE_ROLES_ADMIN)) // Disable Admin for self
+                                                        tempRoles.some(r => r.name === import.meta.env.VITE_ROLES_ADMIN))
                                                 }
                                             >
                                                 <span>{role.name}</span>

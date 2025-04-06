@@ -19,6 +19,52 @@ class ChecklistController {
         }
     }
 
+    static async updateChecklist(req, res) {
+        console.log('Updating Checklist', req.params, req.body);
+        try {
+            const { id: checklistID } = req.params;
+            const { text } = req.body;
+            if (!checklistID || !text) {
+                return res.status(400).json({ error: 'Checklist ID and text are required' });
+            }
+            const checklist = await ChecklistService.updateItem(checklistID, text);
+            res.status(200).json(checklist);
+        } catch (error) {
+            console.error(`${new Date().toISOString()} - Update checklist failed:`, error);
+            res.status(500).json({ error: error.message || 'Failed to update checklist due to an internal error' });
+        }
+    }
+
+    static async deleteChecklist(req, res) {
+        console.log('Deleting Checklist', req.params);
+        try {
+            const { id: checklistID } = req.params;
+            if (!checklistID) {
+                return res.status(400).json({ error: 'Checklist ID is required' });
+            }
+            await ChecklistService.deleteItem(checklistID);
+            res.status(204).send();
+        } catch (error) {
+            console.error(`${new Date().toISOString()} - Delete checklist failed:`, error);
+            res.status(500).json({ error: error.message || 'Failed to delete checklist due to an internal error' });
+        }
+    }
+
+    static async getChecklistByID(req, res) {
+        console.log('Getting Checklist by ID', req.params);
+        try {
+            const { id: checklistID } = req.params;
+            if (!checklistID) {
+                return res.status(400).json({ error: 'Checklist ID is required' });
+            }
+            const checklist = await ChecklistService.getItemById(checklistID);
+            res.status(200).json(checklist);
+        } catch (error) {
+            console.error(`${new Date().toISOString()} - Get checklist by ID failed:`, error);
+            res.status(500).json({ error: error.message || 'Failed to retrieve checklist due to an internal error' });
+        }
+    }
+
     static async getChecklistsByVisitID(req, res) {
 
         console.log('Getting Checklists by Visit ID', req.params);

@@ -6,7 +6,7 @@ import '../utils/constants.dart';
 class ChecklistService {
   static Future<List<Checklist>> getChecklistsByVisitId(String visitId, String token) async {
     final response = await http.get(
-      Uri.parse('$baseUrl/checklists/$visitId'),
+      Uri.parse('$baseUrl/checklists/visit/$visitId'),
       headers: {'Authorization': 'Bearer $token'},
     );
     if (response.statusCode == 200) {
