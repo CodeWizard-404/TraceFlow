@@ -1,4 +1,3 @@
-// lib/providers/user_provider.dart
 import 'package:flutter/foundation.dart';
 import '../models/user.dart';
 import '../services/user_service.dart';
@@ -36,6 +35,21 @@ class UserProvider with ChangeNotifier {
     } catch (e) {
       _users = [];
       throw Exception('Failed to fetch all users: $e');
+    } finally {
+      _isLoading = false;
+      notifyListeners();
+    }
+  }
+
+  Future<void> getUsersByRole(String role, String token) async {
+    _isLoading = true;
+    notifyListeners();
+    try {
+      _users = await UserService.getUsersByRole(role, token);
+      print('Users for role $role: ${_users.length}'); // Debug
+    } catch (e) {
+      _users = [];
+      throw Exception('Failed to fetch users by role $role: $e');
     } finally {
       _isLoading = false;
       notifyListeners();

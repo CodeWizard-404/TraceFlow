@@ -5,7 +5,6 @@ import '../models/receipt_book.dart';
 import '../utils/constants.dart';
 
 class ReceiptBookService {
-  // Fetch all receipt books from the backend
   static Future<List<ReceiptBook>> fetchAllReceiptBooks(String token) async {
     final response = await http.get(
       Uri.parse('$baseUrl/receipt-books'),
@@ -13,6 +12,7 @@ class ReceiptBookService {
     );
     if (response.statusCode == 200) {
       final List<dynamic> decodedData = json.decode(response.body);
+      print('Raw API response for receipt books: $decodedData');
       return decodedData.map((json) => ReceiptBook.fromJson(json)).toList();
     } else {
       throw Exception('Failed to fetch all receipt books: ${response.body}');
@@ -28,6 +28,18 @@ class ReceiptBookService {
       return ReceiptBook.fromJson(json.decode(response.body));
     } else {
       throw Exception('Failed to fetch receipt book: ${response.body}');
+    }
+  }
+
+  static Future<ReceiptBook> fetchReceiptBookByNumber(String number, String token) async {
+    final response = await http.get(
+      Uri.parse('$baseUrl/receipt-books/number/$number'),
+      headers: {'Authorization': 'Bearer $token'},
+    );
+    if (response.statusCode == 200) {
+      return ReceiptBook.fromJson(json.decode(response.body));
+    } else {
+      throw Exception('Failed to fetch receipt book by number: ${response.body}');
     }
   }
 
@@ -54,7 +66,7 @@ class ReceiptBookService {
     }
   }
 
-  static Future<ReceiptBook> validateTransfer({
+  static Future<void> validateTransfer({
     required List<String> bookIDs,
     required String recipientID,
     required String otpCode,
@@ -63,21 +75,12 @@ class ReceiptBookService {
   }) async {
     final response = await http.post(
       Uri.parse('$baseUrl/receipt-books/validate-transfer'),
-      headers: {
-        'Content-Type': 'application/json',
-        'Authorization': 'Bearer $token',
-      },
-      body: json.encode({
-        'bookIDs': bookIDs,
-        'recipientID': recipientID,
-        'otpCode': otpCode,
-        'recipientType': recipientType,
-      }),
+      headers: {'Content-Type': 'application/json', 'Authorization': 'Bearer $token'},
+      body: json.encode({'bookIDs': bookIDs, 'recipientID': recipientID, 'otpCode': otpCode, 'recipientType': recipientType}),
     );
-    if (response.statusCode == 200) {
-      return ReceiptBook.fromJson(json.decode(response.body));
-    } else {
+    if (response.statusCode != 200) {
       throw Exception('Failed to validate transfer: ${response.body}');
     }
+    // No need to parse response since it’s just a message
   }
 }

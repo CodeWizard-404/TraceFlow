@@ -1,4 +1,3 @@
-// lib/providers/receipt_book_provider.dart
 import 'package:flutter/foundation.dart';
 import '../models/receipt_book.dart';
 import '../services/receipt_book_service.dart';
@@ -12,7 +11,6 @@ class ReceiptBookProvider with ChangeNotifier {
   ReceiptBook? get currentReceiptBook => _currentReceiptBook;
   bool get isLoading => _isLoading;
 
-  // Fetch all receipt books and filter by holder (userID) locally in the frontend
   Future<void> fetchAndFilterReceiptBooksByHolder(String userID, String token) async {
     _isLoading = true;
     notifyListeners();
@@ -42,6 +40,20 @@ class ReceiptBookProvider with ChangeNotifier {
     }
   }
 
+  Future<void> fetchReceiptBookByNumber(String number, String token) async {
+    _isLoading = true;
+    notifyListeners();
+    try {
+      _currentReceiptBook = await ReceiptBookService.fetchReceiptBookByNumber(number, token);
+    } catch (e) {
+      _currentReceiptBook = null;
+      throw Exception('Failed to fetch receipt book by number: $e');
+    } finally {
+      _isLoading = false;
+      notifyListeners();
+    }
+  }
+
   Future<void> transferReceiptBooks({
     required List<String> bookIDs,
     required String recipientID,
@@ -57,7 +69,6 @@ class ReceiptBookProvider with ChangeNotifier {
         recipientType: recipientType,
         token: token,
       );
-      // Refresh the list after transfer
       await fetchAndFilterReceiptBooksByHolder(_currentReceiptBook?.currentHolderID ?? '', token);
     } catch (e) {
       throw Exception('Failed to transfer receipt books: $e');
@@ -77,15 +88,18 @@ class ReceiptBookProvider with ChangeNotifier {
     _isLoading = true;
     notifyListeners();
     try {
-      _currentReceiptBook = await ReceiptBookService.validateTransfer(
+      await ReceiptBookService.validateTransfer(
         bookIDs: bookIDs,
         recipientID: recipientID,
         otpCode: otpCode,
         recipientType: recipientType,
         token: token,
       );
-      // Refresh the list after validation
-      await fetchAndFilterReceiptBooksByHolder(_currentReceiptBook?.currentHolderID ?? '', token);
+      // Optionally refresh books list
+      final holderID = _currentReceiptBook?.currentHolderID ?? '';
+      if (holderID.isNotEmpty) {
+        await fetchAndFilterReceiptBooksByHolder(holderID, token);
+      }
     } catch (e) {
       throw Exception('Failed to validate transfer: $e');
     } finally {
