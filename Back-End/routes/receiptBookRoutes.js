@@ -9,6 +9,7 @@ router.post('/', authenticateJWT, requirePermission('create_receipt_books'), Rec
 router.get('/', authenticateJWT, requirePermission('access_all_receipt_books'), ReceiptBookController.getAllReceiptBooks);
 router.get('/:bookID', authenticateJWT, requirePermission('access_receipt_book_details'), ReceiptBookController.getReceiptBookById);
 router.post('/holder/:holderID', authenticateJWT, requirePermission('access_receipt_books_by_holder'), ReceiptBookController.getReceiptBooksByHolder);
+router.get('/number/:number', authenticateJWT, requirePermission('access_receipt_books_by_number'), ReceiptBookController.getReceiptBookByNumber);
 router.put('/:bookID', authenticateJWT, requirePermission('update_receipt_books'), ReceiptBookController.updateReceiptBook);
 router.delete('/:bookID', authenticateJWT, requirePermission('delete_receipt_books'), ReceiptBookController.deleteReceiptBook);
 

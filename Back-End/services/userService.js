@@ -1,10 +1,16 @@
 const bcrypt = require('bcrypt');
 const { User, Role } = require('../models');
+const { Op } = require('sequelize');
 
 class UserService {
     // Create a user (simplified for this example)
     static async createUser(email, password, firstname, lastname, phone, wallet) {
         try {
+            // Manual input validation with friendly message
+            if (!email || !password || !firstname || !lastname || !phone || !wallet) {
+                throw new Error('Please fill in all required fields: email, password, first name, last name, phone, and wallet.');
+            }
+
             const hashedPassword = await bcrypt.hash(password, 10);
             const [user, created] = await User.findOrCreate({
                 where: { phone },
@@ -17,10 +23,38 @@ class UserService {
                     wallet,
                 },
             });
-            if (!created) throw new Error('User already exists');
+
+            if (!created) {
+                const existingUser = await User.findOne({
+                    where: {
+                        [Op.or]: [{ email }, { phone }, { wallet }],
+                    },
+                });
+                if (existingUser) {
+                    const conflictFields = [];
+                    if (existingUser.email === email) conflictFields.push('email');
+                    if (existingUser.phone === phone) conflictFields.push('phone number');
+                    if (existingUser.wallet === wallet) conflictFields.push('wallet');
+                    throw new Error(`This ${conflictFields.join(', ')} is already in use. Please try a different one.`);
+                }
+                throw new Error('This phone number is already registered. Please use a different one.');
+            }
             return user;
         } catch (error) {
-            throw new Error(`Failed to create user: ${error.message}`);
+            // Handle Sequelize-specific errors with friendly messages
+            if (error.name === 'SequelizeUniqueConstraintError') {
+                const field = error.fields[0];
+                const friendlyField = field === 'email' ? 'email' : field === 'phone' ? 'phone number' : 'wallet';
+                throw new Error(`This ${friendlyField} is already taken. Please choose another one.`);
+            }
+            if (error.name === 'SequelizeValidationError') {
+                const details = error.errors.map(err => {
+                    const field = err.path === 'email' ? 'email' : err.path === 'phone' ? 'phone number' : err.path;
+                    return `The ${field} you entered isn’t valid.`;
+                }).join(' ');
+                throw new Error(details || 'Something’s wrong with the information you provided. Please check and try again.');
+            }
+            throw new Error(error.message || 'Oops! Something went wrong while creating your account. Please try again later.');
         }
     }
 
@@ -62,6 +96,26 @@ class UserService {
             throw new Error(`Failed to fetch user: ${error.message}`);
         }
     }
+
+    // Get Users By role
+    static async getUsersByRole(roleName) {
+        try {
+            const role = await Role.findOne({ where: { name: roleName } });
+            if (!role) throw new Error('Role not found');
+            const users = await User.findAll({
+                include: [{
+                    model: Role,
+                    through: { attributes: [] },
+                    where: { roleID: role.roleID },
+                    attributes: [],
+                }],
+            });
+            return users;
+        } catch (error) {
+            throw new Error(`Failed to fetch users by role: ${error.message}`);
+        }
+    }
+
     // Update a user
     static async updateUser(userID, userData) {
         try {

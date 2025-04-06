@@ -35,7 +35,7 @@ const ROLE_TRANSFER_RULES = {
     [ROLES.PURCHASE_TEAM]: {
         transferable: (book: ReceiptBook, userID: string) =>
             (book.status === "In Stock" && book.currentHolderID === userID) ||
-            (book.status === "Sent to Supplier" && !book.currentHolderID) ||
+            (book.status === "Sent to Supplier") ||
             (book.status === "Collect from Supplier" && book.currentHolderID === userID),
         recipientOptions: ["Supplier", "Regional Manager", "Collect from Supplier"],
     },
@@ -137,7 +137,7 @@ const TransferReceiptBook: React.FC = () => {
                 }
                 return prev - 1;
             });
-        }, ERROR_DISPLAY_DURATION);
+        }, 1000);
 
         return () => clearInterval(interval);
     }, [transferInitiated]);
@@ -167,7 +167,7 @@ const TransferReceiptBook: React.FC = () => {
             return book.status === "In Stock" && book.currentHolderID === currentUserID;
         }
         if (recipientType === "Collect from Supplier") {
-            return book.status === "Sent to Supplier" && book.currentHolderID === currentUserID;
+            return book.status === "Sent to Supplier";
         }
         return Array.from(userRoleSet).some(role => {
             const rule = ROLE_TRANSFER_RULES[role as unknown as keyof typeof ROLE_TRANSFER_RULES];
@@ -800,9 +800,7 @@ const TransferReceiptBook: React.FC = () => {
                                                                     setScannedQR(prev => prev.filter(qr => qr !== book?.qrCode));
                                                                     scannedQRRef.current.delete(book?.qrCode || "");
                                                                 }}
-                                                            >
-                                                                Remove
-                                                            </button>
+                                                            >X</button>
                                                         </li>
                                                     );
                                                 })}

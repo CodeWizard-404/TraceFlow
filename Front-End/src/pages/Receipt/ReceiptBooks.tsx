@@ -21,6 +21,9 @@ const PERMISSIONS = {
 const ROLES = {
     SUPERVISOR: import.meta.env.VITE_ROLES_SUPERVISOR,
     STOCK_MANAGER: import.meta.env.VITE_ROLES_STOCK_MANAGER,
+    REGIONAL_MANGER: import.meta.env.VITE_ROLES_REGIONAL_MANAGER,
+    PURSHASE_TEAM: import.meta.env.VITE_ROLES_PURCHASE_TEAM,
+    SUPER_ADMIN: import.meta.env.VITE_ROLES_SUPER_ADMIN,
 };
 
 
@@ -73,6 +76,12 @@ const ReceiptBooks: React.FC = () => {
         isStockManagerLike: userRoles?.some(role =>
             role.name === ROLES.STOCK_MANAGER
         ) || false,
+        isRegionalManagerLike: userRoles?.some(role =>
+            role.name === ROLES.REGIONAL_MANGER
+        ) || false,
+        isPurchaseTeamLike: userRoles?.some(role =>
+            role.name === ROLES.PURSHASE_TEAM
+        ) || false
     }), [userRoles]);
 
     // Fetch Receipt Books with Role-Based Filtering
@@ -85,21 +94,33 @@ const ReceiptBooks: React.FC = () => {
             setLoading(true);
             try {
                 const receiptsData = await getAllReceiptBooks(token);
-                let filteredBooks = receiptsData;
+                let filteredBooks = receiptsData.map(receipt => ({
+                    ...receipt,
+                    qrCode: `data:image/png;base64,${receipt.qrCode}`,
+                }));
 
                 // Apply dynamic role-based filtering
-                if ((userCapabilities.isSupervisorLike && !userCapabilities.isStockManagerLike)) {
-                    // Supervisor-like roles see only their own receipt books
+                if (userCapabilities.isSupervisorLike) {
+                    // Supervisors see books they currently hold
+                    filteredBooks = filteredBooks.filter(r => r.currentHolderID === currentUserID);
+                }
 
-                    filteredBooks = receiptsData.filter(r => r.currentHolderID === currentUserID);
+                if (userCapabilities.isRegionalManagerLike) {
+                    // Regional Managers only see books they hold
+                    filteredBooks = filteredBooks.filter(r => r.currentHolderID === currentUserID);
+                }
 
-                } else if (userCapabilities.isStockManagerLike && !userCapabilities.isSupervisorLike) {
-                    // Stock Manager-like roles exclude certain statuses
-                    filteredBooks = receiptsData.filter(r =>
-                        !["In Stock", "With Stock Manager", "Archived"].includes(r.status)
+                if (userCapabilities.isStockManagerLike) {
+                    // Stock Managers exclude books in stock, with themselves, or archived
+                    filteredBooks = filteredBooks.filter(r =>
+                        ["In Stock", "With Stock Manager", "Archived"].includes(r.status)
                     );
                 }
-                // If neither capability applies (e.g., Admin), show all receipt books
+
+                if (userCapabilities.isPurchaseTeamLike) {
+                    // Purchase Team doesn’t see archived books
+                    filteredBooks = filteredBooks.filter(r => r.status !== "Archived");
+                }
 
                 setReceiptBooks(filteredBooks);
             } catch (error) {
@@ -109,7 +130,7 @@ const ReceiptBooks: React.FC = () => {
             }
         };
         fetchData();
-    }, [token, userPermissions.canView, userCapabilities.isSupervisorLike, userCapabilities.isStockManagerLike, currentUserID, permissionsLoaded]);
+    }, [token, userPermissions.canView, userCapabilities.isSupervisorLike, userCapabilities.isStockManagerLike, currentUserID, permissionsLoaded, userCapabilities.isRegionalManagerLike, userCapabilities.isPurchaseTeamLike]);
 
     // Fetch Holder Names (Users and Agents)
     useEffect(() => {
@@ -221,7 +242,12 @@ const ReceiptBooks: React.FC = () => {
                 { number: paddedNumber, type: newReceiptBook.type },
                 token!
             );
-            setReceiptBooks([...receiptBooks, createdReceipt]);
+            // Transform qrCode to data URL before adding to state
+            const transformedReceipt = {
+                ...createdReceipt,
+                qrCode: `data:image/png;base64,${createdReceipt.qrCode}`,
+            };
+            setReceiptBooks([...receiptBooks, transformedReceipt]);
             setNewReceiptBook({});
             setView("list");
         } catch (error) {
@@ -247,7 +273,12 @@ const ReceiptBooks: React.FC = () => {
                 { ...editReceiptBook, number: paddedNumber },
                 token!
             );
-            setReceiptBooks(receiptBooks.map(r => r.bookID === updatedReceipt.bookID ? updatedReceipt : r));
+            // Transform qrCode to data URL before updating state
+            const transformedReceipt = {
+                ...updatedReceipt,
+                qrCode: `data:image/png;base64,${updatedReceipt.qrCode}`,
+            };
+            setReceiptBooks(receiptBooks.map(r => r.bookID === updatedReceipt.bookID ? transformedReceipt : r));
             setEditReceiptBook(null);
             setView("list");
         } catch (error) {

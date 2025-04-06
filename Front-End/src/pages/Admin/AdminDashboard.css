@@ -348,7 +348,6 @@ body.dark .table-card h2 {
 
 .table-container {
     overflow-y: auto;
-    max-height: 600px;
     border-radius: 0.5rem;
 }
 
@@ -689,28 +688,32 @@ body.dark .role-info-icon {
 .permissions-grid::-webkit-scrollbar,
 .permissions-list::-webkit-scrollbar,
 .permission-list::-webkit-scrollbar,
-.role-info-popup::-webkit-scrollbar {
+.role-info-popup::-webkit-scrollbar,
+.scanned-list ul::-webkit-scrollbar{
     width: 12px;
 }
 
 .permissions-grid::-webkit-scrollbar-track,
 .permissions-list::-webkit-scrollbar-track,
 .permission-list::-webkit-scrollbar-track,
-.role-info-popup::-webkit-scrollbar-track {
+.role-info-popup::-webkit-scrollbar-track,
+.scanned-list ul::-webkit-scrollbar-track  {
     background: none;
 }
 
 body.dark .permissions-grid::-webkit-scrollbar-track,
 body.dark .permissions-list::-webkit-scrollbar-track,
 body.dark .permission-list::-webkit-scrollbar-track,
-body.dark .role-info-popup::-webkit-scrollbar-track {
+body.dark .role-info-popup::-webkit-scrollbar-track,
+body.dark .scanned-list ul::-webkit-scrollbar-track {
     background: none !important;
 }
 
 .permissions-grid::-webkit-scrollbar-thumb,
 .permissions-list::-webkit-scrollbar-thumb,
 .permission-list::-webkit-scrollbar-thumb,
-.role-info-popup::-webkit-scrollbar-thumb {
+.role-info-popup::-webkit-scrollbar-thumb,
+.scanned-list ul::-webkit-scrollbar-thumb {
     background-color: #4cb1c7;
     border-radius: 6px;
     border: 3px solid #f8fafc;
@@ -719,7 +722,8 @@ body.dark .role-info-popup::-webkit-scrollbar-track {
 body.dark .permissions-grid::-webkit-scrollbar-thumb,
 body.dark .permissions-list::-webkit-scrollbar-thumb,
 body.dark .permission-list::-webkit-scrollbar-thumb,
-body.dark .role-info-popup::-webkit-scrollbar-thumb {
+body.dark .role-info-popup::-webkit-scrollbar-thumb,
+body.dark .scanned-list ul::-webkit-scrollbar-thumb {
     background-color: #63b3ed;
     border: 3px solid #2b2b2b;
 }
@@ -1176,7 +1180,8 @@ body.dark .permission-list {
 }
 
 body.dark .permission-list li {
-    color: #e5e7eb;
+    color: #222222;
+    font-weight: bold;
 }
 
 .info-grid {

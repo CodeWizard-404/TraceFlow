@@ -1,4 +1,3 @@
-// controllers/receiptBookController.js
 const ReceiptBookService = require('../services/receiptBookService');
 
 class ReceiptBookController {
@@ -8,7 +7,10 @@ class ReceiptBookController {
             const { number, type } = req.body;
             if (!number || !type) return res.status(400).json({ error: 'Number and type are required' });
             const receiptBook = await ReceiptBookService.createReceiptBook(number, type, req.user.userID);
-            res.status(201).json(receiptBook);
+            // Convert qrCode buffer to base64 for JSON response
+            const responseBook = receiptBook.toJSON();
+            responseBook.qrCode = receiptBook.qrCode.toString('base64');
+            res.status(201).json(responseBook);
         } catch (error) {
             console.error(`${new Date().toISOString()} - Create receipt book failed:`, error);
             res.status(400).json({ error: error.message || 'Failed to create receipt book' });
@@ -19,7 +21,12 @@ class ReceiptBookController {
         console.log('Getting all receipt books', true);
         try {
             const receiptBooks = await ReceiptBookService.getAllReceiptBooks();
-            res.json(receiptBooks);
+            const responseBooks = receiptBooks.map(book => {
+                const bookData = book.toJSON();
+                bookData.qrCode = book.qrCode.toString('base64');
+                return bookData;
+            });
+            res.json(responseBooks);
         } catch (error) {
             console.error(`${new Date().toISOString()} - Get all receipt books failed:`, error);
             res.status(500).json({ error: error.message || 'Failed to retrieve receipt books' });
@@ -31,9 +38,25 @@ class ReceiptBookController {
         try {
             const { bookID } = req.params;
             const receiptBook = await ReceiptBookService.getReceiptBookById(bookID);
-            res.json(receiptBook);
+            const responseBook = receiptBook.toJSON();
+            responseBook.qrCode = receiptBook.qrCode.toString('base64');
+            res.json(responseBook);
         } catch (error) {
             console.error(`${new Date().toISOString()} - Get receipt book failed:`, error);
+            res.status(404).json({ error: error.message || 'Receipt book not found' });
+        }
+    }
+
+    static async getReceiptBookByNumber(req, res) {
+        console.log('Getting receipt book by number', req.params);
+        try {
+            const { number } = req.params;
+            const receiptBook = await ReceiptBookService.getReceiptBookByNumber(number);
+            const responseBook = receiptBook.toJSON();
+            responseBook.qrCode = receiptBook.qrCode.toString('base64');
+            res.json(responseBook);
+        } catch (error) {
+            console.error(`${new Date().toISOString()} - Get receipt book by number failed:`, error);
             res.status(404).json({ error: error.message || 'Receipt book not found' });
         }
     }
@@ -43,8 +66,10 @@ class ReceiptBookController {
         try {
             const { holderID } = req.params;
             const { userType } = req.body;
-            const receiptBooks = await ReceiptBookService.getReceiptBooksByHolder(holderID, userType);
-            res.json(receiptBooks);
+            const receiptBook = await ReceiptBookService.getReceiptBooksByHolder(holderID, userType);
+            const responseBook = receiptBook.toJSON();
+            responseBook.qrCode = receiptBook.qrCode.toString('base64');
+            res.json(responseBook);
         } catch (error) {
             console.error(`${new Date().toISOString()} - Get receipt books by holder failed:`, error);
             res.status(404).json({ error: error.message || 'Receipt books not found' });
@@ -90,7 +115,6 @@ class ReceiptBookController {
         }
     }
 
-
     static async validateTransfer(req, res) {
         console.log('Validating transfer', req.body);
         try {
@@ -128,7 +152,9 @@ class ReceiptBookController {
             }
             const userID = req.user.userID;
             const receiptBook = await ReceiptBookService.updateReceiptBook(bookID, updates, userID);
-            res.json(receiptBook);
+            const responseBook = receiptBook.toJSON();
+            responseBook.qrCode = receiptBook.qrCode.toString('base64');
+            res.json(responseBook);
         } catch (error) {
             console.error(`${new Date().toISOString()} - Update receipt book failed:`, error);
             res.status(400).json({ error: error.message || 'Failed to update receipt book due to an internal error' });
@@ -150,7 +176,6 @@ class ReceiptBookController {
             res.status(400).json({ error: error.message || 'Failed to delete receipt book due to an internal error' });
         }
     }
-
 }
 
 module.exports = ReceiptBookController;

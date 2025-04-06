@@ -7,6 +7,7 @@ const { authenticateJWT, requirePermission } = require('../config/security');
 router.get('/', authenticateJWT, requirePermission('access_all_users'), UserController.getAllUsers);
 router.get('/phone/:phone', authenticateJWT, requirePermission('access_user_by_phone'), UserController.getUserByPhoneNumber);
 router.get('/:userID', authenticateJWT, requirePermission('access_user_details'), UserController.getUserById);
+router.get('/role/:role', authenticateJWT, requirePermission('access_users_by_role'), UserController.getUsersByRole);
 
 router.post('/', authenticateJWT, requirePermission('create_users'), UserController.createUser);
 router.put('/:userID', authenticateJWT, requirePermission('update_users'), UserController.updateUser);

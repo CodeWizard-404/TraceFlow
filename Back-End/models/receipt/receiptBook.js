@@ -33,9 +33,8 @@ module.exports = (sequelize, DataTypes) => {
             defaultValue: 'In Stock',
         },
         qrCode: {
-            type: DataTypes.TEXT,
+            type: DataTypes.BLOB,
             allowNull: false,
-            unique: true,
         },
         agentID: {
             type: DataTypes.STRING,

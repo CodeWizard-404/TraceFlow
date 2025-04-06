@@ -7,13 +7,13 @@ class UserController {
         try {
             const { email, password, firstname, lastname, phone, wallet } = req.body;
             if (!email || !password || !firstname || !lastname || !phone || !wallet) {
-                return res.status(400).json({ error: 'All fields (email, password, firstname, lastname, phone, wallet) are required' });
+                return res.status(400).json({ error: 'Please fill in all required fields' });
             }
             const user = await UserService.createUser(email, password, firstname, lastname, phone, wallet);
             res.status(201).json(user);
         } catch (error) {
             console.error(`${new Date().toISOString()} - Create user failed:`, error);
-            res.status(400).json({ error: error.message || 'Failed to create user due to an internal error' });
+            res.status(400).json({ error: error.message });
         }
     }
 
@@ -40,6 +40,21 @@ class UserController {
         } catch (error) {
             console.error(`${new Date().toISOString()} - Get user by phone failed:`, error);
             res.status(404).json({ error: error.message || 'User not found by phone number' });
+        }
+    }
+
+    static async getUsersByRole(req, res) {
+        console.log('Received request to get users by role', req.params);
+        try {
+            const { role } = req.params;
+            if (!role) {
+                return res.status(400).json({ error: 'Role is required' });
+            }
+            const users = await UserService.getUsersByRole(role);
+            res.status(200).json(users);
+        } catch (error) {
+            console.error(`${new Date().toISOString()} - Get users by role failed:`, error);
+            res.status(500).json({ error: error.message || 'Failed to retrieve users by role due to an internal error' });
         }
     }
 

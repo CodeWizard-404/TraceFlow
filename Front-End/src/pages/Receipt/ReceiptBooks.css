@@ -230,8 +230,6 @@ body.dark .table-card h2, body.dark .form-card h3, body.dark .history-card h3 {
 
 /* Table */
 .table-container {
-    overflow-y: auto;
-    max-height: 600px;
     border-radius: 0.5rem;
 }
 

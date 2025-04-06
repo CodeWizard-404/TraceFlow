@@ -23,8 +23,13 @@ export const createUser = async (
     });
     return response.data;
   } catch (error) {
-    console.error("Error creating user:", error);
-    throw error;
+    if (error instanceof Error && 'response' in error && (error.response as { data?: { error?: string } })?.data?.error) {
+      console.error("Error creating user:", (error.response as { data: { error: string } }).data.error);
+      throw new Error((error.response as { data: { error: string } }).data.error);
+    } else {
+      console.error("Error creating user:", error);
+      throw new Error("Something went wrong while creating the user.");
+    }
   }
 };
 
@@ -118,7 +123,7 @@ export const revokeSupervisorsFromManager = async (
 ): Promise<RevokeSupervisorsResponse> => {
   try {
     const response = await api.post<RevokeSupervisorsResponse>("/users/revoke-supervisors", { managerID, supervisorIDs }, {
-    headers: { Authorization: `Bearer ${token}` },
+      headers: { Authorization: `Bearer ${token}` },
     });
     return response.data;
   } catch (error) {
