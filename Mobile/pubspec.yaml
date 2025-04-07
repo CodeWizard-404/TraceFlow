@@ -21,6 +21,7 @@ dependencies:
   permission_handler: ^11.4.0
   dropdown_search: ^6.0.2
   shared_preferences: ^2.5.3
+  device_info_plus: ^11.3.3
 
 dev_dependencies:
   flutter_test:
