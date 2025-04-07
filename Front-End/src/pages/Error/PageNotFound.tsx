@@ -1,69 +1,57 @@
-import React, { JSX, useEffect, useState } from "react";
+import React from "react";
 import { useNavigate } from "react-router-dom";
-import { FaArrowLeft } from "react-icons/fa";
+import { FaArrowLeft, FaExclamationCircle } from "react-icons/fa";
+import { motion } from "framer-motion";
 import "./PageNotFound.css";
 
 const PageNotFound: React.FC = () => {
   const navigate = useNavigate();
-  const [lines, setLines] = useState<JSX.Element[]>([]);
-
-  // Generate animated digital lines for the background
-  useEffect(() => {
-    const generateLines = () => {
-      const lineElements = Array.from({ length: 20 }, (_, i) => {
-        const isVertical = Math.random() > 0.5;
-        const size = Math.random() * 200 + 50;
-        const pos = Math.random() * 100;
-        const animationDelay = Math.random() * 3;
-        return (
-          <div
-            key={i}
-            className={`line ${isVertical ? "vertical" : "horizontal"}`}
-            style={{
-              [isVertical ? "height" : "width"]: `${size}px`,
-              [isVertical ? "left" : "top"]: `${pos}%`,
-              animationDelay: `${animationDelay}s`,
-            }}
-          />
-        );
-      });
-      setLines(lineElements);
-    };
-    generateLines();
-  }, []);
 
   const handleBack = () => {
     navigate(-1); // Go back to the previous page
   };
 
   return (
-    <div className="not-found-container">
-      {/* Digital Lines Background */}
-      <div className="lines-layer">{lines}</div>
-
-      {/* Main Content */}
-      <div className="not-found-content">
-        {/* 404 Text with Glitch Effect */}
-        <h1 className="not-found-title">
-          <span className="glitch" data-text="404">
-            404
-          </span>
-          <span className="subtitle">Page Not Found</span>
-        </h1>
-
-        {/* Message */}
-        <p className="not-found-message">
-          Oops! It looks like this page doesn’t exist or has been moved.
-        </p>
-
-        {/* Back Button */}
-        <button className="back-btn" onClick={handleBack}>
-          <FaArrowLeft /> Return
-        </button>
+    <div className="not-found-wrapper">
+      <div className="background-overlay">
+        <FaExclamationCircle className="bg-icon warning-icon" />
+        <FaArrowLeft className="bg-icon arrow-icon" />
+        <span className="particle"></span>
+        <span className="particle"></span>
+        <span className="particle"></span>
+        <span className="data-line"></span>
+        <span className="neural-pulse"></span>
       </div>
-
-      {/* Grid Overlay */}
-      <div className="grid-overlay" />
+      <motion.div
+        initial={{ opacity: 0, y: 50 }}
+        animate={{ opacity: 1, y: 0 }}
+        transition={{ duration: 0.5, ease: "easeInOut" }}
+        className="not-found-form"
+      >
+        <div className="form-header">
+          <h1 className="form-title">
+            <span className="glitch" data-text="404">
+              404
+            </span>
+          </h1>
+          <p className="form-subtitle">Page Not Found</p>
+        </div>
+        <div className="content-section">
+          <div className="error-message">
+            <FaExclamationCircle className="error-icon" />
+            <p>Oops!</p>
+            <span>This page doesn’t exist or has been moved.</span>
+          </div>
+          <motion.button
+            className="action-button"
+            onClick={handleBack}
+            whileHover={{ scale: 1.05 }}
+            whileTap={{ scale: 0.95 }}
+          >
+            <FaArrowLeft /> Return to Previous Page
+          </motion.button>
+        </div>
+      </motion.div>
     </div>
   );
 };
