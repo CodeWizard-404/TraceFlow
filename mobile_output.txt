@@ -1,0 +1,3891 @@
+MOBILE PROJECT FILES
+Generated on: 1742409167.4223557
+==================================================
+
+==================================================
+File contents: C:\Users\Kayto\Desktop\IT\Projects\Stage\Stage PFE\TraceFlow\Mobile\lib\widgets\appbar\app_bar.dart
+==================================================
+import 'package:flutter/material.dart';
+
+class CustomAppBar extends StatelessWidget implements PreferredSizeWidget {
+  final String title;
+  final bool showBackButton;
+  final Widget? viewSelector;
+  final VoidCallback? onJumpToNow; // Added back
+
+  const CustomAppBar({
+    required this.title,
+    this.showBackButton = true,
+    this.viewSelector,
+    this.onJumpToNow,
+    super.key,
+  });
+
+  @override
+  Widget build(BuildContext context) {
+    final theme = Theme.of(context);
+    return SafeArea(
+      child: Container(
+        height: 60,
+        padding: const EdgeInsets.symmetric(horizontal: 16),
+        decoration: BoxDecoration(
+          color: theme.scaffoldBackgroundColor,
+          border: Border(
+            bottom: BorderSide(
+              color: theme.dividerColor.withOpacity(0.3),
+              width: 1,
+            ),
+          ),
+        ),
+        child: Row(
+          children: [
+            if (showBackButton)
+              IconButton(
+                icon: const Icon(Icons.chevron_left_rounded, size: 28),
+                color: theme.colorScheme.primary,
+                onPressed: () => Navigator.pop(context),
+                splashRadius: 20,
+              ),
+            Expanded(
+              child: Text(
+                title,
+                style: theme.appBarTheme.titleTextStyle?.copyWith(
+                  fontSize: 20,
+                  fontWeight: FontWeight.w700,
+                ),
+                overflow: TextOverflow.ellipsis,
+              ),
+            ),
+            if (viewSelector != null)
+              Padding(
+                padding: const EdgeInsets.only(left: 12),
+                child: viewSelector!,
+              ),
+            if (onJumpToNow != null)
+              IconButton(
+                icon: const Icon(Icons.gps_fixed_outlined, size: 28),
+                color: theme.colorScheme.primary,
+                onPressed: onJumpToNow,
+                splashRadius: 20,
+                tooltip: 'Go to Today',
+              ),
+            IconButton(
+              icon: const Icon(Icons.menu_rounded, size: 28),
+              color: theme.colorScheme.primary,
+              onPressed: () => Scaffold.of(context).openDrawer(),
+              splashRadius: 20,
+            ),
+          ],
+        ),
+      ),
+    );
+  }
+
+  @override
+  Size get preferredSize => const Size.fromHeight(60);
+}
+
+==================================================
+File contents: C:\Users\Kayto\Desktop\IT\Projects\Stage\Stage PFE\TraceFlow\Mobile\lib\widgets\appbar\sidebar.dart
+==================================================
+import 'package:flutter/material.dart';
+import 'package:provider/provider.dart';
+import '../../providers/theme_provider.dart';
+import '../../providers/auth_provider.dart';
+import '../../screens/Auth/login_screen.dart';
+import '../../screens/Receipt/receipt_books.dart';
+import '../../screens/Timesheet/Timesheet_details.dart';
+
+class AppSidebar extends StatelessWidget {
+  const AppSidebar({super.key});
+
+  @override
+  Widget build(BuildContext context) {
+    final theme = Theme.of(context);
+    final authProvider = Provider.of<AuthProvider>(context);
+
+    return AnimatedSwitcher(
+      duration: const Duration(milliseconds: 600),
+      transitionBuilder: (child, animation) => SlideTransition(
+        position: Tween<Offset>(begin: const Offset(-1, 0), end: Offset.zero).animate(
+          CurvedAnimation(parent: animation, curve: Curves.easeInOut),
+        ),
+        child: child,
+      ),
+      child: Drawer(
+        key: const ValueKey('sidebar'),
+        width: 280,
+        backgroundColor: theme.scaffoldBackgroundColor,
+        shape: const RoundedRectangleBorder(
+          borderRadius: BorderRadius.horizontal(right: Radius.circular(12)),
+        ),
+        elevation: 4,
+        child: SafeArea(
+          child: Column(
+            crossAxisAlignment: CrossAxisAlignment.start,
+            children: [
+              Padding(
+                padding: const EdgeInsets.all(16),
+                child: Text(
+                  'TraceFlow',
+                  style: TextStyle(
+                    fontSize: 22,
+                    fontWeight: FontWeight.w700,
+                    color: theme.colorScheme.primary,
+                    fontFamily: 'Inter',
+                  ),
+                ),
+              ),
+              Container(
+                height: 1,
+                color: theme.dividerColor,
+                margin: const EdgeInsets.symmetric(horizontal: 16),
+              ),
+              Padding(
+                padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 8),
+                child: ListTile(
+                  leading: Icon(Icons.schedule, color: theme.colorScheme.primary),
+                  title: const Text('Timesheet'),
+                  onTap: () {
+                    Navigator.pushReplacement(
+                      context,
+                      MaterialPageRoute(builder: (_) => const TimesheetDetailsScreen()),
+                    );
+                  },
+                ),
+              ),
+              Padding(
+                padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 8),
+                child: ListTile(
+                  leading: Icon(Icons.receipt_long_rounded, color: theme.colorScheme.primary),
+                  title: const Text('Receipt Books'),
+                  onTap: () {
+                    Navigator.pushReplacement(
+                      context,
+                      MaterialPageRoute(builder: (_) => const ReceiptBooksScreen()),
+                    );
+                  },
+                ),
+              ),
+              const Spacer(),
+              Padding(
+                padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 8),
+                child: Consumer<ThemeProvider>(
+                  builder: (context, themeProvider, _) => ListTile(
+                    leading: Icon(_getThemeIcon(themeProvider.themeMode)),
+                    title: const Text('Theme'),
+                    onTap: () {
+                      final nextMode = _getNextThemeMode(themeProvider.themeMode);
+                      themeProvider.setTheme(nextMode);
+                    },
+                  ),
+                ),
+              ),
+              Padding(
+                padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 8),
+                child: ListTile(
+                  leading: const Icon(Icons.logout, color: Colors.redAccent),
+                  title: const Text(
+                    'Logout',
+                    style: TextStyle(color: Colors.redAccent),
+                  ),
+                  onTap: () {
+                    authProvider.logout();
+                    Navigator.pushAndRemoveUntil(
+                      context,
+                      MaterialPageRoute(builder: (_) => const LoginScreen()),
+                          (route) => false,
+                    );
+                  },
+                ),
+              ),
+            ],
+          ),
+        ),
+      ),
+    );
+  }
+
+  IconData _getThemeIcon(ThemeMode mode) {
+    switch (mode) {
+      case ThemeMode.system:
+        return Icons.hdr_auto;
+      case ThemeMode.light:
+        return Icons.light_mode_rounded;
+      case ThemeMode.dark:
+        return Icons.brightness_2;
+    }
+  }
+
+  ThemeMode _getNextThemeMode(ThemeMode current) {
+    switch (current) {
+      case ThemeMode.system:
+        return ThemeMode.light;
+      case ThemeMode.light:
+        return ThemeMode.dark;
+      case ThemeMode.dark:
+        return ThemeMode.system;
+    }
+  }
+}
+
+==================================================
+File contents: C:\Users\Kayto\Desktop\IT\Projects\Stage\Stage PFE\TraceFlow\Mobile\lib\widgets\commen\button.dart
+==================================================
+import 'package:flutter/material.dart';
+
+class CustomButton extends StatelessWidget {
+  final String label;
+  final IconData? icon;
+  final VoidCallback onPressed;
+  final Color? backgroundColor;
+  final Color? textColor;
+  final bool isLoading;
+  final bool isOutlined; // New property to toggle outlined style
+
+  const CustomButton({
+    required this.label,
+    required this.onPressed,
+    this.icon,
+    this.backgroundColor,
+    this.textColor,
+    this.isLoading = false,
+    this.isOutlined = false, // Default to filled style
+    super.key,
+  });
+
+  @override
+  Widget build(BuildContext context) {
+    final theme = Theme.of(context);
+    final effectiveBackgroundColor =
+        backgroundColor ?? theme.colorScheme.primary;
+    final effectiveTextColor =
+        textColor ?? (isOutlined ? effectiveBackgroundColor : Colors.white);
+
+    return AnimatedContainer(
+      duration: const Duration(milliseconds: 200),
+      curve: Curves.easeInOut,
+      child: ElevatedButton(
+        onPressed: isLoading ? null : onPressed,
+        style: ElevatedButton.styleFrom(
+          backgroundColor:
+              isOutlined ? Colors.transparent : effectiveBackgroundColor,
+          foregroundColor: effectiveTextColor,
+          padding: const EdgeInsets.symmetric(horizontal: 20, vertical: 14),
+          shape: RoundedRectangleBorder(
+            borderRadius: BorderRadius.circular(12),
+            side:
+                isOutlined
+                    ? BorderSide(color: effectiveBackgroundColor, width: 2)
+                    : BorderSide.none,
+          ),
+          elevation: isOutlined ? 0 : 2,
+          shadowColor:
+              isOutlined
+                  ? Colors.transparent
+                  : effectiveBackgroundColor.withOpacity(0.3),
+        ),
+        child:
+            isLoading
+                ? SizedBox(
+                  width: 20,
+                  height: 20,
+                  child: CircularProgressIndicator(
+                    color: effectiveTextColor,
+                    strokeWidth: 2,
+                  ),
+                )
+                : Row(
+                  mainAxisSize: MainAxisSize.min,
+                  children: [
+                    if (icon != null) ...[
+                      Icon(
+                        icon,
+                        size: 18,
+                        color: theme.elevatedButtonTheme.style!.foregroundColor
+                            ?.resolve({}),
+                      ),
+                      const SizedBox(width: 8),
+                    ],
+                    Text(
+                      label,
+                      style: TextStyle(
+                        fontSize: 16,
+                        fontWeight: FontWeight.w600,
+                        color: effectiveTextColor,
+                      ),
+                    ),
+                  ],
+                ),
+      ),
+    );
+  }
+}
+
+
+==================================================
+File contents: C:\Users\Kayto\Desktop\IT\Projects\Stage\Stage PFE\TraceFlow\Mobile\lib\widgets\commen\camera_preview.dart
+==================================================
+import 'package:camera/camera.dart';
+import 'package:flutter/material.dart';
+
+class CustomCameraPreview extends StatefulWidget {
+  final CameraController controller;
+  final Widget? overlay;
+
+  const CustomCameraPreview({
+    required this.controller,
+    this.overlay,
+    super.key,
+  });
+
+  @override
+  CustomCameraPreviewState createState() => CustomCameraPreviewState();
+}
+
+class CustomCameraPreviewState extends State<CustomCameraPreview> {
+  @override
+  Widget build(BuildContext context) {
+    if (!widget.controller.value.isInitialized) {
+      return const Center(child: CircularProgressIndicator());
+    }
+    return Stack(
+      children: [
+        ClipRRect(
+          borderRadius: BorderRadius.circular(16),
+          child: AspectRatio(
+            aspectRatio: widget.controller.value.aspectRatio,
+            child: CameraPreview(widget.controller),
+          ),
+        ),
+        if (widget.overlay != null) widget.overlay!,
+        Container(
+          decoration: BoxDecoration(
+            borderRadius: BorderRadius.circular(16),
+            border: Border.all(
+              color: Theme.of(context).colorScheme.primary.withOpacity(0.5),
+              width: 2,
+            ),
+          ),
+        ),
+      ],
+    );
+  }
+
+  @override
+  void dispose() {
+    widget.controller.dispose();
+    super.dispose();
+  }
+}
+
+==================================================
+File contents: C:\Users\Kayto\Desktop\IT\Projects\Stage\Stage PFE\TraceFlow\Mobile\lib\widgets\commen\card.dart
+==================================================
+import 'package:flutter/material.dart';
+
+class CustomCard extends StatelessWidget {
+  final String title;
+  final Widget child;
+
+  const CustomCard({
+    required this.title,
+    required this.child,
+    super.key,
+  });
+
+  @override
+  Widget build(BuildContext context) {
+    final theme = Theme.of(context);
+    return Card(
+      child: Padding(
+        padding: const EdgeInsets.all(16),
+        child: Column(
+          crossAxisAlignment: CrossAxisAlignment.start,
+          children: [
+            Text(title, style: theme.textTheme.headlineSmall?.copyWith(color: theme.colorScheme.primary)),
+            const SizedBox(height: 12),
+            child,
+          ],
+        ),
+      ),
+    );
+  }
+}
+
+==================================================
+File contents: C:\Users\Kayto\Desktop\IT\Projects\Stage\Stage PFE\TraceFlow\Mobile\lib\widgets\commen\chip.dart
+==================================================
+import 'package:flutter/material.dart';
+
+class CustomChip extends StatelessWidget {
+  final String label;
+  final VoidCallback? onDeleted;
+  final Color? backgroundColor;
+  final Color? textColor;
+
+  const CustomChip({
+    required this.label,
+    this.onDeleted,
+    this.backgroundColor,
+    this.textColor,
+    super.key,
+  });
+
+  @override
+  Widget build(BuildContext context) {
+    final theme = Theme.of(context);
+    return Chip(
+      label: Text(
+        label,
+        style: theme.textTheme.bodyMedium?.copyWith(
+          color: textColor ?? theme.colorScheme.primary,
+        ),
+      ),
+      deleteIcon: onDeleted != null ? Icon(Icons.close, size: 18) : null,
+      onDeleted: onDeleted,
+      backgroundColor: backgroundColor ?? theme.colorScheme.primary.withOpacity(0.1),
+      shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(8)),
+      padding: const EdgeInsets.symmetric(horizontal: 8),
+    );
+  }
+}
+
+==================================================
+File contents: C:\Users\Kayto\Desktop\IT\Projects\Stage\Stage PFE\TraceFlow\Mobile\lib\widgets\commen\divider.dart
+==================================================
+import 'package:flutter/material.dart';
+
+class CustomDivider extends StatelessWidget {
+  final double thickness;
+  final Color? color;
+
+  const CustomDivider({
+    this.thickness = 1,
+    this.color,
+    super.key,
+  });
+
+  @override
+  Widget build(BuildContext context) {
+    final theme = Theme.of(context);
+    return Divider(
+      thickness: thickness,
+      color: color ?? theme.colorScheme.onSurface.withOpacity(0.2),
+    );
+  }
+}
+
+==================================================
+File contents: C:\Users\Kayto\Desktop\IT\Projects\Stage\Stage PFE\TraceFlow\Mobile\lib\widgets\commen\dropdown.dar.dart
+==================================================
+import 'package:flutter/material.dart';
+
+class CustomDropdown<T> extends StatelessWidget {
+  final T? value;
+  final List<T> items;
+  final String hint;
+  final void Function(T?) onChanged;
+  final IconData? icon;
+  final String Function(T)? itemToString;
+
+  const CustomDropdown({
+    required this.value,
+    required this.items,
+    required this.hint,
+    required this.onChanged,
+    this.icon,
+    this.itemToString,
+    super.key,
+  });
+
+  @override
+  Widget build(BuildContext context) {
+    final theme = Theme.of(context);
+    return Container(
+      padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 4),
+      decoration: BoxDecoration(
+        color: theme.colorScheme.surface,
+        borderRadius: BorderRadius.circular(12),
+        border: Border.all(color: theme.dividerColor.withOpacity(0.2)),
+      ),
+      child: DropdownButtonHideUnderline(
+        child: DropdownButton<T>(
+          value: value,
+          items: items.map((item) {
+            return DropdownMenuItem<T>(
+              value: item,
+              child: Row(
+                children: [
+                  if (icon != null) ...[
+                    Icon(icon, color: theme.colorScheme.primary, size: 20),
+                    const SizedBox(width: 8),
+                  ],
+                  Text(
+                    itemToString != null ? itemToString!(item) : item.toString(),
+                    style: theme.textTheme.bodyMedium,
+                  ),
+                ],
+              ),
+            );
+          }).toList(),
+          onChanged: onChanged,
+          hint: Text(hint, style: theme.textTheme.bodyMedium?.copyWith(color: theme.colorScheme.onSurface.withOpacity(0.6))),
+          icon: Icon(Icons.arrow_drop_down, color: theme.colorScheme.onSurface.withOpacity(0.6)),
+          isExpanded: true,
+          borderRadius: BorderRadius.circular(12),
+        ),
+      ),
+    );
+  }
+}
+
+==================================================
+File contents: C:\Users\Kayto\Desktop\IT\Projects\Stage\Stage PFE\TraceFlow\Mobile\lib\widgets\commen\empty_state.dart
+==================================================
+import 'package:flutter/material.dart';
+import 'spacer.dart';
+
+class EmptyState extends StatelessWidget {
+  final String text;
+
+  const EmptyState({required this.text, super.key});
+
+  @override
+  Widget build(BuildContext context) {
+    final theme = Theme.of(context);
+    return Row(
+      mainAxisAlignment: MainAxisAlignment.center,
+      children: [
+        Container(
+          padding: const EdgeInsets.all(8),
+          decoration: BoxDecoration(
+            shape: BoxShape.circle,
+            color: theme.colorScheme.primary.withOpacity(0.1),
+          ),
+          child: Icon(
+            Icons.event_note,
+            size: 20,
+            color: theme.colorScheme.primary,
+          ),
+        ),
+        const CustomSpacer(width: 8),
+        Text(
+          text,
+          style: theme.textTheme.bodyMedium?.copyWith(
+            color: theme.colorScheme.onSurface.withOpacity(0.6),
+          ),
+        ),
+      ],
+    );
+  }
+}
+
+==================================================
+File contents: C:\Users\Kayto\Desktop\IT\Projects\Stage\Stage PFE\TraceFlow\Mobile\lib\widgets\commen\floating_action_button.dart
+==================================================
+import 'package:flutter/material.dart';
+
+class CustomFloatingActionButton extends StatelessWidget {
+  final VoidCallback onPressed;
+  final IconData icon;
+
+  const CustomFloatingActionButton({
+    required this.onPressed,
+    required this.icon,
+    super.key,
+  });
+
+  @override
+  Widget build(BuildContext context) {
+    final theme = Theme.of(context);
+    return AnimatedScale(
+      duration: const Duration(milliseconds: 200),
+      scale: 1.0,
+      child: FloatingActionButton(
+        onPressed: onPressed,
+        backgroundColor: theme.colorScheme.primary,
+        foregroundColor: Colors.white,
+        shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(12)),
+        elevation: 2,
+        child: Icon(icon, size: 24),
+      ),
+    );
+  }
+}
+
+==================================================
+File contents: C:\Users\Kayto\Desktop\IT\Projects\Stage\Stage PFE\TraceFlow\Mobile\lib\widgets\commen\icon_button.dart
+==================================================
+import 'package:flutter/material.dart';
+
+class CustomIconButton extends StatelessWidget {
+  final IconData icon;
+  final VoidCallback onPressed;
+  final double size;
+
+  const CustomIconButton({
+    required this.icon,
+    required this.onPressed,
+    this.size = 24,
+    super.key,
+  });
+
+  @override
+  Widget build(BuildContext context) {
+    final theme = Theme.of(context);
+    return AnimatedContainer(
+      duration: const Duration(milliseconds: 200),
+      child: IconButton(
+        icon: Icon(icon, size: size),
+        color: theme.iconTheme.color,
+        onPressed: onPressed,
+        splashRadius: 20,
+      ),
+    );
+  }
+}
+
+==================================================
+File contents: C:\Users\Kayto\Desktop\IT\Projects\Stage\Stage PFE\TraceFlow\Mobile\lib\widgets\commen\info_row.dart
+==================================================
+import 'package:flutter/material.dart';
+import 'spacer.dart';
+
+class InfoRow extends StatelessWidget {
+  final IconData icon;
+  final String text;
+
+  const InfoRow({required this.icon, required this.text, super.key});
+
+  @override
+  Widget build(BuildContext context) {
+    final theme = Theme.of(context);
+    return Row(
+      children: [
+        Container(
+          padding: const EdgeInsets.all(6),
+          decoration: BoxDecoration(
+            color: theme.colorScheme.onSurface.withOpacity(0.1), // Gray tint
+            borderRadius: BorderRadius.circular(6),
+          ),
+          child: Icon(icon, size: 18, color: theme.colorScheme.onSurface), // Black/gray
+        ),
+        const CustomSpacer(width: 12),
+        Expanded(child: Text(text, style: theme.textTheme.bodyMedium)), // Gray
+      ],
+    );
+  }
+}
+
+==================================================
+File contents: C:\Users\Kayto\Desktop\IT\Projects\Stage\Stage PFE\TraceFlow\Mobile\lib\widgets\commen\list_tile.dart
+==================================================
+import 'package:flutter/material.dart';
+
+class CustomListTile extends StatelessWidget {
+  final String title;
+  final String? subtitle;
+  final IconData? leadingIcon;
+  final VoidCallback? onTap;
+
+  const CustomListTile({
+    required this.title,
+    this.subtitle,
+    this.leadingIcon,
+    this.onTap,
+    super.key,
+  });
+
+  @override
+  Widget build(BuildContext context) {
+    final theme = Theme.of(context);
+    return ListTile(
+      leading: leadingIcon != null
+          ? Icon(leadingIcon, color: theme.colorScheme.primary)
+          : null,
+      title: Text(
+        title,
+        style: theme.textTheme.bodyMedium?.copyWith(fontWeight: FontWeight.w500),
+      ),
+      subtitle: subtitle != null
+          ? Text(
+        subtitle!,
+        style: theme.textTheme.bodySmall?.copyWith(color: Colors.grey),
+      )
+          : null,
+      onTap: onTap,
+      shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(12)),
+      tileColor: theme.colorScheme.surface.withOpacity(0.9),
+    );
+  }
+}
+
+==================================================
+File contents: C:\Users\Kayto\Desktop\IT\Projects\Stage\Stage PFE\TraceFlow\Mobile\lib\widgets\commen\progress_indicator.dart
+==================================================
+import 'package:flutter/material.dart';
+
+class CustomProgressIndicator extends StatelessWidget {
+  final Color? color;
+
+  const CustomProgressIndicator({
+    this.color,
+    super.key,
+  });
+
+  @override
+  Widget build(BuildContext context) {
+    final theme = Theme.of(context);
+    return Center(
+      child: CircularProgressIndicator(
+        valueColor: AlwaysStoppedAnimation(color ?? theme.colorScheme.primary),
+        strokeWidth: 2,
+      ),
+    );
+  }
+}
+
+==================================================
+File contents: C:\Users\Kayto\Desktop\IT\Projects\Stage\Stage PFE\TraceFlow\Mobile\lib\widgets\commen\section_title.dart
+==================================================
+import 'package:flutter/material.dart';
+
+class CustomSectionTitle extends StatelessWidget {
+  final String text;
+  final Color? color;
+
+  const CustomSectionTitle({
+    required this.text,
+    this.color,
+    super.key,
+  });
+
+  @override
+  Widget build(BuildContext context) {
+    final theme = Theme.of(context);
+    return Text(
+      text,
+      style: theme.textTheme.headlineSmall?.copyWith(
+        fontWeight: FontWeight.w600,
+        color: color ?? theme.colorScheme.primary,
+        letterSpacing: 0.5,
+      ),
+    );
+  }
+}
+
+==================================================
+File contents: C:\Users\Kayto\Desktop\IT\Projects\Stage\Stage PFE\TraceFlow\Mobile\lib\widgets\commen\snack_bar.dar.dart
+==================================================
+import 'package:flutter/material.dart';
+
+class CustomSnackBar {
+  static void show({
+    required BuildContext context,
+    required String message,
+    Color? backgroundColor,
+  }) {
+    final theme = Theme.of(context);
+    ScaffoldMessenger.of(context).showSnackBar(
+      SnackBar(
+        content: Text(
+          message,
+          style: theme.textTheme.bodyMedium?.copyWith(color: Colors.white),
+        ),
+        backgroundColor: backgroundColor ?? theme.colorScheme.error.withOpacity(0.9),
+        behavior: SnackBarBehavior.floating,
+        shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(12)),
+        margin: const EdgeInsets.all(16),
+      ),
+    );
+  }
+}
+
+==================================================
+File contents: C:\Users\Kayto\Desktop\IT\Projects\Stage\Stage PFE\TraceFlow\Mobile\lib\widgets\commen\spacer.dart
+==================================================
+import 'package:flutter/material.dart';
+
+class CustomSpacer extends StatelessWidget {
+  final double height;
+  final double width;
+
+  const CustomSpacer({
+    this.height = 0,
+    this.width = 0,
+    super.key,
+  });
+
+  @override
+  Widget build(BuildContext context) {
+    return SizedBox(height: height, width: width);
+  }
+}
+
+==================================================
+File contents: C:\Users\Kayto\Desktop\IT\Projects\Stage\Stage PFE\TraceFlow\Mobile\lib\widgets\commen\text_button.dart
+==================================================
+import 'package:flutter/material.dart';
+
+class CustomTextButton extends StatelessWidget {
+  final String label;
+  final VoidCallback onPressed;
+  final Color? color;
+
+  const CustomTextButton({
+    required this.label,
+    required this.onPressed,
+    this.color,
+    super.key,
+  });
+
+  @override
+  Widget build(BuildContext context) {
+    final theme = Theme.of(context);
+    return TextButton(
+      onPressed: onPressed,
+      child: Text(
+        label,
+        style: TextStyle(
+          color: color ?? theme.colorScheme.primary,
+          fontSize: 14,
+          fontWeight: FontWeight.w500,
+          letterSpacing: 0.5,
+        ),
+      ),
+    );
+  }
+}
+
+==================================================
+File contents: C:\Users\Kayto\Desktop\IT\Projects\Stage\Stage PFE\TraceFlow\Mobile\lib\widgets\commen\text_field.dart
+==================================================
+import 'package:flutter/material.dart';
+
+class CustomTextField extends StatelessWidget {
+  final TextEditingController controller;
+  final String label;
+  final IconData? prefixIcon;
+  final IconData? suffixIcon;
+  final bool obscureText;
+  final TextInputType? keyboardType;
+  final String? Function(String?)? validator;
+  final VoidCallback? onSuffixPressed;
+
+  const CustomTextField({
+    required this.controller,
+    required this.label,
+    this.prefixIcon,
+    this.suffixIcon,
+    this.obscureText = false,
+    this.keyboardType,
+    this.validator,
+    this.onSuffixPressed,
+    super.key,
+  });
+
+  @override
+  Widget build(BuildContext context) {
+    final theme = Theme.of(context);
+    return TextFormField(
+      controller: controller,
+      decoration: InputDecoration(
+        labelText: label,
+        prefixIcon: prefixIcon != null
+            ? Icon(prefixIcon, color: theme.colorScheme.primary.withOpacity(0.8))
+            : null,
+        suffixIcon: suffixIcon != null
+            ? IconButton(
+          icon: Icon(suffixIcon, color: theme.colorScheme.primary.withOpacity(0.8)),
+          onPressed: onSuffixPressed,
+        )
+            : null,
+        border: OutlineInputBorder(
+          borderRadius: BorderRadius.circular(12),
+          borderSide: BorderSide.none,
+        ),
+        focusedBorder: OutlineInputBorder(
+          borderRadius: BorderRadius.circular(12),
+          borderSide: BorderSide(color: theme.colorScheme.primary, width: 1.5),
+        ),
+        filled: true,
+        fillColor: theme.colorScheme.surface.withOpacity(0.9),
+        contentPadding: const EdgeInsets.symmetric(vertical: 16, horizontal: 16),
+      ),
+      obscureText: obscureText,
+      keyboardType: keyboardType,
+      validator: validator,
+      style: theme.textTheme.bodyMedium,
+    );
+  }
+}
+
+==================================================
+File contents: C:\Users\Kayto\Desktop\IT\Projects\Stage\Stage PFE\TraceFlow\Mobile\lib\widgets\commen\title_text.dart
+==================================================
+import 'package:flutter/material.dart';
+
+class CustomTitleText extends StatelessWidget {
+  final String text;
+  final Color? color;
+
+  const CustomTitleText({
+    required this.text,
+    this.color,
+    super.key,
+  });
+
+  @override
+  Widget build(BuildContext context) {
+    final theme = Theme.of(context);
+    return Text(
+      text,
+      style: theme.textTheme.headlineLarge?.copyWith(
+        fontWeight: FontWeight.bold,
+        color: color ?? theme.colorScheme.primary,
+        letterSpacing: 1.0,
+      ),
+    );
+  }
+}
+
+==================================================
+File contents: C:\Users\Kayto\Desktop\IT\Projects\Stage\Stage PFE\TraceFlow\Mobile\lib\widgets\commen\ViewSelector.dart
+==================================================
+import 'package:flutter/material.dart';
+
+class CustomViewSelector extends StatelessWidget {
+  final String value;
+  final Function(String) onChanged;
+
+  const CustomViewSelector({
+    required this.value,
+    required this.onChanged,
+    super.key,
+  });
+
+  static const _views = [
+    {'label': 'Day', 'value': 'day', 'icon': Icons.view_day_outlined},
+    {'label': 'Week 1', 'value': 'week1', 'icon': Icons.calendar_view_week_rounded},
+    {'label': 'Week 2', 'value': 'week2', 'icon': Icons.calendar_view_day_rounded},
+    {'label': 'Month', 'value': 'month', 'icon': Icons.calendar_month_rounded},
+    {'label': 'Year', 'value': 'year', 'icon': Icons.calendar_today_rounded},
+  ];
+
+  @override
+  Widget build(BuildContext context) {
+    final theme = Theme.of(context);
+    return PopupMenuButton<String>(
+      initialValue: value,
+      onSelected: onChanged,
+      itemBuilder: (context) => _views.map((view) {
+        return PopupMenuItem<String>(
+          value: view['value'] as String,
+          child: Row(
+            children: [
+              Icon(
+                view['icon'] as IconData,
+                size: 20,
+                color: theme.colorScheme.primary,
+              ),
+              const SizedBox(width: 8),
+              Text(
+                view['label'] as String,
+                style: theme.textTheme.bodyMedium?.copyWith(
+                  fontWeight: FontWeight.w500,
+                  color: theme.colorScheme.onSurface,
+                ),
+              ),
+            ],
+          ),
+        );
+      }).toList(),
+      child: Container(
+        padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 8),
+        decoration: BoxDecoration(
+          color: theme.colorScheme.surface.withOpacity(0.9),
+          borderRadius: BorderRadius.circular(8),
+          border: Border.all(color: theme.dividerColor),
+        ),
+        child: Row(
+          mainAxisSize: MainAxisSize.min,
+          children: [
+            Icon(
+              _views.firstWhere((v) => v['value'] == value)['icon'] as IconData,
+              size: 20,
+              color: theme.colorScheme.primary,
+            ),
+            const SizedBox(width: 6),
+            Text(
+              _views.firstWhere((v) => v['value'] == value)['label'] as String,
+              style: theme.textTheme.bodyMedium?.copyWith(
+                fontWeight: FontWeight.w600,
+              ),
+            ),
+          ],
+        ),
+      ),
+    );
+  }
+}
+
+==================================================
+File contents: C:\Users\Kayto\Desktop\IT\Projects\Stage\Stage PFE\TraceFlow\Mobile\lib\widgets\Glass_Effect\GlassChip.dart
+==================================================
+import 'package:flutter/material.dart';
+
+class GlassChip extends StatelessWidget {
+  final String label;
+  final Color? color;
+
+  const GlassChip({required this.label, this.color, super.key});
+
+  @override
+  Widget build(BuildContext context) {
+    final theme = Theme.of(context);
+    final chipColor = color ?? theme.colorScheme.primary;
+    return Container(
+      padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 6),
+      decoration: BoxDecoration(
+        borderRadius: BorderRadius.circular(16),
+        gradient: LinearGradient(
+          colors: [
+            chipColor.withOpacity(0.3),
+            chipColor.withOpacity(0.1),
+          ],
+          begin: Alignment.topLeft,
+          end: Alignment.bottomRight,
+        ),
+        boxShadow: [
+          BoxShadow(
+            color: chipColor.withOpacity(0.15),
+            blurRadius: 8,
+            offset: const Offset(0, 2),
+          ),
+        ],
+      ),
+      child: Text(
+        label,
+        style: TextStyle(
+          fontSize: 12,
+          color: chipColor,
+          fontWeight: FontWeight.w600,
+          letterSpacing: 0.5,
+        ),
+      ),
+    );
+  }
+}
+
+==================================================
+File contents: C:\Users\Kayto\Desktop\IT\Projects\Stage\Stage PFE\TraceFlow\Mobile\lib\widgets\Glass_Effect\GlassContainer.dart
+==================================================
+import 'package:flutter/material.dart';
+
+class GlassContainer extends StatelessWidget {
+  final Widget child;
+  final double? width;
+  final double? height;
+
+  const GlassContainer({
+    required this.child,
+    this.width,
+    this.height,
+    super.key,
+  });
+
+  @override
+  Widget build(BuildContext context) {
+    final theme = Theme.of(context);
+    return Container(
+      width: width,
+      height: height,
+      decoration: BoxDecoration(
+        color: theme.colorScheme.surface.withOpacity(0.2),
+        borderRadius: BorderRadius.circular(16),
+        border: Border.all(
+          color: theme.colorScheme.primary.withOpacity(0.3),
+          width: 1.5,
+        ),
+        boxShadow: [
+          BoxShadow(
+            color: theme.colorScheme.primary.withOpacity(0.1),
+            blurRadius: 20,
+            spreadRadius: 5,
+          ),
+        ],
+      ),
+      child: ClipRRect(
+        borderRadius: BorderRadius.circular(16),
+        child: child,
+      ),
+    );
+  }
+}
+
+==================================================
+File contents: C:\Users\Kayto\Desktop\IT\Projects\Stage\Stage PFE\TraceFlow\Mobile\lib\widgets\Glass_Effect\GlassStatusChip.dart
+==================================================
+import 'package:flutter/material.dart';
+
+class GlassStatusChip extends StatelessWidget {
+  final String status;
+  final Color? color;
+
+  const GlassStatusChip({required this.status, this.color, super.key});
+
+  @override
+  Widget build(BuildContext context) {
+    final theme = Theme.of(context);
+    final chipColor = color ?? theme.colorScheme.onSurface.withOpacity(0.6);
+    return Container(
+      padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 6),
+      decoration: BoxDecoration(
+        borderRadius: BorderRadius.circular(16),
+        gradient: LinearGradient(
+          colors: [
+            chipColor.withOpacity(0.3),
+            chipColor.withOpacity(0.1),
+          ],
+          begin: Alignment.topLeft,
+          end: Alignment.bottomRight,
+        ),
+        boxShadow: [
+          BoxShadow(
+            color: chipColor.withOpacity(0.2),
+            blurRadius: 8,
+            offset: const Offset(0, 2),
+          ),
+        ],
+      ),
+      child: Text(
+        status,
+        style: TextStyle(
+          fontSize: 12,
+          color: chipColor,
+          fontWeight: FontWeight.bold,
+          letterSpacing: 0.5,
+        ),
+      ),
+    );
+  }
+}
+
+==================================================
+File contents: C:\Users\Kayto\Desktop\IT\Projects\Stage\Stage PFE\TraceFlow\Mobile\lib\widgets\qr_scanner\qr_scanner_widget.dart
+==================================================
+import 'package:flutter/material.dart';
+import 'package:camera/camera.dart';
+import 'package:flutter/services.dart';
+import 'package:google_mlkit_barcode_scanning/google_mlkit_barcode_scanning.dart';
+import '../../widgets/appbar/app_bar.dart';
+import '../../widgets/commen/button.dart';
+import '../../widgets/commen/progress_indicator.dart';
+import '../../widgets/commen/spacer.dart';
+import '../commen/snack_bar.dar.dart';
+
+class QRScannerWidget extends StatefulWidget {
+  const QRScannerWidget({super.key});
+
+  @override
+  QRScannerWidgetState createState() => QRScannerWidgetState();
+}
+
+class QRScannerWidgetState extends State<QRScannerWidget> {
+  late CameraController _cameraController;
+  final BarcodeScanner _barcodeScanner = BarcodeScanner(formats: [BarcodeFormat.qrCode]);
+  bool _isInitialized = false;
+  bool _isScanning = false;
+  double _appBarHeight = 0.0;
+
+  @override
+  void initState() {
+    super.initState();
+    _initializeCamera();
+  }
+
+  Future<void> _initializeCamera() async {
+    final cameras = await availableCameras();
+    _cameraController = CameraController(
+      cameras.first,
+      ResolutionPreset.high,
+      enableAudio: false,
+      imageFormatGroup: ImageFormatGroup.yuv420,
+    );
+    await _cameraController.initialize();
+    await _cameraController.lockCaptureOrientation(DeviceOrientation.portraitUp);
+
+    setState(() {
+      _isInitialized = true;
+    });
+  }
+
+  @override
+  void dispose() {
+    _cameraController.dispose();
+    _barcodeScanner.close();
+    super.dispose();
+  }
+
+  Future<void> _scanQRCode() async {
+    if (!_isInitialized || _isScanning) return;
+    setState(() => _isScanning = true);
+    try {
+      final image = await _cameraController.takePicture();
+      final inputImage = InputImage.fromFilePath(image.path);
+      final barcodes = await _barcodeScanner.processImage(inputImage);
+      for (final barcode in barcodes) {
+        if (barcode.rawValue != null) {
+          Navigator.pop(context, barcode.rawValue);
+          return;
+        }
+      }
+      CustomSnackBar.show(
+        context: context,
+        message: 'No valid QR code detected',
+        backgroundColor: Theme.of(context).colorScheme.error.withOpacity(0.9),
+      );
+    } catch (e) {
+      CustomSnackBar.show(
+        context: context,
+        message: 'Error scanning QR code: $e',
+        backgroundColor: Theme.of(context).colorScheme.error.withOpacity(0.9),
+      );
+    } finally {
+      setState(() => _isScanning = false);
+    }
+  }
+
+  @override
+  Widget build(BuildContext context) {
+    final theme = Theme.of(context);
+    return Scaffold(
+      backgroundColor: Colors.black, // Kept as black for camera overlay
+      body: Stack(
+        children: [
+          // Camera Preview (unchanged for precision)
+          if (_isInitialized)
+            Positioned.fill(
+              child: OverflowBox(
+                maxWidth: double.infinity,
+                maxHeight: double.infinity,
+                child: FittedBox(
+                  fit: BoxFit.cover,
+                  child: SizedBox(
+                    width: _cameraController.value.previewSize?.height,
+                    height: _cameraController.value.previewSize?.width,
+                    child: CameraPreview(_cameraController),
+                  ),
+                ),
+              ),
+            ),
+          // Dark overlay outside QR frame
+          if (_isInitialized)
+            Positioned.fill(
+              child: CustomPaint(
+                painter: QROverlayPainter(appBarHeight: _appBarHeight, theme: theme),
+              ),
+            ),
+          // AppBar and content
+          Column(
+            children: [
+              CustomAppBar(
+                title: 'QR Scanner',
+                showBackButton: true,
+                onJumpToNow: null,
+              ),
+              Padding(
+                padding: const EdgeInsets.symmetric(horizontal: 16.0, vertical: 8.0),
+                child: Text(
+                  'Align the QR code within the frame',
+                  style: theme.textTheme.bodyMedium?.copyWith(
+                    color: theme.colorScheme.onSurface.withOpacity(0.9),
+                    fontWeight: FontWeight.w500,
+                  ),
+                  textAlign: TextAlign.center,
+                ),
+              ),
+              Expanded(
+                child: LayoutBuilder(
+                  builder: (context, constraints) {
+                    WidgetsBinding.instance.addPostFrameCallback((_) {
+                      final appBarRenderBox = context.findRenderObject() as RenderBox?;
+                      if (appBarRenderBox != null && _appBarHeight != appBarRenderBox.size.height) {
+                        setState(() {
+                          _appBarHeight = appBarRenderBox.size.height + MediaQuery.of(context).padding.top;
+                        });
+                      }
+                    });
+
+                    return Column(
+                      mainAxisAlignment: MainAxisAlignment.center,
+                      children: [
+                        if (!_isInitialized)
+                          CustomProgressIndicator(
+                            color: theme.colorScheme.primary,
+                          )
+                        else
+                          Stack(
+                            alignment: Alignment.center,
+                            children: [
+                              SizedBox(
+                                width: 320,
+                                height: 320,
+                                child: Stack(
+                                  children: [
+                                    Positioned(
+                                      top: 0,
+                                      left: 0,
+                                      child: _buildStaticCorner(theme),
+                                    ),
+                                    Positioned(
+                                      top: 0,
+                                      right: 0,
+                                      child: Transform.rotate(
+                                        angle: 1.5708,
+                                        child: _buildStaticCorner(theme),
+                                      ),
+                                    ),
+                                    Positioned(
+                                      bottom: 0,
+                                      left: 0,
+                                      child: Transform.rotate(
+                                        angle: -1.5708,
+                                        child: _buildStaticCorner(theme),
+                                      ),
+                                    ),
+                                    Positioned(
+                                      bottom: 0,
+                                      right: 0,
+                                      child: Transform.rotate(
+                                        angle: 3.1416,
+                                        child: _buildStaticCorner(theme),
+                                      ),
+                                    ),
+                                  ],
+                                ),
+                              ),
+                              if (_isScanning)
+                                Container(
+                                  width: 70,
+                                  height: 70,
+                                  decoration: BoxDecoration(
+                                    shape: BoxShape.circle,
+                                    gradient: RadialGradient(
+                                      colors: [
+                                        theme.colorScheme.background.withOpacity(0.6),
+                                        theme.colorScheme.background.withOpacity(0.3),
+                                      ],
+                                    ),
+                                  ),
+                                  child: CustomProgressIndicator(
+                                    color: theme.colorScheme.primary,
+                                  ),
+                                ),
+                            ],
+                          ),
+                        const CustomSpacer(height: 0),
+                        CustomButton(
+                          label: _isScanning ? 'Scanning...' : 'Scan QR',
+                          icon: Icons.qr_code_scanner,
+                          onPressed: _scanQRCode,
+                          isLoading: _isScanning,
+                          backgroundColor: _isScanning
+                              ? theme.colorScheme.secondary.withOpacity(0.6)
+                              : theme.colorScheme.primary,
+                          textColor: theme.elevatedButtonTheme.style?.foregroundColor?.resolve({}),
+                        ),
+                        const CustomSpacer(height: 0),
+                        Text(
+                          _isScanning ? 'Analyzing code...' : 'Tap to initiate scan',
+                          style: theme.textTheme.bodyMedium?.copyWith(
+                            color: theme.colorScheme.onSurface.withOpacity(0.8),
+                            fontWeight: FontWeight.w500,
+                          ),
+                        ),
+                      ],
+                    );
+                  },
+                ),
+              ),
+            ],
+          ),
+        ],
+      ),
+    );
+  }
+
+  Widget _buildStaticCorner(ThemeData theme) {
+    return Container(
+      width: 40,
+      height: 40,
+      decoration: BoxDecoration(
+        border: Border(
+          top: BorderSide(color: theme.colorScheme.primary, width: 5),
+          left: BorderSide(color: theme.colorScheme.primary, width: 5),
+        ),
+        borderRadius: const BorderRadius.only(
+          topLeft: Radius.circular(12),
+        ),
+      ),
+    );
+  }
+}
+
+class QROverlayPainter extends CustomPainter {
+  final double appBarHeight;
+  final ThemeData theme;
+
+  QROverlayPainter({required this.appBarHeight, required this.theme});
+
+  @override
+  void paint(Canvas canvas, Size size) {
+    final paint = Paint()..color = Colors.black.withOpacity(0.85);
+
+    const qrSize = 313.0;
+    final availableHeight = size.height - appBarHeight;
+    final qrRect = Rect.fromCenter(
+      center: Offset(size.width / 2, size.height / 1.87),
+      width: qrSize,
+      height: qrSize,
+    );
+
+    final path = Path()
+      ..addRect(Rect.fromLTWH(0, 0, size.width, size.height))
+      ..addRRect(
+        RRect.fromRectAndRadius(
+          qrRect,
+          const Radius.circular(12),
+        ),
+      )
+      ..fillType = PathFillType.evenOdd;
+
+    canvas.drawPath(path, paint);
+
+    final gradientPaint = Paint()
+      ..shader = RadialGradient(
+        center: Alignment.center,
+        radius: qrSize / 2 + 20,
+        colors: [
+          theme.colorScheme.primary.withOpacity(0.1),
+          Colors.transparent,
+        ],
+      ).createShader(qrRect);
+
+    canvas.drawRRect(
+      RRect.fromRectAndRadius(qrRect, const Radius.circular(12)),
+      gradientPaint,
+    );
+  }
+
+  @override
+  bool shouldRepaint(covariant CustomPainter oldDelegate) => false;
+}
+
+==================================================
+File contents: C:\Users\Kayto\Desktop\IT\Projects\Stage\Stage PFE\TraceFlow\Mobile\lib\widgets\Receipt\AgentSelector.dart
+==================================================
+import 'package:flutter/material.dart';
+import 'package:provider/provider.dart';
+import 'package:TraceFlow/models/agent.dart';
+import 'package:TraceFlow/providers/agent_provider.dart';
+import 'package:TraceFlow/widgets/commen/spacer.dart';
+import 'package:TraceFlow/widgets/commen/text_field.dart';
+import 'dart:async';
+
+import '../../providers/auth_provider.dart';
+
+class AgentSelector extends StatefulWidget {
+  final String? recipientID;
+  final String? selectedLocation;
+  final TextEditingController phoneController;
+  final void Function(String?) onRecipientIDChanged;
+  final Future<void> Function(String?) onLocationChanged;
+
+  const AgentSelector({
+    required this.recipientID,
+    required this.selectedLocation,
+    required this.phoneController,
+    required this.onRecipientIDChanged,
+    required this.onLocationChanged,
+    super.key,
+  });
+
+  @override
+  State<AgentSelector> createState() => _AgentSelectorState();
+}
+
+class _AgentSelectorState extends State<AgentSelector> {
+  String? _phoneError;
+  Timer? _debounce;
+  final TextEditingController _searchController = TextEditingController();
+  List<Agent> _filteredAgents = [];
+  int _visibleAgentsLimit = 10; // Cap at 10 initially
+
+  @override
+  void initState() {
+    super.initState();
+    widget.phoneController.addListener(_onPhoneChanged);
+    _searchController.addListener(_filterAgents);
+  }
+
+  @override
+  void dispose() {
+    _debounce?.cancel();
+    widget.phoneController.removeListener(_onPhoneChanged);
+    _searchController.removeListener(_filterAgents);
+    _searchController.dispose();
+    super.dispose();
+  }
+
+  void _onPhoneChanged() {
+    final value = widget.phoneController.text;
+    final agentProvider = Provider.of<AgentProvider>(context, listen: false);
+    setState(() => _phoneError = null);
+    _debounce?.cancel();
+    _debounce = Timer(const Duration(milliseconds: 500), () async {
+      if (value.length == 8) {
+        try {
+          await agentProvider.fetchAgentByPhone(value, Provider.of<AuthProvider>(context, listen: false).token!);
+          final agent = agentProvider.currentAgent;
+          if (agent != null) {
+            widget.onRecipientIDChanged(agent.agentID);
+            widget.onLocationChanged(agent.location);
+          } else {
+            setState(() => _phoneError = 'Agent not found with this phone number');
+            widget.onRecipientIDChanged(null);
+          }
+        } catch (e) {
+          setState(() => _phoneError = 'Error fetching agent: $e');
+          widget.onRecipientIDChanged(null);
+        }
+      }
+    });
+  }
+
+  void _filterAgents() {
+    final agentProvider = Provider.of<AgentProvider>(context, listen: false);
+    final query = _searchController.text.toLowerCase();
+    setState(() {
+      _filteredAgents = agentProvider.agents.where((agent) {
+        final fullName = '${agent.name} ${agent.lastname}'.toLowerCase();
+        final phone = agent.phone?.toLowerCase() ?? '';
+        return fullName.contains(query) || phone.contains(query);
+      }).toList();
+      _visibleAgentsLimit = 10; // Reset limit when filtering
+    });
+  }
+
+  Future<void> _showLocationDialog(AgentProvider agentProvider) async {
+    final locations = agentProvider.uniqueLocations;
+    final searchController = TextEditingController();
+    List<String> filteredLocations = List.from(locations);
+
+    await showDialog(
+      context: context,
+      builder: (context) {
+        return StatefulBuilder(
+          builder: (context, setDialogState) {
+            return AlertDialog(
+              title: const Text('Select Location'),
+              content: SizedBox(
+                width: double.maxFinite,
+                child: Column(
+                  mainAxisSize: MainAxisSize.min,
+                  children: [
+                    TextField(
+                      controller: searchController,
+                      decoration: const InputDecoration(hintText: 'Search locations...'),
+                      onChanged: (value) {
+                        setDialogState(() {
+                          filteredLocations = locations
+                              .where((loc) => loc.toLowerCase().contains(value.toLowerCase()))
+                              .toList();
+                        });
+                      },
+                    ),
+                    SizedBox(
+                      height: 200,
+                      child: ListView.builder(
+                        itemCount: filteredLocations.length,
+                        itemBuilder: (context, index) {
+                          final location = filteredLocations[index];
+                          return RadioListTile<String>(
+                            title: Text(location),
+                            value: location,
+                            groupValue: widget.selectedLocation,
+                            onChanged: (value) async {
+                              if (value != null) {
+                                print('Fetching agents for: $value');
+                                await widget.onLocationChanged(value); // Fetch agents
+                                print('Location picked: $value, agents: ${agentProvider.agents.length}');
+                                Navigator.pop(context); // Close dialog
+                                setState(() {
+                                  _filteredAgents = List.from(agentProvider.agents); // Init filtered list
+                                  _visibleAgentsLimit = 10; // Reset limit
+                                });
+                              }
+                            },
+                          );
+                        },
+                      ),
+                    ),
+                  ],
+                ),
+              ),
+              actions: [
+                TextButton(onPressed: () => Navigator.pop(context), child: const Text('Cancel')),
+              ],
+            );
+          },
+        );
+      },
+    );
+  }
+
+  @override
+  Widget build(BuildContext context) {
+    final agentProvider = Provider.of<AgentProvider>(context);
+    final selectedAgent = widget.recipientID != null
+        ? agentProvider.agents.firstWhere(
+          (agent) => agent.agentID == widget.recipientID,
+      orElse: () => agentProvider.currentAgent ??
+          Agent(agentID: '', name: 'Unknown', lastname: '', location: ''),
+    )
+        : null;
+    final agentsToShow = _searchController.text.isEmpty ? agentProvider.agents : _filteredAgents;
+    final visibleAgents = agentsToShow.take(_visibleAgentsLimit).toList();
+    final hasMore = agentsToShow.length > _visibleAgentsLimit;
+
+    print('Building UI, recipientID: ${widget.recipientID}, selectedAgent: ${selectedAgent?.name}, agents: ${agentProvider.agents.length}, filtered: ${agentsToShow.length}, visible: ${visibleAgents.length}');
+
+    return Column(
+      crossAxisAlignment: CrossAxisAlignment.start,
+      children: [
+        CustomTextField(
+          controller: widget.phoneController,
+          label: 'Agent Phone Number',
+          keyboardType: TextInputType.phone,
+        ),
+        if (_phoneError != null) ...[
+          const CustomSpacer(height: 8),
+          Text(_phoneError!, style: const TextStyle(color: Colors.red)),
+        ],
+        const CustomSpacer(height: 16),
+        if (widget.phoneController.text.isEmpty) ...[
+          GestureDetector(
+            onTap: () => _showLocationDialog(agentProvider),
+            child: Container(
+              padding: const EdgeInsets.all(12),
+              decoration: BoxDecoration(
+                border: Border.all(color: Colors.grey),
+                borderRadius: BorderRadius.circular(8),
+              ),
+              child: Row(
+                children: [
+                  const Icon(Icons.location_on),
+                  const SizedBox(width: 8),
+                  Expanded(child: Text(widget.selectedLocation ?? 'Select Location')),
+                ],
+              ),
+            ),
+          ),
+          if (widget.selectedLocation != null) ...[
+            const CustomSpacer(height: 16),
+            CustomTextField(
+              controller: _searchController,
+              label: 'Search Agents (Name, Phone)',
+            ),
+            const CustomSpacer(height: 8),
+            if (agentsToShow.isEmpty)
+              const Text('No agents match your search', style: TextStyle(color: Colors.red))
+            else ...[
+              SizedBox(
+                height: 200,
+                child: ListView.builder(
+                  itemCount: visibleAgents.length,
+                  itemBuilder: (context, index) {
+                    final agent = visibleAgents[index];
+                    return RadioListTile<String>(
+                      title: Text('${agent.name} ${agent.lastname} (${agent.phone ?? "No phone"})'),
+                      value: agent.agentID,
+                      groupValue: widget.recipientID,
+                      onChanged: (value) {
+                        print('Agent selected: $value');
+                        widget.onRecipientIDChanged(value);
+                        setState(() {}); // Force rebuild
+                      },
+                    );
+                  },
+                ),
+              ),
+              if (hasMore) ...[
+                const CustomSpacer(height: 8),
+                ElevatedButton(
+                  onPressed: () {
+                    setState(() {
+                      _visibleAgentsLimit += 10; // Load 10 more
+                    });
+                  },
+                  child: const Text('Show More'),
+                ),
+              ],
+            ],
+          ],
+        ],
+        if (selectedAgent != null && widget.recipientID != null) ...[
+          const CustomSpacer(height: 16),
+          Text('Selected Agent: ${selectedAgent.name} ${selectedAgent.lastname}'),
+        ],
+      ],
+    );
+  }
+}
+
+==================================================
+File contents: C:\Users\Kayto\Desktop\IT\Projects\Stage\Stage PFE\TraceFlow\Mobile\lib\widgets\Receipt\BookScanner.dart
+==================================================
+import 'package:flutter/material.dart';
+import 'package:provider/provider.dart';
+import 'package:TraceFlow/providers/receipt_book_provider.dart';
+import 'package:TraceFlow/widgets/commen/button.dart';
+import 'package:TraceFlow/widgets/commen/spacer.dart';
+
+class BookScanner extends StatelessWidget {
+  final List<String> selectedBookIDs;
+  final String? error;
+  final String? recipientType;
+  final Future<void> Function() onScanQR;
+  final void Function(String) onRemoveBook;
+
+  const BookScanner({
+    required this.selectedBookIDs,
+    required this.error,
+    this.recipientType,
+    required this.onScanQR,
+    required this.onRemoveBook,
+    super.key,
+  });
+
+  @override
+  Widget build(BuildContext context) {
+    final theme = Theme.of(context);
+    final receiptBookProvider = Provider.of<ReceiptBookProvider>(context);
+
+    return Column(
+      crossAxisAlignment: CrossAxisAlignment.start,
+      children: [
+        CustomButton(
+          label: 'Scan QR Code',
+          icon: Icons.qr_code_scanner,
+          onPressed: onScanQR,
+        ),
+        const CustomSpacer(height: 16),
+        Text('Selected Books (${selectedBookIDs.length}):', style: theme.textTheme.titleMedium),
+        if (recipientType == "Stub Collection" && selectedBookIDs.isNotEmpty) ...[
+          if (receiptBookProvider.currentReceiptBook != null)
+            ListTile(
+              title: Text('Receipt #${receiptBookProvider.currentReceiptBook!.number}'),
+              subtitle: Text('Type: ${receiptBookProvider.currentReceiptBook!.type} | Status: ${receiptBookProvider.currentReceiptBook!.status}'),
+              trailing: IconButton(
+                icon: const Icon(Icons.remove_circle),
+                onPressed: () => onRemoveBook(selectedBookIDs.first),
+              ),
+            )
+          else
+            const Text('Loading book details...', style: TextStyle(color: Colors.grey)),
+        ] else ...[
+          ...selectedBookIDs.map((bookID) {
+            final book = receiptBookProvider.receiptBooks.firstWhere((b) => b.bookID == bookID);
+            return ListTile(
+              title: Text('Receipt #${book.number}'),
+              subtitle: Text('Type: ${book.type} | Status: ${book.status}'),
+              trailing: IconButton(
+                icon: const Icon(Icons.remove_circle),
+                onPressed: () => onRemoveBook(bookID),
+              ),
+            );
+          }),
+        ],
+        if (error != null) ...[
+          const CustomSpacer(height: 16),
+          Text(error!, style: const TextStyle(color: Colors.red)),
+        ],
+      ],
+    );
+  }
+}
+
+==================================================
+File contents: C:\Users\Kayto\Desktop\IT\Projects\Stage\Stage PFE\TraceFlow\Mobile\lib\widgets\Receipt\card.dart
+==================================================
+import 'dart:convert';
+import 'package:flutter/material.dart';
+import 'package:TraceFlow/widgets/commen/card.dart';
+import 'package:TraceFlow/widgets/commen/spacer.dart';
+
+class ReceiptBookCard extends StatelessWidget {
+  final dynamic book;
+
+  const ReceiptBookCard({required this.book, super.key});
+
+  String _getDisplayStatus() {
+
+      String? stubStatus;
+      if (book.receiptStub is Map) {
+        stubStatus = book.receiptStub['status'] as String?;
+      } else if (book.receiptStub != null) {
+        stubStatus = book.receiptStub.status as String?;
+      }
+      if (stubStatus == "pending") return "To Agent";
+      if (stubStatus == "collected") return "To Manager";
+
+    return book.status ?? "Unknown"; // Fallback if status is null
+  }
+
+  @override
+  Widget build(BuildContext context) {
+    final theme = Theme.of(context);
+    return CustomCard(
+      title: '#${book.number ?? "N/A"}',
+      child: Row(
+        children: [
+          SizedBox(
+            width: 40,
+            height: 40,
+            child: Image.memory(
+              base64Decode((book.qrCode ?? '').split(',').last),
+              errorBuilder: (_, __, ___) => const Icon(Icons.error, size: 20),
+            ),
+          ),
+          const CustomSpacer(width: 12),
+          Expanded(
+            child: Column(
+              crossAxisAlignment: CrossAxisAlignment.start,
+              children: [
+                Text(book.type ?? "N/A", style: theme.textTheme.bodyMedium),
+                Text(
+                  _getDisplayStatus(),
+                  style: theme.textTheme.bodySmall?.copyWith(color: Colors.grey),
+                ),
+              ],
+            ),
+          ),
+        ],
+      ),
+    );
+  }
+}
+
+==================================================
+File contents: C:\Users\Kayto\Desktop\IT\Projects\Stage\Stage PFE\TraceFlow\Mobile\lib\widgets\Receipt\Controller.dart
+==================================================
+import 'package:flutter/material.dart';
+
+class ReceiptBookController extends StatefulWidget {
+  final List books;
+  final Widget child;
+
+  const ReceiptBookController({required this.books, required this.child, super.key});
+
+  @override
+  State<ReceiptBookController> createState() => _ReceiptBookControllerState();
+}
+
+class _ReceiptBookControllerState extends State<ReceiptBookController> {
+  final TextEditingController _searchController = TextEditingController();
+  String _sortBy = 'number';
+  bool _sortAscending = true;
+  Map<String, Set<String>> _filters = {'status': {}, 'type': {}};
+
+  @override
+  void initState() {
+    super.initState();
+    _searchController.addListener(() => setState(() {}));
+  }
+
+  @override
+  void dispose() {
+    _searchController.dispose();
+    super.dispose();
+  }
+
+  String _getDisplayStatus(dynamic book) {
+    if (book.status == "With Supervisor") {
+      String? stubStatus;
+      if (book.receiptStub is Map) {
+        stubStatus = book.receiptStub['status'] as String?;
+      } else if (book.receiptStub != null) {
+        stubStatus = book.receiptStub.status as String?;
+      }
+      if (stubStatus == "pending") return "To Agent";
+      if (stubStatus == "collected") return "To Manager";
+    }
+    return book.status ?? "Unknown";
+  }
+
+  List get filteredBooks {
+    var filtered = widget.books.where((book) {
+      final searchQuery = _searchController.text.toLowerCase();
+      final displayStatus = _getDisplayStatus(book);
+      final matchesSearch = (book.number ?? '').toLowerCase().contains(searchQuery) ||
+          (book.type ?? '').toLowerCase().contains(searchQuery);
+      final matchesStatus = _filters['status']!.isEmpty || _filters['status']!.contains(displayStatus);
+      final matchesType = _filters['type']!.isEmpty || _filters['type']!.contains(book.type ?? '');
+      return matchesSearch && matchesStatus && matchesType;
+    }).toList();
+
+    filtered.sort((a, b) {
+      int comparison;
+      switch (_sortBy) {
+        case 'number': comparison = (a.number ?? '').compareTo(b.number ?? ''); break;
+        case 'type': comparison = (a.type ?? '').compareTo(b.type ?? ''); break;
+        case 'status': comparison = _getDisplayStatus(a).compareTo(_getDisplayStatus(b)); break;
+        default: comparison = 0;
+      }
+      return _sortAscending ? comparison : -comparison;
+    });
+    return filtered;
+  }
+
+  void showSortMenu(GlobalKey sortKey) {
+    final RenderBox? button = sortKey.currentContext?.findRenderObject() as RenderBox?;
+    if (button == null) return;
+
+    final position = button.localToGlobal(Offset.zero);
+    final size = button.size;
+
+    showMenu(
+      context: context,
+      position: RelativeRect.fromLTRB(
+        position.dx,
+        position.dy + size.height,
+        position.dx + size.width,
+        0,
+      ),
+      items: [
+        _buildSortItem('Number', 'number'),
+        _buildSortItem('Type', 'type'),
+        _buildSortItem('Status', 'status'),
+      ],
+    ).then((value) {
+      if (value != null) {
+        setState(() {
+        if (_sortBy == value) {
+          _sortAscending = !_sortAscending;
+        } else { _sortBy = value; _sortAscending = true; }
+      });
+      }
+    });
+  }
+
+  PopupMenuItem<String> _buildSortItem(String label, String value) {
+    return PopupMenuItem(
+      value: value,
+      child: Row(
+        children: [
+          Text(label),
+          if (_sortBy == value) ...[
+            const SizedBox(width: 8),
+            Icon(_sortAscending ? Icons.arrow_upward : Icons.arrow_downward, size: 16),
+          ],
+        ],
+      ),
+    );
+  }
+
+  @override
+  Widget build(BuildContext context) {
+    return ReceiptBookScope(
+      controller: this,
+      child: widget.child,
+    );
+  }
+}
+
+class ReceiptBookScope extends InheritedWidget {
+  final _ReceiptBookControllerState controller;
+
+  const ReceiptBookScope({required this.controller, required super.child, super.key});
+
+  TextEditingController get searchController => controller._searchController;
+  Map<String, Set<String>> get filters => controller._filters;
+  void setFilters(Map<String, Set<String>> value) => controller.setState(() => controller._filters = value);
+  List get filteredBooks => controller.filteredBooks;
+  void showSortMenu(GlobalKey sortKey) => controller.showSortMenu(sortKey);
+
+  static ReceiptBookScope of(BuildContext context) {
+    return context.dependOnInheritedWidgetOfExactType<ReceiptBookScope>()!;
+  }
+
+  @override
+  bool updateShouldNotify(ReceiptBookScope oldWidget) => true;
+}
+
+==================================================
+File contents: C:\Users\Kayto\Desktop\IT\Projects\Stage\Stage PFE\TraceFlow\Mobile\lib\widgets\Receipt\FilterSheet.dart
+==================================================
+import 'package:flutter/material.dart';
+import 'package:TraceFlow/widgets/commen/button.dart';
+import 'package:TraceFlow/widgets/commen/spacer.dart';
+
+class FilterSheet extends StatefulWidget {
+  final Set<String> typeOptions;
+  final Map<String, Set<String>> initialFilters;
+  final Function(Map<String, Set<String>>) onApply;
+
+  const FilterSheet({
+    required this.typeOptions,
+    required this.initialFilters,
+    required this.onApply,
+    super.key,
+  });
+
+  @override
+  State<FilterSheet> createState() => _FilterSheetState();
+}
+
+class _FilterSheetState extends State<FilterSheet> {
+  late Map<String, Set<String>> _filters;
+
+  @override
+  void initState() {
+    super.initState();
+    _filters = Map.from(widget.initialFilters);
+    // Ensure 'status' includes only derived options if not already set
+    _filters['status'] ??= {'To Agent', 'To Manager'};
+  }
+
+  @override
+  Widget build(BuildContext context) {
+    final allStatusOptions = {'To Agent', 'To Manager'}; // Hardcode derived statuses
+    return Padding(
+      padding: const EdgeInsets.all(16.0),
+      child: Column(
+          mainAxisSize: MainAxisSize.min,
+          crossAxisAlignment: CrossAxisAlignment.start,
+          children: [
+          const Text('Filter Receipt Books', style: TextStyle(fontSize: 20, fontWeight: FontWeight.bold)),
+      const CustomSpacer(height: 16),
+      const Text('Destination', style: TextStyle(fontSize: 16, fontWeight: FontWeight.w600)),
+      Wrap(spacing: 8, children: _buildChips(allStatusOptions, 'status')),
+      const CustomSpacer(height: 16),
+      const Text('Type', style: TextStyle(fontSize: 16, fontWeight: FontWeight.w600)),
+      Wrap(spacing: 8, children: _buildChips(widget.typeOptions, 'type')),
+      const CustomSpacer(height: 24),
+      Row(
+          mainAxisAlignment: MainAxisAlignment.spaceBetween,
+          children: [
+          CustomButton(
+          label: 'Clear',
+          onPressed: () => setState(() => _filters..['status']!.clear()..['type']!.clear()),
+      isOutlined: true,
+    ),
+    CustomButton(
+    label: 'Apply',
+    onPressed: () {
+    widget.onApply(_filters);
+    Navigator.pop(context);
+    },
+    ),
+    ],
+    ),
+    ],
+    ),
+    );
+  }
+
+  List<Widget> _buildChips(Set<String> options, String key) {
+    return options.map<Widget>((option) {
+      final isSelected = _filters[key]!.contains(option);
+      return FilterChip(
+        label: Text(option),
+        selected: isSelected,
+        onSelected: (_) => setState(() => isSelected ? _filters[key]!.remove(option) : _filters[key]!.add(option)),
+        selectedColor: Theme.of(context).colorScheme.primary.withOpacity(0.2),
+        labelStyle: TextStyle(color: isSelected ? Theme.of(context).colorScheme.primary : null),
+      );
+    }).toList();
+  }
+}
+
+==================================================
+File contents: C:\Users\Kayto\Desktop\IT\Projects\Stage\Stage PFE\TraceFlow\Mobile\lib\widgets\Receipt\FilterSortHeader.dart
+==================================================
+import 'package:flutter/material.dart';
+import 'package:TraceFlow/screens/Receipt/transfer_receipt_book.dart';
+import 'package:TraceFlow/widgets/commen/button.dart';
+import 'package:TraceFlow/widgets/commen/spacer.dart';
+import 'package:TraceFlow/widgets/commen/text_field.dart';
+import 'FilterSheet.dart';
+
+class FilterSortHeader extends StatelessWidget {
+  final TextEditingController searchController;
+  final void Function(GlobalKey) onSort;
+  final VoidCallback onFilter;
+  final Set<String> typeOptions;
+  final Map<String, Set<String>> initialFilters;
+  final Function(Map<String, Set<String>>) onApplyFilters;
+
+  const FilterSortHeader({
+    required this.searchController,
+    required this.onSort,
+    required this.onFilter,
+    required this.typeOptions,
+    required this.initialFilters,
+    required this.onApplyFilters,
+    super.key,
+  });
+
+  @override
+  Widget build(BuildContext context) {
+    final sortKey = GlobalKey();
+    return Padding(
+      padding: const EdgeInsets.all(8.0),
+      child: Column(
+        children: [
+          SizedBox(
+            height: 50,
+            child: CustomTextField(controller: searchController, label: 'Search Number/Type'),
+          ),
+          const CustomSpacer(height: 8),
+          Row(
+            children: [
+              IconButton(
+                key: sortKey,
+                icon: const Icon(Icons.sort_rounded),
+                onPressed: () => onSort(sortKey),
+                tooltip: 'Sort',
+              ),
+              const SizedBox(width: 8),
+              IconButton(
+                icon: const Icon(Icons.filter_alt_rounded),
+                onPressed: () => showModalBottomSheet(
+                  context: context,
+                  isScrollControlled: true,
+                  shape: const RoundedRectangleBorder(borderRadius: BorderRadius.vertical(top: Radius.circular(16))),
+                  builder: (_) => FilterSheet(
+                    typeOptions: typeOptions,
+                    initialFilters: initialFilters,
+                    onApply: onApplyFilters,
+                  ),
+                ),
+                tooltip: 'Filter',
+              ),
+              const Spacer(),
+              CustomButton(
+                label: 'Transfer',
+                onPressed: () => Navigator.push(context, MaterialPageRoute(builder: (_) => const TransferReceiptBookScreen())),
+              ),
+            ],
+          ),
+        ],
+      ),
+    );
+  }
+}
+
+==================================================
+File contents: C:\Users\Kayto\Desktop\IT\Projects\Stage\Stage PFE\TraceFlow\Mobile\lib\widgets\Receipt\OtpValidator.dart
+==================================================
+import 'package:flutter/material.dart';
+import 'package:TraceFlow/widgets/commen/button.dart';
+import 'package:TraceFlow/widgets/commen/spacer.dart';
+import 'package:TraceFlow/widgets/commen/text_field.dart';
+
+class OtpValidator extends StatelessWidget {
+  final String? recipientType;
+  final String? recipientID;
+  final int otpSecondsRemaining;
+  final String? error;
+  final TextEditingController otpController;
+  final Future<void> Function() onValidateTransfer;
+  final String Function(int) formatTime;
+
+  const OtpValidator({
+    required this.recipientType,
+    required this.recipientID,
+    required this.otpSecondsRemaining,
+    required this.error,
+    required this.otpController,
+    required this.onValidateTransfer,
+    required this.formatTime,
+    super.key,
+  });
+
+  @override
+  Widget build(BuildContext context) {
+    return Column(
+      crossAxisAlignment: CrossAxisAlignment.start,
+      children: [
+        Text(
+          'OTP expires in: ${formatTime(otpSecondsRemaining)}',
+          style: TextStyle(color: otpSecondsRemaining <= 30 ? Colors.red : null),
+        ),
+        const CustomSpacer(height: 16),
+        CustomTextField(
+          controller: otpController,
+          label: 'Enter OTP',
+          keyboardType: TextInputType.number,
+        ),
+        if (error != null) ...[
+          const CustomSpacer(height: 16),
+          Text(error!, style: const TextStyle(color: Colors.red)),
+        ],
+        const CustomSpacer(height: 16),
+        CustomButton(
+          label: recipientType == "Stub Collection" ? 'Validate Stub Collection' : 'Validate Transfer',
+          icon: Icons.check,
+          onPressed: onValidateTransfer,
+        ),
+      ],
+    );
+  }
+}
+
+==================================================
+File contents: C:\Users\Kayto\Desktop\IT\Projects\Stage\Stage PFE\TraceFlow\Mobile\lib\widgets\Receipt\RecipientTypeSelector.dart
+==================================================
+import 'package:flutter/material.dart';
+import 'package:TraceFlow/widgets/commen/dropdown.dar.dart';
+
+class RecipientTypeSelector extends StatelessWidget {
+  final String? recipientType;
+  final void Function(String?) onChanged;
+
+  const RecipientTypeSelector({
+    required this.recipientType,
+    required this.onChanged,
+    super.key,
+  });
+
+  @override
+  Widget build(BuildContext context) {
+    const recipientOptions = ["Supervisor", "Regional Manager", "Agent", "Stock Manager", "Stub Collection"];
+    return CustomDropdown<String>(
+      value: recipientType,
+      items: recipientOptions,
+      hint: 'Select Recipient Type',
+      onChanged: onChanged,
+    );
+  }
+}
+
+==================================================
+File contents: C:\Users\Kayto\Desktop\IT\Projects\Stage\Stage PFE\TraceFlow\Mobile\lib\widgets\Receipt\TransferForm.dart
+==================================================
+import 'package:flutter/material.dart';
+import 'package:provider/provider.dart';
+import 'package:TraceFlow/providers/agent_provider.dart';
+import 'package:TraceFlow/providers/receipt_book_provider.dart';
+import 'package:TraceFlow/providers/user_provider.dart';
+import 'package:TraceFlow/widgets/commen/dropdown.dar.dart'; // Fix typo: dropdown.dart
+import 'package:TraceFlow/widgets/commen/progress_indicator.dart';
+import 'package:TraceFlow/widgets/commen/spacer.dart';
+import 'package:TraceFlow/widgets/commen/text_field.dart';
+import '../../providers/auth_provider.dart';
+
+class TransferForm extends StatelessWidget {
+  final String? recipientType;
+  final String? recipientID;
+  final String? selectedLocation;
+  final List<String> selectedBookIDs;
+  final bool transferInitiated;
+  final String? error;
+  final bool isScannerActive;
+  final int otpSecondsRemaining;
+  final Set<String> scannedQRCodes;
+  final TextEditingController otpController;
+  final TextEditingController searchController;
+  final TextEditingController phoneController;
+  final void Function(String?) onRecipientTypeChanged;
+  final void Function(String?) onRecipientIDChanged;
+  final Future<void> Function(String?) onLocationChanged;
+  final Future<void> Function() onScanQR;
+  final void Function(String) onRemoveBook;
+  final Future<void> Function() onInitiateTransfer;
+  final Future<void> Function() onValidateTransfer;
+  final String Function(int) formatTime;
+
+  const TransferForm({
+    required this.recipientType,
+    required this.recipientID,
+    required this.selectedLocation,
+    required this.selectedBookIDs,
+    required this.transferInitiated,
+    required this.error,
+    required this.isScannerActive,
+    required this.otpSecondsRemaining,
+    required this.scannedQRCodes,
+    required this.otpController,
+    required this.searchController,
+    required this.phoneController,
+    required this.onRecipientTypeChanged,
+    required this.onRecipientIDChanged,
+    required this.onLocationChanged,
+    required this.onScanQR,
+    required this.onRemoveBook,
+    required this.onInitiateTransfer,
+    required this.onValidateTransfer,
+    required this.formatTime,
+    super.key,
+  });
+
+  @override
+  Widget build(BuildContext context) {
+    final theme = Theme.of(context);
+    final receiptBookProvider = Provider.of<ReceiptBookProvider>(context);
+    final userProvider = Provider.of<UserProvider>(context);
+    final agentProvider = Provider.of<AgentProvider>(context);
+    final recipientOptions = ["Supervisor", "Regional Manager", "Agent", "Stock Manager", "Stub Collection"];
+    final filteredUsers = userProvider.users
+        .where((u) => u.roles.any((r) => r.name.toLowerCase() == recipientType?.toLowerCase()))
+        .toList();
+    final filteredAgents = agentProvider.agents.where((a) =>
+    (a.name.toLowerCase().contains(searchController.text.toLowerCase()) ||
+        a.lastname.toLowerCase().contains(searchController.text.toLowerCase()) ||
+        a.phone?.contains(searchController.text) == true)).toList();
+
+    return Padding(
+      padding: const EdgeInsets.all(16),
+      child: SingleChildScrollView(
+        child: Column(
+          crossAxisAlignment: CrossAxisAlignment.start,
+          children: [
+            if (!transferInitiated) ...[
+              CustomDropdown<String>(
+                value: recipientType,
+                items: recipientOptions,
+                hint: 'Select Recipient Type',
+                onChanged: onRecipientTypeChanged,
+              ),
+              const CustomSpacer(height: 16),
+              if (recipientType != null) ...[
+                if (recipientType == "Agent") ...[
+                  CustomTextField(
+                    controller: phoneController,
+                    label: 'Agent Phone Number',
+                    keyboardType: TextInputType.phone,
+                  ),
+                  const CustomSpacer(height: 16),
+                  FutureBuilder(
+                    future: phoneController.text.length >= 10
+                        ? agentProvider.fetchAgentByPhone(phoneController.text, Provider.of<AuthProvider>(context, listen: false).token!)
+                        : Future.value(),
+                    builder: (context, snapshot) {
+                      if (phoneController.text.length >= 10 && snapshot.connectionState == ConnectionState.waiting) {
+                        return const CustomProgressIndicator();
+                      }
+                      if (snapshot.hasError || agentProvider.currentAgent == null) {
+                        return const Text('No agent found.', style: TextStyle(color: Colors.red));
+                      }
+                      if (agentProvider.currentAgent != null) {
+                        onRecipientIDChanged(agentProvider.currentAgent!.agentID);
+                        return Text('Selected Agent: ${agentProvider.currentAgent!.name} ${agentProvider.currentAgent!.lastname}');
+                      }
+                      return Column(
+                        children: [
+                          const Text('OR', style: TextStyle(fontSize: 16, fontWeight: FontWeight.bold)),
+                          const CustomSpacer(height: 8),
+                          CustomDropdown<String>(
+                            value: selectedLocation,
+                            items: agentProvider.uniqueLocations,
+                            hint: 'Select Location',
+                            onChanged: onLocationChanged,
+                          ),
+                          if (selectedLocation != null) ...[
+                            const CustomSpacer(height: 16),
+                            CustomTextField(
+                              controller: searchController,
+                              label: 'Search Agents (Name, Lastname, Phone)',
+                            ),
+                            const CustomSpacer(height: 16),
+                            CustomDropdown<String>(
+                              value: recipientID,
+                              items: filteredAgents.map((a) => a.agentID).toList(),
+                              hint: 'Select Agent',
+                              itemToString: (id) => '${filteredAgents.firstWhere((a) => a.agentID == id).name} ${filteredAgents.firstWhere((a) => a.agentID == id).lastname} (${filteredAgents.firstWhere((a) => a.agentID == id).phone})',
+                              onChanged: onRecipientIDChanged,
+                            ),
+                          ],
+                        ],
+                      );
+                    },
+                  ),
+                ],
+                if (recipientType != "Agent" && recipientType != "Stub Collection") ...[
+                  CustomTextField(
+                    controller: searchController,
+                    label: 'Search $recipientType (Name, Lastname, Phone)',
+                  ),
+                  const CustomSpacer(height: 16),
+                  CustomDropdown<String>(
+                    value: recipientID,
+                    items: filteredUsers.map((u) => u.userID!).toList(),
+                    hint: 'Select $recipientType',
+                    itemToString: (id) => '${filteredUsers.firstWhere((u) => u.userID == id).firstname} ${filteredUsers.firstWhere((u) => u.userID == id).lastname} (${filteredUsers.firstWhere((u) => u.userID == id).phone})',
+                    onChanged: onRecipientIDChanged,
+                  ),
+                ],
+                if (recipientType == "Stub Collection" || recipientID != null) ...[
+                  const CustomSpacer(height: 16),
+                  Text('Selected Books (${selectedBookIDs.length}):', style: theme.textTheme.titleMedium),
+                  ...selectedBookIDs.map((bookID) {
+                    final book = receiptBookProvider.receiptBooks.firstWhere((b) => b.bookID == bookID);
+                    return ListTile(
+                      title: Text('Receipt #${book.number}'),
+                      subtitle: Text('Type: ${book.type} | Status: ${book.status}'),
+                      trailing: IconButton(
+                        icon: const Icon(Icons.remove_circle, color: Colors.red),
+                        onPressed: () => onRemoveBook(bookID),
+                      ),
+                    );
+                  }),
+                  if (error != null) ...[
+                    const CustomSpacer(height: 16),
+                    Text(error!, style: const TextStyle(color: Colors.red)),
+                  ],
+                  const CustomSpacer(height: 24),
+                  Card(
+                    elevation: 4,
+                    shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(12)),
+                    child: Padding(
+                      padding: const EdgeInsets.all(16),
+                      child: Column(
+                        children: [
+                          ElevatedButton.icon(
+                            onPressed: onScanQR,
+                            icon: const Icon(Icons.qr_code_scanner, size: 24),
+                            label: const Text('Scan QR Code', style: TextStyle(fontSize: 16)),
+                            style: ElevatedButton.styleFrom(
+                              foregroundColor: Colors.white,
+                              backgroundColor: theme.primaryColor,
+                              padding: const EdgeInsets.symmetric(horizontal: 24, vertical: 12),
+                              shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(8)),
+                              elevation: 2,
+                            ),
+                          ),
+                          const SizedBox(height: 12),
+                          ElevatedButton.icon(
+                            onPressed: onInitiateTransfer,
+                            icon: const Icon(Icons.send, size: 24),
+                            label: Text(
+                              recipientType == "Stub Collection" ? 'Initiate Stub Collection' : 'Initiate Transfer',
+                              style: const TextStyle(fontSize: 16),
+                            ),
+                            style: ElevatedButton.styleFrom(
+                              foregroundColor: Colors.white,
+                              backgroundColor: Colors.green,
+                              padding: const EdgeInsets.symmetric(horizontal: 24, vertical: 12),
+                              shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(8)),
+                              elevation: 2,
+                            ),
+                          ),
+                        ],
+                      ),
+                    ),
+                  ),
+                ],
+              ],
+            ] else ...[
+              Text(
+                'OTP expires in: ${formatTime(otpSecondsRemaining)}',
+                style: TextStyle(color: otpSecondsRemaining <= 30 ? Colors.red : null, fontSize: 16),
+              ),
+              const CustomSpacer(height: 16),
+              CustomTextField(
+                controller: otpController,
+                label: 'Enter OTP',
+                keyboardType: TextInputType.number,
+              ),
+              if (error != null) ...[
+                const CustomSpacer(height: 16),
+                Text(error!, style: const TextStyle(color: Colors.red)),
+              ],
+              const CustomSpacer(height: 24),
+              Card(
+                elevation: 4,
+                shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(12)),
+                child: Padding(
+                  padding: const EdgeInsets.all(16),
+                  child: ElevatedButton.icon(
+                    onPressed: onValidateTransfer,
+                    icon: const Icon(Icons.check, size: 24),
+                    label: Text(
+                      recipientType == "Stub Collection" ? 'Validate Stub Collection' : 'Validate Transfer',
+                      style: const TextStyle(fontSize: 16),
+                    ),
+                    style: ElevatedButton.styleFrom(
+                      foregroundColor: Colors.white,
+                      backgroundColor: Colors.blue,
+                      padding: const EdgeInsets.symmetric(horizontal: 24, vertical: 12),
+                      shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(8)),
+                      elevation: 2,
+                    ),
+                  ),
+                ),
+              ),
+            ],
+          ],
+        ),
+      ),
+    );
+  }
+}
+
+==================================================
+File contents: C:\Users\Kayto\Desktop\IT\Projects\Stage\Stage PFE\TraceFlow\Mobile\lib\widgets\Receipt\UserSelector.dart
+==================================================
+import 'package:flutter/material.dart';
+import 'package:provider/provider.dart';
+import 'package:TraceFlow/models/user.dart';
+import 'package:TraceFlow/providers/user_provider.dart';
+import 'package:TraceFlow/widgets/commen/spacer.dart';
+import 'package:TraceFlow/widgets/commen/text_field.dart';
+
+class UserSelector extends StatefulWidget {
+  final String? recipientType;
+  final String? recipientID;
+  final void Function(String?) onRecipientIDChanged;
+
+  const UserSelector({
+    required this.recipientType,
+    required this.recipientID,
+    required this.onRecipientIDChanged,
+    super.key,
+  });
+
+  @override
+  _UserSelectorState createState() => _UserSelectorState();
+}
+
+class _UserSelectorState extends State<UserSelector> {
+  final TextEditingController _searchController = TextEditingController();
+  List<User> _filteredUsers = [];
+  int _visibleUsersLimit = 10; // Cap at 10 initially
+
+  @override
+  void initState() {
+    super.initState();
+    _searchController.addListener(_filterUsers);
+    // Initialize filtered list with all users
+    final userProvider = Provider.of<UserProvider>(context, listen: false);
+    _filteredUsers = List.from(userProvider.users);
+  }
+
+  @override
+  void dispose() {
+    _searchController.removeListener(_filterUsers);
+    _searchController.dispose();
+    super.dispose();
+  }
+
+  void _filterUsers() {
+    final userProvider = Provider.of<UserProvider>(context, listen: false);
+    final query = _searchController.text.toLowerCase();
+    setState(() {
+      _filteredUsers = userProvider.users.where((user) {
+        final fullName = '${user.firstname} ${user.lastname}'.toLowerCase();
+        final phone = user.phone?.toLowerCase() ?? '';
+        return fullName.contains(query) || phone.contains(query);
+      }).toList();
+      _visibleUsersLimit = 10; // Reset limit when filtering
+    });
+  }
+
+  @override
+  Widget build(BuildContext context) {
+    final userProvider = Provider.of<UserProvider>(context);
+    final usersToShow = _searchController.text.isEmpty ? userProvider.users : _filteredUsers;
+    final visibleUsers = usersToShow.take(_visibleUsersLimit).toList();
+    final hasMore = usersToShow.length > _visibleUsersLimit;
+
+    final selectedUser = widget.recipientID != null
+        ? usersToShow.firstWhere(
+          (user) => user.userID == widget.recipientID,
+      orElse: () => userProvider.currentUser ??
+          User(userID: '', firstname: 'Unknown', lastname: '', phone: ''),
+    )
+        : null;
+
+    print('Building UI, recipientID: ${widget.recipientID}, selectedUser: ${selectedUser?.firstname}, users: ${userProvider.users.length}, filtered: ${usersToShow.length}, visible: ${visibleUsers.length}');
+
+    return Column(
+      crossAxisAlignment: CrossAxisAlignment.start,
+      children: [
+        CustomTextField(
+          controller: _searchController,
+          label: 'Search ${widget.recipientType} (Name, Lastname, Phone)',
+        ),
+        const CustomSpacer(height: 16),
+        if (usersToShow.isEmpty)
+          const Text('No users match your search', style: TextStyle(color: Colors.red))
+        else ...[
+          SizedBox(
+            height: 200,
+            child: ListView.builder(
+              itemCount: visibleUsers.length,
+              itemBuilder: (context, index) {
+                final user = visibleUsers[index];
+                return RadioListTile<String>(
+                  title: Text('${user.firstname} ${user.lastname} (${user.phone ?? "No phone"})'),
+                  value: user.userID!,
+                  groupValue: widget.recipientID,
+                  onChanged: (value) {
+                    print('Selected user ID: $value');
+                    widget.onRecipientIDChanged(value);
+                    setState(() {}); // Force rebuild
+                  },
+                );
+              },
+            ),
+          ),
+          if (hasMore) ...[
+            const CustomSpacer(height: 8),
+            ElevatedButton(
+              onPressed: () {
+                setState(() {
+                  _visibleUsersLimit += 10; // Load 10 more
+                });
+              },
+              child: const Text('Show More'),
+            ),
+          ],
+        ],
+        if (selectedUser != null && widget.recipientID != null) ...[
+          const CustomSpacer(height: 16),
+          Text('Selected ${widget.recipientType}: ${selectedUser.firstname} ${selectedUser.lastname}'),
+        ],
+      ],
+    );
+  }
+}
+
+==================================================
+File contents: C:\Users\Kayto\Desktop\IT\Projects\Stage\Stage PFE\TraceFlow\Mobile\lib\widgets\Timesheet\day_card.dart
+==================================================
+import 'package:flutter/material.dart';
+import 'day_view.dart';
+
+class DayCard extends StatelessWidget {
+  final DateTime day;
+  final String title;
+  final String chipLabel;
+  final VoidCallback? onTap;
+
+  const DayCard({
+    required this.day,
+    required this.title,
+    required this.chipLabel,
+    this.onTap,
+    super.key,
+  });
+
+  @override
+  Widget build(BuildContext context) {
+    final theme = Theme.of(context);
+    return GestureDetector(
+      onTap: onTap,
+      child: AnimatedContainer(
+        duration: const Duration(milliseconds: 300),
+        curve: Curves.easeInOut,
+        child: Card(
+          elevation: 5,
+          color: theme.cardTheme.color,
+          child: Column(
+            crossAxisAlignment: CrossAxisAlignment.start,
+            children: [
+              Padding(
+                padding: const EdgeInsets.fromLTRB(20, 8, 20, 8), // Reduced top/bottom padding
+                child: Row(
+                  mainAxisAlignment: MainAxisAlignment.spaceBetween,
+                  children: [
+                    Text(
+                      title,
+                      style: theme.textTheme.headlineSmall,
+                    ),
+                    Container(
+                      padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 6),
+                      decoration: BoxDecoration(
+                        color: theme.colorScheme.onSurface.withOpacity(0.1),
+                        borderRadius: BorderRadius.circular(6),
+                      ),
+                      child: Text(
+                        chipLabel,
+                        style: TextStyle(
+                          fontSize: 12,
+                          color: theme.colorScheme.onSurface,
+                          fontWeight: FontWeight.w500,
+                        ),
+                      ),
+                    ),
+                  ],
+                ),
+              ),
+              DayView(day),
+            ],
+          ),
+        ),
+      ),
+    );
+  }
+}
+
+==================================================
+File contents: C:\Users\Kayto\Desktop\IT\Projects\Stage\Stage PFE\TraceFlow\Mobile\lib\widgets\Timesheet\day_view.dart
+==================================================
+import 'package:flutter/material.dart';
+import 'package:provider/provider.dart';
+import '../../models/timesheet.dart';
+import '../../providers/timesheet_provider.dart';
+import '../Visit/visit_item.dart';
+import '../commen/empty_state.dart';
+
+class DayView extends StatelessWidget {
+  final DateTime day;
+
+  const DayView(this.day, {super.key});
+
+  List getVisitsForDay(DateTime day, List<Timesheet> timesheets) {
+    final localDayStart = DateTime(day.year, day.month, day.day);
+    final allVisits = timesheets
+        .expand((timesheet) => timesheet.visits ?? [])
+        .where((visit) {
+      final visitDate = visit.date != null
+          ? DateTime(visit.date!.year, visit.date!.month, visit.date!.day)
+          : null;
+      return visitDate != null && visitDate.isAtSameMomentAs(localDayStart);
+    }).toList();
+
+    allVisits.sort((a, b) {
+      if (a.time == null && b.time == null) return 0;
+      if (a.time == null) return 1;
+      if (b.time == null) return -1;
+      return a.time!.compareTo(b.time!);
+    });
+
+    return allVisits;
+  }
+
+  @override
+  Widget build(BuildContext context) {
+    return Consumer<TimesheetProvider>(
+      builder: (context, provider, child) {
+        final visits = getVisitsForDay(day, provider.timesheets);
+        return visits.isEmpty
+            ? const Padding(
+          padding: EdgeInsets.symmetric(vertical: 16),
+          child: EmptyState(text: 'No visits scheduled'),
+        )
+            : ListView.separated(
+          shrinkWrap: true,
+          physics: NeverScrollableScrollPhysics(), // Disables internal scrolling
+
+          itemCount: visits.length,
+          separatorBuilder: (context, index) => const SizedBox(height: 0),
+          itemBuilder: (context, index) => AnimatedOpacity(
+            opacity: 1.0,
+            duration: const Duration(milliseconds: 300),
+            child: VisitItem(visits[index]),
+          ),
+        );
+      },
+    );
+  }
+}
+
+==================================================
+File contents: C:\Users\Kayto\Desktop\IT\Projects\Stage\Stage PFE\TraceFlow\Mobile\lib\widgets\Timesheet\month_view.dart
+==================================================
+import 'package:flutter/material.dart';
+import 'package:provider/provider.dart';
+import 'package:intl/intl.dart';
+import '../../providers/timesheet_provider.dart';
+import '../commen/empty_state.dart';
+
+class MonthView extends StatelessWidget {
+  final DateTime date;
+  final Function(DateTime) onDayTap;
+
+  const MonthView({required this.date, required this.onDayTap, super.key});
+
+  List<DateTime> _getMonthDays(DateTime month) {
+    final firstDay = DateTime(month.year, month.month, 1);
+    final lastDay = DateTime(month.year, month.month + 1, 0);
+    final days = <DateTime>[];
+
+    // Calculate the offset to start the week on Sunday
+    int weekdayOffset = firstDay.weekday % 7; // Sunday = 0, Monday = 1, etc.
+    for (int i = 0; i < weekdayOffset; i++) {
+      days.add(DateTime(0)); // Placeholder for empty cells before the 1st
+    }
+
+    // Add all days of the month
+    for (int i = 0; i < lastDay.day; i++) {
+      days.add(firstDay.add(Duration(days: i)));
+    }
+
+    return days;
+  }
+
+  Map<String, dynamic> _getDayVisits(DateTime day, List timesheets) {
+    final localDayStart = DateTime(day.year, day.month, day.day);
+    final visits = timesheets
+        .expand((t) => t.visits ?? [])
+        .where((visit) {
+      final visitDate = visit.date != null
+          ? DateTime(visit.date!.year, visit.date!.month, visit.date!.day)
+          : null;
+      return visitDate != null && visitDate.isAtSameMomentAs(localDayStart);
+    })
+        .toList();
+    return {
+      'count': visits.length,
+      'preview': visits.isNotEmpty ? visits.take(1).map((v) => v.location ?? 'N/A').join(', ') : '',
+    };
+  }
+
+  int _getTotalMonthVisits(DateTime month, List timesheets) {
+    final firstDay = DateTime(month.year, month.month, 1);
+    final lastDay = DateTime(month.year, month.month + 1, 0);
+    return timesheets
+        .expand((t) => t.visits ?? [])
+        .where((visit) {
+      final visitDate = visit.date;
+      return visitDate != null &&
+          visitDate.isAfter(firstDay.subtract(const Duration(days: 1))) &&
+          visitDate.isBefore(lastDay.add(const Duration(days: 1)));
+    })
+        .length;
+  }
+
+  bool _isToday(DateTime day) {
+    final today = DateTime.now();
+    return day.year == today.year &&
+        day.month == today.month &&
+        day.day == today.day;
+  }
+
+  @override
+  Widget build(BuildContext context) {
+    final theme = Theme.of(context);
+    final days = _getMonthDays(date);
+    final dayNames = ['Sun', 'Mon', 'Tue', 'Wed', 'Thu', 'Fri', 'Sat'];
+
+    return Consumer<TimesheetProvider>(
+      builder: (context, provider, child) {
+        if (provider.timesheets.isEmpty) return const EmptyState(text: 'No timesheets available');
+        final totalVisits = _getTotalMonthVisits(date, provider.timesheets);
+
+        return Column(
+          crossAxisAlignment: CrossAxisAlignment.stretch,
+          children: [
+
+            // Day names header
+            Row(
+              children: dayNames.map((name) {
+                final isWeekend = name == 'Sun' || name == 'Sat';
+                return Expanded(
+                  child: Padding(
+                    padding: const EdgeInsets.symmetric(vertical: 4),
+                    child: Text(
+                      name,
+                      textAlign: TextAlign.center,
+                      style: theme.textTheme.bodySmall?.copyWith(
+                        color: isWeekend
+                            ? theme.colorScheme.onSurface.withOpacity(0.5)
+                            : theme.colorScheme.onSurface,
+                      ),
+                    ),
+                  ),
+                );
+              }).toList(),
+            ),
+            // Calendar grid
+            GridView.builder(
+              shrinkWrap: true,
+              physics: const NeverScrollableScrollPhysics(),
+              gridDelegate: const SliverGridDelegateWithFixedCrossAxisCount(
+                crossAxisCount: 7,
+                childAspectRatio: 0.8,
+                mainAxisSpacing: 2,
+                crossAxisSpacing: 2,
+              ),
+              itemCount: days.length,
+              itemBuilder: (context, index) {
+                final day = days[index];
+                if (day.year == 0) {
+                  return Container(); // Empty placeholder
+                }
+
+                final visitData = _getDayVisits(day, provider.timesheets);
+                final hasVisits = visitData['count'] > 0;
+                final isWeekend = day.weekday == 7 || day.weekday == 6;
+                final isToday = _isToday(day);
+
+                return GestureDetector(
+                  onTap: () => onDayTap(day),
+                  child: Container(
+                    decoration: BoxDecoration(
+                      color: hasVisits
+                          ? theme.colorScheme.primary.withOpacity(0.2)
+                          : isWeekend
+                          ? Colors.grey.withOpacity(0.1)
+                          : theme.cardTheme.color,
+                      borderRadius: BorderRadius.circular(4),
+                      border: Border.all(
+                        color: isToday
+                            ? theme.colorScheme.primary.withOpacity(0.7)
+                            : theme.dividerColor.withOpacity(0.3),
+                        width: isToday ? 2 : 1,
+                      ),
+                    ),
+                    padding: const EdgeInsets.all(4),
+                    child: Column(
+                      mainAxisAlignment: MainAxisAlignment.spaceBetween,
+                      children: [
+                        Row(
+                          mainAxisAlignment: MainAxisAlignment.spaceBetween,
+                          children: [
+                            Text(
+                              '${day.day}',
+                              style: theme.textTheme.bodyMedium?.copyWith(
+                                color: hasVisits
+                                    ? theme.colorScheme.primary
+                                    : isWeekend
+                                    ? theme.colorScheme.onSurface.withOpacity(0.6)
+                                    : theme.colorScheme.onSurface,
+                                fontWeight: isToday ? FontWeight.bold : FontWeight.normal,
+                              ),
+                            ),
+                            if (hasVisits)
+                              Container(
+                                padding: const EdgeInsets.symmetric(horizontal: 4, vertical: 2),
+                                decoration: BoxDecoration(
+                                  color: theme.colorScheme.primary.withOpacity(0.8),
+                                  borderRadius: BorderRadius.circular(8),
+                                ),
+                                child: Text(
+                                  '${visitData['count']}',
+                                  style: theme.textTheme.bodySmall?.copyWith(
+                                    color: Colors.white,
+                                    fontSize: 10,
+                                  ),
+                                ),
+                              ),
+                          ],
+                        ),
+                        if (hasVisits && visitData['preview'].isNotEmpty)
+                          Flexible(
+                            child: Text(
+                              visitData['preview'],
+                              style: theme.textTheme.bodySmall?.copyWith(
+                                color: isWeekend
+                                    ? theme.colorScheme.onSurface.withOpacity(0.5)
+                                    : theme.colorScheme.onSurface.withOpacity(0.7),
+                                fontSize: 9,
+                              ),
+                              textAlign: TextAlign.center,
+                              overflow: TextOverflow.ellipsis,
+                              maxLines: 2,
+                            ),
+                          ),
+                        if (!hasVisits)
+                          Text(
+                            'No visits',
+                            style: theme.textTheme.bodySmall?.copyWith(
+                              color: theme.colorScheme.onSurface.withOpacity(0.4),
+                              fontSize: 9,
+                            ),
+                          ),
+                      ],
+                    ),
+                  ),
+                );
+              },
+            ),
+            const SizedBox(height: 8),
+            Container(
+              padding: const EdgeInsets.symmetric(vertical: 8, horizontal: 12),
+              decoration: BoxDecoration(
+                color: theme.cardTheme.color?.withOpacity(0.8),
+                borderRadius: BorderRadius.circular(8),
+              ),
+              child: Row(
+                mainAxisAlignment: MainAxisAlignment.spaceBetween,
+                children: [
+                  Text('Total Visits', style: theme.textTheme.bodySmall),
+                  Text('$totalVisits',
+                      style: theme.textTheme.bodyMedium?.copyWith(
+                        color: theme.colorScheme.primary,
+                        fontWeight: FontWeight.bold,
+                      )),
+                ],
+              ),
+            ),
+          ],
+        );
+      },
+    );
+  }
+}
+
+==================================================
+File contents: C:\Users\Kayto\Desktop\IT\Projects\Stage\Stage PFE\TraceFlow\Mobile\lib\widgets\Timesheet\navigation_bar.dart
+==================================================
+import 'package:flutter/material.dart';
+import 'package:intl/intl.dart';
+import '../commen/icon_button.dart';
+
+class TimesheetNavigationBar extends StatelessWidget {
+  final String currentView;
+  final DateTime currentDate;
+  final VoidCallback onPrevious;
+  final VoidCallback onNext;
+
+  const TimesheetNavigationBar({
+    required this.currentView,
+    required this.currentDate,
+    required this.onPrevious,
+    required this.onNext,
+    super.key,
+  });
+
+  int _getWeekNumber(DateTime date) {
+    final startOfYear = DateTime(date.year, 1, 1);
+    final firstMonday = startOfYear.weekday <= 4
+        ? startOfYear.subtract(Duration(days: startOfYear.weekday - 1))
+        : startOfYear.add(Duration(days: 8 - startOfYear.weekday));
+    return (date.difference(firstMonday).inDays ~/ 7) + 1;
+  }
+
+  String _getTitle() {
+    switch (currentView) {
+      case 'day':
+        return DateFormat('MMMM d').format(currentDate);
+      case 'week1':
+        return 'Week ${_getWeekNumber(currentDate)}';
+      case 'week2':
+        return 'Week ${_getWeekNumber(currentDate)}';
+      case 'month':
+        return DateFormat('MMMM yyyy').format(currentDate);
+      case 'year':
+        return '${currentDate.year}';
+      default:
+        return 'Unknown';
+    }
+  }
+
+  @override
+  Widget build(BuildContext context) {
+    final theme = Theme.of(context);
+    return AnimatedContainer(
+      duration: const Duration(milliseconds: 300),
+      padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 2), // Reduced vertical padding
+      child: Row(
+        mainAxisAlignment: MainAxisAlignment.spaceBetween,
+        children: [
+          CustomIconButton(
+            icon: Icons.chevron_left_rounded,
+            onPressed: onPrevious,
+            size: 24,
+          ),
+          AnimatedContainer(
+            duration: const Duration(milliseconds: 200),
+            padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 4), // Tightened padding
+            decoration: BoxDecoration(
+              color: theme.colorScheme.surface.withOpacity(0.9),
+              borderRadius: BorderRadius.circular(6),
+              border: Border.all(color: theme.dividerColor),
+            ),
+            child: Text(
+              _getTitle(),
+              style: theme.textTheme.headlineSmall?.copyWith(
+                fontSize: 16,
+                color: theme.colorScheme.primary,
+                fontWeight: FontWeight.w600,
+              ),
+            ),
+          ),
+          CustomIconButton(
+            icon: Icons.chevron_right_rounded,
+            onPressed: onNext,
+            size: 24,
+          ),
+        ],
+      ),
+    );
+  }
+}
+
+==================================================
+File contents: C:\Users\Kayto\Desktop\IT\Projects\Stage\Stage PFE\TraceFlow\Mobile\lib\widgets\Timesheet\timesheet_card.dart
+==================================================
+import 'package:flutter/material.dart';
+import '../commen/button.dart';
+import '../commen/spacer.dart';
+
+class TimesheetCard extends StatelessWidget {
+  final String title;
+  final String subtitle;
+  final VoidCallback? onTap;
+
+  const TimesheetCard({
+    required this.title,
+    required this.subtitle,
+    this.onTap,
+    super.key,
+  });
+
+  @override
+  Widget build(BuildContext context) {
+    final theme = Theme.of(context);
+    return AnimatedContainer(
+      duration: const Duration(milliseconds: 300),
+      curve: Curves.easeInOut,
+      child: Card(
+        elevation: 7,
+        shape: RoundedRectangleBorder(
+          borderRadius: BorderRadius.circular(10),
+          side: BorderSide(color: theme.colorScheme.surface, width: 1),
+        ),
+        child: Padding(
+          padding: const EdgeInsets.all(16),
+          child: Column(
+            crossAxisAlignment: CrossAxisAlignment.start,
+            children: [
+              Text(title, style: theme.textTheme.headlineSmall?.copyWith(color: theme.colorScheme.primary)),
+              const CustomSpacer(height: 12),
+              Text(subtitle, style: theme.textTheme.bodyMedium),
+              if (onTap != null) ...[
+                const CustomSpacer(height: 16),
+                Align(
+                  alignment: Alignment.centerRight,
+                  child: CustomButton(
+                    label: 'View',
+                    onPressed: onTap!,
+                  ),
+                ),
+              ],
+            ],
+          ),
+        ),
+      ),
+    );
+  }
+}
+
+==================================================
+File contents: C:\Users\Kayto\Desktop\IT\Projects\Stage\Stage PFE\TraceFlow\Mobile\lib\widgets\Timesheet\week_view.dart
+==================================================
+import 'package:flutter/material.dart';
+import 'package:intl/intl.dart';
+import 'package:provider/provider.dart';
+import '../../providers/timesheet_provider.dart';
+import '../commen/empty_state.dart';
+import 'day_card.dart';
+
+class WeekViewList extends StatelessWidget {
+  final DateTime date;
+  final Function(DateTime)? onDayTap;
+
+  const WeekViewList(this.date, {this.onDayTap, super.key});
+
+  List<DateTime> _getWeekDays(DateTime date) {
+    final startOfWeek = date.subtract(Duration(days: date.weekday - 1));
+    return List.generate(5, (index) => startOfWeek.add(Duration(days: index)));
+  }
+
+  @override
+  Widget build(BuildContext context) {
+    final theme = Theme.of(context);
+    final weekDays = _getWeekDays(date);
+
+    return Consumer<TimesheetProvider>(
+      builder: (context, provider, child) {
+        if (provider.timesheets.isEmpty) return const EmptyState(text: 'No timesheets available');
+        return ListView.builder(
+          shrinkWrap: true,
+          physics: const NeverScrollableScrollPhysics(),
+          itemCount: weekDays.length,
+          padding: EdgeInsets.zero, // Removed vertical padding
+          itemBuilder: (context, index) {
+            final day = weekDays[index];
+            final dayName = DateFormat('EEEE').format(day);
+            final chipLabel = DateFormat('d MMM').format(day);
+            return DayCard(
+              day: day,
+              title: dayName,
+              chipLabel: chipLabel,
+              onTap: onDayTap != null ? () => onDayTap!(day) : null,
+            );
+          },
+        );
+      },
+    );
+  }
+}
+
+==================================================
+File contents: C:\Users\Kayto\Desktop\IT\Projects\Stage\Stage PFE\TraceFlow\Mobile\lib\widgets\Timesheet\week_view_calendar.dart
+==================================================
+import 'package:flutter/material.dart';
+import 'package:intl/intl.dart';
+import 'package:provider/provider.dart';
+import '../../models/visit.dart';
+import '../../providers/timesheet_provider.dart';
+import '../../screens/Visit/visit_details.dart';
+import '../commen/empty_state.dart';
+
+class WeekViewCalendar extends StatelessWidget {
+  final DateTime date;
+  final Function(DateTime)? onDayTap;
+
+  const WeekViewCalendar(this.date, {this.onDayTap, super.key});
+
+  List<DateTime> _getWeekDays(DateTime date) {
+    final startOfWeek = date.subtract(Duration(days: date.weekday - 1));
+    return List.generate(5, (index) => startOfWeek.add(Duration(days: index)));
+  }
+
+  DateTime? _parseVisitStartTime(DateTime visitDate, String time) {
+    try {
+      final timeFormat = DateFormat('HH:mm');
+      final timeOfDay = timeFormat.parse(time);
+      return DateTime(
+        visitDate.year,
+        visitDate.month,
+        visitDate.day,
+        timeOfDay.hour,
+        timeOfDay.minute,
+      );
+    } catch (e) {
+      return DateTime(visitDate.year, visitDate.month, visitDate.day, 8, 0);
+    }
+  }
+
+  Color _getStatusColor(BuildContext context, String? status) {
+    switch (status?.toLowerCase()) {
+      case 'visited':
+        return Theme.of(context).colorScheme.primary;
+      case 'pending':
+        return const Color(0xFFF4B400);
+      case 'rejected':
+        return const Color(0xFFD93025);
+      case 'validated':
+        return const Color(0xFF2EA44F);
+      default:
+        return Theme.of(context).colorScheme.onSurface.withOpacity(0.6);
+    }
+  }
+
+  List<List<Visit>> _groupOverlappingVisits(List<Visit> visits, List<DateTime> weekDays) {
+    final groupedVisits = List.generate(weekDays.length, (_) => <Visit>[]);
+    for (var visit in visits) {
+      final visitDate = visit.date;
+      final dayIndex = weekDays.indexWhere((d) =>
+      d.day == visitDate.day && d.month == visitDate.month && d.year == visitDate.year);
+      if (dayIndex != -1) groupedVisits[dayIndex].add(visit);
+    }
+
+    for (var dayVisits in groupedVisits) {
+      dayVisits.sort((a, b) => _parseVisitStartTime(a.date, a.time)!
+          .compareTo(_parseVisitStartTime(b.date, b.time)!));
+    }
+    return groupedVisits;
+  }
+
+  @override
+  Widget build(BuildContext context) {
+    final theme = Theme.of(context);
+    final weekDays = _getWeekDays(date);
+    const int startHour = 8;
+    const int endHour = 18;
+    const double hourHeight = 70.0;
+    const double timeColumnWidth = 50.0;
+    const double sidePadding = 1.0;
+    final availableWidth = MediaQuery.of(context).size.width - timeColumnWidth - (sidePadding * 2);
+    final columnWidth = availableWidth / 5.25;
+
+    return Consumer<TimesheetProvider>(
+      builder: (context, provider, child) {
+        if (provider.timesheets.isEmpty) return const EmptyState(text: 'No timesheets available');
+
+        final visits = provider.timesheets
+            .expand((t) => t.visits ?? [])
+            .where((visit) {
+          final visitDate = visit.date;
+          final startTime = _parseVisitStartTime(visitDate, visit.time);
+          return visitDate.weekday <= 5 &&
+              startTime != null &&
+              startTime.hour >= startHour &&
+              startTime.hour < endHour;
+        })
+            .toList()
+            .cast<Visit>();
+
+        final groupedVisits = _groupOverlappingVisits(visits, weekDays);
+
+        return Column(
+          children: [
+            Container(
+              padding: const EdgeInsets.symmetric(vertical: 4), // Reduced padding
+              decoration: BoxDecoration(
+                color: theme.cardColor,
+                borderRadius: BorderRadius.circular(8),
+              ),
+              child: Row(
+                children: [
+                  SizedBox(
+                    width: timeColumnWidth,
+                    child: Text(
+                      'Time',
+                      style: theme.textTheme.labelSmall?.copyWith(fontWeight: FontWeight.bold),
+                      textAlign: TextAlign.center,
+                    ),
+                  ),
+                  ...weekDays.map((day) => Expanded(
+                    child: Text(
+                      DateFormat('EEE d').format(day),
+                      style: theme.textTheme.labelSmall?.copyWith(fontWeight: FontWeight.bold),
+                      textAlign: TextAlign.center,
+                    ),
+                  )),
+                ],
+              ),
+            ),
+            SizedBox(
+              height: (endHour - startHour) * hourHeight,
+              child: Row(
+                crossAxisAlignment: CrossAxisAlignment.stretch,
+                children: [
+                  SizedBox(
+                    width: timeColumnWidth,
+                    child: Column(
+                      mainAxisSize: MainAxisSize.min,
+                      children: List.generate(endHour - startHour, (index) {
+                        final hour = startHour + index;
+                        return SizedBox(
+                          height: hourHeight,
+                          child: Center(
+                            child: Text(
+                              '${hour.toString().padLeft(2, '0')}:00',
+                              style: theme.textTheme.labelSmall?.copyWith(
+                                color: theme.colorScheme.onSurface.withOpacity(0.6),
+                              ),
+                            ),
+                          ),
+                        );
+                      }),
+                    ),
+                  ),
+                  Expanded(
+                    child: Padding(
+                      padding: const EdgeInsets.symmetric(horizontal: sidePadding),
+                      child: Container(
+                        decoration: BoxDecoration(
+                          border: Border.all(color: theme.dividerColor.withOpacity(0.2)),
+                          borderRadius: BorderRadius.circular(8),
+                        ),
+                        child: Stack(
+                          children: [
+                            Row(
+                              children: weekDays.map((day) {
+                                return Expanded(
+                                  child: Container(
+                                    decoration: BoxDecoration(
+                                      border: Border(
+                                        right: BorderSide(color: theme.dividerColor.withOpacity(0.2)),
+                                      ),
+                                    ),
+                                  ),
+                                );
+                              }).toList(),
+                            ),
+                            ...weekDays.asMap().entries.expand((entry) {
+                              final dayIndex = entry.key;
+                              final dayVisits = groupedVisits[dayIndex];
+                              final overlaps = <List<Visit>>[];
+                              var currentOverlap = <Visit>[];
+
+                              for (var i = 0; i < dayVisits.length; i++) {
+                                final currentVisit = dayVisits[i];
+                                final currentStart = _parseVisitStartTime(currentVisit.date, currentVisit.time)!;
+                                if (currentOverlap.isEmpty) {
+                                  currentOverlap.add(currentVisit);
+                                } else {
+                                  final lastVisit = currentOverlap.last;
+                                  final lastStart = _parseVisitStartTime(lastVisit.date, lastVisit.time)!;
+                                  if (currentStart.difference(lastStart).inMinutes.abs() < 30) {
+                                    currentOverlap.add(currentVisit);
+                                  } else {
+                                    overlaps.add(currentOverlap);
+                                    currentOverlap = [currentVisit];
+                                  }
+                                }
+                                if (i == dayVisits.length - 1) overlaps.add(currentOverlap);
+                              }
+
+                              return overlaps.expand((overlapGroup) {
+                                return overlapGroup.asMap().entries.map((entry) {
+                                  final visit = entry.value;
+                                  final overlapIndex = entry.key;
+                                  final overlapCount = overlapGroup.length;
+                                  final startTime = _parseVisitStartTime(visit.date, visit.time)!;
+                                  final startMinutes = (startTime.hour - startHour) * 60 + startTime.minute;
+                                  final top = startMinutes * (hourHeight / 60);
+                                  final visitWidth = columnWidth / overlapCount;
+
+                                  final leftPosition = dayIndex * columnWidth + overlapIndex * visitWidth;
+
+                                  return Positioned(
+                                    top: top,
+                                    left: leftPosition,
+                                    width: visitWidth,
+                                    height: hourHeight,
+                                    child: GestureDetector(
+                                      onTap: () {
+                                        Navigator.push(
+                                          context,
+                                          MaterialPageRoute(
+                                            builder: (_) => VisitDetailsScreen(visit: visit),
+                                          ),
+                                        );
+                                      },
+                                      child: Container(
+                                        margin: const EdgeInsets.all(5),
+                                        decoration: BoxDecoration(
+                                          color: Colors.grey.withOpacity(0.2),
+                                          border: Border.all(
+                                            color: _getStatusColor(context, visit.status),
+                                            width: 1,
+                                          ),
+                                          borderRadius: BorderRadius.circular(6),
+                                        ),
+                                        child: Center(
+                                          child: Column(
+                                            mainAxisSize: MainAxisSize.min,
+                                            children: [
+                                              Text(
+                                                visit.time.split(':').take(2).join(':'),
+                                                style: theme.textTheme.labelSmall?.copyWith(
+                                                  color: theme.colorScheme.onSurface,
+                                                  fontSize: 10,
+                                                ),
+                                                textAlign: TextAlign.center,
+                                              ),
+                                              Text(
+                                                visit.location ?? 'Visit',
+                                                style: theme.textTheme.labelSmall?.copyWith(
+                                                  color: theme.colorScheme.onSurface.withOpacity(0.8),
+                                                  fontSize: 9,
+                                                ),
+                                                textAlign: TextAlign.center,
+                                                overflow: TextOverflow.ellipsis,
+                                              ),
+                                            ],
+                                          ),
+                                        ),
+                                      ),
+                                    ),
+                                  );
+                                });
+                              });
+                            }),
+                          ],
+                        ),
+                      ),
+                    ),
+                  ),
+                ],
+              ),
+            ),
+          ],
+        );
+      },
+    );
+  }
+}
+
+==================================================
+File contents: C:\Users\Kayto\Desktop\IT\Projects\Stage\Stage PFE\TraceFlow\Mobile\lib\widgets\Timesheet\week_view_list.dart
+==================================================
+import 'package:flutter/material.dart';
+import 'package:intl/intl.dart';
+import 'package:provider/provider.dart';
+import '../../providers/timesheet_provider.dart';
+import '../commen/empty_state.dart';
+import 'day_card.dart';
+
+class WeekViewList extends StatelessWidget {
+  final DateTime date;
+  final Function(DateTime)? onDayTap;
+
+  const WeekViewList(this.date, {this.onDayTap, super.key});
+
+  List<DateTime> _getWeekDays(DateTime date) {
+    final startOfWeek = date.subtract(Duration(days: date.weekday - 1));
+    return List.generate(5, (index) => startOfWeek.add(Duration(days: index)));
+  }
+
+  @override
+  Widget build(BuildContext context) {
+    final theme = Theme.of(context);
+    final weekDays = _getWeekDays(date);
+
+    return Consumer<TimesheetProvider>(
+      builder: (context, provider, child) {
+        if (provider.timesheets.isEmpty) return const EmptyState(text: 'No timesheets available');
+        return ListView.builder(
+          shrinkWrap: true,
+          physics: const NeverScrollableScrollPhysics(),
+          itemCount: weekDays.length,
+          padding: EdgeInsets.zero, // Removed vertical padding
+          itemBuilder: (context, index) {
+            final day = weekDays[index];
+            final dayName = DateFormat('EEEE').format(day);
+            final chipLabel = DateFormat('d MMM').format(day);
+            return DayCard(
+              day: day,
+              title: dayName,
+              chipLabel: chipLabel,
+              onTap: onDayTap != null ? () => onDayTap!(day) : null,
+            );
+          },
+        );
+      },
+    );
+  }
+}
+
+==================================================
+File contents: C:\Users\Kayto\Desktop\IT\Projects\Stage\Stage PFE\TraceFlow\Mobile\lib\widgets\Timesheet\year_view.dart
+==================================================
+import 'package:flutter/material.dart';
+import 'package:provider/provider.dart';
+import 'package:intl/intl.dart';
+import '../../providers/timesheet_provider.dart';
+import '../commen/empty_state.dart';
+
+class YearView extends StatelessWidget {
+  final DateTime date;
+  final Function(DateTime) onMonthTap;
+
+  const YearView({required this.date, required this.onMonthTap, super.key});
+
+  List<DateTime> _getYearMonths(DateTime year) {
+    return List.generate(12, (index) => DateTime(year.year, index + 1, 1));
+  }
+
+  Map<String, dynamic> _getMonthVisits(DateTime month, List timesheets) {
+    final firstDay = DateTime(month.year, month.month, 1);
+    final lastDay = DateTime(month.year, month.month + 1, 0);
+    final visits = timesheets.expand((t) => t.visits ?? []).where((visit) {
+      final visitDate = visit.date;
+      return visitDate != null &&
+          visitDate.isAfter(firstDay.subtract(const Duration(days: 1))) &&
+          visitDate.isBefore(lastDay.add(const Duration(days: 1)));
+    }).toList();
+    return {
+      'count': visits.length,
+      'preview': visits.isNotEmpty ? visits.take(1).map((v) => v.location ?? 'N/A').join(', ') : '',
+    };
+  }
+
+  int _getTotalYearVisits(DateTime year, List timesheets) {
+    final firstDay = DateTime(year.year, 1, 1);
+    final lastDay = DateTime(year.year + 1, 1, 0);
+    return timesheets.expand((t) => t.visits ?? []).where((visit) {
+      final visitDate = visit.date;
+      return visitDate != null &&
+          visitDate.isAfter(firstDay.subtract(const Duration(days: 1))) &&
+          visitDate.isBefore(lastDay.add(const Duration(days: 1)));
+    }).length;
+  }
+
+  bool _isCurrentMonth(DateTime month) {
+    final now = DateTime.now();
+    return month.year == now.year && month.month == now.month;
+  }
+
+  @override
+  Widget build(BuildContext context) {
+    final theme = Theme.of(context);
+    final months = _getYearMonths(date);
+    return Consumer<TimesheetProvider>(
+      builder: (context, provider, child) {
+        if (provider.timesheets.isEmpty) return const EmptyState(text: 'No timesheets available');
+        final totalVisits = _getTotalYearVisits(date, provider.timesheets);
+        return Column(
+          crossAxisAlignment: CrossAxisAlignment.stretch,
+          children: [
+            GridView.builder(
+              shrinkWrap: true,
+              physics: const NeverScrollableScrollPhysics(),
+              gridDelegate: const SliverGridDelegateWithFixedCrossAxisCount(
+                crossAxisCount: 3,
+                childAspectRatio: 1.5,
+                mainAxisSpacing: 8,
+                crossAxisSpacing: 8,
+              ),
+              itemCount: months.length,
+              itemBuilder: (context, index) {
+                final month = months[index];
+                final visitData = _getMonthVisits(month, provider.timesheets);
+                final hasVisits = visitData['count'] > 0;
+                final isCurrent = _isCurrentMonth(month);
+
+                return GestureDetector(
+                  onTap: () => onMonthTap(month),
+                  child: Container(
+                    decoration: BoxDecoration(
+                      color: hasVisits
+                          ? theme.colorScheme.primary.withOpacity(0.15)
+                          : theme.cardTheme.color ?? Colors.grey[50],
+                      borderRadius: BorderRadius.circular(8),
+                      border: Border.all(
+                        color: isCurrent
+                            ? theme.colorScheme.primary.withOpacity(0.5)
+                            : theme.dividerColor.withOpacity(0.7),
+                        width: isCurrent ? 1.5 : 1,
+                      ),
+                    ),
+                    padding: const EdgeInsets.all(6),
+                    child: Column(
+                      mainAxisAlignment: MainAxisAlignment.center,
+                      children: [
+                        Text(
+                          DateFormat('MMM').format(month),
+                          style: theme.textTheme.bodyMedium?.copyWith(
+                            color: hasVisits
+                                ? theme.colorScheme.primary
+                                : theme.colorScheme.onSurface,
+                            fontWeight: isCurrent ? FontWeight.bold : FontWeight.normal,
+                          ),
+                        ),
+                        const SizedBox(height: 4),
+                        Text(
+                          hasVisits
+                              ? '${visitData['count']} visit${visitData['count'] > 1 ? 's' : ''}'
+                              : 'No visits',
+                          style: theme.textTheme.bodySmall?.copyWith(
+                            color: hasVisits
+                                ? theme.colorScheme.primary.withOpacity(0.8)
+                                : theme.colorScheme.onSurface.withOpacity(0.5),
+                            fontSize: 10,
+                          ),
+                        ),
+                      ],
+                    ),
+                  ),
+                );
+              },
+            ),
+            const SizedBox(height: 12),
+            Container(
+              padding: const EdgeInsets.symmetric(vertical: 10, horizontal: 16),
+              decoration: BoxDecoration(
+                color: theme.cardTheme.color ?? Colors.grey,
+                borderRadius: BorderRadius.circular(8),
+                border: Border.all(color: theme.dividerColor.withOpacity(0.3)),
+              ),
+              child: Row(
+                mainAxisAlignment: MainAxisAlignment.spaceBetween,
+                children: [
+                  Text(
+                    'Total Visits in ${date.year}',
+                    style: theme.textTheme.bodySmall?.copyWith(
+                      color: theme.colorScheme.onSurface.withOpacity(0.8),
+                    ),
+                  ),
+                  Text(
+                    '$totalVisits',
+                    style: theme.textTheme.bodyMedium?.copyWith(
+                      color: theme.colorScheme.primary,
+                      fontWeight: FontWeight.bold,
+                    ),
+                  ),
+                ],
+              ),
+            ),
+          ],
+        );
+      },
+    );
+  }
+}
+
+==================================================
+File contents: C:\Users\Kayto\Desktop\IT\Projects\Stage\Stage PFE\TraceFlow\Mobile\lib\widgets\Visit\ChecklistRow.dart
+==================================================
+import 'package:flutter/material.dart';
+
+import '../commen/spacer.dart';
+
+class ChecklistRow extends StatelessWidget {
+  final String item;
+  final bool checked;
+
+  const ChecklistRow({required this.item, required this.checked, super.key});
+
+  @override
+  Widget build(BuildContext context) {
+    return Padding(
+      padding: const EdgeInsets.symmetric(vertical: 4),
+      child: Row(
+        children: [
+          Icon(
+            checked ? Icons.check_circle : Icons.circle_outlined,
+            color: checked ? Theme.of(context).colorScheme.primary : Theme.of(context).colorScheme.onSurface.withOpacity(0.6),
+            size: 20,
+          ),
+          const CustomSpacer(width: 12),
+          Expanded(child: Text(item, style: Theme.of(context).textTheme.bodyMedium)),
+        ],
+      ),
+    );
+  }
+}
+
+==================================================
+File contents: C:\Users\Kayto\Desktop\IT\Projects\Stage\Stage PFE\TraceFlow\Mobile\lib\widgets\Visit\DurationClock.dart
+==================================================
+import 'package:flutter/material.dart';
+
+import '../commen/spacer.dart';
+
+class DurationClock extends StatelessWidget {
+  final int duration;
+
+  const DurationClock({required this.duration, super.key});
+
+  @override
+  Widget build(BuildContext context) {
+    return Column(
+      mainAxisAlignment: MainAxisAlignment.center,
+      children: [
+        Icon(Icons.timer, size: 30),
+        const CustomSpacer(height: 8),
+        Text('$duration min', style: Theme.of(context).textTheme.bodyMedium?.copyWith(fontWeight: FontWeight.bold)),
+      ],
+    );
+  }
+}
+
+==================================================
+File contents: C:\Users\Kayto\Desktop\IT\Projects\Stage\Stage PFE\TraceFlow\Mobile\lib\widgets\Visit\visit_item.dart
+==================================================
+import 'package:flutter/material.dart';
+import '../../models/visit.dart';
+import '../../screens/visit/visit_details.dart';
+import '../commen/info_row.dart';
+
+class VisitItem extends StatelessWidget {
+  final Visit visit;
+
+  const VisitItem(this.visit, {super.key});
+
+  @override
+  Widget build(BuildContext context) {
+    final theme = Theme.of(context);
+    String formattedTime = visit.time?.split(':').take(2).join(':') ?? 'N/A';
+    return GestureDetector(
+      onTap: () => Navigator.push(
+        context,
+        MaterialPageRoute(builder: (_) => VisitDetailsScreen(visit: visit)),
+      ),
+      child: AnimatedContainer(
+        duration: const Duration(milliseconds: 300),
+        curve: Curves.easeInOut,
+        child: Card(
+          elevation: 2,
+          color: theme.cardTheme.color, // #F9FAFB or #1F262D
+          child: Padding(
+            padding: const EdgeInsets.all(20),
+            child: Column(
+              crossAxisAlignment: CrossAxisAlignment.start,
+              children: [
+                Row(
+                  mainAxisAlignment: MainAxisAlignment.spaceBetween,
+                  children: [
+                    Text(
+                      'Visit Details',
+                      style: theme.textTheme.headlineSmall, // Black/gray
+                    ),
+                    Container(
+                      padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 6),
+                      decoration: BoxDecoration(
+                        color: _getStatusColor(context, visit.status).withOpacity(0.1),
+                        borderRadius: BorderRadius.circular(6),
+                      ),
+                      child: Text(
+                        visit.status ?? 'Unknown',
+                        style: TextStyle(
+                          fontSize: 12,
+                          color: _getStatusColor(context, visit.status),
+                          fontWeight: FontWeight.w500,
+                        ),
+                      ),
+                    ),
+                  ],
+                ),
+                const SizedBox(height: 12),
+                InfoRow(
+                  icon: Icons.location_on,
+                  text: 'Location: ${visit.location ?? 'N/A'}',
+                ),
+                const SizedBox(height: 8),
+                InfoRow(
+                  icon: Icons.access_time,
+                  text: 'Time: $formattedTime',
+                ),
+                if (visit.reasons != null && visit.reasons!.isNotEmpty) ...[
+                  const SizedBox(height: 12),
+                  Wrap(
+                    spacing: 8,
+                    runSpacing: 8,
+                    children: visit.reasons!
+                        .map(
+                          (reason) => Container(
+                        padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 6),
+                        decoration: BoxDecoration(
+                          color: theme.colorScheme.onSurface.withOpacity(0.1), // Gray tint
+                          borderRadius: BorderRadius.circular(6),
+                        ),
+                        child: Text(
+                          reason.item ?? 'N/A',
+                          style: TextStyle(
+                            fontSize: 12,
+                            color: theme.colorScheme.onSurface, // Black/gray
+                            fontWeight: FontWeight.w500,
+                          ),
+                        ),
+                      ),
+                    )
+                        .toList(),
+                  ),
+                ],
+              ],
+            ),
+          ),
+        ),
+      ),
+    );
+  }
+
+  Color _getStatusColor(BuildContext context, String? status) {
+    switch (status?.toLowerCase()) {
+      case 'visited':
+        return Theme.of(context).colorScheme.primary; // #63b3ed or #4cb1c7
+      case 'pending':
+        return const Color(0xFFF4B400); // Yellow
+      case 'rejected':
+        return const Color(0xFFD93025); // Red
+      case 'validated':
+        return const Color(0xFF2EA44F); // Blue-green (your call if this stays)
+      default:
+        return Theme.of(context).colorScheme.onSurface.withOpacity(0.6); // Gray
+    }
+  }
+}

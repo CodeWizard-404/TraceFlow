@@ -8,16 +8,7 @@ import { setupAxiosInterceptors } from "../apis/axiosConfig";
 import User from "../models/User";
 import Permission from "../models/Permission";
 import Role from "../models/Role";
-
-const ROLES = {
-    ADMIN: import.meta.env.VITE_ROLES_ADMIN,
-    SUPER_ADMIN: import.meta.env.VITE_ROLES_SUPER_ADMIN,
-    MANAGER: import.meta.env.VITE_ROLES_MANAGER,
-    SUPERVISOR: import.meta.env.VITE_ROLES_SUPERVISOR,
-    PURCHASE_TEAM: import.meta.env.VITE_ROLES_PURCHASE_TEAM,
-    REGIONAL_MANAGER: import.meta.env.VITE_ROLES_REGIONAL_MANAGER,
-    STOCK_MANAGER: import.meta.env.VITE_ROLES_STOCK_MANAGER,
-};
+import { protectedRoutes, determineTargetRoute } from "../lib/authUtils";
 
 interface AuthContextType {
     user: User | null;
@@ -25,11 +16,20 @@ interface AuthContextType {
     userRoles: Role[] | null;
     effectivePermissions: Permission[] | null;
     permissionsLoaded: boolean;
-    loginUser: (identifier: string, password: string) => Promise<void>;
+    loginUser: (identifier: string, password: string, deviceIdentifier: string) => Promise<void>;
     logout: () => void;
 }
 
 const AuthContext = createContext<AuthContextType | undefined>(undefined);
+
+// eslint-disable-next-line react-refresh/only-export-components
+export const useAuth = (): AuthContextType => {
+    const context = useContext(AuthContext);
+    if (!context) {
+        throw new Error("useAuth must be used within an AuthProvider");
+    }
+    return context;
+};
 
 export const AuthProvider: React.FC<{ children: ReactNode }> = ({ children }) => {
     const [user, setUser] = useState<User | null>(() => {
@@ -40,7 +40,7 @@ export const AuthProvider: React.FC<{ children: ReactNode }> = ({ children }) =>
     const [userRoles, setUserRoles] = useState<Role[] | null>(null);
     const [effectivePermissions, setEffectivePermissions] = useState<Permission[] | null>(null);
     const [permissionsLoaded, setPermissionsLoaded] = useState(false);
-    const [noAccess, setNoAccess] = useState(false); // New state for no access message
+    const [noAccess, setNoAccess] = useState(false);
 
     const navigate = useNavigate();
     const location = useLocation();
@@ -49,19 +49,7 @@ export const AuthProvider: React.FC<{ children: ReactNode }> = ({ children }) =>
         setupAxiosInterceptors();
     }, []);
 
-    const protectedRoutes: { [key: string]: string[] } = {
-        "/admin": [ROLES.ADMIN, ROLES.SUPER_ADMIN],
-        "/timesheet": [import.meta.env.VITE_PERMISSIONS_ACCESS_SUPERVISOR_TIMESHEETS],
-        "/timesheet-form": [import.meta.env.VITE_PERMISSIONS_CREATE_TIMESHEETS, import.meta.env.VITE_PERMISSIONS_CREATE_TIMESHEETS_FOR_SUPERVISOR],
-        "/qr-scan": [import.meta.env.VITE_PERMISSIONS_SCAN_VISITS],
-        "/visit/:idVisit": [import.meta.env.VITE_PERMISSIONS_ACCESS_VISIT_DETAILS],
-        "/visit/:idVisit/validate-checklist": [import.meta.env.VITE_PERMISSIONS_LOG_VISITS],
-        "/receipt-books": [import.meta.env.VITE_PERMISSIONS_ACCESS_RECEIPT_BOOKS],
-        "/receipt-book/:bookID/history": [import.meta.env.VITE_PERMISSIONS_ACCESS_RECEIPT_BOOK_HISTORY],
-        "/transfer-receipt-books": [import.meta.env.VITE_PERMISSIONS_TRANSFER_RECEIPT_BOOKS],
-    };
-
-    const hasPermissionForRoute = (pathname: string): boolean => {
+    const hasPermissionForRoute = React.useCallback((pathname: string): boolean => {
         if (!effectivePermissions || !userRoles) return false;
 
         const routeKey = Object.keys(protectedRoutes).find(key => {
@@ -74,12 +62,12 @@ export const AuthProvider: React.FC<{ children: ReactNode }> = ({ children }) =>
 
         if (!routeKey) return true;
 
-        const required = protectedRoutes[routeKey];
+        const required = protectedRoutes[routeKey as keyof typeof protectedRoutes];
         if (routeKey === "/admin") {
             return userRoles.some(role => required.includes(role.name));
         }
         return effectivePermissions.some(perm => required.includes(perm.name));
-    };
+    }, [effectivePermissions, userRoles]);
 
     useEffect(() => {
         if (!user || !token) {
@@ -91,14 +79,12 @@ export const AuthProvider: React.FC<{ children: ReactNode }> = ({ children }) =>
 
         if (!permissionsLoaded) return;
 
-        // Check if user has no roles or permissions
-        if ((!userRoles || userRoles.length === 0) &&
-            (!effectivePermissions || effectivePermissions.length === 0)) {
-            setNoAccess(true); // Show no access message
+        if ((!userRoles || userRoles.length === 0) && (!effectivePermissions || effectivePermissions.length === 0)) {
+            setNoAccess(true);
             return;
         }
 
-        setNoAccess(false); // Reset no access state if user has roles/permissions
+        setNoAccess(false);
 
         const targetRoute = determineTargetRoute(userRoles || []);
         const currentPath = location.pathname;
@@ -121,7 +107,7 @@ export const AuthProvider: React.FC<{ children: ReactNode }> = ({ children }) =>
                 : targetRoute;
             navigate(fromRoute, { replace: true });
         }
-    }, [user, token, permissionsLoaded, userRoles, effectivePermissions, navigate, location]);
+    }, [user, token, permissionsLoaded, userRoles, effectivePermissions, navigate, location, hasPermissionForRoute]);
 
     useEffect(() => {
         const fetchPermissions = async () => {
@@ -145,16 +131,11 @@ export const AuthProvider: React.FC<{ children: ReactNode }> = ({ children }) =>
         fetchPermissions();
     }, [user, token, permissionsLoaded]);
 
-    const determineTargetRoute = (roles: Role[]): string => {
-        if (!roles || roles.length === 0) return "/";
-        if (roles.some((r) => [ROLES.ADMIN, ROLES.SUPER_ADMIN].includes(r.name))) return "/admin";
-        if (roles.some((r) => [ROLES.MANAGER, ROLES.SUPERVISOR].includes(r.name))) return "/timesheet";
-        if (roles.some((r) => [ROLES.PURCHASE_TEAM, ROLES.REGIONAL_MANAGER, ROLES.STOCK_MANAGER].includes(r.name))) return "/receipt-books";
-        return "/";
-    };
-
-    const loginUser = async (identifier: string, password: string) => {
-        const response = await login(identifier, password);
+    const loginUser = async (identifier: string, password: string, deviceIdentifier: string) => {
+        const response = await login(identifier, password, deviceIdentifier);
+        if ('requires2FA' in response) {
+            return; // Defer to LoginPage.tsx for 2FA
+        }
         const newToken = response.token;
         const newUser = response.user;
 
@@ -200,7 +181,6 @@ export const AuthProvider: React.FC<{ children: ReactNode }> = ({ children }) =>
         logout,
     };
 
-    // Render children or no access message
     return (
         <AuthContext.Provider value={value}>
             {noAccess ? (
@@ -237,10 +217,4 @@ export const AuthProvider: React.FC<{ children: ReactNode }> = ({ children }) =>
     );
 };
 
-export const useAuth = (): AuthContextType => {
-    const context = useContext(AuthContext);
-    if (!context) {
-        throw new Error("useAuth must be used within an AuthProvider");
-    }
-    return context;
-};
+export default AuthProvider;

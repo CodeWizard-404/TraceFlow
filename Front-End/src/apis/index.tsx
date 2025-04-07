@@ -18,9 +18,29 @@ export type AgentByPhoneResponse = Agent;
 export type AgentByIdResponse = Agent;
 
 // Auth API Responses
-export type LoginResponse = { token: string; user: User; }
-export type Verify2FAResponse = { token: string; userID: string; }
-export type Resend2FAResponse = { message: string; }
+
+export type LoginResponse =
+    | {
+        token: string;
+        user: User;
+    }
+    | {
+        requires2FA: true;
+        userID: string;
+        deviceIdentifier: string;
+        message: string;
+    };
+
+export interface Verify2FAResponse {
+    token: string;
+    user: User;
+}
+
+export type Resend2FAResponse = { userID: string; message: string };
+export type InitiatePasswordResetResponse = { userID: string; message: string };
+export type VerifyPasswordResetOTPResponse = { userID: string; message: string };
+export type ResetPasswordResponse = { message: string };
+
 
 
 

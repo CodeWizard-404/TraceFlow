@@ -16,18 +16,21 @@
     "start": "node app.js",
     "dev": "nodemon app.js",
     "seed:permissions": "node config/seedPermissions.js",
-    "migrate": "sequelize db:migrate --dialect postgres"
+    "migrate": "sequelize db:migrate --dialect postgres",
+    "cleanup": "node scripts/cleanup.js"
   },
   "keywords": [],
   "author": "",
   "license": "ISC",
   "dependencies": {
+    "@fingerprintjs/fingerprintjs": "^4.6.1",
     "axios": "^1.8.4",
     "back-end": "file:",
     "bcrypt": "^5.1.1",
     "cors": "^2.8.5",
     "dotenv": "^16.4.7",
     "express": "^5.1.0",
+    "fingerprintjs2": "^2.1.4",
     "jsonwebtoken": "^9.0.2",
     "mdns-js": "^0.2.9",
     "multer": "^1.4.5-lts.2",

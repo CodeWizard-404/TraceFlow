@@ -2170,7 +2170,7 @@ body.dark .supervisor-toggle-button:hover:not(.active) {
     margin-bottom: 15px;
     max-width: 500px;
     position: fixed;
-    top: 2rem;
+    top: -5rem;
     left: 50%;
     transform: translateX(-50%);
     z-index: 1000;
@@ -2186,7 +2186,7 @@ body.dark .supervisor-toggle-button:hover:not(.active) {
 }
 
 body.dark .error-message {
-    background-color: #721c25d5;
+    background-color: #721c25;
     color: #e5e7eb;
     border-color: #79464b;
 }
