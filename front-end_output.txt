@@ -1,5 +1,5 @@
 FRONT-END PROJECT FILES
-Generated on: 1742804382.3710532
+Generated on: 1742409167.4223557
 ==================================================
 
 ==================================================
@@ -63,29 +63,21 @@ File contents: C:\Users\Kayto\Desktop\IT\Projects\Stage\Stage PFE\TraceFlow\Fron
 import api from "./axiosConfig";
 import { LoginResponse, Verify2FAResponse, Resend2FAResponse } from ".";
 
-export const login = async (identifier: string, password: string): Promise<LoginResponse> => {
-    try {
-        const response = await api.post<LoginResponse>("/auth/login", { identifier, password });
-        return response.data;
-    } catch (error) {
-        console.error("Error during login:", error);
-        throw error;
-    }
+
+
+export const login = async (identifier: string, password: string, deviceIdentifier: string): Promise<LoginResponse> => {
+    const response = await api.post<LoginResponse>("/auth/login", { identifier, password, deviceIdentifier });
+    return response.data;
 };
 
-export const verify2FA = async (userID: string, otpCode: string): Promise<Verify2FAResponse> => {
-    try {
-        const response = await api.post<Verify2FAResponse>("/auth/verify2fa", { userID, otpCode });
-        return response.data;
-    } catch (error) {
-        console.error("Error during 2FA verification:", error);
-        throw error;
-    }
+export const verify2FA = async (userID: string, otpCode: string, deviceIdentifier: string, trustDevice: boolean): Promise<Verify2FAResponse> => {
+    const response = await api.post<Verify2FAResponse>("/auth/verify-2fa", { userID, otpCode, deviceIdentifier, trustDevice });
+    return response.data;
 };
 
 export const resend2FA = async (userID: string): Promise<Resend2FAResponse> => {
     try {
-        const response = await api.post<Resend2FAResponse>("/auth/resend2fa", { userID });
+        const response = await api.post<Resend2FAResponse>("/auth/resend-2fa", { userID });
         return response.data;
     } catch (error) {
         console.error("Error resending 2FA:", error);
@@ -93,7 +85,35 @@ export const resend2FA = async (userID: string): Promise<Resend2FAResponse> => {
     }
 };
 
+export const initiatePasswordReset = async (identifier: string): Promise<{ userID: string; message: string }> => {
+    try {
+        const response = await api.post("/auth/password-reset/initiate", { identifier });
+        return response.data;
+    } catch (error) {
+        console.error("Error initiating password reset:", error);
+        throw error;
+    }
+};
 
+export const verifyPasswordResetOTP = async (userID: string, otpCode: string): Promise<{ userID: string; message: string }> => {
+    try {
+        const response = await api.post("/auth/password-reset/verify", { userID, otpCode });
+        return response.data;
+    } catch (error) {
+        console.error("Error verifying password reset OTP:", error);
+        throw error;
+    }
+};
+
+export const resetPassword = async (userID: string, newPassword: string): Promise<{ message: string }> => {
+    try {
+        const response = await api.post("/auth/password-reset/reset", { userID, newPassword });
+        return response.data;
+    } catch (error) {
+        console.error("Error resetting password:", error);
+        throw error;
+    }
+};
 
 ==================================================
 File contents: C:\Users\Kayto\Desktop\IT\Projects\Stage\Stage PFE\TraceFlow\Front-End\src\apis\axiosConfig.tsx
@@ -135,9 +155,9 @@ export default api;
 File contents: C:\Users\Kayto\Desktop\IT\Projects\Stage\Stage PFE\TraceFlow\Front-End\src\apis\checklistAPI.tsx
 ==================================================
 import api from "./axiosConfig";
-import { CreateChecklistResponse, ListChecklistsResponse, ChecklistsByVisitResponse } from ".";
+import { CreateChecklistResponse, ListChecklistsResponse, ChecklistsByVisitResponse, ChecklistByIdResponse, UpdateChecklistResponse } from ".";
 
-export const createChecklist = async (data: { text: string } , token: string): Promise<CreateChecklistResponse> => {
+export const createChecklist = async (data: { text: string }, token: string): Promise<CreateChecklistResponse> => {
     try {
         const response = await api.post<CreateChecklistResponse>("/checklists", data, {
             headers: { Authorization: `Bearer ${token}` },
@@ -149,7 +169,42 @@ export const createChecklist = async (data: { text: string } , token: string): P
     }
 };
 
-export const getAllChecklists = async ( token: string): Promise<ListChecklistsResponse> => {
+export const getChecklistById = async (checklistId: string, token: string): Promise<ChecklistByIdResponse> => {
+    try {
+        const response = await api.get<ChecklistByIdResponse>(`/checklists/${checklistId}`, {
+            headers: { Authorization: `Bearer ${token}` },
+        });
+        return response.data;
+    } catch (error) {
+        console.error(`Error fetching checklist (${checklistId}):`, error);
+        throw error;
+    }
+};
+
+export const updateChecklist = async (checklistId: string, data: { text: string }, token: string): Promise<UpdateChecklistResponse> => {
+    try {
+        const response = await api.put<UpdateChecklistResponse>(`/checklists/${checklistId}`, data, {
+            headers: { Authorization: `Bearer ${token}` },
+        });
+        return response.data;
+    } catch (error) {
+        console.error(`Error updating checklist (${checklistId}):`, error);
+        throw error;
+    }
+};
+
+export const deleteChecklist = async (checklistId: string, token: string): Promise<void> => {
+    try {
+        await api.delete(`/checklists/${checklistId}`, {
+            headers: { Authorization: `Bearer ${token}` },
+        });
+    } catch (error) {
+        console.error(`Error deleting checklist (${checklistId}):`, error);
+        throw error;
+    }
+};
+
+export const getAllChecklists = async (token: string): Promise<ListChecklistsResponse> => {
     try {
         const response = await api.get<ListChecklistsResponse>("/checklists", {
             headers: { Authorization: `Bearer ${token}` },
@@ -161,9 +216,9 @@ export const getAllChecklists = async ( token: string): Promise<ListChecklistsRe
     }
 };
 
-export const getChecklistsByVisitId = async (visitId: string , token: string): Promise<ChecklistsByVisitResponse> => {
+export const getChecklistsByVisitId = async (visitId: string, token: string): Promise<ChecklistsByVisitResponse> => {
     try {
-        const response = await api.get<ChecklistsByVisitResponse>(`/checklists/${visitId}`, {
+        const response = await api.get<ChecklistsByVisitResponse>(`/checklists/visit/${visitId}`, {
             headers: { Authorization: `Bearer ${token}` },
         });
         return response.data;
@@ -196,9 +251,29 @@ export type AgentByPhoneResponse = Agent;
 export type AgentByIdResponse = Agent;
 
 // Auth API Responses
-export interface LoginResponse { token: string; user: User; }
-export interface Verify2FAResponse { token: string; userID: string; }
-export interface Resend2FAResponse { message: string; }
+
+export type LoginResponse =
+    | {
+        token: string;
+        user: User;
+    }
+    | {
+        requires2FA: true;
+        userID: string;
+        deviceIdentifier: string;
+        message: string;
+    };
+
+export interface Verify2FAResponse {
+    token: string;
+    user: User;
+}
+
+export type Resend2FAResponse = { userID: string; message: string };
+export type InitiatePasswordResetResponse = { userID: string; message: string };
+export type VerifyPasswordResetOTPResponse = { userID: string; message: string };
+export type ResetPasswordResponse = { message: string };
+
 
 
 
@@ -208,9 +283,9 @@ export type ListUsersResponse = User[];
 export type UserByPhoneResponse = User;
 export type UserByIdResponse = User;
 export type UpdateUserResponse = User;
-export interface DeleteUserResponse { message: string; }
-export interface AssignSupervisorsResponse { managerID: string; assignedSupervisors: string[]; message: string; }
-export interface RevokeSupervisorsResponse { managerID: string; revokedSupervisors: User[]; message: string; }
+export type DeleteUserResponse = { message: string; }
+export type AssignSupervisorsResponse = { managerID: string; assignedSupervisors: string[]; message: string; }
+export type RevokeSupervisorsResponse = { managerID: string; revokedSupervisors: User[]; message: string; }
 export type SupervisorsByUserResponse = User[];
 export type ManagersByUserResponse = User[];
 
@@ -220,9 +295,9 @@ export type CreateRoleResponse = Role;
 export type ListRolesResponse = Role[];
 export type RoleByIdResponse = Role;
 export type UpdateRoleResponse = Role;
-export interface DeleteRoleResponse { message: string; }
-export interface AssignRolesResponse { userID: string; assignedRoles: string[]; totalAssigned: number; }
-export interface RevokeRoleResponse { userID: string; revokedRole: Role; totalAssigned: number; message: string; }
+export type DeleteRoleResponse = { message: string; }
+export type AssignRolesResponse = { userID: string; assignedRoles: string[]; totalAssigned: number; }
+export type RevokeRoleResponse = { userID: string; revokedRole: Role; totalAssigned: number; message: string; }
 export type RolesByUserResponse = Role[];
 
 
@@ -231,12 +306,12 @@ export type ListPermissionsResponse = Permission[];
 export type PermissionByIdResponse = Permission;
 export type CreatePermissionResponse = Permission;
 export type UpdatePermissionResponse = Permission;
-export interface DeletePermissionResponse { message: string; }
-export interface AssignPermissionsResponse { roleID: string; assignedPermissions: Permission[]; totalAssigned: number }
-export interface RevokePermissionsResponse { roleID: string; revokedPermissions: Permission[]; totalAssigned: number; message: string; }
+export type DeletePermissionResponse = { message: string; }
+export type AssignPermissionsResponse = { roleID: string; assignedPermissions: Permission[]; totalAssigned: number }
+export type RevokePermissionsResponse = { roleID: string; revokedPermissions: Permission[]; totalAssigned: number; message: string; }
 export type PermissionsByRoleResponse = Permission[];
 export type AddPermissionOverrideResponse = UserPermissionOverride;
-export interface RemovePermissionOverrideResponse { message: string; }
+export type RemovePermissionOverrideResponse = { message: string; }
 export type EffectivePermissionsResponse = Permission[];
 export type UserPermissionOverrideResponse = UserPermissionOverride;
 
@@ -260,7 +335,7 @@ export type UpdateTimesheetResponse = Timesheet;
 export type DeleteTimesheetResponse = { message: string };
 
 // Visit API Responses
-export interface VerifyQrResponse { valid: boolean; message: string; }
+export type VerifyQrResponse = { valid: boolean; message: string; }
 export type LogVisitResponse = Visit;
 export type VisitByIdResponse = Visit;
 export type UpdateVisitResponse = Visit;
@@ -268,11 +343,17 @@ export type DeleteVisitResponse = { message: string };
 
 // Reason API Responses
 export type CreateReasonResponse = Reason;
+export type ReasonByIdResponse = Reason;
+export type UpdateReasonResponse = Reason;
+export type DeleteReasonResponse = { message: string; }
 export type ListReasonsResponse = Reason[];
 export type ReasonsByVisitResponse = VisitReason[];
 
 // Checklist API Responses
 export type CreateChecklistResponse = Checklist;
+export type ChecklistByIdResponse = Checklist;
+export type UpdateChecklistResponse = Checklist;
+export type DeleteChecklistResponse = { message: string; }
 export type ListChecklistsResponse = Checklist[];
 export type ChecklistsByVisitResponse = VisitChecklist[];
 
@@ -281,16 +362,17 @@ export type ChecklistsByVisitResponse = VisitChecklist[];
 export type CreateReceiptBookResponse = ReceiptBook;
 export type ListReceiptBooksResponse = ReceiptBook[];
 export type ReceiptBookByIdResponse = ReceiptBook;
+export type ReceiptBooksByHolderResponse = ReceiptBook[];
 export type UpdateReceiptBookResponse = ReceiptBook;
-export interface DeleteReceiptBookResponse { message: string; }
-export interface SendToSupplierResponse { message: string; }
-export interface ReceiveFromSupplierResponse { message: string; }
-export interface TransferResponse { message: string; }
+export type DeleteReceiptBookResponse = { message: string; }
+export type SendToSupplierResponse = { message: string; }
+export type ReceiveFromSupplierResponse = { message: string; }
+export type TransferResponse = { message: string; }
 export type ValidateTransferResponse = ReceiptBook;
 export type TransferHistoryResponse = ReceiptBookTransfer[];
 
 // Receipt Stub API Responses
-export interface CollectStubResponse { message: string; }
+export type CollectStubResponse = { message: string; }
 export type ValidateStubCollectionResponse = ReceiptStub;
 export type ArchiveStubResponse = ReceiptStub;
 
@@ -497,9 +579,9 @@ export const getPermissionOverridesByUser = async (userID: string, token: string
 File contents: C:\Users\Kayto\Desktop\IT\Projects\Stage\Stage PFE\TraceFlow\Front-End\src\apis\reasonAPI.tsx
 ==================================================
 import api from "./axiosConfig";
-import { CreateReasonResponse, ListReasonsResponse, ReasonsByVisitResponse } from ".";
+import { CreateReasonResponse, ListReasonsResponse, ReasonByIdResponse, ReasonsByVisitResponse, UpdateReasonResponse } from ".";
 
-export const createReason = async (data: { text: string } , token: string ): Promise<CreateReasonResponse> => {
+export const createReason = async (data: { text: string }, token: string): Promise<CreateReasonResponse> => {
     try {
         const response = await api.post<CreateReasonResponse>("/reasons", data, {
             headers: { Authorization: `Bearer ${token}` },
@@ -511,7 +593,42 @@ export const createReason = async (data: { text: string } , token: string ): Pro
     }
 };
 
-export const getAllReasons = async ( token: string): Promise<ListReasonsResponse> => {
+export const getReasonById = async (reasonId: string, token: string): Promise<ReasonByIdResponse> => {
+    try {
+        const response = await api.get<ReasonByIdResponse>(`/reasons/${reasonId}`, {
+            headers: { Authorization: `Bearer ${token}` },
+        });
+        return response.data;
+    } catch (error) {
+        console.error(`Error fetching reason (${reasonId}):`, error);
+        throw error;
+    }
+};
+
+export const updateReason = async (reasonId: string, data: { text: string }, token: string): Promise<UpdateReasonResponse> => {
+    try {
+        const response = await api.put<UpdateReasonResponse>(`/reasons/${reasonId}`, data, {
+            headers: { Authorization: `Bearer ${token}` },
+        });
+        return response.data;
+    } catch (error) {
+        console.error(`Error updating reason (${reasonId}):`, error);
+        throw error;
+    }
+};
+
+export const deleteReason = async (reasonId: string, token: string): Promise<void> => {
+    try {
+        await api.delete(`/reasons/${reasonId}`, {
+            headers: { Authorization: `Bearer ${token}` },
+        });
+    } catch (error) {
+        console.error(`Error deleting reason (${reasonId}):`, error);
+        throw error;
+    }
+};
+
+export const getAllReasons = async (token: string): Promise<ListReasonsResponse> => {
     try {
         const response = await api.get<ListReasonsResponse>("/reasons", {
             headers: { Authorization: `Bearer ${token}` },
@@ -523,9 +640,9 @@ export const getAllReasons = async ( token: string): Promise<ListReasonsResponse
     }
 };
 
-export const getReasonsByVisitId = async (visitId: string , token: string): Promise<ReasonsByVisitResponse> => {
+export const getReasonsByVisitId = async (visitId: string, token: string): Promise<ReasonsByVisitResponse> => {
     try {
-        const response = await api.get<ReasonsByVisitResponse>(`/reasons/${visitId}`, {
+        const response = await api.get<ReasonsByVisitResponse>(`/reasons/visit/${visitId}`, {
             headers: { Authorization: `Bearer ${token}` },
         });
         return response.data;
@@ -588,6 +705,21 @@ export const getReceiptBookById = async (bookID: string, token: string): Promise
         return response.data;
     } catch (error) {
         console.error(`Error fetching receipt book by ID (${bookID}):`, error);
+        throw error;
+    }
+};
+export const getReceiptBooksByHolder = async (
+    holderID: string,
+    token: string,
+    userType: string
+): Promise<ReceiptBook[]> => {
+    try {
+        const response = await api.post<ListReceiptBooksResponse>(`/receipt-books/holder/${holderID}`, { userType }, {
+            headers: { Authorization: `Bearer ${token}` },
+        });
+        return response.data;
+    } catch (error) {
+        console.error(`Error fetching receipt books by holder (${holderID}):`, error);
         throw error;
     }
 };
@@ -906,13 +1038,21 @@ export const createTimesheet = async (
   token: string
 ): Promise<CreateTimesheetResponse> => {
   try {
-    const response = await api.post<CreateTimesheetResponse>("/timesheets", data, {
+    const response = await api.post<CreateTimesheetResponse>("/timesheets/supervisor", data, {
       headers: { Authorization: `Bearer ${token}` },
     });
     return response.data;
   } catch (error) {
-    console.error("Error creating timesheet:", error);
-    throw error;
+    console.error("switching to manager route:", error);
+    try {
+      const fallbackResponse = await api.post<CreateTimesheetResponse>("/timesheets/manager", data, {
+        headers: { Authorization: `Bearer ${token}` },
+      });
+      return fallbackResponse.data;
+    } catch (fallbackError) {
+      console.error("Error creating timesheet :", fallbackError);
+      throw fallbackError;
+    }
   }
 };
 
@@ -1064,8 +1204,13 @@ export const createUser = async (
     });
     return response.data;
   } catch (error) {
-    console.error("Error creating user:", error);
-    throw error;
+    if (error instanceof Error && 'response' in error && (error.response as { data?: { error?: string } })?.data?.error) {
+      console.error("Error creating user:", (error.response as { data: { error: string } }).data.error);
+      throw new Error((error.response as { data: { error: string } }).data.error);
+    } else {
+      console.error("Error creating user:", error);
+      throw new Error("Something went wrong while creating the user.");
+    }
   }
 };
 
@@ -1159,7 +1304,7 @@ export const revokeSupervisorsFromManager = async (
 ): Promise<RevokeSupervisorsResponse> => {
   try {
     const response = await api.post<RevokeSupervisorsResponse>("/users/revoke-supervisors", { managerID, supervisorIDs }, {
-    headers: { Authorization: `Bearer ${token}` },
+      headers: { Authorization: `Bearer ${token}` },
     });
     return response.data;
   } catch (error) {

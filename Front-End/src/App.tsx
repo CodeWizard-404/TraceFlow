@@ -8,8 +8,8 @@ import {
 import { ThemeProvider, useTheme } from "./context/ThemeContext";
 import { AuthProvider, useAuth } from "./context/AuthContext";
 import { ErrorProvider } from "./context/ErrorContext";
-import Timesheets from "./pages/timesheet/Timesheets";
-import TimesheetForm from "./pages/timesheet/TimesheetForm";
+import Timesheets from "./pages/Timesheet/Timesheets";
+import TimesheetForm from "./pages/Timesheet/TimesheetForm";
 import QRScan from "./pages/visit/QRScan";
 import VisitDetails from "./pages/visit/VisitDetails";
 import VisitValidation from "./pages/visit/VisitValidation";
@@ -23,7 +23,7 @@ import ReceiptBookHistory from "./pages/Receipt/ReceiptBookHistory";
 import ErrorDisplay from "./pages/Error/ErrorDisplay";
 import AccessDenied from "./pages/Error/AccessDenied";
 import "./App.css";
-import LoginPage from "./pages/auth/Login";
+import LoginPage from "./pages/Auth/Login";
 
 // Static permissions and roles from .env
 const PERMISSIONS = {
@@ -113,7 +113,7 @@ const AppContent: React.FC = () => {
     <div className="app-container">
       <Header />
       <main>
-        <ErrorDisplay />
+        {location.pathname !== "/login" && <ErrorDisplay />}
         <Routes>
           <Route path="/login" element={<LoginPage />} />
           <Route path="/access-denied" element={<AccessDenied />} />
