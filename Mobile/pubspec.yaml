@@ -23,6 +23,8 @@ dependencies:
   shared_preferences: ^2.5.3
   flutter_animate: ^4.5.2
   device_info_plus: ^11.3.3
+  mime: ^2.0.0
+  http_parser: ^4.1.2
 
 dev_dependencies:
   flutter_test:

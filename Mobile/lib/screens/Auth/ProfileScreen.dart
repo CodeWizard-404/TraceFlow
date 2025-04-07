@@ -19,6 +19,9 @@ import '../../widgets/commen/divider.dart';
 import '../../widgets/commen/list_tile.dart';
 import 'login_screen.dart';
 import 'package:flutter/foundation.dart';
+import 'package:http/http.dart' as http;
+import 'package:mime/mime.dart'; // Add this package for MIME type detection
+import 'package:http_parser/http_parser.dart'; // For MediaType
 
 class ProfileScreen extends StatefulWidget {
   const ProfileScreen({super.key});
@@ -161,12 +164,25 @@ class ProfileScreenState extends State<ProfileScreen> with SingleTickerProviderS
     }
   }
 
+
+
   Future<void> _updateProfilePicture() async {
     final picker = ImagePicker();
     final pickedFile = await picker.pickImage(source: ImageSource.gallery);
     if (pickedFile != null) {
       final bytes = await pickedFile.readAsBytes();
-      final multipartFile = http.MultipartFile.fromBytes('PFP', bytes, filename: 'profile.jpg');
+      // Determine the MIME type based on the file extension or bytes
+      String? mimeType = lookupMimeType(pickedFile.path, headerBytes: bytes);
+      if (mimeType == null || !['image/jpeg', 'image/jpg', 'image/png'].contains(mimeType)) {
+        // Fallback to JPEG if MIME type is unknown or unsupported
+        mimeType = 'image/jpeg';
+      }
+      final multipartFile = http.MultipartFile.fromBytes(
+        'PFP',
+        bytes,
+        filename: 'profile.jpg',
+        contentType: MediaType.parse(mimeType), // Explicitly set MIME type
+      );
       final updates = {'PFP': multipartFile};
       final userProvider = Provider.of<UserProvider>(context, listen: false);
       final authProvider = Provider.of<AuthProvider>(context, listen: false);
@@ -498,12 +514,40 @@ class ProfileScreenState extends State<ProfileScreen> with SingleTickerProviderS
       padding: const EdgeInsets.all(16.0),
       child: Column(
         children: [
-          GestureDetector(
-            onTap: _updateProfilePicture,
-            child: Stack(
-              alignment: Alignment.center,
-              children: [
-                CircleAvatar(
+          Stack(
+            alignment: Alignment.center,
+            children: [
+              GestureDetector(
+                onTap: _profilePicBase64 != null
+                    ? () {
+                  // Show full-screen image preview
+                  showDialog(
+                    context: context,
+                    builder: (context) => Dialog(
+                      backgroundColor: Colors.transparent,
+                      insetPadding: const EdgeInsets.all(0),
+                      child: GestureDetector(
+                        onTap: () => Navigator.pop(context), // Close on tap
+                        child: SizedBox(
+                          width: double.infinity,
+                          height: double.infinity,
+                          child: InteractiveViewer(
+                            panEnabled: true,
+                            scaleEnabled: true,
+                            minScale: 0.5,
+                            maxScale: 4.0,
+                            child: Image.memory(
+                              base64Decode(_profilePicBase64!),
+                              fit: BoxFit.contain,
+                            ),
+                          ),
+                        ),
+                      ),
+                    ),
+                  );
+                }
+                    : null, // Do nothing if no profile picture
+                child: CircleAvatar(
                   radius: 50,
                   backgroundImage: _profilePicBase64 != null ? MemoryImage(base64Decode(_profilePicBase64!)) : null,
                   backgroundColor: theme.colorScheme.surface,
@@ -511,17 +555,27 @@ class ProfileScreenState extends State<ProfileScreen> with SingleTickerProviderS
                       ? Icon(Icons.person, size: 50, color: theme.colorScheme.onSurface.withOpacity(0.6))
                       : null,
                 ),
-                Positioned.fill(
+              ),
+              Positioned(
+                bottom: 4,
+                right: 5,
+                child: GestureDetector(
+                  onTap: _updateProfilePicture,
                   child: Container(
+                    padding: const EdgeInsets.all(4),
                     decoration: BoxDecoration(
                       shape: BoxShape.circle,
-                      color: Colors.black.withOpacity(0.3),
+                      color: theme.colorScheme.primary,
                     ),
-                    child: Icon(Icons.camera_alt, color: Colors.white.withOpacity(0.8)),
+                    child: Icon(
+                      Icons.camera_alt,
+                      color: Colors.white,
+                      size: 12,
+                    ),
                   ),
                 ),
-              ],
-            ),
+              ),
+            ],
           ),
           const CustomSpacer(height: 12),
           Text(
