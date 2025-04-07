@@ -1,17 +1,21 @@
 import React from "react";
 import { useNavigate } from "react-router-dom";
-import { FaLock, FaExclamationTriangle } from "react-icons/fa";
+import { FaArrowLeft, FaExclamationCircle } from "react-icons/fa";
 import { motion } from "framer-motion";
-import "./AccessDenied.css";
+import "./PageNotFound.css";
 
-const AccessDenied: React.FC = () => {
+const PageNotFound: React.FC = () => {
     const navigate = useNavigate();
 
+    const handleBack = () => {
+        navigate(-1); // Go back to the previous page
+    };
+
     return (
-        <div className="access-denied-wrapper">
+        <div className="not-found-wrapper">
             <div className="background-overlay">
-                <FaLock className="bg-icon lock-icon" />
-                <FaExclamationTriangle className="bg-icon warning-icon" />
+                <FaExclamationCircle className="bg-icon warning-icon" />
+                <FaArrowLeft className="bg-icon arrow-icon" />
                 <span className="particle"></span>
                 <span className="particle"></span>
                 <span className="particle"></span>
@@ -22,27 +26,29 @@ const AccessDenied: React.FC = () => {
                 initial={{ opacity: 0, y: 50 }}
                 animate={{ opacity: 1, y: 0 }}
                 transition={{ duration: 0.5, ease: "easeInOut" }}
-                className="access-denied-form"
+                className="not-found-form"
             >
                 <div className="form-header">
                     <h1 className="form-title">
-                        <FaLock /> Access Denied
+                        <span className="glitch" data-text="404">
+                            404
+                        </span>
                     </h1>
-                    <p className="form-subtitle">You don’t have permission to view this page.</p>
+                    <p className="form-subtitle">Page Not Found</p>
                 </div>
                 <div className="content-section">
-                    <div className="warning-message">
-                        <FaExclamationTriangle className="warning-icon" />
-                        <p>Restricted Area</p>
-                        <span>Please contact an administrator if you believe this is an error.</span>
+                    <div className="error-message">
+                        <FaExclamationCircle className="error-icon" />
+                        <p>Oops!</p>
+                        <span>This page doesn’t exist or has been moved.</span>
                     </div>
                     <motion.button
                         className="action-button"
-                        onClick={() => navigate(-1)}
+                        onClick={handleBack}
                         whileHover={{ scale: 1.05 }}
                         whileTap={{ scale: 0.95 }}
                     >
-                        Return to Previous Page
+                        <FaArrowLeft /> Return to Previous Page
                     </motion.button>
                 </div>
             </motion.div>
@@ -50,4 +56,4 @@ const AccessDenied: React.FC = () => {
     );
 };
 
-export default AccessDenied;
+export default PageNotFound;
