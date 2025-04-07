@@ -1,4 +1,3 @@
-// TrustedDevice.js
 const { nanoid } = require('nanoid');
 
 module.exports = (sequelize, DataTypes) => {
@@ -16,7 +15,6 @@ module.exports = (sequelize, DataTypes) => {
         deviceIdentifier: {
             type: DataTypes.STRING,
             allowNull: false,
-            unique: true,
         },
         status: {
             type: DataTypes.ENUM('active', 'inactive'),
@@ -32,5 +30,11 @@ module.exports = (sequelize, DataTypes) => {
         },
     }, {
         timestamps: false,
+        indexes: [
+            {
+                unique: true,
+                fields: ['userID', 'deviceIdentifier'],
+            },
+        ],
     });
 };
