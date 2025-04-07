@@ -1,10 +1,12 @@
 import 'package:flutter/material.dart';
 
+import '../../main.dart';
+
 class CustomAppBar extends StatelessWidget implements PreferredSizeWidget {
   final String title;
   final bool showBackButton;
   final Widget? viewSelector;
-  final VoidCallback? onJumpToNow; // Added back
+  final VoidCallback? onJumpToNow;
 
   const CustomAppBar({
     required this.title,
@@ -36,7 +38,18 @@ class CustomAppBar extends StatelessWidget implements PreferredSizeWidget {
               IconButton(
                 icon: const Icon(Icons.chevron_left_rounded, size: 28),
                 color: theme.colorScheme.primary,
-                onPressed: () => Navigator.pop(context),
+                onPressed: () {
+                  // Check if there's a previous page to pop back to
+                  if (Navigator.of(context).canPop()) {
+                    Navigator.pop(context); // Pop to previous page
+                  } else {
+                    // No previous page, redirect to home page using navigatorKey
+                    MyApp.navigatorKey.currentState?.pushNamedAndRemoveUntil(
+                      '/timesheet-details', // Assuming this is the home route for supervisors
+                          (route) => false, // Remove all previous routes
+                    );
+                  }
+                },
                 splashRadius: 20,
               ),
             Expanded(
