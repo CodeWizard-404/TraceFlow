@@ -62,6 +62,7 @@ const memoryStorage = multer.memoryStorage();
 // Shared file filter for both uploads
 const fileFilter = (req, file, cb) => {
     const allowedTypes = /jpeg|jpg|png/;
+    console.log('File mimetype:', file.mimetype);
     const extname = allowedTypes.test(path.extname(file.originalname).toLowerCase());
     const mimetype = allowedTypes.test(file.mimetype);
     if (extname && mimetype) {
