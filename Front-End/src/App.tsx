@@ -24,6 +24,7 @@ import ErrorDisplay from "./pages/Error/ErrorDisplay";
 import AccessDenied from "./pages/Error/AccessDenied";
 import "./App.css";
 import LoginPage from "./pages/Auth/Login";
+import ProfilePage from "./pages/Auth/ProfilePage";
 
 // Static permissions and roles from .env
 const PERMISSIONS = {
@@ -38,6 +39,7 @@ const PERMISSIONS = {
   ACCESS_RECEIPT_BOOKS: import.meta.env.VITE_PERMISSIONS_ACCESS_RECEIPT_BOOKS,
   ACCESS_RECEIPT_BOOK_HISTORY: import.meta.env.VITE_PERMISSIONS_ACCESS_RECEIPT_BOOK_HISTORY,
   TRANSFER_RECEIPT_BOOKS: import.meta.env.VITE_PERMISSIONS_TRANSFER_RECEIPT_BOOKS,
+
 };
 
 const ROLES = {
@@ -130,6 +132,7 @@ const AppContent: React.FC = () => {
           <Route path="/login" element={<LoginPage />} />
           <Route path="/access-denied" element={<AccessDenied />} />
           <Route path="/" element={<Navigate to="/login" replace />} />
+          <Route path="/profile" element={<ProfilePage />} />
           <Route
             path="/admin"
             element={

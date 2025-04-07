@@ -446,7 +446,9 @@ const ReceiptBooks: React.FC = () => {
                                 >
                                     Previous
                                 </button>
-                                <span>Page {currentPage} of {Math.ceil(filteredReceiptBooks.length / ITEMS_PER_PAGE)}</span>
+                                <span>
+                                    Page {currentPage} of {Math.max(1, Math.ceil(filteredReceiptBooks.length / ITEMS_PER_PAGE))}
+                                </span>
                                 <button
                                     onClick={() => setCurrentPage(p => p + 1)}
                                     disabled={currentPage >= Math.ceil(filteredReceiptBooks.length / ITEMS_PER_PAGE)}

@@ -73,8 +73,8 @@ const path = require('path');
 const fs = require('fs');
 const { Timesheet, User } = require('../models');
 
-// Use a request-scoped counter to track file indices
-const storage = multer.diskStorage({
+// Disk storage for timesheet photos
+const diskStorage = multer.diskStorage({
     destination: async (req, file, cb) => {
         const { id } = req.params; // visitID from the route
         try {
@@ -108,7 +108,8 @@ const storage = multer.diskStorage({
 
         // Generate a base timestamp (once per request)
         if (!req.timestamp) {
-            req.timestamp = new Date().toISOString()
+            req.timestamp = new Date()
+                .toISOString()
                 .replace(/T/, '_')
                 .replace(/:/g, '-')
                 .replace(/\..+/, '');
@@ -125,6 +126,10 @@ const storage = multer.diskStorage({
     },
 });
 
+// Memory storage for profile pictures (PFP)
+const memoryStorage = multer.memoryStorage();
+
+// Shared file filter for both uploads
 const fileFilter = (req, file, cb) => {
     const allowedTypes = /jpeg|jpg|png/;
     const extname = allowedTypes.test(path.extname(file.originalname).toLowerCase());
@@ -135,13 +140,19 @@ const fileFilter = (req, file, cb) => {
     cb(new Error('Only JPEG/JPG/PNG images are allowed'), false);
 };
 
-const upload = multer({
-    storage,
-    fileFilter,
-    limits: { fileSize: 5 * 1024 * 1024 }, // 5MB limit
-});
-
-module.exports = upload;
+// Export two multer instances
+module.exports = {
+    uploadPhotos: multer({
+        storage: diskStorage,
+        fileFilter,
+        limits: { fileSize: 5 * 1024 * 1024 }, // 5MB limit
+    }),
+    uploadPFP: multer({
+        storage: memoryStorage,
+        fileFilter,
+        limits: { fileSize: 5 * 1024 * 1024 }, // 5MB limit
+    }),
+};
 
 ==================================================
 File contents: C:\Users\Kayto\Desktop\IT\Projects\Stage\Stage PFE\TraceFlow\Back-End\config\security.js

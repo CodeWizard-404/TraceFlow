@@ -36,8 +36,8 @@ class AuthService {
         });
 
         if (trustedDevice) {
-            await trustedDevice.update({ lastUsed: new Date(), expiresAt: null });
-            return this.generateLoginResponse(user);
+            await trustedDevice.update({ lastUsed: new Date() });
+            return this.generateLoginResponse(user, deviceIdentifier);
         }
 
         const otpCode = await otpService.generateOTP(user.userID);
@@ -78,7 +78,6 @@ class AuthService {
                 await existingDevice.update({
                     status: 'active',
                     lastUsed: new Date(),
-                    expiresAt: null,
                 });
             } else {
                 await TrustedDevice.create({
@@ -86,18 +85,12 @@ class AuthService {
                     deviceIdentifier,
                     status: 'active',
                     lastUsed: new Date(),
-                    expiresAt: null,
+                    expiresAt: new Date(Date.now() + 30 * 24 * 60 * 60 * 1000),
                 });
-
-                // Optionally, mark other devices for this user as inactive
-                await TrustedDevice.update(
-                    { status: 'inactive', expiresAt: new Date(Date.now() + 30 * 24 * 60 * 60 * 1000) },
-                    { where: { userID: user.userID, deviceIdentifier: { [Op.ne]: deviceIdentifier } } }
-                );
             }
         }
 
-        return this.generateLoginResponse(user);
+        return this.generateLoginResponse(user, deviceIdentifier);
     }
 
     static async resend2FA(userID) {
@@ -154,16 +147,17 @@ class AuthService {
         return { message: 'Password reset successfully' };
     }
 
-    static generateLoginResponse(user) {
+    static generateLoginResponse(user, deviceIdentifier) {
         const roles = user.Roles.map(role => ({
             name: role.name,
             permissions: role.Permissions.map(p => p.name),
         }));
 
+        // Use deviceIdentifier as the token itself, signed with JWT_SECRET
         const token = jwt.sign(
-            { userID: user.userID, email: user.email, phone: user.phone, roles },
+            { userID: user.userID, deviceIdentifier }, // Only userID and deviceIdentifier
             JWT_SECRET,
-            { expiresIn: '12h' }
+            { expiresIn: '12h' } // Keep expiration as before
         );
 
         return {

@@ -11,6 +11,7 @@ interface User {
     Roles?: Role[];
     supervisors?: User[];
     managers?: User[];
+    PFP?: string | { type: string; data: number[] } | ArrayBuffer | Uint8Array | null;
 }
 
 export default User;

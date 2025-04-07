@@ -78,14 +78,38 @@ export const updateUser = async (
   token: string
 ): Promise<UpdateUserResponse> => {
   try {
-    const response = await api.put<UpdateUserResponse>(`/users/${userID}`, data, {
-      headers: { Authorization: `Bearer ${token}` },
+    const formData = new FormData();
+    Object.entries(data).forEach(([key, value]) => {
+      if (key === "PFP" && value instanceof File) {
+        formData.append("PFP", value);
+      } else if (value !== undefined) {
+        formData.append(key, String(value));
+      }
+    });
+
+    const response = await api.put<UpdateUserResponse>(`/users/${userID}`, formData, {
+      headers: {
+        Authorization: `Bearer ${token}`,
+        "Content-Type": "multipart/form-data",
+      },
     });
     return response.data;
   } catch (error) {
     console.error(`Error updating user (${userID}):`, error);
     throw error;
   }
+};
+
+export const updateProfile = async (data: Partial<User> | FormData, token: string): Promise<User> => {
+  const config = {
+    headers: {
+      Authorization: `Bearer ${token}`,
+      ...(data instanceof FormData ? { 'Content-Type': 'multipart/form-data' } : { 'Content-Type': 'application/json' })
+    }
+  };
+
+  const response = await api.put('/users/profile', data, config);
+  return response.data;
 };
 
 export const deleteUser = async (userID: string, token: string): Promise<DeleteUserResponse> => {

@@ -56,7 +56,12 @@ function Header() {
       path: "/receipt-books",
       label: "Receipt Books",
       visible: () => hasPermission(PERMISSIONS.ACCESS_RECEIPT_BOOKS),
-    }
+    },
+    {
+      path: "/profile",
+      label: "Profile",
+      visible: () => true,
+    },
   ];
 
   const handleNavClick = (path: To) => {

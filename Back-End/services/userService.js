@@ -121,8 +121,13 @@ class UserService {
         try {
             const user = await User.findByPk(userID);
             if (!user) throw new Error('User not found');
+
             if (userData.password) {
                 userData.password = await bcrypt.hash(userData.password, 10);
+            }
+
+            if (userData.PFP !== undefined) {
+                userData.PFP = userData.PFP; // Buffer from multer memoryStorage
             }
 
             await user.update(userData);

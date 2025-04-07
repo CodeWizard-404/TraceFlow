@@ -1,5 +1,6 @@
 // controllers/userController.js
 const UserService = require('../services/userService');
+const { uploadPFP } = require('../config/multer');
 
 class UserController {
     static async createUser(req, res) {
@@ -74,18 +75,55 @@ class UserController {
     }
 
     static async updateUser(req, res) {
-        console.log('Received request to update user', req.params, req.body);
+        console.log('Received request to update user', req.params, req.body, req.file);
         try {
             const { userID } = req.params;
             const userData = req.body;
+
             if (!userID) {
                 return res.status(400).json({ error: 'User ID is required' });
             }
+
+            if (req.file) {
+                userData.PFP = req.file.buffer;
+            }
+
             const updatedUser = await UserService.updateUser(userID, userData);
             res.status(200).json(updatedUser);
         } catch (error) {
             console.error(`${new Date().toISOString()} - Update user failed:`, error);
             res.status(400).json({ error: error.message || 'Failed to update user due to an internal error' });
+        }
+    }
+
+    static async updateProfile(req, res) {
+        console.log("Received request to update profile", req.body, req.file);
+        try {
+            const userID = req.user.userID;
+            const userData = req.body;
+
+            if (!userID) {
+                return res.status(401).json({ error: "Unauthorized: User ID not found in token" });
+            }
+
+            if (req.file) {
+                userData.PFP = req.file.buffer; // Store raw buffer in database
+            }
+
+            const updatedUser = await UserService.updateUser(userID, userData);
+
+            // Prepare response with base64-encoded PFP
+            const responseUser = {
+                ...updatedUser.toJSON(), // Convert Sequelize instance to plain object
+            };
+            if (responseUser.PFP) {
+                responseUser.PFP = responseUser.PFP.toString("base64"); // Convert buffer to base64 string
+            }
+
+            res.status(200).json(responseUser);
+        } catch (error) {
+            console.error(`${new Date().toISOString()} - Update profile failed:`, error);
+            res.status(400).json({ error: error.message || "Failed to update profile due to an internal error" });
         }
     }
 

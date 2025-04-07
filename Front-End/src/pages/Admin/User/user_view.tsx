@@ -262,7 +262,8 @@ const UserView: React.FC<UserViewProps> = ({
                 lastname: editedUser.lastname!.trim(),
                 email: editedUser.email!.trim(),
                 phone: stripPhoneForDatabase(phoneValue),
-                wallet: stripWalletForDatabase(walletValue || "")
+                wallet: stripWalletForDatabase(walletValue || ""),
+                PFP: undefined
             };
             if (editedUser.password) updatePayload.password = editedUser.password;
 

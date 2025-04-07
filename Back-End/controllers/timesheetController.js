@@ -73,40 +73,40 @@ class TimesheetController {
         }
     }
 
-    static async updateTimesheet(req, res) {
-        console.log(`Update timesheet request received:`, req.params, req.body);
-        try {
-            const { id } = req.params;
-            const { weekNumber, year, status, visits } = req.body;
-            const parsedVisits = typeof visits === 'string' ? JSON.parse(visits) : visits;
-            const filesMap = {};
-            if (req.files) {
-                req.files.forEach(file => {
-                    const visitId = file.fieldname.split('.')[1]; // e.g., "photos.vis_123" -> "vis_123"
-                    if (!filesMap[visitId]) filesMap[visitId] = [];
-                    filesMap[visitId].push(file);
-                });
-            }
+    // static async updateTimesheet(req, res) {
+    //     console.log(`Update timesheet request received:`, req.params, req.body);
+    //     try {
+    //         const { id } = req.params;
+    //         const { weekNumber, year, status, visits } = req.body;
+    //         const parsedVisits = typeof visits === 'string' ? JSON.parse(visits) : visits;
+    //         const filesMap = {};
+    //         if (req.files) {
+    //             req.files.forEach(file => {
+    //                 const visitId = file.fieldname.split('.')[1]; // e.g., "photos.vis_123" -> "vis_123"
+    //                 if (!filesMap[visitId]) filesMap[visitId] = [];
+    //                 filesMap[visitId].push(file);
+    //             });
+    //         }
 
-            const timesheet = await TimesheetService.updateTimesheet(id, { weekNumber, year, status, visits: parsedVisits }, filesMap);
-            res.status(200).json(timesheet);
-        } catch (error) {
-            console.error(`${new Date().toISOString()} - Update timesheet failed:`, error);
-            res.status(error.status || 500).json({ error: error.message || 'Failed to update timesheet due to an internal error' });
-        }
-    }
+    //         const timesheet = await TimesheetService.updateTimesheet(id, { weekNumber, year, status, visits: parsedVisits }, filesMap);
+    //         res.status(200).json(timesheet);
+    //     } catch (error) {
+    //         console.error(`${new Date().toISOString()} - Update timesheet failed:`, error);
+    //         res.status(error.status || 500).json({ error: error.message || 'Failed to update timesheet due to an internal error' });
+    //     }
+    // }
 
-    static async deleteTimesheet(req, res) {
-        console.log(`Delete timesheet request received:`, req.params);
-        try {
-            const { id } = req.params;
-            const result = await TimesheetService.deleteTimesheet(id);
-            res.status(200).json(result);
-        } catch (error) {
-            console.error(`${new Date().toISOString()} - Delete timesheet failed:`, error);
-            res.status(error.status || 500).json({ error: error.message || 'Failed to delete timesheet due to an internal error' });
-        }
-    }
+    // static async deleteTimesheet(req, res) {
+    //     console.log(`Delete timesheet request received:`, req.params);
+    //     try {
+    //         const { id } = req.params;
+    //         const result = await TimesheetService.deleteTimesheet(id);
+    //         res.status(200).json(result);
+    //     } catch (error) {
+    //         console.error(`${new Date().toISOString()} - Delete timesheet failed:`, error);
+    //         res.status(error.status || 500).json({ error: error.message || 'Failed to delete timesheet due to an internal error' });
+    //     }
+    // }
 }
 
 module.exports = TimesheetController;
