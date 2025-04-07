@@ -547,18 +547,14 @@ const VisitDetails: React.FC = () => {
     }
   };
 
-  if (!permissionsLoaded) {
-    return <div className="visit-details-loading">Loading permissions...</div>;
-  }
-
   if (loading) {
     return (
-      <div className="visit-details-loading">
+      <div className="page-loading">
         <div className="spinner"></div>
+        <p>Loading visit details...</p>
       </div>
     );
   }
-
   if (error || !visit) {
     return (
       <div className="visit-details-container">

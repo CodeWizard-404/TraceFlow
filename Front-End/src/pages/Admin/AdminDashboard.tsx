@@ -264,8 +264,7 @@ const AdminDashboard: React.FC = () => {
                 </aside>
 
                 <main className="main-content">
-                    {loading && <div className="loading-overlay">Loading...</div>}
-
+                    {loading && <div className="spinner" style={{ marginBottom: '-1rem' }}></div>}
                     <UsersList
                         users={users}
                         setUsers={setUsers}
@@ -417,7 +416,7 @@ const AdminDashboard: React.FC = () => {
                     />
                 </main>
             </section>
-        </div>
+        </div >
     );
 };
 

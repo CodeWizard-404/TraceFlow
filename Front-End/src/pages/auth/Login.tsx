@@ -371,7 +371,7 @@ const LoginPage: React.FC = () => {
                             </div>
                             <motion.button
                                 type="submit"
-                                className="action-button"
+                                className="action-button action-button-0"
                                 disabled={loading || !deviceIdentifier}
                                 whileHover={{ scale: 1.05 }}
                                 whileTap={{ scale: 0.95 }}
@@ -421,7 +421,7 @@ const LoginPage: React.FC = () => {
                             </div>
                             <motion.button
                                 type="submit"
-                                className="action-button"
+                                className="action-button action-button-0"
                                 disabled={loading || !trustDevice} // Button disabled unless trustDevice is checked
                                 whileHover={{ scale: 1.05 }}
                                 whileTap={{ scale: 0.95 }}
@@ -430,7 +430,7 @@ const LoginPage: React.FC = () => {
                             </motion.button>
                             <motion.button
                                 type="button"
-                                className="action-button secondary"
+                                className="action-button action-button-0 secondary"
                                 onClick={handleResendOTP}
                                 disabled={loading || resendCooldown > 0}
                                 whileHover={{ scale: 1.05 }}
@@ -462,7 +462,7 @@ const LoginPage: React.FC = () => {
                             </div>
                             <motion.button
                                 type="submit"
-                                className="action-button"
+                                className="action-button action-button-0"
                                 disabled={loading}
                                 whileHover={{ scale: 1.05 }}
                                 whileTap={{ scale: 0.95 }}
@@ -497,7 +497,7 @@ const LoginPage: React.FC = () => {
                             </div>
                             <motion.button
                                 type="submit"
-                                className="action-button"
+                                className="action-button action-button-0"
                                 disabled={loading}
                                 whileHover={{ scale: 1.05 }}
                                 whileTap={{ scale: 0.95 }}
@@ -506,7 +506,7 @@ const LoginPage: React.FC = () => {
                             </motion.button>
                             <motion.button
                                 type="button"
-                                className="action-button secondary"
+                                className="action-button action-button-0 secondary"
                                 onClick={handleResendOTP}
                                 disabled={loading || resendCooldown > 0}
                                 whileHover={{ scale: 1.05 }}
@@ -572,7 +572,7 @@ const LoginPage: React.FC = () => {
                             </div>
                             <motion.button
                                 type="submit"
-                                className="action-button"
+                                className="action-button action-button-0"
                                 disabled={loading}
                                 whileHover={{ scale: 1.05 }}
                                 whileTap={{ scale: 0.95 }}

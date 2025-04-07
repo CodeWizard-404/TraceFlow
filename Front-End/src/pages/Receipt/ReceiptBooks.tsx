@@ -308,8 +308,14 @@ const ReceiptBooks: React.FC = () => {
 
 
     // Early Returns for Loading and Access Denied
-    if (!permissionsLoaded) return <div className="loading-text">Loading permissions...</div>;
-    if (loading) return <div className="loading-text">Loading...</div>;
+    if (!permissionsLoaded || loading)
+        return (
+            <div className="page-loading">
+                <div className="spinner"></div>
+                <p>Loading...</p>
+            </div>
+        );
+
     if (!userPermissions.canView) {
         navigate("/access-denied");
         return null;

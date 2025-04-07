@@ -301,12 +301,18 @@ const Timesheets: React.FC = () => {
   );
 
   // Early Returns
-  if (!permissionsLoaded) return <div className="loading">Loading permissions...</div>;
   if (!token) {
     navigate("/access-denied");
     return null;
   }
-  if (loading) return <div className="loading">Loading Timesheets...</div>;
+  if (loading) {
+    return (
+      <div className="page-loading">
+        <div className="spinner"></div>
+        <p>Loading Timesheet...</p>
+      </div>
+    );
+  }
 
   // Render
   return (

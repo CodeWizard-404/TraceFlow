@@ -270,21 +270,8 @@ button:disabled {
   padding-right: 1rem;
 }
 
-.visit-details-loading {
-  flex: 1;
-  display: flex;
-  justify-content: center;
-  align-items: center;
-}
 
-.spinner {
-  width: 2rem;
-  height: 2rem;
-  border: 3px solid #4cb1c7;
-  border-top: 3px solid transparent;
-  border-radius: 50%;
-  animation: spin 1s linear infinite;
-}
+
 
 .visit-details-error-card {
   background: #fff;

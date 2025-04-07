@@ -272,7 +272,10 @@ const RolesList: React.FC<RolesListProps> = ({
                                     <p>{role.description || 'No description available'}</p>
                                     <h5>Permissions by Class:</h5>
                                     {loading ? (
-                                        <p>Loading permissions...</p>
+                                        <div className="page-loading">
+                                            <div className="spinner"></div>
+                                            <p>Loading...</p>
+                                        </div>
                                     ) : Object.entries(getCategorizedPermissionsForRole(rolePermissions)).length > 0 ? (
                                         Object.entries(getCategorizedPermissionsForRole(rolePermissions)).map(([className, perms]) => (
                                             <div key={className} className="permission-class-item">

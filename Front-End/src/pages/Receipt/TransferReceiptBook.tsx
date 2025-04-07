@@ -578,7 +578,14 @@ const TransferReceiptBook: React.FC = () => {
         }
     };
 
-    if (loading) return <div className="loading">Loading...</div>;
+    if (loading) {
+        return (
+            <div className="page-loading">
+                <div className="spinner"></div>
+                <p>Loading...</p>
+            </div>
+        );
+    }
     if (error && !recipientType) return (
         <div className="error">
             {error}

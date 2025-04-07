@@ -138,7 +138,14 @@ const ReceiptBookHistory: React.FC = () => {
     };
 
     // Early Returns for Loading and Error States
-    if (loading) return <div className="loading">Tracking History...</div>;
+    if (loading) {
+        return (
+            <div className="page-loading">
+                <div className="spinner"></div>
+                <p>Tracking History...</p>
+            </div>
+        );
+    }
     if (error || !book) return <div className="error">{error || "Receipt book not found."}</div>;
 
     // Render

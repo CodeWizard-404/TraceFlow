@@ -66,7 +66,12 @@ const ProtectedRoute: React.FC<ProtectedRouteProps> = ({
     );
   }
   if (!permissionsLoaded) {
-    return <div>Loading permissions...</div>;
+    return (
+      <div className="permissions-loading">
+        <div className="spinner"></div>
+        <div>Loading permissions...</div>
+      </div>
+    );
   }
   const hasPermission = requiredPermissions.some((perm) =>
     effectivePermissions?.some((p) => p.name === perm)
@@ -94,8 +99,15 @@ const RoleProtectedRoute: React.FC<RoleProtectedRouteProps> = ({
     );
   }
   if (!permissionsLoaded || !userRoles) {
-    return <div>Loading permissions...</div>;
+    return (
+      <div className="page-loading">
+        <div className="spinner"></div>
+        <p>Loading...</p>
+      </div>
+    );
   }
+
+
   const hasRequiredRole = userRoles.some((role) =>
     requiredRoles.includes(role.name)
   );

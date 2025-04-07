@@ -76,7 +76,14 @@ const TimesheetForm: React.FC = () => {
     canReadChecklists: effectivePermissions?.some(p => p.name === PERMISSIONS.READ_CHECKLISTS_ITEMS),
   }), [effectivePermissions]);
 
-  if (!permissionsLoaded) return <div className="loading">Loading permissions...</div>;
+  if (!permissionsLoaded)
+    return (
+      <div className="page-loading">
+        <div className="spinner"></div>
+        <p>Loading...</p>
+      </div>
+    );
+
   if (!user || !token) return null;
 
   const supervisorID = userPermissions.canReadSupervisors && selectedSupervisor ? selectedSupervisor : user.userID;
@@ -293,8 +300,14 @@ const TimesheetForm: React.FC = () => {
     (!userPermissions.canCreateTimesheetsForSupervisors || selectedSupervisor)
   ), [date, time, selectedAgent, selectedReasons, selectedChecklists, userPermissions.canCreateTimesheetsForSupervisors, selectedSupervisor]);
 
-  if (loading) return <div className="loading">Loading...</div>;
-
+  if (loading) {
+    return (
+      <div className="page-loading">
+        <div className="spinner"></div>
+        <p>Loading...</p>
+      </div>
+    );
+  }
   return (
     <div className="timesheet-form-container">
       <header className="form-header">

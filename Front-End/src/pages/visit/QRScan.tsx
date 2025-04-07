@@ -167,8 +167,13 @@ const QRScan: React.FC = () => {
         );
     }
 
-    if (!permissionsLoaded) {
-        return <div className="qr-scan-container">Loading permissions...</div>;
+    if (loading) {
+        return (
+            <div className="page-loading">
+                <div className="spinner"></div>
+                <p>Loading...</p>
+            </div>
+        );
     }
 
     if (!token || !userPermissions.canScanVisits) {

@@ -207,8 +207,14 @@ const VisitValidation: React.FC = () => {
     const totalItems = checklist.length;
     const lastPhotoUrl = photos.length > 0 ? URL.createObjectURL(photos[photos.length - 1]) : null;
 
-    if (!permissionsLoaded) return <div className="visit-validation-container">Loading permissions...</div>;
-    if (loading) return <div className="loading">Loading...</div>;
+    if (loading) {
+        return (
+            <div className="page-loading">
+                <div className="spinner"></div>
+                <p>Loading Visit Details...</p>
+            </div>
+        );
+    }
     if (error || !visit || !userPermissions.canLogVisits) return (
         <div className="visit-validation-container">
             <div className="error">{error || "Visit not found or access denied."}</div>
