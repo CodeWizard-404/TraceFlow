@@ -1,3 +1,4 @@
+import 'package:TraceFlow/screens/Auth/Verify2FAScreen.dart';
 import 'package:TraceFlow/screens/Receipt/receipt_books.dart';
 import 'package:TraceFlow/screens/Receipt/transfer_receipt_book.dart';
 import 'package:flutter/material.dart';
@@ -26,7 +27,7 @@ void main() {
         (message.contains("EGL_emulation") || message.contains("libEGL"))) {
       return;
     }
-    print(message);
+    print(message); // Use print instead of debugPrint to avoid recursion
   };
 
   runApp(
@@ -53,23 +54,29 @@ void main() {
 class MyApp extends StatelessWidget {
   const MyApp({super.key});
 
+  static final GlobalKey<NavigatorState> navigatorKey = GlobalKey<NavigatorState>();
+
   @override
   Widget build(BuildContext context) {
     return Consumer<ThemeProvider>(
       builder: (context, themeProvider, child) {
+        debugPrint('MyApp build called');
         return MaterialApp(
           title: 'TraceFlow',
           theme: AppThemes.lightTheme,
           darkTheme: AppThemes.darkTheme,
           themeMode: themeProvider.themeMode,
+          navigatorKey: navigatorKey,
           home: const AuthWrapper(),
           routes: {
             '/login': (context) => const LoginScreen(),
             '/timesheet-details': (context) => const TimesheetDetailsScreen(),
             '/receipt-books': (context) => const ReceiptBooksScreen(),
             '/transfer-receipt-books': (context) => const TransferReceiptBookScreen(),
+            '/verify-2fa': (context) => const Verify2FAScreen(),
           },
           onUnknownRoute: (settings) {
+            debugPrint('Unknown route: ${settings.name}');
             return MaterialPageRoute(
               builder: (context) => ErrorPage(
                 errorMessage: 'Page not found: ${settings.name}. Please try again.',
@@ -79,6 +86,7 @@ class MyApp extends StatelessWidget {
               ),
             );
           },
+          navigatorObservers: [RouteLogger()],
         );
       },
     );
@@ -92,6 +100,8 @@ class AuthWrapper extends StatelessWidget {
   Widget build(BuildContext context) {
     final authProvider = Provider.of<AuthProvider>(context);
 
+    debugPrint('AuthWrapper build: token=${authProvider.token}, isLoading=${authProvider.isLoading}, isSupervisor=${authProvider.isSupervisor}');
+
     // Show a loading screen while auth data is being loaded
     if (authProvider.token == null && authProvider.isLoading) {
       return const Scaffold(
@@ -102,7 +112,7 @@ class AuthWrapper extends StatelessWidget {
     // If no token or user, or if user is not a Supervisor, show login screen
     if (authProvider.token == null || authProvider.user == null || !authProvider.isSupervisor) {
       if (authProvider.token != null && !authProvider.isSupervisor) {
-        // Clear invalid state (non-Supervisor with token)
+        debugPrint('Clearing invalid state: non-Supervisor with token');
         authProvider.logout();
       }
       return const LoginScreen();
@@ -110,5 +120,27 @@ class AuthWrapper extends StatelessWidget {
 
     // If token exists and user is a Supervisor, show TimesheetDetailsScreen
     return const TimesheetDetailsScreen();
+  }
+}
+
+class RouteLogger extends NavigatorObserver {
+  @override
+  void didPush(Route route, Route? previousRoute) {
+    debugPrint('Route pushed: ${route.settings.name ?? route.runtimeType}, Previous: ${previousRoute?.settings.name ?? previousRoute?.runtimeType}');
+  }
+
+  @override
+  void didPop(Route route, Route? previousRoute) {
+    debugPrint('Route popped: ${route.settings.name ?? route.runtimeType}, Previous: ${previousRoute?.settings.name ?? previousRoute?.runtimeType}');
+  }
+
+  @override
+  void didReplace({Route? newRoute, Route? oldRoute}) {
+    debugPrint('Route replaced: ${newRoute?.settings.name ?? newRoute?.runtimeType}, Old: ${oldRoute?.settings.name ?? oldRoute?.runtimeType}');
+  }
+
+  @override
+  void didRemove(Route route, Route? previousRoute) {
+    debugPrint('Route removed: ${route.settings.name ?? route.runtimeType}, Previous: ${previousRoute?.settings.name ?? previousRoute?.runtimeType}');
   }
 }
