@@ -72,6 +72,19 @@ export const getUserById = async (userID: string, token: string): Promise<UserBy
   }
 };
 
+export const fetchUserProfile = async (token: string): Promise<User> => {
+  try {
+    const response = await api.get<User>("/users/profile", {
+      headers: { Authorization: `Bearer ${token}` },
+    });
+    return response.data;
+  } catch (error) {
+    console.error("Error fetching user profile:", error);
+    throw error;
+  }
+};
+
+
 export const updateUser = async (
   userID: string,
   data: Partial<User>,

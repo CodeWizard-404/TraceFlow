@@ -4,11 +4,11 @@ const otpService = require('../services/otpService');
 class AuthController {
     static async login(req, res) {
         try {
-            const { identifier, password, deviceIdentifier } = req.body;
+            const { identifier, password, deviceIdentifier, otpMethod } = req.body;
             if (!identifier || !password || !deviceIdentifier) {
                 return res.status(400).json({ error: 'Identifier, password, and device identifier are required' });
             }
-            const result = await AuthService.login(identifier, password, deviceIdentifier);
+            const result = await AuthService.login(identifier, password, deviceIdentifier, otpMethod);
             res.json(result);
         } catch (error) {
             console.error(`${new Date().toISOString()} - Login failed:`, error);

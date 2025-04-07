@@ -1,4 +1,3 @@
-// AuthService.js
 const bcrypt = require('bcrypt');
 const jwt = require('jsonwebtoken');
 const { Op } = require('sequelize');
@@ -10,7 +9,7 @@ const otpService = require('./otpService');
 const JWT_SECRET = process.env.JWT_SECRET;
 
 class AuthService {
-    static async login(identifier, password, deviceIdentifier) {
+    static async login(identifier, password, deviceIdentifier, otpMethod = 'phone') {
         const user = await User.findOne({
             where: {
                 [Op.or]: [{ email: identifier }, { phone: identifier }],
@@ -41,13 +40,42 @@ class AuthService {
         }
 
         const otpCode = await otpService.generateOTP(user.userID);
-        await sendSMS(user.phone, `Your TraceFlow 2FA code is ${otpCode.code}`);
+        let message;
+
+        if (otpMethod === 'email' && user.email) {
+            await transporter.sendMail({
+                from: process.env.SMTP_USER,
+                to: user.email,
+                subject: 'TraceFlow 2FA Code',
+                text: `Your TraceFlow 2FA code is ${otpCode.code}. It expires in 10 minutes.`,
+            });
+            message = 'OTP sent to your email';
+        } else if (otpMethod === 'phone' && user.phone) {
+            await sendSMS(user.phone, `Your TraceFlow 2FA code is ${otpCode.code}`);
+            message = 'OTP sent to your phone';
+        } else {
+            // Fallback to phone if email isn’t available or method is invalid
+            if (user.phone) {
+                await sendSMS(user.phone, `Your TraceFlow 2FA code is ${otpCode.code}`);
+                message = 'OTP sent to your phone (fallback)';
+            } else if (user.email) {
+                await transporter.sendMail({
+                    from: process.env.SMTP_USER,
+                    to: user.email,
+                    subject: 'TraceFlow 2FA Code',
+                    text: `Your TraceFlow 2FA code is ${otpCode.code}. It expires in 10 minutes.`,
+                });
+                message = 'OTP sent to your email (fallback)';
+            } else {
+                throw new Error('No contact method available for OTP');
+            }
+        }
 
         return {
             requires2FA: true,
             userID: user.userID,
             deviceIdentifier,
-            message: 'OTP sent to your phone',
+            message,
         };
     }
 
@@ -153,11 +181,10 @@ class AuthService {
             permissions: role.Permissions.map(p => p.name),
         }));
 
-        // Use deviceIdentifier as the token itself, signed with JWT_SECRET
         const token = jwt.sign(
-            { userID: user.userID, deviceIdentifier }, // Only userID and deviceIdentifier
+            { userID: user.userID, deviceIdentifier },
             JWT_SECRET,
-            { expiresIn: '12h' } // Keep expiration as before
+            { expiresIn: '12h' }
         );
 
         return {

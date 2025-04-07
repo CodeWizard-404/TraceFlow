@@ -3,7 +3,14 @@ import FingerprintJS from "@fingerprintjs/fingerprintjs";
 import { useAuth } from "../../context/AuthContext";
 import { useError } from "../../context/ErrorContext";
 import { AxiosError } from "axios";
-import { login, verify2FA, resend2FA, initiatePasswordReset, verifyPasswordResetOTP, resetPassword } from "../../apis/authAPI";
+import {
+    login,
+    verify2FA,
+    resend2FA,
+    initiatePasswordReset,
+    verifyPasswordResetOTP,
+    resetPassword,
+} from "../../apis/authAPI";
 import { motion, AnimatePresence } from "framer-motion";
 import { FaClock, FaEye, FaEyeSlash, FaMapMarkerAlt, FaQrcode, FaShieldAlt } from "react-icons/fa";
 import { RiTimeLine } from "react-icons/ri";
@@ -23,6 +30,7 @@ const LoginPage: React.FC = () => {
     const [deviceIdentifier, setDeviceIdentifier] = useState<string | null>(null);
     const [timer, setTimer] = useState(600);
     const [resendCooldown, setResendCooldown] = useState(0);
+    const [otpMethod, setOtpMethod] = useState<"phone" | "email">("phone");
     const [errors, setErrors] = useState<{ [key: string]: string }>({});
     const [showPassword, setShowPassword] = useState(false);
     const [showNewPassword, setShowNewPassword] = useState(false);
@@ -44,9 +52,7 @@ const LoginPage: React.FC = () => {
     // Clear error message after 3 seconds
     useEffect(() => {
         if (globalError) {
-            const timeout = setTimeout(() => {
-                setGlobalError(null);
-            }, 3000); // 3000ms = 3 seconds
+            const timeout = setTimeout(() => setGlobalError(null), 3000);
             return () => clearTimeout(timeout);
         }
     }, [globalError, setGlobalError]);
@@ -54,7 +60,7 @@ const LoginPage: React.FC = () => {
     // Timer for OTP expiration
     useEffect(() => {
         if ((step === "verify2FA" || step === "verifyReset") && timer > 0) {
-            const interval = setInterval(() => setTimer(t => t - 1), 1000);
+            const interval = setInterval(() => setTimer((t) => t - 1), 1000);
             return () => clearInterval(interval);
         }
     }, [step, timer]);
@@ -62,7 +68,7 @@ const LoginPage: React.FC = () => {
     // Resend cooldown timer
     useEffect(() => {
         if (resendCooldown > 0) {
-            const interval = setInterval(() => setResendCooldown(t => t - 1), 1000);
+            const interval = setInterval(() => setResendCooldown((t) => t - 1), 1000);
             return () => clearInterval(interval);
         }
     }, [resendCooldown]);
@@ -112,7 +118,7 @@ const LoginPage: React.FC = () => {
             newErrors.confirmPassword = validatePasswordConfirm(newPassword, confirmPassword);
         }
         setErrors(newErrors);
-        return Object.values(newErrors).every(err => !err);
+        return Object.values(newErrors).every((err) => !err);
     }, [step, identifier, password, otpCode, newPassword, confirmPassword]);
 
     const handleBlur = () => validateForm();
@@ -125,10 +131,11 @@ const LoginPage: React.FC = () => {
         setGlobalError(null);
 
         try {
-            const response = await login(identifier, password, deviceIdentifier);
-            if ('requires2FA' in response) {
+            const response = await login(identifier, password, deviceIdentifier, "phone");
+            if ("requires2FA" in response) {
                 setStep("verify2FA");
                 setUserID(response.userID);
+                setOtpMethod("phone");
                 setTimer(600);
             } else {
                 await loginUser(identifier, password, deviceIdentifier);
@@ -239,29 +246,38 @@ const LoginPage: React.FC = () => {
         }
     };
 
-    // Handle OTP resend
-    const handleResendOTP = async () => {
+    // Handle OTP resend or switch method
+    const handleResendOTP = async (method: "phone" | "email") => {
         if (resendCooldown > 0 || !userID) return;
         setLoading(true);
         setGlobalError(null);
 
         try {
             if (step === "verify2FA") {
-                await resend2FA(userID);
+                const response = await resend2FA(userID, method);
+                setOtpMethod(method);
+                setTimer(600);
+                setResendCooldown(60);
+                setGlobalError(response.message);
             } else if (step === "verifyReset") {
                 await initiatePasswordReset(identifier);
+                setTimer(600);
+                setResendCooldown(60);
             }
-            setTimer(600);
-            setResendCooldown(60);
         } catch (err) {
             const axiosError = err as AxiosError<{ error: string }>;
             setGlobalError(
-                axiosError.response?.data?.error ||
-                "Failed to resend OTP. Please try again later."
+                axiosError.response?.data?.error || "Failed to resend OTP. Please try again later."
             );
         } finally {
             setLoading(false);
         }
+    };
+
+    // Wrapper for button click handlers
+    const handleResendClick = (e: React.MouseEvent<HTMLButtonElement>, method: "phone" | "email") => {
+        e.preventDefault();
+        handleResendOTP(method);
     };
 
     const resetForm = () => {
@@ -277,6 +293,7 @@ const LoginPage: React.FC = () => {
         setShowPassword(false);
         setShowNewPassword(false);
         setShowConfirmPassword(false);
+        setOtpMethod("phone");
     };
 
     const handleBackToLogin = () => {
@@ -320,11 +337,7 @@ const LoginPage: React.FC = () => {
                         <p className="form-subtitle">Securely Track. Optimize. Succeed.</p>
                     </div>
                     {globalError && (
-                        <motion.div
-                            initial={{ opacity: 0 }}
-                            animate={{ opacity: 1 }}
-                            className="error-message"
-                        >
+                        <motion.div initial={{ opacity: 0 }} animate={{ opacity: 1 }} className="error-message">
                             {globalError}
                         </motion.div>
                     )}
@@ -378,11 +391,7 @@ const LoginPage: React.FC = () => {
                             >
                                 {loading ? <span className="spinner" /> : "Sign In"}
                             </motion.button>
-                            <button
-                                type="button"
-                                className="form-link"
-                                onClick={() => setStep("forgot")}
-                            >
+                            <button type="button" className="form-link" onClick={() => setStep("forgot")}>
                                 Forgot Password?
                             </button>
                         </form>
@@ -406,6 +415,9 @@ const LoginPage: React.FC = () => {
                                 {errors.otpCode && <span className="error-text">{errors.otpCode}</span>}
                             </div>
                             <div className="form-info">
+                                {otpMethod === "phone"
+                                    ? "We sent a code to your phone number."
+                                    : "We sent a code to your email."}{" "}
                                 Time remaining: {Math.floor(timer / 60)}:{(timer % 60).toString().padStart(2, "0")}
                             </div>
                             <div className="form-checkbox styled-checkbox">
@@ -422,7 +434,7 @@ const LoginPage: React.FC = () => {
                             <motion.button
                                 type="submit"
                                 className="action-button action-button-0"
-                                disabled={loading || !trustDevice} // Button disabled unless trustDevice is checked
+                                disabled={loading}
                                 whileHover={{ scale: 1.05 }}
                                 whileTap={{ scale: 0.95 }}
                             >
@@ -431,13 +443,35 @@ const LoginPage: React.FC = () => {
                             <motion.button
                                 type="button"
                                 className="action-button action-button-0 secondary"
-                                onClick={handleResendOTP}
+                                onClick={(e) => handleResendClick(e, otpMethod)}
                                 disabled={loading || resendCooldown > 0}
                                 whileHover={{ scale: 1.05 }}
                                 whileTap={{ scale: 0.95 }}
                             >
                                 {resendCooldown > 0 ? `Resend in ${resendCooldown}s` : "Resend OTP"}
                             </motion.button>
+                            {otpMethod === "phone" && (
+                                <button
+                                    type="button"
+                                    className="form-link"
+                                    onClick={(e) => handleResendClick(e, "email")}
+                                    disabled={loading || resendCooldown > 0}
+                                >
+                                    Can’t access your phone?
+                                    Send to email instead.
+                                </button>
+                            )}
+                            <hr />
+                            {otpMethod === "email" && (
+                                <button
+                                    type="button"
+                                    className="form-link"
+                                    onClick={(e) => handleResendClick(e, "phone")}
+                                    disabled={loading || resendCooldown > 0}
+                                >
+                                    Send to phone instead.
+                                </button>
+                            )}
                             <button type="button" className="form-link" onClick={handleBackToLogin}>
                                 Back to Sign In
                             </button>
@@ -507,7 +541,7 @@ const LoginPage: React.FC = () => {
                             <motion.button
                                 type="button"
                                 className="action-button action-button-0 secondary"
-                                onClick={handleResendOTP}
+                                onClick={(e) => handleResendClick(e, "phone")} // Default to phone for reset flow
                                 disabled={loading || resendCooldown > 0}
                                 whileHover={{ scale: 1.05 }}
                                 whileTap={{ scale: 0.95 }}

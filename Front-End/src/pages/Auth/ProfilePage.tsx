@@ -1,9 +1,21 @@
 import React, { useState, useEffect, ChangeEvent, KeyboardEvent } from "react";
 import { useAuth } from "../../context/AuthContext";
-import { updateProfile } from "../../apis/userAPI";
+import { updateProfile, fetchUserProfile } from "../../apis/userAPI";
 import User from "../../models/User";
 import "./ProfilePage.css";
-import { FaUser, FaEnvelope, FaPhone, FaWallet, FaCamera, FaCog, FaHistory, FaCreditCard, FaClock, FaCheckCircle } from "react-icons/fa";
+import {
+  FaUser,
+  FaEnvelope,
+  FaPhone,
+  FaWallet,
+  FaCamera,
+  FaCog,
+  FaHistory,
+  FaCreditCard,
+  FaClock,
+  FaCheckCircle,
+  FaRegUser,
+} from "react-icons/fa";
 
 const ProfilePage: React.FC = () => {
   const { user, token } = useAuth();
@@ -18,6 +30,7 @@ const ProfilePage: React.FC = () => {
   const [formErrors, setFormErrors] = useState<Record<string, string>>({});
   const [rawPhone, setRawPhone] = useState("");
   const [rawWallet, setRawWallet] = useState("");
+  const [isLoading, setIsLoading] = useState(true);
 
   const setTempError = (message: string) => {
     setError(message);
@@ -30,35 +43,78 @@ const ProfilePage: React.FC = () => {
   };
 
   useEffect(() => {
-    if (user) {
-      const completeUser: User = {
-        userID: user.userID,
-        firstname: user.firstname,
-        lastname: user.lastname,
-        phone: user.phone || "",
-        email: user.email,
-        wallet: user.wallet || "",
-        PFP: user.PFP || null,
-        password: user.password,
-      };
-      setProfileData(completeUser);
-      setRawPhone(user.phone || "");
-      setRawWallet(user.wallet || "");
-      if (user.PFP) {
-        try {
-          const imageSrc = typeof user.PFP === "string" ? `data:image/jpeg;base64,${user.PFP}` : null;
-          if (!imageSrc) throw new Error("Unsupported PFP format");
-          setProfilePic(imageSrc);
-        } catch (err) {
-          console.error("Error converting profile picture:", err);
-          setProfilePic(null);
-          setTempError("Failed to load profile picture");
-        }
+    const loadUserProfile = async () => {
+      if (!token) {
+        setTempError("No authentication token found");
+        setIsLoading(false);
+        return;
       }
-    }
-  }, [user]);
 
-  // Validation Functions
+      try {
+        setIsLoading(true);
+        const fullUser = await fetchUserProfile(token);
+        const completeUser: User = {
+          userID: fullUser.userID || user?.userID || "",
+          firstname: fullUser.firstname || user?.firstname || "",
+          lastname: fullUser.lastname || user?.lastname || "",
+          phone: fullUser.phone || user?.phone || "",
+          email: fullUser.email || user?.email || "",
+          wallet: fullUser.wallet || user?.wallet || "",
+          PFP: fullUser.PFP || user?.PFP || null,
+          password: "",
+        };
+
+        setProfileData(completeUser);
+        setRawPhone(completeUser.phone || "");
+        setRawWallet(completeUser.wallet || "");
+
+        if (completeUser.PFP) {
+          try {
+            const imageSrc = `data:image/jpeg;base64,${completeUser.PFP}`;
+            setProfilePic(imageSrc);
+          } catch (err) {
+            console.error("Error converting profile picture:", err);
+            setProfilePic(null);
+            setTempError("Failed to load profile picture");
+          }
+        }
+
+        localStorage.setItem("user", JSON.stringify(completeUser));
+      } catch {
+        setTempError("Failed to load user profile");
+        if (user) {
+          const fallbackUser: User = {
+            userID: user.userID || "",
+            firstname: user.firstname || "Not set",
+            lastname: user.lastname || "Not set",
+            phone: user.phone || "",
+            email: user.email || "",
+            wallet: user.wallet || "",
+            PFP: user.PFP || null,
+            password: "",
+          };
+          setProfileData(fallbackUser);
+          setRawPhone(fallbackUser.phone || "");
+          setRawWallet(fallbackUser.wallet || "");
+          if (fallbackUser.PFP) {
+            try {
+              const imageSrc = `data:image/jpeg;base64,${fallbackUser.PFP}`;
+              setProfilePic(imageSrc);
+            } catch {
+              setProfilePic(null);
+            }
+          }
+          localStorage.setItem("user", JSON.stringify(fallbackUser));
+        }
+      } finally {
+        setIsLoading(false);
+      }
+    };
+
+    loadUserProfile();
+  }, [token, user]);
+
+  // Validation Functions (unchanged)
   const validateName = (value: string, field: string): string => {
     const trimmed = value.trim();
     if (!trimmed) return `${field} is required`;
@@ -104,7 +160,7 @@ const ProfilePage: React.FC = () => {
     return "";
   };
 
-  // Formatting Functions
+  // Formatting Functions (unchanged)
   const formatPhoneDisplay = (rawValue: string): string => {
     const digits = rawValue.replace(/[^\d]/g, "");
     let formatted = "";
@@ -146,7 +202,7 @@ const ProfilePage: React.FC = () => {
     const raw = e.target.value.replace(/[^\d]/g, "").slice(0, 8);
     setRawPhone(raw);
     setProfileData({ ...profileData!, phone: stripPhoneForDatabase(raw) });
-    setFormErrors({ ...formErrors, phone: validatePhone(raw) });
+    setFormErrors({ ...formErrors, Kathy: validatePhone(raw) });
   };
 
   const handleWalletChange = (e: ChangeEvent<HTMLInputElement>) => {
@@ -182,12 +238,19 @@ const ProfilePage: React.FC = () => {
   const handleNewPasswordChange = (value: string) => {
     setNewPassword(value);
     const passwordError = validatePassword(value);
-    setFormErrors({ ...formErrors, newPassword: passwordError, confirmPassword: validatePasswordConfirm(value, confirmPassword) });
+    setFormErrors({
+      ...formErrors,
+      newPassword: passwordError,
+      confirmPassword: validatePasswordConfirm(value, confirmPassword),
+    });
   };
 
   const handleConfirmPasswordChange = (value: string) => {
     setConfirmPassword(value);
-    setFormErrors({ ...formErrors, confirmPassword: validatePasswordConfirm(newPassword, value) });
+    setFormErrors({
+      ...formErrors,
+      confirmPassword: validatePasswordConfirm(newPassword, value),
+    });
   };
 
   const handleKeyDown = async (e: KeyboardEvent<HTMLInputElement>, field: keyof User) => {
@@ -200,7 +263,11 @@ const ProfilePage: React.FC = () => {
       try {
         const updatedData: Partial<User> = { [field]: profileData[field] };
         const response = await updateProfile(updatedData, token);
-        const updatedUser: User = { ...profileData, ...response, PFP: response.PFP || profileData.PFP };
+        const updatedUser: User = {
+          ...profileData,
+          ...response,
+          PFP: response.PFP || profileData.PFP,
+        };
         setProfileData(updatedUser);
         setTempSuccess("Profile updated successfully");
         setEditingField(null);
@@ -209,14 +276,14 @@ const ProfilePage: React.FC = () => {
         localStorage.setItem("user", JSON.stringify(updatedUser));
       } catch (err) {
         setTempError(err instanceof Error ? err.message : "Failed to update profile");
-        setProfileData(user);
-        setRawPhone(user?.phone || "");
-        setRawWallet(user?.wallet || "");
+        setProfileData(user || profileData);
+        setRawPhone(user?.phone || profileData?.phone || "");
+        setRawWallet(user?.wallet || profileData?.wallet || "");
       }
     } else if (e.key === "Escape") {
-      setProfileData(user);
-      setRawPhone(user?.phone || "");
-      setRawWallet(user?.wallet || "");
+      setProfileData(user || profileData);
+      setRawPhone(user?.phone || profileData?.phone || "");
+      setRawWallet(user?.wallet || profileData?.wallet || "");
       setEditingField(null);
       setFormErrors({});
     }
@@ -264,17 +331,45 @@ const ProfilePage: React.FC = () => {
     }
   };
 
+  if (isLoading) {
+    return (
+      <div className="page-loading">
+        <div className="spinner"></div>
+        <p>Loading Profile...</p>
+      </div>
+    );
+  }
+
   if (!profileData) {
-    return <div className="page-loading"><div className="spinner"></div><p>Loading Profile...</p></div>;
+    return (
+      <div className="error-message">
+        Failed to load profile. Please try again later.
+      </div>
+    );
   }
 
   return (
     <div className="profile-page">
       <header className="profile-header">
-        <div className="profile-pic-container" onClick={() => document.getElementById("profile-pic-input")?.click()}>
-          {profilePic ? <img src={profilePic} alt="Profile" className="profile-pic" /> : <FaUser className="profile-pic-placeholder" />}
-          <div className="profile-pic-overlay"><FaCamera /></div>
-          <input type="file" id="profile-pic-input" accept="image/*" style={{ display: "none" }} onChange={handleProfilePicChange} />
+        <div
+          className="profile-pic-container"
+          onClick={() => document.getElementById("profile-pic-input")?.click()}
+        >
+          {profilePic ? (
+            <img src={profilePic} alt="Profile" className="profile-pic" />
+          ) : (
+            <FaRegUser className="profile-pic-placeholder" />
+          )}
+          <div className="profile-pic-overlay">
+            <FaCamera />
+          </div>
+          <input
+            type="file"
+            id="profile-pic-input"
+            accept="image/*"
+            style={{ display: "none" }}
+            onChange={handleProfilePicChange}
+          />
         </div>
         <div className="header-info">
           <h1>
@@ -289,10 +384,14 @@ const ProfilePage: React.FC = () => {
                     autoFocus
                     className="edit-input"
                   />
-                  {formErrors.firstname && <span className="field-error">{formErrors.firstname}</span>}
+                  {formErrors.firstname && (
+                    <span className="field-error">{formErrors.firstname}</span>
+                  )}
                 </div>
-              ) : (
+              ) : profileData.firstname !== "Not set" ? (
                 profileData.firstname
+              ) : (
+                "First Name Not Set"
               )}
             </span>{" "}
             <span onDoubleClick={() => handleDoubleClick("lastname")}>
@@ -306,10 +405,14 @@ const ProfilePage: React.FC = () => {
                     autoFocus
                     className="edit-input"
                   />
-                  {formErrors.lastname && <span className="field-error">{formErrors.lastname}</span>}
+                  {formErrors.lastname && (
+                    <span className="field-error">{formErrors.lastname}</span>
+                  )}
                 </div>
-              ) : (
+              ) : profileData.lastname !== "Not set" ? (
                 profileData.lastname
+              ) : (
+                "Last Name Not Set"
               )}
             </span>
           </h1>
@@ -318,13 +421,22 @@ const ProfilePage: React.FC = () => {
       </header>
 
       <nav className="profile-nav">
-        <button className={`nav-tab ${activeTab === "info" ? "active" : ""}`} onClick={() => setActiveTab("info")}>
+        <button
+          className={`nav-tab ${activeTab === "info" ? "active" : ""}`}
+          onClick={() => setActiveTab("info")}
+        >
           <FaUser /> Profile Info
         </button>
-        <button className={`nav-tab ${activeTab === "settings" ? "active" : ""}`} onClick={() => setActiveTab("settings")}>
+        <button
+          className={`nav-tab ${activeTab === "settings" ? "active" : ""}`}
+          onClick={() => setActiveTab("settings")}
+        >
           <FaCog /> Settings
         </button>
-        <button className={`nav-tab ${activeTab === "activity" ? "active" : ""}`} onClick={() => setActiveTab("activity")}>
+        <button
+          className={`nav-tab ${activeTab === "activity" ? "active" : ""}`}
+          onClick={() => setActiveTab("activity")}
+        >
           <FaHistory /> Activity
         </button>
       </nav>
@@ -348,10 +460,12 @@ const ProfilePage: React.FC = () => {
                         autoFocus
                         className="edit-input"
                       />
-                      {formErrors.email && <span className="field-error">{formErrors.email}</span>}
+                      {formErrors.email && (
+                        <span className="field-error">{formErrors.email}</span>
+                      )}
                     </div>
                   ) : (
-                    profileData.email
+                    profileData.email || "Not set"
                   )}
                 </span>
               </div>
@@ -371,10 +485,14 @@ const ProfilePage: React.FC = () => {
                         maxLength={10}
                         placeholder="XX XXX XXX"
                       />
-                      {formErrors.phone && <span className="field-error">{formErrors.phone}</span>}
+                      {formErrors.phone && (
+                        <span className="field-error">{formErrors.phone}</span>
+                      )}
                     </div>
+                  ) : rawPhone ? (
+                    `+216 ${formatPhoneDisplay(rawPhone)}`
                   ) : (
-                    rawPhone ? `+216 ${formatPhoneDisplay(rawPhone)}` : "Not set"
+                    "Not set"
                   )}
                 </span>
               </div>
@@ -394,10 +512,14 @@ const ProfilePage: React.FC = () => {
                         maxLength={19}
                         placeholder="XXXX-XXXX-XXXX-XXXX"
                       />
-                      {formErrors.wallet && <span className="field-error">{formErrors.wallet}</span>}
+                      {formErrors.wallet && (
+                        <span className="field-error">{formErrors.wallet}</span>
+                      )}
                     </div>
+                  ) : rawWallet ? (
+                    formatWalletDisplay(rawWallet)
                   ) : (
-                    rawWallet ? formatWalletDisplay(rawWallet) : "Not linked"
+                    "Not linked"
                   )}
                 </span>
               </div>
@@ -413,26 +535,30 @@ const ProfilePage: React.FC = () => {
                 <h3>Change Password</h3>
                 <div className="form-group">
                   <label>New Password</label>
-                  <div className=" input-container">
+                  <div className="input-container">
                     <input
                       type="password"
                       value={newPassword}
                       onChange={(e) => handleNewPasswordChange(e.target.value)}
                       placeholder="Enter new password"
                     />
-                    {formErrors.newPassword && <span className="field-error">{formErrors.newPassword}</span>}
+                    {formErrors.newPassword && (
+                      <span className="field-error">{formErrors.newPassword}</span>
+                    )}
                   </div>
                 </div>
                 <div className="form-group">
                   <label>Confirm Password</label>
-                  <div className=" input-container">
+                  <div className="input-container">
                     <input
                       type="password"
                       value={confirmPassword}
                       onChange={(e) => handleConfirmPasswordChange(e.target.value)}
                       placeholder="Confirm new password"
                     />
-                    {formErrors.confirmPassword && <span className="field-error">{formErrors.confirmPassword}</span>}
+                    {formErrors.confirmPassword && (
+                      <span className="field-error">{formErrors.confirmPassword}</span>
+                    )}
                   </div>
                 </div>
                 <button className="update-btn" onClick={handlePasswordChange}>
@@ -441,7 +567,9 @@ const ProfilePage: React.FC = () => {
               </div>
               <div className="settings-item">
                 <h3>Two-Factor Authentication</h3>
-                <p>Status: <span className="status">Enabled</span></p>
+                <p>
+                  Status: <span className="status">Enabled</span>
+                </p>
                 <button className="action-btn">Enable 2FA</button>
               </div>
             </div>

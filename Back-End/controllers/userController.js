@@ -96,6 +96,36 @@ class UserController {
         }
     }
 
+    // get profile data
+    static async getProfile(req, res) {
+        console.log("Received request to get profile", req.user);
+        try {
+            const userID = req.user.userID;
+            if (!userID) {
+                return res.status(401).json({ error: "Unauthorized: User ID not found in token" });
+            }
+
+            console.log("User ID from token:", userID);
+            const user = await UserService.getUserById(userID);
+            if (!user) {
+                return res.status(404).json({ error: "User not found" });
+            }
+
+            // Prepare response with base64-encoded PFP
+            const responseUser = {
+                ...user.toJSON(), // Convert Sequelize instance to plain object
+            };
+            if (responseUser.PFP) {
+                responseUser.PFP = responseUser.PFP.toString("base64"); // Convert buffer to base64 string
+            }
+
+            res.status(200).json(responseUser);
+        } catch (error) {
+            console.error(`${new Date().toISOString()} - Get profile failed:`, error);
+            res.status(400).json({ error: error.message || "Failed to get profile due to an internal error" });
+        }
+    }
+
     static async updateProfile(req, res) {
         console.log("Received request to update profile", req.body, req.file);
         try {
