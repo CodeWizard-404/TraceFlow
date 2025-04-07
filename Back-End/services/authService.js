@@ -89,6 +89,7 @@ class AuthService {
                     expiresAt: null,
                 });
 
+                // Optionally, mark other devices for this user as inactive
                 await TrustedDevice.update(
                     { status: 'inactive', expiresAt: new Date(Date.now() + 30 * 24 * 60 * 60 * 1000) },
                     { where: { userID: user.userID, deviceIdentifier: { [Op.ne]: deviceIdentifier } } }
