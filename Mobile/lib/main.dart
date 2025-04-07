@@ -109,20 +109,22 @@ class AuthWrapper extends StatelessWidget {
       );
     }
 
-    // If no token or user, or if user is not a Supervisor, show login screen
-    if (authProvider.token == null || authProvider.user == null || !authProvider.isSupervisor) {
-      if (authProvider.token != null && !authProvider.isSupervisor) {
-        debugPrint('Clearing invalid state: non-Supervisor with token');
-        authProvider.logout();
-      }
+    // If no token or user, show login screen
+    if (authProvider.token == null || authProvider.user == null) {
       return const LoginScreen();
     }
 
-    // If token exists and user is a Supervisor, show TimesheetDetailsScreen
-    return const TimesheetDetailsScreen();
+    // If token exists and user is a Supervisor, show home page (TimesheetDetailsScreen)
+    if (authProvider.isSupervisor) {
+      return const TimesheetDetailsScreen();
+    }
+
+    // If token exists but user isn’t a Supervisor, logout and show login
+    debugPrint('Clearing invalid state: non-Supervisor with token');
+    authProvider.logout();
+    return const LoginScreen();
   }
 }
-
 class RouteLogger extends NavigatorObserver {
   @override
   void didPush(Route route, Route? previousRoute) {

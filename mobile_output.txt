@@ -1,5 +1,5 @@
 MOBILE PROJECT FILES
-Generated on: 1742409167.4223557
+Generated on: 1742804382.3710532
 ==================================================
 
 ==================================================
@@ -92,6 +92,7 @@ import 'package:flutter/material.dart';
 import 'package:provider/provider.dart';
 import '../../providers/theme_provider.dart';
 import '../../providers/auth_provider.dart';
+import '../../screens/Auth/ProfileScreen.dart';
 import '../../screens/Auth/login_screen.dart';
 import '../../screens/Receipt/receipt_books.dart';
 import '../../screens/Timesheet/Timesheet_details.dart';
@@ -140,6 +141,19 @@ class AppSidebar extends StatelessWidget {
                 height: 1,
                 color: theme.dividerColor,
                 margin: const EdgeInsets.symmetric(horizontal: 16),
+              ),
+              Padding(
+                padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 8),
+                child: ListTile(
+                  leading: Icon(Icons.person, color: theme.colorScheme.primary),
+                  title: const Text('Profile'),
+                  onTap: () {
+                    Navigator.pushReplacement(
+                      context,
+                      MaterialPageRoute(builder: (_) => const ProfileScreen()),
+                    );
+                  },
+                ),
               ),
               Padding(
                 padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 8),
@@ -447,6 +461,26 @@ class CustomChip extends StatelessWidget {
       backgroundColor: backgroundColor ?? theme.colorScheme.primary.withOpacity(0.1),
       shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(8)),
       padding: const EdgeInsets.symmetric(horizontal: 8),
+    );
+  }
+}
+
+==================================================
+File contents: C:\Users\Kayto\Desktop\IT\Projects\Stage\Stage PFE\TraceFlow\Mobile\lib\widgets\commen\custom_formatter.dart
+==================================================
+import 'package:flutter/services.dart';
+
+class CustomFormatter extends TextInputFormatter {
+  final String Function(String) format;
+
+  CustomFormatter(this.format);
+
+  @override
+  TextEditingValue formatEditUpdate(TextEditingValue oldValue, TextEditingValue newValue) {
+    final formattedText = format(newValue.text);
+    return TextEditingValue(
+      text: formattedText,
+      selection: TextSelection.collapsed(offset: formattedText.length),
     );
   }
 }
@@ -832,11 +866,13 @@ class CustomTextButton extends StatelessWidget {
   final String label;
   final VoidCallback onPressed;
   final Color? color;
+  final bool enabled; // Added
 
   const CustomTextButton({
     required this.label,
     required this.onPressed,
     this.color,
+    this.enabled = true, // Default to true
     super.key,
   });
 
@@ -844,11 +880,11 @@ class CustomTextButton extends StatelessWidget {
   Widget build(BuildContext context) {
     final theme = Theme.of(context);
     return TextButton(
-      onPressed: onPressed,
+      onPressed: enabled ? onPressed : null, // Disable button if not enabled
       child: Text(
         label,
         style: TextStyle(
-          color: color ?? theme.colorScheme.primary,
+          color: color ?? (enabled ? theme.colorScheme.primary : theme.colorScheme.primary.withOpacity(0.5)),
           fontSize: 14,
           fontWeight: FontWeight.w500,
           letterSpacing: 0.5,
@@ -862,6 +898,7 @@ class CustomTextButton extends StatelessWidget {
 File contents: C:\Users\Kayto\Desktop\IT\Projects\Stage\Stage PFE\TraceFlow\Mobile\lib\widgets\commen\text_field.dart
 ==================================================
 import 'package:flutter/material.dart';
+import 'package:flutter/services.dart'; // Required for FilteringTextInputFormatter
 
 class CustomTextField extends StatelessWidget {
   final TextEditingController controller;
@@ -872,6 +909,11 @@ class CustomTextField extends StatelessWidget {
   final TextInputType? keyboardType;
   final String? Function(String?)? validator;
   final VoidCallback? onSuffixPressed;
+  final bool enabled;
+  final int? maxLength;
+  final void Function(String)? onChanged; // Added
+  final List<TextInputFormatter>? inputFormatters; // Added
+  final bool autofocus; // Added
 
   const CustomTextField({
     required this.controller,
@@ -882,6 +924,11 @@ class CustomTextField extends StatelessWidget {
     this.keyboardType,
     this.validator,
     this.onSuffixPressed,
+    this.enabled = true,
+    this.maxLength,
+    this.onChanged, // Added
+    this.inputFormatters, // Added
+    this.autofocus = false, // Added, default to false
     super.key,
   });
 
@@ -898,7 +945,7 @@ class CustomTextField extends StatelessWidget {
         suffixIcon: suffixIcon != null
             ? IconButton(
           icon: Icon(suffixIcon, color: theme.colorScheme.primary.withOpacity(0.8)),
-          onPressed: onSuffixPressed,
+          onPressed: enabled ? onSuffixPressed : null,
         )
             : null,
         border: OutlineInputBorder(
@@ -917,6 +964,11 @@ class CustomTextField extends StatelessWidget {
       keyboardType: keyboardType,
       validator: validator,
       style: theme.textTheme.bodyMedium,
+      enabled: enabled,
+      maxLength: maxLength,
+      onChanged: onChanged, // Added
+      inputFormatters: inputFormatters, // Added
+      autofocus: autofocus, // Added
     );
   }
 }

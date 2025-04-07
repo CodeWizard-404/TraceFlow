@@ -13,6 +13,34 @@ class UserProvider with ChangeNotifier {
   List<User> get managers => _managers;
   bool get isLoading => _isLoading;
 
+  Future<void> fetchUserProfile(String token) async {
+    _isLoading = true;
+    notifyListeners();
+    try {
+      _currentUser = await UserService.fetchUserProfile(token);
+    } catch (e) {
+      _currentUser = null;
+      throw Exception('Failed to fetch user profile: $e');
+    } finally {
+      _isLoading = false;
+      notifyListeners();
+    }
+  }
+
+  Future<void> updateProfile(String token, Map<String, dynamic> data) async {
+    _isLoading = true;
+    notifyListeners();
+    try {
+      _currentUser = await UserService.updateProfile(token, data);
+    } catch (e) {
+      throw Exception('Failed to update profile: $e');
+    } finally {
+      _isLoading = false;
+      notifyListeners();
+    }
+  }
+
+  // Existing methods...
   Future<void> fetchUserById(String userID, String token) async {
     _isLoading = true;
     notifyListeners();
@@ -46,7 +74,6 @@ class UserProvider with ChangeNotifier {
     notifyListeners();
     try {
       _users = await UserService.getUsersByRole(role, token);
-      print('Users for role $role: ${_users.length}'); // Debug
     } catch (e) {
       _users = [];
       throw Exception('Failed to fetch users by role $role: $e');

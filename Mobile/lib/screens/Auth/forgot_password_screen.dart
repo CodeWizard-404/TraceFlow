@@ -1,4 +1,3 @@
-import 'package:TraceFlow/screens/Auth/verify_reset_screen.dart';
 import 'package:flutter/material.dart';
 import 'package:provider/provider.dart';
 import '../../providers/auth_provider.dart';
@@ -8,6 +7,7 @@ import '../../widgets/commen/spacer.dart';
 import '../../widgets/commen/text_button.dart';
 import '../../widgets/commen/text_field.dart';
 import '../../widgets/commen/title_text.dart';
+import 'verify_reset_screen.dart';
 import 'package:flutter/foundation.dart';
 
 class ForgotPasswordScreen extends StatefulWidget {
@@ -24,57 +24,47 @@ class ForgotPasswordScreenState extends State<ForgotPasswordScreen> {
   @override
   void initState() {
     super.initState();
-    debugPrint('ForgotPasswordScreen initialized');
+    if (kDebugMode) print('ForgotPasswordScreen initialized');
   }
 
   @override
   void dispose() {
     _identifierController.dispose();
-    debugPrint('ForgotPasswordScreen disposed');
+    if (kDebugMode) print('ForgotPasswordScreen disposed');
     super.dispose();
   }
 
   Future<void> _initiatePasswordReset() async {
     if (!_formKey.currentState!.validate()) {
-      debugPrint('Form validation failed');
+      if (kDebugMode) print('Form validation failed');
       return;
     }
 
     final authProvider = Provider.of<AuthProvider>(context, listen: false);
-    try {
-      debugPrint('Initiating password reset...');
-      await authProvider.initiatePasswordReset(_identifierController.text.trim());
-      if (mounted) {
-        debugPrint('Navigating to VerifyResetScreen');
-        Navigator.push(
-          context,
-          MaterialPageRoute(builder: (_) => const VerifyResetScreen()),
-        );
-      }
-    } catch (e) {
-      debugPrint('Password reset initiation error: $e');
-      if (mounted) {
-        _showErrorSnackBar(_parseError(e.toString()));
-      }
+    await authProvider.initiatePasswordReset(_identifierController.text.trim());
+
+    if (authProvider.userID != null && mounted) {
+      if (kDebugMode) print('Navigating to VerifyResetScreen');
+      Navigator.push(
+        context,
+        MaterialPageRoute(builder: (_) => const VerifyResetScreen()),
+      );
+    }
+
+    if (authProvider.errorMessage != null && mounted) {
+      _showErrorSnackBar(authProvider.errorMessage!);
+      authProvider.clearError();
     }
   }
 
   void _showErrorSnackBar(String message) {
     if (mounted) {
-      debugPrint('Showing error snackbar: $message');
+      if (kDebugMode) print('Showing error snackbar: $message');
       CustomSnackBar.show(
         context: context,
         message: message,
         backgroundColor: Theme.of(context).colorScheme.error.withOpacity(0.9),
       );
-    }
-  }
-
-  String _parseError(String error) {
-    if (error.contains('User not found')) {
-      return 'User not found';
-    } else {
-      return 'An error occurred. Please try again.';
     }
   }
 
@@ -89,7 +79,7 @@ class ForgotPasswordScreenState extends State<ForgotPasswordScreen> {
   @override
   Widget build(BuildContext context) {
     final authProvider = Provider.of<AuthProvider>(context);
-    debugPrint('Building ForgotPasswordScreen, isLoading: ${authProvider.isLoading}');
+    if (kDebugMode) print('Building ForgotPasswordScreen, isLoading: ${authProvider.isLoading}');
     return Scaffold(
       backgroundColor: Theme.of(context).scaffoldBackgroundColor,
       body: SafeArea(
@@ -109,6 +99,7 @@ class ForgotPasswordScreenState extends State<ForgotPasswordScreen> {
                     prefixIcon: Icons.person,
                     keyboardType: TextInputType.emailAddress,
                     validator: _validateIdentifier,
+                    enabled: !authProvider.isLoading,
                   ),
                   const CustomSpacer(height: 24),
                   CustomButton(

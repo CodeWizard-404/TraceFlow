@@ -1,25 +1,10 @@
 import 'dart:convert';
 import 'package:http/http.dart' as http;
-import 'package:device_info_plus/device_info_plus.dart';
-import 'dart:io';
 import '../utils/constants.dart';
 
 class AuthService {
-  static Future<String> _getDeviceIdentifier() async {
-    final deviceInfo = DeviceInfoPlugin();
-    if (Platform.isAndroid) {
-      final androidInfo = await deviceInfo.androidInfo;
-      return androidInfo.id; // Unique device ID for Android
-    } else if (Platform.isIOS) {
-      final iosInfo = await deviceInfo.iosInfo;
-      return iosInfo.identifierForVendor ?? 'unknown_ios_device';
-    }
-    return 'unknown_device';
-  }
-
   static Future<Map<String, dynamic>> login(
-      String identifier, String password) async {
-    final deviceIdentifier = await _getDeviceIdentifier();
+      String identifier, String password, String deviceIdentifier, String otpMethod) async {
     final response = await http.post(
       Uri.parse('$baseUrl/auth/login'),
       headers: {'Content-Type': 'application/json'},
@@ -27,18 +12,18 @@ class AuthService {
         'identifier': identifier,
         'password': password,
         'deviceIdentifier': deviceIdentifier,
+        'otpMethod': otpMethod,
       }),
     );
     if (response.statusCode == 200) {
       return json.decode(response.body);
     } else {
-      throw Exception('Login failed: ${response.body}');
+      throw Exception(response.body);
     }
   }
 
   static Future<Map<String, dynamic>> verify2FA(
-      String userID, String otpCode, bool trustDevice) async {
-    final deviceIdentifier = await _getDeviceIdentifier();
+      String userID, String otpCode, String deviceIdentifier, bool trustDevice) async {
     final response = await http.post(
       Uri.parse('$baseUrl/auth/verify-2fa'),
       headers: {'Content-Type': 'application/json'},
@@ -52,23 +37,24 @@ class AuthService {
     if (response.statusCode == 200) {
       return json.decode(response.body);
     } else {
-      throw Exception('2FA verification failed: ${response.body}');
+      throw Exception(response.body);
     }
   }
 
-  static Future<void> resend2FA(String userID) async {
+  static Future<Map<String, dynamic>> resend2FA(String userID, String method) async {
     final response = await http.post(
       Uri.parse('$baseUrl/auth/resend-2fa'),
       headers: {'Content-Type': 'application/json'},
       body: json.encode({'userID': userID}),
     );
-    if (response.statusCode != 200) {
-      throw Exception('Failed to resend 2FA: ${response.body}');
+    if (response.statusCode == 200) {
+      return json.decode(response.body);
+    } else {
+      throw Exception(response.body);
     }
   }
 
-  static Future<Map<String, dynamic>> initiatePasswordReset(
-      String identifier) async {
+  static Future<Map<String, dynamic>> initiatePasswordReset(String identifier) async {
     final response = await http.post(
       Uri.parse('$baseUrl/auth/password-reset/initiate'),
       headers: {'Content-Type': 'application/json'},
@@ -77,12 +63,11 @@ class AuthService {
     if (response.statusCode == 200) {
       return json.decode(response.body);
     } else {
-      throw Exception('Failed to initiate password reset: ${response.body}');
+      throw Exception(response.body);
     }
   }
 
-  static Future<Map<String, dynamic>> verifyPasswordResetOTP(
-      String userID, String otpCode) async {
+  static Future<Map<String, dynamic>> verifyPasswordResetOTP(String userID, String otpCode) async {
     final response = await http.post(
       Uri.parse('$baseUrl/auth/password-reset/verify'),
       headers: {'Content-Type': 'application/json'},
@@ -91,7 +76,7 @@ class AuthService {
     if (response.statusCode == 200) {
       return json.decode(response.body);
     } else {
-      throw Exception('Failed to verify reset OTP: ${response.body}');
+      throw Exception(response.body);
     }
   }
 
@@ -104,7 +89,7 @@ class AuthService {
     if (response.statusCode == 200) {
       return;
     } else {
-      throw Exception('Failed to reset password: ${response.body}');
+      throw Exception(response.body);
     }
   }
 }

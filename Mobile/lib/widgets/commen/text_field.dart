@@ -1,4 +1,5 @@
 import 'package:flutter/material.dart';
+import 'package:flutter/services.dart'; // Required for FilteringTextInputFormatter
 
 class CustomTextField extends StatelessWidget {
   final TextEditingController controller;
@@ -9,6 +10,11 @@ class CustomTextField extends StatelessWidget {
   final TextInputType? keyboardType;
   final String? Function(String?)? validator;
   final VoidCallback? onSuffixPressed;
+  final bool enabled;
+  final int? maxLength;
+  final void Function(String)? onChanged; // Added
+  final List<TextInputFormatter>? inputFormatters; // Added
+  final bool autofocus; // Added
 
   const CustomTextField({
     required this.controller,
@@ -19,6 +25,11 @@ class CustomTextField extends StatelessWidget {
     this.keyboardType,
     this.validator,
     this.onSuffixPressed,
+    this.enabled = true,
+    this.maxLength,
+    this.onChanged, // Added
+    this.inputFormatters, // Added
+    this.autofocus = false, // Added, default to false
     super.key,
   });
 
@@ -35,7 +46,7 @@ class CustomTextField extends StatelessWidget {
         suffixIcon: suffixIcon != null
             ? IconButton(
           icon: Icon(suffixIcon, color: theme.colorScheme.primary.withOpacity(0.8)),
-          onPressed: onSuffixPressed,
+          onPressed: enabled ? onSuffixPressed : null,
         )
             : null,
         border: OutlineInputBorder(
@@ -54,6 +65,11 @@ class CustomTextField extends StatelessWidget {
       keyboardType: keyboardType,
       validator: validator,
       style: theme.textTheme.bodyMedium,
+      enabled: enabled,
+      maxLength: maxLength,
+      onChanged: onChanged, // Added
+      inputFormatters: inputFormatters, // Added
+      autofocus: autofocus, // Added
     );
   }
 }

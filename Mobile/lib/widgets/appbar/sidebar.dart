@@ -2,6 +2,7 @@ import 'package:flutter/material.dart';
 import 'package:provider/provider.dart';
 import '../../providers/theme_provider.dart';
 import '../../providers/auth_provider.dart';
+import '../../screens/Auth/ProfileScreen.dart';
 import '../../screens/Auth/login_screen.dart';
 import '../../screens/Receipt/receipt_books.dart';
 import '../../screens/Timesheet/Timesheet_details.dart';
@@ -50,6 +51,19 @@ class AppSidebar extends StatelessWidget {
                 height: 1,
                 color: theme.dividerColor,
                 margin: const EdgeInsets.symmetric(horizontal: 16),
+              ),
+              Padding(
+                padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 8),
+                child: ListTile(
+                  leading: Icon(Icons.person, color: theme.colorScheme.primary),
+                  title: const Text('Profile'),
+                  onTap: () {
+                    Navigator.pushReplacement(
+                      context,
+                      MaterialPageRoute(builder: (_) => const ProfileScreen()),
+                    );
+                  },
+                ),
               ),
               Padding(
                 padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 8),
