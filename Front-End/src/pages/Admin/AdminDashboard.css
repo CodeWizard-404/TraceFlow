@@ -275,6 +275,7 @@ body.dark .sort-card button {
 
 body.dark .sort-card button:hover {
     background: #63b3ed;
+    color: #fff;
 }
 
 .action-button {
