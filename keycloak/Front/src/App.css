@@ -1,0 +1,508 @@
+/* @tailwind base;
+@tailwind components;
+@tailwind utilities; */
+
+
+/* src/App.css */
+.app-container {
+  display: flex;
+  flex-direction: column;
+  flex: 1;
+  /* Grow to fill the body’s height */
+  height: 100vh;
+
+}
+
+main {
+  flex: 1 0 auto;
+  /* Grow to fill available space and push footer down */
+  /* Optional: Add some space before the footer */
+}
+
+.footer {
+  flex-shrink: 0;
+  /* Prevent shrinking */
+  width: 100%;
+  background: #f8fafc;
+  padding: 1rem;
+  /* Add some padding for better appearance */
+  z-index: 10;
+  /* Ensure it stays above other content if needed */
+}
+
+/* Default styles (Light theme) */
+body {
+  height: 100vh;
+  margin: 0;
+  flex-direction: column;
+  font-family: Arial, sans-serif;
+  background: linear-gradient(135deg, #f8fafc 0%, #eef2f6 100%);
+  color: #1f2937;
+}
+
+.spinner {
+  width: 2rem;
+  height: 2rem;
+  border: 3px solid #4cb1c7;
+  border-top: 3px solid transparent;
+  border-radius: 50%;
+  animation: spin 1s linear infinite;
+}
+
+.permissions-loading,
+.page-loading{
+  flex: 1;
+  display: flex;
+  justify-content: center;
+  align-items: center;
+  height: 100vh;
+  width: 100vw;
+  flex-direction: column;
+  text-align: center;
+  font-size: 1.2rem;
+  color: #6b7280 ;
+  font-weight: 600 !important;
+}
+.page-loading  p{
+  margin-top: 0.3rem;
+  color: #6b7280 !important;
+}
+
+
+
+body::-webkit-scrollbar {
+  width: 12px;
+}
+
+body::-webkit-scrollbar-track {
+  background: #f8fafc;
+}
+
+body.dark::-webkit-scrollbar-track {
+  background: #2b2b2b;
+}
+
+body::-webkit-scrollbar-thumb {
+  background-color: #4cb1c7;
+  border-radius: 6px;
+  border: 3px solid #f8fafc;
+}
+
+body.dark::-webkit-scrollbar-thumb {
+  background-color: #63b3ed;
+  border: 3px solid #2b2b2b;
+}
+
+
+/* Dark theme overrides */
+body.dark {
+  background: linear-gradient(135deg, #1e1e1e 0%, #1e1e1e 100%);
+  color: #e2e8f0;
+}
+
+/* Ensure all generic text elements switch color */
+body.dark p,
+body.dark span,
+body.dark li,
+body.dark h1,
+body.dark h2,
+body.dark h3,
+body.dark label {
+  color: #ffffff;
+}
+
+/* App Container */
+body.dark .app-container {
+  background: none;
+}
+
+/* Header */
+body.dark .header,
+body.dark .footer {
+  background: #26292e;
+  box-shadow: 0 0.375rem 1.25rem rgba(0, 0, 0, 0.3);
+  color: #e2e8f0;
+}
+
+body.dark .header h1 {
+  color: #e2e8f0;
+}
+
+/* TimesheetForm */
+body.dark .timesheet-form-container {
+  background: none;
+}
+
+body.dark .timesheet-form-container .form-header h1 {
+  color: #e2e8f0;
+}
+
+body.dark .timesheet-form-container .form-card {
+  background: #262626;
+  box-shadow: 0 0.375rem 1.25rem rgba(0, 0, 0, 0.3);
+}
+
+body.dark .timesheet-form-container .form-group label {
+  color: #63b3ed;
+}
+
+body.dark .timesheet-form-container .form-group input[type="date"],
+body.dark .timesheet-form-container .form-group input[type="time"],
+body.dark .timesheet-form-container .form-group .search-input,
+body.dark .timesheet-form-container .form-group select {
+  background: #262626;
+  border-color: #4a5568;
+  color: #ffffff;
+}
+
+body.dark input[type="date"]::-webkit-calendar-picker-indicator,
+body.dark input[type="time"]::-webkit-calendar-picker-indicator {
+  filter: invert(1) hue-rotate(180deg);
+  /* Alternative way to adjust color */
+}
+
+body.dark .timesheet-form-container .submit-btn {
+  background: #63b3ed;
+  color: #fff;
+}
+
+body.dark .timesheet-form-container .submit-btn:hover:not(:disabled) {
+  background: #4299e1;
+}
+
+body.dark .timesheet-form-container .error,
+body.dark .timesheet-form-container .error-text {
+  color: #f687b3;
+}
+
+body.dark .timesheet-form-container .selected-item {
+  background: #63b3ed;
+}
+
+body.dark .timesheet-form-container .selected-item:hover {
+  background: #4299e1;
+}
+
+/* Timesheets */
+body.dark .timesheets-container {
+  background: none;
+}
+
+body.dark .timesheets-container .timesheets-header .view-toggle {
+  background: #262626;
+}
+
+body.dark .timesheets-container .toggle-btn {
+  color: #a0b1c0;
+}
+
+body.dark .timesheets-container .toggle-btn.active {
+  background: #63b3ed;
+  color: #fff;
+}
+
+body.dark .timesheets-container .nav-btn,
+body.dark .timesheets-container .current-btn {
+  background: #262626;
+  color: #63b3ed;
+  border-color: #63b3ed;
+}
+
+body.dark .timesheets-container .create-btn {
+  background: #63b3ed;
+  border: 1px solid #262626;
+
+}
+
+body.dark .timesheets-container .nav-btn:hover,
+body.dark .timesheets-container .current-btn:hover {
+  background: #63b3ed;
+  color: #fff;
+}
+
+body.dark .timesheets-container .create-btn:hover {
+  background: #262626;
+  color: #63b3ed;
+  border-color: #63b3ed;
+  border: 1px solid #63b3ed;
+}
+
+body.dark .timesheets-container .year-navigation h1,
+body.dark .timesheets-container .month-header h2,
+body.dark .timesheets-container .week-header h2,
+body.dark .timesheets-container .day-header h2,
+body.dark .timesheets-container .month-card h2,
+body.dark .timesheets-container .week-card h3 {
+  color: #e2e8f0;
+}
+
+body.dark .timesheets-container .month-card,
+body.dark .timesheets-container .week-card,
+body.dark .timesheets-container .week-details {
+  background: #262626;
+  color: #e2e8f0;
+  box-shadow: 0 0.1rem 0.5rem rgba(0, 0, 0, 0.185);
+}
+
+body.dark .timesheets-container .week-tile,
+body.dark .timesheets-container .week-tile,
+body.dark .timesheets-container .day-tile,
+body.dark .timesheets-container .visit-card {
+  background: #353535;
+  box-shadow: 0 0.1rem 0.5rem rgba(0, 0, 0, 0.185);
+}
+
+body.dark .timesheets-container .visit-card .visit-reasons,
+body.dark .timesheets-container .visit-card .visit-location,
+body.dark .timesheets-container .visit-card .visit-time {
+  color: #e2e8f0;
+}
+
+body.dark .timesheets-container .week-tile:hover,
+body.dark .timesheets-container .day-tile:hover {
+  background: #63b3ed;
+}
+
+body.dark .timesheets-container .week-range,
+body.dark .timesheets-container .visit-count,
+body.dark .timesheets-container .week-status,
+body.dark .timesheets-container .visit-location,
+body.dark .timesheets-container .visit-duration,
+body.dark .timesheets-container .week-card p {
+  color: #a0aec0;
+}
+
+
+
+
+
+/* VisitDetails */
+body.dark .visit-details-container {
+  background: none;
+}
+
+body.dark .visit-details-container .visit-details-hero {
+  background: linear-gradient(135deg, #63b3ed 0%, #4299e1 100%);
+}
+
+body.dark .visit-details-container .visit-details-hero h1 {
+  color: #e2e8f0;
+}
+
+body.dark .visit-details-container .visit-details-card {
+  background: #2d3748;
+  box-shadow: 0 0.375rem 1.25rem rgba(0, 0, 0, 0.3);
+}
+
+body.dark .visit-details-container .visit-details-card h2 {
+  color: #63b3ed;
+}
+
+body.dark .visit-details-container .card-content p,
+body.dark .visit-details-container .card-content li {
+  color: #e2e8f0;
+}
+
+body.dark .visit-details-container .no-data {
+  color: #a0aec0;
+}
+
+body.dark .visit-details-container .visit-details-log-btn,
+body.dark .visit-details-container .visit-details-back-btn,
+body.dark .visit-details-container .validate-visit-btn {
+  background: #63b3ed;
+}
+
+body.dark .visit-details-container .reject-visit-btn {
+  background: #d02f70;
+}
+
+body.dark .visit-details-container .visit-details-log-btn:hover,
+body.dark .visit-details-container .visit-details-back-btn:hover,
+body.dark .visit-details-container .validate-visit-btn:hover {
+  background: #4299e1;
+}
+
+body.dark .visit-details-container .reject-visit-btn:hover {
+  background: #b70a4f;
+}
+
+
+body.dark .visit-details-container .visit-details-error-card {
+  background: #2d3748;
+  border-color: #f687b3;
+}
+
+/* QRScan */
+body.dark .qr-scan-container {
+  background: none;
+}
+
+body.dark .qr-scan-container .qr-header h1 {
+  color: #e2e8f0;
+}
+
+body.dark .qr-scan-container .qr-header p,
+body.dark .qr-scan-container .qr-status p {
+  color: #a0aec0;
+}
+
+body.dark .qr-scan-container .qr-scan-card {
+  background: #2d3748;
+  box-shadow: 0 0.375rem 1.25rem rgba(0, 0, 0, 0.3);
+}
+
+body.dark .qr-scan-container .qr-reader {
+  border-color: #63b3ed;
+}
+
+body.dark .qr-scan-container .qr-back-btn {
+  background: #63b3ed;
+}
+
+body.dark .qr-scan-container .qr-back-btn:hover {
+  background: #4299e1;
+}
+
+body.dark .qr-scan-container .qr-error-card {
+  background: #2d3748;
+  border-color: #f687b3;
+}
+
+body.dark .qr-scan-container .qr-error-card h2 {
+  color: #f687b3;
+}
+
+/* VisitValidation */
+body.dark .visit-validation-container {
+  background: none;
+}
+
+body.dark .visit-validation-container .visit-header-0 {
+  background: linear-gradient(135deg, #63b3ed 0%, #4299e1 100%);
+}
+
+body.dark .visit-validation-container .visit-header-0 h1 {
+  color: #e2e8f0;
+}
+
+body.dark .visit-validation-container .visit-header-0 p {
+  color: #e6e6e6;
+}
+
+body.dark .visit-validation-container .visit-card {
+  background: #222222;
+  color: #e2e8f0;
+  box-shadow: 0 0.375rem 1.25rem rgba(0, 0, 0, 0.3);
+}
+
+body.dark .visit-validation-container .details-section,
+body.dark .visit-validation-container .reasons-section,
+body.dark .visit-validation-container .checklist-section,
+body.dark .visit-validation-container .checklist-section .custom-checkbox-input:checked+.custom-checkbox,
+body.dark .visit-validation-container .checklist-section .custom-checkbox body.dark .visit-validation-container .checklist-section li.checked {
+  background: #333333;
+  border-color: #63b3ed;
+}
+
+body.dark .visit-validation-container .details-section h2,
+body.dark .visit-validation-container .reasons-section h2,
+body.dark .visit-validation-container .checklist-section h2 {
+  color: #63b3ed;
+}
+
+
+
+body.dark .visit-validation-container .detail-item p,
+body.dark .visit-validation-container .reasons-section li,
+body.dark .visit-validation-container .checklist-section span {
+  color: #e2e8f0;
+}
+
+body.dark .visit-validation-container .detail-item span {
+  color: #a0aec0;
+}
+
+body.dark .visit-validation-container .progress-fill {
+  background: #63b3ed;
+}
+
+body.dark .visit-validation-container .validate-btn,
+body.dark .visit-validation-container .back-btn {
+  background: #63b3ed;
+  color: #ffffff;
+}
+
+body.dark .visit-validation-container .validate-btn:hover:not(:disabled),
+body.dark .visit-validation-container .back-btn:hover:not(:disabled) {
+  background: #4299e1;
+}
+
+/* VisitValidationDetail */
+body.dark .visit-validation-detail-container {
+  background: none;
+}
+
+body.dark .visit-validation-detail-container .visit-header h1 {
+  color: #e2e8f0;
+}
+
+body.dark .visit-validation-detail-container .visit-header p {
+  color: #a0aec0;
+}
+
+body.dark .visit-validation-detail-container .visit-card {
+  background: #2d3748;
+  color: #e2e8f0;
+  box-shadow: 0 0.375rem 1.25rem rgba(0, 0, 0, 0.3);
+}
+
+body.dark .visit-validation-detail-container .detail-section h2 {
+  color: #63b3ed;
+}
+
+body.dark .visit-validation-detail-container .detail-section p,
+body.dark .visit-validation-detail-container .detail-section li {
+  color: #e2e8f0;
+}
+
+body.dark .visit-validation-detail-container .validate-btn,
+body.dark .visit-validation-detail-container .reject-btn,
+body.dark .visit-validation-detail-container .back-btn {
+  background: #63b3ed;
+}
+
+body.dark .visit-validation-detail-container .validate-btn:hover:not(:disabled),
+body.dark .visit-validation-detail-container .reject-btn:hover:not(:disabled),
+body.dark .visit-validation-detail-container .back-btn:hover {
+  background: #4299e1;
+}
+
+body.dark .visit-validation-detail-container .reject-btn {
+  background: #f687b3;
+}
+
+body.dark .visit-validation-detail-container .reject-btn:hover:not(:disabled) {
+  background: #d53f8c;
+}
+
+/* Bootstrap Overrides */
+body.dark .btn-primary {
+  background: #63b3ed;
+  border-color: #63b3ed;
+}
+
+body.dark .btn-primary:hover {
+  background: #4299e1;
+  border-color: #4299e1;
+}
+
+body.dark .form-control {
+  background: #2d3748;
+  color: #e2e8f0;
+  border-color: #4a5568;
+}
+
+body.dark .form-control::placeholder {
+  color: #d1d3d739 !important;
+}
