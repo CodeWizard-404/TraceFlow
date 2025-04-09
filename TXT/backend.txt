@@ -31,3 +31,5 @@ npm install multer
 npm install -g npm-check-updates
 
 npm install canvas
+
+npm install express-oauth2-jwt-bearer axios.
