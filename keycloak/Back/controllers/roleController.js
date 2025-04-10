@@ -124,6 +124,26 @@ class RoleController {
             res.status(404).json({ error: error.message || 'User not found' });
         }
     }
+
+    static async resetMainRoles(req, res) {
+        console.log('reset main roles', true);
+        try {
+            const result = await RoleService.resetMainRolesToDefault();
+            res.status(200).json({
+                message: "Main roles reset to default successfully",
+                details: result
+            });
+        } catch (error) {
+            console.error(`${new Date().toISOString()} - Reset main roles failed:`, error);
+            res.status(500).json({
+                error: error.message || 'Failed to reset main roles due to an internal error'
+            });
+        }
+    }
 }
+
+
+
+
 
 module.exports = RoleController;

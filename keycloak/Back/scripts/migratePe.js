@@ -1,7 +1,13 @@
 const axios = require('axios');
-const { Role, Permission } = require('../models');
+const { Role, Permission, sequelize } = require('../models');
 const { setupAssociations } = require('../models');
-require('dotenv').config();
+require('dotenv').config({ path: '../.env' });
+
+console.log('DB_HOST:', process.env.DB_HOST);
+console.log('DB_PORT:', process.env.DB_PORT);
+console.log('DB_USER:', process.env.DB_USER);
+console.log('DB_PASSWORD:', process.env.DB_PASSWORD);
+console.log('DB_NAME:', process.env.DB_NAME);
 
 const KEYCLOAK_URL = process.env.KEYCLOAK_URL || 'http://localhost:8080';
 const REALM = process.env.REALM || 'TraceFlow';

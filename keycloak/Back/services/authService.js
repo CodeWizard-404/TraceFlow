@@ -39,10 +39,8 @@ class AuthService {
                 wallet: `wallet_${nanoid()}`,
                 password: 'KEYCLOAK_MANAGED',
             });
-            console.log(`Created new user ${identifier} in local DB with keycloakId ${keycloakId}`);
         } else if (!user.keycloakId) {
             await user.update({ keycloakId });
-            console.log(`Synced user ${identifier} with keycloakId ${keycloakId} in local DB`);
         } else if (user.keycloakId !== keycloakId) {
             throw new Error(`Keycloak ID mismatch: DB has ${user.keycloakId}, Keycloak sent ${keycloakId}`);
         }
@@ -50,6 +48,7 @@ class AuthService {
     }
 
     static async login(identifier, password, deviceIdentifier, otpMethod = 'phone') {
+        console.log(`Attempting login for ${identifier, password, deviceIdentifier, otpMethod}`);
         let loginResponse;
         try {
             loginResponse = await axios.post(
@@ -92,7 +91,6 @@ class AuthService {
         });
         if (trustedDevice) {
             await trustedDevice.update({ lastUsed: new Date() });
-            console.log(`Trusted device login for user ${user.userID}`);
             return this.generateLoginResponse(
                 userWithDetails,
                 loginResponse.data.access_token,
@@ -104,7 +102,6 @@ class AuthService {
         if (otpMethod === 'phone' && user.phone !== 'N/A') {
             const otp = await otpService.generateOTP(user.userID, 'user');
             await sendSMS(user.phone, `Your TraceFlow OTP is ${otp.code}`);
-            console.log(`Sent OTP to phone for user ${user.userID}`);
         } else if (otpMethod === 'email' && user.email) {
             const otp = await otpService.generateOTP(user.userID, 'user');
             await transporter.sendMail({
@@ -113,7 +110,6 @@ class AuthService {
                 subject: 'TraceFlow OTP',
                 text: `Your OTP is ${otp.code}. It expires in 10 minutes.`,
             });
-            console.log(`Sent OTP to email for user ${user.userID}`);
         } else {
             throw new Error(`No ${otpMethod} configured for user`);
         }
@@ -123,18 +119,18 @@ class AuthService {
             userID: user.userID,
             deviceIdentifier,
             tempToken: loginResponse.data.access_token,
-            refreshToken: loginResponse.data.refresh_token, // Include refresh token for 2FA
+            refreshToken: loginResponse.data.refresh_token,
             expiresIn: loginResponse.data.expires_in,
             message: `OTP sent to your ${otpMethod}`,
         };
     }
 
     static async verify2FA(userID, otpCode, deviceIdentifier, trustDevice, tempToken, refreshToken) {
+        console.log(`Attempting 2FA verification for user ${userID, otpCode, deviceIdentifier, trustDevice}`);
         const user = await User.findByPk(userID);
         if (!user) throw new Error('User not found');
 
         await otpService.validateOTP(user.userID, otpCode, 'user');
-        console.log(`OTP verified for user ${userID}`);
 
         const userWithDetails = await User.findOne({
             where: { userID },
@@ -162,13 +158,13 @@ class AuthService {
                     expiresAt: new Date(Date.now() + 30 * 24 * 60 * 60 * 1000), // 30 days
                 });
             }
-            console.log(`Trusted device added for user ${userID}`);
         }
 
         return this.generateLoginResponse(userWithDetails, tempToken, refreshToken, 900); // 15 minutes in seconds
     }
 
     static async refreshToken(refreshToken) {
+        console.log(`Attempting to refresh token for refresh token`);
         try {
             const response = await axios.post(
                 `${KEYCLOAK_URL}/realms/${REALM}/protocol/openid-connect/token`,
@@ -192,13 +188,13 @@ class AuthService {
 
     // Resend 2FA OTP
     static async resend2FA(userID, otpMethod = 'phone') {
+        console.log(`Attempting to resend 2FA OTP for user ${userID} via ${otpMethod}`);
         const user = await User.findByPk(userID);
         if (!user) throw new Error('User not found');
 
         if (otpMethod === 'phone' && user.phone !== 'N/A') {
             const otp = await otpService.generateOTP(userID, 'user');
             await sendSMS(user.phone, `Your TraceFlow OTP is ${otp.code}`);
-            console.log(`Resent OTP to phone for user ${userID}`);
             return { userID, message: 'OTP resent to your phone' };
         } else if (otpMethod === 'email' && user.email) {
             const otp = await otpService.generateOTP(userID, 'user');
@@ -208,7 +204,6 @@ class AuthService {
                 subject: 'TraceFlow OTP',
                 text: `Your OTP is ${otp.code}. It expires in 10 minutes.`,
             });
-            console.log(`Resent OTP to email for user ${userID}`);
             return { userID, message: 'OTP resent to your email' };
         } else {
             throw new Error(`No ${otpMethod} configured for user`);
@@ -217,6 +212,7 @@ class AuthService {
 
     // Initiate password reset
     static async initiatePasswordReset(identifier) {
+        console.log(`Attempting to initiate password reset for identifier: ${identifier}`);
         const adminToken = await this.getKeycloakAdminToken();
 
         // Step 1: Find the user in Keycloak
@@ -233,7 +229,6 @@ class AuthService {
             ['UPDATE_PASSWORD'],
             { headers: { Authorization: `Bearer ${adminToken}` } }
         );
-        console.log(`Initiated password reset for user ${keycloakId}`);
 
         // Step 3: Return the local userID for consistency
         const user = await User.findOne({ where: { keycloakId } });
@@ -242,6 +237,7 @@ class AuthService {
 
     // Reset password directly
     static async resetPassword(userID, newPassword) {
+        console.log(`Attempting to reset password for user ${userID}`);
         const user = await User.findByPk(userID);
         if (!user) throw new Error('User not found');
 
@@ -253,13 +249,13 @@ class AuthService {
             { type: 'password', value: newPassword, temporary: false },
             { headers: { Authorization: `Bearer ${adminToken}` } }
         );
-        console.log(`Reset password for user ${userID} in Keycloak`);
 
         return { message: 'Password reset successfully' };
     }
 
     // Generate a standard login response
     static generateLoginResponse(user, token, refreshToken, expiresIn) {
+        console.log(`Generating login response for user ${user.userID}`);
         const roles = user.Roles.map(role => ({
             name: role.name,
             permissions: role.Permissions.map(p => p.name),

@@ -127,3 +127,15 @@ export const getRolesByUser = async (userID: string, token: string): Promise<Rol
         throw error;
     }
 };
+
+export const resetMainRoles = async (token: string): Promise<{ message: string; details: unknown }> => {
+    try {
+        const response = await api.post<{ message: string; details: unknown }>("/roles/reset", {}, {
+            headers: { Authorization: `Bearer ${token}` },
+        });
+        return response.data;
+    } catch (error) {
+        console.error("Error resetting main roles:", error);
+        throw error;
+    }
+};

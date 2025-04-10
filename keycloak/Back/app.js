@@ -100,49 +100,77 @@ async function startApp() {
         failures: 0,
     };
 
-    const logStep = (step, success, message, error = null) => {
-        const timestamp = new Date().toISOString();
-        console.log(`${timestamp} - ${step}: ${message}${error ? ` - Error: ${error.message}` : ''}`);
-        summary.steps.push({ step, success, message, error });
+    const addStep = (step, success, message) => {
+        summary.steps.push({ step, success, message });
         summary[success ? 'successes' : 'failures']++;
     };
 
-    try {
-        console.log(`${new Date().toISOString()} - Starting application initialization...`);
+    // ANSI color codes
+    const colors = {
+        reset: '\x1b[0m',
+        cyan: '\x1b[36m',
+        green: '\x1b[32m',
+        red: '\x1b[31m',
+        yellow: '\x1b[33m',
+    };
 
+    try {
         await initializeDatabase();
-        logStep('Database Initialization', true, 'Completed successfully');
+        addStep('Database Initialization', true, 'Completed');
 
         await initializeSMTP();
-        logStep('SMTP Initialization', true, 'Completed successfully');
+        addStep('SMTP Initialization', true, 'Completed');
 
         await initializeSMS();
-        logStep('SMS Initialization', true, 'Completed successfully');
+        addStep('SMS Initialization', true, 'Completed');
 
         setupAssociations();
-        logStep('Model Associations', true, 'Relationships established');
+        addStep('Model Associations', true, 'Completed');
 
         await sequelize.sync({ alter: true });
-        logStep('Database Sync', true, 'Tables synchronized');
+        addStep('Database Synchronization', true, 'Completed');
 
         await seedMissingPermissions();
-        logStep('Permission Seeding', true, 'Completed successfully');
+        addStep('Permission Seeding', true, 'Completed');
 
         await initializeServer(app);
-        logStep('Server Initialization', true, 'Server started');
+        addStep('Server Initialization', true, 'Completed');
 
         await seedSuperAdmin();
-        logStep('Super Admin Seeding', true, 'Completed successfully');
+        addStep('Super Admin Seeding', true, 'Completed');
 
         const endTime = new Date();
-        const duration = (endTime - startTime) / 1000;
-        console.log(`${new Date().toISOString()} - Initialization Summary:`);
-        console.log(`  Total Steps: ${summary.steps.length}`);
-        console.log(`  Successes: ${summary.successes}`);
-        console.log(`  Failures: ${summary.failures}`);
-        console.log(`  Duration: ${duration.toFixed(2)} seconds`);
+        const duration = ((endTime - startTime) / 1000).toFixed(2);
+
+        console.log(`\n${colors.cyan}=== TraceFlow Initialization Summary ===${colors.reset}`);
+        console.log(`Date: ${new Date().toISOString()}`);
+        console.log('Steps Completed:');
+        summary.steps.forEach(({ step, success, message }) => {
+            const status = success ? `${colors.green}Success${colors.reset}` : `${colors.red}Failed${colors.reset}`;
+            console.log(`  - ${step}: ${status} - ${message}`);
+        });
+        console.log(`Total Steps: ${summary.steps.length}`);
+        console.log(`${colors.yellow}Successes: ${summary.successes}${colors.reset}`);
+        console.log(`${colors.yellow}Failures: ${summary.failures}${colors.reset}`);
+        console.log(`Duration: ${duration} seconds`);
+        console.log(`${colors.cyan}=======================================${colors.reset}\n`);
     } catch (error) {
-        console.error(`${new Date().toISOString()} - Application initialization failed:`, error);
+        addStep('Initialization', false, `Failed: ${error.message}`);
+        const endTime = new Date();
+        const duration = ((endTime - startTime) / 1000).toFixed(2);
+
+        console.log(`\n${colors.cyan}=== TraceFlow Initialization Summary ===${colors.reset}`);
+        console.log(`Date: ${new Date().toISOString()}`);
+        console.log('Steps Completed:');
+        summary.steps.forEach(({ step, success, message }) => {
+            const status = success ? `${colors.green}Success${colors.reset}` : `${colors.red}Failed${colors.reset}`;
+            console.log(`  - ${step}: ${status} - ${message}`);
+        });
+        console.log(`Total Steps: ${summary.steps.length}`);
+        console.log(`${colors.yellow}Successes: ${summary.successes}${colors.reset}`);
+        console.log(`${colors.yellow}Failures: ${summary.failures}${colors.reset}`);
+        console.log(`Duration: ${duration} seconds`);
+        console.log(`${colors.cyan}=======================================${colors.reset}\n`);
         process.exit(1);
     }
 }

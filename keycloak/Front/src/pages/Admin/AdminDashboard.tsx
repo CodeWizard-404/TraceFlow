@@ -1,12 +1,11 @@
 import React, { useState, useEffect, useMemo } from "react";
 import {
     FaSearch, FaSort, FaUserPlus, FaArrowLeft,
-    FaPlus,
-    FaTimes
+    FaPlus, FaTimes
 } from "react-icons/fa";
 import { useAuth } from "../../context/AuthContext";
 import { getAllUsers } from "../../apis/userAPI";
-import { getAllRoles } from "../../apis/roleAPI";
+import { getAllRoles, resetMainRoles } from "../../apis/roleAPI";
 import { getAllPermissions } from "../../apis/permissionAPI";
 import { getRolesByUser } from "../../apis/roleAPI";
 import { getAllChecklists } from "../../apis/checklistAPI";
@@ -55,11 +54,12 @@ const AdminDashboard: React.FC = () => {
     const [sortField, setSortField] = useState<SortField>("role");
     const [sortOrder, setSortOrder] = useState<SortOrder>("asc");
     const [roleFilter, setRoleFilter] = useState<string>("all");
-    const [usersPage, setUsersPage] = useState(1); // Separate page for UsersList
-    const [checklistsPage, setChecklistsPage] = useState(1); // Separate page for ChecklistsList
-    const [reasonsPage, setReasonsPage] = useState(1); // Separate page for ReasonsList
+    const [usersPage, setUsersPage] = useState(1);
+    const [checklistsPage, setChecklistsPage] = useState(1);
+    const [reasonsPage, setReasonsPage] = useState(1);
     const [loading, setLoading] = useState(false);
     const [error, setError] = useState<string | null>(null);
+    const [resetLoading, setResetLoading] = useState(false);
 
     // Permission Checks
     const userPermissions = useMemo(() => ({
@@ -67,6 +67,7 @@ const AdminDashboard: React.FC = () => {
         canCreateUsers: effectivePermissions?.some(p => p.name === import.meta.env.VITE_PERMISSIONS_CREATE_USERS),
         canViewRoles: effectivePermissions?.some(p => p.name === import.meta.env.VITE_PERMISSIONS_READ_ROLES),
         canCreateRoles: effectivePermissions?.some(p => p.name === import.meta.env.VITE_PERMISSIONS_CREATE_ROLES),
+        canUpdateRoles: effectivePermissions?.some(p => p.name === import.meta.env.VITE_PERMISSIONS_UPDATE_ROLES),
         canViewPermissions: effectivePermissions?.some(p => p.name === import.meta.env.VITE_PERMISSIONS_READ_PERMISSIONS),
         canCreatePermissions: effectivePermissions?.some(p => p.name === import.meta.env.VITE_PERMISSIONS_CREATE_PERMISSIONS),
         canViewChecklists: effectivePermissions?.some(p => p.name === import.meta.env.VITE_PERMISSIONS_READ_CHECKLISTS_ITEMS),
@@ -111,12 +112,40 @@ const AdminDashboard: React.FC = () => {
 
     useEffect(() => {
         if (error) {
-            const timer = setTimeout(() => {
-                setError(null);
-            }, 3000); // Closes after 3 seconds
+            const timer = setTimeout(() => setError(null), 3000);
             return () => clearTimeout(timer);
         }
     }, [error, setError]);
+
+    // Reset Main Roles Handler (Updated)
+    const handleResetMainRoles = async () => {
+        if (!window.confirm('Are you sure you want to reset all main roles to their default state? This cannot be undone.')) {
+            return;
+        }
+
+        setResetLoading(true);
+        try {
+            const response = await resetMainRoles(token!);
+            setRoles(await getAllRoles(token!)); // Refresh roles after reset
+            setError(null);
+
+            // Correctly handle the response.details array
+            const resetDetails = (response.details as Array<{
+                roleName: string;
+                permissionsAssigned: number;
+                permissionsRevoked: number;
+                totalPermissions: number;
+            }>).map(detail =>
+                `${detail.roleName}: ${detail.permissionsAssigned} assigned, ${detail.permissionsRevoked} revoked, ${detail.totalPermissions} total`
+            ).join(", ");
+            setTimeout(() => setError(`Main roles reset successfully! ${resetDetails}`), 500);
+        } catch (err) {
+            console.error("Failed to reset main roles:", err);
+            setError("Failed to reset main roles.");
+        } finally {
+            setResetLoading(false);
+        }
+    };
 
     // Handlers
     const handleViewChange = (newView: ViewMode) => {
@@ -126,7 +155,6 @@ const AdminDashboard: React.FC = () => {
         setSelectedPermission(null);
         setSelectedChecklist(null);
         setSelectedReason(null);
-        // Reset page based on view
         if (newView === "users") setUsersPage(1);
         else if (newView === "checklists") setChecklistsPage(1);
         else if (newView === "reasons") setReasonsPage(1);
@@ -242,9 +270,20 @@ const AdminDashboard: React.FC = () => {
                         </>
                     )}
                     {(view === "roles") && userPermissions.canViewRoles && (
-                        <button className="action-button" onClick={() => handleViewChange("add-role")}>
-                            <FaPlus /> Add Role
-                        </button>
+                        <>
+                            <button className="action-button" onClick={() => handleViewChange("add-role")}>
+                                <FaPlus /> Add Role
+                            </button>
+                            {userPermissions.canUpdateRoles && (
+                                <button
+                                    className="action-button reset-button"
+                                    onClick={handleResetMainRoles}
+                                    disabled={resetLoading}
+                                >
+                                    {resetLoading ? 'Resetting...' : 'Reset Main Roles'}
+                                </button>
+                            )}
+                        </>
                     )}
                     {(view === "permissions") && userPermissions.canViewPermissions && (
                         <button className="action-button" onClick={() => handleViewChange("add-permission")}>
@@ -416,7 +455,7 @@ const AdminDashboard: React.FC = () => {
                     />
                 </main>
             </section>
-        </div >
+        </div>
     );
 };
 

@@ -3,6 +3,7 @@ const router = express.Router();
 const RoleController = require('../controllers/roleController');
 const { requirePermission } = require('../config/security');
 
+router.post('/reset', requirePermission('reset_roles'), RoleController.resetMainRoles);
 
 router.post('/', requirePermission('create_roles'), RoleController.createRole);
 router.get('/', requirePermission('access_all_roles'), RoleController.getAllRoles);

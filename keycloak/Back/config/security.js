@@ -19,10 +19,6 @@ const populateUser = async (req, res, next) => {
         const expiresAt = req.auth.payload.exp;
         const lifespanSeconds = expiresAt - issuedAt;
         const expiresDate = new Date(expiresAt * 1000);
-        console.log(`Token for ${keycloakId}:`);
-        console.log(`- Issued At: ${new Date(issuedAt * 1000)}`);
-        console.log(`- Expires At: ${expiresDate}`);
-        console.log(`- Lifespan: ${lifespanSeconds} seconds (${lifespanSeconds / 60} minutes)`);
 
         try {
             const user = await User.findOne({ where: { keycloakId } });
@@ -48,38 +44,50 @@ const populateUser = async (req, res, next) => {
 
 const authenticateAndPopulate = [authenticateKeycloak, populateUser];
 
+
+const jwt = require('jsonwebtoken');
+
 const requirePermission = (permissionName) => {
     return async (req, res, next) => {
         try {
             const roles = req.auth.payload.realm_access?.roles || [];
-            const overrides = JSON.parse(req.auth.payload.permission_overrides || '{}');
 
-            if (roles.includes("Super Admin")) return next();
-
-            const userOverride = Object.values(overrides).some(roleOverrides =>
-                roleOverrides[permissionName] === 'grant' ? true :
-                    roleOverrides[permissionName] === 'revoke' ? false : null
-            );
-            if (userOverride === false) {
-                return res.status(403).json({ error: `Permission '${permissionName}' required` });
+            if (roles.includes("Super Admin")) {
+                console.log('Super Admin detected, bypassing Keycloak check');
+                return next();
             }
-            if (userOverride === true) return next();
 
             const response = await axios.post(
-                `${process.env.KEYCLOAK_URL}/realms/${process.env.REALM}/authz/entitlement/traceflow-backend`,
-                { permissions: [{ id: permissionName }] },
-                { headers: { Authorization: `Bearer ${req.auth.token}` } }
+                `${process.env.KEYCLOAK_URL}/realms/${process.env.REALM}/protocol/openid-connect/token`,
+                new URLSearchParams({
+                    grant_type: 'urn:ietf:params:oauth:grant-type:uma-ticket',
+                    audience: 'traceflow-backend',
+                }),
+                {
+                    headers: {
+                        Authorization: `Bearer ${req.auth.token}`,
+                        'Content-Type': 'application/x-www-form-urlencoded',
+                    },
+                }
             );
-            const hasPermission = response.data.rpt && response.data.rpt.permissions.some(p => p.resource === permissionName);
+
+            const rpt = jwt.decode(response.data.access_token);
+            const permissions = rpt?.authorization?.permissions || [];
+            const hasPermission = permissions.some(p => p.rsname === permissionName); // Use rsname instead of resource
+
             if (!hasPermission) {
                 return res.status(403).json({ error: `Permission '${permissionName}' required` });
             }
             next();
         } catch (error) {
+            console.error('Keycloak permission check failed:', {
+                status: error.response?.status,
+                data: error.response?.data,
+                message: error.message,
+            });
             if (error.response?.status === 401) {
                 return res.status(401).json({ error: 'Token expired, please refresh' });
             }
-            console.error("Permission check failed:", error.response?.data || error.message);
             return res.status(403).json({ error: `Permission '${permissionName}' required` });
         }
     };

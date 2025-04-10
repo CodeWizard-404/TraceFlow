@@ -29,9 +29,12 @@ export interface LoginResponse {
     message?: string;
     token?: string;
     user?: {
+        fisrtName: string;
+        lastName: string;
         userID: string;
         email: string;
         phone: string;
+        wallet: string;
         roles: { name: string; permissions: string[] }[];
     };
 }
@@ -41,9 +44,12 @@ export interface Verify2FAResponse {
     refreshToken: string;
     expiresIn: number;
     user: {
+        fisrtName: string;
+        lastName: string;
         userID: string;
         email: string;
         phone: string;
+        wallet: string;
         roles: { name: string; permissions: string[] }[];
     };
 }

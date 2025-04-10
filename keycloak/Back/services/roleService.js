@@ -1,6 +1,7 @@
 const axios = require('axios');
 const { Role, Permission, User } = require('../models');
 require('dotenv').config();
+const PermissionService = require('./permissionService');
 
 // Keycloak configuration
 const KEYCLOAK_URL = process.env.KEYCLOAK_URL || 'http://localhost:8080';
@@ -271,6 +272,292 @@ class RoleService {
         });
         if (!user) throw new Error('User not found');
         return user.Roles;
+    }
+
+
+
+
+
+    // Reset main roles to their default state
+    static async resetMainRolesToDefault() {
+        const token = await getAdminToken();
+        const clientUUID = await getClientUUID(token);
+
+        // Define the default roles and their permissions (your provided default state)
+        const defaultRoles = [
+            {
+                name: "Super Admin",
+                description: "Role with full administrative privileges",
+                permissions: [] // We'll assign all permissions for Super Admin
+            },
+            {
+                name: "Admin",
+                description: "Manage Users",
+                permissions: [
+                    // Permission Class
+                    "access_all_permissions",
+                    "access_permission_details",
+                    "assign_permissions",
+                    "revoke_permissions",
+                    "access_permissions_by_role",
+                    "create_permission_overrides",
+                    "delete_permission_overrides",
+                    // Role Class
+                    "create_roles",
+                    "read_role_details",
+                    "update_roles",
+                    "delete_roles",
+                    "access_all_roles",
+                    "revoke_roles",
+                    "assign_roles",
+                    // User Class
+                    "access_user_details",
+                    "assign_supervisors",
+                    "access_users_by_role",
+                    "revoke_supervisors",
+                    "create_users",
+                    "access_supervisors",
+                    "access_user_by_phone",
+                    "delete_users",
+                    "access_all_users",
+                    "update_users",
+                    "access_managers",
+                    // Checklist Class
+                    "create_checklists_items",
+                    "access_checklist_item_details",
+                    "update_checklists_items",
+                    "delete_checklists_items",
+                    "access_checklists_items",
+                    // Reason Class
+                    "create_reason_items",
+                    "access_reason_item_details",
+                    "update_reason_items",
+                    "delete_reason_items",
+                    "access_reason_items"
+                ]
+            },
+            {
+                name: "Supervisor",
+                description: "Log Visits",
+                permissions: [
+                    // Agent Class
+                    "access_agents_by_location",
+                    "access_agents_locations",
+                    "access_agents_by_phone",
+                    "access_agents_by_id",
+                    // Checklist Class
+                    "access_checklist_item_details",
+                    "access_visit_checklist",
+                    // Reason Class
+                    "access_reason_item_details",
+                    "access_visit_reasons",
+                    // ReceiptBook Class
+                    "access_all_receipt_books",
+                    "access_receipt_book_details",
+                    "access_receipt_books_by_holder",
+                    "access_receipt_books_by_number",
+                    "collect_supplier_receipt_books",
+                    "transfer_receipt_books",
+                    "validate_receipt_books_transfer",
+                    // ReceiptStub Class
+                    "collect_receipt_stubs",
+                    "validate_receipt_stubs",
+                    // Visit Class
+                    "scan_visits",
+                    "edit_visit_details",
+                    "delete_visit",
+                    "log_visits",
+                    "access_visit_details",
+                    // User Class
+                    "access_user_details",
+                    "access_users_by_role",
+                    "access_user_by_phone",
+                    "access_all_users",
+                    "access_managers",
+                    // Timesheet Class
+                    "access_timesheet_details",
+                    "access_supervisor_timesheets",
+                    "create_self_timesheets"
+                ]
+            },
+            {
+                name: "Manager",
+                description: "Manage Supervisors",
+                permissions: [
+                    // Agent Class
+                    "access_agents_by_location",
+                    "access_agents_locations",
+                    "access_agents_by_phone",
+                    "access_agents_by_id",
+                    // Checklist Class
+                    "access_checklist_item_details",
+                    "access_visit_checklist",
+                    // Reason Class
+                    "access_reason_item_details",
+                    "access_visit_reasons",
+                    // Visit Class
+                    "edit_visit_details",
+                    "delete_visit",
+                    "access_visit_details",
+                    // User Class
+                    "access_user_details",
+                    "access_users_by_role",
+                    "access_supervisors",
+                    "access_user_by_phone",
+                    "access_all_users",
+                    // Timesheet Class
+                    "access_timesheet_details",
+                    "create_timesheets_for_supervisor",
+                    "access_supervisor_timesheets",
+                    "validate_timesheets"
+                ]
+            },
+            {
+                name: "Stock Manager",
+                description: "Archive Stock",
+                permissions: [
+                    // Agent Class
+                    "access_agents_by_location",
+                    "access_agents_locations",
+                    "access_agents_by_phone",
+                    "access_agents_by_id",
+                    // ReceiptBook Class
+                    "access_all_receipt_books",
+                    "access_receipt_book_details",
+                    "access_receipt_books_by_holder",
+                    "access_receipt_books_by_number",
+                    "delete_receipt_books",
+                    "update_receipt_books",
+                    "transfer_receipt_books",
+                    "validate_receipt_books_transfer",
+                    "access_receipt_book_history",
+                    // User Class
+                    "access_user_details",
+                    "access_users_by_role",
+                    "access_user_by_phone",
+                    "access_all_users",
+                    // ReceiptStub Class
+                    "archive_receipt_stubs"
+                ]
+            },
+            {
+                name: "Regional Manager",
+                description: "Manage Books",
+                permissions: [
+                    // Agent Class
+                    "access_agents_by_location",
+                    "access_agents_locations",
+                    "access_agents_by_phone",
+                    "access_agents_by_id",
+                    // ReceiptBook Class
+                    "access_all_receipt_books",
+                    "access_receipt_book_details",
+                    "access_receipt_books_by_holder",
+                    "access_receipt_books_by_number",
+                    "transfer_receipt_books",
+                    "validate_receipt_books_transfer",
+                    "access_receipt_book_history",
+                    // User Class
+                    "access_user_details",
+                    "access_users_by_role",
+                    "access_user_by_phone",
+                    "access_all_users"
+                ]
+            },
+            {
+                name: "Purchase Team",
+                description: "Manage Initial Stock",
+                permissions: [
+                    // Agent Class
+                    "access_agents_by_location",
+                    "access_agents_locations",
+                    "access_agents_by_phone",
+                    "access_agents_by_id",
+                    // ReceiptBook Class
+                    "create_receipt_books",
+                    "access_all_receipt_books",
+                    "access_receipt_book_details",
+                    "access_receipt_books_by_holder",
+                    "access_receipt_books_by_number",
+                    "delete_receipt_books",
+                    "update_receipt_books",
+                    "send_receipt_books",
+                    "collect_supplier_receipt_books",
+                    "transfer_receipt_books",
+                    "validate_receipt_books_transfer",
+                    "access_receipt_book_history",
+                    // User Class
+                    "access_user_details",
+                    "access_users_by_role",
+                    "access_user_by_phone",
+                    "access_all_users"
+                ]
+            }
+        ];
+
+        const results = [];
+
+        // Get all current permissions from the database
+        const allPermissions = await Permission.findAll();
+        const allPermissionNames = allPermissions.map(p => p.name);
+
+        for (const defaultRole of defaultRoles) {
+            // Step 1: Find or create the role in the database
+            let role = await Role.findOne({ where: { name: defaultRole.name } });
+            if (!role) {
+                role = await RoleService.createRole(defaultRole.name, defaultRole.description);
+            } else {
+                // Update description if it has changed
+                if (role.description !== defaultRole.description) {
+                    await role.update({ description: defaultRole.description });
+                }
+            }
+
+            // Step 2: Handle permissions
+            let permissionIDsToAssign = [];
+            if (defaultRole.name === "Super Admin") {
+                // Super Admin gets all permissions
+                permissionIDsToAssign = allPermissions.map(p => p.permissionID);
+            } else {
+                // Filter permissions that exist in the database
+                permissionIDsToAssign = allPermissions
+                    .filter(p => defaultRole.permissions.includes(p.name))
+                    .map(p => p.permissionID);
+            }
+
+            // Get current permissions for the role
+            const currentPermissions = await role.getPermissions();
+            const currentPermissionNames = currentPermissions.map(p => p.name);
+
+            // Permissions to revoke (those not in default state)
+            const permissionsToRevoke = currentPermissions
+                .filter(p => defaultRole.name === "Super Admin" ? false : !defaultRole.permissions.includes(p.name))
+                .map(p => p.permissionID);
+
+            // Permissions to assign (those missing from current state)
+            const permissionsToAssign = permissionIDsToAssign.filter(id =>
+                !currentPermissions.some(p => p.permissionID === id));
+
+            // Revoke extra permissions
+            if (permissionsToRevoke.length > 0) {
+                await PermissionService.revokePermissionsFromRole(role.roleID, permissionsToRevoke);
+            }
+
+            // Assign missing permissions
+            if (permissionsToAssign.length > 0) {
+                await PermissionService.assignPermissionsToRole(role.roleID, permissionsToAssign);
+            }
+
+            results.push({
+                roleName: defaultRole.name,
+                permissionsAssigned: permissionsToAssign.length,
+                permissionsRevoked: permissionsToRevoke.length,
+                totalPermissions: defaultRole.name === "Super Admin" ? allPermissions.length : permissionIDsToAssign.length
+            });
+        }
+
+        console.log(`Reset ${results.length} main roles to default state`);
+        return results;
     }
 }
 

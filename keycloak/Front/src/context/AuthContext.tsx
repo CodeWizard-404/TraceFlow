@@ -136,10 +136,15 @@ export const AuthProvider: React.FC<{ children: ReactNode }> = ({ children }) =>
     const loginUser = async (identifier: string, password: string, deviceIdentifier: string) => {
         const response = await login(identifier, password, deviceIdentifier);
         if ("requires2FA" in response) {
-            return; // Defer to LoginPage.tsx for 2FA handling
+            return;
         }
-        const newToken = response.token;
-        const newUser = response.user;
+
+        if (!response.token || !response.user) {
+            throw new Error("Login failed: Token or user data missing");
+        }
+
+        const newToken: string = response.token;
+        const newUser: User = response.user;
 
         localStorage.setItem("token", newToken);
         localStorage.setItem("user", JSON.stringify(newUser));

@@ -251,7 +251,7 @@ class PermissionService {
                         type: 'resource',
                         resources: [resourceId],
                         policies: finalPolicies,
-                        decisionStrategy: 'UNANIMOUS',
+                        decisionStrategy: 'AFFIRMATIVE',
                         logic: 'POSITIVE',
                     },
                     { headers: { Authorization: `Bearer ${token}` } }
@@ -267,7 +267,7 @@ class PermissionService {
                         type: 'resource',
                         resources: [resourceId],
                         policies: [policyId],
-                        decisionStrategy: 'UNANIMOUS',
+                        decisionStrategy: 'AFFIRMATIVE',
                         logic: 'POSITIVE',
                     },
                     { headers: { Authorization: `Bearer ${token}` } }
