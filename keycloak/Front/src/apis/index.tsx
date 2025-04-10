@@ -19,21 +19,33 @@ export type AgentByIdResponse = Agent;
 
 // Auth API Responses
 
-export type LoginResponse =
-    | {
-        token: string;
-        user: User;
-    }
-    | {
-        requires2FA: true;
+export interface LoginResponse {
+    requires2FA?: boolean;
+    userID?: string;
+    deviceIdentifier?: string;
+    tempToken?: string;
+    refreshToken?: string;
+    expiresIn?: number;
+    message?: string;
+    token?: string;
+    user?: {
         userID: string;
-        deviceIdentifier: string;
-        message: string;
+        email: string;
+        phone: string;
+        roles: { name: string; permissions: string[] }[];
     };
+}
 
 export interface Verify2FAResponse {
     token: string;
-    user: User;
+    refreshToken: string;
+    expiresIn: number;
+    user: {
+        userID: string;
+        email: string;
+        phone: string;
+        roles: { name: string; permissions: string[] }[];
+    };
 }
 
 export type Resend2FAResponse = { userID: string; message: string };

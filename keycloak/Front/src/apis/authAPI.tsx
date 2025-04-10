@@ -1,6 +1,8 @@
 import api from "./axiosConfig";
 import { LoginResponse, Verify2FAResponse, Resend2FAResponse } from ".";
 
+
+
 export const login = async (
     identifier: string,
     password: string,
@@ -13,6 +15,12 @@ export const login = async (
         deviceIdentifier,
         otpMethod,
     });
+    if (!response.data.requires2FA) {
+        localStorage.setItem('accessToken', response.data.token!);
+        localStorage.setItem('refreshToken', response.data.refreshToken!);
+        localStorage.setItem('expiresIn', response.data.expiresIn!.toString());
+        scheduleTokenRefresh(response.data.expiresIn!);
+    }
     return response.data;
 };
 
@@ -20,16 +28,66 @@ export const verify2FA = async (
     userID: string,
     otpCode: string,
     deviceIdentifier: string,
-    trustDevice: boolean
+    trustDevice: boolean,
+    tempToken: string,
+    refreshToken: string
 ): Promise<Verify2FAResponse> => {
-    const response = await api.post<Verify2FAResponse>("/auth/verify-2fa", {
-        userID,
-        otpCode,
-        deviceIdentifier,
-        trustDevice,
-    });
+    const payload = { userID, otpCode, deviceIdentifier, trustDevice, tempToken, refreshToken };
+    console.log('Verify 2FA payload:', payload);
+    const response = await api.post<Verify2FAResponse>("/auth/verify-2fa", payload);
+    localStorage.setItem('accessToken', response.data.token);
+    localStorage.setItem('refreshToken', response.data.refreshToken);
+    localStorage.setItem('expiresIn', response.data.expiresIn.toString());
+    scheduleTokenRefresh(response.data.expiresIn);
     return response.data;
 };
+
+export const refreshToken = async (): Promise<{ accessToken: string; refreshToken: string; expiresIn: number }> => {
+    const refreshToken = localStorage.getItem('refreshToken');
+    if (!refreshToken) throw new Error('No refresh token available');
+
+    try {
+        const response = await api.post("/auth/refresh", { refreshToken });
+        localStorage.setItem('accessToken', response.data.accessToken);
+        localStorage.setItem('refreshToken', response.data.refreshToken);
+        localStorage.setItem('expiresIn', response.data.expiresIn.toString());
+        scheduleTokenRefresh(response.data.expiresIn);
+        return response.data;
+    } catch (error) {
+        console.error("Error refreshing token:", error);
+        localStorage.clear();
+        window.location.href = '/login';
+        throw error;
+    }
+};
+
+const scheduleTokenRefresh = (expiresIn: number) => {
+    const bufferTime = 600; // Refresh 1 minute before expiry
+    setTimeout(async () => {
+        try {
+            await refreshToken();
+        } catch (error) {
+            console.error('Scheduled refresh failed:', error);
+        }
+    }, (expiresIn - bufferTime) * 1000);
+};
+
+// Update axiosConfig to handle 401 errors
+api.interceptors.response.use(
+    response => response,
+    async error => {
+        if (error.response?.status === 401 && error.response.data.error === 'Token expired, please refresh') {
+            try {
+                const newTokens = await refreshToken();
+                error.config.headers['Authorization'] = `Bearer ${newTokens.accessToken}`;
+                return api(error.config); // Retry original request
+            } catch (refreshError) {
+                return Promise.reject(refreshError);
+            }
+        }
+        return Promise.reject(error);
+    }
+);
 
 export const resend2FA = async (
     userID: string,

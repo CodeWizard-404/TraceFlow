@@ -18,14 +18,29 @@ class AuthController {
 
     static async verify2FA(req, res) {
         try {
-            const { userID, otpCode, deviceIdentifier, trustDevice } = req.body;
-            if (!userID || !otpCode || !deviceIdentifier) {
-                return res.status(400).json({ error: 'User ID, OTP code, and device identifier are required' });
+            const { userID, otpCode, deviceIdentifier, trustDevice, tempToken, refreshToken } = req.body;
+            console.log(`${new Date().toISOString()} - Verify 2FA request body:`, req.body);
+            if (!userID || !otpCode || !deviceIdentifier || !tempToken || !refreshToken) {
+                return res.status(400).json({ error: 'User ID, OTP code, device identifier, temp token, and refresh token are required' });
             }
-            const result = await AuthService.verify2FA(userID, otpCode, deviceIdentifier, trustDevice);
+            const result = await AuthService.verify2FA(userID, otpCode, deviceIdentifier, trustDevice, tempToken, refreshToken);
             res.json(result);
         } catch (error) {
             console.error(`${new Date().toISOString()} - 2FA verification failed:`, error);
+            res.status(401).json({ error: error.message });
+        }
+    }
+
+    static async refreshToken(req, res) {
+        try {
+            const { refreshToken } = req.body;
+            if (!refreshToken) {
+                return res.status(400).json({ error: 'Refresh token is required' });
+            }
+            const result = await AuthService.refreshToken(refreshToken);
+            res.json(result);
+        } catch (error) {
+            console.error(`${new Date().toISOString()} - Token refresh failed:`, error);
             res.status(401).json({ error: error.message });
         }
     }

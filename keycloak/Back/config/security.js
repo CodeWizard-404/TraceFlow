@@ -1,9 +1,8 @@
 const { auth } = require('express-oauth2-jwt-bearer');
-const { User } = require('../models'); // Import your User model
+const { User } = require('../models');
 require('dotenv').config();
 const axios = require('axios');
 
-// Configure Keycloak token validation
 const authenticateKeycloak = auth({
     issuerBaseURL: `${process.env.KEYCLOAK_URL}/realms/${process.env.REALM}`,
     audience: ["traceflow-backend", "account"],
@@ -11,23 +10,29 @@ const authenticateKeycloak = auth({
     tokenSigningAlg: 'RS256',
 });
 
-// Custom middleware to populate req.user with userID from the database
 const populateUser = async (req, res, next) => {
     if (req.auth && req.auth.payload) {
-        const keycloakId = req.auth.payload.sub; // Keycloak's sub
+        const keycloakId = req.auth.payload.sub;
         const roles = req.auth.payload.realm_access?.roles || [];
 
+        const issuedAt = req.auth.payload.iat;
+        const expiresAt = req.auth.payload.exp;
+        const lifespanSeconds = expiresAt - issuedAt;
+        const expiresDate = new Date(expiresAt * 1000);
+        console.log(`Token for ${keycloakId}:`);
+        console.log(`- Issued At: ${new Date(issuedAt * 1000)}`);
+        console.log(`- Expires At: ${expiresDate}`);
+        console.log(`- Lifespan: ${lifespanSeconds} seconds (${lifespanSeconds / 60} minutes)`);
+
         try {
-            // Fetch the user from the database using keycloakId
             const user = await User.findOne({ where: { keycloakId } });
             if (!user) {
                 console.error(`User with keycloakId ${keycloakId} not found in database`);
                 return res.status(401).json({ error: 'User not found in database' });
             }
 
-            // Populate req.user with the database userID
             req.user = {
-                userID: user.userID, // Use the nanoid-generated userID
+                userID: user.userID,
                 keycloakId: user.keycloakId,
                 email: req.auth.payload.email || user.email,
                 phone: req.auth.payload.phone || user.phone || '',
@@ -41,33 +46,25 @@ const populateUser = async (req, res, next) => {
     next();
 };
 
-// Combine authenticateKeycloak with populateUser
 const authenticateAndPopulate = [authenticateKeycloak, populateUser];
 
-// Permission middleware (fully Keycloak-based)
 const requirePermission = (permissionName) => {
     return async (req, res, next) => {
-        const roles = req.auth.payload.realm_access?.roles || [];
-        const overrides = JSON.parse(req.auth.payload.permission_overrides || '{}');
-
-        // Super Admin bypass
-        if (roles.includes("Super Admin")) {
-            // Ensure req.user is already populated by populateUser, no need to repeat
-            return next();
-        }
-
-        const userOverride = Object.values(overrides).some(roleOverrides =>
-            roleOverrides[permissionName] === 'grant' ? true :
-                roleOverrides[permissionName] === 'revoke' ? false : null
-        );
-        if (userOverride === false) {
-            return res.status(403).json({ error: `Permission '${permissionName}' required` });
-        }
-        if (userOverride === true) {
-            return next();
-        }
-
         try {
+            const roles = req.auth.payload.realm_access?.roles || [];
+            const overrides = JSON.parse(req.auth.payload.permission_overrides || '{}');
+
+            if (roles.includes("Super Admin")) return next();
+
+            const userOverride = Object.values(overrides).some(roleOverrides =>
+                roleOverrides[permissionName] === 'grant' ? true :
+                    roleOverrides[permissionName] === 'revoke' ? false : null
+            );
+            if (userOverride === false) {
+                return res.status(403).json({ error: `Permission '${permissionName}' required` });
+            }
+            if (userOverride === true) return next();
+
             const response = await axios.post(
                 `${process.env.KEYCLOAK_URL}/realms/${process.env.REALM}/authz/entitlement/traceflow-backend`,
                 { permissions: [{ id: permissionName }] },
@@ -77,12 +74,14 @@ const requirePermission = (permissionName) => {
             if (!hasPermission) {
                 return res.status(403).json({ error: `Permission '${permissionName}' required` });
             }
+            next();
         } catch (error) {
+            if (error.response?.status === 401) {
+                return res.status(401).json({ error: 'Token expired, please refresh' });
+            }
             console.error("Permission check failed:", error.response?.data || error.message);
             return res.status(403).json({ error: `Permission '${permissionName}' required` });
         }
-
-        next();
     };
 };
 

@@ -35,6 +35,8 @@ const LoginPage: React.FC = () => {
     const [showPassword, setShowPassword] = useState(false);
     const [showNewPassword, setShowNewPassword] = useState(false);
     const [showConfirmPassword, setShowConfirmPassword] = useState(false);
+    const [tempToken, setTempToken] = useState<string | null>(null);
+    const [refreshToken, setRefreshToken] = useState<string | null>(null);
 
     const { loginUser } = useAuth();
     const { error: globalError, setError: setGlobalError } = useError();
@@ -134,7 +136,9 @@ const LoginPage: React.FC = () => {
             const response = await login(identifier, password, deviceIdentifier, "phone");
             if ("requires2FA" in response) {
                 setStep("verify2FA");
-                setUserID(response.userID);
+                setUserID(response.userID!);
+                setTempToken(response.tempToken!);
+                setRefreshToken(response.refreshToken!);
                 setOtpMethod("phone");
                 setTimer(600);
             } else {
@@ -161,7 +165,14 @@ const LoginPage: React.FC = () => {
         setGlobalError(null);
 
         try {
-            const response = await verify2FA(userID!, otpCode, deviceIdentifier, trustDevice);
+            const response = await verify2FA(
+                userID!,
+                otpCode,
+                deviceIdentifier,
+                trustDevice,
+                tempToken!,      // Pass tempToken
+                refreshToken!    // Pass refreshToken
+            );
             localStorage.setItem("token", response.token);
             localStorage.setItem("user", JSON.stringify(response.user));
             await loginUser(identifier, password, deviceIdentifier);
@@ -287,6 +298,8 @@ const LoginPage: React.FC = () => {
         setNewPassword("");
         setConfirmPassword("");
         setTrustDevice(false);
+        setTempToken(null);
+        setRefreshToken(null);
         setErrors({});
         setTimer(600);
         setResendCooldown(0);

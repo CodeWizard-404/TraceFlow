@@ -3,281 +3,269 @@ const { User, Role } = require('../models');
 const { Op } = require('sequelize');
 require('dotenv').config();
 
+// Keycloak configuration
 const KEYCLOAK_URL = process.env.KEYCLOAK_URL || 'http://localhost:8080';
 const REALM = process.env.REALM || 'TraceFlow';
-const ADMIN_USER = process.env.ADMIN_USER || 'admin';
-const ADMIN_PASS = process.env.ADMIN_PASS || 'admin';
 
+// Get admin token for Keycloak
 async function getAdminToken() {
     const response = await axios.post(
         `${KEYCLOAK_URL}/realms/master/protocol/openid-connect/token`,
         new URLSearchParams({
             grant_type: 'password',
             client_id: 'admin-cli',
-            username: ADMIN_USER,
-            password: ADMIN_PASS,
+            username: process.env.ADMIN_USER,
+            password: process.env.ADMIN_PASS,
         })
     );
     return response.data.access_token;
 }
 
 class UserService {
+    // Create a new user in both local DB and Keycloak
     static async createUser(email, password, firstname, lastname, phone, wallet) {
-        try {
-            if (!email || !password || !firstname || !lastname || !phone || !wallet) {
-                throw new Error('Please fill in all required fields: email, password, first name, last name, phone, and wallet.');
-            }
-
-            const token = await getAdminToken();
-            // Create user in Keycloak
-            const keycloakResponse = await axios.post(
-                `${KEYCLOAK_URL}/admin/realms/${REALM}/users`,
-                {
-                    username: email,
-                    email,
-                    firstName: firstname,
-                    lastName: lastname,
-                    enabled: true,
-                    attributes: { phone, wallet },
-                    credentials: [{ type: 'password', value: password, temporary: false }],
-                },
-                { headers: { Authorization: `Bearer ${token}` } }
-            );
-
-            // Get the Keycloak user ID (sub)
-            const location = keycloakResponse.headers.location;
-            const keycloakUserId = location.split('/').pop();
-
-            // Sync with local DB
-            const [user, created] = await User.findOrCreate({
-                where: { userID: keycloakUserId },
-                defaults: {
-                    userID: keycloakUserId,
-                    email,
-                    firstname,
-                    lastname,
-                    phone,
-                    wallet,
-                    password: 'KEYCLOAK_MANAGED', // Placeholder, not used
-                },
-            });
-
-            if (!created) {
-                const existingUser = await User.findOne({
-                    where: { [Op.or]: [{ email }, { phone }, { wallet }] },
-                });
-                if (existingUser && existingUser.userID !== keycloakUserId) {
-                    const conflictFields = [];
-                    if (existingUser.email === email) conflictFields.push('email');
-                    if (existingUser.phone === phone) conflictFields.push('phone number');
-                    if (existingUser.wallet === wallet) conflictFields.push('wallet');
-                    throw new Error(`This ${conflictFields.join(', ')} is already in use. Please try a different one.`);
-                }
-            }
-
-            return user;
-        } catch (error) {
-            throw new Error(error.response?.data?.errorMessage || error.message || 'Oops! Something went wrong while creating your account.');
+        if (!email || !password || !firstname || !lastname || !phone || !wallet) {
+            throw new Error('All fields (email, password, firstname, lastname, phone, wallet) are required');
         }
+
+        const token = await getAdminToken();
+
+        // Step 1: Create the user in Keycloak
+        const keycloakResponse = await axios.post(
+            `${KEYCLOAK_URL}/admin/realms/${REALM}/users`,
+            {
+                username: email,
+                email,
+                firstName: firstname,
+                lastName: lastname,
+                enabled: true,
+                attributes: { phone, wallet },
+                credentials: [{ type: 'password', value: password, temporary: false }],
+            },
+            { headers: { Authorization: `Bearer ${token}` } }
+        );
+        const keycloakUserId = keycloakResponse.headers.location.split('/').pop();
+        console.log(`Created user ${email} in Keycloak with ID ${keycloakUserId}`);
+
+        // Step 2: Create or sync the user in the local DB
+        const [user, created] = await User.findOrCreate({
+            where: { userID: keycloakUserId },
+            defaults: {
+                userID: keycloakUserId,
+                email,
+                firstname,
+                lastname,
+                phone,
+                wallet,
+                password: 'KEYCLOAK_MANAGED', // Password is managed by Keycloak
+            },
+        });
+
+        if (!created) {
+            const existingUser = await User.findOne({
+                where: { [Op.or]: [{ email }, { phone }, { wallet }] },
+            });
+            if (existingUser && existingUser.userID !== keycloakUserId) {
+                const conflicts = [];
+                if (existingUser.email === email) conflicts.push('email');
+                if (existingUser.phone === phone) conflicts.push('phone');
+                if (existingUser.wallet === wallet) conflicts.push('wallet');
+                throw new Error(`Conflict: ${conflicts.join(', ')} already in use`);
+            }
+        }
+
+        console.log(`Created user ${email} in local DB`);
+        return user;
     }
 
+    // Get all users from the local database
     static async getAllUsers() {
-        try {
-            return await User.findAll({
-                include: [{ model: Role, through: { attributes: [] }, attributes: ['name'] }],
-            });
-        } catch (error) {
-            throw new Error(`Failed to fetch users: ${error.message}`);
-        }
+        return await User.findAll({
+            include: [{ model: Role, through: { attributes: [] }, attributes: ['name'] }],
+            attributes: ['userID', 'email', 'firstname', 'lastname', 'phone', 'wallet'],
+        });
     }
 
+    // Get a user by phone number
     static async getUserByPhoneNumber(phone) {
-        try {
-            const user = await User.findOne({ where: { phone } });
-            if (!user) throw new Error('User not found');
-            return user;
-        } catch (error) {
-            throw new Error(`Failed to fetch user: ${error.message}`);
-        }
+        const user = await User.findOne({
+            where: { phone },
+            include: [{ model: Role, through: { attributes: [] }, attributes: ['name'] }],
+        });
+        if (!user) throw new Error('User not found');
+        return user;
     }
 
+    // Get a user by ID
     static async getUserById(userID) {
-        try {
-            const user = await User.findByPk(userID);
-            if (!user) throw new Error('User not found');
-            return user;
-        } catch (error) {
-            throw new Error(`Failed to fetch user: ${error.message}`);
-        }
+        const user = await User.findByPk(userID, {
+            include: [{ model: Role, through: { attributes: [] }, attributes: ['name'] }],
+        });
+        if (!user) throw new Error('User not found');
+        return user;
     }
 
+    // Get users by role name
     static async getUsersByRole(roleName) {
-        try {
-            const role = await Role.findOne({ where: { name: roleName } });
-            if (!role) throw new Error('Role not found');
-            const users = await User.findAll({
-                include: [{
-                    model: Role,
-                    through: { attributes: [] },
-                    where: { roleID: role.roleID },
-                    attributes: [],
-                }],
-            });
-            return users;
-        } catch (error) {
-            throw new Error(`Failed to fetch users by role: ${error.message}`);
-        }
+        const role = await Role.findOne({ where: { name: roleName } });
+        if (!role) throw new Error('Role not found');
+
+        const users = await User.findAll({
+            include: [{
+                model: Role,
+                through: { attributes: [] },
+                where: { roleID: role.roleID },
+                attributes: [],
+            }],
+        });
+        return users;
     }
 
+    // Update a user’s details in both local DB and Keycloak
     static async updateUser(userID, userData) {
-        try {
-            const user = await User.findByPk(userID);
-            if (!user) throw new Error('User not found');
+        const user = await User.findByPk(userID);
+        if (!user) throw new Error('User not found');
 
-            const token = await getAdminToken();
-            console.log('Updating user:', userData);
-            console.log('User found:', user);
-            console.log('Token:', token);
-            console.log('Keycloak URL:', `${KEYCLOAK_URL}/admin/realms/${REALM}/users/${user.keycloakId}`);
+        const token = await getAdminToken();
 
-            // Update Keycloak user if keycloakId exists
-            if (user.keycloakId) {
-                await axios.put(
-                    `${KEYCLOAK_URL}/admin/realms/${REALM}/users/${user.keycloakId}`,
-                    {
-                        email: userData.email || user.email,
-                        firstName: userData.firstname || user.firstname,
-                        lastName: userData.lastname || user.lastname,
-                        attributes: {
-                            phone: userData.phone || user.phone,
-                            wallet: userData.wallet || user.wallet,
-                        },
-                    },
-                    { headers: { Authorization: `Bearer ${token}` } }
-                );
+        // Step 1: Update Keycloak user
+        await axios.put(
+            `${KEYCLOAK_URL}/admin/realms/${REALM}/users/${userID}`,
+            {
+                email: userData.email || user.email,
+                firstName: userData.firstname || user.firstname,
+                lastName: userData.lastname || user.lastname,
+                attributes: {
+                    phone: userData.phone || user.phone,
+                    wallet: userData.wallet || user.wallet,
+                },
+            },
+            { headers: { Authorization: `Bearer ${token}` } }
+        );
 
-                // Update password in Keycloak if provided
-                if (userData.password) {
-                    await axios.put(
-                        `${KEYCLOAK_URL}/admin/realms/${REALM}/users/${user.keycloakId}/reset-password`,
-                        {
-                            type: 'password',
-                            value: userData.password,
-                            temporary: false,
-                        },
-                        { headers: { Authorization: `Bearer ${token}` } }
-                    );
-                }
-            } else {
-                console.warn(`No keycloakId found for user ${userID}. Skipping Keycloak update.`);
-            }
-
-            // Update local DB
-            if (userData.PFP !== undefined) userData.PFP = userData.PFP;
-            await user.update(userData);
-            return user;
-        } catch (error) {
-            console.error(`${new Date().toISOString()} - Update user failed:`, error.response?.data || error);
-            throw new Error(`Failed to update user: ${error.response?.data?.errorMessage || error.message}`);
-        }
-    }
-
-    static async deleteUser(userID) {
-        try {
-            const token = await getAdminToken();
-            await axios.delete(
-                `${KEYCLOAK_URL} / admin / realms / ${REALM} / users / ${userID}`,
+        // Step 2: Update password in Keycloak if provided
+        if (userData.password) {
+            await axios.put(
+                `${KEYCLOAK_URL}/admin/realms/${REALM}/users/${userID}/reset-password`,
+                {
+                    type: 'password',
+                    value: userData.password,
+                    temporary: false,
+                },
                 { headers: { Authorization: `Bearer ${token}` } }
             );
-
-            const user = await User.findByPk(userID);
-            if (user) await user.destroy();
-            return { message: 'User deleted successfully' };
-        } catch (error) {
-            throw new Error(`Failed to delete user: ${error.response?.data?.errorMessage || error.message}`);
+            console.log(`Updated password for user ${userID} in Keycloak`);
         }
+        console.log(`Updated user ${userID} in Keycloak`);
+
+        // Step 3: Update the local DB
+        await user.update({
+            email: userData.email || user.email,
+            firstname: userData.firstname || user.firstname,
+            lastname: userData.lastname || user.lastname,
+            phone: userData.phone || user.phone,
+            wallet: userData.wallet || user.wallet,
+        });
+        console.log(`Updated user ${userID} in local DB`);
+
+        return user;
     }
 
+    // Delete a user from both local DB and Keycloak
+    static async deleteUser(userID) {
+        const user = await User.findByPk(userID);
+        if (!user) throw new Error('User not found');
+
+        const token = await getAdminToken();
+
+        // Step 1: Delete the user from Keycloak
+        await axios.delete(
+            `${KEYCLOAK_URL}/admin/realms/${REALM}/users/${userID}`,
+            { headers: { Authorization: `Bearer ${token}` } }
+        );
+        console.log(`Deleted user ${userID} from Keycloak`);
+
+        // Step 2: Delete the user from the local DB
+        await user.destroy();
+        console.log(`Deleted user ${userID} from local DB`);
+
+        return { message: 'User deleted successfully' };
+    }
+
+    // Get supervisors assigned to a user
     static async getSupervisorsByUser(userID) {
-        try {
-            const user = await User.findByPk(userID, {
-                include: [{
-                    model: User,
-                    as: 'Supervisors',
-                    through: { attributes: [] },
-                    attributes: ['userID', 'firstname', 'lastname', 'email', 'phone'],
-                }],
-            });
-            if (!user) throw new Error('User not found');
-            return user.Supervisors;
-        } catch (error) {
-            throw new Error(`Failed to fetch supervisors: ${error.message}`);
-        }
+        const user = await User.findByPk(userID, {
+            include: [{
+                model: User,
+                as: 'Supervisors',
+                through: { attributes: [] },
+                attributes: ['userID', 'firstname', 'lastname', 'email', 'phone'],
+            }],
+        });
+        if (!user) throw new Error('User not found');
+        return user.Supervisors;
     }
 
+    // Get managers assigned to a user
     static async getManagersByUser(userID) {
-        try {
-            const user = await User.findByPk(userID, {
-                include: [{
-                    model: User,
-                    as: 'Managers',
-                    through: { attributes: [] },
-                    attributes: ['userID', 'firstname', 'lastname', 'email', 'phone'],
-                }],
-            });
-            if (!user) throw new Error('User not found');
-            return user.Managers;
-        } catch (error) {
-            throw new Error(`Failed to fetch managers: ${error.message}`);
-        }
+        const user = await User.findByPk(userID, {
+            include: [{
+                model: User,
+                as: 'Managers',
+                through: { attributes: [] },
+                attributes: ['userID', 'firstname', 'lastname', 'email', 'phone'],
+            }],
+        });
+        if (!user) throw new Error('User not found');
+        return user.Managers;
     }
 
+    // Assign supervisors to a manager in the local DB
     static async assignSupervisorsToManager(managerID, supervisorIDs) {
-        try {
-            const manager = await User.findByPk(managerID);
-            if (!manager) throw new Error('Manager not found');
+        const manager = await User.findByPk(managerID);
+        if (!manager) throw new Error('Manager not found');
 
-            const supervisors = await User.findAll({ where: { userID: supervisorIDs } });
-            if (supervisors.length !== supervisorIDs.length) throw new Error('One or more supervisors not found');
+        const supervisors = await User.findAll({ where: { userID: supervisorIDs } });
+        if (supervisors.length !== supervisorIDs.length) throw new Error('One or more supervisors not found');
 
-            const currentSupervisors = await manager.getSupervisors();
-            const currentSupervisorIDs = currentSupervisors.map(s => s.userID);
-            const newSupervisors = supervisorIDs.filter(id => !currentSupervisorIDs.includes(id));
+        const currentSupervisors = await manager.getSupervisors();
+        const currentSupervisorIDs = currentSupervisors.map(s => s.userID);
+        const newSupervisors = supervisors.filter(s => !currentSupervisorIDs.includes(s.userID));
 
-            if (newSupervisors.length > 0) await manager.addSupervisors(newSupervisors);
-
-            return {
-                managerID,
-                assignedSupervisors: supervisors.map(s => s.userID),
-                message: 'Supervisors assigned successfully',
-            };
-        } catch (error) {
-            throw new Error(`Failed to assign supervisors: ${error.message}`);
+        if (newSupervisors.length > 0) {
+            await manager.addSupervisors(newSupervisors);
+            console.log(`Assigned ${newSupervisors.length} supervisors to manager ${managerID} in local DB`);
         }
+
+        return {
+            managerID,
+            assignedSupervisors: newSupervisors.map(s => s.userID),
+            totalAssigned: (await manager.getSupervisors()).length,
+        };
     }
 
+    // Revoke supervisors from a manager in the local DB
     static async revokeSupervisorsFromManager(managerID, supervisorIDs) {
-        try {
-            const manager = await User.findByPk(managerID);
-            if (!manager) throw new Error('Manager not found');
+        const manager = await User.findByPk(managerID);
+        if (!manager) throw new Error('Manager not found');
 
-            const supervisors = await User.findAll({ where: { userID: supervisorIDs } });
-            if (supervisors.length !== supervisorIDs.length) throw new Error('One or more supervisors not found');
+        const supervisors = await User.findAll({ where: { userID: supervisorIDs } });
+        if (supervisors.length !== supervisorIDs.length) throw new Error('One or more supervisors not found');
 
-            const currentSupervisors = await manager.getSupervisors();
-            const currentSupervisorIDs = currentSupervisors.map(s => s.userID);
-            const revokedSupervisors = supervisorIDs.filter(id => currentSupervisorIDs.includes(id));
+        const currentSupervisors = await manager.getSupervisors();
+        const currentSupervisorIDs = currentSupervisors.map(s => s.userID);
+        const revokedSupervisors = supervisors.filter(s => currentSupervisorIDs.includes(s.userID));
 
-            if (revokedSupervisors.length > 0) await manager.removeSupervisors(revokedSupervisors);
-
-            return {
-                managerID,
-                revokedSupervisors,
-                message: 'Supervisors revoked successfully',
-            };
-        } catch (error) {
-            throw new Error(`Failed to revoke supervisors: ${error.message}`);
+        if (revokedSupervisors.length > 0) {
+            await manager.removeSupervisors(revokedSupervisors);
+            console.log(`Revoked ${revokedSupervisors.length} supervisors from manager ${managerID} in local DB`);
         }
+
+        return {
+            managerID,
+            revokedSupervisors: revokedSupervisors.map(s => s.userID),
+            totalAssigned: (await manager.getSupervisors()).length,
+        };
     }
 }
 
