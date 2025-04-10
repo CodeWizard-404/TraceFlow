@@ -76,7 +76,7 @@ async function createOrUpdateKeycloakUser(token, email, password, firstname, las
     return keycloakId;
 }
 
-async function syncSuperAdminToKeycloak(token, clientUUID, superAdminRole, allPermissions) {
+async function syncSuperAdminRoleToKeycloak(token) {
     let roleId;
     try {
         const roleCheck = await axios.get(
@@ -103,88 +103,6 @@ async function syncSuperAdminToKeycloak(token, clientUUID, superAdminRole, allPe
             throw error;
         }
     }
-
-    const policyName = `${SUPER_ADMIN_CONFIG.roleName}-policy`;
-    let policyId;
-    try {
-        const policyCheck = await axios.get(
-            `${KEYCLOAK_URL}/admin/realms/${REALM}/clients/${clientUUID}/authz/resource-server/policy/role?name=${policyName}`,
-            { headers: { Authorization: `Bearer ${token}` } }
-        );
-        policyId = policyCheck.data[0]?.id;
-    } catch (error) {
-        if (error.response?.status === 404) {
-            await axios.post(
-                `${KEYCLOAK_URL}/admin/realms/${REALM}/clients/${clientUUID}/authz/resource-server/policy/role`,
-                {
-                    name: policyName,
-                    description: `Policy for ${SUPER_ADMIN_CONFIG.roleName} role`,
-                    logic: 'POSITIVE',
-                    type: 'role',
-                    roles: [{ id: roleId, required: true }],
-                },
-                { headers: { Authorization: `Bearer ${token}` } }
-            );
-            const policy = await axios.get(
-                `${KEYCLOAK_URL}/admin/realms/${REALM}/clients/${clientUUID}/authz/resource-server/policy/role?name=${policyName}`,
-                { headers: { Authorization: `Bearer ${token}` } }
-            );
-            policyId = policy.data[0].id;
-        } else {
-            throw error;
-        }
-    }
-
-    const resources = await axios.get(
-        `${KEYCLOAK_URL}/admin/realms/${REALM}/clients/${clientUUID}/authz/resource-server/resource`,
-        { headers: { Authorization: `Bearer ${token}` } }
-    );
-    const resourceMap = new Map(resources.data.map(r => [r.name, r._id]));
-
-    const permissionsResponse = await axios.get(
-        `${KEYCLOAK_URL}/admin/realms/${REALM}/clients/${clientUUID}/authz/resource-server/permission`,
-        { headers: { Authorization: `Bearer ${token}` } }
-    );
-    const permissionMap = new Map(permissionsResponse.data.map(p => [p.name, p]));
-
-    for (const perm of allPermissions) {
-        const permissionName = `${perm.name}-permission`;
-        const resourceId = resourceMap.get(perm.name);
-        if (!resourceId) continue;
-
-        const existingPermission = permissionMap.get(permissionName);
-        if (existingPermission) {
-            const currentPolicies = Array.isArray(existingPermission.policies) ? existingPermission.policies : [];
-            if (!currentPolicies.includes(policyId)) {
-                await axios.put(
-                    `${KEYCLOAK_URL}/admin/realms/${REALM}/clients/${clientUUID}/authz/resource-server/permission/${existingPermission.id}`,
-                    {
-                        name: permissionName,
-                        description: `Permission for ${perm.name}`,
-                        type: 'resource',
-                        resources: [resourceId],
-                        policies: [...currentPolicies, policyId],
-                        decisionStrategy: 'AFFIRMATIVE',
-                    },
-                    { headers: { Authorization: `Bearer ${token}` } }
-                );
-            }
-        } else {
-            await axios.post(
-                `${KEYCLOAK_URL}/admin/realms/${REALM}/clients/${clientUUID}/authz/resource-server/permission/resource`,
-                {
-                    name: permissionName,
-                    description: `Permission for ${perm.name}`,
-                    type: 'resource',
-                    resources: [resourceId],
-                    policies: [policyId],
-                    decisionStrategy: 'AFFIRMATIVE',
-                },
-                { headers: { Authorization: `Bearer ${token}` } }
-            );
-        }
-    }
-
     return roleId;
 }
 
@@ -194,6 +112,7 @@ async function seedSuperAdmin() {
         const token = await getAdminToken();
         const clientUUID = await getClientUUID(token);
 
+        // Seed Super Admin user in Keycloak and local DB
         const keycloakId = await createOrUpdateKeycloakUser(
             token,
             SUPER_ADMIN_CONFIG.email,
@@ -204,6 +123,7 @@ async function seedSuperAdmin() {
             SUPER_ADMIN_CONFIG.wallet
         );
 
+        // Seed Super Admin role in local DB
         const [superAdminRole] = await Role.findOrCreate({
             where: { name: SUPER_ADMIN_CONFIG.roleName },
             defaults: {
@@ -213,6 +133,7 @@ async function seedSuperAdmin() {
             },
         });
 
+        // Seed permissions to Super Admin role in local DB only
         const allPermissions = await Permission.findAll();
         if (allPermissions.length === 0) {
             throw new Error('No permissions found to assign to Super Admin role');
@@ -225,6 +146,7 @@ async function seedSuperAdmin() {
             }
         }
 
+        // Seed Super Admin user in local DB
         const [superAdminUser, userCreated] = await User.findOrCreate({
             where: { email: SUPER_ADMIN_CONFIG.email },
             defaults: {
@@ -243,14 +165,17 @@ async function seedSuperAdmin() {
             await superAdminUser.update({ keycloakId });
         }
 
+        // Assign Super Admin role to user in local DB
         const currentRoles = await superAdminUser.getRoles();
         const currentRoleIDs = currentRoles.map(r => r.roleID);
         if (!currentRoleIDs.includes(superAdminRole.roleID)) {
             await superAdminUser.addRole(superAdminRole);
         }
 
-        const roleId = await syncSuperAdminToKeycloak(token, clientUUID, superAdminRole, allPermissions);
+        // Sync Super Admin role to Keycloak (no permissions)
+        const roleId = await syncSuperAdminRoleToKeycloak(token);
 
+        // Assign Super Admin role to user in Keycloak
         const roleMappingCheck = await axios.get(
             `${KEYCLOAK_URL}/admin/realms/${REALM}/users/${keycloakId}/role-mappings/realm`,
             { headers: { Authorization: `Bearer ${token}` } }
@@ -264,7 +189,7 @@ async function seedSuperAdmin() {
             );
         }
 
-        // Always show credentials in development, whether created or existing
+        // Show credentials in development
         if (process.env.NODE_ENV === 'development') {
             console.log(`\n\x1b[31mSuper Admin Credentials:`);
             console.log(`\tEmail:\t\t${SUPER_ADMIN_CONFIG.email}`);

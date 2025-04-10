@@ -1,17 +1,22 @@
+// Import required modules
 const fs = require('fs').promises;
 const path = require('path');
 const { nanoid } = require('nanoid');
-const axios = require('axios');
 const { Permission } = require('../models');
-const { migratePermissionsKeycloakAssignments } = require('./migratePermissionsKeycloakAssignments');
+const migratePermissionsKeycloakAssignments = require('./migratePe');
 require('dotenv').config();
+
+// Configuration constants
+const DIRECTORIES_TO_SCAN = [
+    path.join(__dirname, '../routes'),
+];
 
 // Regular expressions for parsing code
 const PERMISSION_REGEX = /requirePermission\(['"`]([^'`"]+)['"`]\)/g;
 const ROUTE_PATH_REGEX = /app\.use\(['"`]([^'`"]+)['"`],\s*[a-zA-Z0-9_]+Routes\)/g;
-const ROUTE_METHOD_REGEX = /router\.(get|post|put|delete)\(['"`]([^'`"]+)['"`].*requirePermission\(['"`]([^'`"]+)['"`]\)/g;
 
 // Determines the class type based on route path
+
 const getRouteClass = (routePath) => {
     const basePath = routePath.toLowerCase().replace('/api/', '');
     const routeClassMap = {
@@ -27,79 +32,98 @@ const getRouteClass = (routePath) => {
         permissions: 'Permission',
         users: 'User',
     };
-    return Object.entries(routeClassMap).find(([key]) => basePath.includes(key))?.[1] || 'Other';
+
+    return Object.entries(routeClassMap)
+        .find(([key]) => basePath.includes(key))?.[1] || 'Other';
 };
 
-// Extracts permissions with specific route paths
-const extractRoutePermissions = async () => {
+// Extracts permissions and their associated classes from route files
+
+const extractPermissionsFromFiles = async () => {
     const permissionsMap = new Map();
+
+    // Read and parse app.js for route definitions
     const appFilePath = path.join(__dirname, '../app.js');
     const appContent = await fs.readFile(appFilePath, 'utf8');
     const routeClasses = new Map();
 
+    // Extract route paths and their classes
     [...appContent.matchAll(ROUTE_PATH_REGEX)].forEach(([_, routePath]) => {
         routeClasses.set(routePath, getRouteClass(routePath));
     });
 
-    const directoriesToScan = [path.join(__dirname, '../routes')];
-    for (const dir of directoriesToScan) {
+    // Scan directories for permission definitions
+    for (const dir of DIRECTORIES_TO_SCAN) {
         const files = await fs.readdir(dir);
+
         await Promise.all(files.map(async (file) => {
             const filePath = path.join(dir, file);
             const stats = await fs.stat(filePath);
+
             if (stats.isFile() && file.endsWith('.js')) {
                 const content = await fs.readFile(filePath, 'utf8');
                 const routeName = file.replace('Routes.js', '').toLowerCase();
+
+                // Infer class from route name
                 const matchingRoute = Array.from(routeClasses.keys()).find(route => {
                     const routeLower = route.toLowerCase();
                     return routeLower.includes(routeName) ||
                         (routeName.includes('receiptbook') && routeLower.includes('receipt-books')) ||
                         (routeName.includes('receiptstub') && routeLower.includes('receipt-stubs'));
                 });
-                const baseRoute = matchingRoute || '/api/unknown';
-                const inferredClass = routeClasses.get(matchingRoute) || 'Other';
 
-                [...content.matchAll(ROUTE_METHOD_REGEX)].forEach(([_, method, routePath, permission]) => {
-                    if (permission) {
-                        const fullRoute = path.join(baseRoute, routePath).replace(/\\/g, '/');
-                        permissionsMap.set(permission, { name: permission, class: inferredClass, route: fullRoute });
-                    }
+                const inferredClass = matchingRoute ? routeClasses.get(matchingRoute) : 'Other';
+
+                // Extract permissions from file content
+                [...content.matchAll(PERMISSION_REGEX)].forEach(([_, permission]) => {
+                    if (permission) permissionsMap.set(permission, inferredClass);
                 });
             }
         }));
     }
-    return Array.from(permissionsMap.values());
+
+    return Array.from(permissionsMap, ([name, className]) => ({ name, class: className }));
 };
 
-// Seeds missing permissions into both local DB and Keycloak
+// Seeds missing permissions into the database
+
 const seedMissingPermissions = async () => {
     try {
-        const permissionsFromCode = await extractRoutePermissions();
+        const permissionsWithClasses = await extractPermissionsFromFiles();
         const existingPermissions = new Set(
             (await Permission.findAll({ attributes: ['name'] })).map(p => p.name)
         );
 
-        const missingPermissions = permissionsFromCode.filter(
+        const missingPermissions = permissionsWithClasses.filter(
             perm => !existingPermissions.has(perm.name)
         );
 
-        if (missingPermissions.length > 0) {
-            const permissionObjects = missingPermissions.map(perm => ({
-                permissionID: `perm_${nanoid()}`,
-                name: perm.name,
-                class: perm.class,
-                description: `Auto-generated permission for ${perm.name} (Class: ${perm.class})`,
-            }));
-
-            await Promise.all(permissionObjects.map(perm =>
-                Permission.findOrCreate({
-                    where: { name: perm.name },
-                    defaults: perm,
-                })
-            ));
+        if (missingPermissions.length === 0) {
+            console.log(`${new Date().toISOString()} - No new permissions to seed`);
+            return;
         }
 
+        // Prepare permission objects for database insertion
+        const permissionObjects = missingPermissions.map(perm => ({
+            permissionID: `perm_${nanoid()}`,
+            name: perm.name,
+            class: perm.class,
+            description: `Auto-generated permission for ${perm.name} (Class: ${perm.class})`,
+        }));
+
+        // Seed permissions and count new additions
+        let newPermissionsCount = 0;
+        await Promise.all(permissionObjects.map(async (perm) => {
+            const [_, created] = await Permission.findOrCreate({
+                where: { name: perm.name },
+                defaults: perm,
+            });
+            if (created) newPermissionsCount++;
+        }));
+
         await migratePermissionsKeycloakAssignments();
+        console.log(`${new Date().toISOString()} - Seeded To Keycloak permissions`);
+        console.log(`${new Date().toISOString()} - Seeded ${newPermissionsCount} new permissions`);
     } catch (error) {
         console.error('Error seeding permissions:', error);
         throw error;
@@ -108,7 +132,7 @@ const seedMissingPermissions = async () => {
 
 // Exports
 module.exports = {
-    extractRoutePermissions,
+    extractPermissionsFromFiles,
     seedMissingPermissions,
 };
 

@@ -55,7 +55,12 @@ export const refreshToken = async (): Promise<{ accessToken: string; refreshToke
         return response.data;
     } catch (error) {
         console.error("Error refreshing token:", error);
-        localStorage.clear();
+        localStorage.removeItem('accessToken');
+        localStorage.removeItem('refreshToken');
+        localStorage.removeItem('expiresIn');
+        localStorage.removeItem('token');
+        localStorage.removeItem('user');
+        localStorage.removeItem('supervisorFilter');
         window.location.href = '/login';
         throw error;
     }

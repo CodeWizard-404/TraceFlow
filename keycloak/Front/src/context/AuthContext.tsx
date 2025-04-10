@@ -173,8 +173,12 @@ export const AuthProvider: React.FC<{ children: ReactNode }> = ({ children }) =>
         setEffectivePermissions(null);
         setPermissionsLoaded(false);
         setNoAccess(false);
-        localStorage.removeItem("token");
-        localStorage.removeItem("user");
+        localStorage.removeItem('accessToken');
+        localStorage.removeItem('refreshToken');
+        localStorage.removeItem('expiresIn');
+        localStorage.removeItem('token');
+        localStorage.removeItem('user');
+        localStorage.removeItem('supervisorFilter');
         navigate("/login", { replace: true, state: null });
     };
 
