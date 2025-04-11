@@ -27,20 +27,20 @@ class User {
 
     return User(
       userID: json['userID'],
-      firstName: json['fisrtName'], // Note: Keeping typo to match backend response
-      lastName: json['lastName'],
+      firstName: json['firstname'],
+      lastName: json['lastname'],
       phone: json['phone'],
       email: json['email'],
       wallet: json['wallet'],
-      pfp: json['pfp'], // Lowercase to match existing code
+      pfp: json['PFP'],
       roles: roles,
     );
   }
 
   Map<String, dynamic> toJson() => {
     'userID': userID,
-    'fisrtName': firstName, // Match backend typo
-    'lastName': lastName,
+    'fisrtname': firstName,
+    'lastname': lastName,
     'phone': phone,
     'email': email,
     'wallet': wallet,

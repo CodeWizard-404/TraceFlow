@@ -22,11 +22,11 @@ class _FilterSheetState extends State<FilterSheet> {
   late Map<String, Set<String>> _filters;
 
   @override
+  @override
   void initState() {
     super.initState();
     _filters = Map.from(widget.initialFilters);
-    // Ensure 'status' includes only derived options if not already set
-    _filters['status'] ??= {'To Agent', 'To Manager'};
+    _filters['status'] = Set.from(_filters['status'] ?? {'To Agent', 'To Manager'});
   }
 
   @override

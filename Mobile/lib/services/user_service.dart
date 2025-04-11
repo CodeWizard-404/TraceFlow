@@ -39,7 +39,6 @@ class UserService {
     }
   }
 
-  // Existing methods...
   static Future<User> fetchUserById(String userID, String token) async {
     final response = await http.get(
       Uri.parse('$baseUrl/users/$userID'),
@@ -102,4 +101,7 @@ class UserService {
       throw Exception('Failed to fetch managers: ${response.body}');
     }
   }
+
+
+
 }

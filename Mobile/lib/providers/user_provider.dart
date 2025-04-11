@@ -40,7 +40,6 @@ class UserProvider with ChangeNotifier {
     }
   }
 
-  // Existing methods...
   Future<void> fetchUserById(String userID, String token) async {
     _isLoading = true;
     notifyListeners();
@@ -110,4 +109,6 @@ class UserProvider with ChangeNotifier {
       notifyListeners();
     }
   }
+
+
 }

@@ -689,7 +689,8 @@ body.dark .role-info-icon {
 .permissions-list::-webkit-scrollbar,
 .permission-list::-webkit-scrollbar,
 .role-info-popup::-webkit-scrollbar,
-.scanned-list ul::-webkit-scrollbar{
+.scanned-list ul::-webkit-scrollbar,
+.timeline .timeline-path::-webkit-scrollbar {
     width: 12px;
 }
 
@@ -697,7 +698,8 @@ body.dark .role-info-icon {
 .permissions-list::-webkit-scrollbar-track,
 .permission-list::-webkit-scrollbar-track,
 .role-info-popup::-webkit-scrollbar-track,
-.scanned-list ul::-webkit-scrollbar-track  {
+.scanned-list ul::-webkit-scrollbar-track,
+.timeline .timeline-path::-webkit-scrollbar-track {
     background: none;
 }
 
@@ -705,7 +707,8 @@ body.dark .permissions-grid::-webkit-scrollbar-track,
 body.dark .permissions-list::-webkit-scrollbar-track,
 body.dark .permission-list::-webkit-scrollbar-track,
 body.dark .role-info-popup::-webkit-scrollbar-track,
-body.dark .scanned-list ul::-webkit-scrollbar-track {
+body.dark .scanned-list ul::-webkit-scrollbar-track,
+body.dark .timeline .timeline-path::-webkit-scrollbar-track {
     background: none !important;
 }
 
@@ -713,7 +716,8 @@ body.dark .scanned-list ul::-webkit-scrollbar-track {
 .permissions-list::-webkit-scrollbar-thumb,
 .permission-list::-webkit-scrollbar-thumb,
 .role-info-popup::-webkit-scrollbar-thumb,
-.scanned-list ul::-webkit-scrollbar-thumb {
+.scanned-list ul::-webkit-scrollbar-thumb,
+.timeline::-webkit-scrollbar-thumb {
     background-color: #4cb1c7;
     border-radius: 6px;
     border: 3px solid #f8fafc;
@@ -723,7 +727,8 @@ body.dark .permissions-grid::-webkit-scrollbar-thumb,
 body.dark .permissions-list::-webkit-scrollbar-thumb,
 body.dark .permission-list::-webkit-scrollbar-thumb,
 body.dark .role-info-popup::-webkit-scrollbar-thumb,
-body.dark .scanned-list ul::-webkit-scrollbar-thumb {
+body.dark .scanned-list ul::-webkit-scrollbar-thumb,
+body.dark .timeline .timeline-path::-webkit-scrollbar-thumb {
     background-color: #63b3ed;
     border: 3px solid #2b2b2b;
 }
@@ -2718,7 +2723,8 @@ body.dark .permissions-grid-0::-webkit-scrollbar-thumb {
 .table-card {
     background: #fff;
     border-radius: 0.75rem;
-    padding: 1rem; /* Reduced from 1.5rem */
+    padding: 1rem;
+    /* Reduced from 1.5rem */
     box-shadow: 0 0.375rem 1.25rem rgba(0, 0, 0, 0.05);
 }
 
@@ -2732,7 +2738,8 @@ body.dark .table-card {
 .hover-reveal-list {
     display: flex;
     flex-direction: column;
-    gap: 0.25rem; /* Reduced from 0.75rem */
+    gap: 0.25rem;
+    /* Reduced from 0.75rem */
 }
 
 .list-item-wrapper {
@@ -2741,12 +2748,15 @@ body.dark .table-card {
 
 .list-item {
     background: #f8fafc;
-    border-radius: 0.5rem; /* Smaller radius */
-    padding: 0.5rem; /* Reduced from 1rem */
+    border-radius: 0.5rem;
+    /* Smaller radius */
+    padding: 0.5rem;
+    /* Reduced from 1rem */
     display: flex;
     justify-content: space-between;
     align-items: center;
-    transition: transform 0.2s ease, background 0.2s ease; /* Faster transitions */
+    transition: transform 0.2s ease, background 0.2s ease;
+    /* Faster transitions */
 }
 
 body.dark .list-item {
@@ -2754,8 +2764,10 @@ body.dark .list-item {
 }
 
 .list-item:hover {
-    transform: translateX(0.25rem); /* Reduced from 0.5rem */
-    background: #4cb1c7; /* Flat color, no gradient */
+    transform: translateX(0.25rem);
+    /* Reduced from 0.5rem */
+    background: #4cb1c7;
+    /* Flat color, no gradient */
 }
 
 body.dark .list-item:hover {
@@ -2785,7 +2797,8 @@ body.dark .item-text {
 
 .edit-input {
     flex: 1;
-    padding: 0.25rem 0.5rem; /* More compact */
+    padding: 0.25rem 0.5rem;
+    /* More compact */
     border: 1px solid #ddd;
     border-radius: 0.5rem;
     background: #fff;
@@ -2810,9 +2823,11 @@ body.dark .edit-input:focus {
 
 .item-actions {
     display: flex;
-    gap: 0.25rem; /* Tighter gap */
+    gap: 0.25rem;
+    /* Tighter gap */
     opacity: 0;
-    transform: translateX(10px); /* Reduced from 20px */
+    transform: translateX(10px);
+    /* Reduced from 20px */
     transition: opacity 0.2s ease, transform 0.2s ease;
 }
 
@@ -2826,7 +2841,8 @@ body.dark .edit-input:focus {
 .list-button {
     height: 1.5rem;
     border: none;
-    border-radius: 0.25rem; /* Sharper edges */
+    border-radius: 0.25rem;
+    /* Sharper edges */
     cursor: pointer;
     transition: background 0.2s ease, transform 0.2s ease;
     display: flex;
@@ -2843,7 +2859,8 @@ body.dark .list-button.edit {
 }
 
 .list-button.edit:hover {
-    background: #2d8a9e; /* Darker shade, no gradient */
+    background: #2d8a9e;
+    /* Darker shade, no gradient */
     color: #fff;
     transform: scale(1.1);
 }
@@ -2910,7 +2927,8 @@ body.dark .list-button.cancel:hover {
 .list-header {
     font-weight: 600;
     color: #4cb1c7;
-    margin-bottom: 0.5rem; /* Reduced from 1rem */
+    margin-bottom: 0.5rem;
+    /* Reduced from 1rem */
 }
 
 body.dark .list-header {
@@ -2918,7 +2936,8 @@ body.dark .list-header {
 }
 
 .no-items {
-    padding: 0.5rem; /* Reduced from 1rem */
+    padding: 0.5rem;
+    /* Reduced from 1rem */
     color: #6b7280;
     text-align: center;
 }
@@ -2932,7 +2951,8 @@ body.dark .no-items {
     font-size: 0.75rem;
     font-weight: 600;
     color: #1f2937;
-    cursor: pointer; /* Indicates double-clickability */
+    cursor: pointer;
+    /* Indicates double-clickability */
 }
 
 body.dark .item-text {
@@ -2944,7 +2964,8 @@ body.dark .item-text {
 }
 
 .validation-error {
-    font-size: 0.625rem; /* Smaller than item text */
+    font-size: 0.625rem;
+    /* Smaller than item text */
     color: #e81f76;
     margin-left: 0.5rem;
     white-space: nowrap;
@@ -3001,7 +3022,8 @@ body.dark .validation-error {
     padding: 1rem;
     box-shadow: 0 0.375rem 1.25rem rgba(0, 0, 0, 0.05);
     border: 1px solid #e5e7eb;
-    max-width: 400px; /* Compact width */
+    max-width: 400px;
+    /* Compact width */
     margin: 0 auto;
 }
 
@@ -3034,7 +3056,8 @@ body.dark .form-header {
 .form-content {
     display: flex;
     flex-direction: column;
-    gap: 1rem; /* Space between input and button */
+    gap: 1rem;
+    /* Space between input and button */
 }
 
 /* Form Group */
@@ -3062,7 +3085,8 @@ body.dark .form-label {
 /* Input (already styled, but tweak for consistency) */
 .form-input {
     width: 100%;
-    padding: 0.5rem; /* Slightly larger for better usability */
+    padding: 0.5rem;
+    /* Slightly larger for better usability */
     font-size: 0.75rem;
     border: 1px solid #ddd;
     border-radius: 0.5rem;
@@ -3117,7 +3141,8 @@ body.dark .validation-error {
     border-radius: 0.5rem;
     cursor: pointer;
     transition: background 0.2s ease, transform 0.2s ease;
-    align-self: flex-start; /* Left-aligned */
+    align-self: flex-start;
+    /* Left-aligned */
 }
 
 body.dark .action-button.create {
