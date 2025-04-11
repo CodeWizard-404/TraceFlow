@@ -23,7 +23,7 @@ import ErrorDisplay from "./pages/Error/ErrorDisplay";
 import AccessDenied from "./pages/Error/AccessDenied";
 import "./App.css";
 
-import Dashboard from "./pages/Dashboard/Entry";
+import Entry from "./pages/Dashboard/Entry";
 import LoginPage from "./pages/auth/Login";
 import ProfilePage from "./pages/auth/ProfilePage";
 import Timesheets from "./pages/timesheet/Timesheets";
@@ -197,7 +197,7 @@ const AppContent: React.FC = () => {
               </ProtectedRoute>
             }
           />
-          <Route path="/dashboard" element={<Dashboard />} />
+          <Route path="/dashboard" element={<Entry />} />
           <Route
             path="/receipt-books"
             element={

@@ -1592,6 +1592,7 @@ body.dark .permissions-filter-header label {
     .permissions-filter-controls {
         grid-template-columns: 1fr;
     }
+
 }
 
 
@@ -2449,12 +2450,6 @@ body.dark .permissions-filter-header label {
     display: grid;
     grid-template-columns: 1fr 1fr;
     gap: 1rem;
-}
-
-@media (max-width: 640px) {
-    .permissions-filter-controls {
-        grid-template-columns: 1fr;
-    }
 }
 
 .permissions-search {
