@@ -389,7 +389,12 @@ const Timesheets: React.FC = () => {
                       {week.days[4].toLocaleDateString("en-GB", { day: "numeric", month: "short" })} /
                     </span>
                     <span className="visit-count">{week.visits.length} Visits</span>
-                    {userPermissions.canReadSupervisors && <span className="week-info">Supervisors: {week.supervisorCount}</span>}
+                    {userPermissions.canReadSupervisors && (
+                      <span className="week-info">
+                        <br />
+                        Supervisors: {week.supervisorCount}
+                      </span>
+                    )}
                   </div>
                 ))}
               </div>

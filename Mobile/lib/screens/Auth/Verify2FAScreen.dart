@@ -42,18 +42,9 @@ class Verify2FAScreenState extends State<Verify2FAScreen> {
     }
 
     final authProvider = Provider.of<AuthProvider>(context, listen: false);
+    if (kDebugMode) print('Attempting OTP verification with code: ${_otpController.text}');
     await authProvider.verify2FA(_otpController.text.trim(), _trustDevice);
-
-    if (authProvider.token != null && authProvider.permissionsLoaded && mounted) {
-      if (kDebugMode) print('Navigating to TimesheetDetailsScreen (Home)');
-      Navigator.pushReplacement(
-        context,
-        MaterialPageRoute(builder: (_) => const TimesheetDetailsScreen()),
-      );
-    } else if (authProvider.errorMessage != null && mounted) {
-      _showErrorSnackBar(authProvider.errorMessage!);
-      authProvider.clearError();
-    }
+    if (kDebugMode) print('OTP verification attempt completed');
   }
 
   Future<void> _resend2FA(String method) async {
@@ -101,6 +92,26 @@ class Verify2FAScreenState extends State<Verify2FAScreen> {
   @override
   Widget build(BuildContext context) {
     final authProvider = Provider.of<AuthProvider>(context);
+
+    // Handle navigation and feedback in a post-frame callback
+    WidgetsBinding.instance.addPostFrameCallback((_) {
+      if (!mounted) return;
+      if (authProvider.errorMessage != null) {
+        _showErrorSnackBar(authProvider.errorMessage!);
+        authProvider.clearError();
+      } else if (authProvider.token != null && authProvider.permissionsLoaded && authProvider.isSupervisor) {
+        if (kDebugMode) print('Navigating to TimesheetDetailsScreen (Home) from listener');
+        Navigator.pushReplacement(
+          context,
+          MaterialPageRoute(builder: (_) => const TimesheetDetailsScreen()),
+        );
+      } else if (authProvider.token != null && authProvider.permissionsLoaded && !authProvider.isSupervisor) {
+        if (kDebugMode) print('Access denied: Not a supervisor');
+        _showErrorSnackBar('Access denied: Only Supervisors can log in.');
+        authProvider.logout();
+      }
+    });
+
     if (kDebugMode) print('Building Verify2FAScreen, isLoading: ${authProvider.isLoading}');
     return Scaffold(
       backgroundColor: Theme.of(context).scaffoldBackgroundColor,

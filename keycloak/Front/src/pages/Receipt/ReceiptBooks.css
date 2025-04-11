@@ -161,7 +161,7 @@ body.dark .sort-card button:hover {
     background: #63b3ed;
 }
 
-.action-button {
+.action-button-0 {
     padding: 0.75rem 1.5rem;
     font-size: 0.875rem;
     font-weight: 600;
@@ -179,17 +179,17 @@ body.dark .sort-card button:hover {
     transition: all 0.3s ease;
 }
 
-body.dark .action-button {
+body.dark .action-button-0 {
     background: #63b3ed;
     box-shadow: 0 0.25rem 0.75rem rgba(0, 0, 0, 0.4);
 }
 
-.action-button:hover {
+.action-button-0:hover {
     background: #3a8fa2;
     transform: scale(1.05);
 }
 
-body.dark .action-button:hover {
+body.dark .action-button-0:hover {
     background: #4a83ce;
 }
 
@@ -627,7 +627,7 @@ body.dark .receipt-books-btn:hover {
 
 
 /* Add a container for form buttons */
-.form-actions {
+.form-actions-0 {
     display: flex;
     gap: 1rem;
     /* Space between buttons */
@@ -638,8 +638,8 @@ body.dark .receipt-books-btn:hover {
 }
 
 /* Ensure buttons don’t grow too wide */
-.form-actions .action-button,
-.form-actions .back-button {
+.form-actions-0 .action-button-0,
+.form-actions-0 .back-button {
     flex: 0 0 auto;
     /* Prevent buttons from stretching */
     min-width: 120px;
@@ -648,14 +648,14 @@ body.dark .receipt-books-btn:hover {
 
 /* Responsive adjustments */
 @media (max-width: 480px) {
-    .form-actions {
+    .form-actions-0 {
         flex-direction: column;
         /* Stack buttons vertically on small screens */
         gap: 0.75rem;
     }
 
-    .form-actions .action-button,
-    .form-actions .back-button {
+    .form-actions-0 .action-button-0,
+    .form-actions-0 .back-button {
         width: 100%;
         /* Full width on small screens */
     }

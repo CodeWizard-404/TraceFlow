@@ -47,7 +47,7 @@ class _UserSelectorState extends State<UserSelector> {
     final query = _searchController.text.toLowerCase();
     setState(() {
       _filteredUsers = userProvider.users.where((user) {
-        final fullName = '${user.firstname} ${user.lastname}'.toLowerCase();
+        final fullName = '${user.firstName} ${user.lastName}'.toLowerCase();
         final phone = user.phone?.toLowerCase() ?? '';
         return fullName.contains(query) || phone.contains(query);
       }).toList();
@@ -66,11 +66,11 @@ class _UserSelectorState extends State<UserSelector> {
         ? usersToShow.firstWhere(
           (user) => user.userID == widget.recipientID,
       orElse: () => userProvider.currentUser ??
-          User(userID: '', firstname: 'Unknown', lastname: '', phone: ''),
+          User(userID: '', firstName: 'Unknown', lastName: '', phone: ''),
     )
         : null;
 
-    print('Building UI, recipientID: ${widget.recipientID}, selectedUser: ${selectedUser?.firstname}, users: ${userProvider.users.length}, filtered: ${usersToShow.length}, visible: ${visibleUsers.length}');
+    print('Building UI, recipientID: ${widget.recipientID}, selectedUser: ${selectedUser?.firstName}, users: ${userProvider.users.length}, filtered: ${usersToShow.length}, visible: ${visibleUsers.length}');
 
     return Column(
       crossAxisAlignment: CrossAxisAlignment.start,
@@ -90,7 +90,7 @@ class _UserSelectorState extends State<UserSelector> {
               itemBuilder: (context, index) {
                 final user = visibleUsers[index];
                 return RadioListTile<String>(
-                  title: Text('${user.firstname} ${user.lastname} (${user.phone ?? "No phone"})'),
+                  title: Text('${user.firstName} ${user.lastName} (${user.phone ?? "No phone"})'),
                   value: user.userID!,
                   groupValue: widget.recipientID,
                   onChanged: (value) {
@@ -116,7 +116,7 @@ class _UserSelectorState extends State<UserSelector> {
         ],
         if (selectedUser != null && widget.recipientID != null) ...[
           const CustomSpacer(height: 16),
-          Text('Selected ${widget.recipientType}: ${selectedUser.firstname} ${selectedUser.lastname}'),
+          Text('Selected ${widget.recipientType}: ${selectedUser.firstName} ${selectedUser.lastName}'),
         ],
       ],
     );

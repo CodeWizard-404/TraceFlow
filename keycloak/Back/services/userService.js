@@ -158,13 +158,14 @@ class UserService {
         }
         console.log(`Updated user ${userID} in Keycloak`);
 
-        // Step 3: Update the local DB
+        // Step 3: Update the local DB, including PFP if provided
         await user.update({
             email: userData.email || user.email,
             firstname: userData.firstname || user.firstname,
             lastname: userData.lastname || user.lastname,
             phone: userData.phone || user.phone,
             wallet: userData.wallet || user.wallet,
+            PFP: userData.PFP !== undefined ? userData.PFP : user.PFP, // Update PFP if provided
         });
         console.log(`Updated user ${userID} in local DB`);
 

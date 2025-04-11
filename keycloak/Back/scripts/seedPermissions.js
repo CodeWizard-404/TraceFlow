@@ -130,10 +130,44 @@ const seedMissingPermissions = async () => {
     }
 };
 
-// Exports
+// New function to adapt permissions for Keycloak resource migration
+const extractRoutePermissions = async () => {
+    try {
+        // Reuse existing permissions extraction logic
+        const permissions = await extractPermissionsFromFiles();
+
+        // Map classes to routes, consistent with getRouteClass
+        const classToRouteMap = {
+            Timesheet: '/api/timesheets',
+            Visit: '/api/visits',
+            Agent: '/api/agents',
+            Checklist: '/api/checklists',
+            Reason: '/api/reasons',
+            ReceiptBook: '/api/receipt-books',
+            ReceiptStub: '/api/receipt-stubs',
+            User: '/api/users',
+            Role: '/api/roles',
+            Permission: '/api/permissions',
+            Other: '/api/other',
+        };
+
+        // Transform permissions to include route
+        return permissions.map(perm => ({
+            name: perm.name,
+            class: perm.class,
+            route: classToRouteMap[perm.class] || '/api/unknown', // Fallback to avoid invalid routes
+        }));
+    } catch (error) {
+        console.error('Error in extractRoutePermissions:', error);
+        throw error;
+    }
+};
+
+// Update exports to include the new function
 module.exports = {
     extractPermissionsFromFiles,
     seedMissingPermissions,
+    extractRoutePermissions,
 };
 
 // Execute if run directly

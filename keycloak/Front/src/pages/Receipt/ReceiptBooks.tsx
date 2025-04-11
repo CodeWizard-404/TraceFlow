@@ -373,12 +373,12 @@ const ReceiptBooks: React.FC = () => {
                         </div>
                     </div>
                     {userPermissions.canCreate && (
-                        <button className="action-button" onClick={() => setView("create")}>
+                        <button className="action-button-0" onClick={() => setView("create")}>
                             <FaPlus /> New Receipt
                         </button>
                     )}
                     {userPermissions.canTransfer && (
-                        <button className="action-button" onClick={handleTransfer}>
+                        <button className="action-button-0" onClick={handleTransfer}>
                             <FaExchangeAlt /> Transfer Books
                         </button>
                     )}
@@ -487,8 +487,8 @@ const ReceiptBooks: React.FC = () => {
                                     <option value="Transfer">Transfer</option>
                                 </select>
                             </div>
-                            <div className="form-actions">
-                                <button className="action-button" onClick={handleCreate}>Create</button>
+                            <div className="">
+                                <button className="action-button-0" onClick={handleCreate}>Create</button>
                                 <button className="back-button" onClick={() => setView("list")}>Cancel</button>
                             </div>
                         </div>
@@ -521,8 +521,8 @@ const ReceiptBooks: React.FC = () => {
                                     <option value="Transfer">Transfer</option>
                                 </select>
                             </div>
-                            <div className="form-actions">
-                                <button className="action-button" onClick={handleUpdate}>Save</button>
+                            <div className="">
+                                <button className="action-button-0" onClick={handleUpdate}>Save</button>
                                 <button className="back-button" onClick={() => setView("list")}>Cancel</button>
                             </div>
                         </div>

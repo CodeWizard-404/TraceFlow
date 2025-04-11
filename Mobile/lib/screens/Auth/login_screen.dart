@@ -47,31 +47,13 @@ class LoginScreenState extends State<LoginScreen> {
     final authProvider = Provider.of<AuthProvider>(context, listen: false);
     if (kDebugMode) print('Attempting login with identifier: ${_identifierController.text}');
 
+    // Clear any previous errors
+    authProvider.clearError();
+
+    // Perform login
     await authProvider.login(_identifierController.text.trim(), _passwordController.text.trim());
 
-    if (authProvider.token != null && authProvider.permissionsLoaded && mounted) {
-      if (authProvider.isSupervisor) {
-        if (authProvider.requires2FA) {
-          if (kDebugMode) print('Navigating to Verify2FAScreen');
-          Navigator.pushNamed(context, '/verify-2fa');
-        } else {
-          if (kDebugMode) print('Navigating to TimesheetDetailsScreen (Home)');
-          Navigator.pushReplacement(
-            context,
-            MaterialPageRoute(builder: (_) => const TimesheetDetailsScreen()),
-          );
-        }
-      } else {
-        if (kDebugMode) print('Access denied: Not a supervisor');
-        _showErrorSnackBar('Access denied: Only Supervisors can log in.');
-        await authProvider.logout(); // Clear token and user
-      }
-    }
-
-    if (authProvider.errorMessage != null && mounted) {
-      _showErrorSnackBar(authProvider.errorMessage!);
-      authProvider.clearError();
-    }
+    if (kDebugMode) print('Login attempt completed, waiting for state update');
   }
 
   void _showErrorSnackBar(String message) {
@@ -106,6 +88,29 @@ class LoginScreenState extends State<LoginScreen> {
   @override
   Widget build(BuildContext context) {
     final authProvider = Provider.of<AuthProvider>(context);
+
+    // Handle navigation based on AuthProvider state
+    WidgetsBinding.instance.addPostFrameCallback((_) {
+      if (!mounted) return;
+      if (authProvider.errorMessage != null) {
+        _showErrorSnackBar(authProvider.errorMessage!);
+        authProvider.clearError();
+      } else if (authProvider.requires2FA) {
+        if (kDebugMode) print('Navigating to Verify2FAScreen from listener');
+        Navigator.pushNamed(context, '/verify-2fa');
+      } else if (authProvider.token != null && authProvider.permissionsLoaded && authProvider.isSupervisor) {
+        if (kDebugMode) print('Navigating to TimesheetDetailsScreen (Home) from listener');
+        Navigator.pushReplacement(
+          context,
+          MaterialPageRoute(builder: (_) => const TimesheetDetailsScreen()),
+        );
+      } else if (authProvider.token != null && authProvider.permissionsLoaded && !authProvider.isSupervisor) {
+        if (kDebugMode) print('Access denied: Not a supervisor');
+        _showErrorSnackBar('Access denied: Only Supervisors can log in.');
+        authProvider.logout();
+      }
+    });
+
     if (kDebugMode) print('Building LoginScreen, isLoading: ${authProvider.isLoading}');
     return Scaffold(
       backgroundColor: Theme.of(context).scaffoldBackgroundColor,

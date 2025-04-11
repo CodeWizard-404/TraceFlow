@@ -97,8 +97,8 @@ class ProfileScreenState extends State<ProfileScreen> with SingleTickerProviderS
       final user = userProvider.currentUser;
       if (user != null) {
         setState(() {
-          _firstnameController.text = user.firstname ?? '';
-          _lastnameController.text = user.lastname ?? '';
+          _firstnameController.text = user.firstName ?? '';
+          _lastnameController.text = user.lastName ?? '';
           _emailController.text = user.email ?? '';
           _phoneController.text = user.phone ?? '';
           _walletController.text = user.wallet ?? '';
@@ -345,9 +345,9 @@ class ProfileScreenState extends State<ProfileScreen> with SingleTickerProviderS
   void _checkForChanges(String field, String value) {
     final userProvider = Provider.of<UserProvider>(context, listen: false);
     final originalValue = field == 'firstname'
-        ? userProvider.currentUser?.firstname
+        ? userProvider.currentUser?.firstName
         : field == 'lastname'
-        ? userProvider.currentUser?.lastname
+        ? userProvider.currentUser?.lastName
         : field == 'email'
         ? userProvider.currentUser?.email
         : field == 'phone'
@@ -370,8 +370,8 @@ class ProfileScreenState extends State<ProfileScreen> with SingleTickerProviderS
   void _resetField(String field) {
     final userProvider = Provider.of<UserProvider>(context, listen: false);
     setState(() {
-      if (field == 'firstname') _firstnameController.text = userProvider.currentUser?.firstname ?? '';
-      if (field == 'lastname') _lastnameController.text = userProvider.currentUser?.lastname ?? '';
+      if (field == 'firstname') _firstnameController.text = userProvider.currentUser?.firstName ?? '';
+      if (field == 'lastname') _lastnameController.text = userProvider.currentUser?.lastName ?? '';
       if (field == 'email') _emailController.text = userProvider.currentUser?.email ?? '';
       if (field == 'phone') _phoneController.text = userProvider.currentUser?.phone ?? '';
       if (field == 'wallet') _walletController.text = userProvider.currentUser?.wallet ?? '';
@@ -579,7 +579,7 @@ class ProfileScreenState extends State<ProfileScreen> with SingleTickerProviderS
           ),
           const CustomSpacer(height: 12),
           Text(
-            '${userProvider.currentUser!.firstname} ${userProvider.currentUser!.lastname}',
+            '${userProvider.currentUser!.firstName} ${userProvider.currentUser!.lastName}',
             style: theme.textTheme.headlineSmall?.copyWith(fontWeight: FontWeight.bold),
           ),
           const CustomSpacer(height: 4),

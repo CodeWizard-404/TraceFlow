@@ -2,8 +2,8 @@ import 'package:TraceFlow/models/role.dart';
 
 class User {
   final String? userID;
-  final String? firstname;
-  final String? lastname;
+  final String? firstName;
+  final String? lastName;
   final String? phone;
   final String? email;
   final String? wallet;
@@ -12,8 +12,8 @@ class User {
 
   User({
     this.userID,
-    this.firstname,
-    this.lastname,
+    this.firstName,
+    this.lastName,
     this.phone,
     this.email,
     this.wallet,
@@ -27,24 +27,24 @@ class User {
 
     return User(
       userID: json['userID'],
-      firstname: json['firstname'],
-      lastname: json['lastname'],
+      firstName: json['fisrtName'], // Note: Keeping typo to match backend response
+      lastName: json['lastName'],
       phone: json['phone'],
       email: json['email'],
       wallet: json['wallet'],
-      pfp: json['PFP'],
+      pfp: json['pfp'], // Lowercase to match existing code
       roles: roles,
     );
   }
 
   Map<String, dynamic> toJson() => {
     'userID': userID,
-    'firstname': firstname,
-    'lastname': lastname,
+    'fisrtName': firstName, // Match backend typo
+    'lastName': lastName,
     'phone': phone,
     'email': email,
     'wallet': wallet,
-    'PFP': pfp,
+    'pfp': pfp,
     'roles': roles.map((role) => role.toJson()).toList(),
   };
 }

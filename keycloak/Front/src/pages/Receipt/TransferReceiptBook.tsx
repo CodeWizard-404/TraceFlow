@@ -72,7 +72,9 @@ const TransferReceiptBook: React.FC = () => {
         if (!token) return "";
         try {
             const payload = JSON.parse(atob(token.split('.')[1]));
-            return payload.userID || "";
+            console.log(payload);
+            console.log(payload.sub);
+            return payload.sub || "";
         } catch (e) {
             console.error("Token parsing failed:", e);
             return "";

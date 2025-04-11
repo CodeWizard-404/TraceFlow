@@ -74,6 +74,7 @@ const AdminDashboard: React.FC = () => {
         canCreateChecklists: effectivePermissions?.some(p => p.name === import.meta.env.VITE_PERMISSIONS_CREATE_CHECKLISTS_ITEMS),
         canViewReasons: effectivePermissions?.some(p => p.name === import.meta.env.VITE_PERMISSIONS_READ_REASON_ITEMS),
         canCreateReasons: effectivePermissions?.some(p => p.name === import.meta.env.VITE_PERMISSIONS_CREATE_REASON_ITEMS),
+        canRestRoles: effectivePermissions?.some(p => p.name === import.meta.env.VITE_PERMISSIONS_RESET_MAIN_ROLES),
     }), [effectivePermissions]);
 
     // Initial Data Fetch
@@ -274,7 +275,7 @@ const AdminDashboard: React.FC = () => {
                             <button className="action-button" onClick={() => handleViewChange("add-role")}>
                                 <FaPlus /> Add Role
                             </button>
-                            {userPermissions.canUpdateRoles && (
+                            {userPermissions.canRestRoles && (
                                 <button
                                     className="action-button reset-button"
                                     onClick={handleResetMainRoles}

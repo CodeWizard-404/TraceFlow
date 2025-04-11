@@ -98,15 +98,31 @@ class UserController {
     }
 
     static async updateProfile(req, res) {
-        console.log('Received request to update profile', req.body, req.file);
+        console.log('Received request to update profile', {
+            body: req.body,
+            file: req.file ? { mimetype: req.file.mimetype, size: req.file.size } : null,
+        });
         try {
             const userID = req.user.userID;
             const userData = req.body;
             if (!userID) return res.status(401).json({ error: 'Unauthorized: User ID not found in token' });
-            if (req.file) userData.PFP = req.file.buffer;
+
+            // Validate file if provided
+            if (req.file) {
+                if (req.file.mimetype.startsWith('image/')) {
+                    userData.PFP = req.file.buffer;
+                } else {
+                    return res.status(400).json({ error: 'Invalid file type. Only images are allowed.' });
+                }
+            }
+
             const updatedUser = await UserService.updateUser(userID, userData);
             const responseUser = updatedUser.toJSON();
-            if (responseUser.PFP) responseUser.PFP = responseUser.PFP.toString('base64');
+            if (responseUser.PFP) {
+                responseUser.PFP = responseUser.PFP.toString('base64');
+            } else {
+                delete responseUser.PFP; // Avoid sending null/undefined PFP
+            }
             res.status(200).json(responseUser);
         } catch (error) {
             console.error(`${new Date().toISOString()} - Update profile failed:`, error);

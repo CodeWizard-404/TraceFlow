@@ -147,7 +147,7 @@ class TransferForm extends StatelessWidget {
                     value: recipientID,
                     items: filteredUsers.map((u) => u.userID!).toList(),
                     hint: 'Select $recipientType',
-                    itemToString: (id) => '${filteredUsers.firstWhere((u) => u.userID == id).firstname} ${filteredUsers.firstWhere((u) => u.userID == id).lastname} (${filteredUsers.firstWhere((u) => u.userID == id).phone})',
+                    itemToString: (id) => '${filteredUsers.firstWhere((u) => u.userID == id).firstName} ${filteredUsers.firstWhere((u) => u.userID == id).lastName} (${filteredUsers.firstWhere((u) => u.userID == id).phone})',
                     onChanged: onRecipientIDChanged,
                   ),
                 ],

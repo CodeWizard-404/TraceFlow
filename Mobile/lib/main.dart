@@ -21,13 +21,11 @@ import 'package:TraceFlow/screens/Error.dart';
 import 'themes/app_themes.dart';
 
 void main() {
-  // Custom debug print to filter out unwanted logs
   debugPrint = (String? message, {int? wrapWidth}) {
-    if (message != null &&
-        (message.contains("EGL_emulation") || message.contains("libEGL"))) {
+    if (message != null && (message.contains("EGL_emulation") || message.contains("libEGL"))) {
       return;
     }
-    print(message); // Use print instead of debugPrint to avoid recursion
+    print(message);
   };
 
   runApp(
@@ -100,22 +98,30 @@ class AuthWrapper extends StatelessWidget {
   Widget build(BuildContext context) {
     final authProvider = Provider.of<AuthProvider>(context);
 
-    debugPrint('AuthWrapper build: token=${authProvider.token}, isLoading=${authProvider.isLoading}, isSupervisor=${authProvider.isSupervisor}');
+    debugPrint('AuthWrapper build: token=${authProvider.token}, isLoading=${authProvider.isLoading}, isSupervisor=${authProvider.isSupervisor}, requires2FA=${authProvider.requires2FA}');
 
-    // Show a loading screen while auth data is being loaded
-    if (authProvider.token == null && authProvider.isLoading) {
+    // Show loading screen while auth data is being processed
+    if (authProvider.isLoading) {
       return const Scaffold(
         body: Center(child: CircularProgressIndicator()),
       );
     }
 
+    // If 2FA is required, show Verify2FAScreen
+    if (authProvider.requires2FA) {
+      debugPrint('AuthWrapper: Returning Verify2FAScreen');
+      return const Verify2FAScreen();
+    }
+
     // If no token or user, show login screen
     if (authProvider.token == null || authProvider.user == null) {
+      debugPrint('AuthWrapper: Returning LoginScreen');
       return const LoginScreen();
     }
 
-    // If token exists and user is a Supervisor, show home page (TimesheetDetailsScreen)
+    // If token exists and user is a Supervisor, show home page
     if (authProvider.isSupervisor) {
+      debugPrint('AuthWrapper: Returning TimesheetDetailsScreen');
       return const TimesheetDetailsScreen();
     }
 
@@ -125,6 +131,7 @@ class AuthWrapper extends StatelessWidget {
     return const LoginScreen();
   }
 }
+
 class RouteLogger extends NavigatorObserver {
   @override
   void didPush(Route route, Route? previousRoute) {
