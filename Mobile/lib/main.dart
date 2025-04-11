@@ -100,32 +100,27 @@ class AuthWrapper extends StatelessWidget {
 
     debugPrint('AuthWrapper build: token=${authProvider.token}, isLoading=${authProvider.isLoading}, isSupervisor=${authProvider.isSupervisor}, requires2FA=${authProvider.requires2FA}');
 
-    // Show loading screen while auth data is being processed
     if (authProvider.isLoading) {
       return const Scaffold(
         body: Center(child: CircularProgressIndicator()),
       );
     }
 
-    // If 2FA is required, show Verify2FAScreen
     if (authProvider.requires2FA) {
       debugPrint('AuthWrapper: Returning Verify2FAScreen');
       return const Verify2FAScreen();
     }
 
-    // If no token or user, show login screen
     if (authProvider.token == null || authProvider.user == null) {
       debugPrint('AuthWrapper: Returning LoginScreen');
       return const LoginScreen();
     }
 
-    // If token exists and user is a Supervisor, show home page
     if (authProvider.isSupervisor) {
       debugPrint('AuthWrapper: Returning TimesheetDetailsScreen');
       return const TimesheetDetailsScreen();
     }
 
-    // If token exists but user isn’t a Supervisor, logout and show login
     debugPrint('Clearing invalid state: non-Supervisor with token');
     authProvider.logout();
     return const LoginScreen();

@@ -93,7 +93,6 @@ class Verify2FAScreenState extends State<Verify2FAScreen> {
   Widget build(BuildContext context) {
     final authProvider = Provider.of<AuthProvider>(context);
 
-    // Handle navigation and feedback in a post-frame callback
     WidgetsBinding.instance.addPostFrameCallback((_) {
       if (!mounted) return;
       if (authProvider.errorMessage != null) {

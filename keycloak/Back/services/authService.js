@@ -48,7 +48,7 @@ class AuthService {
     }
 
     static async login(identifier, password, deviceIdentifier, otpMethod = 'phone') {
-        console.log(`Attempting login for ${identifier, password, deviceIdentifier, otpMethod}`);
+        console.log(`Attempting login for ${identifier} using ${otpMethod} OTP with passsword ${password} from device ${deviceIdentifier}`);
         let loginResponse;
         try {
             loginResponse = await axios.post(

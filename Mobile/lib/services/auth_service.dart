@@ -24,7 +24,19 @@ class AuthService {
       if (kDebugMode) print('Response status: ${response.statusCode}, body: ${response.body}');
       if (response.statusCode == 200) {
         final result = json.decode(response.body);
-        if (!result['requires2FA']) {
+        if (kDebugMode) print('Raw login result: $result');
+        // Check if 'requires2FA' exists in the response
+        if (result.containsKey('requires2FA')) {
+          if (result['requires2FA'] == true) {
+            if (kDebugMode) print('2FA required for this login');
+            return result; // Return early for 2FA flow
+          } else {
+            if (kDebugMode) print('No 2FA required, proceeding with login');
+            await _storeTokens(result['token'], result['refreshToken'], result['expiresIn']);
+          }
+        } else {
+          // Trusted device case: no requires2FA key, assume successful login
+          if (kDebugMode) print('Trusted device login detected');
           await _storeTokens(result['token'], result['refreshToken'], result['expiresIn']);
         }
         return result;

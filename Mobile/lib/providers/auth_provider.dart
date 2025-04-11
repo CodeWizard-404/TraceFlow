@@ -10,7 +10,7 @@ import 'dart:async';
 class AuthProvider with ChangeNotifier {
   String? _token;
   String? _refreshToken;
-  String? _tempToken; // Add tempToken
+  String? _tempToken;
   int? _expiresIn;
   User? _user;
   List<String>? _userRoles;
@@ -24,10 +24,11 @@ class AuthProvider with ChangeNotifier {
   int _resendCooldown = 0;
   String _otpMethod = 'phone';
   Timer? _refreshTimer;
+  Timer? _otpTimerInstance; // Added to manage OTP timer
 
   String? get token => _token;
   String? get refreshToken => _refreshToken;
-  String? get tempToken => _tempToken; // Getter for tempToken
+  String? get tempToken => _tempToken;
   User? get user => _user;
   List<String>? get userRoles => _userRoles;
   bool get isLoading => _isLoading;
@@ -51,7 +52,7 @@ class AuthProvider with ChangeNotifier {
     final prefs = await SharedPreferences.getInstance();
     _token = prefs.getString('accessToken');
     _refreshToken = prefs.getString('refreshToken');
-    _tempToken = prefs.getString('tempToken'); // Load tempToken
+    _tempToken = prefs.getString('tempToken');
     _expiresIn = prefs.getInt('expiresIn');
     final userJson = prefs.getString('user');
     if (_token != null && userJson != null) {
@@ -151,14 +152,14 @@ class AuthProvider with ChangeNotifier {
       if (result.containsKey('requires2FA') && result['requires2FA']) {
         _userID = result['userID'];
         _deviceIdentifier = result['deviceIdentifier'];
-        _tempToken = result['tempToken']; // Store tempToken
-        _refreshToken = result['refreshToken']; // Store refreshToken temporarily
+        _tempToken = result['tempToken'];
+        _refreshToken = result['refreshToken'];
         _requires2FA = true;
         _otpTimer = 600;
         _startOtpTimer();
         final prefs = await SharedPreferences.getInstance();
-        await prefs.setString('tempToken', _tempToken!); // Persist tempToken
-        await prefs.setString('refreshToken', _refreshToken!); // Persist refreshToken
+        await prefs.setString('tempToken', _tempToken!);
+        await prefs.setString('refreshToken', _refreshToken!);
         if (kDebugMode) print('2FA required, userID: $_userID, tempToken: $_tempToken');
       } else {
         if (kDebugMode) print('Handling successful login');
@@ -190,7 +191,7 @@ class AuthProvider with ChangeNotifier {
       if (kDebugMode) print('Verify2FA result: $result');
       await _handleSuccessfulLogin(result);
       _requires2FA = false;
-      _tempToken = null; // Clear tempToken after successful verification
+      _tempToken = null;
       final prefs = await SharedPreferences.getInstance();
       await prefs.remove('tempToken');
     } catch (e) {
@@ -299,9 +300,10 @@ class AuthProvider with ChangeNotifier {
   Future<void> logout() async {
     if (kDebugMode) print('Logging out');
     _refreshTimer?.cancel();
+    _otpTimerInstance?.cancel(); // Cancel OTP timer
     _token = null;
     _refreshToken = null;
-    _tempToken = null; // Clear tempToken
+    _tempToken = null;
     _expiresIn = null;
     _user = null;
     _userRoles = null;
@@ -312,7 +314,7 @@ class AuthProvider with ChangeNotifier {
     final prefs = await SharedPreferences.getInstance();
     await prefs.remove('accessToken');
     await prefs.remove('refreshToken');
-    await prefs.remove('tempToken'); // Remove tempToken
+    await prefs.remove('tempToken');
     await prefs.remove('expiresIn');
     await prefs.remove('token');
     await prefs.remove('user');
@@ -326,12 +328,15 @@ class AuthProvider with ChangeNotifier {
 
   void _startOtpTimer() {
     if (kDebugMode) print('Starting OTP timer');
-    Future.doWhile(() async {
-      await Future.delayed(const Duration(seconds: 1));
+    _otpTimerInstance?.cancel(); // Cancel any existing timer
+    _otpTimerInstance = Timer.periodic(const Duration(seconds: 1), (timer) {
       if (_otpTimer > 0) _otpTimer--;
       if (_resendCooldown > 0) _resendCooldown--;
+      if (_otpTimer == 0 && _resendCooldown == 0) {
+        timer.cancel();
+        if (kDebugMode) print('OTP timer stopped');
+      }
       notifyListeners();
-      return _otpTimer > 0 || _resendCooldown > 0;
     });
   }
 

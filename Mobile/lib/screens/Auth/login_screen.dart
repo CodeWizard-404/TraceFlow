@@ -47,10 +47,7 @@ class LoginScreenState extends State<LoginScreen> {
     final authProvider = Provider.of<AuthProvider>(context, listen: false);
     if (kDebugMode) print('Attempting login with identifier: ${_identifierController.text}');
 
-    // Clear any previous errors
     authProvider.clearError();
-
-    // Perform login
     await authProvider.login(_identifierController.text.trim(), _passwordController.text.trim());
 
     if (kDebugMode) print('Login attempt completed, waiting for state update');
@@ -89,13 +86,12 @@ class LoginScreenState extends State<LoginScreen> {
   Widget build(BuildContext context) {
     final authProvider = Provider.of<AuthProvider>(context);
 
-    // Handle navigation based on AuthProvider state
     WidgetsBinding.instance.addPostFrameCallback((_) {
       if (!mounted) return;
       if (authProvider.errorMessage != null) {
         _showErrorSnackBar(authProvider.errorMessage!);
         authProvider.clearError();
-      } else if (authProvider.requires2FA) {
+      } else if (authProvider.requires2FA && ModalRoute.of(context)?.settings.name != '/verify-2fa') {
         if (kDebugMode) print('Navigating to Verify2FAScreen from listener');
         Navigator.pushNamed(context, '/verify-2fa');
       } else if (authProvider.token != null && authProvider.permissionsLoaded && authProvider.isSupervisor) {
