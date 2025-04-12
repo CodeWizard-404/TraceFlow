@@ -1,7 +1,7 @@
 const axios = require('axios');
 const { Role, Permission, sequelize } = require('../models');
 const { setupAssociations } = require('../models');
-require('dotenv').config({ path: '../.env' });
+require('dotenv').config();
 
 const KEYCLOAK_URL = process.env.KEYCLOAK_URL || 'http://localhost:8080';
 const REALM = process.env.REALM || 'TraceFlow';

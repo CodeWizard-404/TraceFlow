@@ -144,7 +144,11 @@ export const AuthProvider: React.FC<{ children: ReactNode }> = ({ children }) =>
         }
 
         const newToken: string = response.token;
-        const newUser: User = response.user;
+        const newUser: User = {
+            ...response.user,
+            firstname: response.user.firstName,
+            lastname: response.user.lastName
+        };
 
         localStorage.setItem("token", newToken);
         localStorage.setItem("user", JSON.stringify(newUser));
@@ -165,7 +169,6 @@ export const AuthProvider: React.FC<{ children: ReactNode }> = ({ children }) =>
             setPermissionsLoaded(true);
         }
     };
-
     const logout = () => {
         setUser(null);
         setToken(null);

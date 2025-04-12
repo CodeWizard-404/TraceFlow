@@ -1,16 +1,16 @@
+import { AxiosError } from "axios";
 import api from "./axiosConfig";
 import {
-    CreateRoleResponse,
-    ListRolesResponse,
-    RoleByIdResponse,
-    UpdateRoleResponse,
-    DeleteRoleResponse,
     AssignRolesResponse,
-    RolesByUserResponse,
+    CreateRoleResponse,
+    DeleteRoleResponse,
+    ListRolesResponse,
     RevokeRoleResponse,
+    RoleByIdResponse,
+    RolesByUserResponse,
+    UpdateRoleResponse,
+    AxiosErrorResponse,
 } from ".";
-
-
 
 export const getAllRoles = async (token: string): Promise<ListRolesResponse> => {
     try {
@@ -18,25 +18,26 @@ export const getAllRoles = async (token: string): Promise<ListRolesResponse> => 
             headers: { Authorization: `Bearer ${token}` },
         });
         return response.data;
-    } catch (error) {
-        console.error("Error fetching all roles:", error);
-        throw error;
+    } catch (error: unknown) {
+        const axiosError = error as AxiosError<AxiosErrorResponse>;
+        throw new Error(axiosError.message);
     }
 };
 
-export const getRoleById = async (roleID: string, token: string): Promise<RoleByIdResponse> => {
+export const getRoleById = async (
+    roleID: string,
+    token: string
+): Promise<RoleByIdResponse> => {
     try {
         const response = await api.get<RoleByIdResponse>(`/roles/${roleID}`, {
             headers: { Authorization: `Bearer ${token}` },
         });
         return response.data;
-    } catch (error) {
-        console.error(`Error fetching role by ID (${roleID}):`, error);
-        throw error;
+    } catch (error: unknown) {
+        const axiosError = error as AxiosError<AxiosErrorResponse>;
+        throw new Error(axiosError.message);
     }
 };
-
-
 
 export const createRole = async (
     data: { name: string; description?: string },
@@ -47,9 +48,9 @@ export const createRole = async (
             headers: { Authorization: `Bearer ${token}` },
         });
         return response.data;
-    } catch (error) {
-        console.error("Error creating role:", error);
-        throw error;
+    } catch (error: unknown) {
+        const axiosError = error as AxiosError<AxiosErrorResponse>;
+        throw new Error(axiosError.message);
     }
 };
 
@@ -63,26 +64,26 @@ export const updateRole = async (
             headers: { Authorization: `Bearer ${token}` },
         });
         return response.data;
-    } catch (error) {
-        console.error(`Error updating role (${roleID}):`, error);
-        throw error;
+    } catch (error: unknown) {
+        const axiosError = error as AxiosError<AxiosErrorResponse>;
+        throw new Error(axiosError.message);
     }
 };
 
-export const deleteRole = async (roleID: string, token: string): Promise<DeleteRoleResponse> => {
+export const deleteRole = async (
+    roleID: string,
+    token: string
+): Promise<DeleteRoleResponse> => {
     try {
         const response = await api.delete<DeleteRoleResponse>(`/roles/${roleID}`, {
             headers: { Authorization: `Bearer ${token}` },
         });
         return response.data;
-    } catch (error) {
-        console.error(`Error deleting role (${roleID}):`, error);
-        throw error;
+    } catch (error: unknown) {
+        const axiosError = error as AxiosError<AxiosErrorResponse>;
+        throw new Error(axiosError.message);
     }
 };
-
-
-
 
 export const assignRolesToUser = async (
     userID: string,
@@ -90,13 +91,17 @@ export const assignRolesToUser = async (
     token: string
 ): Promise<AssignRolesResponse> => {
     try {
-        const response = await api.post<AssignRolesResponse>(`/roles/user/${userID}/assign`, { roleIDs }, {
-            headers: { Authorization: `Bearer ${token}` },
-        });
+        const response = await api.post<AssignRolesResponse>(
+            `/roles/user/${userID}/assign`,
+            { roleIDs },
+            {
+                headers: { Authorization: `Bearer ${token}` },
+            }
+        );
         return response.data;
-    } catch (error) {
-        console.error(`Error assigning roles to user (${userID}):`, error);
-        throw error;
+    } catch (error: unknown) {
+        const axiosError = error as AxiosError<AxiosErrorResponse>;
+        throw new Error(axiosError.message);
     }
 };
 
@@ -106,36 +111,52 @@ export const revokeRolesFromUser = async (
     token: string
 ): Promise<RevokeRoleResponse | RevokeRoleResponse[]> => {
     try {
-        const response = await api.post<RevokeRoleResponse | RevokeRoleResponse[]>(`/roles/user/${userID}/revoke`, { roleIDs }, {
-            headers: { Authorization: `Bearer ${token}` },
-        });
+        const response = await api.post<RevokeRoleResponse | RevokeRoleResponse[]>(
+            `/roles/user/${userID}/revoke`,
+            { roleIDs },
+            {
+                headers: { Authorization: `Bearer ${token}` },
+            }
+        );
         return response.data;
-    } catch (error) {
-        console.error(`Error revoking roles from user (${userID}):`, error);
-        throw error;
+    } catch (error: unknown) {
+        const axiosError = error as AxiosError<AxiosErrorResponse>;
+        throw new Error(axiosError.message);
     }
 };
 
-export const getRolesByUser = async (userID: string, token: string): Promise<RolesByUserResponse> => {
+export const getRolesByUser = async (
+    userID: string,
+    token: string
+): Promise<RolesByUserResponse> => {
     try {
-        const response = await api.get<RolesByUserResponse>(`/roles/user/${userID}`, {
-            headers: { Authorization: `Bearer ${token}` },
-        });
+        const response = await api.get<RolesByUserResponse>(
+            `/roles/user/${userID}`,
+            {
+                headers: { Authorization: `Bearer ${token}` },
+            }
+        );
         return response.data;
-    } catch (error) {
-        console.error(`Error fetching roles for user (${userID}):`, error);
-        throw error;
+    } catch (error: unknown) {
+        const axiosError = error as AxiosError<AxiosErrorResponse>;
+        throw new Error(axiosError.message);
     }
 };
 
-export const resetMainRoles = async (token: string): Promise<{ message: string; details: unknown }> => {
+export const resetMainRoles = async (
+    token: string
+): Promise<{ message: string; details: unknown }> => {
     try {
-        const response = await api.post<{ message: string; details: unknown }>("/roles/reset", {}, {
-            headers: { Authorization: `Bearer ${token}` },
-        });
+        const response = await api.post<{ message: string; details: unknown }>(
+            "/roles/reset",
+            {},
+            {
+                headers: { Authorization: `Bearer ${token}` },
+            }
+        );
         return response.data;
-    } catch (error) {
-        console.error("Error resetting main roles:", error);
-        throw error;
+    } catch (error: unknown) {
+        const axiosError = error as AxiosError<AxiosErrorResponse>;
+        throw new Error(axiosError.message);
     }
 };

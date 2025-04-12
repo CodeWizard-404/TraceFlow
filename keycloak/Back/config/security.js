@@ -2,6 +2,7 @@ const { auth } = require('express-oauth2-jwt-bearer');
 const { User } = require('../models');
 require('dotenv').config();
 const axios = require('axios');
+const PermissionService = require('../services/permissionService');
 
 const authenticateKeycloak = auth({
     issuerBaseURL: `${process.env.KEYCLOAK_URL}/realms/${process.env.REALM}`,
@@ -50,13 +51,16 @@ const jwt = require('jsonwebtoken');
 const requirePermission = (permissionName) => {
     return async (req, res, next) => {
         try {
+            // Extract roles from token
             const roles = req.auth.payload.realm_access?.roles || [];
 
+            // Bypass for Super Admin
             if (roles.includes("Super Admin")) {
-                console.log('Super Admin detected, bypassing Keycloak check');
+                console.log('Super Admin detected, bypassing permission checks');
                 return next();
             }
 
+            // Step 1: Keycloak permission check
             const response = await axios.post(
                 `${process.env.KEYCLOAK_URL}/realms/${process.env.REALM}/protocol/openid-connect/token`,
                 new URLSearchParams({
@@ -73,14 +77,27 @@ const requirePermission = (permissionName) => {
 
             const rpt = jwt.decode(response.data.access_token);
             const permissions = rpt?.authorization?.permissions || [];
-            const hasPermission = permissions.some(p => p.rsname === permissionName); // Use rsname instead of resource
+            const hasKeycloakPermission = permissions.some(p => p.rsname === permissionName);
 
-            if (!hasPermission) {
+            if (!hasKeycloakPermission) {
+                console.log(`Keycloak denied permission: ${permissionName}`);
                 return res.status(403).json({ error: `Permission '${permissionName}' required` });
             }
+
+            // Step 2: Local effective permissions check
+            const userId = req.user.userID; // From populateUser
+            const effectivePermissions = await PermissionService.getEffectivePermissions(userId);
+            const hasEffectivePermission = effectivePermissions.some(p => p.name === permissionName);
+
+            if (!hasEffectivePermission) {
+                console.log(`Local override denied permission: ${permissionName}`);
+                return res.status(403).json({ error: `Permission '${permissionName}' revoked by override` });
+            }
+
+            console.log(`Permission granted: ${permissionName}`);
             next();
         } catch (error) {
-            console.error('Keycloak permission check failed:', {
+            console.error('Permission check failed:', {
                 status: error.response?.status,
                 data: error.response?.data,
                 message: error.message,

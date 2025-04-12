@@ -2,271 +2,558 @@ const axios = require('axios');
 const { User, Role } = require('../models');
 const { Op } = require('sequelize');
 require('dotenv').config();
+const { nanoid } = require('nanoid');
 
 // Keycloak configuration
 const KEYCLOAK_URL = process.env.KEYCLOAK_URL || 'http://localhost:8080';
 const REALM = process.env.REALM || 'TraceFlow';
 
-// Get admin token for Keycloak
-async function getAdminToken() {
-    const response = await axios.post(
-        `${KEYCLOAK_URL}/realms/master/protocol/openid-connect/token`,
-        new URLSearchParams({
-            grant_type: 'password',
-            client_id: 'admin-cli',
-            username: process.env.ADMIN_USER,
-            password: process.env.ADMIN_PASS,
-        })
-    );
-    return response.data.access_token;
-}
+// Centralized error messages
+const ERROR_MESSAGES = {
+    MISSING_FIELDS: 'Please fill in all required fields.',
+    INVALID_EMAIL: 'Please enter a valid email address.',
+    INVALID_PHONE: 'Phone number must be 8–12 digits.',
+    INVALID_WALLET: 'Please enter a valid wallet address.',
+    INVALID_PASSWORD: 'Password must be at least 6 characters.',
+    INVALID_NAME: 'Names must be 2–50 characters and contain only letters.',
+    INVALID_ID: 'Invalid user ID',
+    DUPLICATE_EMAIL: 'This email is already in use.',
+    DUPLICATE_PHONE: 'This phone number is already in use.',
+    DUPLICATE_WALLET: 'This wallet is already in use.',
+    USER_NOT_FOUND: 'User not found.',
+    ROLE_NOT_FOUND: 'Role not found.',
+    NO_USERS_FOUND: 'No users found.',
+    NO_SUPERVISORS_FOUND: 'No supervisors found.',
+    NO_MANAGERS_FOUND: 'No managers found.',
+    MANAGER_NOT_FOUND: 'Manager not found.',
+    SUPERVISOR_NOT_FOUND: 'One or more supervisors not found.',
+    AUTH_SERVICE_DOWN: 'Unable to connect to authentication service.',
+    KEYCLOAK_CREATE_FAILED: 'Unable to create user account.',
+    KEYCLOAK_UPDATE_FAILED: 'Unable to update user account.',
+    KEYCLOAK_DELETE_FAILED: 'Unable to delete user account.',
+    KEYCLOAK_PASSWORD_FAILED: 'Unable to update password.',
+    DB_CREATE_FAILED: 'Unable to save user to database.',
+    DB_UPDATE_FAILED: 'Unable to update user in database.',
+    DB_DELETE_FAILED: 'Unable to delete user from database.',
+    INVALID_IMAGE: 'Please upload a valid image.',
+    USER_NOT_AUTHENTICATED: 'Please log in to continue.',
+    USER_NOT_SYNCED: 'User account is not properly set up.',
+    INVALID_ROLE: 'Please provide a valid role.',
+    INVALID_SUPERVISOR_IDS: 'Supervisor IDs must be a valid array.',
+};
 
+// Service for user-related operations
 class UserService {
-    // Create a new user in both local DB and Keycloak
-    static async createUser(email, password, firstname, lastname, phone, wallet) {
-        if (!email || !password || !firstname || !lastname || !phone || !wallet) {
-            throw new Error('All fields (email, password, firstname, lastname, phone, wallet) are required');
+    // Get Keycloak admin token
+    static async getAdminToken() {
+        try {
+            const response = await axios.post(
+                `${KEYCLOAK_URL}/realms/master/protocol/openid-connect/token`,
+                new URLSearchParams({
+                    grant_type: 'password',
+                    client_id: 'admin-cli',
+                    username: process.env.ADMIN_USER,
+                    password: process.env.ADMIN_PASS,
+                })
+            );
+            return response.data.access_token;
+        } catch (error) {
+            throw new Error(ERROR_MESSAGES.AUTH_SERVICE_DOWN);
+        }
+    }
+
+    // Validate input data
+    static validateInput({ email, phone, wallet, password, firstname, lastname, userID, role, supervisorIDs }) {
+        const errors = [];
+
+        if (email !== undefined) {
+            if (!email || !/^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(email)) {
+                errors.push(ERROR_MESSAGES.INVALID_EMAIL);
+            }
         }
 
-        const token = await getAdminToken();
+        if (phone !== undefined) {
+            if (!phone || !/^\d{8,12}$/.test(phone)) {
+                errors.push(ERROR_MESSAGES.INVALID_PHONE);
+            }
+        }
 
-        // Step 1: Create the user in Keycloak
-        const keycloakResponse = await axios.post(
-            `${KEYCLOAK_URL}/admin/realms/${REALM}/users`,
-            {
-                username: email,
-                email,
-                firstName: firstname,
-                lastName: lastname,
-                enabled: true,
-                attributes: { phone, wallet },
-                credentials: [{ type: 'password', value: password, temporary: false }],
-            },
-            { headers: { Authorization: `Bearer ${token}` } }
-        );
-        const keycloakUserId = keycloakResponse.headers.location.split('/').pop();
-        console.log(`Created user ${email} in Keycloak with ID ${keycloakUserId}`);
+        if (wallet !== undefined) {
+            if (!wallet || !/^[a-zA-Z0-9]{10,50}$/.test(wallet)) {
+                errors.push(ERROR_MESSAGES.INVALID_WALLET);
+            }
+        }
 
-        // Step 2: Create or sync the user in the local DB
-        const [user, created] = await User.findOrCreate({
-            where: { userID: keycloakUserId },
-            defaults: {
-                userID: keycloakUserId,
+        if (password !== undefined) {
+            if (!password || password.length < 6) {
+                errors.push(ERROR_MESSAGES.INVALID_PASSWORD);
+            }
+        }
+
+        if (firstname !== undefined) {
+            if (!firstname || !/^[a-zA-Z]{2,50}$/.test(firstname)) {
+                errors.push(ERROR_MESSAGES.INVALID_NAME);
+            }
+        }
+
+        if (lastname !== undefined) {
+            if (!lastname || !/^[a-zA-Z]{2,50}$/.test(lastname)) {
+                errors.push(ERROR_MESSAGES.INVALID_NAME);
+            }
+        }
+
+        if (userID !== undefined) {
+            if (!userID) {
+                errors.push(ERROR_MESSAGES.INVALID_ID);
+            }
+        }
+
+        if (role !== undefined) {
+            if (!role || typeof role !== 'string') {
+                errors.push(ERROR_MESSAGES.INVALID_ROLE);
+            }
+        }
+
+        if (supervisorIDs !== undefined) {
+            if (!Array.isArray(supervisorIDs) || supervisorIDs.length === 0) {
+                errors.push(ERROR_MESSAGES.INVALID_SUPERVISOR_IDS);
+            }
+        }
+
+        if (errors.length > 0) {
+            throw new Error(errors.join(' '));
+        }
+    }
+
+    // Create a new user
+    static async createUser(email, password, firstname, lastname, phone, wallet) {
+        if (!email || !password || !firstname || !lastname || !phone || !wallet) {
+            throw new Error(ERROR_MESSAGES.MISSING_FIELDS);
+        }
+
+        this.validateInput({ email, phone, wallet, password, firstname, lastname });
+
+        const token = await this.getAdminToken();
+
+        // Check for duplicates in Keycloak
+        try {
+            const existingUser = await axios.get(
+                `${KEYCLOAK_URL}/admin/realms/${REALM}/users?username=${encodeURIComponent(email)}&exact=true`,
+                { headers: { Authorization: `Bearer ${token}` } }
+            );
+            if (existingUser.data.length > 0) {
+                throw new Error(ERROR_MESSAGES.DUPLICATE_EMAIL);
+            }
+        } catch (error) {
+            if (error.response?.status !== 404) {
+                throw new Error(ERROR_MESSAGES.AUTH_SERVICE_DOWN);
+            }
+        }
+
+        // Create user in Keycloak
+        let keycloakUserId;
+        try {
+            const keycloakResponse = await axios.post(
+                `${KEYCLOAK_URL}/admin/realms/${REALM}/users`,
+                {
+                    username: email,
+                    email,
+                    firstName: firstname,
+                    lastName: lastname,
+                    enabled: true,
+                    credentials: [{ type: 'password', value: password, temporary: false }],
+                    attributes: { phone },
+                },
+                { headers: { Authorization: `Bearer ${token}` } }
+            );
+            keycloakUserId = keycloakResponse.headers.location.split('/').pop();
+        } catch (error) {
+            throw new Error(ERROR_MESSAGES.KEYCLOAK_CREATE_FAILED);
+        }
+
+        // Check for duplicates in local DB
+        const existingUser = await User.findOne({
+            where: { [Op.or]: [{ email }, { phone }, { wallet }] },
+        });
+        if (existingUser) {
+            const errors = [];
+            if (existingUser.email === email) errors.push(ERROR_MESSAGES.DUPLICATE_EMAIL);
+            if (existingUser.phone === phone) errors.push(ERROR_MESSAGES.DUPLICATE_PHONE);
+            if (existingUser.wallet === wallet) errors.push(ERROR_MESSAGES.DUPLICATE_WALLET);
+            throw new Error(errors.join(' '));
+        }
+
+        // Create user in local DB
+        try {
+            const user = await User.create({
+                userID: `usr_${nanoid()}`,
+                keycloakId: keycloakUserId,
                 email,
                 firstname,
                 lastname,
                 phone,
                 wallet,
-                password: 'KEYCLOAK_MANAGED', // Password is managed by Keycloak
-            },
+                password: 'KEYCLOAK_MANAGED',
+            });
+            return user;
+        } catch (error) {
+            throw new Error(ERROR_MESSAGES.DB_CREATE_FAILED);
+        }
+    }
+
+    // Update user details
+    static async updateUser(userID, userData) {
+        if (!userID) {
+            throw new Error(ERROR_MESSAGES.MISSING_FIELDS);
+        }
+
+        this.validateInput({
+            userID,
+            email: userData.email,
+            phone: userData.phone,
+            wallet: userData.wallet,
+            password: userData.password,
+            firstname: userData.firstname,
+            lastname: userData.lastname,
         });
 
-        if (!created) {
+        const user = await User.findByPk(userID);
+        if (!user) {
+            throw new Error(ERROR_MESSAGES.USER_NOT_FOUND);
+        }
+        if (!user.keycloakId) {
+            throw new Error(ERROR_MESSAGES.USER_NOT_SYNCED);
+        }
+
+        // Check for duplicates in local DB
+        if (userData.email || userData.phone || userData.wallet) {
             const existingUser = await User.findOne({
-                where: { [Op.or]: [{ email }, { phone }, { wallet }] },
+                where: {
+                    [Op.or]: [
+                        userData.email ? { email: userData.email } : null,
+                        userData.phone ? { phone: userData.phone } : null,
+                        userData.wallet ? { wallet: userData.wallet } : null,
+                    ].filter(Boolean),
+                    userID: { [Op.ne]: userID },
+                },
             });
-            if (existingUser && existingUser.userID !== keycloakUserId) {
-                const conflicts = [];
-                if (existingUser.email === email) conflicts.push('email');
-                if (existingUser.phone === phone) conflicts.push('phone');
-                if (existingUser.wallet === wallet) conflicts.push('wallet');
-                throw new Error(`Conflict: ${conflicts.join(', ')} already in use`);
+            if (existingUser) {
+                const errors = [];
+                if (userData.email && existingUser.email === userData.email) {
+                    errors.push(ERROR_MESSAGES.DUPLICATE_EMAIL);
+                }
+                if (userData.phone && existingUser.phone === userData.phone) {
+                    errors.push(ERROR_MESSAGES.DUPLICATE_PHONE);
+                }
+                if (userData.wallet && existingUser.wallet === userData.wallet) {
+                    errors.push(ERROR_MESSAGES.DUPLICATE_WALLET);
+                }
+                throw new Error(errors.join(' '));
             }
         }
 
-        console.log(`Created user ${email} in local DB`);
-        return user;
-    }
+        const token = await this.getAdminToken();
 
-    // Get all users from the local database
-    static async getAllUsers() {
-        return await User.findAll({
-            include: [{ model: Role, through: { attributes: [] }, attributes: ['name'] }],
-            attributes: ['userID', 'email', 'firstname', 'lastname', 'phone', 'wallet'],
-        });
-    }
-
-    // Get a user by phone number
-    static async getUserByPhoneNumber(phone) {
-        const user = await User.findOne({
-            where: { phone },
-            include: [{ model: Role, through: { attributes: [] }, attributes: ['name'] }],
-        });
-        if (!user) throw new Error('User not found');
-        return user;
-    }
-
-    // Get a user by ID
-    static async getUserById(userID) {
-        const user = await User.findByPk(userID, {
-            include: [{ model: Role, through: { attributes: [] }, attributes: ['name'] }],
-        });
-        if (!user) throw new Error('User not found');
-        return user;
-    }
-
-    // Get users by role name
-    static async getUsersByRole(roleName) {
-        const role = await Role.findOne({ where: { name: roleName } });
-        if (!role) throw new Error('Role not found');
-
-        const users = await User.findAll({
-            include: [{
-                model: Role,
-                through: { attributes: [] },
-                where: { roleID: role.roleID },
-                attributes: [],
-            }],
-        });
-        return users;
-    }
-
-    // Update a user’s details in both local DB and Keycloak
-    static async updateUser(userID, userData) {
-        const user = await User.findByPk(userID);
-        if (!user) throw new Error('User not found');
-
-        const token = await getAdminToken();
-
-        // Step 1: Update Keycloak user
-        await axios.put(
-            `${KEYCLOAK_URL}/admin/realms/${REALM}/users/${userID}`,
-            {
-                email: userData.email || user.email,
-                firstName: userData.firstname || user.firstname,
-                lastName: userData.lastname || user.lastname,
-                attributes: {
-                    phone: userData.phone || user.phone,
-                    wallet: userData.wallet || user.wallet,
-                },
-            },
-            { headers: { Authorization: `Bearer ${token}` } }
-        );
-
-        // Step 2: Update password in Keycloak if provided
-        if (userData.password) {
+        // Update Keycloak user
+        try {
             await axios.put(
-                `${KEYCLOAK_URL}/admin/realms/${REALM}/users/${userID}/reset-password`,
+                `${KEYCLOAK_URL}/admin/realms/${REALM}/users/${user.keycloakId}`,
                 {
-                    type: 'password',
-                    value: userData.password,
-                    temporary: false,
+                    username: userData.email || user.email,
+                    email: userData.email || user.email,
+                    firstName: userData.firstname || user.firstname,
+                    lastName: userData.lastname || user.lastname,
+                    attributes: { phone: userData.phone || user.phone },
                 },
                 { headers: { Authorization: `Bearer ${token}` } }
             );
-            console.log(`Updated password for user ${userID} in Keycloak`);
+        } catch (error) {
+            throw new Error(ERROR_MESSAGES.KEYCLOAK_UPDATE_FAILED);
         }
-        console.log(`Updated user ${userID} in Keycloak`);
 
-        // Step 3: Update the local DB, including PFP if provided
-        await user.update({
-            email: userData.email || user.email,
-            firstname: userData.firstname || user.firstname,
-            lastname: userData.lastname || user.lastname,
-            phone: userData.phone || user.phone,
-            wallet: userData.wallet || user.wallet,
-            PFP: userData.PFP !== undefined ? userData.PFP : user.PFP, // Update PFP if provided
-        });
-        console.log(`Updated user ${userID} in local DB`);
+        // Update password in Keycloak
+        if (userData.password) {
+            try {
+                await axios.put(
+                    `${KEYCLOAK_URL}/admin/realms/${REALM}/users/${user.keycloakId}/reset-password`,
+                    { type: 'password', value: userData.password, temporary: false },
+                    { headers: { Authorization: `Bearer ${token}` } }
+                );
+            } catch (error) {
+                throw new Error(ERROR_MESSAGES.KEYCLOAK_PASSWORD_FAILED);
+            }
+        }
 
-        return user;
+        // Update local DB
+        try {
+            await user.update({
+                email: userData.email || user.email,
+                firstname: userData.firstname || user.firstname,
+                lastname: userData.lastname || user.lastname,
+                phone: userData.phone || user.phone,
+                wallet: userData.wallet || user.wallet,
+                PFP: userData.PFP !== undefined ? userData.PFP : user.PFP,
+            });
+            return user;
+        } catch (error) {
+            throw new Error(ERROR_MESSAGES.DB_UPDATE_FAILED);
+        }
     }
 
-    // Delete a user from both local DB and Keycloak
+    // Delete a user
     static async deleteUser(userID) {
+        if (!userID) {
+            throw new Error(ERROR_MESSAGES.MISSING_FIELDS);
+        }
+
+        this.validateInput({ userID });
+
         const user = await User.findByPk(userID);
-        if (!user) throw new Error('User not found');
+        if (!user) {
+            throw new Error(ERROR_MESSAGES.USER_NOT_FOUND);
+        }
 
-        const token = await getAdminToken();
+        const token = await this.getAdminToken();
 
-        // Step 1: Delete the user from Keycloak
-        await axios.delete(
-            `${KEYCLOAK_URL}/admin/realms/${REALM}/users/${userID}`,
-            { headers: { Authorization: `Bearer ${token}` } }
-        );
-        console.log(`Deleted user ${userID} from Keycloak`);
+        // Delete from Keycloak
+        if (user.keycloakId) {
+            try {
+                await axios.delete(`${KEYCLOAK_URL}/admin/realms/${REALM}/users/${user.keycloakId}`, {
+                    headers: { Authorization: `Bearer ${token}` },
+                });
+            } catch (error) {
+                throw new Error(ERROR_MESSAGES.KEYCLOAK_DELETE_FAILED);
+            }
+        }
 
-        // Step 2: Delete the user from the local DB
-        await user.destroy();
-        console.log(`Deleted user ${userID} from local DB`);
-
-        return { message: 'User deleted successfully' };
+        // Delete from local DB
+        try {
+            await user.destroy();
+            return { message: 'User deleted successfully.' };
+        } catch (error) {
+            throw new Error(ERROR_MESSAGES.DB_DELETE_FAILED);
+        }
     }
 
-    // Get supervisors assigned to a user
+    // Get all users
+    static async getAllUsers() {
+        try {
+            const users = await User.findAll({
+                include: [{ model: Role, through: { attributes: [] }, attributes: ['name'] }],
+                attributes: ['userID', 'email', 'firstname', 'lastname', 'phone', 'wallet'],
+            });
+            if (!users.length) {
+                throw new Error(ERROR_MESSAGES.NO_USERS_FOUND);
+            }
+            return users;
+        } catch (error) {
+            throw new Error(error.message || ERROR_MESSAGES.NO_USERS_FOUND);
+        }
+    }
+
+    // Get user by phone number
+    static async getUserByPhoneNumber(phone) {
+        if (!phone) {
+            throw new Error(ERROR_MESSAGES.MISSING_FIELDS);
+        }
+
+        this.validateInput({ phone });
+
+        try {
+            const user = await User.findOne({
+                where: { phone },
+                include: [{ model: Role, through: { attributes: [] }, attributes: ['name'] }],
+            });
+            if (!user) {
+                throw new Error(ERROR_MESSAGES.USER_NOT_FOUND);
+            }
+            return user;
+        } catch (error) {
+            throw new Error(error.message || ERROR_MESSAGES.USER_NOT_FOUND);
+        }
+    }
+
+    // Get user by ID
+    static async getUserById(userID) {
+        if (!userID) {
+            throw new Error(ERROR_MESSAGES.MISSING_FIELDS);
+        }
+
+        this.validateInput({ userID });
+
+        try {
+            const user = await User.findByPk(userID, {
+                include: [{ model: Role, through: { attributes: [] }, attributes: ['name'] }],
+            });
+            if (!user) {
+                throw new Error(ERROR_MESSAGES.USER_NOT_FOUND);
+            }
+            return user;
+        } catch (error) {
+            throw new Error(error.message || ERROR_MESSAGES.USER_NOT_FOUND);
+        }
+    }
+
+    // Get users by role
+    static async getUsersByRole(roleName) {
+        if (!roleName) {
+            throw new Error(ERROR_MESSAGES.MISSING_FIELDS);
+        }
+
+        this.validateInput({ role: roleName });
+
+        try {
+            const role = await Role.findOne({ where: { name: roleName } });
+            if (!role) {
+                throw new Error(ERROR_MESSAGES.ROLE_NOT_FOUND);
+            }
+            const users = await User.findAll({
+                include: [
+                    {
+                        model: Role,
+                        through: { attributes: [] },
+                        where: { roleID: role.roleID },
+                        attributes: [],
+                    },
+                ],
+            });
+            if (!users.length) {
+                throw new Error(ERROR_MESSAGES.NO_USERS_FOUND);
+            }
+            return users;
+        } catch (error) {
+            throw new Error(error.message || ERROR_MESSAGES.NO_USERS_FOUND);
+        }
+    }
+
+    // Get supervisors for a user
     static async getSupervisorsByUser(userID) {
-        const user = await User.findByPk(userID, {
-            include: [{
-                model: User,
-                as: 'Supervisors',
-                through: { attributes: [] },
-                attributes: ['userID', 'firstname', 'lastname', 'email', 'phone'],
-            }],
-        });
-        if (!user) throw new Error('User not found');
-        return user.Supervisors;
+        if (!userID) {
+            throw new Error(ERROR_MESSAGES.MISSING_FIELDS);
+        }
+
+        this.validateInput({ userID });
+
+        try {
+            const user = await User.findByPk(userID, {
+                include: [
+                    {
+                        model: User,
+                        as: 'Supervisors',
+                        through: { attributes: [] },
+                        attributes: ['userID', 'firstname', 'lastname', 'email', 'phone'],
+                    },
+                ],
+            });
+            if (!user) {
+                throw new Error(ERROR_MESSAGES.USER_NOT_FOUND);
+            }
+            if (!user.Supervisors.length) {
+                return ERROR_MESSAGES.NO_SUPERVISORS_FOUND;
+            }
+            return user.Supervisors;
+        } catch (error) {
+            throw new Error(error.message || ERROR_MESSAGES.NO_SUPERVISORS_FOUND);
+        }
     }
 
-    // Get managers assigned to a user
+    // Get managers for a user
     static async getManagersByUser(userID) {
-        const user = await User.findByPk(userID, {
-            include: [{
-                model: User,
-                as: 'Managers',
-                through: { attributes: [] },
-                attributes: ['userID', 'firstname', 'lastname', 'email', 'phone'],
-            }],
-        });
-        if (!user) throw new Error('User not found');
-        return user.Managers;
+        if (!userID) {
+            throw new Error(ERROR_MESSAGES.MISSING_FIELDS);
+        }
+
+        this.validateInput({ userID });
+
+        try {
+            const user = await User.findByPk(userID, {
+                include: [
+                    {
+                        model: User,
+                        as: 'Managers',
+                        through: { attributes: [] },
+                        attributes: ['userID', 'firstname', 'lastname', 'email', 'phone'],
+                    },
+                ],
+            });
+            if (!user) {
+                throw new Error(ERROR_MESSAGES.USER_NOT_FOUND);
+            }
+            if (!user.Managers.length) {
+                return ERROR_MESSAGES.NO_MANAGERS_FOUND;
+            }
+            return user.Managers;
+        } catch (error) {
+            throw new Error(error.message || ERROR_MESSAGES.NO_MANAGERS_FOUND);
+        }
     }
 
-    // Assign supervisors to a manager in the local DB
+    // Assign supervisors to a manager
     static async assignSupervisorsToManager(managerID, supervisorIDs) {
-        const manager = await User.findByPk(managerID);
-        if (!manager) throw new Error('Manager not found');
-
-        const supervisors = await User.findAll({ where: { userID: supervisorIDs } });
-        if (supervisors.length !== supervisorIDs.length) throw new Error('One or more supervisors not found');
-
-        const currentSupervisors = await manager.getSupervisors();
-        const currentSupervisorIDs = currentSupervisors.map(s => s.userID);
-        const newSupervisors = supervisors.filter(s => !currentSupervisorIDs.includes(s.userID));
-
-        if (newSupervisors.length > 0) {
-            await manager.addSupervisors(newSupervisors);
-            console.log(`Assigned ${newSupervisors.length} supervisors to manager ${managerID} in local DB`);
+        if (!managerID || !supervisorIDs) {
+            throw new Error(ERROR_MESSAGES.MISSING_FIELDS);
         }
 
-        return {
-            managerID,
-            assignedSupervisors: newSupervisors.map(s => s.userID),
-            totalAssigned: (await manager.getSupervisors()).length,
-        };
+        this.validateInput({ userID: managerID, supervisorIDs });
+
+        try {
+            const manager = await User.findByPk(managerID);
+            if (!manager) {
+                throw new Error(ERROR_MESSAGES.MANAGER_NOT_FOUND);
+            }
+            const supervisors = await User.findAll({ where: { userID: supervisorIDs } });
+            if (supervisors.length !== supervisorIDs.length) {
+                throw new Error(ERROR_MESSAGES.SUPERVISOR_NOT_FOUND);
+            }
+            const currentSupervisors = await manager.getSupervisors();
+            const newSupervisors = supervisors.filter(
+                (s) => !currentSupervisors.some((cs) => cs.userID === s.userID)
+            );
+            if (newSupervisors.length > 0) {
+                await manager.addSupervisors(newSupervisors);
+            }
+            return {
+                managerID,
+                assignedSupervisors: newSupervisors.map((s) => s.userID),
+                totalAssigned: (await manager.getSupervisors()).length,
+            };
+        } catch (error) {
+            throw new Error(error.message || ERROR_MESSAGES.SUPERVISOR_NOT_FOUND);
+        }
     }
 
-    // Revoke supervisors from a manager in the local DB
+    // Revoke supervisors from a manager
     static async revokeSupervisorsFromManager(managerID, supervisorIDs) {
-        const manager = await User.findByPk(managerID);
-        if (!manager) throw new Error('Manager not found');
-
-        const supervisors = await User.findAll({ where: { userID: supervisorIDs } });
-        if (supervisors.length !== supervisorIDs.length) throw new Error('One or more supervisors not found');
-
-        const currentSupervisors = await manager.getSupervisors();
-        const currentSupervisorIDs = currentSupervisors.map(s => s.userID);
-        const revokedSupervisors = supervisors.filter(s => currentSupervisorIDs.includes(s.userID));
-
-        if (revokedSupervisors.length > 0) {
-            await manager.removeSupervisors(revokedSupervisors);
-            console.log(`Revoked ${revokedSupervisors.length} supervisors from manager ${managerID} in local DB`);
+        if (!managerID || !supervisorIDs) {
+            throw new Error(ERROR_MESSAGES.MISSING_FIELDS);
         }
 
-        return {
-            managerID,
-            revokedSupervisors: revokedSupervisors.map(s => s.userID),
-            totalAssigned: (await manager.getSupervisors()).length,
-        };
+        this.validateInput({ userID: managerID, supervisorIDs });
+
+        try {
+            const manager = await User.findByPk(managerID);
+            if (!manager) {
+                throw new Error(ERROR_MESSAGES.MANAGER_NOT_FOUND);
+            }
+            const supervisors = await User.findAll({ where: { userID: supervisorIDs } });
+            if (supervisors.length !== supervisorIDs.length) {
+                throw new Error(ERROR_MESSAGES.SUPERVISOR_NOT_FOUND);
+            }
+            const currentSupervisors = await manager.getSupervisors();
+            const revokedSupervisors = supervisors.filter((s) =>
+                currentSupervisors.some((cs) => cs.userID === s.userID)
+            );
+            if (revokedSupervisors.length > 0) {
+                await manager.removeSupervisors(revokedSupervisors);
+            }
+            return {
+                managerID,
+                revokedSupervisors: revokedSupervisors.map((s) => s.userID),
+                totalAssigned: (await manager.getSupervisors()).length,
+            };
+        } catch (error) {
+            throw new Error(error.message || ERROR_MESSAGES.SUPERVISOR_NOT_FOUND);
+        }
     }
 }
 
