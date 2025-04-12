@@ -25,23 +25,15 @@ class AuthService {
       if (response.statusCode == 200) {
         final result = json.decode(response.body);
         if (kDebugMode) print('Raw login result: $result');
-        // Check if 'requires2FA' exists in the response
-        if (result.containsKey('requires2FA')) {
-          if (result['requires2FA'] == true) {
-            if (kDebugMode) print('2FA required for this login');
-            return result; // Return early for 2FA flow
-          } else {
-            if (kDebugMode) print('No 2FA required, proceeding with login');
-            await _storeTokens(result['token'], result['refreshToken'], result['expiresIn']);
-          }
-        } else {
-          // Trusted device case: no requires2FA key, assume successful login
-          if (kDebugMode) print('Trusted device login detected');
-          await _storeTokens(result['token'], result['refreshToken'], result['expiresIn']);
+        if (result.containsKey('requires2FA') && result['requires2FA'] == true) {
+          if (kDebugMode) print('2FA required for this login');
+          return result;
         }
+        if (kDebugMode) print('No 2FA required, storing tokens');
+        await _storeTokens(result['token'], result['refreshToken'], result['expiresIn']);
         return result;
       } else {
-        throw Exception(_parseError(response.body));
+        throw Exception(_parseError(response));
       }
     } catch (e) {
       if (kDebugMode) print('AuthService.login error: $e');
@@ -71,7 +63,7 @@ class AuthService {
         await _storeTokens(result['token'], result['refreshToken'], result['expiresIn']);
         return result;
       } else {
-        throw Exception(_parseError(response.body));
+        throw Exception(_parseError(response));
       }
     } catch (e) {
       if (kDebugMode) print('Verify2FA error: $e');
@@ -93,7 +85,7 @@ class AuthService {
         await _storeTokens(result['accessToken'], result['refreshToken'], result['expiresIn']);
         return result;
       } else {
-        throw Exception(_parseError(response.body));
+        throw Exception(_parseError(response));
       }
     } catch (e) {
       if (kDebugMode) print('Refresh token error: $e');
@@ -113,7 +105,7 @@ class AuthService {
       if (response.statusCode == 200) {
         return json.decode(response.body);
       } else {
-        throw Exception(_parseError(response.body));
+        throw Exception(_parseError(response));
       }
     } catch (e) {
       if (kDebugMode) print('Resend2FA error: $e');
@@ -133,7 +125,7 @@ class AuthService {
       if (response.statusCode == 200) {
         return json.decode(response.body);
       } else {
-        throw Exception(_parseError(response.body));
+        throw Exception(_parseError(response));
       }
     } catch (e) {
       if (kDebugMode) print('InitiatePasswordReset error: $e');
@@ -153,7 +145,7 @@ class AuthService {
       if (response.statusCode == 200) {
         return json.decode(response.body);
       } else {
-        throw Exception(_parseError(response.body));
+        throw Exception(_parseError(response));
       }
     } catch (e) {
       if (kDebugMode) print('VerifyPasswordResetOTP error: $e');
@@ -173,7 +165,7 @@ class AuthService {
       if (response.statusCode == 200) {
         return;
       } else {
-        throw Exception(_parseError(response.body));
+        throw Exception(_parseError(response));
       }
     } catch (e) {
       if (kDebugMode) print('ResetPassword error: $e');
@@ -221,13 +213,38 @@ class AuthService {
     await prefs.setInt('expiresIn', expiresIn);
   }
 
-  static String _parseError(String body) {
-    if (kDebugMode) print('Parsing error body: $body');
+  static String _parseError(dynamic input) {
+    if (kDebugMode) print('Parsing error input: $input');
     try {
-      final jsonBody = json.decode(body);
-      return jsonBody['error'] ?? 'An error occurred';
-    } catch (_) {
-      return body.isNotEmpty ? body : 'An error occurred';
+      if (input is http.Response) {
+        final body = input.body;
+        if (body.isNotEmpty) {
+          final jsonBody = json.decode(body);
+          if (jsonBody is Map && jsonBody.containsKey('error')) {
+            return jsonBody['error'] as String;
+          }
+        }
+        // Map HTTP status codes to specific messages
+        switch (input.statusCode) {
+          case 401:
+            return 'Please log in to continue.';
+          case 403:
+            return 'You don’t have permission to perform this action.';
+          case 500:
+            return 'Something went wrong on our end. Please try again later.';
+          default:
+            return 'An error occurred. Please try again.';
+        }
+      }
+      // Handle exceptions or string errors
+      final errorStr = input.toString();
+      if (errorStr.contains('Network Error')) {
+        return 'Unable to connect to the server. Check your connection.';
+      }
+      return errorStr.isNotEmpty ? errorStr : 'An error occurred. Please try again.';
+    } catch (e) {
+      if (kDebugMode) print('Error parsing error: $e');
+      return 'An error occurred. Please try again.';
     }
   }
 }

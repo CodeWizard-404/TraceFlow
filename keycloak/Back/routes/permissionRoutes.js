@@ -6,9 +6,9 @@ const { requirePermission } = require('../config/security');
 
 
 router.get('/', requirePermission('access_all_permissions'), PermissionController.getAllPermissions);
-router.post('/', requirePermission('create_permissions'), PermissionController.createPermission);
+//router.post('/', requirePermission('create_permissions'), PermissionController.createPermission);
 router.put('/:permissionID', requirePermission('update_permissions'), PermissionController.updatePermission);
-router.delete('/:permissionID', requirePermission('delete_permissions'), PermissionController.deletePermission);
+//router.delete('/:permissionID', requirePermission('delete_permissions'), PermissionController.deletePermission);
 router.get('/:permissionID', requirePermission('access_permission_details'), PermissionController.getPermissionById);
 
 router.post('/role/:roleID/assign', requirePermission('assign_permissions'), PermissionController.assignPermissionsToRole);

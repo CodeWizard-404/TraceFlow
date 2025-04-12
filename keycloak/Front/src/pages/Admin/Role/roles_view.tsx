@@ -1,17 +1,22 @@
-import React, { useState, useEffect, useMemo } from "react";
-import {
-    FaEdit, FaTrash
-} from "react-icons/fa";
-import Role from "../../../models/Role";
-import Permission from "../../../models/Permission";
-import { useAuth } from "../../../context/AuthContext";
-import {
-    updateRole,
-    deleteRole,
-} from "../../../apis/roleAPI";
-import "../AdminDashboard.css";
-import { assignPermissionsToRole, revokePermissionsFromRole } from "../../../apis/permissionAPI";
+import React, { useEffect, useMemo, useState } from "react";
+import { FaEdit, FaInfoCircle, FaTrash } from "react-icons/fa";
 
+// Context and APIs
+import { useAuth } from "../../../context/AuthContext";
+import { assignPermissionsToRole, revokePermissionsFromRole } from "../../../apis/permissionAPI";
+import { deleteRole, updateRole } from "../../../apis/roleAPI";
+
+// Models and Types
+import Permission from "../../../models/Permission";
+import Role from "../../../models/Role";
+
+// Components
+import InfoPopup from "../InfoPopup";
+
+// Styles
+import "../AdminDashboard.css";
+
+// Props Interface
 interface RoleViewProps {
     selectedRole: Role | null;
     setSelectedRole: (role: Role | null) => void;
@@ -23,6 +28,7 @@ interface RoleViewProps {
     setError: (error: string | null) => void;
 }
 
+// Main Component
 const RoleView: React.FC<RoleViewProps> = ({
     selectedRole,
     setSelectedRole,
@@ -31,7 +37,7 @@ const RoleView: React.FC<RoleViewProps> = ({
     permissionsList,
     view,
     userRoles,
-    setError
+    setError,
 }) => {
     const { token, effectivePermissions } = useAuth();
 
@@ -43,25 +49,81 @@ const RoleView: React.FC<RoleViewProps> = ({
     const [selectedCategory, setSelectedCategory] = useState<string>("all");
     const [hasUnsavedChanges, setHasUnsavedChanges] = useState(false);
     const [loading, setLoading] = useState(false);
-    const [confirmation, setConfirmation] = useState<{ message: string; onConfirm: () => void } | null>(null);
+    const [confirmation, setConfirmation] = useState<{
+        message: string;
+        onConfirm: () => void;
+    } | null>(null);
     const [roleFormErrors, setRoleFormErrors] = useState({ name: "", description: "" });
     const [roleTouched, setRoleTouched] = useState({ name: false, description: false });
+    const [activePermissionPopup, setActivePermissionPopup] = useState<string | null>(null);
 
-    // Permission Checks
+    // Permissions
     const userPermissions = {
-        canUpdateRoles: effectivePermissions?.some(p => p.name === import.meta.env.VITE_PERMISSIONS_UPDATE_ROLES),
-        canDeleteRoles: effectivePermissions?.some(p => p.name === import.meta.env.VITE_PERMISSIONS_DELETE_ROLES),
-        canAssignPermissions: effectivePermissions?.some(p => p.name === import.meta.env.VITE_PERMISSIONS_ASSIGN_PERMISSIONS),
-        canReadPermissionsByRole: effectivePermissions?.some(p => p.name === import.meta.env.VITE_PERMISSIONS_READ_PERMISSIONS_BY_ROLE),
-        canViewRoleDetails: effectivePermissions?.some(p => p.name === import.meta.env.VITE_PERMISSIONS_READ_ROLE_DETAILS),
+        canUpdateRoles: effectivePermissions?.some((p) => p.name === import.meta.env.VITE_PERMISSIONS_UPDATE_ROLES),
+        canDeleteRoles: effectivePermissions?.some((p) => p.name === import.meta.env.VITE_PERMISSIONS_DELETE_ROLES),
+        canAssignPermissions: effectivePermissions?.some((p) => p.name === import.meta.env.VITE_PERMISSIONS_ASSIGN_PERMISSIONS),
+        canReadPermissionsByRole: effectivePermissions?.some((p) => p.name === import.meta.env.VITE_PERMISSIONS_READ_PERMISSIONS_BY_ROLE),
+        canViewRoleDetails: effectivePermissions?.some((p) => p.name === import.meta.env.VITE_PERMISSIONS_READ_ROLE_DETAILS),
     };
 
-    const isSuperAdmin = useMemo(() => userRoles?.some(r => r.name === import.meta.env.VITE_ROLES_SUPER_ADMIN), [userRoles]);
+    const isSuperAdmin = useMemo(
+        () => userRoles?.some((r) => r.name === import.meta.env.VITE_ROLES_SUPER_ADMIN),
+        [userRoles]
+    );
 
-    // Sync Temporary Permissions with Selected Role
+    // Restricted Roles
+    const restrictedRoles = [
+        import.meta.env.VITE_ROLES_SUPER_ADMIN,
+        import.meta.env.VITE_ROLES_ADMIN,
+        import.meta.env.VITE_ROLES_MANAGER,
+        import.meta.env.VITE_ROLES_SUPERVISOR,
+        import.meta.env.VITE_ROLES_PURCHASE_TEAM,
+        import.meta.env.VITE_ROLES_REGIONAL_MANAGER,
+        import.meta.env.VITE_ROLES_STOCK_MANAGER,
+    ];
+
+    const isRestrictedRole = selectedRole ? restrictedRoles.includes(selectedRole.name) : false;
+
+    // Sync Permissions
     useEffect(() => {
         if (selectedRole) setTempPermissions(selectedRole.permissions || []);
     }, [selectedRole]);
+
+    // Computed Permissions
+    const categorizedPermissions = useMemo(() => {
+        return Object.entries(
+            permissionsList
+                .filter((perm) => isSuperAdmin || !["Role", "Permission"].includes(perm.class))
+                .reduce((acc: { [key: string]: Permission[] }, perm) => {
+                    const formattedName = perm.name
+                        .replace(/_/g, " ")
+                        .replace(/\b\w/g, (char) => char.toUpperCase());
+                    if (!acc[perm.class]) acc[perm.class] = [];
+                    acc[perm.class].push({ ...perm, name: formattedName });
+                    return acc;
+                }, {})
+        );
+    }, [permissionsList, isSuperAdmin]);
+
+    const filteredPermissions = useMemo(() => {
+        let result = permissionsList.filter((perm) => isSuperAdmin || !["Role", "Permission"].includes(perm.class));
+        if (permissionSearch) {
+            result = result.filter(
+                (perm) =>
+                    perm.name.toLowerCase().includes(permissionSearch.toLowerCase()) ||
+                    perm.class.toLowerCase().includes(permissionSearch.toLowerCase())
+            );
+        }
+        if (selectedCategory !== "all") result = result.filter((perm) => perm.class === selectedCategory);
+        return result.reduce((acc: { [key: string]: Permission[] }, perm) => {
+            const formattedName = perm.name
+                .replace(/_/g, " ")
+                .replace(/\b\w/g, (char) => char.toUpperCase());
+            if (!acc[perm.class]) acc[perm.class] = [];
+            acc[perm.class].push({ ...perm, name: formattedName });
+            return acc;
+        }, {});
+    }, [permissionsList, permissionSearch, selectedCategory, isSuperAdmin]);
 
     // Handlers
     const handleEditRole = (role: Role) => {
@@ -79,40 +141,45 @@ const RoleView: React.FC<RoleViewProps> = ({
         if (!selectedRole || !userPermissions.canUpdateRoles || !isEditingRole) return;
 
         const errors = {
-            name: validateRoleName(editedRole.name || ""),
+            name: isRestrictedRole ? "" : validateRoleName(editedRole.name || ""),
             description: validateRoleDescription(editedRole.description || ""),
         };
 
         setRoleFormErrors(errors);
-        if (Object.values(errors).some(error => error)) {
+        if (Object.values(errors).some((error) => error)) {
             setError("Please correct the errors before saving.");
             return;
         }
 
         setLoading(true);
         try {
-            const updatedRole = await updateRole(selectedRole.roleID, {
-                name: editedRole.name!.trim(),
-                description: editedRole.description?.trim()
-            }, token!);
-            setRoles(roles.map(r => r.roleID === selectedRole.roleID ? { ...updatedRole, permissions: selectedRole.permissions } : r));
+            const updatedRole = await updateRole(
+                selectedRole.roleID,
+                {
+                    name: editedRole.name!.trim(),
+                    description: editedRole.description?.trim(),
+                },
+                token!
+            );
+            setRoles(roles.map((r) => (r.roleID === selectedRole.roleID ? { ...updatedRole, permissions: selectedRole.permissions } : r)));
             setSelectedRole({ ...updatedRole, permissions: selectedRole.permissions });
             setIsEditingRole(false);
             setEditedRole({});
             setRoleFormErrors({ name: "", description: "" });
             setRoleTouched({ name: false, description: false });
             setError(null);
-        } catch (error) {
-            console.error("Failed to update role:", error);
+        } catch (error: unknown) {
+            const errorMessage = error instanceof Error ? error.message : "Failed to update role.";
+            setError(errorMessage);
         } finally {
             setLoading(false);
         }
     };
 
     const handleDeleteRole = async (role: Role) => {
-        if (!userPermissions.canUpdateRoles) return;
-        if (role.name === import.meta.env.VITE_ROLES_SUPER_ADMIN) {
-            setError("The Super Admin role cannot be deleted.");
+        if (!userPermissions.canDeleteRoles) return;
+        if (restrictedRoles.includes(role.name)) {
+            setError(`${role.name} role cannot be deleted.`);
             return;
         }
         setConfirmation({
@@ -121,11 +188,12 @@ const RoleView: React.FC<RoleViewProps> = ({
                 setLoading(true);
                 try {
                     await deleteRole(role.roleID, token!);
-                    setRoles(roles.filter(r => r.roleID !== role.roleID));
+                    setRoles(roles.filter((r) => r.roleID !== role.roleID));
                     setSelectedRole(null);
                     setError(null);
-                } catch (error) {
-                    console.error("Failed to delete role:", error);
+                } catch (error: unknown) {
+                    const errorMessage = error instanceof Error ? error.message : "Failed to delete role.";
+                    setError(errorMessage);
                 } finally {
                     setLoading(false);
                 }
@@ -135,20 +203,24 @@ const RoleView: React.FC<RoleViewProps> = ({
 
     const handleTogglePermission = (permissionID: string) => {
         if (!userPermissions.canAssignPermissions) return;
-        const hasPermission = tempPermissions.some(perm => perm.permissionID === permissionID);
-        setTempPermissions(hasPermission
-            ? tempPermissions.filter(p => p.permissionID !== permissionID)
-            : [...tempPermissions, permissionsList.find(p => p.permissionID === permissionID)!]);
+        const hasPermission = tempPermissions.some((perm) => perm.permissionID === permissionID);
+        setTempPermissions(
+            hasPermission
+                ? tempPermissions.filter((p) => p.permissionID !== permissionID)
+                : [...tempPermissions, permissionsList.find((p) => p.permissionID === permissionID)!]
+        );
         setHasUnsavedChanges(true);
     };
 
     const handleToggleAllPermissionsInClass = (className: string) => {
         if (!userPermissions.canAssignPermissions) return;
-        const classPermissions = permissionsList.filter(p => p.class === className);
-        const allSelected = classPermissions.every(p => tempPermissions.some(tp => tp.permissionID === p.permissionID));
-        setTempPermissions(allSelected
-            ? tempPermissions.filter(p => !classPermissions.some(cp => cp.permissionID === p.permissionID))
-            : [...tempPermissions, ...classPermissions.filter(p => !tempPermissions.some(tp => tp.permissionID === p.permissionID))]);
+        const classPermissions = permissionsList.filter((p) => p.class === className);
+        const allSelected = classPermissions.every((p) => tempPermissions.some((tp) => tp.permissionID === p.permissionID));
+        setTempPermissions(
+            allSelected
+                ? tempPermissions.filter((p) => !classPermissions.some((cp) => cp.permissionID === p.permissionID))
+                : [...tempPermissions, ...classPermissions.filter((p) => !tempPermissions.some((tp) => tp.permissionID === p.permissionID))]
+        );
         setHasUnsavedChanges(true);
     };
 
@@ -156,25 +228,28 @@ const RoleView: React.FC<RoleViewProps> = ({
         if (!selectedRole || !userPermissions.canUpdateRoles || !userPermissions.canAssignPermissions) return;
         setLoading(true);
         try {
-            const currentPermissionIds = selectedRole.permissions?.map(p => p.permissionID) || [];
-            const newPermissionIds = tempPermissions.map(p => p.permissionID);
-            const toAdd = newPermissionIds.filter(id => !currentPermissionIds.includes(id));
-            const toRemove = currentPermissionIds.filter(id => !newPermissionIds.includes(id));
+            const currentPermissionIds = selectedRole.permissions?.map((p) => p.permissionID) || [];
+            const newPermissionIds = tempPermissions.map((p) => p.permissionID);
+            const toAdd = newPermissionIds.filter((id) => !currentPermissionIds.includes(id));
+            const toRemove = currentPermissionIds.filter((id) => !newPermissionIds.includes(id));
 
             if (toAdd.length > 0) await assignPermissionsToRole(selectedRole.roleID, toAdd, token!);
             if (toRemove.length > 0) await revokePermissionsFromRole(selectedRole.roleID, toRemove, token!);
 
-            setRoles(roles.map(r => r.roleID === selectedRole.roleID ? { ...r, permissions: tempPermissions } : r));
+            setRoles(roles.map((r) => (r.roleID === selectedRole.roleID ? { ...r, permissions: tempPermissions } : r)));
             setSelectedRole({ ...selectedRole, permissions: tempPermissions });
             setHasUnsavedChanges(false);
-        } catch (error) {
-            console.error("Failed to save permissions:", error);
+            setError(null);
+        } catch (error: unknown) {
+            const errorMessage = error instanceof Error ? error.message : "Failed to save permissions.";
             setTempPermissions(selectedRole.permissions || []);
+            setError(errorMessage);
         } finally {
             setLoading(false);
         }
     };
 
+    // Validation
     const validateRoleName = (value: string): string => {
         const trimmed = value.trim();
         if (!trimmed) return "Role name is required";
@@ -190,31 +265,12 @@ const RoleView: React.FC<RoleViewProps> = ({
         return "";
     };
 
-    const categorizedPermissions = Object.entries(permissionsList.reduce((acc: { [key: string]: Permission[] }, perm) => {
-        const formattedName = perm.name.replace(/_/g, ' ').replace(/\b\w/g, char => char.toUpperCase());
-        if (!acc[perm.class]) acc[perm.class] = [];
-        acc[perm.class].push({ ...perm, name: formattedName });
-        return acc;
-    }, {} as { [key: string]: Permission[] }));
-
-    const filteredPermissions = () => {
-        let result = permissionsList.filter(perm => isSuperAdmin || !["Permission"].includes(perm.class));
-        if (permissionSearch) {
-            result = result.filter(perm =>
-                perm.name.toLowerCase().includes(permissionSearch.toLowerCase()) ||
-                perm.class.toLowerCase().includes(permissionSearch.toLowerCase())
-            );
-        }
-        if (selectedCategory !== "all") result = result.filter(perm => perm.class === selectedCategory);
-        return result.reduce((acc: { [key: string]: Permission[] }, perm) => {
-            const formattedName = perm.name.replace(/_/g, ' ').replace(/\b\w/g, char => char.toUpperCase());
-            if (!acc[perm.class]) acc[perm.class] = [];
-            acc[perm.class].push({ ...perm, name: formattedName });
-            return acc;
-        }, {} as { [key: string]: Permission[] });
-    };
-
-    const ConfirmationModal: React.FC<{ message: string; onConfirm: () => void; onCancel: () => void }> = ({ message, onConfirm, onCancel }) => {
+    // Confirmation Modal
+    const ConfirmationModal: React.FC<{
+        message: string;
+        onConfirm: () => void;
+        onCancel: () => void;
+    }> = ({ message, onConfirm, onCancel }) => {
         const [isFadingOut, setIsFadingOut] = useState(false);
 
         const handleConfirm = () => {
@@ -232,19 +288,26 @@ const RoleView: React.FC<RoleViewProps> = ({
         };
 
         return (
-            <div className={`confirmation-modal-overlay ${isFadingOut ? 'fade-out' : 'fade-in'}`}>
+            <div className={`confirmation-modal-overlay ${isFadingOut ? "fade-out" : "fade-in"}`}>
                 <div className="confirmation-modal">
                     <p>{message}</p>
                     <div className="confirmation-actions">
-                        <button className="confirm-button" onClick={handleConfirm}>Confirm</button>
-                        <button className="cancel-button" onClick={handleCancel}>Cancel</button>
+                        <button className="confirm-button" onClick={handleConfirm}>
+                            Confirm
+                        </button>
+                        <button className="cancel-button" onClick={handleCancel}>
+                            Cancel
+                        </button>
                     </div>
                 </div>
             </div>
         );
     };
 
-    return view === "roles" && selectedRole && userPermissions.canUpdateRoles ? (
+    // Render
+    if (view !== "roles" || !selectedRole || !userPermissions.canUpdateRoles) return null;
+
+    return (
         <div className="details-card">
             {confirmation && (
                 <ConfirmationModal
@@ -256,38 +319,78 @@ const RoleView: React.FC<RoleViewProps> = ({
                     onCancel={() => setConfirmation(null)}
                 />
             )}
+            <InfoPopup
+                isOpen={!!activePermissionPopup}
+                onClose={() => setActivePermissionPopup(null)}
+                contentRenderer={() => {
+                    const permission = permissionsList.find((perm) => perm.permissionID === activePermissionPopup);
+                    if (!permission) return <p>Permission not found</p>;
+                    return (
+                        <>
+                            <h4>{permission.name}</h4>
+                            <p>
+                                <strong>Class:</strong> {permission.class}
+                            </p>
+                            <p>
+                                <strong>Description:</strong> {permission.description || "No description available"}
+                            </p>
+                        </>
+                    );
+                }}
+            />
             <div className="card-header">
                 {isEditingRole ? (
                     <div className="role-edit-form">
                         <input
                             type="text"
                             value={editedRole.name || ""}
-                            onChange={e => {
-                                setEditedRole({ ...editedRole, name: e.target.value });
-                                setRoleFormErrors({ ...roleFormErrors, name: validateRoleName(e.target.value) });
+                            onChange={(e) => {
+                                if (!isRestrictedRole) {
+                                    setEditedRole({ ...editedRole, name: e.target.value });
+                                    setRoleFormErrors({
+                                        ...roleFormErrors,
+                                        name: validateRoleName(e.target.value),
+                                    });
+                                }
                             }}
                             onBlur={() => setRoleTouched({ ...roleTouched, name: true })}
                             placeholder="Role Name"
                             className={`role-edit-input ${roleTouched.name && roleFormErrors.name ? "invalid-vibrate" : ""}`}
+                            disabled={isRestrictedRole || loading}
                             required
                         />
-                        {roleFormErrors.name && roleTouched.name && <span className="error-text">{roleFormErrors.name}</span>}
+                        {roleFormErrors.name && roleTouched.name && !isRestrictedRole && (
+                            <span className="error-text">{roleFormErrors.name}</span>
+                        )}
                         <textarea
                             value={editedRole.description || ""}
-                            onChange={e => {
+                            onChange={(e) => {
                                 setEditedRole({ ...editedRole, description: e.target.value });
-                                setRoleFormErrors({ ...roleFormErrors, description: validateRoleDescription(e.target.value) });
+                                setRoleFormErrors({
+                                    ...roleFormErrors,
+                                    description: validateRoleDescription(e.target.value),
+                                });
                             }}
                             onBlur={() => setRoleTouched({ ...roleTouched, description: true })}
                             placeholder="Role Description"
                             className={`role-edit-textarea ${roleTouched.description && roleFormErrors.description ? "invalid-vibrate" : ""}`}
+                            disabled={loading}
                         />
-                        {roleFormErrors.description && roleTouched.description && <span className="error-text">{roleFormErrors.description}</span>}
+                        {roleFormErrors.description && roleTouched.description && (
+                            <span className="error-text">{roleFormErrors.description}</span>
+                        )}
                         <div className="role-edit-actions">
                             <button className="action-button" onClick={handleSaveRoleEdit} disabled={loading}>
                                 {loading ? "Saving..." : "Save"}
                             </button>
-                            <button className="cancel-button" onClick={() => { setIsEditingRole(false); setEditedRole({}); }} disabled={loading}>
+                            <button
+                                className="cancel-button"
+                                onClick={() => {
+                                    setIsEditingRole(false);
+                                    setEditedRole({});
+                                }}
+                                disabled={loading}
+                            >
                                 Cancel
                             </button>
                         </div>
@@ -296,10 +399,18 @@ const RoleView: React.FC<RoleViewProps> = ({
                     <>
                         <h2>{selectedRole.name}</h2>
                         <div className="role-actions">
-                            <button className="edit-button" onClick={() => handleEditRole(selectedRole)} disabled={loading || !userPermissions.canUpdateRoles}>
+                            <button
+                                className="edit-button"
+                                onClick={() => handleEditRole(selectedRole)}
+                                disabled={loading || !userPermissions.canUpdateRoles}
+                            >
                                 <FaEdit /> Edit
                             </button>
-                            <button className="delete-button" onClick={() => handleDeleteRole(selectedRole)} disabled={loading || !userPermissions.canDeleteRoles}>
+                            <button
+                                className="delete-button"
+                                onClick={() => handleDeleteRole(selectedRole)}
+                                disabled={loading || !userPermissions.canDeleteRoles || isRestrictedRole}
+                            >
                                 <FaTrash /> Delete
                             </button>
                         </div>
@@ -319,11 +430,16 @@ const RoleView: React.FC<RoleViewProps> = ({
                                     type="text"
                                     placeholder="Search permissions..."
                                     value={permissionSearch}
-                                    onChange={e => setPermissionSearch(e.target.value)}
+                                    onChange={(e) => setPermissionSearch(e.target.value)}
+                                    disabled={loading}
                                 />
                             </div>
                             <div className="permissions-category">
-                                <select value={selectedCategory} onChange={e => setSelectedCategory(e.target.value)}>
+                                <select
+                                    value={selectedCategory}
+                                    onChange={(e) => setSelectedCategory(e.target.value)}
+                                    disabled={loading}
+                                >
                                     <option value="all">All Categories</option>
                                     {categorizedPermissions.map(([category]) => (
                                         <option key={category} value={category}>
@@ -337,7 +453,7 @@ const RoleView: React.FC<RoleViewProps> = ({
                     <h3>Permissions</h3>
                     {userPermissions.canReadPermissionsByRole && (
                         <div className="permissions-list">
-                            {Object.entries(filteredPermissions()).map(([className, permissions]) => (
+                            {Object.entries(filteredPermissions).map(([className, permissions]) => (
                                 <div key={className} className="permission-class">
                                     <div className="permission-class-header">
                                         <h4>{className}</h4>
@@ -347,22 +463,32 @@ const RoleView: React.FC<RoleViewProps> = ({
                                                 onClick={() => handleToggleAllPermissionsInClass(className)}
                                                 disabled={loading}
                                             >
-                                                {permissionsList.filter(p => p.class === className).every(p =>
-                                                    tempPermissions.some(tp => tp.permissionID === p.permissionID))
-                                                    ? "Deselect All" : "Select All"}
+                                                {permissionsList
+                                                    .filter((p) => p.class === className)
+                                                    .every((p) => tempPermissions.some((tp) => tp.permissionID === p.permissionID))
+                                                    ? "Deselect All"
+                                                    : "Select All"}
                                             </button>
                                         )}
                                     </div>
                                     <div className="permissions-container">
                                         {Array.isArray(permissions) ? (
-                                            permissions.map(perm => (
+                                            permissions.map((perm) => (
                                                 <button
                                                     key={perm.permissionID}
-                                                    className={`permission-button ${tempPermissions.some(p => p.permissionID === perm.permissionID) ? "assigned" : ""}`}
+                                                    className={`permission-button ${tempPermissions.some((p) => p.permissionID === perm.permissionID) ? "assigned" : ""
+                                                        }`}
                                                     onClick={() => handleTogglePermission(perm.permissionID)}
                                                     disabled={loading || !userPermissions.canAssignPermissions}
                                                 >
-                                                    {perm.name}
+                                                    <span>{perm.name}</span>
+                                                    <FaInfoCircle
+                                                        className="permission-info-icon"
+                                                        onClick={(e) => {
+                                                            e.stopPropagation();
+                                                            setActivePermissionPopup(perm.permissionID);
+                                                        }}
+                                                    />
                                                 </button>
                                             ))
                                         ) : (
@@ -375,14 +501,13 @@ const RoleView: React.FC<RoleViewProps> = ({
                     )}
                     {hasUnsavedChanges && userPermissions.canAssignPermissions && (
                         <button className="action-button" onClick={handleSavePermissions} disabled={loading}>
-                            {loading ? 'Saving...' : 'Save Changes'}
+                            {loading ? "Saving..." : "Save Changes"}
                         </button>
                     )}
                 </>
             )}
-
         </div>
-    ) : null;
+    );
 };
 
 export default RoleView;

@@ -1,7 +1,7 @@
 import React, { useState } from "react";
-import { FaEdit, FaTrash, FaTimes } from "react-icons/fa";
+import { FaEdit, FaTimes } from "react-icons/fa";
 import { useAuth } from "../../../context/AuthContext";
-import { updatePermission, deletePermission } from "../../../apis/permissionAPI";
+import { updatePermission } from "../../../apis/permissionAPI";
 import "../AdminDashboard.css";
 import PermissionsClass from "../../../models/Enum/PermissionsClass";
 import Permission from "../../../models/Permission";
@@ -27,12 +27,10 @@ const PermView: React.FC<PermViewProps> = ({
     const [isEditingPermission, setIsEditingPermission] = useState(false);
     const [editedPermission, setEditedPermission] = useState<Partial<Permission>>({});
     const [permissionFormErrors, setPermissionFormErrors] = useState({
-        name: "",
         class: "",
         description: "",
     });
     const [permissionTouched, setPermissionTouched] = useState({
-        name: false,
         class: false,
         description: false,
     });
@@ -41,16 +39,6 @@ const PermView: React.FC<PermViewProps> = ({
     const userPermissions = {
         canViewPermissionDetails: effectivePermissions?.some(p => p.name === import.meta.env.VITE_PERMISSIONS_READ_PERMISSION_DETAILS),
         canUpdatePermissions: effectivePermissions?.some(p => p.name === import.meta.env.VITE_PERMISSIONS_UPDATE_PERMISSIONS),
-        canDeletePermissions: effectivePermissions?.some(p => p.name === import.meta.env.VITE_PERMISSIONS_DELETE_PERMISSIONS),
-    };
-
-    const validatePermissionName = (value: string): string => {
-        const trimmed = value.trim();
-        if (!trimmed) return "Permission name is required";
-        if (trimmed.length < 10) return "Permission name must be at least 10 characters";
-        if (trimmed.length > 30) return "Permission name must be 30 characters or less";
-        if (!/^[a-z_]+$/.test(trimmed)) return "Permission name must contain only lowercase letters and underscores (e.g., read_users)";
-        return "";
     };
 
     const validatePermissionClass = (value: string): string => {
@@ -79,7 +67,6 @@ const PermView: React.FC<PermViewProps> = ({
         if (!selectedPermission || !userPermissions.canUpdatePermissions || !isEditingPermission) return;
 
         const errors = {
-            name: validatePermissionName(editedPermission.name || ""),
             class: validatePermissionClass(editedPermission.class || ""),
             description: validatePermissionDescription(editedPermission.description || ""),
         };
@@ -93,7 +80,6 @@ const PermView: React.FC<PermViewProps> = ({
         setLoading(true);
         try {
             const updatedPermission = await updatePermission(selectedPermission.permissionID, {
-                name: editedPermission.name!.trim(),
                 className: editedPermission.class!.trim(),
                 description: editedPermission.description?.trim(),
             }, token!);
@@ -101,28 +87,12 @@ const PermView: React.FC<PermViewProps> = ({
             setSelectedPermission(updatedPermission);
             setIsEditingPermission(false);
             setEditedPermission({});
-            setPermissionFormErrors({ name: "", class: "", description: "" });
-            setPermissionTouched({ name: false, class: false, description: false });
+            setPermissionFormErrors({ class: "", description: "" });
+            setPermissionTouched({ class: false, description: false });
             setError(null);
         } catch (error) {
             console.error("Failed to update permission:", error);
             setError("Failed to update permission.");
-        } finally {
-            setLoading(false);
-        }
-    };
-
-    const handleDeletePermission = async (permission: Permission) => {
-        if (!userPermissions.canDeletePermissions) return;
-        setLoading(true);
-        try {
-            await deletePermission(permission.permissionID, token!);
-            setPermissionsList(permissionsList.filter(p => p.permissionID !== permission.permissionID));
-            setSelectedPermission(null);
-            setError(null);
-        } catch (error) {
-            console.error("Failed to delete permission:", error);
-            setError("Failed to delete permission.");
         } finally {
             setLoading(false);
         }
@@ -138,19 +108,15 @@ const PermView: React.FC<PermViewProps> = ({
                         <div className="permission-edit-header">
                             <h2>Edit Permission</h2>
                         </div>
-                        <input
-                            type="text"
-                            value={editedPermission.name || ""}
-                            onChange={e => {
-                                setEditedPermission({ ...editedPermission, name: e.target.value });
-                                setPermissionFormErrors({ ...permissionFormErrors, name: validatePermissionName(e.target.value) });
-                            }}
-                            onBlur={() => setPermissionTouched({ ...permissionTouched, name: true })}
-                            placeholder="Permission Name"
-                            className={`permission-edit-input ${permissionTouched.name && permissionFormErrors.name ? "invalid-vibrate" : ""}`}
-                            required
-                        />
-                        {permissionFormErrors.name && permissionTouched.name && <span className="error-text">{permissionFormErrors.name}</span>}
+                        <div className="form-group">
+                            <label>Name</label>
+                            <input
+                                type="text"
+                                value={editedPermission.name || ""}
+                                disabled
+                                className="permission-edit-input disabled"
+                            />
+                        </div>
                         <div className="form-group">
                             <label>Class *</label>
                             <select
@@ -158,8 +124,7 @@ const PermView: React.FC<PermViewProps> = ({
                                 onChange={e => {
                                     setEditedPermission({ ...editedPermission, class: e.target.value as PermissionsClass });
                                     setPermissionFormErrors({ ...permissionFormErrors, class: validatePermissionClass(e.target.value) });
-                                }}
-                                onBlur={() => setPermissionTouched({ ...permissionTouched, class: true })}
+                                }} onBlur={() => setPermissionTouched({ ...permissionTouched, class: true })}
                                 className={`permission-edit-input ${permissionTouched.class && permissionFormErrors.class ? "invalid-vibrate" : ""}`}
                                 required
                             >
@@ -209,13 +174,6 @@ const PermView: React.FC<PermViewProps> = ({
                                 disabled={loading || !userPermissions.canUpdatePermissions}
                             >
                                 <FaEdit /> Edit
-                            </button>
-                            <button
-                                className="delete-button"
-                                onClick={() => handleDeletePermission(selectedPermission)}
-                                disabled={loading || !userPermissions.canDeletePermissions}
-                            >
-                                <FaTrash /> Delete
                             </button>
                             <button
                                 className="close-button"

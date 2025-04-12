@@ -22,7 +22,7 @@ import RoleView from "./Role/roles_view";
 import RoleAdd from "./Role/role_add";
 import RolesList from "./Role/roles_list";
 import PermView from "./Permission/perm_view";
-import PermAdd from "./Permission/perm_add";
+// import PermAdd from "./Permission/perm_add";
 import PermsList from "./Permission/perms_list";
 import ChecklistView from "./Items/Checklists/ChecklistView";
 import { SortField, SortOrder, ViewMode } from "./adminTypes";
@@ -241,29 +241,34 @@ const AdminDashboard: React.FC = () => {
                             </button>
                         )}
                     </div>
-                    {(view === "users") && userPermissions.canViewUsers && (
+                    {userPermissions.canViewUsers && (
                         <>
-                            <div className="sort-card">
-                                <h3>Sort Users By</h3>
-                                <select value={sortField} onChange={e => setSortField(e.target.value as SortField)}>
-                                    <option value="name">Name</option>
-                                    <option value="email">Email</option>
-                                    <option value="role">Role</option>
-                                </select>
-                                <button onClick={() => setSortOrder(sortOrder === "asc" ? "desc" : "asc")}>
-                                    <FaSort /> {sortOrder === "asc" ? "Asc" : "Desc"}
-                                </button>
-                            </div>
-                            <div className="role-filter-card">
-                                <h3>Filter by Role</h3>
-                                <select value={roleFilter} onChange={e => setRoleFilter(e.target.value)}>
-                                    <option value="all">All Roles</option>
-                                    {roles.map(role => (
-                                        <option key={role.roleID} value={role.roleID}>{role.name}</option>
-                                    ))}
-                                </select>
-                            </div>
-                            {userPermissions.canCreateUsers && (
+                            {(view === "users") && (
+                                <>
+
+                                    <div className="sort-card">
+                                        <h3>Sort Users By</h3>
+                                        <select value={sortField} onChange={e => setSortField(e.target.value as SortField)}>
+                                            <option value="name">Name</option>
+                                            <option value="email">Email</option>
+                                            <option value="role">Role</option>
+                                        </select>
+                                        <button onClick={() => setSortOrder(sortOrder === "asc" ? "desc" : "asc")}>
+                                            <FaSort /> {sortOrder === "asc" ? "Asc" : "Desc"}
+                                        </button>
+                                    </div>
+                                    <div className="role-filter-card">
+                                        <h3>Filter by Role</h3>
+                                        <select value={roleFilter} onChange={e => setRoleFilter(e.target.value)}>
+                                            <option value="all">All Roles</option>
+                                            {roles.map(role => (
+                                                <option key={role.roleID} value={role.roleID}>{role.name}</option>
+                                            ))}
+                                        </select>
+                                    </div>
+                                </>
+                            )}
+                            {(view === "users" || view === "add-user" || view === "user-details") && userPermissions.canCreateUsers && (
                                 <button className="action-button" onClick={() => handleViewChange("add-user")}>
                                     <FaUserPlus /> Add User
                                 </button>
@@ -286,11 +291,11 @@ const AdminDashboard: React.FC = () => {
                             )}
                         </>
                     )}
-                    {(view === "permissions") && userPermissions.canViewPermissions && (
+                    {/* {(view === "permissions") && userPermissions.canViewPermissions && (
                         <button className="action-button" onClick={() => handleViewChange("add-permission")}>
                             <FaPlus /> Add Permission
                         </button>
-                    )}
+                    )} */}
                     {(view === "checklists") && userPermissions.canViewChecklists && (
                         <button className="action-button" onClick={() => handleViewChange("add-checklist")}>
                             <FaPlus /> Add Checklist
@@ -388,14 +393,14 @@ const AdminDashboard: React.FC = () => {
                         view={view}
                         setError={setError}
                     />
-                    <PermAdd
+                    {/* <PermAdd
                         permissionsList={permissionsList}
                         setPermissionsList={setPermissionsList}
                         view={view}
                         token={token!}
                         setView={setView}
                         setError={setError}
-                    />
+                    /> */}
                     <ChecklistsList
                         checklists={checklists}
                         setChecklists={setChecklists}

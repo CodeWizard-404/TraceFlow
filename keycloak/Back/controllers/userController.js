@@ -1,196 +1,188 @@
 const UserService = require('../services/userService');
-const { uploadPFP } = require('../config/multer');
 
+// Handles user-related API requests
 class UserController {
+    // Create a new user
     static async createUser(req, res) {
-        console.log('Received request to create user:', req.body);
+        console.log("Creating user: ", req.body);
         try {
             const { email, password, firstname, lastname, phone, wallet } = req.body;
-            if (!email || !password || !firstname || !lastname || !phone || !wallet) {
-                return res.status(400).json({ error: 'Please fill in all required fields' });
-            }
             const user = await UserService.createUser(email, password, firstname, lastname, phone, wallet);
             res.status(201).json(user);
         } catch (error) {
-            console.error(`${new Date().toISOString()} - Create user failed:`, error);
             res.status(400).json({ error: error.message });
         }
     }
 
+    // Get all users
     static async getAllUsers(req, res) {
-        console.log('Received request to get all users');
+        console.log("Getting all users", true);
         try {
             const users = await UserService.getAllUsers();
             res.status(200).json(users);
         } catch (error) {
-            console.error(`${new Date().toISOString()} - Get all users failed:`, error);
             res.status(500).json({ error: error.message });
         }
     }
 
+    // Get user by phone number
     static async getUserByPhoneNumber(req, res) {
-        console.log('Received request to get user by phone number', req.params);
+        console.log("Getting user by phone number: ", req.params);
         try {
             const { phone } = req.params;
-            if (!phone) return res.status(400).json({ error: 'Phone number is required' });
             const user = await UserService.getUserByPhoneNumber(phone);
             res.status(200).json(user);
         } catch (error) {
-            console.error(`${new Date().toISOString()} - Get user by phone failed:`, error);
             res.status(404).json({ error: error.message });
         }
     }
 
+    // Get users by role
     static async getUsersByRole(req, res) {
-        console.log('Received request to get users by role', req.params);
+        console.log("Getting users by role: ", req.params);
         try {
             const { role } = req.params;
-            if (!role) return res.status(400).json({ error: 'Role is required' });
             const users = await UserService.getUsersByRole(role);
             res.status(200).json(users);
         } catch (error) {
-            console.error(`${new Date().toISOString()} - Get users by role failed:`, error);
-            res.status(500).json({ error: error.message });
+            res.status(400).json({ error: error.message });
         }
     }
 
+    // Get user by ID
     static async getUserById(req, res) {
-        console.log('Received request to get user by ID', req.params);
+        console.log("Getting user by ID: ", req.params);
         try {
             const { userID } = req.params;
-            if (!userID) return res.status(400).json({ error: 'User ID is required' });
             const user = await UserService.getUserById(userID);
             res.status(200).json(user);
         } catch (error) {
-            console.error(`${new Date().toISOString()} - Get user by ID failed:`, error);
             res.status(404).json({ error: error.message });
         }
     }
 
+    // Update user details
     static async updateUser(req, res) {
-        console.log('Received request to update user', req.params, req.body, req.file);
+        console.log("Updating user: ", req.params, req.body);
         try {
             const { userID } = req.params;
             const userData = req.body;
-            if (!userID) return res.status(400).json({ error: 'User ID is required' });
-            if (req.file) userData.PFP = req.file.buffer;
+            if (req.file) {
+                if (!req.file.mimetype.startsWith('image/')) {
+                    return res.status(400).json({ error: 'Please upload a valid image.' });
+                }
+                userData.PFP = req.file.buffer;
+            }
             const updatedUser = await UserService.updateUser(userID, userData);
             res.status(200).json(updatedUser);
         } catch (error) {
-            console.error(`${new Date().toISOString()} - Update user failed:`, error);
             res.status(400).json({ error: error.message });
         }
     }
 
+    // Get user profile
     static async getProfile(req, res) {
-        console.log('Received request to get profile', req.user);
+        console.log("Getting user profile", req);
         try {
-            const userID = req.user.userID;
-            if (!userID) return res.status(401).json({ error: 'Unauthorized: User ID not found in token' });
+            const userID = req.user?.userID;
+            if (!userID) {
+                return res.status(401).json({ error: 'Please log in to view your profile.' });
+            }
             const user = await UserService.getUserById(userID);
             const responseUser = user.toJSON();
-            if (responseUser.PFP) responseUser.PFP = responseUser.PFP.toString('base64');
+            if (responseUser.PFP) {
+                responseUser.PFP = responseUser.PFP.toString('base64');
+            }
             res.status(200).json(responseUser);
         } catch (error) {
-            console.error(`${new Date().toISOString()} - Get profile failed:`, error);
             res.status(400).json({ error: error.message });
         }
     }
 
+    // Update user profile
     static async updateProfile(req, res) {
-        console.log('Received request to update profile', {
-            body: req.body,
-            file: req.file ? { mimetype: req.file.mimetype, size: req.file.size } : null,
-        });
+        console.log("Updating user profile: ", req.params, req.body, req.file);
         try {
-            const userID = req.user.userID;
-            const userData = req.body;
-            if (!userID) return res.status(401).json({ error: 'Unauthorized: User ID not found in token' });
-
-            // Validate file if provided
-            if (req.file) {
-                if (req.file.mimetype.startsWith('image/')) {
-                    userData.PFP = req.file.buffer;
-                } else {
-                    return res.status(400).json({ error: 'Invalid file type. Only images are allowed.' });
-                }
+            const userID = req.user?.userID;
+            if (!userID) {
+                return res.status(401).json({ error: 'Please log in to update your profile.' });
             }
-
+            const userData = req.body;
+            if (req.file) {
+                if (!req.file.mimetype.startsWith('image/')) {
+                    return res.status(400).json({ error: 'Please upload a valid image.' });
+                }
+                userData.PFP = req.file.buffer;
+            }
             const updatedUser = await UserService.updateUser(userID, userData);
             const responseUser = updatedUser.toJSON();
             if (responseUser.PFP) {
                 responseUser.PFP = responseUser.PFP.toString('base64');
             } else {
-                delete responseUser.PFP; // Avoid sending null/undefined PFP
+                delete responseUser.PFP;
             }
             res.status(200).json(responseUser);
         } catch (error) {
-            console.error(`${new Date().toISOString()} - Update profile failed:`, error);
             res.status(400).json({ error: error.message });
         }
     }
 
+    // Delete a user
     static async deleteUser(req, res) {
-        console.log('Received request to delete user', req.params);
+        console.log("Deleting user: ", req.params);
         try {
             const { userID } = req.params;
-            if (!userID) return res.status(400).json({ error: 'User ID is required' });
             const result = await UserService.deleteUser(userID);
             res.status(200).json(result);
         } catch (error) {
-            console.error(`${new Date().toISOString()} - Delete user failed:`, error);
             res.status(400).json({ error: error.message });
         }
     }
 
+    // Assign supervisors to a manager
     static async assignSupervisorsToManager(req, res) {
-        console.log('Received request to assign supervisors to manager', req.body);
+        console.log("Assigning supervisors to manager: ", req.body);
         try {
             const { managerID, supervisorIDs } = req.body;
-            if (!managerID || !Array.isArray(supervisorIDs)) return res.status(400).json({ error: 'Manager ID and supervisor IDs array are required' });
             const result = await UserService.assignSupervisorsToManager(managerID, supervisorIDs);
             res.status(200).json(result);
         } catch (error) {
-            console.error(`${new Date().toISOString()} - Assign supervisors failed:`, error);
             res.status(400).json({ error: error.message });
         }
     }
 
+    // Revoke supervisors from a manager
     static async revokeSupervisorsFromManager(req, res) {
-        console.log('Received request to revoke supervisors from manager', req.body);
+        console.log("Revoking supervisors from manager: ", req.body);
         try {
             const { managerID, supervisorIDs } = req.body;
-            if (!managerID || !Array.isArray(supervisorIDs)) return res.status(400).json({ error: 'Manager ID and supervisor IDs array are required' });
             const result = await UserService.revokeSupervisorsFromManager(managerID, supervisorIDs);
             res.status(200).json(result);
         } catch (error) {
-            console.error(`${new Date().toISOString()} - Revoke supervisors failed:`, error);
             res.status(400).json({ error: error.message });
         }
     }
 
+    // Get supervisors for a user
     static async getSupervisorsByUser(req, res) {
-        console.log('Received request to get supervisors by user', req.params);
+        console.log("Getting supervisors for user: ", req.params);
         try {
             const { userID } = req.params;
-            if (!userID) return res.status(400).json({ error: 'User ID is required' });
             const supervisors = await UserService.getSupervisorsByUser(userID);
             res.status(200).json(supervisors);
         } catch (error) {
-            console.error(`${new Date().toISOString()} - Get supervisors failed:`, error);
             res.status(404).json({ error: error.message });
         }
     }
 
+    // Get managers for a user
     static async getManagersByUser(req, res) {
-        console.log('Received request to get managers by user', req.params);
+        console.log("Getting managers for user: ", req.params);
         try {
             const { userID } = req.params;
-            if (!userID) return res.status(400).json({ error: 'User ID is required' });
             const managers = await UserService.getManagersByUser(userID);
             res.status(200).json(managers);
         } catch (error) {
-            console.error(`${new Date().toISOString()} - Get managers failed:`, error);
             res.status(404).json({ error: error.message });
         }
     }

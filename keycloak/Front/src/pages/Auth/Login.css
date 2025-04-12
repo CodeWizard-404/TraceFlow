@@ -216,68 +216,176 @@ body.dark .bg-icon {
 
 /* Animations */
 @keyframes gradientWave {
-    0% { background-position: 0% 0%; }
-    50% { background-position: 100% 100%; }
-    100% { background-position: 0% 0%; }
+    0% {
+        background-position: 0% 0%;
+    }
+
+    50% {
+        background-position: 100% 100%;
+    }
+
+    100% {
+        background-position: 0% 0%;
+    }
 }
 
 @keyframes shimmer {
-    0%, 100% { opacity: 0.8; transform: rotate(-30deg) translateX(-10%); }
-    50% { opacity: 1; transform: rotate(-30deg) translateX(10%); }
+    0%, 100% {
+        opacity: 0.8;
+        transform: rotate(-30deg) translateX(-10%);
+    }
+
+    50% {
+        opacity: 1;
+        transform: rotate(-30deg) translateX(10%);
+    }
 }
 
 @keyframes pulse {
-    0%, 100% { transform: scale(1); opacity: 0.3; }
-    50% { transform: scale(1.2); opacity: 0.5; }
+    0%, 100% {
+        transform: scale(1);
+        opacity: 0.3;
+    }
+
+    50% {
+        transform: scale(1.2);
+        opacity: 0.5;
+    }
 }
 
 @keyframes rotate {
-    0% { transform: rotate(0deg); }
-    100% { transform: rotate(360deg); }
+    0% {
+        transform: rotate(0deg);
+    }
+
+    100% {
+        transform: rotate(360deg);
+    }
 }
 
 @keyframes float {
-    0%, 100% { transform: translateY(0); }
-    50% { transform: translateY(-20px); }
+    0%, 100% {
+        transform: translateY(0);
+    }
+
+    50% {
+        transform: translateY(-20px);
+    }
 }
 
 @keyframes scan {
-    0%, 100% { transform: scale(1) translateX(0); opacity: 0.3; }
-    50% { transform: scale(1.1) translateX(10px); opacity: 0.5; }
+    0%, 100% {
+        transform: scale(1) translateX(0);
+        opacity: 0.3;
+    }
+
+    50% {
+        transform: scale(1.1) translateX(10px);
+        opacity: 0.5;
+    }
 }
 
 @keyframes tick {
-    0% { transform: rotate(0deg); }
-    25% { transform: rotate(15deg); }
-    50% { transform: rotate(0deg); }
-    75% { transform: rotate(-15deg); }
-    100% { transform: rotate(0deg); }
+    0% {
+        transform: rotate(0deg);
+    }
+
+    25% {
+        transform: rotate(15deg);
+    }
+
+    50% {
+        transform: rotate(0deg);
+    }
+
+    75% {
+        transform: rotate(-15deg);
+    }
+
+    100% {
+        transform: rotate(0deg);
+    }
 }
 
 @keyframes shieldPulse {
-    0%, 100% { transform: scale(1); opacity: 0.3; }
-    50% { transform: scale(1.15); opacity: 0.5; }
+    0%, 100% {
+        transform: scale(1);
+        opacity: 0.3;
+    }
+
+    50% {
+        transform: scale(1.15);
+        opacity: 0.5;
+    }
 }
 
 @keyframes drift {
-    0% { transform: translate(0, 0); opacity: 0.5; }
-    50% { transform: translate(50px, -50px); opacity: 0.8; }
-    100% { transform: translate(0, 0); opacity: 0.5; }
+    0% {
+        transform: translate(0, 0);
+        opacity: 0.5;
+    }
+
+    50% {
+        transform: translate(50px, -50px);
+        opacity: 0.8;
+    }
+
+    100% {
+        transform: translate(0, 0);
+        opacity: 0.5;
+    }
 }
 
 @keyframes qrFade {
-    0%, 100% { opacity: 0; }
-    50% { opacity: 0.3; }
+    0%, 100% {
+        opacity: 0;
+    }
+
+    50% {
+        opacity: 0.3;
+    }
 }
 
 @keyframes flow {
-    0% { transform: translateX(-100%) rotate(var(--angle)); }
-    100% { transform: translateX(200%) rotate(var(--angle)); }
+    0% {
+        transform: translateX(-100%) rotate(var(--angle));
+    }
+
+    100% {
+        transform: translateX(200%) rotate(var(--angle));
+    }
 }
 
 @keyframes neuralWave {
-    0%, 100% { transform: translate(-50%, -50%) scale(1); opacity: 0.3; }
-    50% { transform: translate(-50%, -50%) scale(1.5); opacity: 0.5; }
+    0%, 100% {
+        transform: translate(-50%, -50%) scale(1);
+        opacity: 0.3;
+    }
+
+    50% {
+        transform: translate(-50%, -50%) scale(1.5);
+        opacity: 0.5;
+    }
+}
+
+@keyframes spin {
+    0% {
+        transform: rotate(0deg);
+    }
+
+    100% {
+        transform: rotate(360deg);
+    }
+}
+
+.spinner {
+    display: inline-block;
+    width: 20px;
+    height: 20px;
+    border: 3px solid rgba(255, 255, 255, 0.3);
+    border-radius: 50%;
+    border-top-color: #fff;
+    animation: spin 1s ease-in-out infinite;
 }
 
 .login-form {
@@ -287,7 +395,7 @@ body.dark .bg-icon {
     box-shadow: 0 0.375rem 1.25rem rgba(0, 0, 0, 0.1);
     max-width: 400px;
     width: 90%;
-    z-index: 4; /* Above all background elements */
+    z-index: 4;
     position: relative;
     backdrop-filter: blur(5px);
 }
@@ -332,12 +440,30 @@ body.dark .form-subtitle {
     text-align: center;
     font-size: 0.875rem;
     width: 100%;
+    margin-bottom: 1rem;
 }
 
 body.dark .error-message {
     background: #721c25;
     color: #e5e7eb;
     border: 1px solid #79464b;
+}
+
+.success-message {
+    background: #d4edda;
+    color: #155724;
+    padding: 0.75rem 1rem;
+    border-radius: 0.75rem;
+    text-align: center;
+    font-size: 0.875rem;
+    width: 100%;
+    margin-bottom: 1rem;
+}
+
+body.dark .success-message {
+    background: #155724;
+    color: #d4edda;
+    border: 1px solid #2f855a;
 }
 
 .form-group {
@@ -450,53 +576,46 @@ body.dark .password-toggle:hover {
     margin-bottom: 0.75rem;
 }
 
-body.dark .action-button {
+body.dark .action-button-0 {
     background: linear-gradient(135deg, #63b3ed 0%, #4a83ce 100%);
     box-shadow: 0 0.25rem 0.75rem rgba(23, 82, 159, 0.4);
 }
 
-.action-button:hover:not(:disabled) {
+.action-button-0:hover:not(:disabled) {
     background: #3a8fa2;
     transform: scale(1.05);
 }
 
-body.dark .action-button:hover:not(:disabled) {
+body.dark .action-button-0:hover:not(:disabled) {
     background: #4a83ce;
 }
 
-.action-button:disabled {
+.action-button-0:disabled {
     background: #d1d5db;
     cursor: not-allowed;
     box-shadow: none;
 }
 
-body.dark .action-button:disabled {
+body.dark .action-button-0:disabled {
     background: #4b5563;
 }
 
-.action-button.secondary {
+.action-button-0.secondary {
     background: #6b7280;
     box-shadow: 0 0.25rem 0.75rem rgba(107, 114, 128, 0.3);
 }
 
-body.dark .action-button.secondary {
+body.dark .action-button-0.secondary {
     background: #4b5563;
     box-shadow: 0 0.25rem 0.75rem rgba(75, 85, 99, 0.4);
 }
 
-.action-button.secondary:hover:not(:disabled) {
+.action-button-0.secondary:hover:not(:disabled) {
     background: #4b5563;
 }
 
-body.dark .action-button.secondary:hover:not(:disabled) {
+body.dark .action-button-0.secondary:hover:not(:disabled) {
     background: #374151;
-}
-
-
-
-@keyframes spin {
-    0% { transform: rotate(0deg); }
-    100% { transform: rotate(360deg); }
 }
 
 .form-info {
@@ -569,7 +688,7 @@ body.dark .form-link:hover {
         padding: 0.625rem;
     }
 
-    .action-button {
+    .action-button-0 {
         padding: 0.625rem 1rem;
     }
 
@@ -591,7 +710,6 @@ body.dark .form-link:hover {
         height: 40px;
     }
 }
-
 
 .styled-checkbox {
     margin: 15px 0;
