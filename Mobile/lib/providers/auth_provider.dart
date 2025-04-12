@@ -24,7 +24,7 @@ class AuthProvider with ChangeNotifier {
   int _resendCooldown = 0;
   String _otpMethod = 'phone';
   Timer? _refreshTimer;
-  Timer? _otpTimerInstance; // Added to manage OTP timer
+  Timer? _otpTimerInstance;
 
   String? get token => _token;
   String? get refreshToken => _refreshToken;
@@ -167,7 +167,7 @@ class AuthProvider with ChangeNotifier {
       }
     } catch (e) {
       if (kDebugMode) print('Login error: $e');
-      _errorMessage = _parseError(e.toString());
+      _errorMessage = e.toString().replaceFirst('Exception: ', '');
     } finally {
       _isLoading = false;
       if (kDebugMode) print('Login completed, isLoading: $_isLoading, error: $_errorMessage, requires2FA: $_requires2FA');
@@ -196,7 +196,7 @@ class AuthProvider with ChangeNotifier {
       await prefs.remove('tempToken');
     } catch (e) {
       if (kDebugMode) print('Verify2FA error: $e');
-      _errorMessage = _parseError(e.toString());
+      _errorMessage = e.toString().replaceFirst('Exception: ', '');
     } finally {
       _isLoading = false;
       notifyListeners();
@@ -222,7 +222,7 @@ class AuthProvider with ChangeNotifier {
       if (kDebugMode) print('Resend2FA successful: $result');
     } catch (e) {
       if (kDebugMode) print('Resend2FA error: $e');
-      _errorMessage = _parseError(e.toString());
+      _errorMessage = e.toString().replaceFirst('Exception: ', '');
     } finally {
       _isLoading = false;
       notifyListeners();
@@ -242,7 +242,7 @@ class AuthProvider with ChangeNotifier {
       if (kDebugMode) print('Password reset initiated, userID: $_userID');
     } catch (e) {
       if (kDebugMode) print('InitiatePasswordReset error: $e');
-      _errorMessage = _parseError(e.toString());
+      _errorMessage = e.toString().replaceFirst('Exception: ', '');
     } finally {
       _isLoading = false;
       notifyListeners();
@@ -265,7 +265,7 @@ class AuthProvider with ChangeNotifier {
       if (kDebugMode) print('Password reset OTP verified');
     } catch (e) {
       if (kDebugMode) print('VerifyPasswordResetOTP error: $e');
-      _errorMessage = _parseError(e.toString());
+      _errorMessage = e.toString().replaceFirst('Exception: ', '');
     } finally {
       _isLoading = false;
       notifyListeners();
@@ -290,7 +290,7 @@ class AuthProvider with ChangeNotifier {
       if (kDebugMode) print('Password reset successful');
     } catch (e) {
       if (kDebugMode) print('ResetPassword error: $e');
-      _errorMessage = _parseError(e.toString());
+      _errorMessage = e.toString().replaceFirst('Exception: ', '');
     } finally {
       _isLoading = false;
       notifyListeners();
@@ -300,7 +300,7 @@ class AuthProvider with ChangeNotifier {
   Future<void> logout() async {
     if (kDebugMode) print('Logging out');
     _refreshTimer?.cancel();
-    _otpTimerInstance?.cancel(); // Cancel OTP timer
+    _otpTimerInstance?.cancel();
     _token = null;
     _refreshToken = null;
     _tempToken = null;
@@ -328,7 +328,7 @@ class AuthProvider with ChangeNotifier {
 
   void _startOtpTimer() {
     if (kDebugMode) print('Starting OTP timer');
-    _otpTimerInstance?.cancel(); // Cancel any existing timer
+    _otpTimerInstance?.cancel();
     _otpTimerInstance = Timer.periodic(const Duration(seconds: 1), (timer) {
       if (_otpTimer > 0) _otpTimer--;
       if (_resendCooldown > 0) _resendCooldown--;
@@ -354,15 +354,5 @@ class AuthProvider with ChangeNotifier {
     await _fetchPermissions();
     _scheduleTokenRefresh();
     notifyListeners();
-  }
-
-  String _parseError(String error) {
-    if (kDebugMode) print('Parsing error: $error');
-    if (error.contains('Invalid credentials')) return 'Invalid email or password';
-    if (error.contains('User not found')) return 'User not found';
-    if (error.contains('Invalid or expired OTP')) return 'Invalid or expired OTP';
-    if (error.contains('Network Error')) return 'Unable to connect to the server. Check your connection.';
-    if (error.contains('temp token, and refresh token are required')) return 'Authentication data missing. Please log in again.';
-    return 'An error occurred. Please try again.';
   }
 }
