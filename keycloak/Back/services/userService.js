@@ -453,13 +453,13 @@ class UserService {
             if (!user) {
                 throw new Error(ERROR_MESSAGES.USER_NOT_FOUND);
             }
-            if (!user.Supervisors.length) {
-                throw new Error(ERROR_MESSAGES.NO_SUPERVISORS_FOUND);
-            }
-            return user.Supervisors;
+            return user.Supervisors || [];
         } catch (error) {
             logger.error(`Get supervisors error: ${error.message}`, { ip: null });
-            throw new Error(error.message || ERROR_MESSAGES.NO_SUPERVISORS_FOUND);
+            if (error.message === ERROR_MESSAGES.USER_NOT_FOUND) {
+                throw new Error(error.message);
+            }
+            return [];
         }
     }
 
@@ -484,16 +484,15 @@ class UserService {
             if (!user) {
                 throw new Error(ERROR_MESSAGES.USER_NOT_FOUND);
             }
-            if (!user.Managers.length) {
-                throw new Error(ERROR_MESSAGES.NO_MANAGERS_FOUND);
-            }
-            return user.Managers;
+            return user.Managers || [];
         } catch (error) {
             logger.error(`Get managers error: ${error.message}`, { ip: null });
-            throw new Error(error.message || ERROR_MESSAGES.NO_MANAGERS_FOUND);
+            if (error.message === ERROR_MESSAGES.USER_NOT_FOUND) {
+                throw new Error(error.message);
+            }
+            return [];
         }
     }
-
     static async assignSupervisorsToManager(managerID, supervisorIDs, actorID) {
         if (!managerID || !supervisorIDs) {
             throw new Error(ERROR_MESSAGES.MISSING_FIELDS);

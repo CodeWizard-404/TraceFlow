@@ -82,7 +82,7 @@ interface EditFormState {
 const VisitDetails: React.FC = () => {
   const { idVisit } = useParams<{ idVisit: string }>();
   const navigate = useNavigate();
-  const { token, user, effectivePermissions, permissionsLoaded } = useAuth();
+  const { user, effectivePermissions, permissionsLoaded } = useAuth();
 
   const [visit, setVisit] = useState<Visit | null>(null);
   const [agent, setAgent] = useState<Agent | null>(null);
@@ -173,7 +173,7 @@ const VisitDetails: React.FC = () => {
   };
 
   const fetchVisitData = useCallback(async () => {
-    if (!idVisit || !token || !userPermissions.canAccessVisitDetails) {
+    if (!idVisit || !userPermissions.canAccessVisitDetails) {
       navigate("/access-denied");
       setLoading(false);
       return;
@@ -181,10 +181,10 @@ const VisitDetails: React.FC = () => {
 
     try {
       setLoading(true);
-      const visitData = await getVisitById(idVisit, token);
+      const visitData = await getVisitById(idVisit);
       setVisit(visitData);
 
-      const agentData = visitData.agentID ? await getAgentById(visitData.agentID, token) : null;
+      const agentData = visitData.agentID ? await getAgentById(visitData.agentID) : null;
       setAgent(agentData);
 
       setEditForm({
@@ -222,10 +222,10 @@ const VisitDetails: React.FC = () => {
       setSelectedSupervisor("");
 
       const [locationsData, reasonsData, checklistsData, supervisorsData] = await Promise.all([
-        userPermissions.canReadAgentsByLocation ? getAgentLocations(token) : Promise.resolve([]),
-        userPermissions.canReadReasons ? getAllReasons(token) : Promise.resolve([]),
-        userPermissions.canReadChecklists ? getAllChecklists(token) : Promise.resolve([]),
-        userPermissions.canReadSupervisors && user ? getSupervisorsByUser(user.userID, token) : Promise.resolve([]),
+        userPermissions.canReadAgentsByLocation ? getAgentLocations() : Promise.resolve([]),
+        userPermissions.canReadReasons ? getAllReasons() : Promise.resolve([]),
+        userPermissions.canReadChecklists ? getAllChecklists() : Promise.resolve([]),
+        userPermissions.canReadSupervisors && user ? getSupervisorsByUser(user.userID) : Promise.resolve([]),
       ]);
 
       setLocations(locationsData as string[]);
@@ -238,7 +238,7 @@ const VisitDetails: React.FC = () => {
     } finally {
       setLoading(false);
     }
-  }, [idVisit, token, userPermissions, permissionsLoaded, navigate, user]);
+  }, [idVisit, userPermissions, permissionsLoaded, navigate, user]);
 
   useEffect(() => {
     if (permissionsLoaded) fetchVisitData();
@@ -308,9 +308,9 @@ const VisitDetails: React.FC = () => {
 
   const fetchAgentByPhone = useCallback(
     debounce(async (phone: string) => {
-      if (phone.length < 7 || !userPermissions.canReadAgentsByPhone || !token) return;
+      if (phone.length < 7 || !userPermissions.canReadAgentsByPhone) return;
       try {
-        const agentData = await getAgentByPhone(phone, token);
+        const agentData = await getAgentByPhone(phone);
         setEditForm(prev => ({
           ...prev,
           agentID: agentData.agentID,
@@ -324,14 +324,14 @@ const VisitDetails: React.FC = () => {
         setAgents([]);
       }
     }, 500),
-    [token, userPermissions.canReadAgentsByPhone]
+    [userPermissions.canReadAgentsByPhone]
   );
 
   const fetchSupervisorByPhone = useCallback(
     debounce(async (phone: string) => {
-      if (phone.length < 7 || !userPermissions.canReadSupervisors || !token) return;
+      if (phone.length < 7 || !userPermissions.canReadSupervisors) return;
       try {
-        const supervisor = await getUserByPhone(phone, token);
+        const supervisor = await getUserByPhone(phone);
         setSelectedSupervisor(supervisor.userID);
         setSupervisors(prev => prev.some(s => s.userID === supervisor.userID) ? prev : [...prev, supervisor]);
         setSupervisorSearch(`${supervisor.firstname || ""} ${supervisor.lastname || ""}`);
@@ -341,7 +341,7 @@ const VisitDetails: React.FC = () => {
         setSupervisorSearch("");
       }
     }, 500),
-    [token, userPermissions.canReadSupervisors]
+    [userPermissions.canReadSupervisors]
   );
 
   useEffect(() => {
@@ -354,10 +354,10 @@ const VisitDetails: React.FC = () => {
   }, [editForm.agentPhone, supervisorPhone, fetchAgentByPhone, fetchSupervisorByPhone]);
 
   useEffect(() => {
-    if (editForm.location && !editForm.agentPhone && userPermissions.canReadAgentsByLocation && token) {
+    if (editForm.location && !editForm.agentPhone && userPermissions.canReadAgentsByLocation) {
       const fetchAgents = async () => {
         try {
-          const agentsData = await getAgentsByLocation(editForm.location, token);
+          const agentsData = await getAgentsByLocation(editForm.location);
           setAgents(agentsData);
           if (!editForm.agentPhone) {
             setEditForm(prev => ({ ...prev, agentID: "", agentSearch: "" }));
@@ -368,7 +368,7 @@ const VisitDetails: React.FC = () => {
       };
       fetchAgents();
     }
-  }, [editForm.location, editForm.agentPhone, userPermissions.canReadAgentsByLocation, token]);
+  }, [editForm.location, editForm.agentPhone, userPermissions.canReadAgentsByLocation]);
 
   const handleLogVisit = () => {
     if (visit && userPermissions.canLogVisits) {
@@ -377,9 +377,9 @@ const VisitDetails: React.FC = () => {
   };
 
   const handleValidate = async () => {
-    if (!visit || !visit.timesheetID || !userPermissions.canValidateTimesheets || !token) return;
+    if (!visit || !visit.timesheetID || !userPermissions.canValidateTimesheets) return;
     try {
-      await validateTimesheet(visit.timesheetID, { visitIDs: [visit.visitID], status: "validated" }, token);
+      await validateTimesheet(visit.timesheetID, { visitIDs: [visit.visitID], status: "validated" });
       setVisit(prev => prev ? { ...prev, status: VisitStatus.VALIDATED } : null);
     } catch {
       setError("Failed to validate visit.");
@@ -387,9 +387,9 @@ const VisitDetails: React.FC = () => {
   };
 
   const handleReject = async () => {
-    if (!visit || !visit.timesheetID || !userPermissions.canValidateTimesheets || !token) return;
+    if (!visit || !visit.timesheetID || !userPermissions.canValidateTimesheets) return;
     try {
-      await validateTimesheet(visit.timesheetID, { visitIDs: [visit.visitID], status: "rejected" }, token);
+      await validateTimesheet(visit.timesheetID, { visitIDs: [visit.visitID], status: "rejected" });
       setVisit(prev => prev ? { ...prev, status: VisitStatus.REJECTED } : null);
     } catch {
       setError("Failed to reject visit.");
@@ -425,7 +425,7 @@ const VisitDetails: React.FC = () => {
 
   const handleEditSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
-    if (!visit || !userPermissions.canEditTimesheets || !token || !editForm.date || !editForm.time) return;
+    if (!visit || !userPermissions.canEditTimesheets || !editForm.date || !editForm.time) return;
 
     let newStatus = editForm.status;
     let updatedDuration: number | undefined = visit.duration || undefined;
@@ -456,7 +456,7 @@ const VisitDetails: React.FC = () => {
         photosToRemove: editForm.photosToRemove,
         supervisorID: selectedSupervisor && userPermissions.canCreateTimesheetsForSupervisors ? selectedSupervisor : undefined,
         duration: updatedDuration
-      }, token);
+      });
 
       setVisit(updatedVisit);
       setNewPhotos([]);
@@ -472,9 +472,9 @@ const VisitDetails: React.FC = () => {
   };
 
   const handleDelete = async () => {
-    if (!visit || !userPermissions.canDeleteTimesheets || !token || !window.confirm("Are you sure you want to delete this visit?")) return;
+    if (!visit || !userPermissions.canDeleteTimesheets || !window.confirm("Are you sure you want to delete this visit?")) return;
     try {
-      await deleteVisit(visit.visitID, token);
+      await deleteVisit(visit.visitID);
       navigate("/timesheet");
     } catch {
       setError("Failed to delete visit.");

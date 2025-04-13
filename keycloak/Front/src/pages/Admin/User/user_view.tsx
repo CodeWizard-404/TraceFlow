@@ -48,8 +48,9 @@ interface UserViewProps {
     permissionsList: Permission[];
     view: ViewMode;
     userRoles: Role[];
-    token: string;
     setView: (view: ViewMode) => void;
+    effectivePermissions: Permission[];
+    setError: React.Dispatch<React.SetStateAction<string | null>>;
 }
 
 // Main Component
@@ -62,8 +63,7 @@ const UserView: React.FC<UserViewProps> = ({
     permissionsList,
     view,
     userRoles,
-    token,
-    setView,
+    setView
 }) => {
     const { effectivePermissions: authEffectivePermissions, user: currentUser } = useAuth();
     const { setError } = useError(); // Use ErrorContext
@@ -174,8 +174,8 @@ const UserView: React.FC<UserViewProps> = ({
                 setLoading(true);
                 try {
                     const [overrides, effectivePerms] = await Promise.all([
-                        getPermissionOverridesByUser(selectedUser.userID, token),
-                        getEffectivePermissions(selectedUser.userID, token),
+                        getPermissionOverridesByUser(selectedUser.userID),
+                        getEffectivePermissions(selectedUser.userID),
                     ]);
                     setUserOverrides(overrides);
                     setTempOverrides(overrides);
@@ -188,7 +188,7 @@ const UserView: React.FC<UserViewProps> = ({
             };
             fetchOverridesAndPermissions();
         }
-    }, [selectedUser, token, setError]);
+    }, [selectedUser, setError]);
 
     useEffect(() => {
         // Fetch role permissions for popup
@@ -196,7 +196,7 @@ const UserView: React.FC<UserViewProps> = ({
             const fetchRolePermissions = async () => {
                 setLoading(true);
                 try {
-                    const permissionsResponse = await getPermissionsByRole(activeRolePopup, token);
+                    const permissionsResponse = await getPermissionsByRole(activeRolePopup);
                     setRolePermissions(permissionsResponse || []);
                 } catch (error) {
                     setError(error instanceof Error ? error.message : "Failed to load role permissions.");
@@ -209,7 +209,7 @@ const UserView: React.FC<UserViewProps> = ({
         } else {
             setRolePermissions([]);
         }
-    }, [activeRolePopup, token, setError]);
+    }, [activeRolePopup, setError]);
 
     // Memoized Computations
     const categorizedPermissions = useMemo(() => {
@@ -434,7 +434,7 @@ const UserView: React.FC<UserViewProps> = ({
             };
             if (editedUser.password) updatePayload.password = editedUser.password;
 
-            const updatedUser = await updateUser(selectedUser.userID, updatePayload, token);
+            const updatedUser = await updateUser(selectedUser.userID, updatePayload);
             setUsers(users.map((u) => (u.userID === selectedUser.userID ? updatedUser : u)));
             setSelectedUser(updatedUser);
             resetFormStates();
@@ -455,7 +455,7 @@ const UserView: React.FC<UserViewProps> = ({
         if (!selectedUser || !userPermissions.canDeleteUsers) return;
         setLoading(true);
         try {
-            await deleteUser(selectedUser.userID, token);
+            await deleteUser(selectedUser.userID);
             setUsers(users.filter((u) => u.userID !== selectedUser.userID));
             setSelectedUser(null);
             setView("users");
@@ -502,10 +502,10 @@ const UserView: React.FC<UserViewProps> = ({
                 const toRevoke = currentSupervisorIds.filter((id) => !supervisorIds.includes(id));
 
                 if (toAssign.length > 0) {
-                    await assignSupervisorsToManager(selectedUser.userID, toAssign, token);
+                    await assignSupervisorsToManager(selectedUser.userID, toAssign);
                 }
                 if (toRevoke.length > 0) {
-                    await revokeSupervisorsFromManager(selectedUser.userID, toRevoke, token);
+                    await revokeSupervisorsFromManager(selectedUser.userID, toRevoke);
                 }
             }
 
@@ -518,14 +518,14 @@ const UserView: React.FC<UserViewProps> = ({
                 if (toAssign.length > 0) {
                     await Promise.all(
                         toAssign.map((managerId) =>
-                            assignSupervisorsToManager(managerId, [selectedUser.userID], token)
+                            assignSupervisorsToManager(managerId, [selectedUser.userID])
                         )
                     );
                 }
                 if (toRevoke.length > 0) {
                     await Promise.all(
                         toRevoke.map((managerId) =>
-                            revokeSupervisorsFromManager(managerId, [selectedUser.userID], token)
+                            revokeSupervisorsFromManager(managerId, [selectedUser.userID])
                         )
                     );
                 }
@@ -568,7 +568,7 @@ const UserView: React.FC<UserViewProps> = ({
         setLoading(true);
         try {
             if (hasRole) {
-                await revokeRolesFromUser(selectedUser.userID, [role.roleID], token);
+                await revokeRolesFromUser(selectedUser.userID, [role.roleID]);
                 const updatedRoles = tempRoles.filter((r) => r.roleID !== role.roleID);
                 setTempRoles(updatedRoles);
                 setUsers(
@@ -578,7 +578,7 @@ const UserView: React.FC<UserViewProps> = ({
                 );
                 setSelectedUser({ ...selectedUser, Roles: updatedRoles });
             } else {
-                await assignRolesToUser(selectedUser.userID, [role.roleID], token);
+                await assignRolesToUser(selectedUser.userID, [role.roleID]);
                 const updatedRoles = [...tempRoles, role];
                 setTempRoles(updatedRoles);
                 setUsers(
@@ -634,7 +634,7 @@ const UserView: React.FC<UserViewProps> = ({
             const toRemove = userOverrides.filter(
                 (o) => !tempOverrideIds.includes(o.overrideID)
             );
-            await Promise.all(toRemove.map((o) => removePermissionOverride(o.overrideID, token)));
+            await Promise.all(toRemove.map((o) => removePermissionOverride(o.overrideID)));
 
             const toAddOrUpdate = tempOverrides.filter(
                 (o) => o.overrideID.startsWith("temp_") || !currentOverrideIds.includes(o.overrideID)
@@ -645,15 +645,14 @@ const UserView: React.FC<UserViewProps> = ({
                         ? addPermissionOverride(
                             selectedUser.userID,
                             { roleID: o.roleID, permissionID: o.permissionID, action: o.action },
-                            token
                         )
                         : Promise.resolve()
                 )
             );
 
             const [updatedOverrides, updatedEffectivePerms] = await Promise.all([
-                getPermissionOverridesByUser(selectedUser.userID, token),
-                getEffectivePermissions(selectedUser.userID, token),
+                getPermissionOverridesByUser(selectedUser.userID),
+                getEffectivePermissions(selectedUser.userID),
             ]);
             setUserOverrides(updatedOverrides);
             setTempOverrides(updatedOverrides);
@@ -1102,8 +1101,8 @@ const UserView: React.FC<UserViewProps> = ({
                                                             <div key={perm.permissionID} className="permission-item">
                                                                 <button
                                                                     className={`permission-button ${(hasOverride ? overrideAction === "grant" : isEffective)
-                                                                            ? "assigned"
-                                                                            : ""
+                                                                        ? "assigned"
+                                                                        : ""
                                                                         }`}
                                                                     disabled={loading}
                                                                 >

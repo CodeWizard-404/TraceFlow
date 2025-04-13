@@ -64,22 +64,12 @@ const ERROR_DISPLAY_DURATION = 5000;
 const TransferReceiptBook: React.FC = () => {
     const navigate = useNavigate();
     const location = useLocation();
-    const { token, userRoles, effectivePermissions } = useAuth();
+    const { userRoles, effectivePermissions, user } = useAuth();
     const { agentID: preSelectedAgentID, forceAgent, transferType } = (location.state as { agentID?: string; forceAgent?: boolean; transferType?: string }) || {};
     const userRoleSet = new Set(userRoles?.map(role => role.name) || []);
 
-    const currentUserID = useMemo(() => {
-        if (!token) return "";
-        try {
-            const payload = JSON.parse(atob(token.split('.')[1]));
-            console.log(payload);
-            console.log(payload.sub);
-            return payload.sub || "";
-        } catch (e) {
-            console.error("Token parsing failed:", e);
-            return "";
-        }
-    }, [token]);
+    const currentUserID = user!.userID;
+
 
     const [receiptBooks, setReceiptBooks] = useState<ReceiptBook[]>([]);
     const [selectedBookIDs, setSelectedBookIDs] = useState<string[]>([]);
@@ -244,7 +234,7 @@ const TransferReceiptBook: React.FC = () => {
             setAgentPhone("");
             const fetchAgent = async () => {
                 try {
-                    const agent = await getAgentById(preSelectedAgentID, token!);
+                    const agent = await getAgentById(preSelectedAgentID);
                     setAgents([agent]);
                 } catch (err) {
                     setError("Failed to fetch agent details.");
@@ -253,7 +243,7 @@ const TransferReceiptBook: React.FC = () => {
             };
             fetchAgent();
         }
-    }, [preSelectedAgentID, forceAgent, token, recipientType, transferType]);
+    }, [preSelectedAgentID, forceAgent, recipientType, transferType]);
 
     const stopScanner = useCallback(async () => {
         if (stopLockRef.current || !qrScannerRef.current || !isScannerRunning) return;
@@ -339,16 +329,16 @@ const TransferReceiptBook: React.FC = () => {
 
     useEffect(() => {
         const fetchData = async () => {
-            if (!token || !userPermissions.canTransferReceiptBooks) {
+            if (!userPermissions.canTransferReceiptBooks) {
                 setError("Access Denied - Missing transfer_receipt_books permission");
                 setLoading(false);
                 return;
             }
             try {
                 const [booksData, usersData, locationsData] = await Promise.all([
-                    getAllReceiptBooks(token),
-                    getAllUsers(token),
-                    getAgentLocations(token),
+                    getAllReceiptBooks(),
+                    getAllUsers(),
+                    getAgentLocations(),
                 ]);
                 setReceiptBooks(booksData);
                 setUsers(usersData);
@@ -361,7 +351,7 @@ const TransferReceiptBook: React.FC = () => {
             }
         };
         fetchData();
-    }, [token, userPermissions.canTransferReceiptBooks]);
+    }, [userPermissions.canTransferReceiptBooks]);
 
     const getRecipientOptions = useCallback(() => {
         const options = new Set<string>();
@@ -376,19 +366,19 @@ const TransferReceiptBook: React.FC = () => {
 
     const fetchAgentsByLocation = useCallback(async (location: string) => {
         try {
-            const agentsData = await getAgentsByLocation(location, token!);
+            const agentsData = await getAgentsByLocation(location);
             setAgents(agentsData);
         } catch (err) {
             setError("Failed to fetch agents by location.");
             console.error(err);
         }
-    }, [token]);
+    }, []);
 
     useEffect(() => {
         if (!agentPhone || recipientType !== "Agent") return;
         const timeout = setTimeout(async () => {
             try {
-                const agent = await getAgentByPhone(agentPhone, token!);
+                const agent = await getAgentByPhone(agentPhone);
                 setRecipientID(agent.agentID);
                 setAgents([agent]);
                 setSelectedLocation("");
@@ -400,14 +390,14 @@ const TransferReceiptBook: React.FC = () => {
             }
         }, 500);
         return () => clearTimeout(timeout);
-    }, [agentPhone, recipientType, token]);
+    }, [agentPhone, recipientType]);
 
     useEffect(() => {
         if (!searchQuery || recipientType === "Agent" || recipientType === "Supplier" ||
             recipientType === "Archive" || recipientType === "Stub Collection" || recipientType === "Collect from Supplier") return;
         const timeout = setTimeout(async () => {
             try {
-                const user = await getUserByPhone(searchQuery, token!);
+                const user = await getUserByPhone(searchQuery);
                 if (user.Roles?.some(r => r.name.toLowerCase() === recipientType.toLowerCase())) {
                     setRecipientID(user.userID);
                     setError(null);
@@ -422,7 +412,7 @@ const TransferReceiptBook: React.FC = () => {
             }
         }, 500);
         return () => clearTimeout(timeout);
-    }, [searchQuery, recipientType, token]);
+    }, [searchQuery, recipientType]);
 
     const filteredAgents = useCallback(() => {
         if (!selectedLocation) return [];
@@ -523,25 +513,25 @@ const TransferReceiptBook: React.FC = () => {
 
         try {
             if (recipientType === "Supplier") {
-                await sendToSupplier(selectedBookIDs, supplierEmail, token!);
+                await sendToSupplier(selectedBookIDs, supplierEmail);
                 navigate(-1);
             } else if (recipientType === "Stub Collection") {
                 if (selectedBookIDs.length > 1) {
                     setError("Stub collection can only process one book at a time.");
                     return;
                 }
-                await collectStub(selectedBookIDs[0], token!);
+                await collectStub(selectedBookIDs[0]);
                 setTransferInitiated(true);
                 setError(null);
             } else if (recipientType === "Archive") {
-                await Promise.all(selectedBookIDs.map(bookID => archiveStub(bookID, token!)));
+                await Promise.all(selectedBookIDs.map(bookID => archiveStub(bookID)));
                 navigate(-1);
             } else if (recipientType === "Collect from Supplier") {
-                await collectFromSupplier(selectedBookIDs, currentUserID, token!);
+                await collectFromSupplier(selectedBookIDs, currentUserID);
                 navigate(-1);
             } else {
                 const recipientTypeForAPI = recipientType === "Agent" ? "agent" : "user";
-                await transfer(selectedBookIDs, recipientID, recipientTypeForAPI, token!);
+                await transfer(selectedBookIDs, recipientID, recipientTypeForAPI);
                 setTransferInitiated(true);
                 setError(null);
             }
@@ -567,11 +557,11 @@ const TransferReceiptBook: React.FC = () => {
                     setError("Stub collection requires exactly one book.");
                     return;
                 }
-                await validateStubCollection(selectedBookIDs[0], otp, token!);
+                await validateStubCollection(selectedBookIDs[0], otp);
                 navigate(-1);
             } else {
                 const recipientTypeForAPI = recipientType === "Agent" ? "agent" : "user";
-                await validateTransfer(selectedBookIDs, recipientID, otp, recipientTypeForAPI, token!);
+                await validateTransfer(selectedBookIDs, recipientID, otp, recipientTypeForAPI);
                 navigate(-1);
             }
         } catch (err) {

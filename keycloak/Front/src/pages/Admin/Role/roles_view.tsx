@@ -39,7 +39,7 @@ const RoleView: React.FC<RoleViewProps> = ({
     userRoles,
     setError,
 }) => {
-    const { token, effectivePermissions } = useAuth();
+    const { effectivePermissions } = useAuth();
 
     // State
     const [isEditingRole, setIsEditingRole] = useState(false);
@@ -159,7 +159,6 @@ const RoleView: React.FC<RoleViewProps> = ({
                     name: editedRole.name!.trim(),
                     description: editedRole.description?.trim(),
                 },
-                token!
             );
             setRoles(roles.map((r) => (r.roleID === selectedRole.roleID ? { ...updatedRole, permissions: selectedRole.permissions } : r)));
             setSelectedRole({ ...updatedRole, permissions: selectedRole.permissions });
@@ -187,7 +186,7 @@ const RoleView: React.FC<RoleViewProps> = ({
             onConfirm: async () => {
                 setLoading(true);
                 try {
-                    await deleteRole(role.roleID, token!);
+                    await deleteRole(role.roleID);
                     setRoles(roles.filter((r) => r.roleID !== role.roleID));
                     setSelectedRole(null);
                     setError(null);
@@ -233,8 +232,8 @@ const RoleView: React.FC<RoleViewProps> = ({
             const toAdd = newPermissionIds.filter((id) => !currentPermissionIds.includes(id));
             const toRemove = currentPermissionIds.filter((id) => !newPermissionIds.includes(id));
 
-            if (toAdd.length > 0) await assignPermissionsToRole(selectedRole.roleID, toAdd, token!);
-            if (toRemove.length > 0) await revokePermissionsFromRole(selectedRole.roleID, toRemove, token!);
+            if (toAdd.length > 0) await assignPermissionsToRole(selectedRole.roleID, toAdd);
+            if (toRemove.length > 0) await revokePermissionsFromRole(selectedRole.roleID, toRemove);
 
             setRoles(roles.map((r) => (r.roleID === selectedRole.roleID ? { ...r, permissions: tempPermissions } : r)));
             setSelectedRole({ ...selectedRole, permissions: tempPermissions });

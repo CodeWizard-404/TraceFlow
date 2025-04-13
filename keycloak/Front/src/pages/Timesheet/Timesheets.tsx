@@ -16,7 +16,7 @@ const PERMISSIONS = {
   ACCESS_SUPERVISOR_TIMESHEETS: import.meta.env.VITE_PERMISSIONS_ACCESS_SUPERVISOR_TIMESHEETS,
   ACCESS_TIMESHEET_DETAILS: import.meta.env.VITE_PERMISSIONS_ACCESS_TIMESHEET_DETAILS,
   CREATE_TIMESHEETS: import.meta.env.VITE_PERMISSIONS_CREATE_TIMESHEETS,
-  CREATE_SUPERVISOR_TIMESHEETS: import.meta.env.VITE_PERMISSIONS_CREATE_SUPERVISOR_TIMESHEETS,
+  CREATE_SUPERVISOR_TIMESHEETS: import.meta.env.VITE_PERMISSIONS_CREATE_TIMESHEETS_FOR_SUPERVISOR,
   VALIDATE_TIMESHEETS: import.meta.env.VITE_PERMISSIONS_VALIDATE_TIMESHEETS,
   READ_USERS: import.meta.env.VITE_PERMISSIONS_READ_USERS,
   READ_SUPERVISORS: import.meta.env.VITE_PERMISSIONS_READ_SUPERVISORS,
@@ -451,8 +451,12 @@ const Timesheets: React.FC = () => {
                   </div>
                   <div className="days-grid">
                     {weekData.days.map(day => {
-                      const dayStr = day.toISOString().split("T")[0];
-                      const dayVisits = sortVisitsByTime(weekData.visits.filter(v => new Date(v.date).toISOString().split("T")[0] === dayStr));
+                      const dayStr = `${day.getFullYear()}-${String(day.getMonth() + 1).padStart(2, '0')}-${String(day.getDate()).padStart(2, '0')}`;
+                      const dayVisits = sortVisitsByTime(weekData.visits.filter(v => {
+                        const visitDate = new Date(v.date);
+                        const visitDateStr = `${visitDate.getFullYear()}-${String(visitDate.getMonth() + 1).padStart(2, '0')}-${String(visitDate.getDate()).padStart(2, '0')}`;
+                        return visitDateStr === dayStr;
+                      }));
                       return (
                         <div className="day-column" key={dayStr}>
                           <div

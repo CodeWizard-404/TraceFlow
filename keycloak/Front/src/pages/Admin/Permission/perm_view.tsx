@@ -23,7 +23,7 @@ const PermView: React.FC<PermViewProps> = ({
     view,
     setError,
 }) => {
-    const { token, effectivePermissions } = useAuth();
+    const { effectivePermissions } = useAuth();
     const [isEditingPermission, setIsEditingPermission] = useState(false);
     const [editedPermission, setEditedPermission] = useState<Partial<Permission>>({});
     const [permissionFormErrors, setPermissionFormErrors] = useState({
@@ -82,7 +82,7 @@ const PermView: React.FC<PermViewProps> = ({
             const updatedPermission = await updatePermission(selectedPermission.permissionID, {
                 className: editedPermission.class!.trim(),
                 description: editedPermission.description?.trim(),
-            }, token!);
+            });
             setPermissionsList(permissionsList.map(p => p.permissionID === selectedPermission.permissionID ? updatedPermission : p));
             setSelectedPermission(updatedPermission);
             setIsEditingPermission(false);

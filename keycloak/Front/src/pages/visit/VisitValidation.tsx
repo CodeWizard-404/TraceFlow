@@ -16,7 +16,7 @@ const VisitValidation: React.FC = () => {
     const { idVisit } = useParams<{ idVisit: string }>();
     const navigate = useNavigate();
     const location = useLocation();
-    const { token, effectivePermissions, permissionsLoaded } = useAuth();
+    const { effectivePermissions, permissionsLoaded } = useAuth();
 
     const [visit, setVisit] = useState<Visit | null>(null);
     const [agent, setAgent] = useState<Agent | null>(null);
@@ -46,8 +46,9 @@ const VisitValidation: React.FC = () => {
     }, [location.state, permissionsLoaded, navigate, idVisit]);
 
     useEffect(() => {
+
         const fetchVisitData = async () => {
-            if (!idVisit || !token) {
+            if (!idVisit) {
                 setError("Missing visit ID or authentication token.");
                 setLoading(false);
                 return;
@@ -56,10 +57,10 @@ const VisitValidation: React.FC = () => {
 
             try {
                 setLoading(true);
-                const visitData = await getVisitById(idVisit, token);
+                const visitData = await getVisitById(idVisit);
                 setVisit(visitData);
                 if (visitData.agentID) {
-                    const agentData = await getAgentById(visitData.agentID, token);
+                    const agentData = await getAgentById(visitData.agentID);
                     setAgent(agentData);
                 }
                 const initialChecklist = visitData.Checklists?.map((cl) => ({
@@ -78,7 +79,7 @@ const VisitValidation: React.FC = () => {
         };
 
         fetchVisitData();
-    }, [idVisit, token, userPermissions.canLogVisits, permissionsLoaded]);
+    }, [idVisit, userPermissions.canLogVisits, permissionsLoaded]);
 
     const startCamera = async () => {
         console.log("Start Camera button clicked");
@@ -200,7 +201,7 @@ const VisitValidation: React.FC = () => {
                 comment,
             };
 
-            await logVisitDetails(idVisit, updatedVisitData, token!);
+            await logVisitDetails(idVisit, updatedVisitData);
             stopCamera();
             navigate("/timesheet");
         } catch (err) {

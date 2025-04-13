@@ -138,8 +138,6 @@ const AuthProvider: React.FC<{ children: ReactNode }> = ({ children }) => {
                         await new Promise((resolve) => setTimeout(resolve, 1000));
                     }
                 }
-                console.log('effectivePermissions:', perms); // Add this
-                console.log('userRoles:', roles);
                 setEffectivePermissions(perms || null);
                 setUserRoles(roles || null);
             } catch {

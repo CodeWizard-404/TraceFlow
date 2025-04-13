@@ -33,6 +33,7 @@ const authenticateCookie = async (req, res, next) => {
                 userID: response.data.sub,
                 email: response.data.email,
                 roles: response.data.realm_access?.roles || [],
+                token: accessToken, // Store token for permission checks
             };
             next();
         } catch (error) {
@@ -47,33 +48,51 @@ const authenticateCookie = async (req, res, next) => {
 
 const requirePermission = (permissionName) => {
     return async (req, res, next) => {
-        console.log('1User Roles:', req.user.roles);
         try {
             const roles = req.user.roles || [];
-            console.log('2User Roles:', roles);
 
+            // Bypass for Super Admin
             if (roles.includes('Super Admin')) {
-                console.log('3User has Super Admin role. Skipping permission check.');
+                logger.info('Super Admin detected, bypassing permission checks');
                 return next();
             }
 
-            const hasPermission = roles.includes(permissionName) || req.user.permissions?.includes(permissionName);
-            console.log(`4.1User permission: ${roles.includes(permissionName)}`);
-            console.log(`4.2User permission: ${req.user.permissions?.includes(permissionName)}`);
-            console.log(`4.3User permission: ${hasPermission}`);
+            // Request a Resource Permission Ticket (RPT) from Keycloak
+            const response = await axios.post(
+                `${KEYCLOAK_URL}/realms/${REALM}/protocol/openid-connect/token`,
+                new URLSearchParams({
+                    grant_type: 'urn:ietf:params:oauth:grant-type:uma-ticket',
+                    audience: CLIENT_ID,
+                    permission: permissionName,
+                }),
+                {
+                    headers: {
+                        Authorization: `Bearer ${req.user.token}`,
+                        'Content-Type': 'application/x-www-form-urlencoded',
+                    },
+                }
+            );
+
+            // Decode the RPT to check permissions
+            const rpt = response.data.access_token;
+            const tokenData = JSON.parse(Buffer.from(rpt.split('.')[1], 'base64').toString());
+            const permissions = tokenData.authorization?.permissions || [];
+
+            // Check if the requested permission is granted
+            const hasPermission = permissions.some((p) => p.rsname === permissionName);
+
             if (!hasPermission) {
-                console.log(`5User does not have permission: ${permissionName}`);
+                logger.warn(`Permission denied for ${permissionName}`);
                 return res.status(403).json({ error: `Permission '${permissionName}' required` });
             }
 
-            logger.info(`User ${req.user.userID} has permission: ${permissionName}`);
-            console.log(`6User has permission: ${permissionName}`);
-
+            logger.info(`Permission granted for ${permissionName} to user ${req.user.userID}`);
             next();
-            console.log(`7User has permission: ${permissionName}`);
         } catch (error) {
-            console.error(`8Permission check failed for ${permissionName}: ${error.message}`);
             logger.error(`Permission check failed for ${permissionName}: ${error.message}`);
+            if (error.response?.status === 401) {
+                return res.status(401).json({ error: 'Token expired, please refresh' });
+            }
             return res.status(403).json({ error: `Permission '${permissionName}' required` });
         }
     };

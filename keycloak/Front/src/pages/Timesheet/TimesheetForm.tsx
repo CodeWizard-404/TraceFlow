@@ -33,7 +33,7 @@ const PERMISSIONS = {
 // Main Component
 const TimesheetForm: React.FC = () => {
   const navigate = useNavigate();
-  const { user, token, effectivePermissions, permissionsLoaded } = useAuth();
+  const { user, effectivePermissions, permissionsLoaded } = useAuth();
   const { setError } = useError();
 
   // State
@@ -80,7 +80,7 @@ const TimesheetForm: React.FC = () => {
       </div>
     );
 
-  if (!user || !token) return null;
+  if (!user) return null;
 
   const supervisorID = userPermissions.canReadSupervisors && selectedSupervisor ? selectedSupervisor : user.userID;
 
@@ -90,10 +90,10 @@ const TimesheetForm: React.FC = () => {
       setLoading(true);
       try {
         const promises = [
-          userPermissions.canReadAgentsByLocation ? getAgentLocations(token) : Promise.resolve([]),
-          userPermissions.canReadReasons ? getAllReasons(token) : Promise.resolve([]),
-          userPermissions.canReadChecklists ? getAllChecklists(token) : Promise.resolve([]),
-          userPermissions.canReadSupervisors ? getSupervisorsByUser(user.userID, token) : Promise.resolve([]),
+          userPermissions.canReadAgentsByLocation ? getAgentLocations() : Promise.resolve([]),
+          userPermissions.canReadReasons ? getAllReasons() : Promise.resolve([]),
+          userPermissions.canReadChecklists ? getAllChecklists() : Promise.resolve([]),
+          userPermissions.canReadSupervisors ? getSupervisorsByUser(user.userID) : Promise.resolve([]),
         ];
         const [locationsData, reasonsData, checklistsData, supervisorsData] = await Promise.all(promises);
 
@@ -111,14 +111,14 @@ const TimesheetForm: React.FC = () => {
       }
     };
     fetchData();
-  }, [token, userPermissions, user.userID, setError]);
+  }, [userPermissions, user.userID, setError]);
 
   // Fetch Agents by Location
   useEffect(() => {
     if (selectedLocation && !agentPhone && userPermissions.canReadAgentsByLocation) {
       const fetchAgents = async () => {
         try {
-          const agentsData = await getAgentsByLocation(selectedLocation, token);
+          const agentsData = await getAgentsByLocation(selectedLocation);
           setAgents(agentsData);
         } catch (err) {
           setError(`Failed to load agents for ${selectedLocation}`);
@@ -130,14 +130,14 @@ const TimesheetForm: React.FC = () => {
       setAgents([]);
       setSelectedAgent("");
     }
-  }, [selectedLocation, agentPhone, userPermissions.canReadAgentsByLocation, token, setError]);
+  }, [selectedLocation, agentPhone, userPermissions.canReadAgentsByLocation, setError]);
 
   // Debounced Fetch Agent by Phone
   const fetchAgentByPhone = useCallback(
     debounce(async (phone: string) => {
       if (phone.length < 7 || !userPermissions.canReadAgentsByPhone) return;
       try {
-        const agentData = await getAgentByPhone(phone, token);
+        const agentData = await getAgentByPhone(phone);
         setSelectedAgent(agentData.agentID);
         setSelectedLocation(agentData.location || "");
         setAgents([agentData]);
@@ -150,7 +150,7 @@ const TimesheetForm: React.FC = () => {
         console.error("Fetch agent by phone error:", err);
       }
     }, 500),
-    [userPermissions.canReadAgentsByPhone, token, setError]
+    [userPermissions.canReadAgentsByPhone, setError]
   );
 
   useEffect(() => {
@@ -169,7 +169,7 @@ const TimesheetForm: React.FC = () => {
     debounce(async (phone: string) => {
       if (phone.length < 7 || !userPermissions.canReadSupervisors || !userPermissions.canCreateTimesheetsForSupervisors) return;
       try {
-        const supervisor = await getUserByPhone(phone, token);
+        const supervisor = await getUserByPhone(phone);
         setSelectedSupervisor(supervisor.userID);
         setSupervisors(prev => prev.some(s => s.userID === supervisor.userID) ? prev : [...prev, supervisor]);
         setSupervisorSearch(`${supervisor.firstname || ""} ${supervisor.lastname || ""}`);
@@ -179,7 +179,7 @@ const TimesheetForm: React.FC = () => {
         console.error("Fetch supervisor by phone error:", err);
       }
     }, 500),
-    [token, supervisors, userPermissions.canReadSupervisors, userPermissions.canCreateTimesheetsForSupervisors, setError]
+    [supervisors, userPermissions.canReadSupervisors, userPermissions.canCreateTimesheetsForSupervisors, setError]
   );
 
   useEffect(() => {
@@ -250,7 +250,7 @@ const TimesheetForm: React.FC = () => {
     };
 
     try {
-      await createTimesheet(timesheetData, token);
+      await createTimesheet(timesheetData);
       navigate("/timesheet");
     } catch (err) {
       setError("Failed to create timesheet. Please try again.");

@@ -39,7 +39,7 @@ const padNumber = (value: string): string => {
 const ReceiptBooks: React.FC = () => {
     // Hooks
     const navigate = useNavigate();
-    const { token, effectivePermissions, userRoles, permissionsLoaded, user } = useAuth();
+    const { effectivePermissions, userRoles, permissionsLoaded, user } = useAuth();
     const currentUserID = user!.userID;
 
     // State
@@ -87,13 +87,13 @@ const ReceiptBooks: React.FC = () => {
     // Fetch Receipt Books with Role-Based Filtering
     useEffect(() => {
         const fetchData = async () => {
-            if (!token || !userPermissions.canView || !permissionsLoaded) {
+            if (!userPermissions.canView || !permissionsLoaded) {
                 setLoading(false);
                 return;
             }
             setLoading(true);
             try {
-                const receiptsData = await getAllReceiptBooks(token);
+                const receiptsData = await getAllReceiptBooks();
                 let filteredBooks = receiptsData.map(receipt => ({
                     ...receipt,
                     qrCode: `data:image/png;base64,${receipt.qrCode}`,
@@ -130,7 +130,7 @@ const ReceiptBooks: React.FC = () => {
             }
         };
         fetchData();
-    }, [token, userPermissions.canView, userCapabilities.isSupervisorLike, userCapabilities.isStockManagerLike, currentUserID, permissionsLoaded, userCapabilities.isRegionalManagerLike, userCapabilities.isPurchaseTeamLike]);
+    }, [userPermissions.canView, userCapabilities.isSupervisorLike, userCapabilities.isStockManagerLike, currentUserID, permissionsLoaded, userCapabilities.isRegionalManagerLike, userCapabilities.isPurchaseTeamLike]);
 
     // Fetch Holder Names (Users and Agents)
     useEffect(() => {
@@ -144,7 +144,7 @@ const ReceiptBooks: React.FC = () => {
             for (const userID of uniqueUserIDs) {
                 if (userID && !newHoldersMap.has(userID)) {
                     try {
-                        const userData = await getUserById(userID, token!);
+                        const userData = await getUserById(userID);
                         newHoldersMap.set(userID, `${userData.firstname} ${userData.lastname}`);
                         hasChanges = true;
                     } catch (error) {
@@ -159,7 +159,7 @@ const ReceiptBooks: React.FC = () => {
             for (const agentID of uniqueAgentIDs) {
                 if (agentID && !newHoldersMap.has(agentID)) {
                     try {
-                        const agentData = await getAgentById(agentID, token!);
+                        const agentData = await getAgentById(agentID);
                         newHoldersMap.set(agentID, `${agentData.name} ${agentData.lastname}`);
                         hasChanges = true;
                     } catch (error) {
@@ -173,8 +173,8 @@ const ReceiptBooks: React.FC = () => {
             if (hasChanges) setHoldersMap(newHoldersMap);
         };
 
-        if (token && receiptBooks.length > 0) fetchHolders();
-    }, [token, receiptBooks, holdersMap]);
+        if (receiptBooks.length > 0) fetchHolders();
+    }, [receiptBooks, holdersMap]);
 
     // Memoized Data Calculations
     const uniqueTypes = useMemo(() => Array.from(new Set(receiptBooks.map(r => r.type))), [receiptBooks]);
@@ -240,7 +240,6 @@ const ReceiptBooks: React.FC = () => {
             }
             const createdReceipt = await createReceiptBook(
                 { number: paddedNumber, type: newReceiptBook.type },
-                token!
             );
             // Transform qrCode to data URL before adding to state
             const transformedReceipt = {
@@ -271,7 +270,6 @@ const ReceiptBooks: React.FC = () => {
             const updatedReceipt = await updateReceiptBook(
                 editReceiptBook.bookID,
                 { ...editReceiptBook, number: paddedNumber },
-                token!
             );
             // Transform qrCode to data URL before updating state
             const transformedReceipt = {
@@ -290,7 +288,7 @@ const ReceiptBooks: React.FC = () => {
         // Delete a receipt book with confirmation
         if (!userPermissions.canDelete || !window.confirm("Are you sure?")) return;
         try {
-            await deleteReceiptBook(bookID, token!);
+            await deleteReceiptBook(bookID);
             setReceiptBooks(receiptBooks.filter(r => r.bookID !== bookID));
         } catch (error) {
             alert(`Failed to delete receipt book: ${error}`);

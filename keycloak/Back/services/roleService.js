@@ -1,4 +1,3 @@
-
 const axios = require('axios');
 const { Role, Permission, User } = require('../models');
 const PermissionService = require('./permissionService');
@@ -24,18 +23,22 @@ const RESTRICTED_ROLES = [
 // Get admin token for Keycloak
 async function getAdminToken() {
     try {
+        logger.debug(`Attempting Keycloak authentication with user: ${process.env.ADMIN_USER}`);
         const response = await axios.post(
-            `${KEYCLOAK_URL} /realms/master / protocol / openid - connect / token`,
+            `${KEYCLOAK_URL}/realms/master/protocol/openid-connect/token`,
             new URLSearchParams({
                 grant_type: 'password',
                 client_id: 'admin-cli',
                 username: process.env.ADMIN_USER,
                 password: process.env.ADMIN_PASS,
-            })
+            }),
+            { timeout: 5000 }
         );
         return response.data.access_token;
     } catch (error) {
-        throw new Error('Could not authenticate with Keycloak.');
+        const errorDetails = error.response?.data?.error_description || error.message;
+        logger.error(`Keycloak authentication failed: ${errorDetails}`);
+        throw new Error(`Could not authenticate with Keycloak: ${errorDetails}`);
     }
 }
 
@@ -43,17 +46,19 @@ async function getAdminToken() {
 async function getClientUUID(token) {
     try {
         const response = await axios.get(
-            `${KEYCLOAK_URL} /admin/realms / ${REALM}/clients?clientId=${CLIENT_ID}`,
+            `${KEYCLOAK_URL}/admin/realms/${REALM}/clients?clientId=${CLIENT_ID}`,
             { headers: { Authorization: `Bearer ${token}` } }
         );
         const client = response.data.find((c) => c.clientId === CLIENT_ID);
         if (!client) throw new Error('Client not found.');
         return client.id;
     } catch (error) {
+        logger.error(`Failed to fetch client UUID: ${error.message}`);
         throw new Error('Could not find client in Keycloak.');
     }
 }
 
+// Rest of RoleService remains unchanged...
 class RoleService {
     // Create a new role
     static async createRole(name, description, actorID) {
@@ -119,6 +124,13 @@ class RoleService {
         try {
             const roles = await Role.findAll({
                 attributes: ['roleID', 'name', 'description'],
+                include: [
+                    {
+                        model: Permission,
+                        attributes: ['permissionID', 'name', 'description'],
+                        through: { attributes: [] }, // Exclude RolePermissions table attributes
+                    },
+                ],
             });
             return roles;
         } catch (error) {
@@ -364,61 +376,73 @@ class RoleService {
                 {
                     name: 'Super Admin',
                     description: 'Full administrative privileges',
-                    permissions: [],
+                    permissions: [], //All
                 },
                 {
                     name: 'Admin',
                     description: 'Manage users',
                     permissions: [
+                        // Class: Checklist
+                        'access_checklist_item_details',
+                        'access_checklists_items',
+                        'create_checklists_items',
+                        'delete_checklists_items',
+                        'update_checklists_items',
+                        // Class: Permission
                         'access_all_permissions',
                         'access_permission_details',
-                        'assign_permissions',
-                        'revoke_permissions',
                         'access_permissions_by_role',
+                        'assign_permissions',
                         'create_permission_overrides',
                         'delete_permission_overrides',
-                        'create_roles',
-                        'read_role_details',
-                        'update_roles',
-                        'delete_roles',
+                        'revoke_permissions',
+                        // Class: Reason
+                        'access_reason_item_details',
+                        'access_reason_items',
+                        'create_reason_items',
+                        'delete_reason_items',
+                        'update_reason_items',
+                        // Class: Role
                         'access_all_roles',
-                        'revoke_roles',
                         'assign_roles',
-                        'access_user_details',
-                        'assign_supervisors',
-                        'access_users_by_role',
-                        'revoke_supervisors',
-                        'create_users',
+                        'create_roles',
+                        'delete_roles',
+                        'read_role_details',
+                        'reset_roles',
+                        'revoke_roles',
+                        'update_roles',
+                        // Class: User
+                        'access_all_users',
+                        'access_managers',
                         'access_supervisors',
                         'access_user_by_phone',
+                        'access_user_details',
+                        'access_users_by_role',
+                        'assign_supervisors',
+                        'create_users',
                         'delete_users',
-                        'access_all_users',
-                        'update_users',
-                        'access_managers',
-                        'create_checklists_items',
-                        'access_checklist_item_details',
-                        'update_checklists_items',
-                        'delete_checklists_items',
-                        'access_checklists_items',
-                        'create_reason_items',
-                        'access_reason_item_details',
-                        'update_reason_items',
-                        'delete_reason_items',
-                        'access_reason_items',
+                        'revoke_supervisors',
+                        'update_users'
                     ],
                 },
                 {
                     name: 'Supervisor',
                     description: 'Log visits',
                     permissions: [
-                        'access_agents_by_location',
-                        'access_agents_locations',
-                        'access_agents_by_phone',
+                        // Class: Agent
                         'access_agents_by_id',
+                        'access_agents_by_location',
+                        'access_agents_by_phone',
+                        'access_agents_locations',
+                        // Class: Checklist
                         'access_checklist_item_details',
+                        'access_checklists_items',
                         'access_visit_checklist',
+                        // Class: Reason
                         'access_reason_item_details',
+                        'access_reason_items',
                         'access_visit_reasons',
+                        // Class: ReceiptBook
                         'access_all_receipt_books',
                         'access_receipt_book_details',
                         'access_receipt_books_by_holder',
@@ -426,138 +450,287 @@ class RoleService {
                         'collect_supplier_receipt_books',
                         'transfer_receipt_books',
                         'validate_receipt_books_transfer',
+                        // Class: ReceiptStub
                         'collect_receipt_stubs',
                         'validate_receipt_stubs',
-                        'scan_visits',
-                        'edit_visit_details',
-                        'delete_visit',
-                        'log_visits',
-                        'access_visit_details',
-                        'access_user_details',
-                        'access_users_by_role',
-                        'access_user_by_phone',
+                        // Class: Timesheet
+                        'access_supervisor_timesheets',
+                        'access_timesheet_details',
+                        'create_self_timesheets',
+                        // Class: User
                         'access_all_users',
                         'access_managers',
-                        'access_timesheet_details',
-                        'access_supervisor_timesheets',
-                        'create_self_timesheets',
+                        'access_user_by_phone',
+                        'access_user_details',
+                        'access_users_by_role',
+                        // Class: Visit
+                        'access_visit_details',
+                        'delete_visit',
+                        'edit_visit_details',
+                        'log_visits',
+                        'scan_visits'
                     ],
                 },
                 {
                     name: 'Manager',
                     description: 'Manage supervisors',
                     permissions: [
-                        'access_agents_by_location',
-                        'access_agents_locations',
-                        'access_agents_by_phone',
+                        // Class: Agent
                         'access_agents_by_id',
+                        'access_agents_by_location',
+                        'access_agents_by_phone',
+                        'access_agents_locations',
+                        // Class: Checklist
                         'access_checklist_item_details',
+                        'access_checklists_items',
                         'access_visit_checklist',
+                        // Class: Reason
                         'access_reason_item_details',
+                        'access_reason_items',
                         'access_visit_reasons',
-                        'edit_visit_details',
-                        'delete_visit',
-                        'access_visit_details',
-                        'access_user_details',
-                        'access_users_by_role',
-                        'access_supervisors',
-                        'access_user_by_phone',
-                        'access_all_users',
+                        // Class: Timesheet
+                        'access_supervisor_timesheets',
                         'access_timesheet_details',
                         'create_timesheets_for_supervisor',
-                        'access_supervisor_timesheets',
                         'validate_timesheets',
+                        // Class: User
+                        'access_all_users',
+                        'access_supervisors',
+                        'access_user_by_phone',
+                        'access_user_details',
+                        'access_users_by_role',
+                        // Class: Visit
+                        'access_visit_details',
+                        'delete_visit',
+                        'edit_visit_details'
                     ],
                 },
                 {
                     name: 'Stock Manager',
                     description: 'Archive stock',
                     permissions: [
-                        'access_agents_by_location',
-                        'access_agents_locations',
-                        'access_agents_by_phone',
+                        // Class: Agent
                         'access_agents_by_id',
+                        'access_agents_by_location',
+                        'access_agents_by_phone',
+                        'access_agents_locations',
+                        // Class: ReceiptBook
                         'access_all_receipt_books',
                         'access_receipt_book_details',
+                        'access_receipt_book_history',
                         'access_receipt_books_by_holder',
                         'access_receipt_books_by_number',
                         'delete_receipt_books',
-                        'update_receipt_books',
                         'transfer_receipt_books',
+                        'update_receipt_books',
                         'validate_receipt_books_transfer',
-                        'access_receipt_book_history',
-                        'access_user_details',
-                        'access_users_by_role',
-                        'access_user_by_phone',
-                        'access_all_users',
+                        // Class: ReceiptStub
                         'archive_receipt_stubs',
+                        // Class: User
+                        'access_all_users',
+                        'access_user_by_phone',
+                        'access_user_details',
+                        'access_users_by_role'
                     ],
                 },
                 {
                     name: 'Regional Manager',
                     description: 'Manage books',
                     permissions: [
-                        'access_agents_by_location',
-                        'access_agents_locations',
-                        'access_agents_by_phone',
+                        // Class: Agent
                         'access_agents_by_id',
+                        'access_agents_by_location',
+                        'access_agents_by_phone',
+                        'access_agents_locations',
+                        // Class: ReceiptBook
                         'access_all_receipt_books',
                         'access_receipt_book_details',
+                        'access_receipt_book_history',
                         'access_receipt_books_by_holder',
                         'access_receipt_books_by_number',
                         'transfer_receipt_books',
                         'validate_receipt_books_transfer',
-                        'access_receipt_book_history',
-                        'access_user_details',
-                        'access_users_by_role',
-                        'access_user_by_phone',
+                        // Class: User
                         'access_all_users',
+                        'access_user_by_phone',
+                        'access_user_details',
+                        'access_users_by_role'
                     ],
                 },
                 {
                     name: 'Purchase Team',
                     description: 'Manage initial stock',
                     permissions: [
-                        'access_agents_by_location',
-                        'access_agents_locations',
-                        'access_agents_by_phone',
+                        // Class: Agent
                         'access_agents_by_id',
-                        'create_receipt_books',
+                        'access_agents_by_location',
+                        'access_agents_by_phone',
+                        'access_agents_locations',
+                        // Class: ReceiptBook
                         'access_all_receipt_books',
                         'access_receipt_book_details',
+                        'access_receipt_book_history',
                         'access_receipt_books_by_holder',
                         'access_receipt_books_by_number',
-                        'delete_receipt_books',
-                        'update_receipt_books',
-                        'send_receipt_books',
                         'collect_supplier_receipt_books',
+                        'create_receipt_books',
+                        'delete_receipt_books',
+                        'send_receipt_books',
                         'transfer_receipt_books',
+                        'update_receipt_books',
                         'validate_receipt_books_transfer',
-                        'access_receipt_book_history',
-                        'access_user_details',
-                        'access_users_by_role',
-                        'access_user_by_phone',
+                        // Class: User
                         'access_all_users',
+                        'access_user_by_phone',
+                        'access_user_details',
+                        'access_users_by_role'
                     ],
-                },
+                }
             ];
 
             const results = [];
 
-            // Get all permissions
+            // Get all permissions from local DB
             const allPermissions = await Permission.findAll();
             const allPermissionNames = allPermissions.map((p) => p.name);
 
+            // Create or update resources in Keycloak for each permission
+            const resourceMap = new Map();
+            for (const permission of allPermissions) {
+                try {
+                    // Check if resource exists
+                    const resourceResponse = await axios.get(
+                        `${KEYCLOAK_URL}/admin/realms/${REALM}/clients/${clientUUID}/authz/resource-server/resource?search=${permission.name}`,
+                        { headers: { Authorization: `Bearer ${token}` } }
+                    );
+                    let resourceId = resourceResponse.data.find((r) => r.name === permission.name)?._id;
+
+                    if (!resourceId) {
+                        // Create resource
+                        const resourceData = await axios.post(
+                            `${KEYCLOAK_URL}/admin/realms/${REALM}/clients/${clientUUID}/authz/resource-server/resource`,
+                            {
+                                name: permission.name,
+                                displayName: permission.description || `Resource for ${permission.name}`,
+                                type: 'urn:traceflow:resources:permission',
+                                scopes: [{ name: 'access' }],
+                            },
+                            { headers: { Authorization: `Bearer ${token}` } }
+                        );
+                        resourceId = resourceData.data._id;
+                    } else {
+                        // Update resource if needed
+                        await axios.put(
+                            `${KEYCLOAK_URL}/admin/realms/${REALM}/clients/${clientUUID}/authz/resource-server/resource/${resourceId}`,
+                            {
+                                name: permission.name,
+                                displayName: permission.description || `Resource for ${permission.name}`,
+                                type: 'urn:traceflow:resources:permission',
+                                scopes: [{ name: 'access' }],
+                            },
+                            { headers: { Authorization: `Bearer ${token}` } }
+                        );
+                    }
+                    resourceMap.set(permission.name, resourceId);
+                    logger.debug(`Synced resource for permission ${permission.name} with ID ${resourceId}`);
+                } catch (error) {
+                    logger.error(`Failed to create/update resource for permission ${permission.name}: ${error.message}`);
+                    throw new Error(`Could not sync resource for permission ${permission.name}`);
+                }
+            }
+
+            // Map permissions to their associated role policies
+            const permissionToPolicies = new Map();
+            allPermissionNames.forEach((permName) => permissionToPolicies.set(permName, []));
+
+            // Process roles and policies
+            const rolePolicyMap = new Map();
             for (const defaultRole of defaultRoles) {
-                // Find or create role
+                // Find or create role in local DB and Keycloak
                 let role = await Role.findOne({ where: { name: defaultRole.name } });
+                let keycloakRoleId;
                 if (!role) {
                     role = await RoleService.createRole(defaultRole.name, defaultRole.description, actorID);
-                } else if (role.description !== defaultRole.description) {
-                    await role.update({ description: defaultRole.description });
+                    const keycloakRole = await axios.get(
+                        `${KEYCLOAK_URL}/admin/realms/${REALM}/roles/${defaultRole.name}`,
+                        { headers: { Authorization: `Bearer ${token}` } }
+                    );
+                    keycloakRoleId = keycloakRole.data.id;
+                } else {
+                    if (role.description !== defaultRole.description) {
+                        await role.update({ description: defaultRole.description });
+                        await axios.put(
+                            `${KEYCLOAK_URL}/admin/realms/${REALM}/roles/${role.name}`,
+                            {
+                                name: role.name,
+                                description: defaultRole.description,
+                            },
+                            { headers: { Authorization: `Bearer ${token}` } }
+                        );
+                    }
+                    const keycloakRole = await axios.get(
+                        `${KEYCLOAK_URL}/admin/realms/${REALM}/roles/${role.name}`,
+                        { headers: { Authorization: `Bearer ${token}` } }
+                    );
+                    keycloakRoleId = keycloakRole.data.id;
                 }
+                logger.debug(`Processing role ${defaultRole.name} with Keycloak ID ${keycloakRoleId}`);
 
-                // Assign permissions
+                // Create or update role-based policy
+                let policyId;
+                try {
+                    const policyResponse = await axios.get(
+                        `${KEYCLOAK_URL}/admin/realms/${REALM}/clients/${clientUUID}/authz/resource-server/policy/role?name=${role.name}-policy`,
+                        { headers: { Authorization: `Bearer ${token}` } }
+                    );
+                    policyId = policyResponse.data[0]?.id;
+                    if (policyId) {
+                        await axios.put(
+                            `${KEYCLOAK_URL}/admin/realms/${REALM}/clients/${clientUUID}/authz/resource-server/policy/role/${policyId}`,
+                            {
+                                name: `${role.name}-policy`,
+                                description: `Policy for ${role.name} role`,
+                                logic: 'POSITIVE',
+                                type: 'role',
+                                roles: [{ id: keycloakRoleId, required: true }],
+                            },
+                            { headers: { Authorization: `Bearer ${token}` } }
+                        );
+                    }
+                } catch (error) {
+                    if (error.response?.status === 404) {
+                        const policyData = await axios.post(
+                            `${KEYCLOAK_URL}/admin/realms/${REALM}/clients/${clientUUID}/authz/resource-server/policy/role`,
+                            {
+                                name: `${role.name}-policy`,
+                                description: `Policy for ${role.name} role`,
+                                logic: 'POSITIVE',
+                                type: 'role',
+                                roles: [{ id: keycloakRoleId, required: true }],
+                            },
+                            { headers: { Authorization: `Bearer ${token}` } }
+                        );
+                        policyId = policyData.data.id;
+                    } else {
+                        throw error;
+                    }
+                }
+                rolePolicyMap.set(defaultRole.name, policyId);
+                logger.debug(`Synced policy for role ${role.name} with ID ${policyId}`);
+
+                // Assign permissions to policies
+                const permissionNamesToAssign =
+                    defaultRole.name === 'Super Admin'
+                        ? allPermissionNames
+                        : defaultRole.permissions.filter((p) => allPermissionNames.includes(p));
+
+                permissionNamesToAssign.forEach((permName) => {
+                    if (permissionToPolicies.has(permName)) {
+                        permissionToPolicies.get(permName).push(policyId);
+                    }
+                });
+
+                // Update local DB permissions
                 let permissionIDsToAssign =
                     defaultRole.name === 'Super Admin'
                         ? allPermissions.map((p) => p.permissionID)
@@ -568,7 +741,6 @@ class RoleService {
                 const currentPermissions = await role.getPermissions();
                 const currentPermissionIDs = currentPermissions.map((p) => p.permissionID);
 
-                // Revoke extra permissions
                 const permissionsToRevoke = currentPermissions
                     .filter(
                         (p) =>
@@ -579,7 +751,6 @@ class RoleService {
                     await PermissionService.revokePermissionsFromRole(role.roleID, permissionsToRevoke);
                 }
 
-                // Assign missing permissions
                 const permissionsToAssign = permissionIDsToAssign.filter(
                     (id) => !currentPermissionIDs.includes(id)
                 );
@@ -591,12 +762,95 @@ class RoleService {
                     roleName: defaultRole.name,
                     permissionsAssigned: permissionsToAssign.length,
                     permissionsRevoked: permissionsToRevoke.length,
+                    keycloakPermissionsSynced: permissionNamesToAssign.length,
+                    keycloakPermissionsRemoved: 0, // Will update later
                     totalPermissions:
                         defaultRole.name === 'Super Admin'
                             ? allPermissions.length
                             : permissionIDsToAssign.length,
                 });
             }
+
+            // Create or update permissions in Keycloak (one per resource)
+            let keycloakPermissionsRemoved = 0;
+            for (const permName of allPermissionNames) {
+                try {
+                    const resourceId = resourceMap.get(permName);
+                    if (!resourceId) throw new Error(`Resource not found for permission ${permName}`);
+
+                    const policyIds = permissionToPolicies.get(permName);
+                    if (!policyIds || policyIds.length === 0) {
+                        logger.debug(`No policies for permission ${permName}, skipping permission creation`);
+                        continue;
+                    }
+
+                    // Check if permission exists
+                    const permissionResponse = await axios.get(
+                        `${KEYCLOAK_URL}/admin/realms/${REALM}/clients/${clientUUID}/authz/resource-server/permission/resource?name=${permName}-permission`,
+                        { headers: { Authorization: `Bearer ${token}` } }
+                    );
+                    let permissionId = permissionResponse.data.find((p) => p.name === `${permName}-permission`)?.id;
+
+                    const permissionData = {
+                        name: `${permName}-permission`,
+                        description: `Permission for ${permName}`,
+                        type: 'resource',
+                        policies: policyIds,
+                        resources: [resourceId],
+                        logic: 'POSITIVE',
+                        decisionStrategy: 'AFFIRMATIVE',
+                    };
+
+                    if (permissionId) {
+                        // Update existing permission
+                        await axios.put(
+                            `${KEYCLOAK_URL}/admin/realms/${REALM}/clients/${clientUUID}/authz/resource-server/permission/resource/${permissionId}`,
+                            permissionData,
+                            { headers: { Authorization: `Bearer ${token}` } }
+                        );
+                    } else {
+                        // Create new permission
+                        await axios.post(
+                            `${KEYCLOAK_URL}/admin/realms/${REALM}/clients/${clientUUID}/authz/resource-server/permission/resource`,
+                            permissionData,
+                            { headers: { Authorization: `Bearer ${token}` } }
+                        );
+                    }
+                    logger.debug(`Synced permission ${permName}-permission with policies: ${policyIds.join(', ')}`);
+                } catch (error) {
+                    logger.error(`Failed to create/update permission ${permName}: ${error.message}`);
+                    throw new Error(`Could not sync permission ${permName}`);
+                }
+            }
+
+            // Clean up unused permissions in Keycloak
+            const allKeycloakPermissions = await axios.get(
+                `${KEYCLOAK_URL}/admin/realms/${REALM}/clients/${clientUUID}/authz/resource-server/permission`,
+                { headers: { Authorization: `Bearer ${token}` } }
+            );
+            const permissionsToRemove = allKeycloakPermissions.data.filter((p) => {
+                if (!p.name || !p.name.endsWith('-permission')) return false;
+                const permName = p.name.replace('-permission', '');
+                return !allPermissionNames.includes(permName);
+            });
+
+            for (const perm of permissionsToRemove) {
+                try {
+                    await axios.delete(
+                        `${KEYCLOAK_URL}/admin/realms/${REALM}/clients/${clientUUID}/authz/resource-server/permission/${perm.id}`,
+                        { headers: { Authorization: `Bearer ${token}` } }
+                    );
+                    logger.debug(`Removed unused permission ${perm.name}`);
+                    keycloakPermissionsRemoved++;
+                } catch (error) {
+                    logger.error(`Failed to delete permission ${perm.name}: ${error.message}`);
+                }
+            }
+
+            // Update results with total permissions removed
+            results.forEach((result) => {
+                result.keycloakPermissionsRemoved = keycloakPermissionsRemoved;
+            });
 
             logger.info(`Reset main roles by user ${actorID}`, { ip: null });
             return results;
