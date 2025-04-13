@@ -1,4 +1,3 @@
-// responses/index.ts
 import Agent from "../models/Agent";
 import { Checklist, VisitChecklist } from "../models/Checklist";
 import { Reason, VisitReason } from "../models/Reason";
@@ -20,7 +19,53 @@ export interface AxiosErrorResponse {
     };
 }
 
+export interface LoginResponse {
+    requires2FA: boolean;
+    accessToken?: string;
+    user?: {
+        userID: string;
+        email: string;
+        phone: string;
+        roles: Role[];
+    };
+    userID?: string;
+    deviceIdentifier?: string;
+    tempToken?: string;
+    refreshToken?: string;
+    expiresIn?: number;
+    message?: string;
+}
 
+export interface Verify2FAResponse {
+    requires2FA: boolean;
+    accessToken?: string;
+    user?: {
+        userID: string;
+        email: string;
+        phone: string;
+        roles: Role[];
+    };
+}
+
+export interface InitiatePasswordResetResponse {
+    userID: string; // User ID
+    message: string; // Success message
+}
+
+export interface Resend2FAResponse {
+    userID: string; // User ID
+    message: string; // Success message
+}
+
+export interface VerifyPasswordResetOTPResponse {
+    userID: string; // User ID
+    tempToken: string; // Temporary token for reset
+    message: string; // Success message
+}
+
+export interface ResetPasswordResponse {
+    message: string; // Success message
+}
 // Agent API Responses
 export type AgentByIdResponse = Agent; // Single agent by ID
 export type AgentByPhoneResponse = Agent; // Single agent by phone
@@ -28,60 +73,6 @@ export type AgentLocationsResponse = string[]; // List of agent locations
 export type AgentsByLocationResponse = Agent[]; // List of agents by location
 
 
-// Auth API Responses
-export interface LoginResponse {
-    requires2FA?: boolean; // Indicates if 2FA is needed
-    userID?: string; // User ID for 2FA flow
-    deviceIdentifier?: string; // Device ID for 2FA
-    tempToken?: string; // Temporary token for 2FA
-    refreshToken?: string; // Refresh token
-    expiresIn?: number; // Token expiration time
-    message?: string; // Success or OTP message
-    token?: string; // Access token (if no 2FA)
-    user?: {
-        firstName: string; // User's first name
-        lastName: string; // User's last name
-        userID: string; // User ID
-        email: string; // User email
-        phone: string; // User phone
-        wallet: string; // User wallet
-        roles: { name: string; permissions: string[] }[]; // User roles and permissions
-    };
-}
-
-export interface Verify2FAResponse {
-    token: string; // Access token
-    refreshToken: string; // Refresh token
-    expiresIn: number; // Token expiration time
-    user: {
-        firstName: string; // User's first name
-        lastName: string; // User's last name
-        userID: string; // User ID
-        email: string; // User email
-        phone: string; // User phone
-        wallet: string; // User wallet
-        roles: { name: string; permissions: string[] }[]; // User roles and permissions
-    };
-}
-
-export type InitiatePasswordResetResponse = {
-    userID: string; // User ID
-    message: string; // Success message
-};
-
-export type Resend2FAResponse = {
-    userID: string; // User ID
-    message: string; // Success message
-};
-
-export type ResetPasswordResponse = {
-    message: string; // Success message
-};
-
-export type VerifyPasswordResetOTPResponse = {
-    userID: string; // User ID
-    message: string; // Success message
-};
 
 // Checklist API Responses
 export type ChecklistByIdResponse = Checklist; // Single checklist by ID

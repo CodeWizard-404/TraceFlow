@@ -1,24 +1,35 @@
 const { Agent } = require('../models');
+const logger = require('../utils/logger');
 
 class AgentService {
     static async getAgentById(id) {
-        const agent = await Agent.findByPk(id);
-        if (!agent) {
-            const error = new Error('Agent not found');
-            error.status = 404;
+        try {
+            const agent = await Agent.findByPk(id);
+            if (!agent) {
+                const error = new Error('Agent not found');
+                error.status = 404;
+                throw error;
+            }
+            return agent;
+        } catch (error) {
+            logger.error(`Get agent by ID error: ${error.message}`, { ip: null });
             throw error;
         }
-        return agent;
     }
 
     static async getAgentByPhone(phone) {
-        const agent = await Agent.findOne({ where: { phone } });
-        if (!agent) {
-            const error = new Error('Agent not found');
-            error.status = 404;
+        try {
+            const agent = await Agent.findOne({ where: { phone } });
+            if (!agent) {
+                const error = new Error('Agent not found');
+                error.status = 404;
+                throw error;
+            }
+            return agent;
+        } catch (error) {
+            logger.error(`Get agent by phone error: ${error.message}`, { ip: null });
             throw error;
         }
-        return agent;
     }
 
     static async getAgentsByLocation(location) {
@@ -27,17 +38,29 @@ class AgentService {
             error.status = 400;
             throw error;
         }
-        const agents = await Agent.findAll({ where: { location } });
-        return agents;
+        try {
+            const agents = await Agent.findAll({ where: { location } });
+            return agents;
+        } catch (error) {
+            logger.error(`Get agents by location error: ${error.message}`, { ip: null });
+            throw error;
+        }
     }
 
     static async getAllUniqueLocations() {
-        const locations = await Agent.findAll({
-            attributes: ['location'],
-            group: ['location'],
-        });
-        const uniqueLocations = locations.map((loc) => loc.location);
-        return uniqueLocations;
+        try {
+            const locations = await Agent.findAll({
+                attributes: ['location'],
+                group: ['location'],
+            });
+            const uniqueLocations = locations.map((loc) => loc.location);
+            return uniqueLocations;
+        } catch (error) {
+            logger.error(`Get unique locations error: ${error.message}`, { ip: null });
+            const err = new Error('Failed to retrieve unique locations: ' + error.message);
+            err.status = error.status || 500;
+            throw err;
+        }
     }
 }
 

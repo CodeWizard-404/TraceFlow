@@ -95,7 +95,9 @@ const QRScan: React.FC = () => {
                     await new Promise((resolve) => setTimeout(resolve, 100));
                     setIsSuccess(true);
                     await new Promise((resolve) => setTimeout(resolve, 100));
-                    navigate(`/visit/${visit.visitID}/validate-checklist`);
+                    navigate(`/visit/${visit.visitID}/validate-checklist`, {
+                        state: { fromValidQRScan: true, visit },
+                    });
                 } else {
                     setBackendError("Mismatch error");
                     setIsShaking(true);

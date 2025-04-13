@@ -1,11 +1,12 @@
-const axios = require("axios");
-const { Permission, Role, User, UserPermissionOverride } = require("../models");
-require("dotenv").config();
+const axios = require('axios');
+const { Permission, Role, User, UserPermissionOverride } = require('../models');
+const logger = require('../utils/logger');
+require('dotenv').config();
 
 // Keycloak configuration
-const KEYCLOAK_URL = process.env.KEYCLOAK_URL || "http://localhost:8080";
-const REALM = process.env.REALM || "TraceFlow";
-const CLIENT_ID = process.env.KEYCLOAK_CLIENT_ID || "traceflow-backend";
+const KEYCLOAK_URL = process.env.KEYCLOAK_URL || 'http://localhost:8080';
+const REALM = process.env.REALM || 'TraceFlow';
+const CLIENT_ID = process.env.KEYCLOAK_CLIENT_ID || 'traceflow-backend';
 
 // Get admin token for Keycloak
 async function getAdminToken() {
@@ -13,15 +14,15 @@ async function getAdminToken() {
         const response = await axios.post(
             `${KEYCLOAK_URL}/realms/master/protocol/openid-connect/token`,
             new URLSearchParams({
-                grant_type: "password",
-                client_id: "admin-cli",
+                grant_type: 'password',
+                client_id: 'admin-cli',
                 username: process.env.ADMIN_USER,
                 password: process.env.ADMIN_PASS,
             })
         );
         return response.data.access_token;
     } catch (error) {
-        throw new Error("Could not authenticate with Keycloak.");
+        throw new Error('Could not authenticate with Keycloak.');
     }
 }
 
@@ -33,43 +34,43 @@ async function getClientUUID(token) {
             { headers: { Authorization: `Bearer ${token}` } }
         );
         const client = response.data.find((c) => c.clientId === CLIENT_ID);
-        if (!client) throw new Error("Client not found.");
+        if (!client) throw new Error('Client not found.');
         return client.id;
     } catch (error) {
-        throw new Error("Could not find client in Keycloak.");
+        throw new Error('Could not find client in Keycloak.');
     }
 }
 
 class PermissionService {
-    // Get all permissions
     static async getAllPermissions() {
         try {
-            return await Permission.findAll({
-                attributes: ["permissionID", "name", "class", "description"],
+            const permissions = await Permission.findAll({
+                attributes: ['permissionID', 'name', 'class', 'description'],
             });
+            return permissions;
         } catch (error) {
-            throw new Error("Could not fetch permissions.");
+            logger.error(`Fetch permissions error: ${error.message}`, { ip: null });
+            throw new Error('Could not fetch permissions.');
         }
     }
 
-    // Get permission by ID
     static async getPermissionById(permissionID) {
         try {
             const permission = await Permission.findByPk(permissionID, {
-                include: [{ model: Role, attributes: ["roleID", "name"] }],
+                include: [{ model: Role, attributes: ['roleID', 'name'] }],
             });
-            if (!permission) throw new Error("Permission not found.");
+            if (!permission) throw new Error('Permission not found.');
             return permission;
         } catch (error) {
-            throw new Error(error.message || "Could not fetch permission.");
+            logger.error(`Get permission error: ${error.message}`, { ip: null });
+            throw new Error(error.message || 'Could not fetch permission.');
         }
     }
 
-    // Update permission details
-    static async updatePermission(permissionID, updates) {
+    static async updatePermission(permissionID, updates, actorID) {
         try {
             const permission = await Permission.findByPk(permissionID);
-            if (!permission) throw new Error("Permission not found.");
+            if (!permission) throw new Error('Permission not found.');
 
             const token = await getAdminToken();
             const clientUUID = await getClientUUID(token);
@@ -80,7 +81,7 @@ class PermissionService {
                 { headers: { Authorization: `Bearer ${token}` } }
             );
             const resourceId = resourceResponse.data[0]?._id;
-            if (!resourceId) throw new Error("Resource not found in Keycloak.");
+            if (!resourceId) throw new Error('Resource not found in Keycloak.');
 
             await axios.put(
                 `${KEYCLOAK_URL}/admin/realms/${REALM}/clients/${clientUUID}/authz/resource-server/resource/${resourceId}`,
@@ -98,43 +99,37 @@ class PermissionService {
                 description: updates.description || permission.description,
             });
 
+            logger.info(`Permission ${permissionID} updated by user ${actorID}`, { ip: null });
             return permission;
         } catch (error) {
-            throw new Error(error.message || "Could not update permission.");
+            logger.error(`Update permission error: ${error.message}, user: ${actorID}`, { ip: null });
+            throw new Error(error.message || 'Could not update permission.');
         }
     }
 
-    // Assign permissions to a role
-    static async assignPermissionsToRole(user, roleID, permissionIDs) {
+    static async assignPermissionsToRole(user, roleID, permissionIDs, actorID) {
         try {
             const token = await getAdminToken();
             const clientUUID = await getClientUUID(token);
 
             // Validate role
             const role = await Role.findByPk(roleID);
-            if (!role) throw new Error("Role not found.");
+            if (!role) throw new Error('Role not found.');
 
             // Validate permissions
             const permissions = await Permission.findAll({
                 where: { permissionID: permissionIDs },
             });
-            if (permissions.length !== permissionIDs.length)
-                throw new Error("One or more permissions not found.");
+            if (permissions.length !== permissionIDs.length) throw new Error('One or more permissions not found.');
 
             // Check if user is Super Admin
-            const isSuperAdmin = user.Roles.some(
-                (r) => r.name === "Super Admin"
-            );
+            const isSuperAdmin = user.roles.includes('Super Admin');
 
             // Restrict non-Super Admins from assigning Role/Permission classes
             if (!isSuperAdmin) {
-                const restrictedPermissions = permissions.filter((p) =>
-                    ["Role", "Permission"].includes(p.class)
-                );
+                const restrictedPermissions = permissions.filter((p) => ['Role', 'Permission'].includes(p.class));
                 if (restrictedPermissions.length > 0) {
-                    throw new Error(
-                        "You do not have permission to assign Role or Permission class permissions."
-                    );
+                    throw new Error('You do not have permission to assign Role or Permission class permissions.');
                 }
             }
 
@@ -160,15 +155,15 @@ class PermissionService {
                         {
                             name: policyName,
                             description: `Policy for ${role.name} role`,
-                            logic: "POSITIVE",
-                            type: "role",
+                            logic: 'POSITIVE',
+                            type: 'role',
                             roles: [{ id: roleId, required: true }],
                         },
                         { headers: { Authorization: `Bearer ${token}` } }
                     );
                     policyId = policyResponse.data.id;
                 } else {
-                    throw new Error("Could not create policy.");
+                    throw new Error('Could not create policy.');
                 }
             }
 
@@ -198,9 +193,7 @@ class PermissionService {
                 const resourceId = resource._id;
 
                 const permissionName = `${perm.name}-permission`;
-                const existingPermission = existingPermissions.find(
-                    (p) => p.name === permissionName
-                );
+                const existingPermission = existingPermissions.find((p) => p.name === permissionName);
 
                 if (existingPermission) {
                     const rolesWithPermission = await Role.findAll({
@@ -214,9 +207,7 @@ class PermissionService {
                     });
 
                     const policyIdsFromDB = rolesWithPermission
-                        .map(
-                            (r) => allPolicies.find((p) => p.name === `${r.name}-policy`)?.id
-                        )
+                        .map((r) => allPolicies.find((p) => p.name === `${r.name}-policy`)?.id)
                         .filter((id) => id);
                     policyIdsFromDB.push(policyId);
 
@@ -231,11 +222,11 @@ class PermissionService {
                         {
                             name: permissionName,
                             description: existingPermission.description || `Permission for ${perm.name}`,
-                            type: "resource",
+                            type: 'resource',
                             resources: [resourceId],
                             policies: finalPolicies,
-                            decisionStrategy: "AFFIRMATIVE",
-                            logic: "POSITIVE",
+                            decisionStrategy: 'AFFIRMATIVE',
+                            logic: 'POSITIVE',
                         },
                         { headers: { Authorization: `Bearer ${token}` } }
                     );
@@ -245,11 +236,11 @@ class PermissionService {
                         {
                             name: permissionName,
                             description: `Permission for ${perm.name}`,
-                            type: "resource",
+                            type: 'resource',
                             resources: [resourceId],
                             policies: [policyId],
-                            decisionStrategy: "AFFIRMATIVE",
-                            logic: "POSITIVE",
+                            decisionStrategy: 'AFFIRMATIVE',
+                            logic: 'POSITIVE',
                         },
                         { headers: { Authorization: `Bearer ${token}` } }
                     );
@@ -259,36 +250,35 @@ class PermissionService {
             // Update local DB
             const currentPermissions = await role.getPermissions();
             const currentPermissionIDs = currentPermissions.map((p) => p.permissionID);
-            const newPermissions = permissions.filter(
-                (p) => !currentPermissionIDs.includes(p.permissionID)
-            );
+            const newPermissions = permissions.filter((p) => !currentPermissionIDs.includes(p.permissionID));
             if (newPermissions.length > 0) {
                 await role.addPermissions(newPermissions);
             }
 
+            logger.info(`Assigned ${newPermissions.length} permissions to role ${roleID} by user ${actorID}`, { ip: null });
             return {
                 roleID,
                 assignedPermissions: newPermissions.map((p) => p.name),
                 totalAssigned: (await role.getPermissions()).length,
             };
         } catch (error) {
-            throw new Error(error.message || "Could not assign permissions.");
+            logger.error(`Assign permissions error: ${error.message}, user: ${actorID}`, { ip: null });
+            throw new Error(error.message || 'Could not assign permissions.');
         }
     }
 
-    // Revoke permissions from a role
-    static async revokePermissionsFromRole(roleID, permissionIDs) {
+    static async revokePermissionsFromRole(roleID, permissionIDs, actorID) {
         try {
             const token = await getAdminToken();
             const clientUUID = await getClientUUID(token);
 
             const role = await Role.findByPk(roleID);
-            if (!role) throw new Error("Role not found.");
+            if (!role) throw new Error('Role not found.');
 
             const results = [];
             for (const permissionID of permissionIDs) {
                 const permission = await Permission.findByPk(permissionID);
-                if (!permission) throw new Error("Permission not found.");
+                if (!permission) throw new Error('Permission not found.');
 
                 // Update Keycloak
                 const permissionName = `${permission.name}-permission`;
@@ -340,13 +330,14 @@ class PermissionService {
                 });
             }
 
+            logger.info(`Revoked ${results.length} permissions from role ${roleID} by user ${actorID}`, { ip: null });
             return results.length === 1 ? results[0] : results;
         } catch (error) {
-            throw new Error(error.message || "Could not revoke permissions.");
+            logger.error(`Revoke permissions error: ${error.message}, user: ${actorID}`, { ip: null });
+            throw new Error(error.message || 'Could not revoke permissions.');
         }
     }
 
-    // Get permissions for a role
     static async getPermissionsByRole(roleID) {
         try {
             const role = await Role.findByPk(roleID, {
@@ -354,146 +345,111 @@ class PermissionService {
                     {
                         model: Permission,
                         through: { attributes: [] },
-                        attributes: ["permissionID", "name", "class", "description"],
+                        attributes: ['permissionID', 'name', 'class', 'description'],
                     },
                 ],
             });
-            if (!role) throw new Error("Role not found.");
+            if (!role) throw new Error('Role not found.');
             return role.Permissions;
         } catch (error) {
-            throw new Error(error.message || "Could not fetch role permissions.");
+            logger.error(`Get role permissions error: ${error.message}`, { ip: null });
+            throw new Error(error.message || 'Could not fetch role permissions.');
         }
     }
 
-    // Add permission override for a user
-    static async addPermissionOverride(user, userID, roleID, permissionID, action) {
+    static async addPermissionOverride(user, userID, roleID, permissionID, action, actorID) {
         const transaction = await UserPermissionOverride.sequelize.transaction();
         try {
-            console.log("addPermissionOverride - Input user:", user);
-
-            const token = await getAdminToken();
-
             // Validate inputs
             const targetUser = await User.findByPk(userID);
-            if (!targetUser) throw new Error("User not found.");
+            if (!targetUser) throw new Error('User not found.');
             const role = await Role.findByPk(roleID);
-            if (!role) throw new Error("Role not found.");
+            if (!role) throw new Error('Role not found.');
             const permission = await Permission.findByPk(permissionID);
-            if (!permission) throw new Error("Permission not found.");
+            if (!permission) throw new Error('Permission not found.');
 
             // Check if user has the role
             const userRoles = await targetUser.getRoles({ where: { roleID } });
-            if (!userRoles.length) throw new Error("User does not have this role.");
+            if (!userRoles.length) throw new Error('User does not have this role.');
 
             // Check if user is Super Admin
-            const isSuperAdmin = Array.isArray(user?.roles) && user.roles.includes("Super Admin");
-            console.log("addPermissionOverride - isSuperAdmin:", isSuperAdmin);
-
-            if (!isSuperAdmin && ["Role", "Permission"].includes(permission.class)) {
-                throw new Error(
-                    "You do not have permission to assign Role or Permission class permissions."
-                );
+            const isSuperAdmin = user.roles.includes('Super Admin');
+            if (!isSuperAdmin && ['Role', 'Permission'].includes(permission.class)) {
+                throw new Error('You do not have permission to assign Role or Permission class permissions.');
             }
 
             // Update local DB
-            console.log("addPermissionOverride - Updating local DB...");
             const [override, created] = await UserPermissionOverride.findOrCreate({
                 where: { userID, roleID, permissionID },
                 defaults: { action },
-                transaction
+                transaction,
             });
             if (!created) await override.update({ action }, { transaction });
-            console.log("addPermissionOverride - Local DB updated:", override);
 
             // Update Keycloak
-            console.log("addPermissionOverride - Fetching Keycloak user...");
+            const token = await getAdminToken();
             const keycloakUserResponse = await axios.get(
                 `${KEYCLOAK_URL}/admin/realms/${REALM}/users/${userID}`,
                 { headers: { Authorization: `Bearer ${token}` } }
             );
-            console.log("addPermissionOverride - Keycloak user:", keycloakUserResponse.data);
 
             // Merge existing attributes
             const currentAttributes = keycloakUserResponse.data.attributes || {};
-            const overrides = JSON.parse(currentAttributes.permission_overrides?.[0] || "{}");
+            const overrides = JSON.parse(currentAttributes.permission_overrides?.[0] || '{}');
             overrides[roleID] = overrides[roleID] || {};
             overrides[roleID][permission.name] = action;
-            console.log("addPermissionOverride - New overrides:", overrides);
 
             // Update user with merged attributes
             const updatedUser = {
                 ...keycloakUserResponse.data,
                 attributes: {
                     ...currentAttributes,
-                    permission_overrides: [JSON.stringify(overrides)]
-                }
+                    permission_overrides: [JSON.stringify(overrides)],
+                },
             };
 
-            console.log("addPermissionOverride - Sending Keycloak update:", updatedUser);
-            try {
-                await axios.put(
-                    `${KEYCLOAK_URL}/admin/realms/${REALM}/users/${userID}`,
-                    updatedUser,
-                    {
-                        headers: {
-                            Authorization: `Bearer ${token}`,
-                            'Content-Type': 'application/json'
-                        }
-                    }
-                );
-                console.log("addPermissionOverride - Keycloak updated successfully");
-            } catch (keycloakError) {
-                console.error(
-                    "addPermissionOverride - Keycloak update failed:",
-                    keycloakError.response?.data || keycloakError.message
-                );
-                throw new Error("Failed to update Keycloak user attributes.");
-            }
+            await axios.put(
+                `${KEYCLOAK_URL}/admin/realms/${REALM}/users/${userID}`,
+                updatedUser,
+                {
+                    headers: {
+                        Authorization: `Bearer ${token}`,
+                        'Content-Type': 'application/json',
+                    },
+                }
+            );
 
             await transaction.commit();
+            logger.info(`Permission override added for user ${userID} by ${actorID}`, { ip: null });
             return override;
         } catch (error) {
             await transaction.rollback();
-            console.error(
-                "addPermissionOverride - Error:",
-                error.response?.data || error.message,
-                error.stack
-            );
-            throw new Error(error.message || "Could not add permission override.");
+            logger.error(`Add permission override error: ${error.message}, user: ${actorID}`, { ip: null });
+            throw new Error(error.message || 'Could not add permission override.');
         }
     }
 
-    // Remove permission override
-    static async removePermissionOverride(overrideID) {
+    static async removePermissionOverride(overrideID, actorID) {
         const transaction = await UserPermissionOverride.sequelize.transaction();
         try {
-            console.log("removePermissionOverride - Override ID:", overrideID);
-
             const override = await UserPermissionOverride.findByPk(overrideID);
-            if (!override) throw new Error("Override not found.");
+            if (!override) throw new Error('Override not found.');
 
             const token = await getAdminToken();
 
             // Fetch Keycloak user
-            console.log("removePermissionOverride - Fetching Keycloak user...");
             const keycloakUserResponse = await axios.get(
                 `${KEYCLOAK_URL}/admin/realms/${REALM}/users/${override.userID}`,
                 { headers: { Authorization: `Bearer ${token}` } }
             );
-            console.log("removePermissionOverride - Keycloak user:", keycloakUserResponse.data);
 
             // Parse existing attributes
             const currentAttributes = keycloakUserResponse.data.attributes || {};
-            const overrides = JSON.parse(currentAttributes.permission_overrides?.[0] || "{}");
+            const overrides = JSON.parse(currentAttributes.permission_overrides?.[0] || '{}');
             const permission = await Permission.findByPk(override.permissionID);
 
             // Remove the override
             if (overrides[override.roleID]?.[permission.name]) {
-                console.log(
-                    "removePermissionOverride - Removing override for:",
-                    override.roleID,
-                    permission.name
-                );
                 delete overrides[override.roleID][permission.name];
                 if (Object.keys(overrides[override.roleID]).length === 0) {
                     delete overrides[override.roleID];
@@ -504,45 +460,35 @@ class PermissionService {
                     ...keycloakUserResponse.data,
                     attributes: {
                         ...currentAttributes,
-                        permission_overrides: [JSON.stringify(overrides)]
-                    }
+                        permission_overrides: [JSON.stringify(overrides)],
+                    },
                 };
 
-                console.log("removePermissionOverride - Sending Keycloak update:", updatedUser);
                 await axios.put(
                     `${KEYCLOAK_URL}/admin/realms/${REALM}/users/${override.userID}`,
                     updatedUser,
                     {
                         headers: {
                             Authorization: `Bearer ${token}`,
-                            'Content-Type': 'application/json'
-                        }
+                            'Content-Type': 'application/json',
+                        },
                     }
                 );
-                console.log("removePermissionOverride - Keycloak updated successfully");
-            } else {
-                console.log("removePermissionOverride - No matching override found in Keycloak");
             }
 
             // Delete from local DB
-            console.log("removePermissionOverride - Deleting from local DB...");
             await override.destroy({ transaction });
-            console.log("removePermissionOverride - Local DB updated");
 
             await transaction.commit();
-            return { message: "Override removed successfully." };
+            logger.info(`Permission override ${overrideID} removed by user ${actorID}`, { ip: null });
+            return { message: 'Override removed successfully.' };
         } catch (error) {
             await transaction.rollback();
-            console.error(
-                "removePermissionOverride - Error:",
-                error.response?.data || error.message,
-                error.stack
-            );
-            throw new Error(error.message || "Could not remove override.");
+            logger.error(`Remove permission override error: ${error.message}, user: ${actorID}`, { ip: null });
+            throw new Error(error.message || 'Could not remove override.');
         }
     }
 
-    // Get effective permissions for a user
     static async getEffectivePermissions(userID) {
         try {
             const user = await User.findByPk(userID, {
@@ -555,7 +501,7 @@ class PermissionService {
                     { model: UserPermissionOverride, include: [{ model: Permission }] },
                 ],
             });
-            if (!user) throw new Error("User not found.");
+            if (!user) throw new Error('User not found.');
 
             const rolePermissions = {};
             for (const role of user.Roles) {
@@ -568,9 +514,9 @@ class PermissionService {
             for (const override of user.UserPermissionOverrides) {
                 const { roleID, permissionID, action } = override;
                 if (!rolePermissions[roleID]) continue;
-                if (action === "revoke") {
+                if (action === 'revoke') {
                     delete rolePermissions[roleID][permissionID];
-                } else if (action === "grant") {
+                } else if (action === 'grant') {
                     rolePermissions[roleID][permissionID] = override.Permission;
                 }
             }
@@ -581,22 +527,21 @@ class PermissionService {
             }
             return effectivePermissions;
         } catch (error) {
-            throw new Error(error.message || "Could not fetch effective permissions.");
+            logger.error(`Get effective permissions error: ${error.message}`, { ip: null });
+            throw new Error(error.message || 'Could not fetch effective permissions.');
         }
     }
 
-    // Get permission overrides for a user
     static async getPermissionOverrides(userID) {
         try {
             const user = await User.findByPk(userID, {
-                include: [
-                    { model: UserPermissionOverride, include: [{ model: Permission }] },
-                ],
+                include: [{ model: UserPermissionOverride, include: [{ model: Permission }] }],
             });
-            if (!user) throw new Error("User not found.");
+            if (!user) throw new Error('User not found.');
             return user.UserPermissionOverrides;
         } catch (error) {
-            throw new Error(error.message || "Could not fetch permission overrides.");
+            logger.error(`Get permission overrides error: ${error.message}`, { ip: null });
+            throw new Error(error.message || 'Could not fetch permission overrides.');
         }
     }
 }

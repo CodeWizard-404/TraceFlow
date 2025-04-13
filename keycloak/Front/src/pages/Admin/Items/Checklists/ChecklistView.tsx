@@ -13,7 +13,6 @@ interface ChecklistViewProps {
     checklists: Checklist[];
     setChecklists: React.Dispatch<React.SetStateAction<Checklist[]>>;
     view: string;
-    token: string;
     setError: (error: string | null) => void;
 }
 
@@ -23,7 +22,6 @@ const ChecklistView: React.FC<ChecklistViewProps> = ({
     checklists,
     setChecklists,
     view,
-    token,
     setError,
 }) => {
     const { effectivePermissions } = useAuth();
@@ -46,7 +44,7 @@ const ChecklistView: React.FC<ChecklistViewProps> = ({
         if (!selectedChecklist || !userPermissions.canUpdateChecklists) return;
         setLoading(true);
         try {
-            const updatedChecklist = await updateChecklist(selectedChecklist.checklistID, { text: editedItem }, token);
+            const updatedChecklist = await updateChecklist(selectedChecklist.checklistID, { text: editedItem });
             setChecklists(checklists.map(c => c.checklistID === selectedChecklist.checklistID ? updatedChecklist : c));
             setSelectedChecklist(updatedChecklist);
             setIsEditing(false);
@@ -63,7 +61,7 @@ const ChecklistView: React.FC<ChecklistViewProps> = ({
         if (!selectedChecklist || !userPermissions.canDeleteChecklists) return;
         setLoading(true);
         try {
-            await deleteChecklist(selectedChecklist.checklistID, token);
+            await deleteChecklist(selectedChecklist.checklistID);
             setChecklists(checklists.filter(c => c.checklistID !== selectedChecklist.checklistID));
             setSelectedChecklist(null);
             setError(null);

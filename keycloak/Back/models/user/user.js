@@ -1,5 +1,4 @@
 const { nanoid } = require('nanoid');
-
 module.exports = (sequelize, DataTypes) => {
     return sequelize.define('User', {
         userID: {
@@ -7,10 +6,10 @@ module.exports = (sequelize, DataTypes) => {
             primaryKey: true,
             defaultValue: () => `usr_${nanoid()}`,
         },
-        keycloakId: { // New field for Keycloak's sub
+        keycloakId: {
             type: DataTypes.STRING,
             unique: true,
-            allowNull: true, // Allow null until synced with Keycloak
+            allowNull: true,
         },
         firstname: { type: DataTypes.STRING, allowNull: false },
         lastname: { type: DataTypes.STRING, allowNull: false },
@@ -18,7 +17,7 @@ module.exports = (sequelize, DataTypes) => {
         email: { type: DataTypes.STRING, unique: true, allowNull: false },
         wallet: { type: DataTypes.STRING, unique: true, allowNull: false },
         password: { type: DataTypes.STRING, allowNull: false },
-        PFP: { type: DataTypes.BLOB, allowNull: true }
+        PFP: { type: DataTypes.BLOB, allowNull: true },
+        tempResetToken: { type: DataTypes.STRING, allowNull: true },
     });
-
 };

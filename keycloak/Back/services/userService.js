@@ -1,6 +1,7 @@
 const axios = require('axios');
 const { User, Role } = require('../models');
 const { Op } = require('sequelize');
+const logger = require('../utils/logger');
 require('dotenv').config();
 const { nanoid } = require('nanoid');
 
@@ -42,9 +43,7 @@ const ERROR_MESSAGES = {
     INVALID_SUPERVISOR_IDS: 'Supervisor IDs must be a valid array.',
 };
 
-// Service for user-related operations
 class UserService {
-    // Get Keycloak admin token
     static async getAdminToken() {
         try {
             const response = await axios.post(
@@ -58,11 +57,11 @@ class UserService {
             );
             return response.data.access_token;
         } catch (error) {
+            logger.error(`Get admin token error: ${error.message}`, { ip: null });
             throw new Error(ERROR_MESSAGES.AUTH_SERVICE_DOWN);
         }
     }
 
-    // Validate input data
     static validateInput({ email, phone, wallet, password, firstname, lastname, userID, role, supervisorIDs }) {
         const errors = [];
 
@@ -125,8 +124,7 @@ class UserService {
         }
     }
 
-    // Create a new user
-    static async createUser(email, password, firstname, lastname, phone, wallet) {
+    static async createUser(email, password, firstname, lastname, phone, wallet, actorID) {
         if (!email || !password || !firstname || !lastname || !phone || !wallet) {
             throw new Error(ERROR_MESSAGES.MISSING_FIELDS);
         }
@@ -168,6 +166,7 @@ class UserService {
             );
             keycloakUserId = keycloakResponse.headers.location.split('/').pop();
         } catch (error) {
+            logger.error(`Keycloak create user error: ${error.message}, user: ${actorID}`, { ip: null });
             throw new Error(ERROR_MESSAGES.KEYCLOAK_CREATE_FAILED);
         }
 
@@ -195,14 +194,15 @@ class UserService {
                 wallet,
                 password: 'KEYCLOAK_MANAGED',
             });
+            logger.info(`User ${email} created by user ${actorID}`, { ip: null });
             return user;
         } catch (error) {
+            logger.error(`DB create user error: ${error.message}, user: ${actorID}`, { ip: null });
             throw new Error(ERROR_MESSAGES.DB_CREATE_FAILED);
         }
     }
 
-    // Update user details
-    static async updateUser(userID, userData) {
+    static async updateUser(userID, userData, actorID) {
         if (!userID) {
             throw new Error(ERROR_MESSAGES.MISSING_FIELDS);
         }
@@ -268,6 +268,7 @@ class UserService {
                 { headers: { Authorization: `Bearer ${token}` } }
             );
         } catch (error) {
+            logger.error(`Keycloak update user error: ${error.message}, user: ${actorID}`, { ip: null });
             throw new Error(ERROR_MESSAGES.KEYCLOAK_UPDATE_FAILED);
         }
 
@@ -280,6 +281,7 @@ class UserService {
                     { headers: { Authorization: `Bearer ${token}` } }
                 );
             } catch (error) {
+                logger.error(`Keycloak password update error: ${error.message}, user: ${actorID}`, { ip: null });
                 throw new Error(ERROR_MESSAGES.KEYCLOAK_PASSWORD_FAILED);
             }
         }
@@ -294,14 +296,15 @@ class UserService {
                 wallet: userData.wallet || user.wallet,
                 PFP: userData.PFP !== undefined ? userData.PFP : user.PFP,
             });
+            logger.info(`User ${userID} updated by user ${actorID}`, { ip: null });
             return user;
         } catch (error) {
+            logger.error(`DB update user error: ${error.message}, user: ${actorID}`, { ip: null });
             throw new Error(ERROR_MESSAGES.DB_UPDATE_FAILED);
         }
     }
 
-    // Delete a user
-    static async deleteUser(userID) {
+    static async deleteUser(userID, actorID) {
         if (!userID) {
             throw new Error(ERROR_MESSAGES.MISSING_FIELDS);
         }
@@ -322,6 +325,7 @@ class UserService {
                     headers: { Authorization: `Bearer ${token}` },
                 });
             } catch (error) {
+                logger.error(`Keycloak delete user error: ${error.message}, user: ${actorID}`, { ip: null });
                 throw new Error(ERROR_MESSAGES.KEYCLOAK_DELETE_FAILED);
             }
         }
@@ -329,13 +333,14 @@ class UserService {
         // Delete from local DB
         try {
             await user.destroy();
+            logger.info(`User ${userID} deleted by user ${actorID}`, { ip: null });
             return { message: 'User deleted successfully.' };
         } catch (error) {
+            logger.error(`DB delete user error: ${error.message}, user: ${actorID}`, { ip: null });
             throw new Error(ERROR_MESSAGES.DB_DELETE_FAILED);
         }
     }
 
-    // Get all users
     static async getAllUsers() {
         try {
             const users = await User.findAll({
@@ -347,11 +352,11 @@ class UserService {
             }
             return users;
         } catch (error) {
+            logger.error(`Get all users error: ${error.message}`, { ip: null });
             throw new Error(error.message || ERROR_MESSAGES.NO_USERS_FOUND);
         }
     }
 
-    // Get user by phone number
     static async getUserByPhoneNumber(phone) {
         if (!phone) {
             throw new Error(ERROR_MESSAGES.MISSING_FIELDS);
@@ -369,11 +374,11 @@ class UserService {
             }
             return user;
         } catch (error) {
+            logger.error(`Get user by phone error: ${error.message}`, { ip: null });
             throw new Error(error.message || ERROR_MESSAGES.USER_NOT_FOUND);
         }
     }
 
-    // Get user by ID
     static async getUserById(userID) {
         if (!userID) {
             throw new Error(ERROR_MESSAGES.MISSING_FIELDS);
@@ -390,11 +395,11 @@ class UserService {
             }
             return user;
         } catch (error) {
+            logger.error(`Get user by ID error: ${error.message}`, { ip: null });
             throw new Error(error.message || ERROR_MESSAGES.USER_NOT_FOUND);
         }
     }
 
-    // Get users by role
     static async getUsersByRole(roleName) {
         if (!roleName) {
             throw new Error(ERROR_MESSAGES.MISSING_FIELDS);
@@ -422,11 +427,11 @@ class UserService {
             }
             return users;
         } catch (error) {
+            logger.error(`Get users by role error: ${error.message}`, { ip: null });
             throw new Error(error.message || ERROR_MESSAGES.NO_USERS_FOUND);
         }
     }
 
-    // Get supervisors for a user
     static async getSupervisorsByUser(userID) {
         if (!userID) {
             throw new Error(ERROR_MESSAGES.MISSING_FIELDS);
@@ -449,15 +454,15 @@ class UserService {
                 throw new Error(ERROR_MESSAGES.USER_NOT_FOUND);
             }
             if (!user.Supervisors.length) {
-                return ERROR_MESSAGES.NO_SUPERVISORS_FOUND;
+                throw new Error(ERROR_MESSAGES.NO_SUPERVISORS_FOUND);
             }
             return user.Supervisors;
         } catch (error) {
+            logger.error(`Get supervisors error: ${error.message}`, { ip: null });
             throw new Error(error.message || ERROR_MESSAGES.NO_SUPERVISORS_FOUND);
         }
     }
 
-    // Get managers for a user
     static async getManagersByUser(userID) {
         if (!userID) {
             throw new Error(ERROR_MESSAGES.MISSING_FIELDS);
@@ -480,16 +485,16 @@ class UserService {
                 throw new Error(ERROR_MESSAGES.USER_NOT_FOUND);
             }
             if (!user.Managers.length) {
-                return ERROR_MESSAGES.NO_MANAGERS_FOUND;
+                throw new Error(ERROR_MESSAGES.NO_MANAGERS_FOUND);
             }
             return user.Managers;
         } catch (error) {
+            logger.error(`Get managers error: ${error.message}`, { ip: null });
             throw new Error(error.message || ERROR_MESSAGES.NO_MANAGERS_FOUND);
         }
     }
 
-    // Assign supervisors to a manager
-    static async assignSupervisorsToManager(managerID, supervisorIDs) {
+    static async assignSupervisorsToManager(managerID, supervisorIDs, actorID) {
         if (!managerID || !supervisorIDs) {
             throw new Error(ERROR_MESSAGES.MISSING_FIELDS);
         }
@@ -512,18 +517,19 @@ class UserService {
             if (newSupervisors.length > 0) {
                 await manager.addSupervisors(newSupervisors);
             }
+            logger.info(`Assigned ${newSupervisors.length} supervisors to manager ${managerID} by user ${actorID}`, { ip: null });
             return {
                 managerID,
                 assignedSupervisors: newSupervisors.map((s) => s.userID),
                 totalAssigned: (await manager.getSupervisors()).length,
             };
         } catch (error) {
+            logger.error(`Assign supervisors error: ${error.message}, user: ${actorID}`, { ip: null });
             throw new Error(error.message || ERROR_MESSAGES.SUPERVISOR_NOT_FOUND);
         }
     }
 
-    // Revoke supervisors from a manager
-    static async revokeSupervisorsFromManager(managerID, supervisorIDs) {
+    static async revokeSupervisorsFromManager(managerID, supervisorIDs, actorID) {
         if (!managerID || !supervisorIDs) {
             throw new Error(ERROR_MESSAGES.MISSING_FIELDS);
         }
@@ -546,12 +552,14 @@ class UserService {
             if (revokedSupervisors.length > 0) {
                 await manager.removeSupervisors(revokedSupervisors);
             }
+            logger.info(`Revoked ${revokedSupervisors.length} supervisors from manager ${managerID} by user ${actorID}`, { ip: null });
             return {
                 managerID,
                 revokedSupervisors: revokedSupervisors.map((s) => s.userID),
                 totalAssigned: (await manager.getSupervisors()).length,
             };
         } catch (error) {
+            logger.error(`Revoke supervisors error: ${error.message}, user: ${actorID}`, { ip: null });
             throw new Error(error.message || ERROR_MESSAGES.SUPERVISOR_NOT_FOUND);
         }
     }

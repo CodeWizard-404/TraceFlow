@@ -25,7 +25,6 @@ interface UserAddProps {
     setUsers: React.Dispatch<React.SetStateAction<User[]>>;
     roles: Role[];
     view: string;
-    token: string;
     setView: (view: ViewMode) => void;
     setError: (error: string | null) => void;
 }
@@ -36,7 +35,6 @@ const UserAdd: React.FC<UserAddProps> = ({
     setUsers,
     roles,
     view,
-    token,
     setView,
     setError,
 }) => {
@@ -113,7 +111,6 @@ const UserAdd: React.FC<UserAddProps> = ({
                     phone: stripPhoneForDatabase(rawPhone),
                     wallet: stripWalletForDatabase(rawWallet),
                 },
-                token
             );
 
             if (selectedRolesForNewUser.length > 0 && userPermissions.canAssignRoles) {
@@ -121,8 +118,8 @@ const UserAdd: React.FC<UserAddProps> = ({
                     (roleID) => roles.find((r) => r.roleID === roleID)?.name !== import.meta.env.VITE_ROLES_SUPER_ADMIN
                 );
                 if (filteredRoles.length > 0) {
-                    await assignRolesToUser(createdUser.userID, filteredRoles, token);
-                    createdUser.Roles = await getRolesByUser(createdUser.userID, token);
+                    await assignRolesToUser(createdUser.userID, filteredRoles);
+                    createdUser.Roles = await getRolesByUser(createdUser.userID);
                 }
             }
 

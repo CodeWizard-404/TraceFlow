@@ -9,7 +9,6 @@ interface ReasonsListProps {
     reasons: Reason[];
     setReasons: React.Dispatch<React.SetStateAction<Reason[]>>;
     view: string;
-    token: string;
     setSelectedReason: React.Dispatch<React.SetStateAction<Reason | null>>;
     setError: (error: string | null) => void;
     searchQuery: string;
@@ -22,7 +21,6 @@ const ReasonsList: React.FC<ReasonsListProps> = ({
     reasons,
     setReasons,
     view,
-    token,
     setSelectedReason,
     setError,
     searchQuery,
@@ -91,7 +89,7 @@ const ReasonsList: React.FC<ReasonsListProps> = ({
             return;
         }
         try {
-            const updatedReason = await updateReason(reasonID, { text: editedText.trim() }, token);
+            const updatedReason = await updateReason(reasonID, { text: editedText.trim() });
             setReasons(reasons.map(r => r.reasonID === reasonID ? updatedReason : r));
             setEditingID(null);
             setError(null);
@@ -105,7 +103,7 @@ const ReasonsList: React.FC<ReasonsListProps> = ({
     const handleDelete = async (reasonID: string) => {
         if (!userPermissions.canDeleteReasons) return;
         try {
-            await deleteReason(reasonID, token);
+            await deleteReason(reasonID);
             setReasons(reasons.filter(r => r.reasonID !== reasonID));
             setError(null);
         } catch (error) {

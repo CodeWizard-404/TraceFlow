@@ -20,7 +20,6 @@ interface RoleAddProps {
     setRoles: (roles: Role[]) => void;
     permissionsList: Permission[];
     view: string;
-    token: string;
     setView: (view: ViewMode) => void;
     setError: (error: string | null) => void;
 }
@@ -31,7 +30,6 @@ const RoleAdd: React.FC<RoleAddProps> = ({
     setRoles,
     permissionsList,
     view,
-    token,
     setView,
     setError,
 }) => {
@@ -114,12 +112,10 @@ const RoleAdd: React.FC<RoleAddProps> = ({
         setLoading(true);
         try {
             const createdRole = await createRole(
-                { name: newRole.name!.trim(), description: newRole.description?.trim() },
-                token
-            );
+                { name: newRole.name!.trim(), description: newRole.description?.trim() });
             if (selectedPermissionsForNewRole.length > 0 && userPermissions.canAssignPermissions) {
-                await assignPermissionsToRole(createdRole.roleID, selectedPermissionsForNewRole, token);
-                createdRole.permissions = await getPermissionsByRole(createdRole.roleID, token);
+                await assignPermissionsToRole(createdRole.roleID, selectedPermissionsForNewRole);
+                createdRole.permissions = await getPermissionsByRole(createdRole.roleID);
             }
             setRoles([...roles, createdRole]);
             setNewRole({});

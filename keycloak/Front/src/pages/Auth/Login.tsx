@@ -1,4 +1,3 @@
-// components/Login/LoginPage.tsx
 import React, { useState, useEffect, useCallback } from "react";
 import FingerprintJS from "@fingerprintjs/fingerprintjs";
 import { useAuth } from "../../context/AuthContext";
@@ -28,6 +27,9 @@ const LoginPage: React.FC = () => {
     const [loading, setLoading] = useState(false);
     const [userID, setUserID] = useState<string | null>(null);
     const [deviceIdentifier, setDeviceIdentifier] = useState<string | null>(null);
+    const [tempToken, setTempToken] = useState<string | null>(null);
+    const [refreshToken, setRefreshToken] = useState<string | null>(null);
+    const [tempResetToken, setTempResetToken] = useState<string | null>(null);
     const [timer, setTimer] = useState(600);
     const [resendCooldown, setResendCooldown] = useState(0);
     const [otpMethod, setOtpMethod] = useState<"phone" | "email">("phone");
@@ -35,8 +37,6 @@ const LoginPage: React.FC = () => {
     const [showPassword, setShowPassword] = useState(false);
     const [showNewPassword, setShowNewPassword] = useState(false);
     const [showConfirmPassword, setShowConfirmPassword] = useState(false);
-    const [tempToken, setTempToken] = useState<string | null>(null);
-    const [refreshToken, setRefreshToken] = useState<string | null>(null);
     const [success, setSuccess] = useState<string | null>(null);
 
     const { loginUser } = useAuth();
@@ -92,11 +92,6 @@ const LoginPage: React.FC = () => {
 
     const validatePassword = (value: string): string => {
         if (!value) return "Please enter a password.";
-        if (value.length < 8) return "Password must be at least 8 characters long.";
-        if (value.length > 128) return "Password cannot exceed 128 characters.";
-        if (!/^(?=.*[a-z])(?=.*[A-Z])(?=.*\d)(?=.*[!@#$%^&*])[^\s]+$/.test(value)) {
-            return "Password must include an uppercase letter, lowercase letter, number, and special character (no spaces).";
-        }
         return "";
     };
 
@@ -143,19 +138,25 @@ const LoginPage: React.FC = () => {
 
         try {
             const response = await login(identifier, password, deviceIdentifier, "phone");
-            if ("requires2FA" in response) {
+            if (!response) {
+                throw new Error("No response from server. Please try again.");
+            }
+            if (response.requires2FA) {
                 setStep("verify2FA");
                 setUserID(response.userID!);
                 setTempToken(response.tempToken!);
                 setRefreshToken(response.refreshToken!);
-                setOtpMethod("phone");
                 setTimer(600);
                 setSuccess("OTP sent to your phone.");
-            } else {
+            } else if (response.user) {
                 await loginUser(identifier, password, deviceIdentifier);
+                setSuccess("Login successful!");
+            } else {
+                throw new Error("Invalid response from server.");
             }
         } catch (error: unknown) {
             const errorMessage = error instanceof Error ? error.message : "Login failed. Please try again.";
+            console.error('Login error:', errorMessage);
             setError(errorMessage);
         } finally {
             setLoading(false);
@@ -165,8 +166,11 @@ const LoginPage: React.FC = () => {
     // Handle 2FA verification
     const handleVerify2FA = async (e: React.FormEvent) => {
         e.preventDefault();
-        if (!deviceIdentifier || !validateForm() || !userID) {
+        if (!deviceIdentifier || !validateForm() || !userID || !tempToken || !refreshToken) {
             setError("Invalid session. Please try logging in again.");
+            return;
+        }
+        if (loading) {
             return;
         }
         setLoading(true);
@@ -174,25 +178,27 @@ const LoginPage: React.FC = () => {
         setSuccess(null);
 
         try {
-            const response = await verify2FA(
-                userID,
-                otpCode,
-                deviceIdentifier,
-                trustDevice,
-                tempToken!,
-                refreshToken!
-            );
-            localStorage.setItem("token", response.token);
-            localStorage.setItem("user", JSON.stringify(response.user));
-            await loginUser(identifier, password, deviceIdentifier);
+            const response = await verify2FA(userID, otpCode, deviceIdentifier, trustDevice, tempToken, refreshToken);
+            if (!response) {
+                throw new Error("No response from verify2FA.");
+            }
+            if (response.requires2FA) {
+                throw new Error("Unexpected requires2FA: true after verification.");
+            }
+            if (!response.user) {
+                throw new Error("User data missing in verify2FA response.");
+            }
+
+            await loginUser(identifier, password, deviceIdentifier, otpCode, trustDevice, tempToken, refreshToken, userID);
+            setSuccess("Login successful!");
         } catch (error: unknown) {
             const errorMessage = error instanceof Error ? error.message : "2FA verification failed.";
+            console.error('verify2FA error:', errorMessage);
             setError(errorMessage);
         } finally {
             setLoading(false);
         }
     };
-
     // Handle password reset initiation
     const handleInitiateReset = async (e: React.FormEvent) => {
         e.preventDefault();
@@ -206,7 +212,7 @@ const LoginPage: React.FC = () => {
             setUserID(response.userID);
             setStep("verifyReset");
             setTimer(600);
-            setSuccess("OTP sent to your email or phone.");
+            setSuccess(response.message);
         } catch (error: unknown) {
             const errorMessage = error instanceof Error ? error.message : "Failed to initiate password reset.";
             setError(errorMessage);
@@ -227,9 +233,11 @@ const LoginPage: React.FC = () => {
         setSuccess(null);
 
         try {
-            await verifyPasswordResetOTP(userID, otpCode);
+            const response = await verifyPasswordResetOTP(userID, otpCode);
+            setTempResetToken(response.tempToken);
             setStep("reset");
             setOtpCode("");
+            setSuccess(response.message);
         } catch (error: unknown) {
             const errorMessage = error instanceof Error ? error.message : "Invalid OTP. Please try again.";
             setError(errorMessage);
@@ -241,7 +249,7 @@ const LoginPage: React.FC = () => {
     // Handle password reset submission
     const handleResetPassword = async (e: React.FormEvent) => {
         e.preventDefault();
-        if (!validateForm() || !userID) {
+        if (!validateForm() || !userID || !tempResetToken) {
             setError("Invalid session. Please try again.");
             return;
         }
@@ -250,7 +258,7 @@ const LoginPage: React.FC = () => {
         setSuccess(null);
 
         try {
-            await resetPassword(userID, newPassword);
+            await resetPassword(userID, newPassword, tempResetToken);
             setSuccess("Password reset successfully! Please log in with your new password.");
             setStep("login");
             resetForm();
@@ -264,9 +272,7 @@ const LoginPage: React.FC = () => {
 
     // Handle OTP resend or switch method
     const handleResendOTP = async (method: "phone" | "email") => {
-        if (resendCooldown > 0 || !userID) {
-            return;
-        }
+        if (resendCooldown > 0 || !userID) return;
         setLoading(true);
         setError(null);
         setSuccess(null);
@@ -277,17 +283,13 @@ const LoginPage: React.FC = () => {
                 setOtpMethod(method);
                 setTimer(600);
                 setResendCooldown(60);
-                setSuccess(
-                    response.message?.includes("email")
-                        ? "OTP sent to your email."
-                        : "OTP sent to your phone."
-                );
+                setSuccess(response.message);
             } else if (step === "verifyReset") {
-                await initiatePasswordReset(identifier);
+                const response = await initiatePasswordReset(identifier);
                 setTimer(600);
                 setResendCooldown(60);
                 setOtpMethod(method);
-                setSuccess("OTP resent to your email or phone.");
+                setSuccess(response.message);
             }
         } catch (error: unknown) {
             const errorMessage = error instanceof Error ? error.message : "Failed to resend OTP.";
@@ -309,8 +311,10 @@ const LoginPage: React.FC = () => {
         setNewPassword("");
         setConfirmPassword("");
         setTrustDevice(false);
+        setUserID(null);
         setTempToken(null);
         setRefreshToken(null);
+        setTempResetToken(null);
         setErrors({});
         setTimer(600);
         setResendCooldown(0);

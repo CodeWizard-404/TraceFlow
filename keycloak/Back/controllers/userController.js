@@ -1,91 +1,117 @@
 const UserService = require('../services/userService');
+const logger = require('../utils/logger');
 
-// Handles user-related API requests
 class UserController {
-    // Create a new user
     static async createUser(req, res) {
-        console.log("Creating user: ", req.body);
         try {
             const { email, password, firstname, lastname, phone, wallet } = req.body;
-            const user = await UserService.createUser(email, password, firstname, lastname, phone, wallet);
-            res.status(201).json(user);
+            if (!email || !password || !firstname || !lastname || !phone || !wallet) {
+                logger.warn(`Create user failed: Missing fields, user: ${req.user.userID}, IP: ${req.ip}`, { ip: req.ip });
+                return res.status(400).json({ error: 'All fields are required.' });
+            }
+            const user = await UserService.createUser(email, password, firstname, lastname, phone, wallet, req.user.userID);
+            logger.info(`User created: ${email} by user ${req.user.userID}, IP: ${req.ip}`, { ip: req.ip });
+            return res.status(201).json(user);
         } catch (error) {
-            res.status(400).json({ error: error.message });
+            logger.error(`Create user error: ${error.message}, user: ${req.user.userID}, IP: ${req.ip}`, { ip: req.ip });
+            return res.status(400).json({ error: error.message });
         }
     }
 
-    // Get all users
     static async getAllUsers(req, res) {
-        console.log("Getting all users", true);
         try {
             const users = await UserService.getAllUsers();
-            res.status(200).json(users);
+            logger.info(`Fetched all users by user ${req.user.userID}, IP: ${req.ip}`, { ip: req.ip });
+            return res.status(200).json(users);
         } catch (error) {
-            res.status(500).json({ error: error.message });
+            logger.error(`Fetch users error: ${error.message}, user: ${req.user.userID}, IP: ${req.ip}`, { ip: req.ip });
+            return res.status(500).json({ error: error.message });
         }
     }
 
-    // Get user by phone number
     static async getUserByPhoneNumber(req, res) {
-        console.log("Getting user by phone number: ", req.params);
         try {
             const { phone } = req.params;
+            if (!phone) {
+                logger.warn(`Get user by phone failed: Missing phone, user: ${req.user.userID}, IP: ${req.ip}`, { ip: req.ip });
+                return res.status(400).json({ error: 'Phone number is required.' });
+            }
             const user = await UserService.getUserByPhoneNumber(phone);
-            res.status(200).json(user);
+            logger.info(`Fetched user by phone ${phone} by user ${req.user.userID}, IP: ${req.ip}`, { ip: req.ip });
+            return res.status(200).json(user);
         } catch (error) {
-            res.status(404).json({ error: error.message });
+            logger.error(`Get user by phone error: ${error.message}, user: ${req.user.userID}, IP: ${req.ip}`, { ip: req.ip });
+            return res.status(404).json({ error: error.message });
         }
     }
 
-    // Get users by role
     static async getUsersByRole(req, res) {
-        console.log("Getting users by role: ", req.params);
         try {
             const { role } = req.params;
+            if (!role) {
+                logger.warn(`Get users by role failed: Missing role, user: ${req.user.userID}, IP: ${req.ip}`, { ip: req.ip });
+                return res.status(400).json({ error: 'Role is required.' });
+            }
             const users = await UserService.getUsersByRole(role);
-            res.status(200).json(users);
+            logger.info(`Fetched users by role ${role} by user ${req.user.userID}, IP: ${req.ip}`, { ip: req.ip });
+            return res.status(200).json(users);
         } catch (error) {
-            res.status(400).json({ error: error.message });
+            logger.error(`Get users by role error: ${error.message}, user: ${req.user.userID}, IP: ${req.ip}`, { ip: req.ip });
+            return res.status(400).json({ error: error.message });
         }
     }
 
-    // Get user by ID
     static async getUserById(req, res) {
-        console.log("Getting user by ID: ", req.params);
         try {
             const { userID } = req.params;
+            if (!userID) {
+                logger.warn(`Get user by ID failed: Missing userID, user: ${req.user.userID}, IP: ${req.ip}`, { ip: req.ip });
+                return res.status(400).json({ error: 'User ID is required.' });
+            }
             const user = await UserService.getUserById(userID);
-            res.status(200).json(user);
+            logger.info(`Fetched user ${userID} by user ${req.user.userID}, IP: ${req.ip}`, { ip: req.ip });
+            return res.status(200).json(user);
         } catch (error) {
-            res.status(404).json({ error: error.message });
+            logger.error(`Get user by ID error: ${error.message}, user: ${req.user.userID}, IP: ${req.ip}`, { ip: req.ip });
+            return res.status(404).json({ error: error.message });
         }
     }
 
-    // Update user details
     static async updateUser(req, res) {
-        console.log("Updating user: ", req.params, req.body);
         try {
             const { userID } = req.params;
             const userData = req.body;
+            if (!userID) {
+                logger.warn(`Update user failed: Missing userID, user: ${req.user.userID}, IP: ${req.ip}`, { ip: req.ip });
+                return res.status(400).json({ error: 'User ID is required.' });
+            }
             if (req.file) {
                 if (!req.file.mimetype.startsWith('image/')) {
+                    logger.warn(`Update user failed: Invalid image, user: ${req.user.userID}, IP: ${req.ip}`, { ip: req.ip });
                     return res.status(400).json({ error: 'Please upload a valid image.' });
                 }
                 userData.PFP = req.file.buffer;
             }
-            const updatedUser = await UserService.updateUser(userID, userData);
-            res.status(200).json(updatedUser);
+            const updatedUser = await UserService.updateUser(userID, userData, req.user.userID);
+            const responseUser = updatedUser.toJSON();
+            if (responseUser.PFP) {
+                responseUser.PFP = responseUser.PFP.toString('base64');
+            } else {
+                delete responseUser.PFP;
+            }
+            logger.info(`Updated user ${userID} by user ${req.user.userID}, IP: ${req.ip}`, { ip: req.ip });
+            return res.status(200).json(responseUser);
         } catch (error) {
-            res.status(400).json({ error: error.message });
+            logger.error(`Update user error: ${error.message}, user: ${req.user.userID}, IP: ${req.ip}`, { ip: req.ip });
+            return res.status(400).json({ error: error.message });
         }
     }
 
-    // Get user profile
     static async getProfile(req, res) {
-        console.log("Getting user profile", req);
         try {
             const userID = req.user?.userID;
             if (!userID) {
+                logger.warn(`Get profile failed: Not authenticated, IP: ${req.ip}`, { ip: req.ip });
                 return res.status(401).json({ error: 'Please log in to view your profile.' });
             }
             const user = await UserService.getUserById(userID);
@@ -93,97 +119,121 @@ class UserController {
             if (responseUser.PFP) {
                 responseUser.PFP = responseUser.PFP.toString('base64');
             }
-            res.status(200).json(responseUser);
+            logger.info(`Fetched profile for user ${userID}, IP: ${req.ip}`, { ip: req.ip });
+            return res.status(200).json(responseUser);
         } catch (error) {
-            res.status(400).json({ error: error.message });
+            logger.error(`Get profile error: ${error.message}, user: ${req.user?.userID}, IP: ${req.ip}`, { ip: req.ip });
+            return res.status(400).json({ error: error.message });
         }
     }
 
-    // Update user profile
     static async updateProfile(req, res) {
-        console.log("Updating user profile: ", req.params, req.body, req.file);
         try {
             const userID = req.user?.userID;
             if (!userID) {
+                logger.warn(`Update profile failed: Not authenticated, IP: ${req.ip}`, { ip: req.ip });
                 return res.status(401).json({ error: 'Please log in to update your profile.' });
             }
             const userData = req.body;
             if (req.file) {
                 if (!req.file.mimetype.startsWith('image/')) {
+                    logger.warn(`Update profile failed: Invalid image, user: ${req.user.userID}, IP: ${req.ip}`, { ip: req.ip });
                     return res.status(400).json({ error: 'Please upload a valid image.' });
                 }
                 userData.PFP = req.file.buffer;
             }
-            const updatedUser = await UserService.updateUser(userID, userData);
+            const updatedUser = await UserService.updateUser(userID, userData, req.user.userID);
             const responseUser = updatedUser.toJSON();
             if (responseUser.PFP) {
                 responseUser.PFP = responseUser.PFP.toString('base64');
             } else {
                 delete responseUser.PFP;
             }
-            res.status(200).json(responseUser);
+            logger.info(`Updated profile for user ${userID} by user ${req.user.userID}, IP: ${req.ip}`, { ip: req.ip });
+            return res.status(200).json(responseUser);
         } catch (error) {
-            res.status(400).json({ error: error.message });
+            logger.error(`Update profile error: ${error.message}, user: ${req.user?.userID}, IP: ${req.ip}`, { ip: req.ip });
+            return res.status(400).json({ error: error.message });
         }
     }
 
-    // Delete a user
     static async deleteUser(req, res) {
-        console.log("Deleting user: ", req.params);
         try {
             const { userID } = req.params;
-            const result = await UserService.deleteUser(userID);
-            res.status(200).json(result);
+            if (!userID) {
+                logger.warn(`Delete user failed: Missing userID, user: ${req.user.userID}, IP: ${req.ip}`, { ip: req.ip });
+                return res.status(400).json({ error: 'User ID is required.' });
+            }
+            const result = await UserService.deleteUser(userID, req.user.userID);
+            logger.info(`Deleted user ${userID} by user ${req.user.userID}, IP: ${req.ip}`, { ip: req.ip });
+            return res.status(200).json(result);
         } catch (error) {
-            res.status(400).json({ error: error.message });
+            logger.error(`Delete user error: ${error.message}, user: ${req.user.userID}, IP: ${req.ip}`, { ip: req.ip });
+            return res.status(400).json({ error: error.message });
         }
     }
 
-    // Assign supervisors to a manager
     static async assignSupervisorsToManager(req, res) {
-        console.log("Assigning supervisors to manager: ", req.body);
         try {
             const { managerID, supervisorIDs } = req.body;
-            const result = await UserService.assignSupervisorsToManager(managerID, supervisorIDs);
-            res.status(200).json(result);
+            if (!managerID || !Array.isArray(supervisorIDs) || supervisorIDs.length === 0) {
+                logger.warn(`Assign supervisors failed: Invalid input, user: ${req.user.userID}, IP: ${req.ip}`, { ip: req.ip });
+                return res.status(400).json({ error: 'Manager ID and supervisor IDs are required.' });
+            }
+            const result = await UserService.assignSupervisorsToManager(managerID, supervisorIDs, req.user.userID);
+            logger.info(`Assigned supervisors to manager ${managerID} by user ${req.user.userID}, IP: ${req.ip}`, { ip: req.ip });
+            return res.status(200).json(result);
         } catch (error) {
-            res.status(400).json({ error: error.message });
+            logger.error(`Assign supervisors error: ${error.message}, user: ${req.user.userID}, IP: ${req.ip}`, { ip: req.ip });
+            return res.status(400).json({ error: error.message });
         }
     }
 
-    // Revoke supervisors from a manager
     static async revokeSupervisorsFromManager(req, res) {
-        console.log("Revoking supervisors from manager: ", req.body);
         try {
             const { managerID, supervisorIDs } = req.body;
-            const result = await UserService.revokeSupervisorsFromManager(managerID, supervisorIDs);
-            res.status(200).json(result);
+            if (!managerID || !Array.isArray(supervisorIDs) || supervisorIDs.length === 0) {
+                logger.warn(`Revoke supervisors failed: Invalid input, user: ${req.user.userID}, IP: ${req.ip}`, { ip: req.ip });
+                return res.status(400).json({ error: 'Manager ID and supervisor IDs are required.' });
+            }
+            const result = await UserService.revokeSupervisorsFromManager(managerID, supervisorIDs, req.user.userID);
+            logger.info(`Revoked supervisors from manager ${managerID} by user ${req.user.userID}, IP: ${req.ip}`, { ip: req.ip });
+            return res.status(200).json(result);
         } catch (error) {
-            res.status(400).json({ error: error.message });
+            logger.error(`Revoke supervisors error: ${error.message}, user: ${req.user.userID}, IP: ${req.ip}`, { ip: req.ip });
+            return res.status(400).json({ error: error.message });
         }
     }
 
-    // Get supervisors for a user
     static async getSupervisorsByUser(req, res) {
-        console.log("Getting supervisors for user: ", req.params);
         try {
             const { userID } = req.params;
+            if (!userID) {
+                logger.warn(`Get supervisors failed: Missing userID, user: ${req.user.userID}, IP: ${req.ip}`, { ip: req.ip });
+                return res.status(400).json({ error: 'User ID is required.' });
+            }
             const supervisors = await UserService.getSupervisorsByUser(userID);
-            res.status(200).json(supervisors);
+            logger.info(`Fetched supervisors for user ${userID} by user ${req.user.userID}, IP: ${req.ip}`, { ip: req.ip });
+            return res.status(200).json(supervisors);
         } catch (error) {
-            res.status(404).json({ error: error.message });
+            logger.error(`Get supervisors error: ${error.message}, user: ${req.user.userID}, IP: ${req.ip}`, { ip: req.ip });
+            return res.status(404).json({ error: error.message });
         }
     }
 
-    // Get managers for a user
     static async getManagersByUser(req, res) {
-        console.log("Getting managers for user: ", req.params);
         try {
             const { userID } = req.params;
+            if (!userID) {
+                logger.warn(`Get managers failed: Missing userID, user: ${req.user.userID}, IP: ${req.ip}`, { ip: req.ip });
+                return res.status(400).json({ error: 'User ID is required.' });
+            }
             const managers = await UserService.getManagersByUser(userID);
-            res.status(200).json(managers);
+            logger.info(`Fetched managers for user ${userID} by user ${req.user.userID}, IP: ${req.ip}`, { ip: req.ip });
+            return res.status(200).json(managers);
         } catch (error) {
-            res.status(404).json({ error: error.message });
+            logger.error(`Get managers error: ${error.message}, user: ${req.user.userID}, IP: ${req.ip}`, { ip: req.ip });
+            return res.status(404).json({ error: error.message });
         }
     }
 }

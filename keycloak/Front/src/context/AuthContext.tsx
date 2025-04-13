@@ -1,22 +1,30 @@
-import React, { createContext, useContext, useState, useEffect, ReactNode } from "react";
-import { useNavigate, useLocation } from "react-router-dom";
-import { login } from "../apis/authAPI";
-import { getEffectivePermissions } from "../apis/permissionAPI";
-import { getRolesByUser } from "../apis/roleAPI";
-import { setupAxiosInterceptors } from "../apis/axiosConfig";
-import User from "../models/User";
-import Permission from "../models/Permission";
-import Role from "../models/Role";
-import { protectedRoutes, determineTargetRoute } from "../lib/authUtils";
+import React, { createContext, useContext, useState, useEffect, ReactNode } from 'react';
+import { useNavigate, useLocation } from 'react-router-dom';
+import { login, verify2FA, logout } from '../apis/authAPI';
+import { getEffectivePermissions } from '../apis/permissionAPI';
+import { getRolesByUser } from '../apis/roleAPI';
+import { setupAxiosInterceptors } from '../apis/axiosConfig';
+import User from '../models/User';
+import Permission from '../models/Permission';
+import Role from '../models/Role';
+import { protectedRoutes, determineTargetRoute } from '../lib/authUtils';
 
 interface AuthContextType {
     user: User | null;
-    token: string | null;
     userRoles: Role[] | null;
     effectivePermissions: Permission[] | null;
     permissionsLoaded: boolean;
-    loginUser: (identifier: string, password: string, deviceIdentifier: string) => Promise<void>;
-    logout: () => void;
+    loginUser: (
+        identifier: string,
+        password: string,
+        deviceIdentifier: string,
+        otpCode?: string,
+        trustDevice?: boolean,
+        tempToken?: string,
+        refreshToken?: string,
+        userID?: string
+    ) => Promise<void>;
+    logout: () => Promise<void>;
 }
 
 const AuthContext = createContext<AuthContextType | undefined>(undefined);
@@ -24,16 +32,15 @@ const AuthContext = createContext<AuthContextType | undefined>(undefined);
 // eslint-disable-next-line react-refresh/only-export-components
 export const useAuth = (): AuthContextType => {
     const context = useContext(AuthContext);
-    if (!context) throw new Error("useAuth must be used within an AuthProvider");
+    if (!context) throw new Error('useAuth must be used within an AuthProvider');
     return context;
 };
 
-export const AuthProvider: React.FC<{ children: ReactNode }> = ({ children }) => {
+const AuthProvider: React.FC<{ children: ReactNode }> = ({ children }) => {
     const [user, setUser] = useState<User | null>(() => {
-        const storedUser = localStorage.getItem("user");
+        const storedUser = localStorage.getItem('user');
         return storedUser ? JSON.parse(storedUser) : null;
     });
-    const [token, setToken] = useState<string | null>(() => localStorage.getItem("token"));
     const [userRoles, setUserRoles] = useState<Role[] | null>(null);
     const [effectivePermissions, setEffectivePermissions] = useState<Permission[] | null>(null);
     const [permissionsLoaded, setPermissionsLoaded] = useState(false);
@@ -51,8 +58,8 @@ export const AuthProvider: React.FC<{ children: ReactNode }> = ({ children }) =>
             if (!effectivePermissions || !userRoles) return false;
 
             const routeKey = Object.keys(protectedRoutes).find((key) => {
-                if (key.includes(":")) {
-                    const regex = new RegExp(`^${key.replace(/:[^/]+/g, "[^/]+")}$`);
+                if (key.includes(':')) {
+                    const regex = new RegExp(`^${key.replace(/:[^/]+/g, '[^/]+')}$`);
                     return regex.test(pathname);
                 }
                 return key === pathname;
@@ -61,7 +68,7 @@ export const AuthProvider: React.FC<{ children: ReactNode }> = ({ children }) =>
             if (!routeKey) return true;
 
             const required = protectedRoutes[routeKey as keyof typeof protectedRoutes];
-            if (routeKey === "/admin") {
+            if (routeKey === '/admin') {
                 return userRoles.some((role) => required.includes(role.name));
             }
             return effectivePermissions.some((perm) => required.includes(perm.name));
@@ -70,16 +77,16 @@ export const AuthProvider: React.FC<{ children: ReactNode }> = ({ children }) =>
     );
 
     useEffect(() => {
-        if (!user || !token) {
-            if (location.pathname !== "/login") {
-                navigate("/login", { replace: true, state: { from: location.pathname } });
+        if (!user) {
+            if (location.pathname !== '/login' && location.pathname !== '/reset-password') {
+                navigate('/login', { replace: true, state: { from: location.pathname } });
             }
             return;
         }
 
         if (!permissionsLoaded) return;
 
-        if ((!userRoles || userRoles.length === 0) && (!effectivePermissions || effectivePermissions.length === 0)) {
+        if (!userRoles?.length && !effectivePermissions?.length) {
             setNoAccess(true);
             return;
         }
@@ -89,7 +96,7 @@ export const AuthProvider: React.FC<{ children: ReactNode }> = ({ children }) =>
         const targetRoute = determineTargetRoute(userRoles || []);
         const currentPath = location.pathname;
 
-        if (currentPath === "/login") {
+        if (currentPath === '/login' || currentPath === '/reset-password') {
             const fromRoute =
                 location.state?.from && hasPermissionForRoute(location.state.from)
                     ? location.state.from
@@ -100,99 +107,171 @@ export const AuthProvider: React.FC<{ children: ReactNode }> = ({ children }) =>
 
         if (hasPermissionForRoute(currentPath)) return;
 
-        if (currentPath === "/" || !hasPermissionForRoute(currentPath)) {
+        if (currentPath === '/' || !hasPermissionForRoute(currentPath)) {
             const fromRoute =
                 location.state?.from &&
-                    location.state.from !== "/login" &&
+                    location.state.from !== '/login' &&
+                    location.state.from !== '/reset-password' &&
                     hasPermissionForRoute(location.state.from)
                     ? location.state.from
                     : targetRoute;
             navigate(fromRoute, { replace: true });
         }
-    }, [user, token, permissionsLoaded, userRoles, effectivePermissions, navigate, location, hasPermissionForRoute]);
+    }, [user, permissionsLoaded, userRoles, effectivePermissions, navigate, location, hasPermissionForRoute]);
 
     useEffect(() => {
         const fetchPermissions = async () => {
-            if (!user || !token || permissionsLoaded) return;
+            if (!user || permissionsLoaded) return;
 
             try {
                 setPermissionsLoaded(false);
-                const [perms, roles] = await Promise.all([
-                    getEffectivePermissions(user.userID, token),
-                    getRolesByUser(user.userID, token),
-                ]);
-                setEffectivePermissions(perms);
-                setUserRoles(roles);
-            } catch (error) {
-                console.error("Failed to fetch permissions on mount:", error);
+                let perms, roles;
+                for (let attempt = 1; attempt <= 3; attempt++) {
+                    try {
+                        [perms, roles] = await Promise.all([
+                            getEffectivePermissions(user.userID),
+                            getRolesByUser(user.userID),
+                        ]);
+                        break;
+                    } catch (error) {
+                        if (attempt === 3) throw error;
+                        await new Promise((resolve) => setTimeout(resolve, 1000));
+                    }
+                }
+                console.log('effectivePermissions:', perms); // Add this
+                console.log('userRoles:', roles);
+                setEffectivePermissions(perms || null);
+                setUserRoles(roles || null);
+            } catch {
+                await handleLogout();
             } finally {
                 setPermissionsLoaded(true);
             }
         };
 
         fetchPermissions();
-    }, [user, token, permissionsLoaded]);
+        // eslint-disable-next-line react-hooks/exhaustive-deps
+    }, [user, permissionsLoaded]);
 
-    const loginUser = async (identifier: string, password: string, deviceIdentifier: string) => {
-        const response = await login(identifier, password, deviceIdentifier);
-        if ("requires2FA" in response) {
-            return;
-        }
-
-        if (!response.token || !response.user) {
-            throw new Error("Login failed: Token or user data missing");
-        }
-
-        const newToken: string = response.token;
-        const newUser: User = {
-            ...response.user,
-            firstname: response.user.firstName,
-            lastname: response.user.lastName
-        };
-
-        localStorage.setItem("token", newToken);
-        localStorage.setItem("user", JSON.stringify(newUser));
-        setToken(newToken);
-        setUser(newUser);
-
+    const loginUser = async (
+        identifier: string,
+        password: string,
+        deviceIdentifier: string,
+        otpCode?: string,
+        trustDevice: boolean = false,
+        tempToken?: string,
+        refreshToken?: string,
+        userID?: string
+    ) => {
         try {
-            setPermissionsLoaded(false);
-            const [perms, roles] = await Promise.all([
-                getEffectivePermissions(newUser.userID, newToken),
-                getRolesByUser(newUser.userID, newToken),
-            ]);
-            setEffectivePermissions(perms);
-            setUserRoles(roles);
+            let response;
+            if (otpCode && userID && tempToken && refreshToken) {
+                response = await verify2FA(userID, otpCode, deviceIdentifier, trustDevice, tempToken, refreshToken);
+                if (response.requires2FA) {
+                    throw new Error('Unexpected requires2FA: true after verification');
+                }
+                if (!response.user) {
+                    throw new Error('User data missing in verify2FA response');
+                }
+            } else {
+                response = await login(identifier, password, deviceIdentifier, 'phone');
+                if (response.requires2FA) {
+                    throw new Error(
+                        JSON.stringify({
+                            requires2FA: true,
+                            userID: response.userID,
+                            deviceIdentifier: response.deviceIdentifier,
+                            tempToken: response.tempToken,
+                            refreshToken: response.refreshToken,
+                        })
+                    );
+                }
+                if (!response.user) {
+                    throw new Error('Login failed: User data missing');
+                }
+            }
+
+            const newUser: User = {
+                userID: response.user.userID,
+                email: response.user.email,
+                phone: response.user.phone,
+                firstname: '',
+                lastname: '',
+                wallet: '',
+                password: '',
+                keycloakId: '',
+                Roles: response.user.roles.map((role) => ({
+                    roleID: role.roleID,
+                    name: role.name,
+                    description: role.description,
+                    permissions: role.permissions!.map((perm) => ({
+                        permissionID: perm.permissionID,
+                        name: perm.name,
+                        class: perm.class,
+                        description: perm.description,
+                    })),
+                })),
+            };
+
+            localStorage.setItem('user', JSON.stringify(newUser));
+            setUser(newUser);
+
+            try {
+                setPermissionsLoaded(false);
+                let perms, roles;
+                for (let attempt = 1; attempt <= 3; attempt++) {
+                    try {
+                        [perms, roles] = await Promise.all([
+                            getEffectivePermissions(newUser.userID),
+                            getRolesByUser(newUser.userID),
+                        ]);
+                        break;
+                    } catch (error) {
+                        if (attempt === 3) throw error;
+                        await new Promise((resolve) => setTimeout(resolve, 1000));
+                    }
+                }
+                setEffectivePermissions(perms || null);
+                setUserRoles(roles || null);
+            } catch {
+                await handleLogout();
+                throw new Error('Failed to load user permissions');
+            } finally {
+                setPermissionsLoaded(true);
+            }
         } catch (error) {
-            console.error("Failed to fetch permissions after login:", error);
-        } finally {
-            setPermissionsLoaded(true);
+            if (error instanceof Error && error.message.startsWith('{')) {
+                throw error;
+            }
+            throw new Error(error instanceof Error ? error.message : 'Login failed');
         }
     };
-    const logout = () => {
-        setUser(null);
-        setToken(null);
-        setUserRoles(null);
-        setEffectivePermissions(null);
-        setPermissionsLoaded(false);
-        setNoAccess(false);
-        localStorage.removeItem('accessToken');
-        localStorage.removeItem('refreshToken');
-        localStorage.removeItem('expiresIn');
-        localStorage.removeItem('token');
-        localStorage.removeItem('user');
-        localStorage.removeItem('supervisorFilter');
-        navigate("/login", { replace: true, state: null });
+
+    const handleLogout = async () => {
+        try {
+            await logout();
+        } catch {
+            // Silent catch, proceed with cleanup
+        } finally {
+            setUser(null);
+            setUserRoles(null);
+            setEffectivePermissions(null);
+            setPermissionsLoaded(false);
+            setNoAccess(false);
+            localStorage.removeItem('user');
+            localStorage.removeItem('accessToken');
+            localStorage.removeItem('supervisorFilter');
+            navigate('/login', { replace: true, state: null });
+        }
     };
 
     const value: AuthContextType = {
         user,
-        token,
         userRoles,
         effectivePermissions,
         permissionsLoaded,
         loginUser,
-        logout,
+        logout: handleLogout,
     };
 
     return (
@@ -200,27 +279,27 @@ export const AuthProvider: React.FC<{ children: ReactNode }> = ({ children }) =>
             {noAccess ? (
                 <div
                     style={{
-                        display: "flex",
-                        justifyContent: "center",
-                        alignItems: "center",
-                        height: "100vh",
-                        flexDirection: "column",
-                        textAlign: "center",
-                        padding: "20px",
+                        display: 'flex',
+                        justifyContent: 'center',
+                        alignItems: 'center',
+                        height: '100vh',
+                        flexDirection: 'column',
+                        textAlign: 'center',
+                        padding: '20px',
                     }}
                 >
                     <h2>No Access</h2>
                     <p>You don't have any roles or permissions assigned. Please contact an administrator.</p>
                     <button
-                        onClick={logout}
+                        onClick={handleLogout}
                         style={{
-                            padding: "10px 20px",
-                            fontSize: "16px",
-                            cursor: "pointer",
-                            backgroundColor: "#ff4444",
-                            color: "white",
-                            border: "none",
-                            borderRadius: "5px",
+                            padding: '10px 20px',
+                            fontSize: '16px',
+                            cursor: 'pointer',
+                            backgroundColor: '#ff4444',
+                            color: 'white',
+                            border: 'none',
+                            borderRadius: '5px',
                         }}
                     >
                         Logout

@@ -2,6 +2,7 @@ import Role from "./Role";
 
 interface User {
     userID: string;
+    keycloakId: string;
     firstname: string;
     lastname: string;
     phone: string;

@@ -13,7 +13,6 @@ interface ReasonViewProps {
     reasons: Reason[];
     setReasons: React.Dispatch<React.SetStateAction<Reason[]>>;
     view: string;
-    token: string;
     setError: (error: string | null) => void;
 }
 
@@ -23,7 +22,6 @@ const ReasonView: React.FC<ReasonViewProps> = ({
     reasons,
     setReasons,
     view,
-    token,
     setError,
 }) => {
     const { effectivePermissions } = useAuth();
@@ -46,7 +44,7 @@ const ReasonView: React.FC<ReasonViewProps> = ({
         if (!selectedReason || !userPermissions.canUpdateReasons) return;
         setLoading(true);
         try {
-            const updatedReason = await updateReason(selectedReason.reasonID, { text: editedItem }, token);
+            const updatedReason = await updateReason(selectedReason.reasonID, { text: editedItem });
             setReasons(reasons.map(r => r.reasonID === selectedReason.reasonID ? updatedReason : r));
             setSelectedReason(updatedReason);
             setIsEditing(false);
@@ -63,7 +61,7 @@ const ReasonView: React.FC<ReasonViewProps> = ({
         if (!selectedReason || !userPermissions.canDeleteReasons) return;
         setLoading(true);
         try {
-            await deleteReason(selectedReason.reasonID, token);
+            await deleteReason(selectedReason.reasonID);
             setReasons(reasons.filter(r => r.reasonID !== selectedReason.reasonID));
             setSelectedReason(null);
             setError(null);

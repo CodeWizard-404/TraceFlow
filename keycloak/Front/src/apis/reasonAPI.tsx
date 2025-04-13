@@ -1,73 +1,108 @@
+import { AxiosError } from "axios";
 import api from "./axiosConfig";
-import { CreateReasonResponse, ListReasonsResponse, ReasonByIdResponse, ReasonsByVisitResponse, UpdateReasonResponse } from ".";
+import { CreateReasonResponse, ListReasonsResponse, ReasonByIdResponse, ReasonsByVisitResponse, UpdateReasonResponse, DeleteReasonResponse } from ".";
 
-export const createReason = async (data: { text: string }, token: string): Promise<CreateReasonResponse> => {
-    try {
-        const response = await api.post<CreateReasonResponse>("/reasons", data, {
-            headers: { Authorization: `Bearer ${token}` },
-        });
-        return response.data;
-    } catch (error) {
-        console.error("Error creating reason:", error);
-        throw error;
+// Error response type for Axios errors
+interface AxiosErrorResponse {
+    response?: {
+        data?: { error?: string };
+        status?: number;
+    };
+}
+
+// Generic error handler
+const handleApiError = (error: unknown, defaultMessage: string): string => {
+    const axiosError = error as AxiosError<AxiosErrorResponse>;
+    if (axiosError.response?.data) {
+        return axiosError.message; // Use backend's user-friendly error
+    }
+    switch (axiosError.response?.status) {
+        case 400:
+            return "Invalid request. Please check your input and try again.";
+        case 401:
+            return "Authentication failed. Please log in again.";
+        case 403:
+            return "You don’t have permission to perform this action.";
+        case 404:
+            return "Resource not found.";
+        case 500:
+            return "Something went wrong on our end. Please try again later.";
+        default:
+            return defaultMessage;
     }
 };
 
-export const getReasonById = async (reasonId: string, token: string): Promise<ReasonByIdResponse> => {
+// Create a new reason
+export const createReason = async (data: { text: string }): Promise<CreateReasonResponse> => {
     try {
-        const response = await api.get<ReasonByIdResponse>(`/reasons/${reasonId}`, {
-            headers: { Authorization: `Bearer ${token}` },
-        });
+        if (!data.text) {
+            throw new Error("Reason text is required.");
+        }
+        const response = await api.post<CreateReasonResponse>("/reasons", data);
         return response.data;
     } catch (error) {
-        console.error(`Error fetching reason (${reasonId}):`, error);
-        throw error;
+        throw new Error(handleApiError(error, "Unable to create reason."));
     }
 };
 
-export const updateReason = async (reasonId: string, data: { text: string }, token: string): Promise<UpdateReasonResponse> => {
+// Get reason by ID
+export const getReasonById = async (reasonId: string): Promise<ReasonByIdResponse> => {
     try {
-        const response = await api.put<UpdateReasonResponse>(`/reasons/${reasonId}`, data, {
-            headers: { Authorization: `Bearer ${token}` },
-        });
+        if (!reasonId) {
+            throw new Error("Reason ID is required.");
+        }
+        const response = await api.get<ReasonByIdResponse>(`/reasons/${reasonId}`);
         return response.data;
     } catch (error) {
-        console.error(`Error updating reason (${reasonId}):`, error);
-        throw error;
+        throw new Error(handleApiError(error, "Reason not found."));
     }
 };
 
-export const deleteReason = async (reasonId: string, token: string): Promise<void> => {
+// Update a reason
+export const updateReason = async (reasonId: string, data: { text: string }): Promise<UpdateReasonResponse> => {
     try {
-        await api.delete(`/reasons/${reasonId}`, {
-            headers: { Authorization: `Bearer ${token}` },
-        });
+        if (!reasonId || !data.text) {
+            throw new Error("Reason ID and text are required.");
+        }
+        const response = await api.put<UpdateReasonResponse>(`/reasons/${reasonId}`, data);
+        return response.data;
     } catch (error) {
-        console.error(`Error deleting reason (${reasonId}):`, error);
-        throw error;
+        throw new Error(handleApiError(error, "Unable to update reason."));
     }
 };
 
-export const getAllReasons = async (token: string): Promise<ListReasonsResponse> => {
+// Delete a reason
+export const deleteReason = async (reasonId: string): Promise<DeleteReasonResponse> => {
     try {
-        const response = await api.get<ListReasonsResponse>("/reasons", {
-            headers: { Authorization: `Bearer ${token}` },
-        });
+        if (!reasonId) {
+            throw new Error("Reason ID is required.");
+        }
+        const response = await api.delete<DeleteReasonResponse>(`/reasons/${reasonId}`);
         return response.data;
     } catch (error) {
-        console.error("Error fetching all reasons:", error);
-        throw error;
+        throw new Error(handleApiError(error, "Unable to delete reason."));
     }
 };
 
-export const getReasonsByVisitId = async (visitId: string, token: string): Promise<ReasonsByVisitResponse> => {
+// Get all reasons
+export const getAllReasons = async (): Promise<ListReasonsResponse> => {
     try {
-        const response = await api.get<ReasonsByVisitResponse>(`/reasons/visit/${visitId}`, {
-            headers: { Authorization: `Bearer ${token}` },
-        });
+        const response = await api.get<ListReasonsResponse>("/reasons");
         return response.data;
     } catch (error) {
-        console.error(`Error fetching reasons for visit (${visitId}):`, error);
-        throw error;
+        throw new Error(handleApiError(error, "Unable to fetch all reasons."));
+    }
+};
+
+// Get reasons by visit ID
+export const getReasonsByVisitId = async (visitId: string): Promise<ReasonsByVisitResponse> => {
+    try {
+        if (!visitId) {
+            throw new Error("Visit ID is required.");
+        }
+        const response = await api.get<ReasonsByVisitResponse>(`/reasons/visit/${visitId}`);
+        return response.data;
+    } catch (error) {
+        throw new Error(handleApiError(error, "Unable to fetch reasons for visit."));
     }
 };

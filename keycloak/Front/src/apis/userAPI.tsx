@@ -30,28 +30,38 @@ const handleApiError = (error: unknown, defaultMessage: string): string => {
     if (axiosError.response?.data?.error) {
       return axiosError.response.data.error; // Use backend's user-friendly error
     }
-    if (axiosError.response?.status === 401) {
-      return "Please log in to continue.";
-    }
-    if (axiosError.response?.status === 403) {
-      return "You don’t have permission to perform this action.";
-    }
-    if (axiosError.response?.status === 500) {
-      return "Something went wrong on our end. Please try again later.";
+    switch (axiosError.response?.status) {
+      case 400:
+        return "Invalid request. Please check your input and try again.";
+      case 401:
+        return "Authentication failed. Please log in again.";
+      case 403:
+        return "You don’t have permission to perform this action.";
+      case 404:
+        return "User not found.";
+      case 500:
+        return "Something went wrong on our end. Please try again later.";
+      default:
+        return defaultMessage;
     }
   }
   return defaultMessage; // Fallback for network errors or unexpected issues
 };
 
 // Create a new user
-export const createUser = async (
-  data: { email: string; password: string; firstname: string; lastname: string; phone: string; wallet: string },
-  token: string
-): Promise<CreateUserResponse> => {
+export const createUser = async (data: {
+  email: string;
+  password: string;
+  firstname: string;
+  lastname: string;
+  phone: string;
+  wallet: string;
+}): Promise<CreateUserResponse> => {
   try {
-    const response = await api.post<CreateUserResponse>("/users", data, {
-      headers: { Authorization: `Bearer ${token}` },
-    });
+    if (!data.email || !data.password || !data.firstname || !data.lastname || !data.phone || !data.wallet) {
+      throw new Error("All fields are required.");
+    }
+    const response = await api.post<CreateUserResponse>("/users", data);
     return response.data;
   } catch (error) {
     throw new Error(handleApiError(error, "Unable to create user. Please try again."));
@@ -59,11 +69,9 @@ export const createUser = async (
 };
 
 // Get all users
-export const getAllUsers = async (token: string): Promise<ListUsersResponse> => {
+export const getAllUsers = async (): Promise<ListUsersResponse> => {
   try {
-    const response = await api.get<ListUsersResponse>("/users", {
-      headers: { Authorization: `Bearer ${token}` },
-    });
+    const response = await api.get<ListUsersResponse>("/users");
     return response.data;
   } catch (error) {
     throw new Error(handleApiError(error, "Unable to fetch users. Please try again."));
@@ -71,11 +79,12 @@ export const getAllUsers = async (token: string): Promise<ListUsersResponse> => 
 };
 
 // Get user by phone number
-export const getUserByPhone = async (phone: string, token: string): Promise<UserByPhoneResponse> => {
+export const getUserByPhone = async (phone: string): Promise<UserByPhoneResponse> => {
   try {
-    const response = await api.get<UserByPhoneResponse>(`/users/phone/${phone}`, {
-      headers: { Authorization: `Bearer ${token}` },
-    });
+    if (!phone) {
+      throw new Error("Phone number is required.");
+    }
+    const response = await api.get<UserByPhoneResponse>(`/users/phone/${phone}`);
     return response.data;
   } catch (error) {
     throw new Error(handleApiError(error, "User not found."));
@@ -83,11 +92,12 @@ export const getUserByPhone = async (phone: string, token: string): Promise<User
 };
 
 // Get user by ID
-export const getUserById = async (userID: string, token: string): Promise<UserByIdResponse> => {
+export const getUserById = async (userID: string): Promise<UserByIdResponse> => {
   try {
-    const response = await api.get<UserByIdResponse>(`/users/${userID}`, {
-      headers: { Authorization: `Bearer ${token}` },
-    });
+    if (!userID) {
+      throw new Error("User ID is required.");
+    }
+    const response = await api.get<UserByIdResponse>(`/users/${userID}`);
     return response.data;
   } catch (error) {
     throw new Error(handleApiError(error, "User not found."));
@@ -95,11 +105,9 @@ export const getUserById = async (userID: string, token: string): Promise<UserBy
 };
 
 // Fetch user profile
-export const fetchUserProfile = async (token: string): Promise<User> => {
+export const fetchUserProfile = async (): Promise<User> => {
   try {
-    const response = await api.get<User>("/users/profile", {
-      headers: { Authorization: `Bearer ${token}` },
-    });
+    const response = await api.get<User>("/users/profile");
     return response.data;
   } catch (error) {
     throw new Error(handleApiError(error, "Unable to fetch profile. Please try again."));
@@ -109,10 +117,12 @@ export const fetchUserProfile = async (token: string): Promise<User> => {
 // Update user details
 export const updateUser = async (
   userID: string,
-  data: Partial<User>,
-  token: string
+  data: Partial<User>
 ): Promise<UpdateUserResponse> => {
   try {
+    if (!userID) {
+      throw new Error("User ID is required.");
+    }
     const formData = new FormData();
     Object.entries(data).forEach(([key, value]) => {
       if (key === "PFP" && value instanceof File) {
@@ -124,7 +134,6 @@ export const updateUser = async (
 
     const response = await api.put<UpdateUserResponse>(`/users/${userID}`, formData, {
       headers: {
-        Authorization: `Bearer ${token}`,
         "Content-Type": "multipart/form-data",
       },
     });
@@ -135,11 +144,10 @@ export const updateUser = async (
 };
 
 // Update user profile
-export const updateProfile = async (data: Partial<User> | FormData, token: string): Promise<User> => {
+export const updateProfile = async (data: Partial<User> | FormData): Promise<User> => {
   try {
     const config = {
       headers: {
-        Authorization: `Bearer ${token}`,
         ...(data instanceof FormData ? { "Content-Type": "multipart/form-data" } : { "Content-Type": "application/json" }),
       },
     };
@@ -151,11 +159,12 @@ export const updateProfile = async (data: Partial<User> | FormData, token: strin
 };
 
 // Delete a user
-export const deleteUser = async (userID: string, token: string): Promise<DeleteUserResponse> => {
+export const deleteUser = async (userID: string): Promise<DeleteUserResponse> => {
   try {
-    const response = await api.delete<DeleteUserResponse>(`/users/${userID}`, {
-      headers: { Authorization: `Bearer ${token}` },
-    });
+    if (!userID) {
+      throw new Error("User ID is required.");
+    }
+    const response = await api.delete<DeleteUserResponse>(`/users/${userID}`);
     return response.data;
   } catch (error) {
     throw new Error(handleApiError(error, "Unable to delete user. Please try again."));
@@ -165,13 +174,13 @@ export const deleteUser = async (userID: string, token: string): Promise<DeleteU
 // Assign supervisors to a manager
 export const assignSupervisorsToManager = async (
   managerID: string,
-  supervisorIDs: string[],
-  token: string
+  supervisorIDs: string[]
 ): Promise<AssignSupervisorsResponse> => {
   try {
-    const response = await api.post<AssignSupervisorsResponse>("/users/assign-supervisors", { managerID, supervisorIDs }, {
-      headers: { Authorization: `Bearer ${token}` },
-    });
+    if (!managerID || !Array.isArray(supervisorIDs) || supervisorIDs.length === 0) {
+      throw new Error("Manager ID and supervisor IDs are required.");
+    }
+    const response = await api.post<AssignSupervisorsResponse>("/users/assign-supervisors", { managerID, supervisorIDs });
     return response.data;
   } catch (error) {
     throw new Error(handleApiError(error, "Unable to assign supervisors. Please try again."));
@@ -181,13 +190,13 @@ export const assignSupervisorsToManager = async (
 // Revoke supervisors from a manager
 export const revokeSupervisorsFromManager = async (
   managerID: string,
-  supervisorIDs: string[],
-  token: string
+  supervisorIDs: string[]
 ): Promise<RevokeSupervisorsResponse> => {
   try {
-    const response = await api.post<RevokeSupervisorsResponse>("/users/revoke-supervisors", { managerID, supervisorIDs }, {
-      headers: { Authorization: `Bearer ${token}` },
-    });
+    if (!managerID || !Array.isArray(supervisorIDs) || supervisorIDs.length === 0) {
+      throw new Error("Manager ID and supervisor IDs are required.");
+    }
+    const response = await api.post<RevokeSupervisorsResponse>("/users/revoke-supervisors", { managerID, supervisorIDs });
     return response.data;
   } catch (error) {
     throw new Error(handleApiError(error, "Unable to revoke supervisors. Please try again."));
@@ -195,11 +204,12 @@ export const revokeSupervisorsFromManager = async (
 };
 
 // Get supervisors for a user
-export const getSupervisorsByUser = async (userID: string, token: string): Promise<SupervisorsByUserResponse> => {
+export const getSupervisorsByUser = async (userID: string): Promise<SupervisorsByUserResponse> => {
   try {
-    const response = await api.get<SupervisorsByUserResponse>(`/users/${userID}/supervisors`, {
-      headers: { Authorization: `Bearer ${token}` },
-    });
+    if (!userID) {
+      throw new Error("User ID is required.");
+    }
+    const response = await api.get<SupervisorsByUserResponse>(`/users/${userID}/supervisors`);
     return response.data;
   } catch (error) {
     throw new Error(handleApiError(error, "No supervisors found."));
@@ -207,11 +217,12 @@ export const getSupervisorsByUser = async (userID: string, token: string): Promi
 };
 
 // Get managers for a user
-export const getManagersByUser = async (userID: string, token: string): Promise<ManagersByUserResponse> => {
+export const getManagersByUser = async (userID: string): Promise<ManagersByUserResponse> => {
   try {
-    const response = await api.get<ManagersByUserResponse>(`/users/${userID}/managers`, {
-      headers: { Authorization: `Bearer ${token}` },
-    });
+    if (!userID) {
+      throw new Error("User ID is required.");
+    }
+    const response = await api.get<ManagersByUserResponse>(`/users/${userID}/managers`);
     return response.data;
   } catch (error) {
     throw new Error(handleApiError(error, "No managers found."));

@@ -58,12 +58,8 @@ const TimesheetForm: React.FC = () => {
   const [supervisorPhone, setSupervisorPhone] = useState<string>("");
   const [supervisorSearch, setSupervisorSearch] = useState<string>("");
 
-  // Current date/time setup
-  const currentDateTime = new Date(Date.now());
-  const currentDate = currentDateTime.toISOString().split('T')[0];
-  const currentHours = currentDateTime.getHours().toString().padStart(2, '0');
-  const currentMinutes = currentDateTime.getMinutes().toString().padStart(2, '0');
-  const currentTime = `${currentHours}:${currentMinutes}`;
+  // Current date setup
+  const currentDate = new Date().toISOString().split('T')[0];
 
   // Permission Checks
   const userPermissions = useMemo(() => ({
@@ -87,27 +83,6 @@ const TimesheetForm: React.FC = () => {
   if (!user || !token) return null;
 
   const supervisorID = userPermissions.canReadSupervisors && selectedSupervisor ? selectedSupervisor : user.userID;
-
-  // Date/Time Validation Functions
-  const isWeekend = (dateStr: string): boolean => {
-    const date = new Date(dateStr);
-    const day = date.getDay();
-    return day === 0 || day === 6; // 0 = Sunday, 6 = Saturday
-  };
-
-  const isValidTime = (timeStr: string, dateStr: string): boolean => {
-    const [hours, minutes] = timeStr.split(':').map(Number);
-    if (hours < 8 || (hours >= 16 && minutes > 30)) {
-      return false;
-    }
-    if (dateStr === currentDate) {
-      const [currentH, currentM] = currentTime.split(':').map(Number);
-      if (hours < currentH || (hours === currentH && minutes < currentM)) {
-        return false;
-      }
-    }
-    return true;
-  };
 
   // Fetch Initial Data
   useEffect(() => {
@@ -229,19 +204,13 @@ const TimesheetForm: React.FC = () => {
   // Handlers
   const handleDateChange = (e: React.ChangeEvent<HTMLInputElement>) => {
     const selectedDate = e.target.value;
-    if (selectedDate >= currentDate && !isWeekend(selectedDate)) {
+    if (selectedDate >= currentDate) {
       setDate(selectedDate);
-      if (time && !isValidTime(time, selectedDate)) {
-        setTime('');
-      }
     }
   };
 
   const handleTimeChange = (e: React.ChangeEvent<HTMLInputElement>) => {
-    const selectedTime = e.target.value;
-    if (date && isValidTime(selectedTime, date)) {
-      setTime(selectedTime);
-    }
+    setTime(e.target.value);
   };
 
   const handleReasonSelect = (reason: Reason) => {
@@ -363,18 +332,8 @@ const TimesheetForm: React.FC = () => {
               value={date}
               onChange={handleDateChange}
               min={currentDate}
-              onInvalid={(e) => e.preventDefault()} // Prevents browser default validation popup
               required
             />
-            {/* Add custom style to visually disable weekends */}
-            <style>{`
-              input[type="date"]::-webkit-calendar-picker-indicator {
-                filter: opacity(1);
-              }
-              input[type="date"] {
-                position: relative;
-              }
-            `}</style>
           </div>
 
           <div className="form-group">
@@ -384,11 +343,8 @@ const TimesheetForm: React.FC = () => {
               id="time"
               value={time}
               onChange={handleTimeChange}
-              min={date === currentDate ? currentTime : "08:00"}
-              max="17:00"
-              step="300"
               required
-              disabled={!date} // Disable time until date is selected
+              disabled={!date}
             />
           </div>
 

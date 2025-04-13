@@ -16,6 +16,7 @@ const Checklist = require("./visit/checklist")(sequelize, DataTypes);
 const VisitChecklist = require("./visit/VisitChecklists")(sequelize, DataTypes);
 const Reason = require("./visit/reason")(sequelize, DataTypes);
 const TrustedDevice = require("./user/TrustedDevice")(sequelize, DataTypes);
+const Log = require("./log")(sequelize, DataTypes); // Add Log model
 
 const setupAssociations = () => {
     // User - User (many to many): A User can have multiple Supervisors and Managers, and a User can be a Supervisor or Manager of multiple Users.
@@ -113,5 +114,6 @@ module.exports = {
     ReceiptBookTransfer,
     UserPermissionOverride,
     TrustedDevice,
+    Log, // Add Log to exports
     setupAssociations,
 };

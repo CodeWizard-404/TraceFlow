@@ -1,5 +1,5 @@
 import React, { useState, useEffect, useMemo, useRef } from "react";
-import { useParams, useNavigate } from "react-router-dom";
+import { useParams, useNavigate, useLocation } from "react-router-dom";
 import { FaUser, FaPhone, FaListUl, FaCheckCircle, FaArrowLeft, FaCheck, FaCamera, FaTimes } from "react-icons/fa";
 import "./VisitValidation.css";
 import { getAgentById } from "../../apis/agentAPI";
@@ -15,6 +15,7 @@ const PERMISSIONS = {
 const VisitValidation: React.FC = () => {
     const { idVisit } = useParams<{ idVisit: string }>();
     const navigate = useNavigate();
+    const location = useLocation();
     const { token, effectivePermissions, permissionsLoaded } = useAuth();
 
     const [visit, setVisit] = useState<Visit | null>(null);
@@ -36,6 +37,13 @@ const VisitValidation: React.FC = () => {
     const userPermissions = useMemo(() => ({
         canLogVisits: effectivePermissions?.some(p => p.name === PERMISSIONS.LOG_VISITS),
     }), [effectivePermissions]);
+
+    useEffect(() => {
+        if (permissionsLoaded && !location.state?.fromValidQRScan) {
+            setError("Access denied. Please scan a valid QR code first.");
+            navigate(`/visit/${idVisit}`, { replace: true });
+        }
+    }, [location.state, permissionsLoaded, navigate, idVisit]);
 
     useEffect(() => {
         const fetchVisitData = async () => {

@@ -21,7 +21,6 @@ interface RolesListProps {
     setRoles: (roles: Role[]) => void;
     userRoles: Role[];
     view: string;
-    token: string;
     setSelectedRole: (role: Role | null) => void;
     setError: (error: string | null) => void;
     searchQuery: string;
@@ -33,7 +32,6 @@ const RolesList: React.FC<RolesListProps> = ({
     setRoles,
     userRoles,
     view,
-    token,
     setSelectedRole,
     setError,
     searchQuery,
@@ -79,7 +77,7 @@ const RolesList: React.FC<RolesListProps> = ({
             const fetchRolePermissions = async () => {
                 setLoading(true);
                 try {
-                    const permissionsResponse = await getPermissionsByRole(activeRolePopup, token);
+                    const permissionsResponse = await getPermissionsByRole(activeRolePopup);
                     setRolePermissions(permissionsResponse || []);
                 } catch (error: unknown) {
                     const errorMessage = error instanceof Error ? error.message : "Failed to load role permissions.";
@@ -93,7 +91,7 @@ const RolesList: React.FC<RolesListProps> = ({
         } else {
             setRolePermissions([]);
         }
-    }, [activeRolePopup, token, setError]);
+    }, [activeRolePopup, setError]);
 
     // Handlers
     const handleRoleSelect = async (role: Role) => {
@@ -125,7 +123,7 @@ const RolesList: React.FC<RolesListProps> = ({
 
     const proceedWithRoleSelect = async (role: Role) => {
         try {
-            const rolePermissions = await getPermissionsByRole(role.roleID, token);
+            const rolePermissions = await getPermissionsByRole(role.roleID);
             const updatedRole = { ...role, permissions: rolePermissions };
             setRoles(roles.map((r) => (r.roleID === role.roleID ? updatedRole : r)));
             setSelectedRole(updatedRole);

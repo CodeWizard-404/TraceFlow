@@ -4,7 +4,6 @@ require('dotenv').config();
 const transporter = nodemailer.createTransport({
     host: process.env.SMTP_HOST,
     port: process.env.SMTP_PORT,
-    secure: false,
     auth: {
         user: process.env.SMTP_USER,
         pass: process.env.SMTP_PASS,
@@ -15,7 +14,10 @@ const transporter = nodemailer.createTransport({
 async function initializeSMTP() {
     try {
         await transporter.verify();
+        console.log(`${new Date().toISOString()} - SMTP server verified successfully`);
+        return true;
     } catch (error) {
+        console.error(`${new Date().toISOString()} - SMTP verification error:`, error.message);
         throw error; // Re-throw to be caught by the caller
     }
 }

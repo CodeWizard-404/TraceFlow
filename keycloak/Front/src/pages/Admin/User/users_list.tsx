@@ -11,7 +11,6 @@ interface UsersListProps {
     users: User[];
     setUsers: React.Dispatch<React.SetStateAction<User[]>>;
     view: ViewMode;
-    token: string;
     setView: (view: ViewMode) => void;
     setSelectedUser: React.Dispatch<React.SetStateAction<User | null>>;
     setError: (error: string | null) => void;
@@ -29,7 +28,6 @@ const UsersList: React.FC<UsersListProps> = ({
     users,
     setUsers,
     view,
-    token,
     setView,
     setSelectedUser,
     setError,
@@ -142,9 +140,9 @@ const UsersList: React.FC<UsersListProps> = ({
         setSelectedUser(user);
         try {
             const [userRoles, supervisors, managers] = await Promise.all([
-                getRolesByUser(user.userID, token),
-                getSupervisorsByUser(user.userID, token),
-                getManagersByUser(user.userID, token)
+                getRolesByUser(user.userID),
+                getSupervisorsByUser(user.userID),
+                getManagersByUser(user.userID)
             ]);
             const updatedUser = { ...user, Roles: userRoles, supervisors, managers };
             setUsers(users.map(u => u.userID === user.userID ? updatedUser : u));

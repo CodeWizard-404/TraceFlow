@@ -6,7 +6,8 @@ import {
   Navigate,
 } from "react-router-dom";
 import { ThemeProvider, useTheme } from "./context/ThemeContext";
-import { AuthProvider, useAuth } from "./context/AuthContext";
+import { useAuth } from "./context/AuthContext";
+import AuthProvider from "./context/AuthContext";
 import { ErrorProvider } from "./context/ErrorContext";
 import Timesheets from "./pages/Timesheet/Timesheets";
 import TimesheetForm from "./pages/Timesheet/TimesheetForm";
@@ -31,15 +32,12 @@ const PERMISSIONS = {
   ACCESS_SUPERVISOR_TIMESHEETS: import.meta.env.VITE_PERMISSIONS_ACCESS_SUPERVISOR_TIMESHEETS,
   CREATE_TIMESHEETS: import.meta.env.VITE_PERMISSIONS_CREATE_TIMESHEETS,
   CREATE_SUPERVISOR_TIMESHEETS: import.meta.env.VITE_PERMISSIONS_CREATE_TIMESHEETS_FOR_SUPERVISOR,
-
   SCAN_VISITS: import.meta.env.VITE_PERMISSIONS_SCAN_VISITS,
   ACCESS_VISIT_DETAILS: import.meta.env.VITE_PERMISSIONS_ACCESS_VISIT_DETAILS,
   LOG_VISITS: import.meta.env.VITE_PERMISSIONS_LOG_VISITS,
-
   ACCESS_RECEIPT_BOOKS: import.meta.env.VITE_PERMISSIONS_ACCESS_RECEIPT_BOOKS,
   ACCESS_RECEIPT_BOOK_HISTORY: import.meta.env.VITE_PERMISSIONS_ACCESS_RECEIPT_BOOK_HISTORY,
   TRANSFER_RECEIPT_BOOKS: import.meta.env.VITE_PERMISSIONS_TRANSFER_RECEIPT_BOOKS,
-
 };
 
 const ROLES = {
@@ -57,8 +55,8 @@ const ProtectedRoute: React.FC<ProtectedRouteProps> = ({
   children,
   requiredPermissions,
 }) => {
-  const { user, token, effectivePermissions, permissionsLoaded } = useAuth();
-  if (!user || !token) {
+  const { user, effectivePermissions, permissionsLoaded } = useAuth();
+  if (!user) {
     return (
       <Navigate
         to="/login"
@@ -86,12 +84,13 @@ interface RoleProtectedRouteProps {
   children: JSX.Element;
   requiredRoles: string[];
 }
+
 const RoleProtectedRoute: React.FC<RoleProtectedRouteProps> = ({
   children,
   requiredRoles,
 }) => {
-  const { user, token, userRoles, permissionsLoaded } = useAuth();
-  if (!user || !token) {
+  const { user, userRoles, permissionsLoaded } = useAuth();
+  if (!user) {
     return (
       <Navigate
         to="/login"
@@ -108,7 +107,6 @@ const RoleProtectedRoute: React.FC<RoleProtectedRouteProps> = ({
       </div>
     );
   }
-
 
   const hasRequiredRole = userRoles.some((role) =>
     requiredRoles.includes(role.name)
@@ -219,6 +217,7 @@ const AppContent: React.FC = () => {
               </ProtectedRoute>
             }
           />
+          <Route path="/logout" element={<Navigate to="/login" replace />} />
           <Route path="*" element={<PageNotFound />} />
         </Routes>
       </main>

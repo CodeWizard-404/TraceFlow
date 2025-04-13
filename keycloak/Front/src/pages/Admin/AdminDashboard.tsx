@@ -36,7 +36,7 @@ import "./AdminDashboard.css";
 const ITEMS_PER_PAGE = 10;
 
 const AdminDashboard: React.FC = () => {
-    const { token, effectivePermissions, userRoles } = useAuth();
+    const { effectivePermissions, userRoles } = useAuth();
 
     // State
     const [users, setUsers] = useState<User[]>([]);
@@ -83,15 +83,15 @@ const AdminDashboard: React.FC = () => {
             setLoading(true);
             try {
                 const [usersData, rolesData, permissionsData, checklistsData, reasonsData] = await Promise.all([
-                    userPermissions.canViewUsers ? getAllUsers(token!) : Promise.resolve([]),
-                    userPermissions.canViewRoles ? getAllRoles(token!) : Promise.resolve([]),
-                    userPermissions.canViewPermissions ? getAllPermissions(token!) : Promise.resolve([]),
-                    userPermissions.canViewChecklists ? getAllChecklists(token!) : Promise.resolve([]),
-                    userPermissions.canViewReasons ? getAllReasons(token!) : Promise.resolve([]),
+                    userPermissions.canViewUsers ? getAllUsers() : Promise.resolve([]),
+                    userPermissions.canViewRoles ? getAllRoles() : Promise.resolve([]),
+                    userPermissions.canViewPermissions ? getAllPermissions() : Promise.resolve([]),
+                    userPermissions.canViewChecklists ? getAllChecklists() : Promise.resolve([]),
+                    userPermissions.canViewReasons ? getAllReasons() : Promise.resolve([]),
                 ]);
                 const usersWithRoles = await Promise.all(
                     usersData.map(async (user) => {
-                        const userRoles = await getRolesByUser(user.userID, token!);
+                        const userRoles = await getRolesByUser(user.userID);
                         return { ...user, Roles: userRoles };
                     })
                 );
@@ -108,8 +108,8 @@ const AdminDashboard: React.FC = () => {
                 setLoading(false);
             }
         };
-        if (token) fetchData();
-    }, [token, userPermissions]);
+        fetchData();
+    }, [userPermissions]);
 
     useEffect(() => {
         if (error) {
@@ -126,8 +126,8 @@ const AdminDashboard: React.FC = () => {
 
         setResetLoading(true);
         try {
-            const response = await resetMainRoles(token!);
-            setRoles(await getAllRoles(token!)); // Refresh roles after reset
+            const response = await resetMainRoles();
+            setRoles(await getAllRoles()); // Refresh roles after reset
             setError(null);
 
             // Correctly handle the response.details array
@@ -162,7 +162,6 @@ const AdminDashboard: React.FC = () => {
     };
 
     // Render
-    if (!token) return <div>Please log in to access the dashboard.</div>;
 
     return (
         <div className="admin-dashboard">
@@ -314,7 +313,6 @@ const AdminDashboard: React.FC = () => {
                         users={users}
                         setUsers={setUsers}
                         view={view}
-                        token={token!}
                         setView={setView}
                         setSelectedUser={setSelectedUser}
                         setError={setError}
@@ -337,7 +335,6 @@ const AdminDashboard: React.FC = () => {
                         view={view}
                         effectivePermissions={effectivePermissions || []}
                         userRoles={userRoles || []}
-                        token={token!}
                         setView={setView}
                         setError={setError}
                     />
@@ -346,7 +343,6 @@ const AdminDashboard: React.FC = () => {
                         setUsers={setUsers}
                         roles={roles}
                         view={view}
-                        token={token!}
                         setView={setView}
                         setError={setError}
                     />
@@ -354,7 +350,6 @@ const AdminDashboard: React.FC = () => {
                         roles={roles}
                         setRoles={setRoles}
                         view={view}
-                        token={token!}
                         setSelectedRole={setSelectedRole}
                         setError={setError}
                         userRoles={userRoles || []}
@@ -375,7 +370,6 @@ const AdminDashboard: React.FC = () => {
                         setRoles={setRoles}
                         permissionsList={permissionsList}
                         view={view}
-                        token={token!}
                         setView={setView}
                         setError={setError}
                     />
@@ -405,7 +399,6 @@ const AdminDashboard: React.FC = () => {
                         checklists={checklists}
                         setChecklists={setChecklists}
                         view={view}
-                        token={token!}
                         setSelectedChecklist={setSelectedChecklist}
                         setError={setError}
                         searchQuery={searchQuery}
@@ -419,14 +412,12 @@ const AdminDashboard: React.FC = () => {
                         checklists={checklists}
                         setChecklists={setChecklists}
                         view={view}
-                        token={token!}
                         setError={setError}
                     />
                     <ChecklistAdd
                         checklists={checklists}
                         setChecklists={setChecklists}
                         view={view}
-                        token={token!}
                         setView={setView}
                         setError={setError}
                     />
@@ -434,7 +425,6 @@ const AdminDashboard: React.FC = () => {
                         reasons={reasons}
                         setReasons={setReasons}
                         view={view}
-                        token={token!}
                         setSelectedReason={setSelectedReason}
                         setError={setError}
                         searchQuery={searchQuery}
@@ -448,14 +438,12 @@ const AdminDashboard: React.FC = () => {
                         reasons={reasons}
                         setReasons={setReasons}
                         view={view}
-                        token={token!}
                         setError={setError}
                     />
                     <ReasonAdd
                         reasons={reasons}
                         setReasons={setReasons}
                         view={view}
-                        token={token!}
                         setView={setView}
                         setError={setError}
                     />

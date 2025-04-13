@@ -4,9 +4,10 @@ const ChecklistService = require('./checklistService');
 const ReasonService = require('./reasonService');
 const path = require('path');
 const fs = require('fs');
+const logger = require('../utils/logger');
 
 class VisitService {
-    static async createVisit(data) {
+    static async createVisit(data, actorID) {
         const { date, time, agentID, supervisorID, timesheetID, reasons, checklists, status = 'pending' } = data;
         if (!date || !time || !agentID || !supervisorID || !timesheetID) {
             const error = new Error('Missing required fields');
@@ -29,24 +30,26 @@ class VisitService {
                 status,
             });
             if (reasons && reasons.length > 0) {
-                const reasonIds = reasons.map(r => r.id);
+                const reasonIds = reasons.map((r) => r.id);
                 const createdReasons = await ReasonService.getItemsByIds(reasonIds);
                 await visit.setReasons(createdReasons);
             }
             if (checklists && checklists.length > 0) {
-                const checklistIds = checklists.map(c => c.id);
+                const checklistIds = checklists.map((c) => c.id);
                 const createdChecklists = await ChecklistService.getItemsByIds(checklistIds);
                 await visit.setChecklists(createdChecklists);
             }
+            logger.info(`Visit created for agent ${agentID} by user ${actorID}`, { ip: null });
             return visit.reload({ include: [Reason, Checklist] });
         } catch (error) {
+            logger.error(`Create visit error: ${error.message}, user: ${actorID}`, { ip: null });
             const err = new Error('Failed to create visit: ' + error.message);
             err.status = error.status || 500;
             throw err;
         }
     }
 
-    static async verifyQRCode(qrData, visitId) {
+    static async verifyQRCode(qrData, visitId, actorID) {
         if (!qrData || !visitId) {
             const error = new Error('Missing required parameters');
             error.status = 400;
@@ -77,15 +80,17 @@ class VisitService {
                 error.status = 400;
                 throw error;
             }
+            logger.info(`QR code verified for visit ${visitId} by user ${actorID}`, { ip: null });
             return { valid: true, message: 'Verification successful' };
         } catch (error) {
+            logger.error(`Verify QR code error: ${error.message}, user: ${actorID}`, { ip: null });
             const err = new Error(error.message);
             err.status = error.status || 500;
             throw err;
         }
     }
 
-    static async logVisit(visitID, data, files) {
+    static async logVisit(visitID, data, files, actorID) {
         try {
             const { duration, checklistUpdates, comment } = data;
             if (!files || files.length === 0) {
@@ -106,9 +111,9 @@ class VisitService {
             const time = visit.time.replace(/:/g, '-');
             const supervisorName = `${visit.Timesheet.User.firstname.toLowerCase()}_${visit.Timesheet.User.lastname.toLowerCase()}`;
             const folderName = `${date}_${time}_${supervisorName}`;
-            const folderPath = path.join(__dirname, '../uploads/photos', folderName);
+            const folderPath = path.join(__dirname, '../Uploads/photos', folderName);
             if (!fs.existsSync(folderPath)) fs.mkdirSync(folderPath, { recursive: true });
-            const photoPaths = files.map(file => `/uploads/photos/${folderName}/${file.filename}`);
+            const photoPaths = files.map((file) => `/uploads/photos/${folderName}/${file.filename}`);
 
             // Parse checklistUpdates if it’s a string
             let parsedChecklistUpdates = checklistUpdates;
@@ -116,7 +121,7 @@ class VisitService {
                 try {
                     parsedChecklistUpdates = JSON.parse(checklistUpdates);
                 } catch (e) {
-                    console.error('Failed to parse checklistUpdates:', checklistUpdates, e);
+                    logger.error(`Parse checklistUpdates error: ${e.message}, user: ${actorID}`, { ip: null });
                     const error = new Error('Invalid checklistUpdates format');
                     error.status = 400;
                     throw error;
@@ -134,28 +139,17 @@ class VisitService {
             visit.comment = comment || visit.comment;
             visit.status = 'visited';
             await visit.save();
+            logger.info(`Visit ${visitID} logged by user ${actorID}`, { ip: null });
             return visit.reload({ include: [Checklist] });
         } catch (error) {
-            console.error(`${new Date().toISOString()} - Log visit failed:`, error);
+            logger.error(`Log visit error: ${error.message}, user: ${actorID}`, { ip: null });
             throw error;
         }
     }
 
-    static async updateVisit(visitID, data, files = []) {
+    static async updateVisit(visitID, data, files = [], actorID) {
         try {
-            const {
-                date,
-                time,
-                duration,
-                location,
-                status,
-                comment,
-                agentID,
-                checklists,
-                reasons,
-                photosToRemove,
-                supervisorID
-            } = data;
+            const { date, time, duration, location, status, comment, agentID, checklists, reasons, photosToRemove, supervisorID } = data;
 
             const visit = await Visit.findByPk(visitID, {
                 include: [{ model: Timesheet, include: [User] }, Checklist, Reason],
@@ -170,12 +164,8 @@ class VisitService {
             const oldTime = visit.time.replace(/:/g, '-');
             const supervisorName = `${visit.Timesheet.User.firstname.toLowerCase()}_${visit.Timesheet.User.lastname.toLowerCase()}`;
             const folderName = `${oldDate}_${oldTime}_${supervisorName}`;
-            const folderPath = path.join(__dirname, '../uploads/photos', folderName);
+            const folderPath = path.join(__dirname, '../Uploads/photos', folderName);
 
-            // Log initial state
-            console.log('Initial visit.photos:', visit.photos);
-
-            // Handle photos
             let photoPaths = visit.photos ? [...visit.photos] : [];
 
             // Parse photosToRemove if it’s a string
@@ -184,40 +174,33 @@ class VisitService {
                 try {
                     photosArray = JSON.parse(photosToRemove);
                 } catch (e) {
-                    console.error('Failed to parse photosToRemove:', photosToRemove, e);
+                    logger.error(`Parse photosToRemove error: ${e.message}, user: ${actorID}`, { ip: null });
                     photosArray = [];
                 }
             }
 
             if (photosArray && Array.isArray(photosArray) && photosArray.length > 0) {
-                console.log('Photos to remove:', photosArray);
-                photoPaths = photoPaths.filter(p => !photosArray.includes(p));
-                photosArray.forEach(photo => {
+                photoPaths = photoPaths.filter((p) => !photosArray.includes(p));
+                photosArray.forEach((photo) => {
                     const photoPath = path.join(__dirname, '..', photo);
                     if (fs.existsSync(photoPath)) {
                         fs.unlinkSync(photoPath);
-                        console.log(`Deleted photo from filesystem: ${photo}`);
-                    } else {
-                        console.log(`Photo not found in filesystem: ${photo}`);
                     }
                 });
             }
-            console.log('After removal, photoPaths:', photoPaths);
 
             // Add new photos to the existing folder
             if (files && files.length > 0) {
                 if (!fs.existsSync(folderPath)) {
                     fs.mkdirSync(folderPath, { recursive: true });
                 }
-                files.forEach(file => {
+                files.forEach((file) => {
                     const destPath = path.join(folderPath, file.filename);
                     fs.renameSync(file.path, destPath);
                     const newPhotoPath = `/uploads/photos/${folderName}/${file.filename}`;
                     photoPaths.push(newPhotoPath);
-                    console.log(`Added new photo: ${newPhotoPath}`);
                 });
             }
-            console.log('After adding new photos, photoPaths:', photoPaths);
 
             // Calculate weekNumber and year from the visit's date
             const newDate = date || visit.date;
@@ -279,16 +262,26 @@ class VisitService {
             // Parse checklists and reasons
             let parsedChecklists = checklists;
             if (typeof checklists === 'string') {
-                parsedChecklists = JSON.parse(checklists);
+                try {
+                    parsedChecklists = JSON.parse(checklists);
+                } catch (e) {
+                    logger.error(`Parse checklists error: ${e.message}, user: ${actorID}`, { ip: null });
+                    parsedChecklists = [];
+                }
             }
             let parsedReasons = reasons;
             if (typeof reasons === 'string') {
-                parsedReasons = JSON.parse(reasons);
+                try {
+                    parsedReasons = JSON.parse(reasons);
+                } catch (e) {
+                    logger.error(`Parse reasons error: ${e.message}, user: ${actorID}`, { ip: null });
+                    parsedReasons = [];
+                }
             }
 
             // Update checklists
             if (parsedChecklists && Array.isArray(parsedChecklists)) {
-                const checklistIds = parsedChecklists.map(c => c.id);
+                const checklistIds = parsedChecklists.map((c) => c.id);
                 const updatedChecklists = await ChecklistService.getItemsByIds(checklistIds);
                 await visit.setChecklists(updatedChecklists);
                 for (const checklist of parsedChecklists) {
@@ -300,7 +293,7 @@ class VisitService {
 
             // Update reasons
             if (parsedReasons && Array.isArray(parsedReasons)) {
-                const reasonIds = parsedReasons.map(r => r.id);
+                const reasonIds = parsedReasons.map((r) => r.id);
                 const updatedReasons = await ReasonService.getItemsByIds(reasonIds);
                 await visit.setReasons(updatedReasons);
             }
@@ -314,15 +307,11 @@ class VisitService {
             visit.photos = photoPaths;
             visit.comment = comment !== undefined ? comment : visit.comment;
 
-            console.log('Before save, visit.photos:', visit.photos);
-
             await visit.save();
-
-            console.log('After save, visit.photos:', visit.photos);
-
+            logger.info(`Visit ${visitID} updated by user ${actorID}`, { ip: null });
             return visit.reload({ include: [Checklist, Reason] });
         } catch (error) {
-            console.error('Failed to update visit:', error);
+            logger.error(`Update visit error: ${error.message}, user: ${actorID}`, { ip: null });
             const err = new Error('Failed to update visit: ' + error.message);
             err.status = error.status || 500;
             throw err;
@@ -337,7 +326,7 @@ class VisitService {
         return weekNumber;
     }
 
-    static async deleteVisit(visitID) {
+    static async deleteVisit(visitID, actorID) {
         try {
             const visit = await Visit.findByPk(visitID, {
                 include: [{ model: Timesheet, include: [User] }],
@@ -351,14 +340,16 @@ class VisitService {
             const time = visit.time.replace(/:/g, '-');
             const supervisorName = `${visit.Timesheet.User.firstname.toLowerCase()}_${visit.Timesheet.User.lastname.toLowerCase()}`;
             const folderName = `${date}_${time}_${supervisorName}`;
-            const folderPath = path.join(__dirname, '../uploads/photos', folderName);
+            const folderPath = path.join(__dirname, '../Uploads/photos', folderName);
 
             if (fs.existsSync(folderPath)) {
                 fs.rmSync(folderPath, { recursive: true, force: true });
             }
             await visit.destroy();
+            logger.info(`Visit ${visitID} deleted by user ${actorID}`, { ip: null });
             return { message: 'Visit and associated photos deleted successfully' };
         } catch (error) {
+            logger.error(`Delete visit error: ${error.message}, user: ${actorID}`, { ip: null });
             const err = new Error('Failed to delete visit: ' + error.message);
             err.status = error.status || 500;
             throw err;
@@ -375,6 +366,7 @@ class VisitService {
             }
             return visit;
         } catch (error) {
+            logger.error(`Get visit error: ${error.message}`, { ip: null });
             const err = new Error('Failed to fetch visit: ' + error.message);
             err.status = error.status || 500;
             throw err;

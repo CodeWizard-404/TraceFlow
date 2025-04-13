@@ -1,8 +1,9 @@
 const { Visit, Reason, Checklist, Timesheet } = require('../models');
 const VisitService = require('./visitService');
+const logger = require('../utils/logger');
 
 class TimesheetService {
-    static async createTimesheet(data) {
+    static async createTimesheet(data, actorID) {
         const { weekNumber, year, supervisorID, visits, status = 'pending' } = data;
 
         if (!weekNumber || !year || !supervisorID || !Array.isArray(visits)) {
@@ -39,100 +40,44 @@ class TimesheetService {
             }
 
             for (const visitData of visits) {
-                await VisitService.createVisit({
-                    date: visitData.date,
-                    time: visitData.time,
-                    location: visitData.location,
-                    agentID: visitData.agentID,
-                    supervisorID,
-                    timesheetID: timesheet.timesheetID,
-                    reasons: visitData.reasons,
-                    checklists: visitData.checklists,
-                    status,
-                });
+                await VisitService.createVisit(
+                    {
+                        date: visitData.date,
+                        time: visitData.time,
+                        location: visitData.location,
+                        agentID: visitData.agentID,
+                        supervisorID,
+                        timesheetID: timesheet.timesheetID,
+                        reasons: visitData.reasons,
+                        checklists: visitData.checklists,
+                        status,
+                    },
+                    actorID
+                );
             }
 
+            logger.info(`Timesheet created for supervisor ${supervisorID} by user ${actorID}`, { ip: null });
             return await Timesheet.findByPk(timesheet.timesheetID, {
                 include: [
                     {
                         model: Visit,
                         include: [
-                            { model: Checklist, through: { attributes: ["checked"] } },
+                            { model: Checklist, through: { attributes: ['checked'] } },
                             { model: Reason, through: { attributes: [] } },
                         ],
                     },
                 ],
             });
         } catch (error) {
+            logger.error(`Create timesheet error: ${error.message}, user: ${actorID}`, { ip: null });
             const err = new Error('Failed to create timesheet: ' + error.message);
-            err.status = 500;
+            err.status = error.status || 500;
             throw err;
         }
     }
 
-    // static async updateTimesheet(timesheetID, data, filesMap = {}) {
-    //     try {
-    //         const { weekNumber, year, status, visits } = data;
-    //         const timesheet = await Timesheet.findByPk(timesheetID, { include: [Visit] });
-    //         if (!timesheet) {
-    //             const error = new Error('Timesheet not found');
-    //             error.status = 404;
-    //             throw error;
-    //         }
-    //         timesheet.weekNumber = weekNumber || timesheet.weekNumber;
-    //         timesheet.year = year || timesheet.year;
-    //         timesheet.status = status || timesheet.status;
-    //         await timesheet.save();
-
-    //         if (visits && Array.isArray(visits)) {
-    //             for (const visitData of visits) {
-    //                 if (visitData.visitID) {
-    //                     const files = filesMap[visitData.visitID] || [];
-    //                     await VisitService.updateVisit(visitData.visitID, visitData, files);
-    //                 } else {
-    //                     await VisitService.createVisit({
-    //                         ...visitData,
-    //                         timesheetID,
-    //                         supervisorID: timesheet.supervisorID,
-    //                     });
-    //                 }
-    //             }
-    //         }
-    //         return timesheet.reload({
-    //             include: [
-    //                 {
-    //                     model: Visit,
-    //                     include: [Checklist, Reason],
-    //                 },
-    //             ],
-    //         });
-    //     } catch (error) {
-    //         const err = new Error('Failed to update timesheet: ' + error.message);
-    //         err.status = error.status || 500;
-    //         throw err;
-    //     }
-    // }
-
-    // static async deleteTimesheet(timesheetID) {
-    //     try {
-    //         const timesheet = await Timesheet.findByPk(timesheetID, { include: [Visit] });
-    //         if (!timesheet) {
-    //             const error = new Error('Timesheet not found');
-    //             error.status = 404;
-    //             throw error;
-    //         }
-    //         await Promise.all(timesheet.Visits.map(visit => VisitService.deleteVisit(visit.visitID)));
-    //         await timesheet.destroy();
-    //         return { message: 'Timesheet and associated visits deleted successfully' };
-    //     } catch (error) {
-    //         const err = new Error('Failed to delete timesheet: ' + error.message);
-    //         err.status = error.status || 500;
-    //         throw err;
-    //     }
-    // }
-
-    static async validateTimesheet(timesheetID, visitIDs = [], status) {
-        if (!status || (Array.isArray(visitIDs) && visitIDs.some(id => typeof id !== 'string'))) {
+    static async validateTimesheet(timesheetID, visitIDs = [], status, actorID) {
+        if (!status || (Array.isArray(visitIDs) && visitIDs.some((id) => typeof id !== 'string'))) {
             const error = new Error('Invalid input: status is required and visitIDs must be strings');
             error.status = 400;
             throw error;
@@ -149,14 +94,11 @@ class TimesheetService {
             const visits = await Visit.findAll({ where: { timesheetID } });
             let visitsToUpdate;
             if (visitIDs.length === 0) {
-                visitsToUpdate = visits.filter(visit =>
-                    visit.status === 'pending' || visit.status === 'rejected'
-                );
+                visitsToUpdate = visits.filter((visit) => visit.status === 'pending' || visit.status === 'rejected');
             } else {
                 const visitIdSet = new Set(visitIDs);
-                visitsToUpdate = visits.filter(visit =>
-                    visitIdSet.has(visit.visitID) &&
-                    (visit.status === 'pending' || visit.status === 'rejected')
+                visitsToUpdate = visits.filter(
+                    (visit) => visitIdSet.has(visit.visitID) && (visit.status === 'pending' || visit.status === 'rejected')
                 );
             }
 
@@ -164,19 +106,23 @@ class TimesheetService {
                 return timesheet;
             }
 
-            await Promise.all(visitsToUpdate.map(async (visit) => {
-                visit.status = status;
-                await visit.save();
-            }));
+            await Promise.all(
+                visitsToUpdate.map(async (visit) => {
+                    visit.status = status;
+                    await visit.save();
+                })
+            );
 
             const updatedVisits = await Visit.findAll({ where: { timesheetID } });
-            if (updatedVisits.every(visit => visit.status === 'validated')) {
+            if (updatedVisits.every((visit) => visit.status === 'validated')) {
                 timesheet.status = 'validated';
                 await timesheet.save();
             }
 
+            logger.info(`Timesheet ${timesheetID} validated by user ${actorID}`, { ip: null });
             return timesheet;
         } catch (error) {
+            logger.error(`Validate timesheet error: ${error.message}, user: ${actorID}`, { ip: null });
             const err = new Error(`Validation failed: ${error.message}`);
             err.status = error.status || 500;
             throw err;
@@ -185,18 +131,20 @@ class TimesheetService {
 
     static async listTimesheets() {
         try {
-            return await Timesheet.findAll({
+            const timesheets = await Timesheet.findAll({
                 include: [
                     {
                         model: Visit,
                         include: [
-                            { model: Checklist, through: { attributes: ["checked"] }, attributes: ["item"] },
-                            { model: Reason, through: { attributes: [] }, attributes: ["item"] },
+                            { model: Checklist, through: { attributes: ['checked'] }, attributes: ['item'] },
+                            { model: Reason, through: { attributes: [] }, attributes: ['item'] },
                         ],
                     },
                 ],
             });
+            return timesheets;
         } catch (error) {
+            logger.error(`List timesheets error: ${error.message}`, { ip: null });
             const err = new Error('Failed to get timesheets: ' + error.message);
             err.status = 500;
             throw err;
@@ -210,8 +158,8 @@ class TimesheetService {
                     {
                         model: Visit,
                         include: [
-                            { model: Checklist, through: { attributes: ["checked"] }, attributes: ["item"] },
-                            { model: Reason, through: { attributes: [] }, attributes: ["item"] },
+                            { model: Checklist, through: { attributes: ['checked'] }, attributes: ['item'] },
+                            { model: Reason, through: { attributes: [] }, attributes: ['item'] },
                         ],
                     },
                 ],
@@ -223,6 +171,7 @@ class TimesheetService {
             }
             return timesheet;
         } catch (error) {
+            logger.error(`View timesheet error: ${error.message}`, { ip: null });
             const err = new Error('Failed to get timesheet: ' + error.message);
             err.status = error.status || 500;
             throw err;
@@ -236,19 +185,21 @@ class TimesheetService {
             throw error;
         }
         try {
-            return await Timesheet.findAll({
+            const timesheets = await Timesheet.findAll({
                 where: { supervisorID },
                 include: [
                     {
                         model: Visit,
                         include: [
-                            { model: Checklist, through: { attributes: ["checked"] }, attributes: ["item"] },
-                            { model: Reason, through: { attributes: [] }, attributes: ["item"] },
+                            { model: Checklist, through: { attributes: ['checked'] }, attributes: ['item'] },
+                            { model: Reason, through: { attributes: [] }, attributes: ['item'] },
                         ],
                     },
                 ],
             });
+            return timesheets;
         } catch (error) {
+            logger.error(`Get timesheets by supervisor error: ${error.message}`, { ip: null });
             const err = new Error('Failed to get timesheets by supervisorID: ' + error.message);
             err.status = 500;
             throw err;

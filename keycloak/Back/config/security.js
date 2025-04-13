@@ -1,113 +1,82 @@
-const { auth } = require('express-oauth2-jwt-bearer');
-const { User } = require('../models');
-require('dotenv').config();
 const axios = require('axios');
-const PermissionService = require('../services/permissionService');
+const logger = require('../utils/logger');
+require('dotenv').config();
 
-const authenticateKeycloak = auth({
-    issuerBaseURL: `${process.env.KEYCLOAK_URL}/realms/${process.env.REALM}`,
-    audience: ["traceflow-backend", "account"],
-    jwksUri: `${process.env.KEYCLOAK_URL}/realms/${process.env.REALM}/protocol/openid-connect/certs`,
-    tokenSigningAlg: 'RS256',
-});
+const KEYCLOAK_URL = process.env.KEYCLOAK_URL || 'http://localhost:8080';
+const REALM = process.env.REALM || 'TraceFlow';
+const CLIENT_ID = process.env.KEYCLOAK_CLIENT_ID || 'traceflow-backend';
+const CLIENT_SECRET = process.env.KEYCLOAK_CLIENT_SECRET || 'your-client-secret-from-keycloak';
 
-const populateUser = async (req, res, next) => {
-    if (req.auth && req.auth.payload) {
-        const keycloakId = req.auth.payload.sub;
-        const roles = req.auth.payload.realm_access?.roles || [];
+const authenticateCookie = async (req, res, next) => {
+    try {
+        const accessToken = req.cookies?.accessToken;
 
-        const issuedAt = req.auth.payload.iat;
-        const expiresAt = req.auth.payload.exp;
-        const lifespanSeconds = expiresAt - issuedAt;
-        const expiresDate = new Date(expiresAt * 1000);
+        if (!accessToken) {
+            return res.status(401).json({ error: 'Access token required' });
+        }
 
         try {
-            const user = await User.findOne({ where: { keycloakId } });
-            if (!user) {
-                console.error(`User with keycloakId ${keycloakId} not found in database`);
-                return res.status(401).json({ error: 'User not found in database' });
+            const response = await axios.post(
+                `${KEYCLOAK_URL}/realms/${REALM}/protocol/openid-connect/token/introspect`,
+                new URLSearchParams({
+                    token: accessToken,
+                    client_id: CLIENT_ID,
+                    client_secret: CLIENT_SECRET,
+                })
+            );
+
+            if (!response.data.active) {
+                return res.status(401).json({ error: 'Invalid or expired token' });
             }
 
             req.user = {
-                userID: user.userID,
-                keycloakId: user.keycloakId,
-                email: req.auth.payload.email || user.email,
-                phone: req.auth.payload.phone || user.phone || '',
-                roles,
+                userID: response.data.sub,
+                email: response.data.email,
+                roles: response.data.realm_access?.roles || [],
             };
+            next();
         } catch (error) {
-            console.error('Error fetching user from database:', error);
-            return res.status(500).json({ error: 'Internal server error during user lookup' });
+            logger.error(`Keycloak introspection error: ${error.message}`);
+            return res.status(error.response?.status || 401).json({ error: 'Invalid token' });
         }
+    } catch (error) {
+        logger.error(`Authentication error: ${error.message}`);
+        return res.status(500).json({ error: 'Authentication failed' });
     }
-    next();
 };
-
-const authenticateAndPopulate = [authenticateKeycloak, populateUser];
-
-
-const jwt = require('jsonwebtoken');
 
 const requirePermission = (permissionName) => {
     return async (req, res, next) => {
+        console.log('1User Roles:', req.user.roles);
         try {
-            // Extract roles from token
-            const roles = req.auth.payload.realm_access?.roles || [];
+            const roles = req.user.roles || [];
+            console.log('2User Roles:', roles);
 
-            // Bypass for Super Admin
-            if (roles.includes("Super Admin")) {
-                console.log('Super Admin detected, bypassing permission checks');
+            if (roles.includes('Super Admin')) {
+                console.log('3User has Super Admin role. Skipping permission check.');
                 return next();
             }
 
-            // Step 1: Keycloak permission check
-            const response = await axios.post(
-                `${process.env.KEYCLOAK_URL}/realms/${process.env.REALM}/protocol/openid-connect/token`,
-                new URLSearchParams({
-                    grant_type: 'urn:ietf:params:oauth:grant-type:uma-ticket',
-                    audience: 'traceflow-backend',
-                }),
-                {
-                    headers: {
-                        Authorization: `Bearer ${req.auth.token}`,
-                        'Content-Type': 'application/x-www-form-urlencoded',
-                    },
-                }
-            );
-
-            const rpt = jwt.decode(response.data.access_token);
-            const permissions = rpt?.authorization?.permissions || [];
-            const hasKeycloakPermission = permissions.some(p => p.rsname === permissionName);
-
-            if (!hasKeycloakPermission) {
-                console.log(`Keycloak denied permission: ${permissionName}`);
+            const hasPermission = roles.includes(permissionName) || req.user.permissions?.includes(permissionName);
+            console.log(`4.1User permission: ${roles.includes(permissionName)}`);
+            console.log(`4.2User permission: ${req.user.permissions?.includes(permissionName)}`);
+            console.log(`4.3User permission: ${hasPermission}`);
+            if (!hasPermission) {
+                console.log(`5User does not have permission: ${permissionName}`);
                 return res.status(403).json({ error: `Permission '${permissionName}' required` });
             }
 
-            // Step 2: Local effective permissions check
-            const userId = req.user.userID; // From populateUser
-            const effectivePermissions = await PermissionService.getEffectivePermissions(userId);
-            const hasEffectivePermission = effectivePermissions.some(p => p.name === permissionName);
+            logger.info(`User ${req.user.userID} has permission: ${permissionName}`);
+            console.log(`6User has permission: ${permissionName}`);
 
-            if (!hasEffectivePermission) {
-                console.log(`Local override denied permission: ${permissionName}`);
-                return res.status(403).json({ error: `Permission '${permissionName}' revoked by override` });
-            }
-
-            console.log(`Permission granted: ${permissionName}`);
             next();
+            console.log(`7User has permission: ${permissionName}`);
         } catch (error) {
-            console.error('Permission check failed:', {
-                status: error.response?.status,
-                data: error.response?.data,
-                message: error.message,
-            });
-            if (error.response?.status === 401) {
-                return res.status(401).json({ error: 'Token expired, please refresh' });
-            }
+            console.error(`8Permission check failed for ${permissionName}: ${error.message}`);
+            logger.error(`Permission check failed for ${permissionName}: ${error.message}`);
             return res.status(403).json({ error: `Permission '${permissionName}' required` });
         }
     };
 };
 
-module.exports = { authenticateKeycloak: authenticateAndPopulate, requirePermission };
+module.exports = { authenticateCookie, requirePermission };

@@ -1,41 +1,73 @@
+import { AxiosError } from "axios";
 import api from "./axiosConfig";
-import { CreateTimesheetResponse, ListTimesheetsResponse, TimesheetByIdResponse, ValidateTimesheetResponse, TimesheetsBySupervisorResponse, DeleteTimesheetResponse } from ".";
+import {
+  CreateTimesheetResponse,
+  ListTimesheetsResponse,
+  TimesheetByIdResponse,
+  ValidateTimesheetResponse,
+  TimesheetsBySupervisorResponse,
+  DeleteTimesheetResponse,
+} from ".";
 
-export const createTimesheet = async (
-  data: {
-    weekNumber: number;
-    year: number;
-    supervisorID: string;
-    visits: Array<{
-      date: string;
-      time: string;
-      agentID: string;
-      reasons: Array<{ text?: string; id?: string }>;
-      checklists: Array<{ text?: string; id?: string }>;
-    }>;
-    status?: string;
-  },
-  token: string
-): Promise<CreateTimesheetResponse> => {
-  try {
-    const response = await api.post<CreateTimesheetResponse>("/timesheets/supervisor", data, {
-      headers: { Authorization: `Bearer ${token}` },
-    });
-    return response.data;
-  } catch (error) {
-    console.error("switching to manager route:", error);
-    try {
-      const fallbackResponse = await api.post<CreateTimesheetResponse>("/timesheets/manager", data, {
-        headers: { Authorization: `Bearer ${token}` },
-      });
-      return fallbackResponse.data;
-    } catch (fallbackError) {
-      console.error("Error creating timesheet :", fallbackError);
-      throw fallbackError;
-    }
+// Error response type for Axios errors
+interface AxiosErrorResponse {
+  response?: {
+    data?: { error?: string };
+    status?: number;
+  };
+}
+
+// Generic error handler
+const handleApiError = (error: unknown, defaultMessage: string): string => {
+  const axiosError = error as AxiosError<AxiosErrorResponse>;
+  if (axiosError.response?.data) {
+    return axiosError.message; // Use backend's user-friendly error
+  }
+  switch (axiosError.response?.status) {
+    case 400:
+      return "Invalid request. Please check your input and try again.";
+    case 401:
+      return "Authentication failed. Please log in again.";
+    case 403:
+      return "You don’t have permission to perform this action.";
+    case 404:
+      return "Timesheet not found.";
+    case 500:
+      return "Something went wrong on our end. Please try again later.";
+    default:
+      return defaultMessage;
   }
 };
 
+// Create a new timesheet
+export const createTimesheet = async (data: {
+  weekNumber: number;
+  year: number;
+  supervisorID: string;
+  visits: Array<{
+    date: string;
+    time: string;
+    agentID: string;
+    reasons: Array<{ text?: string; id?: string }>;
+    checklists: Array<{ text?: string; id?: string }>;
+  }>;
+  status?: string;
+}): Promise<CreateTimesheetResponse> => {
+  try {
+    if (!data.weekNumber || !data.year || !data.supervisorID || !Array.isArray(data.visits)) {
+      throw new Error("Week number, year, supervisor ID, and visits array are required.");
+    }
+    if (data.status && !["pending", "validated"].includes(data.status)) {
+      throw new Error("Status must be 'pending' or 'validated'.");
+    }
+    const response = await api.post<CreateTimesheetResponse>("/timesheets/supervisor", data);
+    return response.data;
+  } catch (error) {
+    throw new Error(handleApiError(error, "Unable to create timesheet."));
+  }
+};
+
+// Update a timesheet
 export const updateTimesheet = async (
   id: string,
   data: {
@@ -52,23 +84,33 @@ export const updateTimesheet = async (
       comment?: string;
       photos?: File[];
     }>;
-  },
-  token: string
+  }
 ): Promise<TimesheetByIdResponse> => {
   try {
+    if (!id) {
+      throw new Error("Timesheet ID is required.");
+    }
     const formData = new FormData();
-    if (data.weekNumber) formData.append('weekNumber', data.weekNumber.toString());
-    if (data.year) formData.append('year', data.year.toString());
-    if (data.status) formData.append('status', data.status);
+    if (data.weekNumber) formData.append("weekNumber", data.weekNumber.toString());
+    if (data.year) formData.append("year", data.year.toString());
+    if (data.status) formData.append("status", data.status);
 
     if (data.visits) {
-      const visitsData = data.visits.map(visit => {
-        // eslint-disable-next-line @typescript-eslint/no-explicit-any
-        const visitObj: any = { ...visit };
+      const visitsData = data.visits.map((visit) => {
+        const visitObj: Partial<{
+          visitID: string;
+          date: string;
+          time: string;
+          duration: number;
+          location: string;
+          status: string;
+          comment: string;
+          photos: File[];
+        }> = { ...visit };
         delete visitObj.photos; // Remove photos from JSON
         return visitObj;
       });
-      formData.append('visits', JSON.stringify(visitsData));
+      formData.append("visits", JSON.stringify(visitsData));
 
       data.visits.forEach((visit) => {
         if (visit.photos && visit.visitID) {
@@ -81,77 +123,76 @@ export const updateTimesheet = async (
 
     const response = await api.put<TimesheetByIdResponse>(`/timesheets/${id}`, formData, {
       headers: {
-        Authorization: `Bearer ${token}`,
-        'Content-Type': 'multipart/form-data',
+        "Content-Type": "multipart/form-data",
       },
     });
     return response.data;
   } catch (error) {
-    console.error(`Error updating timesheet (${id}):`, error);
-    throw error;
+    throw new Error(handleApiError(error, "Unable to update timesheet."));
   }
 };
 
-export const deleteTimesheet = async (id: string, token: string): Promise<DeleteTimesheetResponse> => {
+// Delete a timesheet
+export const deleteTimesheet = async (id: string): Promise<DeleteTimesheetResponse> => {
   try {
-    const response = await api.delete<DeleteTimesheetResponse>(`/timesheets/${id}`, {
-      headers: { Authorization: `Bearer ${token}` },
-    });
+    if (!id) {
+      throw new Error("Timesheet ID is required.");
+    }
+    const response = await api.delete<DeleteTimesheetResponse>(`/timesheets/${id}`);
     return response.data;
   } catch (error) {
-    console.error(`Error deleting timesheet (${id}):`, error);
-    throw error;
+    throw new Error(handleApiError(error, "Unable to delete timesheet."));
   }
 };
 
-export const getAllTimesheets = async (token: string): Promise<ListTimesheetsResponse> => {
+// Get all timesheets
+export const getAllTimesheets = async (): Promise<ListTimesheetsResponse> => {
   try {
-    const response = await api.get<ListTimesheetsResponse>("/timesheets", {
-      headers: { Authorization: `Bearer ${token}` },
-    });
+    const response = await api.get<ListTimesheetsResponse>("/timesheets");
     return response.data;
   } catch (error) {
-    console.error("Error fetching all timesheets:", error);
-    throw error;
+    throw new Error(handleApiError(error, "Unable to fetch all timesheets."));
   }
 };
 
-export const getTimesheetById = async (id: string, token: string): Promise<TimesheetByIdResponse> => {
+// Get timesheet by ID
+export const getTimesheetById = async (id: string): Promise<TimesheetByIdResponse> => {
   try {
-    const response = await api.get<TimesheetByIdResponse>(`/timesheets/${id}`, {
-      headers: { Authorization: `Bearer ${token}` },
-    });
+    if (!id) {
+      throw new Error("Timesheet ID is required.");
+    }
+    const response = await api.get<TimesheetByIdResponse>(`/timesheets/${id}`);
     return response.data;
   } catch (error) {
-    console.error(`Error fetching timesheet by ID (${id}):`, error);
-    throw error;
+    throw new Error(handleApiError(error, "Timesheet not found."));
   }
 };
 
+// Validate a timesheet
 export const validateTimesheet = async (
   id: string,
-  data: { visitIDs: string[]; status: string },
-  token: string
+  data: { visitIDs: string[]; status: string }
 ): Promise<ValidateTimesheetResponse> => {
   try {
-    const response = await api.put<ValidateTimesheetResponse>(`/timesheets/${id}/validate`, data, {
-      headers: { Authorization: `Bearer ${token}` },
-    });
+    if (!id || !data.status) {
+      throw new Error("Timesheet ID and status are required.");
+    }
+    const response = await api.put<ValidateTimesheetResponse>(`/timesheets/${id}/validate`, data);
     return response.data;
   } catch (error) {
-    console.error(`Error validating timesheet (${id}):`, error);
-    throw error;
+    throw new Error(handleApiError(error, "Unable to validate timesheet."));
   }
 };
 
-export const getTimesheetsBySupervisor = async (supervisorID: string, token: string): Promise<TimesheetsBySupervisorResponse> => {
+// Get timesheets by supervisor
+export const getTimesheetsBySupervisor = async (supervisorID: string): Promise<TimesheetsBySupervisorResponse> => {
   try {
-    const response = await api.get<TimesheetsBySupervisorResponse>(`/timesheets/supervisor/${supervisorID}`, {
-      headers: { Authorization: `Bearer ${token}` },
-    });
+    if (!supervisorID) {
+      throw new Error("Supervisor ID is required.");
+    }
+    const response = await api.get<TimesheetsBySupervisorResponse>(`/timesheets/supervisor/${supervisorID}`);
     return response.data;
   } catch (error) {
-    console.error(`Error fetching timesheets for supervisor (${supervisorID}):`, error);
-    throw error;
+    throw new Error(handleApiError(error, "Unable to fetch timesheets for supervisor."));
   }
 };

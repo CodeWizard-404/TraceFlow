@@ -1,4 +1,5 @@
-const RoleService = require("../services/roleService");
+const RoleService = require('../services/roleService');
+const logger = require('../utils/logger');
 
 class RoleController {
     // Create a new role
@@ -6,12 +7,15 @@ class RoleController {
         try {
             const { name, description } = req.body;
             if (!name) {
-                return res.status(400).json({ error: "Role name is required." });
+                logger.warn(`Create role failed: Missing name, user: ${req.user.userID}, IP: ${req.ip}`, { ip: req.ip });
+                return res.status(400).json({ error: 'Role name is required.' });
             }
-            const role = await RoleService.createRole(name, description);
-            res.status(201).json(role);
+            const role = await RoleService.createRole(name, description, req.user.userID);
+            logger.info(`Role created: ${name} by user ${req.user.userID}, IP: ${req.ip}`, { ip: req.ip });
+            return res.status(201).json(role);
         } catch (error) {
-            res.status(400).json({ error: error.message || "Could not create role." });
+            logger.error(`Create role error: ${error.message}, user: ${req.user.userID}, IP: ${req.ip}`, { ip: req.ip });
+            return res.status(400).json({ error: error.message || 'Could not create role.' });
         }
     }
 
@@ -19,9 +23,11 @@ class RoleController {
     static async getAllRoles(req, res) {
         try {
             const roles = await RoleService.getAllRoles();
-            res.status(200).json(roles);
+            logger.info(`Fetched all roles by user ${req.user.userID}, IP: ${req.ip}`, { ip: req.ip });
+            return res.status(200).json(roles);
         } catch (error) {
-            res.status(500).json({ error: error.message || "Could not fetch roles." });
+            logger.error(`Fetch roles error: ${error.message}, user: ${req.user.userID}, IP: ${req.ip}`, { ip: req.ip });
+            return res.status(500).json({ error: error.message || 'Could not fetch roles.' });
         }
     }
 
@@ -30,12 +36,15 @@ class RoleController {
         try {
             const { roleID } = req.params;
             if (!roleID) {
-                return res.status(400).json({ error: "Role ID is required." });
+                logger.warn(`Get role failed: Missing roleID, user: ${req.user.userID}, IP: ${req.ip}`, { ip: req.ip });
+                return res.status(400).json({ error: 'Role ID is required.' });
             }
             const role = await RoleService.getRoleById(roleID);
-            res.status(200).json(role);
+            logger.info(`Fetched role ${roleID} by user ${req.user.userID}, IP: ${req.ip}`, { ip: req.ip });
+            return res.status(200).json(role);
         } catch (error) {
-            res.status(404).json({ error: error.message || "Role not found." });
+            logger.error(`Get role error: ${error.message}, user: ${req.user.userID}, IP: ${req.ip}`, { ip: req.ip });
+            return res.status(404).json({ error: error.message || 'Role not found.' });
         }
     }
 
@@ -45,12 +54,15 @@ class RoleController {
             const { roleID } = req.params;
             const { name, description } = req.body;
             if (!roleID) {
-                return res.status(400).json({ error: "Role ID is required." });
+                logger.warn(`Update role failed: Missing roleID, user: ${req.user.userID}, IP: ${req.ip}`, { ip: req.ip });
+                return res.status(400).json({ error: 'Role ID is required.' });
             }
-            const role = await RoleService.updateRole(roleID, { name, description });
-            res.status(200).json(role);
+            const role = await RoleService.updateRole(roleID, { name, description }, req.user.userID);
+            logger.info(`Updated role ${roleID} by user ${req.user.userID}, IP: ${req.ip}`, { ip: req.ip });
+            return res.status(200).json(role);
         } catch (error) {
-            res.status(400).json({ error: error.message || "Could not update role." });
+            logger.error(`Update role error: ${error.message}, user: ${req.user.userID}, IP: ${req.ip}`, { ip: req.ip });
+            return res.status(400).json({ error: error.message || 'Could not update role.' });
         }
     }
 
@@ -59,12 +71,15 @@ class RoleController {
         try {
             const { roleID } = req.params;
             if (!roleID) {
-                return res.status(400).json({ error: "Role ID is required." });
+                logger.warn(`Delete role failed: Missing roleID, user: ${req.user.userID}, IP: ${req.ip}`, { ip: req.ip });
+                return res.status(400).json({ error: 'Role ID is required.' });
             }
-            await RoleService.deleteRole(roleID);
-            res.status(200).json({ message: "Role deleted successfully." });
+            await RoleService.deleteRole(roleID, req.user.userID);
+            logger.info(`Deleted role ${roleID} by user ${req.user.userID}, IP: ${req.ip}`, { ip: req.ip });
+            return res.status(200).json({ message: 'Role deleted successfully.' });
         } catch (error) {
-            res.status(400).json({ error: error.message || "Could not delete role." });
+            logger.error(`Delete role error: ${error.message}, user: ${req.user.userID}, IP: ${req.ip}`, { ip: req.ip });
+            return res.status(400).json({ error: error.message || 'Could not delete role.' });
         }
     }
 
@@ -74,12 +89,15 @@ class RoleController {
             const { userID } = req.params;
             const { roleIDs } = req.body;
             if (!userID || !Array.isArray(roleIDs)) {
-                return res.status(400).json({ error: "User ID and role IDs are required." });
+                logger.warn(`Assign roles failed: Invalid input, user: ${req.user.userID}, IP: ${req.ip}`, { ip: req.ip });
+                return res.status(400).json({ error: 'User ID and role IDs are required.' });
             }
-            const result = await RoleService.assignRolesToUser(userID, roleIDs);
-            res.status(200).json(result);
+            const result = await RoleService.assignRolesToUser(userID, roleIDs, req.user.userID);
+            logger.info(`Assigned roles to user ${userID} by ${req.user.userID}, IP: ${req.ip}`, { ip: req.ip });
+            return res.status(200).json(result);
         } catch (error) {
-            res.status(400).json({ error: error.message || "Could not assign roles." });
+            logger.error(`Assign roles error: ${error.message}, user: ${req.user.userID}, IP: ${req.ip}`, { ip: req.ip });
+            return res.status(400).json({ error: error.message || 'Could not assign roles.' });
         }
     }
 
@@ -89,14 +107,15 @@ class RoleController {
             const { userID } = req.params;
             const { roleIDs } = req.body;
             if (!userID || !Array.isArray(roleIDs) || roleIDs.length === 0) {
-                return res.status(400).json({
-                    error: "User ID and role IDs are required.",
-                });
+                logger.warn(`Revoke roles failed: Invalid input, user: ${req.user.userID}, IP: ${req.ip}`, { ip: req.ip });
+                return res.status(400).json({ error: 'User ID and role IDs are required.' });
             }
-            const result = await RoleService.revokeRolesFromUser(userID, roleIDs);
-            res.status(200).json(result);
+            const result = await RoleService.revokeRolesFromUser(userID, roleIDs, req.user.userID);
+            logger.info(`Revoked roles from user ${userID} by ${req.user.userID}, IP: ${req.ip}`, { ip: req.ip });
+            return res.status(200).json(result);
         } catch (error) {
-            res.status(400).json({ error: error.message || "Could not revoke roles." });
+            logger.error(`Revoke roles error: ${error.message}, user: ${req.user.userID}, IP: ${req.ip}`, { ip: req.ip });
+            return res.status(400).json({ error: error.message || 'Could not revoke roles.' });
         }
     }
 
@@ -105,25 +124,30 @@ class RoleController {
         try {
             const { userID } = req.params;
             if (!userID) {
-                return res.status(400).json({ error: "User ID is required." });
+                logger.warn(`Get user roles failed: Missing userID, user: ${req.user.userID}, IP: ${req.ip}`, { ip: req.ip });
+                return res.status(400).json({ error: 'User ID is required.' });
             }
             const roles = await RoleService.getRolesByUser(userID);
-            res.status(200).json(roles);
+            logger.info(`Fetched roles for user ${userID} by ${req.user.userID}, IP: ${req.ip}`, { ip: req.ip });
+            return res.status(200).json(roles);
         } catch (error) {
-            res.status(404).json({ error: error.message || "Could not fetch user roles." });
+            logger.error(`Get user roles error: ${error.message}, user: ${req.user.userID}, IP: ${req.ip}`, { ip: req.ip });
+            return res.status(404).json({ error: error.message || 'Could not fetch user roles.' });
         }
     }
 
     // Reset main roles
     static async resetMainRoles(req, res) {
         try {
-            const result = await RoleService.resetMainRolesToDefault();
-            res.status(200).json({
-                message: "Main roles reset successfully.",
+            const result = await RoleService.resetMainRolesToDefault(req.user.userID);
+            logger.info(`Reset main roles by user ${req.user.userID}, IP: ${req.ip}`, { ip: req.ip });
+            return res.status(200).json({
+                message: 'Main roles reset successfully.',
                 details: result,
             });
         } catch (error) {
-            res.status(500).json({ error: error.message || "Could not reset roles." });
+            logger.error(`Reset roles error: ${error.message}, user: ${req.user.userID}, IP: ${req.ip}`, { ip: req.ip });
+            return res.status(500).json({ error: error.message || 'Could not reset roles.' });
         }
     }
 }
