@@ -45,11 +45,6 @@
     transition: transform 0.2s ease, box-shadow 0.2s ease;
   }
   
-  .maps-card:hover {
-    transform: translateY(-4px);
-    box-shadow: 0 6px 16px rgba(0, 0, 0, 0.2);
-  }
-  
   .maps-card__title {
     font-size: 1.25rem;
     font-weight: 600;
@@ -172,7 +167,9 @@
     grid-row: span 2 / span 2;
     grid-column-start: 4;
     grid-row-start: 1;
-    background-color: blue;
+    background-color: white;
+    border-radius: 10px;
+    border: solid black 1px;
   }
   
   .div8 {
@@ -180,19 +177,23 @@
     grid-row: span 2 / span 2;
     grid-column-start: 1;
     grid-row-start: 6;
-    background-color: yellow;
+    background-color: white;
+    border-radius: 10px;
+    border: solid black 1px;
   }
   
   .div11 {
     grid-row: span 5 / span 5;
     grid-column-start: 5;
     grid-row-start: 3;
-    background-color: lightblue;
+    background-color: white;
+    border-radius: 10px;
+    border: solid black 1px;
   }
   
   /* Dark Mode Styles */
   body.dark .charts-card {
-    background-color: #1f2937; /* Dark gray */
+    background: linear-gradient(135deg, #1f2937, #374151); /* Dark gradient */
     border-color: #4b5563; /* Lighter gray border */
   }
   
@@ -201,9 +202,9 @@
     border-color: #4b5563;
     box-shadow: 0 4px 12px rgba(0, 0, 0, 0.3);
   }
-  
-  body.dark .maps-card:hover {
-    box-shadow: 0 6px 16px rgba(0, 0, 0, 0.4);
+
+  .card-title{
+    font-size: 2rem;
   }
   
   body.dark .maps-card__title {
@@ -218,7 +219,7 @@
   
   body.dark .stats-card1,
   body.dark .stats-card2 {
-    background-color: #1f2937;
+    background: linear-gradient(135deg, #1f2937, #374151); /* Dark gradient */
     border-color: #4b5563;
   }
   
@@ -245,15 +246,18 @@
   }
   
   body.dark .div4 {
-    background-color: #1e3a8a; /* Darker blue */
+    background: linear-gradient(135deg, #1f2937, #374151); /* Dark gradient */
+    border-color: #4b5563;
   }
   
   body.dark .div8 {
-    background-color: #d97706; /* Darker yellow/orange */
+    background: linear-gradient(135deg, #1f2937, #374151); /* Dark gradient */
+    border-color: #4b5563;
   }
   
   body.dark .div11 {
-    background-color: #1e40af; /* Darker light blue */
+    background: linear-gradient(135deg, #1f2937, #374151); /* Dark gradient */
+    border-color: #4b5563;
   }
   
   /* Optional: Background for the entire container */

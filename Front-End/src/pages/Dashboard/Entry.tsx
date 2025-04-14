@@ -11,6 +11,7 @@ import { GoogleMap, LoadScript, Marker } from "@react-google-maps/api";
 import { Chart as ChartJS, ArcElement, Tooltip, Legend } from "chart.js";
 import "./Entry.css";
 import { useTheme } from "../../context/ThemeContext";
+import { FaSun } from "react-icons/fa";
 
 // Register Chart.js components
 ChartJS.register(ArcElement, Tooltip, Legend);
@@ -186,7 +187,10 @@ const Entry: React.FC = () => {
         <main className="p-6 grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
           <div className="parent">
             <div className="charts-card">
-              <h2>Charts</h2>
+              <div>
+                <FaSun />
+                <span className="card-title">Charts</span>
+              </div>
               <div
                 style={{
                   display: "flex",
