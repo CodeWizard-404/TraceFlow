@@ -12,7 +12,7 @@
     "test:ui": "vitest --ui"
   },
   "dependencies": {
-    "@fingerprintjs/fingerprintjs": "^4.6.1",
+    "@fingerprintjs/fingerprintjs": "^4.6.2",
     "@hookform/resolvers": "^5.0.0",
     "@radix-ui/react-label": "^2.1.2",
     "@radix-ui/react-popover": "^1.1.6",
@@ -27,7 +27,7 @@
     "dotenv": "^16.4.7",
     "fingerprintjs2": "^2.1.4",
     "flatpickr": "^4.6.13",
-    "framer-motion": "^12.6.3",
+    "framer-motion": "^12.6.5",
     "front-end": "file:",
     "html5-qrcode": "^2.3.8",
     "js-cookie": "^3.0.5",

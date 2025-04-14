@@ -1,27 +1,63 @@
-import api from "./axiosConfig";
-import { LoginResponse, Verify2FAResponse, Resend2FAResponse } from ".";
+import api from './axiosConfig';
+import {
+    InitiatePasswordResetResponse,
+    LoginResponse,
+    Resend2FAResponse,
+    ResetPasswordResponse,
+    Verify2FAResponse,
+    VerifyPasswordResetOTPResponse,
+} from './index';
 
+interface AxiosErrorResponse {
+    response?: {
+        data?: {
+            error?: string;
+        };
+        status?: number;
+    };
+}
 
+const handleApiError = (error: unknown, defaultMessage: string): string => {
+    if (error instanceof Error && 'response' in error) {
+        const axiosError = error as AxiosErrorResponse;
+        if (axiosError.response?.data?.error) {
+            return axiosError.response.data.error;
+        }
+        switch (axiosError.response?.status) {
+            case 400:
+                return 'Invalid request. Please check your input.';
+            case 401:
+                return 'Authentication failed. Please log in again.';
+            case 403:
+                return 'You don’t have permission to perform this action.';
+            case 404:
+                return 'Resource not found.';
+            case 500:
+                return 'Server error. Please try again later.';
+            default:
+                return defaultMessage;
+        }
+    }
+    return defaultMessage;
+};
 
 export const login = async (
     identifier: string,
     password: string,
     deviceIdentifier: string,
-    otpMethod: "phone" | "email" = "phone"
+    otpMethod: string
 ): Promise<LoginResponse> => {
-    const response = await api.post<LoginResponse>("/auth/login", {
-        identifier,
-        password,
-        deviceIdentifier,
-        otpMethod,
-    });
-    if (!response.data.requires2FA) {
-        localStorage.setItem('accessToken', response.data.token!);
-        localStorage.setItem('refreshToken', response.data.refreshToken!);
-        localStorage.setItem('expiresIn', response.data.expiresIn!.toString());
-        scheduleTokenRefresh(response.data.expiresIn!);
+    try {
+        const response = await api.post('/auth/login', {
+            identifier,
+            password,
+            deviceIdentifier,
+            otpMethod,
+        });
+        return response.data;
+    } catch (error) {
+        throw new Error(handleApiError(error, 'Login failed'));
     }
-    return response.data;
 };
 
 export const verify2FA = async (
@@ -32,67 +68,42 @@ export const verify2FA = async (
     tempToken: string,
     refreshToken: string
 ): Promise<Verify2FAResponse> => {
-    const payload = { userID, otpCode, deviceIdentifier, trustDevice, tempToken, refreshToken };
-    console.log('Verify 2FA payload:', payload);
-    const response = await api.post<Verify2FAResponse>("/auth/verify-2fa", payload);
-    localStorage.setItem('accessToken', response.data.token);
-    localStorage.setItem('refreshToken', response.data.refreshToken);
-    localStorage.setItem('expiresIn', response.data.expiresIn.toString());
-    scheduleTokenRefresh(response.data.expiresIn);
-    return response.data;
-};
-
-export const refreshToken = async (): Promise<{ accessToken: string; refreshToken: string; expiresIn: number }> => {
-    const refreshToken = localStorage.getItem('refreshToken');
-    if (!refreshToken) throw new Error('No refresh token available');
-
     try {
-        const response = await api.post("/auth/refresh", { refreshToken });
-        localStorage.setItem('accessToken', response.data.accessToken);
-        localStorage.setItem('refreshToken', response.data.refreshToken);
-        localStorage.setItem('expiresIn', response.data.expiresIn.toString());
-        scheduleTokenRefresh(response.data.expiresIn);
+        const response = await api.post('/auth/verify-2fa', {
+            userID,
+            otpCode,
+            deviceIdentifier,
+            trustDevice,
+            tempToken,
+            refreshToken,
+        });
         return response.data;
     } catch (error) {
-        console.error("Error refreshing token:", error);
+        throw new Error(handleApiError(error, '2FA verification failed'));
+    }
+};
+
+export const logout = async (): Promise<void> => {
+    try {
+        await api.post('/auth/logout');
         localStorage.removeItem('accessToken');
-        localStorage.removeItem('refreshToken');
-        localStorage.removeItem('expiresIn');
-        localStorage.removeItem('token');
         localStorage.removeItem('user');
         localStorage.removeItem('supervisorFilter');
-        window.location.href = '/login';
-        throw error;
+    } catch (error) {
+        throw new Error(handleApiError(error, 'Logout failed'));
     }
 };
 
-const scheduleTokenRefresh = (expiresIn: number) => {
-    const bufferTime = 600; // Refresh 1 minute before expiry
-    setTimeout(async () => {
-        try {
-            await refreshToken();
-        } catch (error) {
-            console.error('Scheduled refresh failed:', error);
-        }
-    }, (expiresIn - bufferTime) * 1000);
-};
-
-// Update axiosConfig to handle 401 errors
-api.interceptors.response.use(
-    response => response,
-    async error => {
-        if (error.response?.status === 401 && error.response.data.error === 'Token expired, please refresh') {
-            try {
-                const newTokens = await refreshToken();
-                error.config.headers['Authorization'] = `Bearer ${newTokens.accessToken}`;
-                return api(error.config); // Retry original request
-            } catch (refreshError) {
-                return Promise.reject(refreshError);
-            }
-        }
-        return Promise.reject(error);
+export const refreshToken = async (): Promise<void> => {
+    try {
+        await api.post('/auth/refresh');
+    } catch (error) {
+        localStorage.removeItem('user');
+        localStorage.removeItem('accessToken');
+        localStorage.removeItem('supervisorFilter');
+        throw new Error(handleApiError(error, 'Unable to refresh session'));
     }
-);
+};
 
 export const resend2FA = async (
     userID: string,
@@ -102,45 +113,51 @@ export const resend2FA = async (
         const response = await api.post<Resend2FAResponse>("/auth/resend-2fa", { userID, otpMethod });
         return response.data;
     } catch (error) {
-        console.error("Error resending 2FA:", error);
-        throw error;
+        throw new Error(handleApiError(error, "Unable to resend OTP. Please try again."));
     }
 };
 
 export const initiatePasswordReset = async (
     identifier: string
-): Promise<{ userID: string; message: string }> => {
+): Promise<InitiatePasswordResetResponse> => {
     try {
-        const response = await api.post("/auth/password-reset/initiate", { identifier });
+        const response = await api.post<InitiatePasswordResetResponse>("/auth/password-reset/initiate", { identifier });
         return response.data;
     } catch (error) {
-        console.error("Error initiating password reset:", error);
-        throw error;
+        throw new Error(
+            handleApiError(error, "Unable to initiate password reset. Please check your email or phone and try again.")
+        );
     }
 };
 
 export const verifyPasswordResetOTP = async (
     userID: string,
     otpCode: string
-): Promise<{ userID: string; message: string }> => {
+): Promise<VerifyPasswordResetOTPResponse> => {
     try {
-        const response = await api.post("/auth/password-reset/verify", { userID, otpCode });
+        const response = await api.post<VerifyPasswordResetOTPResponse>("/auth/password-reset/verify", {
+            userID,
+            otpCode,
+        });
         return response.data;
     } catch (error) {
-        console.error("Error verifying password reset OTP:", error);
-        throw error;
+        throw new Error(handleApiError(error, "Unable to verify OTP. Please check your OTP and try again."));
     }
 };
 
 export const resetPassword = async (
     userID: string,
-    newPassword: string
-): Promise<{ message: string }> => {
+    newPassword: string,
+    tempToken: string
+): Promise<ResetPasswordResponse> => {
     try {
-        const response = await api.post("/auth/password-reset/reset", { userID, newPassword });
+        const response = await api.post<ResetPasswordResponse>("/auth/password-reset/reset", {
+            userID,
+            newPassword,
+            tempToken,
+        });
         return response.data;
     } catch (error) {
-        console.error("Error resetting password:", error);
-        throw error;
+        throw new Error(handleApiError(error, "Unable to reset password. Please try again."));
     }
 };

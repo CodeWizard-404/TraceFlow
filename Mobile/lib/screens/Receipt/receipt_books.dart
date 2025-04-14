@@ -33,8 +33,7 @@ class _ReceiptBooksScreenState extends State<ReceiptBooksScreen> {
     final authProvider = Provider.of<AuthProvider>(context, listen: false);
     final receiptBookProvider = Provider.of<ReceiptBookProvider>(context, listen: false);
     await receiptBookProvider.fetchAndFilterReceiptBooksByHolder(
-      authProvider.user!.userID!,
-      authProvider.token!,
+      authProvider.user!.userID!
     );
   }
 

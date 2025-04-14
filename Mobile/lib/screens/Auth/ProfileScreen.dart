@@ -80,20 +80,10 @@ class ProfileScreenState extends State<ProfileScreen> with SingleTickerProviderS
   Future<void> _fetchProfile() async {
     final userProvider = Provider.of<UserProvider>(context, listen: false);
     final authProvider = Provider.of<AuthProvider>(context, listen: false);
-    final token = authProvider.token;
-
-    if (token == null) {
-      setState(() {
-        _errorMessage = 'No authentication token found. Please log in.';
-        _isLoading = false;
-      });
-      _redirectToLogin();
-      return;
-    }
-
+    if (kDebugMode) print('Fetching profile');
     setState(() => _isLoading = true);
     try {
-      await userProvider.fetchUserProfile(token);
+      await userProvider.fetchUserProfile();
       final user = userProvider.currentUser;
       if (user != null) {
         setState(() {
@@ -105,14 +95,16 @@ class ProfileScreenState extends State<ProfileScreen> with SingleTickerProviderS
           _profilePicBase64 = user.pfp;
           _isLoading = false;
         });
+        if (kDebugMode) print('Profile fetched: ${user.userID}');
       }
     } catch (e) {
       setState(() {
         _errorMessage = 'Failed to load profile: $e';
         _isLoading = false;
       });
-      if (_errorMessage!.contains('Invalid or expired token') || _errorMessage!.contains('jwt malformed')) {
-        authProvider.logout();
+      if (kDebugMode) print(_errorMessage);
+      if (_errorMessage!.contains('Invalid or expired token') || _errorMessage!.contains('401')) {
+        await authProvider.logout();
         _redirectToLogin();
       }
     }
@@ -121,14 +113,7 @@ class ProfileScreenState extends State<ProfileScreen> with SingleTickerProviderS
   Future<void> _updateProfile(String field) async {
     final userProvider = Provider.of<UserProvider>(context, listen: false);
     final authProvider = Provider.of<AuthProvider>(context, listen: false);
-    final token = authProvider.token;
-
-    if (token == null) {
-      setState(() => _updateMessage = 'No authentication token found. Please log in.');
-      _redirectToLogin();
-      return;
-    }
-
+    if (kDebugMode) print('Updating profile field: $field');
     final updates = {
       field: field == 'phone'
           ? _phoneController.text.replaceAll(RegExp(r'[^\d]'), '')
@@ -143,7 +128,7 @@ class ProfileScreenState extends State<ProfileScreen> with SingleTickerProviderS
 
     setState(() => _isLoading = true);
     try {
-      await userProvider.updateProfile(token, updates);
+      await userProvider.updateProfile(updates);
       setState(() {
         _isLoading = false;
         _updateMessage = 'Profile updated successfully';
@@ -151,65 +136,59 @@ class ProfileScreenState extends State<ProfileScreen> with SingleTickerProviderS
         _hasChanges = false;
         _formErrors.clear();
       });
-      await _fetchProfile(); // Refresh after save
+      if (kDebugMode) print('Profile updated successfully');
+      await _fetchProfile();
     } catch (e) {
       setState(() {
         _isLoading = false;
         _updateMessage = 'Failed to update profile: $e';
       });
-      if (_updateMessage!.contains('Invalid or expired token') || _updateMessage!.contains('jwt malformed')) {
-        authProvider.logout();
+      if (kDebugMode) print(_updateMessage);
+      if (_updateMessage!.contains('Invalid or expired token') || _updateMessage!.contains('401')) {
+        await authProvider.logout();
         _redirectToLogin();
       }
     }
   }
-
-
 
   Future<void> _updateProfilePicture() async {
     final picker = ImagePicker();
     final pickedFile = await picker.pickImage(source: ImageSource.gallery);
     if (pickedFile != null) {
       final bytes = await pickedFile.readAsBytes();
-      // Determine the MIME type based on the file extension or bytes
       String? mimeType = lookupMimeType(pickedFile.path, headerBytes: bytes);
       if (mimeType == null || !['image/jpeg', 'image/jpg', 'image/png'].contains(mimeType)) {
-        // Fallback to JPEG if MIME type is unknown or unsupported
         mimeType = 'image/jpeg';
       }
       final multipartFile = http.MultipartFile.fromBytes(
         'PFP',
         bytes,
         filename: 'profile.jpg',
-        contentType: MediaType.parse(mimeType), // Explicitly set MIME type
+        contentType: MediaType.parse(mimeType),
       );
       final updates = {'PFP': multipartFile};
       final userProvider = Provider.of<UserProvider>(context, listen: false);
       final authProvider = Provider.of<AuthProvider>(context, listen: false);
-      final token = authProvider.token;
-
-      if (token == null) {
-        setState(() => _updateMessage = 'No authentication token found. Please log in.');
-        _redirectToLogin();
-        return;
-      }
+      if (kDebugMode) print('Updating profile picture');
 
       setState(() => _isLoading = true);
       try {
-        await userProvider.updateProfile(token, updates);
+        await userProvider.updateProfile(updates);
         setState(() {
           _profilePicBase64 = userProvider.currentUser?.pfp;
           _isLoading = false;
           _updateMessage = 'Profile picture updated successfully';
         });
-        await _fetchProfile(); // Refresh after update
+        if (kDebugMode) print('Profile picture updated');
+        await _fetchProfile();
       } catch (e) {
         setState(() {
           _isLoading = false;
           _updateMessage = 'Failed to update profile picture: $e';
         });
-        if (_updateMessage!.contains('Invalid or expired token') || _updateMessage!.contains('jwt malformed')) {
-          authProvider.logout();
+        if (kDebugMode) print(_updateMessage);
+        if (_updateMessage!.contains('Invalid or expired token') || _updateMessage!.contains('401')) {
+          await authProvider.logout();
           _redirectToLogin();
         }
       }
@@ -221,36 +200,33 @@ class ProfileScreenState extends State<ProfileScreen> with SingleTickerProviderS
     final confirmPassword = _confirmPasswordController.text;
     if (newPassword != confirmPassword) {
       setState(() => _updateMessage = 'Passwords do not match');
+      if (kDebugMode) print(_updateMessage);
       return;
     }
     final userProvider = Provider.of<UserProvider>(context, listen: false);
     final authProvider = Provider.of<AuthProvider>(context, listen: false);
-    final token = authProvider.token;
-
-    if (token == null) {
-      setState(() => _updateMessage = 'No authentication token found. Please log in.');
-      _redirectToLogin();
-      return;
-    }
-
     final updates = {'password': newPassword};
+    if (kDebugMode) print('Updating password');
+
     setState(() => _isLoading = true);
     try {
-      await userProvider.updateProfile(token, updates);
+      await userProvider.updateProfile(updates);
       setState(() {
         _newPasswordController.clear();
         _confirmPasswordController.clear();
         _isLoading = false;
         _updateMessage = 'Password updated successfully';
       });
-      await _fetchProfile(); // Refresh after update
+      if (kDebugMode) print('Password updated');
+      await _fetchProfile();
     } catch (e) {
       setState(() {
         _isLoading = false;
         _updateMessage = 'Failed to update password: $e';
       });
-      if (_updateMessage!.contains('Invalid or expired token') || _updateMessage!.contains('jwt malformed')) {
-        authProvider.logout();
+      if (kDebugMode) print(_updateMessage);
+      if (_updateMessage!.contains('Invalid or expired token') || _updateMessage!.contains('401')) {
+        await authProvider.logout();
         _redirectToLogin();
       }
     }

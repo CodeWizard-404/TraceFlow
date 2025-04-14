@@ -1,5 +1,5 @@
 import React, { useState, useEffect, useMemo, useRef } from "react";
-import { useParams, useNavigate } from "react-router-dom";
+import { useParams, useNavigate, useLocation } from "react-router-dom";
 import { FaUser, FaPhone, FaListUl, FaCheckCircle, FaArrowLeft, FaCheck, FaCamera, FaTimes } from "react-icons/fa";
 import "./VisitValidation.css";
 import { getAgentById } from "../../apis/agentAPI";
@@ -15,7 +15,8 @@ const PERMISSIONS = {
 const VisitValidation: React.FC = () => {
     const { idVisit } = useParams<{ idVisit: string }>();
     const navigate = useNavigate();
-    const { token, effectivePermissions, permissionsLoaded } = useAuth();
+    const location = useLocation();
+    const { effectivePermissions, permissionsLoaded } = useAuth();
 
     const [visit, setVisit] = useState<Visit | null>(null);
     const [agent, setAgent] = useState<Agent | null>(null);
@@ -38,8 +39,16 @@ const VisitValidation: React.FC = () => {
     }), [effectivePermissions]);
 
     useEffect(() => {
+        if (permissionsLoaded && !location.state?.fromValidQRScan) {
+            setError("Access denied. Please scan a valid QR code first.");
+            navigate(`/visit/${idVisit}`, { replace: true });
+        }
+    }, [location.state, permissionsLoaded, navigate, idVisit]);
+
+    useEffect(() => {
+
         const fetchVisitData = async () => {
-            if (!idVisit || !token) {
+            if (!idVisit) {
                 setError("Missing visit ID or authentication token.");
                 setLoading(false);
                 return;
@@ -48,10 +57,10 @@ const VisitValidation: React.FC = () => {
 
             try {
                 setLoading(true);
-                const visitData = await getVisitById(idVisit, token);
+                const visitData = await getVisitById(idVisit);
                 setVisit(visitData);
                 if (visitData.agentID) {
-                    const agentData = await getAgentById(visitData.agentID, token);
+                    const agentData = await getAgentById(visitData.agentID);
                     setAgent(agentData);
                 }
                 const initialChecklist = visitData.Checklists?.map((cl) => ({
@@ -70,7 +79,7 @@ const VisitValidation: React.FC = () => {
         };
 
         fetchVisitData();
-    }, [idVisit, token, userPermissions.canLogVisits, permissionsLoaded]);
+    }, [idVisit, userPermissions.canLogVisits, permissionsLoaded]);
 
     const startCamera = async () => {
         console.log("Start Camera button clicked");
@@ -192,7 +201,7 @@ const VisitValidation: React.FC = () => {
                 comment,
             };
 
-            await logVisitDetails(idVisit, updatedVisitData, token!);
+            await logVisitDetails(idVisit, updatedVisitData);
             stopCamera();
             navigate("/timesheet");
         } catch (err) {

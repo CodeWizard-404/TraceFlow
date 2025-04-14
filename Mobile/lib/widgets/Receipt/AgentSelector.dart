@@ -59,7 +59,7 @@ class _AgentSelectorState extends State<AgentSelector> {
     _debounce = Timer(const Duration(milliseconds: 500), () async {
       if (value.length == 8) {
         try {
-          await agentProvider.fetchAgentByPhone(value, Provider.of<AuthProvider>(context, listen: false).token!);
+          await agentProvider.fetchAgentByPhone(value);
           final agent = agentProvider.currentAgent;
           if (agent != null) {
             widget.onRecipientIDChanged(agent.agentID);
@@ -71,6 +71,11 @@ class _AgentSelectorState extends State<AgentSelector> {
         } catch (e) {
           setState(() => _phoneError = 'Error fetching agent: $e');
           widget.onRecipientIDChanged(null);
+          if (e.toString().contains('401')) {
+            // Session expired, redirect to login
+            Provider.of<AuthProvider>(context, listen: false).logout();
+            Navigator.pushReplacementNamed(context, '/login');
+          }
         }
       }
     });
@@ -147,7 +152,10 @@ class _AgentSelectorState extends State<AgentSelector> {
                 ),
               ),
               actions: [
-                TextButton(onPressed: () => Navigator.pop(context), child: const Text('Cancel')),
+                TextButton(
+                  onPressed: () => Navigator.pop(context),
+                  child: const Text('Cancel'),
+                ),
               ],
             );
           },
@@ -170,7 +178,8 @@ class _AgentSelectorState extends State<AgentSelector> {
     final visibleAgents = agentsToShow.take(_visibleAgentsLimit).toList();
     final hasMore = agentsToShow.length > _visibleAgentsLimit;
 
-    print('Building UI, recipientID: ${widget.recipientID}, selectedAgent: ${selectedAgent?.name}, agents: ${agentProvider.agents.length}, filtered: ${agentsToShow.length}, visible: ${visibleAgents.length}');
+    print(
+        'Building UI, recipientID: ${widget.recipientID}, selectedAgent: ${selectedAgent?.name}, agents: ${agentProvider.agents.length}, filtered: ${agentsToShow.length}, visible: ${visibleAgents.length}');
 
     return Column(
       crossAxisAlignment: CrossAxisAlignment.start,

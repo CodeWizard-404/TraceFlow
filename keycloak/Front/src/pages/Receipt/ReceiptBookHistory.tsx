@@ -38,7 +38,7 @@ const ReceiptBookHistory: React.FC = () => {
     // Hooks
     const { bookID } = useParams<{ bookID: string }>(); // Receipt book ID from URL params
     const navigate = useNavigate();
-    const { token, effectivePermissions } = useAuth();
+    const { effectivePermissions } = useAuth();
 
     // State
     const [book, setBook] = useState<ReceiptBook | null>(null); // Current receipt book details
@@ -56,7 +56,7 @@ const ReceiptBookHistory: React.FC = () => {
     // Fetch receipt book details and transfer history
     useEffect(() => {
         const fetchData = async () => {
-            if (!bookID || !token || !userPermissions.canViewHistory) {
+            if (!bookID || !userPermissions.canViewHistory) {
                 setError("Access Denied or Invalid Book ID");
                 setLoading(false);
                 return;
@@ -65,8 +65,8 @@ const ReceiptBookHistory: React.FC = () => {
             setLoading(true);
             try {
                 const [bookData, historyData] = await Promise.all([
-                    getReceiptBookById(bookID, token),
-                    getTransferHistory(bookID, token),
+                    getReceiptBookById(bookID),
+                    getTransferHistory(bookID),
                 ]);
                 setBook(bookData);
                 setHistory(historyData);
@@ -81,7 +81,7 @@ const ReceiptBookHistory: React.FC = () => {
                 });
 
                 // Fetch user names
-                const userPromises = Array.from(userIDs).map(id => getUserById(id, token));
+                const userPromises = Array.from(userIDs).map(id => getUserById(id));
                 const userResults = await Promise.all(userPromises);
                 const newUsersMap = new Map<string, string>(
                     userResults.map(user => [user.userID, `${user.firstname} ${user.lastname}`])
@@ -90,7 +90,7 @@ const ReceiptBookHistory: React.FC = () => {
 
                 // Fetch agent names if applicable
                 if (agentIDs.size > 0) {
-                    const agentPromises = Array.from(agentIDs).map(id => getAgentById(id, token));
+                    const agentPromises = Array.from(agentIDs).map(id => getAgentById(id));
                     const agentResults = await Promise.all(agentPromises);
                     const newAgentsMap = new Map<string, string>(
                         agentResults.map(agent => [agent.agentID, `${agent.name} ${agent.lastname}`])
@@ -106,7 +106,7 @@ const ReceiptBookHistory: React.FC = () => {
         };
 
         fetchData();
-    }, [bookID, token, userPermissions.canViewHistory]);
+    }, [bookID, userPermissions.canViewHistory]);
 
     // Determine the role involved in a transfer
     const getRoleFromTransfer = (entry: ReceiptBookTransfer): string => {

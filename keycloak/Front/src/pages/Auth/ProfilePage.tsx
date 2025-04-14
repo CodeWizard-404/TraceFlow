@@ -18,7 +18,7 @@ import {
 } from "react-icons/fa";
 
 const ProfilePage: React.FC = () => {
-  const { user, token } = useAuth();
+  const { user } = useAuth(); // Removed token
   const [profileData, setProfileData] = useState<User | null>(null);
   const [editingField, setEditingField] = useState<string | null>(null);
   const [newPassword, setNewPassword] = useState("");
@@ -44,23 +44,24 @@ const ProfilePage: React.FC = () => {
 
   useEffect(() => {
     const loadUserProfile = async () => {
-      if (!token) {
-        setTempError("No authentication token found");
+      if (!user) {
+        setTempError("User not authenticated");
         setIsLoading(false);
         return;
       }
 
       try {
         setIsLoading(true);
-        const fullUser = await fetchUserProfile(token);
+        const fullUser = await fetchUserProfile();
         const completeUser: User = {
-          userID: fullUser.userID || user?.userID || "",
-          firstname: fullUser.firstname || user?.firstname || "",
-          lastname: fullUser.lastname || user?.lastname || "",
-          phone: fullUser.phone || user?.phone || "",
-          email: fullUser.email || user?.email || "",
-          wallet: fullUser.wallet || user?.wallet || "",
-          PFP: fullUser.PFP || user?.PFP || null,
+          keycloakId: user.keycloakId || "",
+          userID: fullUser.userID || user.userID || "",
+          firstname: fullUser.firstname || user.firstname || "",
+          lastname: fullUser.lastname || user.lastname || "",
+          phone: fullUser.phone || user.phone || "",
+          email: fullUser.email || user.email || "",
+          wallet: fullUser.wallet || user.wallet || "",
+          PFP: fullUser.PFP || user.PFP || null,
           password: "",
         };
 
@@ -80,10 +81,12 @@ const ProfilePage: React.FC = () => {
         }
 
         localStorage.setItem("user", JSON.stringify(completeUser));
-      } catch {
-        setTempError("Failed to load user profile");
+      } catch (err) {
+        console.error("Failed to load user profile:", err);
+        setTempError(err instanceof Error ? err.message : "Failed to load user profile");
         if (user) {
           const fallbackUser: User = {
+            keycloakId: user.keycloakId || "",
             userID: user.userID || "",
             firstname: user.firstname || "Not set",
             lastname: user.lastname || "Not set",
@@ -112,7 +115,7 @@ const ProfilePage: React.FC = () => {
     };
 
     loadUserProfile();
-  }, [token, user]);
+  }, [user]);
 
   // Validation Functions (unchanged)
   const validateName = (value: string, field: string): string => {
@@ -254,7 +257,7 @@ const ProfilePage: React.FC = () => {
   };
 
   const handleKeyDown = async (e: KeyboardEvent<HTMLInputElement>, field: keyof User) => {
-    if (e.key === "Enter" && profileData && token) {
+    if (e.key === "Enter" && profileData) {
       const error = formErrors[field];
       if (error) {
         setTempError(error);
@@ -262,7 +265,7 @@ const ProfilePage: React.FC = () => {
       }
       try {
         const updatedData: Partial<User> = { [field]: profileData[field] };
-        const response = await updateProfile(updatedData, token);
+        const response = await updateProfile(updatedData);
         const updatedUser: User = {
           ...profileData,
           ...response,
@@ -275,6 +278,7 @@ const ProfilePage: React.FC = () => {
         setRawWallet(updatedUser.wallet || "");
         localStorage.setItem("user", JSON.stringify(updatedUser));
       } catch (err) {
+        console.error("Profile update error:", err);
         setTempError(err instanceof Error ? err.message : "Failed to update profile");
         setProfileData(user || profileData);
         setRawPhone(user?.phone || profileData?.phone || "");
@@ -290,12 +294,12 @@ const ProfilePage: React.FC = () => {
   };
 
   const handleProfilePicChange = async (e: ChangeEvent<HTMLInputElement>) => {
-    if (!token || !e.target.files || e.target.files.length === 0) return;
+    if (!e.target.files || e.target.files.length === 0) return;
     const file = e.target.files[0];
     try {
       const formData = new FormData();
       formData.append("PFP", file);
-      const response = await updateProfile(formData, token);
+      const response = await updateProfile(formData); // No token
       if (response.PFP) {
         const imageSrc = `data:image/jpeg;base64,${response.PFP}`;
         setProfilePic(imageSrc);
@@ -305,12 +309,13 @@ const ProfilePage: React.FC = () => {
         localStorage.setItem("user", JSON.stringify(updatedUser));
       }
     } catch (err) {
+      console.error("Profile pic update error:", err);
       setTempError(err instanceof Error ? err.message : "Failed to update profile picture");
     }
   };
 
   const handlePasswordChange = async () => {
-    if (!token || !newPassword || !confirmPassword) return;
+    if (!newPassword || !confirmPassword) return;
     const passwordError = formErrors.newPassword;
     const confirmError = formErrors.confirmPassword;
     if (passwordError || confirmError) {
@@ -318,7 +323,7 @@ const ProfilePage: React.FC = () => {
       return;
     }
     try {
-      const response = await updateProfile({ password: newPassword }, token);
+      const response = await updateProfile({ password: newPassword }); // No token
       const updatedUser: User = { ...profileData!, ...response };
       setProfileData(updatedUser);
       setTempSuccess("Password updated successfully");
@@ -327,6 +332,7 @@ const ProfilePage: React.FC = () => {
       setFormErrors({ ...formErrors, newPassword: "", confirmPassword: "" });
       localStorage.setItem("user", JSON.stringify(updatedUser));
     } catch (err) {
+      console.error("Password update error:", err);
       setTempError(err instanceof Error ? err.message : "Failed to update password");
     }
   };

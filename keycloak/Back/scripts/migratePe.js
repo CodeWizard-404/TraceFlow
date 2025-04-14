@@ -1,8 +1,18 @@
 const axios = require('axios');
-const { Role, Permission, sequelize } = require('../models');
-const { setupAssociations } = require('../models');
-require('dotenv').config({ path: '../.env' });
+const path = require('path');
+const { sequelize } = require('../models');
+require('dotenv').config({ path: path.resolve(__dirname, '../.env') });
 
+// Debug environment variables
+console.log('Environment variables:', {
+    DB_HOST: process.env.DB_HOST,
+    DB_PORT: process.env.DB_PORT,
+    DB_USER: process.env.DB_USER,
+    DB_PASSWORD: process.env.DB_PASSWORD,
+    DB_NAME: process.env.DB_NAME,
+});
+
+// Keycloak config
 const KEYCLOAK_URL = process.env.KEYCLOAK_URL || 'http://localhost:8080';
 const REALM = process.env.REALM || 'TraceFlow';
 const ADMIN_USER = process.env.ADMIN_USER || 'admin';
@@ -10,124 +20,193 @@ const ADMIN_PASS = process.env.ADMIN_PASS || 'admin';
 const CLIENT_ID = process.env.KEYCLOAK_CLIENT_ID || 'traceflow-backend';
 
 async function getAdminToken() {
-    const response = await axios.post(
-        `${KEYCLOAK_URL}/realms/master/protocol/openid-connect/token`,
-        new URLSearchParams({
-            grant_type: 'password',
-            client_id: 'admin-cli',
-            username: ADMIN_USER,
-            password: ADMIN_PASS,
-        })
-    );
-    return response.data.access_token;
+    try {
+        const response = await axios.post(
+            `${KEYCLOAK_URL}/realms/master/protocol/openid-connect/token`,
+            new URLSearchParams({
+                grant_type: 'password',
+                client_id: 'admin-cli',
+                username: ADMIN_USER,
+                password: ADMIN_PASS,
+            })
+        );
+        return response.data.access_token;
+    } catch (err) {
+        throw new Error(`Failed to get admin token: ${err.response?.data?.error_description || err.message}`);
+    }
 }
 
 async function getClientUUID(token) {
-    const response = await axios.get(
-        `${KEYCLOAK_URL}/admin/realms/${REALM}/clients?clientId=${CLIENT_ID}`,
-        { headers: { Authorization: `Bearer ${token}` } }
-    );
-    const client = response.data.find(c => c.clientId === CLIENT_ID);
-    if (!client) throw new Error(`Client ${CLIENT_ID} not found`);
-    return client.id;
-}
-
-async function migratePermissionsKeycloakAssignments() {
     try {
-        setupAssociations();
-        const token = await getAdminToken();
-        const clientUUID = await getClientUUID(token);
-
-        const roles = await Role.findAll({
-            include: [{ model: Permission, through: { attributes: [] } }],
-        });
-
-        const policiesResponse = await axios.get(
-            `${KEYCLOAK_URL}/admin/realms/${REALM}/clients/${clientUUID}/authz/resource-server/policy`,
+        const response = await axios.get(
+            `${KEYCLOAK_URL}/admin/realms/${REALM}/clients?clientId=${CLIENT_ID}`,
             { headers: { Authorization: `Bearer ${token}` } }
         );
-        const policies = policiesResponse.data;
+        const client = response.data.find(c => c.clientId === CLIENT_ID);
+        if (!client) throw new Error(`Client ${CLIENT_ID} not found in realm ${REALM}`);
+        return client.id;
+    } catch (err) {
+        throw new Error(`Failed to get client UUID: ${err.response?.data?.error_description || err.message}`);
+    }
+}
 
-        const resourcesResponse = await axios.get(
+async function getExistingResources(token, clientUUID) {
+    try {
+        const response = await axios.get(
             `${KEYCLOAK_URL}/admin/realms/${REALM}/clients/${clientUUID}/authz/resource-server/resource`,
             { headers: { Authorization: `Bearer ${token}` } }
         );
-        const resources = resourcesResponse.data;
+        return response.data;
+    } catch (err) {
+        throw new Error(`Failed to fetch resources: ${err.response?.data?.error_description || err.message}`);
+    }
+}
 
-        const permissionsResponse = await axios.get(
+async function getExistingPolicies(token, clientUUID) {
+    try {
+        const response = await axios.get(
+            `${KEYCLOAK_URL}/admin/realms/${REALM}/clients/${clientUUID}/authz/resource-server/policy`,
+            { headers: { Authorization: `Bearer ${token}` } }
+        );
+        return response.data.filter(policy => policy.type === 'role');
+    } catch (err) {
+        throw new Error(`Failed to fetch policies: ${err.response?.data?.error_description || err.message}`);
+    }
+}
+
+async function getExistingPermissions(token, clientUUID) {
+    try {
+        const response = await axios.get(
             `${KEYCLOAK_URL}/admin/realms/${REALM}/clients/${clientUUID}/authz/resource-server/permission`,
             { headers: { Authorization: `Bearer ${token}` } }
         );
-        const existingPermissions = permissionsResponse.data;
+        return response.data;
+    } catch (err) {
+        throw new Error(`Failed to fetch permissions: ${err.response?.data?.error_description || err.message}`);
+    }
+}
 
-        const permissionPolicyMap = {};
-        for (const role of roles) {
-            const rolePolicy = policies.find(p => p.name === `${role.name}-policy`);
-            if (!rolePolicy) {
+async function deletePermission(token, clientUUID, permissionId) {
+    try {
+        await axios.delete(
+            `${KEYCLOAK_URL}/admin/realms/${REALM}/clients/${clientUUID}/authz/resource-server/permission/${permissionId}`,
+            { headers: { Authorization: `Bearer ${token}` } }
+        );
+        console.log(`${new Date().toISOString()} - Deleted permission: ${permissionId}`);
+    } catch (err) {
+        console.error(`Failed to delete permission ${permissionId}: ${err.response?.data?.error_description || err.message}`);
+    }
+}
+
+const migratePermissionsToKeycloak = async () => {
+    try {
+        // Verify database connection
+        await sequelize.authenticate();
+        console.log(`${new Date().toISOString()} - Database connection successful`);
+
+        // Get Keycloak token and client
+        const token = await getAdminToken();
+        const clientUUID = await getClientUUID(token);
+
+        // Fetch Keycloak data
+        const keycloakResources = await getExistingResources(token, clientUUID);
+        const keycloakPolicies = await getExistingPolicies(token, clientUUID);
+
+        // Delete existing permissions
+        const existingPermissions = await getExistingPermissions(token, clientUUID);
+        if (existingPermissions.length > 0) {
+            console.log(`${new Date().toISOString()} - Deleting ${existingPermissions.length} existing permissions`);
+            await Promise.all(existingPermissions.map(perm => deletePermission(token, clientUUID, perm.id)));
+            console.log(`${new Date().toISOString()} - All permissions deleted`);
+        } else {
+            console.log(`${new Date().toISOString()} - No existing permissions found`);
+        }
+
+        // Fetch permissions with roles using raw query
+        console.log(`${new Date().toISOString()} - Fetching permissions with roles...`);
+        const [dbPermissions] = await sequelize.query(`
+      SELECT p."permissionID", p.name AS permission_name, array_agg(r.name) AS role_names
+      FROM "Permissions" p
+      LEFT JOIN "RolePermissions" rp ON p."permissionID" = rp."permissionID"
+      LEFT JOIN "Roles" r ON rp."roleID" = r."roleID"
+      GROUP BY p."permissionID", p.name
+    `);
+
+        console.log(`${new Date().toISOString()} - Found ${dbPermissions.length} permissions`);
+
+        if (dbPermissions.length === 0) {
+            console.warn(`${new Date().toISOString()} - No permissions found, exiting`);
+            return;
+        }
+
+        // Process permissions
+        for (const dbPerm of dbPermissions) {
+            const permName = dbPerm.permission_name;
+            console.log(`${new Date().toISOString()} - Processing permission: ${permName}`);
+
+            // Find matching resource
+            const resource = keycloakResources.find(r => r.name === permName);
+            if (!resource) {
+                console.warn(`${new Date().toISOString()} - No resource found for ${permName}, skipping`);
                 continue;
             }
 
-            for (const perm of role.Permissions) {
-                const resource = resources.find(r => r.name === perm.name);
-                if (!resource) {
-                    continue;
-                }
+            // Get role names
+            const roleNames = dbPerm.role_names ? dbPerm.role_names.filter(name => name) : [];
+            console.log(`${new Date().toISOString()} - Roles for ${permName}: ${roleNames.join(', ') || 'none'}`);
 
-                const permissionName = `${perm.name}-permission`;
-                if (!permissionPolicyMap[permissionName]) {
-                    permissionPolicyMap[permissionName] = {
-                        resourceId: resource._id,
-                        policies: new Set(),
-                    };
-                }
-                permissionPolicyMap[permissionName].policies.add(rolePolicy.id);
+            if (roleNames.length === 0) {
+                console.warn(`${new Date().toISOString()} - No roles for ${permName}, skipping`);
+                continue;
             }
-        }
 
-        for (const [permissionName, { resourceId, policies: policySet }] of Object.entries(permissionPolicyMap)) {
-            const policyIds = Array.from(policySet);
-            const existingPermission = existingPermissions.find(p => p.name === permissionName);
+            // Find matching policies
+            const policyIds = roleNames
+                .map(roleName => {
+                    const policy = keycloakPolicies.find(p => p.name === `${roleName}-policy`);
+                    return policy ? policy.id : null;
+                })
+                .filter(id => id);
 
-            if (existingPermission) {
-                const currentPolicies = existingPermission.policies || [];
-                const updatedPolicies = [...new Set([...currentPolicies, ...policyIds])];
-                if (updatedPolicies.length !== currentPolicies.length) {
-                    await axios.put(
-                        `${KEYCLOAK_URL}/admin/realms/${REALM}/clients/${clientUUID}/authz/resource-server/permission/resource/${existingPermission.id}`,
-                        {
-                            name: permissionName,
-                            description: `Permission for ${permissionName.replace('-permission', '')}`,
-                            type: 'resource',
-                            resources: [resourceId],
-                            policies: updatedPolicies,
-                            decisionStrategy: 'AFFIRMATIVE',
-                        },
-                        { headers: { Authorization: `Bearer ${token}` } }
-                    );
-                }
-            } else {
+            if (policyIds.length === 0) {
+                console.warn(`${new Date().toISOString()} - No policies found for ${permName}, skipping`);
+                continue;
+            }
+
+            // Create permission
+            const permissionName = `${permName}-permission`;
+            try {
                 await axios.post(
                     `${KEYCLOAK_URL}/admin/realms/${REALM}/clients/${clientUUID}/authz/resource-server/permission/resource`,
                     {
                         name: permissionName,
-                        description: `Permission for ${permissionName.replace('-permission', '')}`,
                         type: 'resource',
-                        resources: [resourceId],
+                        resources: [resource._id],
                         policies: policyIds,
+                        scopes: resource.scopes ? resource.scopes.map(s => s.name) : [],
+                        logic: 'POSITIVE',
                         decisionStrategy: 'AFFIRMATIVE',
                     },
                     { headers: { Authorization: `Bearer ${token}` } }
                 );
+                console.log(`${new Date().toISOString()} - Created permission: ${permissionName} with ${policyIds.length} policies`);
+            } catch (err) {
+                console.error(`${new Date().toISOString()} - Failed to create permission ${permissionName}: ${err.response?.data?.error_description || err.message}`);
             }
         }
+
+        console.log(`${new Date().toISOString()} - Migration complete`);
     } catch (error) {
-        console.error('Error:', error.response?.data || error.message);
+        console.error(`${new Date().toISOString()} - Migration error:`, error.message);
         throw error;
     }
-}
+};
 
 if (require.main === module) {
-    migratePermissionsKeycloakAssignments().catch(console.error);
+    migratePermissionsToKeycloak().catch(err => {
+        console.error('Migration failed:', err.message);
+        process.exit(1);
+    });
 }
 
-module.exports = { migratePermissionsKeycloakAssignments };
+module.exports = { migratePermissionsToKeycloak };

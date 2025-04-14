@@ -1,112 +1,91 @@
-const { Timesheet } = require('../models');
 const TimesheetService = require('../services/timesheetService');
+const logger = require('../utils/logger');
 
 class TimesheetController {
     static async createTimesheet(req, res) {
-        console.log(`Create timesheet request received:`, req.body);
         try {
             const { weekNumber, year, supervisorID, visits, status = 'pending' } = req.body;
             if (!weekNumber || !year || !supervisorID || !Array.isArray(visits)) {
+                logger.warn(`Create timesheet failed: Missing fields, user: ${req.user.userID}, IP: ${req.ip}`, { ip: req.ip });
                 return res.status(400).json({ error: 'Missing required fields: weekNumber, year, supervisorID, and visits array are mandatory' });
             }
             if (status && !['pending', 'validated'].includes(status)) {
+                logger.warn(`Create timesheet failed: Invalid status, user: ${req.user.userID}, IP: ${req.ip}`, { ip: req.ip });
                 return res.status(400).json({ error: 'Invalid status value. Must be "pending" or "validated"' });
             }
 
-            const timesheet = await TimesheetService.createTimesheet({ weekNumber, year, supervisorID, visits, status });
-            res.status(201).json(timesheet);
+            const timesheet = await TimesheetService.createTimesheet({ weekNumber, year, supervisorID, visits, status }, req.user.userID);
+            logger.info(`Timesheet created for supervisor ${supervisorID} by user ${req.user.userID}, IP: ${req.ip}`, { ip: req.ip });
+            return res.status(201).json(timesheet);
         } catch (error) {
-            console.error(`${new Date().toISOString()} - Create timesheet failed:`, error);
-            res.status(error.status || 500).json({ error: error.message || 'Failed to create timesheet due to an internal error' });
+            logger.error(`Create timesheet error: ${error.message}, user: ${req.user.userID}, IP: ${req.ip}`, { ip: req.ip });
+            return res.status(error.status || 500).json({ error: error.message || 'Failed to create timesheet due to an internal error' });
         }
     }
 
     static async validateTimesheet(req, res) {
-
-        console.log(`Validate timesheet request received:`, req.params, req.body);
         try {
             const { id } = req.params;
             const { visitIDs = [], status } = req.body;
+            if (!id) {
+                logger.warn(`Validate timesheet failed: Missing timesheet ID, user: ${req.user.userID}, IP: ${req.ip}`, { ip: req.ip });
+                return res.status(400).json({ error: 'Timesheet ID is required' });
+            }
             if (!status) {
+                logger.warn(`Validate timesheet failed: Missing status, user: ${req.user.userID}, IP: ${req.ip}`, { ip: req.ip });
                 return res.status(400).json({ error: 'Status is required to validate a timesheet' });
             }
-            const timesheet = await TimesheetService.validateTimesheet(id, visitIDs, status);
-            res.status(200).json(timesheet);
+            const timesheet = await TimesheetService.validateTimesheet(id, visitIDs, status, req.user.userID);
+            logger.info(`Timesheet ${id} validated by user ${req.user.userID}, IP: ${req.ip}`, { ip: req.ip });
+            return res.status(200).json(timesheet);
         } catch (error) {
-            console.error(`${new Date().toISOString()} - Validate timesheet failed:`, error);
-            res.status(error.status || 500).json({ error: error.message || 'Failed to validate timesheet due to an internal error' });
+            logger.error(`Validate timesheet error: ${error.message}, user: ${req.user.userID}, IP: ${req.ip}`, { ip: req.ip });
+            return res.status(error.status || 500).json({ error: error.message || 'Failed to validate timesheet due to an internal error' });
         }
     }
 
     static async getAllTimesheets(req, res) {
-        console.log(`Get all timesheets request received`, true);
         try {
             const timesheets = await TimesheetService.listTimesheets();
-            res.status(200).json(timesheets);
+            logger.info(`Fetched all timesheets by user ${req.user.userID}, IP: ${req.ip}`, { ip: req.ip });
+            return res.status(200).json(timesheets);
         } catch (error) {
-            console.error(`${new Date().toISOString()} - Get all timesheets failed:`, error);
-            res.status(500).json({ error: error.message || 'Failed to retrieve all timesheets due to an internal error' });
+            logger.error(`Get all timesheets error: ${error.message}, user: ${req.user.userID}, IP: ${req.ip}`, { ip: req.ip });
+            return res.status(500).json({ error: error.message || 'Failed to retrieve all timesheets due to an internal error' });
         }
     }
 
     static async getTimesheetById(req, res) {
-        console.log(`Get timesheet request received:`, req.params);
         try {
             const { id } = req.params;
+            if (!id) {
+                logger.warn(`Get timesheet failed: Missing timesheet ID, user: ${req.user.userID}, IP: ${req.ip}`, { ip: req.ip });
+                return res.status(400).json({ error: 'Timesheet ID is required' });
+            }
             const timesheet = await TimesheetService.viewTimesheet(id);
-            res.status(200).json(timesheet);
+            logger.info(`Fetched timesheet ${id} by user ${req.user.userID}, IP: ${req.ip}`, { ip: req.ip });
+            return res.status(200).json(timesheet);
         } catch (error) {
-            console.error(`${new Date().toISOString()} - Get timesheet failed:`, error);
-            res.status(error.status || 500).json({ error: error.message || 'Failed to retrieve timesheet due to an internal error' });
+            logger.error(`Get timesheet error: ${error.message}, user: ${req.user.userID}, IP: ${req.ip}`, { ip: req.ip });
+            return res.status(error.status || 500).json({ error: error.message || 'Failed to retrieve timesheet due to an internal error' });
         }
     }
 
     static async getTimesheetsBySupervisor(req, res) {
-        console.log(`Get timesheets by supervisor request received:`, req.params);
         try {
             const { supervisorID } = req.params;
+            if (!supervisorID) {
+                logger.warn(`Get timesheets by supervisor failed: Missing supervisorID, user: ${req.user.userID}, IP: ${req.ip}`, { ip: req.ip });
+                return res.status(400).json({ error: 'Supervisor ID is required' });
+            }
             const timesheets = await TimesheetService.getTimesheetsBySupervisor(supervisorID);
-            res.status(200).json(timesheets);
+            logger.info(`Fetched timesheets for supervisor ${supervisorID} by user ${req.user.userID}, IP: ${req.ip}`, { ip: req.ip });
+            return res.status(200).json(timesheets);
         } catch (error) {
-            console.error(`${new Date().toISOString()} - Get timesheets by supervisor failed:`, error);
-            res.status(error.status || 500).json({ error: error.message || 'Failed to retrieve timesheets for supervisor due to an internal error' });
+            logger.error(`Get timesheets by supervisor error: ${error.message}, user: ${req.user.userID}, IP: ${req.ip}`, { ip: req.ip });
+            return res.status(error.status || 500).json({ error: error.message || 'Failed to retrieve timesheets for supervisor due to an internal error' });
         }
     }
-
-    // static async updateTimesheet(req, res) {
-    //     console.log(`Update timesheet request received:`, req.params, req.body);
-    //     try {
-    //         const { id } = req.params;
-    //         const { weekNumber, year, status, visits } = req.body;
-    //         const parsedVisits = typeof visits === 'string' ? JSON.parse(visits) : visits;
-    //         const filesMap = {};
-    //         if (req.files) {
-    //             req.files.forEach(file => {
-    //                 const visitId = file.fieldname.split('.')[1]; // e.g., "photos.vis_123" -> "vis_123"
-    //                 if (!filesMap[visitId]) filesMap[visitId] = [];
-    //                 filesMap[visitId].push(file);
-    //             });
-    //         }
-
-    //         const timesheet = await TimesheetService.updateTimesheet(id, { weekNumber, year, status, visits: parsedVisits }, filesMap);
-    //         res.status(200).json(timesheet);
-    //     } catch (error) {
-    //         console.error(`${new Date().toISOString()} - Update timesheet failed:`, error);
-    //         res.status(error.status || 500).json({ error: error.message || 'Failed to update timesheet due to an internal error' });
-    //     }
-    // }
-
-    // static async deleteTimesheet(req, res) {
-    //     console.log(`Delete timesheet request received:`, req.params);
-    //     try {
-    //         const { id } = req.params;
-    //         const result = await TimesheetService.deleteTimesheet(id);
-    //         res.status(200).json(result);
-    //     } catch (error) {
-    //         console.error(`${new Date().toISOString()} - Delete timesheet failed:`, error);
-    //         res.status(error.status || 500).json({ error: error.message || 'Failed to delete timesheet due to an internal error' });
-    //     }
-    // }
 }
 
 module.exports = TimesheetController;

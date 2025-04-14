@@ -9,7 +9,6 @@ interface ReasonAddProps {
     reasons: Reason[];
     setReasons: React.Dispatch<React.SetStateAction<Reason[]>>;
     view: string;
-    token: string;
     setView: (view: ViewMode) => void;
     setError: (error: string | null) => void;
 }
@@ -18,7 +17,6 @@ const ReasonAdd: React.FC<ReasonAddProps> = ({
     reasons,
     setReasons,
     view,
-    token,
     setView,
     setError,
 }) => {
@@ -50,7 +48,7 @@ const ReasonAdd: React.FC<ReasonAddProps> = ({
         }
         setLoading(true);
         try {
-            const createdReason = await createReason({ text: newItem.trim() }, token);
+            const createdReason = await createReason({ text: newItem.trim() });
             setReasons([...reasons, createdReason]);
             setNewItem("");
             setView("reasons");

@@ -1,86 +1,173 @@
-// lib/services/receipt_book_service.dart
-import 'dart:convert';
+import 'package:flutter/foundation.dart';
 import 'package:http/http.dart' as http;
+import 'dart:convert';
 import '../models/receipt_book.dart';
 import '../utils/constants.dart';
+import '../services/cookie_manager.dart';
 
 class ReceiptBookService {
-  static Future<List<ReceiptBook>> fetchAllReceiptBooks(String token) async {
-    final response = await http.get(
-      Uri.parse('$baseUrl/receipt-books'),
-      headers: {'Authorization': 'Bearer $token'},
-    );
-    if (response.statusCode == 200) {
-      final List<dynamic> decodedData = json.decode(response.body);
-      print('Raw API response for receipt books: $decodedData');
-      return decodedData.map((json) => ReceiptBook.fromJson(json)).toList();
-    } else {
-      throw Exception('Failed to fetch all receipt books: ${response.body}');
+  Future<List<ReceiptBook>> fetchAllReceiptBooks() async {
+    if (kDebugMode) print('ReceiptBookService: Fetching all receipt books');
+    try {
+      final headers = await CookieManager.getHeaders();
+      if (kDebugMode) print('Headers prepared: $headers');
+      final response = await http.get(
+        Uri.parse('$baseUrl/receipt-books'),
+        headers: headers,
+      );
+
+      if (kDebugMode) print('Response status: ${response.statusCode}');
+      CookieManager.extractCookies(response);
+
+      if (response.statusCode == 200) {
+        final List<dynamic> data = json.decode(response.body);
+        final books = data.map((json) => ReceiptBook.fromJson(json)).toList();
+        if (kDebugMode) print('Receipt books fetched: ${books.length}');
+        return books;
+      } else {
+        final error = 'Failed to fetch receipt books: ${response.statusCode}';
+        if (kDebugMode) print(error);
+        throw Exception(error);
+      }
+    } catch (e) {
+      if (kDebugMode) print('Error fetching receipt books: $e');
+      throw Exception('Error fetching receipt books: $e');
     }
   }
 
-  static Future<ReceiptBook> fetchReceiptBookById(String bookID, String token) async {
-    final response = await http.get(
-      Uri.parse('$baseUrl/receipt-books/$bookID'),
-      headers: {'Authorization': 'Bearer $token'},
-    );
-    if (response.statusCode == 200) {
-      return ReceiptBook.fromJson(json.decode(response.body));
-    } else {
-      throw Exception('Failed to fetch receipt book: ${response.body}');
+  Future<ReceiptBook?> fetchReceiptBookById(String bookID) async {
+    if (kDebugMode) print('ReceiptBookService: Fetching receipt book by ID: $bookID');
+    try {
+      final headers = await CookieManager.getHeaders();
+      if (kDebugMode) print('Headers prepared: $headers');
+      final response = await http.get(
+        Uri.parse('$baseUrl/receipt-books/$bookID'),
+        headers: headers,
+      );
+
+      if (kDebugMode) print('Response status: ${response.statusCode}');
+      CookieManager.extractCookies(response);
+
+      if (response.statusCode == 200) {
+        final data = json.decode(response.body);
+        final book = ReceiptBook.fromJson(data);
+        if (kDebugMode) print('Receipt book fetched: ${book.bookID}');
+        return book;
+      } else if (response.statusCode == 404) {
+        if (kDebugMode) print('No receipt book found for ID: $bookID');
+        return null;
+      } else {
+        final error = 'Failed to fetch receipt book: ${response.statusCode}';
+        if (kDebugMode) print(error);
+        throw Exception(error);
+      }
+    } catch (e) {
+      if (kDebugMode) print('Error fetching receipt book by ID: $e');
+      throw Exception('Error fetching receipt book: $e');
     }
   }
 
-  static Future<ReceiptBook> fetchReceiptBookByNumber(String number, String token) async {
-    final response = await http.get(
-      Uri.parse('$baseUrl/receipt-books/number/$number'),
-      headers: {'Authorization': 'Bearer $token'},
-    );
-    if (response.statusCode == 200) {
-      return ReceiptBook.fromJson(json.decode(response.body));
-    } else {
-      throw Exception('Failed to fetch receipt book by number: ${response.body}');
+  Future<ReceiptBook?> fetchReceiptBookByNumber(String number) async {
+    if (kDebugMode) print('ReceiptBookService: Fetching receipt book by number: $number');
+    try {
+      final headers = await CookieManager.getHeaders();
+      if (kDebugMode) print('Headers prepared: $headers');
+      final response = await http.get(
+        Uri.parse('$baseUrl/receipt-books/number/$number'),
+        headers: headers,
+      );
+
+      if (kDebugMode) print('Response status: ${response.statusCode}');
+      CookieManager.extractCookies(response);
+
+      if (response.statusCode == 200) {
+        final data = json.decode(response.body);
+        final book = ReceiptBook.fromJson(data);
+        if (kDebugMode) print('Receipt book fetched: ${book.bookID}');
+        return book;
+      } else if (response.statusCode == 404) {
+        if (kDebugMode) print('No receipt book found for number: $number');
+        return null;
+      } else {
+        final error = 'Failed to fetch receipt book: ${response.statusCode}';
+        if (kDebugMode) print(error);
+        throw Exception(error);
+      }
+    } catch (e) {
+      if (kDebugMode) print('Error fetching receipt book by number: $e');
+      throw Exception('Error fetching receipt book: $e');
     }
   }
 
-  static Future<void> transferReceiptBooks({
+  Future<void> transferReceiptBooks({
     required List<String> bookIDs,
     required String recipientID,
     required String recipientType,
-    required String token,
   }) async {
-    final response = await http.post(
-      Uri.parse('$baseUrl/receipt-books/transfer'),
-      headers: {
-        'Content-Type': 'application/json',
-        'Authorization': 'Bearer $token',
-      },
-      body: json.encode({
-        'bookIDs': bookIDs,
-        'recipientID': recipientID,
-        'recipientType': recipientType,
-      }),
-    );
-    if (response.statusCode != 200) {
-      throw Exception('Failed to transfer receipt books: ${response.body}');
+    if (kDebugMode) print('ReceiptBookService: Transferring receipt books: $bookIDs');
+    try {
+      final headers = await CookieManager.getHeaders();
+      if (kDebugMode) print('Headers prepared: $headers');
+      final response = await http.post(
+        Uri.parse('$baseUrl/receipt-books/transfer'),
+        headers: headers,
+        body: json.encode({
+          'bookIDs': bookIDs,
+          'recipientID': recipientID,
+          'recipientType': recipientType,
+        }),
+      );
+
+      if (kDebugMode) print('Response status: ${response.statusCode}');
+      CookieManager.extractCookies(response);
+
+      if (response.statusCode == 200) {
+        if (kDebugMode) print('Receipt books transferred successfully');
+      } else {
+        final error = 'Failed to transfer receipt books: ${response.statusCode}';
+        if (kDebugMode) print(error);
+        throw Exception(error);
+      }
+    } catch (e) {
+      if (kDebugMode) print('Error transferring receipt books: $e');
+      throw Exception('Error transferring receipt books: $e');
     }
   }
 
-  static Future<void> validateTransfer({
+  Future<void> validateTransfer({
     required List<String> bookIDs,
     required String recipientID,
     required String otpCode,
     required String recipientType,
-    required String token,
   }) async {
-    final response = await http.post(
-      Uri.parse('$baseUrl/receipt-books/validate-transfer'),
-      headers: {'Content-Type': 'application/json', 'Authorization': 'Bearer $token'},
-      body: json.encode({'bookIDs': bookIDs, 'recipientID': recipientID, 'otpCode': otpCode, 'recipientType': recipientType}),
-    );
-    if (response.statusCode != 200) {
-      throw Exception('Failed to validate transfer: ${response.body}');
+    if (kDebugMode) print('ReceiptBookService: Validating transfer for books: $bookIDs');
+    try {
+      final headers = await CookieManager.getHeaders();
+      if (kDebugMode) print('Headers prepared: $headers');
+      final response = await http.post(
+        Uri.parse('$baseUrl/receipt-books/validate-transfer'),
+        headers: headers,
+        body: json.encode({
+          'bookIDs': bookIDs,
+          'recipientID': recipientID,
+          'otpCode': otpCode,
+          'recipientType': recipientType,
+        }),
+      );
+
+      if (kDebugMode) print('Response status: ${response.statusCode}');
+      CookieManager.extractCookies(response);
+
+      if (response.statusCode == 200) {
+        if (kDebugMode) print('Transfer validated successfully');
+      } else {
+        final error = 'Failed to validate transfer: ${response.statusCode}';
+        if (kDebugMode) print(error);
+        throw Exception(error);
+      }
+    } catch (e) {
+      if (kDebugMode) print('Error validating transfer: $e');
+      throw Exception('Error validating transfer: $e');
     }
-    // No need to parse response since it’s just a message
   }
 }

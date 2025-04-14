@@ -57,8 +57,8 @@ class _TransferReceiptBookScreenState extends State<TransferReceiptBookScreen> {
     final receiptBookProvider = Provider.of<ReceiptBookProvider>(context, listen: false);
     try {
       await Future.wait([
-        receiptBookProvider.fetchAndFilterReceiptBooksByHolder(authProvider.user!.userID!, authProvider.token!),
-        agentProvider.fetchUniqueLocations(authProvider.token!),
+        receiptBookProvider.fetchAndFilterReceiptBooksByHolder(authProvider.user!.userID!),
+        agentProvider.fetchUniqueLocations(),
       ]);
       print('User books loaded: ${receiptBookProvider.receiptBooks.length}');
     } catch (e) {
@@ -70,7 +70,7 @@ class _TransferReceiptBookScreenState extends State<TransferReceiptBookScreen> {
     final authProvider = Provider.of<AuthProvider>(context, listen: false);
     final userProvider = Provider.of<UserProvider>(context, listen: false);
     try {
-      await userProvider.getUsersByRole(role, authProvider.token!);
+      await userProvider.getUsersByRole(role);
     } catch (e) {
       setState(() => _error = 'Error loading users for $role: $e');
     }
@@ -116,7 +116,7 @@ class _TransferReceiptBookScreenState extends State<TransferReceiptBookScreen> {
         }
 
         try {
-          await receiptBookProvider.fetchReceiptBookByNumber(number, authProvider.token!);
+          await receiptBookProvider.fetchReceiptBookByNumber(number);
           if (receiptBookProvider.currentReceiptBook == null) {
             setState(() => _error = 'Book with number "$number" not found.');
             return;
@@ -219,13 +219,12 @@ class _TransferReceiptBookScreenState extends State<TransferReceiptBookScreen> {
     final receiptStubProvider = Provider.of<ReceiptStubProvider>(context, listen: false);
     try {
       if (_recipientType == "Stub Collection") {
-        await receiptStubProvider.collectStub(_selectedBookIDs.first, authProvider.token!);
+        await receiptStubProvider.collectStub(_selectedBookIDs.first);
       } else {
         await receiptBookProvider.transferReceiptBooks(
           bookIDs: _selectedBookIDs,
           recipientID: _recipientID!,
           recipientType: _recipientType == "Agent" ? "agent" : "user",
-          token: authProvider.token!,
         );
       }
       setState(() {
@@ -248,24 +247,19 @@ class _TransferReceiptBookScreenState extends State<TransferReceiptBookScreen> {
     final receiptBookProvider = Provider.of<ReceiptBookProvider>(context, listen: false);
     final receiptStubProvider = Provider.of<ReceiptStubProvider>(context, listen: false);
 
-    if (authProvider.token == null) {
-      setState(() => _error = 'Authentication token is missing.');
-      return;
-    }
+
 
     print('Validating transfer with:');
     print('  recipientType: $_recipientType');
     print('  bookID: ${_selectedBookIDs.first}');
     print('  otp: ${_otpController.text}');
-    print('  token: ${authProvider.token}');
     print('  recipientID: $_recipientID');
 
     try {
       if (_recipientType == "Stub Collection") {
         await receiptStubProvider.validateStubCollection(
           _selectedBookIDs.first,
-          _otpController.text,
-          authProvider.token!,
+          _otpController.text
         );
       } else {
         if (_recipientID == null) {
@@ -277,7 +271,6 @@ class _TransferReceiptBookScreenState extends State<TransferReceiptBookScreen> {
           recipientID: _recipientID!,
           otpCode: _otpController.text,
           recipientType: _recipientType == "Agent" ? "agent" : "user",
-          token: authProvider.token!,
         );
       }
       _otpTimer?.cancel();
@@ -286,7 +279,7 @@ class _TransferReceiptBookScreenState extends State<TransferReceiptBookScreen> {
       setState(() => _error = 'Failed to validate transfer: $e');
       print('Validation error details: $e');
       if (e.toString().contains('Null')) {
-        print('Null check - bookID: ${_selectedBookIDs.first}, otp: ${_otpController.text}, token: ${authProvider.token}, recipientID: $_recipientID');
+        print('Null check - bookID: ${_selectedBookIDs.first}, otp: ${_otpController.text},  recipientID: $_recipientID');
       }
     }
   }
@@ -381,7 +374,7 @@ class _TransferReceiptBookScreenState extends State<TransferReceiptBookScreen> {
                                 setState(() => _selectedLocation = value);
                                 if (value != null) {
                                   await Provider.of<AgentProvider>(context, listen: false)
-                                      .fetchAgentsByLocation(value, Provider.of<AuthProvider>(context, listen: false).token!);
+                                      .fetchAgentsByLocation(value);
                                 }
                               },
                             ),

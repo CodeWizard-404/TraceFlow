@@ -9,7 +9,6 @@ interface ChecklistAddProps {
     checklists: Checklist[];
     setChecklists: React.Dispatch<React.SetStateAction<Checklist[]>>;
     view: string;
-    token: string;
     setView: (view: ViewMode) => void;
     setError: (error: string | null) => void;
 }
@@ -23,7 +22,6 @@ const ChecklistAdd: React.FC<ChecklistAddProps> = ({
     checklists,
     setChecklists,
     view,
-    token,
     setView,
     setError,
 }) => {
@@ -59,7 +57,7 @@ const ChecklistAdd: React.FC<ChecklistAddProps> = ({
         }
         setLoading(true);
         try {
-            const createdChecklist = await createChecklist({ text: newItem.trim() }, token);
+            const createdChecklist = await createChecklist({ text: newItem.trim() });
             setChecklists([...checklists, createdChecklist]);
             setNewItem("");
             setView("checklists");

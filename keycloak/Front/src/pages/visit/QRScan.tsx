@@ -15,7 +15,7 @@ const QRScan: React.FC = () => {
     // Hooks
     const navigate = useNavigate();
     const location = useLocation();
-    const { token, effectivePermissions, permissionsLoaded } = useAuth();
+    const { effectivePermissions, permissionsLoaded } = useAuth();
     const visit = (location.state as { visit?: Visit })?.visit; // Visit data passed via location state
 
     // State
@@ -40,14 +40,6 @@ const QRScan: React.FC = () => {
         // Validate preconditions
         if (!visit || !visit.visitID) {
             console.error("No visit data provided. Please go back and select a visit.");
-            setLoading(false);
-            setStatus("");
-            return;
-        }
-
-        if (!token) {
-            console.error("No authentication token provided.");
-            setBackendError("Authentication required.");
             setLoading(false);
             setStatus("");
             return;
@@ -88,14 +80,15 @@ const QRScan: React.FC = () => {
             try {
                 const response = await verifyQrCode(
                     { qrData: decodedText, visitId: visit.visitID },
-                    token
                 );
                 if (response.valid) {
                     setStatus("Validating...");
                     await new Promise((resolve) => setTimeout(resolve, 100));
                     setIsSuccess(true);
                     await new Promise((resolve) => setTimeout(resolve, 100));
-                    navigate(`/visit/${visit.visitID}/validate-checklist`);
+                    navigate(`/visit/${visit.visitID}/validate-checklist`, {
+                        state: { fromValidQRScan: true, visit },
+                    });
                 } else {
                     setBackendError("Mismatch error");
                     setIsShaking(true);
@@ -144,7 +137,7 @@ const QRScan: React.FC = () => {
             }
             setIsMounted(false);
         };
-    }, [visit, navigate, token, permissionsLoaded, userPermissions.canScanVisits, isMounted]);
+    }, [visit, navigate, permissionsLoaded, userPermissions.canScanVisits, isMounted]);
 
     // Handlers
     const handleBack = () => {
@@ -176,12 +169,12 @@ const QRScan: React.FC = () => {
         );
     }
 
-    if (!token || !userPermissions.canScanVisits) {
+    if (!userPermissions.canScanVisits) {
         return (
             <div className="qr-scan-container">
                 <div className="qr-scan-error-card">
                     <h2>Oops!</h2>
-                    <p>{!token ? "Authentication required." : "Access Denied: You lack permission to scan visits."}</p>
+                    <p>Access Denied: You lack permission to scan visits.</p>
                     <button className="qr-back-btn" onClick={handleBack}>
                         Back
                     </button>

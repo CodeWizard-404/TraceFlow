@@ -1,6 +1,10 @@
 const cors = require('cors');
 const express = require('express');
+const cookieParser = require('cookie-parser');
 const path = require('path');
+const cron = require('node-cron');
+const otpService = require('./services/otpService');
+const logger = require('./utils/logger');
 const {
     initializeDatabase,
     initializeSMTP,
@@ -8,7 +12,7 @@ const {
     initializeServer,
 } = require('./config');
 const { sequelize } = require('./config/db');
-const { authenticateKeycloak } = require('./config/security');
+const { authenticateCookie } = require('./config/security');
 
 const { seedSuperAdmin } = require('./scripts/SeedSuperAdmin');
 const { seedMissingPermissions } = require('./scripts/seedPermissions');
@@ -33,42 +37,37 @@ const app = express();
 
 const allowedOrigins = [
     process.env.FRONTEND_URL || 'http://localhost:5173',
-    'http://localhost:3000',
-    'http://192.168.1.11:5173',
+    'http://192.168.1.16:5173',
 ];
 
 const corsOptions = {
     origin: (origin, callback) => {
-        if (!origin || allowedOrigins.includes(origin)) {
-            callback(null, true);
+        const allowed = allowedOrigins.includes(origin) || !origin;
+        if (allowed) {
+            callback(null, origin); // Reflect the exact origin
         } else {
-            callback(new Error('Not allowed by CORS'));
+            callback(new Error(`CORS not allowed for origin: ${origin}`));
         }
     },
     credentials: true,
     methods: ['GET', 'POST', 'PUT', 'DELETE', 'OPTIONS'],
-    allowedHeaders: ['Content-Type', 'Authorization'],
+    allowedHeaders: ['Content-Type', 'Authorization', 'Cookie'],
+    exposedHeaders: ['Set-Cookie'],
+    optionsSuccessStatus: 204,
 };
 
+
 app.use(cors(corsOptions));
+app.use(cookieParser());
 app.use(express.json());
 
-// Set RLS userID based on Keycloak token
-app.use((req, res, next) => {
-    if (req.user) {
-        sequelize.query(`SET jwt.claims.userID = '${req.user.userID}'`)
-            .catch(err => console.error(`${new Date().toISOString()} - Failed to set RLS userID:`, err));
-    }
-    next();
-});
-
 // Serve static files
-app.use('/api/uploads', express.static(path.join(__dirname, 'uploads')));
+app.use('/api/uploads', express.static(path.join(__dirname, 'Uploads')));
 
 app.use('/api/auth', authRoutes);
 
-// Apply Keycloak authentication to all /api routes
-app.use('/api', authenticateKeycloak);
+// Apply authentication to all /api routes
+app.use('/api', authenticateCookie);
 
 app.use('/api/users', userRoutes);
 app.use('/api/roles', roleRoutes);
@@ -82,14 +81,23 @@ app.use('/api/receipt-books', receiptBookRoutes);
 app.use('/api/receipt-stubs', receiptStubRoutes);
 
 // Test endpoint
-app.get('/test', authenticateKeycloak, (req, res) => {
+app.get('/api/test', authenticateCookie, (req, res) => {
     res.json({ message: 'Secure endpoint accessed', user: req.user });
 });
 
 // Error handler
 app.use((err, req, res, next) => {
-    console.error(`${new Date().toISOString()} - Server error:`, err.stack);
+    logger.error(`Server error: ${err.stack}`, { ip: req.ip });
     res.status(500).json({ error: 'Something went wrong!' });
+});
+
+cron.schedule('0 * * * *', async () => {
+    try {
+        logger.info('Cleaning up expired OTPs');
+        await otpService.cleanupExpiredOTPs();
+    } catch (error) {
+        logger.error('Error cleaning up OTPs:', error.message);
+    }
 });
 
 async function startApp() {
@@ -105,7 +113,6 @@ async function startApp() {
         summary[success ? 'successes' : 'failures']++;
     };
 
-    // ANSI color codes
     const colors = {
         reset: '\x1b[0m',
         cyan: '\x1b[36m',
@@ -142,7 +149,7 @@ async function startApp() {
         const endTime = new Date();
         const duration = ((endTime - startTime) / 1000).toFixed(2);
 
-        console.log(`\n${colors.cyan}=== TraceFlow Initialization Summary ===${colors.reset}`);
+        console.log(`\n${colors.cyan}========== TraceFlow Initialization Summary ========${colors.reset}`);
         console.log(`Date: ${new Date().toISOString()}`);
         console.log('Steps Completed:');
         summary.steps.forEach(({ step, success, message }) => {
@@ -153,7 +160,7 @@ async function startApp() {
         console.log(`${colors.yellow}Successes: ${summary.successes}${colors.reset}`);
         console.log(`${colors.yellow}Failures: ${summary.failures}${colors.reset}`);
         console.log(`Duration: ${duration} seconds`);
-        console.log(`${colors.cyan}=======================================${colors.reset}\n`);
+        console.log(`${colors.cyan}====================================================${colors.reset}\n`);
     } catch (error) {
         addStep('Initialization', false, `Failed: ${error.message}`);
         const endTime = new Date();

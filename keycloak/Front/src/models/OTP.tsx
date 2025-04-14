@@ -1,7 +1,7 @@
 interface OTP {
     otpID: string;
     code: string;
-    expiresAt: string; 
+    expiresAt: string;
     createdAt: string;
     userID: string;
     agentID?: string;

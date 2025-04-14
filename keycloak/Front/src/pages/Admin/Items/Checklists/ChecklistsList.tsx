@@ -9,7 +9,6 @@ interface ChecklistsListProps {
     checklists: Checklist[];
     setChecklists: React.Dispatch<React.SetStateAction<Checklist[]>>;
     view: string;
-    token: string;
     setSelectedChecklist: React.Dispatch<React.SetStateAction<Checklist | null>>;
     setError: (error: string | null) => void;
     searchQuery: string;
@@ -27,7 +26,6 @@ const ChecklistsList: React.FC<ChecklistsListProps> = ({
     checklists,
     setChecklists,
     view,
-    token,
     setSelectedChecklist,
     setError,
     searchQuery,
@@ -104,7 +102,7 @@ const ChecklistsList: React.FC<ChecklistsListProps> = ({
             return;
         }
         try {
-            const updatedChecklist = await updateChecklist(checklistID, { text: editedText.trim() }, token);
+            const updatedChecklist = await updateChecklist(checklistID, { text: editedText.trim() });
             setChecklists(checklists.map(c => c.checklistID === checklistID ? updatedChecklist : c));
             setEditingID(null);
             setError(null);
@@ -118,7 +116,7 @@ const ChecklistsList: React.FC<ChecklistsListProps> = ({
     const handleDelete = async (checklistID: string) => {
         if (!userPermissions.canDeleteChecklists || isFixedChecklist(checklistID)) return;
         try {
-            await deleteChecklist(checklistID, token);
+            await deleteChecklist(checklistID);
             setChecklists(checklists.filter(c => c.checklistID !== checklistID));
             setError(null);
         } catch (error) {

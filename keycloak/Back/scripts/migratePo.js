@@ -1,90 +1,94 @@
 const axios = require('axios');
-const { Role } = require('../models');
-require('dotenv').config();
+const path = require('path');
+require('dotenv').config({ path: path.resolve(__dirname, '../.env') });
 
+// Keycloak config from .env
 const KEYCLOAK_URL = process.env.KEYCLOAK_URL || 'http://localhost:8080';
 const REALM = process.env.REALM || 'TraceFlow';
 const ADMIN_USER = process.env.ADMIN_USER || 'admin';
 const ADMIN_PASS = process.env.ADMIN_PASS || 'admin';
 const CLIENT_ID = process.env.KEYCLOAK_CLIENT_ID || 'traceflow-backend';
 
+// Get Keycloak admin token
 async function getAdminToken() {
-    const response = await axios.post(
-        `${KEYCLOAK_URL}/realms/master/protocol/openid-connect/token`,
-        new URLSearchParams({
-            grant_type: 'password',
-            client_id: 'admin-cli',
-            username: ADMIN_USER,
-            password: ADMIN_PASS,
-        })
-    );
-    return response.data.access_token;
+    try {
+        const response = await axios.post(
+            `${KEYCLOAK_URL}/realms/master/protocol/openid-connect/token`,
+            new URLSearchParams({
+                grant_type: 'password',
+                client_id: 'admin-cli',
+                username: ADMIN_USER,
+                password: ADMIN_PASS,
+            })
+        );
+        return response.data.access_token;
+    } catch (err) {
+        throw new Error(`Failed to get admin token: ${err.response?.data?.error_description || err.message}`);
+    }
 }
 
+// Fetch the client UUID
 async function getClientUUID(token) {
-    const response = await axios.get(
-        `${KEYCLOAK_URL}/admin/realms/${REALM}/clients?clientId=${CLIENT_ID}`,
-        { headers: { Authorization: `Bearer ${token}` } }
-    );
-    const client = response.data.find(c => c.clientId === CLIENT_ID);
-    if (!client) throw new Error(`Client ${CLIENT_ID} not found in realm ${REALM}`);
-    return client.id;
+    try {
+        const response = await axios.get(
+            `${KEYCLOAK_URL}/admin/realms/${REALM}/clients?clientId=${CLIENT_ID}`,
+            { headers: { Authorization: `Bearer ${token}` } }
+        );
+        const client = response.data.find(c => c.clientId === CLIENT_ID);
+        if (!client) throw new Error(`Client ${CLIENT_ID} not found in realm ${REALM}`);
+        return client.id;
+    } catch (err) {
+        throw new Error(`Failed to get client UUID: ${err.response?.data?.error_description || err.message}`);
+    }
 }
 
-// Fetch all existing policies
+// Fetch all existing role-based policies
 async function getExistingPolicies(token, clientUUID) {
-    const response = await axios.get(
-        `${KEYCLOAK_URL}/admin/realms/${REALM}/clients/${clientUUID}/authz/resource-server/policy`,
-        { headers: { Authorization: `Bearer ${token}` } }
-    );
-    return response.data.filter(policy => policy.type === 'role'); // Only role-based policies
+    try {
+        const response = await axios.get(
+            `${KEYCLOAK_URL}/admin/realms/${REALM}/clients/${clientUUID}/authz/resource-server/policy`,
+            { headers: { Authorization: `Bearer ${token}` } }
+        );
+        return response.data.filter(policy => policy.type === 'role');
+    } catch (err) {
+        throw new Error(`Failed to fetch existing policies: ${err.response?.data?.error_description || err.message}`);
+    }
 }
 
 // Delete a single policy
 async function deletePolicy(token, clientUUID, policyId) {
-    await axios.delete(
-        `${KEYCLOAK_URL}/admin/realms/${REALM}/clients/${clientUUID}/authz/resource-server/policy/${policyId}`,
-        { headers: { Authorization: `Bearer ${token}` } }
-    );
-    console.log(`${new Date().toISOString()} - Deleted Keycloak policy with ID: ${policyId}`);
-}
-
-// Sync a local role to Keycloak and return its Keycloak ID
-async function syncRoleToKeycloak(token, role) {
     try {
-        const response = await axios.get(
-            `${KEYCLOAK_URL}/admin/realms/${REALM}/roles/${role.name}`,
+        await axios.delete(
+            `${KEYCLOAK_URL}/admin/realms/${REALM}/clients/${clientUUID}/authz/resource-server/policy/${policyId}`,
             { headers: { Authorization: `Bearer ${token}` } }
         );
-        return response.data.id; // Role already exists
+        console.log(`${new Date().toISOString()} - Deleted Keycloak policy with ID: ${policyId}`);
     } catch (err) {
-        if (err.response?.status === 404) {
-            await axios.post(
-                `${KEYCLOAK_URL}/admin/realms/${REALM}/roles`,
-                {
-                    name: role.name,
-                    description: role.description || `Role: ${role.name}`,
-                },
-                { headers: { Authorization: `Bearer ${token}` } }
-            );
-            const newRoleResponse = await axios.get(
-                `${KEYCLOAK_URL}/admin/realms/${REALM}/roles/${role.name}`,
-                { headers: { Authorization: `Bearer ${token}` } }
-            );
-            console.log(`${new Date().toISOString()} - Synced role to Keycloak: ${role.name}`);
-            return newRoleResponse.data.id;
-        }
-        throw err;
+        console.error(`Failed to delete policy ${policyId}: ${err.response?.data?.error_description || err.message}`);
     }
 }
 
-// Migrate policies to Keycloak
+// Fetch all roles from Keycloak realm
+async function getKeycloakRoles(token) {
+    try {
+        const response = await axios.get(
+            `${KEYCLOAK_URL}/admin/realms/${REALM}/roles`,
+            { headers: { Authorization: `Bearer ${token}` } }
+        );
+        return response.data;
+    } catch (err) {
+        throw new Error(`Failed to fetch Keycloak roles: ${err.response?.data?.error_description || err.message}`);
+    }
+}
+
+// Migrate policies to Keycloak based on existing Keycloak roles
 const migratePoliciesToKeycloak = async () => {
     try {
+        // Step 1: Get admin token and client UUID
         const token = await getAdminToken();
         const clientUUID = await getClientUUID(token);
 
-        // Step 1: Delete all existing role-based policies
+        // Step 2: Delete all existing role-based policies
         const existingPolicies = await getExistingPolicies(token, clientUUID);
         if (existingPolicies.length > 0) {
             console.log(`${new Date().toISOString()} - Found ${existingPolicies.length} existing role-based policies, deleting...`);
@@ -96,23 +100,17 @@ const migratePoliciesToKeycloak = async () => {
             console.log(`${new Date().toISOString()} - No existing role-based policies found`);
         }
 
-        // Step 2: Fetch roles from local DB and sync to Keycloak
-        const localRoles = await Role.findAll();
-        if (localRoles.length === 0) {
-            console.warn(`${new Date().toISOString()} - No roles found in local database, nothing to migrate`);
+        // Step 3: Fetch all roles from Keycloak
+        const keycloakRoles = await getKeycloakRoles(token);
+        if (keycloakRoles.length === 0) {
+            console.warn(`${new Date().toISOString()} - No roles found in Keycloak, nothing to migrate`);
             return;
         }
 
-        const syncedRoles = [];
-        for (const role of localRoles) {
-            const keycloakRoleId = await syncRoleToKeycloak(token, role);
-            syncedRoles.push({ name: role.name, id: keycloakRoleId });
-            // Optionally update local DB with Keycloak ID if you add a keycloakId field
-            // await role.update({ keycloakId: keycloakRoleId });
-        }
+        console.log(`${new Date().toISOString()} - Found ${keycloakRoles.length} roles in Keycloak`);
 
-        // Step 3: Create policies for synced roles
-        for (const role of syncedRoles) {
+        // Step 4: Create policies for each Keycloak role
+        for (const role of keycloakRoles) {
             try {
                 await axios.post(
                     `${KEYCLOAK_URL}/admin/realms/${REALM}/clients/${clientUUID}/authz/resource-server/policy/role`,
@@ -127,20 +125,23 @@ const migratePoliciesToKeycloak = async () => {
                 );
                 console.log(`${new Date().toISOString()} - Created Keycloak policy for role: ${role.name}`);
             } catch (err) {
-                console.error(`Failed to create policy for ${role.name}:`, err.response?.data || err.message);
+                console.error(`${new Date().toISOString()} - Failed to create policy for ${role.name}: ${err.response?.data?.error_description || err.message}`);
             }
         }
 
         console.log(`${new Date().toISOString()} - Keycloak policies migration complete`);
     } catch (error) {
-        console.error('Error migrating policies to Keycloak:', error);
+        console.error(`${new Date().toISOString()} - Error migrating policies to Keycloak:`, error.message);
         throw error;
     }
 };
 
 // Execute if run directly
 if (require.main === module) {
-    migratePoliciesToKeycloak().catch(console.error);
+    migratePoliciesToKeycloak().catch(err => {
+        console.error('Migration failed:', err.message);
+        process.exit(1);
+    });
 }
 
 module.exports = { migratePoliciesToKeycloak };

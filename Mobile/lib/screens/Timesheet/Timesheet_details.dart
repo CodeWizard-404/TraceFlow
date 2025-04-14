@@ -60,7 +60,6 @@ class TimesheetDetailsScreenState extends State<TimesheetDetailsScreen> with Sin
         final firstMonday = _getFirstMondayOfYear(now.year - 100);
         return (date.difference(firstMonday).inDays / 7).floor();
       case 'month':
-      // Calculate total months from a fixed past date (e.g., 100 years ago)
         final baseDate = DateTime(now.year - 100, 1, 1);
         final totalMonths = (date.year - baseDate.year) * 12 + date.month - baseDate.month;
         return totalMonths;
@@ -90,7 +89,6 @@ class TimesheetDetailsScreenState extends State<TimesheetDetailsScreen> with Sin
           _currentDate = firstMonday.add(Duration(days: index * 7));
           break;
         case 'month':
-        // Use a fixed base date to calculate the new month
           final baseDate = DateTime(now.year - 100, 1, 1);
           final totalMonths = index;
           final newYear = baseDate.year + (totalMonths ~/ 12);
@@ -127,9 +125,9 @@ class TimesheetDetailsScreenState extends State<TimesheetDetailsScreen> with Sin
   Future<void> _fetchTimesheets() async {
     final authProvider = Provider.of<AuthProvider>(context, listen: false);
     final timesheetProvider = Provider.of<TimesheetProvider>(context, listen: false);
-    if (authProvider.user?.userID != null && authProvider.token != null) {
+    if (authProvider.user?.userID != null) {
       await timesheetProvider
-          .fetchTimesheetsBySupervisor(authProvider.user!.userID!, authProvider.token!)
+          .fetchTimesheetsBySupervisor(authProvider.user!.userID!)
           .catchError((error) {
         Navigator.push(
           context,

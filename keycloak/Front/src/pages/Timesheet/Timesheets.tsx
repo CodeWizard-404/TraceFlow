@@ -11,20 +11,15 @@ import { getAllUsers, getSupervisorsByUser } from "../../apis/userAPI";
 import { FaClock, FaMapMarkerAlt, FaRegUser } from "react-icons/fa";
 import TimesheetStatus from "../../models/Enum/TimesheetStatus";
 
-
 const PERMISSIONS = {
   ACCESS_TIMESHEETS: import.meta.env.VITE_PERMISSIONS_ACCESS_TIMESHEETS,
   ACCESS_SUPERVISOR_TIMESHEETS: import.meta.env.VITE_PERMISSIONS_ACCESS_SUPERVISOR_TIMESHEETS,
-
   ACCESS_TIMESHEET_DETAILS: import.meta.env.VITE_PERMISSIONS_ACCESS_TIMESHEET_DETAILS,
-
   CREATE_TIMESHEETS: import.meta.env.VITE_PERMISSIONS_CREATE_TIMESHEETS,
   CREATE_SUPERVISOR_TIMESHEETS: import.meta.env.VITE_PERMISSIONS_CREATE_TIMESHEETS_FOR_SUPERVISOR,
   VALIDATE_TIMESHEETS: import.meta.env.VITE_PERMISSIONS_VALIDATE_TIMESHEETS,
-
   READ_USERS: import.meta.env.VITE_PERMISSIONS_READ_USERS,
   READ_SUPERVISORS: import.meta.env.VITE_PERMISSIONS_READ_SUPERVISORS,
-
   ACCESS_RECEIPT_BOOKS: import.meta.env.VITE_PERMISSIONS_ACCESS_RECEIPT_BOOKS,
 };
 
@@ -40,12 +35,11 @@ interface VisitWithSupervisor extends Visit {
   supervisorID?: string;
 }
 
-
 // Main Component
 const Timesheets: React.FC = () => {
   // Hooks
   const navigate = useNavigate();
-  const { user, token, userRoles, effectivePermissions, permissionsLoaded } = useAuth();
+  const { user, userRoles, effectivePermissions, permissionsLoaded } = useAuth();
   const supervisorID = user?.userID;
 
   // State
@@ -65,14 +59,10 @@ const Timesheets: React.FC = () => {
   const userPermissions = useMemo(() => ({
     canAccessTimesheets: effectivePermissions?.some(p => p.name === PERMISSIONS.ACCESS_TIMESHEETS),
     canAccessSupervisorTimesheets: effectivePermissions?.some(p => p.name === PERMISSIONS.ACCESS_SUPERVISOR_TIMESHEETS),
-
     canAccessTimesheetDetails: effectivePermissions?.some(p => p.name === PERMISSIONS.ACCESS_TIMESHEET_DETAILS),
-
     canCreateTimesheets: effectivePermissions?.some(p => p.name === PERMISSIONS.CREATE_TIMESHEETS),
     canCreateSupervisorTimesheets: effectivePermissions?.some(p => p.name === PERMISSIONS.CREATE_SUPERVISOR_TIMESHEETS),
-
     canValidateTimesheets: effectivePermissions?.some(p => p.name === PERMISSIONS.VALIDATE_TIMESHEETS),
-
     canReadUsers: effectivePermissions?.some(p => p.name === PERMISSIONS.READ_USERS),
     canReadSupervisors: effectivePermissions?.some(p => p.name === PERMISSIONS.READ_SUPERVISORS),
     canAccessReceiptBooks: effectivePermissions?.some(p => p.name === PERMISSIONS.ACCESS_RECEIPT_BOOKS),
@@ -88,15 +78,15 @@ const Timesheets: React.FC = () => {
       let data: Timesheet[] = [];
 
       if (userPermissions.canAccessTimesheets) {
-        data = await getAllTimesheets(token!);
+        data = await getAllTimesheets();
       } else if (userPermissions.canReadSupervisors) {
-        const supervisors = await getSupervisorsByUser(supervisorID!, token!);
+        const supervisors = await getSupervisorsByUser(supervisorID!);
         const supervisorTimesheetsPromises = supervisors.map(supervisor =>
-          getTimesheetsBySupervisor(supervisor.userID, token!)
+          getTimesheetsBySupervisor(supervisor.userID)
         );
         data = (await Promise.all(supervisorTimesheetsPromises)).flat();
       } else if (userPermissions.canAccessSupervisorTimesheets) {
-        data = await getTimesheetsBySupervisor(supervisorID!, token!);
+        data = await getTimesheetsBySupervisor(supervisorID!);
       }
 
       setTimesheets(data.filter(ts => ts.year === currentYear || (ts.year === currentYear - 1 && ts.weekNumber >= 52)));
@@ -112,11 +102,11 @@ const Timesheets: React.FC = () => {
     try {
       let userData: User[] = [];
       if (isSuperAdmin) {
-        userData = (await getAllUsers(token!)).filter(user =>
+        userData = (await getAllUsers()).filter(user =>
           user.Roles?.some(role => role.name.toLowerCase() === ROLES.SUPERVISOR.toLowerCase())
         );
       } else if (userPermissions.canReadSupervisors && supervisorID) {
-        userData = (await getSupervisorsByUser(supervisorID, token!));
+        userData = (await getSupervisorsByUser(supervisorID));
       }
       setUsers(userData);
     } catch (error) {
@@ -126,15 +116,15 @@ const Timesheets: React.FC = () => {
 
   // Effects
   useEffect(() => {
-    if (!permissionsLoaded || !supervisorID || !token) return;
+    if (!permissionsLoaded || !supervisorID) return;
     fetchTimesheets();
     updateCurrentWeekAndDay();
-  }, [currentYear, supervisorID, token, permissionsLoaded, userPermissions]);
+  }, [currentYear, supervisorID, permissionsLoaded, userPermissions]);
 
   useEffect(() => {
-    if (!token || !permissionsLoaded || (!userPermissions.canReadUsers && !userPermissions.canReadSupervisors)) return;
+    if (!permissionsLoaded || (!userPermissions.canReadUsers && !userPermissions.canReadSupervisors)) return;
     fetchUsers();
-  }, [token, permissionsLoaded, userPermissions, supervisorID, isSuperAdmin]);
+  }, [permissionsLoaded, userPermissions, supervisorID, isSuperAdmin]);
 
   useEffect(() => {
     if (userPermissions.canAccessTimesheets || userPermissions.canReadSupervisors) {
@@ -177,11 +167,11 @@ const Timesheets: React.FC = () => {
   const updateCurrentWeekAndDay = () => {
     const today = new Date();
     setCurrentWeek(getWeekNumber(today));
-    setCurrentDay(today.getDay() === 0 || today.getDay() === 6 ? new Date(today.setDate(today.getDate() - (today.getDay() || 7) + 1)) : today);
+    setCurrentDay(today);
   };
 
   const getWeekDays = (year: number, weekNumber: number): Date[] =>
-    Array.from({ length: 5 }, (_, i) => {
+    Array.from({ length: 7 }, (_, i) => {
       const jan1 = new Date(year, 0, 1);
       const firstFridayOffset = (5 - jan1.getDay() + 7) % 7;
       const firstMonday = new Date(year, 0, 1 + firstFridayOffset - 4);
@@ -249,7 +239,6 @@ const Timesheets: React.FC = () => {
         (ts.Visits || []).map(visit => ({
           ...visit,
           supervisorID: ts.supervisorID,
-          date: new Date(new Date(visit.date).getTime() - (24 * 60 * 60 * 1000)).toISOString()
         }))
       ),
       status: matchingTimesheets[0]?.status || "Not Scheduled",
@@ -285,7 +274,7 @@ const Timesheets: React.FC = () => {
     try {
       const timesheet = filteredTimesheets.find(ts => ts.timesheetID === timesheetID);
       if (!timesheet) return;
-      await validateTimesheet(timesheetID, { visitIDs: timesheet.Visits?.map(v => v.visitID) || [], status: "validated" }, token!);
+      await validateTimesheet(timesheetID, { visitIDs: timesheet.Visits?.map(v => v.visitID) || [], status: "validated" });
       await fetchTimesheets();
     } catch (error) {
       console.error("Failed to validate timesheet:", error);
@@ -300,11 +289,7 @@ const Timesheets: React.FC = () => {
     [users, supervisorSearch]
   );
 
-  // Early Returns
-  if (!token) {
-    navigate("/access-denied");
-    return null;
-  }
+
   if (loading) {
     return (
       <div className="page-loading">
@@ -332,7 +317,6 @@ const Timesheets: React.FC = () => {
         </div>
         <div className="action-buttons">
           {(userPermissions.canCreateTimesheets || userPermissions.canCreateSupervisorTimesheets) && (
-
             <button className="create-btn" onClick={() => navigate("/timesheet-form", { state: { year: currentYear } })}>
               Schedule Visit
             </button>
@@ -386,7 +370,7 @@ const Timesheets: React.FC = () => {
                     <span className="week-number">Week {week.weekNumber} :</span>
                     <span className="week-range">
                       {week.days[0].toLocaleDateString("en-GB", { day: "numeric", month: "short" })} -{" "}
-                      {week.days[4].toLocaleDateString("en-GB", { day: "numeric", month: "short" })} /
+                      {week.days[6].toLocaleDateString("en-GB", { day: "numeric", month: "short" })} /
                     </span>
                     <span className="visit-count">{week.visits.length} Visits</span>
                     {userPermissions.canReadSupervisors && (
@@ -421,7 +405,7 @@ const Timesheets: React.FC = () => {
                 <h3>Week {week.weekNumber}</h3>
                 <p className="week-range">
                   {week.days[0].toLocaleDateString("en-GB", { day: "numeric", month: "short" })} -{" "}
-                  {week.days[4].toLocaleDateString("en-GB", { day: "numeric", month: "short" })}
+                  {week.days[6].toLocaleDateString("en-GB", { day: "numeric", month: "short" })}
                 </p>
                 <p className="week-info">
                   {week.visits.length} Visits {!userPermissions.canReadSupervisors && `- Status: ${week.status}`}
@@ -449,7 +433,7 @@ const Timesheets: React.FC = () => {
                     <div className="week-details-info">
                       <p className="week-range">
                         {weekData.days[0].toLocaleDateString("en-GB", { day: "numeric", month: "short" })} -{" "}
-                        {weekData.days[4].toLocaleDateString("en-GB", { day: "numeric", month: "short" })}
+                        {weekData.days[6].toLocaleDateString("en-GB", { day: "numeric", month: "short" })}
                       </p>
                       <p className="week-status">
                         Status: {weekData.status}
@@ -467,8 +451,12 @@ const Timesheets: React.FC = () => {
                   </div>
                   <div className="days-grid">
                     {weekData.days.map(day => {
-                      const dayStr = day.toISOString().split("T")[0];
-                      const dayVisits = sortVisitsByTime(weekData.visits.filter(v => new Date(v.date).toISOString().split("T")[0] === dayStr));
+                      const dayStr = `${day.getFullYear()}-${String(day.getMonth() + 1).padStart(2, '0')}-${String(day.getDate()).padStart(2, '0')}`;
+                      const dayVisits = sortVisitsByTime(weekData.visits.filter(v => {
+                        const visitDate = new Date(v.date);
+                        const visitDateStr = `${visitDate.getFullYear()}-${String(visitDate.getMonth() + 1).padStart(2, '0')}-${String(visitDate.getDate()).padStart(2, '0')}`;
+                        return visitDateStr === dayStr;
+                      }));
                       return (
                         <div className="day-column" key={dayStr}>
                           <div

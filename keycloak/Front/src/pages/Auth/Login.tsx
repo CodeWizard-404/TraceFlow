@@ -2,7 +2,6 @@ import React, { useState, useEffect, useCallback } from "react";
 import FingerprintJS from "@fingerprintjs/fingerprintjs";
 import { useAuth } from "../../context/AuthContext";
 import { useError } from "../../context/ErrorContext";
-import { AxiosError } from "axios";
 import {
     login,
     verify2FA,
@@ -28,6 +27,9 @@ const LoginPage: React.FC = () => {
     const [loading, setLoading] = useState(false);
     const [userID, setUserID] = useState<string | null>(null);
     const [deviceIdentifier, setDeviceIdentifier] = useState<string | null>(null);
+    const [tempToken, setTempToken] = useState<string | null>(null);
+    const [refreshToken, setRefreshToken] = useState<string | null>(null);
+    const [tempResetToken, setTempResetToken] = useState<string | null>(null);
     const [timer, setTimer] = useState(600);
     const [resendCooldown, setResendCooldown] = useState(0);
     const [otpMethod, setOtpMethod] = useState<"phone" | "email">("phone");
@@ -35,11 +37,10 @@ const LoginPage: React.FC = () => {
     const [showPassword, setShowPassword] = useState(false);
     const [showNewPassword, setShowNewPassword] = useState(false);
     const [showConfirmPassword, setShowConfirmPassword] = useState(false);
-    const [tempToken, setTempToken] = useState<string | null>(null);
-    const [refreshToken, setRefreshToken] = useState<string | null>(null);
+    const [success, setSuccess] = useState<string | null>(null);
 
     const { loginUser } = useAuth();
-    const { error: globalError, setError: setGlobalError } = useError();
+    const { error, setError } = useError();
 
     // Load device fingerprint
     useEffect(() => {
@@ -51,13 +52,16 @@ const LoginPage: React.FC = () => {
         getFingerprint();
     }, []);
 
-    // Clear error message after 3 seconds
+    // Clear success or API error message after 3 seconds
     useEffect(() => {
-        if (globalError) {
-            const timeout = setTimeout(() => setGlobalError(null), 3000);
+        if (success || error) {
+            const timeout = setTimeout(() => {
+                setSuccess(null);
+                setError(null);
+            }, 3000);
             return () => clearTimeout(timeout);
         }
-    }, [globalError, setGlobalError]);
+    }, [success, error, setError]);
 
     // Timer for OTP expiration
     useEffect(() => {
@@ -78,17 +82,16 @@ const LoginPage: React.FC = () => {
     // Validation functions
     const validateIdentifier = (value: string): string => {
         if (!value) return "Please enter your email or phone number.";
-        if (!/^([^\s@]+@[^\s@]+\.[^\s@]+|\+?\d{10,15})$/.test(value)) return "Invalid email or phone format.";
+        const emailRegex = /^[^\s@]+@[^\s@]+\.[^\s@]+$/;
+        const phoneRegex = /^(?:\+\d{12}|\d{8})$/;
+        if (!emailRegex.test(value) && !phoneRegex.test(value)) {
+            return "Invalid email or phone format. Phone must be 8 digits or + followed by 12 digits.";
+        }
         return "";
     };
 
     const validatePassword = (value: string): string => {
         if (!value) return "Please enter a password.";
-        if (value.length < 8) return "Password must be at least 8 characters long.";
-        if (value.length > 128) return "Password cannot exceed 128 characters.";
-        if (!/^(?=.*[a-z])(?=.*[A-Z])(?=.*\d)(?=.*[!@#$%^&*])[^\s]+$/.test(value)) {
-            return "Password must include an uppercase letter, lowercase letter, number, and special character (no spaces).";
-        }
         return "";
     };
 
@@ -130,28 +133,31 @@ const LoginPage: React.FC = () => {
         e.preventDefault();
         if (!deviceIdentifier || !validateForm()) return;
         setLoading(true);
-        setGlobalError(null);
+        setError(null);
+        setSuccess(null);
 
         try {
             const response = await login(identifier, password, deviceIdentifier, "phone");
-            if ("requires2FA" in response) {
+            if (!response) {
+                throw new Error("No response from server. Please try again.");
+            }
+            if (response.requires2FA) {
                 setStep("verify2FA");
                 setUserID(response.userID!);
                 setTempToken(response.tempToken!);
                 setRefreshToken(response.refreshToken!);
-                setOtpMethod("phone");
                 setTimer(600);
-            } else {
+                setSuccess("OTP sent to your phone.");
+            } else if (response.user) {
                 await loginUser(identifier, password, deviceIdentifier);
+                setSuccess("Login successful!");
+            } else {
+                throw new Error("Invalid response from server.");
             }
-        } catch (err) {
-            const axiosError = err as AxiosError<{ error: string }>;
-            setGlobalError(
-                axiosError.response?.data?.error ||
-                (axiosError.message === "Network Error"
-                    ? "Unable to connect to the server. Please check your internet connection."
-                    : "Login failed. Please check your email/phone and password.")
-            );
+        } catch (error: unknown) {
+            const errorMessage = error instanceof Error ? error.message : "Login failed. Please try again.";
+            console.error('Login error:', errorMessage);
+            setError(errorMessage);
         } finally {
             setLoading(false);
         }
@@ -160,53 +166,56 @@ const LoginPage: React.FC = () => {
     // Handle 2FA verification
     const handleVerify2FA = async (e: React.FormEvent) => {
         e.preventDefault();
-        if (!deviceIdentifier || !validateForm()) return;
+        if (!deviceIdentifier || !validateForm() || !userID || !tempToken || !refreshToken) {
+            setError("Invalid session. Please try logging in again.");
+            return;
+        }
+        if (loading) {
+            return;
+        }
         setLoading(true);
-        setGlobalError(null);
+        setError(null);
+        setSuccess(null);
 
         try {
-            const response = await verify2FA(
-                userID!,
-                otpCode,
-                deviceIdentifier,
-                trustDevice,
-                tempToken!,      // Pass tempToken
-                refreshToken!    // Pass refreshToken
-            );
-            localStorage.setItem("token", response.token);
-            localStorage.setItem("user", JSON.stringify(response.user));
-            await loginUser(identifier, password, deviceIdentifier);
-        } catch (err) {
-            const axiosError = err as AxiosError<{ error: string }>;
-            setGlobalError(
-                axiosError.response?.data?.error ||
-                (axiosError.message === "Network Error"
-                    ? "Network issue. Please try again later."
-                    : "Invalid OTP. Please try again.")
-            );
+            const response = await verify2FA(userID, otpCode, deviceIdentifier, trustDevice, tempToken, refreshToken);
+            if (!response) {
+                throw new Error("No response from verify2FA.");
+            }
+            if (response.requires2FA) {
+                throw new Error("Unexpected requires2FA: true after verification.");
+            }
+            if (!response.user) {
+                throw new Error("User data missing in verify2FA response.");
+            }
+
+            await loginUser(identifier, password, deviceIdentifier, otpCode, trustDevice, tempToken, refreshToken, userID);
+            setSuccess("Login successful!");
+        } catch (error: unknown) {
+            const errorMessage = error instanceof Error ? error.message : "2FA verification failed.";
+            console.error('verify2FA error:', errorMessage);
+            setError(errorMessage);
         } finally {
             setLoading(false);
         }
     };
-
     // Handle password reset initiation
     const handleInitiateReset = async (e: React.FormEvent) => {
         e.preventDefault();
         if (!validateForm()) return;
         setLoading(true);
-        setGlobalError(null);
+        setError(null);
+        setSuccess(null);
 
         try {
             const response = await initiatePasswordReset(identifier);
             setUserID(response.userID);
             setStep("verifyReset");
             setTimer(600);
-        } catch (err) {
-            const axiosError = err as AxiosError<{ error: string }>;
-            setGlobalError(
-                axiosError.response?.data?.error ||
-                "Failed to send reset OTP. Please check your email/phone and try again."
-            );
+            setSuccess(response.message);
+        } catch (error: unknown) {
+            const errorMessage = error instanceof Error ? error.message : "Failed to initiate password reset.";
+            setError(errorMessage);
         } finally {
             setLoading(false);
         }
@@ -215,20 +224,23 @@ const LoginPage: React.FC = () => {
     // Handle reset OTP verification
     const handleVerifyResetOTP = async (e: React.FormEvent) => {
         e.preventDefault();
-        if (!validateForm()) return;
+        if (!validateForm() || !userID) {
+            setError("Invalid session. Please try again.");
+            return;
+        }
         setLoading(true);
-        setGlobalError(null);
+        setError(null);
+        setSuccess(null);
 
         try {
-            await verifyPasswordResetOTP(userID!, otpCode);
+            const response = await verifyPasswordResetOTP(userID, otpCode);
+            setTempResetToken(response.tempToken);
             setStep("reset");
             setOtpCode("");
-        } catch (err) {
-            const axiosError = err as AxiosError<{ error: string }>;
-            setGlobalError(
-                axiosError.response?.data?.error ||
-                "Invalid reset OTP. Please try again or request a new one."
-            );
+            setSuccess(response.message);
+        } catch (error: unknown) {
+            const errorMessage = error instanceof Error ? error.message : "Invalid OTP. Please try again.";
+            setError(errorMessage);
         } finally {
             setLoading(false);
         }
@@ -237,21 +249,22 @@ const LoginPage: React.FC = () => {
     // Handle password reset submission
     const handleResetPassword = async (e: React.FormEvent) => {
         e.preventDefault();
-        if (!validateForm()) return;
+        if (!validateForm() || !userID || !tempResetToken) {
+            setError("Invalid session. Please try again.");
+            return;
+        }
         setLoading(true);
-        setGlobalError(null);
+        setError(null);
+        setSuccess(null);
 
         try {
-            await resetPassword(userID!, newPassword);
-            setGlobalError("Password reset successfully! Please log in with your new password.");
+            await resetPassword(userID, newPassword, tempResetToken);
+            setSuccess("Password reset successfully! Please log in with your new password.");
             setStep("login");
             resetForm();
-        } catch (err) {
-            const axiosError = err as AxiosError<{ error: string }>;
-            setGlobalError(
-                axiosError.response?.data?.error ||
-                "Failed to reset password. Please try again."
-            );
+        } catch (error: unknown) {
+            const errorMessage = error instanceof Error ? error.message : "Password reset failed.";
+            setError(errorMessage);
         } finally {
             setLoading(false);
         }
@@ -261,7 +274,8 @@ const LoginPage: React.FC = () => {
     const handleResendOTP = async (method: "phone" | "email") => {
         if (resendCooldown > 0 || !userID) return;
         setLoading(true);
-        setGlobalError(null);
+        setError(null);
+        setSuccess(null);
 
         try {
             if (step === "verify2FA") {
@@ -269,23 +283,22 @@ const LoginPage: React.FC = () => {
                 setOtpMethod(method);
                 setTimer(600);
                 setResendCooldown(60);
-                setGlobalError(response.message);
+                setSuccess(response.message);
             } else if (step === "verifyReset") {
-                await initiatePasswordReset(identifier);
+                const response = await initiatePasswordReset(identifier);
                 setTimer(600);
                 setResendCooldown(60);
+                setOtpMethod(method);
+                setSuccess(response.message);
             }
-        } catch (err) {
-            const axiosError = err as AxiosError<{ error: string }>;
-            setGlobalError(
-                axiosError.response?.data?.error || "Failed to resend OTP. Please try again later."
-            );
+        } catch (error: unknown) {
+            const errorMessage = error instanceof Error ? error.message : "Failed to resend OTP.";
+            setError(errorMessage);
         } finally {
             setLoading(false);
         }
     };
 
-    // Wrapper for button click handlers
     const handleResendClick = (e: React.MouseEvent<HTMLButtonElement>, method: "phone" | "email") => {
         e.preventDefault();
         handleResendOTP(method);
@@ -298,8 +311,10 @@ const LoginPage: React.FC = () => {
         setNewPassword("");
         setConfirmPassword("");
         setTrustDevice(false);
+        setUserID(null);
         setTempToken(null);
         setRefreshToken(null);
+        setTempResetToken(null);
         setErrors({});
         setTimer(600);
         setResendCooldown(0);
@@ -311,7 +326,8 @@ const LoginPage: React.FC = () => {
 
     const handleBackToLogin = () => {
         setStep("login");
-        setGlobalError(null);
+        setError(null);
+        setSuccess(null);
         resetForm();
     };
 
@@ -349,9 +365,14 @@ const LoginPage: React.FC = () => {
                         <h1 className="form-title">TraceFlow</h1>
                         <p className="form-subtitle">Securely Track. Optimize. Succeed.</p>
                     </div>
-                    {globalError && (
+                    {error && (
                         <motion.div initial={{ opacity: 0 }} animate={{ opacity: 1 }} className="error-message">
-                            {globalError}
+                            {error}
+                        </motion.div>
+                    )}
+                    {success && (
+                        <motion.div initial={{ opacity: 0 }} animate={{ opacity: 1 }} className="success-message">
+                            {success}
                         </motion.div>
                     )}
 
@@ -397,7 +418,7 @@ const LoginPage: React.FC = () => {
                             </div>
                             <motion.button
                                 type="submit"
-                                className="action-button action-button-0"
+                                className="action-button-0"
                                 disabled={loading || !deviceIdentifier}
                                 whileHover={{ scale: 1.05 }}
                                 whileTap={{ scale: 0.95 }}
@@ -446,7 +467,7 @@ const LoginPage: React.FC = () => {
                             </div>
                             <motion.button
                                 type="submit"
-                                className="action-button action-button-0"
+                                className="action-button-0"
                                 disabled={loading}
                                 whileHover={{ scale: 1.05 }}
                                 whileTap={{ scale: 0.95 }}
@@ -455,7 +476,7 @@ const LoginPage: React.FC = () => {
                             </motion.button>
                             <motion.button
                                 type="button"
-                                className="action-button action-button-0 secondary"
+                                className="action-button-0 secondary"
                                 onClick={(e) => handleResendClick(e, otpMethod)}
                                 disabled={loading || resendCooldown > 0}
                                 whileHover={{ scale: 1.05 }}
@@ -470,8 +491,7 @@ const LoginPage: React.FC = () => {
                                     onClick={(e) => handleResendClick(e, "email")}
                                     disabled={loading || resendCooldown > 0}
                                 >
-                                    Can’t access your phone?
-                                    Send to email instead.
+                                    Can’t access your phone? Send to email instead.
                                 </button>
                             )}
                             <hr />
@@ -509,7 +529,7 @@ const LoginPage: React.FC = () => {
                             </div>
                             <motion.button
                                 type="submit"
-                                className="action-button action-button-0"
+                                className="action-button-0"
                                 disabled={loading}
                                 whileHover={{ scale: 1.05 }}
                                 whileTap={{ scale: 0.95 }}
@@ -544,7 +564,7 @@ const LoginPage: React.FC = () => {
                             </div>
                             <motion.button
                                 type="submit"
-                                className="action-button action-button-0"
+                                className="action-button-0"
                                 disabled={loading}
                                 whileHover={{ scale: 1.05 }}
                                 whileTap={{ scale: 0.95 }}
@@ -553,8 +573,8 @@ const LoginPage: React.FC = () => {
                             </motion.button>
                             <motion.button
                                 type="button"
-                                className="action-button action-button-0 secondary"
-                                onClick={(e) => handleResendClick(e, "phone")} // Default to phone for reset flow
+                                className="action-button-0 secondary"
+                                onClick={(e) => handleResendClick(e, otpMethod)}
                                 disabled={loading || resendCooldown > 0}
                                 whileHover={{ scale: 1.05 }}
                                 whileTap={{ scale: 0.95 }}
@@ -619,7 +639,7 @@ const LoginPage: React.FC = () => {
                             </div>
                             <motion.button
                                 type="submit"
-                                className="action-button action-button-0"
+                                className="action-button-0"
                                 disabled={loading}
                                 whileHover={{ scale: 1.05 }}
                                 whileTap={{ scale: 0.95 }}

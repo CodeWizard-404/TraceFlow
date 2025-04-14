@@ -1,13 +1,20 @@
 const express = require('express');
-const router = express.Router();
 const AuthController = require('../controllers/authController');
+const { sensitiveLimiter, otpLimiter, refreshLimiter } = require('../middleware/rateLimit');
 
-router.post('/login', AuthController.login);
-router.post('/verify-2fa', AuthController.verify2FA);
-router.post('/resend-2fa', AuthController.resend2FA);
-router.post('/refresh', AuthController.refreshToken);
-router.post('/password-reset/initiate', AuthController.initiatePasswordReset);
-router.post('/password-reset/verify', AuthController.verifyPasswordResetOTP);
-router.post('/password-reset/reset', AuthController.resetPassword);
+const router = express.Router();
+
+router.post('/login', sensitiveLimiter, AuthController.login);
+router.post('/verify-2fa', sensitiveLimiter, AuthController.verify2FA);
+router.post('/refresh', refreshLimiter, AuthController.refreshToken);
+router.post('/resend-2fa', otpLimiter, AuthController.resend2FA);
+router.post('/password-reset/initiate', otpLimiter, AuthController.initiatePasswordReset);
+router.post('/password-reset/verify', sensitiveLimiter, AuthController.verifyPasswordResetOTP);
+router.post('/password-reset/reset', sensitiveLimiter, AuthController.resetPassword);
+router.post('/logout', (req, res) => {
+    res.clearCookie('accessToken');
+    res.clearCookie('refreshToken');
+    res.json({ message: 'Logged out' });
+});
 
 module.exports = router;
