@@ -2,6 +2,7 @@ import 'dart:async';
 import 'dart:convert';
 import 'package:flutter/material.dart';
 import 'package:flutter/services.dart';
+import 'package:flutter/foundation.dart';
 import 'package:provider/provider.dart';
 import '../../models/checklist.dart';
 import '../../models/reason.dart';
@@ -11,6 +12,10 @@ import '../../providers/timesheet_provider.dart';
 import '../../providers/agent_provider.dart';
 import '../../providers/checklist_provider.dart';
 import '../../providers/reason_provider.dart';
+import '../../services/cookie_manager.dart';
+import '../../widgets/appbar/app_bar.dart';
+import '../../widgets/commen/button.dart';
+import '../../widgets/commen/spacer.dart';
 
 class CreateVisitScreen extends StatefulWidget {
   final int weekNumber;
@@ -43,7 +48,10 @@ class _CreateVisitScreenState extends State<CreateVisitScreen> {
   @override
   void initState() {
     super.initState();
-    _selectedDate = DateTime(widget.year, 1, 1).add(Duration(days: (widget.weekNumber - 1) * 7));
+    if (kDebugMode) print('CreateVisitScreen initState, week: ${widget.weekNumber}, year: ${widget.year}');
+    final calculatedDate = DateTime(widget.year, 1, 1).add(Duration(days: (widget.weekNumber - 1) * 7));
+    final now = DateTime.now();
+    _selectedDate = calculatedDate.isBefore(now) ? now : calculatedDate;
     WidgetsBinding.instance.addPostFrameCallback((_) {
       _loadInitialData();
     });
@@ -51,60 +59,63 @@ class _CreateVisitScreenState extends State<CreateVisitScreen> {
 
   @override
   void dispose() {
+    if (kDebugMode) print('Disposing CreateVisitScreen');
     _debounce?.cancel();
     _phoneController.dispose();
     super.dispose();
   }
 
   Future<void> _loadInitialData() async {
+    if (kDebugMode) print('Loading initial data');
     setState(() => _isLoading = true);
+    final authProvider = Provider.of<AuthProvider>(context, listen: false);
     try {
-      final authProvider = Provider.of<AuthProvider>(context, listen: false);
-      final token = authProvider.token;
-      if (token == null) throw Exception('No authentication token');
-
+      if (!CookieManager.cookies.containsKey('accessToken')) {
+        if (kDebugMode) print('No accessToken, loading cookies');
+        await CookieManager.loadCookies();
+      }
       final agentProvider = Provider.of<AgentProvider>(context, listen: false);
       final checklistProvider = Provider.of<ChecklistProvider>(context, listen: false);
       final reasonProvider = Provider.of<ReasonProvider>(context, listen: false);
 
       await Future.wait([
-        agentProvider.fetchUniqueLocations(token),
-        checklistProvider.getAllChecklists(token),
-        reasonProvider.getAllReasons(token),
+        agentProvider.fetchUniqueLocations(),
+        checklistProvider.getAllChecklists(),
+        reasonProvider.getAllReasons(),
       ]);
+      if (kDebugMode) print('Initial data loaded successfully');
     } catch (e) {
+      if (kDebugMode) print('Error loading initial data: $e');
       _showSnackBar('Failed to load initial data: $e');
+      if (e.toString().contains('401')) {
+        await authProvider.logout();
+        Navigator.pushReplacementNamed(context, '/login');
+      }
     } finally {
       if (mounted) setState(() => _isLoading = false);
     }
   }
 
   int _getWeekNumber(DateTime date) {
-    // Create a UTC version of the input date (ignoring time)
     final utcDate = DateTime.utc(date.year, date.month, date.day);
-
-    // Adjust to the nearest Thursday: add 4 - (day of week or 7 if Sunday)
-    final dayOfWeek = utcDate.weekday % 7; // Dart: 1 = Mon, 7 = Sun; JS: 0 = Sun, 6 = Sat
+    final dayOfWeek = utcDate.weekday % 7;
     final adjustedDate = utcDate.add(Duration(days: 4 - (dayOfWeek == 0 ? 7 : dayOfWeek)));
-
-    // Get the start of the year (Jan 1st) in UTC
     final yearStart = DateTime.utc(adjustedDate.year, 1, 1);
-
-    // Calculate the difference in milliseconds, convert to days, and compute week number
     final diffMillis = adjustedDate.millisecondsSinceEpoch - yearStart.millisecondsSinceEpoch;
-    final diffDays = diffMillis / 86400000; // 86,400,000 ms = 1 day
-    return ((diffDays + 1) / 7).ceil();
+    final diffDays = diffMillis / 86400000;
+    final weekNumber = ((diffDays + 1) / 7).ceil();
+    if (kDebugMode) print('Calculated week number: $weekNumber for date: $date');
+    return weekNumber;
   }
 
   Future<void> _selectDate(BuildContext context) async {
+    if (kDebugMode) print('Selecting date');
     final now = DateTime.now();
     final DateTime? picked = await showDatePicker(
       context: context,
       initialDate: _selectedDate ?? DateTime.now(),
       firstDate: DateTime(now.year, now.month, now.day),
       lastDate: DateTime.now().add(const Duration(days: 365)),
-      selectableDayPredicate: (DateTime date) =>
-      date.weekday != DateTime.saturday && date.weekday != DateTime.sunday,
       builder: (context, child) {
         return Theme(
           data: Theme.of(context).copyWith(
@@ -120,11 +131,15 @@ class _CreateVisitScreenState extends State<CreateVisitScreen> {
       },
     );
     if (picked != null && picked != _selectedDate) {
-      setState(() => _selectedDate = picked);
+      setState(() {
+        _selectedDate = picked;
+        if (kDebugMode) print('Date selected: $_selectedDate');
+      });
     }
   }
 
   Future<void> _selectTime(BuildContext context) async {
+    if (kDebugMode) print('Selecting time');
     final now = DateTime.now();
     final TimeOfDay? picked = await showTimePicker(
       context: context,
@@ -150,23 +165,22 @@ class _CreateVisitScreenState extends State<CreateVisitScreen> {
         picked.hour,
         picked.minute,
       );
-      final startTime = DateTime(selectedDate.year, selectedDate.month, selectedDate.day, 8, 0);
-      final endTime = DateTime(selectedDate.year, selectedDate.month, selectedDate.day, 17, 0);
 
-      if (picked.hour < 8 || picked.hour >= 17 || (picked.hour == 17 && picked.minute > 0)) {
-        _showSnackBar('Time must be between 08:00 and 17:00');
-        return;
-      }
       if (selectedDate.day == now.day && selectedDateTime.isBefore(now)) {
+        if (kDebugMode) print('Invalid time: before now for today');
         _showSnackBar('Time cannot be before now for today');
         return;
       }
 
-      setState(() => _selectedTime = picked);
+      setState(() {
+        _selectedTime = picked;
+        if (kDebugMode) print('Time selected: ${_selectedTime!.format(context)}');
+      });
     }
   }
 
   Future<void> _showLocationDialog(BuildContext context, AgentProvider agentProvider) async {
+    if (kDebugMode) print('Showing location dialog');
     final locations = agentProvider.uniqueLocations;
     final TextEditingController searchController = TextEditingController();
     List<String> filteredLocations = List.from(locations);
@@ -177,6 +191,7 @@ class _CreateVisitScreenState extends State<CreateVisitScreen> {
         return StatefulBuilder(
           builder: (context, setDialogState) {
             return AlertDialog(
+              backgroundColor: Theme.of(context).cardTheme.color,
               title: Text('Select Location', style: Theme.of(context).textTheme.headlineSmall),
               content: SizedBox(
                 width: double.maxFinite,
@@ -198,7 +213,7 @@ class _CreateVisitScreenState extends State<CreateVisitScreen> {
                         });
                       },
                     ),
-                    const SizedBox(height: 12),
+                    const CustomSpacer(height: 12),
                     SizedBox(
                       height: 300,
                       child: ListView.builder(
@@ -210,10 +225,11 @@ class _CreateVisitScreenState extends State<CreateVisitScreen> {
                             value: location,
                             groupValue: _location,
                             onChanged: (value) {
+                              if (kDebugMode) print('Location selected: $value');
                               setState(() {
                                 _location = value;
                                 _selectedAgentId = null;
-                                agentProvider.fetchAgentsByLocation(value!, Provider.of<AuthProvider>(context, listen: false).token!);
+                                agentProvider.fetchAgentsByLocation(value!);
                               });
                               Navigator.pop(context);
                             },
@@ -227,8 +243,12 @@ class _CreateVisitScreenState extends State<CreateVisitScreen> {
               ),
               actions: [
                 TextButton(
-                  onPressed: () => Navigator.pop(context),
-                  child: Text('Cancel', style: TextStyle(color: Theme.of(context).colorScheme.onSurface.withOpacity(0.6))),
+                  onPressed: () {
+                    if (kDebugMode) print('Location dialog cancelled');
+                    Navigator.pop(context);
+                  },
+                  child: Text('Cancel',
+                      style: TextStyle(color: Theme.of(context).colorScheme.onSurface.withOpacity(0.6))),
                 ),
               ],
             );
@@ -239,6 +259,7 @@ class _CreateVisitScreenState extends State<CreateVisitScreen> {
   }
 
   Future<void> _showAgentDialog(BuildContext context, AgentProvider agentProvider) async {
+    if (kDebugMode) print('Showing agent dialog');
     final agents = agentProvider.agents;
     final TextEditingController searchController = TextEditingController();
     List<Agent> filteredAgents = List.from(agents);
@@ -249,6 +270,7 @@ class _CreateVisitScreenState extends State<CreateVisitScreen> {
         return StatefulBuilder(
           builder: (context, setDialogState) {
             return AlertDialog(
+              backgroundColor: Theme.of(context).cardTheme.color,
               title: Text('Select Agent', style: Theme.of(context).textTheme.headlineSmall),
               content: SizedBox(
                 width: double.maxFinite,
@@ -272,7 +294,7 @@ class _CreateVisitScreenState extends State<CreateVisitScreen> {
                         });
                       },
                     ),
-                    const SizedBox(height: 12),
+                    const CustomSpacer(height: 12),
                     SizedBox(
                       height: 300,
                       child: ListView.builder(
@@ -284,6 +306,7 @@ class _CreateVisitScreenState extends State<CreateVisitScreen> {
                             value: agent.agentID!,
                             groupValue: _selectedAgentId,
                             onChanged: (value) {
+                              if (kDebugMode) print('Agent selected: $value');
                               setState(() => _selectedAgentId = value);
                               Navigator.pop(context);
                             },
@@ -297,8 +320,12 @@ class _CreateVisitScreenState extends State<CreateVisitScreen> {
               ),
               actions: [
                 TextButton(
-                  onPressed: () => Navigator.pop(context),
-                  child: Text('Cancel', style: TextStyle(color: Theme.of(context).colorScheme.onSurface.withOpacity(0.6))),
+                  onPressed: () {
+                    if (kDebugMode) print('Agent dialog cancelled');
+                    Navigator.pop(context);
+                  },
+                  child: Text('Cancel',
+                      style: TextStyle(color: Theme.of(context).colorScheme.onSurface.withOpacity(0.6))),
                 ),
               ],
             );
@@ -309,6 +336,7 @@ class _CreateVisitScreenState extends State<CreateVisitScreen> {
   }
 
   Future<void> _showChecklistDialog(BuildContext context, ChecklistProvider checklistProvider) async {
+    if (kDebugMode) print('Showing checklist dialog');
     final allChecklists = checklistProvider.allChecklists;
     final selectedChecklists = List<Checklist>.from(_selectedChecklists);
     final TextEditingController searchController = TextEditingController();
@@ -320,6 +348,7 @@ class _CreateVisitScreenState extends State<CreateVisitScreen> {
         return StatefulBuilder(
           builder: (context, setDialogState) {
             return AlertDialog(
+              backgroundColor: Theme.of(context).cardTheme.color,
               title: Text('Select Checklists', style: Theme.of(context).textTheme.headlineSmall),
               content: SizedBox(
                 width: double.maxFinite,
@@ -341,7 +370,7 @@ class _CreateVisitScreenState extends State<CreateVisitScreen> {
                         });
                       },
                     ),
-                    const SizedBox(height: 12),
+                    const CustomSpacer(height: 12),
                     SizedBox(
                       height: 300,
                       child: ListView.builder(
@@ -371,16 +400,20 @@ class _CreateVisitScreenState extends State<CreateVisitScreen> {
               ),
               actions: [
                 TextButton(
-                  onPressed: () => Navigator.pop(context),
-                  child: Text('Cancel', style: TextStyle(color: Theme.of(context).colorScheme.onSurface.withOpacity(0.6))),
-                ),
-                ElevatedButton(
                   onPressed: () {
+                    if (kDebugMode) print('Checklist dialog cancelled');
+                    Navigator.pop(context);
+                  },
+                  child: Text('Cancel',
+                      style: TextStyle(color: Theme.of(context).colorScheme.onSurface.withOpacity(0.6))),
+                ),
+                CustomButton(
+                  label: 'Confirm',
+                  onPressed: () {
+                    if (kDebugMode) print('Checklists confirmed: ${selectedChecklists.length} selected');
                     setState(() => _selectedChecklists = selectedChecklists);
                     Navigator.pop(context);
                   },
-                  style: Theme.of(context).elevatedButtonTheme.style,
-                  child: Text('Confirm', style: TextStyle(color: Theme.of(context).colorScheme.onPrimary)),
                 ),
               ],
             );
@@ -391,6 +424,7 @@ class _CreateVisitScreenState extends State<CreateVisitScreen> {
   }
 
   Future<void> _showReasonDialog(BuildContext context, ReasonProvider reasonProvider) async {
+    if (kDebugMode) print('Showing reason dialog');
     final allReasons = reasonProvider.allReasons;
     final selectedReasons = List<Reason>.from(_selectedReasons);
     final TextEditingController searchController = TextEditingController();
@@ -402,6 +436,7 @@ class _CreateVisitScreenState extends State<CreateVisitScreen> {
         return StatefulBuilder(
           builder: (context, setDialogState) {
             return AlertDialog(
+              backgroundColor: Theme.of(context).cardTheme.color,
               title: Text('Select Reasons', style: Theme.of(context).textTheme.headlineSmall),
               content: SizedBox(
                 width: double.maxFinite,
@@ -423,7 +458,7 @@ class _CreateVisitScreenState extends State<CreateVisitScreen> {
                         });
                       },
                     ),
-                    const SizedBox(height: 12),
+                    const CustomSpacer(height: 12),
                     SizedBox(
                       height: 300,
                       child: ListView.builder(
@@ -453,16 +488,20 @@ class _CreateVisitScreenState extends State<CreateVisitScreen> {
               ),
               actions: [
                 TextButton(
-                  onPressed: () => Navigator.pop(context),
-                  child: Text('Cancel', style: TextStyle(color: Theme.of(context).colorScheme.onSurface.withOpacity(0.6))),
-                ),
-                ElevatedButton(
                   onPressed: () {
+                    if (kDebugMode) print('Reason dialog cancelled');
+                    Navigator.pop(context);
+                  },
+                  child: Text('Cancel',
+                      style: TextStyle(color: Theme.of(context).colorScheme.onSurface.withOpacity(0.6))),
+                ),
+                CustomButton(
+                  label: 'Confirm',
+                  onPressed: () {
+                    if (kDebugMode) print('Reasons confirmed: ${selectedReasons.length} selected');
                     setState(() => _selectedReasons = selectedReasons);
                     Navigator.pop(context);
                   },
-                  style: Theme.of(context).elevatedButtonTheme.style,
-                  child: Text('Confirm', style: TextStyle(color: Theme.of(context).colorScheme.onPrimary)),
                 ),
               ],
             );
@@ -473,6 +512,7 @@ class _CreateVisitScreenState extends State<CreateVisitScreen> {
   }
 
   void _onPhoneChanged(String value, AgentProvider agentProvider) {
+    if (kDebugMode) print('Phone number changed: $value');
     setState(() {
       _agentPhone = value;
       _phoneError = null;
@@ -481,6 +521,7 @@ class _CreateVisitScreenState extends State<CreateVisitScreen> {
     if (_debounce?.isActive ?? false) _debounce!.cancel();
     _debounce = Timer(const Duration(milliseconds: 500), () async {
       if (value.isEmpty) {
+        if (kDebugMode) print('Phone cleared');
         setState(() {
           _selectedAgentId = null;
           _location = null;
@@ -489,7 +530,11 @@ class _CreateVisitScreenState extends State<CreateVisitScreen> {
       } else if (value.length >= 8) {
         try {
           final authProvider = Provider.of<AuthProvider>(context, listen: false);
-          await agentProvider.fetchAgentByPhone(value, authProvider.token!);
+          if (!CookieManager.cookies.containsKey('accessToken')) {
+            if (kDebugMode) print('No accessToken, loading cookies');
+            await CookieManager.loadCookies();
+          }
+          await agentProvider.fetchAgentByPhone(value);
           final agent = agentProvider.currentAgent;
           if (agent != null) {
             setState(() {
@@ -497,6 +542,7 @@ class _CreateVisitScreenState extends State<CreateVisitScreen> {
               _location = agent.location;
               agentProvider.agents.clear();
               agentProvider.agents.add(agent);
+              if (kDebugMode) print('Agent found by phone: ${_selectedAgentId}');
             });
           } else {
             setState(() {
@@ -504,15 +550,22 @@ class _CreateVisitScreenState extends State<CreateVisitScreen> {
               _selectedAgentId = null;
               _location = null;
               agentProvider.agents.clear();
+              if (kDebugMode) print('No agent found for phone');
             });
           }
         } catch (e) {
+          if (kDebugMode) print('Error fetching agent by phone: $e');
           setState(() {
             _phoneError = 'Error fetching agent: $e';
             _selectedAgentId = null;
             _location = null;
             agentProvider.agents.clear();
           });
+          if (e.toString().contains('401')) {
+            final authProvider = Provider.of<AuthProvider>(context, listen: false);
+            await authProvider.logout();
+            Navigator.pushReplacementNamed(context, '/login');
+          }
         }
       }
     });
@@ -530,39 +583,34 @@ class _CreateVisitScreenState extends State<CreateVisitScreen> {
       selectedTime.minute,
     );
 
-    if (selectedDate.weekday == DateTime.saturday || selectedDate.weekday == DateTime.sunday) {
-      _showSnackBar('Date cannot be a Saturday or Sunday');
-      return false;
-    }
     if (selectedDate.isBefore(DateTime(now.year, now.month, now.day))) {
+      if (kDebugMode) print('Invalid date: before today');
       _showSnackBar('Date cannot be before today');
       return false;
     }
-
-    final startTime = DateTime(selectedDate.year, selectedDate.month, selectedDate.day, 8, 0);
-    final endTime = DateTime(selectedDate.year, selectedDate.month, selectedDate.day, 17, 0);
-    if (selectedDateTime.isBefore(startTime) || selectedDateTime.isAfter(endTime)) {
-      _showSnackBar('Time must be between 08:00 and 17:00');
-      return false;
-    }
     if (selectedDate.day == now.day && selectedDateTime.isBefore(now)) {
+      if (kDebugMode) print('Invalid time: before now for today');
       _showSnackBar('Time cannot be before now for today');
       return false;
     }
 
     if (_selectedAgentId == null) {
+      if (kDebugMode) print('Validation failed: no agent selected');
       _showSnackBar('An agent must be selected');
       return false;
     }
     if (_location == null) {
+      if (kDebugMode) print('Validation failed: no location selected');
       _showSnackBar('A location must be selected');
       return false;
     }
     if (_selectedChecklists.isEmpty) {
+      if (kDebugMode) print('Validation failed: no checklists selected');
       _showSnackBar('At least one checklist item is required');
       return false;
     }
     if (_selectedReasons.isEmpty) {
+      if (kDebugMode) print('Validation failed: no reasons selected');
       _showSnackBar('At least one reason is required');
       return false;
     }
@@ -571,23 +619,24 @@ class _CreateVisitScreenState extends State<CreateVisitScreen> {
   }
 
   void _submitVisit() async {
-    if (_isLoading) return;
+    if (_isLoading) {
+      if (kDebugMode) print('Submit blocked: already loading');
+      return;
+    }
 
     if (_formKey.currentState!.validate() && _validateInputs()) {
+      if (kDebugMode) print('Submitting visit');
       setState(() => _isLoading = true);
-
       final authProvider = Provider.of<AuthProvider>(context, listen: false);
       final timesheetProvider = Provider.of<TimesheetProvider>(context, listen: false);
-      final token = authProvider.token;
-      final supervisorID = authProvider.user?.userID;
-
-      if (token == null || supervisorID == null) {
-        _showSnackBar('Please log in first');
-        setState(() => _isLoading = false);
-        return;
-      }
 
       try {
+        if (!CookieManager.cookies.containsKey('accessToken')) {
+          if (kDebugMode) print('No accessToken, loading cookies');
+          await CookieManager.loadCookies();
+        }
+        final supervisorID = authProvider.user?.userID;
+
         final checklistUpdates = _selectedChecklists.map((c) => {'id': c.checklistID}).toList();
         final reasonUpdates = _selectedReasons.map((r) => {'id': r.reasonID}).toList();
 
@@ -600,20 +649,25 @@ class _CreateVisitScreenState extends State<CreateVisitScreen> {
           'checklists': checklistUpdates,
         };
 
-        print('Submitting visit payload: ${json.encode(visit)}');
+        if (kDebugMode) print('Submitting visit payload: ${json.encode(visit)}');
 
         await timesheetProvider.createTimesheet(
           weekNumber: _getWeekNumber(_selectedDate!),
           year: _selectedDate!.year,
-          supervisorID: supervisorID,
+          supervisorID: supervisorID!,
           visits: [visit],
-          token: token,
         );
 
+        if (kDebugMode) print('Visit created successfully');
         Navigator.pop(context);
         _showSnackBar('Visit created successfully');
       } catch (e) {
+        if (kDebugMode) print('Error creating visit: $e');
         _showSnackBar('Failed to create visit: $e');
+        if (e.toString().contains('401')) {
+          await authProvider.logout();
+          Navigator.pushReplacementNamed(context, '/login');
+        }
       } finally {
         if (mounted) setState(() => _isLoading = false);
       }
@@ -625,50 +679,21 @@ class _CreateVisitScreenState extends State<CreateVisitScreen> {
       ScaffoldMessenger.of(context).showSnackBar(
         SnackBar(
           content: Text(message),
-          backgroundColor: message.contains('successfully') ? Theme.of(context).colorScheme.primary : Theme.of(context).colorScheme.error,
+          backgroundColor: message.contains('successfully')
+              ? Theme.of(context).colorScheme.primary
+              : Theme.of(context).colorScheme.error,
         ),
       );
+      if (kDebugMode) print('SnackBar shown: $message');
     }
   }
 
   @override
   Widget build(BuildContext context) {
     return Scaffold(
-      appBar: PreferredSize(
-        preferredSize: const Size.fromHeight(80),
-        child: Container(
-          decoration: BoxDecoration(
-            gradient: LinearGradient(
-              colors: [
-                Theme.of(context).colorScheme.primary,
-                Theme.of(context).colorScheme.secondary,
-              ],
-              begin: Alignment.topLeft,
-              end: Alignment.bottomRight,
-            ),
-            borderRadius: const BorderRadius.vertical(bottom: Radius.circular(20)),
-          ),
-          child: AppBar(
-            backgroundColor: Colors.transparent,
-            elevation: 0,
-            title: Text(
-              'Create Visit',
-              style: Theme.of(context).appBarTheme.titleTextStyle,
-            ),
-            centerTitle: true,
-            leading: IconButton(
-              icon: Icon(Icons.arrow_back_ios_rounded, color: Theme.of(context).appBarTheme.iconTheme!.color, size: 24),
-              onPressed: () => Navigator.pop(context),
-            ),
-            actions: [
-              if (_isLoading)
-                const Padding(
-                  padding: EdgeInsets.all(8.0),
-                  child: CircularProgressIndicator(color: Colors.white),
-                ),
-            ],
-          ),
-        ),
+      appBar: CustomAppBar(
+        title: 'Create Visit',
+        showBackButton: true,
       ),
       body: Container(
         color: Theme.of(context).scaffoldBackgroundColor,
@@ -691,7 +716,7 @@ class _CreateVisitScreenState extends State<CreateVisitScreen> {
                             : '${_selectedDate!.day}/${_selectedDate!.month}/${_selectedDate!.year}',
                         onTap: () => _selectDate(context),
                       ),
-                      const SizedBox(height: 12),
+                      const CustomSpacer(height: 12),
                       _buildTile(
                         icon: Icons.access_time,
                         title: _selectedTime == null ? 'Select Time' : _selectedTime!.format(context),
@@ -700,7 +725,7 @@ class _CreateVisitScreenState extends State<CreateVisitScreen> {
                     ],
                   ),
                 ),
-                const SizedBox(height: 16),
+                const CustomSpacer(height: 16),
                 _buildSectionCard(
                   title: 'Location & Agent',
                   child: Consumer<AgentProvider>(
@@ -713,27 +738,28 @@ class _CreateVisitScreenState extends State<CreateVisitScreen> {
                             decoration: BoxDecoration(
                               color: Theme.of(context).colorScheme.surface,
                               borderRadius: BorderRadius.circular(12),
-                              border: Border.all(color: Theme.of(context).colorScheme.onSurface.withOpacity(0.2)),
+                              border: Border.all(
+                                  color: Theme.of(context).colorScheme.onSurface.withOpacity(0.2)),
                             ),
                             child: Row(
                               children: [
                                 Icon(Icons.phone, color: Theme.of(context).colorScheme.primary, size: 24),
-                                const SizedBox(width: 12),
+                                const CustomSpacer(width: 12),
                                 Expanded(
                                   child: TextField(
                                     controller: _phoneController,
-                                    keyboardType: TextInputType.number, // Numeric keyboard
-                                    inputFormatters: [
-                                      FilteringTextInputFormatter.digitsOnly, // Only allows numbers
-                                    ],
-                                    maxLength: 8, // Limits to 8 digits
+                                    keyboardType: TextInputType.number,
+                                    inputFormatters: [FilteringTextInputFormatter.digitsOnly],
+                                    maxLength: 8,
                                     decoration: InputDecoration(
                                       hintText: 'Enter agent\'s phone number',
                                       border: InputBorder.none,
-                                      hintStyle: TextStyle(color: Theme.of(context).colorScheme.onSurface.withOpacity(0.6)),
-                                      counterText: '', // Hides the character counter
+                                      hintStyle: TextStyle(
+                                          color: Theme.of(context).colorScheme.onSurface.withOpacity(0.6)),
+                                      counterText: '',
                                     ),
-                                    style: TextStyle(fontSize: 16, color: Theme.of(context).colorScheme.onSurface),
+                                    style:
+                                    TextStyle(fontSize: 16, color: Theme.of(context).colorScheme.onSurface),
                                     onChanged: (value) => _onPhoneChanged(value, agentProvider),
                                   ),
                                 ),
@@ -741,21 +767,24 @@ class _CreateVisitScreenState extends State<CreateVisitScreen> {
                             ),
                           ),
                           if (_phoneError != null) ...[
-                            const SizedBox(height: 8),
+                            const CustomSpacer(height: 8),
                             Text(
                               _phoneError!,
                               style: TextStyle(color: Theme.of(context).colorScheme.error, fontSize: 12),
                             ),
                           ],
-                          const SizedBox(height: 12),
+                          const CustomSpacer(height: 12),
                           GestureDetector(
-                            onTap: _agentPhone.isNotEmpty ? null : () => _showLocationDialog(context, agentProvider),
+                            onTap: _agentPhone.isNotEmpty
+                                ? null
+                                : () => _showLocationDialog(context, agentProvider),
                             child: Container(
                               padding: const EdgeInsets.all(12),
                               decoration: BoxDecoration(
                                 color: Theme.of(context).colorScheme.surface,
                                 borderRadius: BorderRadius.circular(12),
-                                border: Border.all(color: Theme.of(context).colorScheme.onSurface.withOpacity(0.2)),
+                                border: Border.all(
+                                    color: Theme.of(context).colorScheme.onSurface.withOpacity(0.2)),
                                 backgroundBlendMode: _agentPhone.isNotEmpty ? BlendMode.saturation : null,
                               ),
                               child: Row(
@@ -766,10 +795,13 @@ class _CreateVisitScreenState extends State<CreateVisitScreen> {
                                         ? Theme.of(context).colorScheme.onSurface.withOpacity(0.6)
                                         : Theme.of(context).colorScheme.primary,
                                   ),
-                                  const SizedBox(width: 12),
+                                  const CustomSpacer(width: 12),
                                   Expanded(
                                     child: Text(
-                                      _location ?? (_agentPhone.isNotEmpty ? 'Selected via phone' : 'Select Location'),
+                                      _location ??
+                                          (_agentPhone.isNotEmpty
+                                              ? 'Selected via phone'
+                                              : 'Select Location'),
                                       style: TextStyle(
                                         color: _agentPhone.isNotEmpty
                                             ? Theme.of(context).colorScheme.onSurface.withOpacity(0.6)
@@ -785,7 +817,7 @@ class _CreateVisitScreenState extends State<CreateVisitScreen> {
                               ),
                             ),
                           ),
-                          const SizedBox(height: 12),
+                          const CustomSpacer(height: 12),
                           GestureDetector(
                             onTap: _agentPhone.isNotEmpty || _location == null
                                 ? null
@@ -795,8 +827,10 @@ class _CreateVisitScreenState extends State<CreateVisitScreen> {
                               decoration: BoxDecoration(
                                 color: Theme.of(context).colorScheme.surface,
                                 borderRadius: BorderRadius.circular(12),
-                                border: Border.all(color: Theme.of(context).colorScheme.onSurface.withOpacity(0.2)),
-                                backgroundBlendMode: _agentPhone.isNotEmpty || _location == null ? BlendMode.saturation : null,
+                                border: Border.all(
+                                    color: Theme.of(context).colorScheme.onSurface.withOpacity(0.2)),
+                                backgroundBlendMode:
+                                _agentPhone.isNotEmpty || _location == null ? BlendMode.saturation : null,
                               ),
                               child: Row(
                                 children: [
@@ -806,7 +840,7 @@ class _CreateVisitScreenState extends State<CreateVisitScreen> {
                                         ? Theme.of(context).colorScheme.onSurface.withOpacity(0.6)
                                         : Theme.of(context).colorScheme.primary,
                                   ),
-                                  const SizedBox(width: 12),
+                                  const CustomSpacer(width: 12),
                                   Expanded(
                                     child: Text(
                                       _selectedAgentId == null
@@ -815,15 +849,21 @@ class _CreateVisitScreenState extends State<CreateVisitScreen> {
                                           : _location == null
                                           ? 'Select a location first'
                                           : 'Select Agent')
-                                          : agentProvider.agents.firstWhere(
+                                          : '${agentProvider.agents.firstWhere(
                                             (agent) => agent.agentID == _selectedAgentId,
-                                        orElse: () => Agent(agentID: _selectedAgentId!, name: 'Loading', lastname: '...', location: ''),
-                                      ).name +
-                                          ' ' +
-                                          agentProvider.agents.firstWhere(
-                                                (agent) => agent.agentID == _selectedAgentId,
-                                            orElse: () => Agent(agentID: _selectedAgentId!, name: 'Loading', lastname: '...', location: ''),
-                                          ).lastname,
+                                        orElse: () => Agent(
+                                            agentID: _selectedAgentId!,
+                                            name: 'Loading',
+                                            lastname: '...',
+                                            location: ''),
+                                      ).name} ${agentProvider.agents.firstWhere(
+                                            (agent) => agent.agentID == _selectedAgentId,
+                                        orElse: () => Agent(
+                                            agentID: _selectedAgentId!,
+                                            name: 'Loading',
+                                            lastname: '...',
+                                            location: ''),
+                                      ).lastname}',
                                       style: TextStyle(
                                         color: _agentPhone.isNotEmpty || _location == null
                                             ? Theme.of(context).colorScheme.onSurface.withOpacity(0.6)
@@ -844,7 +884,7 @@ class _CreateVisitScreenState extends State<CreateVisitScreen> {
                     },
                   ),
                 ),
-                const SizedBox(height: 16),
+                const CustomSpacer(height: 16),
                 _buildSectionCard(
                   title: 'Checklists',
                   child: Consumer<ChecklistProvider>(
@@ -859,12 +899,13 @@ class _CreateVisitScreenState extends State<CreateVisitScreen> {
                               decoration: BoxDecoration(
                                 color: Theme.of(context).colorScheme.surface,
                                 borderRadius: BorderRadius.circular(12),
-                                border: Border.all(color: Theme.of(context).colorScheme.onSurface.withOpacity(0.2)),
+                                border: Border.all(
+                                    color: Theme.of(context).colorScheme.onSurface.withOpacity(0.2)),
                               ),
                               child: Row(
                                 children: [
                                   Icon(Icons.checklist, color: Theme.of(context).colorScheme.primary),
-                                  const SizedBox(width: 12),
+                                  const CustomSpacer(width: 12),
                                   Expanded(
                                     child: Text(
                                       _selectedChecklists.isEmpty
@@ -873,13 +914,14 @@ class _CreateVisitScreenState extends State<CreateVisitScreen> {
                                       style: Theme.of(context).textTheme.bodyMedium,
                                     ),
                                   ),
-                                  Icon(Icons.arrow_drop_down, color: Theme.of(context).colorScheme.onSurface.withOpacity(0.6)),
+                                  Icon(Icons.arrow_drop_down,
+                                      color: Theme.of(context).colorScheme.onSurface.withOpacity(0.6)),
                                 ],
                               ),
                             ),
                           ),
                           if (_selectedChecklists.isNotEmpty) ...[
-                            const SizedBox(height: 8),
+                            const CustomSpacer(height: 8),
                             Wrap(
                               spacing: 8,
                               runSpacing: 8,
@@ -889,6 +931,7 @@ class _CreateVisitScreenState extends State<CreateVisitScreen> {
                                   deleteIcon: const Icon(Icons.close, size: 18),
                                   onDeleted: () {
                                     setState(() => _selectedChecklists.remove(checklist));
+                                    if (kDebugMode) print('Removed checklist: ${checklist.checklistID}');
                                   },
                                   backgroundColor: Theme.of(context).colorScheme.primary.withOpacity(0.1),
                                   labelStyle: TextStyle(color: Theme.of(context).colorScheme.primary),
@@ -901,7 +944,7 @@ class _CreateVisitScreenState extends State<CreateVisitScreen> {
                     },
                   ),
                 ),
-                const SizedBox(height: 16),
+                const CustomSpacer(height: 16),
                 _buildSectionCard(
                   title: 'Reasons',
                   child: Consumer<ReasonProvider>(
@@ -916,25 +959,29 @@ class _CreateVisitScreenState extends State<CreateVisitScreen> {
                               decoration: BoxDecoration(
                                 color: Theme.of(context).colorScheme.surface,
                                 borderRadius: BorderRadius.circular(12),
-                                border: Border.all(color: Theme.of(context).colorScheme.onSurface.withOpacity(0.2)),
+                                border: Border.all(
+                                    color: Theme.of(context).colorScheme.onSurface.withOpacity(0.2)),
                               ),
                               child: Row(
                                 children: [
                                   Icon(Icons.list_alt, color: Theme.of(context).colorScheme.primary),
-                                  const SizedBox(width: 12),
+                                  const CustomSpacer(width: 12),
                                   Expanded(
                                     child: Text(
-                                      _selectedReasons.isEmpty ? 'Select Reasons' : '${_selectedReasons.length} selected',
+                                      _selectedReasons.isEmpty
+                                          ? 'Select Reasons'
+                                          : '${_selectedReasons.length} selected',
                                       style: Theme.of(context).textTheme.bodyMedium,
                                     ),
                                   ),
-                                  Icon(Icons.arrow_drop_down, color: Theme.of(context).colorScheme.onSurface.withOpacity(0.6)),
+                                  Icon(Icons.arrow_drop_down,
+                                      color: Theme.of(context).colorScheme.onSurface.withOpacity(0.6)),
                                 ],
                               ),
                             ),
                           ),
                           if (_selectedReasons.isNotEmpty) ...[
-                            const SizedBox(height: 8),
+                            const CustomSpacer(height: 8),
                             Wrap(
                               spacing: 8,
                               runSpacing: 8,
@@ -944,6 +991,7 @@ class _CreateVisitScreenState extends State<CreateVisitScreen> {
                                   deleteIcon: const Icon(Icons.close, size: 18),
                                   onDeleted: () {
                                     setState(() => _selectedReasons.remove(reason));
+                                    if (kDebugMode) print('Removed reason: ${reason.reasonID}');
                                   },
                                   backgroundColor: Theme.of(context).colorScheme.primary.withOpacity(0.1),
                                   labelStyle: TextStyle(color: Theme.of(context).colorScheme.primary),
@@ -956,14 +1004,11 @@ class _CreateVisitScreenState extends State<CreateVisitScreen> {
                     },
                   ),
                 ),
-                const SizedBox(height: 24),
-                ElevatedButton(
+                const CustomSpacer(height: 24),
+                CustomButton(
+                  label: 'Create Visit',
                   onPressed: _submitVisit,
-                  style: Theme.of(context).elevatedButtonTheme.style,
-                  child: Text(
-                    'Create Visit',
-                    style: TextStyle(fontSize: 18, fontWeight: FontWeight.w600, color: Theme.of(context).colorScheme.onPrimary),
-                  ),
+                  isLoading: _isLoading,
                 ),
               ],
             ),
@@ -974,32 +1019,43 @@ class _CreateVisitScreenState extends State<CreateVisitScreen> {
   }
 
   Widget _buildSectionCard({required String title, required Widget child}) {
-    return Card(
-      elevation: 2,
-      shape: Theme.of(context).cardTheme.shape,
-      color: Theme.of(context).cardTheme.color,
-      child: Padding(
-        padding: const EdgeInsets.all(16.0),
-        child: Column(
-          crossAxisAlignment: CrossAxisAlignment.start,
-          children: [
-            Text(
+    return Container(
+      decoration: BoxDecoration(
+        color: Theme.of(context).colorScheme.surface,
+        borderRadius: BorderRadius.circular(12),
+        border: Border.all(color: Theme.of(context).colorScheme.onSurface.withOpacity(0.2)),
+      ),
+      child: Column(
+        crossAxisAlignment: CrossAxisAlignment.start,
+        children: [
+          Padding(
+            padding: const EdgeInsets.fromLTRB(16, 12, 16, 8),
+            child: Text(
               title,
-              style: Theme.of(context).textTheme.headlineSmall,
+              style: Theme.of(context).textTheme.titleMedium?.copyWith(
+                fontWeight: FontWeight.bold,
+                color: Theme.of(context).colorScheme.primary,
+              ),
             ),
-            const SizedBox(height: 12),
-            child,
-          ],
-        ),
+          ),
+          Padding(
+            padding: const EdgeInsets.fromLTRB(16, 0, 16, 16),
+            child: child,
+          ),
+        ],
       ),
     );
   }
 
-  Widget _buildTile({required IconData icon, required String title, required VoidCallback onTap}) {
+  Widget _buildTile({
+    required IconData icon,
+    required String title,
+    required VoidCallback onTap,
+  }) {
     return GestureDetector(
       onTap: onTap,
       child: Container(
-        padding: const EdgeInsets.symmetric(vertical: 12, horizontal: 16),
+        padding: const EdgeInsets.all(12),
         decoration: BoxDecoration(
           color: Theme.of(context).colorScheme.surface,
           borderRadius: BorderRadius.circular(12),
@@ -1007,15 +1063,16 @@ class _CreateVisitScreenState extends State<CreateVisitScreen> {
         ),
         child: Row(
           children: [
-            Icon(icon, color: Theme.of(context).colorScheme.primary, size: 24),
-            const SizedBox(width: 12),
+            Icon(icon, color: Theme.of(context).colorScheme.primary),
+            const CustomSpacer(width: 12),
             Expanded(
               child: Text(
                 title,
                 style: Theme.of(context).textTheme.bodyMedium,
               ),
             ),
-            Icon(Icons.arrow_drop_down, color: Theme.of(context).colorScheme.onSurface.withOpacity(0.6)),
+            Icon(Icons.arrow_drop_down,
+                color: Theme.of(context).colorScheme.onSurface.withOpacity(0.6)),
           ],
         ),
       ),

@@ -3,11 +3,11 @@ import 'package:provider/provider.dart';
 import 'package:TraceFlow/providers/agent_provider.dart';
 import 'package:TraceFlow/providers/receipt_book_provider.dart';
 import 'package:TraceFlow/providers/user_provider.dart';
-import 'package:TraceFlow/widgets/commen/dropdown.dar.dart'; // Fix typo: dropdown.dart
 import 'package:TraceFlow/widgets/commen/progress_indicator.dart';
 import 'package:TraceFlow/widgets/commen/spacer.dart';
 import 'package:TraceFlow/widgets/commen/text_field.dart';
 import '../../providers/auth_provider.dart';
+import '../commen/dropdown.dar.dart';
 
 class TransferForm extends StatelessWidget {
   final String? recipientType;
@@ -61,7 +61,13 @@ class TransferForm extends StatelessWidget {
     final receiptBookProvider = Provider.of<ReceiptBookProvider>(context);
     final userProvider = Provider.of<UserProvider>(context);
     final agentProvider = Provider.of<AgentProvider>(context);
-    final recipientOptions = ["Supervisor", "Regional Manager", "Agent", "Stock Manager", "Stub Collection"];
+    final recipientOptions = [
+      "Supervisor",
+      "Regional Manager",
+      "Agent",
+      "Stock Manager",
+      "Stub Collection"
+    ];
     final filteredUsers = userProvider.users
         .where((u) => u.roles.any((r) => r.name.toLowerCase() == recipientType?.toLowerCase()))
         .toList();
@@ -94,22 +100,31 @@ class TransferForm extends StatelessWidget {
                   const CustomSpacer(height: 16),
                   FutureBuilder(
                     future: phoneController.text.length >= 10
-                        ? agentProvider.fetchAgentByPhone(phoneController.text, Provider.of<AuthProvider>(context, listen: false).token!)
+                        ? agentProvider.fetchAgentByPhone(phoneController.text)
                         : Future.value(),
                     builder: (context, snapshot) {
-                      if (phoneController.text.length >= 10 && snapshot.connectionState == ConnectionState.waiting) {
+                      if (phoneController.text.length >= 10 &&
+                          snapshot.connectionState == ConnectionState.waiting) {
                         return const CustomProgressIndicator();
                       }
-                      if (snapshot.hasError || agentProvider.currentAgent == null) {
+                      if (snapshot.hasError) {
+                        if (snapshot.error.toString().contains('401')) {
+                          // Session expired, redirect to login
+                          Provider.of<AuthProvider>(context, listen: false).logout();
+                          Navigator.pushReplacementNamed(context, '/login');
+                          return const SizedBox.shrink();
+                        }
                         return const Text('No agent found.', style: TextStyle(color: Colors.red));
                       }
                       if (agentProvider.currentAgent != null) {
                         onRecipientIDChanged(agentProvider.currentAgent!.agentID);
-                        return Text('Selected Agent: ${agentProvider.currentAgent!.name} ${agentProvider.currentAgent!.lastname}');
+                        return Text(
+                            'Selected Agent: ${agentProvider.currentAgent!.name} ${agentProvider.currentAgent!.lastname}');
                       }
                       return Column(
                         children: [
-                          const Text('OR', style: TextStyle(fontSize: 16, fontWeight: FontWeight.bold)),
+                          const Text('OR',
+                              style: TextStyle(fontSize: 16, fontWeight: FontWeight.bold)),
                           const CustomSpacer(height: 8),
                           CustomDropdown<String>(
                             value: selectedLocation,
@@ -128,7 +143,8 @@ class TransferForm extends StatelessWidget {
                               value: recipientID,
                               items: filteredAgents.map((a) => a.agentID).toList(),
                               hint: 'Select Agent',
-                              itemToString: (id) => '${filteredAgents.firstWhere((a) => a.agentID == id).name} ${filteredAgents.firstWhere((a) => a.agentID == id).lastname} (${filteredAgents.firstWhere((a) => a.agentID == id).phone})',
+                              itemToString: (id) =>
+                              '${filteredAgents.firstWhere((a) => a.agentID == id).name} ${filteredAgents.firstWhere((a) => a.agentID == id).lastname} (${filteredAgents.firstWhere((a) => a.agentID == id).phone})',
                               onChanged: onRecipientIDChanged,
                             ),
                           ],
@@ -147,15 +163,18 @@ class TransferForm extends StatelessWidget {
                     value: recipientID,
                     items: filteredUsers.map((u) => u.userID!).toList(),
                     hint: 'Select $recipientType',
-                    itemToString: (id) => '${filteredUsers.firstWhere((u) => u.userID == id).firstName} ${filteredUsers.firstWhere((u) => u.userID == id).lastName} (${filteredUsers.firstWhere((u) => u.userID == id).phone})',
+                    itemToString: (id) =>
+                    '${filteredUsers.firstWhere((u) => u.userID == id).firstName} ${filteredUsers.firstWhere((u) => u.userID == id).lastName} (${filteredUsers.firstWhere((u) => u.userID == id).phone})',
                     onChanged: onRecipientIDChanged,
                   ),
                 ],
                 if (recipientType == "Stub Collection" || recipientID != null) ...[
                   const CustomSpacer(height: 16),
-                  Text('Selected Books (${selectedBookIDs.length}):', style: theme.textTheme.titleMedium),
+                  Text('Selected Books (${selectedBookIDs.length}):',
+                      style: theme.textTheme.titleMedium),
                   ...selectedBookIDs.map((bookID) {
-                    final book = receiptBookProvider.receiptBooks.firstWhere((b) => b.bookID == bookID);
+                    final book =
+                    receiptBookProvider.receiptBooks.firstWhere((b) => b.bookID == bookID);
                     return ListTile(
                       title: Text('Receipt #${book.number}'),
                       subtitle: Text('Type: ${book.type} | Status: ${book.status}'),
@@ -194,7 +213,9 @@ class TransferForm extends StatelessWidget {
                             onPressed: onInitiateTransfer,
                             icon: const Icon(Icons.send, size: 24),
                             label: Text(
-                              recipientType == "Stub Collection" ? 'Initiate Stub Collection' : 'Initiate Transfer',
+                              recipientType == "Stub Collection"
+                                  ? 'Initiate Stub Collection'
+                                  : 'Initiate Transfer',
                               style: const TextStyle(fontSize: 16),
                             ),
                             style: ElevatedButton.styleFrom(
@@ -214,7 +235,8 @@ class TransferForm extends StatelessWidget {
             ] else ...[
               Text(
                 'OTP expires in: ${formatTime(otpSecondsRemaining)}',
-                style: TextStyle(color: otpSecondsRemaining <= 30 ? Colors.red : null, fontSize: 16),
+                style: TextStyle(
+                    color: otpSecondsRemaining <= 30 ? Colors.red : null, fontSize: 16),
               ),
               const CustomSpacer(height: 16),
               CustomTextField(
@@ -236,7 +258,9 @@ class TransferForm extends StatelessWidget {
                     onPressed: onValidateTransfer,
                     icon: const Icon(Icons.check, size: 24),
                     label: Text(
-                      recipientType == "Stub Collection" ? 'Validate Stub Collection' : 'Validate Transfer',
+                      recipientType == "Stub Collection"
+                          ? 'Validate Stub Collection'
+                          : 'Validate Transfer',
                       style: const TextStyle(fontSize: 16),
                     ),
                     style: ElevatedButton.styleFrom(

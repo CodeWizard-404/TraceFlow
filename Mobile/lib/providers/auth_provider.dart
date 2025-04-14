@@ -1,17 +1,13 @@
 import 'dart:convert';
 import 'dart:io';
 import 'package:flutter/foundation.dart';
-import 'package:shared_preferences/shared_preferences.dart';
 import 'package:device_info_plus/device_info_plus.dart';
 import '../models/user.dart';
 import '../services/auth_service.dart';
+import '../services/cookie_manager.dart';
 import 'dart:async';
 
 class AuthProvider with ChangeNotifier {
-  String? _token;
-  String? _refreshToken;
-  String? _tempToken;
-  int? _expiresIn;
   User? _user;
   List<String>? _userRoles;
   bool _isLoading = false;
@@ -23,12 +19,11 @@ class AuthProvider with ChangeNotifier {
   int _otpTimer = 600;
   int _resendCooldown = 0;
   String _otpMethod = 'phone';
-  Timer? _refreshTimer;
   Timer? _otpTimerInstance;
+  String? _tempToken; // For password reset
+  String? _authTempToken; // For 2FA tempToken
+  String? _refreshToken; // For 2FA refreshToken
 
-  String? get token => _token;
-  String? get refreshToken => _refreshToken;
-  String? get tempToken => _tempToken;
   User? get user => _user;
   List<String>? get userRoles => _userRoles;
   bool get isLoading => _isLoading;
@@ -40,29 +35,61 @@ class AuthProvider with ChangeNotifier {
   String? get userID => _userID;
   bool get requires2FA => _requires2FA;
   bool get isSupervisor => _userRoles?.contains('Supervisor') ?? false;
+  bool get isAuthenticated => _user != null && !_requires2FA;
 
   AuthProvider() {
     if (kDebugMode) print('AuthProvider initialized');
-    _loadAuthData();
     _initializeDeviceIdentifier();
+    _restoreSession();
   }
 
-  Future<void> _loadAuthData() async {
-    if (kDebugMode) print('Loading auth data');
-    final prefs = await SharedPreferences.getInstance();
-    _token = prefs.getString('accessToken');
-    _refreshToken = prefs.getString('refreshToken');
-    _tempToken = prefs.getString('tempToken');
-    _expiresIn = prefs.getInt('expiresIn');
-    final userJson = prefs.getString('user');
-    if (_token != null && userJson != null) {
-      _user = User.fromJson(json.decode(userJson));
-      await _fetchPermissions();
-      if (_refreshToken != null && _expiresIn != null) {
-        _scheduleTokenRefresh();
-      }
+  Future<void> _restoreSession() async {
+    if (kDebugMode) print('Restoring session');
+    await CookieManager.loadCookies();
+    if (CookieManager.cookies.containsKey('accessToken')) {
+      await _checkAuthStatus();
+    } else {
+      if (kDebugMode) print('No accessToken found, skipping auth check');
     }
+  }
+
+  Future<void> _checkAuthStatus() async {
+    if (kDebugMode) print('Checking auth status, cookies: ${CookieManager.cookies}');
+    _isLoading = true;
     notifyListeners();
+    try {
+      final result = await AuthService.checkAuthStatus();
+      if (kDebugMode) print('Auth status result: $result');
+      if (result is Map<String, dynamic> && result.containsKey('user')) {
+        _user = User.fromJson(result['user']);
+        await _fetchPermissions();
+        if (kDebugMode) print('Session restored, user: ${_user?.userID}');
+      } else {
+        if (kDebugMode) print('No valid user data in auth status response');
+        // Try refreshing token if cookies exist
+        if (CookieManager.cookies.containsKey('refreshToken')) {
+          if (kDebugMode) print('Attempting token refresh');
+          await AuthService.refreshToken();
+          final retryResult = await AuthService.checkAuthStatus();
+          if (retryResult is Map<String, dynamic> && retryResult.containsKey('user')) {
+            _user = User.fromJson(retryResult['user']);
+            await _fetchPermissions();
+            if (kDebugMode) print('Session restored after refresh, user: ${_user?.userID}');
+          } else {
+            if (kDebugMode) print('Refresh failed, no valid user data');
+            await CookieManager.clearCookies(caller: 'AuthProvider.checkAuthStatus');
+          }
+        }
+      }
+    } catch (e) {
+      if (kDebugMode) print('Auth status check failed: $e');
+      if (e.toString().contains('Invalid refresh token') || e.toString().contains('401')) {
+        await CookieManager.clearCookies(caller: 'AuthProvider.checkAuthStatus');
+      }
+    } finally {
+      _isLoading = false;
+      notifyListeners();
+    }
   }
 
   Future<void> _initializeDeviceIdentifier() async {
@@ -92,7 +119,7 @@ class AuthProvider with ChangeNotifier {
   }
 
   Future<void> _fetchPermissions() async {
-    if (_user == null || _token == null || _permissionsLoaded) return;
+    if (_user == null || _permissionsLoaded) return;
     if (kDebugMode) print('Fetching permissions');
     _permissionsLoaded = false;
     try {
@@ -105,32 +132,6 @@ class AuthProvider with ChangeNotifier {
       _permissionsLoaded = true;
     }
     notifyListeners();
-  }
-
-  Future<void> _scheduleTokenRefresh() async {
-    _refreshTimer?.cancel();
-    if (_expiresIn == null || _refreshToken == null) return;
-    if (kDebugMode) print('Scheduling token refresh in ${_expiresIn! - 600} seconds');
-    final bufferTime = 600;
-    final duration = Duration(seconds: _expiresIn! - bufferTime);
-    _refreshTimer = Timer(duration, () async {
-      try {
-        final result = await AuthService.refreshToken(_refreshToken!);
-        _token = result['accessToken'];
-        _refreshToken = result['refreshToken'];
-        _expiresIn = result['expiresIn'];
-        final prefs = await SharedPreferences.getInstance();
-        await prefs.setString('accessToken', _token!);
-        await prefs.setString('refreshToken', _refreshToken!);
-        await prefs.setInt('expiresIn', _expiresIn!);
-        _scheduleTokenRefresh();
-        if (kDebugMode) print('Token refreshed successfully');
-      } catch (e) {
-        if (kDebugMode) print('Scheduled refresh failed: $e');
-        await logout();
-      }
-      notifyListeners();
-    });
   }
 
   Future<void> login(String identifier, String password) async {
@@ -152,15 +153,12 @@ class AuthProvider with ChangeNotifier {
       if (result.containsKey('requires2FA') && result['requires2FA']) {
         _userID = result['userID'];
         _deviceIdentifier = result['deviceIdentifier'];
-        _tempToken = result['tempToken'];
+        _authTempToken = result['tempToken'];
         _refreshToken = result['refreshToken'];
         _requires2FA = true;
         _otpTimer = 600;
         _startOtpTimer();
-        final prefs = await SharedPreferences.getInstance();
-        await prefs.setString('tempToken', _tempToken!);
-        await prefs.setString('refreshToken', _refreshToken!);
-        if (kDebugMode) print('2FA required, userID: $_userID, tempToken: $_tempToken');
+        if (kDebugMode) print('2FA required, userID: $_userID, tempToken: $_authTempToken');
       } else {
         if (kDebugMode) print('Handling successful login');
         await _handleSuccessfulLogin(result);
@@ -176,7 +174,7 @@ class AuthProvider with ChangeNotifier {
   }
 
   Future<void> verify2FA(String otpCode, bool trustDevice) async {
-    if (_userID == null || _deviceIdentifier == null || _tempToken == null || _refreshToken == null) {
+    if (_userID == null || _deviceIdentifier == null || _authTempToken == null || _refreshToken == null) {
       _errorMessage = 'Missing required authentication data';
       if (kDebugMode) print('Verify2FA failed: $_errorMessage');
       _isLoading = false;
@@ -186,14 +184,20 @@ class AuthProvider with ChangeNotifier {
     _isLoading = true;
     _errorMessage = null;
     try {
-      if (kDebugMode) print('Calling AuthService.verify2FA with userID: $_userID, tempToken: $_tempToken');
-      final result = await AuthService.verify2FA(_userID!, otpCode, _deviceIdentifier!, trustDevice, _tempToken!, _refreshToken!);
+      if (kDebugMode) print('Calling AuthService.verify2FA with userID: $_userID');
+      final result = await AuthService.verify2FA(
+        _userID!,
+        otpCode,
+        _deviceIdentifier!,
+        trustDevice,
+        _authTempToken!,
+        _refreshToken!,
+      );
       if (kDebugMode) print('Verify2FA result: $result');
       await _handleSuccessfulLogin(result);
       _requires2FA = false;
-      _tempToken = null;
-      final prefs = await SharedPreferences.getInstance();
-      await prefs.remove('tempToken');
+      _authTempToken = null;
+      _refreshToken = null;
     } catch (e) {
       if (kDebugMode) print('Verify2FA error: $e');
       _errorMessage = e.toString().replaceFirst('Exception: ', '');
@@ -261,8 +265,9 @@ class AuthProvider with ChangeNotifier {
     notifyListeners();
     try {
       if (kDebugMode) print('Calling AuthService.verifyPasswordResetOTP');
-      await AuthService.verifyPasswordResetOTP(_userID!, otpCode);
-      if (kDebugMode) print('Password reset OTP verified');
+      final result = await AuthService.verifyPasswordResetOTP(_userID!, otpCode);
+      _tempToken = result['tempToken'];
+      if (kDebugMode) print('Password reset OTP verified, tempToken: $_tempToken');
     } catch (e) {
       if (kDebugMode) print('VerifyPasswordResetOTP error: $e');
       _errorMessage = e.toString().replaceFirst('Exception: ', '');
@@ -273,8 +278,8 @@ class AuthProvider with ChangeNotifier {
   }
 
   Future<void> resetPassword(String newPassword) async {
-    if (_userID == null) {
-      _errorMessage = 'User ID missing';
+    if (_userID == null || _tempToken == null) {
+      _errorMessage = 'User ID or temporary token missing';
       if (kDebugMode) print('ResetPassword failed: $_errorMessage');
       notifyListeners();
       return;
@@ -284,9 +289,10 @@ class AuthProvider with ChangeNotifier {
     notifyListeners();
     try {
       if (kDebugMode) print('Calling AuthService.resetPassword');
-      await AuthService.resetPassword(_userID!, newPassword);
+      await AuthService.resetPassword(_userID!, newPassword, _tempToken!);
       _errorMessage = 'Password reset successfully! Please log in.';
       _userID = null;
+      _tempToken = null;
       if (kDebugMode) print('Password reset successful');
     } catch (e) {
       if (kDebugMode) print('ResetPassword error: $e');
@@ -299,25 +305,21 @@ class AuthProvider with ChangeNotifier {
 
   Future<void> logout() async {
     if (kDebugMode) print('Logging out');
-    _refreshTimer?.cancel();
     _otpTimerInstance?.cancel();
-    _token = null;
-    _refreshToken = null;
-    _tempToken = null;
-    _expiresIn = null;
     _user = null;
     _userRoles = null;
     _permissionsLoaded = false;
     _userID = null;
     _requires2FA = false;
     _errorMessage = null;
-    final prefs = await SharedPreferences.getInstance();
-    await prefs.remove('accessToken');
-    await prefs.remove('refreshToken');
-    await prefs.remove('tempToken');
-    await prefs.remove('expiresIn');
-    await prefs.remove('token');
-    await prefs.remove('user');
+    _tempToken = null;
+    _authTempToken = null;
+    _refreshToken = null;
+    try {
+      await AuthService.logout();
+    } catch (e) {
+      if (kDebugMode) print('Logout error: $e');
+    }
     notifyListeners();
   }
 
@@ -340,19 +342,22 @@ class AuthProvider with ChangeNotifier {
     });
   }
 
+// In auth_provider.dart, replace _handleSuccessfulLogin with:
   Future<void> _handleSuccessfulLogin(Map<String, dynamic> result) async {
     if (kDebugMode) print('Handling successful login: $result');
-    _token = result['token'];
-    _refreshToken = result['refreshToken'];
-    _expiresIn = result['expiresIn'];
-    _user = User.fromJson(result['user']);
-    final prefs = await SharedPreferences.getInstance();
-    await prefs.setString('accessToken', _token!);
-    await prefs.setString('refreshToken', _refreshToken!);
-    await prefs.setInt('expiresIn', _expiresIn!);
-    await prefs.setString('user', json.encode(result['user']));
-    await _fetchPermissions();
-    _scheduleTokenRefresh();
+    if (result.containsKey('user')) {
+      _user = User.fromJson(result['user']);
+      await _fetchPermissions();
+      // Check if user has Supervisor role
+      if (!_userRoles!.contains('Supervisor')) {
+        if (kDebugMode) print('User lacks Supervisor role, logging out');
+        await logout();
+        _errorMessage = 'Access denied: Only Supervisors can log in.';
+        return;
+      }
+    } else {
+      if (kDebugMode) print('No user data in login result');
+    }
     notifyListeners();
   }
 }

@@ -2228,3 +2228,9 @@
 {"level":"info","message":"Super Admin detected, bypassing permission checks","timestamp":"2025-04-13T20:13:47.101Z"}
 {"ip":"192.168.1.16","level":"info","message":"Fetched user 1075bf20-4263-420f-ab7b-f44a2826d908 by user d9bf1cf1-f6db-492c-96d6-052bdee0703d, IP: 192.168.1.16","timestamp":"2025-04-13T20:13:47.810Z"}
 {"ip":"192.168.1.16","level":"info","message":"Fetched all receipt books by user d9bf1cf1-f6db-492c-96d6-052bdee0703d, IP: 192.168.1.16","timestamp":"2025-04-13T20:13:47.956Z"}
+{"level":"error","message":"Keycloak introspection error: Request failed with status code 401","timestamp":"2025-04-13T22:34:50.347Z"}
+{"level":"error","message":"Keycloak login error for s@gmail.com: Request failed with status code 401","timestamp":"2025-04-13T22:35:01.729Z"}
+{"level":"error","message":"Login error for s@gmail.com: Wrong email or password.","timestamp":"2025-04-13T22:35:01.730Z"}
+{"ip":"192.168.1.100","level":"error","message":"Server error: TypeError: Cannot read properties of undefined (reading 'formatError')\n    at login (C:\\Users\\Kayto\\Desktop\\IT\\Projects\\Stage\\Stage PFE\\TraceFlow\\keycloak\\Back\\controllers\\authController.js:39:46)\n    at process.processTicksAndRejections (node:internal/process/task_queues:105:5)","timestamp":"2025-04-13T22:35:01.732Z"}
+{"level":"info","message":"Cleaning up expired OTPs","timestamp":"2025-04-13T23:00:00.972Z"}
+{"level":"info","message":"Cleaning up expired OTPs","timestamp":"2025-04-14T00:00:00.585Z"}

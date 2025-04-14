@@ -1,8 +1,8 @@
 import 'dart:convert';
-import 'package:http/http.dart' as http;
-import 'package:shared_preferences/shared_preferences.dart';
 import 'package:flutter/foundation.dart';
+import 'package:http/http.dart' as http;
 import '../utils/constants.dart';
+import './cookie_manager.dart';
 
 class AuthService {
   static Future<Map<String, dynamic>> login(
@@ -13,7 +13,7 @@ class AuthService {
       if (kDebugMode) print('Sending POST to $url');
       final response = await http.post(
         url,
-        headers: {'Content-Type': 'application/json'},
+        headers: CookieManager.getHeaders({'Content-Type': 'application/json'}),
         body: json.encode({
           'identifier': identifier,
           'password': password,
@@ -21,17 +21,15 @@ class AuthService {
           'otpMethod': otpMethod,
         }),
       );
-      if (kDebugMode) print('Response status: ${response.statusCode}, body: ${response.body}');
+      if (kDebugMode) print('Login response: ${response.statusCode}, ${response.body}');
+      CookieManager.extractCookies(response);
       if (response.statusCode == 200) {
         final result = json.decode(response.body);
-        if (kDebugMode) print('Raw login result: $result');
-        if (result.containsKey('requires2FA') && result['requires2FA'] == true) {
-          if (kDebugMode) print('2FA required for this login');
+        if (result is Map<String, dynamic>) {
+          if (kDebugMode) print('Raw login result: $result');
           return result;
         }
-        if (kDebugMode) print('No 2FA required, storing tokens');
-        await _storeTokens(result['token'], result['refreshToken'], result['expiresIn']);
-        return result;
+        throw Exception('Invalid login response format');
       } else {
         throw Exception(_parseError(response));
       }
@@ -47,7 +45,7 @@ class AuthService {
     try {
       final response = await http.post(
         Uri.parse('$baseUrl/auth/verify-2fa'),
-        headers: {'Content-Type': 'application/json'},
+        headers: CookieManager.getHeaders({'Content-Type': 'application/json'}),
         body: json.encode({
           'userID': userID,
           'otpCode': otpCode,
@@ -57,11 +55,14 @@ class AuthService {
           'refreshToken': refreshToken,
         }),
       );
-      if (kDebugMode) print('Verify2FA response: ${response.statusCode}, body: ${response.body}');
+      if (kDebugMode) print('Verify2FA response: ${response.statusCode}, ${response.body}');
+      CookieManager.extractCookies(response);
       if (response.statusCode == 200) {
         final result = json.decode(response.body);
-        await _storeTokens(result['token'], result['refreshToken'], result['expiresIn']);
-        return result;
+        if (result is Map<String, dynamic>) {
+          return result;
+        }
+        throw Exception('Invalid verify2FA response format');
       } else {
         throw Exception(_parseError(response));
       }
@@ -71,19 +72,21 @@ class AuthService {
     }
   }
 
-  static Future<Map<String, dynamic>> refreshToken(String refreshToken) async {
-    if (kDebugMode) print('AuthService.refreshToken called');
+  static Future<Map<String, dynamic>> refreshToken() async {
+    if (kDebugMode) print('AuthService.refreshToken called, cookies: ${CookieManager.cookies}');
     try {
       final response = await http.post(
         Uri.parse('$baseUrl/auth/refresh'),
-        headers: {'Content-Type': 'application/json'},
-        body: json.encode({'refreshToken': refreshToken}),
+        headers: CookieManager.getHeaders({'Content-Type': 'application/json'}),
       );
-      if (kDebugMode) print('Refresh token response: ${response.statusCode}, body: ${response.body}');
+      if (kDebugMode) print('Refresh token response: ${response.statusCode}, ${response.body}');
+      CookieManager.extractCookies(response);
       if (response.statusCode == 200) {
         final result = json.decode(response.body);
-        await _storeTokens(result['accessToken'], result['refreshToken'], result['expiresIn']);
-        return result;
+        if (result is Map<String, dynamic>) {
+          return result;
+        }
+        throw Exception('Invalid refresh token response format');
       } else {
         throw Exception(_parseError(response));
       }
@@ -98,12 +101,17 @@ class AuthService {
     try {
       final response = await http.post(
         Uri.parse('$baseUrl/auth/resend-2fa'),
-        headers: {'Content-Type': 'application/json'},
+        headers: CookieManager.getHeaders({'Content-Type': 'application/json'}),
         body: json.encode({'userID': userID, 'otpMethod': otpMethod}),
       );
-      if (kDebugMode) print('Resend2FA response: ${response.statusCode}, body: ${response.body}');
+      if (kDebugMode) print('Resend2FA response: ${response.statusCode}, ${response.body}');
+      CookieManager.extractCookies(response);
       if (response.statusCode == 200) {
-        return json.decode(response.body);
+        final result = json.decode(response.body);
+        if (result is Map<String, dynamic>) {
+          return result;
+        }
+        throw Exception('Invalid resend2FA response format');
       } else {
         throw Exception(_parseError(response));
       }
@@ -118,12 +126,17 @@ class AuthService {
     try {
       final response = await http.post(
         Uri.parse('$baseUrl/auth/password-reset/initiate'),
-        headers: {'Content-Type': 'application/json'},
+        headers: CookieManager.getHeaders({'Content-Type': 'application/json'}),
         body: json.encode({'identifier': identifier}),
       );
-      if (kDebugMode) print('InitiatePasswordReset response: ${response.statusCode}, body: ${response.body}');
+      if (kDebugMode) print('InitiatePasswordReset response: ${response.statusCode}, ${response.body}');
+      CookieManager.extractCookies(response);
       if (response.statusCode == 200) {
-        return json.decode(response.body);
+        final result = json.decode(response.body);
+        if (result is Map<String, dynamic>) {
+          return result;
+        }
+        throw Exception('Invalid initiatePasswordReset response format');
       } else {
         throw Exception(_parseError(response));
       }
@@ -138,12 +151,17 @@ class AuthService {
     try {
       final response = await http.post(
         Uri.parse('$baseUrl/auth/password-reset/verify'),
-        headers: {'Content-Type': 'application/json'},
+        headers: CookieManager.getHeaders({'Content-Type': 'application/json'}),
         body: json.encode({'userID': userID, 'otpCode': otpCode}),
       );
-      if (kDebugMode) print('VerifyPasswordResetOTP response: ${response.statusCode}, body: ${response.body}');
+      if (kDebugMode) print('VerifyPasswordResetOTP response: ${response.statusCode}, ${response.body}');
+      CookieManager.extractCookies(response);
       if (response.statusCode == 200) {
-        return json.decode(response.body);
+        final result = json.decode(response.body);
+        if (result is Map<String, dynamic>) {
+          return result;
+        }
+        throw Exception('Invalid verifyPasswordResetOTP response format');
       } else {
         throw Exception(_parseError(response));
       }
@@ -153,15 +171,16 @@ class AuthService {
     }
   }
 
-  static Future<void> resetPassword(String userID, String newPassword) async {
+  static Future<void> resetPassword(String userID, String newPassword, String tempToken) async {
     if (kDebugMode) print('AuthService.resetPassword called with userID: $userID');
     try {
       final response = await http.post(
         Uri.parse('$baseUrl/auth/password-reset/reset'),
-        headers: {'Content-Type': 'application/json'},
-        body: json.encode({'userID': userID, 'newPassword': newPassword}),
+        headers: CookieManager.getHeaders({'Content-Type': 'application/json'}),
+        body: json.encode({'userID': userID, 'newPassword': newPassword, 'tempToken': tempToken}),
       );
-      if (kDebugMode) print('ResetPassword response: ${response.statusCode}, body: ${response.body}');
+      if (kDebugMode) print('ResetPassword response: ${response.statusCode}, ${response.body}');
+      CookieManager.extractCookies(response);
       if (response.statusCode == 200) {
         return;
       } else {
@@ -173,44 +192,80 @@ class AuthService {
     }
   }
 
-  static Future<Map<String, dynamic>> makeAuthenticatedRequest({
+  static Future<Map<String, dynamic>> checkAuthStatus() async {
+    if (kDebugMode) print('AuthService.checkAuthStatus called, cookies: ${CookieManager.cookies}');
+    try {
+      final response = await http.get(
+        Uri.parse('$baseUrl/test'),
+        headers: CookieManager.getHeaders({'Content-Type': 'application/json'}),
+      );
+      if (kDebugMode) print('CheckAuthStatus response: ${response.statusCode}, ${response.body}');
+      CookieManager.extractCookies(response);
+      if (response.statusCode == 200) {
+        final result = json.decode(response.body);
+        if (result is Map<String, dynamic>) {
+          if (kDebugMode) print('Decoded checkAuthStatus result: $result');
+          return result;
+        }
+        throw Exception('Invalid checkAuthStatus response format: expected Map, got ${result.runtimeType}');
+      } else {
+        throw Exception(_parseError(response));
+      }
+    } catch (e) {
+      if (kDebugMode) print('CheckAuthStatus error: $e');
+      rethrow;
+    }
+  }
+
+  static Future<void> logout() async {
+    if (kDebugMode) print('AuthService.logout called');
+    try {
+      final response = await http.post(
+        Uri.parse('$baseUrl/auth/logout'),
+        headers: CookieManager.getHeaders({'Content-Type': 'application/json'}),
+      );
+      if (kDebugMode) print('Logout response: ${response.statusCode}, ${response.body}');
+      await CookieManager.clearCookies(caller: 'AuthService.logout');
+      if (response.statusCode != 200) {
+        throw Exception(_parseError(response));
+      }
+    } catch (e) {
+      if (kDebugMode) print('Logout error: $e');
+      throw Exception(_parseError(e.toString()));
+    }
+  }
+
+  static Future<dynamic> makeAuthenticatedRequest({
     required Future<http.Response> Function() request,
-    required String accessToken,
   }) async {
-    if (kDebugMode) print('Making authenticated request with token: $accessToken');
+    if (kDebugMode) print('Making authenticated request, cookies: ${CookieManager.cookies}');
     try {
       final response = await request();
-      if (kDebugMode) print('Authenticated request response: ${response.statusCode}, body: ${response.body}');
-      if (response.statusCode == 401 && json.decode(response.body)['error'] == 'Token expired, please refresh') {
-        final prefs = await SharedPreferences.getInstance();
-        final refreshToken = prefs.getString('refreshToken');
-        if (refreshToken == null) {
-          if (kDebugMode) print('No refresh token available');
-          throw Exception('No refresh token available');
+      if (kDebugMode) print('Authenticated request response: ${response.statusCode}, ${response.body}');
+      CookieManager.extractCookies(response);
+      if (response.statusCode == 401) {
+        if (kDebugMode) print('Received 401, attempting to refresh token, cookies: ${CookieManager.cookies}');
+        try {
+          final refreshResult = await refreshToken();
+          if (kDebugMode) print('Refresh result: $refreshResult, new cookies: ${CookieManager.cookies}');
+          // Retry the original request with new cookies
+          final retryResponse = await request();
+          if (kDebugMode) print('Retry response: ${retryResponse.statusCode}, ${retryResponse.body}');
+          CookieManager.extractCookies(retryResponse);
+          return json.decode(retryResponse.body);
+        } catch (e) {
+          if (kDebugMode) print('Refresh failed: $e');
+          if (e.toString().contains('Invalid refresh token')) {
+            await CookieManager.clearCookies(caller: 'makeAuthenticatedRequest.refresh');
+          }
+          throw Exception('Authentication failed: Unable to refresh token');
         }
-        final newTokens = await AuthService.refreshToken(refreshToken);
-        if (kDebugMode) print('Retrying with new token: ${newTokens['accessToken']}');
-        return makeAuthenticatedRequest(
-          request: () async {
-            final headers = {'Content-Type': 'application/json', 'Authorization': 'Bearer ${newTokens['accessToken']}'};
-            return request().then((resp) => http.Response(resp.body, resp.statusCode, headers: headers));
-          },
-          accessToken: newTokens['accessToken'],
-        );
       }
       return json.decode(response.body);
     } catch (e) {
       if (kDebugMode) print('Authenticated request failed: $e');
       rethrow;
     }
-  }
-
-  static Future<void> _storeTokens(String accessToken, String refreshToken, int expiresIn) async {
-    if (kDebugMode) print('Storing tokens: accessToken=$accessToken, expiresIn=$expiresIn');
-    final prefs = await SharedPreferences.getInstance();
-    await prefs.setString('accessToken', accessToken);
-    await prefs.setString('refreshToken', refreshToken);
-    await prefs.setInt('expiresIn', expiresIn);
   }
 
   static String _parseError(dynamic input) {
@@ -224,7 +279,6 @@ class AuthService {
             return jsonBody['error'] as String;
           }
         }
-        // Map HTTP status codes to specific messages
         switch (input.statusCode) {
           case 401:
             return 'Please log in to continue.';
@@ -236,7 +290,6 @@ class AuthService {
             return 'An error occurred. Please try again.';
         }
       }
-      // Handle exceptions or string errors
       final errorStr = input.toString();
       if (errorStr.contains('Network Error')) {
         return 'Unable to connect to the server. Check your connection.';

@@ -13,7 +13,7 @@ class WeekViewList extends StatelessWidget {
 
   List<DateTime> _getWeekDays(DateTime date) {
     final startOfWeek = date.subtract(Duration(days: date.weekday - 1));
-    return List.generate(5, (index) => startOfWeek.add(Duration(days: index)));
+    return List.generate(7, (index) => startOfWeek.add(Duration(days: index))); // Changed from 5 to 7
   }
 
   @override
@@ -28,7 +28,7 @@ class WeekViewList extends StatelessWidget {
           shrinkWrap: true,
           physics: const NeverScrollableScrollPhysics(),
           itemCount: weekDays.length,
-          padding: EdgeInsets.zero, // Removed vertical padding
+          padding: EdgeInsets.zero,
           itemBuilder: (context, index) {
             final day = weekDays[index];
             final dayName = DateFormat('EEEE').format(day);

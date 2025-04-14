@@ -1,6 +1,7 @@
 import 'package:TraceFlow/widgets/appbar/sidebar.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter/services.dart';
+import 'package:flutter/foundation.dart';
 import 'package:intl/intl.dart';
 import 'package:provider/provider.dart';
 import 'package:image_picker/image_picker.dart';
@@ -24,6 +25,7 @@ import '../../widgets/commen/progress_indicator.dart';
 import '../../widgets/commen/spacer.dart';
 import '../../widgets/commen/text_field.dart';
 import '../../widgets/commen/list_tile.dart';
+import '../../services/cookie_manager.dart';
 
 class EditVisitScreen extends StatefulWidget {
   final Visit visit;
@@ -49,11 +51,12 @@ class _EditVisitScreenState extends State<EditVisitScreen> {
   bool _isLoading = false;
   bool _isInitialized = false;
   DateTime? _editStartTime;
-  bool _hasChanges = false; // Track if anything has changed
+  bool _hasChanges = false;
 
   @override
   void initState() {
     super.initState();
+    if (kDebugMode) print('EditVisitScreen initState for visit: ${widget.visit.visitID}');
     _visit = widget.visit;
     _dateController = TextEditingController(
       text: DateFormat('yyyy-MM-dd').format(_visit.date),
@@ -63,8 +66,7 @@ class _EditVisitScreenState extends State<EditVisitScreen> {
     _commentController = TextEditingController(text: _visit.comment ?? '');
     _selectedLocation = _visit.location;
     _selectedAgentId = _visit.agentID;
-    _visitChecklists =
-        _visit.checklists != null ? List.from(_visit.checklists!) : [];
+    _visitChecklists = _visit.checklists != null ? List.from(_visit.checklists!) : [];
     _visitReasons = _visit.reasons != null ? List.from(_visit.reasons!) : [];
 
     _agentPhoneController.addListener(_onPhoneNumberChanged);
@@ -85,6 +87,7 @@ class _EditVisitScreenState extends State<EditVisitScreen> {
 
   @override
   void dispose() {
+    if (kDebugMode) print('Disposing EditVisitScreen');
     _agentPhoneController.removeListener(_onPhoneNumberChanged);
     _dateController.removeListener(_checkForChanges);
     _timeController.removeListener(_checkForChanges);
@@ -98,11 +101,13 @@ class _EditVisitScreenState extends State<EditVisitScreen> {
   }
 
   void _startEditTimer() {
+    if (kDebugMode) print('Starting edit timer');
     _editStartTime = DateTime.now();
   }
 
   void _onPhoneNumberChanged() {
     final phone = _agentPhoneController.text;
+    if (kDebugMode) print('Phone number changed: $phone');
     if (phone.length == 8 && phone.contains(RegExp(r'^[0-9]+$'))) {
       _fetchAgentByPhone(phone);
     }
@@ -111,9 +116,7 @@ class _EditVisitScreenState extends State<EditVisitScreen> {
 
   void _checkForChanges() {
     setState(() {
-      _hasChanges =
-          _dateController.text !=
-              DateFormat('yyyy-MM-dd').format(_visit.date) ||
+      _hasChanges = _dateController.text != DateFormat('yyyy-MM-dd').format(_visit.date) ||
           _timeController.text != _visit.time ||
           _agentPhoneController.text.isNotEmpty ||
           _commentController.text != (_visit.comment ?? '') ||
@@ -123,167 +126,172 @@ class _EditVisitScreenState extends State<EditVisitScreen> {
           _visitReasons.length != (_visit.reasons?.length ?? 0) ||
           _photosToRemove.isNotEmpty ||
           _newPhotos.isNotEmpty ||
-          _visitChecklists.any(
-            (c) =>
-                c.visitChecklist?.checked !=
-                (_visit.checklists
-                        ?.firstWhere(
-                          (vc) => vc.checklistID == c.checklistID,
-                          orElse:
-                              () => Checklist(
-                                checklistID: c.checklistID,
-                                item: c.item,
-                              ),
-                        )
-                        .visitChecklist
-                        ?.checked ??
-                    false),
-          );
+          _visitChecklists.any((c) =>
+          c.visitChecklist?.checked !=
+              (_visit.checklists
+                  ?.firstWhere(
+                    (vc) => vc.checklistID == c.checklistID,
+                orElse: () => Checklist(checklistID: c.checklistID, item: c.item),
+              )
+                  .visitChecklist
+                  ?.checked ??
+                  false));
+      if (kDebugMode && _hasChanges) print('Changes detected');
     });
   }
 
   Future<void> _fetchAgentByPhone(String phone) async {
+    if (kDebugMode) print('Fetching agent by phone: $phone');
     final authProvider = Provider.of<AuthProvider>(context, listen: false);
     final agentProvider = Provider.of<AgentProvider>(context, listen: false);
-    final token = authProvider.token;
-
-    if (token == null) return;
 
     setState(() => _isLoading = true);
     try {
-      await agentProvider.fetchAgentByPhone(phone, token);
+      if (!CookieManager.cookies.containsKey('accessToken')) {
+        if (kDebugMode) print('No accessToken, loading cookies');
+        await CookieManager.loadCookies();
+      }
+      await agentProvider.fetchAgentByPhone(phone);
       final newAgent = agentProvider.currentAgent;
       if (newAgent != null && newAgent.agentID != null) {
-        setState(() => _selectedAgentId = newAgent.agentID);
+        setState(() {
+          _selectedAgentId = newAgent.agentID;
+          if (kDebugMode) print('Agent found: ${newAgent.agentID}');
+        });
       } else {
         _showSnackBar('No agent found with this phone number');
       }
     } catch (e) {
+      if (kDebugMode) print('Error fetching agent: $e');
       _showSnackBar('Error fetching agent: $e');
+      if (e.toString().contains('401')) {
+        await authProvider.logout();
+        Navigator.pushReplacementNamed(context, '/login');
+      }
     } finally {
       if (mounted) setState(() => _isLoading = false);
     }
-    _checkForChanges();
   }
 
   Future<void> _loadInitialData() async {
+    if (kDebugMode) print('Loading initial data');
     setState(() => _isLoading = true);
+    final authProvider = Provider.of<AuthProvider>(context, listen: false);
     try {
-      final authProvider = Provider.of<AuthProvider>(context, listen: false);
-      final token = authProvider.token;
-      if (token == null) throw Exception('No authentication token');
-
-      final checklistProvider = Provider.of<ChecklistProvider>(
-        context,
-        listen: false,
-      );
-      final reasonProvider = Provider.of<ReasonProvider>(
-        context,
-        listen: false,
-      );
+      if (!CookieManager.cookies.containsKey('accessToken')) {
+        if (kDebugMode) print('No accessToken, loading cookies');
+        await CookieManager.loadCookies();
+      }
+      final checklistProvider = Provider.of<ChecklistProvider>(context, listen: false);
+      final reasonProvider = Provider.of<ReasonProvider>(context, listen: false);
       final agentProvider = Provider.of<AgentProvider>(context, listen: false);
 
       await Future.wait([
-        checklistProvider.getAllChecklists(token),
-        reasonProvider.getAllReasons(token),
-        agentProvider.fetchUniqueLocations(token),
-        if (_selectedLocation != null)
-          agentProvider.fetchAgentsByLocation(_selectedLocation!, token),
+        checklistProvider.getAllChecklists(),
+        reasonProvider.getAllReasons(),
+        agentProvider.fetchUniqueLocations(),
+        if (_selectedLocation != null) agentProvider.fetchAgentsByLocation(_selectedLocation!),
       ]);
 
       if (agentProvider.agents.isNotEmpty &&
           !agentProvider.agents.any((a) => a.agentID == _selectedAgentId)) {
-        setState(() => _selectedAgentId = agentProvider.agents.first.agentID);
+        setState(() {
+          _selectedAgentId = agentProvider.agents.first.agentID;
+          if (kDebugMode) print('Selected first agent: $_selectedAgentId');
+        });
       }
 
       _isInitialized = true;
     } catch (e) {
+      if (kDebugMode) print('Error loading initial data: $e');
       _showSnackBar('Failed to load initial data: $e');
+      if (e.toString().contains('401')) {
+        await authProvider.logout();
+        Navigator.pushReplacementNamed(context, '/login');
+      }
     } finally {
       if (mounted) setState(() => _isLoading = false);
     }
   }
 
   Future<void> _saveChanges() async {
-    if (_isLoading || !_hasChanges) return;
-
-    if (!_validateInputs()) return;
-
-    setState(() => _isLoading = true);
-
-    final authProvider = Provider.of<AuthProvider>(context, listen: false);
-    final visitProvider = Provider.of<VisitProvider>(context, listen: false);
-    final agentProvider = Provider.of<AgentProvider>(context, listen: false);
-    final token = authProvider.token;
-
-    if (token == null) {
-      _showSnackBar('Please log in first');
-      setState(() => _isLoading = false);
+    if (_isLoading || !_hasChanges) {
+      if (kDebugMode) print('No changes to save or loading');
       return;
     }
 
+    if (!_validateInputs()) {
+      if (kDebugMode) print('Validation failed');
+      return;
+    }
+
+    if (kDebugMode) print('Saving changes for visit: ${_visit.visitID}');
+    setState(() => _isLoading = true);
+    final authProvider = Provider.of<AuthProvider>(context, listen: false);
+    final visitProvider = Provider.of<VisitProvider>(context, listen: false);
+    final agentProvider = Provider.of<AgentProvider>(context, listen: false);
+
     try {
+      if (!CookieManager.cookies.containsKey('accessToken')) {
+        if (kDebugMode) print('No accessToken, loading cookies');
+        await CookieManager.loadCookies();
+      }
       String? agentId = _selectedAgentId;
       if (_agentPhoneController.text.isNotEmpty && _visit.status != 'visited') {
-        await agentProvider.fetchAgentByPhone(
-          _agentPhoneController.text,
-          token,
-        );
+        await agentProvider.fetchAgentByPhone(_agentPhoneController.text);
         agentId = agentProvider.currentAgent?.agentID ?? _selectedAgentId;
+        if (kDebugMode) print('Agent ID from phone: $agentId');
       }
 
-      final checklistUpdates =
-          _visitChecklists
-              .map(
-                (c) => {
-                  'id': c.checklistID,
-                  'checked': c.visitChecklist?.checked ?? false,
-                },
-              )
-              .toList();
+      final checklistUpdates = _visitChecklists
+          .map((c) => {
+        'id': c.checklistID,
+        'checked': c.visitChecklist?.checked ?? false,
+      })
+          .toList();
 
-      final reasonUpdates =
-          _visitReasons.map((r) => {'id': r.reasonID}).toList();
+      final reasonUpdates = _visitReasons.map((r) => {'id': r.reasonID}).toList();
 
       int? updatedDuration = _visit.duration;
       if (_visit.status == 'visited' && _editStartTime != null) {
-        final editDuration =
-            DateTime.now().difference(_editStartTime!).inMinutes;
+        final editDuration = DateTime.now().difference(_editStartTime!).inMinutes;
         updatedDuration = (_visit.duration ?? 0) + editDuration;
+        if (kDebugMode) print('Updated duration: $updatedDuration minutes');
       }
 
       final newStatus = _visit.status == 'visited' ? 'visited' : 'pending';
-      final formattedDate =
-          _visit.status == 'visited'
-              ? DateFormat('yyyy-MM-dd').format(_visit.date)
-              : _dateController.text;
+      final formattedDate = _visit.status == 'visited'
+          ? DateFormat('yyyy-MM-dd').format(_visit.date)
+          : _dateController.text;
 
       await visitProvider.updateVisit(
         visitId: _visit.visitID!,
         date: formattedDate,
         time: _visit.status == 'visited' ? _visit.time : _timeController.text,
-        location:
-            _visit.status == 'visited' ? _visit.location : _selectedLocation,
+        location: _visit.status == 'visited' ? _visit.location : _selectedLocation,
         status: newStatus,
         duration: updatedDuration,
-        comment:
-            _visit.status == 'visited' && _commentController.text.isNotEmpty
-                ? _commentController.text
-                : _visit.comment,
+        comment: _visit.status == 'visited' && _commentController.text.isNotEmpty
+            ? _commentController.text
+            : _visit.comment,
         agentID: _visit.status == 'visited' ? _visit.agentID : agentId,
         checklists: checklistUpdates,
         reasons: reasonUpdates,
-        photoPaths:
-            _newPhotos.isNotEmpty
-                ? _newPhotos.map((p) => p.path).toList()
-                : (_photosToRemove.isNotEmpty ? _photosToRemove : null),
-        token: token,
+        photoPaths: _newPhotos.isNotEmpty
+            ? _newPhotos.map((p) => p.path).toList()
+            : (_photosToRemove.isNotEmpty ? _photosToRemove : null),
       );
 
+      if (kDebugMode) print('Visit updated successfully');
       _showSnackBar('Visit updated successfully');
       if (mounted) Navigator.pop(context);
     } catch (e) {
+      if (kDebugMode) print('Error updating visit: $e');
       _showSnackBar('Failed to update visit: $e');
+      if (e.toString().contains('401')) {
+        await authProvider.logout();
+        Navigator.pushReplacementNamed(context, '/login');
+      }
     } finally {
       if (mounted) setState(() => _isLoading = false);
     }
@@ -302,51 +310,31 @@ class _EditVisitScreenState extends State<EditVisitScreen> {
         selectedTime.minute,
       );
 
-      if (selectedDate.weekday == DateTime.saturday ||
-          selectedDate.weekday == DateTime.sunday) {
-        _showSnackBar('Date cannot be a Saturday or Sunday');
-        return false;
-      }
       if (selectedDate.isBefore(DateTime(now.year, now.month, now.day))) {
+        if (kDebugMode) print('Invalid date: before today');
         _showSnackBar('Date cannot be before today');
         return false;
       }
-
-      final startTime = DateTime(
-        selectedDate.year,
-        selectedDate.month,
-        selectedDate.day,
-        8,
-        0,
-      );
-      final endTime = DateTime(
-        selectedDate.year,
-        selectedDate.month,
-        selectedDate.day,
-        17,
-        0,
-      );
-      if (selectedDateTime.isBefore(startTime) ||
-          selectedDateTime.isAfter(endTime)) {
-        _showSnackBar('Time must be between 08:00 and 17:00');
-        return false;
-      }
       if (selectedDate.day == now.day && selectedDateTime.isBefore(now)) {
+        if (kDebugMode) print('Invalid time: before now for today');
         _showSnackBar('Time cannot be before now for today');
         return false;
       }
 
       if (_selectedAgentId == null) {
+        if (kDebugMode) print('Validation failed: no agent selected');
         _showSnackBar('An agent must be selected');
         return false;
       }
     }
 
     if (_visitChecklists.isEmpty) {
+      if (kDebugMode) print('Validation failed: no checklists');
       _showSnackBar('At least one checklist item is required');
       return false;
     }
     if (_visitReasons.isEmpty) {
+      if (kDebugMode) print('Validation failed: no reasons');
       _showSnackBar('At least one reason is required');
       return false;
     }
@@ -354,20 +342,26 @@ class _EditVisitScreenState extends State<EditVisitScreen> {
     return true;
   }
 
+
   void _showSnackBar(String message) {
     if (mounted) {
-      ScaffoldMessenger.of(
-        context,
-      ).showSnackBar(SnackBar(content: Text(message)));
+      ScaffoldMessenger.of(context).showSnackBar(
+        SnackBar(
+          content: Text(message),
+          backgroundColor: message.contains('successfully')
+              ? Theme.of(context).colorScheme.primary
+              : Theme.of(context).colorScheme.error,
+        ),
+      );
+      if (kDebugMode) print('SnackBar shown: $message');
     }
   }
 
   void _toggleChecklist(Checklist checklist, bool? value) {
     if (_visit.status != 'visited') return;
+    if (kDebugMode) print('Toggling checklist: ${checklist.checklistID} to $value');
     setState(() {
-      final index = _visitChecklists.indexWhere(
-        (c) => c.checklistID == checklist.checklistID,
-      );
+      final index = _visitChecklists.indexWhere((c) => c.checklistID == checklist.checklistID);
       if (index != -1) {
         _visitChecklists[index] = Checklist(
           checklistID: checklist.checklistID,
@@ -385,6 +379,7 @@ class _EditVisitScreenState extends State<EditVisitScreen> {
 
   void _addChecklist(Checklist checklist) {
     if (!_visitChecklists.any((c) => c.checklistID == checklist.checklistID)) {
+      if (kDebugMode) print('Adding checklist: ${checklist.checklistID}');
       setState(() {
         _visitChecklists.add(
           Checklist(
@@ -403,6 +398,7 @@ class _EditVisitScreenState extends State<EditVisitScreen> {
   }
 
   void _removeChecklist(String checklistId) {
+    if (kDebugMode) print('Removing checklist: $checklistId');
     setState(() {
       _visitChecklists.removeWhere((c) => c.checklistID == checklistId);
       _checkForChanges();
@@ -411,6 +407,7 @@ class _EditVisitScreenState extends State<EditVisitScreen> {
 
   void _addReason(Reason reason) {
     if (!_visitReasons.any((r) => r.reasonID == reason.reasonID)) {
+      if (kDebugMode) print('Adding reason: ${reason.reasonID}');
       setState(() {
         _visitReasons.add(reason);
         _checkForChanges();
@@ -419,6 +416,7 @@ class _EditVisitScreenState extends State<EditVisitScreen> {
   }
 
   void _removeReason(String reasonId) {
+    if (kDebugMode) print('Removing reason: $reasonId');
     setState(() {
       _visitReasons.removeWhere((r) => r.reasonID == reasonId);
       _checkForChanges();
@@ -426,6 +424,7 @@ class _EditVisitScreenState extends State<EditVisitScreen> {
   }
 
   void _removePhoto(String photo) {
+    if (kDebugMode) print('Removing photo: $photo');
     setState(() {
       _photosToRemove.add(photo);
       _checkForChanges();
@@ -434,54 +433,51 @@ class _EditVisitScreenState extends State<EditVisitScreen> {
 
   Future<void> _addNewPhoto() async {
     if (_visit.status != 'visited') return;
+    if (kDebugMode) print('Adding new photo');
     final picker = ImagePicker();
     final pickedFile = await picker.pickImage(source: ImageSource.camera);
     if (pickedFile != null) {
       setState(() {
         _newPhotos.add(File(pickedFile.path));
+        if (kDebugMode) print('New photo added: ${pickedFile.path}');
         _checkForChanges();
       });
     }
   }
 
   void _viewPhotoFullScreen(String photoPath) {
+    if (kDebugMode) print('Viewing photo: $photoPath');
     Navigator.push(
       context,
       MaterialPageRoute(
-        builder:
-            (_) => Scaffold(
-              appBar: CustomAppBar(title: 'Photo View', showBackButton: true),
-              body: Center(
-                child: Image.network(
-                  photoPath.startsWith('http')
-                      ? photoPath
-                      : '$baseUrl$photoPath',
-                  fit: BoxFit.contain,
-                  errorBuilder:
-                      (context, error, stackTrace) => const Icon(
-                        Icons.error,
-                        color: Colors.white,
-                        size: 50,
-                      ),
-                ),
-              ),
-              backgroundColor: Colors.black,
+        builder: (_) => Scaffold(
+          appBar: CustomAppBar(title: 'Photo View', showBackButton: true),
+          body: Center(
+            child: Image.network(
+              photoPath.startsWith('http') ? photoPath : '$baseUrl$photoPath',
+              fit: BoxFit.contain,
+              errorBuilder: (context, error, stackTrace) {
+                if (kDebugMode) print('Error loading photo: $error');
+                return const Icon(Icons.error, color: Colors.white, size: 50);
+              },
             ),
+          ),
+          backgroundColor: Colors.black,
+        ),
       ),
     );
   }
 
   Future<void> _pickDate() async {
+    if (kDebugMode) print('Picking date');
     final now = DateTime.now();
     final date = await showDatePicker(
       context: context,
       initialDate: _visit.date,
       firstDate: DateTime(now.year, now.month, now.day),
       lastDate: DateTime.now().add(const Duration(days: 365)),
-      selectableDayPredicate:
-          (DateTime date) =>
-              date.weekday != DateTime.saturday &&
-              date.weekday != DateTime.sunday,
+      selectableDayPredicate: (DateTime date) =>
+      date.weekday != DateTime.saturday && date.weekday != DateTime.sunday,
       builder: (context, child) {
         return Theme(
           data: Theme.of(context).copyWith(
@@ -499,16 +495,16 @@ class _EditVisitScreenState extends State<EditVisitScreen> {
     if (date != null && mounted) {
       setState(() {
         _dateController.text = DateFormat('yyyy-MM-dd').format(date);
+        if (kDebugMode) print('Date selected: ${_dateController.text}');
         _checkForChanges();
       });
     }
   }
 
   Future<void> _pickTime() async {
+    if (kDebugMode) print('Picking time');
     final now = DateTime.now();
-    final initialTime = TimeOfDay.fromDateTime(
-      DateFormat('HH:mm').parse(_timeController.text),
-    );
+    final initialTime = TimeOfDay.fromDateTime(DateFormat('HH:mm').parse(_timeController.text));
     final time = await showTimePicker(
       context: context,
       initialTime: initialTime,
@@ -535,29 +531,27 @@ class _EditVisitScreenState extends State<EditVisitScreen> {
       );
       final isToday = selectedDate.day == now.day;
 
-      if (time.hour < 8 ||
-          time.hour >= 17 ||
-          (time.hour == 17 && time.minute > 0)) {
+      if (time.hour < 8 || time.hour >= 17 || (time.hour == 17 && time.minute > 0)) {
+        if (kDebugMode) print('Invalid time: outside 08:00-17:00');
         _showSnackBar('Time must be between 08:00 and 17:00');
         return;
       }
       if (isToday && selectedDateTime.isBefore(now)) {
+        if (kDebugMode) print('Invalid time: before now for today');
         _showSnackBar('Time cannot be before now for today');
         return;
       }
 
       setState(() {
-        _timeController.text =
-            '${time.hour.toString().padLeft(2, '0')}:${time.minute.toString().padLeft(2, '0')}';
+        _timeController.text = '${time.hour.toString().padLeft(2, '0')}:${time.minute.toString().padLeft(2, '0')}';
+        if (kDebugMode) print('Time selected: ${_timeController.text}');
         _checkForChanges();
       });
     }
   }
 
-  Future<void> _showLocationDialog(
-    BuildContext context,
-    AgentProvider agentProvider,
-  ) async {
+  Future<void> _showLocationDialog(BuildContext context, AgentProvider agentProvider) async {
+    if (kDebugMode) print('Showing location dialog');
     final locations = agentProvider.uniqueLocations;
     final TextEditingController searchController = TextEditingController();
     List<String> filteredLocations = List.from(locations);
@@ -568,10 +562,8 @@ class _EditVisitScreenState extends State<EditVisitScreen> {
         return StatefulBuilder(
           builder: (context, setDialogState) {
             return AlertDialog(
-              title: Text(
-                'Select Location',
-                style: Theme.of(context).textTheme.headlineSmall,
-              ),
+              backgroundColor: Theme.of(context).cardTheme.color,
+              title: Text('Select Location', style: Theme.of(context).textTheme.headlineSmall),
               content: SizedBox(
                 width: double.maxFinite,
                 child: Column(
@@ -582,6 +574,13 @@ class _EditVisitScreenState extends State<EditVisitScreen> {
                       label: 'Search locations...',
                       prefixIcon: Icons.search,
                       onSuffixPressed: null,
+                      onChanged: (value) {
+                        setDialogState(() {
+                          filteredLocations = locations
+                              .where((location) => location.toLowerCase().contains(value.toLowerCase()))
+                              .toList();
+                        });
+                      },
                     ),
                     const CustomSpacer(height: 12),
                     SizedBox(
@@ -594,16 +593,11 @@ class _EditVisitScreenState extends State<EditVisitScreen> {
                             title: location,
                             leadingIcon: Icons.location_on,
                             onTap: () {
+                              if (kDebugMode) print('Location selected: $location');
                               setState(() {
                                 _selectedLocation = location;
                                 _selectedAgentId = null;
-                                agentProvider.fetchAgentsByLocation(
-                                  location,
-                                  Provider.of<AuthProvider>(
-                                    context,
-                                    listen: false,
-                                  ).token!,
-                                );
+                                agentProvider.fetchAgentsByLocation(location);
                                 _checkForChanges();
                               });
                               Navigator.pop(context);
@@ -618,7 +612,10 @@ class _EditVisitScreenState extends State<EditVisitScreen> {
               actions: [
                 CustomButton(
                   label: 'Cancel',
-                  onPressed: () => Navigator.pop(context),
+                  onPressed: () {
+                    if (kDebugMode) print('Location dialog cancelled');
+                    Navigator.pop(context);
+                  },
                   backgroundColor: Theme.of(context).cardTheme.color,
                 ),
               ],
@@ -629,10 +626,8 @@ class _EditVisitScreenState extends State<EditVisitScreen> {
     );
   }
 
-  Future<void> _showAgentDialog(
-    BuildContext context,
-    AgentProvider agentProvider,
-  ) async {
+  Future<void> _showAgentDialog(BuildContext context, AgentProvider agentProvider) async {
+    if (kDebugMode) print('Showing agent dialog');
     final agents = agentProvider.agents;
     final TextEditingController searchController = TextEditingController();
     List<Agent> filteredAgents = List.from(agents);
@@ -643,10 +638,8 @@ class _EditVisitScreenState extends State<EditVisitScreen> {
         return StatefulBuilder(
           builder: (context, setDialogState) {
             return AlertDialog(
-              title: Text(
-                'Select Agent',
-                style: Theme.of(context).textTheme.headlineSmall,
-              ),
+              backgroundColor: Theme.of(context).cardTheme.color,
+              title: Text('Select Agent', style: Theme.of(context).textTheme.headlineSmall),
               content: SizedBox(
                 width: double.maxFinite,
                 child: Column(
@@ -657,6 +650,15 @@ class _EditVisitScreenState extends State<EditVisitScreen> {
                       label: 'Search agents...',
                       prefixIcon: Icons.search,
                       onSuffixPressed: null,
+                      onChanged: (value) {
+                        setDialogState(() {
+                          filteredAgents = agents
+                              .where((agent) =>
+                          '${agent.name} ${agent.lastname}'.toLowerCase().contains(value.toLowerCase()) ||
+                              agent.agentID!.toLowerCase().contains(value.toLowerCase()))
+                              .toList();
+                        });
+                      },
                     ),
                     const CustomSpacer(height: 12),
                     SizedBox(
@@ -669,6 +671,7 @@ class _EditVisitScreenState extends State<EditVisitScreen> {
                             title: '${agent.name} ${agent.lastname}',
                             leadingIcon: Icons.person,
                             onTap: () {
+                              if (kDebugMode) print('Agent selected: ${agent.agentID}');
                               setState(() {
                                 _selectedAgentId = agent.agentID;
                                 _checkForChanges();
@@ -685,9 +688,11 @@ class _EditVisitScreenState extends State<EditVisitScreen> {
               actions: [
                 CustomButton(
                   label: 'Cancel',
-                  onPressed: () => Navigator.pop(context),
+                  onPressed: () {
+                    if (kDebugMode) print('Agent dialog cancelled');
+                    Navigator.pop(context);
+                  },
                   backgroundColor: Theme.of(context).cardTheme.color,
-
                 ),
               ],
             );
@@ -697,10 +702,8 @@ class _EditVisitScreenState extends State<EditVisitScreen> {
     );
   }
 
-  Future<void> _showChecklistDialog(
-    BuildContext context,
-    ChecklistProvider checklistProvider,
-  ) async {
+  Future<void> _showChecklistDialog(BuildContext context, ChecklistProvider checklistProvider) async {
+    if (kDebugMode) print('Showing checklist dialog');
     final allChecklists = checklistProvider.allChecklists;
     final selectedChecklists = List<Checklist>.from(_visitChecklists);
 
@@ -710,10 +713,8 @@ class _EditVisitScreenState extends State<EditVisitScreen> {
         return StatefulBuilder(
           builder: (context, setDialogState) {
             return AlertDialog(
-              title: Text(
-                'Select Checklists',
-                style: Theme.of(context).textTheme.headlineSmall,
-              ),
+              backgroundColor: Theme.of(context).cardTheme.color,
+              title: Text('Select Checklists', style: Theme.of(context).textTheme.headlineSmall),
               content: SizedBox(
                 width: double.maxFinite,
                 child: Column(
@@ -732,9 +733,7 @@ class _EditVisitScreenState extends State<EditVisitScreen> {
                         itemCount: allChecklists.length,
                         itemBuilder: (context, index) {
                           final checklist = allChecklists[index];
-                          final isSelected = selectedChecklists.any(
-                            (c) => c.checklistID == checklist.checklistID,
-                          );
+                          final isSelected = selectedChecklists.any((c) => c.checklistID == checklist.checklistID);
                           return CheckboxListTile(
                             title: Text(checklist.item),
                             value: isSelected,
@@ -753,10 +752,7 @@ class _EditVisitScreenState extends State<EditVisitScreen> {
                                     ),
                                   );
                                 } else {
-                                  selectedChecklists.removeWhere(
-                                    (c) =>
-                                        c.checklistID == checklist.checklistID,
-                                  );
+                                  selectedChecklists.removeWhere((c) => c.checklistID == checklist.checklistID);
                                 }
                               });
                             },
@@ -771,13 +767,16 @@ class _EditVisitScreenState extends State<EditVisitScreen> {
               actions: [
                 CustomButton(
                   label: 'Cancel',
-                  onPressed: () => Navigator.pop(context),
+                  onPressed: () {
+                    if (kDebugMode) print('Checklist dialog cancelled');
+                    Navigator.pop(context);
+                  },
                   backgroundColor: Theme.of(context).cardTheme.color,
-
                 ),
                 CustomButton(
                   label: 'Confirm',
                   onPressed: () {
+                    if (kDebugMode) print('Checklists confirmed: ${selectedChecklists.length} selected');
                     setState(() {
                       _visitChecklists = selectedChecklists;
                       _checkForChanges();
@@ -793,10 +792,8 @@ class _EditVisitScreenState extends State<EditVisitScreen> {
     );
   }
 
-  Future<void> _showReasonDialog(
-    BuildContext context,
-    ReasonProvider reasonProvider,
-  ) async {
+  Future<void> _showReasonDialog(BuildContext context, ReasonProvider reasonProvider) async {
+    if (kDebugMode) print('Showing reason dialog');
     final allReasons = reasonProvider.allReasons;
     final selectedReasons = List<Reason>.from(_visitReasons);
 
@@ -806,10 +803,8 @@ class _EditVisitScreenState extends State<EditVisitScreen> {
         return StatefulBuilder(
           builder: (context, setDialogState) {
             return AlertDialog(
-              title: Text(
-                'Select Reasons',
-                style: Theme.of(context).textTheme.headlineSmall,
-              ),
+              backgroundColor: Theme.of(context).cardTheme.color,
+              title: Text('Select Reasons', style: Theme.of(context).textTheme.headlineSmall),
               content: SizedBox(
                 width: double.maxFinite,
                 child: Column(
@@ -828,9 +823,7 @@ class _EditVisitScreenState extends State<EditVisitScreen> {
                         itemCount: allReasons.length,
                         itemBuilder: (context, index) {
                           final reason = allReasons[index];
-                          final isSelected = selectedReasons.any(
-                            (r) => r.reasonID == reason.reasonID,
-                          );
+                          final isSelected = selectedReasons.any((r) => r.reasonID == reason.reasonID);
                           return CheckboxListTile(
                             title: Text(reason.item),
                             value: isSelected,
@@ -839,9 +832,7 @@ class _EditVisitScreenState extends State<EditVisitScreen> {
                                 if (value == true) {
                                   selectedReasons.add(reason);
                                 } else {
-                                  selectedReasons.removeWhere(
-                                    (r) => r.reasonID == reason.reasonID,
-                                  );
+                                  selectedReasons.removeWhere((r) => r.reasonID == reason.reasonID);
                                 }
                               });
                             },
@@ -856,13 +847,16 @@ class _EditVisitScreenState extends State<EditVisitScreen> {
               actions: [
                 CustomButton(
                   label: 'Cancel',
-                  onPressed: () => Navigator.pop(context),
+                  onPressed: () {
+                    if (kDebugMode) print('Reason dialog cancelled');
+                    Navigator.pop(context);
+                  },
                   backgroundColor: Theme.of(context).cardTheme.color,
-
                 ),
                 CustomButton(
                   label: 'Confirm',
                   onPressed: () {
+                    if (kDebugMode) print('Reasons confirmed: ${selectedReasons.length} selected');
                     setState(() {
                       _visitReasons = selectedReasons;
                       _checkForChanges();
@@ -888,364 +882,273 @@ class _EditVisitScreenState extends State<EditVisitScreen> {
       drawer: const AppSidebar(),
       body: RefreshIndicator(
         onRefresh: _loadInitialData,
-        child:
-            _isLoading && !_isInitialized
-                ? const Center(child: CustomProgressIndicator())
-                : Padding(
-                  padding: const EdgeInsets.all(16.0),
-                  child: ListView(
+        child: _isLoading && !_isInitialized
+            ? const Center(child: CustomProgressIndicator())
+            : Padding(
+          padding: const EdgeInsets.all(16.0),
+          child: ListView(
+            children: [
+              if (_visit.status != 'visited') ...[
+                CustomCard(
+                  title: 'Date & Time',
+                  child: Column(
                     children: [
-                      if (_visit.status != 'visited') ...[
-                        CustomCard(
-                          title: 'Date & Time',
-                          child: Column(
-                            children: [
-                              CustomListTile(
-                                title: _dateController.text,
-                                leadingIcon: Icons.calendar_today,
-                                onTap: _pickDate,
-                              ),
-                              const CustomSpacer(height: 12),
-                              CustomListTile(
-                                title: _timeController.text,
-                                leadingIcon: Icons.access_time,
-                                onTap: _pickTime,
-                              ),
-                            ],
-                          ),
-                        ),
-                        const CustomSpacer(height: 16),
-                        CustomCard(
-                          title: 'Location & Agent',
-                          child: Consumer<AgentProvider>(
-                            builder: (context, agentProvider, child) {
-                              return Column(
-                                crossAxisAlignment: CrossAxisAlignment.start,
-                                children: [
-                                  CustomTextField(
-                                    controller: _agentPhoneController,
-                                    label: 'Enter agent\'s phone number',
-                                    prefixIcon: Icons.phone,
-                                    keyboardType: TextInputType.number,
-                                    validator: (value) {
-                                      if (value!.length != 8 ||
-                                          !RegExp(
-                                            r'^[0-9]+$',
-                                          ).hasMatch(value)) {
-                                        return 'Enter a valid 8-digit phone number';
-                                      }
-                                      return null;
-                                    },
-                                  ),
-                                  const CustomSpacer(height: 12),
-                                  CustomListTile(
-                                    title:
-                                        _selectedLocation ?? 'Select Location',
-                                    leadingIcon: Icons.location_on,
-                                    onTap:
-                                        _agentPhoneController.text.isNotEmpty
-                                            ? null
-                                            : () => _showLocationDialog(
-                                              context,
-                                              agentProvider,
-                                            ),
-                                  ),
-                                  const CustomSpacer(height: 12),
-                                  CustomListTile(
-                                    title:
-                                        _selectedAgentId == null
-                                            ? (_agentPhoneController
-                                                    .text
-                                                    .isNotEmpty
-                                                ? 'Selected via phone'
-                                                : _selectedLocation == null
-                                                ? 'Select a location first'
-                                                : 'Select Agent')
-                                            : '${agentProvider.agents.firstWhere((agent) => agent.agentID == _selectedAgentId, orElse: () => Agent(agentID: _selectedAgentId!, name: 'Loading', lastname: '...', location: '')).name} ${agentProvider.agents.firstWhere((agent) => agent.agentID == _selectedAgentId, orElse: () => Agent(agentID: _selectedAgentId!, name: 'Loading', lastname: '...', location: '')).lastname}',
-                                    leadingIcon: Icons.person,
-                                    onTap:
-                                        _agentPhoneController.text.isNotEmpty ||
-                                                _selectedLocation == null
-                                            ? null
-                                            : () => _showAgentDialog(
-                                              context,
-                                              agentProvider,
-                                            ),
-                                  ),
-                                ],
-                              );
+                      CustomListTile(
+                        title: _dateController.text,
+                        leadingIcon: Icons.calendar_today,
+                        onTap: _pickDate,
+                      ),
+                      const CustomSpacer(height: 12),
+                      CustomListTile(
+                        title: _timeController.text,
+                        leadingIcon: Icons.access_time,
+                        onTap: _pickTime,
+                      ),
+                    ],
+                  ),
+                ),
+                const CustomSpacer(height: 16),
+                CustomCard(
+                  title: 'Location & Agent',
+                  child: Consumer<AgentProvider>(
+                    builder: (context, agentProvider, child) {
+                      return Column(
+                        crossAxisAlignment: CrossAxisAlignment.start,
+                        children: [
+                          CustomTextField(
+                            controller: _agentPhoneController,
+                            label: 'Enter agent\'s phone number',
+                            prefixIcon: Icons.phone,
+                            keyboardType: TextInputType.number,
+                            validator: (value) {
+                              if (value!.length != 8 || !RegExp(r'^[0-9]+$').hasMatch(value)) {
+                                return 'Enter a valid 8-digit phone number';
+                              }
+                              return null;
                             },
                           ),
-                        ),
-                      ],
-                      if (_visit.status == 'visited' &&
-                          _visit.comment != null) ...[
-                        const CustomSpacer(height: 16),
-                        CustomCard(
-                          title: 'Details',
-                          child: CustomTextField(
-                            controller: _commentController,
-                            label: 'Enter comment',
-                            prefixIcon: Icons.comment,
+                          const CustomSpacer(height: 12),
+                          CustomListTile(
+                            title: _selectedLocation ?? 'Select Location',
+                            leadingIcon: Icons.location_on,
+                            onTap: _agentPhoneController.text.isNotEmpty
+                                ? null
+                                : () => _showLocationDialog(context, agentProvider),
                           ),
+                          const CustomSpacer(height: 12),
+                          CustomListTile(
+                            title: _selectedAgentId == null
+                                ? (_agentPhoneController.text.isNotEmpty
+                                ? 'Selected via phone'
+                                : _selectedLocation == null
+                                ? 'Select a location first'
+                                : 'Select Agent')
+                                : '${agentProvider.agents.firstWhere((agent) => agent.agentID == _selectedAgentId, orElse: () => Agent(agentID: _selectedAgentId!, name: 'Loading', lastname: '...', location: '')).name} ${agentProvider.agents.firstWhere((agent) => agent.agentID == _selectedAgentId, orElse: () => Agent(agentID: _selectedAgentId!, name: 'Loading', lastname: '...', location: '')).lastname}',
+                            leadingIcon: Icons.person,
+                            onTap: _agentPhoneController.text.isNotEmpty || _selectedLocation == null
+                                ? null
+                                : () => _showAgentDialog(context, agentProvider),
+                          ),
+                        ],
+                      );
+                    },
+                  ),
+                ),
+              ],
+              if (_visit.status == 'visited' && _visit.comment != null) ...[
+                const CustomSpacer(height: 16),
+                CustomCard(
+                  title: 'Details',
+                  child: CustomTextField(
+                    controller: _commentController,
+                    label: 'Enter comment',
+                    prefixIcon: Icons.comment,
+                  ),
+                ),
+              ],
+              const CustomSpacer(height: 16),
+              CustomCard(
+                title: 'Checklists',
+                child: Consumer<ChecklistProvider>(
+                  builder: (context, checklistProvider, child) {
+                    return Column(
+                      crossAxisAlignment: CrossAxisAlignment.start,
+                      children: [
+                        CustomListTile(
+                          title: _visitChecklists.isEmpty
+                              ? 'Select Checklists'
+                              : '${_visitChecklists.length} selected',
+                          leadingIcon: Icons.checklist,
+                          onTap: () => _showChecklistDialog(context, checklistProvider),
                         ),
+                        if (_visitChecklists.isNotEmpty) ...[
+                          const CustomSpacer(height: 8),
+                          Column(
+                            children: _visitChecklists.map((checklist) {
+                              return CheckboxListTile(
+                                title: Text(checklist.item),
+                                value: checklist.visitChecklist?.checked ?? false,
+                                onChanged: _visit.status == 'visited'
+                                    ? (value) => _toggleChecklist(checklist, value)
+                                    : null,
+                                activeColor: Theme.of(context).colorScheme.primary,
+                                enabled: _visit.status == 'visited',
+                                controlAffinity: ListTileControlAffinity.leading,
+                                dense: true,
+                              );
+                            }).toList(),
+                          ),
+                        ],
                       ],
-                      const CustomSpacer(height: 16),
-                      CustomCard(
-                        title: 'Checklists',
-                        child: Consumer<ChecklistProvider>(
-                          builder: (context, checklistProvider, child) {
-                            return Column(
-                              crossAxisAlignment: CrossAxisAlignment.start,
-                              children: [
-                                CustomListTile(
-                                  title:
-                                      _visitChecklists.isEmpty
-                                          ? 'Select Checklists'
-                                          : '${_visitChecklists.length} selected',
-                                  leadingIcon: Icons.checklist,
-                                  onTap:
-                                      () => _showChecklistDialog(
-                                        context,
-                                        checklistProvider,
-                                      ),
-                                ),
-                                if (_visitChecklists.isNotEmpty) ...[
-                                  const CustomSpacer(height: 8),
-                                  Column(
-                                    children:
-                                        _visitChecklists.map((checklist) {
-                                          return CheckboxListTile(
-                                            title: Text(checklist.item),
-                                            value:
-                                                checklist
-                                                    .visitChecklist
-                                                    ?.checked ??
-                                                false,
-                                            onChanged:
-                                                _visit.status == 'visited'
-                                                    ? (value) =>
-                                                        _toggleChecklist(
-                                                          checklist,
-                                                          value,
-                                                        )
-                                                    : null,
-                                            activeColor:
-                                                Theme.of(
-                                                  context,
-                                                ).colorScheme.primary,
-                                            enabled: _visit.status == 'visited',
-                                            controlAffinity:
-                                                ListTileControlAffinity.leading,
-                                            dense: true,
-                                          );
-                                        }).toList(),
-                                  ),
-                                ],
-                              ],
-                            );
-                          },
+                    );
+                  },
+                ),
+              ),
+              const CustomSpacer(height: 16),
+              CustomCard(
+                title: 'Reasons',
+                child: Consumer<ReasonProvider>(
+                  builder: (context, reasonProvider, child) {
+                    return Column(
+                      crossAxisAlignment: CrossAxisAlignment.start,
+                      children: [
+                        CustomListTile(
+                          title: _visitReasons.isEmpty ? 'Select Reasons' : '${_visitReasons.length} selected',
+                          leadingIcon: Icons.list_alt,
+                          onTap: () => _showReasonDialog(context, reasonProvider),
                         ),
-                      ),
-                      const CustomSpacer(height: 16),
-                      CustomCard(
-                        title: 'Reasons',
-                        child: Consumer<ReasonProvider>(
-                          builder: (context, reasonProvider, child) {
-                            return Column(
-                              crossAxisAlignment: CrossAxisAlignment.start,
-                              children: [
-                                CustomListTile(
-                                  title:
-                                      _visitReasons.isEmpty
-                                          ? 'Select Reasons'
-                                          : '${_visitReasons.length} selected',
-                                  leadingIcon: Icons.list_alt,
-                                  onTap:
-                                      () => _showReasonDialog(
-                                        context,
-                                        reasonProvider,
-                                      ),
-                                ),
-                                if (_visitReasons.isNotEmpty) ...[
-                                  const CustomSpacer(height: 8),
-                                  Wrap(
-                                    spacing: 8,
-                                    runSpacing: 8,
-                                    children:
-                                        _visitReasons.map((reason) {
-                                          return Chip(
-                                            label: Text(reason.item),
-                                            deleteIcon: const Icon(
-                                              Icons.close,
-                                              size: 18,
-                                            ),
-                                            onDeleted:
-                                                () => _removeReason(
-                                                  reason.reasonID!,
-                                                ),
-                                            backgroundColor: Theme.of(context).cardTheme.color,
-
-                                            labelStyle: TextStyle(
-                                              color:
-                                                  Theme.of(
-                                                    context,
-                                                  ).colorScheme.primary,
-                                            ),
-                                          );
-                                        }).toList(),
-                                  ),
-                                ],
-                              ],
-                            );
-                          },
+                        if (_visitReasons.isNotEmpty) ...[
+                          const CustomSpacer(height: 8),
+                          Wrap(
+                            spacing: 8,
+                            runSpacing: 8,
+                            children: _visitReasons.map((reason) {
+                              return Chip(
+                                label: Text(reason.item),
+                                deleteIcon: const Icon(Icons.close, size: 18),
+                                onDeleted: () => _removeReason(reason.reasonID!),
+                                backgroundColor: Theme.of(context).cardTheme.color,
+                                labelStyle: TextStyle(color: Theme.of(context).colorScheme.primary),
+                              );
+                            }).toList(),
+                          ),
+                        ],
+                      ],
+                    );
+                  },
+                ),
+              ),
+              if (_visit.photos != null && _visit.photos!.isNotEmpty || _newPhotos.isNotEmpty) ...[
+                const CustomSpacer(height: 16),
+                CustomCard(
+                  title: 'Photos',
+                  child: Column(
+                    crossAxisAlignment: CrossAxisAlignment.start,
+                    children: [
+                      if (_visit.status == 'visited')
+                        CustomButton(
+                          label: 'Add Photo',
+                          onPressed: _addNewPhoto,
                         ),
-                      ),
-                      if (_visit.photos != null && _visit.photos!.isNotEmpty ||
-                          _newPhotos.isNotEmpty) ...[
-                        const CustomSpacer(height: 16),
-                        CustomCard(
-                          title: 'Photos',
-                          child: Column(
-                            crossAxisAlignment: CrossAxisAlignment.start,
-                            children: [
-                              if (_visit.status == 'visited')
-                                CustomButton(
-                                  label: 'Add Photo',
-                                  onPressed: _addNewPhoto,
+                      const CustomSpacer(height: 8),
+                      Wrap(
+                        spacing: 8,
+                        runSpacing: 8,
+                        children: [
+                          if (_visit.photos != null)
+                            ..._visit.photos!.where((p) => !_photosToRemove.contains(p)).map((photo) {
+                              return GestureDetector(
+                                onTap: () => _viewPhotoFullScreen(photo),
+                                child: Stack(
+                                  children: [
+                                    Image.network(
+                                      photo.startsWith('http') ? photo : '$baseUrl$photo',
+                                      width: 100,
+                                      height: 100,
+                                      fit: BoxFit.cover,
+                                      errorBuilder: (_, __, ___) => const Icon(Icons.error, size: 100),
+                                    ),
+                                    Positioned(
+                                      top: 0,
+                                      right: 0,
+                                      child: CustomIconButton(
+                                        icon: Icons.close,
+                                        onPressed: () => _removePhoto(photo),
+                                      ),
+                                    ),
+                                  ],
                                 ),
-                              const CustomSpacer(height: 8),
-                              Wrap(
-                                spacing: 8,
-                                runSpacing: 8,
+                              );
+                            }).toList(),
+                          ..._newPhotos.map((photo) {
+                            return GestureDetector(
+                              onTap: () => Navigator.push(
+                                context,
+                                MaterialPageRoute(
+                                  builder: (_) => Scaffold(
+                                    appBar: CustomAppBar(title: 'Photo Preview', showBackButton: true),
+                                    body: Center(child: Image.file(photo, fit: BoxFit.contain)),
+                                    backgroundColor: Colors.black,
+                                  ),
+                                ),
+                              ),
+                              child: Stack(
                                 children: [
-                                  if (_visit.photos != null)
-                                    ..._visit.photos!
-                                        .where(
-                                          (p) => !_photosToRemove.contains(p),
-                                        )
-                                        .map((photo) {
-                                          return GestureDetector(
-                                            onTap:
-                                                () =>
-                                                    _viewPhotoFullScreen(photo),
-                                            child: Stack(
-                                              children: [
-                                                Image.network(
-                                                  photo.startsWith('http')
-                                                      ? photo
-                                                      : '$baseUrl$photo',
-                                                  width: 100,
-                                                  height: 100,
-                                                  fit: BoxFit.cover,
-                                                  errorBuilder:
-                                                      (_, __, ___) =>
-                                                          const Icon(
-                                                            Icons.error,
-                                                            size: 100,
-                                                          ),
-                                                ),
-                                                Positioned(
-                                                  top: 0,
-                                                  right: 0,
-                                                  child: CustomIconButton(
-                                                    icon: Icons.close,
-                                                    onPressed:
-                                                        () =>
-                                                            _removePhoto(photo),
-                                                  ),
-                                                ),
-                                              ],
-                                            ),
-                                          );
-                                        })
-                                        .toList(),
-                                  ..._newPhotos.map((photo) {
-                                    return GestureDetector(
-                                      onTap:
-                                          () => Navigator.push(
-                                            context,
-                                            MaterialPageRoute(
-                                              builder:
-                                                  (_) => Scaffold(
-                                                    appBar: CustomAppBar(
-                                                      title: 'Photo Preview',
-                                                      showBackButton: true,
-                                                    ),
-                                                    body: Center(
-                                                      child: Image.file(
-                                                        photo,
-                                                        fit: BoxFit.contain,
-                                                      ),
-                                                    ),
-                                                    backgroundColor:
-                                                        Colors.black,
-                                                  ),
-                                            ),
-                                          ),
-                                      child: Stack(
-                                        children: [
-                                          Image.file(
-                                            photo,
-                                            width: 100,
-                                            height: 100,
-                                            fit: BoxFit.cover,
-                                            errorBuilder:
-                                                (_, __, ___) => const Icon(
-                                                  Icons.error,
-                                                  size: 100,
-                                                ),
-                                          ),
-                                          Positioned(
-                                            top: 0,
-                                            right: 0,
-                                            child: CustomIconButton(
-                                              icon: Icons.close,
-                                              onPressed:
-                                                  () => setState(
-                                                    () => _newPhotos.remove(
-                                                      photo,
-                                                    ),
-                                                  ),
-                                            ),
-                                          ),
-                                        ],
-                                      ),
-                                    );
-                                  }).toList(),
+                                  Image.file(
+                                    photo,
+                                    width: 100,
+                                    height: 100,
+                                    fit: BoxFit.cover,
+                                    errorBuilder: (_, __, ___) => const Icon(Icons.error, size: 100),
+                                  ),
+                                  Positioned(
+                                    top: 0,
+                                    right: 0,
+                                    child: CustomIconButton(
+                                      icon: Icons.close,
+                                      onPressed: () => setState(() {
+                                        _newPhotos.remove(photo);
+                                        _checkForChanges();
+                                      }),
+                                    ),
+                                  ),
                                 ],
                               ),
-                            ],
-                          ),
-                        ),
-                      ],
-                      const CustomSpacer(height: 24),
-                      Row(
-                        mainAxisAlignment: MainAxisAlignment.center,
-                        children: [
-                          SizedBox(
-                            child: CustomButton(
-                              label: 'Cancel',
-                              onPressed: () {
-                                _editStartTime = null;
-                                Navigator.pop(context);
-                              },
-                            ),
-                          ),
-                          const CustomSpacer(width: 8),
-                          SizedBox(
-                            child: CustomButton(
-                              label: 'Save Changes',
-                              onPressed:
-                                  _hasChanges ? () => _saveChanges() : () {},
-                              isLoading: _isLoading,
-                            ),
-                          ),
+                            );
+                          }).toList(),
                         ],
                       ),
                     ],
                   ),
                 ),
+              ],
+              const CustomSpacer(height: 24),
+              Row(
+                mainAxisAlignment: MainAxisAlignment.center,
+                children: [
+                  SizedBox(
+                    child: CustomButton(
+                      label: 'Cancel',
+                      onPressed: () {
+                        if (kDebugMode) print('Cancelling edit');
+                        _editStartTime = null;
+                        Navigator.pop(context);
+                      },
+                    ),
+                  ),
+                  const CustomSpacer(width: 8),
+                  SizedBox(
+                    child: CustomButton(
+                      label: 'Save Changes',
+                      onPressed: _hasChanges ? () => _saveChanges() : () {},
+                      isLoading: _isLoading,
+                    ),
+                  ),
+                ],
+              ),
+            ],
+          ),
+        ),
       ),
     );
   }
