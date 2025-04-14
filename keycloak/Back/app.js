@@ -81,7 +81,7 @@ app.use('/api/receipt-books', receiptBookRoutes);
 app.use('/api/receipt-stubs', receiptStubRoutes);
 
 // Test endpoint
-app.get('/test', authenticateCookie, (req, res) => {
+app.get('/api/test', authenticateCookie, (req, res) => {
     res.json({ message: 'Secure endpoint accessed', user: req.user });
 });
 
