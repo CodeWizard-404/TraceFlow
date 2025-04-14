@@ -14,7 +14,7 @@ class WeekViewCalendar extends StatelessWidget {
 
   List<DateTime> _getWeekDays(DateTime date) {
     final startOfWeek = date.subtract(Duration(days: date.weekday - 1));
-    return List.generate(5, (index) => startOfWeek.add(Duration(days: index)));
+    return List.generate(7, (index) => startOfWeek.add(Duration(days: index))); // Changed from 5 to 7
   }
 
   DateTime? _parseVisitStartTime(DateTime visitDate, String time) {
@@ -74,7 +74,7 @@ class WeekViewCalendar extends StatelessWidget {
     const double timeColumnWidth = 50.0;
     const double sidePadding = 1.0;
     final availableWidth = MediaQuery.of(context).size.width - timeColumnWidth - (sidePadding * 2);
-    final columnWidth = availableWidth / 5.25;
+    final columnWidth = availableWidth / 7.25; // Changed from 5.25 to 7.25
 
     return Consumer<TimesheetProvider>(
       builder: (context, provider, child) {
@@ -85,8 +85,7 @@ class WeekViewCalendar extends StatelessWidget {
             .where((visit) {
           final visitDate = visit.date;
           final startTime = _parseVisitStartTime(visitDate, visit.time);
-          return visitDate.weekday <= 5 &&
-              startTime != null &&
+          return startTime != null &&
               startTime.hour >= startHour &&
               startTime.hour < endHour;
         })
@@ -98,7 +97,7 @@ class WeekViewCalendar extends StatelessWidget {
         return Column(
           children: [
             Container(
-              padding: const EdgeInsets.symmetric(vertical: 4), // Reduced padding
+              padding: const EdgeInsets.symmetric(vertical: 4),
               decoration: BoxDecoration(
                 color: theme.cardColor,
                 borderRadius: BorderRadius.circular(8),

@@ -95,10 +95,17 @@ class AuthWrapper extends StatelessWidget {
   const AuthWrapper({super.key});
 
   @override
+// In main.dart, replace AuthWrapper's build method with:
+  @override
   Widget build(BuildContext context) {
     final authProvider = Provider.of<AuthProvider>(context);
 
-    debugPrint('AuthWrapper build: token=${authProvider.token}, isLoading=${authProvider.isLoading}, isSupervisor=${authProvider.isSupervisor}, requires2FA=${authProvider.requires2FA}');
+    debugPrint(
+        'AuthWrapper build: '
+            'user=${authProvider.user?.userID},'
+            'isLoading=${authProvider.isLoading}, '
+            'isSupervisor=${authProvider.isSupervisor}, '
+            'requires2FA=${authProvider.requires2FA}');
 
     if (authProvider.isLoading) {
       return const Scaffold(
@@ -111,21 +118,14 @@ class AuthWrapper extends StatelessWidget {
       return const Verify2FAScreen();
     }
 
-    if (authProvider.token == null || authProvider.user == null) {
+    if (authProvider.user == null) {
       debugPrint('AuthWrapper: Returning LoginScreen');
       return const LoginScreen();
     }
 
-    if (authProvider.isSupervisor) {
-      debugPrint('AuthWrapper: Returning TimesheetDetailsScreen');
-      return const TimesheetDetailsScreen();
-    }
-
-    debugPrint('Clearing invalid state: non-Supervisor with token');
-    authProvider.logout();
-    return const LoginScreen();
-  }
-}
+    debugPrint('AuthWrapper: Returning TimesheetDetailsScreen');
+    return const TimesheetDetailsScreen();
+  }}
 
 class RouteLogger extends NavigatorObserver {
   @override

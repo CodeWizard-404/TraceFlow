@@ -25,6 +25,17 @@ class User {
     var rolesList = json['roles'] as List<dynamic>? ?? [];
     List<Role> roles = rolesList.map((roleJson) => Role.fromJson(roleJson)).toList();
 
+    // Handle PFP field
+    dynamic pfpData = json['PFP'];
+    String? pfp;
+    if (pfpData is String) {
+      pfp = pfpData;
+    } else if (pfpData is Map<String, dynamic>) {
+      pfp = null; // Or convert to string if needed, e.g., jsonEncode(pfpData)
+    } else {
+      pfp = null;
+    }
+
     return User(
       userID: json['userID'],
       firstName: json['firstname'],
@@ -32,14 +43,14 @@ class User {
       phone: json['phone'],
       email: json['email'],
       wallet: json['wallet'],
-      pfp: json['PFP'],
+      pfp: pfp,
       roles: roles,
     );
   }
 
   Map<String, dynamic> toJson() => {
     'userID': userID,
-    'fisrtname': firstName,
+    'firstname': firstName, // Fixed typo
     'lastname': lastName,
     'phone': phone,
     'email': email,

@@ -94,16 +94,12 @@ class LoginScreenState extends State<LoginScreen> {
       } else if (authProvider.requires2FA && ModalRoute.of(context)?.settings.name != '/verify-2fa') {
         if (kDebugMode) print('Navigating to Verify2FAScreen from listener');
         Navigator.pushNamed(context, '/verify-2fa');
-      } else if (authProvider.token != null && authProvider.permissionsLoaded && authProvider.isSupervisor) {
+      } else if (authProvider.isAuthenticated && authProvider.permissionsLoaded) {
         if (kDebugMode) print('Navigating to TimesheetDetailsScreen (Home) from listener');
         Navigator.pushReplacement(
           context,
           MaterialPageRoute(builder: (_) => const TimesheetDetailsScreen()),
         );
-      } else if (authProvider.token != null && authProvider.permissionsLoaded && !authProvider.isSupervisor) {
-        if (kDebugMode) print('Access denied: Not a supervisor');
-        _showErrorSnackBar('Access denied: Only Supervisors can log in.');
-        authProvider.logout();
       }
     });
 

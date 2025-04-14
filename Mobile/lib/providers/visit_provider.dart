@@ -1,15 +1,18 @@
-// lib/providers/visit_provider.dart
 import 'package:flutter/foundation.dart';
 import '../models/visit.dart';
+import '../services/auth_service.dart';
+import '../services/cookie_manager.dart';
 import '../services/visits_service.dart';
 
 class VisitProvider with ChangeNotifier {
   Visit? _currentVisit;
   bool _isLoading = false;
   DateTime? _startTime;
+  String? _errorMessage;
 
   Visit? get currentVisit => _currentVisit;
   bool get isLoading => _isLoading;
+  String? get errorMessage => _errorMessage;
 
   Future<void> logVisit({
     required String visitId,
@@ -17,35 +20,57 @@ class VisitProvider with ChangeNotifier {
     required List<Map<String, dynamic>> checklistUpdates,
     String? comment,
     List<String>? photoPaths,
-    required String token,
   }) async {
+    if (kDebugMode) print('VisitProvider.logVisit called for visitId: $visitId');
     _isLoading = true;
+    _errorMessage = null;
     notifyListeners();
     try {
+      if (!CookieManager.cookies.containsKey('accessToken')) {
+        if (kDebugMode) print('No accessToken, attempting to load cookies');
+        await CookieManager.loadCookies();
+      }
       _currentVisit = await VisitService.logVisit(
         visitId: visitId,
         duration: duration,
         checklistUpdates: checklistUpdates,
         comment: comment,
         photoPaths: photoPaths,
-        token: token,
       );
+      if (kDebugMode) print('Logged visit: $visitId');
     } catch (e) {
-      throw Exception('Failed to log visit: $e');
+      _errorMessage = 'Failed to log visit: $e';
+      if (kDebugMode) print(_errorMessage);
+      if (e.toString().contains('Invalid or expired token') || e.toString().contains('401')) {
+        await AuthService.logout();
+      }
+      rethrow;
     } finally {
       _isLoading = false;
       notifyListeners();
     }
   }
 
-  Future<void> fetchVisitById(String visitId, String token) async {
+  Future<void> fetchVisitById(String visitId) async {
+    if (kDebugMode) print('VisitProvider.fetchVisitById called for visitId: $visitId');
     _isLoading = true;
+    _errorMessage = null;
     notifyListeners();
     try {
-      _currentVisit = await VisitService.fetchVisitById(visitId, token);
+      if (!CookieManager.cookies.containsKey('accessToken')) {
+        if (kDebugMode) print('No accessToken, attempting to load cookies');
+        await CookieManager.loadCookies();
+      }
+      _currentVisit = await VisitService.fetchVisitById(visitId);
+      if (kDebugMode) print('Fetched visit: $visitId');
     } catch (e) {
       _currentVisit = null;
-      throw Exception('Failed to fetch visit: $e');
+      _errorMessage = 'Failed to fetch visit: $e';
+      if (kDebugMode) print(_errorMessage);
+      if (e.toString().contains('Invalid or expired token') || e.toString().contains('401')) {
+        await AuthService.logout();
+      }
+      rethrow;
     } finally {
       _isLoading = false;
       notifyListeners();
@@ -64,10 +89,16 @@ class VisitProvider with ChangeNotifier {
     List<Map<String, dynamic>>? checklists,
     List<Map<String, dynamic>>? reasons,
     List<String>? photoPaths,
-    required String token,
   }) async {
-    _setLoading(true);
+    if (kDebugMode) print('VisitProvider.updateVisit called for visitId: $visitId');
+    _isLoading = true;
+    _errorMessage = null;
+    notifyListeners();
     try {
+      if (!CookieManager.cookies.containsKey('accessToken')) {
+        if (kDebugMode) print('No accessToken, attempting to load cookies');
+        await CookieManager.loadCookies();
+      }
       _currentVisit = await VisitService.updateVisit(
         visitId: visitId,
         date: date,
@@ -80,28 +111,41 @@ class VisitProvider with ChangeNotifier {
         checklists: checklists,
         reasons: reasons,
         photoPaths: photoPaths,
-        token: token,
       );
+      if (kDebugMode) print('Updated visit: $visitId');
     } catch (e) {
-      throw Exception('Failed to update visit: $e');
+      _errorMessage = 'Failed to update visit: $e';
+      if (kDebugMode) print(_errorMessage);
+      if (e.toString().contains('Invalid or expired token') || e.toString().contains('401')) {
+        await AuthService.logout();
+      }
+      rethrow;
     } finally {
-      _setLoading(false);
+      _isLoading = false;
+      notifyListeners();
     }
   }
 
-  void _setLoading(bool value) {
-    _isLoading = value;
-    notifyListeners();
-  }
-
-  Future<void> deleteVisit(String visitId, String token) async {
+  Future<void> deleteVisit(String visitId) async {
+    if (kDebugMode) print('VisitProvider.deleteVisit called for visitId: $visitId');
     _isLoading = true;
+    _errorMessage = null;
     notifyListeners();
     try {
-      await VisitService.deleteVisit(visitId, token);
+      if (!CookieManager.cookies.containsKey('accessToken')) {
+        if (kDebugMode) print('No accessToken, attempting to load cookies');
+        await CookieManager.loadCookies();
+      }
+      await VisitService.deleteVisit(visitId);
       _currentVisit = null;
+      if (kDebugMode) print('Deleted visit: $visitId');
     } catch (e) {
-      throw Exception('Failed to delete visit: $e');
+      _errorMessage = 'Failed to delete visit: $e';
+      if (kDebugMode) print(_errorMessage);
+      if (e.toString().contains('Invalid or expired token') || e.toString().contains('401')) {
+        await AuthService.logout();
+      }
+      rethrow;
     } finally {
       _isLoading = false;
       notifyListeners();
@@ -111,19 +155,29 @@ class VisitProvider with ChangeNotifier {
   Future<Map<String, dynamic>> verifyQRCode({
     required String qrData,
     required String visitId,
-    required String token,
   }) async {
+    if (kDebugMode) print('VisitProvider.verifyQRCode called for visitId: $visitId');
     _isLoading = true;
+    _errorMessage = null;
     notifyListeners();
     try {
+      if (!CookieManager.cookies.containsKey('accessToken')) {
+        if (kDebugMode) print('No accessToken, attempting to load cookies');
+        await CookieManager.loadCookies();
+      }
       final result = await VisitService.verifyQRCode(
         qrData: qrData,
         visitId: visitId,
-        token: token,
       );
+      if (kDebugMode) print('Verified QR code for visit: $visitId');
       return result;
     } catch (e) {
-      throw Exception('Failed to verify QR code: $e');
+      _errorMessage = 'Failed to verify QR code: $e';
+      if (kDebugMode) print(_errorMessage);
+      if (e.toString().contains('Invalid or expired token') || e.toString().contains('401')) {
+        await AuthService.logout();
+      }
+      rethrow;
     } finally {
       _isLoading = false;
       notifyListeners();
@@ -131,13 +185,20 @@ class VisitProvider with ChangeNotifier {
   }
 
   void startVisitTimer() {
+    if (kDebugMode) print('VisitProvider.startVisitTimer called');
     _startTime = DateTime.now();
     notifyListeners();
   }
 
   int? getElapsedTimeInMinutes() {
-    return _startTime != null
-        ? DateTime.now().difference(_startTime!).inMinutes
-        : null;
+    final elapsed = _startTime != null ? DateTime.now().difference(_startTime!).inMinutes : null;
+    if (kDebugMode && elapsed != null) {}
+    return elapsed;
+  }
+
+  void clearError() {
+    if (kDebugMode) print('VisitProvider.clearError called');
+    _errorMessage = null;
+    notifyListeners();
   }
 }
