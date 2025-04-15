@@ -1,4 +1,21 @@
-import 'package:TraceFlow/models/role.dart';
+import 'package:flutter/foundation.dart';
+
+class Role {
+  final String name;
+
+  Role({required this.name});
+
+  factory Role.fromJson(dynamic json) {
+    if (json is String) {
+      return Role(name: json);
+    } else if (json is Map<String, dynamic>) {
+      return Role(name: json['name'] ?? '');
+    }
+    return Role(name: '');
+  }
+
+  Map<String, dynamic> toJson() => {'name': name};
+}
 
 class User {
   final String? userID;
@@ -9,6 +26,7 @@ class User {
   final String? wallet;
   final String? pfp;
   final List<Role> roles;
+  final String? token;
 
   User({
     this.userID,
@@ -19,6 +37,7 @@ class User {
     this.wallet,
     this.pfp,
     this.roles = const [],
+    this.token,
   });
 
   factory User.fromJson(Map<String, dynamic> json) {
@@ -26,36 +45,38 @@ class User {
     List<Role> roles = rolesList.map((roleJson) => Role.fromJson(roleJson)).toList();
 
     // Handle PFP field
-    dynamic pfpData = json['PFP'];
+    dynamic pfpData = json['PFP'] ?? json['pfp'];
     String? pfp;
     if (pfpData is String) {
       pfp = pfpData;
     } else if (pfpData is Map<String, dynamic>) {
-      pfp = null; // Or convert to string if needed, e.g., jsonEncode(pfpData)
+      pfp = null;
     } else {
       pfp = null;
     }
 
     return User(
-      userID: json['userID'],
-      firstName: json['firstname'],
-      lastName: json['lastname'],
-      phone: json['phone'],
-      email: json['email'],
-      wallet: json['wallet'],
+      userID: json['userID']?.toString(),
+      firstName: json['firstname'] ?? json['given_name'] ?? '',
+      lastName: json['lastname'] ?? json['family_name'] ?? '',
+      phone: json['phone']?.toString(),
+      email: json['email']?.toString(),
+      wallet: json['wallet']?.toString(),
       pfp: pfp,
       roles: roles,
+      token: json['token']?.toString(),
     );
   }
 
   Map<String, dynamic> toJson() => {
     'userID': userID,
-    'firstname': firstName, // Fixed typo
+    'firstname': firstName,
     'lastname': lastName,
     'phone': phone,
     'email': email,
     'wallet': wallet,
     'pfp': pfp,
     'roles': roles.map((role) => role.toJson()).toList(),
+    'token': token,
   };
 }
