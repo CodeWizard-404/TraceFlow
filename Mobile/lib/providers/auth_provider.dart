@@ -1,4 +1,3 @@
-import 'dart:convert';
 import 'dart:io';
 import 'package:flutter/foundation.dart';
 import 'package:device_info_plus/device_info_plus.dart';
@@ -22,9 +21,8 @@ class AuthProvider with ChangeNotifier {
   Timer? _otpTimerInstance;
   String? _tempToken;
   String? _authTempToken;
-  String? _refreshToken; 
+  String? _refreshToken;
   int? _tokenExpiry;
-
 
   User? get user => _user;
   List<String>? get userRoles => _userRoles;
@@ -62,21 +60,22 @@ class AuthProvider with ChangeNotifier {
     try {
       final result = await AuthService.checkAuthStatus();
       if (kDebugMode) print('Auth status result: $result');
-      if (result is Map<String, dynamic> && result.containsKey('user')) {
+      if (result.containsKey('user')) {
         _user = User.fromJson(result['user']);
         await _fetchPermissions();
-        if (kDebugMode) print('Session restored, user: ${_user?.userID}');
+        if (kDebugMode) print('Session restored, user: ${_user?.userID}, roles: ${_user?.roles}');
+        _startRefreshTimer();
       } else {
         if (kDebugMode) print('No valid user data in auth status response');
-        // Try refreshing token if cookies exist
         if (CookieManager.cookies.containsKey('refreshToken')) {
           if (kDebugMode) print('Attempting token refresh');
           await AuthService.refreshToken();
           final retryResult = await AuthService.checkAuthStatus();
-          if (retryResult is Map<String, dynamic> && retryResult.containsKey('user')) {
+          if (retryResult.containsKey('user')) {
             _user = User.fromJson(retryResult['user']);
             await _fetchPermissions();
             if (kDebugMode) print('Session restored after refresh, user: ${_user?.userID}');
+            _startRefreshTimer();
           } else {
             if (kDebugMode) print('Refresh failed, no valid user data');
             await CookieManager.clearCookies(caller: 'AuthProvider.checkAuthStatus');
@@ -317,6 +316,7 @@ class AuthProvider with ChangeNotifier {
     _tempToken = null;
     _authTempToken = null;
     _refreshToken = null;
+    _tokenExpiry = null;
     try {
       await AuthService.logout();
     } catch (e) {
@@ -344,43 +344,55 @@ class AuthProvider with ChangeNotifier {
     });
   }
 
-
   Future<void> _handleSuccessfulLogin(Map<String, dynamic> result) async {
+    if (kDebugMode) print('Handling successful login: $result');
     if (result.containsKey('user')) {
       _user = User.fromJson(result['user']);
-      _tokenExpiry = result['expiresIn'] != null
+      _tokenExpiry = (result['expiresIn'] != null
           ? DateTime.now().millisecondsSinceEpoch + result['expiresIn']
-          : null;
+          : null) as int?;
       await _fetchPermissions();
       if (!_userRoles!.contains('Supervisor')) {
+        if (kDebugMode) print('User lacks Supervisor role, logging out');
         await logout();
         _errorMessage = 'Access denied: Only Supervisors can log in.';
         return;
       }
       _startRefreshTimer();
+    } else {
+      if (kDebugMode) print('No user data in login result');
     }
     notifyListeners();
   }
 
   void _startRefreshTimer() {
-    if (_tokenExpiry == null) return;
-    final timeUntilRefresh = _tokenExpiry! - DateTime.now().millisecondsSinceEpoch - 30000; // 30s buffer
-    if (timeUntilRefresh <= 0) {
-      _refreshToken();
+    if (_tokenExpiry == null) {
+      if (kDebugMode) print('No token expiry set, skipping refresh timer');
       return;
     }
-    Timer(Duration(milliseconds: timeUntilRefresh), _refreshToken);
+    final timeUntilRefresh = _tokenExpiry! - DateTime.now().millisecondsSinceEpoch - 30000; // 30s buffer
+    if (timeUntilRefresh <= 0) {
+      if (kDebugMode) print('Token expired or near expiry, refreshing immediately');
+      _refreshAccessToken();
+      return;
+    }
+    if (kDebugMode) print('Scheduling token refresh in $timeUntilRefresh ms');
+    Timer(Duration(milliseconds: timeUntilRefresh), _refreshAccessToken);
   }
 
-  Future<void> _refreshToken() async {
+  Future<void> _refreshAccessToken() async {
+    if (kDebugMode) print('Refreshing access token');
     try {
       final result = await AuthService.refreshToken();
-      _tokenExpiry = result['expiresIn'] != null
+      _tokenExpiry = (result['expiresIn'] != null
           ? DateTime.now().millisecondsSinceEpoch + result['expiresIn']
-          : null;
+          : null) as int?;
+      if (kDebugMode) print('Token refreshed, new expiry: $_tokenExpiry');
       _startRefreshTimer();
     } catch (e) {
+      if (kDebugMode) print('Token refresh failed: $e');
       await logout();
     }
+    notifyListeners();
   }
 }

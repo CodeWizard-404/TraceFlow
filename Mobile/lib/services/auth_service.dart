@@ -5,6 +5,37 @@ import '../utils/constants.dart';
 import './cookie_manager.dart';
 
 class AuthService {
+  static Future<Map<String, dynamic>> checkAuthStatus() async {
+    if (kDebugMode) print('AuthService.checkAuthStatus called, cookies: ${CookieManager.cookies}');
+    try {
+      final response = await http.get(
+        Uri.parse('$baseUrl/test'),
+        headers: CookieManager.getHeaders({'Content-Type': 'application/json'}),
+      );
+      if (kDebugMode) print('CheckAuthStatus response: ${response.statusCode}, ${response.body}');
+      CookieManager.extractCookies(response);
+      if (response.statusCode == 200) {
+        dynamic result = json.decode(response.body);
+        // Handle case where result is a string (double-encoded JSON)
+        if (result is String) {
+          if (kDebugMode) print('Response is a string, attempting to decode again');
+          result = json.decode(result);
+        }
+        if (result is Map<String, dynamic>) {
+          if (kDebugMode) print('Decoded checkAuthStatus result: $result');
+          return result;
+        }
+        throw Exception('Invalid checkAuthStatus response format: expected Map, got ${result.runtimeType}');
+      } else {
+        throw Exception(_parseError(response));
+      }
+    } catch (e) {
+      if (kDebugMode) print('CheckAuthStatus error: $e');
+      rethrow;
+    }
+  }
+
+  // ... Other methods unchanged (login, verify2FA, etc.) ...
   static Future<Map<String, dynamic>> login(
       String identifier, String password, String deviceIdentifier, String otpMethod) async {
     if (kDebugMode) print('AuthService.login called with identifier: $identifier, device: $deviceIdentifier, otpMethod: $otpMethod');
@@ -192,31 +223,6 @@ class AuthService {
     }
   }
 
-  static Future<Map<String, dynamic>> checkAuthStatus() async {
-    if (kDebugMode) print('AuthService.checkAuthStatus called, cookies: ${CookieManager.cookies}');
-    try {
-      final response = await http.get(
-        Uri.parse('$baseUrl/test'),
-        headers: CookieManager.getHeaders({'Content-Type': 'application/json'}),
-      );
-      if (kDebugMode) print('CheckAuthStatus response: ${response.statusCode}, ${response.body}');
-      CookieManager.extractCookies(response);
-      if (response.statusCode == 200) {
-        final result = json.decode(response.body);
-        if (result is Map<String, dynamic>) {
-          if (kDebugMode) print('Decoded checkAuthStatus result: $result');
-          return result;
-        }
-        throw Exception('Invalid checkAuthStatus response format: expected Map, got ${result.runtimeType}');
-      } else {
-        throw Exception(_parseError(response));
-      }
-    } catch (e) {
-      if (kDebugMode) print('CheckAuthStatus error: $e');
-      rethrow;
-    }
-  }
-
   static Future<void> logout() async {
     if (kDebugMode) print('AuthService.logout called');
     try {
@@ -268,31 +274,31 @@ class AuthService {
     }
   }
 
-static String _parseError(dynamic input) {
-  try {
-    if (input is http.Response) {
-      final body = input.body;
-      if (body.isNotEmpty) {
-        final jsonBody = json.decode(body);
-        if (jsonBody is Map && jsonBody.containsKey('error')) {
-          if (input.statusCode == 429 && jsonBody.containsKey('waitTime')) {
-            return '${jsonBody['error']} Wait ${jsonBody['waitTime']} seconds.';
+  static String _parseError(dynamic input) {
+    try {
+      if (input is http.Response) {
+        final body = input.body;
+        if (body.isNotEmpty) {
+          final jsonBody = json.decode(body);
+          if (jsonBody is Map && jsonBody.containsKey('error')) {
+            if (input.statusCode == 429 && jsonBody.containsKey('waitTime')) {
+              return '${jsonBody['error']} Wait ${jsonBody['waitTime']} seconds.';
+            }
+            return jsonBody['error'] as String;
           }
-          return jsonBody['error'] as String;
         }
-      }
-      switch (input.statusCode) {
-        case 401:
-          return 'Please log in to continue.';
-        case 403:
-          return 'You don’t have permission to perform this action.';
-        case 429:
-          return 'Too many attempts. Please wait.';
-        case 500:
-          return 'Something went wrong on our end. Please try again later.';
-        default:
-          return 'An error occurred. Please try again.';
-      }
+        switch (input.statusCode) {
+          case 401:
+            return 'Please log in to continue.';
+          case 403:
+            return 'You don’t have permission to perform this action.';
+          case 429:
+            return 'Too many attempts. Please wait.';
+          case 500:
+            return 'Something went wrong on our end. Please try again later.';
+          default:
+            return 'An error occurred. Please try again.';
+        }
       }
       final errorStr = input.toString();
       if (errorStr.contains('Network Error')) {
