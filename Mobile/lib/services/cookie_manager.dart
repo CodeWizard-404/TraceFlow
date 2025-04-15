@@ -17,8 +17,12 @@ class CookieManager {
           final value = parts[1].trim();
           if (key == 'accessToken' || key == 'refreshToken' || key == 'deviceToken') {
             cookies[key] = value;
-            await _storage.write(key: key, value: value);
-            if (kDebugMode) print('Stored cookie: $key=$value');
+            try {
+              await _storage.write(key: key, value: value);
+              if (kDebugMode) print('Stored cookie: $key=$value');
+            } catch (e) {
+              if (kDebugMode) print('Failed to store cookie $key: $e');
+            }
           }
         }
       }
@@ -31,6 +35,7 @@ class CookieManager {
       final accessToken = await _storage.read(key: 'accessToken');
       final refreshToken = await _storage.read(key: 'refreshToken');
       final deviceToken = await _storage.read(key: 'deviceToken');
+      cookies.clear();
       if (accessToken != null && accessToken.isNotEmpty) {
         cookies['accessToken'] = accessToken;
       }
@@ -43,6 +48,7 @@ class CookieManager {
       if (kDebugMode) print('Loaded cookies: $cookies');
     } catch (e) {
       if (kDebugMode) print('Failed to load cookies: $e');
+      cookies.clear();
     }
   }
 
@@ -69,27 +75,25 @@ class CookieManager {
 
   static Map<String, String> getHeaders([Map<String, String>? additionalHeaders]) {
     final headers = additionalHeaders != null ? Map<String, String>.from(additionalHeaders) : <String, String>{};
-    if (cookies.containsKey('accessToken') || cookies.containsKey('refreshToken') || cookies.containsKey('deviceToken')) {
+    if (cookies.isNotEmpty) {
       headers['Cookie'] = cookies.entries
           .where((e) => e.key == 'accessToken' || e.key == 'refreshToken' || e.key == 'deviceToken')
           .map((e) => '${e.key}=${e.value}')
           .join('; ');
       if (kDebugMode) print('Sending Cookie header: ${headers['Cookie']}');
     } else {
-      if (kDebugMode) print('No cookies to send, cookies: $cookies');
+      if (kDebugMode) print('No cookies to send');
     }
     return headers;
   }
 
   static Future<void> clearCookies({String? caller}) async {
     if (kDebugMode) print('Clearing cookies, called by: ${caller ?? "unknown"}');
-    // Preserve deviceToken during logout
     final deviceToken = cookies['deviceToken'];
     cookies.clear();
     try {
       await _storage.delete(key: 'accessToken');
       await _storage.delete(key: 'refreshToken');
-      // Do not delete deviceToken
       if (deviceToken != null) {
         cookies['deviceToken'] = deviceToken;
         await _storage.write(key: 'deviceToken', value: deviceToken);
