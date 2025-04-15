@@ -3,17 +3,17 @@ import 'package:flutter/foundation.dart';
 import 'package:http/http.dart' as http;
 import '../utils/constants.dart';
 import './cookie_manager.dart';
+import 'http_client.dart';
 
 class AuthService {
   static Future<Map<String, dynamic>> checkAuthStatus() async {
     if (kDebugMode) print('AuthService.checkAuthStatus called, cookies: ${CookieManager.cookies}');
     try {
-      final response = await http.get(
+      final response = await CustomHttpClient.get(
         Uri.parse('$baseUrl/test'),
-        headers: CookieManager.getHeaders({'Content-Type': 'application/json'}),
+        headers: {'Content-Type': 'application/json'},
       );
       if (kDebugMode) print('CheckAuthStatus response: ${response.statusCode}, ${response.body}');
-      CookieManager.extractCookies(response);
       if (response.statusCode == 200) {
         dynamic result = json.decode(response.body);
         if (result is String) {
@@ -40,9 +40,9 @@ class AuthService {
     try {
       final url = Uri.parse('$baseUrl/auth/login');
       if (kDebugMode) print('Sending POST to $url');
-      final response = await http.post(
+      final response = await CustomHttpClient.post(
         url,
-        headers: CookieManager.getHeaders({'Content-Type': 'application/json'}),
+        headers: {'Content-Type': 'application/json'},
         body: json.encode({
           'identifier': identifier,
           'password': password,
@@ -50,7 +50,6 @@ class AuthService {
         }),
       );
       if (kDebugMode) print('Login response: ${response.statusCode}, ${response.body}');
-      CookieManager.extractCookies(response);
       if (response.statusCode == 200) {
         final result = json.decode(response.body);
         if (result is Map<String, dynamic>) {
@@ -71,9 +70,9 @@ class AuthService {
       String userID, String otpCode, bool trustDevice, String tempToken, String refreshToken) async {
     if (kDebugMode) print('AuthService.verify2FA called with userID: $userID');
     try {
-      final response = await http.post(
+      final response = await CustomHttpClient.post(
         Uri.parse('$baseUrl/auth/verify-2fa'),
-        headers: CookieManager.getHeaders({'Content-Type': 'application/json'}),
+        headers: {'Content-Type': 'application/json'},
         body: json.encode({
           'userID': userID,
           'otpCode': otpCode,
@@ -83,7 +82,6 @@ class AuthService {
         }),
       );
       if (kDebugMode) print('Verify2FA response: ${response.statusCode}, ${response.body}');
-      CookieManager.extractCookies(response);
       if (response.statusCode == 200) {
         final result = json.decode(response.body);
         if (result is Map<String, dynamic>) {
@@ -102,12 +100,11 @@ class AuthService {
   static Future<Map<String, dynamic>> refreshToken() async {
     if (kDebugMode) print('AuthService.refreshToken called, cookies: ${CookieManager.cookies}');
     try {
-      final response = await http.post(
+      final response = await CustomHttpClient.post(
         Uri.parse('$baseUrl/auth/refresh'),
-        headers: CookieManager.getHeaders({'Content-Type': 'application/json'}),
+        headers: {'Content-Type': 'application/json'},
       );
       if (kDebugMode) print('Refresh token response: ${response.statusCode}, ${response.body}');
-      CookieManager.extractCookies(response);
       if (response.statusCode == 200) {
         final result = json.decode(response.body);
         if (result is Map<String, dynamic>) {
@@ -126,13 +123,12 @@ class AuthService {
   static Future<Map<String, dynamic>> resend2FA(String userID, String otpMethod) async {
     if (kDebugMode) print('AuthService.resend2FA called with userID: $userID, method: $otpMethod');
     try {
-      final response = await http.post(
+      final response = await CustomHttpClient.post(
         Uri.parse('$baseUrl/auth/resend-2fa'),
-        headers: CookieManager.getHeaders({'Content-Type': 'application/json'}),
+        headers: {'Content-Type': 'application/json'},
         body: json.encode({'userID': userID, 'otpMethod': otpMethod}),
       );
       if (kDebugMode) print('Resend2FA response: ${response.statusCode}, ${response.body}');
-      CookieManager.extractCookies(response);
       if (response.statusCode == 200) {
         final result = json.decode(response.body);
         if (result is Map<String, dynamic>) {
@@ -151,13 +147,12 @@ class AuthService {
   static Future<Map<String, dynamic>> initiatePasswordReset(String identifier) async {
     if (kDebugMode) print('AuthService.initiatePasswordReset called with identifier: $identifier');
     try {
-      final response = await http.post(
+      final response = await CustomHttpClient.post(
         Uri.parse('$baseUrl/auth/reset-password/init'),
-        headers: CookieManager.getHeaders({'Content-Type': 'application/json'}),
+        headers: {'Content-Type': 'application/json'},
         body: json.encode({'identifier': identifier}),
       );
       if (kDebugMode) print('InitiatePasswordReset response: ${response.statusCode}, ${response.body}');
-      CookieManager.extractCookies(response);
       if (response.statusCode == 200) {
         final result = json.decode(response.body);
         if (result is Map<String, dynamic>) {
@@ -176,13 +171,12 @@ class AuthService {
   static Future<Map<String, dynamic>> verifyPasswordResetOTP(String userID, String otpCode) async {
     if (kDebugMode) print('AuthService.verifyPasswordResetOTP called with userID: $userID');
     try {
-      final response = await http.post(
+      final response = await CustomHttpClient.post(
         Uri.parse('$baseUrl/auth/reset-password/verify'),
-        headers: CookieManager.getHeaders({'Content-Type': 'application/json'}),
+        headers: {'Content-Type': 'application/json'},
         body: json.encode({'userID': userID, 'otpCode': otpCode}),
       );
       if (kDebugMode) print('VerifyPasswordResetOTP response: ${response.statusCode}, ${response.body}');
-      CookieManager.extractCookies(response);
       if (response.statusCode == 200) {
         final result = json.decode(response.body);
         if (result is Map<String, dynamic>) {
@@ -201,13 +195,12 @@ class AuthService {
   static Future<void> resetPassword(String userID, String newPassword, String tempToken) async {
     if (kDebugMode) print('AuthService.resetPassword called with userID: $userID');
     try {
-      final response = await http.post(
+      final response = await CustomHttpClient.post(
         Uri.parse('$baseUrl/auth/reset-password'),
-        headers: CookieManager.getHeaders({'Content-Type': 'application/json'}),
+        headers: {'Content-Type': 'application/json'},
         body: json.encode({'userID': userID, 'newPassword': newPassword, 'tempToken': tempToken}),
       );
       if (kDebugMode) print('ResetPassword response: ${response.statusCode}, ${response.body}');
-      CookieManager.extractCookies(response);
       if (response.statusCode == 200) {
         return;
       } else {
@@ -222,9 +215,9 @@ class AuthService {
   static Future<void> logout() async {
     if (kDebugMode) print('AuthService.logout called');
     try {
-      final response = await http.post(
+      final response = await CustomHttpClient.post(
         Uri.parse('$baseUrl/auth/logout'),
-        headers: CookieManager.getHeaders({'Content-Type': 'application/json'}),
+        headers: {'Content-Type': 'application/json'},
       );
       if (kDebugMode) print('Logout response: ${response.statusCode}, ${response.body}');
       await CookieManager.clearCookies(caller: 'AuthService.logout');
@@ -239,7 +232,6 @@ class AuthService {
 
   static Future<dynamic> makeAuthenticatedRequest({
     required Future<http.Response> Function() request,
-
   }) async {
     if (kDebugMode) print('Making authenticated request, cookies: ${CookieManager.cookies}');
     try {
@@ -251,7 +243,7 @@ class AuthService {
         try {
           final refreshResult = await refreshToken();
           if (kDebugMode) print('Refresh result: $refreshResult, new cookies: ${CookieManager.cookies}');
-// Retry the original request with new cookies
+          // Retry the original request with new cookies
           final retryResponse = await request();
           if (kDebugMode) print('Retry response: ${retryResponse.statusCode}, ${retryResponse.body}');
           CookieManager.extractCookies(retryResponse);

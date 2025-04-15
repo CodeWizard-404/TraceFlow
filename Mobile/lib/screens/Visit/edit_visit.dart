@@ -342,7 +342,6 @@ class _EditVisitScreenState extends State<EditVisitScreen> {
     return true;
   }
 
-
   void _showSnackBar(String message) {
     if (mounted) {
       ScaffoldMessenger.of(context).showSnackBar(

@@ -15,8 +15,8 @@ class MonthView extends StatelessWidget {
     final lastDay = DateTime(month.year, month.month + 1, 0);
     final days = <DateTime>[];
 
-    // Calculate the offset to start the week on Sunday
-    int weekdayOffset = firstDay.weekday % 7; // Sunday = 0, Monday = 1, etc.
+    // Calculate the offset to start the week on Monday
+    int weekdayOffset = (firstDay.weekday - 1) % 7; // Monday = 0, Tuesday = 1, ..., Sunday = 6
     for (int i = 0; i < weekdayOffset; i++) {
       days.add(DateTime(0)); // Placeholder for empty cells before the 1st
     }
@@ -71,7 +71,7 @@ class MonthView extends StatelessWidget {
   Widget build(BuildContext context) {
     final theme = Theme.of(context);
     final days = _getMonthDays(date);
-    final dayNames = ['Sun', 'Mon', 'Tue', 'Wed', 'Thu', 'Fri', 'Sat'];
+    final dayNames = ['Mon', 'Tue', 'Wed', 'Thu', 'Fri', 'Sat', 'Sun'];
 
     return Consumer<TimesheetProvider>(
       builder: (context, provider, child) {
@@ -81,11 +81,10 @@ class MonthView extends StatelessWidget {
         return Column(
           crossAxisAlignment: CrossAxisAlignment.stretch,
           children: [
-
             // Day names header
             Row(
               children: dayNames.map((name) {
-                final isWeekend = name == 'Sun' || name == 'Sat';
+                final isWeekend = name == 'Sat' || name == 'Sun';
                 return Expanded(
                   child: Padding(
                     padding: const EdgeInsets.symmetric(vertical: 4),
@@ -121,7 +120,7 @@ class MonthView extends StatelessWidget {
 
                 final visitData = _getDayVisits(day, provider.timesheets);
                 final hasVisits = visitData['count'] > 0;
-                final isWeekend = day.weekday == 7 || day.weekday == 6;
+                final isWeekend = day.weekday == 6 || day.weekday == 7; // Sat or Sun
                 final isToday = _isToday(day);
 
                 return GestureDetector(
