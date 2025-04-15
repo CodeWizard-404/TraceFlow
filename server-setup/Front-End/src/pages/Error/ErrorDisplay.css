@@ -1,0 +1,77 @@
+@import url('https://fonts.googleapis.com/css2?family=Inter:wght@400;600;700&display=swap');
+
+.error-display {
+    position: fixed;
+    top: 20px;
+    left: 50%;
+    transform: translateX(-50%);
+    z-index: 1000;
+    font-family: 'Inter', sans-serif;
+}
+
+.error-glass {
+    background: rgba(184, 0, 0, 0.739);
+    /* Pink-red with transparency */
+    padding: 0.5rem 1rem;
+    border-radius: 0.5rem;
+    box-shadow: 0 0.375rem 1.25rem rgba(0, 0, 0, 0.2);
+    display: flex;
+    align-items: center;
+    gap: 1rem;
+    transition: all 0.3s ease;
+    max-width: 100%;
+}
+
+body.dark .error-glass {
+    background: rgba(145, 0, 0, 0.533);
+    /* Softer red for dark mode */
+    box-shadow: 0 0.375rem 1.25rem rgba(0, 0, 0, 0.4);
+}
+
+.error-glass:hover {
+    transform: scale(1.02);
+}
+
+.error-glass span {
+    font-size: 0.875rem;
+    font-weight: 600;
+    color: #fff;
+    flex: 1;
+}
+
+.dismiss-button {
+    background: rgba(255, 255, 255, 0.2);
+    border: none;
+    border-radius: 50%;
+    width: 24px;
+    height: 24px;
+    color: #fff;
+    font-size: 0.875rem;
+    font-weight: 700;
+    cursor: pointer;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    transition: all 0.3s ease;
+}
+
+.dismiss-button:hover {
+    background: rgba(255, 255, 255, 0.4);
+    transform: scale(1.1);
+}
+
+@media (max-width: 480px) {
+    .error-glass {
+        padding: 0.75rem 1.5rem;
+    }
+
+    .error-glass span {
+        font-size: 0.75rem;
+    }
+
+    .dismiss-button {
+        width: 20px;
+        height: 20px;
+        font-size: 0.75rem;
+    }
+}
