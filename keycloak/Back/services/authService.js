@@ -1,6 +1,5 @@
-// backend/services/authService.js
 const axios = require('axios');
-const { nanoid } = require('nanoid');
+const { v4: uuidv4 } = require('uuid');
 const { User, Role, Permission, TrustedDevice } = require('../models');
 const otpService = require('./otpService');
 const { transporter } = require('../config/smtp');
@@ -26,6 +25,7 @@ const ERROR_MESSAGES = {
     INVALID_KEYCLOAK_RESPONSE: 'Authentication failed. Please try again.',
     ACCOUNT_LOCKED: 'Account temporarily locked due to too many failed attempts.',
     TOO_MANY_ATTEMPTS: 'Too many login attempts. Please wait before trying again.',
+    INVALID_DEVICE_TOKEN: 'Invalid or expired device token.',
 };
 
 const verificationCache = new Map();
@@ -37,6 +37,7 @@ const CLIENT_ID = process.env.KEYCLOAK_CLIENT_ID || 'traceflow-backend';
 const CLIENT_SECRET = process.env.KEYCLOAK_CLIENT_SECRET || '';
 const ACCESS_TOKEN_MAX_AGE = parseInt(process.env.ACCESS_TOKEN_MAX_AGE) || 900000; // 15 minutes
 const REFRESH_TOKEN_MAX_AGE = parseInt(process.env.REFRESH_TOKEN_MAX_AGE) || 86400000; // 1 day
+const DEVICE_TOKEN_MAX_AGE = 30 * 24 * 60 * 60 * 1000; // 30 days
 
 class AuthService {
     static async getKeycloakAdminToken() {
@@ -63,13 +64,13 @@ class AuthService {
             let user = await User.findOne({ where: { email: identifier } });
             if (!user) {
                 user = await User.create({
-                    userID: `usr_${nanoid()}`,
+                    userID: `usr_${uuidv4()}`,
                     keycloakId,
                     email: identifier,
                     firstname: 'Unknown',
                     lastname: 'User',
                     phone: 'N/A',
-                    wallet: `wallet_${nanoid()}`,
+                    wallet: `wallet_${uuidv4()}`,
                     password: 'KEYCLOAK_MANAGED',
                 });
             } else if (!user.keycloakId) {
@@ -86,7 +87,7 @@ class AuthService {
         }
     }
 
-    static async login(identifier, password, deviceIdentifier, otpMethod = 'email', res) {
+    static async login(identifier, password, deviceToken, otpMethod = 'email', res) {
         let loginResponse;
         try {
             loginResponse = await axios.post(
@@ -186,18 +187,21 @@ class AuthService {
             throw Object.assign(new Error(ERROR_MESSAGES.USER_NOT_FOUND), { status: 404 });
         }
 
-        const trustedDevice = await TrustedDevice.findOne({
-            where: { userID: user.userID, deviceIdentifier, status: 'active' },
-        });
-        if (trustedDevice) {
-            await trustedDevice.update({ lastUsed: new Date() });
-            return this.generateLoginResponse(
-                userWithDetails,
-                loginResponse.data.access_token,
-                loginResponse.data.refresh_token,
-                loginResponse.data.expires_in,
-                res
-            );
+        // Check for trusted device using deviceToken
+        if (deviceToken) {
+            const trustedDevice = await TrustedDevice.findOne({
+                where: { userID: user.userID, deviceToken, status: 'active' },
+            });
+            if (trustedDevice && trustedDevice.expiresAt > new Date()) {
+                await trustedDevice.update({ lastUsed: new Date() });
+                return this.generateLoginResponse(
+                    userWithDetails,
+                    loginResponse.data.access_token,
+                    loginResponse.data.refresh_token,
+                    loginResponse.data.expires_in,
+                    res
+                );
+            }
         }
 
         const emailRegex = /^[^\s@]+@[^\s@]+\.[^\s@]+$/;
@@ -265,10 +269,21 @@ class AuthService {
                 throw Object.assign(new Error(ERROR_MESSAGES.OTP_SEND_FAILED), { status: 500 });
             }
 
+            // Generate a new deviceToken for 2FA verification
+            const newDeviceToken = uuidv4();
+            const cookieOptions = {
+                httpOnly: true,
+                secure: process.env.NODE_ENV === 'production',
+                sameSite: 'Strict',
+                path: '/',
+                maxAge: DEVICE_TOKEN_MAX_AGE,
+            };
+            res.cookie('deviceToken', newDeviceToken, cookieOptions);
+
             return {
                 requires2FA: true,
                 userID: user.userID,
-                deviceIdentifier,
+                deviceToken: newDeviceToken,
                 tempToken: loginResponse.data.access_token,
                 refreshToken: loginResponse.data.refresh_token,
                 expiresIn: loginResponse.data.expires_in * 1000,
@@ -282,11 +297,11 @@ class AuthService {
         }
     }
 
-    static async verify2FA(userID, otpCode, deviceIdentifier, trustDevice, tempToken, refreshToken, res) {
+    static async verify2FA(userID, otpCode, deviceToken, trustDevice, tempToken, refreshToken, res) {
         const missingFields = [];
         if (!userID) missingFields.push('userID');
         if (!otpCode) missingFields.push('otpCode');
-        if (!deviceIdentifier) missingFields.push('deviceIdentifier');
+        if (!deviceToken) missingFields.push('deviceToken');
         if (trustDevice === undefined) missingFields.push('trustDevice');
         if (!tempToken) missingFields.push('tempToken');
         if (!refreshToken) missingFields.push('refreshToken');
@@ -298,7 +313,7 @@ class AuthService {
             });
         }
 
-        const cacheKey = `${userID}:${otpCode}:${deviceIdentifier}`;
+        const cacheKey = `${userID}:${otpCode}:${deviceToken}`;
         const cachedResult = verificationCache.get(cacheKey);
         if (cachedResult) {
             logger.info(`2FA cache hit for ${userID}`);
@@ -337,17 +352,23 @@ class AuthService {
 
         if (trustDevice) {
             const existingDevice = await TrustedDevice.findOne({
-                where: { userID, deviceIdentifier },
+                where: { userID, deviceToken },
             });
             if (existingDevice) {
-                await existingDevice.update({ status: 'active', lastUsed: new Date() });
-            } else {
-                await TrustedDevice.create({
-                    userID,
-                    deviceIdentifier,
+                await existingDevice.update({
                     status: 'active',
                     lastUsed: new Date(),
-                    expiresAt: new Date(Date.now() + 30 * 24 * 60 * 60 * 1000),
+                    expiresAt: new Date(Date.now() + DEVICE_TOKEN_MAX_AGE),
+                });
+            } else {
+                await TrustedDevice.create({
+                    deviceID: `dev_${uuidv4()}`,
+                    userID,
+                    deviceToken,
+                    userAgent: res.req.headers['user-agent'] || 'unknown',
+                    status: 'active',
+                    lastUsed: new Date(),
+                    expiresAt: new Date(Date.now() + DEVICE_TOKEN_MAX_AGE),
                 });
             }
         }
@@ -380,7 +401,7 @@ class AuthService {
             const cookieOptions = {
                 httpOnly: true,
                 secure: process.env.NODE_ENV === 'production',
-                sameSite: 'Lax',
+                sameSite: 'Strict',
                 path: '/',
             };
 
@@ -437,7 +458,7 @@ class AuthService {
         const cookieOptions = {
             httpOnly: true,
             secure: process.env.NODE_ENV === 'production',
-            sameSite: 'Lax',
+            sameSite: 'Strict',
             path: '/',
         };
 
@@ -601,7 +622,7 @@ class AuthService {
             throw Object.assign(new Error(ERROR_MESSAGES.INVALID_OTP), { status: 400 });
         }
 
-        const tempToken = nanoid();
+        const tempToken = uuidv4();
         await User.update({ tempResetToken: tempToken }, { where: { userID } });
 
         logger.info(`Password reset OTP verified for ${userID}`);

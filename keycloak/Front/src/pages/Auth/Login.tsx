@@ -1,7 +1,4 @@
-// frontend/src/pages/Auth/Login.tsx
-
 import React, { useState, useEffect, useCallback } from 'react';
-import FingerprintJS from '@fingerprintjs/fingerprintjs';
 import { useAuth } from '../../context/AuthContext';
 import { useError } from '../../context/ErrorContext';
 import {
@@ -28,7 +25,6 @@ const LoginPage: React.FC = () => {
     const [trustDevice, setTrustDevice] = useState(false);
     const [loading, setLoading] = useState(false);
     const [userID, setUserID] = useState<string | null>(null);
-    const [deviceIdentifier, setDeviceIdentifier] = useState<string | null>(null);
     const [tempToken, setTempToken] = useState<string | null>(null);
     const [refreshToken, setRefreshToken] = useState<string | null>(null);
     const [tempResetToken, setTempResetToken] = useState<string | null>(null);
@@ -36,7 +32,7 @@ const LoginPage: React.FC = () => {
     const [resendCooldown, setResendCooldown] = useState(0);
     const [otpMethod, setOtpMethod] = useState<'phone' | 'email'>('phone');
     const [errors, setErrors] = useState<{ [key: string]: string }>({});
-    const [apiError, setApiError] = useState<string | null>(null); // Local error state
+    const [apiError, setApiError] = useState<string | null>(null);
     const [showPassword, setShowPassword] = useState(false);
     const [showNewPassword, setShowNewPassword] = useState(false);
     const [showConfirmPassword, setShowConfirmPassword] = useState(false);
@@ -44,15 +40,6 @@ const LoginPage: React.FC = () => {
 
     const { loginUser } = useAuth();
     const { setError, clearError } = useError();
-
-    useEffect(() => {
-        const getFingerprint = async () => {
-            const fp = await FingerprintJS.load();
-            const result = await fp.get();
-            setDeviceIdentifier(result.visitorId);
-        };
-        getFingerprint();
-    }, []);
 
     useEffect(() => {
         if (success || apiError) {
@@ -129,14 +116,14 @@ const LoginPage: React.FC = () => {
 
     const handleLogin = async (e: React.FormEvent) => {
         e.preventDefault();
-        if (!deviceIdentifier || !validateForm()) return;
+        if (!validateForm()) return;
         setLoading(true);
         setApiError(null);
         clearError();
         setSuccess(null);
 
         try {
-            const response = await login(identifier, password, deviceIdentifier, 'phone');
+            const response = await login(identifier, password, 'phone');
             if (!response) {
                 throw new Error('No response from server. Please try again.');
             }
@@ -148,7 +135,7 @@ const LoginPage: React.FC = () => {
                 setTimer(600);
                 setSuccess('OTP sent to your phone.');
             } else if (response.user) {
-                await loginUser(identifier, password, deviceIdentifier);
+                await loginUser(identifier, password);
                 setSuccess('Login successful!');
             } else {
                 throw new Error('Invalid response from server.');
@@ -165,7 +152,7 @@ const LoginPage: React.FC = () => {
 
     const handleVerify2FA = async (e: React.FormEvent) => {
         e.preventDefault();
-        if (!deviceIdentifier || !validateForm() || !userID || !tempToken || !refreshToken) {
+        if (!validateForm() || !userID || !tempToken || !refreshToken) {
             setApiError('Invalid session. Please try logging in again.');
             setError('Invalid session. Please try logging in again.');
             return;
@@ -177,7 +164,7 @@ const LoginPage: React.FC = () => {
         setSuccess(null);
 
         try {
-            const response = await verify2FA(userID, otpCode, deviceIdentifier, trustDevice, tempToken, refreshToken);
+            const response = await verify2FA(userID, otpCode, trustDevice, tempToken, refreshToken);
             if (!response) {
                 throw new Error('No response from verify2FA.');
             }
@@ -187,7 +174,7 @@ const LoginPage: React.FC = () => {
             if (!response.user) {
                 throw new Error('User data missing in verify2FA response.');
             }
-            await loginUser(identifier, password, deviceIdentifier, otpCode, trustDevice, tempToken, refreshToken, userID);
+            await loginUser(identifier, password, otpCode, trustDevice, tempToken, refreshToken, userID);
             setSuccess('Login successful!');
         } catch (error: unknown) {
             const errorMessage = error instanceof Error ? error.message : '2FA verification failed.';
@@ -397,7 +384,7 @@ const LoginPage: React.FC = () => {
                                     value={identifier}
                                     onChange={(e) => setIdentifier(e.target.value)}
                                     onBlur={handleBlur}
-                                    disabled={loading || !deviceIdentifier}
+                                    disabled={loading}
                                     placeholder="Enter your email or phone"
                                     className={errors.identifier ? 'input-error' : ''}
                                 />
@@ -412,7 +399,7 @@ const LoginPage: React.FC = () => {
                                         value={password}
                                         onChange={(e) => setPassword(e.target.value)}
                                         onBlur={handleBlur}
-                                        disabled={loading || !deviceIdentifier}
+                                        disabled={loading}
                                         placeholder="Enter your password"
                                         className={errors.password ? 'input-error' : ''}
                                     />
@@ -430,7 +417,7 @@ const LoginPage: React.FC = () => {
                             <motion.button
                                 type="submit"
                                 className="action-button-0"
-                                disabled={loading || !deviceIdentifier}
+                                disabled={loading}
                                 whileHover={{ scale: 1.05 }}
                                 whileTap={{ scale: 0.95 }}
                             >

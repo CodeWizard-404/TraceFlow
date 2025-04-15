@@ -16,7 +16,6 @@ class AuthService {
       CookieManager.extractCookies(response);
       if (response.statusCode == 200) {
         dynamic result = json.decode(response.body);
-        // Handle case where result is a string (double-encoded JSON)
         if (result is String) {
           if (kDebugMode) print('Response is a string, attempting to decode again');
           result = json.decode(result);
@@ -35,10 +34,8 @@ class AuthService {
     }
   }
 
-  // ... Other methods unchanged (login, verify2FA, etc.) ...
-  static Future<Map<String, dynamic>> login(
-      String identifier, String password, String deviceIdentifier, String otpMethod) async {
-    if (kDebugMode) print('AuthService.login called with identifier: $identifier, device: $deviceIdentifier, otpMethod: $otpMethod');
+  static Future<Map<String, dynamic>> login(String identifier, String password, String otpMethod) async {
+    if (kDebugMode) print('AuthService.login called with identifier: $identifier, otpMethod: $otpMethod');
     try {
       final url = Uri.parse('$baseUrl/auth/login');
       if (kDebugMode) print('Sending POST to $url');
@@ -48,7 +45,6 @@ class AuthService {
         body: json.encode({
           'identifier': identifier,
           'password': password,
-          'deviceIdentifier': deviceIdentifier,
           'otpMethod': otpMethod,
         }),
       );
@@ -71,7 +67,7 @@ class AuthService {
   }
 
   static Future<Map<String, dynamic>> verify2FA(
-      String userID, String otpCode, String deviceIdentifier, bool trustDevice, String tempToken, String refreshToken) async {
+      String userID, String otpCode, bool trustDevice, String tempToken, String refreshToken) async {
     if (kDebugMode) print('AuthService.verify2FA called with userID: $userID');
     try {
       final response = await http.post(
@@ -80,7 +76,6 @@ class AuthService {
         body: json.encode({
           'userID': userID,
           'otpCode': otpCode,
-          'deviceIdentifier': deviceIdentifier,
           'trustDevice': trustDevice,
           'tempToken': tempToken,
           'refreshToken': refreshToken,
@@ -254,7 +249,6 @@ class AuthService {
         try {
           final refreshResult = await refreshToken();
           if (kDebugMode) print('Refresh result: $refreshResult, new cookies: ${CookieManager.cookies}');
-          // Retry the original request with new cookies
           final retryResponse = await request();
           if (kDebugMode) print('Retry response: ${retryResponse.statusCode}, ${retryResponse.body}');
           CookieManager.extractCookies(retryResponse);

@@ -1365,3 +1365,39 @@
 {"ip":"192.168.1.100","level":"info","message":"Fetched all receipt books by user 72eb7014-756c-40c0-a316-54b8a159a767, IP: 192.168.1.100","timestamp":"2025-04-15T16:15:37.052Z"}
 {"level":"info","message":"Permission granted for access_users_by_role to user 72eb7014-756c-40c0-a316-54b8a159a767","timestamp":"2025-04-15T16:15:40.177Z"}
 {"ip":"192.168.1.100","level":"info","message":"Fetched users by role Supervisor by user 72eb7014-756c-40c0-a316-54b8a159a767, IP: 192.168.1.100","timestamp":"2025-04-15T16:15:40.995Z"}
+{"level":"info","message":"Permission granted for access_supervisor_timesheets to user 72eb7014-756c-40c0-a316-54b8a159a767","timestamp":"2025-04-15T16:23:27.680Z"}
+{"ip":"192.168.1.100","level":"info","message":"Fetched timesheets for supervisor 72eb7014-756c-40c0-a316-54b8a159a767 by user 72eb7014-756c-40c0-a316-54b8a159a767, IP: 192.168.1.100","timestamp":"2025-04-15T16:23:28.140Z"}
+{"level":"warn","message":"Token introspection failed: inactive token","timestamp":"2025-04-15T16:34:48.917Z"}
+{"level":"info","message":"User logged out, cookies cleared","timestamp":"2025-04-15T16:34:48.987Z"}
+{"level":"info","message":"User logged out, cookies cleared","timestamp":"2025-04-15T16:34:49.093Z"}
+{"level":"info","message":"Keycloak admin token obtained","timestamp":"2025-04-15T16:35:01.920Z"}
+{"level":"info","message":"Login response generated for user 72eb7014-756c-40c0-a316-54b8a159a767","timestamp":"2025-04-15T16:35:03.463Z"}
+{"level":"info","message":"Login attempt for s@gmail.com, requires2FA: false","timestamp":"2025-04-15T16:35:03.464Z"}
+{"level":"info","message":"Permission granted for access_supervisor_timesheets to user 72eb7014-756c-40c0-a316-54b8a159a767","timestamp":"2025-04-15T16:35:04.204Z"}
+{"ip":"192.168.1.100","level":"info","message":"Fetched timesheets for supervisor 72eb7014-756c-40c0-a316-54b8a159a767 by user 72eb7014-756c-40c0-a316-54b8a159a767, IP: 192.168.1.100","timestamp":"2025-04-15T16:35:04.508Z"}
+{"level":"info","message":"Cleaning up expired OTPs","timestamp":"2025-04-15T17:00:00.800Z"}
+{"level":"info","message":"Cleaned up 0 expired OTPs","timestamp":"2025-04-15T17:00:00.956Z"}
+{"level":"warn","message":"Token introspection failed: inactive token","timestamp":"2025-04-15T17:52:21.549Z"}
+{"level":"info","message":"Cleaning up expired OTPs","timestamp":"2025-04-15T18:00:00.595Z"}
+{"level":"info","message":"Cleaned up 0 expired OTPs","timestamp":"2025-04-15T18:00:00.652Z"}
+{"level":"warn","message":"Token introspection failed: inactive token","timestamp":"2025-04-15T18:11:56.614Z"}
+{"level":"info","message":"Keycloak admin token obtained","timestamp":"2025-04-15T18:12:22.858Z"}
+{"level":"info","message":"Login response generated for user 72eb7014-756c-40c0-a316-54b8a159a767","timestamp":"2025-04-15T18:12:24.460Z"}
+{"level":"info","message":"Login attempt for s@gmail.com, requires2FA: false","timestamp":"2025-04-15T18:12:24.461Z"}
+{"level":"info","message":"Permission granted for access_supervisor_timesheets to user 72eb7014-756c-40c0-a316-54b8a159a767","timestamp":"2025-04-15T18:12:25.199Z"}
+{"ip":"192.168.1.100","level":"info","message":"Fetched timesheets for supervisor 72eb7014-756c-40c0-a316-54b8a159a767 by user 72eb7014-756c-40c0-a316-54b8a159a767, IP: 192.168.1.100","timestamp":"2025-04-15T18:12:25.506Z"}
+{"level":"warn","message":"Token introspection failed: inactive token","timestamp":"2025-04-15T18:28:12.148Z"}
+{"level":"info","message":"Keycloak admin token obtained","timestamp":"2025-04-15T18:28:44.528Z"}
+{"level":"info","message":"Login response generated for user 72eb7014-756c-40c0-a316-54b8a159a767","timestamp":"2025-04-15T18:28:46.021Z"}
+{"level":"info","message":"Login attempt for s@gmail.com, requires2FA: false","timestamp":"2025-04-15T18:28:46.022Z"}
+{"level":"info","message":"Permission granted for access_supervisor_timesheets to user 72eb7014-756c-40c0-a316-54b8a159a767","timestamp":"2025-04-15T18:28:46.803Z"}
+{"ip":"192.168.1.100","level":"info","message":"Fetched timesheets for supervisor 72eb7014-756c-40c0-a316-54b8a159a767 by user 72eb7014-756c-40c0-a316-54b8a159a767, IP: 192.168.1.100","timestamp":"2025-04-15T18:28:47.101Z"}
+{"level":"info","message":"Permission granted for access_supervisor_timesheets to user 72eb7014-756c-40c0-a316-54b8a159a767","timestamp":"2025-04-15T18:28:58.122Z"}
+{"ip":"192.168.1.100","level":"info","message":"Fetched timesheets for supervisor 72eb7014-756c-40c0-a316-54b8a159a767 by user 72eb7014-756c-40c0-a316-54b8a159a767, IP: 192.168.1.100","timestamp":"2025-04-15T18:28:58.462Z"}
+{"level":"info","message":"Permission granted for access_supervisor_timesheets to user 72eb7014-756c-40c0-a316-54b8a159a767","timestamp":"2025-04-15T18:33:57.256Z"}
+{"ip":"192.168.1.100","level":"info","message":"Fetched timesheets for supervisor 72eb7014-756c-40c0-a316-54b8a159a767 by user 72eb7014-756c-40c0-a316-54b8a159a767, IP: 192.168.1.100","timestamp":"2025-04-15T18:33:57.619Z"}
+{"level":"info","message":"Permission granted for access_all_receipt_books to user 72eb7014-756c-40c0-a316-54b8a159a767","timestamp":"2025-04-15T18:34:09.523Z"}
+{"ip":"192.168.1.100","level":"info","message":"Fetched all receipt books by user 72eb7014-756c-40c0-a316-54b8a159a767, IP: 192.168.1.100","timestamp":"2025-04-15T18:34:10.663Z"}
+{"level":"info","message":"Permission granted for access_supervisor_timesheets to user 72eb7014-756c-40c0-a316-54b8a159a767","timestamp":"2025-04-15T18:34:24.869Z"}
+{"ip":"192.168.1.100","level":"info","message":"Fetched timesheets for supervisor 72eb7014-756c-40c0-a316-54b8a159a767 by user 72eb7014-756c-40c0-a316-54b8a159a767, IP: 192.168.1.100","timestamp":"2025-04-15T18:34:25.224Z"}
+{"ip":"192.168.1.100","level":"info","message":"Fetched profile for user 72eb7014-756c-40c0-a316-54b8a159a767, IP: 192.168.1.100","timestamp":"2025-04-15T18:34:53.233Z"}

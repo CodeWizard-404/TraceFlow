@@ -1,5 +1,3 @@
-// backend/controllers/authController.js
-
 const { validationResult } = require('express-validator');
 const logger = require('../utils/logger');
 const AuthService = require('../services/authService');
@@ -33,13 +31,14 @@ class AuthController {
                 return res.status(400).json({ error: ERROR_MESSAGES.MISSING_FIELDS, details: errors.array() });
             }
 
-            const { identifier, password, deviceIdentifier, otpMethod } = req.body;
-            if (!identifier || !password || !deviceIdentifier) {
+            const { identifier, password, otpMethod } = req.body;
+            const deviceToken = req.cookies.deviceToken || null;
+            if (!identifier || !password) {
                 logger.warn('Missing login fields');
                 return res.status(400).json(AuthController.formatError(new Error(ERROR_MESSAGES.MISSING_FIELDS)));
             }
 
-            const result = await AuthService.login(identifier, password, deviceIdentifier, otpMethod, res);
+            const result = await AuthService.login(identifier, password, deviceToken, otpMethod, res);
             logger.info(`Login attempt for ${identifier}, requires2FA: ${result.requires2FA || false}`);
             return res.status(200).json(result);
         } catch (error) {
@@ -57,20 +56,21 @@ class AuthController {
                 return res.status(400).json({ error: ERROR_MESSAGES.MISSING_FIELDS, details: errors.array() });
             }
 
-            const { userID, otpCode, deviceIdentifier, trustDevice, tempToken, refreshToken } = req.body;
-            if (!userID || !otpCode || !deviceIdentifier || trustDevice === undefined || !tempToken || !refreshToken) {
+            const { userID, otpCode, trustDevice, tempToken, refreshToken } = req.body;
+            const deviceToken = req.cookies.deviceToken || null;
+            if (!userID || !otpCode || trustDevice === undefined || !tempToken || !refreshToken) {
                 logger.warn('Missing 2FA fields');
                 return res.status(400).json(AuthController.formatError(new Error(ERROR_MESSAGES.MISSING_FIELDS)));
             }
 
-            const cacheKey = `2fa_${userID}_${deviceIdentifier}`;
+            const cacheKey = `2fa_${userID}_${deviceToken || 'unknown'}`;
             const cachedResult = cache.get(cacheKey);
             if (cachedResult) {
                 logger.info(`2FA cache hit for ${userID}`);
                 return res.status(200).json(cachedResult);
             }
 
-            const result = await AuthService.verify2FA(userID, otpCode, deviceIdentifier, trustDevice, tempToken, refreshToken, res);
+            const result = await AuthService.verify2FA(userID, otpCode, deviceToken, trustDevice, tempToken, refreshToken, res);
             cache.set(cacheKey, result, 60);
             logger.info(`2FA verified for user ${userID}`);
             return res.status(200).json(result);
@@ -100,12 +100,13 @@ class AuthController {
         try {
             const cookieOptions = {
                 path: '/',
-                sameSite: 'Lax',
+                sameSite: 'Strict',
                 secure: process.env.NODE_ENV === 'production',
             };
             res.clearCookie('accessToken', cookieOptions);
             res.clearCookie('refreshToken', cookieOptions);
-            logger.info('User logged out, cookies cleared');
+            // Do not clear deviceToken cookie to persist trusted device status
+            logger.info('User logged out, access and refresh cookies cleared');
             return res.status(200).json({ message: 'Logged out successfully' });
         } catch (error) {
             logger.error(`Logout error: ${error.message}`);

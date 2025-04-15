@@ -1,5 +1,3 @@
-// frontend/src/apis/authAPI.tsx
-
 import api from './axiosConfig';
 import {
     LoginResponse,
@@ -24,7 +22,7 @@ interface AxiosErrorResponse {
 const handleApiError = (error: unknown, defaultMessage: string): string => {
     const axiosError = error as AxiosErrorResponse;
     if (axiosError.response?.data?.error) {
-        return axiosError.response.data.error; // Use backend's error message
+        return axiosError.response.data.error;
     }
     switch (axiosError.response?.status) {
         case 400:
@@ -47,14 +45,12 @@ const handleApiError = (error: unknown, defaultMessage: string): string => {
 export const login = async (
     identifier: string,
     password: string,
-    deviceIdentifier: string,
     otpMethod: string
 ): Promise<LoginResponse> => {
     try {
         const response = await api.post('/auth/login', {
             identifier,
             password,
-            deviceIdentifier,
             otpMethod,
         });
         return response.data;
@@ -66,7 +62,6 @@ export const login = async (
 export const verify2FA = async (
     userID: string,
     otpCode: string,
-    deviceIdentifier: string,
     trustDevice: boolean,
     tempToken: string,
     refreshToken: string
@@ -75,7 +70,6 @@ export const verify2FA = async (
         const response = await api.post('/auth/verify-2fa', {
             userID,
             otpCode,
-            deviceIdentifier,
             trustDevice,
             tempToken,
             refreshToken,

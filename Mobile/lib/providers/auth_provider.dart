@@ -1,10 +1,8 @@
-import 'dart:io';
+import 'dart:async';
 import 'package:flutter/foundation.dart';
-import 'package:device_info_plus/device_info_plus.dart';
 import '../models/user.dart';
 import '../services/auth_service.dart';
 import '../services/cookie_manager.dart';
-import 'dart:async';
 
 class AuthProvider with ChangeNotifier {
   User? _user;
@@ -12,7 +10,6 @@ class AuthProvider with ChangeNotifier {
   bool _isLoading = false;
   bool _permissionsLoaded = false;
   String? _userID;
-  String? _deviceIdentifier;
   bool _requires2FA = false;
   String? _errorMessage;
   int _otpTimer = 600;
@@ -39,7 +36,6 @@ class AuthProvider with ChangeNotifier {
 
   AuthProvider() {
     if (kDebugMode) print('AuthProvider initialized');
-    _initializeDeviceIdentifier();
     _restoreSession();
   }
 
@@ -93,32 +89,6 @@ class AuthProvider with ChangeNotifier {
     }
   }
 
-  Future<void> _initializeDeviceIdentifier() async {
-    if (kDebugMode) print('Initializing device identifier');
-    final deviceInfo = DeviceInfoPlugin();
-    String identifier;
-    try {
-      if (Platform.isAndroid) {
-        final androidInfo = await deviceInfo.androidInfo;
-        identifier = androidInfo.id;
-        if (kDebugMode) print('Android device ID: $identifier');
-      } else if (Platform.isIOS) {
-        final iosInfo = await deviceInfo.iosInfo;
-        identifier = iosInfo.identifierForVendor ?? 'unknown_ios_device';
-        if (kDebugMode) print('iOS device ID: $identifier');
-      } else {
-        identifier = 'unknown_device';
-        if (kDebugMode) print('Fallback device ID: $identifier');
-      }
-      _deviceIdentifier = identifier;
-    } catch (e) {
-      if (kDebugMode) print('Failed to get device identifier: $e');
-      _deviceIdentifier = 'unknown_device_${DateTime.now().millisecondsSinceEpoch}';
-    }
-    if (kDebugMode) print('Device identifier set to: $_deviceIdentifier');
-    notifyListeners();
-  }
-
   Future<void> _fetchPermissions() async {
     if (_user == null || _permissionsLoaded) return;
     if (kDebugMode) print('Fetching permissions');
@@ -136,24 +106,16 @@ class AuthProvider with ChangeNotifier {
   }
 
   Future<void> login(String identifier, String password) async {
-    if (kDebugMode) print('Starting login with identifier: $identifier, device: $_deviceIdentifier');
-    if (_deviceIdentifier == null) {
-      if (kDebugMode) print('Device identifier is null, cannot proceed');
-      _errorMessage = 'Device identifier not initialized. Please try again.';
-      _isLoading = false;
-      notifyListeners();
-      return;
-    }
+    if (kDebugMode) print('Starting login with identifier: $identifier');
     _isLoading = true;
     _requires2FA = false;
     _errorMessage = null;
     try {
       if (kDebugMode) print('Calling AuthService.login');
-      final result = await AuthService.login(identifier, password, _deviceIdentifier!, _otpMethod);
+      final result = await AuthService.login(identifier, password, _otpMethod);
       if (kDebugMode) print('Login result: $result');
       if (result.containsKey('requires2FA') && result['requires2FA']) {
         _userID = result['userID'];
-        _deviceIdentifier = result['deviceIdentifier'];
         _authTempToken = result['tempToken'];
         _refreshToken = result['refreshToken'];
         _requires2FA = true;
@@ -175,7 +137,7 @@ class AuthProvider with ChangeNotifier {
   }
 
   Future<void> verify2FA(String otpCode, bool trustDevice) async {
-    if (_userID == null || _deviceIdentifier == null || _authTempToken == null || _refreshToken == null) {
+    if (_userID == null || _authTempToken == null || _refreshToken == null) {
       _errorMessage = 'Missing required authentication data';
       if (kDebugMode) print('Verify2FA failed: $_errorMessage');
       _isLoading = false;
@@ -189,7 +151,6 @@ class AuthProvider with ChangeNotifier {
       final result = await AuthService.verify2FA(
         _userID!,
         otpCode,
-        _deviceIdentifier!,
         trustDevice,
         _authTempToken!,
         _refreshToken!,

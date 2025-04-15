@@ -28,7 +28,7 @@ export interface LoginResponse {
         roles: Role[];
     };
     userID?: string;
-    deviceIdentifier?: string;
+    deviceToken?: string;
     tempToken?: string;
     refreshToken?: string;
     expiresIn?: number;

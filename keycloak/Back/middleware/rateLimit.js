@@ -4,7 +4,7 @@ require('dotenv').config();
 
 const noOpLimiter = (req, res, next) => next();
 
-if (process.env.NODE_ENV === 'development') {
+if (process.env.NODE_ENV === 'production') {
     // rateLimiter.js (updated sensitiveLimiter only)
     const sensitiveLimiter = rateLimit({
         windowMs: parseInt(process.env.SENSITIVE_LIMITER_WINDOW_MS) || 10 * 60 * 1000, // 10 minutes

@@ -15,7 +15,7 @@ class CookieManager {
         if (parts.length >= 2) {
           final key = parts[0].trim();
           final value = parts[1].trim();
-          if (key == 'accessToken' || key == 'refreshToken') {
+          if (key == 'accessToken' || key == 'refreshToken' || key == 'deviceToken') {
             cookies[key] = value;
             await _storage.write(key: key, value: value);
             if (kDebugMode) print('Stored cookie: $key=$value');
@@ -30,11 +30,15 @@ class CookieManager {
     try {
       final accessToken = await _storage.read(key: 'accessToken');
       final refreshToken = await _storage.read(key: 'refreshToken');
+      final deviceToken = await _storage.read(key: 'deviceToken');
       if (accessToken != null && accessToken.isNotEmpty) {
         cookies['accessToken'] = accessToken;
       }
       if (refreshToken != null && refreshToken.isNotEmpty) {
         cookies['refreshToken'] = refreshToken;
+      }
+      if (deviceToken != null && deviceToken.isNotEmpty) {
+        cookies['deviceToken'] = deviceToken;
       }
       if (kDebugMode) print('Loaded cookies: $cookies');
     } catch (e) {
@@ -65,14 +69,14 @@ class CookieManager {
 
   static Map<String, String> getHeaders([Map<String, String>? additionalHeaders]) {
     final headers = additionalHeaders != null ? Map<String, String>.from(additionalHeaders) : <String, String>{};
-    if (cookies.containsKey('accessToken')) {
+    if (cookies.isNotEmpty) {
       headers['Cookie'] = cookies.entries
-          .where((e) => e.key == 'accessToken' || e.key == 'refreshToken')
+          .where((e) => ['accessToken', 'refreshToken', 'deviceToken'].contains(e.key))
           .map((e) => '${e.key}=${e.value}')
           .join('; ');
       if (kDebugMode) print('Sending Cookie header: ${headers['Cookie']}');
     } else {
-      if (kDebugMode) print('No accessToken cookie to send, cookies: $cookies');
+      if (kDebugMode) print('No cookies to send');
     }
     return headers;
   }
@@ -83,6 +87,7 @@ class CookieManager {
     try {
       await _storage.delete(key: 'accessToken');
       await _storage.delete(key: 'refreshToken');
+      await _storage.delete(key: 'deviceToken');
       if (kDebugMode) print('Cleared stored cookies');
     } catch (e) {
       if (kDebugMode) print('Failed to clear stored cookies: $e');

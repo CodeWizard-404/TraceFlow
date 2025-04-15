@@ -19,7 +19,6 @@ interface AuthContextType {
     loginUser: (
         identifier: string,
         password: string,
-        deviceIdentifier: string,
         otpCode?: string,
         trustDevice?: boolean,
         tempToken?: string,
@@ -55,13 +54,12 @@ const AuthProvider: React.FC<{ children: ReactNode }> = ({ children }) => {
         setupAxiosInterceptors();
     }, []);
 
-    // Automatic token refresh
     useEffect(() => {
         if (!user || !tokenExpiry) {
             return;
         }
 
-        const refreshBuffer = 30 * 1000; // Refresh 30 seconds before expiry
+        const refreshBuffer = 30 * 1000;
         const timeUntilRefresh = tokenExpiry - Date.now() - refreshBuffer;
 
         if (timeUntilRefresh <= 0) {
@@ -198,7 +196,6 @@ const AuthProvider: React.FC<{ children: ReactNode }> = ({ children }) => {
     const loginUser = async (
         identifier: string,
         password: string,
-        deviceIdentifier: string,
         otpCode?: string,
         trustDevice: boolean = false,
         tempToken?: string,
@@ -208,7 +205,7 @@ const AuthProvider: React.FC<{ children: ReactNode }> = ({ children }) => {
         try {
             let response;
             if (otpCode && userID && tempToken && refreshToken) {
-                response = await verify2FA(userID, otpCode, deviceIdentifier, trustDevice, tempToken, refreshToken);
+                response = await verify2FA(userID, otpCode, trustDevice, tempToken, refreshToken);
                 if (response.requires2FA) {
                     throw new Error('Unexpected requires2FA: true after verification');
                 }
@@ -216,13 +213,13 @@ const AuthProvider: React.FC<{ children: ReactNode }> = ({ children }) => {
                     throw new Error('User data missing in verify2FA response');
                 }
             } else {
-                response = await login(identifier, password, deviceIdentifier, 'phone');
+                response = await login(identifier, password, 'phone');
                 if (response.requires2FA) {
                     throw new Error(
                         JSON.stringify({
                             requires2FA: true,
                             userID: response.userID,
-                            deviceIdentifier: response.deviceIdentifier,
+                            deviceToken: response.deviceToken,
                             tempToken: response.tempToken,
                             refreshToken: response.refreshToken,
                         })
