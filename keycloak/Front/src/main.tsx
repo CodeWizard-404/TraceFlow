@@ -2,7 +2,8 @@ import React from "react";
 import { createRoot } from "react-dom/client";
 import { ThemeProvider, useTheme } from "./context/ThemeContext";
 import App from "./App";
-import './index.css';
+import "./index.css";
+import "./i18n";
 import "bootstrap/dist/css/bootstrap.min.css";
 import "./App.css"; // Import the global theme CSS
 
