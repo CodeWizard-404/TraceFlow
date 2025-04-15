@@ -1,6 +1,5 @@
 import 'package:flutter/material.dart';
-
-import '../../main.dart';
+import 'package:TraceFlow/main.dart';
 
 class CustomAppBar extends StatelessWidget implements PreferredSizeWidget {
   final String title;
@@ -43,9 +42,9 @@ class CustomAppBar extends StatelessWidget implements PreferredSizeWidget {
                   if (Navigator.of(context).canPop()) {
                     Navigator.pop(context); // Pop to previous page
                   } else {
-                    // No previous page, redirect to home page using navigatorKey
-                    MyApp.navigatorKey.currentState?.pushNamedAndRemoveUntil(
-                      '/timesheet-details', // Assuming this is the home route for supervisors
+                    // No previous page, redirect to home page
+                    NavigationService.navigatorKey.currentState?.pushNamedAndRemoveUntil(
+                      '/timesheet-details', // Default home route
                           (route) => false, // Remove all previous routes
                     );
                   }
