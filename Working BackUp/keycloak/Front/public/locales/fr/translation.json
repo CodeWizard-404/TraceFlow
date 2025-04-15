@@ -1,0 +1,21 @@
+{
+    "maps_card_title": "Visites des agents aujourd'hui",
+    "stats_card1_title": "Nombre de superviseurs",
+    "stats_card2_title": "Superviseurs actifs",
+    "navbar_dashboard": "Tableau de bord",
+    "emails": "Courriels",
+    "navbar_admin": "Tableau de bord admin",
+    "navbar_timesheets": "Feuilles de temps",
+    "navbar_receipt_books": "Livres de reçus",
+    "navbar_profile": "Profil",
+    "logo_alt": "Logo de l'entreprise",
+    "toggle_menu": "Basculer le menu de navigation",
+    "toggle_theme": "Passer en mode {{mode}}",
+    "theme": "Thème",
+    "logout": "Déconnexion",
+  "select_language": "Choisir la langue",
+  "footer_copyright": "© Copyright {{year}}. Tous droits réservés",
+  "footer_privacy": "Politique de confidentialité",
+  "footer_terms": "Conditions de service",
+  "footer_contact": "Nous contacter"
+  }

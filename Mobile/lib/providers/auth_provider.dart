@@ -20,9 +20,11 @@ class AuthProvider with ChangeNotifier {
   int _resendCooldown = 0;
   String _otpMethod = 'phone';
   Timer? _otpTimerInstance;
-  String? _tempToken; // For password reset
-  String? _authTempToken; // For 2FA tempToken
-  String? _refreshToken; // For 2FA refreshToken
+  String? _tempToken;
+  String? _authTempToken;
+  String? _refreshToken; 
+  int? _tokenExpiry;
+
 
   User? get user => _user;
   List<String>? get userRoles => _userRoles;
@@ -342,22 +344,43 @@ class AuthProvider with ChangeNotifier {
     });
   }
 
-// In auth_provider.dart, replace _handleSuccessfulLogin with:
+
   Future<void> _handleSuccessfulLogin(Map<String, dynamic> result) async {
-    if (kDebugMode) print('Handling successful login: $result');
     if (result.containsKey('user')) {
       _user = User.fromJson(result['user']);
+      _tokenExpiry = result['expiresIn'] != null
+          ? DateTime.now().millisecondsSinceEpoch + result['expiresIn']
+          : null;
       await _fetchPermissions();
-      // Check if user has Supervisor role
       if (!_userRoles!.contains('Supervisor')) {
-        if (kDebugMode) print('User lacks Supervisor role, logging out');
         await logout();
         _errorMessage = 'Access denied: Only Supervisors can log in.';
         return;
       }
-    } else {
-      if (kDebugMode) print('No user data in login result');
+      _startRefreshTimer();
     }
     notifyListeners();
+  }
+
+  void _startRefreshTimer() {
+    if (_tokenExpiry == null) return;
+    final timeUntilRefresh = _tokenExpiry! - DateTime.now().millisecondsSinceEpoch - 30000; // 30s buffer
+    if (timeUntilRefresh <= 0) {
+      _refreshToken();
+      return;
+    }
+    Timer(Duration(milliseconds: timeUntilRefresh), _refreshToken);
+  }
+
+  Future<void> _refreshToken() async {
+    try {
+      final result = await AuthService.refreshToken();
+      _tokenExpiry = result['expiresIn'] != null
+          ? DateTime.now().millisecondsSinceEpoch + result['expiresIn']
+          : null;
+      _startRefreshTimer();
+    } catch (e) {
+      await logout();
+    }
   }
 }

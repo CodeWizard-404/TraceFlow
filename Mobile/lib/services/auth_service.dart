@@ -125,7 +125,7 @@ class AuthService {
     if (kDebugMode) print('AuthService.initiatePasswordReset called with identifier: $identifier');
     try {
       final response = await http.post(
-        Uri.parse('$baseUrl/auth/password-reset/initiate'),
+        Uri.parse('$baseUrl/auth/reset-password/init'),
         headers: CookieManager.getHeaders({'Content-Type': 'application/json'}),
         body: json.encode({'identifier': identifier}),
       );
@@ -150,7 +150,7 @@ class AuthService {
     if (kDebugMode) print('AuthService.verifyPasswordResetOTP called with userID: $userID');
     try {
       final response = await http.post(
-        Uri.parse('$baseUrl/auth/password-reset/verify'),
+        Uri.parse('$baseUrl/auth/reset-password/verify'),
         headers: CookieManager.getHeaders({'Content-Type': 'application/json'}),
         body: json.encode({'userID': userID, 'otpCode': otpCode}),
       );
@@ -175,7 +175,7 @@ class AuthService {
     if (kDebugMode) print('AuthService.resetPassword called with userID: $userID');
     try {
       final response = await http.post(
-        Uri.parse('$baseUrl/auth/password-reset/reset'),
+        Uri.parse('$baseUrl/auth/reset-password'),
         headers: CookieManager.getHeaders({'Content-Type': 'application/json'}),
         body: json.encode({'userID': userID, 'newPassword': newPassword, 'tempToken': tempToken}),
       );
@@ -268,27 +268,31 @@ class AuthService {
     }
   }
 
-  static String _parseError(dynamic input) {
-    if (kDebugMode) print('Parsing error input: $input');
-    try {
-      if (input is http.Response) {
-        final body = input.body;
-        if (body.isNotEmpty) {
-          final jsonBody = json.decode(body);
-          if (jsonBody is Map && jsonBody.containsKey('error')) {
-            return jsonBody['error'] as String;
+static String _parseError(dynamic input) {
+  try {
+    if (input is http.Response) {
+      final body = input.body;
+      if (body.isNotEmpty) {
+        final jsonBody = json.decode(body);
+        if (jsonBody is Map && jsonBody.containsKey('error')) {
+          if (input.statusCode == 429 && jsonBody.containsKey('waitTime')) {
+            return '${jsonBody['error']} Wait ${jsonBody['waitTime']} seconds.';
           }
+          return jsonBody['error'] as String;
         }
-        switch (input.statusCode) {
-          case 401:
-            return 'Please log in to continue.';
-          case 403:
-            return 'You don’t have permission to perform this action.';
-          case 500:
-            return 'Something went wrong on our end. Please try again later.';
-          default:
-            return 'An error occurred. Please try again.';
-        }
+      }
+      switch (input.statusCode) {
+        case 401:
+          return 'Please log in to continue.';
+        case 403:
+          return 'You don’t have permission to perform this action.';
+        case 429:
+          return 'Too many attempts. Please wait.';
+        case 500:
+          return 'Something went wrong on our end. Please try again later.';
+        default:
+          return 'An error occurred. Please try again.';
+      }
       }
       final errorStr = input.toString();
       if (errorStr.contains('Network Error')) {
