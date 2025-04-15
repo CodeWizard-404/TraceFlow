@@ -40,22 +40,43 @@ class AuthProvider with ChangeNotifier {
   AuthProvider() {
     if (kDebugMode) print('AuthProvider initialized');
     _restoreSession();
+    _startProactiveRefreshTimer();
+  }
+
+  void _startProactiveRefreshTimer() {
+    if (kDebugMode) print('Starting proactive refresh timer (every 14.5 minutes)');
+    _refreshTimer?.cancel();
+    _refreshTimer = Timer.periodic(const Duration(minutes: 14, seconds: 30), (timer) async {
+      if (kDebugMode) print('Proactive refresh triggered');
+      await _refreshAccessToken();
+    });
   }
 
   Future<void> _restoreSession() async {
     if (kDebugMode) print('Restoring session');
-    await CookieManager.loadCookies();
-    if (CookieManager.cookies.containsKey('accessToken')) {
-      await _checkAuthStatus();
-    } else {
-      if (kDebugMode) print('No accessToken found, skipping auth check');
+    _isLoading = true;
+    notifyListeners();
+    try {
+      await CookieManager.loadCookies();
+      if (CookieManager.cookies.containsKey('accessToken') && CookieManager.cookies.containsKey('refreshToken')) {
+        await _checkAuthStatus();
+      } else {
+        if (kDebugMode) print('No valid tokens found, clearing cookies');
+        await CookieManager.clearCookies(caller: 'AuthProvider.restoreSession');
+        _errorMessage = 'Please log in to continue.';
+      }
+    } catch (e) {
+      if (kDebugMode) print('Session restoration failed: $e');
+      await CookieManager.clearCookies(caller: 'AuthProvider.restoreSession');
+      _errorMessage = 'Please log in to continue.';
+    } finally {
+      _isLoading = false;
+      notifyListeners();
     }
   }
 
   Future<void> _checkAuthStatus() async {
     if (kDebugMode) print('Checking auth status, cookies: ${CookieManager.cookies}');
-    _isLoading = true;
-    notifyListeners();
     try {
       final result = await AuthService.checkAuthStatus();
       if (kDebugMode) print('Auth status result: $result');
@@ -66,17 +87,16 @@ class AuthProvider with ChangeNotifier {
             : null) as int?;
         await _fetchPermissions();
         if (kDebugMode) print('Session restored, user: ${_user?.userID}, roles: ${_user?.roles}');
-        _startRefreshTimer();
       } else {
         if (kDebugMode) print('No valid user data in auth status response');
         await CookieManager.clearCookies(caller: 'AuthProvider.checkAuthStatus');
+        _errorMessage = 'Please log in to continue.';
       }
     } catch (e) {
       if (kDebugMode) print('Auth status check failed: $e');
       await CookieManager.clearCookies(caller: 'AuthProvider.checkAuthStatus');
-    } finally {
-      _isLoading = false;
-      notifyListeners();
+      _errorMessage = 'Please log in to continue.';
+      throw e;
     }
   }
 
@@ -270,6 +290,7 @@ class AuthProvider with ChangeNotifier {
       if (kDebugMode) print('Logout error: $e');
     }
     notifyListeners();
+    _startProactiveRefreshTimer(); // Restart timer after logout
   }
 
   void clearError() {
@@ -305,31 +326,22 @@ class AuthProvider with ChangeNotifier {
         _errorMessage = 'Access denied: Only Supervisors can log in.';
         return;
       }
-      _startRefreshTimer();
     } else {
       if (kDebugMode) print('No user data in login result');
     }
     notifyListeners();
   }
 
-  void _startRefreshTimer() {
-    if (_tokenExpiry == null) {
-      if (kDebugMode) print('No token expiry set, skipping refresh timer');
-      return;
-    }
-    _refreshTimer?.cancel();
-    final timeUntilRefresh = _tokenExpiry! - DateTime.now().millisecondsSinceEpoch - 30000; // 30s buffer
-    if (timeUntilRefresh <= 0) {
-      if (kDebugMode) print('Token expired or near expiry, refreshing immediately');
-      _refreshAccessToken();
-      return;
-    }
-    if (kDebugMode) print('Scheduling token refresh in $timeUntilRefresh ms');
-    _refreshTimer = Timer(Duration(milliseconds: timeUntilRefresh), _refreshAccessToken);
-  }
-
   Future<void> _refreshAccessToken() async {
     if (kDebugMode) print('Refreshing access token');
+    if (!CookieManager.cookies.containsKey('refreshToken')) {
+      if (kDebugMode) print('No refresh token available, skipping refresh');
+      await CookieManager.clearCookies(caller: 'AuthProvider.refreshAccessToken');
+      _errorMessage = 'Please log in to continue.';
+      await logout();
+      notifyListeners();
+      return;
+    }
     const maxRetries = 3;
     for (var attempt = 1; attempt <= maxRetries; attempt++) {
       try {
@@ -338,14 +350,14 @@ class AuthProvider with ChangeNotifier {
             ? DateTime.now().millisecondsSinceEpoch + result['expiresIn']
             : null) as int?;
         if (kDebugMode) print('Token refreshed, new expiry: $_tokenExpiry');
-        _startRefreshTimer();
         return;
       } catch (e) {
         if (kDebugMode) print('Token refresh attempt $attempt failed: $e');
         if (attempt == maxRetries) {
           if (kDebugMode) print('Max refresh attempts reached, logging out');
-          await logout();
+          await CookieManager.clearCookies(caller: 'AuthProvider.refreshAccessToken');
           _errorMessage = 'Session expired. Please log in again.';
+          await logout();
           notifyListeners();
           return;
         }
