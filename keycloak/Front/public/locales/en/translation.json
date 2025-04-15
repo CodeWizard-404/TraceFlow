@@ -1,0 +1,21 @@
+{
+    "maps_card_title": "Agents Visits Today",
+    "stats_card1_title": "Supervisors Count",
+    "stats_card2_title": "Active Supervisors",
+    "emails": "Emails",
+    "navbar_dashboard": "Dashboard",
+    "navbar_admin": "Admin Dashboard",
+    "navbar_timesheets": "Timesheets",
+    "navbar_receipt_books": "Receipt Books",
+    "navbar_profile": "Profile",
+    "logo_alt": "Company Logo",
+    "toggle_menu": "Toggle navigation menu",
+    "toggle_theme": "Switch to {{mode}} mode",
+    "theme": "Theme",
+    "logout": "Logout",
+    "select_language": "Select language",
+    "footer_copyright": "© Copyright {{year}}. All Rights Reserved",
+    "footer_privacy": "Privacy Policy",
+    "footer_terms": "Terms of Service",
+    "footer_contact": "Contact Us"
+  }

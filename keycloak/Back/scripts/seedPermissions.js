@@ -3,7 +3,7 @@ const fs = require('fs').promises;
 const path = require('path');
 const { nanoid } = require('nanoid');
 const { Permission } = require('../models');
-const migratePermissionsKeycloakAssignments = require('./migratePe');
+const { migratePermissionsKeycloakAssignments } = require('./migratePe');
 require('dotenv').config();
 
 // Configuration constants

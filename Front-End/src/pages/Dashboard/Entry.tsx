@@ -12,6 +12,7 @@ import { Chart as ChartJS, ArcElement, Tooltip, Legend } from "chart.js";
 import "./Entry.css";
 import { useTheme } from "../../context/ThemeContext";
 import { FaSun } from "react-icons/fa";
+import { useTranslation } from "react-i18next";
 
 // Register Chart.js components
 ChartJS.register(ArcElement, Tooltip, Legend);
@@ -21,6 +22,7 @@ const Entry: React.FC = () => {
   const [users, setUsers] = useState<User[]>([]);
   const [visits, setVisits] = useState<Visit[]>([]);
   const [notifications, setNotifications] = useState<Notification[]>([]);
+  const { t } = useTranslation();
 
   // Simulate fetching data
   useEffect(() => {
@@ -214,7 +216,7 @@ const Entry: React.FC = () => {
             </div>
             {/* Map */}
             <div className="maps-card">
-              <h2 className="">Agents Visits Today</h2>
+              <h2 className="">{t("maps_card_title")}</h2>
               <div className="maps-card__container">
                 <LoadScript googleMapsApiKey={""}>
                   <GoogleMap
