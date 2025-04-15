@@ -15,7 +15,7 @@ const Visit = require("./visit/visit")(sequelize, DataTypes);
 const Checklist = require("./visit/checklist")(sequelize, DataTypes);
 const VisitChecklist = require("./visit/VisitChecklists")(sequelize, DataTypes);
 const Reason = require("./visit/reason")(sequelize, DataTypes);
-const TrustedDevice = require("./user/TrustedDevice")(sequelize, DataTypes);
+const TrustedDevice = require("./user/trustedDevice")(sequelize, DataTypes);
 const Log = require("./log")(sequelize, DataTypes); // Add Log model
 
 const setupAssociations = () => {
