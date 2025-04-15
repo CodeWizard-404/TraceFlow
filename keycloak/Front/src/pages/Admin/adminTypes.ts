@@ -1,3 +1,5 @@
+export type SortField = "name" | "email" | "role";
+export type SortOrder = "asc" | "desc";
 export type ViewMode =
     | "users"
     | "roles"
@@ -6,12 +8,11 @@ export type ViewMode =
     | "add-role"
     | "add-permission"
     | "user-details"
+    | "role-details"
+    | "permission-details"
     | "checklists"
     | "add-checklist"
     | "checklist-details"
     | "reasons"
     | "add-reason"
     | "reason-details";
-
-export type SortField = "name" | "email" | "role" | "item";
-export type SortOrder = "asc" | "desc";

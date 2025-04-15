@@ -1,6 +1,8 @@
+/* eslint-disable react-hooks/exhaustive-deps */
+/* eslint-disable react-refresh/only-export-components */
 import React, { createContext, useContext, useState, useEffect, ReactNode } from 'react';
 import { useNavigate, useLocation } from 'react-router-dom';
-import { login, verify2FA, logout } from '../apis/authAPI';
+import { login, verify2FA, logout, refreshToken } from '../apis/authAPI';
 import { getEffectivePermissions } from '../apis/permissionAPI';
 import { getRolesByUser } from '../apis/roleAPI';
 import { setupAxiosInterceptors } from '../apis/axiosConfig';
@@ -29,7 +31,6 @@ interface AuthContextType {
 
 const AuthContext = createContext<AuthContextType | undefined>(undefined);
 
-// eslint-disable-next-line react-refresh/only-export-components
 export const useAuth = (): AuthContextType => {
     const context = useContext(AuthContext);
     if (!context) throw new Error('useAuth must be used within an AuthProvider');
@@ -45,6 +46,7 @@ const AuthProvider: React.FC<{ children: ReactNode }> = ({ children }) => {
     const [effectivePermissions, setEffectivePermissions] = useState<Permission[] | null>(null);
     const [permissionsLoaded, setPermissionsLoaded] = useState(false);
     const [noAccess, setNoAccess] = useState(false);
+    const [tokenExpiry, setTokenExpiry] = useState<number | null>(null);
 
     const navigate = useNavigate();
     const location = useLocation();
@@ -52,6 +54,43 @@ const AuthProvider: React.FC<{ children: ReactNode }> = ({ children }) => {
     useEffect(() => {
         setupAxiosInterceptors();
     }, []);
+
+    // Automatic token refresh
+    useEffect(() => {
+        if (!user || !tokenExpiry) {
+            return;
+        }
+
+        const refreshBuffer = 30 * 1000; // Refresh 30 seconds before expiry
+        const timeUntilRefresh = tokenExpiry - Date.now() - refreshBuffer;
+
+        if (timeUntilRefresh <= 0) {
+            handleRefresh();
+            return;
+        }
+
+        const timer = setTimeout(handleRefresh, timeUntilRefresh);
+        return () => {
+            clearTimeout(timer);
+        };
+    }, [tokenExpiry, user]);
+
+    const handleRefresh = async (retries = 3) => {
+        for (let attempt = 1; attempt <= retries; attempt++) {
+            try {
+                const { expiresIn } = await refreshToken();
+                const newExpiry = Date.now() + expiresIn;
+                setTokenExpiry(newExpiry);
+                return;
+            } catch (error) {
+                console.error(`Refresh attempt ${attempt} failed:`, error);
+                if (attempt === retries) {
+                    await handleLogout();
+                }
+                await new Promise((resolve) => setTimeout(resolve, 1000));
+            }
+        }
+    };
 
     const hasPermissionForRoute = React.useCallback(
         (pathname: string): boolean => {
@@ -84,7 +123,9 @@ const AuthProvider: React.FC<{ children: ReactNode }> = ({ children }) => {
             return;
         }
 
-        if (!permissionsLoaded) return;
+        if (!permissionsLoaded) {
+            return;
+        }
 
         if (!userRoles?.length && !effectivePermissions?.length) {
             setNoAccess(true);
@@ -105,7 +146,9 @@ const AuthProvider: React.FC<{ children: ReactNode }> = ({ children }) => {
             return;
         }
 
-        if (hasPermissionForRoute(currentPath)) return;
+        if (hasPermissionForRoute(currentPath)) {
+            return;
+        }
 
         if (currentPath === '/' || !hasPermissionForRoute(currentPath)) {
             const fromRoute =
@@ -134,13 +177,15 @@ const AuthProvider: React.FC<{ children: ReactNode }> = ({ children }) => {
                         ]);
                         break;
                     } catch (error) {
+                        console.error(`Permission fetch attempt ${attempt} failed:`, error);
                         if (attempt === 3) throw error;
                         await new Promise((resolve) => setTimeout(resolve, 1000));
                     }
                 }
                 setEffectivePermissions(perms || null);
                 setUserRoles(roles || null);
-            } catch {
+            } catch (error) {
+                console.error('Failed to load permissions, logging out:', error);
                 await handleLogout();
             } finally {
                 setPermissionsLoaded(true);
@@ -148,7 +193,6 @@ const AuthProvider: React.FC<{ children: ReactNode }> = ({ children }) => {
         };
 
         fetchPermissions();
-        // eslint-disable-next-line react-hooks/exhaustive-deps
     }, [user, permissionsLoaded]);
 
     const loginUser = async (
@@ -213,6 +257,7 @@ const AuthProvider: React.FC<{ children: ReactNode }> = ({ children }) => {
 
             localStorage.setItem('user', JSON.stringify(newUser));
             setUser(newUser);
+            setTokenExpiry(Date.now() + (response.expiresIn || parseInt(import.meta.env.VITE_ACCESS_TOKEN_MAX_AGE) || 900000));
 
             try {
                 setPermissionsLoaded(false);
@@ -225,19 +270,22 @@ const AuthProvider: React.FC<{ children: ReactNode }> = ({ children }) => {
                         ]);
                         break;
                     } catch (error) {
+                        console.error(`Post-login permission fetch attempt ${attempt} failed:`, error);
                         if (attempt === 3) throw error;
                         await new Promise((resolve) => setTimeout(resolve, 1000));
                     }
                 }
                 setEffectivePermissions(perms || null);
                 setUserRoles(roles || null);
-            } catch {
+            } catch (error) {
+                console.error('Failed to load permissions after login, logging out:', error);
                 await handleLogout();
                 throw new Error('Failed to load user permissions');
             } finally {
                 setPermissionsLoaded(true);
             }
         } catch (error) {
+            console.error('Login failed:', error);
             if (error instanceof Error && error.message.startsWith('{')) {
                 throw error;
             }
@@ -248,14 +296,15 @@ const AuthProvider: React.FC<{ children: ReactNode }> = ({ children }) => {
     const handleLogout = async () => {
         try {
             await logout();
-        } catch {
-            // Silent catch, proceed with cleanup
+        } catch (error) {
+            console.error('Logout error:', error);
         } finally {
             setUser(null);
             setUserRoles(null);
             setEffectivePermissions(null);
             setPermissionsLoaded(false);
             setNoAccess(false);
+            setTokenExpiry(null);
             localStorage.removeItem('user');
             localStorage.removeItem('accessToken');
             localStorage.removeItem('supervisorFilter');

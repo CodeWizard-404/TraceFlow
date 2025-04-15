@@ -43,10 +43,13 @@
     "node-cache": "^5.1.2",
     "node-cron": "^3.0.3",
     "nodemailer": "^6.10.0",
+    "pino": "^9.6.0",
     "qrcode": "^1.5.4",
     "sequelize": "^6.37.7",
     "socket.io": "^4.8.1",
-    "winston": "^3.17.0"
+    "uuid": "^11.1.0",
+    "winston": "^3.17.0",
+    "winston-daily-rotate-file": "^5.0.0"
   },
   "description": "",
   "devDependencies": {

@@ -1,6 +1,7 @@
 const crypto = require('crypto');
 const { Op } = require('sequelize');
-const { OTP, User } = require('../models');
+const { OTP } = require('../models');
+const logger = require('../utils/logger');
 
 class OTPService {
     // Generate a new OTP for a user
@@ -14,9 +15,15 @@ class OTPService {
             // Store in local database
             const otp = await OTP.create(otpData);
 
+            logger.info(`Generated OTP for ${type} ID: ${entityID}`);
+
             return otp;
         } catch (error) {
-            console.error('OTP generation error:', error.message);
+            logger.error('OTP generation error', {
+                error: error.message,
+                entityID,
+                type
+            });
             throw new Error('Failed to generate OTP');
         }
     }
@@ -34,7 +41,11 @@ class OTPService {
             // Check local database
             const otp = await OTP.findOne({ where });
             if (!otp) {
-                console.error('OTP not found or invalid:', { entityID, code });
+                logger.warn('OTP validation failed', {
+                    entityID,
+                    code,
+                    type
+                });
                 throw new Error('Invalid or expired OTP');
             }
 
@@ -42,9 +53,16 @@ class OTPService {
             await otp.update({ used: true });
             await otp.destroy();
 
+            logger.info(`Successfully validated OTP for ${type} ID: ${entityID}`);
+
             return true;
         } catch (error) {
-            console.error('OTP validation error:', error.message);
+            logger.error('OTP validation error', {
+                error: error.message,
+                entityID,
+                code,
+                type
+            });
             throw new Error(error.message || 'Failed to validate OTP');
         }
     }
@@ -57,9 +75,11 @@ class OTPService {
                     expiresAt: { [Op.lt]: new Date() },
                 },
             });
-            console.log(`Cleaned up ${count} expired OTPs`);
+            logger.info(`Cleaned up ${count} expired OTPs`);
         } catch (error) {
-            console.error('Expired OTP cleanup error:', error.message);
+            logger.error('Expired OTP cleanup error', {
+                error: error.message
+            });
         }
     }
 }

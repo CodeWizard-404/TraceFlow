@@ -37,14 +37,13 @@ const app = express();
 
 const allowedOrigins = [
     process.env.FRONTEND_URL || 'http://localhost:5173',
-    'http://192.168.1.16:5173',
 ];
 
 const corsOptions = {
     origin: (origin, callback) => {
         const allowed = allowedOrigins.includes(origin) || !origin;
         if (allowed) {
-            callback(null, origin); // Reflect the exact origin
+            callback(null, origin);
         } else {
             callback(new Error(`CORS not allowed for origin: ${origin}`));
         }

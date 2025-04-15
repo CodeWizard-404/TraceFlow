@@ -72,7 +72,7 @@ class UserService {
         }
 
         if (phone !== undefined) {
-            if (!phone || !/^\d{8,12}$/.test(phone)) {
+            if (!phone || !/^\d{8,11}$/.test(phone)) {
                 errors.push(ERROR_MESSAGES.INVALID_PHONE);
             }
         }

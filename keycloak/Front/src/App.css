@@ -50,7 +50,7 @@ body {
 }
 
 .permissions-loading,
-.page-loading{
+.page-loading {
   flex: 1;
   display: flex;
   justify-content: center;
@@ -60,10 +60,11 @@ body {
   flex-direction: column;
   text-align: center;
   font-size: 1.2rem;
-  color: #6b7280 ;
+  color: #6b7280;
   font-weight: 600 !important;
 }
-.page-loading  p{
+
+.page-loading p {
   margin-top: 0.3rem;
   color: #6b7280 !important;
 }

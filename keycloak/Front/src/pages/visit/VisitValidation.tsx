@@ -82,16 +82,11 @@ const VisitValidation: React.FC = () => {
     }, [idVisit, userPermissions.canLogVisits, permissionsLoaded]);
 
     const startCamera = async () => {
-        console.log("Start Camera button clicked");
         try {
-            console.log("Requesting camera access...");
             const stream = await navigator.mediaDevices.getUserMedia({ video: { facingMode: "environment" } });
-            console.log("Stream obtained:", stream);
             if (videoRef.current) {
                 videoRef.current.srcObject = stream;
-                console.log("Stream assigned to video element");
                 setIsCameraActive(true);
-                console.log("Camera active state set");
             } else {
                 console.error("Video ref is null");
                 setError("Video element not found.");
@@ -111,24 +106,19 @@ const VisitValidation: React.FC = () => {
     };
 
     const stopCamera = () => {
-        console.log("Stop Camera button clicked");
         if (videoRef.current && videoRef.current.srcObject) {
             const stream = videoRef.current.srcObject as MediaStream;
             stream.getTracks().forEach(track => {
                 track.stop();
-                console.log("Track stopped:", track);
             });
             videoRef.current.srcObject = null;
             setIsCameraActive(false);
-            console.log("Camera stopped and state reset");
         }
     };
 
     useEffect(() => {
         if (isCameraActive && videoRef.current && videoRef.current.srcObject) {
-            console.log("Attempting to play video...");
             videoRef.current.play()
-                .then(() => console.log("Video playing successfully"))
                 .catch(err => {
                     console.error("Video play failed:", err);
                     setError("Failed to play camera stream.");

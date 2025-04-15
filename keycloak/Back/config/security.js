@@ -5,13 +5,14 @@ require('dotenv').config();
 const KEYCLOAK_URL = process.env.KEYCLOAK_URL || 'http://localhost:8080';
 const REALM = process.env.REALM || 'TraceFlow';
 const CLIENT_ID = process.env.KEYCLOAK_CLIENT_ID || 'traceflow-backend';
-const CLIENT_SECRET = process.env.KEYCLOAK_CLIENT_SECRET || 'your-client-secret-from-keycloak';
+const CLIENT_SECRET = process.env.KEYCLOAK_CLIENT_SECRET || '';
 
 const authenticateCookie = async (req, res, next) => {
     try {
         const accessToken = req.cookies?.accessToken;
 
         if (!accessToken) {
+            logger.warn('No access token provided');
             return res.status(401).json({ error: 'Access token required' });
         }
 
@@ -26,6 +27,7 @@ const authenticateCookie = async (req, res, next) => {
             );
 
             if (!response.data.active) {
+                logger.warn('Token introspection failed: inactive token');
                 return res.status(401).json({ error: 'Invalid or expired token' });
             }
 
@@ -33,11 +35,14 @@ const authenticateCookie = async (req, res, next) => {
                 userID: response.data.sub,
                 email: response.data.email,
                 roles: response.data.realm_access?.roles || [],
-                token: accessToken, // Store token for permission checks
+                token: accessToken,
             };
             next();
         } catch (error) {
-            logger.error(`Keycloak introspection error: ${error.message}`);
+            logger.error(`Keycloak introspection error: ${error.message}`, {
+                status: error.response?.status,
+                data: error.response?.data,
+            });
             return res.status(error.response?.status || 401).json({ error: 'Invalid token' });
         }
     } catch (error) {
@@ -51,13 +56,11 @@ const requirePermission = (permissionName) => {
         try {
             const roles = req.user.roles || [];
 
-            // Bypass for Super Admin
             if (roles.includes('Super Admin')) {
-                logger.info('Super Admin detected, bypassing permission checks');
+                logger.info(`Super Admin bypass for user ${req.user.userID}`);
                 return next();
             }
 
-            // Request a Resource Permission Ticket (RPT) from Keycloak
             const response = await axios.post(
                 `${KEYCLOAK_URL}/realms/${REALM}/protocol/openid-connect/token`,
                 new URLSearchParams({
@@ -73,23 +76,24 @@ const requirePermission = (permissionName) => {
                 }
             );
 
-            // Decode the RPT to check permissions
             const rpt = response.data.access_token;
             const tokenData = JSON.parse(Buffer.from(rpt.split('.')[1], 'base64').toString());
             const permissions = tokenData.authorization?.permissions || [];
 
-            // Check if the requested permission is granted
             const hasPermission = permissions.some((p) => p.rsname === permissionName);
 
             if (!hasPermission) {
-                logger.warn(`Permission denied for ${permissionName}`);
+                logger.warn(`Permission denied for ${permissionName} to user ${req.user.userID}`);
                 return res.status(403).json({ error: `Permission '${permissionName}' required` });
             }
 
             logger.info(`Permission granted for ${permissionName} to user ${req.user.userID}`);
             next();
         } catch (error) {
-            logger.error(`Permission check failed for ${permissionName}: ${error.message}`);
+            logger.error(`Permission check failed for ${permissionName}: ${error.message}`, {
+                status: error.response?.status,
+                data: error.response?.data,
+            });
             if (error.response?.status === 401) {
                 return res.status(401).json({ error: 'Token expired, please refresh' });
             }

@@ -73,12 +73,10 @@ const UsersList: React.FC<UsersListProps> = ({
 
         // Apply role filter
         if (roleFilter !== "all") {
-            console.log("Filtering by roleID:", roleFilter);
             result = result.filter(user => {
                 const userRoles = user.Roles || [];
                 const hasRole = userRoles.some(role => {
                     const match = role.roleID === roleFilter;
-                    console.log(`User ${user.firstname} ${user.lastname}, Role ID: ${role.roleID}, Match: ${match}`);
                     return match;
                 });
                 return hasRole;

@@ -1,31 +1,60 @@
-// middleware/rateLimit.js
 const rateLimit = require('express-rate-limit');
+const logger = require('../utils/logger');
+require('dotenv').config();
 
-// Limit for sensitive endpoints (login, OTP verification)
-const sensitiveLimiter = rateLimit({
-    windowMs: 15 * 60 * 1000, // 15 minutes
-    max: 500, // 5 requests per IP
-    message: {
-        error: 'Too many attempts. Please wait 15 minutes and try again.',
-    },
-});
+const noOpLimiter = (req, res, next) => next();
 
-// Limit for OTP resend and password reset initiation
-const otpLimiter = rateLimit({
-    windowMs: 60 * 60 * 1000, // 1 hour
-    max: 300, // 3 requests per IP
-    message: {
-        error: 'Too many OTP requests. Please wait 1 hour and try again.',
-    },
-});
+if (process.env.NODE_ENV === 'development') {
+    // rateLimiter.js (updated sensitiveLimiter only)
+    const sensitiveLimiter = rateLimit({
+        windowMs: parseInt(process.env.SENSITIVE_LIMITER_WINDOW_MS) || 10 * 60 * 1000, // 10 minutes
+        max: parseInt(process.env.SENSITIVE_LIMITER_MAX) || 15,
+        message: {
+            error: 'Too many attempts. Please wait 10 minutes and try again.',
+            waitTime: 600, // 10 minutes in seconds
+        },
+        handler: (req, res) => {
+            logger.warn(`Sensitive rate limit hit: ${req.ip}`);
+            res.status(429).json({
+                error: 'Too many attempts. Please wait 10 minutes and try again.',
+                waitTime: 600,
+            });
+        },
+    });
 
-// Limit for token refresh (less strict)
-const refreshLimiter = rateLimit({
-    windowMs: 60 * 60 * 1000, // 1 hour
-    max: 10000000, // 10 requests per IP
-    message: {
-        error: 'Too many refresh attempts. Please wait 1 hour and try again.',
-    },
-});
+    const otpLimiter = rateLimit({
+        windowMs: parseInt(process.env.OTP_LIMITER_WINDOW_MS) || 10 * 60 * 1000, // 10 minutes
+        max: parseInt(process.env.OTP_LIMITER_MAX) || 5,
+        message: {
+            error: 'Too many OTP requests. Please wait 10 minutes and try again.',
+        },
+        handler: (req, res) => {
+            logger.warn(`OTP rate limit hit: ${req.ip}`);
+            res.status(429).json({
+                error: 'Too many OTP requests. Please wait 10 minutes and try again.',
+            });
+        },
+    });
 
-module.exports = { sensitiveLimiter, otpLimiter, refreshLimiter };
+    const refreshLimiter = rateLimit({
+        windowMs: parseInt(process.env.REFRESH_LIMITER_WINDOW_MS) || 60 * 60 * 1000, // 1 hour
+        max: parseInt(process.env.REFRESH_LIMITER_MAX) || 10,
+        message: {
+            error: 'Too many refresh attempts. Please wait 1 hour and try again.',
+        },
+        handler: (req, res) => {
+            logger.warn(`Refresh rate limit hit: ${req.ip}`);
+            res.status(429).json({
+                error: 'Too many refresh attempts. Please wait 1 hour and try again.',
+            });
+        },
+    });
+
+    module.exports = { sensitiveLimiter, otpLimiter, refreshLimiter };
+} else {
+    module.exports = {
+        sensitiveLimiter: noOpLimiter,
+        otpLimiter: noOpLimiter,
+        refreshLimiter: noOpLimiter,
+    };
+}

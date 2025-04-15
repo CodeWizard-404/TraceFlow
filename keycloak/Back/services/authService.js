@@ -1,6 +1,7 @@
+// backend/services/authService.js
 const axios = require('axios');
 const { nanoid } = require('nanoid');
-const { User, Role, OTP, Permission, TrustedDevice } = require('../models');
+const { User, Role, Permission, TrustedDevice } = require('../models');
 const otpService = require('./otpService');
 const { transporter } = require('../config/smtp');
 const { sendSMS } = require('../config/sms');
@@ -23,6 +24,8 @@ const ERROR_MESSAGES = {
     DATABASE_ERROR: 'Database issue. Try again.',
     MISSING_FIELDS: 'Missing required fields for 2FA verification.',
     INVALID_KEYCLOAK_RESPONSE: 'Authentication failed. Please try again.',
+    ACCOUNT_LOCKED: 'Account temporarily locked due to too many failed attempts.',
+    TOO_MANY_ATTEMPTS: 'Too many login attempts. Please wait before trying again.',
 };
 
 const verificationCache = new Map();
@@ -31,7 +34,9 @@ const CACHE_TTL = 5000;
 const KEYCLOAK_URL = process.env.KEYCLOAK_URL || 'http://localhost:8080';
 const REALM = process.env.REALM || 'TraceFlow';
 const CLIENT_ID = process.env.KEYCLOAK_CLIENT_ID || 'traceflow-backend';
-const CLIENT_SECRET = process.env.KEYCLOAK_CLIENT_SECRET || 'your-client-secret-from-keycloak';
+const CLIENT_SECRET = process.env.KEYCLOAK_CLIENT_SECRET || '';
+const ACCESS_TOKEN_MAX_AGE = parseInt(process.env.ACCESS_TOKEN_MAX_AGE) || 900000; // 15 minutes
+const REFRESH_TOKEN_MAX_AGE = parseInt(process.env.REFRESH_TOKEN_MAX_AGE) || 86400000; // 1 day
 
 class AuthService {
     static async getKeycloakAdminToken() {
@@ -45,10 +50,11 @@ class AuthService {
                     password: process.env.KEYCLOAK_ADMIN_PASSWORD || 'admin',
                 })
             );
+            logger.info('Keycloak admin token obtained');
             return response.data.access_token;
         } catch (error) {
             logger.error(`Keycloak admin token error: ${error.message}`);
-            throw new Error(ERROR_MESSAGES.KEYCLOAK_ADMIN_TOKEN_FAILED);
+            throw Object.assign(new Error(ERROR_MESSAGES.KEYCLOAK_ADMIN_TOKEN_FAILED), { status: 503 });
         }
     }
 
@@ -76,7 +82,7 @@ class AuthService {
             logger.error(`Sync user error for ${identifier}: ${error.message}`);
             throw error.message === ERROR_MESSAGES.KEYCLOAK_MISMATCH
                 ? error
-                : new Error(ERROR_MESSAGES.DATABASE_ERROR);
+                : Object.assign(new Error(ERROR_MESSAGES.DATABASE_ERROR), { status: 500 });
         }
     }
 
@@ -101,14 +107,40 @@ class AuthService {
                 !loginResponse.data.refresh_token ||
                 !loginResponse.data.expires_in
             ) {
-                throw new Error(ERROR_MESSAGES.INVALID_KEYCLOAK_RESPONSE);
+                throw Object.assign(new Error(ERROR_MESSAGES.INVALID_KEYCLOAK_RESPONSE), { status: 400 });
             }
         } catch (error) {
             logger.error(`Keycloak login error for ${identifier}: ${error.message}`);
-            throw new Error(
-                error.message === ERROR_MESSAGES.INVALID_KEYCLOAK_RESPONSE
-                    ? error.message
-                    : ERROR_MESSAGES.INVALID_CREDENTIALS
+            if (error.response) {
+                const { status, data } = error.response;
+                if (status === 429) {
+                    const waitTime = data.error_description?.match(/try again in (\d+) seconds/)?.[1] || 300;
+                    throw Object.assign(new Error(ERROR_MESSAGES.TOO_MANY_ATTEMPTS), {
+                        waitTime: parseInt(waitTime),
+                        status: 429,
+                    });
+                }
+                if (status === 403 && data.error_description?.includes('Account temporarily disabled')) {
+                    const waitTime = data.error_description?.match(/try again in (\d+) seconds/)?.[1] || 900;
+                    throw Object.assign(new Error(ERROR_MESSAGES.ACCOUNT_LOCKED), {
+                        waitTime: parseInt(waitTime),
+                        status: 403,
+                    });
+                }
+                if (status === 401 || (status === 400 && data.error === 'invalid_grant')) {
+                    throw Object.assign(new Error(ERROR_MESSAGES.INVALID_CREDENTIALS), {
+                        failureCount: data.failure_count || 0,
+                        status: 401,
+                    });
+                }
+            }
+            throw Object.assign(
+                new Error(
+                    error.message === ERROR_MESSAGES.INVALID_KEYCLOAK_RESPONSE
+                        ? error.message
+                        : ERROR_MESSAGES.INVALID_CREDENTIALS
+                ),
+                { status: 401 }
             );
         }
 
@@ -119,12 +151,14 @@ class AuthService {
                 `${KEYCLOAK_URL}/admin/realms/${REALM}/users?username=${identifier}&exact=true`,
                 { headers: { Authorization: `Bearer ${adminToken}` } }
             );
-            if (!keycloakUserResponse.data.length) throw new Error(ERROR_MESSAGES.KEYCLOAK_USER_NOT_FOUND);
+            if (!keycloakUserResponse.data.length) {
+                throw Object.assign(new Error(ERROR_MESSAGES.KEYCLOAK_USER_NOT_FOUND), { status: 404 });
+            }
         } catch (error) {
             logger.error(`Keycloak user fetch error for ${identifier}: ${error.message}`);
             throw error.message === ERROR_MESSAGES.KEYCLOAK_USER_NOT_FOUND
                 ? error
-                : new Error(ERROR_MESSAGES.KEYCLOAK_UNAVAILABLE);
+                : Object.assign(new Error(ERROR_MESSAGES.KEYCLOAK_UNAVAILABLE), { status: 503 });
         }
 
         const keycloakId = keycloakUserResponse.data[0].id;
@@ -136,14 +170,20 @@ class AuthService {
                 {
                     model: Role,
                     through: { attributes: [] },
-                    include: [{ model: Permission, through: { attributes: [] }, attributes: ['name', 'class'] }],
+                    include: [
+                        {
+                            model: Permission,
+                            through: { attributes: [] },
+                            attributes: ['name', 'class', 'permissionID', 'description'],
+                        },
+                    ],
                 },
             ],
         });
 
         if (!userWithDetails) {
             logger.error(`User details fetch failed for ${identifier}`);
-            throw new Error(ERROR_MESSAGES.USER_NOT_FOUND);
+            throw Object.assign(new Error(ERROR_MESSAGES.USER_NOT_FOUND), { status: 404 });
         }
 
         const trustedDevice = await TrustedDevice.findOne({
@@ -161,13 +201,13 @@ class AuthService {
         }
 
         const emailRegex = /^[^\s@]+@[^\s@]+\.[^\s@]+$/;
-        const phoneRegex = /^\+?\d{8,12}$/;
+        const phoneRegex = /^\+?\d{8,11}$/;
         const hasValidEmail = user.email && emailRegex.test(user.email);
         const hasValidPhone = user.phone && user.phone !== 'N/A' && phoneRegex.test(user.phone);
 
         if (!hasValidEmail && !hasValidPhone) {
             logger.error(`No valid OTP method for ${user.userID}`);
-            throw new Error(ERROR_MESSAGES.NO_OTP_METHOD);
+            throw Object.assign(new Error(ERROR_MESSAGES.NO_OTP_METHOD), { status: 400 });
         }
 
         try {
@@ -188,7 +228,7 @@ class AuthService {
                     if (hasValidPhone) {
                         selectedMethod = 'phone';
                     } else {
-                        throw new Error(ERROR_MESSAGES.OTP_SEND_FAILED);
+                        throw Object.assign(new Error(ERROR_MESSAGES.OTP_SEND_FAILED), { status: 500 });
                     }
                 }
             }
@@ -209,20 +249,20 @@ class AuthService {
                                 text: `Your OTP is ${otp.code}. It expires in 10 minutes.`,
                             });
                         } else {
-                            throw new Error(ERROR_MESSAGES.OTP_SEND_FAILED);
+                            throw Object.assign(new Error(ERROR_MESSAGES.OTP_SEND_FAILED), { status: 500 });
                         }
                     } else {
                         selectedMethod = smsResult.fallback ? 'email' : 'phone';
                     }
                 } catch (error) {
                     logger.error(`SMS OTP send failed for ${user.userID}: ${error.message}`);
-                    throw new Error(ERROR_MESSAGES.OTP_SEND_FAILED);
+                    throw Object.assign(new Error(ERROR_MESSAGES.OTP_SEND_FAILED), { status: 500 });
                 }
             }
 
             if (!otp) {
                 logger.error(`OTP delivery failed for ${user.userID}`);
-                throw new Error(ERROR_MESSAGES.OTP_SEND_FAILED);
+                throw Object.assign(new Error(ERROR_MESSAGES.OTP_SEND_FAILED), { status: 500 });
             }
 
             return {
@@ -231,14 +271,14 @@ class AuthService {
                 deviceIdentifier,
                 tempToken: loginResponse.data.access_token,
                 refreshToken: loginResponse.data.refresh_token,
-                expiresIn: loginResponse.data.expires_in,
+                expiresIn: loginResponse.data.expires_in * 1000,
                 message: `OTP sent to your ${selectedMethod}`,
             };
         } catch (error) {
             logger.error(`OTP error for ${identifier}: ${error.message}`);
             throw error.message === ERROR_MESSAGES.NO_OTP_METHOD
                 ? error
-                : new Error(ERROR_MESSAGES.OTP_SEND_FAILED);
+                : Object.assign(new Error(ERROR_MESSAGES.OTP_SEND_FAILED), { status: 500 });
         }
     }
 
@@ -252,26 +292,30 @@ class AuthService {
         if (!refreshToken) missingFields.push('refreshToken');
 
         if (missingFields.length > 0) {
-            throw new Error(`${ERROR_MESSAGES.MISSING_FIELDS} Missing: ${missingFields.join(', ')}`);
+            logger.error(`2FA verification failed: Missing fields: ${missingFields.join(', ')}`);
+            throw Object.assign(new Error(`${ERROR_MESSAGES.MISSING_FIELDS} Missing: ${missingFields.join(', ')}`), {
+                status: 400,
+            });
         }
 
         const cacheKey = `${userID}:${otpCode}:${deviceIdentifier}`;
         const cachedResult = verificationCache.get(cacheKey);
         if (cachedResult) {
+            logger.info(`2FA cache hit for ${userID}`);
             return cachedResult;
         }
 
         const user = await User.findByPk(userID);
         if (!user) {
             logger.error(`2FA verification failed: User ${userID} not found`);
-            throw new Error(ERROR_MESSAGES.USER_NOT_FOUND);
+            throw Object.assign(new Error(ERROR_MESSAGES.USER_NOT_FOUND), { status: 404 });
         }
 
         try {
             await otpService.validateOTP(user.userID, otpCode, 'user');
         } catch (error) {
             logger.error(`2FA OTP validation failed for ${userID}: ${error.message}`);
-            throw new Error(ERROR_MESSAGES.INVALID_OTP);
+            throw Object.assign(new Error(ERROR_MESSAGES.INVALID_OTP), { status: 400 });
         }
 
         const userWithDetails = await User.findOne({
@@ -280,7 +324,13 @@ class AuthService {
                 {
                     model: Role,
                     through: { attributes: [] },
-                    include: [{ model: Permission, through: { attributes: [] }, attributes: ['name', 'class'] }],
+                    include: [
+                        {
+                            model: Permission,
+                            through: { attributes: [] },
+                            attributes: ['name', 'class', 'permissionID', 'description'],
+                        },
+                    ],
                 },
             ],
         });
@@ -311,6 +361,7 @@ class AuthService {
 
     static async refreshToken(refreshToken, res) {
         try {
+            logger.info('Initiating token refresh');
             const response = await axios.post(
                 `${KEYCLOAK_URL}/realms/${REALM}/protocol/openid-connect/token`,
                 new URLSearchParams({
@@ -321,13 +372,9 @@ class AuthService {
                 })
             );
 
-            if (
-                !response.data ||
-                !response.data.access_token ||
-                !response.data.refresh_token ||
-                !response.data.expires_in
-            ) {
-                throw new Error(ERROR_MESSAGES.INVALID_REFRESH_TOKEN);
+            if (!response.data || !response.data.access_token || !response.data.expires_in || !response.data.refresh_token) {
+                logger.error('Invalid Keycloak refresh response', { response: response.data });
+                throw Object.assign(new Error(ERROR_MESSAGES.INVALID_REFRESH_TOKEN), { status: 400 });
             }
 
             const cookieOptions = {
@@ -339,55 +386,71 @@ class AuthService {
 
             res.cookie('accessToken', response.data.access_token, {
                 ...cookieOptions,
-                maxAge: response.data.expires_in * 1000,
+                maxAge: ACCESS_TOKEN_MAX_AGE,
             });
+
             res.cookie('refreshToken', response.data.refresh_token, {
                 ...cookieOptions,
-                maxAge: 7 * 24 * 60 * 60 * 1000,
+                maxAge: REFRESH_TOKEN_MAX_AGE,
+            });
+
+            logger.info('Tokens refreshed successfully', {
+                accessTokenExpiresIn: response.data.expires_in,
+                refreshTokenRotatedAt: new Date().toISOString(),
             });
 
             return {
                 user: { message: 'Token refreshed' },
                 accessToken: response.data.access_token,
                 refreshToken: response.data.refresh_token,
+                expiresIn: response.data.expires_in * 1000,
             };
         } catch (error) {
-            logger.error(`Token refresh error: ${error.message}`);
-            throw new Error(ERROR_MESSAGES.INVALID_REFRESH_TOKEN);
+            logger.error(`Token refresh failed: ${error.message}`, {
+                status: error.response?.status,
+                data: error.response?.data,
+            });
+            throw Object.assign(new Error(ERROR_MESSAGES.INVALID_REFRESH_TOKEN), { status: 400 });
         }
     }
 
     static generateLoginResponse(user, token, refreshToken, expiresIn, res) {
         if (!user || !token || !refreshToken || !expiresIn) {
             logger.error(`Invalid login response data for user ${user?.userID || 'unknown'}`);
-            throw new Error(ERROR_MESSAGES.INVALID_KEYCLOAK_RESPONSE);
+            throw Object.assign(new Error(ERROR_MESSAGES.INVALID_KEYCLOAK_RESPONSE), { status: 400 });
         }
 
         const roles = user.Roles?.map((role) => ({
             roleID: role.roleID,
             name: role.name,
             description: role.description || undefined,
-            permissions: role.Permissions ? role.Permissions.map((p) => ({
-                permissionID: p.permissionID,
-                name: p.name,
-                class: p.class,
-                description: p.description || undefined,
-            })) : [],
+            permissions: role.Permissions
+                ? role.Permissions.map((p) => ({
+                    permissionID: p.permissionID,
+                    name: p.name,
+                    class: p.class,
+                    description: p.description || undefined,
+                }))
+                : [],
         })) || [];
 
         const cookieOptions = {
             httpOnly: true,
-            secure: false,
-            maxAge: expiresIn * 1000,
+            secure: process.env.NODE_ENV === 'production',
             sameSite: 'Lax',
             path: '/',
         };
 
-        res.cookie('accessToken', token, cookieOptions);
+        res.cookie('accessToken', token, {
+            ...cookieOptions,
+            maxAge: ACCESS_TOKEN_MAX_AGE,
+        });
         res.cookie('refreshToken', refreshToken, {
             ...cookieOptions,
-            maxAge: 7 * 24 * 60 * 60 * 1000,
+            maxAge: REFRESH_TOKEN_MAX_AGE,
         });
+
+        logger.info(`Login response generated for user ${user.userID}`);
 
         return {
             requires2FA: false,
@@ -398,6 +461,7 @@ class AuthService {
                 phone: user.phone,
                 roles,
             },
+            expiresIn: expiresIn * 1000,
         };
     }
 
@@ -405,17 +469,17 @@ class AuthService {
         const user = await User.findByPk(userID);
         if (!user) {
             logger.error(`Resend 2FA failed: User ${userID} not found`);
-            throw new Error(ERROR_MESSAGES.USER_NOT_FOUND);
+            throw Object.assign(new Error(ERROR_MESSAGES.USER_NOT_FOUND), { status: 404 });
         }
 
         const emailRegex = /^[^\s@]+@[^\s@]+\.[^\s@]+$/;
-        const phoneRegex = /^\+?\d{8,12}$/;
+        const phoneRegex = /^\+?\d{8,11}$/;
         const hasValidEmail = user.email && emailRegex.test(user.email);
         const hasValidPhone = user.phone && user.phone !== 'N/A' && phoneRegex.test(user.phone);
 
         if (!hasValidEmail && !hasValidPhone) {
             logger.error(`No valid OTP method for ${userID}`);
-            throw new Error(ERROR_MESSAGES.NO_OTP_METHOD);
+            throw Object.assign(new Error(ERROR_MESSAGES.NO_OTP_METHOD), { status: 400 });
         }
 
         try {
@@ -445,22 +509,23 @@ class AuthService {
                             text: `Your OTP is ${otp.code}. It expires in 10 minutes.`,
                         });
                     } else {
-                        throw new Error(ERROR_MESSAGES.OTP_SEND_FAILED);
+                        throw Object.assign(new Error(ERROR_MESSAGES.OTP_SEND_FAILED), { status: 500 });
                     }
                 } else {
                     selectedMethod = smsResult.fallback ? 'email' : 'phone';
                 }
             } else {
                 logger.error(`Invalid OTP method for ${userID}: ${otpMethod}`);
-                throw new Error(ERROR_MESSAGES.NO_OTP_METHOD);
+                throw Object.assign(new Error(ERROR_MESSAGES.NO_OTP_METHOD), { status: 400 });
             }
 
+            logger.info(`OTP resent to ${userID} via ${selectedMethod}`);
             return { userID, message: `OTP resent to your ${selectedMethod}` };
         } catch (error) {
             logger.error(`Resend OTP error for ${userID}: ${error.message}`);
             throw error.message === ERROR_MESSAGES.NO_OTP_METHOD
                 ? error
-                : new Error(ERROR_MESSAGES.OTP_SEND_FAILED);
+                : Object.assign(new Error(ERROR_MESSAGES.OTP_SEND_FAILED), { status: 500 });
         }
     }
 
@@ -472,18 +537,20 @@ class AuthService {
                 `${KEYCLOAK_URL}/admin/realms/${REALM}/users?username=${identifier}&exact=true`,
                 { headers: { Authorization: `Bearer ${adminToken}` } }
             );
-            if (!userResponse.data.length) throw new Error(ERROR_MESSAGES.USER_NOT_FOUND);
+            if (!userResponse.data.length) {
+                throw Object.assign(new Error(ERROR_MESSAGES.USER_NOT_FOUND), { status: 404 });
+            }
             keycloakId = userResponse.data[0].id;
             user = await this.syncKeycloakUser(identifier, keycloakId);
         } catch (error) {
             logger.error(`Password reset init error for ${identifier}: ${error.message}`);
             throw error.message === ERROR_MESSAGES.USER_NOT_FOUND
                 ? error
-                : new Error(ERROR_MESSAGES.KEYCLOAK_UNAVAILABLE);
+                : Object.assign(new Error(ERROR_MESSAGES.KEYCLOAK_UNAVAILABLE), { status: 503 });
         }
 
         const emailRegex = /^[^\s@]+@[^\s@]+\.[^\s@]+$/;
-        const phoneRegex = /^\+?\d{8,12}$/;
+        const phoneRegex = /^\+?\d{8,11}$/;
         const hasValidEmail = user.email && emailRegex.test(user.email);
         const hasValidPhone = user.phone && user.phone !== 'N/A' && phoneRegex.test(user.phone);
 
@@ -502,20 +569,21 @@ class AuthService {
                 const smsResult = await sendSMS(user.phone, `Your TraceFlow password reset OTP is ${otp.code}`, 'otp');
                 if (!smsResult.success) {
                     logger.error(`SMS reset failed for ${user.userID}: ${smsResult.reason}`);
-                    throw new Error(ERROR_MESSAGES.PASSWORD_RESET_FAILED);
+                    throw Object.assign(new Error(ERROR_MESSAGES.PASSWORD_RESET_FAILED), { status: 500 });
                 }
                 selectedMethod = smsResult.fallback ? 'email' : 'phone';
             } else {
                 logger.error(`No valid OTP method for ${user.userID}`);
-                throw new Error(ERROR_MESSAGES.NO_OTP_METHOD);
+                throw Object.assign(new Error(ERROR_MESSAGES.NO_OTP_METHOD), { status: 400 });
             }
 
+            logger.info(`Password reset OTP sent to ${user.userID} via ${selectedMethod}`);
             return { userID: user.userID, message: `OTP sent to your ${selectedMethod}` };
         } catch (error) {
             logger.error(`Password reset OTP error for ${user.userID}: ${error.message}`);
             throw error.message === ERROR_MESSAGES.NO_OTP_METHOD
                 ? error
-                : new Error(ERROR_MESSAGES.PASSWORD_RESET_FAILED);
+                : Object.assign(new Error(ERROR_MESSAGES.PASSWORD_RESET_FAILED), { status: 500 });
         }
     }
 
@@ -523,19 +591,20 @@ class AuthService {
         const user = await User.findByPk(userID);
         if (!user) {
             logger.error(`Password reset OTP verification failed: User ${userID} not found`);
-            throw new Error(ERROR_MESSAGES.USER_NOT_FOUND);
+            throw Object.assign(new Error(ERROR_MESSAGES.USER_NOT_FOUND), { status: 404 });
         }
 
         try {
             await otpService.validateOTP(user.userID, otpCode, 'user');
         } catch (error) {
             logger.error(`Password reset OTP validation failed for ${userID}: ${error.message}`);
-            throw new Error(ERROR_MESSAGES.INVALID_OTP);
+            throw Object.assign(new Error(ERROR_MESSAGES.INVALID_OTP), { status: 400 });
         }
 
         const tempToken = nanoid();
         await User.update({ tempResetToken: tempToken }, { where: { userID } });
 
+        logger.info(`Password reset OTP verified for ${userID}`);
         return { userID, tempToken, message: 'OTP verified. Proceed to reset password.' };
     }
 
@@ -543,11 +612,11 @@ class AuthService {
         const user = await User.findByPk(userID);
         if (!user) {
             logger.error(`Password reset failed: User ${userID} not found`);
-            throw new Error(ERROR_MESSAGES.USER_NOT_FOUND);
+            throw Object.assign(new Error(ERROR_MESSAGES.USER_NOT_FOUND), { status: 404 });
         }
         if (user.tempResetToken !== tempToken) {
             logger.error(`Password reset failed for ${userID}: Invalid reset token`);
-            throw new Error('Invalid or expired reset token');
+            throw Object.assign(new Error('Invalid or expired reset token'), { status: 400 });
         }
 
         try {
@@ -558,9 +627,10 @@ class AuthService {
                 { headers: { Authorization: `Bearer ${adminToken}` } }
             );
             await User.update({ tempResetToken: null }, { where: { userID } });
+            logger.info(`Password reset successful for ${userID}`);
         } catch (error) {
             logger.error(`Password reset error for ${userID}: ${error.message}`);
-            throw new Error(ERROR_MESSAGES.PASSWORD_UPDATE_FAILED);
+            throw Object.assign(new Error(ERROR_MESSAGES.PASSWORD_UPDATE_FAILED), { status: 500 });
         }
 
         return { message: 'Password reset successfully' };

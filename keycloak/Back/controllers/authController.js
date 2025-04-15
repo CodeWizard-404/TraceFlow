@@ -1,3 +1,5 @@
+// backend/controllers/authController.js
+
 const { validationResult } = require('express-validator');
 const logger = require('../utils/logger');
 const AuthService = require('../services/authService');
@@ -10,25 +12,31 @@ const ERROR_MESSAGES = {
     USER_NOT_FOUND: 'Account not found.',
     INVALID_TOKEN: 'Session expired. Log in again.',
     SERVER_ERROR: 'Something broke. Try again later.',
+    INVALID_CREDENTIALS: 'Wrong email or password.',
 };
 
 class AuthController {
     static formatError(error) {
-        return {
+        const response = {
             error: error.message || ERROR_MESSAGES.SERVER_ERROR,
         };
+        if (error.waitTime) response.waitTime = error.waitTime;
+        if (error.failureCount !== undefined) response.failureCount = error.failureCount;
+        return response;
     }
 
     static async login(req, res) {
         try {
             const errors = validationResult(req);
             if (!errors.isEmpty()) {
-                return res.status(400).json({ errors: errors.array() });
+                logger.warn(`Login validation failed: ${JSON.stringify(errors.array())}`);
+                return res.status(400).json({ error: ERROR_MESSAGES.MISSING_FIELDS, details: errors.array() });
             }
 
             const { identifier, password, deviceIdentifier, otpMethod } = req.body;
             if (!identifier || !password || !deviceIdentifier) {
-                return res.status(400).json(this.formatError(new Error(ERROR_MESSAGES.MISSING_FIELDS)));
+                logger.warn('Missing login fields');
+                return res.status(400).json(AuthController.formatError(new Error(ERROR_MESSAGES.MISSING_FIELDS)));
             }
 
             const result = await AuthService.login(identifier, password, deviceIdentifier, otpMethod, res);
@@ -36,7 +44,8 @@ class AuthController {
             return res.status(200).json(result);
         } catch (error) {
             logger.error(`Login error for ${req.body.identifier || 'unknown'}: ${error.message}`);
-            return res.status(400).json(this.formatError(error));
+            const status = error.message === ERROR_MESSAGES.INVALID_CREDENTIALS ? 401 : 400;
+            return res.status(status).json(AuthController.formatError(error));
         }
     }
 
@@ -44,17 +53,20 @@ class AuthController {
         try {
             const errors = validationResult(req);
             if (!errors.isEmpty()) {
-                return res.status(400).json({ errors: errors.array() });
+                logger.warn(`2FA validation failed: ${JSON.stringify(errors.array())}`);
+                return res.status(400).json({ error: ERROR_MESSAGES.MISSING_FIELDS, details: errors.array() });
             }
 
             const { userID, otpCode, deviceIdentifier, trustDevice, tempToken, refreshToken } = req.body;
             if (!userID || !otpCode || !deviceIdentifier || trustDevice === undefined || !tempToken || !refreshToken) {
-                return res.status(400).json(this.formatError(new Error(ERROR_MESSAGES.MISSING_FIELDS)));
+                logger.warn('Missing 2FA fields');
+                return res.status(400).json(AuthController.formatError(new Error(ERROR_MESSAGES.MISSING_FIELDS)));
             }
 
             const cacheKey = `2fa_${userID}_${deviceIdentifier}`;
             const cachedResult = cache.get(cacheKey);
             if (cachedResult) {
+                logger.info(`2FA cache hit for ${userID}`);
                 return res.status(200).json(cachedResult);
             }
 
@@ -64,7 +76,7 @@ class AuthController {
             return res.status(200).json(result);
         } catch (error) {
             logger.error(`2FA verification error for ${req.body.userID || 'unknown'}: ${error.message}`);
-            return res.status(400).json(this.formatError(error));
+            return res.status(400).json(AuthController.formatError(error));
         }
     }
 
@@ -72,24 +84,32 @@ class AuthController {
         try {
             const refreshToken = req.cookies.refreshToken;
             if (!refreshToken) {
-                return res.status(400).json(this.formatError(new Error(ERROR_MESSAGES.MISSING_FIELDS)));
+                logger.warn('No refresh token provided');
+                return res.status(400).json(AuthController.formatError(new Error(ERROR_MESSAGES.MISSING_FIELDS)));
             }
             const result = await AuthService.refreshToken(refreshToken, res);
+            logger.info('Refresh token successful');
             return res.status(200).json(result);
         } catch (error) {
             logger.error(`Refresh token error: ${error.message}`);
-            return res.status(400).json(this.formatError(error));
+            return res.status(400).json(AuthController.formatError(error));
         }
     }
 
     static async logout(req, res) {
         try {
-            res.clearCookie('accessToken', { path: '/', sameSite: 'Lax', secure: false });
-            res.clearCookie('refreshToken', { path: '/', sameSite: 'Lax', secure: false });
+            const cookieOptions = {
+                path: '/',
+                sameSite: 'Lax',
+                secure: process.env.NODE_ENV === 'production',
+            };
+            res.clearCookie('accessToken', cookieOptions);
+            res.clearCookie('refreshToken', cookieOptions);
+            logger.info('User logged out, cookies cleared');
             return res.status(200).json({ message: 'Logged out successfully' });
         } catch (error) {
             logger.error(`Logout error: ${error.message}`);
-            return res.status(500).json(this.formatError(error));
+            return res.status(500).json(AuthController.formatError(error));
         }
     }
 
@@ -97,18 +117,21 @@ class AuthController {
         try {
             const errors = validationResult(req);
             if (!errors.isEmpty()) {
-                return res.status(400).json({ errors: errors.array() });
+                logger.warn(`Resend 2FA validation failed: ${JSON.stringify(errors.array())}`);
+                return res.status(400).json({ error: ERROR_MESSAGES.MISSING_FIELDS, details: errors.array() });
             }
 
             const { userID, otpMethod } = req.body;
             if (!userID) {
-                return res.status(400).json(this.formatError(new Error(ERROR_MESSAGES.MISSING_FIELDS)));
+                logger.warn('Missing userID for resend 2FA');
+                return res.status(400).json(AuthController.formatError(new Error(ERROR_MESSAGES.MISSING_FIELDS)));
             }
             const result = await AuthService.resend2FA(userID, otpMethod);
-            return res.json(result);
+            logger.info(`2FA resent for ${userID}`);
+            return res.status(200).json(result);
         } catch (error) {
             logger.error(`Resend 2FA error for ${req.body.userID || 'unknown'}: ${error.message}`);
-            return res.status(400).json(this.formatError(error));
+            return res.status(400).json(AuthController.formatError(error));
         }
     }
 
@@ -116,18 +139,21 @@ class AuthController {
         try {
             const errors = validationResult(req);
             if (!errors.isEmpty()) {
-                return res.status(400).json({ errors: errors.array() });
+                logger.warn(`Password reset init validation failed: ${JSON.stringify(errors.array())}`);
+                return res.status(400).json({ error: ERROR_MESSAGES.MISSING_FIELDS, details: errors.array() });
             }
 
             const { identifier } = req.body;
             if (!identifier) {
-                return res.status(400).json(this.formatError(new Error(ERROR_MESSAGES.MISSING_FIELDS)));
+                logger.warn('Missing identifier for password reset');
+                return res.status(400).json(AuthController.formatError(new Error(ERROR_MESSAGES.MISSING_FIELDS)));
             }
             const result = await AuthService.initiatePasswordReset(identifier);
-            return res.json(result);
+            logger.info(`Password reset initiated for ${identifier}`);
+            return res.status(200).json(result);
         } catch (error) {
             logger.error(`Password reset init error for ${req.body.identifier || 'unknown'}: ${error.message}`);
-            return res.status(400).json(this.formatError(error));
+            return res.status(400).json(AuthController.formatError(error));
         }
     }
 
@@ -135,18 +161,21 @@ class AuthController {
         try {
             const errors = validationResult(req);
             if (!errors.isEmpty()) {
-                return res.status(400).json({ errors: errors.array() });
+                logger.warn(`Password reset OTP validation failed: ${JSON.stringify(errors.array())}`);
+                return res.status(400).json({ error: ERROR_MESSAGES.MISSING_FIELDS, details: errors.array() });
             }
 
             const { userID, otpCode } = req.body;
             if (!userID || !otpCode) {
-                return res.status(400).json(this.formatError(new Error(ERROR_MESSAGES.MISSING_FIELDS)));
+                logger.warn('Missing fields for password reset OTP');
+                return res.status(400).json(AuthController.formatError(new Error(ERROR_MESSAGES.MISSING_FIELDS)));
             }
             const result = await AuthService.verifyPasswordResetOTP(userID, otpCode);
-            return res.json(result);
+            logger.info(`Password reset OTP verified for ${userID}`);
+            return res.status(200).json(result);
         } catch (error) {
             logger.error(`Password reset OTP error for ${req.body.userID || 'unknown'}: ${error.message}`);
-            return res.status(400).json(this.formatError(error));
+            return res.status(400).json(AuthController.formatError(error));
         }
     }
 
@@ -154,18 +183,21 @@ class AuthController {
         try {
             const errors = validationResult(req);
             if (!errors.isEmpty()) {
-                return res.status(400).json({ errors: errors.array() });
+                logger.warn(`Password reset validation failed: ${JSON.stringify(errors.array())}`);
+                return res.status(400).json({ error: ERROR_MESSAGES.MISSING_FIELDS, details: errors.array() });
             }
 
             const { userID, newPassword, tempToken } = req.body;
             if (!userID || !newPassword || !tempToken) {
-                return res.status(400).json(this.formatError(new Error(ERROR_MESSAGES.MISSING_FIELDS)));
+                logger.warn('Missing fields for password reset');
+                return res.status(400).json(AuthController.formatError(new Error(ERROR_MESSAGES.MISSING_FIELDS)));
             }
             const result = await AuthService.resetPassword(userID, newPassword, tempToken);
-            return res.json(result);
+            logger.info(`Password reset completed for ${userID}`);
+            return res.status(200).json(result);
         } catch (error) {
             logger.error(`Password reset error for ${req.body.userID || 'unknown'}: ${error.message}`);
-            return res.status(400).json(this.formatError(error));
+            return res.status(400).json(AuthController.formatError(error));
         }
     }
 }
