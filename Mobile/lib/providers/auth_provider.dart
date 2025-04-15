@@ -1,8 +1,10 @@
-import 'dart:async';
+import 'dart:convert';
 import 'package:flutter/foundation.dart';
+import 'package:http/http.dart' as http;
 import '../models/user.dart';
 import '../services/auth_service.dart';
 import '../services/cookie_manager.dart';
+import 'dart:async';
 
 class AuthProvider with ChangeNotifier {
   User? _user;

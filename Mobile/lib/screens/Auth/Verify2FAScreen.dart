@@ -1,3 +1,4 @@
+
 import 'package:flutter/material.dart';
 import 'package:provider/provider.dart';
 import '../../providers/auth_provider.dart';
@@ -98,13 +99,13 @@ class Verify2FAScreenState extends State<Verify2FAScreen> {
       if (authProvider.errorMessage != null) {
         _showErrorSnackBar(authProvider.errorMessage!);
         authProvider.clearError();
-      } else if (authProvider.permissionsLoaded && authProvider.isSupervisor) {
+      } else if ( authProvider.permissionsLoaded && authProvider.isSupervisor) {
         if (kDebugMode) print('Navigating to TimesheetDetailsScreen (Home) from listener');
         Navigator.pushReplacement(
           context,
           MaterialPageRoute(builder: (_) => const TimesheetDetailsScreen()),
         );
-      } else if (authProvider.permissionsLoaded && !authProvider.isSupervisor) {
+      } else if ( authProvider.permissionsLoaded && !authProvider.isSupervisor) {
         if (kDebugMode) print('Access denied: Not a supervisor');
         _showErrorSnackBar('Access denied: Only Supervisors can log in.');
         authProvider.logout();
@@ -197,3 +198,4 @@ class Verify2FAScreenState extends State<Verify2FAScreen> {
     );
   }
 }
+

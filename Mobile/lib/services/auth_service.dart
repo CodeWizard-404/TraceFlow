@@ -34,7 +34,8 @@ class AuthService {
     }
   }
 
-  static Future<Map<String, dynamic>> login(String identifier, String password, String otpMethod) async {
+  static Future<Map<String, dynamic>> login(
+      String identifier, String password, String otpMethod) async {
     if (kDebugMode) print('AuthService.login called with identifier: $identifier, otpMethod: $otpMethod');
     try {
       final url = Uri.parse('$baseUrl/auth/login');
@@ -238,6 +239,7 @@ class AuthService {
 
   static Future<dynamic> makeAuthenticatedRequest({
     required Future<http.Response> Function() request,
+
   }) async {
     if (kDebugMode) print('Making authenticated request, cookies: ${CookieManager.cookies}');
     try {
@@ -249,6 +251,7 @@ class AuthService {
         try {
           final refreshResult = await refreshToken();
           if (kDebugMode) print('Refresh result: $refreshResult, new cookies: ${CookieManager.cookies}');
+// Retry the original request with new cookies
           final retryResponse = await request();
           if (kDebugMode) print('Retry response: ${retryResponse.statusCode}, ${retryResponse.body}');
           CookieManager.extractCookies(retryResponse);

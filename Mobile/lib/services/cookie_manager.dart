@@ -69,26 +69,32 @@ class CookieManager {
 
   static Map<String, String> getHeaders([Map<String, String>? additionalHeaders]) {
     final headers = additionalHeaders != null ? Map<String, String>.from(additionalHeaders) : <String, String>{};
-    if (cookies.isNotEmpty) {
+    if (cookies.containsKey('accessToken') || cookies.containsKey('refreshToken') || cookies.containsKey('deviceToken')) {
       headers['Cookie'] = cookies.entries
-          .where((e) => ['accessToken', 'refreshToken', 'deviceToken'].contains(e.key))
+          .where((e) => e.key == 'accessToken' || e.key == 'refreshToken' || e.key == 'deviceToken')
           .map((e) => '${e.key}=${e.value}')
           .join('; ');
       if (kDebugMode) print('Sending Cookie header: ${headers['Cookie']}');
     } else {
-      if (kDebugMode) print('No cookies to send');
+      if (kDebugMode) print('No cookies to send, cookies: $cookies');
     }
     return headers;
   }
 
   static Future<void> clearCookies({String? caller}) async {
     if (kDebugMode) print('Clearing cookies, called by: ${caller ?? "unknown"}');
+    // Preserve deviceToken during logout
+    final deviceToken = cookies['deviceToken'];
     cookies.clear();
     try {
       await _storage.delete(key: 'accessToken');
       await _storage.delete(key: 'refreshToken');
-      await _storage.delete(key: 'deviceToken');
-      if (kDebugMode) print('Cleared stored cookies');
+      // Do not delete deviceToken
+      if (deviceToken != null) {
+        cookies['deviceToken'] = deviceToken;
+        await _storage.write(key: 'deviceToken', value: deviceToken);
+      }
+      if (kDebugMode) print('Cleared stored cookies, preserved deviceToken: $deviceToken');
     } catch (e) {
       if (kDebugMode) print('Failed to clear stored cookies: $e');
     }
