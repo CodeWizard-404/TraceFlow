@@ -14,6 +14,7 @@ import '../../providers/checklist_provider.dart';
 import '../../providers/reason_provider.dart';
 import '../../services/cookie_manager.dart';
 import '../../widgets/appbar/app_bar.dart';
+import '../../widgets/appbar/sidebar.dart';
 import '../../widgets/commen/button.dart';
 import '../../widgets/commen/spacer.dart';
 
@@ -695,6 +696,7 @@ class _CreateVisitScreenState extends State<CreateVisitScreen> {
         title: 'Create Visit',
         showBackButton: true,
       ),
+      drawer: const AppSidebar(),
       body: Container(
         color: Theme.of(context).scaffoldBackgroundColor,
         child: Padding(
@@ -719,7 +721,9 @@ class _CreateVisitScreenState extends State<CreateVisitScreen> {
                       const CustomSpacer(height: 12),
                       _buildTile(
                         icon: Icons.access_time,
-                        title: _selectedTime == null ? 'Select Time' : _selectedTime!.format(context),
+                        title: _selectedTime == null
+                            ? 'Select Time'
+                            : _selectedTime!.format(context),
                         onTap: () => _selectTime(context),
                       ),
                     ],

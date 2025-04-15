@@ -1,10 +1,13 @@
-import 'package:TraceFlow/screens/Auth/Verify2FAScreen.dart';
-import 'package:TraceFlow/screens/Receipt/receipt_books.dart';
-import 'package:TraceFlow/screens/Receipt/transfer_receipt_book.dart';
 import 'package:flutter/material.dart';
 import 'package:provider/provider.dart';
-import 'package:TraceFlow/providers/agent_provider.dart';
 import 'package:TraceFlow/providers/auth_provider.dart';
+import 'package:TraceFlow/screens/Auth/login_screen.dart';
+import 'package:TraceFlow/screens/Auth/Verify2FAScreen.dart';
+import 'package:TraceFlow/screens/Timesheet/Timesheet_details.dart';
+import 'package:TraceFlow/screens/Receipt/receipt_books.dart';
+import 'package:TraceFlow/screens/Receipt/transfer_receipt_book.dart';
+import 'package:TraceFlow/screens/Error.dart';
+import 'package:TraceFlow/providers/agent_provider.dart';
 import 'package:TraceFlow/providers/checklist_provider.dart';
 import 'package:TraceFlow/providers/reason_provider.dart';
 import 'package:TraceFlow/providers/receipt_book_provider.dart';
@@ -15,9 +18,6 @@ import 'package:TraceFlow/providers/user_provider.dart';
 import 'package:TraceFlow/providers/role_provider.dart';
 import 'package:TraceFlow/providers/permission_provider.dart';
 import 'package:TraceFlow/providers/theme_provider.dart';
-import 'package:TraceFlow/screens/Timesheet/Timesheet_details.dart';
-import 'package:TraceFlow/screens/Auth/login_screen.dart';
-import 'package:TraceFlow/screens/Error.dart';
 import 'themes/app_themes.dart';
 
 void main() {
@@ -95,8 +95,6 @@ class AuthWrapper extends StatelessWidget {
   const AuthWrapper({super.key});
 
   @override
-// In main.dart, replace AuthWrapper's build method with:
-  @override
   Widget build(BuildContext context) {
     final authProvider = Provider.of<AuthProvider>(context);
 
@@ -105,12 +103,21 @@ class AuthWrapper extends StatelessWidget {
             'user=${authProvider.user?.userID},'
             'isLoading=${authProvider.isLoading}, '
             'isSupervisor=${authProvider.isSupervisor}, '
-            'requires2FA=${authProvider.requires2FA}');
+            'requires2FA=${authProvider.requires2FA}, '
+            'error=${authProvider.errorMessage}');
 
     if (authProvider.isLoading) {
       return const Scaffold(
         body: Center(child: CircularProgressIndicator()),
       );
+    }
+
+    if (authProvider.errorMessage?.contains('Session expired') ?? false) {
+      debugPrint('AuthWrapper: Session expired, redirecting to LoginScreen');
+      WidgetsBinding.instance.addPostFrameCallback((_) {
+        Navigator.pushReplacementNamed(context, '/login');
+      });
+      return const SizedBox.shrink();
     }
 
     if (authProvider.requires2FA) {
@@ -125,7 +132,8 @@ class AuthWrapper extends StatelessWidget {
 
     debugPrint('AuthWrapper: Returning TimesheetDetailsScreen');
     return const TimesheetDetailsScreen();
-  }}
+  }
+}
 
 class RouteLogger extends NavigatorObserver {
   @override
