@@ -5,81 +5,111 @@ const { transporter } = require('../config/smtp');
 const logger = require('../utils/logger');
 
 class ReceiptStubService {
-    static async collectStub(bookID, userID) {
+    static async collectStub(bookIDs, userID) {
         try {
-            const book = await ReceiptBook.findByPk(bookID, { include: [Agent, ReceiptStub] });
-            if (!book) {
-                const error = new Error('Receipt book not found');
+            const books = await ReceiptBook.findAll({
+                where: { bookID: bookIDs },
+                include: [Agent, ReceiptStub]
+            });
+            if (books.length !== bookIDs.length) {
+                const error = new Error('Some receipt books not found');
                 error.status = 404;
                 throw error;
             }
-            if (book.status !== 'Assigned to Agent' || !book.agentID) {
-                const error = new Error('Book not assigned to an agent');
-                error.status = 400;
-                throw error;
-            }
-            if (book.ReceiptStub.status !== 'pending') {
-                const error = new Error('Stub already processed');
+
+            const invalidBooks = books.filter(book =>
+                book.status !== 'Assigned to Agent' || !book.agentID || book.ReceiptStub.status !== 'pending'
+            );
+            if (invalidBooks.length > 0) {
+                const error = new Error('Some books are not assigned to an agent or stubs already processed');
                 error.status = 400;
                 throw error;
             }
 
-            const otp = await OTPService.generateOTP(book.agentID, 'agent');
-            const smsResult = await sendSMS(book.Agent.phone, `Your OTP for stub collection of Book #${book.number} is ${otp.code}`);
+            const agentIDs = [...new Set(books.map(book => book.agentID))];
+            if (agentIDs.length > 1) {
+                const error = new Error('All books must be assigned to the same agent');
+                error.status = 400;
+                throw error;
+            }
+
+            const agentID = agentIDs[0];
+            const otp = await OTPService.generateOTP(agentID, 'agent');
+            const agent = await Agent.findByPk(agentID);
+            const smsResult = await sendSMS(
+                agent.phone,
+                `Your OTP for stub collection of ${bookIDs.length} receipt books is ${otp.code}`
+            );
             if (!smsResult.success) {
-                logger.warn(`SMS notification failed for agent ${book.agentID}: ${smsResult.reason}`, { ip: null });
+                logger.warn(`SMS notification failed for agent ${agentID}: ${smsResult.reason}`, { ip: null });
             }
 
-            logger.info(`Initiated stub collection for book ${bookID} by user ${userID}`, { ip: null });
-            return { message: 'OTP sent to agent' };
+            logger.info(`Initiated stub collection for ${bookIDs.length} books by user ${userID}`, { ip: null });
+            return { message: `OTP sent to agent for ${bookIDs.length} books` };
         } catch (error) {
             logger.error(`Collect stub error: ${error.message}, user: ${userID}`, { ip: null });
             throw error;
         }
     }
 
-    static async validateStubCollection(bookID, supervisorID, otpCode) {
+    static async validateStubCollection(bookIDs, supervisorID, otpCode) {
         try {
-            const book = await ReceiptBook.findByPk(bookID, { include: [Agent, ReceiptStub] });
-            if (!book) {
-                const error = new Error('Receipt book not found');
+            const books = await ReceiptBook.findAll({
+                where: { bookID: bookIDs },
+                include: [Agent, ReceiptStub]
+            });
+            if (books.length !== bookIDs.length) {
+                const error = new Error('Some receipt books not found');
                 error.status = 404;
                 throw error;
             }
-            if (book.status !== 'Assigned to Agent' || !book.agentID) {
-                const error = new Error('Invalid book state');
+
+            const invalidBooks = books.filter(book =>
+                book.status !== 'Assigned to Agent' || !book.agentID || book.ReceiptStub.status !== 'pending'
+            );
+            if (invalidBooks.length > 0) {
+                const error = new Error('Some books are not in valid state or stubs already processed');
                 error.status = 400;
                 throw error;
             }
-            if (book.ReceiptStub.status !== 'pending') {
-                const error = new Error('Stub already processed');
+
+            const agentIDs = [...new Set(books.map(book => book.agentID))];
+            if (agentIDs.length > 1) {
+                const error = new Error('All books must be assigned to the same agent');
                 error.status = 400;
                 throw error;
             }
 
-            await OTPService.validateOTP(book.agentID, otpCode, 'agent');
+            const agentID = agentIDs[0];
+            await OTPService.validateOTP(agentID, otpCode, 'agent');
 
-            await Promise.all([
-                book.update({ status: 'Stub Collected', agentID: null, currentHolderID: supervisorID }),
-                book.ReceiptStub.update({ status: 'collected' }),
-                ReceiptBookTransfer.create({
-                    bookID,
-                    fromAgentID: book.agentID,
-                    toUserID: supervisorID,
-                    status: 'Validated',
-                    transferType: 'StubToSupervisor',
-                }),
-            ]);
+            await Promise.all(
+                books.map(book =>
+                    Promise.all([
+                        book.update({ status: 'Stub Collected', agentID: null, currentHolderID: supervisorID }),
+                        book.ReceiptStub.update({ status: 'collected' }),
+                        ReceiptBookTransfer.create({
+                            bookID: book.bookID,
+                            fromAgentID: agentID,
+                            toUserID: supervisorID,
+                            status: 'Validated',
+                            transferType: 'StubToSupervisor',
+                        }),
+                    ])
+                )
+            );
 
+            const agent = await Agent.findByPk(agentID);
+            const supervisor = await User.findByPk(supervisorID);
             await transporter.sendMail({
                 from: process.env.SMTP_USER,
-                to: book.Agent.email || (await User.findByPk(supervisorID))?.email,
-                subject: `Stub Collection Validated for Book #${book.number}`,
-                text: `Stub for Book #${book.number} has been collected by Supervisor ${supervisorID}.`,
+                to: agent.email || supervisor.email,
+                subject: `Stub Collection Validated for ${bookIDs.length} Books`,
+                text: `Stubs for ${bookIDs.length} receipt books have been collected by Supervisor ${supervisorID}.`,
             });
 
-            logger.info(`Validated stub collection for book ${bookID} by user ${supervisorID}`, { ip: null });
-            return { message: 'Stub collected' };
+            logger.info(`Validated stub collection for ${bookIDs.length} books by user ${supervisorID}`, { ip: null });
+            return { message: `${bookIDs.length} stubs collected` };
         } catch (error) {
             logger.error(`Validate stub collection error: ${error.message}, user: ${supervisorID}`, { ip: null });
             throw error;

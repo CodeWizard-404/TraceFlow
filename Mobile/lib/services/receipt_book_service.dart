@@ -124,7 +124,7 @@ class ReceiptBookService {
       if (response.statusCode == 200) {
         if (kDebugMode) print('Receipt books transferred successfully');
       } else {
-        final error = 'Failed to transfer receipt books: ${response.statusCode}';
+        final error = json.decode(response.body)['error'] ?? 'Failed to transfer receipt books: ${response.statusCode}';
         if (kDebugMode) print(error);
         throw Exception(error);
       }
@@ -161,7 +161,7 @@ class ReceiptBookService {
       if (response.statusCode == 200) {
         if (kDebugMode) print('Transfer validated successfully');
       } else {
-        final error = 'Failed to validate transfer: ${response.statusCode}';
+        final error = json.decode(response.body)['error'] ?? 'Failed to validate transfer: ${response.statusCode}';
         if (kDebugMode) print(error);
         throw Exception(error);
       }

@@ -67,7 +67,6 @@ class _TransferReceiptBookScreenState extends State<TransferReceiptBookScreen> {
   }
 
   Future<void> _fetchUsersForRole(String role) async {
-    final authProvider = Provider.of<AuthProvider>(context, listen: false);
     final userProvider = Provider.of<UserProvider>(context, listen: false);
     try {
       await userProvider.getUsersByRole(role);
@@ -86,7 +85,7 @@ class _TransferReceiptBookScreenState extends State<TransferReceiptBookScreen> {
       case "Agent":
         return book.currentHolderID == userID && book.status == "With Supervisor";
       case "Stub Collection":
-        return true;
+        return book.status == "Assigned to Agent";
       default:
         return false;
     }
@@ -110,15 +109,15 @@ class _TransferReceiptBookScreenState extends State<TransferReceiptBookScreen> {
           setState(() => _error = 'QR code "$number" has already been scanned.');
           return;
         }
-        if (_selectedBookIDs.isNotEmpty) {
-          setState(() => _error = "Stub collection can only process one book.");
-          return;
-        }
 
         try {
           await receiptBookProvider.fetchReceiptBookByNumber(number);
           if (receiptBookProvider.currentReceiptBook == null) {
             setState(() => _error = 'Book with number "$number" not found.');
+            return;
+          }
+          if (!_isTransferable(receiptBookProvider.currentReceiptBook!, authProvider.user!.userID!, _recipientType)) {
+            setState(() => _error = 'Book "$number" (status: ${receiptBookProvider.currentReceiptBook!.status}) cannot be collected.');
             return;
           }
         } catch (e) {
@@ -134,7 +133,7 @@ class _TransferReceiptBookScreenState extends State<TransferReceiptBookScreen> {
         });
       } else {
         final matchingBook = receiptBookProvider.receiptBooks.firstWhere(
-              (r) => r.number == number && r.type == type,
+          (r) => r.number == number && r.type == type,
           orElse: () => ReceiptBook(number: '', type: '', status: '', qrCode: ''),
         );
 
@@ -148,10 +147,6 @@ class _TransferReceiptBookScreenState extends State<TransferReceiptBookScreen> {
         }
         if (!_isTransferable(matchingBook, authProvider.user!.userID!, _recipientType)) {
           setState(() => _error = 'Book "$number" (status: ${matchingBook.status}, holder: ${matchingBook.currentHolderID}) cannot be scanned by you or transferred to $_recipientType.');
-          return;
-        }
-        if (_recipientType == "Agent" && _selectedBookIDs.isNotEmpty) {
-          setState(() => _error = "Only one book can be assigned to an Agent.");
           return;
         }
 
@@ -205,21 +200,16 @@ class _TransferReceiptBookScreenState extends State<TransferReceiptBookScreen> {
       setState(() => _error = "Only one book can be assigned to an Agent.");
       return;
     }
-    if (_recipientType == "Stub Collection" && _selectedBookIDs.length > 1) {
-      setState(() => _error = "Stub collection can only process one book.");
-      return;
-    }
     if (_recipientType != "Stub Collection" && _recipientID == null) {
       setState(() => _error = "Please select a recipient.");
       return;
     }
 
-    final authProvider = Provider.of<AuthProvider>(context, listen: false);
     final receiptBookProvider = Provider.of<ReceiptBookProvider>(context, listen: false);
     final receiptStubProvider = Provider.of<ReceiptStubProvider>(context, listen: false);
     try {
       if (_recipientType == "Stub Collection") {
-        await receiptStubProvider.collectStub(_selectedBookIDs.first);
+        await receiptStubProvider.collectStub(_selectedBookIDs);
       } else {
         await receiptBookProvider.transferReceiptBooks(
           bookIDs: _selectedBookIDs,
@@ -243,23 +233,14 @@ class _TransferReceiptBookScreenState extends State<TransferReceiptBookScreen> {
       setState(() => _error = 'Please enter the OTP.');
       return;
     }
-    final authProvider = Provider.of<AuthProvider>(context, listen: false);
     final receiptBookProvider = Provider.of<ReceiptBookProvider>(context, listen: false);
     final receiptStubProvider = Provider.of<ReceiptStubProvider>(context, listen: false);
-
-
-
-    print('Validating transfer with:');
-    print('  recipientType: $_recipientType');
-    print('  bookID: ${_selectedBookIDs.first}');
-    print('  otp: ${_otpController.text}');
-    print('  recipientID: $_recipientID');
 
     try {
       if (_recipientType == "Stub Collection") {
         await receiptStubProvider.validateStubCollection(
-          _selectedBookIDs.first,
-          _otpController.text
+          _selectedBookIDs,
+          _otpController.text,
         );
       } else {
         if (_recipientID == null) {
@@ -278,9 +259,6 @@ class _TransferReceiptBookScreenState extends State<TransferReceiptBookScreen> {
     } catch (e) {
       setState(() => _error = 'Failed to validate transfer: $e');
       print('Validation error details: $e');
-      if (e.toString().contains('Null')) {
-        print('Null check - bookID: ${_selectedBookIDs.first}, otp: ${_otpController.text},  recipientID: $_recipientID');
-      }
     }
   }
 

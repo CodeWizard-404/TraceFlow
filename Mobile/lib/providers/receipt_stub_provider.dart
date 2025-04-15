@@ -1,4 +1,3 @@
-import 'package:flutter/material.dart';
 import 'package:flutter/foundation.dart';
 import '../models/receipt_stub.dart';
 import '../services/receipt_stub_service.dart';
@@ -16,16 +15,16 @@ class ReceiptStubProvider with ChangeNotifier {
   bool get isLoading => _isLoading;
   String? get errorMessage => _errorMessage;
 
-  Future<void> collectStub(String bookID) async {
-    if (kDebugMode) print('Collecting stub for book: $bookID');
+  Future<void> collectStub(List<String> bookIDs) async {
+    if (kDebugMode) print('Collecting stubs for books: $bookIDs');
     _isLoading = true;
     _errorMessage = null;
     notifyListeners();
     try {
-      await _receiptStubService.collectStub(bookID);
-      if (kDebugMode) print('Stub collected successfully');
+      await _receiptStubService.collectStub(bookIDs);
+      if (kDebugMode) print('Stubs collected successfully');
     } catch (e) {
-      _errorMessage = 'Failed to collect stub: $e';
+      _errorMessage = 'Failed to collect stubs: $e';
       if (kDebugMode) print(_errorMessage);
       rethrow;
     } finally {
@@ -34,18 +33,14 @@ class ReceiptStubProvider with ChangeNotifier {
     }
   }
 
-  Future<void> validateStubCollection(String bookID, String otpCode) async {
-    if (kDebugMode) print('Validating stub collection for book: $bookID');
+  Future<void> validateStubCollection(List<String> bookIDs, String otpCode) async {
+    if (kDebugMode) print('Validating stub collection for books: $bookIDs');
     _isLoading = true;
     _errorMessage = null;
     notifyListeners();
     try {
-      _currentStub = await _receiptStubService.validateStubCollection(bookID, otpCode);
-      if (kDebugMode) {
-        print(_currentStub != null
-            ? 'Stub validated: ${_currentStub!.stubID}'
-            : 'No stub found for book: $bookID');
-      }
+      await _receiptStubService.validateStubCollection(bookIDs, otpCode);
+      if (kDebugMode) print('Stubs validated successfully');
     } catch (e) {
       _errorMessage = 'Failed to validate stub collection: $e';
       if (kDebugMode) print(_errorMessage);

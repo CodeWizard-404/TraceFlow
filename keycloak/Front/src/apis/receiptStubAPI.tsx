@@ -32,29 +32,29 @@ const handleApiError = (error: unknown, defaultMessage: string): string => {
     }
 };
 
-// Collect a receipt stub
-export const collectStub = async (bookID: string): Promise<CollectStubResponse> => {
+// Collect receipt stubs
+export const collectStub = async (bookIDs: string[]): Promise<CollectStubResponse> => {
     try {
-        if (!bookID) {
-            throw new Error("Book ID is required.");
+        if (!bookIDs || !Array.isArray(bookIDs) || bookIDs.length === 0) {
+            throw new Error("Array of book IDs is required.");
         }
-        const response = await api.post<CollectStubResponse>(`/receipt-stubs/${bookID}/collect`, {});
+        const response = await api.post<CollectStubResponse>("/receipt-stubs/collect", { bookIDs });
         return response.data;
     } catch (error) {
-        throw new Error(handleApiError(error, "Unable to collect stub."));
+        throw new Error(handleApiError(error, "Unable to collect stubs."));
     }
 };
 
 // Validate stub collection
 export const validateStubCollection = async (
-    bookID: string,
+    bookIDs: string[],
     otpCode: string
 ): Promise<ValidateStubCollectionResponse> => {
     try {
-        if (!bookID || !otpCode) {
-            throw new Error("Book ID and OTP code are required.");
+        if (!bookIDs || !Array.isArray(bookIDs) || bookIDs.length === 0 || !otpCode) {
+            throw new Error("Array of book IDs and OTP code are required.");
         }
-        const response = await api.post<ValidateStubCollectionResponse>(`/receipt-stubs/${bookID}/validate-collection`, { otpCode });
+        const response = await api.post<ValidateStubCollectionResponse>("/receipt-stubs/validate-collection", { bookIDs, otpCode });
         return response.data;
     } catch (error) {
         throw new Error(handleApiError(error, "Unable to validate stub collection."));

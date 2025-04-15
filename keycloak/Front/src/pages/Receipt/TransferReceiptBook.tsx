@@ -70,7 +70,6 @@ const TransferReceiptBook: React.FC = () => {
 
     const currentUserID = user!.userID;
 
-
     const [receiptBooks, setReceiptBooks] = useState<ReceiptBook[]>([]);
     const [selectedBookIDs, setSelectedBookIDs] = useState<string[]>([]);
     const [users, setUsers] = useState<User[]>([]);
@@ -110,7 +109,7 @@ const TransferReceiptBook: React.FC = () => {
             setError(null);
         }, ERROR_DISPLAY_DURATION);
 
-        return () => clearTimeout(timer); // Cleanup on unmount or new error
+        return () => clearTimeout(timer);
     }, [error]);
 
     // OTP Timer logic
@@ -145,8 +144,12 @@ const TransferReceiptBook: React.FC = () => {
             const agent = agents.find(a => a.agentID === recipientID);
             return agent ? `${agent.name} ${agent.lastname} (${agent.phone})` : "Loading...";
         } else if (recipientType === "Stub Collection") {
-            const book = receiptBooks.find(b => b.bookID === selectedBookIDs[0]);
-            const agent = agents.find(a => a.agentID === book?.agentID);
+            const books = receiptBooks.filter(b => selectedBookIDs.includes(b.bookID));
+            const agentIDs = [...new Set(books.map(b => b.agentID).filter(id => id))];
+            if (agentIDs.length !== 1) {
+                return "Multiple or no agents selected";
+            }
+            const agent = agents.find(a => a.agentID === agentIDs[0]);
             return agent ? `${agent.name} ${agent.lastname} (${agent.phone})` : "Loading...";
         } else {
             const user = users.find(u => u.userID === recipientID);
@@ -209,11 +212,6 @@ const TransferReceiptBook: React.FC = () => {
                 return;
             }
 
-            if (recipientType === "Agent" && userRoleSet.has("Supervisor") && selectedBookIDs.length >= 1) {
-                setError("Supervisors can only assign one receipt book to an Agent.");
-                return;
-            }
-
             setScannedQR(prev => [...prev, decodedText]);
             setSelectedBookIDs(prev => [...prev, matchingBook.bookID]);
             scannedQRRef.current.add(decodedText);
@@ -224,7 +222,7 @@ const TransferReceiptBook: React.FC = () => {
         } finally {
             scanLockRef.current = false;
         }
-    }, [isTransferable, recipientType, selectedBookIDs, receiptBooks, userRoleSet]);
+    }, [isTransferable, recipientType, selectedBookIDs, receiptBooks]);
 
     useEffect(() => {
         if (preSelectedAgentID && forceAgent && !recipientType) {
@@ -431,25 +429,21 @@ const TransferReceiptBook: React.FC = () => {
     }, [users, recipientType, searchQuery]);
 
     const filteredBooks = useMemo(() => {
-        const inStockBooks = receiptBooks.filter(book =>
-            book.status === "In Stock" && isTransferable(book)
-        ).filter(book =>
+        const transferableBooks = receiptBooks.filter(book => isTransferable(book)).filter(book =>
             book.number.toLowerCase().includes(bookSearchQuery.toLowerCase()) ||
             book.type.toLowerCase().includes(bookSearchQuery.toLowerCase())
         );
         const startIndex = (currentPage - 1) * ITEMS_PER_PAGE;
         const endIndex = startIndex + ITEMS_PER_PAGE;
-        return inStockBooks.slice(startIndex, endIndex);
+        return transferableBooks.slice(startIndex, endIndex);
     }, [receiptBooks, bookSearchQuery, isTransferable, currentPage]);
 
     const totalPages = useMemo(() => {
-        const inStockBooks = receiptBooks.filter(book =>
-            book.status === "In Stock" && isTransferable(book)
-        ).filter(book =>
+        const transferableBooks = receiptBooks.filter(book => isTransferable(book)).filter(book =>
             book.number.toLowerCase().includes(bookSearchQuery.toLowerCase()) ||
             book.type.toLowerCase().includes(bookSearchQuery.toLowerCase())
         );
-        return Math.ceil(inStockBooks.length / ITEMS_PER_PAGE);
+        return Math.ceil(transferableBooks.length / ITEMS_PER_PAGE);
     }, [receiptBooks, bookSearchQuery, isTransferable]);
 
     const handleBookSelection = (bookID: string) => {
@@ -491,7 +485,7 @@ const TransferReceiptBook: React.FC = () => {
             return;
         }
         if (recipientType === "Agent" && userRoleSet.has("Supervisor") && selectedBookIDs.length > 1) {
-            setError("Supervisors can only assign one receipt book to an Agent.");
+            setError("Supervisors can only assign one receipt book to an Agent at a time.");
             return;
         }
         if (!recipientType) {
@@ -516,11 +510,7 @@ const TransferReceiptBook: React.FC = () => {
                 await sendToSupplier(selectedBookIDs, supplierEmail);
                 navigate(-1);
             } else if (recipientType === "Stub Collection") {
-                if (selectedBookIDs.length > 1) {
-                    setError("Stub collection can only process one book at a time.");
-                    return;
-                }
-                await collectStub(selectedBookIDs[0]);
+                await collectStub(selectedBookIDs);
                 setTransferInitiated(true);
                 setError(null);
             } else if (recipientType === "Archive") {
@@ -553,11 +543,7 @@ const TransferReceiptBook: React.FC = () => {
         }
         try {
             if (recipientType === "Stub Collection") {
-                if (selectedBookIDs.length !== 1) {
-                    setError("Stub collection requires exactly one book.");
-                    return;
-                }
-                await validateStubCollection(selectedBookIDs[0], otp);
+                await validateStubCollection(selectedBookIDs, otp);
                 navigate(-1);
             } else {
                 const recipientTypeForAPI = recipientType === "Agent" ? "agent" : "user";
@@ -716,7 +702,7 @@ const TransferReceiptBook: React.FC = () => {
                                                         </li>
                                                     ))
                                                 ) : (
-                                                    <li className="no-data">No In Stock books available or matching search.</li>
+                                                    <li className="no-data">No transferable books available or matching search.</li>
                                                 )}
                                             </ul>
                                             {totalPages > 1 && (
@@ -782,7 +768,7 @@ const TransferReceiptBook: React.FC = () => {
 
                                 {recipientType !== "Supplier" && recipientType && (recipientID || recipientType === "Archive" || recipientType === "Stub Collection" || recipientType === "Collect from Supplier") && (
                                     <div className="form-group qr-section">
-                                        <label>{recipientType === "Collect from Supplier" ? "Scan Books to Collect from Supplier" : "Scan QR Codes"}</label>
+                                        <label>{recipientType === "Collect from Supplier" ? "Scan Books to Collect from Supplier" : recipientType === "Stub Collection" ? "Scan Books for Stub Collection" : "Scan QR Codes"}</label>
                                         {error && <div className="error-above-camera">{error}</div>}
                                         <div id="qr-reader" ref={qrReaderRef} className="qr-reader" />
                                         <div className="scanned-list">

@@ -261,7 +261,7 @@ class ReceiptBookService {
 
             const otp = await OTPService.generateOTP(recipientID, recipientType);
             const recipientPhone = recipient.phone || recipient.Agent?.phone;
-            const smsResult = await sendSMS(recipientPhone, `Your OTP for receiving ${bookIDs.length} books is ${otp.code}`);
+            const smsResult = await sendSMS(recipientPhone, `Your OTP for receiving ${bookIDs.length} receipt books is ${otp.code}`);
 
             if (!smsResult.success) {
                 logger.warn(`Notification failed for ${recipientType} ${recipientID}: ${smsResult.reason}`, { ip: null });
@@ -274,7 +274,7 @@ class ReceiptBookService {
             );
 
             logger.info(`Initiated transfer of ${bookIDs.length} books to ${recipientType} ${recipientID} by user ${senderID}`, { ip: null });
-            return { message: `Transfer initiated for ${recipientType} ${recipientID}`, otpID: otp.otpID };
+            return { message: `Transfer initiated for ${bookIDs.length} books to ${recipientType} ${recipientID}`, otpID: otp.otpID };
         } catch (error) {
             logger.error(`Transfer error: ${error.message}, user: ${senderID}`, { ip: null });
             throw error;
@@ -308,19 +308,19 @@ class ReceiptBookService {
             }
 
             const transferType = transfers[0].transferType;
-            const book = await ReceiptBook.findByPk(transfers[0].bookID);
-            const { status } = this.determineTransferDetails(book.status, recipientType, recipient);
+            const books = await ReceiptBook.findAll({ where: { bookID: bookIDs } });
 
             await Promise.all(
-                transfers.map(async t => {
-                    const book = await ReceiptBook.findByPk(t.bookID);
+                books.map(async book => {
+                    const { status } = this.determineTransferDetails(book.status, recipientType, recipient);
+                    const transfer = transfers.find(t => t.bookID === book.bookID);
                     await Promise.all([
                         book.update({
                             status,
                             currentHolderID: recipientType === 'user' ? recipientID : null,
                             agentID: recipientType === 'agent' ? recipientID : null,
                         }),
-                        t.update({ status: 'Validated' }),
+                        transfer.update({ status: 'Validated', transferDate: new Date() }),
                     ]);
                 })
             );
@@ -329,12 +329,12 @@ class ReceiptBookService {
             await transporter.sendMail({
                 from: process.env.SMTP_USER,
                 to: recipientEmail,
-                subject: `Transfer of ${bookIDs.length} Books Validated`,
-                text: `${bookIDs.length} books transferred to ${recipientType} ${recipientID}. New status: ${status}`,
+                subject: `Transfer of ${bookIDs.length} Receipt Books Validated`,
+                text: `${bookIDs.length} receipt books transferred to ${recipientType} ${recipientID}.`,
             });
 
             logger.info(`Validated transfer of ${bookIDs.length} books to ${recipientType} ${recipientID}`, { ip: null });
-            return { message: `${bookIDs.length} books transferred and validated` };
+            return { message: `${bookIDs.length} receipt books transferred and validated` };
         } catch (error) {
             logger.error(`Validate transfer error: ${error.message}`, { ip: null });
             throw error;
