@@ -5,8 +5,8 @@ require('dotenv').config();
 
 const KEYCLOAK_URL = process.env.KEYCLOAK_URL || 'http://localhost:8080';
 const REALM = process.env.REALM || 'TraceFlow';
-const ADMIN_USER = process.env.ADMIN_USER || 'admin';
-const ADMIN_PASS = process.env.ADMIN_PASS || 'admin';
+const KEYCLOAK_ADMIN_USER = process.env.KEYCLOAK_ADMIN_USER || 'admin';
+const KEYCLOAK_ADMIN_PASSWORD = process.env.KEYCLOAK_ADMIN_PASSWORD || 'admin';
 
 async function getAdminToken() {
     const response = await axios.post(
@@ -14,8 +14,8 @@ async function getAdminToken() {
         new URLSearchParams({
             grant_type: 'password',
             client_id: 'admin-cli',
-            username: ADMIN_USER,
-            password: ADMIN_PASS,
+            username: KEYCLOAK_ADMIN_USER,
+            password: KEYCLOAK_ADMIN_PASSWORD,
         })
     );
     return response.data.access_token;

@@ -1,0 +1,4855 @@
+{
+  "id": "09d5ce0d-0761-4ec5-9d33-5e92480ec2aa",
+  "realm": "TraceFlow",
+  "displayName": "",
+  "displayNameHtml": "",
+  "notBefore": 0,
+  "defaultSignatureAlgorithm": "RS256",
+  "revokeRefreshToken": false,
+  "refreshTokenMaxReuse": 0,
+  "accessTokenLifespan": 900,
+  "accessTokenLifespanForImplicitFlow": 900,
+  "ssoSessionIdleTimeout": 32400,
+  "ssoSessionMaxLifespan": 86400,
+  "ssoSessionIdleTimeoutRememberMe": 0,
+  "ssoSessionMaxLifespanRememberMe": 0,
+  "offlineSessionIdleTimeout": 2592000,
+  "offlineSessionMaxLifespanEnabled": false,
+  "offlineSessionMaxLifespan": 5184000,
+  "clientSessionIdleTimeout": 32400,
+  "clientSessionMaxLifespan": 3600,
+  "clientOfflineSessionIdleTimeout": 0,
+  "clientOfflineSessionMaxLifespan": 0,
+  "accessCodeLifespan": 3600,
+  "accessCodeLifespanUserAction": 300,
+  "accessCodeLifespanLogin": 1800,
+  "actionTokenGeneratedByAdminLifespan": 43200,
+  "actionTokenGeneratedByUserLifespan": 300,
+  "oauth2DeviceCodeLifespan": 600,
+  "oauth2DevicePollingInterval": 5,
+  "enabled": true,
+  "sslRequired": "external",
+  "registrationAllowed": false,
+  "registrationEmailAsUsername": true,
+  "rememberMe": false,
+  "verifyEmail": false,
+  "loginWithEmailAllowed": true,
+  "duplicateEmailsAllowed": false,
+  "resetPasswordAllowed": false,
+  "editUsernameAllowed": true,
+  "bruteForceProtected": true,
+  "permanentLockout": false,
+  "maxTemporaryLockouts": 0,
+  "bruteForceStrategy": "LINEAR",
+  "maxFailureWaitSeconds": 900,
+  "minimumQuickLoginWaitSeconds": 60,
+  "waitIncrementSeconds": 300,
+  "quickLoginCheckMilliSeconds": 1000,
+  "maxDeltaTimeSeconds": 43200,
+  "failureFactor": 30,
+  "roles": {
+    "realm": [
+      {
+        "id": "6f0f8071-29a6-45c9-98cd-2e627364705e",
+        "name": "Supervisor",
+        "description": "Log Visitsfzer",
+        "composite": false,
+        "clientRole": false,
+        "containerId": "09d5ce0d-0761-4ec5-9d33-5e92480ec2aa",
+        "attributes": {}
+      },
+      {
+        "id": "bc0ac7e4-480e-4309-82ce-057443472ed9",
+        "name": "default-roles-traceflow",
+        "description": "${role_default-roles}",
+        "composite": true,
+        "composites": {
+          "client": {
+            "account": [
+              "view-profile",
+              "manage-account"
+            ]
+          }
+        },
+        "clientRole": false,
+        "containerId": "09d5ce0d-0761-4ec5-9d33-5e92480ec2aa",
+        "attributes": {}
+      },
+      {
+        "id": "32c69e5d-dff9-4193-b54b-cceda43dcb67",
+        "name": "Super Admin",
+        "description": "Role with full administrative privileges",
+        "composite": false,
+        "clientRole": false,
+        "containerId": "09d5ce0d-0761-4ec5-9d33-5e92480ec2aa",
+        "attributes": {}
+      },
+      {
+        "id": "2ef878dd-af7f-4424-b73b-bce709e68a54",
+        "name": "Regional Manager",
+        "description": "Manage Books",
+        "composite": false,
+        "clientRole": false,
+        "containerId": "09d5ce0d-0761-4ec5-9d33-5e92480ec2aa",
+        "attributes": {}
+      },
+      {
+        "id": "07ce8bb4-abe3-47d6-819f-2a7f3711f4c5",
+        "name": "Stock Manager",
+        "description": "Archive Stock",
+        "composite": false,
+        "clientRole": false,
+        "containerId": "09d5ce0d-0761-4ec5-9d33-5e92480ec2aa",
+        "attributes": {}
+      },
+      {
+        "id": "4f029168-aece-4de3-b6a6-46b94b8dee23",
+        "name": "Admin",
+        "description": "Manage Users",
+        "composite": false,
+        "clientRole": false,
+        "containerId": "09d5ce0d-0761-4ec5-9d33-5e92480ec2aa",
+        "attributes": {}
+      },
+      {
+        "id": "ee13a569-cf6b-4671-903e-4a7d393456cf",
+        "name": "Purchase Team",
+        "description": "Manage Initial Stock",
+        "composite": false,
+        "clientRole": false,
+        "containerId": "09d5ce0d-0761-4ec5-9d33-5e92480ec2aa",
+        "attributes": {}
+      },
+      {
+        "id": "58a620c5-e964-42a1-9f52-356112591ba8",
+        "name": "Manager",
+        "description": "Manage Supervisors",
+        "composite": false,
+        "clientRole": false,
+        "containerId": "09d5ce0d-0761-4ec5-9d33-5e92480ec2aa",
+        "attributes": {}
+      }
+    ],
+    "client": {
+      "realm-management": [
+        {
+          "id": "cd4e72cf-b6af-4efb-9081-2b64fc4453ef",
+          "name": "impersonation",
+          "description": "${role_impersonation}",
+          "composite": false,
+          "clientRole": true,
+          "containerId": "2eabaa02-374d-4425-ae80-c3bb69349e5b",
+          "attributes": {}
+        },
+        {
+          "id": "2430425c-44a6-4c1b-8d5e-158eb68808de",
+          "name": "manage-authorization",
+          "description": "${role_manage-authorization}",
+          "composite": false,
+          "clientRole": true,
+          "containerId": "2eabaa02-374d-4425-ae80-c3bb69349e5b",
+          "attributes": {}
+        },
+        {
+          "id": "4624c2b2-f112-422f-ab46-f50bdcb0457d",
+          "name": "manage-clients",
+          "description": "${role_manage-clients}",
+          "composite": false,
+          "clientRole": true,
+          "containerId": "2eabaa02-374d-4425-ae80-c3bb69349e5b",
+          "attributes": {}
+        },
+        {
+          "id": "c82ec15f-7dd5-4ad4-8823-5bd2e6dd084b",
+          "name": "create-client",
+          "description": "${role_create-client}",
+          "composite": false,
+          "clientRole": true,
+          "containerId": "2eabaa02-374d-4425-ae80-c3bb69349e5b",
+          "attributes": {}
+        },
+        {
+          "id": "7f8887eb-973e-4bb3-a76a-b27db213fe1c",
+          "name": "manage-events",
+          "description": "${role_manage-events}",
+          "composite": false,
+          "clientRole": true,
+          "containerId": "2eabaa02-374d-4425-ae80-c3bb69349e5b",
+          "attributes": {}
+        },
+        {
+          "id": "ec464fb8-9756-4d65-ae2b-50ad07cefe65",
+          "name": "view-clients",
+          "description": "${role_view-clients}",
+          "composite": true,
+          "composites": {
+            "client": {
+              "realm-management": [
+                "query-clients"
+              ]
+            }
+          },
+          "clientRole": true,
+          "containerId": "2eabaa02-374d-4425-ae80-c3bb69349e5b",
+          "attributes": {}
+        },
+        {
+          "id": "d88673a6-6000-4ecf-8140-17caff384581",
+          "name": "view-events",
+          "description": "${role_view-events}",
+          "composite": false,
+          "clientRole": true,
+          "containerId": "2eabaa02-374d-4425-ae80-c3bb69349e5b",
+          "attributes": {}
+        },
+        {
+          "id": "7cd1ff57-0a00-4895-9759-a0c97061143f",
+          "name": "view-realm",
+          "description": "${role_view-realm}",
+          "composite": false,
+          "clientRole": true,
+          "containerId": "2eabaa02-374d-4425-ae80-c3bb69349e5b",
+          "attributes": {}
+        },
+        {
+          "id": "73349fb1-876d-4a5d-b453-8f8932944045",
+          "name": "query-groups",
+          "description": "${role_query-groups}",
+          "composite": false,
+          "clientRole": true,
+          "containerId": "2eabaa02-374d-4425-ae80-c3bb69349e5b",
+          "attributes": {}
+        },
+        {
+          "id": "1e95078d-afa9-4d70-a46b-45517834e39c",
+          "name": "manage-realm",
+          "description": "${role_manage-realm}",
+          "composite": false,
+          "clientRole": true,
+          "containerId": "2eabaa02-374d-4425-ae80-c3bb69349e5b",
+          "attributes": {}
+        },
+        {
+          "id": "130220a4-240b-4fa1-a04e-146ec8bd641b",
+          "name": "query-users",
+          "description": "${role_query-users}",
+          "composite": false,
+          "clientRole": true,
+          "containerId": "2eabaa02-374d-4425-ae80-c3bb69349e5b",
+          "attributes": {}
+        },
+        {
+          "id": "d4fb0660-ceab-4217-9231-8987b64b3c7c",
+          "name": "manage-identity-providers",
+          "description": "${role_manage-identity-providers}",
+          "composite": false,
+          "clientRole": true,
+          "containerId": "2eabaa02-374d-4425-ae80-c3bb69349e5b",
+          "attributes": {}
+        },
+        {
+          "id": "cfb25b85-fc0c-47e0-a677-176b4f07db1e",
+          "name": "query-realms",
+          "description": "${role_query-realms}",
+          "composite": false,
+          "clientRole": true,
+          "containerId": "2eabaa02-374d-4425-ae80-c3bb69349e5b",
+          "attributes": {}
+        },
+        {
+          "id": "d1654e63-fefb-4efa-b935-bf6905106cea",
+          "name": "view-users",
+          "description": "${role_view-users}",
+          "composite": true,
+          "composites": {
+            "client": {
+              "realm-management": [
+                "query-users",
+                "query-groups"
+              ]
+            }
+          },
+          "clientRole": true,
+          "containerId": "2eabaa02-374d-4425-ae80-c3bb69349e5b",
+          "attributes": {}
+        },
+        {
+          "id": "8076af3f-d65d-4815-9386-7417d85cad05",
+          "name": "query-clients",
+          "description": "${role_query-clients}",
+          "composite": false,
+          "clientRole": true,
+          "containerId": "2eabaa02-374d-4425-ae80-c3bb69349e5b",
+          "attributes": {}
+        },
+        {
+          "id": "1313ab43-b336-42bb-b901-ac801829cc02",
+          "name": "view-identity-providers",
+          "description": "${role_view-identity-providers}",
+          "composite": false,
+          "clientRole": true,
+          "containerId": "2eabaa02-374d-4425-ae80-c3bb69349e5b",
+          "attributes": {}
+        },
+        {
+          "id": "c5106931-5196-4d38-a1e5-0f76255ca771",
+          "name": "manage-users",
+          "description": "${role_manage-users}",
+          "composite": false,
+          "clientRole": true,
+          "containerId": "2eabaa02-374d-4425-ae80-c3bb69349e5b",
+          "attributes": {}
+        },
+        {
+          "id": "91f7de32-0a19-47ce-8fc6-95763f78e32c",
+          "name": "realm-admin",
+          "description": "${role_realm-admin}",
+          "composite": true,
+          "composites": {
+            "client": {
+              "realm-management": [
+                "impersonation",
+                "manage-authorization",
+                "manage-clients",
+                "manage-events",
+                "create-client",
+                "view-events",
+                "view-clients",
+                "view-realm",
+                "query-groups",
+                "query-users",
+                "manage-realm",
+                "query-realms",
+                "view-users",
+                "manage-identity-providers",
+                "view-identity-providers",
+                "query-clients",
+                "manage-users",
+                "view-authorization"
+              ]
+            }
+          },
+          "clientRole": true,
+          "containerId": "2eabaa02-374d-4425-ae80-c3bb69349e5b",
+          "attributes": {}
+        },
+        {
+          "id": "7bcca7b2-d518-46f1-bb2c-9de48a54a67d",
+          "name": "view-authorization",
+          "description": "${role_view-authorization}",
+          "composite": false,
+          "clientRole": true,
+          "containerId": "2eabaa02-374d-4425-ae80-c3bb69349e5b",
+          "attributes": {}
+        }
+      ],
+      "security-admin-console": [],
+      "admin-cli": [],
+      "account-console": [],
+      "broker": [
+        {
+          "id": "8ad3a75d-93bc-47bc-b48b-fb4a403a05e8",
+          "name": "read-token",
+          "description": "${role_read-token}",
+          "composite": false,
+          "clientRole": true,
+          "containerId": "95c6fd59-b4ac-43e3-85cc-becf87f86cbc",
+          "attributes": {}
+        }
+      ],
+      "account": [
+        {
+          "id": "d5a4a395-853a-406c-825e-7675f9d64bf5",
+          "name": "manage-consent",
+          "description": "${role_manage-consent}",
+          "composite": true,
+          "composites": {
+            "client": {
+              "account": [
+                "view-consent"
+              ]
+            }
+          },
+          "clientRole": true,
+          "containerId": "2e2fb749-1d17-42dd-af18-3619becc7a77",
+          "attributes": {}
+        },
+        {
+          "id": "a060c94f-81f5-4714-a37b-2f1590b39791",
+          "name": "view-profile",
+          "description": "${role_view-profile}",
+          "composite": false,
+          "clientRole": true,
+          "containerId": "2e2fb749-1d17-42dd-af18-3619becc7a77",
+          "attributes": {}
+        },
+        {
+          "id": "9ccdec9d-028c-4d86-8b32-0cfc10bc5924",
+          "name": "view-groups",
+          "description": "${role_view-groups}",
+          "composite": false,
+          "clientRole": true,
+          "containerId": "2e2fb749-1d17-42dd-af18-3619becc7a77",
+          "attributes": {}
+        },
+        {
+          "id": "f0e8af07-6621-4528-8c0e-06160814ab4d",
+          "name": "manage-account-links",
+          "description": "${role_manage-account-links}",
+          "composite": false,
+          "clientRole": true,
+          "containerId": "2e2fb749-1d17-42dd-af18-3619becc7a77",
+          "attributes": {}
+        },
+        {
+          "id": "e36894e2-d97b-4592-a18d-bdc941830319",
+          "name": "manage-account",
+          "description": "${role_manage-account}",
+          "composite": true,
+          "composites": {
+            "client": {
+              "account": [
+                "manage-account-links"
+              ]
+            }
+          },
+          "clientRole": true,
+          "containerId": "2e2fb749-1d17-42dd-af18-3619becc7a77",
+          "attributes": {}
+        },
+        {
+          "id": "968ec875-fa28-4fda-888c-c18cb28bd699",
+          "name": "view-applications",
+          "description": "${role_view-applications}",
+          "composite": false,
+          "clientRole": true,
+          "containerId": "2e2fb749-1d17-42dd-af18-3619becc7a77",
+          "attributes": {}
+        },
+        {
+          "id": "0862e300-a7e5-462d-8108-9394982f1a2e",
+          "name": "delete-account",
+          "description": "${role_delete-account}",
+          "composite": false,
+          "clientRole": true,
+          "containerId": "2e2fb749-1d17-42dd-af18-3619becc7a77",
+          "attributes": {}
+        },
+        {
+          "id": "37ba6109-d6ca-49a4-a827-7829e5370eb3",
+          "name": "view-consent",
+          "description": "${role_view-consent}",
+          "composite": false,
+          "clientRole": true,
+          "containerId": "2e2fb749-1d17-42dd-af18-3619becc7a77",
+          "attributes": {}
+        }
+      ],
+      "traceflow-backend": [
+        {
+          "id": "0d903544-b2b1-4efa-a85a-a9e6b7412595",
+          "name": "uma_protection",
+          "composite": false,
+          "clientRole": true,
+          "containerId": "35398fc5-480f-40cf-88b4-7d9d4cbdf800",
+          "attributes": {}
+        }
+      ]
+    }
+  },
+  "groups": [],
+  "defaultRole": {
+    "id": "bc0ac7e4-480e-4309-82ce-057443472ed9",
+    "name": "default-roles-traceflow",
+    "description": "${role_default-roles}",
+    "composite": true,
+    "clientRole": false,
+    "containerId": "09d5ce0d-0761-4ec5-9d33-5e92480ec2aa"
+  },
+  "requiredCredentials": [
+    "password"
+  ],
+  "otpPolicyType": "totp",
+  "otpPolicyAlgorithm": "HmacSHA1",
+  "otpPolicyInitialCounter": 0,
+  "otpPolicyDigits": 6,
+  "otpPolicyLookAheadWindow": 1,
+  "otpPolicyPeriod": 120,
+  "otpPolicyCodeReusable": false,
+  "otpSupportedApplications": [
+    "totpAppFreeOTPName"
+  ],
+  "localizationTexts": {},
+  "webAuthnPolicyRpEntityName": "keycloak",
+  "webAuthnPolicySignatureAlgorithms": [
+    "ES256",
+    "RS256"
+  ],
+  "webAuthnPolicyRpId": "",
+  "webAuthnPolicyAttestationConveyancePreference": "not specified",
+  "webAuthnPolicyAuthenticatorAttachment": "not specified",
+  "webAuthnPolicyRequireResidentKey": "not specified",
+  "webAuthnPolicyUserVerificationRequirement": "not specified",
+  "webAuthnPolicyCreateTimeout": 0,
+  "webAuthnPolicyAvoidSameAuthenticatorRegister": false,
+  "webAuthnPolicyAcceptableAaguids": [],
+  "webAuthnPolicyExtraOrigins": [],
+  "webAuthnPolicyPasswordlessRpEntityName": "keycloak",
+  "webAuthnPolicyPasswordlessSignatureAlgorithms": [
+    "ES256",
+    "RS256"
+  ],
+  "webAuthnPolicyPasswordlessRpId": "",
+  "webAuthnPolicyPasswordlessAttestationConveyancePreference": "not specified",
+  "webAuthnPolicyPasswordlessAuthenticatorAttachment": "not specified",
+  "webAuthnPolicyPasswordlessRequireResidentKey": "not specified",
+  "webAuthnPolicyPasswordlessUserVerificationRequirement": "not specified",
+  "webAuthnPolicyPasswordlessCreateTimeout": 0,
+  "webAuthnPolicyPasswordlessAvoidSameAuthenticatorRegister": false,
+  "webAuthnPolicyPasswordlessAcceptableAaguids": [],
+  "webAuthnPolicyPasswordlessExtraOrigins": [],
+  "users": [
+    {
+      "id": "9c8d9dec-9ec9-4a06-a160-c08197957b1d",
+      "username": "service-account-traceflow-backend",
+      "emailVerified": false,
+      "createdTimestamp": 1744133081859,
+      "enabled": true,
+      "totp": false,
+      "serviceAccountClientId": "traceflow-backend",
+      "disableableCredentialTypes": [],
+      "requiredActions": [],
+      "realmRoles": [
+        "default-roles-traceflow"
+      ],
+      "clientRoles": {
+        "traceflow-backend": [
+          "uma_protection"
+        ]
+      },
+      "notBefore": 0,
+      "groups": []
+    }
+  ],
+  "clientScopeMappings": {
+    "account": [
+      {
+        "client": "account-console",
+        "roles": [
+          "manage-account",
+          "view-groups"
+        ]
+      }
+    ]
+  },
+  "clients": [
+    {
+      "id": "2e2fb749-1d17-42dd-af18-3619becc7a77",
+      "clientId": "account",
+      "name": "${client_account}",
+      "rootUrl": "${authBaseUrl}",
+      "baseUrl": "/realms/TraceFlow/account/",
+      "surrogateAuthRequired": false,
+      "enabled": true,
+      "alwaysDisplayInConsole": false,
+      "clientAuthenticatorType": "client-secret",
+      "redirectUris": [
+        "/realms/TraceFlow/account/*"
+      ],
+      "webOrigins": [],
+      "notBefore": 0,
+      "bearerOnly": false,
+      "consentRequired": false,
+      "standardFlowEnabled": true,
+      "implicitFlowEnabled": false,
+      "directAccessGrantsEnabled": false,
+      "serviceAccountsEnabled": false,
+      "publicClient": true,
+      "frontchannelLogout": false,
+      "protocol": "openid-connect",
+      "attributes": {
+        "realm_client": "false",
+        "post.logout.redirect.uris": "+"
+      },
+      "authenticationFlowBindingOverrides": {},
+      "fullScopeAllowed": false,
+      "nodeReRegistrationTimeout": 0,
+      "defaultClientScopes": [
+        "web-origins",
+        "acr",
+        "roles",
+        "profile",
+        "basic",
+        "email"
+      ],
+      "optionalClientScopes": [
+        "address",
+        "phone",
+        "offline_access",
+        "organization",
+        "microprofile-jwt"
+      ]
+    },
+    {
+      "id": "d48dd092-eba8-4266-b2a1-1c598ce812e5",
+      "clientId": "account-console",
+      "name": "${client_account-console}",
+      "rootUrl": "${authBaseUrl}",
+      "baseUrl": "/realms/TraceFlow/account/",
+      "surrogateAuthRequired": false,
+      "enabled": true,
+      "alwaysDisplayInConsole": false,
+      "clientAuthenticatorType": "client-secret",
+      "redirectUris": [
+        "/realms/TraceFlow/account/*"
+      ],
+      "webOrigins": [],
+      "notBefore": 0,
+      "bearerOnly": false,
+      "consentRequired": false,
+      "standardFlowEnabled": true,
+      "implicitFlowEnabled": false,
+      "directAccessGrantsEnabled": false,
+      "serviceAccountsEnabled": false,
+      "publicClient": true,
+      "frontchannelLogout": false,
+      "protocol": "openid-connect",
+      "attributes": {
+        "realm_client": "false",
+        "post.logout.redirect.uris": "+",
+        "pkce.code.challenge.method": "S256"
+      },
+      "authenticationFlowBindingOverrides": {},
+      "fullScopeAllowed": false,
+      "nodeReRegistrationTimeout": 0,
+      "protocolMappers": [
+        {
+          "id": "58b53750-53a8-4244-a08c-66989dae770a",
+          "name": "audience resolve",
+          "protocol": "openid-connect",
+          "protocolMapper": "oidc-audience-resolve-mapper",
+          "consentRequired": false,
+          "config": {}
+        }
+      ],
+      "defaultClientScopes": [
+        "web-origins",
+        "acr",
+        "roles",
+        "profile",
+        "basic",
+        "email"
+      ],
+      "optionalClientScopes": [
+        "address",
+        "phone",
+        "offline_access",
+        "organization",
+        "microprofile-jwt"
+      ]
+    },
+    {
+      "id": "eddde8cd-1d8e-41c7-b49d-52da05af4720",
+      "clientId": "admin-cli",
+      "name": "${client_admin-cli}",
+      "surrogateAuthRequired": false,
+      "enabled": true,
+      "alwaysDisplayInConsole": false,
+      "clientAuthenticatorType": "client-secret",
+      "redirectUris": [],
+      "webOrigins": [],
+      "notBefore": 0,
+      "bearerOnly": false,
+      "consentRequired": false,
+      "standardFlowEnabled": false,
+      "implicitFlowEnabled": false,
+      "directAccessGrantsEnabled": true,
+      "serviceAccountsEnabled": false,
+      "publicClient": true,
+      "frontchannelLogout": false,
+      "protocol": "openid-connect",
+      "attributes": {
+        "realm_client": "false",
+        "client.use.lightweight.access.token.enabled": "true"
+      },
+      "authenticationFlowBindingOverrides": {},
+      "fullScopeAllowed": true,
+      "nodeReRegistrationTimeout": 0,
+      "defaultClientScopes": [
+        "web-origins",
+        "acr",
+        "roles",
+        "profile",
+        "basic",
+        "email"
+      ],
+      "optionalClientScopes": [
+        "address",
+        "phone",
+        "offline_access",
+        "organization",
+        "microprofile-jwt"
+      ]
+    },
+    {
+      "id": "95c6fd59-b4ac-43e3-85cc-becf87f86cbc",
+      "clientId": "broker",
+      "name": "${client_broker}",
+      "surrogateAuthRequired": false,
+      "enabled": true,
+      "alwaysDisplayInConsole": false,
+      "clientAuthenticatorType": "client-secret",
+      "redirectUris": [],
+      "webOrigins": [],
+      "notBefore": 0,
+      "bearerOnly": true,
+      "consentRequired": false,
+      "standardFlowEnabled": true,
+      "implicitFlowEnabled": false,
+      "directAccessGrantsEnabled": false,
+      "serviceAccountsEnabled": false,
+      "publicClient": false,
+      "frontchannelLogout": false,
+      "protocol": "openid-connect",
+      "attributes": {
+        "realm_client": "true"
+      },
+      "authenticationFlowBindingOverrides": {},
+      "fullScopeAllowed": false,
+      "nodeReRegistrationTimeout": 0,
+      "defaultClientScopes": [
+        "web-origins",
+        "acr",
+        "roles",
+        "profile",
+        "basic",
+        "email"
+      ],
+      "optionalClientScopes": [
+        "address",
+        "phone",
+        "offline_access",
+        "organization",
+        "microprofile-jwt"
+      ]
+    },
+    {
+      "id": "2eabaa02-374d-4425-ae80-c3bb69349e5b",
+      "clientId": "realm-management",
+      "name": "${client_realm-management}",
+      "surrogateAuthRequired": false,
+      "enabled": true,
+      "alwaysDisplayInConsole": false,
+      "clientAuthenticatorType": "client-secret",
+      "redirectUris": [],
+      "webOrigins": [],
+      "notBefore": 0,
+      "bearerOnly": true,
+      "consentRequired": false,
+      "standardFlowEnabled": true,
+      "implicitFlowEnabled": false,
+      "directAccessGrantsEnabled": false,
+      "serviceAccountsEnabled": false,
+      "publicClient": false,
+      "frontchannelLogout": false,
+      "protocol": "openid-connect",
+      "attributes": {
+        "realm_client": "true"
+      },
+      "authenticationFlowBindingOverrides": {},
+      "fullScopeAllowed": false,
+      "nodeReRegistrationTimeout": 0,
+      "defaultClientScopes": [
+        "web-origins",
+        "acr",
+        "roles",
+        "profile",
+        "basic",
+        "email"
+      ],
+      "optionalClientScopes": [
+        "address",
+        "phone",
+        "offline_access",
+        "organization",
+        "microprofile-jwt"
+      ]
+    },
+    {
+      "id": "3dc17401-0ea4-4c08-828f-19ae7d193e49",
+      "clientId": "security-admin-console",
+      "name": "${client_security-admin-console}",
+      "rootUrl": "${authAdminUrl}",
+      "baseUrl": "/admin/TraceFlow/console/",
+      "surrogateAuthRequired": false,
+      "enabled": true,
+      "alwaysDisplayInConsole": false,
+      "clientAuthenticatorType": "client-secret",
+      "redirectUris": [
+        "/admin/TraceFlow/console/*"
+      ],
+      "webOrigins": [
+        "+"
+      ],
+      "notBefore": 0,
+      "bearerOnly": false,
+      "consentRequired": false,
+      "standardFlowEnabled": true,
+      "implicitFlowEnabled": false,
+      "directAccessGrantsEnabled": false,
+      "serviceAccountsEnabled": false,
+      "publicClient": true,
+      "frontchannelLogout": false,
+      "protocol": "openid-connect",
+      "attributes": {
+        "realm_client": "false",
+        "client.use.lightweight.access.token.enabled": "true",
+        "post.logout.redirect.uris": "+",
+        "pkce.code.challenge.method": "S256"
+      },
+      "authenticationFlowBindingOverrides": {},
+      "fullScopeAllowed": true,
+      "nodeReRegistrationTimeout": 0,
+      "protocolMappers": [
+        {
+          "id": "f35f914d-d63f-4233-af58-cc8c46b0f35a",
+          "name": "locale",
+          "protocol": "openid-connect",
+          "protocolMapper": "oidc-usermodel-attribute-mapper",
+          "consentRequired": false,
+          "config": {
+            "introspection.token.claim": "true",
+            "userinfo.token.claim": "true",
+            "user.attribute": "locale",
+            "id.token.claim": "true",
+            "access.token.claim": "true",
+            "claim.name": "locale",
+            "jsonType.label": "String"
+          }
+        }
+      ],
+      "defaultClientScopes": [
+        "web-origins",
+        "acr",
+        "roles",
+        "profile",
+        "basic",
+        "email"
+      ],
+      "optionalClientScopes": [
+        "address",
+        "phone",
+        "offline_access",
+        "organization",
+        "microprofile-jwt"
+      ]
+    },
+    {
+      "id": "35398fc5-480f-40cf-88b4-7d9d4cbdf800",
+      "clientId": "traceflow-backend",
+      "name": "",
+      "description": "",
+      "rootUrl": "",
+      "adminUrl": "",
+      "baseUrl": "",
+      "surrogateAuthRequired": false,
+      "enabled": true,
+      "alwaysDisplayInConsole": false,
+      "clientAuthenticatorType": "client-secret",
+      "secret": "**********",
+      "redirectUris": [
+        "http://localhost:5173/*",
+        "http://localhost:5000/*"
+      ],
+      "webOrigins": [
+        "http://localhost:5000",
+        "http://localhost:5173"
+      ],
+      "notBefore": 0,
+      "bearerOnly": false,
+      "consentRequired": false,
+      "standardFlowEnabled": true,
+      "implicitFlowEnabled": false,
+      "directAccessGrantsEnabled": true,
+      "serviceAccountsEnabled": true,
+      "authorizationServicesEnabled": true,
+      "publicClient": false,
+      "frontchannelLogout": true,
+      "protocol": "openid-connect",
+      "attributes": {
+        "realm_client": "false",
+        "oidc.ciba.grant.enabled": "false",
+        "client.secret.creation.time": "1744130239",
+        "backchannel.logout.session.required": "true",
+        "frontchannel.logout.session.required": "true",
+        "oauth2.device.authorization.grant.enabled": "false",
+        "display.on.consent.screen": "false",
+        "backchannel.logout.revoke.offline.tokens": "false"
+      },
+      "authenticationFlowBindingOverrides": {},
+      "fullScopeAllowed": true,
+      "nodeReRegistrationTimeout": -1,
+      "defaultClientScopes": [
+        "web-origins",
+        "service_account",
+        "acr",
+        "roles",
+        "profile",
+        "basic",
+        "email"
+      ],
+      "optionalClientScopes": [
+        "address",
+        "phone",
+        "offline_access",
+        "organization",
+        "microprofile-jwt"
+      ],
+      "authorizationSettings": {
+        "allowRemoteResourceManagement": true,
+        "policyEnforcementMode": "ENFORCING",
+        "resources": [
+          {
+            "name": "access_agents_by_location",
+            "type": "urn:traceflow:resources:permission",
+            "ownerManagedAccess": false,
+            "displayName": "Auto-generated permission for access_agents_by_location (Class: Agent)",
+            "attributes": {
+              "class": [
+                "Agent"
+              ]
+            },
+            "uris": [],
+            "scopes": [
+              {
+                "name": "access"
+              }
+            ]
+          },
+          {
+            "name": "access_agents_locations",
+            "type": "urn:traceflow:resources:permission",
+            "ownerManagedAccess": false,
+            "displayName": "Auto-generated permission for access_agents_locations (Class: Agent)",
+            "attributes": {
+              "class": [
+                "Agent"
+              ]
+            },
+            "uris": [],
+            "scopes": [
+              {
+                "name": "access"
+              }
+            ]
+          },
+          {
+            "name": "access_agents_by_phone",
+            "type": "urn:traceflow:resources:permission",
+            "ownerManagedAccess": false,
+            "displayName": "Auto-generated permission for access_agents_by_phone (Class: Agent)",
+            "attributes": {
+              "class": [
+                "Agent"
+              ]
+            },
+            "uris": [],
+            "scopes": [
+              {
+                "name": "access"
+              }
+            ]
+          },
+          {
+            "name": "access_agents_by_id",
+            "type": "urn:traceflow:resources:permission",
+            "ownerManagedAccess": false,
+            "displayName": "Auto-generated permission for access_agents_by_id (Class: Agent)",
+            "attributes": {
+              "class": [
+                "Agent"
+              ]
+            },
+            "uris": [],
+            "scopes": [
+              {
+                "name": "access"
+              }
+            ]
+          },
+          {
+            "name": "create_checklists_items",
+            "type": "urn:traceflow:resources:permission",
+            "ownerManagedAccess": false,
+            "displayName": "Auto-generated permission for create_checklists_items (Class: Checklist)",
+            "attributes": {
+              "class": [
+                "Checklist"
+              ]
+            },
+            "uris": [],
+            "scopes": [
+              {
+                "name": "access"
+              }
+            ]
+          },
+          {
+            "name": "access_checklist_item_details",
+            "type": "urn:traceflow:resources:permission",
+            "ownerManagedAccess": false,
+            "displayName": "Auto-generated permission for access_checklist_item_details (Class: Checklist)",
+            "attributes": {
+              "class": [
+                "Checklist"
+              ]
+            },
+            "uris": [],
+            "scopes": [
+              {
+                "name": "access"
+              }
+            ]
+          },
+          {
+            "name": "update_checklists_items",
+            "type": "urn:traceflow:resources:permission",
+            "ownerManagedAccess": false,
+            "displayName": "Auto-generated permission for update_checklists_items (Class: Checklist)",
+            "attributes": {
+              "class": [
+                "Checklist"
+              ]
+            },
+            "uris": [],
+            "scopes": [
+              {
+                "name": "access"
+              }
+            ]
+          },
+          {
+            "name": "delete_checklists_items",
+            "type": "urn:traceflow:resources:permission",
+            "ownerManagedAccess": false,
+            "displayName": "Auto-generated permission for delete_checklists_items (Class: Checklist)",
+            "attributes": {
+              "class": [
+                "Checklist"
+              ]
+            },
+            "uris": [],
+            "scopes": [
+              {
+                "name": "access"
+              }
+            ]
+          },
+          {
+            "name": "access_checklists_items",
+            "type": "urn:traceflow:resources:permission",
+            "ownerManagedAccess": false,
+            "displayName": "Auto-generated permission for access_checklists_items (Class: Checklist)",
+            "attributes": {
+              "class": [
+                "Checklist"
+              ]
+            },
+            "uris": [],
+            "scopes": [
+              {
+                "name": "access"
+              }
+            ]
+          },
+          {
+            "name": "access_visit_checklist",
+            "type": "urn:traceflow:resources:permission",
+            "ownerManagedAccess": false,
+            "displayName": "Auto-generated permission for access_visit_checklist (Class: Checklist)",
+            "attributes": {
+              "class": [
+                "Checklist"
+              ]
+            },
+            "uris": [],
+            "scopes": [
+              {
+                "name": "access"
+              }
+            ]
+          },
+          {
+            "name": "access_all_permissions",
+            "type": "urn:traceflow:resources:permission",
+            "ownerManagedAccess": false,
+            "displayName": "Auto-generated permission for access_all_permissions (Class: Permission)",
+            "attributes": {
+              "class": [
+                "Permission"
+              ]
+            },
+            "uris": [],
+            "scopes": [
+              {
+                "name": "access"
+              }
+            ]
+          },
+          {
+            "name": "create_permissions",
+            "type": "urn:traceflow:resources:permission",
+            "ownerManagedAccess": false,
+            "displayName": "Auto-generated permission for create_permissions (Class: Permission)",
+            "attributes": {
+              "class": [
+                "Permission"
+              ]
+            },
+            "uris": [],
+            "scopes": [
+              {
+                "name": "access"
+              }
+            ]
+          },
+          {
+            "name": "update_permissions",
+            "type": "urn:traceflow:resources:permission",
+            "ownerManagedAccess": false,
+            "displayName": "Auto-generated permission for update_permissions (Class: Permission)",
+            "attributes": {
+              "class": [
+                "Permission"
+              ]
+            },
+            "uris": [],
+            "scopes": [
+              {
+                "name": "access"
+              }
+            ]
+          },
+          {
+            "name": "delete_permissions",
+            "type": "urn:traceflow:resources:permission",
+            "ownerManagedAccess": false,
+            "displayName": "Auto-generated permission for delete_permissions (Class: Permission)",
+            "attributes": {
+              "class": [
+                "Permission"
+              ]
+            },
+            "uris": [],
+            "scopes": [
+              {
+                "name": "access"
+              }
+            ]
+          },
+          {
+            "name": "access_permission_details",
+            "type": "urn:traceflow:resources:permission",
+            "ownerManagedAccess": false,
+            "displayName": "Auto-generated permission for access_permission_details (Class: Permission)",
+            "attributes": {
+              "class": [
+                "Permission"
+              ]
+            },
+            "uris": [],
+            "scopes": [
+              {
+                "name": "access"
+              }
+            ]
+          },
+          {
+            "name": "assign_permissions",
+            "type": "urn:traceflow:resources:permission",
+            "ownerManagedAccess": false,
+            "displayName": "Auto-generated permission for assign_permissions (Class: Permission)",
+            "attributes": {
+              "class": [
+                "Permission"
+              ]
+            },
+            "uris": [],
+            "scopes": [
+              {
+                "name": "access"
+              }
+            ]
+          },
+          {
+            "name": "revoke_permissions",
+            "type": "urn:traceflow:resources:permission",
+            "ownerManagedAccess": false,
+            "displayName": "Auto-generated permission for revoke_permissions (Class: Permission)",
+            "attributes": {
+              "class": [
+                "Permission"
+              ]
+            },
+            "uris": [],
+            "scopes": [
+              {
+                "name": "access"
+              }
+            ]
+          },
+          {
+            "name": "access_permissions_by_role",
+            "type": "urn:traceflow:resources:permission",
+            "ownerManagedAccess": false,
+            "displayName": "Auto-generated permission for access_permissions_by_role (Class: Permission)",
+            "attributes": {
+              "class": [
+                "Permission"
+              ]
+            },
+            "uris": [],
+            "scopes": [
+              {
+                "name": "access"
+              }
+            ]
+          },
+          {
+            "name": "create_permission_overrides",
+            "type": "urn:traceflow:resources:permission",
+            "ownerManagedAccess": false,
+            "displayName": "Auto-generated permission for create_permission_overrides (Class: Permission)",
+            "attributes": {
+              "class": [
+                "Permission"
+              ]
+            },
+            "uris": [],
+            "scopes": [
+              {
+                "name": "access"
+              }
+            ]
+          },
+          {
+            "name": "delete_permission_overrides",
+            "type": "urn:traceflow:resources:permission",
+            "ownerManagedAccess": false,
+            "displayName": "Auto-generated permission for delete_permission_overrides (Class: Permission)",
+            "attributes": {
+              "class": [
+                "Permission"
+              ]
+            },
+            "uris": [],
+            "scopes": [
+              {
+                "name": "access"
+              }
+            ]
+          },
+          {
+            "name": "create_receipt_books",
+            "type": "urn:traceflow:resources:permission",
+            "ownerManagedAccess": false,
+            "displayName": "Auto-generated permission for create_receipt_books (Class: ReceiptBook)",
+            "attributes": {
+              "class": [
+                "ReceiptBook"
+              ]
+            },
+            "uris": [],
+            "scopes": [
+              {
+                "name": "access"
+              }
+            ]
+          },
+          {
+            "name": "access_all_receipt_books",
+            "type": "urn:traceflow:resources:permission",
+            "ownerManagedAccess": false,
+            "displayName": "Auto-generated permission for access_all_receipt_books (Class: ReceiptBook)",
+            "attributes": {
+              "class": [
+                "ReceiptBook"
+              ]
+            },
+            "uris": [],
+            "scopes": [
+              {
+                "name": "access"
+              }
+            ]
+          },
+          {
+            "name": "access_receipt_book_details",
+            "type": "urn:traceflow:resources:permission",
+            "ownerManagedAccess": false,
+            "displayName": "Auto-generated permission for access_receipt_book_details (Class: ReceiptBook)",
+            "attributes": {
+              "class": [
+                "ReceiptBook"
+              ]
+            },
+            "uris": [],
+            "scopes": [
+              {
+                "name": "access"
+              }
+            ]
+          },
+          {
+            "name": "access_receipt_books_by_holder",
+            "type": "urn:traceflow:resources:permission",
+            "ownerManagedAccess": false,
+            "displayName": "Auto-generated permission for access_receipt_books_by_holder (Class: ReceiptBook)",
+            "attributes": {
+              "class": [
+                "ReceiptBook"
+              ]
+            },
+            "uris": [],
+            "scopes": [
+              {
+                "name": "access"
+              }
+            ]
+          },
+          {
+            "name": "access_receipt_books_by_number",
+            "type": "urn:traceflow:resources:permission",
+            "ownerManagedAccess": false,
+            "displayName": "Auto-generated permission for access_receipt_books_by_number (Class: ReceiptBook)",
+            "attributes": {
+              "class": [
+                "ReceiptBook"
+              ]
+            },
+            "uris": [],
+            "scopes": [
+              {
+                "name": "access"
+              }
+            ]
+          },
+          {
+            "name": "update_receipt_books",
+            "type": "urn:traceflow:resources:permission",
+            "ownerManagedAccess": false,
+            "displayName": "Auto-generated permission for update_receipt_books (Class: ReceiptBook)",
+            "attributes": {
+              "class": [
+                "ReceiptBook"
+              ]
+            },
+            "uris": [],
+            "scopes": [
+              {
+                "name": "access"
+              }
+            ]
+          },
+          {
+            "name": "delete_receipt_books",
+            "type": "urn:traceflow:resources:permission",
+            "ownerManagedAccess": false,
+            "displayName": "Auto-generated permission for delete_receipt_books (Class: ReceiptBook)",
+            "attributes": {
+              "class": [
+                "ReceiptBook"
+              ]
+            },
+            "uris": [],
+            "scopes": [
+              {
+                "name": "access"
+              }
+            ]
+          },
+          {
+            "name": "send_receipt_books",
+            "type": "urn:traceflow:resources:permission",
+            "ownerManagedAccess": false,
+            "displayName": "Auto-generated permission for send_receipt_books (Class: ReceiptBook)",
+            "attributes": {
+              "class": [
+                "ReceiptBook"
+              ]
+            },
+            "uris": [],
+            "scopes": [
+              {
+                "name": "access"
+              }
+            ]
+          },
+          {
+            "name": "collect_supplier_receipt_books",
+            "type": "urn:traceflow:resources:permission",
+            "ownerManagedAccess": false,
+            "displayName": "Auto-generated permission for collect_supplier_receipt_books (Class: ReceiptBook)",
+            "attributes": {
+              "class": [
+                "ReceiptBook"
+              ]
+            },
+            "uris": [],
+            "scopes": [
+              {
+                "name": "access"
+              }
+            ]
+          },
+          {
+            "name": "transfer_receipt_books",
+            "type": "urn:traceflow:resources:permission",
+            "ownerManagedAccess": false,
+            "displayName": "Auto-generated permission for transfer_receipt_books (Class: ReceiptBook)",
+            "attributes": {
+              "class": [
+                "ReceiptBook"
+              ]
+            },
+            "uris": [],
+            "scopes": [
+              {
+                "name": "access"
+              }
+            ]
+          },
+          {
+            "name": "validate_receipt_books_transfer",
+            "type": "urn:traceflow:resources:permission",
+            "ownerManagedAccess": false,
+            "displayName": "Auto-generated permission for validate_receipt_books_transfer (Class: ReceiptBook)",
+            "attributes": {
+              "class": [
+                "ReceiptBook"
+              ]
+            },
+            "uris": [],
+            "scopes": [
+              {
+                "name": "access"
+              }
+            ]
+          },
+          {
+            "name": "access_receipt_book_history",
+            "type": "urn:traceflow:resources:permission",
+            "ownerManagedAccess": false,
+            "displayName": "Auto-generated permission for access_receipt_book_history (Class: ReceiptBook)",
+            "attributes": {
+              "class": [
+                "ReceiptBook"
+              ]
+            },
+            "uris": [],
+            "scopes": [
+              {
+                "name": "access"
+              }
+            ]
+          },
+          {
+            "name": "collect_receipt_stubs",
+            "type": "urn:traceflow:resources:permission",
+            "ownerManagedAccess": false,
+            "displayName": "Auto-generated permission for collect_receipt_stubs (Class: ReceiptStub)",
+            "attributes": {
+              "class": [
+                "ReceiptStub"
+              ]
+            },
+            "uris": [],
+            "scopes": [
+              {
+                "name": "access"
+              }
+            ]
+          },
+          {
+            "name": "validate_receipt_stubs",
+            "type": "urn:traceflow:resources:permission",
+            "ownerManagedAccess": false,
+            "displayName": "Auto-generated permission for validate_receipt_stubs (Class: ReceiptStub)",
+            "attributes": {
+              "class": [
+                "ReceiptStub"
+              ]
+            },
+            "uris": [],
+            "scopes": [
+              {
+                "name": "access"
+              }
+            ]
+          },
+          {
+            "name": "archive_receipt_stubs",
+            "type": "urn:traceflow:resources:permission",
+            "ownerManagedAccess": false,
+            "displayName": "Auto-generated permission for archive_receipt_stubs (Class: ReceiptStub)",
+            "attributes": {
+              "class": [
+                "ReceiptStub"
+              ]
+            },
+            "uris": [],
+            "scopes": [
+              {
+                "name": "access"
+              }
+            ]
+          },
+          {
+            "name": "create_reason_items",
+            "type": "urn:traceflow:resources:permission",
+            "ownerManagedAccess": false,
+            "displayName": "Auto-generated permission for create_reason_items (Class: Reason)",
+            "attributes": {
+              "class": [
+                "Reason"
+              ]
+            },
+            "uris": [],
+            "scopes": [
+              {
+                "name": "access"
+              }
+            ]
+          },
+          {
+            "name": "access_reason_item_details",
+            "type": "urn:traceflow:resources:permission",
+            "ownerManagedAccess": false,
+            "displayName": "Auto-generated permission for access_reason_item_details (Class: Reason)",
+            "attributes": {
+              "class": [
+                "Reason"
+              ]
+            },
+            "uris": [],
+            "scopes": [
+              {
+                "name": "access"
+              }
+            ]
+          },
+          {
+            "name": "update_reason_items",
+            "type": "urn:traceflow:resources:permission",
+            "ownerManagedAccess": false,
+            "displayName": "Auto-generated permission for update_reason_items (Class: Reason)",
+            "attributes": {
+              "class": [
+                "Reason"
+              ]
+            },
+            "uris": [],
+            "scopes": [
+              {
+                "name": "access"
+              }
+            ]
+          },
+          {
+            "name": "delete_reason_items",
+            "type": "urn:traceflow:resources:permission",
+            "ownerManagedAccess": false,
+            "displayName": "Auto-generated permission for delete_reason_items (Class: Reason)",
+            "attributes": {
+              "class": [
+                "Reason"
+              ]
+            },
+            "uris": [],
+            "scopes": [
+              {
+                "name": "access"
+              }
+            ]
+          },
+          {
+            "name": "access_reason_items",
+            "type": "urn:traceflow:resources:permission",
+            "ownerManagedAccess": false,
+            "displayName": "Auto-generated permission for access_reason_items (Class: Reason)",
+            "attributes": {
+              "class": [
+                "Reason"
+              ]
+            },
+            "uris": [],
+            "scopes": [
+              {
+                "name": "access"
+              }
+            ]
+          },
+          {
+            "name": "access_visit_reasons",
+            "type": "urn:traceflow:resources:permission",
+            "ownerManagedAccess": false,
+            "displayName": "Auto-generated permission for access_visit_reasons (Class: Reason)",
+            "attributes": {
+              "class": [
+                "Reason"
+              ]
+            },
+            "uris": [],
+            "scopes": [
+              {
+                "name": "access"
+              }
+            ]
+          },
+          {
+            "name": "reset_roles",
+            "type": "urn:traceflow:resources:permission",
+            "ownerManagedAccess": false,
+            "displayName": "Auto-generated permission for reset_roles (Class: Role)",
+            "attributes": {
+              "class": [
+                "Role"
+              ]
+            },
+            "uris": [],
+            "scopes": [
+              {
+                "name": "access"
+              }
+            ]
+          },
+          {
+            "name": "create_roles",
+            "type": "urn:traceflow:resources:permission",
+            "ownerManagedAccess": false,
+            "displayName": "Auto-generated permission for create_roles (Class: Role)",
+            "attributes": {
+              "class": [
+                "Role"
+              ]
+            },
+            "uris": [],
+            "scopes": [
+              {
+                "name": "access"
+              }
+            ]
+          },
+          {
+            "name": "access_all_roles",
+            "type": "urn:traceflow:resources:permission",
+            "ownerManagedAccess": false,
+            "displayName": "Auto-generated permission for access_all_roles (Class: Role)",
+            "attributes": {
+              "class": [
+                "Role"
+              ]
+            },
+            "uris": [],
+            "scopes": [
+              {
+                "name": "access"
+              }
+            ]
+          },
+          {
+            "name": "read_role_details",
+            "type": "urn:traceflow:resources:permission",
+            "ownerManagedAccess": false,
+            "displayName": "Auto-generated permission for read_role_details (Class: Role)",
+            "attributes": {
+              "class": [
+                "Role"
+              ]
+            },
+            "uris": [],
+            "scopes": [
+              {
+                "name": "access"
+              }
+            ]
+          },
+          {
+            "name": "update_roles",
+            "type": "urn:traceflow:resources:permission",
+            "ownerManagedAccess": false,
+            "displayName": "Auto-generated permission for update_roles (Class: Role)",
+            "attributes": {
+              "class": [
+                "Role"
+              ]
+            },
+            "uris": [],
+            "scopes": [
+              {
+                "name": "access"
+              }
+            ]
+          },
+          {
+            "name": "delete_roles",
+            "type": "urn:traceflow:resources:permission",
+            "ownerManagedAccess": false,
+            "displayName": "Auto-generated permission for delete_roles (Class: Role)",
+            "attributes": {
+              "class": [
+                "Role"
+              ]
+            },
+            "uris": [],
+            "scopes": [
+              {
+                "name": "access"
+              }
+            ]
+          },
+          {
+            "name": "assign_roles",
+            "type": "urn:traceflow:resources:permission",
+            "ownerManagedAccess": false,
+            "displayName": "Auto-generated permission for assign_roles (Class: Role)",
+            "attributes": {
+              "class": [
+                "Role"
+              ]
+            },
+            "uris": [],
+            "scopes": [
+              {
+                "name": "access"
+              }
+            ]
+          },
+          {
+            "name": "revoke_roles",
+            "type": "urn:traceflow:resources:permission",
+            "ownerManagedAccess": false,
+            "displayName": "Auto-generated permission for revoke_roles (Class: Role)",
+            "attributes": {
+              "class": [
+                "Role"
+              ]
+            },
+            "uris": [],
+            "scopes": [
+              {
+                "name": "access"
+              }
+            ]
+          },
+          {
+            "name": "create_timesheets_for_supervisor",
+            "type": "urn:traceflow:resources:permission",
+            "ownerManagedAccess": false,
+            "displayName": "Auto-generated permission for create_timesheets_for_supervisor (Class: Timesheet)",
+            "attributes": {
+              "class": [
+                "Timesheet"
+              ]
+            },
+            "uris": [],
+            "scopes": [
+              {
+                "name": "access"
+              }
+            ]
+          },
+          {
+            "name": "create_self_timesheets",
+            "type": "urn:traceflow:resources:permission",
+            "ownerManagedAccess": false,
+            "displayName": "Auto-generated permission for create_self_timesheets (Class: Timesheet)",
+            "attributes": {
+              "class": [
+                "Timesheet"
+              ]
+            },
+            "uris": [],
+            "scopes": [
+              {
+                "name": "access"
+              }
+            ]
+          },
+          {
+            "name": "validate_timesheets",
+            "type": "urn:traceflow:resources:permission",
+            "ownerManagedAccess": false,
+            "displayName": "Auto-generated permission for validate_timesheets (Class: Timesheet)",
+            "attributes": {
+              "class": [
+                "Timesheet"
+              ]
+            },
+            "uris": [],
+            "scopes": [
+              {
+                "name": "access"
+              }
+            ]
+          },
+          {
+            "name": "access_all_timesheets",
+            "type": "urn:traceflow:resources:permission",
+            "ownerManagedAccess": false,
+            "displayName": "Auto-generated permission for access_all_timesheets (Class: Timesheet)",
+            "attributes": {
+              "class": [
+                "Timesheet"
+              ]
+            },
+            "uris": [],
+            "scopes": [
+              {
+                "name": "access"
+              }
+            ]
+          },
+          {
+            "name": "access_timesheet_details",
+            "type": "urn:traceflow:resources:permission",
+            "ownerManagedAccess": false,
+            "displayName": "Auto-generated permission for access_timesheet_details (Class: Timesheet)",
+            "attributes": {
+              "class": [
+                "Timesheet"
+              ]
+            },
+            "uris": [],
+            "scopes": [
+              {
+                "name": "access"
+              }
+            ]
+          },
+          {
+            "name": "access_supervisor_timesheets",
+            "type": "urn:traceflow:resources:permission",
+            "ownerManagedAccess": false,
+            "displayName": "Auto-generated permission for access_supervisor_timesheets (Class: Timesheet)",
+            "attributes": {
+              "class": [
+                "Timesheet"
+              ]
+            },
+            "uris": [],
+            "scopes": [
+              {
+                "name": "access"
+              }
+            ]
+          },
+          {
+            "name": "scan_visits",
+            "type": "urn:traceflow:resources:permission",
+            "ownerManagedAccess": false,
+            "displayName": "Auto-generated permission for scan_visits (Class: Visit)",
+            "attributes": {
+              "class": [
+                "Visit"
+              ]
+            },
+            "uris": [],
+            "scopes": [
+              {
+                "name": "access"
+              }
+            ]
+          },
+          {
+            "name": "log_visits",
+            "type": "urn:traceflow:resources:permission",
+            "ownerManagedAccess": false,
+            "displayName": "Auto-generated permission for log_visits (Class: Visit)",
+            "attributes": {
+              "class": [
+                "Visit"
+              ]
+            },
+            "uris": [],
+            "scopes": [
+              {
+                "name": "access"
+              }
+            ]
+          },
+          {
+            "name": "access_visit_details",
+            "type": "urn:traceflow:resources:permission",
+            "ownerManagedAccess": false,
+            "displayName": "Auto-generated permission for access_visit_details (Class: Visit)",
+            "attributes": {
+              "class": [
+                "Visit"
+              ]
+            },
+            "uris": [],
+            "scopes": [
+              {
+                "name": "access"
+              }
+            ]
+          },
+          {
+            "name": "edit_visit_details",
+            "type": "urn:traceflow:resources:permission",
+            "ownerManagedAccess": false,
+            "displayName": "Auto-generated permission for edit_visit_details (Class: Visit)",
+            "attributes": {
+              "class": [
+                "Visit"
+              ]
+            },
+            "uris": [],
+            "scopes": [
+              {
+                "name": "access"
+              }
+            ]
+          },
+          {
+            "name": "delete_visit",
+            "type": "urn:traceflow:resources:permission",
+            "ownerManagedAccess": false,
+            "displayName": "Auto-generated permission for delete_visit (Class: Visit)",
+            "attributes": {
+              "class": [
+                "Visit"
+              ]
+            },
+            "uris": [],
+            "scopes": [
+              {
+                "name": "access"
+              }
+            ]
+          },
+          {
+            "name": "access_all_users",
+            "type": "urn:traceflow:resources:permission",
+            "ownerManagedAccess": false,
+            "displayName": "Auto-generated permission for access_all_users (Class: User)",
+            "attributes": {
+              "class": [
+                "User"
+              ]
+            },
+            "uris": [],
+            "scopes": [
+              {
+                "name": "access"
+              }
+            ]
+          },
+          {
+            "name": "access_user_by_phone",
+            "type": "urn:traceflow:resources:permission",
+            "ownerManagedAccess": false,
+            "displayName": "Auto-generated permission for access_user_by_phone (Class: User)",
+            "attributes": {
+              "class": [
+                "User"
+              ]
+            },
+            "uris": [],
+            "scopes": [
+              {
+                "name": "access"
+              }
+            ]
+          },
+          {
+            "name": "access_user_details",
+            "type": "urn:traceflow:resources:permission",
+            "ownerManagedAccess": false,
+            "displayName": "Auto-generated permission for access_user_details (Class: User)",
+            "attributes": {
+              "class": [
+                "User"
+              ]
+            },
+            "uris": [],
+            "scopes": [
+              {
+                "name": "access"
+              }
+            ]
+          },
+          {
+            "name": "access_users_by_role",
+            "type": "urn:traceflow:resources:permission",
+            "ownerManagedAccess": false,
+            "displayName": "Auto-generated permission for access_users_by_role (Class: User)",
+            "attributes": {
+              "class": [
+                "User"
+              ]
+            },
+            "uris": [],
+            "scopes": [
+              {
+                "name": "access"
+              }
+            ]
+          },
+          {
+            "name": "create_users",
+            "type": "urn:traceflow:resources:permission",
+            "ownerManagedAccess": false,
+            "displayName": "Auto-generated permission for create_users (Class: User)",
+            "attributes": {
+              "class": [
+                "User"
+              ]
+            },
+            "uris": [],
+            "scopes": [
+              {
+                "name": "access"
+              }
+            ]
+          },
+          {
+            "name": "update_users",
+            "type": "urn:traceflow:resources:permission",
+            "ownerManagedAccess": false,
+            "displayName": "Auto-generated permission for update_users (Class: User)",
+            "attributes": {
+              "class": [
+                "User"
+              ]
+            },
+            "uris": [],
+            "scopes": [
+              {
+                "name": "access"
+              }
+            ]
+          },
+          {
+            "name": "delete_users",
+            "type": "urn:traceflow:resources:permission",
+            "ownerManagedAccess": false,
+            "displayName": "Auto-generated permission for delete_users (Class: User)",
+            "attributes": {
+              "class": [
+                "User"
+              ]
+            },
+            "uris": [],
+            "scopes": [
+              {
+                "name": "access"
+              }
+            ]
+          },
+          {
+            "name": "assign_supervisors",
+            "type": "urn:traceflow:resources:permission",
+            "ownerManagedAccess": false,
+            "displayName": "Auto-generated permission for assign_supervisors (Class: User)",
+            "attributes": {
+              "class": [
+                "User"
+              ]
+            },
+            "uris": [],
+            "scopes": [
+              {
+                "name": "access"
+              }
+            ]
+          },
+          {
+            "name": "revoke_supervisors",
+            "type": "urn:traceflow:resources:permission",
+            "ownerManagedAccess": false,
+            "displayName": "Auto-generated permission for revoke_supervisors (Class: User)",
+            "attributes": {
+              "class": [
+                "User"
+              ]
+            },
+            "uris": [],
+            "scopes": [
+              {
+                "name": "access"
+              }
+            ]
+          },
+          {
+            "name": "access_supervisors",
+            "type": "urn:traceflow:resources:permission",
+            "ownerManagedAccess": false,
+            "displayName": "Auto-generated permission for access_supervisors (Class: User)",
+            "attributes": {
+              "class": [
+                "User"
+              ]
+            },
+            "uris": [],
+            "scopes": [
+              {
+                "name": "access"
+              }
+            ]
+          },
+          {
+            "name": "access_managers",
+            "type": "urn:traceflow:resources:permission",
+            "ownerManagedAccess": false,
+            "displayName": "Auto-generated permission for access_managers (Class: User)",
+            "attributes": {
+              "class": [
+                "User"
+              ]
+            },
+            "uris": [],
+            "scopes": [
+              {
+                "name": "access"
+              }
+            ]
+          }
+        ],
+        "policies": [
+          {
+            "name": "Default Policy",
+            "description": "A policy that grants access only for users within this realm",
+            "type": "js",
+            "logic": "POSITIVE",
+            "decisionStrategy": "AFFIRMATIVE",
+            "config": {
+              "code": "// by default, grants any permission associated with this policy\n$evaluation.grant();\n"
+            }
+          },
+          {
+            "name": "Supervisor-policy",
+            "description": "Policy for Supervisor role",
+            "type": "role",
+            "logic": "POSITIVE",
+            "decisionStrategy": "UNANIMOUS",
+            "config": {
+              "roles": "[{\"id\":\"Supervisor\",\"required\":true}]"
+            }
+          },
+          {
+            "name": "uma_authorization-policy",
+            "description": "Policy for uma_authorization role",
+            "type": "role",
+            "logic": "POSITIVE",
+            "decisionStrategy": "UNANIMOUS",
+            "config": {
+              "roles": "[]"
+            }
+          },
+          {
+            "name": "default-roles-traceflow-policy",
+            "description": "Policy for default-roles-traceflow role",
+            "type": "role",
+            "logic": "POSITIVE",
+            "decisionStrategy": "UNANIMOUS",
+            "config": {
+              "roles": "[{\"id\":\"default-roles-traceflow\",\"required\":true}]"
+            }
+          },
+          {
+            "name": "Super Admin-policy",
+            "description": "Policy for Super Admin role",
+            "type": "role",
+            "logic": "POSITIVE",
+            "decisionStrategy": "UNANIMOUS",
+            "config": {
+              "roles": "[{\"id\":\"Super Admin\",\"required\":true}]"
+            }
+          },
+          {
+            "name": "Regional Manager-policy",
+            "description": "Policy for Regional Manager role",
+            "type": "role",
+            "logic": "POSITIVE",
+            "decisionStrategy": "UNANIMOUS",
+            "config": {
+              "roles": "[{\"id\":\"Regional Manager\",\"required\":true}]"
+            }
+          },
+          {
+            "name": "Stock Manager-policy",
+            "description": "Policy for Stock Manager role",
+            "type": "role",
+            "logic": "POSITIVE",
+            "decisionStrategy": "UNANIMOUS",
+            "config": {
+              "roles": "[{\"id\":\"Stock Manager\",\"required\":true}]"
+            }
+          },
+          {
+            "name": "Admin-policy",
+            "description": "Policy for Admin role",
+            "type": "role",
+            "logic": "POSITIVE",
+            "decisionStrategy": "UNANIMOUS",
+            "config": {
+              "roles": "[{\"id\":\"Admin\",\"required\":true}]"
+            }
+          },
+          {
+            "name": "Purchase Team-policy",
+            "description": "Policy for Purchase Team role",
+            "type": "role",
+            "logic": "POSITIVE",
+            "decisionStrategy": "UNANIMOUS",
+            "config": {
+              "roles": "[{\"id\":\"Purchase Team\",\"required\":true}]"
+            }
+          },
+          {
+            "name": "Manager-policy",
+            "description": "Policy for Manager role",
+            "type": "role",
+            "logic": "POSITIVE",
+            "decisionStrategy": "UNANIMOUS",
+            "config": {
+              "roles": "[{\"id\":\"Manager\",\"required\":true}]"
+            }
+          },
+          {
+            "name": "offline_access-policy",
+            "description": "Policy for offline_access role",
+            "type": "role",
+            "logic": "POSITIVE",
+            "decisionStrategy": "UNANIMOUS",
+            "config": {
+              "roles": "[]"
+            }
+          },
+          {
+            "name": "access_agents_locations-permission",
+            "description": "Permission for access_agents_locations",
+            "type": "resource",
+            "logic": "POSITIVE",
+            "decisionStrategy": "AFFIRMATIVE",
+            "config": {
+              "resources": "[\"access_agents_locations\"]",
+              "applyPolicies": "[\"Regional Manager-policy\",\"Stock Manager-policy\",\"Super Admin-policy\",\"Supervisor-policy\",\"Purchase Team-policy\",\"Manager-policy\"]"
+            }
+          },
+          {
+            "name": "access_agents_by_phone-permission",
+            "description": "Permission for access_agents_by_phone",
+            "type": "resource",
+            "logic": "POSITIVE",
+            "decisionStrategy": "AFFIRMATIVE",
+            "config": {
+              "resources": "[\"access_agents_by_phone\"]",
+              "applyPolicies": "[\"Regional Manager-policy\",\"Stock Manager-policy\",\"Super Admin-policy\",\"Supervisor-policy\",\"Purchase Team-policy\",\"Manager-policy\"]"
+            }
+          },
+          {
+            "name": "access_agents_by_id-permission",
+            "description": "Permission for access_agents_by_id",
+            "type": "resource",
+            "logic": "POSITIVE",
+            "decisionStrategy": "AFFIRMATIVE",
+            "config": {
+              "resources": "[\"access_agents_by_id\"]",
+              "applyPolicies": "[\"Regional Manager-policy\",\"Stock Manager-policy\",\"Super Admin-policy\",\"Supervisor-policy\",\"Purchase Team-policy\",\"Manager-policy\"]"
+            }
+          },
+          {
+            "name": "create_checklists_items-permission",
+            "description": "Permission for create_checklists_items",
+            "type": "resource",
+            "logic": "POSITIVE",
+            "decisionStrategy": "AFFIRMATIVE",
+            "config": {
+              "resources": "[\"create_checklists_items\"]",
+              "applyPolicies": "[\"Super Admin-policy\",\"Admin-policy\"]"
+            }
+          },
+          {
+            "name": "access_checklist_item_details-permission",
+            "description": "Permission for access_checklist_item_details",
+            "type": "resource",
+            "logic": "POSITIVE",
+            "decisionStrategy": "AFFIRMATIVE",
+            "config": {
+              "resources": "[\"access_checklist_item_details\"]",
+              "applyPolicies": "[\"Super Admin-policy\",\"Supervisor-policy\",\"Admin-policy\",\"Manager-policy\"]"
+            }
+          },
+          {
+            "name": "update_checklists_items-permission",
+            "description": "Permission for update_checklists_items",
+            "type": "resource",
+            "logic": "POSITIVE",
+            "decisionStrategy": "AFFIRMATIVE",
+            "config": {
+              "resources": "[\"update_checklists_items\"]",
+              "applyPolicies": "[\"Super Admin-policy\",\"Admin-policy\"]"
+            }
+          },
+          {
+            "name": "delete_checklists_items-permission",
+            "description": "Permission for delete_checklists_items",
+            "type": "resource",
+            "logic": "POSITIVE",
+            "decisionStrategy": "AFFIRMATIVE",
+            "config": {
+              "resources": "[\"delete_checklists_items\"]",
+              "applyPolicies": "[\"Super Admin-policy\",\"Admin-policy\"]"
+            }
+          },
+          {
+            "name": "access_checklists_items-permission",
+            "description": "Permission for access_checklists_items",
+            "type": "resource",
+            "logic": "POSITIVE",
+            "decisionStrategy": "AFFIRMATIVE",
+            "config": {
+              "resources": "[\"access_checklists_items\"]",
+              "applyPolicies": "[\"Super Admin-policy\",\"Supervisor-policy\",\"Admin-policy\",\"Manager-policy\"]"
+            }
+          },
+          {
+            "name": "access_visit_checklist-permission",
+            "description": "Permission for access_visit_checklist",
+            "type": "resource",
+            "logic": "POSITIVE",
+            "decisionStrategy": "AFFIRMATIVE",
+            "config": {
+              "resources": "[\"access_visit_checklist\"]",
+              "applyPolicies": "[\"Super Admin-policy\",\"Supervisor-policy\",\"Manager-policy\"]"
+            }
+          },
+          {
+            "name": "access_all_permissions-permission",
+            "description": "Permission for access_all_permissions",
+            "type": "resource",
+            "logic": "POSITIVE",
+            "decisionStrategy": "AFFIRMATIVE",
+            "config": {
+              "resources": "[\"access_all_permissions\"]",
+              "applyPolicies": "[\"Super Admin-policy\",\"Admin-policy\"]"
+            }
+          },
+          {
+            "name": "create_permissions-permission",
+            "description": "Permission for create_permissions",
+            "type": "resource",
+            "logic": "POSITIVE",
+            "decisionStrategy": "AFFIRMATIVE",
+            "config": {
+              "resources": "[\"create_permissions\"]",
+              "applyPolicies": "[\"Super Admin-policy\"]"
+            }
+          },
+          {
+            "name": "update_permissions-permission",
+            "description": "Permission for update_permissions",
+            "type": "resource",
+            "logic": "POSITIVE",
+            "decisionStrategy": "AFFIRMATIVE",
+            "config": {
+              "resources": "[\"update_permissions\"]",
+              "applyPolicies": "[\"Super Admin-policy\"]"
+            }
+          },
+          {
+            "name": "delete_permissions-permission",
+            "description": "Permission for delete_permissions",
+            "type": "resource",
+            "logic": "POSITIVE",
+            "decisionStrategy": "AFFIRMATIVE",
+            "config": {
+              "resources": "[\"delete_permissions\"]",
+              "applyPolicies": "[\"Super Admin-policy\"]"
+            }
+          },
+          {
+            "name": "access_permission_details-permission",
+            "description": "Permission for access_permission_details",
+            "type": "resource",
+            "logic": "POSITIVE",
+            "decisionStrategy": "AFFIRMATIVE",
+            "config": {
+              "resources": "[\"access_permission_details\"]",
+              "applyPolicies": "[\"Super Admin-policy\",\"Admin-policy\"]"
+            }
+          },
+          {
+            "name": "assign_permissions-permission",
+            "description": "Permission for assign_permissions",
+            "type": "resource",
+            "logic": "POSITIVE",
+            "decisionStrategy": "AFFIRMATIVE",
+            "config": {
+              "resources": "[\"assign_permissions\"]",
+              "applyPolicies": "[\"Super Admin-policy\",\"Admin-policy\"]"
+            }
+          },
+          {
+            "name": "revoke_permissions-permission",
+            "description": "Permission for revoke_permissions",
+            "type": "resource",
+            "logic": "POSITIVE",
+            "decisionStrategy": "AFFIRMATIVE",
+            "config": {
+              "resources": "[\"revoke_permissions\"]",
+              "applyPolicies": "[\"Super Admin-policy\",\"Admin-policy\"]"
+            }
+          },
+          {
+            "name": "access_permissions_by_role-permission",
+            "description": "Permission for access_permissions_by_role",
+            "type": "resource",
+            "logic": "POSITIVE",
+            "decisionStrategy": "AFFIRMATIVE",
+            "config": {
+              "resources": "[\"access_permissions_by_role\"]",
+              "applyPolicies": "[\"Super Admin-policy\",\"Admin-policy\"]"
+            }
+          },
+          {
+            "name": "create_permission_overrides-permission",
+            "description": "Permission for create_permission_overrides",
+            "type": "resource",
+            "logic": "POSITIVE",
+            "decisionStrategy": "AFFIRMATIVE",
+            "config": {
+              "resources": "[\"create_permission_overrides\"]",
+              "applyPolicies": "[\"Super Admin-policy\",\"Admin-policy\"]"
+            }
+          },
+          {
+            "name": "delete_permission_overrides-permission",
+            "description": "Permission for delete_permission_overrides",
+            "type": "resource",
+            "logic": "POSITIVE",
+            "decisionStrategy": "AFFIRMATIVE",
+            "config": {
+              "resources": "[\"delete_permission_overrides\"]",
+              "applyPolicies": "[\"Super Admin-policy\",\"Admin-policy\"]"
+            }
+          },
+          {
+            "name": "create_reason_items-permission",
+            "description": "Permission for create_reason_items",
+            "type": "resource",
+            "logic": "POSITIVE",
+            "decisionStrategy": "AFFIRMATIVE",
+            "config": {
+              "resources": "[\"create_reason_items\"]",
+              "applyPolicies": "[\"Super Admin-policy\",\"Admin-policy\"]"
+            }
+          },
+          {
+            "name": "access_reason_item_details-permission",
+            "description": "Permission for access_reason_item_details",
+            "type": "resource",
+            "logic": "POSITIVE",
+            "decisionStrategy": "AFFIRMATIVE",
+            "config": {
+              "resources": "[\"access_reason_item_details\"]",
+              "applyPolicies": "[\"Super Admin-policy\",\"Supervisor-policy\",\"Admin-policy\",\"Manager-policy\"]"
+            }
+          },
+          {
+            "name": "update_reason_items-permission",
+            "description": "Permission for update_reason_items",
+            "type": "resource",
+            "logic": "POSITIVE",
+            "decisionStrategy": "AFFIRMATIVE",
+            "config": {
+              "resources": "[\"update_reason_items\"]",
+              "applyPolicies": "[\"Super Admin-policy\",\"Admin-policy\"]"
+            }
+          },
+          {
+            "name": "delete_reason_items-permission",
+            "description": "Permission for delete_reason_items",
+            "type": "resource",
+            "logic": "POSITIVE",
+            "decisionStrategy": "AFFIRMATIVE",
+            "config": {
+              "resources": "[\"delete_reason_items\"]",
+              "applyPolicies": "[\"Super Admin-policy\",\"Admin-policy\"]"
+            }
+          },
+          {
+            "name": "access_reason_items-permission",
+            "description": "Permission for access_reason_items",
+            "type": "resource",
+            "logic": "POSITIVE",
+            "decisionStrategy": "AFFIRMATIVE",
+            "config": {
+              "resources": "[\"access_reason_items\"]",
+              "applyPolicies": "[\"Super Admin-policy\",\"Supervisor-policy\",\"Admin-policy\",\"Manager-policy\"]"
+            }
+          },
+          {
+            "name": "access_visit_reasons-permission",
+            "description": "Permission for access_visit_reasons",
+            "type": "resource",
+            "logic": "POSITIVE",
+            "decisionStrategy": "AFFIRMATIVE",
+            "config": {
+              "resources": "[\"access_visit_reasons\"]",
+              "applyPolicies": "[\"Super Admin-policy\",\"Supervisor-policy\",\"Manager-policy\"]"
+            }
+          },
+          {
+            "name": "create_roles-permission",
+            "description": "Permission for create_roles",
+            "type": "resource",
+            "logic": "POSITIVE",
+            "decisionStrategy": "AFFIRMATIVE",
+            "config": {
+              "resources": "[\"create_roles\"]",
+              "applyPolicies": "[\"Super Admin-policy\",\"Admin-policy\"]"
+            }
+          },
+          {
+            "name": "read_role_details-permission",
+            "description": "Permission for read_role_details",
+            "type": "resource",
+            "logic": "POSITIVE",
+            "decisionStrategy": "AFFIRMATIVE",
+            "config": {
+              "resources": "[\"read_role_details\"]",
+              "applyPolicies": "[\"Super Admin-policy\",\"Admin-policy\"]"
+            }
+          },
+          {
+            "name": "update_roles-permission",
+            "description": "Permission for update_roles",
+            "type": "resource",
+            "logic": "POSITIVE",
+            "decisionStrategy": "AFFIRMATIVE",
+            "config": {
+              "resources": "[\"update_roles\"]",
+              "applyPolicies": "[\"Super Admin-policy\",\"Admin-policy\"]"
+            }
+          },
+          {
+            "name": "delete_roles-permission",
+            "description": "Permission for delete_roles",
+            "type": "resource",
+            "logic": "POSITIVE",
+            "decisionStrategy": "AFFIRMATIVE",
+            "config": {
+              "resources": "[\"delete_roles\"]",
+              "applyPolicies": "[\"Super Admin-policy\",\"Admin-policy\"]"
+            }
+          },
+          {
+            "name": "access_all_roles-permission",
+            "description": "Permission for access_all_roles",
+            "type": "resource",
+            "logic": "POSITIVE",
+            "decisionStrategy": "AFFIRMATIVE",
+            "config": {
+              "resources": "[\"access_all_roles\"]",
+              "applyPolicies": "[\"Super Admin-policy\",\"Admin-policy\"]"
+            }
+          },
+          {
+            "name": "create_receipt_books-permission",
+            "description": "Permission for create_receipt_books",
+            "type": "resource",
+            "logic": "POSITIVE",
+            "decisionStrategy": "AFFIRMATIVE",
+            "config": {
+              "resources": "[\"create_receipt_books\"]",
+              "applyPolicies": "[\"Super Admin-policy\",\"Purchase Team-policy\"]"
+            }
+          },
+          {
+            "name": "access_all_receipt_books-permission",
+            "description": "Permission for access_all_receipt_books",
+            "type": "resource",
+            "logic": "POSITIVE",
+            "decisionStrategy": "AFFIRMATIVE",
+            "config": {
+              "resources": "[\"access_all_receipt_books\"]",
+              "applyPolicies": "[\"Regional Manager-policy\",\"Stock Manager-policy\",\"Super Admin-policy\",\"Supervisor-policy\",\"Purchase Team-policy\"]"
+            }
+          },
+          {
+            "name": "access_receipt_book_details-permission",
+            "description": "Permission for access_receipt_book_details",
+            "type": "resource",
+            "logic": "POSITIVE",
+            "decisionStrategy": "AFFIRMATIVE",
+            "config": {
+              "resources": "[\"access_receipt_book_details\"]",
+              "applyPolicies": "[\"Regional Manager-policy\",\"Stock Manager-policy\",\"Super Admin-policy\",\"Supervisor-policy\",\"Purchase Team-policy\"]"
+            }
+          },
+          {
+            "name": "access_receipt_books_by_holder-permission",
+            "description": "Permission for access_receipt_books_by_holder",
+            "type": "resource",
+            "logic": "POSITIVE",
+            "decisionStrategy": "AFFIRMATIVE",
+            "config": {
+              "resources": "[\"access_receipt_books_by_holder\"]",
+              "applyPolicies": "[\"Regional Manager-policy\",\"Stock Manager-policy\",\"Super Admin-policy\",\"Supervisor-policy\",\"Purchase Team-policy\"]"
+            }
+          },
+          {
+            "name": "revoke_roles-permission",
+            "description": "Permission for revoke_roles",
+            "type": "resource",
+            "logic": "POSITIVE",
+            "decisionStrategy": "AFFIRMATIVE",
+            "config": {
+              "resources": "[\"revoke_roles\"]",
+              "applyPolicies": "[\"Super Admin-policy\",\"Admin-policy\"]"
+            }
+          },
+          {
+            "name": "assign_roles-permission",
+            "description": "Permission for assign_roles",
+            "type": "resource",
+            "logic": "POSITIVE",
+            "decisionStrategy": "AFFIRMATIVE",
+            "config": {
+              "resources": "[\"assign_roles\"]",
+              "applyPolicies": "[\"Super Admin-policy\",\"Admin-policy\"]"
+            }
+          },
+          {
+            "name": "access_receipt_books_by_number-permission",
+            "description": "Permission for access_receipt_books_by_number",
+            "type": "resource",
+            "logic": "POSITIVE",
+            "decisionStrategy": "AFFIRMATIVE",
+            "config": {
+              "resources": "[\"access_receipt_books_by_number\"]",
+              "applyPolicies": "[\"Regional Manager-policy\",\"Stock Manager-policy\",\"Super Admin-policy\",\"Supervisor-policy\",\"Purchase Team-policy\"]"
+            }
+          },
+          {
+            "name": "delete_receipt_books-permission",
+            "description": "Permission for delete_receipt_books",
+            "type": "resource",
+            "logic": "POSITIVE",
+            "decisionStrategy": "AFFIRMATIVE",
+            "config": {
+              "resources": "[\"delete_receipt_books\"]",
+              "applyPolicies": "[\"Stock Manager-policy\",\"Super Admin-policy\",\"Purchase Team-policy\"]"
+            }
+          },
+          {
+            "name": "update_receipt_books-permission",
+            "description": "Permission for update_receipt_books",
+            "type": "resource",
+            "logic": "POSITIVE",
+            "decisionStrategy": "AFFIRMATIVE",
+            "config": {
+              "resources": "[\"update_receipt_books\"]",
+              "applyPolicies": "[\"Stock Manager-policy\",\"Super Admin-policy\",\"Purchase Team-policy\"]"
+            }
+          },
+          {
+            "name": "send_receipt_books-permission",
+            "description": "Permission for send_receipt_books",
+            "type": "resource",
+            "logic": "POSITIVE",
+            "decisionStrategy": "AFFIRMATIVE",
+            "config": {
+              "resources": "[\"send_receipt_books\"]",
+              "applyPolicies": "[\"Super Admin-policy\",\"Purchase Team-policy\"]"
+            }
+          },
+          {
+            "name": "collect_supplier_receipt_books-permission",
+            "description": "Permission for collect_supplier_receipt_books",
+            "type": "resource",
+            "logic": "POSITIVE",
+            "decisionStrategy": "AFFIRMATIVE",
+            "config": {
+              "resources": "[\"collect_supplier_receipt_books\"]",
+              "applyPolicies": "[\"Super Admin-policy\",\"Supervisor-policy\",\"Purchase Team-policy\"]"
+            }
+          },
+          {
+            "name": "transfer_receipt_books-permission",
+            "description": "Permission for transfer_receipt_books",
+            "type": "resource",
+            "logic": "POSITIVE",
+            "decisionStrategy": "AFFIRMATIVE",
+            "config": {
+              "resources": "[\"transfer_receipt_books\"]",
+              "applyPolicies": "[\"Regional Manager-policy\",\"Stock Manager-policy\",\"Super Admin-policy\",\"Supervisor-policy\",\"Purchase Team-policy\"]"
+            }
+          },
+          {
+            "name": "validate_receipt_books_transfer-permission",
+            "description": "Permission for validate_receipt_books_transfer",
+            "type": "resource",
+            "logic": "POSITIVE",
+            "decisionStrategy": "AFFIRMATIVE",
+            "config": {
+              "resources": "[\"validate_receipt_books_transfer\"]",
+              "applyPolicies": "[\"Regional Manager-policy\",\"Stock Manager-policy\",\"Super Admin-policy\",\"Supervisor-policy\",\"Purchase Team-policy\"]"
+            }
+          },
+          {
+            "name": "access_receipt_book_history-permission",
+            "description": "Permission for access_receipt_book_history",
+            "type": "resource",
+            "logic": "POSITIVE",
+            "decisionStrategy": "AFFIRMATIVE",
+            "config": {
+              "resources": "[\"access_receipt_book_history\"]",
+              "applyPolicies": "[\"Regional Manager-policy\",\"Stock Manager-policy\",\"Super Admin-policy\",\"Purchase Team-policy\"]"
+            }
+          },
+          {
+            "name": "collect_receipt_stubs-permission",
+            "description": "Permission for collect_receipt_stubs",
+            "type": "resource",
+            "logic": "POSITIVE",
+            "decisionStrategy": "AFFIRMATIVE",
+            "config": {
+              "resources": "[\"collect_receipt_stubs\"]",
+              "applyPolicies": "[\"Super Admin-policy\",\"Supervisor-policy\"]"
+            }
+          },
+          {
+            "name": "scan_visits-permission",
+            "description": "Permission for scan_visits",
+            "type": "resource",
+            "logic": "POSITIVE",
+            "decisionStrategy": "AFFIRMATIVE",
+            "config": {
+              "resources": "[\"scan_visits\"]",
+              "applyPolicies": "[\"Super Admin-policy\",\"Supervisor-policy\"]"
+            }
+          },
+          {
+            "name": "validate_receipt_stubs-permission",
+            "description": "Permission for validate_receipt_stubs",
+            "type": "resource",
+            "logic": "POSITIVE",
+            "decisionStrategy": "AFFIRMATIVE",
+            "config": {
+              "resources": "[\"validate_receipt_stubs\"]",
+              "applyPolicies": "[\"Super Admin-policy\",\"Supervisor-policy\"]"
+            }
+          },
+          {
+            "name": "edit_visit_details-permission",
+            "description": "Permission for edit_visit_details",
+            "type": "resource",
+            "logic": "POSITIVE",
+            "decisionStrategy": "AFFIRMATIVE",
+            "config": {
+              "resources": "[\"edit_visit_details\"]",
+              "applyPolicies": "[\"Super Admin-policy\",\"Supervisor-policy\",\"Manager-policy\"]"
+            }
+          },
+          {
+            "name": "access_all_timesheets-permission",
+            "description": "Permission for access_all_timesheets",
+            "type": "resource",
+            "logic": "POSITIVE",
+            "decisionStrategy": "AFFIRMATIVE",
+            "config": {
+              "resources": "[\"access_all_timesheets\"]",
+              "applyPolicies": "[\"Super Admin-policy\"]"
+            }
+          },
+          {
+            "name": "access_user_details-permission",
+            "description": "Permission for access_user_details",
+            "type": "resource",
+            "logic": "POSITIVE",
+            "decisionStrategy": "AFFIRMATIVE",
+            "config": {
+              "resources": "[\"access_user_details\"]",
+              "applyPolicies": "[\"Regional Manager-policy\",\"Stock Manager-policy\",\"Super Admin-policy\",\"Supervisor-policy\",\"Admin-policy\",\"Purchase Team-policy\",\"Manager-policy\"]"
+            }
+          },
+          {
+            "name": "assign_supervisors-permission",
+            "description": "Permission for assign_supervisors",
+            "type": "resource",
+            "logic": "POSITIVE",
+            "decisionStrategy": "AFFIRMATIVE",
+            "config": {
+              "resources": "[\"assign_supervisors\"]",
+              "applyPolicies": "[\"Super Admin-policy\",\"Admin-policy\"]"
+            }
+          },
+          {
+            "name": "archive_receipt_stubs-permission",
+            "description": "Permission for archive_receipt_stubs",
+            "type": "resource",
+            "logic": "POSITIVE",
+            "decisionStrategy": "AFFIRMATIVE",
+            "config": {
+              "resources": "[\"archive_receipt_stubs\"]",
+              "applyPolicies": "[\"Stock Manager-policy\",\"Super Admin-policy\"]"
+            }
+          },
+          {
+            "name": "delete_visit-permission",
+            "description": "Permission for delete_visit",
+            "type": "resource",
+            "logic": "POSITIVE",
+            "decisionStrategy": "AFFIRMATIVE",
+            "config": {
+              "resources": "[\"delete_visit\"]",
+              "applyPolicies": "[\"Super Admin-policy\",\"Supervisor-policy\",\"Manager-policy\"]"
+            }
+          },
+          {
+            "name": "access_timesheet_details-permission",
+            "description": "Permission for access_timesheet_details",
+            "type": "resource",
+            "logic": "POSITIVE",
+            "decisionStrategy": "AFFIRMATIVE",
+            "config": {
+              "resources": "[\"access_timesheet_details\"]",
+              "applyPolicies": "[\"Super Admin-policy\",\"Supervisor-policy\",\"Manager-policy\"]"
+            }
+          },
+          {
+            "name": "access_users_by_role-permission",
+            "description": "Permission for access_users_by_role",
+            "type": "resource",
+            "logic": "POSITIVE",
+            "decisionStrategy": "AFFIRMATIVE",
+            "config": {
+              "resources": "[\"access_users_by_role\"]",
+              "applyPolicies": "[\"Regional Manager-policy\",\"Stock Manager-policy\",\"Super Admin-policy\",\"Supervisor-policy\",\"Admin-policy\",\"Purchase Team-policy\",\"Manager-policy\"]"
+            }
+          },
+          {
+            "name": "revoke_supervisors-permission",
+            "description": "Permission for revoke_supervisors",
+            "type": "resource",
+            "logic": "POSITIVE",
+            "decisionStrategy": "AFFIRMATIVE",
+            "config": {
+              "resources": "[\"revoke_supervisors\"]",
+              "applyPolicies": "[\"Super Admin-policy\",\"Admin-policy\"]"
+            }
+          },
+          {
+            "name": "log_visits-permission",
+            "description": "Permission for log_visits",
+            "type": "resource",
+            "logic": "POSITIVE",
+            "decisionStrategy": "AFFIRMATIVE",
+            "config": {
+              "resources": "[\"log_visits\"]",
+              "applyPolicies": "[\"Super Admin-policy\",\"Supervisor-policy\"]"
+            }
+          },
+          {
+            "name": "create_timesheets_for_supervisor-permission",
+            "description": "Permission for create_timesheets_for_supervisor",
+            "type": "resource",
+            "logic": "POSITIVE",
+            "decisionStrategy": "AFFIRMATIVE",
+            "config": {
+              "resources": "[\"create_timesheets_for_supervisor\"]",
+              "applyPolicies": "[\"Super Admin-policy\",\"Manager-policy\"]"
+            }
+          },
+          {
+            "name": "access_supervisor_timesheets-permission",
+            "description": "Permission for access_supervisor_timesheets",
+            "type": "resource",
+            "logic": "POSITIVE",
+            "decisionStrategy": "AFFIRMATIVE",
+            "config": {
+              "resources": "[\"access_supervisor_timesheets\"]",
+              "applyPolicies": "[\"Super Admin-policy\",\"Supervisor-policy\",\"Manager-policy\"]"
+            }
+          },
+          {
+            "name": "create_users-permission",
+            "description": "Permission for create_users",
+            "type": "resource",
+            "logic": "POSITIVE",
+            "decisionStrategy": "AFFIRMATIVE",
+            "config": {
+              "resources": "[\"create_users\"]",
+              "applyPolicies": "[\"Super Admin-policy\",\"Admin-policy\"]"
+            }
+          },
+          {
+            "name": "access_supervisors-permission",
+            "description": "Permission for access_supervisors",
+            "type": "resource",
+            "logic": "POSITIVE",
+            "decisionStrategy": "AFFIRMATIVE",
+            "config": {
+              "resources": "[\"access_supervisors\"]",
+              "applyPolicies": "[\"Super Admin-policy\",\"Admin-policy\",\"Manager-policy\"]"
+            }
+          },
+          {
+            "name": "access_visit_details-permission",
+            "description": "Permission for access_visit_details",
+            "type": "resource",
+            "logic": "POSITIVE",
+            "decisionStrategy": "AFFIRMATIVE",
+            "config": {
+              "resources": "[\"access_visit_details\"]",
+              "applyPolicies": "[\"Super Admin-policy\",\"Supervisor-policy\",\"Manager-policy\"]"
+            }
+          },
+          {
+            "name": "validate_timesheets-permission",
+            "description": "Permission for validate_timesheets",
+            "type": "resource",
+            "logic": "POSITIVE",
+            "decisionStrategy": "AFFIRMATIVE",
+            "config": {
+              "resources": "[\"validate_timesheets\"]",
+              "applyPolicies": "[\"Super Admin-policy\",\"Manager-policy\"]"
+            }
+          },
+          {
+            "name": "access_user_by_phone-permission",
+            "description": "Permission for access_user_by_phone",
+            "type": "resource",
+            "logic": "POSITIVE",
+            "decisionStrategy": "AFFIRMATIVE",
+            "config": {
+              "resources": "[\"access_user_by_phone\"]",
+              "applyPolicies": "[\"Regional Manager-policy\",\"Stock Manager-policy\",\"Super Admin-policy\",\"Supervisor-policy\",\"Admin-policy\",\"Purchase Team-policy\",\"Manager-policy\"]"
+            }
+          },
+          {
+            "name": "delete_users-permission",
+            "description": "Permission for delete_users",
+            "type": "resource",
+            "logic": "POSITIVE",
+            "decisionStrategy": "AFFIRMATIVE",
+            "config": {
+              "resources": "[\"delete_users\"]",
+              "applyPolicies": "[\"Super Admin-policy\",\"Admin-policy\"]"
+            }
+          },
+          {
+            "name": "create_self_timesheets-permission",
+            "description": "Permission for create_self_timesheets",
+            "type": "resource",
+            "logic": "POSITIVE",
+            "decisionStrategy": "AFFIRMATIVE",
+            "config": {
+              "resources": "[\"create_self_timesheets\"]",
+              "applyPolicies": "[\"Super Admin-policy\",\"Supervisor-policy\"]"
+            }
+          },
+          {
+            "name": "access_all_users-permission",
+            "description": "Permission for access_all_users",
+            "type": "resource",
+            "logic": "POSITIVE",
+            "decisionStrategy": "AFFIRMATIVE",
+            "config": {
+              "resources": "[\"access_all_users\"]",
+              "applyPolicies": "[\"Regional Manager-policy\",\"Stock Manager-policy\",\"Super Admin-policy\",\"Supervisor-policy\",\"Admin-policy\",\"Purchase Team-policy\",\"Manager-policy\"]"
+            }
+          },
+          {
+            "name": "update_users-permission",
+            "description": "Permission for update_users",
+            "type": "resource",
+            "logic": "POSITIVE",
+            "decisionStrategy": "AFFIRMATIVE",
+            "config": {
+              "resources": "[\"update_users\"]",
+              "applyPolicies": "[\"Super Admin-policy\",\"Admin-policy\"]"
+            }
+          },
+          {
+            "name": "access_managers-permission",
+            "description": "Permission for access_managers",
+            "type": "resource",
+            "logic": "POSITIVE",
+            "decisionStrategy": "AFFIRMATIVE",
+            "config": {
+              "resources": "[\"access_managers\"]",
+              "applyPolicies": "[\"Super Admin-policy\",\"Supervisor-policy\",\"Admin-policy\"]"
+            }
+          },
+          {
+            "name": "reset_roles-permission",
+            "description": "Permission for reset_roles",
+            "type": "resource",
+            "logic": "POSITIVE",
+            "decisionStrategy": "AFFIRMATIVE",
+            "config": {
+              "resources": "[\"reset_roles\"]",
+              "applyPolicies": "[\"Super Admin-policy\",\"Admin-policy\"]"
+            }
+          },
+          {
+            "name": "access_agents_by_location-permission",
+            "description": "Permission for access_agents_by_location",
+            "type": "resource",
+            "logic": "POSITIVE",
+            "decisionStrategy": "AFFIRMATIVE",
+            "config": {
+              "resources": "[\"access_agents_by_location\"]",
+              "applyPolicies": "[\"Regional Manager-policy\",\"Stock Manager-policy\",\"Super Admin-policy\",\"Supervisor-policy\",\"Purchase Team-policy\",\"Manager-policy\"]"
+            }
+          }
+        ],
+        "scopes": [
+          {
+            "name": "access"
+          },
+          {
+            "name": "read"
+          },
+          {
+            "name": "write"
+          },
+          {
+            "name": "update"
+          },
+          {
+            "name": "delete"
+          }
+        ],
+        "decisionStrategy": "UNANIMOUS"
+      }
+    }
+  ],
+  "clientScopes": [
+    {
+      "id": "3b3e50fc-7b09-4b9b-984e-e59dd75fbf69",
+      "name": "offline_access",
+      "description": "OpenID Connect built-in scope: offline_access",
+      "protocol": "openid-connect",
+      "attributes": {
+        "consent.screen.text": "${offlineAccessScopeConsentText}",
+        "display.on.consent.screen": "true"
+      }
+    },
+    {
+      "id": "3fd89d46-4e48-4c71-94f4-f17f628c278d",
+      "name": "phone",
+      "description": "OpenID Connect built-in scope: phone",
+      "protocol": "openid-connect",
+      "attributes": {
+        "include.in.token.scope": "true",
+        "consent.screen.text": "${phoneScopeConsentText}",
+        "display.on.consent.screen": "true"
+      },
+      "protocolMappers": [
+        {
+          "id": "6ac01a72-ba03-40a5-b4d2-8655d1db1f30",
+          "name": "phone number",
+          "protocol": "openid-connect",
+          "protocolMapper": "oidc-usermodel-attribute-mapper",
+          "consentRequired": false,
+          "config": {
+            "introspection.token.claim": "true",
+            "userinfo.token.claim": "true",
+            "user.attribute": "phoneNumber",
+            "id.token.claim": "true",
+            "access.token.claim": "true",
+            "claim.name": "phone_number",
+            "jsonType.label": "String"
+          }
+        },
+        {
+          "id": "4644f8e6-7803-4da4-bdb1-335d9f322d42",
+          "name": "phone number verified",
+          "protocol": "openid-connect",
+          "protocolMapper": "oidc-usermodel-attribute-mapper",
+          "consentRequired": false,
+          "config": {
+            "introspection.token.claim": "true",
+            "userinfo.token.claim": "true",
+            "user.attribute": "phoneNumberVerified",
+            "id.token.claim": "true",
+            "access.token.claim": "true",
+            "claim.name": "phone_number_verified",
+            "jsonType.label": "boolean"
+          }
+        }
+      ]
+    },
+    {
+      "id": "e0476c87-0f1b-4b0b-8647-adfb6eecfd8a",
+      "name": "address",
+      "description": "OpenID Connect built-in scope: address",
+      "protocol": "openid-connect",
+      "attributes": {
+        "include.in.token.scope": "true",
+        "consent.screen.text": "${addressScopeConsentText}",
+        "display.on.consent.screen": "true"
+      },
+      "protocolMappers": [
+        {
+          "id": "e44fca85-aa7a-425f-87ae-616893a27186",
+          "name": "address",
+          "protocol": "openid-connect",
+          "protocolMapper": "oidc-address-mapper",
+          "consentRequired": false,
+          "config": {
+            "user.attribute.formatted": "formatted",
+            "user.attribute.country": "country",
+            "introspection.token.claim": "true",
+            "user.attribute.postal_code": "postal_code",
+            "userinfo.token.claim": "true",
+            "user.attribute.street": "street",
+            "id.token.claim": "true",
+            "user.attribute.region": "region",
+            "access.token.claim": "true",
+            "user.attribute.locality": "locality"
+          }
+        }
+      ]
+    },
+    {
+      "id": "080e6a76-b7b8-442b-94a0-2aef1c827e3c",
+      "name": "roles",
+      "description": "OpenID Connect scope for add user roles to the access token",
+      "protocol": "openid-connect",
+      "attributes": {
+        "include.in.token.scope": "false",
+        "consent.screen.text": "${rolesScopeConsentText}",
+        "display.on.consent.screen": "true"
+      },
+      "protocolMappers": [
+        {
+          "id": "729dd468-892c-4a07-b7d3-7ac1e61a2de6",
+          "name": "client roles",
+          "protocol": "openid-connect",
+          "protocolMapper": "oidc-usermodel-client-role-mapper",
+          "consentRequired": false,
+          "config": {
+            "user.attribute": "foo",
+            "introspection.token.claim": "true",
+            "access.token.claim": "true",
+            "claim.name": "resource_access.${client_id}.roles",
+            "jsonType.label": "String",
+            "multivalued": "true"
+          }
+        },
+        {
+          "id": "595e3c5b-3e9e-4993-869b-6bc985cb2365",
+          "name": "realm roles",
+          "protocol": "openid-connect",
+          "protocolMapper": "oidc-usermodel-realm-role-mapper",
+          "consentRequired": false,
+          "config": {
+            "user.attribute": "foo",
+            "introspection.token.claim": "true",
+            "access.token.claim": "true",
+            "claim.name": "realm_access.roles",
+            "jsonType.label": "String",
+            "multivalued": "true"
+          }
+        },
+        {
+          "id": "72204b13-16c1-49bd-afb7-93e721aa0afa",
+          "name": "audience resolve",
+          "protocol": "openid-connect",
+          "protocolMapper": "oidc-audience-resolve-mapper",
+          "consentRequired": false,
+          "config": {
+            "introspection.token.claim": "true",
+            "access.token.claim": "true"
+          }
+        }
+      ]
+    },
+    {
+      "id": "b9974307-d98f-4c8e-9da9-002b736ecb2b",
+      "name": "organization",
+      "description": "Additional claims about the organization a subject belongs to",
+      "protocol": "openid-connect",
+      "attributes": {
+        "include.in.token.scope": "true",
+        "consent.screen.text": "${organizationScopeConsentText}",
+        "display.on.consent.screen": "true"
+      },
+      "protocolMappers": [
+        {
+          "id": "d9c9f37f-b8e6-4390-aade-12341708203e",
+          "name": "organization",
+          "protocol": "openid-connect",
+          "protocolMapper": "oidc-organization-membership-mapper",
+          "consentRequired": false,
+          "config": {
+            "id.token.claim": "true",
+            "introspection.token.claim": "true",
+            "access.token.claim": "true",
+            "claim.name": "organization",
+            "jsonType.label": "String",
+            "multivalued": "true"
+          }
+        }
+      ]
+    },
+    {
+      "id": "93ec48a6-92aa-4c8a-b81e-5433834ed8de",
+      "name": "email",
+      "description": "OpenID Connect built-in scope: email",
+      "protocol": "openid-connect",
+      "attributes": {
+        "include.in.token.scope": "true",
+        "consent.screen.text": "${emailScopeConsentText}",
+        "display.on.consent.screen": "true"
+      },
+      "protocolMappers": [
+        {
+          "id": "d50272b8-cd39-41f7-8cbd-e8eba35e4a47",
+          "name": "email",
+          "protocol": "openid-connect",
+          "protocolMapper": "oidc-usermodel-attribute-mapper",
+          "consentRequired": false,
+          "config": {
+            "introspection.token.claim": "true",
+            "userinfo.token.claim": "true",
+            "user.attribute": "email",
+            "id.token.claim": "true",
+            "access.token.claim": "true",
+            "claim.name": "email",
+            "jsonType.label": "String"
+          }
+        },
+        {
+          "id": "cc01a43c-239c-49c0-9d7d-38bf88d3edd3",
+          "name": "email verified",
+          "protocol": "openid-connect",
+          "protocolMapper": "oidc-usermodel-property-mapper",
+          "consentRequired": false,
+          "config": {
+            "introspection.token.claim": "true",
+            "userinfo.token.claim": "true",
+            "user.attribute": "emailVerified",
+            "id.token.claim": "true",
+            "access.token.claim": "true",
+            "claim.name": "email_verified",
+            "jsonType.label": "boolean"
+          }
+        }
+      ]
+    },
+    {
+      "id": "b333dc97-7cdd-4171-b236-4db3ba18a796",
+      "name": "saml_organization",
+      "description": "Organization Membership",
+      "protocol": "saml",
+      "attributes": {
+        "display.on.consent.screen": "false"
+      },
+      "protocolMappers": [
+        {
+          "id": "6c37d109-83db-4a6d-9e24-71b2f0064232",
+          "name": "organization",
+          "protocol": "saml",
+          "protocolMapper": "saml-organization-membership-mapper",
+          "consentRequired": false,
+          "config": {}
+        }
+      ]
+    },
+    {
+      "id": "c0bf9363-17ba-49f8-9f39-b4f0eff71eac",
+      "name": "profile",
+      "description": "OpenID Connect built-in scope: profile",
+      "protocol": "openid-connect",
+      "attributes": {
+        "include.in.token.scope": "true",
+        "consent.screen.text": "${profileScopeConsentText}",
+        "display.on.consent.screen": "true"
+      },
+      "protocolMappers": [
+        {
+          "id": "fb57da2b-9b62-4a16-9391-d47130eb6c5b",
+          "name": "gender",
+          "protocol": "openid-connect",
+          "protocolMapper": "oidc-usermodel-attribute-mapper",
+          "consentRequired": false,
+          "config": {
+            "introspection.token.claim": "true",
+            "userinfo.token.claim": "true",
+            "user.attribute": "gender",
+            "id.token.claim": "true",
+            "access.token.claim": "true",
+            "claim.name": "gender",
+            "jsonType.label": "String"
+          }
+        },
+        {
+          "id": "b06db7d2-a137-44b2-b4a4-8245248150ba",
+          "name": "middle name",
+          "protocol": "openid-connect",
+          "protocolMapper": "oidc-usermodel-attribute-mapper",
+          "consentRequired": false,
+          "config": {
+            "introspection.token.claim": "true",
+            "userinfo.token.claim": "true",
+            "user.attribute": "middleName",
+            "id.token.claim": "true",
+            "access.token.claim": "true",
+            "claim.name": "middle_name",
+            "jsonType.label": "String"
+          }
+        },
+        {
+          "id": "a7194a6c-b31f-4a5a-8434-8ef513525ac7",
+          "name": "locale",
+          "protocol": "openid-connect",
+          "protocolMapper": "oidc-usermodel-attribute-mapper",
+          "consentRequired": false,
+          "config": {
+            "introspection.token.claim": "true",
+            "userinfo.token.claim": "true",
+            "user.attribute": "locale",
+            "id.token.claim": "true",
+            "access.token.claim": "true",
+            "claim.name": "locale",
+            "jsonType.label": "String"
+          }
+        },
+        {
+          "id": "4d75aec3-c2dd-4cbe-9efa-31ef89682928",
+          "name": "updated at",
+          "protocol": "openid-connect",
+          "protocolMapper": "oidc-usermodel-attribute-mapper",
+          "consentRequired": false,
+          "config": {
+            "introspection.token.claim": "true",
+            "userinfo.token.claim": "true",
+            "user.attribute": "updatedAt",
+            "id.token.claim": "true",
+            "access.token.claim": "true",
+            "claim.name": "updated_at",
+            "jsonType.label": "long"
+          }
+        },
+        {
+          "id": "477bcbf6-05c4-48a1-a019-bea903a64fd2",
+          "name": "full name",
+          "protocol": "openid-connect",
+          "protocolMapper": "oidc-full-name-mapper",
+          "consentRequired": false,
+          "config": {
+            "id.token.claim": "true",
+            "introspection.token.claim": "true",
+            "access.token.claim": "true",
+            "userinfo.token.claim": "true"
+          }
+        },
+        {
+          "id": "d1b71bed-c81f-41b8-b0a5-25b647d75e4c",
+          "name": "given name",
+          "protocol": "openid-connect",
+          "protocolMapper": "oidc-usermodel-attribute-mapper",
+          "consentRequired": false,
+          "config": {
+            "introspection.token.claim": "true",
+            "userinfo.token.claim": "true",
+            "user.attribute": "firstName",
+            "id.token.claim": "true",
+            "access.token.claim": "true",
+            "claim.name": "given_name",
+            "jsonType.label": "String"
+          }
+        },
+        {
+          "id": "a90fad21-1fc9-45d2-8a30-a74e402589d0",
+          "name": "picture",
+          "protocol": "openid-connect",
+          "protocolMapper": "oidc-usermodel-attribute-mapper",
+          "consentRequired": false,
+          "config": {
+            "introspection.token.claim": "true",
+            "userinfo.token.claim": "true",
+            "user.attribute": "picture",
+            "id.token.claim": "true",
+            "access.token.claim": "true",
+            "claim.name": "picture",
+            "jsonType.label": "String"
+          }
+        },
+        {
+          "id": "a7ae3060-9af7-447e-bb1c-49b74df06a59",
+          "name": "profile",
+          "protocol": "openid-connect",
+          "protocolMapper": "oidc-usermodel-attribute-mapper",
+          "consentRequired": false,
+          "config": {
+            "introspection.token.claim": "true",
+            "userinfo.token.claim": "true",
+            "user.attribute": "profile",
+            "id.token.claim": "true",
+            "access.token.claim": "true",
+            "claim.name": "profile",
+            "jsonType.label": "String"
+          }
+        },
+        {
+          "id": "8a9c126d-aa11-411b-b059-88e0c255f65b",
+          "name": "nickname",
+          "protocol": "openid-connect",
+          "protocolMapper": "oidc-usermodel-attribute-mapper",
+          "consentRequired": false,
+          "config": {
+            "introspection.token.claim": "true",
+            "userinfo.token.claim": "true",
+            "user.attribute": "nickname",
+            "id.token.claim": "true",
+            "access.token.claim": "true",
+            "claim.name": "nickname",
+            "jsonType.label": "String"
+          }
+        },
+        {
+          "id": "bb3e744c-2a78-447f-91a3-a947ec27f37f",
+          "name": "website",
+          "protocol": "openid-connect",
+          "protocolMapper": "oidc-usermodel-attribute-mapper",
+          "consentRequired": false,
+          "config": {
+            "introspection.token.claim": "true",
+            "userinfo.token.claim": "true",
+            "user.attribute": "website",
+            "id.token.claim": "true",
+            "access.token.claim": "true",
+            "claim.name": "website",
+            "jsonType.label": "String"
+          }
+        },
+        {
+          "id": "9f3c0351-2d5e-464b-ab1f-1175d2d4cd3d",
+          "name": "username",
+          "protocol": "openid-connect",
+          "protocolMapper": "oidc-usermodel-attribute-mapper",
+          "consentRequired": false,
+          "config": {
+            "introspection.token.claim": "true",
+            "userinfo.token.claim": "true",
+            "user.attribute": "username",
+            "id.token.claim": "true",
+            "access.token.claim": "true",
+            "claim.name": "preferred_username",
+            "jsonType.label": "String"
+          }
+        },
+        {
+          "id": "6d6eb0d3-124b-4bd1-bcfc-2f66d0003cfb",
+          "name": "zoneinfo",
+          "protocol": "openid-connect",
+          "protocolMapper": "oidc-usermodel-attribute-mapper",
+          "consentRequired": false,
+          "config": {
+            "introspection.token.claim": "true",
+            "userinfo.token.claim": "true",
+            "user.attribute": "zoneinfo",
+            "id.token.claim": "true",
+            "access.token.claim": "true",
+            "claim.name": "zoneinfo",
+            "jsonType.label": "String"
+          }
+        },
+        {
+          "id": "bb965b1f-a917-471c-94cd-c9c799f100d7",
+          "name": "birthdate",
+          "protocol": "openid-connect",
+          "protocolMapper": "oidc-usermodel-attribute-mapper",
+          "consentRequired": false,
+          "config": {
+            "introspection.token.claim": "true",
+            "userinfo.token.claim": "true",
+            "user.attribute": "birthdate",
+            "id.token.claim": "true",
+            "access.token.claim": "true",
+            "claim.name": "birthdate",
+            "jsonType.label": "String"
+          }
+        },
+        {
+          "id": "94349271-b448-4c33-8a1d-d413e5907e32",
+          "name": "family name",
+          "protocol": "openid-connect",
+          "protocolMapper": "oidc-usermodel-attribute-mapper",
+          "consentRequired": false,
+          "config": {
+            "introspection.token.claim": "true",
+            "userinfo.token.claim": "true",
+            "user.attribute": "lastName",
+            "id.token.claim": "true",
+            "access.token.claim": "true",
+            "claim.name": "family_name",
+            "jsonType.label": "String"
+          }
+        }
+      ]
+    },
+    {
+      "id": "4e15d09d-44fa-4a0a-b994-fbee40a32ee4",
+      "name": "web-origins",
+      "description": "OpenID Connect scope for add allowed web origins to the access token",
+      "protocol": "openid-connect",
+      "attributes": {
+        "include.in.token.scope": "false",
+        "consent.screen.text": "",
+        "display.on.consent.screen": "false"
+      },
+      "protocolMappers": [
+        {
+          "id": "41c1c8a5-6fe4-4a7e-bb06-5e81c628afee",
+          "name": "allowed web origins",
+          "protocol": "openid-connect",
+          "protocolMapper": "oidc-allowed-origins-mapper",
+          "consentRequired": false,
+          "config": {
+            "introspection.token.claim": "true",
+            "access.token.claim": "true"
+          }
+        }
+      ]
+    },
+    {
+      "id": "07cb8b48-a72a-4e7e-966a-7ce60c417f01",
+      "name": "service_account",
+      "description": "Specific scope for a client enabled for service accounts",
+      "protocol": "openid-connect",
+      "attributes": {
+        "include.in.token.scope": "false",
+        "display.on.consent.screen": "false"
+      },
+      "protocolMappers": [
+        {
+          "id": "05277f7b-2867-47c3-9ad9-f6a6c4ae60c5",
+          "name": "Client Host",
+          "protocol": "openid-connect",
+          "protocolMapper": "oidc-usersessionmodel-note-mapper",
+          "consentRequired": false,
+          "config": {
+            "user.session.note": "clientHost",
+            "id.token.claim": "true",
+            "introspection.token.claim": "true",
+            "access.token.claim": "true",
+            "claim.name": "clientHost",
+            "jsonType.label": "String"
+          }
+        },
+        {
+          "id": "3a72d223-f757-42f9-bb16-162f00361bf7",
+          "name": "Client ID",
+          "protocol": "openid-connect",
+          "protocolMapper": "oidc-usersessionmodel-note-mapper",
+          "consentRequired": false,
+          "config": {
+            "user.session.note": "client_id",
+            "id.token.claim": "true",
+            "introspection.token.claim": "true",
+            "access.token.claim": "true",
+            "claim.name": "client_id",
+            "jsonType.label": "String"
+          }
+        },
+        {
+          "id": "bf9b6ff1-a104-4e63-a0b8-8cf1afa2d03e",
+          "name": "Client IP Address",
+          "protocol": "openid-connect",
+          "protocolMapper": "oidc-usersessionmodel-note-mapper",
+          "consentRequired": false,
+          "config": {
+            "user.session.note": "clientAddress",
+            "id.token.claim": "true",
+            "introspection.token.claim": "true",
+            "access.token.claim": "true",
+            "claim.name": "clientAddress",
+            "jsonType.label": "String"
+          }
+        }
+      ]
+    },
+    {
+      "id": "94dcd81e-d565-4b49-8f1d-e0c2ce27f76e",
+      "name": "microprofile-jwt",
+      "description": "Microprofile - JWT built-in scope",
+      "protocol": "openid-connect",
+      "attributes": {
+        "include.in.token.scope": "true",
+        "display.on.consent.screen": "false"
+      },
+      "protocolMappers": [
+        {
+          "id": "f7dee56f-842e-46f4-a3ad-cf12730079c8",
+          "name": "upn",
+          "protocol": "openid-connect",
+          "protocolMapper": "oidc-usermodel-attribute-mapper",
+          "consentRequired": false,
+          "config": {
+            "introspection.token.claim": "true",
+            "userinfo.token.claim": "true",
+            "user.attribute": "username",
+            "id.token.claim": "true",
+            "access.token.claim": "true",
+            "claim.name": "upn",
+            "jsonType.label": "String"
+          }
+        },
+        {
+          "id": "6ed08db9-259e-47f1-84bb-8871d8e5abe2",
+          "name": "groups",
+          "protocol": "openid-connect",
+          "protocolMapper": "oidc-usermodel-realm-role-mapper",
+          "consentRequired": false,
+          "config": {
+            "introspection.token.claim": "true",
+            "multivalued": "true",
+            "user.attribute": "foo",
+            "id.token.claim": "true",
+            "access.token.claim": "true",
+            "claim.name": "groups",
+            "jsonType.label": "String"
+          }
+        }
+      ]
+    },
+    {
+      "id": "994d873c-391d-4aca-9891-832a8df1d8f8",
+      "name": "role_list",
+      "description": "SAML role list",
+      "protocol": "saml",
+      "attributes": {
+        "consent.screen.text": "${samlRoleListScopeConsentText}",
+        "display.on.consent.screen": "true"
+      },
+      "protocolMappers": [
+        {
+          "id": "a8533e8c-4d12-4fc5-bc77-d4632216f8ea",
+          "name": "role list",
+          "protocol": "saml",
+          "protocolMapper": "saml-role-list-mapper",
+          "consentRequired": false,
+          "config": {
+            "single": "false",
+            "attribute.nameformat": "Basic",
+            "attribute.name": "Role"
+          }
+        }
+      ]
+    },
+    {
+      "id": "bfaa2b23-b211-42c6-87a8-973e62cbfbfa",
+      "name": "basic",
+      "description": "OpenID Connect scope for add all basic claims to the token",
+      "protocol": "openid-connect",
+      "attributes": {
+        "include.in.token.scope": "false",
+        "display.on.consent.screen": "false"
+      },
+      "protocolMappers": [
+        {
+          "id": "779d1734-6b94-4d01-9f59-da87c6acf6e5",
+          "name": "auth_time",
+          "protocol": "openid-connect",
+          "protocolMapper": "oidc-usersessionmodel-note-mapper",
+          "consentRequired": false,
+          "config": {
+            "user.session.note": "AUTH_TIME",
+            "id.token.claim": "true",
+            "introspection.token.claim": "true",
+            "access.token.claim": "true",
+            "claim.name": "auth_time",
+            "jsonType.label": "long"
+          }
+        },
+        {
+          "id": "db37b3bb-7898-434f-8aeb-f4e09c68f810",
+          "name": "sub",
+          "protocol": "openid-connect",
+          "protocolMapper": "oidc-sub-mapper",
+          "consentRequired": false,
+          "config": {
+            "introspection.token.claim": "true",
+            "access.token.claim": "true"
+          }
+        }
+      ]
+    },
+    {
+      "id": "87c1d4bd-a97c-4e96-b12e-a869812e586b",
+      "name": "acr",
+      "description": "OpenID Connect scope for add acr (authentication context class reference) to the token",
+      "protocol": "openid-connect",
+      "attributes": {
+        "include.in.token.scope": "false",
+        "display.on.consent.screen": "false"
+      },
+      "protocolMappers": [
+        {
+          "id": "e92e3026-9b83-48ad-a2b6-fc1826e8d849",
+          "name": "acr loa level",
+          "protocol": "openid-connect",
+          "protocolMapper": "oidc-acr-mapper",
+          "consentRequired": false,
+          "config": {
+            "id.token.claim": "true",
+            "introspection.token.claim": "true",
+            "access.token.claim": "true"
+          }
+        }
+      ]
+    }
+  ],
+  "defaultDefaultClientScopes": [
+    "role_list",
+    "saml_organization",
+    "profile",
+    "email",
+    "roles",
+    "web-origins",
+    "acr",
+    "basic"
+  ],
+  "defaultOptionalClientScopes": [
+    "offline_access",
+    "address",
+    "phone",
+    "microprofile-jwt",
+    "organization"
+  ],
+  "browserSecurityHeaders": {
+    "contentSecurityPolicyReportOnly": "",
+    "xContentTypeOptions": "nosniff",
+    "referrerPolicy": "no-referrer",
+    "xRobotsTag": "none",
+    "xFrameOptions": "SAMEORIGIN",
+    "contentSecurityPolicy": "frame-src 'self'; frame-ancestors 'self'; object-src 'none';",
+    "xXSSProtection": "1; mode=block",
+    "strictTransportSecurity": "max-age=31536000; includeSubDomains"
+  },
+  "smtpServer": {
+    "password": "**********",
+    "replyToDisplayName": "",
+    "starttls": "true",
+    "auth": "true",
+    "port": "587",
+    "replyTo": "",
+    "host": "smtp.gmail.com",
+    "from": "sofien.laghouanem.2.0@gmail.com",
+    "fromDisplayName": "",
+    "envelopeFrom": "",
+    "ssl": "false",
+    "user": "sofien.laghouanem.2.0@gmail.com"
+  },
+  "eventsEnabled": false,
+  "eventsListeners": [
+    "jboss-logging"
+  ],
+  "enabledEventTypes": [],
+  "adminEventsEnabled": false,
+  "adminEventsDetailsEnabled": false,
+  "identityProviders": [],
+  "identityProviderMappers": [],
+  "components": {
+    "org.keycloak.services.clientregistration.policy.ClientRegistrationPolicy": [
+      {
+        "id": "26989ac4-190e-444e-88cc-0994c60435c6",
+        "name": "Allowed Client Scopes",
+        "providerId": "allowed-client-templates",
+        "subType": "authenticated",
+        "subComponents": {},
+        "config": {
+          "allow-default-scopes": [
+            "true"
+          ]
+        }
+      },
+      {
+        "id": "7ead0a51-f4f0-4330-bb0b-52b7480ba94e",
+        "name": "Full Scope Disabled",
+        "providerId": "scope",
+        "subType": "anonymous",
+        "subComponents": {},
+        "config": {}
+      },
+      {
+        "id": "8e1dc004-7b6d-4c90-8ff8-e0f8aafbaba8",
+        "name": "Allowed Protocol Mapper Types",
+        "providerId": "allowed-protocol-mappers",
+        "subType": "authenticated",
+        "subComponents": {},
+        "config": {
+          "allowed-protocol-mapper-types": [
+            "saml-role-list-mapper",
+            "oidc-sha256-pairwise-sub-mapper",
+            "oidc-full-name-mapper",
+            "saml-user-attribute-mapper",
+            "oidc-usermodel-property-mapper",
+            "oidc-address-mapper",
+            "saml-user-property-mapper",
+            "oidc-usermodel-attribute-mapper"
+          ]
+        }
+      },
+      {
+        "id": "1f9cb22d-7bbc-4f18-9d83-1e7f5e020ae0",
+        "name": "Allowed Client Scopes",
+        "providerId": "allowed-client-templates",
+        "subType": "anonymous",
+        "subComponents": {},
+        "config": {
+          "allow-default-scopes": [
+            "true"
+          ]
+        }
+      },
+      {
+        "id": "e8b298ec-a9f4-4a47-9eee-0ae3e30210c3",
+        "name": "Max Clients Limit",
+        "providerId": "max-clients",
+        "subType": "anonymous",
+        "subComponents": {},
+        "config": {
+          "max-clients": [
+            "200"
+          ]
+        }
+      },
+      {
+        "id": "057f28a2-f328-4b66-8381-d75659a5f235",
+        "name": "Consent Required",
+        "providerId": "consent-required",
+        "subType": "anonymous",
+        "subComponents": {},
+        "config": {}
+      },
+      {
+        "id": "11178cc6-af94-4775-824e-2338f7c0d53a",
+        "name": "Trusted Hosts",
+        "providerId": "trusted-hosts",
+        "subType": "anonymous",
+        "subComponents": {},
+        "config": {
+          "host-sending-registration-request-must-match": [
+            "true"
+          ],
+          "client-uris-must-match": [
+            "true"
+          ]
+        }
+      },
+      {
+        "id": "9a945026-ad2d-4185-be06-28d40d54737c",
+        "name": "Allowed Protocol Mapper Types",
+        "providerId": "allowed-protocol-mappers",
+        "subType": "anonymous",
+        "subComponents": {},
+        "config": {
+          "allowed-protocol-mapper-types": [
+            "oidc-full-name-mapper",
+            "oidc-usermodel-attribute-mapper",
+            "oidc-address-mapper",
+            "oidc-sha256-pairwise-sub-mapper",
+            "oidc-usermodel-property-mapper",
+            "saml-user-attribute-mapper",
+            "saml-role-list-mapper",
+            "saml-user-property-mapper"
+          ]
+        }
+      }
+    ],
+    "org.keycloak.userprofile.UserProfileProvider": [
+      {
+        "id": "356cc8b8-dd8e-461b-b2ca-d15dff7f98dd",
+        "providerId": "declarative-user-profile",
+        "subComponents": {},
+        "config": {
+          "kc.user.profile.config": [
+            "{\"attributes\":[{\"name\":\"username\",\"displayName\":\"${username}\",\"validations\":{\"length\":{\"min\":3,\"max\":255},\"username-prohibited-characters\":{},\"up-username-not-idn-homograph\":{}},\"permissions\":{\"view\":[\"admin\",\"user\"],\"edit\":[\"admin\",\"user\"]},\"multivalued\":false},{\"name\":\"email\",\"displayName\":\"${email}\",\"validations\":{\"email\":{},\"length\":{\"max\":255}},\"required\":{\"roles\":[\"user\"]},\"permissions\":{\"view\":[\"admin\",\"user\"],\"edit\":[\"admin\",\"user\"]},\"multivalued\":false},{\"name\":\"firstName\",\"displayName\":\"${firstName}\",\"validations\":{\"length\":{\"max\":255},\"person-name-prohibited-characters\":{}},\"required\":{\"roles\":[\"user\"]},\"permissions\":{\"view\":[\"admin\",\"user\"],\"edit\":[\"admin\",\"user\"]},\"multivalued\":false},{\"name\":\"lastName\",\"displayName\":\"${lastName}\",\"validations\":{\"length\":{\"max\":255},\"person-name-prohibited-characters\":{}},\"required\":{\"roles\":[\"user\"]},\"permissions\":{\"view\":[\"admin\",\"user\"],\"edit\":[\"admin\",\"user\"]},\"multivalued\":false},{\"name\":\"phone\",\"displayName\":\"${phone}\",\"validations\":{},\"annotations\":{},\"required\":{\"roles\":[\"user\"]},\"permissions\":{\"view\":[\"admin\",\"user\"],\"edit\":[\"admin\",\"user\"]},\"multivalued\":false},{\"name\":\"permission_overrides\",\"displayName\":\"${permission_overrides}\",\"validations\":{},\"annotations\":{},\"permissions\":{\"view\":[\"admin\",\"user\"],\"edit\":[\"admin\",\"user\"]},\"multivalued\":true}],\"groups\":[{\"name\":\"user-metadata\",\"displayHeader\":\"User metadata\",\"displayDescription\":\"Attributes, which refer to user metadata\"}]}"
+          ]
+        }
+      }
+    ],
+    "org.keycloak.keys.KeyProvider": [
+      {
+        "id": "3b615c98-3c4a-4deb-9a98-3fecfd1e0db5",
+        "name": "rsa-enc-generated",
+        "providerId": "rsa-enc-generated",
+        "subComponents": {},
+        "config": {
+          "priority": [
+            "100"
+          ],
+          "algorithm": [
+            "RSA-OAEP"
+          ]
+        }
+      },
+      {
+        "id": "55a05ffe-1116-4894-90a1-9efabd7ce9cb",
+        "name": "rsa-generated",
+        "providerId": "rsa-generated",
+        "subComponents": {},
+        "config": {
+          "priority": [
+            "100"
+          ]
+        }
+      },
+      {
+        "id": "3f8cee49-18eb-40c8-b0e7-1b736f21d560",
+        "name": "aes-generated",
+        "providerId": "aes-generated",
+        "subComponents": {},
+        "config": {
+          "priority": [
+            "100"
+          ]
+        }
+      },
+      {
+        "id": "c5323ff6-0b1d-460e-a798-b872de2ff0cc",
+        "name": "hmac-generated-hs512",
+        "providerId": "hmac-generated",
+        "subComponents": {},
+        "config": {
+          "priority": [
+            "100"
+          ],
+          "algorithm": [
+            "HS512"
+          ]
+        }
+      }
+    ]
+  },
+  "internationalizationEnabled": false,
+  "supportedLocales": [],
+  "authenticationFlows": [
+    {
+      "id": "6811fb79-a4ca-4109-9d54-4c026fb61e6f",
+      "alias": "Account verification options",
+      "description": "Method with which to verity the existing account",
+      "providerId": "basic-flow",
+      "topLevel": false,
+      "builtIn": true,
+      "authenticationExecutions": [
+        {
+          "authenticator": "idp-email-verification",
+          "authenticatorFlow": false,
+          "requirement": "ALTERNATIVE",
+          "priority": 10,
+          "autheticatorFlow": false,
+          "userSetupAllowed": false
+        },
+        {
+          "authenticatorFlow": true,
+          "requirement": "ALTERNATIVE",
+          "priority": 20,
+          "autheticatorFlow": true,
+          "flowAlias": "Verify Existing Account by Re-authentication",
+          "userSetupAllowed": false
+        }
+      ]
+    },
+    {
+      "id": "1e341cde-45ee-4cf5-adcd-346869b577c4",
+      "alias": "Browser - Conditional OTP",
+      "description": "Flow to determine if the OTP is required for the authentication",
+      "providerId": "basic-flow",
+      "topLevel": false,
+      "builtIn": true,
+      "authenticationExecutions": [
+        {
+          "authenticator": "conditional-user-configured",
+          "authenticatorFlow": false,
+          "requirement": "REQUIRED",
+          "priority": 10,
+          "autheticatorFlow": false,
+          "userSetupAllowed": false
+        },
+        {
+          "authenticator": "auth-otp-form",
+          "authenticatorFlow": false,
+          "requirement": "REQUIRED",
+          "priority": 20,
+          "autheticatorFlow": false,
+          "userSetupAllowed": false
+        }
+      ]
+    },
+    {
+      "id": "adf83262-3a18-4c81-8fdf-0c5f0677e5c4",
+      "alias": "Browser - Conditional Organization",
+      "description": "Flow to determine if the organization identity-first login is to be used",
+      "providerId": "basic-flow",
+      "topLevel": false,
+      "builtIn": true,
+      "authenticationExecutions": [
+        {
+          "authenticator": "conditional-user-configured",
+          "authenticatorFlow": false,
+          "requirement": "REQUIRED",
+          "priority": 10,
+          "autheticatorFlow": false,
+          "userSetupAllowed": false
+        },
+        {
+          "authenticator": "organization",
+          "authenticatorFlow": false,
+          "requirement": "ALTERNATIVE",
+          "priority": 20,
+          "autheticatorFlow": false,
+          "userSetupAllowed": false
+        }
+      ]
+    },
+    {
+      "id": "a5f4150b-2dea-41f1-8ef2-d9ecbdde3032",
+      "alias": "Custom Browser Flow",
+      "description": "Allow login with email or phone",
+      "providerId": "basic-flow",
+      "topLevel": true,
+      "builtIn": false,
+      "authenticationExecutions": []
+    },
+    {
+      "id": "c2463914-454e-4b10-bb15-1f5a83c07801",
+      "alias": "Direct Grant - Conditional OTP",
+      "description": "Flow to determine if the OTP is required for the authentication",
+      "providerId": "basic-flow",
+      "topLevel": false,
+      "builtIn": true,
+      "authenticationExecutions": [
+        {
+          "authenticator": "conditional-user-configured",
+          "authenticatorFlow": false,
+          "requirement": "REQUIRED",
+          "priority": 10,
+          "autheticatorFlow": false,
+          "userSetupAllowed": false
+        },
+        {
+          "authenticator": "direct-grant-validate-otp",
+          "authenticatorFlow": false,
+          "requirement": "REQUIRED",
+          "priority": 20,
+          "autheticatorFlow": false,
+          "userSetupAllowed": false
+        }
+      ]
+    },
+    {
+      "id": "ebe43106-dbbf-47ef-885e-f9dfb46336fe",
+      "alias": "First Broker Login - Conditional Organization",
+      "description": "Flow to determine if the authenticator that adds organization members is to be used",
+      "providerId": "basic-flow",
+      "topLevel": false,
+      "builtIn": true,
+      "authenticationExecutions": [
+        {
+          "authenticator": "conditional-user-configured",
+          "authenticatorFlow": false,
+          "requirement": "REQUIRED",
+          "priority": 10,
+          "autheticatorFlow": false,
+          "userSetupAllowed": false
+        },
+        {
+          "authenticator": "idp-add-organization-member",
+          "authenticatorFlow": false,
+          "requirement": "REQUIRED",
+          "priority": 20,
+          "autheticatorFlow": false,
+          "userSetupAllowed": false
+        }
+      ]
+    },
+    {
+      "id": "88a109b8-802f-4aad-a76f-f47690fcacf6",
+      "alias": "First broker login - Conditional OTP",
+      "description": "Flow to determine if the OTP is required for the authentication",
+      "providerId": "basic-flow",
+      "topLevel": false,
+      "builtIn": true,
+      "authenticationExecutions": [
+        {
+          "authenticator": "conditional-user-configured",
+          "authenticatorFlow": false,
+          "requirement": "REQUIRED",
+          "priority": 10,
+          "autheticatorFlow": false,
+          "userSetupAllowed": false
+        },
+        {
+          "authenticator": "auth-otp-form",
+          "authenticatorFlow": false,
+          "requirement": "REQUIRED",
+          "priority": 20,
+          "autheticatorFlow": false,
+          "userSetupAllowed": false
+        }
+      ]
+    },
+    {
+      "id": "71087fc9-7279-4b89-b2c0-26c0f91b534c",
+      "alias": "Handle Existing Account",
+      "description": "Handle what to do if there is existing account with same email/username like authenticated identity provider",
+      "providerId": "basic-flow",
+      "topLevel": false,
+      "builtIn": true,
+      "authenticationExecutions": [
+        {
+          "authenticator": "idp-confirm-link",
+          "authenticatorFlow": false,
+          "requirement": "REQUIRED",
+          "priority": 10,
+          "autheticatorFlow": false,
+          "userSetupAllowed": false
+        },
+        {
+          "authenticatorFlow": true,
+          "requirement": "REQUIRED",
+          "priority": 20,
+          "autheticatorFlow": true,
+          "flowAlias": "Account verification options",
+          "userSetupAllowed": false
+        }
+      ]
+    },
+    {
+      "id": "cdbde387-85f4-46a7-8a0d-478e92d37637",
+      "alias": "Organization",
+      "providerId": "basic-flow",
+      "topLevel": false,
+      "builtIn": true,
+      "authenticationExecutions": [
+        {
+          "authenticatorFlow": true,
+          "requirement": "CONDITIONAL",
+          "priority": 10,
+          "autheticatorFlow": true,
+          "flowAlias": "Browser - Conditional Organization",
+          "userSetupAllowed": false
+        }
+      ]
+    },
+    {
+      "id": "8098f706-a165-4190-8d16-2f1f55ac9e12",
+      "alias": "Reset - Conditional OTP",
+      "description": "Flow to determine if the OTP should be reset or not. Set to REQUIRED to force.",
+      "providerId": "basic-flow",
+      "topLevel": false,
+      "builtIn": true,
+      "authenticationExecutions": [
+        {
+          "authenticator": "conditional-user-configured",
+          "authenticatorFlow": false,
+          "requirement": "REQUIRED",
+          "priority": 10,
+          "autheticatorFlow": false,
+          "userSetupAllowed": false
+        },
+        {
+          "authenticator": "reset-otp",
+          "authenticatorFlow": false,
+          "requirement": "REQUIRED",
+          "priority": 20,
+          "autheticatorFlow": false,
+          "userSetupAllowed": false
+        }
+      ]
+    },
+    {
+      "id": "8253ccde-ef14-4045-89b6-83f62a07efde",
+      "alias": "User creation or linking",
+      "description": "Flow for the existing/non-existing user alternatives",
+      "providerId": "basic-flow",
+      "topLevel": false,
+      "builtIn": true,
+      "authenticationExecutions": [
+        {
+          "authenticatorConfig": "create unique user config",
+          "authenticator": "idp-create-user-if-unique",
+          "authenticatorFlow": false,
+          "requirement": "ALTERNATIVE",
+          "priority": 10,
+          "autheticatorFlow": false,
+          "userSetupAllowed": false
+        },
+        {
+          "authenticatorFlow": true,
+          "requirement": "ALTERNATIVE",
+          "priority": 20,
+          "autheticatorFlow": true,
+          "flowAlias": "Handle Existing Account",
+          "userSetupAllowed": false
+        }
+      ]
+    },
+    {
+      "id": "a21791ad-141f-485e-a84b-4bf97f25e128",
+      "alias": "Verify Existing Account by Re-authentication",
+      "description": "Reauthentication of existing account",
+      "providerId": "basic-flow",
+      "topLevel": false,
+      "builtIn": true,
+      "authenticationExecutions": [
+        {
+          "authenticator": "idp-username-password-form",
+          "authenticatorFlow": false,
+          "requirement": "REQUIRED",
+          "priority": 10,
+          "autheticatorFlow": false,
+          "userSetupAllowed": false
+        },
+        {
+          "authenticatorFlow": true,
+          "requirement": "CONDITIONAL",
+          "priority": 20,
+          "autheticatorFlow": true,
+          "flowAlias": "First broker login - Conditional OTP",
+          "userSetupAllowed": false
+        }
+      ]
+    },
+    {
+      "id": "379ed0d1-65d1-4f71-995a-41be0d5faa31",
+      "alias": "browser",
+      "description": "Browser based authentication",
+      "providerId": "basic-flow",
+      "topLevel": true,
+      "builtIn": true,
+      "authenticationExecutions": [
+        {
+          "authenticator": "auth-cookie",
+          "authenticatorFlow": false,
+          "requirement": "ALTERNATIVE",
+          "priority": 10,
+          "autheticatorFlow": false,
+          "userSetupAllowed": false
+        },
+        {
+          "authenticator": "auth-spnego",
+          "authenticatorFlow": false,
+          "requirement": "DISABLED",
+          "priority": 20,
+          "autheticatorFlow": false,
+          "userSetupAllowed": false
+        },
+        {
+          "authenticator": "identity-provider-redirector",
+          "authenticatorFlow": false,
+          "requirement": "ALTERNATIVE",
+          "priority": 25,
+          "autheticatorFlow": false,
+          "userSetupAllowed": false
+        },
+        {
+          "authenticatorFlow": true,
+          "requirement": "ALTERNATIVE",
+          "priority": 26,
+          "autheticatorFlow": true,
+          "flowAlias": "Organization",
+          "userSetupAllowed": false
+        },
+        {
+          "authenticatorFlow": true,
+          "requirement": "ALTERNATIVE",
+          "priority": 30,
+          "autheticatorFlow": true,
+          "flowAlias": "forms",
+          "userSetupAllowed": false
+        }
+      ]
+    },
+    {
+      "id": "6e957f92-b047-4cc0-8be9-b0cc191b7d30",
+      "alias": "browser with OTP",
+      "description": "Browser based authentication",
+      "providerId": "basic-flow",
+      "topLevel": true,
+      "builtIn": false,
+      "authenticationExecutions": [
+        {
+          "authenticator": "auth-cookie",
+          "authenticatorFlow": false,
+          "requirement": "ALTERNATIVE",
+          "priority": 10,
+          "autheticatorFlow": false,
+          "userSetupAllowed": false
+        },
+        {
+          "authenticator": "auth-spnego",
+          "authenticatorFlow": false,
+          "requirement": "DISABLED",
+          "priority": 20,
+          "autheticatorFlow": false,
+          "userSetupAllowed": false
+        },
+        {
+          "authenticator": "identity-provider-redirector",
+          "authenticatorFlow": false,
+          "requirement": "ALTERNATIVE",
+          "priority": 25,
+          "autheticatorFlow": false,
+          "userSetupAllowed": false
+        },
+        {
+          "authenticatorFlow": true,
+          "requirement": "ALTERNATIVE",
+          "priority": 26,
+          "autheticatorFlow": true,
+          "flowAlias": "browser with OTP Organization",
+          "userSetupAllowed": false
+        },
+        {
+          "authenticatorFlow": true,
+          "requirement": "ALTERNATIVE",
+          "priority": 30,
+          "autheticatorFlow": true,
+          "flowAlias": "browser with OTP forms",
+          "userSetupAllowed": false
+        }
+      ]
+    },
+    {
+      "id": "17a22dc5-a8d6-476d-bc14-14dc1fb40e68",
+      "alias": "browser with OTP Browser - Conditional OTP",
+      "description": "Flow to determine if the OTP is required for the authentication",
+      "providerId": "basic-flow",
+      "topLevel": false,
+      "builtIn": false,
+      "authenticationExecutions": [
+        {
+          "authenticator": "conditional-user-configured",
+          "authenticatorFlow": false,
+          "requirement": "REQUIRED",
+          "priority": 10,
+          "autheticatorFlow": false,
+          "userSetupAllowed": false
+        },
+        {
+          "authenticator": "auth-otp-form",
+          "authenticatorFlow": false,
+          "requirement": "REQUIRED",
+          "priority": 20,
+          "autheticatorFlow": false,
+          "userSetupAllowed": false
+        }
+      ]
+    },
+    {
+      "id": "2c6316c9-f7dd-4970-9350-de44d82c1833",
+      "alias": "browser with OTP Browser - Conditional Organization",
+      "description": "Flow to determine if the organization identity-first login is to be used",
+      "providerId": "basic-flow",
+      "topLevel": false,
+      "builtIn": false,
+      "authenticationExecutions": [
+        {
+          "authenticator": "conditional-user-configured",
+          "authenticatorFlow": false,
+          "requirement": "REQUIRED",
+          "priority": 10,
+          "autheticatorFlow": false,
+          "userSetupAllowed": false
+        },
+        {
+          "authenticator": "organization",
+          "authenticatorFlow": false,
+          "requirement": "ALTERNATIVE",
+          "priority": 20,
+          "autheticatorFlow": false,
+          "userSetupAllowed": false
+        }
+      ]
+    },
+    {
+      "id": "0b624d67-9a97-44f2-865c-4f84428472b9",
+      "alias": "browser with OTP Organization",
+      "providerId": "basic-flow",
+      "topLevel": false,
+      "builtIn": false,
+      "authenticationExecutions": [
+        {
+          "authenticatorFlow": true,
+          "requirement": "CONDITIONAL",
+          "priority": 10,
+          "autheticatorFlow": true,
+          "flowAlias": "browser with OTP Browser - Conditional Organization",
+          "userSetupAllowed": false
+        }
+      ]
+    },
+    {
+      "id": "d99b8879-1c62-4910-b073-a013217ccef2",
+      "alias": "browser with OTP forms",
+      "description": "Username, password, otp and other auth forms.",
+      "providerId": "basic-flow",
+      "topLevel": false,
+      "builtIn": false,
+      "authenticationExecutions": [
+        {
+          "authenticator": "auth-username-password-form",
+          "authenticatorFlow": false,
+          "requirement": "REQUIRED",
+          "priority": 10,
+          "autheticatorFlow": false,
+          "userSetupAllowed": false
+        },
+        {
+          "authenticatorFlow": true,
+          "requirement": "CONDITIONAL",
+          "priority": 20,
+          "autheticatorFlow": true,
+          "flowAlias": "browser with OTP Browser - Conditional OTP",
+          "userSetupAllowed": false
+        }
+      ]
+    },
+    {
+      "id": "75f4805d-b42b-4ecd-a68a-50d46f8771ef",
+      "alias": "clients",
+      "description": "Base authentication for clients",
+      "providerId": "client-flow",
+      "topLevel": true,
+      "builtIn": true,
+      "authenticationExecutions": [
+        {
+          "authenticator": "client-secret",
+          "authenticatorFlow": false,
+          "requirement": "ALTERNATIVE",
+          "priority": 10,
+          "autheticatorFlow": false,
+          "userSetupAllowed": false
+        },
+        {
+          "authenticator": "client-jwt",
+          "authenticatorFlow": false,
+          "requirement": "ALTERNATIVE",
+          "priority": 20,
+          "autheticatorFlow": false,
+          "userSetupAllowed": false
+        },
+        {
+          "authenticator": "client-secret-jwt",
+          "authenticatorFlow": false,
+          "requirement": "ALTERNATIVE",
+          "priority": 30,
+          "autheticatorFlow": false,
+          "userSetupAllowed": false
+        },
+        {
+          "authenticator": "client-x509",
+          "authenticatorFlow": false,
+          "requirement": "ALTERNATIVE",
+          "priority": 40,
+          "autheticatorFlow": false,
+          "userSetupAllowed": false
+        }
+      ]
+    },
+    {
+      "id": "e80e60ad-df35-4932-ad5e-b5b1ae8db95a",
+      "alias": "direct grant",
+      "description": "OpenID Connect Resource Owner Grant",
+      "providerId": "basic-flow",
+      "topLevel": true,
+      "builtIn": true,
+      "authenticationExecutions": [
+        {
+          "authenticator": "direct-grant-validate-username",
+          "authenticatorFlow": false,
+          "requirement": "REQUIRED",
+          "priority": 10,
+          "autheticatorFlow": false,
+          "userSetupAllowed": false
+        },
+        {
+          "authenticator": "direct-grant-validate-password",
+          "authenticatorFlow": false,
+          "requirement": "REQUIRED",
+          "priority": 20,
+          "autheticatorFlow": false,
+          "userSetupAllowed": false
+        },
+        {
+          "authenticatorFlow": true,
+          "requirement": "CONDITIONAL",
+          "priority": 30,
+          "autheticatorFlow": true,
+          "flowAlias": "Direct Grant - Conditional OTP",
+          "userSetupAllowed": false
+        }
+      ]
+    },
+    {
+      "id": "48b80cb2-77cf-4cdd-99b9-c9095694a829",
+      "alias": "docker auth",
+      "description": "Used by Docker clients to authenticate against the IDP",
+      "providerId": "basic-flow",
+      "topLevel": true,
+      "builtIn": true,
+      "authenticationExecutions": [
+        {
+          "authenticator": "docker-http-basic-authenticator",
+          "authenticatorFlow": false,
+          "requirement": "REQUIRED",
+          "priority": 10,
+          "autheticatorFlow": false,
+          "userSetupAllowed": false
+        }
+      ]
+    },
+    {
+      "id": "3cc33db7-a86e-4102-a4ab-852065be94b9",
+      "alias": "first broker login",
+      "description": "Actions taken after first broker login with identity provider account, which is not yet linked to any Keycloak account",
+      "providerId": "basic-flow",
+      "topLevel": true,
+      "builtIn": true,
+      "authenticationExecutions": [
+        {
+          "authenticatorConfig": "review profile config",
+          "authenticator": "idp-review-profile",
+          "authenticatorFlow": false,
+          "requirement": "REQUIRED",
+          "priority": 10,
+          "autheticatorFlow": false,
+          "userSetupAllowed": false
+        },
+        {
+          "authenticatorFlow": true,
+          "requirement": "REQUIRED",
+          "priority": 20,
+          "autheticatorFlow": true,
+          "flowAlias": "User creation or linking",
+          "userSetupAllowed": false
+        },
+        {
+          "authenticatorFlow": true,
+          "requirement": "CONDITIONAL",
+          "priority": 50,
+          "autheticatorFlow": true,
+          "flowAlias": "First Broker Login - Conditional Organization",
+          "userSetupAllowed": false
+        }
+      ]
+    },
+    {
+      "id": "7f0f3334-6091-4c2c-abf7-b9baf5e45b99",
+      "alias": "forms",
+      "description": "Username, password, otp and other auth forms.",
+      "providerId": "basic-flow",
+      "topLevel": false,
+      "builtIn": true,
+      "authenticationExecutions": [
+        {
+          "authenticator": "auth-username-password-form",
+          "authenticatorFlow": false,
+          "requirement": "REQUIRED",
+          "priority": 10,
+          "autheticatorFlow": false,
+          "userSetupAllowed": false
+        },
+        {
+          "authenticatorFlow": true,
+          "requirement": "CONDITIONAL",
+          "priority": 20,
+          "autheticatorFlow": true,
+          "flowAlias": "Browser - Conditional OTP",
+          "userSetupAllowed": false
+        }
+      ]
+    },
+    {
+      "id": "fc8604f6-f168-4793-bb0d-8f191a1f927d",
+      "alias": "registration",
+      "description": "Registration flow",
+      "providerId": "basic-flow",
+      "topLevel": true,
+      "builtIn": true,
+      "authenticationExecutions": [
+        {
+          "authenticator": "registration-page-form",
+          "authenticatorFlow": true,
+          "requirement": "REQUIRED",
+          "priority": 10,
+          "autheticatorFlow": true,
+          "flowAlias": "registration form",
+          "userSetupAllowed": false
+        }
+      ]
+    },
+    {
+      "id": "8ecac277-35d9-4d8a-9df8-ab65afd856a2",
+      "alias": "registration form",
+      "description": "Registration form",
+      "providerId": "form-flow",
+      "topLevel": false,
+      "builtIn": true,
+      "authenticationExecutions": [
+        {
+          "authenticator": "registration-user-creation",
+          "authenticatorFlow": false,
+          "requirement": "REQUIRED",
+          "priority": 20,
+          "autheticatorFlow": false,
+          "userSetupAllowed": false
+        },
+        {
+          "authenticator": "registration-password-action",
+          "authenticatorFlow": false,
+          "requirement": "REQUIRED",
+          "priority": 50,
+          "autheticatorFlow": false,
+          "userSetupAllowed": false
+        },
+        {
+          "authenticator": "registration-recaptcha-action",
+          "authenticatorFlow": false,
+          "requirement": "DISABLED",
+          "priority": 60,
+          "autheticatorFlow": false,
+          "userSetupAllowed": false
+        },
+        {
+          "authenticator": "registration-terms-and-conditions",
+          "authenticatorFlow": false,
+          "requirement": "DISABLED",
+          "priority": 70,
+          "autheticatorFlow": false,
+          "userSetupAllowed": false
+        }
+      ]
+    },
+    {
+      "id": "f0914517-fc05-4ae5-8088-ed71ef1ee8fc",
+      "alias": "reset credentials",
+      "description": "Reset credentials for a user if they forgot their password or something",
+      "providerId": "basic-flow",
+      "topLevel": true,
+      "builtIn": true,
+      "authenticationExecutions": [
+        {
+          "authenticator": "reset-credentials-choose-user",
+          "authenticatorFlow": false,
+          "requirement": "REQUIRED",
+          "priority": 10,
+          "autheticatorFlow": false,
+          "userSetupAllowed": false
+        },
+        {
+          "authenticator": "reset-credential-email",
+          "authenticatorFlow": false,
+          "requirement": "REQUIRED",
+          "priority": 20,
+          "autheticatorFlow": false,
+          "userSetupAllowed": false
+        },
+        {
+          "authenticator": "reset-password",
+          "authenticatorFlow": false,
+          "requirement": "REQUIRED",
+          "priority": 30,
+          "autheticatorFlow": false,
+          "userSetupAllowed": false
+        },
+        {
+          "authenticatorFlow": true,
+          "requirement": "CONDITIONAL",
+          "priority": 40,
+          "autheticatorFlow": true,
+          "flowAlias": "Reset - Conditional OTP",
+          "userSetupAllowed": false
+        }
+      ]
+    },
+    {
+      "id": "2a7f2ae3-349b-4fc8-b69d-dec3e658a75a",
+      "alias": "saml ecp",
+      "description": "SAML ECP Profile Authentication Flow",
+      "providerId": "basic-flow",
+      "topLevel": true,
+      "builtIn": true,
+      "authenticationExecutions": [
+        {
+          "authenticator": "http-basic-authenticator",
+          "authenticatorFlow": false,
+          "requirement": "REQUIRED",
+          "priority": 10,
+          "autheticatorFlow": false,
+          "userSetupAllowed": false
+        }
+      ]
+    }
+  ],
+  "authenticatorConfig": [
+    {
+      "id": "13a8ea16-323a-4ce7-9172-9bd3a6ea7ddb",
+      "alias": "create unique user config",
+      "config": {
+        "require.password.update.after.registration": "false"
+      }
+    },
+    {
+      "id": "e1d12d1e-a904-4b8d-9a6c-df8ff6b486c0",
+      "alias": "review profile config",
+      "config": {
+        "update.profile.on.first.login": "missing"
+      }
+    }
+  ],
+  "requiredActions": [
+    {
+      "alias": "CONFIGURE_TOTP",
+      "name": "Configure OTP",
+      "providerId": "CONFIGURE_TOTP",
+      "enabled": true,
+      "defaultAction": false,
+      "priority": 10,
+      "config": {}
+    },
+    {
+      "alias": "TERMS_AND_CONDITIONS",
+      "name": "Terms and Conditions",
+      "providerId": "TERMS_AND_CONDITIONS",
+      "enabled": false,
+      "defaultAction": false,
+      "priority": 20,
+      "config": {}
+    },
+    {
+      "alias": "UPDATE_PASSWORD",
+      "name": "Update Password",
+      "providerId": "UPDATE_PASSWORD",
+      "enabled": true,
+      "defaultAction": false,
+      "priority": 30,
+      "config": {}
+    },
+    {
+      "alias": "UPDATE_PROFILE",
+      "name": "Update Profile",
+      "providerId": "UPDATE_PROFILE",
+      "enabled": true,
+      "defaultAction": false,
+      "priority": 40,
+      "config": {}
+    },
+    {
+      "alias": "VERIFY_EMAIL",
+      "name": "Verify Email",
+      "providerId": "VERIFY_EMAIL",
+      "enabled": true,
+      "defaultAction": false,
+      "priority": 50,
+      "config": {}
+    },
+    {
+      "alias": "delete_account",
+      "name": "Delete Account",
+      "providerId": "delete_account",
+      "enabled": false,
+      "defaultAction": false,
+      "priority": 60,
+      "config": {}
+    },
+    {
+      "alias": "webauthn-register",
+      "name": "Webauthn Register",
+      "providerId": "webauthn-register",
+      "enabled": true,
+      "defaultAction": false,
+      "priority": 70,
+      "config": {}
+    },
+    {
+      "alias": "webauthn-register-passwordless",
+      "name": "Webauthn Register Passwordless",
+      "providerId": "webauthn-register-passwordless",
+      "enabled": true,
+      "defaultAction": false,
+      "priority": 80,
+      "config": {}
+    },
+    {
+      "alias": "VERIFY_PROFILE",
+      "name": "Verify Profile",
+      "providerId": "VERIFY_PROFILE",
+      "enabled": true,
+      "defaultAction": false,
+      "priority": 90,
+      "config": {}
+    },
+    {
+      "alias": "delete_credential",
+      "name": "Delete Credential",
+      "providerId": "delete_credential",
+      "enabled": true,
+      "defaultAction": false,
+      "priority": 100,
+      "config": {}
+    },
+    {
+      "alias": "update_user_locale",
+      "name": "Update User Locale",
+      "providerId": "update_user_locale",
+      "enabled": true,
+      "defaultAction": false,
+      "priority": 1000,
+      "config": {}
+    }
+  ],
+  "browserFlow": "browser",
+  "registrationFlow": "registration",
+  "directGrantFlow": "direct grant",
+  "resetCredentialsFlow": "reset credentials",
+  "clientAuthenticationFlow": "clients",
+  "dockerAuthenticationFlow": "docker auth",
+  "firstBrokerLoginFlow": "first broker login",
+  "attributes": {
+    "cibaBackchannelTokenDeliveryMode": "poll",
+    "cibaAuthRequestedUserHint": "login_hint",
+    "oauth2DevicePollingInterval": "5",
+    "clientOfflineSessionMaxLifespan": "0",
+    "clientSessionIdleTimeout": "32400",
+    "actionTokenGeneratedByUserLifespan.verify-email": "",
+    "actionTokenGeneratedByUserLifespan.idp-verify-account-via-email": "",
+    "clientOfflineSessionIdleTimeout": "0",
+    "actionTokenGeneratedByUserLifespan.execute-actions": "",
+    "cibaInterval": "5",
+    "realmReusableOtpCode": "false",
+    "cibaExpiresIn": "120",
+    "oauth2DeviceCodeLifespan": "600",
+    "parRequestUriLifespan": "3600",
+    "clientSessionMaxLifespan": "3600",
+    "frontendUrl": "",
+    "acr.loa.map": "{}",
+    "shortVerificationUri": "",
+    "actionTokenGeneratedByUserLifespan.reset-credentials": ""
+  },
+  "keycloakVersion": "26.1.4",
+  "userManagedAccessAllowed": false,
+  "organizationsEnabled": false,
+  "verifiableCredentialsEnabled": false,
+  "adminPermissionsEnabled": false,
+  "clientProfiles": {
+    "profiles": []
+  },
+  "clientPolicies": {
+    "policies": []
+  }
+}
