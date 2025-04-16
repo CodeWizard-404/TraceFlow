@@ -1,21 +1,1228 @@
 {
-    "maps_card_title": "Agents Visits Today",
-    "stats_card1_title": "Supervisors Count",
-    "stats_card2_title": "Active Supervisors",
-    "emails": "Emails",
-    "navbar_dashboard": "Dashboard",
-    "navbar_admin": "Admin Dashboard",
-    "navbar_timesheets": "Timesheets",
-    "navbar_receipt_books": "Receipt Books",
-    "navbar_profile": "Profile",
-    "logo_alt": "Company Logo",
-    "toggle_menu": "Toggle navigation menu",
-    "toggle_theme": "Switch to {{mode}} mode",
-    "theme": "Theme",
-    "logout": "Logout",
-    "select_language": "Select language",
-    "footer_copyright": "© Copyright {{year}}. All Rights Reserved",
-    "footer_privacy": "Privacy Policy",
-    "footer_terms": "Terms of Service",
-    "footer_contact": "Contact Us"
+  "common": {
+    "months": {
+      "0": "January",
+      "1": "February",
+      "2": "March",
+      "3": "April",
+      "4": "May",
+      "5": "June",
+      "6": "July",
+      "7": "August",
+      "8": "September",
+      "9": "October",
+      "10": "November",
+      "11": "December"
+    },
+    "weekdays": {
+      "short": {
+        "0": "Sun",
+        "1": "Mon",
+        "2": "Tue",
+        "3": "Wed",
+        "4": "Thu",
+        "5": "Fri",
+        "6": "Sat"
+      }
+    },
+    "statuses": {
+      "pending": "Pending",
+      "visited": "Visited",
+      "validated": "Validated",
+      "rejected": "Rejected",
+      "notScheduled": "Not Scheduled"
+    },
+    "receiptBookStatuses": {
+      "inStock": "In Stock",
+      "sentToSupplier": "Sent to Supplier",
+      "collectFromSupplier": "Collect from Supplier",
+      "withRegionalManager": "With Regional Manager",
+      "stubCollected": "Stub Collected",
+      "withSupervisor": "With Supervisor",
+      "assignedToAgent": "Assigned to Agent",
+      "withStockManager": "With Stock Manager",
+      "stubCollectedStatus": "collected"
+    }
+  },
+  "visitValidation": {
+    "title": "Validate Visit",
+    "description": "Complete the checklist, add photos, and validate the visit.",
+    "loading": "Loading Visit Details...",
+    "error": {
+      "missingData": "Missing visit ID or authentication token.",
+      "fetchFailed": "Failed to load visit or agent data.",
+      "accessDenied": "Visit not found or access denied.",
+      "cameraAccess": "Failed to access camera. Please ensure permissions are granted.",
+      "cameraInUse": "Camera is in use by another app or unavailable. Please close other apps or check your device.",
+      "cameraPlayFailed": "Failed to play camera stream.",
+      "validationFailed": "Failed to validate visit.",
+      "noPhotos": "At least one photo is required."
+    },
+    "visitDetails": {
+      "title": "Visit Details",
+      "agent": "Agent",
+      "phone": "Phone",
+      "na": "N/A"
+    },
+    "reasons": {
+      "title": "Reasons",
+      "noData": "No reasons specified."
+    },
+    "checklist": {
+      "title": "Checklist",
+      "noData": "No checklist items available."
+    },
+    "photos": {
+      "title": "Photos",
+      "startCamera": "Start Camera",
+      "note": "At least one photo is required."
+    },
+    "comment": {
+      "title": "Comment (Optional)",
+      "placeholder": "Add a comment about the visit..."
+    },
+    "actions": {
+      "validate": "Validate Visit",
+      "validating": "Validating...",
+      "back": "Back"
+    }
+  },
+  "visitDetails": {
+    "title": "Visit Details",
+    "loading": "Loading visit details...",
+    "error": {
+      "notFound": "Visit not found.",
+      "fetchFailed": "Failed to load visit details.",
+      "validateFailed": "Failed to validate visit.",
+      "rejectFailed": "Failed to reject visit.",
+      "updateFailed": "Failed to update visit.",
+      "deleteFailed": "Failed to delete visit.",
+      "cameraAccess": "Failed to access camera. Please ensure permissions are granted.",
+      "cameraPlayFailed": "Failed to play camera stream.",
+      "agentNotFound": "Agent not found with this phone number",
+      "supervisorNotFound": "Supervisor not found with this phone number",
+      "agentsLoadFailed": "Failed to load agents for {location}"
+    },
+    "whenWhere": {
+      "title": "When & Where",
+      "date": "Date",
+      "time": "Time",
+      "location": "Location",
+      "na": "N/A"
+    },
+    "agent": {
+      "title": "Agent",
+      "noData": "No agent assigned",
+      "phone": "Phone"
+    },
+    "reasons": {
+      "title": "Reasons",
+      "noData": "No reasons listed"
+    },
+    "checklist": {
+      "title": "Checklist",
+      "noData": "No checklist items"
+    },
+    "photos": {
+      "title": "Photos",
+      "count": "({count})",
+      "startCamera": "Start Camera"
+    },
+    "comment": {
+      "title": "Comment"
+    },
+    "supervisor": {
+      "title": "Supervisor",
+      "searchNamePlaceholder": "Search supervisors by name...",
+      "searchPhonePlaceholder": "Or enter supervisor phone number...",
+      "selectPlaceholder": "Select a supervisor"
+    },
+    "form": {
+      "agentPhone": "Agent Phone (Optional)",
+      "agentPhonePlaceholder": "Enter agent's phone number",
+      "locationSearchPlaceholder": "Search locations...",
+      "locationSelectPlaceholder": "Select a location",
+      "agentSearchPlaceholder": "Search agents...",
+      "agentSelectPlaceholder": "Select an agent",
+      "reasonSearchPlaceholder": "Search reasons...",
+      "reasonSelectPlaceholder": "Select a reason",
+      "checklistSearchPlaceholder": "Search checklists...",
+      "checklistSelectPlaceholder": "Select a checklist",
+      "permissionDenied": "Permission denied"
+    },
+    "actions": {
+      "edit": "Edit",
+      "delete": "Delete",
+      "back": "Back",
+      "logVisit": "Log Visit",
+      "validate": "Validate",
+      "reject": "Reject",
+      "save": "Save",
+      "cancel": "Cancel",
+      "deleteConfirm": "Are you sure you want to delete this visit?"
+    },
+    "duration": "{duration}m"
+  },
+  "qrScan": {
+    "title": "Scan QR Code",
+    "description": "Align the QR code within the frame to validate the visit.",
+    "loading": "Loading...",
+    "status": {
+      "startingCamera": "Starting camera...",
+      "scanning": "Scanning...",
+      "detected": "QR Code Detected",
+      "checking": "Checking...",
+      "validating": "Validating..."
+    },
+    "error": {
+      "noVisit": "No visit selected.",
+      "authRequired": "Authentication required.",
+      "accessDenied": "Access Denied: You lack permission to scan visits.",
+      "mismatch": "Mismatch error"
+    },
+    "actions": {
+      "back": "Back"
+    }
+  },
+  "timesheets": {
+    "loading": "Loading Timesheet...",
+    "viewModes": {
+      "year": "Year",
+      "month": "Month",
+      "week": "Week",
+      "day": "Day"
+    },
+    "actions": {
+      "scheduleVisit": "Schedule Visit",
+      "receiptBooks": "Receipt Books",
+      "current": "Current {viewMode}",
+      "filterSupervisors": "Filter Supervisors",
+      "validateTimesheet": "Validate Entire Timesheet"
+    },
+    "filter": {
+      "searchPlaceholder": "Search by name or phone...",
+      "allSupervisors": "All Supervisors"
+    },
+    "yearView": {
+      "month": "{monthName}",
+      "weekNumber": "Week {weekNumber} :",
+      "weekRange": "{startDate} - {endDate}",
+      "visitCount": "{count} Visits",
+      "supervisorCount": "Supervisors: {count}"
+    },
+    "monthView": {
+      "weekNumber": "Week {weekNumber}",
+      "weekRange": "{startDate} - {endDate}",
+      "visitCount": "{count} Visits",
+      "supervisorCount": "Supervisors: {count}",
+      "status": "Status: {status}"
+    },
+    "weekView": {
+      "weekNumber": "Week {weekNumber}",
+      "weekRange": "{startDate} - {endDate}",
+      "status": "Status: {status}",
+      "supervisor": "Supervisor: {firstname} {lastname}",
+      "dayName": "{dayName}",
+      "dayDate": "{dayDate}",
+      "visitCount": "/ {count} Visits"
+    },
+    "dayView": {
+      "date": "{weekday} {day}/{month}",
+      "noVisits": "No Visits Scheduled"
+    },
+    "visitCard": {
+      "supervisor": "{firstname} {lastname}",
+      "time": "{time}",
+      "status": "{status}",
+      "location": "{location}",
+      "locationTBD": "Location TBD",
+      "reasons": "Reasons: {reasons}"
+    }
+  },
+  "timesheetForm": {
+    "title": "Create Visit",
+    "loading": "Loading...",
+    "form": {
+      "supervisor": "Supervisor",
+      "date": "Date",
+      "time": "Time",
+      "agentPhone": "Agent Phone (Optional)",
+      "location": "Location",
+      "agent": "Agent",
+      "reasons": "Reasons",
+      "checklists": "Checklists",
+      "placeholders": {
+        "supervisorSearch": "Search supervisors by name...",
+        "supervisorPhone": "Or enter supervisor phone number...",
+        "supervisorSelect": "Select a supervisor",
+        "agentPhone": "Enter agent's phone number",
+        "permissionDenied": "Permission denied",
+        "locationSearch": "Search locations...",
+        "locationSelect": "Select a location",
+        "agentSearch": "Search agents...",
+        "agentSearchPlaceholder": "Search agents...",
+        "agentSelect": "Select an agent",
+        "reasonSearch": "Search reasons...",
+        "reasonSelect": "Select a reason",
+        "checklistSearch": "Search checklists...",
+        "checklistSelect": "Select a checklist"
+      }
+    },
+    "actions": {
+      "back": "Back",
+      "create": "Create Timesheet",
+      "submitting": "Submitting..."
+    },
+    "errors": {
+      "loadInitialData": "Failed to load initial data. Please try again.",
+      "loadAgents": "Failed to load agents for {location}",
+      "agentNotFound": "Agent not found with this phone number",
+      "supervisorNotFound": "Supervisor not found with this phone number",
+      "createFailed": "Failed to create timesheet. Please try again."
+    }
+  },
+  "transferReceiptBook": {
+    "title": "Transfer Receipt Books ({roles})",
+    "loading": "Loading...",
+    "form": {
+      "recipientType": "Recipient Type",
+      "agentSelection": "Agent Selection",
+      "supplierEmail": "Supplier Email",
+      "selectBooks": "Select In Stock Books to Transfer",
+      "selectedAgent": "Selected Agent",
+      "scanCollect": "Scan Books to Collect from Supplier",
+      "scanQR": "Scan QR Codes",
+      "otp": "Enter OTP (Sent to {recipientType} {recipientDetails})",
+      "placeholders": {
+        "recipientType": "Select Recipient Type",
+        "agentPhone": "Enter agent phone number",
+        "location": "Select Location",
+        "agentSearch": "Search agents by name or phone",
+        "agentSelect": "Select Agent",
+        "supplierEmail": "Enter supplier email",
+        "bookSearch": "Search books by number or type",
+        "userSearch": "Enter phone number or search by name",
+        "userSelect": "Select {recipientType}",
+        "otp": "Enter OTP"
+      }
+    },
+    "actions": {
+      "back": "Back",
+      "initiateTransfer": "Initiate Transfer",
+      "initiateStubCollection": "Initiate Stub Collection",
+      "collectFromSupplier": "Collect from Supplier",
+      "validateTransfer": "Validate Transfer",
+      "validateStubCollection": "Validate Stub Collection"
+    },
+    "pagination": {
+      "pageInfo": "Page {currentPage} of {totalPages}",
+      "selectedBooks": "Selected Books: {count}"
+    },
+    "list": {
+      "noBooks": "No In Stock books available or matching search.",
+      "selectedBooks": "Selected Books ({count})",
+      "scannedQRCodes": "{count} QR codes scanned."
+    },
+    "otpTimer": "OTP expires in: {time}",
+    "errors": {
+      "accessDenied": "Access Denied - Missing transfer_receipt_books permission",
+      "loadData": "Failed to load data. Check console for details.",
+      "fetchAgent": "Failed to fetch agent details.",
+      "cameraAccess": "Camera access denied or unavailable.",
+      "qrNotFound": "QR code \"{number}\" not found in receipt books.",
+      "qrAlreadyScanned": "QR code \"{number}\" has already been scanned or selected.",
+      "bookNotTransferable": "Book \"{number}\" (status: {status}) cannot be transferred/collected by your role(s).",
+      "stubNotAssigned": "Book \"{number}\" must be \"Assigned to Agent\" for stub collection.",
+      "stubNotCollected": "Stub \"{number}\" must be \"collected\" for stock management.",
+      "supervisorLimit": "Supervisors can only assign one receipt book to an Agent.",
+      "invalidQR": "Invalid QR code format. Please try again.",
+      "otpExpired": "OTP has expired. Please initiate the transfer again.",
+      "noBooksSelected": "Please select at least one book.",
+      "noRecipientType": "Please select a recipient type.",
+      "noSupplierEmail": "Please enter a supplier email.",
+      "noAgent": "Please enter an agent phone number or select an agent.",
+      "noRecipient": "Please select a recipient or enter a phone number.",
+      "stubCollectionLimit": "Stub collection can only process one book at a time.",
+      "initiateFailed": "Failed to initiate transfer/collection: {message}",
+      "noOTP": "Please enter the OTP.",
+      "stubCollectionSingle": "Stub collection requires exactly one book.",
+      "validationFailed": "Invalid OTP or transfer validation failed: {message}",
+      "agentNotFound": "No agent found with phone {phone}.",
+      "userRoleMismatch": "User with phone {phone} does not have role {recipientType}.",
+      "userNotFound": "No user found with phone {phone}.",
+      "fetchAgents": "Failed to fetch agents by location."
+    }
+  },
+  "receiptBooks": {
+    "title": {
+      "list": "Receipt Books",
+      "create": "Create",
+      "edit": "Edit"
+    },
+    "loading": "Loading...",
+    "form": {
+      "createTitle": "New Receipt",
+      "editTitle": "Edit Receipt #{number}",
+      "labels": {
+        "number": "Number",
+        "type": "Type"
+      },
+      "placeholders": {
+        "number": "000001",
+        "type": "Select Type"
+      }
+    },
+    "search": {
+      "placeholder": "Search receipts..."
+    },
+    "sort": {
+      "title": "Sort By",
+      "fields": {
+        "number": "Number",
+        "type": "Type",
+        "status": "Status"
+      },
+      "order": {
+        "asc": "Asc",
+        "desc": "Desc"
+      }
+    },
+    "filter": {
+      "title": "Filters",
+      "type": {
+        "label": "Type",
+        "all": "All Types"
+      },
+      "status": {
+        "label": "Status",
+        "all": "All Statuses"
+      }
+    },
+    "table": {
+      "headers": {
+        "number": "Number",
+        "type": "Type",
+        "bookStatus": "Book Status",
+        "stubStatus": "Stub Status",
+        "holder": "Holder",
+        "qrCode": "QR Code",
+        "actions": "Actions"
+      },
+      "na": "N/A",
+      "holderLoading": "Loading..."
+    },
+    "pagination": {
+      "pageInfo": "Page {currentPage} of {totalPages}",
+      "previous": "Previous",
+      "next": "Next"
+    },
+    "actions": {
+      "newReceipt": "New Receipt",
+      "transferBooks": "Transfer Books",
+      "create": "Create",
+      "save": "Save",
+      "cancel": "Cancel",
+      "deleteConfirm": "Are you sure?"
+    },
+    "errors": {
+      "requiredFields": "Please fill in all required fields.",
+      "invalidNumber": "Number must be exactly 6 digits.",
+      "createFailed": "Failed to create receipt book: {message}",
+      "updateFailed": "Failed to update receipt book: {message}",
+      "deleteFailed": "Failed to delete receipt book: {error}"
+    },
+    "types": {
+      "refund": "Refund",
+      "transfer": "Transfer"
+    }
+  },
+  "receiptBookHistory": {
+    "title": "Receipt Book #{number} History",
+    "loading": "Tracking History...",
+    "error": {
+      "accessDenied": "Access Denied or Invalid Book ID",
+      "fetchFailed": "Failed to fetch history or details.",
+      "notFound": "Receipt book not found."
+    },
+    "actions": {
+      "back": "Back to Receipts"
+    },
+    "footer": {
+      "currentStatus": "Current Status: {status}",
+      "currentHolder": "Current Holder: {holder}",
+      "na": "N/A"
+    },
+    "timeline": {
+      "from": "From: {from}",
+      "to": "To: {to}",
+      "date": "Date: {date}",
+      "status": "Status: {status}",
+      "initialStock": "Initial Stock",
+      "supplier": "Supplier"
+    },
+    "transferTypes": {
+      "toSupplier": "To Supplier",
+      "toRegionalManager": "To Regional Manager",
+      "toSupervisor": "To Supervisor",
+      "toAgent": "To Agent",
+      "stubToSupervisor": "Stub To Supervisor",
+      "toStockManager": "To Stock Manager",
+      "toRegionalManagerFromSupervisor": "To Regional Manager From Supervisor",
+      "archive": "Archive"
+    }
+  },
+  "pageNotFound": {
+    "title": "404",
+    "subtitle": "Page Not Found",
+    "error": {
+      "message": "Oops!",
+      "description": "This page doesn’t exist or has been moved."
+    },
+    "actions": {
+      "back": "Return to Previous Page"
+    }
+  },
+  "errorDisplay": {
+    "actions": {
+      "dismiss": "Dismiss"
+    }
+  },
+  "accessDenied": {
+    "title": "Access Denied",
+    "subtitle": "You don’t have permission to view this page.",
+    "warning": {
+      "message": "Restricted Area",
+      "description": "Please contact an administrator if you believe this is an error."
+    },
+    "actions": {
+      "back": "Return to Previous Page"
+    }
+  },
+  "entry": {
+    "charts": {
+      "title": "Charts",
+      "timesheetStatus": "Timesheet Status",
+      "visitStatus": "Visit Status",
+      "supervisorTimesheets": "Timesheets per Supervisor",
+      "labels": {
+        "pending": "Pending",
+        "validated": "Validated"
+      }
+    },
+    "maps": {
+      "title": "Today’s Visits",
+      "noVisits": "No visits today"
+    },
+    "stats": {
+      "supervisorsCount": "Supervisors Count",
+      "activeSupervisors": "Active Supervisors"
+    },
+    "sections": {
+      "unfinishedVisits": "Unfinished Visits",
+      "emails": "Emails",
+      "toDoList": "To Do List"
+    }
+  },
+  "navbar": {
+    "monitoring": "Monitoring",
+    "reporting": "Reporting",
+    "help": "Help"
+  },
+  "profilePage": {
+    "loading": "Loading Profile...",
+    "error": {
+      "noProfile": "Failed to load profile. Please try again later.",
+      "noToken": "No authentication token found",
+      "fetchFailed": "Failed to load user profile",
+      "updateFailed": "Failed to update profile",
+      "pictureFailed": "Failed to update profile picture",
+      "passwordFailed": "Failed to update password"
+    },
+    "header": {
+      "userId": "User ID: {userId}",
+      "firstNameNotSet": "First Name Not Set",
+      "lastNameNotSet": "Last Name Not Set"
+    },
+    "nav": {
+      "info": "Profile Info",
+      "settings": "Settings",
+      "activity": "Activity"
+    },
+    "info": {
+      "title": "Profile Information",
+      "email": "Email",
+      "phone": "Phone",
+      "wallet": "Wallet",
+      "notSet": "Not set",
+      "notLinked": "Not linked"
+    },
+    "settings": {
+      "title": "Account Settings",
+      "password": {
+        "title": "Change Password",
+        "newPassword": "New Password",
+        "confirmPassword": "Confirm Password",
+        "newPasswordPlaceholder": "Enter new password",
+        "confirmPasswordPlaceholder": "Confirm new password",
+        "update": "Update Password"
+      },
+      "twoFactor": {
+        "title": "Two-Factor Authentication",
+        "status": "Status: {status}",
+        "enabled": "Enabled",
+        "enable": "Enable 2FA"
+      }
+    },
+    "activity": {
+      "title": "Recent Activity",
+      "visitLogged": {
+        "title": "Visit Logged",
+        "subtext": "Agent: {agent} | Location: {location}",
+        "amount": "+1 Visit"
+      },
+      "timesheetSubmitted": {
+        "title": "Timesheet Submitted",
+        "subtext": "Duration: {duration}",
+        "amount": "Pending Approval"
+      },
+      "carnetDistributed": {
+        "title": "Carnet Distributed",
+        "subtext": "Carnet ID: {carnetId} | Agent: {agent}",
+        "amount": "+1 Carnet"
+      },
+      "soucheCollected": {
+        "title": "Souche Collected",
+        "subtext": "Carnet ID: {carnetId} | Status: {status}",
+        "amount": "+1 Souche"
+      }
+    },
+    "validation": {
+      "firstnameRequired": "Firstname is required",
+      "firstnameLengthMin": "Firstname must be at least 3 characters",
+      "firstnameLengthMax": "Firstname must be 20 characters or less",
+      "firstnameFormat": "Firstname can only contain letters, spaces, hyphens, or apostrophes",
+      "lastnameRequired": "Lastname is required",
+      "lastnameLengthMin": "Lastname must be at least 3 characters",
+      "lastnameLengthMax": "Lastname must be 20 characters or less",
+      "lastnameFormat": "Lastname can only contain letters, spaces, hyphens, or apostrophes",
+      "emailRequired": "Email is required",
+      "emailLength": "Email must be 70 characters or less",
+      "emailFormat": "Invalid email format",
+      "phoneRequired": "Phone is required",
+      "phoneLength": "Phone must be 8 digits",
+      "walletLength": "Wallet must be exactly 16 digits",
+      "passwordLengthMin": "Password must be at least 8 characters",
+      "passwordLengthMax": "Password must be 128 characters or less",
+      "passwordFormat": "Password must include uppercase, lowercase, digit, and special character, no spaces",
+      "passwordConfirmRequired": "Password confirmation is required",
+      "passwordMismatch": "Passwords do not match"
+    },
+    "success": {
+      "profileUpdated": "Profile updated successfully",
+      "pictureUpdated": "Profile picture updated successfully",
+      "passwordUpdated": "Password updated successfully"
+    }
+  },
+  "login": {
+    "header": {
+      "title": "TraceFlow",
+      "subtitle": "Securely Track. Optimize. Succeed."
+    },
+    "login": {
+      "title": "Sign In",
+      "identifier": "Email or Phone",
+      "password": "Password",
+      "identifierPlaceholder": "Enter your email or phone",
+      "passwordPlaceholder": "Enter your password",
+      "forgotPassword": "Forgot Password?",
+      "submit": "Sign In"
+    },
+    "verify2FA": {
+      "title": "Enter OTP",
+      "otpPlaceholder": "6-digit code",
+      "phoneMessage": "We sent a code to your phone number.",
+      "emailMessage": "We sent a code to your email.",
+      "timer": "Time remaining: {minutes}:{seconds}",
+      "trustDevice": "Trust this device",
+      "resend": "Resend OTP",
+      "resendCooldown": "Resend in {seconds}s",
+      "switchToEmail": "Can’t access your phone? Send to email instead.",
+      "switchToPhone": "Send to phone instead.",
+      "submit": "Verify OTP",
+      "back": "Back to Sign In"
+    },
+    "forgot": {
+      "title": "Send Reset OTP",
+      "identifier": "Email or Phone",
+      "identifierPlaceholder": "Enter your email or phone",
+      "submit": "Send Reset OTP",
+      "back": "Back to Sign In"
+    },
+    "verifyReset": {
+      "title": "Enter Reset OTP",
+      "otpPlaceholder": "6-digit code",
+      "timer": "Time remaining: {minutes}:{seconds}",
+      "resend": "Resend OTP",
+      "resendCooldown": "Resend in {seconds}s",
+      "submit": "Verify OTP",
+      "back": "Back to Sign In"
+    },
+    "reset": {
+      "title": "Reset Password",
+      "newPassword": "New Password",
+      "confirmPassword": "Confirm Password",
+      "newPasswordPlaceholder": "Enter new password",
+      "confirmPasswordPlaceholder": "Confirm new password",
+      "submit": "Reset Password",
+      "back": "Back to Sign In"
+    },
+    "validation": {
+      "identifierRequired": "Please enter your email or phone number.",
+      "identifierFormat": "Invalid email or phone format.",
+      "passwordRequired": "Please enter a password.",
+      "passwordLengthMin": "Password must be at least 8 characters long.",
+      "passwordLengthMax": "Password cannot exceed 128 characters.",
+      "passwordFormat": "Password must include an uppercase letter, lowercase letter, number, and special character (no spaces).",
+      "confirmPasswordRequired": "Please confirm your password.",
+      "passwordMismatch": "Passwords do not match.",
+      "otpRequired": "Please enter the 6-digit OTP.",
+      "otpFormat": "OTP must be exactly 6 digits."
+    },
+    "error": {
+      "loginFailed": "Login failed. Please check your email/phone and password.",
+      "networkError": "Unable to connect to the server. Please check your internet connection.",
+      "invalidOtp": "Invalid OTP. Please try again.",
+      "resetOtpFailed": "Failed to send reset OTP. Please check your email/phone and try again.",
+      "verifyResetOtpFailed": "Invalid reset OTP. Please try again or request a new one.",
+      "resetFailed": "Failed to reset password. Please try again.",
+      "resendFailed": "Failed to resend OTP. Please try again later."
+    },
+    "success": {
+      "resetSuccess": "Password reset successfully! Please log in with your new password."
+    }
+  },
+  "adminDashboard": {
+    "header": {
+      "users": "Users Management",
+      "roles": "Roles Management",
+      "permissions": "Permissions Management",
+      "addUser": "Add New User",
+      "addRole": "Create New Role",
+      "addPermission": "Create New Permission",
+      "userDetails": "{firstName} {lastName}",
+      "checklists": "Checklists Management",
+      "addChecklist": "Add New Checklist",
+      "checklistDetails": "Checklist: {item}",
+      "reasons": "Reasons Management",
+      "addReason": "Add New Reason",
+      "reasonDetails": "Reason: {item}"
+    },
+    "sidebar": {
+      "view": "View",
+      "users": "Users",
+      "roles": "Roles",
+      "permissions": "Permissions",
+      "checklists": "Checklists",
+      "reasons": "Reasons",
+      "sortUsersBy": "Sort Users By",
+      "sortOptions": {
+        "name": "Name",
+        "email": "Email",
+        "role": "Role"
+      },
+      "sortOrder": {
+        "asc": "Asc",
+        "desc": "Desc"
+      },
+      "filterByRole": "Filter by Role",
+      "allRoles": "All Roles",
+      "addUser": "Add User",
+      "addRole": "Add Role",
+      "addPermission": "Add Permission",
+      "addChecklist": "Add Checklist",
+      "addReason": "Add Reason"
+    },
+    "search": {
+      "placeholder": "Search {view}..."
+    },
+    "error": {
+      "noToken": "Please log in to access the dashboard.",
+      "fetchFailed": "Failed to load dashboard data.",
+      "createReasonFailed": "Failed to create reason.",
+      "updateChecklistFailed": "Failed to update checklist.",
+      "deleteChecklistFailed": "Failed to delete checklist.",
+      "createChecklistFailed": "Failed to create checklist."
+    },
+    "actions": {
+      "back": "Back"
+    },
+    "reasonAdd": {
+      "title": "Add New Reason",
+      "form": {
+        "labels": {
+          "item": "Item"
+        },
+        "placeholders": {
+          "item": "Enter reason item (5-100 chars)"
+        }
+      },
+      "actions": {
+        "create": "Create Reason",
+        "creating": "Creating..."
+      },
+      "validation": {
+        "empty": "Item cannot be empty.",
+        "minLength": "Item must be at least 5 characters.",
+        "maxLength": "Item cannot exceed 100 characters.",
+        "duplicate": "Item already exists."
+      }
+    },
+    "checklistView": {
+      "actions": {
+        "edit": "Edit",
+        "delete": "Delete",
+        "save": "Save",
+        "saving": "Saving...",
+        "cancel": "Cancel"
+      }
+    },
+    "checklistsList": {
+      "title": "Checklists",
+      "noItems": "No checklists found",
+      "pagination": {
+        "previous": "Previous",
+        "next": "Next",
+        "pageInfo": "Page {currentPage} of {totalPages}"
+      },
+      "validation": {
+        "empty": "Item cannot be empty.",
+        "minLength": "Item must be at least 5 characters.",
+        "maxLength": "Item cannot exceed 100 characters.",
+        "duplicate": "Item already exists."
+      }
+    },
+    "checklistAdd": {
+      "title": "Add New Checklist",
+      "form": {
+        "labels": {
+          "item": "Item"
+        },
+        "placeholders": {
+          "item": "Enter checklist item (5-100 chars)"
+        }
+      },
+      "actions": {
+        "create": "Create Checklist",
+        "creating": "Creating..."
+      }
+    }
+  },
+  "usersList": {
+    "title": "Users",
+    "tableHeaders": {
+      "name": "Name",
+      "email": "Email",
+      "phone": "Phone",
+      "roles": "Roles"
+    },
+    "noUsers": "No users found",
+    "pagination": {
+      "previous": "Previous",
+      "next": "Next",
+      "pageInfo": "Page {currentPage} of {totalPages}"
+    },
+    "error": {
+      "fetchFailed": "Failed to load user details."
+    }
+  },
+  "userView": {
+    "title": {
+      "details": "User Details",
+      "edit": "Edit User"
+    },
+    "basicInfo": {
+      "title": "Basic Information",
+      "name": "Name",
+      "email": "Email",
+      "phone": "Phone",
+      "wallet": "Wallet",
+      "na": "N/A"
+    },
+    "form": {
+      "placeholders": {
+        "firstName": "First Name *",
+        "lastName": "Last Name *",
+        "email": "Email *",
+        "phone": "XX XXX XXX",
+        "wallet": "XXXX-XXXX-XXXX-XXXX",
+        "password": "Password (optional)",
+        "passwordConfirm": "Confirm Password (optional)"
+      }
+    },
+    "roleManagement": {
+      "title": "Role Management",
+      "noDescription": "No description available",
+      "noPermissions": "No permissions assigned"
+    },
+    "permissionOverrides": {
+      "title": "Permission Overrides",
+      "filter": "Filter Permissions",
+      "searchPlaceholder": "Search permissions...",
+      "allCategories": "All Categories",
+      "effectivePermissions": "Effective Permissions",
+      "noPermissions": "No permissions available"
+    },
+    "assignments": {
+      "title": "Assignments",
+      "supervisors": "Supervisors Assigned to This Manager",
+      "managers": "Managers Assigned to This Supervisor",
+      "searchSupervisorsPlaceholder": "Search supervisors...",
+      "searchManagersPlaceholder": "Search managers..."
+    },
+    "actions": {
+      "edit": "Edit",
+      "delete": "Delete",
+      "save": "Save",
+      "cancel": "Cancel",
+      "saveChanges": "Save Changes",
+      "saveAssignments": "Save Assignments",
+      "grantPermission": "Grant Permission",
+      "revokePermission": "Revoke Permission",
+      "removeOverride": "Remove Override"
+    },
+    "pagination": {
+      "previous": "Previous",
+      "next": "Next",
+      "pageInfo": "Page {currentPage} of {totalPages}"
+    },
+    "validation": {
+      "firstnameRequired": "First Name is required",
+      "firstnameLengthMin": "First Name must be at least 3 characters",
+      "firstnameLengthMax": "First Name must be 20 characters or less",
+      "firstnameFormat": "First Name can only contain letters, spaces, hyphens, or apostrophes",
+      "lastnameRequired": "Last Name is required",
+      "lastnameLengthMin": "Last Name must be at least 3 characters",
+      "lastnameLengthMax": "Last Name must be 20 characters or less",
+      "lastnameFormat": "Last Name can only contain letters, spaces, hyphens, or apostrophes",
+      "emailRequired": "Email is required",
+      "emailLength": "Email must be 70 characters or less",
+      "emailFormat": "Invalid email format",
+      "phoneRequired": "Phone is required",
+      "phoneLength": "Phone must be 8 digits",
+      "walletLength": "Wallet must be exactly 16 digits",
+      "passwordLengthMin": "Password must be at least 8 characters",
+      "passwordLengthMax": "Password must be 128 characters or less",
+      "passwordFormat": "Password must include uppercase, lowercase, digit, and special character, no spaces",
+      "passwordConfirmRequired": "Password confirmation is required",
+      "passwordMismatch": "Passwords do not match"
+    },
+    "error": {
+      "updateFailed": "Failed to update user.",
+      "deleteFailed": "Failed to delete user.",
+      "fetchPermissionsFailed": "Failed to load user permissions.",
+      "fetchRolePermissionsFailed": "Failed to load role permissions.",
+      "toggleRoleFailed": "Failed to toggle role.",
+      "saveAssignmentsFailed": "Failed to save assignments.",
+      "saveOverridesFailed": "Failed to save permission overrides.",
+      "noRoleSelected": "No role selected for override",
+      "superAdminRestricted": "The Super Admin role cannot be assigned or revoked.",
+      "adminSelfRevoke": "You cannot revoke your own Admin role."
+    },
+    "loading": {
+      "default": "Loading...",
+      "saving": "Saving..."
+    }
+  },
+  "userAdd": {
+    "title": "Add New User",
+    "sections": {
+      "personalInfo": "Personal Information",
+      "contactInfo": "Contact Information",
+      "credentials": "Credentials",
+      "roleAssignment": "Role Assignment"
+    },
+    "form": {
+      "labels": {
+        "firstName": "First Name *",
+        "lastName": "Last Name *",
+        "email": "Email *",
+        "phone": "Phone *",
+        "password": "Password *",
+        "confirmPassword": "Confirm Password *",
+        "wallet": "Wallet *",
+        "assignRoles": "Assign Roles *"
+      },
+      "placeholders": {
+        "firstName": "First Name *",
+        "lastName": "Last Name *",
+        "email": "Email *",
+        "phone": "XX XXX XXX",
+        "wallet": "XXXX-XXXX-XXXX-XXXX",
+        "password": "Password *",
+        "confirmPassword": "Confirm Password *"
+      }
+    },
+    "roleManagement": {
+      "noDescription": "No description available",
+      "noPermissions": "No permissions assigned"
+    },
+    "actions": {
+      "create": "Create User",
+      "creating": "Creating..."
+    },
+    "validation": {
+      "firstnameRequired": "First Name is required",
+      "firstnameLengthMin": "First Name must be at least 3 characters",
+      "firstnameLengthMax": "First Name must be 20 characters or less",
+      "firstnameFormat": "First Name can only contain letters, spaces, hyphens, or apostrophes",
+      "lastnameRequired": "Last Name is required",
+      "lastnameLengthMin": "Last Name must be at least 3 characters",
+      "lastnameLengthMax": "Last Name must be 20 characters or less",
+      "lastnameFormat": "Last Name can only contain letters, spaces, hyphens, or apostrophes",
+      "emailRequired": "Email is required",
+      "emailLength": "Email must be 70 characters or less",
+      "emailFormat": "Invalid email format",
+      "phoneRequired": "Phone is required",
+      "phoneLength": "Phone must be 8 digits",
+      "walletRequired": "Wallet is required",
+      "walletLength": "Wallet must be exactly 16 digits",
+      "passwordRequired": "Password is required",
+      "passwordLengthMin": "Password must be at least 8 characters",
+      "passwordLengthMax": "Password must be 128 characters or less",
+      "passwordFormat": "Password must include uppercase, lowercase, digit, and special character, no spaces",
+      "passwordConfirmRequired": "Password confirmation is required",
+      "passwordMismatch": "Passwords do not match"
+    },
+    "error": {
+      "createFailed": "Failed to create user.",
+      "superAdminRestricted": "Only Super Admins can assign the Super Admin role."
+    }
+  },
+  "roleView": {
+    "title": "{roleName}",
+    "descriptionPlaceholder": "Role Description",
+    "permissions": {
+      "title": "Permissions",
+      "filter": {
+        "label": "Filter Permissions",
+        "searchPlaceholder": "Search permissions...",
+        "categoryPlaceholder": "All Categories"
+      },
+      "noPermissions": "No permissions available"
+    },
+    "form": {
+      "labels": {
+        "name": "Role Name",
+        "description": "Role Description"
+      },
+      "placeholders": {
+        "name": "Role Name",
+        "description": "Role Description"
+      }
+    },
+    "actions": {
+      "edit": "Edit",
+      "delete": "Delete",
+      "save": "Save",
+      "cancel": "Cancel",
+      "saveChanges": "Save Changes",
+      "saving": "Saving...",
+      "toggleAll": "Select All",
+      "toggleAllOff": "Deselect All",
+      "deleteConfirm": "Are you sure you want to delete the \"{roleName}\" role? This action cannot be undone."
+    },
+    "validation": {
+      "nameRequired": "Role name is required",
+      "nameLengthMin": "Role name must be at least 3 characters",
+      "nameLengthMax": "Role name must be 20 characters or less",
+      "nameFormat": "Role name can only contain letters, spaces, or hyphens",
+      "descriptionLengthMax": "Description must be 150 characters or less"
+    },
+    "error": {
+      "updateFailed": "Failed to update role.",
+      "deleteFailed": "Failed to delete role.",
+      "savePermissionsFailed": "Failed to save permissions.",
+      "superAdminRestricted": "The Super Admin role cannot be modified or deleted."
+    }
+  },
+  "rolesList": {
+    "title": "Roles",
+    "categories": {
+      "fixed": "Fixed Roles",
+      "premade": "Pre-made Roles",
+      "custom": "Custom Roles"
+    },
+    "roleCard": {
+      "permissionCount": "{count} Permissions"
+    },
+    "popup": {
+      "noDescription": "No description available",
+      "permissionsTitle": "Permissions by Class",
+      "noPermissions": "No permissions assigned",
+      "loading": "Loading..."
+    },
+    "confirmation": {
+      "unsavedChanges": "You have unsaved changes. Are you sure you want to switch roles?",
+      "premadeWarning": "Warning: Modifying pre-made roles may affect system functionality. Are you sure you want to proceed?"
+    },
+    "actions": {
+      "confirm": "Confirm",
+      "cancel": "Cancel"
+    },
+    "error": {
+      "fetchPermissionsFailed": "Failed to load role permissions.",
+      "superAdminRestricted": "The Super Admin role cannot be modified.",
+      "adminRestricted": "Only Super Admins can modify the Admin role."
+    }
+  },
+  "roleAdd": {
+    "title": "Create New Role",
+    "sections": {
+      "roleDetails": "Role Details",
+      "permissions": "Permissions"
+    },
+    "form": {
+      "labels": {
+        "name": "Name *",
+        "description": "Description",
+        "assignPermissions": "Assign Permissions"
+      },
+      "placeholders": {
+        "name": "Enter role name",
+        "description": "Enter role description",
+        "permissionSearch": "Search permissions..."
+      }
+    },
+    "permissions": {
+      "filter": {
+        "label": "Filter Permissions",
+        "categoryPlaceholder": "All Categories"
+      },
+      "noPermissions": "No permissions available"
+    },
+    "actions": {
+      "create": "Create Role",
+      "toggleAll": "Select All",
+      "toggleAllOff": "Deselect All"
+    },
+    "validation": {
+      "nameRequired": "Role name is required",
+      "nameLengthMin": "Role name must be at least 3 characters",
+      "nameLengthMax": "Role name must be 20 characters or less",
+      "nameFormat": "Role name can only contain letters, spaces, or hyphens",
+      "descriptionLengthMax": "Description must be 150 characters or less"
+    },
+    "error": {
+      "createFailed": "Failed to create role.",
+      "validationFailed": "Please correct the errors before submitting."
+    }
+  },
+  "permsList": {
+    "title": "Permissions",
+    "filter": {
+      "label": "Filter Permissions",
+      "searchPlaceholder": "Search permissions...",
+      "categoryPlaceholder": "All Classes"
+    },
+    "permissionCard": {
+      "noDescription": "No description"
+    }
+  },
+  "permView": {
+    "title": {
+      "view": "{permissionName}",
+      "edit": "Edit Permission"
+    },
+    "fields": {
+      "class": "Class",
+      "description": "Description",
+      "noDescription": "No description"
+    },
+    "form": {
+      "labels": {
+        "name": "Permission Name *",
+        "class": "Class *",
+        "description": "Permission Description"
+      },
+      "placeholders": {
+        "name": "Permission Name",
+        "class": "Select a class",
+        "description": "Permission Description"
+      }
+    },
+    "actions": {
+      "edit": "Edit",
+      "delete": "Delete",
+      "save": "Save",
+      "cancel": "Cancel",
+      "close": "Close",
+      "saving": "Saving..."
+    },
+    "validation": {
+      "nameRequired": "Permission name is required",
+      "nameLengthMin": "Permission name must be at least 10 characters",
+      "nameLengthMax": "Permission name must be 30 characters or less",
+      "nameFormat": "Permission name must contain only lowercase letters and underscores (e.g., read_users)",
+      "classRequired": "Permission class is required",
+      "classLengthMin": "Class must be at least 3 characters",
+      "classLengthMax": "Class must be 20 characters or less",
+      "classFormat": "Class can only contain letters",
+      "descriptionLengthMax": "Description must be 150 characters or less"
+    },
+    "error": {
+      "updateFailed": "Failed to update permission.",
+      "deleteFailed": "Failed to delete permission.",
+      "validationFailed": "Please correct the errors before saving."
+    }
+  },
+  "permAdd": {
+    "title": "Create New Permission",
+    "form": {
+      "labels": {
+        "name": "Name *",
+        "class": "Class *",
+        "description": "Description"
+      },
+      "placeholders": {
+        "name": "Enter permission name",
+        "class": "Select a class",
+        "description": "Enter permission description"
+      }
+    },
+    "actions": {
+      "create": "Create Permission"
+    },
+    "validation": {
+      "nameRequired": "Permission name is required",
+      "nameLengthMin": "Permission name must be at least 10 characters",
+      "nameLengthMax": "Permission name must be 30 characters or less",
+      "nameFormat": "Permission name must contain only lowercase letters and underscores (e.g., read_users)",
+      "classRequired": "Permission class is required",
+      "classLengthMin": "Class must be at least 3 characters",
+      "classLengthMax": "Class must be 20 characters or less",
+      "classFormat": "Class can only contain letters",
+      "descriptionLengthMax": "Description must be 150 characters or less"
+    },
+    "error": {
+      "createFailed": "Failed to create permission.",
+      "validationFailed": "Please correct the errors before submitting."
+    }
+  },
+  "reasonView": {
+    "title": {
+      "view": "{reasonItem}",
+      "edit": "Edit Reason"
+    },
+    "actions": {
+      "edit": "Edit",
+      "delete": "Delete",
+      "save": "Save",
+      "cancel": "Cancel",
+      "saving": "Saving..."
+    },
+    "error": {
+      "updateFailed": "Failed to update reason.",
+      "deleteFailed": "Failed to delete reason."
+    }
   }
+}
