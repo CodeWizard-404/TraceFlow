@@ -31,6 +31,9 @@ const timesheetRoutes = require('./routes/timesheetRoutes');
 const userRoutes = require('./routes/userRoutes');
 const visitRoutes = require('./routes/visitRoutes');
 
+//const { migratePermissionsToKeycloak } = require('./scripts/migratePe');
+//const { migrateToKeycloak } = require('./scripts/migrateURO');
+
 require('dotenv').config();
 
 const app = express();
@@ -121,6 +124,9 @@ async function startApp() {
     };
 
     try {
+        //await migratePermissionsToKeycloak();
+        //await migrateToKeycloak();
+
         await initializeDatabase();
         addStep('Database Initialization', true, 'Completed');
 

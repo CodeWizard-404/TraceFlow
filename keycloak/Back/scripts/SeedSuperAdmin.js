@@ -7,7 +7,7 @@ const SUPER_ADMIN_CONFIG = {
     password: process.env.SUPER_ADMIN_PASSWORD,
     firstname: 'Super',
     lastname: 'Admin',
-    phone: '00-000-000',
+    phone: '00000000',
     wallet: '0000-0000-0000-0000',
     roleName: 'Super Admin',
 };
