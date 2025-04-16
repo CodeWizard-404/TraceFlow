@@ -58,6 +58,77 @@ async function getClientUUID(token) {
     }
 }
 
+// Placeholder PermissionService implementations
+class PermissionService {
+    static async revokePermissionsFromRole(roleID, permissionIDs) {
+        try {
+            const role = await Role.findByPk(roleID);
+            if (!role) throw new Error('Role not found.');
+
+            const validPermissions = [];
+            for (const permissionID of permissionIDs) {
+                const permission = await Permission.findByPk(permissionID);
+                if (!permission) {
+                    logger.warn(`Permission with ID ${permissionID} not found, skipping revocation.`);
+                    continue;
+                }
+                const hasPermission = await role.hasPermission(permission);
+                if (!hasPermission) {
+                    logger.info(`Permission ${permission.name} not assigned to role ${role.name}, skipping revocation.`);
+                    continue;
+                }
+                validPermissions.push(permission);
+            }
+
+            if (validPermissions.length > 0) {
+                await role.removePermissions(validPermissions);
+                logger.info(`Revoked ${validPermissions.length} permissions from role ${roleID}`);
+            } else {
+                logger.info(`No valid permissions to revoke from role ${roleID}`);
+            }
+
+            return { roleID, revokedPermissions: validPermissions.map((p) => p.name) };
+        } catch (error) {
+            logger.error(`Revoke permissions error: ${error.message}, role: ${roleID}`);
+            throw new Error(error.message || 'Could not revoke permissions.');
+        }
+    }
+
+    static async assignPermissionsToRole(roleID, permissionIDs) {
+        try {
+            const role = await Role.findByPk(roleID);
+            if (!role) throw new Error('Role not found.');
+
+            const validPermissions = [];
+            for (const permissionID of permissionIDs) {
+                const permission = await Permission.findByPk(permissionID);
+                if (!permission) {
+                    logger.warn(`Permission with ID ${permissionID} not found, skipping assignment.`);
+                    continue;
+                }
+                const hasPermission = await role.hasPermission(permission);
+                if (hasPermission) {
+                    logger.info(`Permission ${permission.name} already assigned to role ${role.name}, skipping assignment.`);
+                    continue;
+                }
+                validPermissions.push(permission);
+            }
+
+            if (validPermissions.length > 0) {
+                await role.addPermissions(validPermissions);
+                logger.info(`Assigned ${validPermissions.length} permissions to role ${roleID}`);
+            } else {
+                logger.info(`No valid permissions to assign to role ${roleID}`);
+            }
+
+            return { roleID, assignedPermissions: validPermissions.map((p) => p.name) };
+        } catch (error) {
+            logger.error(`Assign permissions error: ${error.message}, role: ${roleID}`);
+            throw new Error(error.message || 'Could not assign permissions.');
+        }
+    }
+}
+
 // Rest of RoleService remains unchanged...
 class RoleService {
     // Create a new role
@@ -594,6 +665,20 @@ class RoleService {
             const allPermissions = await Permission.findAll();
             const allPermissionNames = allPermissions.map((p) => p.name);
 
+            // Validate permission names in defaultRoles
+            for (const defaultRole of defaultRoles) {
+                if (defaultRole.name !== 'Super Admin') {
+                    const invalidPermissions = defaultRole.permissions.filter(
+                        (p) => !allPermissionNames.includes(p)
+                    );
+                    if (invalidPermissions.length > 0) {
+                        logger.warn(
+                            `Invalid permissions for role ${defaultRole.name}: ${invalidPermissions.join(', ')}`
+                        );
+                    }
+                }
+            }
+
             // Create or update resources in Keycloak for each permission
             const resourceMap = new Map();
             for (const permission of allPermissions) {
@@ -746,16 +831,39 @@ class RoleService {
                         (p) =>
                             defaultRole.name !== 'Super Admin' && !defaultRole.permissions.includes(p.name)
                     )
-                    .map((p) => p.permissionID);
+                    .map((p) => p.permissionID)
+                    .filter((id) => {
+                        const isValid = allPermissions.some((perm) => perm.permissionID === id);
+                        if (!isValid) {
+                            logger.warn(`Invalid permission ID ${id} detected during revocation for role ${defaultRole.name}`);
+                        }
+                        return isValid;
+                    });
+
                 if (permissionsToRevoke.length > 0) {
-                    await PermissionService.revokePermissionsFromRole(role.roleID, permissionsToRevoke);
+                    try {
+                        await PermissionService.revokePermissionsFromRole(role.roleID, permissionsToRevoke);
+                    } catch (error) {
+                        logger.error(`Failed to revoke permissions for role ${defaultRole.name}: ${error.message}, permissions: ${JSON.stringify(permissionsToRevoke)}`);
+                    }
                 }
 
-                const permissionsToAssign = permissionIDsToAssign.filter(
-                    (id) => !currentPermissionIDs.includes(id)
-                );
+                const permissionsToAssign = permissionIDsToAssign
+                    .filter((id) => !currentPermissionIDs.includes(id))
+                    .filter((id) => {
+                        const isValid = allPermissions.some((perm) => perm.permissionID === id);
+                        if (!isValid) {
+                            logger.warn(`Invalid permission ID ${id} detected during assignment for role ${defaultRole.name}`);
+                        }
+                        return isValid;
+                    });
+
                 if (permissionsToAssign.length > 0) {
-                    await PermissionService.assignPermissionsToRole(role.roleID, permissionsToAssign);
+                    try {
+                        await PermissionService.assignPermissionsToRole(role.roleID, permissionsToAssign);
+                    } catch (error) {
+                        logger.error(`Failed to assign permissions for role ${defaultRole.name}: ${error.message}, permissions: ${JSON.stringify(permissionsToAssign)}`);
+                    }
                 }
 
                 results.push({
