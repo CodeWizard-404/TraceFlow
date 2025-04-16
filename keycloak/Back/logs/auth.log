@@ -3464,3 +3464,230 @@
 {"ip":"192.168.1.26","level":"info","message":"Fetched permissions for role rol_PwfJoIkzawLfb3vfhGMyM by user dfeb879d-c071-48ce-9d5d-32b5d06955d5, IP: 192.168.1.26","timestamp":"2025-04-16T01:12:53.203Z"}
 {"level":"info","message":"Super Admin bypass for user dfeb879d-c071-48ce-9d5d-32b5d06955d5","timestamp":"2025-04-16T01:12:56.554Z"}
 {"ip":"192.168.1.26","level":"info","message":"Fetched permissions for role rol_yNvaFhlj8l9ILWJmjzLsq by user dfeb879d-c071-48ce-9d5d-32b5d06955d5, IP: 192.168.1.26","timestamp":"2025-04-16T01:12:56.561Z"}
+{"level":"info","message":"Cleaning up expired OTPs","timestamp":"2025-04-16T09:00:00.007Z"}
+{"level":"info","message":"Cleaned up 0 expired OTPs","timestamp":"2025-04-16T09:00:00.214Z"}
+{"level":"info","message":"Keycloak admin token obtained","timestamp":"2025-04-16T09:18:58.723Z"}
+{"level":"info","message":"Generated OTP for user ID: user_t5r8no9rq","timestamp":"2025-04-16T09:18:59.277Z"}
+{"level":"info","message":"Login attempt for superadmin@example.com, requires2FA: true","timestamp":"2025-04-16T09:19:01.114Z"}
+{"level":"info","message":"Successfully validated OTP for user ID: user_t5r8no9rq","timestamp":"2025-04-16T09:19:40.565Z"}
+{"level":"info","message":"Login response generated for user user_t5r8no9rq","timestamp":"2025-04-16T09:19:40.952Z"}
+{"level":"info","message":"2FA verified for user user_t5r8no9rq","timestamp":"2025-04-16T09:19:40.974Z"}
+{"level":"info","message":"2FA cache hit for user_t5r8no9rq","timestamp":"2025-04-16T09:19:41.072Z"}
+{"ip":"192.168.0.101","level":"info","message":"Fetched roles for user user_t5r8no9rq by 55fc4e7b-a291-4e9b-aa58-06a6dfff4ab4, IP: 192.168.0.101","timestamp":"2025-04-16T09:19:42.668Z"}
+{"ip":"192.168.0.101","level":"info","message":"Fetched effective permissions for user user_t5r8no9rq by 55fc4e7b-a291-4e9b-aa58-06a6dfff4ab4, IP: 192.168.0.101","timestamp":"2025-04-16T09:19:42.682Z"}
+{"ip":"192.168.0.101","level":"info","message":"Fetched roles for user user_t5r8no9rq by 55fc4e7b-a291-4e9b-aa58-06a6dfff4ab4, IP: 192.168.0.101","timestamp":"2025-04-16T09:19:42.757Z"}
+{"ip":"192.168.0.101","level":"info","message":"Fetched effective permissions for user user_t5r8no9rq by 55fc4e7b-a291-4e9b-aa58-06a6dfff4ab4, IP: 192.168.0.101","timestamp":"2025-04-16T09:19:42.773Z"}
+{"level":"info","message":"Super Admin bypass for user 55fc4e7b-a291-4e9b-aa58-06a6dfff4ab4","timestamp":"2025-04-16T09:19:43.062Z"}
+{"ip":"192.168.0.101","level":"info","message":"Fetched all users by user 55fc4e7b-a291-4e9b-aa58-06a6dfff4ab4, IP: 192.168.0.101","timestamp":"2025-04-16T09:19:43.074Z"}
+{"level":"info","message":"Super Admin bypass for user 55fc4e7b-a291-4e9b-aa58-06a6dfff4ab4","timestamp":"2025-04-16T09:19:43.088Z"}
+{"ip":"192.168.0.101","level":"info","message":"Fetched all roles by user 55fc4e7b-a291-4e9b-aa58-06a6dfff4ab4, IP: 192.168.0.101","timestamp":"2025-04-16T09:19:43.102Z"}
+{"level":"info","message":"Super Admin bypass for user 55fc4e7b-a291-4e9b-aa58-06a6dfff4ab4","timestamp":"2025-04-16T09:19:43.159Z"}
+{"level":"info","message":"Super Admin bypass for user 55fc4e7b-a291-4e9b-aa58-06a6dfff4ab4","timestamp":"2025-04-16T09:19:43.168Z"}
+{"level":"info","message":"Super Admin bypass for user 55fc4e7b-a291-4e9b-aa58-06a6dfff4ab4","timestamp":"2025-04-16T09:19:43.176Z"}
+{"ip":"192.168.0.101","level":"info","message":"Fetched all checklists by user 55fc4e7b-a291-4e9b-aa58-06a6dfff4ab4, IP: 192.168.0.101","timestamp":"2025-04-16T09:19:43.226Z"}
+{"ip":"192.168.0.101","level":"info","message":"Fetched all roles by user 55fc4e7b-a291-4e9b-aa58-06a6dfff4ab4, IP: 192.168.0.101","timestamp":"2025-04-16T09:19:43.249Z"}
+{"ip":"192.168.0.101","level":"info","message":"Fetched all permissions by user 55fc4e7b-a291-4e9b-aa58-06a6dfff4ab4, IP: 192.168.0.101","timestamp":"2025-04-16T09:19:43.260Z"}
+{"level":"info","message":"Super Admin bypass for user 55fc4e7b-a291-4e9b-aa58-06a6dfff4ab4","timestamp":"2025-04-16T09:19:43.296Z"}
+{"ip":"192.168.0.101","level":"info","message":"Fetched all users by user 55fc4e7b-a291-4e9b-aa58-06a6dfff4ab4, IP: 192.168.0.101","timestamp":"2025-04-16T09:19:43.314Z"}
+{"level":"info","message":"Super Admin bypass for user 55fc4e7b-a291-4e9b-aa58-06a6dfff4ab4","timestamp":"2025-04-16T09:19:43.325Z"}
+{"ip":"192.168.0.101","level":"info","message":"Fetched all reasons by user 55fc4e7b-a291-4e9b-aa58-06a6dfff4ab4, IP: 192.168.0.101","timestamp":"2025-04-16T09:19:43.373Z"}
+{"level":"info","message":"Super Admin bypass for user 55fc4e7b-a291-4e9b-aa58-06a6dfff4ab4","timestamp":"2025-04-16T09:19:43.411Z"}
+{"level":"info","message":"Super Admin bypass for user 55fc4e7b-a291-4e9b-aa58-06a6dfff4ab4","timestamp":"2025-04-16T09:19:43.419Z"}
+{"ip":"192.168.0.101","level":"info","message":"Fetched all checklists by user 55fc4e7b-a291-4e9b-aa58-06a6dfff4ab4, IP: 192.168.0.101","timestamp":"2025-04-16T09:19:43.425Z"}
+{"ip":"192.168.0.101","level":"info","message":"Fetched all permissions by user 55fc4e7b-a291-4e9b-aa58-06a6dfff4ab4, IP: 192.168.0.101","timestamp":"2025-04-16T09:19:43.436Z"}
+{"level":"info","message":"Super Admin bypass for user 55fc4e7b-a291-4e9b-aa58-06a6dfff4ab4","timestamp":"2025-04-16T09:19:43.447Z"}
+{"ip":"192.168.0.101","level":"info","message":"Fetched all reasons by user 55fc4e7b-a291-4e9b-aa58-06a6dfff4ab4, IP: 192.168.0.101","timestamp":"2025-04-16T09:19:43.474Z"}
+{"ip":"192.168.0.101","level":"info","message":"Fetched roles for user user_t5r8no9rq by 55fc4e7b-a291-4e9b-aa58-06a6dfff4ab4, IP: 192.168.0.101","timestamp":"2025-04-16T09:19:43.612Z"}
+{"ip":"192.168.0.101","level":"info","message":"Fetched roles for user user_t5r8no9rq by 55fc4e7b-a291-4e9b-aa58-06a6dfff4ab4, IP: 192.168.0.101","timestamp":"2025-04-16T09:19:43.690Z"}
+{"level":"info","message":"Super Admin bypass for user 55fc4e7b-a291-4e9b-aa58-06a6dfff4ab4","timestamp":"2025-04-16T09:19:54.222Z"}
+{"ip":null,"level":"info","message":"Role Admin created by user 55fc4e7b-a291-4e9b-aa58-06a6dfff4ab4","timestamp":"2025-04-16T09:19:59.001Z"}
+{"ip":null,"level":"error","message":"Assign permissions error: Argument passed to findByPk is invalid: perm_8xcP9b2Q4FcYsjIfI_91X,perm_3Z1U7gisYlCFa1z_jCw6R,perm_mMfsR5so4bX-DwmluadIB,perm_Fvj77RhCL-P7qDn2eiRYb,perm_zQq2utcZqC_RCJhu90S8K,perm_BHioSxi-X5s8PqDMlqhhb,perm_NP7N_V0HvvRP8WW5k2CM2,perm_2AYdMUCALejJF7tNhPFIe,perm_aIZt0o3efJRHySAKfn9NS,perm_ZVWHYBjo93dcL065sSsjQ,perm_i-DbVZGgjOjXkhwnNLQjr,perm_B9gjFyxc1FBmq4WxNdEDm,perm_Kh4n2aq-TU-T23OaFu0cx,perm_hhYSplKsLR5M0Sx9gABqr,perm_tUoQ1WrUO8xaEXGzglIEd,perm_Nt-FiQDM-TW7M8LDV1vlx,perm_ql5F7KoSZE_Aq9aF_Rgjk,perm_1mwiYKHhHaOeD7F5qnOfs,perm_2ocgTFBYplOT2kT8se5Ky,perm_d1E9JD9Dd9vPCu7KPF3qu,perm_3LnOWYln_A3vIa9-WP0WI,perm_lV7WnBnJ_LqNAx_YHLvip,perm_4vc_q_3htZzxeRU8IOfrN,perm_f84w3e3U1mW3IPpHR5jKD,perm_Gq3GhoND-MQ1a2SUZ3zYb,perm_4sLpOWmSd1wGvkn_ku6Kl,perm_vTJbby6dbCG-RJngjX6gG,perm_pVrOwSlqtY4bGI-qJGAAE,perm_Hs18B7YOF7ctEqjR2GZzH,perm_5Aa4hsuzdh5CtiCgVPe6G,perm_oFBFbNciaEUiw6wYxzD7x,perm_pCvpgsgTKEa-pcV3-Sptm,perm_tsdDrZg_YpO7KMVWN66YD,perm_bMFShr_MX0n2HNnj2_I5b,perm_6aNfDqbFmCLjDPhwd5q3f,perm_zgJ57b7uBONuCC_q3Dx78, user: undefined","timestamp":"2025-04-16T09:19:59.144Z"}
+{"ip":null,"level":"error","message":"Reset roles error: Argument passed to findByPk is invalid: perm_8xcP9b2Q4FcYsjIfI_91X,perm_3Z1U7gisYlCFa1z_jCw6R,perm_mMfsR5so4bX-DwmluadIB,perm_Fvj77RhCL-P7qDn2eiRYb,perm_zQq2utcZqC_RCJhu90S8K,perm_BHioSxi-X5s8PqDMlqhhb,perm_NP7N_V0HvvRP8WW5k2CM2,perm_2AYdMUCALejJF7tNhPFIe,perm_aIZt0o3efJRHySAKfn9NS,perm_ZVWHYBjo93dcL065sSsjQ,perm_i-DbVZGgjOjXkhwnNLQjr,perm_B9gjFyxc1FBmq4WxNdEDm,perm_Kh4n2aq-TU-T23OaFu0cx,perm_hhYSplKsLR5M0Sx9gABqr,perm_tUoQ1WrUO8xaEXGzglIEd,perm_Nt-FiQDM-TW7M8LDV1vlx,perm_ql5F7KoSZE_Aq9aF_Rgjk,perm_1mwiYKHhHaOeD7F5qnOfs,perm_2ocgTFBYplOT2kT8se5Ky,perm_d1E9JD9Dd9vPCu7KPF3qu,perm_3LnOWYln_A3vIa9-WP0WI,perm_lV7WnBnJ_LqNAx_YHLvip,perm_4vc_q_3htZzxeRU8IOfrN,perm_f84w3e3U1mW3IPpHR5jKD,perm_Gq3GhoND-MQ1a2SUZ3zYb,perm_4sLpOWmSd1wGvkn_ku6Kl,perm_vTJbby6dbCG-RJngjX6gG,perm_pVrOwSlqtY4bGI-qJGAAE,perm_Hs18B7YOF7ctEqjR2GZzH,perm_5Aa4hsuzdh5CtiCgVPe6G,perm_oFBFbNciaEUiw6wYxzD7x,perm_pCvpgsgTKEa-pcV3-Sptm,perm_tsdDrZg_YpO7KMVWN66YD,perm_bMFShr_MX0n2HNnj2_I5b,perm_6aNfDqbFmCLjDPhwd5q3f,perm_zgJ57b7uBONuCC_q3Dx78, user: 55fc4e7b-a291-4e9b-aa58-06a6dfff4ab4","timestamp":"2025-04-16T09:19:59.146Z"}
+{"ip":"192.168.0.101","level":"error","message":"Reset roles error: Argument passed to findByPk is invalid: perm_8xcP9b2Q4FcYsjIfI_91X,perm_3Z1U7gisYlCFa1z_jCw6R,perm_mMfsR5so4bX-DwmluadIB,perm_Fvj77RhCL-P7qDn2eiRYb,perm_zQq2utcZqC_RCJhu90S8K,perm_BHioSxi-X5s8PqDMlqhhb,perm_NP7N_V0HvvRP8WW5k2CM2,perm_2AYdMUCALejJF7tNhPFIe,perm_aIZt0o3efJRHySAKfn9NS,perm_ZVWHYBjo93dcL065sSsjQ,perm_i-DbVZGgjOjXkhwnNLQjr,perm_B9gjFyxc1FBmq4WxNdEDm,perm_Kh4n2aq-TU-T23OaFu0cx,perm_hhYSplKsLR5M0Sx9gABqr,perm_tUoQ1WrUO8xaEXGzglIEd,perm_Nt-FiQDM-TW7M8LDV1vlx,perm_ql5F7KoSZE_Aq9aF_Rgjk,perm_1mwiYKHhHaOeD7F5qnOfs,perm_2ocgTFBYplOT2kT8se5Ky,perm_d1E9JD9Dd9vPCu7KPF3qu,perm_3LnOWYln_A3vIa9-WP0WI,perm_lV7WnBnJ_LqNAx_YHLvip,perm_4vc_q_3htZzxeRU8IOfrN,perm_f84w3e3U1mW3IPpHR5jKD,perm_Gq3GhoND-MQ1a2SUZ3zYb,perm_4sLpOWmSd1wGvkn_ku6Kl,perm_vTJbby6dbCG-RJngjX6gG,perm_pVrOwSlqtY4bGI-qJGAAE,perm_Hs18B7YOF7ctEqjR2GZzH,perm_5Aa4hsuzdh5CtiCgVPe6G,perm_oFBFbNciaEUiw6wYxzD7x,perm_pCvpgsgTKEa-pcV3-Sptm,perm_tsdDrZg_YpO7KMVWN66YD,perm_bMFShr_MX0n2HNnj2_I5b,perm_6aNfDqbFmCLjDPhwd5q3f,perm_zgJ57b7uBONuCC_q3Dx78, user: 55fc4e7b-a291-4e9b-aa58-06a6dfff4ab4, IP: 192.168.0.101","timestamp":"2025-04-16T09:19:59.147Z"}
+{"ip":"192.168.0.101","level":"info","message":"Fetched roles for user user_t5r8no9rq by 55fc4e7b-a291-4e9b-aa58-06a6dfff4ab4, IP: 192.168.0.101","timestamp":"2025-04-16T09:20:58.768Z"}
+{"ip":"192.168.0.101","level":"info","message":"Fetched effective permissions for user user_t5r8no9rq by 55fc4e7b-a291-4e9b-aa58-06a6dfff4ab4, IP: 192.168.0.101","timestamp":"2025-04-16T09:20:58.778Z"}
+{"ip":"192.168.0.101","level":"info","message":"Fetched roles for user user_t5r8no9rq by 55fc4e7b-a291-4e9b-aa58-06a6dfff4ab4, IP: 192.168.0.101","timestamp":"2025-04-16T09:20:58.821Z"}
+{"ip":"192.168.0.101","level":"info","message":"Fetched effective permissions for user user_t5r8no9rq by 55fc4e7b-a291-4e9b-aa58-06a6dfff4ab4, IP: 192.168.0.101","timestamp":"2025-04-16T09:20:58.833Z"}
+{"level":"info","message":"Super Admin bypass for user 55fc4e7b-a291-4e9b-aa58-06a6dfff4ab4","timestamp":"2025-04-16T09:20:58.887Z"}
+{"ip":"192.168.0.101","level":"info","message":"Fetched all users by user 55fc4e7b-a291-4e9b-aa58-06a6dfff4ab4, IP: 192.168.0.101","timestamp":"2025-04-16T09:20:58.895Z"}
+{"level":"info","message":"Super Admin bypass for user 55fc4e7b-a291-4e9b-aa58-06a6dfff4ab4","timestamp":"2025-04-16T09:20:58.908Z"}
+{"ip":"192.168.0.101","level":"info","message":"Fetched all roles by user 55fc4e7b-a291-4e9b-aa58-06a6dfff4ab4, IP: 192.168.0.101","timestamp":"2025-04-16T09:20:58.931Z"}
+{"level":"info","message":"Super Admin bypass for user 55fc4e7b-a291-4e9b-aa58-06a6dfff4ab4","timestamp":"2025-04-16T09:20:58.950Z"}
+{"level":"info","message":"Super Admin bypass for user 55fc4e7b-a291-4e9b-aa58-06a6dfff4ab4","timestamp":"2025-04-16T09:20:58.964Z"}
+{"level":"info","message":"Super Admin bypass for user 55fc4e7b-a291-4e9b-aa58-06a6dfff4ab4","timestamp":"2025-04-16T09:20:58.974Z"}
+{"ip":"192.168.0.101","level":"info","message":"Fetched all permissions by user 55fc4e7b-a291-4e9b-aa58-06a6dfff4ab4, IP: 192.168.0.101","timestamp":"2025-04-16T09:20:58.985Z"}
+{"level":"info","message":"Super Admin bypass for user 55fc4e7b-a291-4e9b-aa58-06a6dfff4ab4","timestamp":"2025-04-16T09:20:59.005Z"}
+{"level":"info","message":"Super Admin bypass for user 55fc4e7b-a291-4e9b-aa58-06a6dfff4ab4","timestamp":"2025-04-16T09:20:59.025Z"}
+{"ip":"192.168.0.101","level":"info","message":"Fetched all checklists by user 55fc4e7b-a291-4e9b-aa58-06a6dfff4ab4, IP: 192.168.0.101","timestamp":"2025-04-16T09:20:59.034Z"}
+{"ip":"192.168.0.101","level":"info","message":"Fetched all reasons by user 55fc4e7b-a291-4e9b-aa58-06a6dfff4ab4, IP: 192.168.0.101","timestamp":"2025-04-16T09:20:59.056Z"}
+{"ip":"192.168.0.101","level":"info","message":"Fetched all users by user 55fc4e7b-a291-4e9b-aa58-06a6dfff4ab4, IP: 192.168.0.101","timestamp":"2025-04-16T09:20:59.068Z"}
+{"level":"info","message":"Super Admin bypass for user 55fc4e7b-a291-4e9b-aa58-06a6dfff4ab4","timestamp":"2025-04-16T09:20:59.078Z"}
+{"ip":"192.168.0.101","level":"info","message":"Fetched all roles by user 55fc4e7b-a291-4e9b-aa58-06a6dfff4ab4, IP: 192.168.0.101","timestamp":"2025-04-16T09:20:59.091Z"}
+{"level":"info","message":"Super Admin bypass for user 55fc4e7b-a291-4e9b-aa58-06a6dfff4ab4","timestamp":"2025-04-16T09:20:59.118Z"}
+{"level":"info","message":"Super Admin bypass for user 55fc4e7b-a291-4e9b-aa58-06a6dfff4ab4","timestamp":"2025-04-16T09:20:59.126Z"}
+{"ip":"192.168.0.101","level":"info","message":"Fetched all permissions by user 55fc4e7b-a291-4e9b-aa58-06a6dfff4ab4, IP: 192.168.0.101","timestamp":"2025-04-16T09:20:59.146Z"}
+{"level":"info","message":"Super Admin bypass for user 55fc4e7b-a291-4e9b-aa58-06a6dfff4ab4","timestamp":"2025-04-16T09:20:59.166Z"}
+{"level":"info","message":"Super Admin bypass for user 55fc4e7b-a291-4e9b-aa58-06a6dfff4ab4","timestamp":"2025-04-16T09:20:59.170Z"}
+{"ip":"192.168.0.101","level":"info","message":"Fetched all checklists by user 55fc4e7b-a291-4e9b-aa58-06a6dfff4ab4, IP: 192.168.0.101","timestamp":"2025-04-16T09:20:59.174Z"}
+{"ip":"192.168.0.101","level":"info","message":"Fetched all reasons by user 55fc4e7b-a291-4e9b-aa58-06a6dfff4ab4, IP: 192.168.0.101","timestamp":"2025-04-16T09:20:59.182Z"}
+{"ip":"192.168.0.101","level":"info","message":"Fetched roles for user user_t5r8no9rq by 55fc4e7b-a291-4e9b-aa58-06a6dfff4ab4, IP: 192.168.0.101","timestamp":"2025-04-16T09:20:59.205Z"}
+{"ip":"192.168.0.101","level":"info","message":"Fetched all roles by user 55fc4e7b-a291-4e9b-aa58-06a6dfff4ab4, IP: 192.168.0.101","timestamp":"2025-04-16T09:20:59.221Z"}
+{"level":"info","message":"Super Admin bypass for user 55fc4e7b-a291-4e9b-aa58-06a6dfff4ab4","timestamp":"2025-04-16T09:20:59.231Z"}
+{"level":"info","message":"Super Admin bypass for user 55fc4e7b-a291-4e9b-aa58-06a6dfff4ab4","timestamp":"2025-04-16T09:20:59.235Z"}
+{"ip":"192.168.0.101","level":"info","message":"Fetched all users by user 55fc4e7b-a291-4e9b-aa58-06a6dfff4ab4, IP: 192.168.0.101","timestamp":"2025-04-16T09:20:59.239Z"}
+{"level":"info","message":"Super Admin bypass for user 55fc4e7b-a291-4e9b-aa58-06a6dfff4ab4","timestamp":"2025-04-16T09:20:59.252Z"}
+{"ip":"192.168.0.101","level":"info","message":"Fetched all permissions by user 55fc4e7b-a291-4e9b-aa58-06a6dfff4ab4, IP: 192.168.0.101","timestamp":"2025-04-16T09:20:59.257Z"}
+{"ip":"192.168.0.101","level":"info","message":"Fetched all reasons by user 55fc4e7b-a291-4e9b-aa58-06a6dfff4ab4, IP: 192.168.0.101","timestamp":"2025-04-16T09:20:59.290Z"}
+{"ip":"192.168.0.101","level":"info","message":"Fetched all checklists by user 55fc4e7b-a291-4e9b-aa58-06a6dfff4ab4, IP: 192.168.0.101","timestamp":"2025-04-16T09:20:59.304Z"}
+{"ip":"192.168.0.101","level":"info","message":"Fetched roles for user user_t5r8no9rq by 55fc4e7b-a291-4e9b-aa58-06a6dfff4ab4, IP: 192.168.0.101","timestamp":"2025-04-16T09:20:59.322Z"}
+{"ip":"192.168.0.101","level":"info","message":"Fetched roles for user user_t5r8no9rq by 55fc4e7b-a291-4e9b-aa58-06a6dfff4ab4, IP: 192.168.0.101","timestamp":"2025-04-16T09:20:59.387Z"}
+{"level":"info","message":"Super Admin bypass for user 55fc4e7b-a291-4e9b-aa58-06a6dfff4ab4","timestamp":"2025-04-16T09:21:03.760Z"}
+{"ip":null,"level":"error","message":"Assign permissions error: Argument passed to findByPk is invalid: perm_8xcP9b2Q4FcYsjIfI_91X,perm_3Z1U7gisYlCFa1z_jCw6R,perm_mMfsR5so4bX-DwmluadIB,perm_Fvj77RhCL-P7qDn2eiRYb,perm_zQq2utcZqC_RCJhu90S8K,perm_BHioSxi-X5s8PqDMlqhhb,perm_NP7N_V0HvvRP8WW5k2CM2,perm_2AYdMUCALejJF7tNhPFIe,perm_aIZt0o3efJRHySAKfn9NS,perm_ZVWHYBjo93dcL065sSsjQ,perm_i-DbVZGgjOjXkhwnNLQjr,perm_B9gjFyxc1FBmq4WxNdEDm,perm_Kh4n2aq-TU-T23OaFu0cx,perm_hhYSplKsLR5M0Sx9gABqr,perm_tUoQ1WrUO8xaEXGzglIEd,perm_Nt-FiQDM-TW7M8LDV1vlx,perm_ql5F7KoSZE_Aq9aF_Rgjk,perm_1mwiYKHhHaOeD7F5qnOfs,perm_2ocgTFBYplOT2kT8se5Ky,perm_d1E9JD9Dd9vPCu7KPF3qu,perm_3LnOWYln_A3vIa9-WP0WI,perm_lV7WnBnJ_LqNAx_YHLvip,perm_4vc_q_3htZzxeRU8IOfrN,perm_f84w3e3U1mW3IPpHR5jKD,perm_Gq3GhoND-MQ1a2SUZ3zYb,perm_4sLpOWmSd1wGvkn_ku6Kl,perm_vTJbby6dbCG-RJngjX6gG,perm_pVrOwSlqtY4bGI-qJGAAE,perm_Hs18B7YOF7ctEqjR2GZzH,perm_5Aa4hsuzdh5CtiCgVPe6G,perm_oFBFbNciaEUiw6wYxzD7x,perm_pCvpgsgTKEa-pcV3-Sptm,perm_tsdDrZg_YpO7KMVWN66YD,perm_bMFShr_MX0n2HNnj2_I5b,perm_6aNfDqbFmCLjDPhwd5q3f,perm_zgJ57b7uBONuCC_q3Dx78, user: undefined","timestamp":"2025-04-16T09:21:08.387Z"}
+{"ip":null,"level":"error","message":"Reset roles error: Argument passed to findByPk is invalid: perm_8xcP9b2Q4FcYsjIfI_91X,perm_3Z1U7gisYlCFa1z_jCw6R,perm_mMfsR5so4bX-DwmluadIB,perm_Fvj77RhCL-P7qDn2eiRYb,perm_zQq2utcZqC_RCJhu90S8K,perm_BHioSxi-X5s8PqDMlqhhb,perm_NP7N_V0HvvRP8WW5k2CM2,perm_2AYdMUCALejJF7tNhPFIe,perm_aIZt0o3efJRHySAKfn9NS,perm_ZVWHYBjo93dcL065sSsjQ,perm_i-DbVZGgjOjXkhwnNLQjr,perm_B9gjFyxc1FBmq4WxNdEDm,perm_Kh4n2aq-TU-T23OaFu0cx,perm_hhYSplKsLR5M0Sx9gABqr,perm_tUoQ1WrUO8xaEXGzglIEd,perm_Nt-FiQDM-TW7M8LDV1vlx,perm_ql5F7KoSZE_Aq9aF_Rgjk,perm_1mwiYKHhHaOeD7F5qnOfs,perm_2ocgTFBYplOT2kT8se5Ky,perm_d1E9JD9Dd9vPCu7KPF3qu,perm_3LnOWYln_A3vIa9-WP0WI,perm_lV7WnBnJ_LqNAx_YHLvip,perm_4vc_q_3htZzxeRU8IOfrN,perm_f84w3e3U1mW3IPpHR5jKD,perm_Gq3GhoND-MQ1a2SUZ3zYb,perm_4sLpOWmSd1wGvkn_ku6Kl,perm_vTJbby6dbCG-RJngjX6gG,perm_pVrOwSlqtY4bGI-qJGAAE,perm_Hs18B7YOF7ctEqjR2GZzH,perm_5Aa4hsuzdh5CtiCgVPe6G,perm_oFBFbNciaEUiw6wYxzD7x,perm_pCvpgsgTKEa-pcV3-Sptm,perm_tsdDrZg_YpO7KMVWN66YD,perm_bMFShr_MX0n2HNnj2_I5b,perm_6aNfDqbFmCLjDPhwd5q3f,perm_zgJ57b7uBONuCC_q3Dx78, user: 55fc4e7b-a291-4e9b-aa58-06a6dfff4ab4","timestamp":"2025-04-16T09:21:08.388Z"}
+{"ip":"192.168.0.101","level":"error","message":"Reset roles error: Argument passed to findByPk is invalid: perm_8xcP9b2Q4FcYsjIfI_91X,perm_3Z1U7gisYlCFa1z_jCw6R,perm_mMfsR5so4bX-DwmluadIB,perm_Fvj77RhCL-P7qDn2eiRYb,perm_zQq2utcZqC_RCJhu90S8K,perm_BHioSxi-X5s8PqDMlqhhb,perm_NP7N_V0HvvRP8WW5k2CM2,perm_2AYdMUCALejJF7tNhPFIe,perm_aIZt0o3efJRHySAKfn9NS,perm_ZVWHYBjo93dcL065sSsjQ,perm_i-DbVZGgjOjXkhwnNLQjr,perm_B9gjFyxc1FBmq4WxNdEDm,perm_Kh4n2aq-TU-T23OaFu0cx,perm_hhYSplKsLR5M0Sx9gABqr,perm_tUoQ1WrUO8xaEXGzglIEd,perm_Nt-FiQDM-TW7M8LDV1vlx,perm_ql5F7KoSZE_Aq9aF_Rgjk,perm_1mwiYKHhHaOeD7F5qnOfs,perm_2ocgTFBYplOT2kT8se5Ky,perm_d1E9JD9Dd9vPCu7KPF3qu,perm_3LnOWYln_A3vIa9-WP0WI,perm_lV7WnBnJ_LqNAx_YHLvip,perm_4vc_q_3htZzxeRU8IOfrN,perm_f84w3e3U1mW3IPpHR5jKD,perm_Gq3GhoND-MQ1a2SUZ3zYb,perm_4sLpOWmSd1wGvkn_ku6Kl,perm_vTJbby6dbCG-RJngjX6gG,perm_pVrOwSlqtY4bGI-qJGAAE,perm_Hs18B7YOF7ctEqjR2GZzH,perm_5Aa4hsuzdh5CtiCgVPe6G,perm_oFBFbNciaEUiw6wYxzD7x,perm_pCvpgsgTKEa-pcV3-Sptm,perm_tsdDrZg_YpO7KMVWN66YD,perm_bMFShr_MX0n2HNnj2_I5b,perm_6aNfDqbFmCLjDPhwd5q3f,perm_zgJ57b7uBONuCC_q3Dx78, user: 55fc4e7b-a291-4e9b-aa58-06a6dfff4ab4, IP: 192.168.0.101","timestamp":"2025-04-16T09:21:08.390Z"}
+{"ip":"192.168.0.101","level":"info","message":"Fetched roles for user user_t5r8no9rq by 55fc4e7b-a291-4e9b-aa58-06a6dfff4ab4, IP: 192.168.0.101","timestamp":"2025-04-16T09:29:37.818Z"}
+{"ip":"192.168.0.101","level":"info","message":"Fetched effective permissions for user user_t5r8no9rq by 55fc4e7b-a291-4e9b-aa58-06a6dfff4ab4, IP: 192.168.0.101","timestamp":"2025-04-16T09:29:37.832Z"}
+{"ip":"192.168.0.101","level":"info","message":"Fetched roles for user user_t5r8no9rq by 55fc4e7b-a291-4e9b-aa58-06a6dfff4ab4, IP: 192.168.0.101","timestamp":"2025-04-16T09:29:37.885Z"}
+{"ip":"192.168.0.101","level":"info","message":"Fetched effective permissions for user user_t5r8no9rq by 55fc4e7b-a291-4e9b-aa58-06a6dfff4ab4, IP: 192.168.0.101","timestamp":"2025-04-16T09:29:37.908Z"}
+{"level":"warn","message":"No access token provided","timestamp":"2025-04-16T09:38:18.173Z"}
+{"level":"warn","message":"No access token provided","timestamp":"2025-04-16T09:38:18.188Z"}
+{"level":"warn","message":"No access token provided","timestamp":"2025-04-16T09:38:18.198Z"}
+{"level":"warn","message":"No access token provided","timestamp":"2025-04-16T09:38:18.204Z"}
+{"level":"warn","message":"No access token provided","timestamp":"2025-04-16T09:38:18.210Z"}
+{"level":"warn","message":"No access token provided","timestamp":"2025-04-16T09:38:18.230Z"}
+{"level":"warn","message":"No access token provided","timestamp":"2025-04-16T09:38:18.234Z"}
+{"level":"info","message":"Initiating token refresh","timestamp":"2025-04-16T09:38:18.239Z"}
+{"level":"info","message":"Initiating token refresh","timestamp":"2025-04-16T09:38:18.255Z"}
+{"level":"warn","message":"No access token provided","timestamp":"2025-04-16T09:38:18.262Z"}
+{"level":"info","message":"Initiating token refresh","timestamp":"2025-04-16T09:38:18.266Z"}
+{"level":"warn","message":"No access token provided","timestamp":"2025-04-16T09:38:18.271Z"}
+{"level":"info","message":"Initiating token refresh","timestamp":"2025-04-16T09:38:18.274Z"}
+{"level":"warn","message":"No access token provided","timestamp":"2025-04-16T09:38:18.286Z"}
+{"level":"info","message":"Initiating token refresh","timestamp":"2025-04-16T09:38:18.289Z"}
+{"level":"error","message":"Token refresh failed: ","timestamp":"2025-04-16T09:38:18.299Z"}
+{"level":"error","message":"Refresh token error: Can’t refresh session. Log in again.","timestamp":"2025-04-16T09:38:18.300Z"}
+{"level":"info","message":"Initiating token refresh","timestamp":"2025-04-16T09:38:18.368Z"}
+{"level":"error","message":"Token refresh failed: ","timestamp":"2025-04-16T09:38:18.378Z"}
+{"level":"error","message":"Refresh token error: Can’t refresh session. Log in again.","timestamp":"2025-04-16T09:38:18.380Z"}
+{"level":"error","message":"Token refresh failed: ","timestamp":"2025-04-16T09:38:18.385Z"}
+{"level":"error","message":"Refresh token error: Can’t refresh session. Log in again.","timestamp":"2025-04-16T09:38:18.387Z"}
+{"level":"error","message":"Token refresh failed: ","timestamp":"2025-04-16T09:38:18.395Z"}
+{"level":"error","message":"Refresh token error: Can’t refresh session. Log in again.","timestamp":"2025-04-16T09:38:18.396Z"}
+{"level":"info","message":"Initiating token refresh","timestamp":"2025-04-16T09:38:18.405Z"}
+{"level":"error","message":"Token refresh failed: ","timestamp":"2025-04-16T09:38:18.414Z"}
+{"level":"error","message":"Refresh token error: Can’t refresh session. Log in again.","timestamp":"2025-04-16T09:38:18.416Z"}
+{"level":"info","message":"Initiating token refresh","timestamp":"2025-04-16T09:38:18.423Z"}
+{"level":"info","message":"Initiating token refresh","timestamp":"2025-04-16T09:38:18.434Z"}
+{"level":"error","message":"Token refresh failed: ","timestamp":"2025-04-16T09:38:18.442Z"}
+{"level":"error","message":"Refresh token error: Can’t refresh session. Log in again.","timestamp":"2025-04-16T09:38:18.444Z"}
+{"level":"info","message":"Initiating token refresh","timestamp":"2025-04-16T09:38:18.449Z"}
+{"level":"error","message":"Token refresh failed: ","timestamp":"2025-04-16T09:38:18.457Z"}
+{"level":"error","message":"Refresh token error: Can’t refresh session. Log in again.","timestamp":"2025-04-16T09:38:18.458Z"}
+{"level":"error","message":"Token refresh failed: ","timestamp":"2025-04-16T09:38:18.465Z"}
+{"level":"error","message":"Refresh token error: Can’t refresh session. Log in again.","timestamp":"2025-04-16T09:38:18.466Z"}
+{"level":"error","message":"Token refresh failed: ","timestamp":"2025-04-16T09:38:18.472Z"}
+{"level":"error","message":"Refresh token error: Can’t refresh session. Log in again.","timestamp":"2025-04-16T09:38:18.474Z"}
+{"level":"error","message":"Token refresh failed: ","timestamp":"2025-04-16T09:38:18.482Z"}
+{"level":"error","message":"Refresh token error: Can’t refresh session. Log in again.","timestamp":"2025-04-16T09:38:18.483Z"}
+{"level":"error","message":"Keycloak login error for superadmin@example.com: ","timestamp":"2025-04-16T09:38:20.968Z"}
+{"level":"error","message":"Login error for superadmin@example.com: Wrong email or password.","timestamp":"2025-04-16T09:38:20.970Z"}
+{"level":"info","message":"Initiating token refresh","timestamp":"2025-04-16T09:38:21.003Z"}
+{"level":"error","message":"Token refresh failed: ","timestamp":"2025-04-16T09:38:21.018Z"}
+{"level":"error","message":"Refresh token error: Can’t refresh session. Log in again.","timestamp":"2025-04-16T09:38:21.021Z"}
+{"level":"error","message":"Keycloak login error for superadmin@example.com: ","timestamp":"2025-04-16T09:38:22.841Z"}
+{"level":"error","message":"Login error for superadmin@example.com: Wrong email or password.","timestamp":"2025-04-16T09:38:22.844Z"}
+{"level":"info","message":"Initiating token refresh","timestamp":"2025-04-16T09:38:22.867Z"}
+{"level":"error","message":"Token refresh failed: ","timestamp":"2025-04-16T09:38:22.875Z"}
+{"level":"error","message":"Refresh token error: Can’t refresh session. Log in again.","timestamp":"2025-04-16T09:38:22.877Z"}
+{"level":"error","message":"Keycloak login error for superadmin@example.com: ","timestamp":"2025-04-16T09:38:24.750Z"}
+{"level":"error","message":"Login error for superadmin@example.com: Wrong email or password.","timestamp":"2025-04-16T09:38:24.751Z"}
+{"level":"info","message":"Initiating token refresh","timestamp":"2025-04-16T09:38:24.775Z"}
+{"level":"error","message":"Token refresh failed: ","timestamp":"2025-04-16T09:38:24.790Z"}
+{"level":"error","message":"Refresh token error: Can’t refresh session. Log in again.","timestamp":"2025-04-16T09:38:24.791Z"}
+{"level":"info","message":"Cleaning up expired OTPs","timestamp":"2025-04-16T10:00:00.027Z"}
+{"level":"info","message":"Cleaned up 0 expired OTPs","timestamp":"2025-04-16T10:00:00.130Z"}
+{"level":"error","message":"Keycloak login error for superadmin@example.com: ","timestamp":"2025-04-16T10:47:34.684Z"}
+{"level":"error","message":"Login error for superadmin@example.com: Wrong email or password.","timestamp":"2025-04-16T10:47:34.690Z"}
+{"level":"info","message":"Initiating token refresh","timestamp":"2025-04-16T10:47:34.712Z"}
+{"level":"error","message":"Token refresh failed: ","timestamp":"2025-04-16T10:47:34.726Z"}
+{"level":"error","message":"Refresh token error: Can’t refresh session. Log in again.","timestamp":"2025-04-16T10:47:34.729Z"}
+{"level":"info","message":"Keycloak admin token obtained","timestamp":"2025-04-16T10:49:05.001Z"}
+{"level":"info","message":"Login response generated for user user_t5r8no9rq","timestamp":"2025-04-16T10:49:05.297Z"}
+{"level":"info","message":"Login attempt for superadmin@example.com, requires2FA: false","timestamp":"2025-04-16T10:49:05.301Z"}
+{"level":"info","message":"Keycloak admin token obtained","timestamp":"2025-04-16T10:49:05.591Z"}
+{"level":"info","message":"Login response generated for user user_t5r8no9rq","timestamp":"2025-04-16T10:49:05.714Z"}
+{"level":"info","message":"Login attempt for superadmin@example.com, requires2FA: false","timestamp":"2025-04-16T10:49:05.718Z"}
+{"ip":"192.168.0.101","level":"info","message":"Fetched effective permissions for user user_t5r8no9rq by 55fc4e7b-a291-4e9b-aa58-06a6dfff4ab4, IP: 192.168.0.101","timestamp":"2025-04-16T10:49:05.836Z"}
+{"ip":"192.168.0.101","level":"info","message":"Fetched roles for user user_t5r8no9rq by 55fc4e7b-a291-4e9b-aa58-06a6dfff4ab4, IP: 192.168.0.101","timestamp":"2025-04-16T10:49:05.861Z"}
+{"ip":"192.168.0.101","level":"info","message":"Fetched roles for user user_t5r8no9rq by 55fc4e7b-a291-4e9b-aa58-06a6dfff4ab4, IP: 192.168.0.101","timestamp":"2025-04-16T10:49:05.943Z"}
+{"ip":"192.168.0.101","level":"info","message":"Fetched effective permissions for user user_t5r8no9rq by 55fc4e7b-a291-4e9b-aa58-06a6dfff4ab4, IP: 192.168.0.101","timestamp":"2025-04-16T10:49:05.966Z"}
+{"level":"info","message":"Super Admin bypass for user 55fc4e7b-a291-4e9b-aa58-06a6dfff4ab4","timestamp":"2025-04-16T10:49:06.039Z"}
+{"level":"info","message":"Super Admin bypass for user 55fc4e7b-a291-4e9b-aa58-06a6dfff4ab4","timestamp":"2025-04-16T10:49:06.046Z"}
+{"ip":"192.168.0.101","level":"info","message":"Fetched all users by user 55fc4e7b-a291-4e9b-aa58-06a6dfff4ab4, IP: 192.168.0.101","timestamp":"2025-04-16T10:49:06.053Z"}
+{"ip":"192.168.0.101","level":"info","message":"Fetched all roles by user 55fc4e7b-a291-4e9b-aa58-06a6dfff4ab4, IP: 192.168.0.101","timestamp":"2025-04-16T10:49:06.064Z"}
+{"level":"info","message":"Super Admin bypass for user 55fc4e7b-a291-4e9b-aa58-06a6dfff4ab4","timestamp":"2025-04-16T10:49:06.075Z"}
+{"level":"info","message":"Super Admin bypass for user 55fc4e7b-a291-4e9b-aa58-06a6dfff4ab4","timestamp":"2025-04-16T10:49:06.084Z"}
+{"level":"info","message":"Super Admin bypass for user 55fc4e7b-a291-4e9b-aa58-06a6dfff4ab4","timestamp":"2025-04-16T10:49:06.094Z"}
+{"ip":"192.168.0.101","level":"info","message":"Fetched all permissions by user 55fc4e7b-a291-4e9b-aa58-06a6dfff4ab4, IP: 192.168.0.101","timestamp":"2025-04-16T10:49:06.105Z"}
+{"level":"info","message":"Super Admin bypass for user 55fc4e7b-a291-4e9b-aa58-06a6dfff4ab4","timestamp":"2025-04-16T10:49:06.114Z"}
+{"ip":"192.168.0.101","level":"info","message":"Fetched all checklists by user 55fc4e7b-a291-4e9b-aa58-06a6dfff4ab4, IP: 192.168.0.101","timestamp":"2025-04-16T10:49:06.118Z"}
+{"level":"info","message":"Super Admin bypass for user 55fc4e7b-a291-4e9b-aa58-06a6dfff4ab4","timestamp":"2025-04-16T10:49:06.124Z"}
+{"ip":"192.168.0.101","level":"info","message":"Fetched all reasons by user 55fc4e7b-a291-4e9b-aa58-06a6dfff4ab4, IP: 192.168.0.101","timestamp":"2025-04-16T10:49:06.131Z"}
+{"ip":"192.168.0.101","level":"info","message":"Fetched all users by user 55fc4e7b-a291-4e9b-aa58-06a6dfff4ab4, IP: 192.168.0.101","timestamp":"2025-04-16T10:49:06.139Z"}
+{"ip":"192.168.0.101","level":"info","message":"Fetched all roles by user 55fc4e7b-a291-4e9b-aa58-06a6dfff4ab4, IP: 192.168.0.101","timestamp":"2025-04-16T10:49:06.148Z"}
+{"level":"info","message":"Super Admin bypass for user 55fc4e7b-a291-4e9b-aa58-06a6dfff4ab4","timestamp":"2025-04-16T10:49:06.155Z"}
+{"level":"info","message":"Super Admin bypass for user 55fc4e7b-a291-4e9b-aa58-06a6dfff4ab4","timestamp":"2025-04-16T10:49:06.159Z"}
+{"level":"info","message":"Super Admin bypass for user 55fc4e7b-a291-4e9b-aa58-06a6dfff4ab4","timestamp":"2025-04-16T10:49:06.170Z"}
+{"ip":"192.168.0.101","level":"info","message":"Fetched all permissions by user 55fc4e7b-a291-4e9b-aa58-06a6dfff4ab4, IP: 192.168.0.101","timestamp":"2025-04-16T10:49:06.176Z"}
+{"level":"info","message":"Super Admin bypass for user 55fc4e7b-a291-4e9b-aa58-06a6dfff4ab4","timestamp":"2025-04-16T10:49:06.183Z"}
+{"level":"info","message":"Super Admin bypass for user 55fc4e7b-a291-4e9b-aa58-06a6dfff4ab4","timestamp":"2025-04-16T10:49:06.188Z"}
+{"ip":"192.168.0.101","level":"info","message":"Fetched all checklists by user 55fc4e7b-a291-4e9b-aa58-06a6dfff4ab4, IP: 192.168.0.101","timestamp":"2025-04-16T10:49:06.193Z"}
+{"ip":"192.168.0.101","level":"info","message":"Fetched all reasons by user 55fc4e7b-a291-4e9b-aa58-06a6dfff4ab4, IP: 192.168.0.101","timestamp":"2025-04-16T10:49:06.199Z"}
+{"level":"info","message":"Super Admin bypass for user 55fc4e7b-a291-4e9b-aa58-06a6dfff4ab4","timestamp":"2025-04-16T10:49:06.207Z"}
+{"ip":"192.168.0.101","level":"info","message":"Fetched roles for user user_t5r8no9rq by 55fc4e7b-a291-4e9b-aa58-06a6dfff4ab4, IP: 192.168.0.101","timestamp":"2025-04-16T10:49:06.213Z"}
+{"ip":"192.168.0.101","level":"info","message":"Fetched all users by user 55fc4e7b-a291-4e9b-aa58-06a6dfff4ab4, IP: 192.168.0.101","timestamp":"2025-04-16T10:49:06.218Z"}
+{"ip":"192.168.0.101","level":"info","message":"Fetched all roles by user 55fc4e7b-a291-4e9b-aa58-06a6dfff4ab4, IP: 192.168.0.101","timestamp":"2025-04-16T10:49:06.223Z"}
+{"level":"info","message":"Super Admin bypass for user 55fc4e7b-a291-4e9b-aa58-06a6dfff4ab4","timestamp":"2025-04-16T10:49:06.231Z"}
+{"ip":"192.168.0.101","level":"info","message":"Fetched all permissions by user 55fc4e7b-a291-4e9b-aa58-06a6dfff4ab4, IP: 192.168.0.101","timestamp":"2025-04-16T10:49:06.240Z"}
+{"level":"info","message":"Super Admin bypass for user 55fc4e7b-a291-4e9b-aa58-06a6dfff4ab4","timestamp":"2025-04-16T10:49:06.250Z"}
+{"ip":"192.168.0.101","level":"info","message":"Fetched all checklists by user 55fc4e7b-a291-4e9b-aa58-06a6dfff4ab4, IP: 192.168.0.101","timestamp":"2025-04-16T10:49:06.253Z"}
+{"ip":"192.168.0.101","level":"info","message":"Fetched all reasons by user 55fc4e7b-a291-4e9b-aa58-06a6dfff4ab4, IP: 192.168.0.101","timestamp":"2025-04-16T10:49:06.263Z"}
+{"ip":"192.168.0.101","level":"info","message":"Fetched roles for user user_t5r8no9rq by 55fc4e7b-a291-4e9b-aa58-06a6dfff4ab4, IP: 192.168.0.101","timestamp":"2025-04-16T10:49:06.299Z"}
+{"ip":"192.168.0.101","level":"info","message":"Fetched roles for user user_t5r8no9rq by 55fc4e7b-a291-4e9b-aa58-06a6dfff4ab4, IP: 192.168.0.101","timestamp":"2025-04-16T10:49:06.338Z"}
+{"ip":"192.168.0.101","level":"info","message":"Fetched effective permissions for user user_t5r8no9rq by 55fc4e7b-a291-4e9b-aa58-06a6dfff4ab4, IP: 192.168.0.101","timestamp":"2025-04-16T10:50:10.771Z"}
+{"ip":"192.168.0.101","level":"info","message":"Fetched roles for user user_t5r8no9rq by 55fc4e7b-a291-4e9b-aa58-06a6dfff4ab4, IP: 192.168.0.101","timestamp":"2025-04-16T10:50:10.778Z"}
+{"ip":"192.168.0.101","level":"info","message":"Fetched roles for user user_t5r8no9rq by 55fc4e7b-a291-4e9b-aa58-06a6dfff4ab4, IP: 192.168.0.101","timestamp":"2025-04-16T10:50:10.805Z"}
+{"ip":"192.168.0.101","level":"info","message":"Fetched effective permissions for user user_t5r8no9rq by 55fc4e7b-a291-4e9b-aa58-06a6dfff4ab4, IP: 192.168.0.101","timestamp":"2025-04-16T10:50:10.813Z"}
+{"level":"info","message":"Super Admin bypass for user 55fc4e7b-a291-4e9b-aa58-06a6dfff4ab4","timestamp":"2025-04-16T10:50:10.853Z"}
+{"level":"info","message":"Super Admin bypass for user 55fc4e7b-a291-4e9b-aa58-06a6dfff4ab4","timestamp":"2025-04-16T10:50:10.859Z"}
+{"ip":"192.168.0.101","level":"info","message":"Fetched all users by user 55fc4e7b-a291-4e9b-aa58-06a6dfff4ab4, IP: 192.168.0.101","timestamp":"2025-04-16T10:50:10.864Z"}
+{"ip":"192.168.0.101","level":"info","message":"Fetched all roles by user 55fc4e7b-a291-4e9b-aa58-06a6dfff4ab4, IP: 192.168.0.101","timestamp":"2025-04-16T10:50:10.881Z"}
+{"level":"info","message":"Super Admin bypass for user 55fc4e7b-a291-4e9b-aa58-06a6dfff4ab4","timestamp":"2025-04-16T10:50:10.885Z"}
+{"level":"info","message":"Super Admin bypass for user 55fc4e7b-a291-4e9b-aa58-06a6dfff4ab4","timestamp":"2025-04-16T10:50:10.887Z"}
+{"level":"info","message":"Super Admin bypass for user 55fc4e7b-a291-4e9b-aa58-06a6dfff4ab4","timestamp":"2025-04-16T10:50:10.890Z"}
+{"ip":"192.168.0.101","level":"info","message":"Fetched all permissions by user 55fc4e7b-a291-4e9b-aa58-06a6dfff4ab4, IP: 192.168.0.101","timestamp":"2025-04-16T10:50:10.908Z"}
+{"ip":"192.168.0.101","level":"info","message":"Fetched all reasons by user 55fc4e7b-a291-4e9b-aa58-06a6dfff4ab4, IP: 192.168.0.101","timestamp":"2025-04-16T10:50:10.913Z"}
+{"level":"info","message":"Super Admin bypass for user 55fc4e7b-a291-4e9b-aa58-06a6dfff4ab4","timestamp":"2025-04-16T10:50:10.925Z"}
+{"level":"info","message":"Super Admin bypass for user 55fc4e7b-a291-4e9b-aa58-06a6dfff4ab4","timestamp":"2025-04-16T10:50:10.930Z"}
+{"ip":"192.168.0.101","level":"info","message":"Fetched all roles by user 55fc4e7b-a291-4e9b-aa58-06a6dfff4ab4, IP: 192.168.0.101","timestamp":"2025-04-16T10:50:10.934Z"}
+{"ip":"192.168.0.101","level":"info","message":"Fetched all checklists by user 55fc4e7b-a291-4e9b-aa58-06a6dfff4ab4, IP: 192.168.0.101","timestamp":"2025-04-16T10:50:10.938Z"}
+{"ip":"192.168.0.101","level":"info","message":"Fetched all users by user 55fc4e7b-a291-4e9b-aa58-06a6dfff4ab4, IP: 192.168.0.101","timestamp":"2025-04-16T10:50:10.943Z"}
+{"level":"info","message":"Super Admin bypass for user 55fc4e7b-a291-4e9b-aa58-06a6dfff4ab4","timestamp":"2025-04-16T10:50:10.949Z"}
+{"level":"info","message":"Super Admin bypass for user 55fc4e7b-a291-4e9b-aa58-06a6dfff4ab4","timestamp":"2025-04-16T10:50:10.952Z"}
+{"ip":"192.168.0.101","level":"info","message":"Fetched all permissions by user 55fc4e7b-a291-4e9b-aa58-06a6dfff4ab4, IP: 192.168.0.101","timestamp":"2025-04-16T10:50:10.965Z"}
+{"level":"info","message":"Super Admin bypass for user 55fc4e7b-a291-4e9b-aa58-06a6dfff4ab4","timestamp":"2025-04-16T10:50:10.972Z"}
+{"level":"info","message":"Super Admin bypass for user 55fc4e7b-a291-4e9b-aa58-06a6dfff4ab4","timestamp":"2025-04-16T10:50:10.976Z"}
+{"level":"info","message":"Super Admin bypass for user 55fc4e7b-a291-4e9b-aa58-06a6dfff4ab4","timestamp":"2025-04-16T10:50:10.982Z"}
+{"ip":"192.168.0.101","level":"info","message":"Fetched all reasons by user 55fc4e7b-a291-4e9b-aa58-06a6dfff4ab4, IP: 192.168.0.101","timestamp":"2025-04-16T10:50:10.986Z"}
+{"ip":"192.168.0.101","level":"info","message":"Fetched all roles by user 55fc4e7b-a291-4e9b-aa58-06a6dfff4ab4, IP: 192.168.0.101","timestamp":"2025-04-16T10:50:10.995Z"}
+{"ip":"192.168.0.101","level":"info","message":"Fetched roles for user user_t5r8no9rq by 55fc4e7b-a291-4e9b-aa58-06a6dfff4ab4, IP: 192.168.0.101","timestamp":"2025-04-16T10:50:11.006Z"}
+{"level":"info","message":"Super Admin bypass for user 55fc4e7b-a291-4e9b-aa58-06a6dfff4ab4","timestamp":"2025-04-16T10:50:11.013Z"}
+{"ip":"192.168.0.101","level":"info","message":"Fetched all users by user 55fc4e7b-a291-4e9b-aa58-06a6dfff4ab4, IP: 192.168.0.101","timestamp":"2025-04-16T10:50:11.016Z"}
+{"ip":"192.168.0.101","level":"info","message":"Fetched all checklists by user 55fc4e7b-a291-4e9b-aa58-06a6dfff4ab4, IP: 192.168.0.101","timestamp":"2025-04-16T10:50:11.022Z"}
+{"level":"info","message":"Super Admin bypass for user 55fc4e7b-a291-4e9b-aa58-06a6dfff4ab4","timestamp":"2025-04-16T10:50:11.029Z"}
+{"ip":"192.168.0.101","level":"info","message":"Fetched all permissions by user 55fc4e7b-a291-4e9b-aa58-06a6dfff4ab4, IP: 192.168.0.101","timestamp":"2025-04-16T10:50:11.033Z"}
+{"ip":"192.168.0.101","level":"info","message":"Fetched all reasons by user 55fc4e7b-a291-4e9b-aa58-06a6dfff4ab4, IP: 192.168.0.101","timestamp":"2025-04-16T10:50:11.041Z"}
+{"level":"info","message":"Super Admin bypass for user 55fc4e7b-a291-4e9b-aa58-06a6dfff4ab4","timestamp":"2025-04-16T10:50:11.054Z"}
+{"ip":"192.168.0.101","level":"info","message":"Fetched all checklists by user 55fc4e7b-a291-4e9b-aa58-06a6dfff4ab4, IP: 192.168.0.101","timestamp":"2025-04-16T10:50:11.073Z"}
+{"ip":"192.168.0.101","level":"info","message":"Fetched roles for user user_t5r8no9rq by 55fc4e7b-a291-4e9b-aa58-06a6dfff4ab4, IP: 192.168.0.101","timestamp":"2025-04-16T10:50:11.107Z"}
+{"ip":"192.168.0.101","level":"info","message":"Fetched roles for user user_t5r8no9rq by 55fc4e7b-a291-4e9b-aa58-06a6dfff4ab4, IP: 192.168.0.101","timestamp":"2025-04-16T10:50:11.129Z"}

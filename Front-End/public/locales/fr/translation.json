@@ -1,21 +1,484 @@
 {
-    "maps_card_title": "Visites des agents aujourd'hui",
-    "stats_card1_title": "Nombre de superviseurs",
-    "stats_card2_title": "Superviseurs actifs",
-    "navbar_dashboard": "Tableau de bord",
-    "emails": "Courriels",
-    "navbar_admin": "Tableau de bord admin",
-    "navbar_timesheets": "Feuilles de temps",
-    "navbar_receipt_books": "Livres de reçus",
-    "navbar_profile": "Profil",
-    "logo_alt": "Logo de l'entreprise",
-    "toggle_menu": "Basculer le menu de navigation",
-    "toggle_theme": "Passer en mode {{mode}}",
-    "theme": "Thème",
-    "logout": "Déconnexion",
-  "select_language": "Choisir la langue",
-  "footer_copyright": "© Copyright {{year}}. Tous droits réservés",
-  "footer_privacy": "Politique de confidentialité",
-  "footer_terms": "Conditions de service",
-  "footer_contact": "Nous contacter"
+  "common": {
+    "months": {
+      "0": "Janvier",
+      "1": "Février",
+      "2": "Mars",
+      "3": "Avril",
+      "4": "Mai",
+      "5": "Juin",
+      "6": "Juillet",
+      "7": "Août",
+      "8": "Septembre",
+      "9": "Octobre",
+      "10": "Novembre",
+      "11": "Décembre"
+    },
+    "weekdays": {
+      "short": {
+        "0": "Dim",
+        "1": "Lun",
+        "2": "Mar",
+        "3": "Mer",
+        "4": "Jeu",
+        "5": "Ven",
+        "6": "Sam"
+      }
+    },
+    "statuses": {
+      "pending": "En attente",
+      "visited": "Visité",
+      "validated": "Validé",
+      "rejected": "Rejeté",
+      "notScheduled": "Non planifié"
+    },
+    "receiptBookStatuses": {
+      "inStock": "En stock",
+      "sentToSupplier": "Envoyé au fournisseur",
+      "collectFromSupplier": "À récupérer auprès du fournisseur",
+      "withRegionalManager": "Chez le gestionnaire régional",
+      "stubCollected": "Souche collectée",
+      "withSupervisor": "Chez le superviseur",
+      "assignedToAgent": "Assigné à un agent",
+      "withStockManager": "Chez le gestionnaire de stock",
+      "stubCollectedStatus": "collectée"
+    }
+  },
+  "visitValidation": {
+    "title": "Valider la visite",
+    "description": "Complétez la liste de contrôle, ajoutez des photos et validez la visite.",
+    "loading": "Chargement des détails de la visite...",
+    "error": {
+      "missingData": "Identifiant de visite ou jeton d'authentification manquant.",
+      "fetchFailed": "Échec du chargement des données de la visite ou de l'agent.",
+      "accessDenied": "Visite introuvable ou accès refusé.",
+      "cameraAccess": "Échec de l'accès à la caméra. Veuillez vérifier que les autorisations sont accordées.",
+      "cameraInUse": "La caméra est utilisée par une autre application ou indisponible. Veuillez fermer les autres applications ou vérifier votre appareil.",
+      "cameraPlayFailed": "Échec de la lecture du flux de la caméra.",
+      "validationFailed": "Échec de la validation de la visite.",
+      "noPhotos": "Au moins une photo est requise."
+    },
+    "visitDetails": {
+      "title": "Détails de la visite",
+      "agent": "Agent",
+      "phone": "Téléphone",
+      "na": "N/D"
+    },
+    "reasons": {
+      "title": "Motifs",
+      "noData": "Aucun motif spécifié."
+    },
+    "checklist": {
+      "title": "Liste de contrôle",
+      "noData": "Aucun élément de liste de contrôle disponible."
+    },
+    "photos": {
+      "title": "Photos",
+      "startCamera": "Démarrer la caméra",
+      "note": "Au moins une photo est requise."
+    },
+    "comment": {
+      "title": "Commentaire (facultatif)",
+      "placeholder": "Ajoutez un commentaire sur la visite..."
+    },
+    "actions": {
+      "validate": "Valider la visite",
+      "validating": "Validation en cours...",
+      "back": "Retour"
+    }
+  },
+  "visitDetails": {
+    "title": "Détails de la visite",
+    "loading": "Chargement des détails de la visite...",
+    "error": {
+      "notFound": "Visite introuvable.",
+      "fetchFailed": "Échec du chargement des détails de la visite.",
+      "validateFailed": "Échec de la validation de la visite.",
+      "rejectFailed": "Échec du rejet de la visite.",
+      "updateFailed": "Échec de la mise à jour de la visite.",
+      "deleteFailed": "Échec de la suppression de la visite.",
+      "cameraAccess": "Échec de l'accès à la caméra. Veuillez vérifier que les autorisations sont accordées.",
+      "cameraPlayFailed": "Échec de la lecture du flux de la caméra.",
+      "agentNotFound": "Agent introuvable avec ce numéro de téléphone",
+      "supervisorNotFound": "Superviseur introuvable avec ce numéro de téléphone",
+      "agentsLoadFailed": "Échec du chargement des agents pour {location}"
+    },
+    "whenWhere": {
+      "title": "Quand et où",
+      "date": "Date",
+      "time": "Heure",
+      "location": "Lieu",
+      "na": "N/D"
+    },
+    "agent": {
+      "title": "Agent",
+      "noData": "Aucun agent assigné",
+      "phone": "Téléphone"
+    },
+    "reasons": {
+      "title": "Motifs",
+      "noData": "Aucun motif répertorié"
+    },
+    "checklist": {
+      "title": "Liste de contrôle",
+      "noData": "Aucun élément de liste de contrôle"
+    },
+    "photos": {
+      "title": "Photos",
+      "count": "({count})",
+      "startCamera": "Démarrer la caméra"
+    },
+    "comment": {
+      "title": "Commentaire"
+    },
+    "supervisor": {
+      "title": "Superviseur",
+      "searchNamePlaceholder": "Rechercher des superviseurs par nom...",
+      "searchPhonePlaceholder": "Ou entrer le numéro de téléphone du superviseur...",
+      "selectPlaceholder": "Sélectionner un superviseur"
+    },
+    "form": {
+      "agentPhone": "Téléphone de l'agent (facultatif)",
+      "agentPhonePlaceholder": "Entrer le numéro de téléphone de l'agent",
+      "locationSearchPlaceholder": "Rechercher des lieux...",
+      "locationSelectPlaceholder": "Sélectionner un lieu",
+      "agentSearchPlaceholder": "Rechercher des agents...",
+      "agentSelectPlaceholder": "Sélectionner un agent",
+      "reasonSearchPlaceholder": "Rechercher des motifs...",
+      "reasonSelectPlaceholder": "Sélectionner un motif",
+      "checklistSearchPlaceholder": "Rechercher des listes de contrôle...",
+      "checklistSelectPlaceholder": "Sélectionner une liste de contrôle",
+      "permissionDenied": "Autorisation refusée"
+    },
+    "actions": {
+      "edit": "Modifier",
+      "delete": "Supprimer",
+      "back": "Retour",
+      "logVisit": "Enregistrer la visite",
+      "validate": "Valider",
+      "reject": "Rejeter",
+      "save": "Enregistrer",
+      "cancel": "Annuler",
+      "deleteConfirm": "Êtes-vous sûr de vouloir supprimer cette visite ?"
+    },
+    "duration": "{duration}m"
+  },
+  "qrScan": {
+    "title": "Scanner le code QR",
+    "description": "Alignez le code QR dans le cadre pour valider la visite.",
+    "loading": "Chargement...",
+    "status": {
+      "startingCamera": "Démarrage de la caméra...",
+      "scanning": "Scan en cours...",
+      "detected": "Code QR détecté",
+      "checking": "Vérification...",
+      "validating": "Validation..."
+    },
+    "error": {
+      "noVisit": "Aucune visite sélectionnée.",
+      "authRequired": "Authentification requise.",
+      "accessDenied": "Accès refusé : Vous n'avez pas l'autorisation de scanner les visites.",
+      "mismatch": "Erreur de correspondance"
+    },
+    "actions": {
+      "back": "Retour"
+    }
+  },
+  "timesheets": {
+    "loading": "Chargement des feuilles de temps...",
+    "viewModes": {
+      "year": "Année",
+      "month": "Mois",
+      "week": "Semaine",
+      "day": "Jour"
+    },
+    "actions": {
+      "scheduleVisit": "Planifier une visite",
+      "receiptBooks": "Carnets de reçus",
+      "current": "Actuel {viewMode}",
+      "filterSupervisors": "Filtrer les superviseurs",
+      "validateTimesheet": "Valider toute la feuille de temps"
+    },
+    "filter": {
+      "searchPlaceholder": "Rechercher par nom ou téléphone...",
+      "allSupervisors": "Tous les superviseurs"
+    },
+    "yearView": {
+      "month": "{monthName}",
+      "weekNumber": "Semaine {weekNumber} :",
+      "weekRange": "{startDate} - {endDate}",
+      "visitCount": "{count} Visites",
+      "supervisorCount": "Superviseurs : {count}"
+    },
+    "monthView": {
+      "weekNumber": "Semaine {weekNumber}",
+      "weekRange": "{startDate} - {endDate}",
+      "visitCount": "{count} Visites",
+      "supervisorCount": "Superviseurs : {count}",
+      "status": "Statut : {status}"
+    },
+    "weekView": {
+      "weekNumber": "Semaine {weekNumber}",
+      "weekRange": "{startDate} - {endDate}",
+      "status": "Statut : {status}",
+      "supervisor": "Superviseur : {firstname} {lastname}",
+      "dayName": "{dayName}",
+      "dayDate": "{dayDate}",
+      "visitCount": "/ {count} Visites"
+    },
+    "dayView": {
+      "date": "{weekday} {day}/{month}",
+      "noVisits": "Aucune visite planifiée"
+    },
+    "visitCard": {
+      "supervisor": "{firstname} {lastname}",
+      "time": "{time}",
+      "status": "{status}",
+      "location": "{location}",
+      "locationTBD": "Lieu à déterminer",
+      "reasons": "Motifs : {reasons}"
+    }
+  },
+  "timesheetForm": {
+    "title": "Créer une visite",
+    "loading": "Chargement...",
+    "form": {
+      "supervisor": "Superviseur",
+      "date": "Date",
+      "time": "Heure",
+      "agentPhone": "Téléphone de l'agent (facultatif)",
+      "location": "Lieu",
+      "agent": "Agent",
+      "reasons": "Motifs",
+      "checklists": "Listes de contrôle",
+      "placeholders": {
+        "supervisorSearch": "Rechercher des superviseurs par nom...",
+        "supervisorPhone": "Ou entrer le numéro de téléphone du superviseur...",
+        "supervisorSelect": "Sélectionner un superviseur",
+        "agentPhone": "Entrer le numéro de téléphone de l'agent",
+        "permissionDenied": "Autorisation refusée",
+        "locationSearch": "Rechercher des lieux...",
+        "locationSelect": "Sélectionner un lieu",
+        "agentSearch": "Rechercher des agents...",
+        "agentSelect": "Sélectionner un agent",
+        "reasonSearch": "Rechercher des motifs...",
+        "reasonSelect": "Sélectionner un motif",
+        "checklistSearch": "Rechercher des listes de contrôle...",
+        "checklistSelect": "Sélectionner une liste de contrôle"
+      }
+    },
+    "actions": {
+      "back": "Retour",
+      "create": "Créer une feuille de temps",
+      "submitting": "Soumission en cours..."
+    },
+    "errors": {
+      "loadInitialData": "Échec du chargement des données initiales. Veuillez réessayer.",
+      "loadAgents": "Échec du chargement des agents pour {location}",
+      "agentNotFound": "Agent introuvable avec ce numéro de téléphone",
+      "supervisorNotFound": "Superviseur introuvable avec ce numéro de téléphone",
+      "createFailed": "Échec de la création de la feuille de temps. Veuillez réessayer."
+    }
+  },
+  "transferReceiptBook": {
+    "title": "Transférer les carnets de reçus ({roles})",
+    "loading": "Chargement...",
+    "form": {
+      "recipientType": "Type de destinataire",
+      "agentSelection": "Sélection de l'agent",
+      "supplierEmail": "Email du fournisseur",
+      "selectBooks": "Sélectionner les carnets en stock à transférer",
+      "selectedAgent": "Agent sélectionné",
+      "scanCollect": "Scanner les carnets à récupérer auprès du fournisseur",
+      "scanQR": "Scanner les codes QR",
+      "otp": "Entrer le OTP (Envoyé à {recipientType} {recipientDetails})",
+      "placeholders": {
+        "recipientType": "Sélectionner le type de destinataire",
+        "agentPhone": "Entrer le numéro de téléphone de l'agent",
+        "location": "Sélectionner un lieu",
+        "agentSearch": "Rechercher des agents par nom ou téléphone",
+        "agentSelect": "Sélectionner un agent",
+        "supplierEmail": "Entrer l'email du fournisseur",
+        "bookSearch": "Rechercher des carnets par numéro ou type",
+        "userSearch": "Entrer le numéro de téléphone ou rechercher par nom",
+        "userSelect": "Sélectionner {recipientType}",
+        "otp": "Entrer le OTP"
+      }
+    },
+    "actions": {
+      "back": "Retour",
+      "initiateTransfer": "Lancer le transfert",
+      "initiateStubCollection": "Lancer la collecte de souches",
+      "collectFromSupplier": "Récupérer auprès du fournisseur",
+      "validateTransfer": "Valider le transfert",
+      "validateStubCollection": "Valider la collecte de souches"
+    },
+    "pagination": {
+      "pageInfo": "Page {currentPage} sur {totalPages}",
+      "selectedBooks": "Carnets sélectionnés : {count}"
+    },
+    "list": {
+      "noBooks": "Aucun carnet en stock disponible ou correspondant à la recherche.",
+      "selectedBooks": "Carnets sélectionnés ({count})",
+      "scannedQRCodes": "{count} codes QR scannés."
+    },
+    "otpTimer": "L'OTP expire dans : {time}",
+    "errors": {
+      "accessDenied": "Accès refusé - Permission transfer_receipt_books manquante",
+      "loadData": "Échec du chargement des données. Vérifiez la console pour plus de détails.",
+      "fetchAgent": "Échec de la récupération des détails de l'agent.",
+      "cameraAccess": "Accès à la caméra refusé ou indisponible.",
+      "qrNotFound": "Code QR \"{number}\" introuvable dans les carnets de reçus.",
+      "qrAlreadyScanned": "Code QR \"{number}\" déjà scanné ou sélectionné.",
+      "bookNotTransferable": "Carnet \"{number}\" (statut : {status}) ne peut pas être transféré/collecté par votre(vos) rôle(s).",
+      "stubNotAssigned": "Le carnet \"{number}\" doit être \"Assigné à un agent\" pour la collecte de souches.",
+      "stubNotCollected": "La souche \"{number}\" doit être \"collectée\" pour la gestion des stocks.",
+      "supervisorLimit": "Les superviseurs ne peuvent assigner qu'un seul carnet de reçus à un agent.",
+      "invalidQR": "Format de code QR invalide. Veuillez réessayer.",
+      "otpExpired": "L'OTP a expiré. Veuillez relancer le transfert.",
+      "noBooksSelected": "Veuillez sélectionner au moins un carnet.",
+      "noRecipientType": "Veuillez sélectionner un type de destinataire.",
+      "noSupplierEmail": "Veuillez entrer un email de fournisseur.",
+      "noAgent": "Veuillez entrer un numéro de téléphone d'agent ou sélectionner un agent.",
+      "noRecipient": "Veuillez sélectionner un destinataire ou entrer un numéro de téléphone.",
+      "stubCollectionLimit": "La collecte de souches ne peut traiter qu'un seul carnet à la fois.",
+      "initiateFailed": "Échec du lancement du transfert/collecte : {message}",
+      "noOTP": "Veuillez entrer l'OTP.",
+      "stubCollectionSingle": "La collecte de souches nécessite exactement un carnet.",
+      "validationFailed": "OTP invalide ou échec de la validation du transfert : {message}",
+      "agentNotFound": "Aucun agent trouvé avec le téléphone {phone}.",
+      "userRoleMismatch": "L'utilisateur avec le téléphone {phone} n'a pas le rôle {recipientType}.",
+      "userNotFound": "Aucun utilisateur trouvé avec le téléphone {phone}.",
+      "fetchAgents": "Échec de la récupération des agents par lieu."
+    }
+  },
+  "receiptBooks": {
+    "title": {
+      "list": "Carnets de reçus",
+      "create": "Créer",
+      "edit": "Modifier"
+    },
+    "loading": "Chargement...",
+    "form": {
+      "createTitle": "Nouveau reçu",
+      "editTitle": "Modifier le reçu #{number}",
+      "labels": {
+        "number": "Numéro",
+        "type": "Type"
+      },
+      "placeholders": {
+        "number": "000001",
+        "type": "Sélectionner un type"
+      }
+    },
+    "search": {
+      "placeholder": "Rechercher des reçus..."
+    },
+    "sort": {
+      "title": "Trier par",
+      "fields": {
+        "number": "Numéro",
+        "type": "Type",
+        "status": "Statut"
+      },
+      "order": {
+        "asc": "Croissant",
+        "desc": "Décroissant"
+      }
+    },
+    "filter": {
+      "title": "Filtres",
+      "type": {
+        "label": "Type",
+        "all": "Tous les types"
+      },
+      "status": {
+        "label": "Statut",
+        "all": "Tous les statuts"
+      }
+    },
+    "table": {
+      "headers": {
+        "number": "Numéro",
+        "type": "Type",
+        "bookStatus": "Statut du carnet",
+        "stubStatus": "Statut de la souche",
+        "holder": "Détenteur",
+        "qrCode": "Code QR",
+        "actions": "Actions"
+      },
+      "na": "N/D",
+      "holderLoading": "Chargement..."
+    },
+    "pagination": {
+      "pageInfo": "Page {currentPage} sur {totalPages}",
+      "previous": "Précédent",
+      "next": "Suivant"
+    },
+    "actions": {
+      "newReceipt": "Nouveau reçu",
+      "transferBooks": "Transférer les carnets",
+      "create": "Créer",
+      "save": "Enregistrer",
+      "cancel": "Annuler",
+      "deleteConfirm": "Êtes-vous sûr ?"
+    },
+    "errors": {
+      "requiredFields": "Veuillez remplir tous les champs requis.",
+      "invalidNumber": "Le numéro doit comporter exactement 6 chiffres.",
+      "createFailed": "Échec de la création du carnet de reçus : {message}",
+      "updateFailed": "Échec de la mise à jour du carnet de reçus : {message}",
+      "deleteFailed": "Échec de la suppression du carnet de reçus : {error}"
+    },
+    "types": {
+      "refund": "Remboursement",
+      "transfer": "Transfert"
+    }
+  },
+  "receiptBookHistory": {
+    "title": "Historique du carnet de reçus #{number}",
+    "loading": "Suivi de l'historique...",
+    "error": {
+      "accessDenied": "Accès refusé ou identifiant de carnet invalide",
+      "fetchFailed": "Échec de la récupération de l'historique ou des détails.",
+      "notFound": "Carnet de reçus introuvable."
+    },
+    "actions": {
+      "back": "Retour aux carnets de reçus"
+    },
+    "footer": {
+      "currentStatus": "Statut actuel : {status}",
+      "currentHolder": "Détenteur actuel : {holder}",
+      "na": "N/D"
+    },
+    "timeline": {
+      "from": "De : {from}",
+      "to": "À : {to}",
+      "date": "Date : {date}",
+      "status": "Statut : {status}",
+      "initialStock": "Stock initial",
+      "supplier": "Fournisseur"
+    },
+    "transferTypes": {
+      "toSupplier": "Au fournisseur",
+      "toRegionalManager": "Au gestionnaire régional",
+      "toSupervisor": "Au superviseur",
+      "toAgent": "À l'agent",
+      "stubToSupervisor": "Souche au superviseur",
+      "toStockManager": "Au gestionnaire de stock",
+      "toRegionalManagerFromSupervisor": "Au gestionnaire régional depuis le superviseur",
+      "archive": "Archiver"
+    }
+  },
+  "pageNotFound": {
+    "title": "404",
+    "subtitle": "Page non trouvée",
+    "error": {
+      "message": "Oups !",
+      "description": "Cette page n’existe pas ou a été déplacée."
+    },
+    "actions": {
+      "back": "Retour à la page précédente"
+    }
   }
+}
