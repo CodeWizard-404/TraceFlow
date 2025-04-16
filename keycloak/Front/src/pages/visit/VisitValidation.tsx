@@ -16,12 +16,14 @@ import { getVisitById, logVisitDetails } from "../../apis/visitAPI";
 import Visit from "../../models/Visit";
 import Agent from "../../models/Agent";
 import { useAuth } from "../../context/AuthContext";
+import { useTranslation } from "react-i18next";
 
 const PERMISSIONS = {
   LOG_VISITS: import.meta.env.VITE_PERMISSIONS_LOG_VISITS,
 };
 
 const VisitValidation: React.FC = () => {
+  const { t } = useTranslation();
   const { idVisit } = useParams<{ idVisit: string }>();
   const navigate = useNavigate();
   const location = useLocation();
@@ -56,15 +58,15 @@ const VisitValidation: React.FC = () => {
 
   useEffect(() => {
     if (permissionsLoaded && !location.state?.fromValidQRScan) {
-      setError("Access denied. Please scan a valid QR code first.");
+      setError(t("visitValidation.error.accessDenied"));
       navigate(`/visit/${idVisit}`, { replace: true });
     }
-  }, [location.state, permissionsLoaded, navigate, idVisit]);
+  }, [location.state, permissionsLoaded, navigate, idVisit, t]);
 
   useEffect(() => {
     const fetchVisitData = async () => {
       if (!idVisit) {
-        setError("Missing visit ID or authentication token.");
+        setError(t("visitValidation.error.missingData"));
         setLoading(false);
         return;
       }
@@ -87,7 +89,7 @@ const VisitValidation: React.FC = () => {
         setChecklist(initialChecklist);
         setEntryTime(Date.now());
       } catch (err) {
-        setError("Failed to load visit or agent data.");
+        setError(t("visitValidation.error.fetchFailed"));
         console.error("Fetch visit data error:", err);
       } finally {
         setLoading(false);
@@ -95,7 +97,7 @@ const VisitValidation: React.FC = () => {
     };
 
     fetchVisitData();
-  }, [idVisit, userPermissions.canLogVisits, permissionsLoaded]);
+  }, [idVisit, userPermissions.canLogVisits, permissionsLoaded, t]);
 
   const startCamera = async () => {
     try {
@@ -107,18 +109,18 @@ const VisitValidation: React.FC = () => {
         setIsCameraActive(true);
       } else {
         console.error("Video ref is null");
-        setError("Video element not found.");
+        setError(t("visitValidation.error.videoNotFound"));
       }
     } catch (err: unknown) {
       if (err instanceof Error) {
         const errorMessage =
           err.name === "NotReadableError"
-            ? "Camera is in use by another app or unavailable. Please close other apps or check your device."
-            : "Failed to access camera. Please ensure permissions are granted.";
+            ? t("visitValidation.error.cameraInUse")
+            : t("visitValidation.error.cameraAccess");
         setError(errorMessage);
         console.error("Camera access error:", err.name, err.message);
       } else {
-        setError("An unknown error occurred.");
+        setError(t("visitValidation.error.unknown"));
         console.error("Unknown error:", err);
       }
     }
@@ -139,10 +141,10 @@ const VisitValidation: React.FC = () => {
     if (isCameraActive && videoRef.current && videoRef.current.srcObject) {
       videoRef.current.play().catch((err) => {
         console.error("Video play failed:", err);
-        setError("Failed to play camera stream.");
+        setError(t("visitValidation.error.cameraPlayFailed"));
       });
     }
-  }, [isCameraActive]);
+  }, [isCameraActive, t]);
 
   const capturePhoto = () => {
     if (videoRef.current && canvasRef.current) {
@@ -197,8 +199,8 @@ const VisitValidation: React.FC = () => {
     ) {
       setError(
         photos.length === 0
-          ? "At least one photo is required."
-          : "Access denied or missing data."
+          ? t("visitValidation.error.noPhotos")
+          : t("visitValidation.error.accessDenied")
       );
       return;
     }
@@ -227,7 +229,7 @@ const VisitValidation: React.FC = () => {
       stopCamera();
       navigate("/timesheet");
     } catch (err) {
-      setError("Failed to validate visit.");
+      setError(t("visitValidation.error.validationFailed"));
       console.error("Validate visit error:", err);
     } finally {
       setIsSubmitting(false);
@@ -246,26 +248,26 @@ const VisitValidation: React.FC = () => {
     return (
       <div className="page-loading">
         <div className="spinner"></div>
-        <p>Loading Visit Details...</p>
+        <p>{t("visitValidation.loading")}</p>
       </div>
     );
   }
-  if (error || !visit || !userPermissions.canLogVisits)
+  if (error || !visit || !userPermissions.canLogVisits) {
     return (
       <div className="visit-validation-container">
-        <div className="error">
-          {error || "Visit not found or access denied."}
+        <div className="error" role="alert">
+          {error || t("visitValidation.error.accessDenied")}
         </div>
         <button
           className="back-btn"
-          onClick={() => {
-            navigate(0);
-          }}
+          onClick={() => navigate(0)}
+          aria-label={t("visitValidation.aria.backButton")}
         >
-          <FaArrowLeft /> Back
+          <FaArrowLeft /> {t("visitValidation.actions.back")}
         </button>
       </div>
     );
+  }
 
   return (
     <div
@@ -276,35 +278,39 @@ const VisitValidation: React.FC = () => {
       {!isCameraActive && (
         <header className="visit-header-0">
           <h1>
-            Validate Visit
+            {t("visitValidation.title")}
             <span className={`status-dot status-${visit.status}`}></span>
           </h1>
-          <p>Complete the checklist, add photos, and validate the visit.</p>
+          <p>{t("visitValidation.description")}</p>
         </header>
       )}
 
       <section className="visit-card">
         <div className="details-section">
           <h2>
-            <FaUser /> Visit Details
+            <FaUser /> {t("visitValidation.visitDetails.title")}
           </h2>
           <div className="detail-item">
             <span>
-              <FaUser /> Agent
+              <FaUser /> {t("visitValidation.visitDetails.agent")}
             </span>
-            <p>{agent ? `${agent.name} ${agent.lastname}` : "N/A"}</p>
+            <p>
+              {agent
+                ? `${agent.name} ${agent.lastname}`
+                : t("visitValidation.visitDetails.na")}
+            </p>
           </div>
           <div className="detail-item">
             <span>
-              <FaPhone /> Phone
+              <FaPhone /> {t("visitValidation.visitDetails.phone")}
             </span>
-            <p>{agent?.phone || "N/A"}</p>
+            <p>{agent?.phone || t("visitValidation.visitDetails.na")}</p>
           </div>
         </div>
 
         <div className="reasons-section">
           <h2>
-            <FaListUl /> Reasons
+            <FaListUl /> {t("visitValidation.reasons.title")}
           </h2>
           {visit.Reasons && visit.Reasons.length > 0 ? (
             <ul>
@@ -313,13 +319,17 @@ const VisitValidation: React.FC = () => {
               ))}
             </ul>
           ) : (
-            <p className="no-data">No reasons specified.</p>
+            <p className="no-data">{t("visitValidation.reasons.noData")}</p>
           )}
         </div>
 
         <div className="checklist-section">
           <h2>
-            <FaCheckCircle /> Checklist ({completedItems}/{totalItems})
+            <FaCheckCircle /> {t("visitValidation.checklist.title")}{" "}
+            {t("visitValidation.checklist.count", {
+              completed: completedItems,
+              total: totalItems,
+            })}
           </h2>
           {checklist.length > 0 ? (
             <>
@@ -332,11 +342,18 @@ const VisitValidation: React.FC = () => {
                         checked={item.checked}
                         onChange={() => handleChecklistChange(item.id)}
                         className="custom-checkbox-input"
+                        aria-label={t("visitValidation.aria.checklistItem", {
+                          item: item.item,
+                        })}
                       />
                       <span className="custom-checkbox">
                         <FaCheck className="check-icon" />
                       </span>
-                      <span className="checklist-text">{item.item}</span>
+                      <span className="checklist-text">
+                        {t("visitValidation.checklist.itemLabel", {
+                          item: item.item,
+                        })}
+                      </span>
                     </label>
                   </li>
                 ))}
@@ -349,21 +366,23 @@ const VisitValidation: React.FC = () => {
               </div>
             </>
           ) : (
-            <p className="no-data">No checklist items available.</p>
+            <p className="no-data">{t("visitValidation.checklist.noData")}</p>
           )}
         </div>
 
         <div className="photos-section">
           <h2>
-            <FaCamera /> Photos ({photos.length})
+            <FaCamera /> {t("visitValidation.photos.title")}{" "}
+            {t("visitValidation.photos.count", { count: photos.length })}
           </h2>
           <div className="camera-controls">
             <button
               className="camera-btn"
               onClick={startCamera}
               disabled={isCameraActive}
+              aria-label={t("visitValidation.aria.startCamera")}
             >
-              <FaCamera /> Start Camera
+              <FaCamera /> {t("visitValidation.photos.startCamera")}
             </button>
             <div
               className={`camera-container ${isCameraActive ? "active" : ""}`}
@@ -383,17 +402,28 @@ const VisitValidation: React.FC = () => {
                 </div>
                 {lastPhotoUrl && (
                   <div className="thumbnail-preview">
-                    <img src={lastPhotoUrl} alt="Last captured" />
+                    <img
+                      src={lastPhotoUrl}
+                      alt={t("visitValidation.photos.lastCapturedAlt")}
+                    />
                   </div>
                 )}
               </div>
               {isCameraActive && (
                 <>
-                  <button className="stop-camera-btn" onClick={stopCamera}>
-                    <FaTimes />
+                  <button
+                    className="stop-camera-btn"
+                    onClick={stopCamera}
+                    aria-label={t("visitValidation.aria.stopCamera")}
+                  >
+                    <FaTimes /> {t("visitValidation.actions.stopCamera")}
                   </button>
-                  <button className="capture-btn" onClick={capturePhoto}>
-                    <FaCamera />
+                  <button
+                    className="capture-btn"
+                    onClick={capturePhoto}
+                    aria-label={t("visitValidation.aria.capturePhoto")}
+                  >
+                    <FaCamera /> {t("visitValidation.actions.capturePhoto")}
                   </button>
                 </>
               )}
@@ -405,30 +435,39 @@ const VisitValidation: React.FC = () => {
                 <div key={index} className="photo-container">
                   <img
                     src={URL.createObjectURL(photo)}
-                    alt={`Captured photo ${index + 1}`}
+                    alt={t("visitValidation.photos.capturedAlt", {
+                      index: index + 1,
+                    })}
                     className="photo-preview"
                     onClick={() => openPhotoPreview(photo)}
+                    aria-label={t("visitValidation.aria.previewPhoto", {
+                      index: index + 1,
+                    })}
                   />
                   <button
                     className="remove-photo-btn"
                     onClick={() => removePhoto(index)}
+                    aria-label={t("visitValidation.aria.removePhoto", {
+                      index: index + 1,
+                    })}
                   >
-                    <FaTimes />
+                    <FaTimes /> {t("visitValidation.actions.removePhoto")}
                   </button>
                 </div>
               ))}
             </div>
           )}
-          <p className="photo-note">At least one photo is required.</p>
+          <p className="photo-note">{t("visitValidation.photos.note")}</p>
         </div>
 
         <div className="comment-section">
-          <h2>Comment (Optional)</h2>
+          <h2>{t("visitValidation.comment.title")}</h2>
           <textarea
             value={comment}
             onChange={(e) => setComment(e.target.value)}
-            placeholder="Add a comment about the visit..."
+            placeholder={t("visitValidation.comment.placeholder")}
             className="comment-input"
+            aria-label={t("visitValidation.comment.label")}
           />
         </div>
 
@@ -437,8 +476,12 @@ const VisitValidation: React.FC = () => {
             className={`validate-btn ${isSubmitting ? "submitting" : ""}`}
             onClick={handleValidate}
             disabled={isSubmitting || photos.length === 0}
+            aria-label={t("visitValidation.aria.validateButton")}
           >
-            <FaCheck /> {isSubmitting ? "Validating..." : "Validate Visit"}
+            <FaCheck />{" "}
+            {isSubmitting
+              ? t("visitValidation.actions.validating")
+              : t("visitValidation.actions.validate")}
           </button>
           <button
             className="back-btn"
@@ -446,8 +489,9 @@ const VisitValidation: React.FC = () => {
               stopCamera();
               navigate("/timesheet");
             }}
+            aria-label={t("visitValidation.aria.backButton")}
           >
-            <FaArrowLeft /> Back
+            <FaArrowLeft /> {t("visitValidation.actions.back")}
           </button>
         </div>
       </section>
@@ -457,11 +501,15 @@ const VisitValidation: React.FC = () => {
         <div className="photo-fullscreen-preview" onClick={closePhotoPreview}>
           <img
             src={selectedPhoto}
-            alt="Full-screen preview"
+            alt={t("visitValidation.photos.fullscreenAlt")}
             className="fullscreen-image"
           />
-          <button className="close-preview-btn" onClick={closePhotoPreview}>
-            <FaTimes />
+          <button
+            className="close-preview-btn"
+            onClick={closePhotoPreview}
+            aria-label={t("visitValidation.aria.closePreview")}
+          >
+            <FaTimes /> {t("visitValidation.actions.closePreview")}
           </button>
         </div>
       )}

@@ -1,8 +1,16 @@
 import { useState } from "react";
-import { To, useNavigate } from "react-router-dom"; // Add useNavigate for programmatic navigation
+import { To, useNavigate } from "react-router-dom";
 import { useTheme } from "../context/ThemeContext";
 import { useAuth } from "../context/AuthContext";
-import { FaSun, FaMoon, FaSignOutAlt } from "react-icons/fa";
+import { useTranslation } from "react-i18next";
+import {
+  FaSun,
+  FaMoon,
+  FaSignOutAlt,
+  FaGlobe,
+  FaBars,
+  FaTimes,
+} from "react-icons/fa";
 import "./CMP.css";
 
 function Header() {
@@ -10,12 +18,10 @@ function Header() {
   const { theme, toggleTheme } = useTheme();
   const { user, userRoles, effectivePermissions, permissionsLoaded, logout } =
     useAuth();
-  const navigate = useNavigate(); // For navigation on click
+  const navigate = useNavigate();
+  const { t, i18n } = useTranslation();
 
-  const toggleMenu = () => {
-    setIsMenuOpen((prev) => !prev);
-  };
-
+  const toggleMenu = () => setIsMenuOpen((prev) => !prev);
   const handleLogout = async () => {
     try {
       await logout();
@@ -24,7 +30,6 @@ function Header() {
     }
   };
 
-  // Define permissions and roles from .env (mirroring App.jsx)
   const PERMISSIONS = {
     ACCESS_SUPERVISOR_TIMESHEETS: import.meta.env
       .VITE_PERMISSIONS_ACCESS_SUPERVISOR_TIMESHEETS,
@@ -36,40 +41,43 @@ function Header() {
     SUPER_ADMIN: import.meta.env.VITE_ROLES_SUPER_ADMIN,
   };
 
-  // Permission and role checks
   const hasPermission = (permission: string) =>
     permissionsLoaded &&
     effectivePermissions?.some((p) => p.name === permission);
   const hasRole = (role: string) =>
     permissionsLoaded && userRoles?.some((r) => r.name === role);
 
-  // Navigation items with conditions
   const navItems = [
     {
+      path: "/dashboard",
+      label: t("header.navbar.dashboard"),
+      visible: () => true,
+    },
+    {
       path: "/admin",
-      label: "Admin Dashboard",
+      label: t("header.navbar.admin"),
       visible: () => hasRole(ROLES.ADMIN) || hasRole(ROLES.SUPER_ADMIN),
     },
     {
       path: "/timesheet",
-      label: "Timesheets",
+      label: t("header.navbar.timesheets"),
       visible: () => hasPermission(PERMISSIONS.ACCESS_SUPERVISOR_TIMESHEETS),
     },
     {
       path: "/receipt-books",
-      label: "Receipt Books",
+      label: t("header.navbar.receiptBooks"),
       visible: () => hasPermission(PERMISSIONS.ACCESS_RECEIPT_BOOKS),
     },
     {
       path: "/profile",
-      label: "Profile",
+      label: t("header.navbar.profile"),
       visible: () => true,
     },
   ];
 
   const handleNavClick = (path: To) => {
     navigate(path);
-    setIsMenuOpen(false); // Close menu on mobile after clicking
+    setIsMenuOpen(false);
   };
 
   return (
@@ -77,21 +85,17 @@ function Header() {
       <div className="header-container">
         <img
           className="logo"
-          src={
-            theme === "dark"
-              ? "../../public/Banner-wd.png"
-              : "../../public/Banner-bl.png"
-          }
-          alt="LOGO"
+          src={theme === "dark" ? "/Banner-wd.png" : "/Banner-bl.png"}
+          alt={t("header.logoAlt")}
           onClick={() => navigate("/")}
         />
         <button
           className="menu-toggle"
           onClick={toggleMenu}
-          aria-label="Toggle menu"
+          aria-label={t("header.aria.menuToggle")}
           aria-expanded={isMenuOpen}
         >
-          {isMenuOpen ? "✕" : "☰"}
+          {isMenuOpen ? <FaTimes /> : <FaBars />}
         </button>
         <nav className={`header-nav ${isMenuOpen ? "open" : ""}`}>
           {permissionsLoaded &&
@@ -102,6 +106,7 @@ function Header() {
                   key={item.path}
                   className="nav-link"
                   onClick={() => handleNavClick(item.path)}
+                  aria-label={t("header.aria.navLink", { label: item.label })}
                 >
                   {item.label}
                 </button>
@@ -112,23 +117,41 @@ function Header() {
               <button
                 className="theme-toggle-btn"
                 onClick={toggleTheme}
-                aria-label={`Switch to ${
-                  theme === "light" ? "dark" : "light"
-                } mode`}
+                aria-label={t("header.aria.themeToggle", {
+                  mode: t(
+                    `header.${theme === "light" ? "darkMode" : "lightMode"}`
+                  ),
+                })}
               >
                 {theme === "light" ? <FaMoon /> : <FaSun />}
-                <span className="btn-text">Theme</span>
+                <span className="btn-text">{t("header.theme")}</span>
               </button>
+            </div>
+            <div className="icon-btn-wrapper">
+              <div className="lang-switcher-container">
+                <span className="lang-icon">
+                  <FaGlobe />
+                </span>
+                <select
+                  className="lang-switcher"
+                  value={i18n.language}
+                  onChange={(e) => i18n.changeLanguage(e.target.value)}
+                  aria-label={t("header.selectLanguage")}
+                >
+                  <option value="en">{t("header.languages.en")}</option>
+                  <option value="fr">{t("header.languages.fr")}</option>
+                </select>
+              </div>
             </div>
             {user && (
               <div className="icon-btn-wrapper">
                 <button
                   className="logout-btn"
                   onClick={handleLogout}
-                  aria-label="Log out"
+                  aria-label={t("header.aria.logout")}
                 >
                   <FaSignOutAlt />
-                  <span className="btn-text">Logout</span>
+                  <span className="btn-text">{t("header.logout")}</span>
                 </button>
               </div>
             )}
