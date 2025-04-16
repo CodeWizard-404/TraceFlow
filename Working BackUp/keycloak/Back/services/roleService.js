@@ -23,14 +23,14 @@ const RESTRICTED_ROLES = [
 // Get admin token for Keycloak
 async function getAdminToken() {
     try {
-        logger.debug(`Attempting Keycloak authentication with user: ${process.env.ADMIN_USER}`);
+        logger.debug(`Attempting Keycloak authentication with user: ${process.env.KEYCLOAK_ADMIN_USER}`);
         const response = await axios.post(
             `${KEYCLOAK_URL}/realms/master/protocol/openid-connect/token`,
             new URLSearchParams({
                 grant_type: 'password',
                 client_id: 'admin-cli',
-                username: process.env.ADMIN_USER,
-                password: process.env.ADMIN_PASS,
+                username: process.env.KEYCLOAK_ADMIN_USER,
+                password: process.env.KEYCLOAK_ADMIN_PASSWORD,
             }),
             { timeout: 5000 }
         );

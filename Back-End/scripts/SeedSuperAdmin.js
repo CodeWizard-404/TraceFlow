@@ -4,7 +4,7 @@ require('dotenv').config();
 
 const SUPER_ADMIN_CONFIG = {
     email: process.env.SUPER_ADMIN_EMAIL || 'superadmin@example.com',
-    password: process.env.SUPER_ADMIN_PASSWORD || 'SuperSecurePassword123!',
+    password: process.env.SUPER_KEYCLOAK_ADMIN_PASSWORDWORD || 'SuperSecurePassword123!',
     firstname: 'Super',
     lastname: 'Admin',
     phone: '000-000-0000',
@@ -61,7 +61,7 @@ async function seedSuperAdmin() {
 
         // Output credentials
         console.log(`\x1b[34m\nSuper Admin Credentials:\n\tEmail:\t\t${SUPER_ADMIN_CONFIG.email}\n\tPassword:\t${SUPER_ADMIN_CONFIG.password}\n\x1b[0m`);
-        } catch (error) {
+    } catch (error) {
         console.error('Error seeding Super Admin:', error);
         throw error;
     }
