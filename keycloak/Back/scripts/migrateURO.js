@@ -1,5 +1,5 @@
 const axios = require('axios');
-const { User, Role, Permission, UserPermissionOverride, setupAssociations, sequelize } = require('../models');
+const { User, Role, setupAssociations, sequelize } = require('../models');
 const crypto = require('crypto');
 require('dotenv').config();
 
@@ -41,7 +41,10 @@ async function migrateUser(token, user) {
             firstName: user.firstname,
             lastName: user.lastname,
             enabled: true,
-            attributes: { phone: user.phone || '', wallet: user.wallet || '' },
+            attributes: {
+                phone: user.phone || '', // Phone moved to attributes
+                wallet: user.wallet || ''
+            },
             credentials: [{ type: 'password', value: tempPassword, temporary: true }],
         },
         { headers: { Authorization: `Bearer ${token}` } }
@@ -109,49 +112,7 @@ async function assignRoleToUser(token, userEmail, roleName, roleId) {
     console.log(`${new Date().toISOString()} - Assigned ${roleName} to ${userEmail}`);
 }
 
-async function migrateOverrides(token, user, roles, permissions) {
-    const overrides = await UserPermissionOverride.findAll({
-        where: { userID: user.userID },
-        include: [{ model: Permission }],
-    });
-    if (!overrides.length) {
-        console.log(`${new Date().toISOString()} - No overrides for ${user.email}`);
-        return;
-    }
-
-    const overrideMap = overrides.reduce((acc, o) => {
-        const role = roles.find(r => r.roleID === o.roleID);
-        const perm = permissions.find(p => p.permissionID === o.permissionID);
-        if (!role || !perm) {
-            console.warn(`${new Date().toISOString()} - Skipping override for ${user.email}: Role ${o.roleID} or Permission ${o.permissionID} not found`);
-            return acc;
-        }
-        acc[role.keycloakId] = acc[role.keycloakId] || {};
-        acc[role.keycloakId][perm.name] = o.action;
-        return acc;
-    }, {});
-
-    if (Object.keys(overrideMap).length === 0) {
-        console.log(`${new Date().toISOString()} - No valid overrides for ${user.email} after validation`);
-        return;
-    }
-
-    const userResponse = await axios.get(
-        `${KEYCLOAK_URL}/admin/realms/${REALM}/users?email=${user.email}`,
-        { headers: { Authorization: `Bearer ${token}` } }
-    );
-    if (!userResponse.data.length) throw new Error(`User ${user.email} not found in Keycloak`);
-    const userId = userResponse.data[0].id;
-
-    await axios.put(
-        `${KEYCLOAK_URL}/admin/realms/${REALM}/users/${userId}`,
-        { attributes: { permission_overrides: JSON.stringify(overrideMap) } },
-        { headers: { Authorization: `Bearer ${token}` } }
-    );
-    console.log(`${new Date().toISOString()} - Migrated overrides for ${user.email}`);
-}
-
-(async () => {
+async function migrateToKeycloak() {
     try {
         await sequelize.sync();
         setupAssociations();
@@ -193,17 +154,13 @@ async function migrateOverrides(token, user, roles, permissions) {
             }
         }
 
-        // Migrate permission overrides
-        const permissions = await Permission.findAll();
-        for (const user of users) {
-            await migrateOverrides(token, user, Array.from(roleMap.values()), permissions);
-        }
-
-        console.log(`${new Date().toISOString()} - Migration, role assignment, and overrides complete`);
+        console.log(`${new Date().toISOString()} - Migration and role assignment complete`);
     } catch (err) {
         console.error(`${new Date().toISOString()} - Migration failed:`, err);
         throw err; // Ensure error propagates
     } finally {
         await sequelize.close();
     }
-})();
+}
+
+module.exports = { migrateToKeycloak };
