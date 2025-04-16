@@ -4,7 +4,7 @@ require('dotenv').config();
 
 const SUPER_ADMIN_CONFIG = {
     email: process.env.SUPER_ADMIN_EMAIL,
-    password: process.env.SUPER_KEYCLOAK_ADMIN_PASSWORDWORD,
+    password: process.env.SUPER_ADMIN_PASSWORD,
     firstname: 'Super',
     lastname: 'Admin',
     phone: '00000000',
