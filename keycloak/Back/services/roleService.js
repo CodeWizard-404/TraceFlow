@@ -58,78 +58,6 @@ async function getClientUUID(token) {
     }
 }
 
-// Placeholder PermissionService implementations
-class PermissionService {
-    static async revokePermissionsFromRole(roleID, permissionIDs) {
-        try {
-            const role = await Role.findByPk(roleID);
-            if (!role) throw new Error('Role not found.');
-
-            const validPermissions = [];
-            for (const permissionID of permissionIDs) {
-                const permission = await Permission.findByPk(permissionID);
-                if (!permission) {
-                    logger.warn(`Permission with ID ${permissionID} not found, skipping revocation.`);
-                    continue;
-                }
-                const hasPermission = await role.hasPermission(permission);
-                if (!hasPermission) {
-                    logger.info(`Permission ${permission.name} not assigned to role ${role.name}, skipping revocation.`);
-                    continue;
-                }
-                validPermissions.push(permission);
-            }
-
-            if (validPermissions.length > 0) {
-                await role.removePermissions(validPermissions);
-                logger.info(`Revoked ${validPermissions.length} permissions from role ${roleID}`);
-            } else {
-                logger.info(`No valid permissions to revoke from role ${roleID}`);
-            }
-
-            return { roleID, revokedPermissions: validPermissions.map((p) => p.name) };
-        } catch (error) {
-            logger.error(`Revoke permissions error: ${error.message}, role: ${roleID}`);
-            throw new Error(error.message || 'Could not revoke permissions.');
-        }
-    }
-
-    static async assignPermissionsToRole(roleID, permissionIDs) {
-        try {
-            const role = await Role.findByPk(roleID);
-            if (!role) throw new Error('Role not found.');
-
-            const validPermissions = [];
-            for (const permissionID of permissionIDs) {
-                const permission = await Permission.findByPk(permissionID);
-                if (!permission) {
-                    logger.warn(`Permission with ID ${permissionID} not found, skipping assignment.`);
-                    continue;
-                }
-                const hasPermission = await role.hasPermission(permission);
-                if (hasPermission) {
-                    logger.info(`Permission ${permission.name} already assigned to role ${role.name}, skipping assignment.`);
-                    continue;
-                }
-                validPermissions.push(permission);
-            }
-
-            if (validPermissions.length > 0) {
-                await role.addPermissions(validPermissions);
-                logger.info(`Assigned ${validPermissions.length} permissions to role ${roleID}`);
-            } else {
-                logger.info(`No valid permissions to assign to role ${roleID}`);
-            }
-
-            return { roleID, assignedPermissions: validPermissions.map((p) => p.name) };
-        } catch (error) {
-            logger.error(`Assign permissions error: ${error.message}, role: ${roleID}`);
-            throw new Error(error.message || 'Could not assign permissions.');
-        }
-    }
-}
-
-// Rest of RoleService remains unchanged...
 class RoleService {
     // Create a new role
     static async createRole(name, description, actorID) {
@@ -842,7 +770,7 @@ class RoleService {
 
                 if (permissionsToRevoke.length > 0) {
                     try {
-                        await PermissionService.revokePermissionsFromRole(role.roleID, permissionsToRevoke);
+                        await PermissionService.revokePermissionsFromRole(role.roleID, permissionsToRevoke, actorID);
                     } catch (error) {
                         logger.error(`Failed to revoke permissions for role ${defaultRole.name}: ${error.message}, permissions: ${JSON.stringify(permissionsToRevoke)}`);
                     }
@@ -860,7 +788,9 @@ class RoleService {
 
                 if (permissionsToAssign.length > 0) {
                     try {
-                        await PermissionService.assignPermissionsToRole(role.roleID, permissionsToAssign);
+                        // Use a dummy user object since assignPermissionsToRole requires it
+                        const dummyUser = { roles: ['Super Admin'] };
+                        await PermissionService.assignPermissionsToRole(dummyUser, role.roleID, permissionsToAssign, actorID);
                     } catch (error) {
                         logger.error(`Failed to assign permissions for role ${defaultRole.name}: ${error.message}, permissions: ${JSON.stringify(permissionsToAssign)}`);
                     }

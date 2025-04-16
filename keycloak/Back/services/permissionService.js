@@ -278,7 +278,17 @@ class PermissionService {
             const results = [];
             for (const permissionID of permissionIDs) {
                 const permission = await Permission.findByPk(permissionID);
-                if (!permission) throw new Error('Permission not found.');
+                if (!permission) {
+                    logger.warn(`Permission with ID ${permissionID} not found, skipping revocation for role ${role.name}`);
+                    continue;
+                }
+
+                // Check if permission is assigned to role
+                const hasPermission = await role.hasPermission(permission);
+                if (!hasPermission) {
+                    logger.info(`Permission ${permission.name} not assigned to role ${role.name}, skipping revocation`);
+                    continue;
+                }
 
                 // Update Keycloak
                 const permissionName = `${permission.name}-permission`;
