@@ -22,8 +22,8 @@ async function getAdminToken() {
         new URLSearchParams({
             grant_type: 'password',
             client_id: 'admin-cli',
-            username: process.env.KEYCLOAK_KEYCLOAK_ADMIN_USER || 'admin',
-            password: process.env.KEYCLOAK_KEYCLOAK_ADMIN_PASSWORDWORD || 'admin',
+            username: process.env.KEYCLOAK_ADMIN_USER || 'admin',
+            password: process.env.KEYCLOAK_ADMIN_PASSWORD || 'admin',
         })
     );
     return response.data.access_token;
