@@ -132,6 +132,93 @@
     transition: all 0.3s ease;
 }
 
+/* Language Switcher */
+.lang-switcher {
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    padding: 0.2rem 2rem;
+    font-size: 0.9rem;
+    font-family: "Inter", sans-serif;
+    font-weight: 600;
+    color: #fff;
+    background: #4cb1c7; /* Matches theme-toggle-btn */
+    border: none;
+    border-radius: 1rem;
+    cursor: pointer;
+    height: 2rem;
+    transition: all 0.3s ease;
+    appearance: none; /* Remove default select styling */
+    -webkit-appearance: none;
+    -moz-appearance: none;
+    position: relative;
+    width: 10rem; /* Compact size */
+}
+
+.header.dark .lang-switcher {
+    background: #63b3ed; /* Matches dark theme */
+    color: #1f2937; /* Dark text for contrast */
+}
+
+.lang-switcher:hover {
+    background: #3a8fa2;
+}
+
+.header.dark .lang-switcher:hover {
+    background: #4299e1;
+}
+
+/* Custom arrow for select */
+.lang-switcher::after {
+    content: "▼";
+    position: absolute;
+    right: 0.75rem;
+    font-size: 0.7rem;
+    color: #fff;
+    pointer-events: none;
+    transition: color 0.3s ease;
+}
+
+.header.dark .lang-switcher::after {
+    color: #1f2937;
+}
+
+/* Option styling (limited control, but ensure consistency) */
+.lang-switcher option {
+    background: #fff;
+    color: #1f2937;
+    font-family: "Inter", sans-serif;
+    font-weight: 600;
+}
+
+.header.dark .lang-switcher option {
+    background: #26292e;
+    color: #e2e8f0;
+}
+
+/* Responsive Design */
+@media (max-width: 768px) {
+    .lang-switcher {
+        width: 3.5rem;
+        height: 1.75rem;
+        padding: 0.375rem;
+        font-size: 0.85rem;
+    }
+}
+
+@media (max-width: 480px) {
+    .lang-switcher {
+        width: 3rem;
+        height: 1.5rem;
+        font-size: 0.8rem;
+    }
+
+    .lang-switcher::after {
+        right: 0.5rem;
+        font-size: 0.6rem;
+    }
+}
+
 .header.dark .theme-toggle-btn {
     background: #63b3ed;
 }
@@ -426,48 +513,7 @@
     }
 }
 
-.footer {
-    background: #f8f8f8;
-    color: #1f2937;
-    padding: 1rem;
-    text-align: center;
-  }
-  
-  .footer.dark {
-    background: #26292e;
-    color: #e2e8f0;
-  }
-  
-  .footer-text {
-    font-family: "Inter", sans-serif;
-    font-size: 0.9rem;
-    margin: 0;
-  }
-  
-  .footer-links {
-    margin-top: 0.5rem;
-  }
-  
-  .footer-link {
-    font-family: "Inter", sans-serif;
-    font-size: 0.9rem;
-    color: #4cb1c7;
-    text-decoration: none;
-    margin: 0 0.5rem;
-  }
-  
-  .footer-link:hover {
-    color: #3a8fa2;
-  }
-  
-  .footer.dark .footer-link {
-    color: #63b3ed;
-  }
-  
-  .footer.dark .footer-link:hover {
-    color: #4299e1;
-  }
-  /* Language Switcher Container */
+/* Language Switcher Container */
 .lang-switcher-container {
     position: relative;
     display: inline-flex;
@@ -509,7 +555,7 @@
 
 .header.dark .lang-switcher {
     background: #63b3ed;
-    color: #fff;
+    color: white;
 }
 
 .header.dark .lang-switcher::before {

@@ -42,6 +42,38 @@
       "assignedToAgent": "Assigned to Agent",
       "withStockManager": "With Stock Manager",
       "stubCollectedStatus": "collected"
+    },
+    "durationUnit": "m"
+  },
+  "header": {
+    "logoAlt": "Company Logo",
+    "aria": {
+      "toggleMenu": "Toggle navigation menu",
+      "themeToggle": "Switch to {mode} mode",
+      "logout": "Log out"
+    },
+    "theme": "Theme",
+    "selectLanguage": "Select language",
+    "logout": "Logout",
+    "darkMode": "dark",
+    "lightMode": "light",
+    "navbar": {
+      "dashboard": "Dashboard",
+      "admin": "Admin",
+      "timesheets": "Timesheets",
+      "receiptBooks": "Receipt Books",
+      "profile": "Profile"
+    }
+  },
+  "footer": {
+    "aria": {
+      "label": "Footer"
+    },
+    "copyright": "© {year} TraceFlow. All rights reserved.",
+    "links": {
+      "privacy": "Privacy Policy",
+      "terms": "Terms of Service",
+      "contact": "Contact Us"
     }
   },
   "visitValidation": {
@@ -49,6 +81,7 @@
     "description": "Complete the checklist, add photos, and validate the visit.",
     "loading": "Loading Visit Details...",
     "error": {
+      "title": "Error",
       "missingData": "Missing visit ID or authentication token.",
       "fetchFailed": "Failed to load visit or agent data.",
       "accessDenied": "Visit not found or access denied.",
@@ -56,7 +89,9 @@
       "cameraInUse": "Camera is in use by another app or unavailable. Please close other apps or check your device.",
       "cameraPlayFailed": "Failed to play camera stream.",
       "validationFailed": "Failed to validate visit.",
-      "noPhotos": "At least one photo is required."
+      "noPhotos": "At least one photo is required.",
+      "noChecklists": "No checklists available for this visit.",
+      "missingChecklists": "Please complete all checklist items before submitting."
     },
     "visitDetails": {
       "title": "Visit Details",
@@ -70,27 +105,37 @@
     },
     "checklist": {
       "title": "Checklist",
-      "noData": "No checklist items available."
+      "noData": "No checklist items available.",
+      "itemLabel": "{item}"
     },
     "photos": {
       "title": "Photos",
       "startCamera": "Start Camera",
-      "note": "At least one photo is required."
+      "note": "At least one photo is required.",
+      "alt": "Visit photo {index}"
     },
     "comment": {
       "title": "Comment (Optional)",
+      "label": "Comment",
       "placeholder": "Add a comment about the visit..."
     },
     "actions": {
       "validate": "Validate Visit",
       "validating": "Validating...",
-      "back": "Back"
+      "back": "Back",
+      "cancel": "Cancel",
+      "submit": "Submit Validation"
+    },
+    "success": {
+      "title": "Success",
+      "message": "Visit validated successfully."
     }
   },
   "visitDetails": {
     "title": "Visit Details",
     "loading": "Loading visit details...",
     "error": {
+      "title": "Oops!",
       "notFound": "Visit not found.",
       "fetchFailed": "Failed to load visit details.",
       "validateFailed": "Failed to validate visit.",
@@ -99,9 +144,9 @@
       "deleteFailed": "Failed to delete visit.",
       "cameraAccess": "Failed to access camera. Please ensure permissions are granted.",
       "cameraPlayFailed": "Failed to play camera stream.",
-      "agentNotFound": "Agent not found with this phone number",
-      "supervisorNotFound": "Supervisor not found with this phone number",
-      "agentsLoadFailed": "Failed to load agents for {location}"
+      "agentNotFound": "Agent not found with this phone number.",
+      "supervisorNotFound": "Supervisor not found with this phone number.",
+      "agentsLoadFailed": "Failed to load agents for {location}."
     },
     "whenWhere": {
       "title": "When & Where",
@@ -126,29 +171,75 @@
     "photos": {
       "title": "Photos",
       "count": "({count})",
-      "startCamera": "Start Camera"
+      "startCamera": "Start Camera",
+      "alt": "Visit photo {index}"
     },
     "comment": {
-      "title": "Comment"
+      "title": "Comment",
+      "label": "Comment",
+      "placeholder": "Add a comment..."
     },
     "supervisor": {
       "title": "Supervisor",
       "searchNamePlaceholder": "Search supervisors by name...",
       "searchPhonePlaceholder": "Or enter supervisor phone number...",
-      "selectPlaceholder": "Select a supervisor"
+      "selectPlaceholder": "Select a supervisor",
+      "ariaLabel": "Select a supervisor"
     },
     "form": {
-      "agentPhone": "Agent Phone (Optional)",
-      "agentPhonePlaceholder": "Enter agent's phone number",
-      "locationSearchPlaceholder": "Search locations...",
-      "locationSelectPlaceholder": "Select a location",
-      "agentSearchPlaceholder": "Search agents...",
-      "agentSelectPlaceholder": "Select an agent",
-      "reasonSearchPlaceholder": "Search reasons...",
-      "reasonSelectPlaceholder": "Select a reason",
-      "checklistSearchPlaceholder": "Search checklists...",
-      "checklistSelectPlaceholder": "Select a checklist",
-      "permissionDenied": "Permission denied"
+      "agentPhone": {
+        "label": "Agent Phone (Optional)",
+        "placeholder": "Enter agent's phone number"
+      },
+      "location": {
+        "label": "Location",
+        "searchPlaceholder": "Search locations...",
+        "selectPlaceholder": "Select a location"
+      },
+      "agent": {
+        "label": "Agent",
+        "searchPlaceholder": "Search agents...",
+        "selectPlaceholder": "Select an agent"
+      },
+      "reasons": {
+        "label": "Reasons",
+        "searchPlaceholder": "Search reasons...",
+        "selectPlaceholder": "Select a reason"
+      },
+      "checklists": {
+        "label": "Checklists",
+        "searchPlaceholder": "Search checklists...",
+        "selectPlaceholder": "Select a checklist"
+      },
+      "photos": {
+        "title": "Photos",
+        "startCamera": "Start Camera",
+        "lastCapturedAlt": "Last captured photo",
+        "existingAlt": "Photo {index}",
+        "newAlt": "New photo {index}"
+      },
+      "comment": {
+        "label": "Comment",
+        "placeholder": "Add a comment..."
+      },
+      "supervisor": {
+        "label": "Supervisor",
+        "searchPlaceholder": "Search supervisors by name...",
+        "phonePlaceholder": "Or enter supervisor phone number...",
+        "selectPlaceholder": "Select a supervisor",
+        "ariaLabel": "Select a supervisor"
+      },
+      "date": {
+        "label": "Date"
+      },
+      "time": {
+        "label": "Time"
+      },
+      "permissionDenied": "Permission denied",
+      "actions": {
+        "save": "Save",
+        "cancel": "Cancel"
+      }
     },
     "actions": {
       "edit": "Edit",
@@ -161,7 +252,21 @@
       "cancel": "Cancel",
       "deleteConfirm": "Are you sure you want to delete this visit?"
     },
-    "duration": "{duration}m"
+    "duration": "{duration}m",
+    "fullscreenAlt": "Fullscreen preview",
+    "aria": {
+      "backButton": "Return to previous page",
+      "logVisit": "Log this visit",
+      "editVisit": "Edit visit details",
+      "deleteVisit": "Delete this visit",
+      "cancelVisit": "Cancel this visit",
+      "validateVisit": "Validate this visit",
+      "tabGeneral": "View general visit information",
+      "tabTimesheet": "View timesheet information",
+      "tabHistory": "View visit history",
+      "errorMessage": "Error message",
+      "supervisorSelect": "Select a supervisor for the visit"
+    }
   },
   "qrScan": {
     "title": "Scan QR Code",
@@ -175,6 +280,7 @@
       "validating": "Validating..."
     },
     "error": {
+      "title": "Oops!",
       "noVisit": "No visit selected.",
       "authRequired": "Authentication required.",
       "accessDenied": "Access Denied: You lack permission to scan visits.",
@@ -182,6 +288,11 @@
     },
     "actions": {
       "back": "Back"
+    },
+    "aria": {
+      "backButton": "Return to previous page",
+      "qrReader": "QR code scanner, current status: {status}",
+      "errorMessage": "Error message"
     }
   },
   "timesheets": {
@@ -237,6 +348,27 @@
       "location": "{location}",
       "locationTBD": "Location TBD",
       "reasons": "Reasons: {reasons}"
+    },
+    "aria": {
+      "prevYear": "Previous year",
+      "nextYear": "Next year",
+      "prevMonth": "Previous month",
+      "nextMonth": "Next month",
+      "prevWeek": "Previous week",
+      "nextWeek": "Next week",
+      "prevDay": "Previous day",
+      "nextDay": "Next day",
+      "viewToggle": "Switch to {mode} view",
+      "scheduleVisit": "Schedule a new visit",
+      "receiptBooks": "View receipt books",
+      "current": "Scroll to current {mode}",
+      "supervisorSearch": "Search supervisors by name or phone",
+      "supervisorFilter": "Filter timesheets by supervisor",
+      "month": "View timesheets for {month}",
+      "weekTile": "View week {weekNumber} details",
+      "weekCard": "View week {weekNumber} details",
+      "dayTile": "View visits for {weekday} {day}",
+      "visitCard": "View visit details for {time} at {location}"
     }
   },
   "timesheetForm": {
