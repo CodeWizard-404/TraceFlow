@@ -244,6 +244,29 @@ const VisitValidation: React.FC = () => {
   const lastPhotoUrl =
     photos.length > 0 ? URL.createObjectURL(photos[photos.length - 1]) : null;
 
+  // Debug translations with interpolation
+  console.log(
+    "Translation Checklist Count:",
+    t("visitValidation.checklist.count", {
+      completed: completedItems,
+      total: totalItems,
+    })
+  );
+  console.log(
+    "Translation Photos Count:",
+    t("visitValidation.photos.count", { count: photos.length })
+  );
+
+  // Fallbacks for interpolated translations
+  const checklistCount =
+    t("visitValidation.checklist.count", {
+      completed: completedItems,
+      total: totalItems,
+    }) || `${completedItems} of ${totalItems} completed`;
+  const photosCount =
+    t("visitValidation.photos.count", { count: photos.length }) ||
+    `(${photos.length} photos)`;
+
   if (loading) {
     return (
       <div className="page-loading">
@@ -326,37 +349,46 @@ const VisitValidation: React.FC = () => {
         <div className="checklist-section">
           <h2>
             <FaCheckCircle /> {t("visitValidation.checklist.title")}{" "}
-            {t("visitValidation.checklist.count", {
-              completed: completedItems,
-              total: totalItems,
-            })}
+            {checklistCount}
           </h2>
           {checklist.length > 0 ? (
             <>
               <ul className="checklist">
-                {checklist.map((item) => (
-                  <li key={item.id} className={item.checked ? "checked" : ""}>
-                    <label className="custom-checkbox-label">
-                      <input
-                        type="checkbox"
-                        checked={item.checked}
-                        onChange={() => handleChecklistChange(item.id)}
-                        className="custom-checkbox-input"
-                        aria-label={t("visitValidation.aria.checklistItem", {
-                          item: item.item,
-                        })}
-                      />
-                      <span className="custom-checkbox">
-                        <FaCheck className="check-icon" />
-                      </span>
-                      <span className="checklist-text">
-                        {t("visitValidation.checklist.itemLabel", {
-                          item: item.item,
-                        })}
-                      </span>
-                    </label>
-                  </li>
-                ))}
+                {checklist.map((item) => {
+                  const checklistItemLabel =
+                    t("visitValidation.checklist.itemLabel", {
+                      item: item.item,
+                    }) || item.item;
+                  console.log(
+                    "Checklist Item Label:",
+                    t("visitValidation.checklist.itemLabel", {
+                      item: item.item,
+                    })
+                  );
+                  return (
+                    <li key={item.id} className={item.checked ? "checked" : ""}>
+                      <label className="custom-checkbox-label">
+                        <input
+                          type="checkbox"
+                          checked={item.checked}
+                          onChange={() => handleChecklistChange(item.id)}
+                          className="custom-checkbox-input"
+                          aria-label={
+                            t("visitValidation.aria.checklistItem", {
+                              item: item.item,
+                            }) || `Toggle ${item.item}`
+                          }
+                        />
+                        <span className="custom-checkbox">
+                          <FaCheck className="check-icon" />
+                        </span>
+                        <span className="checklist-text">
+                          {checklistItemLabel}
+                        </span>
+                      </label>
+                    </li>
+                  );
+                })}
               </ul>
               <div className="progress-bar">
                 <div
@@ -372,8 +404,7 @@ const VisitValidation: React.FC = () => {
 
         <div className="photos-section">
           <h2>
-            <FaCamera /> {t("visitValidation.photos.title")}{" "}
-            {t("visitValidation.photos.count", { count: photos.length })}
+            <FaCamera /> {t("visitValidation.photos.title")} {photosCount}
           </h2>
           <div className="camera-controls">
             <button
@@ -431,30 +462,41 @@ const VisitValidation: React.FC = () => {
           </div>
           {photos.length > 0 && (
             <div className="photo-previews">
-              {photos.map((photo, index) => (
-                <div key={index} className="photo-container">
-                  <img
-                    src={URL.createObjectURL(photo)}
-                    alt={t("visitValidation.photos.capturedAlt", {
-                      index: index + 1,
-                    })}
-                    className="photo-preview"
-                    onClick={() => openPhotoPreview(photo)}
-                    aria-label={t("visitValidation.aria.previewPhoto", {
-                      index: index + 1,
-                    })}
-                  />
-                  <button
-                    className="remove-photo-btn"
-                    onClick={() => removePhoto(index)}
-                    aria-label={t("visitValidation.aria.removePhoto", {
-                      index: index + 1,
-                    })}
-                  >
-                    <FaTimes /> {t("visitValidation.actions.removePhoto")}
-                  </button>
-                </div>
-              ))}
+              {photos.map((photo, index) => {
+                const previewPhotoAria =
+                  t("visitValidation.aria.previewPhoto", {
+                    index: index + 1,
+                  }) || `Preview photo ${index + 1}`;
+                const removePhotoAria =
+                  t("visitValidation.aria.removePhoto", { index: index + 1 }) ||
+                  `Remove photo ${index + 1}`;
+                const capturedAlt =
+                  t("visitValidation.photos.capturedAlt", {
+                    index: index + 1,
+                  }) || `Captured photo ${index + 1}`;
+                console.log(
+                  "Photo Preview Aria:",
+                  t("visitValidation.aria.previewPhoto", { index: index + 1 })
+                );
+                return (
+                  <div key={index} className="photo-container">
+                    <img
+                      src={URL.createObjectURL(photo)}
+                      alt={capturedAlt}
+                      className="photo-preview"
+                      onClick={() => openPhotoPreview(photo)}
+                      aria-label={previewPhotoAria}
+                    />
+                    <button
+                      className="remove-photo-btn"
+                      onClick={() => removePhoto(index)}
+                      aria-label={removePhotoAria}
+                    >
+                      <FaTimes /> {t("visitValidation.actions.removePhoto")}
+                    </button>
+                  </div>
+                );
+              })}
             </div>
           )}
           <p className="photo-note">{t("visitValidation.photos.note")}</p>

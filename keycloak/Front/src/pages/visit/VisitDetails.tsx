@@ -687,6 +687,35 @@ const VisitDetails: React.FC = () => {
     }
   };
 
+  // Debug translations with interpolation
+  console.log(
+    "Translation Photos Count:",
+    t("visitDetails.photos.count", { count: visit?.photos?.length || 0 })
+  );
+  console.log(
+    "Translation Form Photos Count:",
+    t("visitDetails.form.photos.count", {
+      count:
+        (visit?.photos?.filter((p) => !editForm.photosToRemove.includes(p))
+          .length || 0) + newPhotos.length,
+    })
+  );
+
+  // Fallbacks for interpolated translations
+  const photosCount =
+    t("visitDetails.photos.count", { count: visit?.photos?.length || 0 }) ||
+    `(${visit?.photos?.length || 0} photos)`;
+  const formPhotosCount =
+    t("visitDetails.form.photos.count", {
+      count:
+        (visit?.photos?.filter((p) => !editForm.photosToRemove.includes(p))
+          .length || 0) + newPhotos.length,
+    }) ||
+    `(${
+      (visit?.photos?.filter((p) => !editForm.photosToRemove.includes(p))
+        .length || 0) + newPhotos.length
+    } photos)`;
+
   if (loading) {
     return (
       <div className="page-loading">
@@ -857,19 +886,18 @@ const VisitDetails: React.FC = () => {
               {visit.photos?.length ? (
                 <div className="visit-details-card photos-section">
                   <h2>
-                    <FaCamera /> {t("visitDetails.photos.title")}{" "}
-                    {t("visitDetails.photos.count", {
-                      count: visit.photos.length,
-                    })}
+                    <FaCamera /> {t("visitDetails.photos.title")} {photosCount}
                   </h2>
                   <div className="card-content photo-gallery">
                     {visit.photos.map((photo, index) => (
                       <div key={index} className="photo-container">
                         <img
                           src={`${BASE_URL}${photo}`}
-                          alt={t("visitDetails.photos.alt", {
-                            index: index + 1,
-                          })}
+                          alt={
+                            t("visitDetails.photos.alt", {
+                              index: index + 1,
+                            }) || `Photo ${index + 1}`
+                          }
                           className="photo-preview"
                           onClick={() => handleImageClick(photo)}
                         />
@@ -1235,21 +1263,28 @@ const VisitDetails: React.FC = () => {
                     ))}
                 </select>
                 <div className="selected-items">
-                  {editForm.reasons.map((r, index) => (
-                    <span
-                      key={index}
-                      className="selected-item"
-                      onClick={() => handleRemoveReason(index)}
-                      aria-label={t("visitDetails.aria.removeReason", {
-                        item:
-                          reasons.find((re) => re.reasonID === r.id)?.item ||
-                          r.id,
-                      })}
-                    >
-                      {reasons.find((re) => re.reasonID === r.id)?.item || r.id}{" "}
-                      ×
-                    </span>
-                  ))}
+                  {editForm.reasons.map((r, index) => {
+                    const reasonItem =
+                      reasons.find((re) => re.reasonID === r.id)?.item || r.id;
+                    console.log(
+                      "Reason Item:",
+                      t("visitDetails.aria.removeReason", { item: reasonItem })
+                    );
+                    return (
+                      <span
+                        key={index}
+                        className="selected-item"
+                        onClick={() => handleRemoveReason(index)}
+                        aria-label={
+                          t("visitDetails.aria.removeReason", {
+                            item: reasonItem,
+                          }) || `Remove reason ${reasonItem}`
+                        }
+                      >
+                        {reasonItem} ×
+                      </span>
+                    );
+                  })}
                 </div>
               </div>
             )}
@@ -1304,38 +1339,46 @@ const VisitDetails: React.FC = () => {
                     ))}
                 </select>
                 <div className="selected-items">
-                  {editForm.checklists.map((c, index) => (
-                    <div key={index} className="checklist-item">
-                      <input
-                        type="checkbox"
-                        checked={c.checked}
-                        onChange={(e) =>
-                          handleChecklistChange(c.id, e.target.checked)
-                        }
-                        disabled={visit.status !== "visited"}
-                        aria-label={t("visitDetails.aria.checklistItem", {
-                          item:
-                            checklists.find((cl) => cl.checklistID === c.id)
-                              ?.item || c.id,
-                        })}
-                      />
-                      <span>
-                        {checklists.find((cl) => cl.checklistID === c.id)
-                          ?.item || c.id}
-                      </span>
-                      <span
-                        className="remove-item"
-                        onClick={() => handleRemoveChecklist(index)}
-                        aria-label={t("visitDetails.aria.removeChecklist", {
-                          item:
-                            checklists.find((cl) => cl.checklistID === c.id)
-                              ?.item || c.id,
-                        })}
-                      >
-                        ×
-                      </span>
-                    </div>
-                  ))}
+                  {editForm.checklists.map((c, index) => {
+                    const checklistItem =
+                      checklists.find((cl) => cl.checklistID === c.id)?.item ||
+                      c.id;
+                    console.log(
+                      "Checklist Item:",
+                      t("visitDetails.aria.checklistItem", {
+                        item: checklistItem,
+                      })
+                    );
+                    return (
+                      <div key={index} className="checklist-item">
+                        <input
+                          type="checkbox"
+                          checked={c.checked}
+                          onChange={(e) =>
+                            handleChecklistChange(c.id, e.target.checked)
+                          }
+                          disabled={visit.status !== "visited"}
+                          aria-label={
+                            t("visitDetails.aria.checklistItem", {
+                              item: checklistItem,
+                            }) || `Toggle checklist ${checklistItem}`
+                          }
+                        />
+                        <span>{checklistItem}</span>
+                        <span
+                          className="remove-item"
+                          onClick={() => handleRemoveChecklist(index)}
+                          aria-label={
+                            t("visitDetails.aria.removeChecklist", {
+                              item: checklistItem,
+                            }) || `Remove checklist ${checklistItem}`
+                          }
+                        >
+                          ×
+                        </span>
+                      </div>
+                    );
+                  })}
                 </div>
               </div>
             )}
@@ -1345,12 +1388,7 @@ const VisitDetails: React.FC = () => {
               <div className="form-group photos-section">
                 <h2>
                   <FaCamera /> {t("visitDetails.form.photos.title")}{" "}
-                  {t("visitDetails.form.photos.count", {
-                    count:
-                      (visit.photos?.filter(
-                        (p) => !editForm.photosToRemove.includes(p)
-                      ).length || 0) + newPhotos.length,
-                  })}
+                  {formPhotosCount}
                 </h2>
                 {visit.status === VisitStatus.VISITED && (
                   <div className="camera-controls">
@@ -1433,9 +1471,11 @@ const VisitDetails: React.FC = () => {
                         >
                           <img
                             src={`${BASE_URL}${photo}`}
-                            alt={t("visitDetails.form.photos.existingAlt", {
-                              index: index + 1,
-                            })}
+                            alt={
+                              t("visitDetails.form.photos.existingAlt", {
+                                index: index + 1,
+                              }) || `Existing photo ${index + 1}`
+                            }
                             className="photo-preview"
                             onClick={() => handleImageClick(photo)}
                           />
@@ -1443,9 +1483,11 @@ const VisitDetails: React.FC = () => {
                             type="button"
                             className="remove-photo-btn"
                             onClick={() => handleRemovePhoto(photo)}
-                            aria-label={t("visitDetails.aria.removePhoto", {
-                              index: index + 1,
-                            })}
+                            aria-label={
+                              t("visitDetails.aria.removePhoto", {
+                                index: index + 1,
+                              }) || `Remove photo ${index + 1}`
+                            }
                           >
                             <FaTimes /> {t("visitDetails.actions.removePhoto")}
                           </button>
@@ -1455,9 +1497,11 @@ const VisitDetails: React.FC = () => {
                       <div key={`new-${index}`} className="photo-container">
                         <img
                           src={URL.createObjectURL(photo)}
-                          alt={t("visitDetails.form.photos.newAlt", {
-                            index: index + 1,
-                          })}
+                          alt={
+                            t("visitDetails.form.photos.newAlt", {
+                              index: index + 1,
+                            }) || `New photo ${index + 1}`
+                          }
                           className="photo-preview"
                           onClick={() =>
                             setSelectedImage(URL.createObjectURL(photo))
@@ -1467,11 +1511,14 @@ const VisitDetails: React.FC = () => {
                           type="button"
                           className="remove-photo-btn"
                           onClick={() => removeNewPhoto(index)}
-                          aria-label={t("visitDetails.aria.removePhoto", {
-                            index: index + 1,
-                          })}
-                        ></button>
-                        <FaTimes /> {t("visitDetails.actions.removePhoto")}
+                          aria-label={
+                            t("visitDetails.aria.removePhoto", {
+                              index: index + 1,
+                            }) || `Remove photo ${index + 1}`
+                          }
+                        >
+                          <FaTimes /> {t("visitDetails.actions.removePhoto")}
+                        </button>
                       </div>
                     ))}
                   </div>

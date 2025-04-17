@@ -26,7 +26,9 @@ const ProfilePage: React.FC = () => {
   const [error, setError] = useState<string>("");
   const [success, setSuccess] = useState<string>("");
   const [profilePic, setProfilePic] = useState<string | null>(null);
-  const [activeTab, setActiveTab] = useState<"info" | "settings" | "activity">("info");
+  const [activeTab, setActiveTab] = useState<"info" | "settings" | "activity">(
+    "info"
+  );
   const [formErrors, setFormErrors] = useState<Record<string, string>>({});
   const [rawPhone, setRawPhone] = useState("");
   const [rawWallet, setRawWallet] = useState("");
@@ -83,7 +85,9 @@ const ProfilePage: React.FC = () => {
         localStorage.setItem("user", JSON.stringify(completeUser));
       } catch (err) {
         console.error("Failed to load user profile:", err);
-        setTempError(err instanceof Error ? err.message : "Failed to load user profile");
+        setTempError(
+          err instanceof Error ? err.message : "Failed to load user profile"
+        );
         if (user) {
           const fallbackUser: User = {
             keycloakId: user.keycloakId || "",
@@ -123,7 +127,8 @@ const ProfilePage: React.FC = () => {
     if (!trimmed) return `${field} is required`;
     if (trimmed.length < 3) return `${field} must be at least 3 characters`;
     if (trimmed.length > 20) return `${field} must be 20 characters or less`;
-    if (!/^[a-zA-Z\s'-]+$/.test(trimmed)) return `${field} can only contain letters, spaces, hyphens, or apostrophes`;
+    if (!/^[a-zA-Z\s'-]+$/.test(trimmed))
+      return `${field} can only contain letters, spaces, hyphens, or apostrophes`;
     return "";
   };
 
@@ -131,7 +136,8 @@ const ProfilePage: React.FC = () => {
     const trimmed = value.trim();
     if (!trimmed) return "Email is required";
     if (trimmed.length > 70) return "Email must be 70 characters or less";
-    if (!/^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(trimmed)) return "Invalid email format";
+    if (!/^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(trimmed))
+      return "Invalid email format";
     return "";
   };
 
@@ -144,22 +150,31 @@ const ProfilePage: React.FC = () => {
 
   const validateWallet = (value: string): string => {
     const digits = value.replace(/[^\d]/g, "");
-    if (digits && digits.length !== 16) return "Wallet must be exactly 16 digits";
+    if (digits && digits.length !== 16)
+      return "Wallet must be exactly 16 digits";
     return "";
   };
 
   const validatePassword = (value: string): string => {
-    if (value && value.length < 8) return "Password must be at least 8 characters";
+    if (value && value.length < 8)
+      return "Password must be at least 8 characters";
     if (value.length > 128) return "Password must be 128 characters or less";
-    if (value && !/^(?=.*[a-z])(?=.*[A-Z])(?=.*\d)(?=.*[!@#$%^&*])[^\s]+$/.test(value)) {
+    if (
+      value &&
+      !/^(?=.*[a-z])(?=.*[A-Z])(?=.*\d)(?=.*[!@#$%^&*])[^\s]+$/.test(value)
+    ) {
       return "Password must include uppercase, lowercase, digit, and special character, no spaces";
     }
     return "";
   };
 
-  const validatePasswordConfirm = (password: string, confirm: string): string => {
+  const validatePasswordConfirm = (
+    password: string,
+    confirm: string
+  ): string => {
     if (password && !confirm) return "Password confirmation is required";
-    if (password && confirm && password !== confirm) return "Passwords do not match";
+    if (password && confirm && password !== confirm)
+      return "Passwords do not match";
     return "";
   };
 
@@ -222,7 +237,10 @@ const ProfilePage: React.FC = () => {
       switch (field) {
         case "firstname":
         case "lastname":
-          error = validateName(value, field.charAt(0).toUpperCase() + field.slice(1));
+          error = validateName(
+            value,
+            field.charAt(0).toUpperCase() + field.slice(1)
+          );
           break;
         case "email":
           error = validateEmail(value);
@@ -256,7 +274,10 @@ const ProfilePage: React.FC = () => {
     });
   };
 
-  const handleKeyDown = async (e: KeyboardEvent<HTMLInputElement>, field: keyof User) => {
+  const handleKeyDown = async (
+    e: KeyboardEvent<HTMLInputElement>,
+    field: keyof User
+  ) => {
     if (e.key === "Enter" && profileData) {
       const error = formErrors[field];
       if (error) {
@@ -279,7 +300,9 @@ const ProfilePage: React.FC = () => {
         localStorage.setItem("user", JSON.stringify(updatedUser));
       } catch (err) {
         console.error("Profile update error:", err);
-        setTempError(err instanceof Error ? err.message : "Failed to update profile");
+        setTempError(
+          err instanceof Error ? err.message : "Failed to update profile"
+        );
         setProfileData(user || profileData);
         setRawPhone(user?.phone || profileData?.phone || "");
         setRawWallet(user?.wallet || profileData?.wallet || "");
@@ -303,14 +326,20 @@ const ProfilePage: React.FC = () => {
       if (response.PFP) {
         const imageSrc = `data:image/jpeg;base64,${response.PFP}`;
         setProfilePic(imageSrc);
-        const updatedUser: User = { ...profileData!, ...response, PFP: response.PFP };
+        const updatedUser: User = {
+          ...profileData!,
+          ...response,
+          PFP: response.PFP,
+        };
         setProfileData(updatedUser);
         setTempSuccess("Profile picture updated successfully");
         localStorage.setItem("user", JSON.stringify(updatedUser));
       }
     } catch (err) {
       console.error("Profile pic update error:", err);
-      setTempError(err instanceof Error ? err.message : "Failed to update profile picture");
+      setTempError(
+        err instanceof Error ? err.message : "Failed to update profile picture"
+      );
     }
   };
 
@@ -333,7 +362,9 @@ const ProfilePage: React.FC = () => {
       localStorage.setItem("user", JSON.stringify(updatedUser));
     } catch (err) {
       console.error("Password update error:", err);
-      setTempError(err instanceof Error ? err.message : "Failed to update password");
+      setTempError(
+        err instanceof Error ? err.message : "Failed to update password"
+      );
     }
   };
 
@@ -385,7 +416,9 @@ const ProfilePage: React.FC = () => {
                   <input
                     type="text"
                     value={profileData.firstname}
-                    onChange={(e) => handleInputChange("firstname", e.target.value)}
+                    onChange={(e) =>
+                      handleInputChange("firstname", e.target.value)
+                    }
                     onKeyDown={(e) => handleKeyDown(e, "firstname")}
                     autoFocus
                     className="edit-input"
@@ -406,7 +439,9 @@ const ProfilePage: React.FC = () => {
                   <input
                     type="text"
                     value={profileData.lastname}
-                    onChange={(e) => handleInputChange("lastname", e.target.value)}
+                    onChange={(e) =>
+                      handleInputChange("lastname", e.target.value)
+                    }
                     onKeyDown={(e) => handleKeyDown(e, "lastname")}
                     autoFocus
                     className="edit-input"
@@ -461,7 +496,9 @@ const ProfilePage: React.FC = () => {
                       <input
                         type="email"
                         value={profileData.email}
-                        onChange={(e) => handleInputChange("email", e.target.value)}
+                        onChange={(e) =>
+                          handleInputChange("email", e.target.value)
+                        }
                         onKeyDown={(e) => handleKeyDown(e, "email")}
                         autoFocus
                         className="edit-input"
@@ -549,7 +586,9 @@ const ProfilePage: React.FC = () => {
                       placeholder="Enter new password"
                     />
                     {formErrors.newPassword && (
-                      <span className="field-error">{formErrors.newPassword}</span>
+                      <span className="field-error">
+                        {formErrors.newPassword}
+                      </span>
                     )}
                   </div>
                 </div>
@@ -559,11 +598,15 @@ const ProfilePage: React.FC = () => {
                     <input
                       type="password"
                       value={confirmPassword}
-                      onChange={(e) => handleConfirmPasswordChange(e.target.value)}
+                      onChange={(e) =>
+                        handleConfirmPasswordChange(e.target.value)
+                      }
                       placeholder="Confirm new password"
                     />
                     {formErrors.confirmPassword && (
-                      <span className="field-error">{formErrors.confirmPassword}</span>
+                      <span className="field-error">
+                        {formErrors.confirmPassword}
+                      </span>
                     )}
                   </div>
                 </div>
@@ -591,7 +634,9 @@ const ProfilePage: React.FC = () => {
                 <div className="activity-details">
                   <p>Visit Logged</p>
                   <span>April 07, 2025 - 10:45</span>
-                  <span className="activity-subtext">Agent: John Doe | Location: Tunis</span>
+                  <span className="activity-subtext">
+                    Agent: John Doe | Location: Tunis
+                  </span>
                 </div>
                 <span className="activity-amount">+1 Visit</span>
               </div>
@@ -609,7 +654,9 @@ const ProfilePage: React.FC = () => {
                 <div className="activity-details">
                   <p>Carnet Distributed</p>
                   <span>April 05, 2025 - 09:15</span>
-                  <span className="activity-subtext">Carnet ID: #CRN12345 | Agent: Amina K.</span>
+                  <span className="activity-subtext">
+                    Carnet ID: #CRN12345 | Agent: Amina K.
+                  </span>
                 </div>
                 <span className="activity-amount">+1 Carnet</span>
               </div>
@@ -618,7 +665,9 @@ const ProfilePage: React.FC = () => {
                 <div className="activity-details">
                   <p>Souche Collected</p>
                   <span>April 04, 2025 - 14:00</span>
-                  <span className="activity-subtext">Carnet ID: #CRN12345 | Status: Validated</span>
+                  <span className="activity-subtext">
+                    Carnet ID: #CRN12345 | Status: Validated
+                  </span>
                 </div>
                 <span className="activity-amount">+1 Souche</span>
               </div>

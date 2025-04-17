@@ -138,8 +138,9 @@ function Header() {
                   onChange={(e) => i18n.changeLanguage(e.target.value)}
                   aria-label={t("header.selectLanguage")}
                 >
-                  <option value="en">{t("header.languages.en")}</option>
-                  <option value="fr">{t("header.languages.fr")}</option>
+                  <option value="en">English</option>
+                  <option value="fr">Francais</option>
+                  <option value="ar">العربية</option>
                 </select>
               </div>
             </div>

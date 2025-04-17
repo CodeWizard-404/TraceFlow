@@ -19,11 +19,14 @@ import { Reason } from "../../models/Reason";
 import User from "../../models/User";
 import { useAuth } from "../../context/AuthContext";
 import { useError } from "../../context/ErrorContext";
+import { useTranslation } from "react-i18next";
 
 const PERMISSIONS = {
   CREATE_TIMESHEETS: import.meta.env.VITE_PERMISSIONS_CREATE_TIMESHEETS,
-  CREATE_TIMESHEETS_FOR_SUPERVISOR: import.meta.env.VITE_PERMISSIONS_CREATE_TIMESHEETS_FOR_SUPERVISOR,
-  READ_AGENTS_BY_LOCATION: import.meta.env.VITE_PERMISSIONS_READ_AGENTS_BY_LOCATION,
+  CREATE_TIMESHEETS_FOR_SUPERVISOR: import.meta.env
+    .VITE_PERMISSIONS_CREATE_TIMESHEETS_FOR_SUPERVISOR,
+  READ_AGENTS_BY_LOCATION: import.meta.env
+    .VITE_PERMISSIONS_READ_AGENTS_BY_LOCATION,
   READ_AGENTS_BY_PHONE: import.meta.env.VITE_PERMISSIONS_READ_AGENTS_BY_PHONE,
   READ_SUPERVISORS: import.meta.env.VITE_PERMISSIONS_READ_SUPERVISORS,
   READ_REASON_ITEMS: import.meta.env.VITE_PERMISSIONS_READ_REASON_ITEMS,
@@ -35,6 +38,7 @@ const TimesheetForm: React.FC = () => {
   const navigate = useNavigate();
   const { user, effectivePermissions, permissionsLoaded } = useAuth();
   const { setError } = useError();
+  const { t } = useTranslation();
 
   // State
   const [date, setDate] = useState<string>("");
@@ -47,10 +51,14 @@ const TimesheetForm: React.FC = () => {
   const [agentSearch, setAgentSearch] = useState<string>("");
   const [agentPhone, setAgentPhone] = useState<string>("");
   const [reasons, setReasons] = useState<Reason[]>([]);
-  const [selectedReasons, setSelectedReasons] = useState<Array<{ id?: string }>>([]);
+  const [selectedReasons, setSelectedReasons] = useState<
+    Array<{ id?: string }>
+  >([]);
   const [reasonSearch, setReasonSearch] = useState<string>("");
   const [checklists, setChecklists] = useState<Checklist[]>([]);
-  const [selectedChecklists, setSelectedChecklists] = useState<Array<{ id?: string }>>([]);
+  const [selectedChecklists, setSelectedChecklists] = useState<
+    Array<{ id?: string }>
+  >([]);
   const [checklistSearch, setChecklistSearch] = useState<string>("");
   const [loading, setLoading] = useState<boolean>(false);
   const [supervisors, setSupervisors] = useState<User[]>([]);
@@ -59,30 +67,50 @@ const TimesheetForm: React.FC = () => {
   const [supervisorSearch, setSupervisorSearch] = useState<string>("");
 
   // Current date setup
-  const currentDate = new Date().toISOString().split('T')[0];
+  const currentDate = new Date().toISOString().split("T")[0];
 
   // Permission Checks
-  const userPermissions = useMemo(() => ({
-    canCreateTimesheets: effectivePermissions?.some(p => p.name === PERMISSIONS.CREATE_TIMESHEETS),
-    canCreateTimesheetsForSupervisors: effectivePermissions?.some(p => p.name === PERMISSIONS.CREATE_TIMESHEETS_FOR_SUPERVISOR),
-    canReadAgentsByLocation: effectivePermissions?.some(p => p.name === PERMISSIONS.READ_AGENTS_BY_LOCATION),
-    canReadAgentsByPhone: effectivePermissions?.some(p => p.name === PERMISSIONS.READ_AGENTS_BY_PHONE),
-    canReadSupervisors: effectivePermissions?.some(p => p.name === PERMISSIONS.READ_SUPERVISORS),
-    canReadReasons: effectivePermissions?.some(p => p.name === PERMISSIONS.READ_REASON_ITEMS),
-    canReadChecklists: effectivePermissions?.some(p => p.name === PERMISSIONS.READ_CHECKLISTS_ITEMS),
-  }), [effectivePermissions]);
+  const userPermissions = useMemo(
+    () => ({
+      canCreateTimesheets: effectivePermissions?.some(
+        (p) => p.name === PERMISSIONS.CREATE_TIMESHEETS
+      ),
+      canCreateTimesheetsForSupervisors: effectivePermissions?.some(
+        (p) => p.name === PERMISSIONS.CREATE_TIMESHEETS_FOR_SUPERVISOR
+      ),
+      canReadAgentsByLocation: effectivePermissions?.some(
+        (p) => p.name === PERMISSIONS.READ_AGENTS_BY_LOCATION
+      ),
+      canReadAgentsByPhone: effectivePermissions?.some(
+        (p) => p.name === PERMISSIONS.READ_AGENTS_BY_PHONE
+      ),
+      canReadSupervisors: effectivePermissions?.some(
+        (p) => p.name === PERMISSIONS.READ_SUPERVISORS
+      ),
+      canReadReasons: effectivePermissions?.some(
+        (p) => p.name === PERMISSIONS.READ_REASON_ITEMS
+      ),
+      canReadChecklists: effectivePermissions?.some(
+        (p) => p.name === PERMISSIONS.READ_CHECKLISTS_ITEMS
+      ),
+    }),
+    [effectivePermissions]
+  );
 
   if (!permissionsLoaded)
     return (
       <div className="page-loading">
         <div className="spinner"></div>
-        <p>Loading...</p>
+        <p>{t("timesheetForm.loading")}</p>
       </div>
     );
 
   if (!user) return null;
 
-  const supervisorID = userPermissions.canReadSupervisors && selectedSupervisor ? selectedSupervisor : user.userID;
+  const supervisorID =
+    userPermissions.canReadSupervisors && selectedSupervisor
+      ? selectedSupervisor
+      : user.userID;
 
   // Fetch Initial Data
   useEffect(() => {
@@ -90,38 +118,56 @@ const TimesheetForm: React.FC = () => {
       setLoading(true);
       try {
         const promises = [
-          userPermissions.canReadAgentsByLocation ? getAgentLocations() : Promise.resolve([]),
-          userPermissions.canReadReasons ? getAllReasons() : Promise.resolve([]),
-          userPermissions.canReadChecklists ? getAllChecklists() : Promise.resolve([]),
-          userPermissions.canReadSupervisors ? getSupervisorsByUser(user.userID) : Promise.resolve([]),
+          userPermissions.canReadAgentsByLocation
+            ? getAgentLocations()
+            : Promise.resolve([]),
+          userPermissions.canReadReasons
+            ? getAllReasons()
+            : Promise.resolve([]),
+          userPermissions.canReadChecklists
+            ? getAllChecklists()
+            : Promise.resolve([]),
+          userPermissions.canReadSupervisors
+            ? getSupervisorsByUser(user.userID)
+            : Promise.resolve([]),
         ];
-        const [locationsData, reasonsData, checklistsData, supervisorsData] = await Promise.all(promises);
+        const [locationsData, reasonsData, checklistsData, supervisorsData] =
+          await Promise.all(promises);
 
         setLocations(locationsData as string[]);
         setReasons(reasonsData as Reason[]);
         setChecklists(checklistsData as Checklist[]);
-        if (userPermissions.canCreateTimesheetsForSupervisors && userPermissions.canReadSupervisors) {
+        if (
+          userPermissions.canCreateTimesheetsForSupervisors &&
+          userPermissions.canReadSupervisors
+        ) {
           setSupervisors(supervisorsData as User[]);
         }
       } catch (err) {
-        setError("Failed to load initial data. Please try again.");
+        setError(t("timesheetForm.errors.initialData"));
         console.error("Fetch initial data error:", err);
       } finally {
         setLoading(false);
       }
     };
     fetchData();
-  }, [userPermissions, user.userID, setError]);
+  }, [userPermissions, user.userID, setError, t]);
 
   // Fetch Agents by Location
   useEffect(() => {
-    if (selectedLocation && !agentPhone && userPermissions.canReadAgentsByLocation) {
+    if (
+      selectedLocation &&
+      !agentPhone &&
+      userPermissions.canReadAgentsByLocation
+    ) {
       const fetchAgents = async () => {
         try {
           const agentsData = await getAgentsByLocation(selectedLocation);
           setAgents(agentsData);
         } catch (err) {
-          setError(`Failed to load agents for ${selectedLocation}`);
+          setError(
+            t("timesheetForm.errors.agentsByLocation", { selectedLocation })
+          );
           console.error("Fetch agents by location error:", err);
         }
       };
@@ -130,7 +176,13 @@ const TimesheetForm: React.FC = () => {
       setAgents([]);
       setSelectedAgent("");
     }
-  }, [selectedLocation, agentPhone, userPermissions.canReadAgentsByLocation, setError]);
+  }, [
+    selectedLocation,
+    agentPhone,
+    userPermissions.canReadAgentsByLocation,
+    setError,
+    t,
+  ]);
 
   // Debounced Fetch Agent by Phone
   const fetchAgentByPhone = useCallback(
@@ -143,14 +195,14 @@ const TimesheetForm: React.FC = () => {
         setAgents([agentData]);
         setAgentSearch(`${agentData.name || ""} ${agentData.lastname || ""}`);
       } catch (err) {
-        setError("Agent not found with this phone number");
+        setError(t("timesheetForm.errors.agentNotFound"));
         setSelectedAgent("");
         setAgents([]);
         setSelectedLocation("");
         console.error("Fetch agent by phone error:", err);
       }
     }, 500),
-    [userPermissions.canReadAgentsByPhone, setError]
+    [userPermissions.canReadAgentsByPhone, setError, t]
   );
 
   useEffect(() => {
@@ -167,38 +219,67 @@ const TimesheetForm: React.FC = () => {
   // Debounced Fetch Supervisor by Phone
   const fetchSupervisorByPhone = useCallback(
     debounce(async (phone: string) => {
-      if (phone.length < 7 || !userPermissions.canReadSupervisors || !userPermissions.canCreateTimesheetsForSupervisors) return;
+      if (
+        phone.length < 7 ||
+        !userPermissions.canReadSupervisors ||
+        !userPermissions.canCreateTimesheetsForSupervisors
+      )
+        return;
       try {
         const supervisor = await getUserByPhone(phone);
         setSelectedSupervisor(supervisor.userID);
-        setSupervisors(prev => prev.some(s => s.userID === supervisor.userID) ? prev : [...prev, supervisor]);
-        setSupervisorSearch(`${supervisor.firstname || ""} ${supervisor.lastname || ""}`);
+        setSupervisors((prev) =>
+          prev.some((s) => s.userID === supervisor.userID)
+            ? prev
+            : [...prev, supervisor]
+        );
+        setSupervisorSearch(
+          `${supervisor.firstname || ""} ${supervisor.lastname || ""}`
+        );
       } catch (err) {
-        setError("Supervisor not found with this phone number");
+        setError(t("timesheetForm.errors.supervisorNotFound"));
         setSelectedSupervisor("");
         console.error("Fetch supervisor by phone error:", err);
       }
     }, 500),
-    [supervisors, userPermissions.canReadSupervisors, userPermissions.canCreateTimesheetsForSupervisors, setError]
+    [
+      userPermissions.canReadSupervisors,
+      userPermissions.canCreateTimesheetsForSupervisors,
+      setError,
+      t,
+    ]
   );
 
   useEffect(() => {
-    if (supervisorPhone && userPermissions.canCreateTimesheetsForSupervisors && userPermissions.canReadSupervisors) {
+    if (
+      supervisorPhone &&
+      userPermissions.canCreateTimesheetsForSupervisors &&
+      userPermissions.canReadSupervisors
+    ) {
       fetchSupervisorByPhone(supervisorPhone);
     } else if (userPermissions.canCreateTimesheetsForSupervisors) {
       setSelectedSupervisor("");
       setSupervisorSearch("");
     }
     return () => fetchSupervisorByPhone.cancel();
-  }, [supervisorPhone, userPermissions.canCreateTimesheetsForSupervisors, userPermissions.canReadSupervisors, fetchSupervisorByPhone]);
+  }, [
+    supervisorPhone,
+    userPermissions.canCreateTimesheetsForSupervisors,
+    userPermissions.canReadSupervisors,
+    fetchSupervisorByPhone,
+  ]);
 
   // Utility Functions
   const getWeekNumber = (dateStr: string): number => {
     const date = new Date(dateStr);
-    const utcDate = new Date(Date.UTC(date.getUTCFullYear(), date.getUTCMonth(), date.getUTCDate()));
+    const utcDate = new Date(
+      Date.UTC(date.getUTCFullYear(), date.getUTCMonth(), date.getUTCDate())
+    );
     utcDate.setUTCDate(utcDate.getUTCDate() + 4 - (utcDate.getUTCDay() || 7));
     const yearStart = new Date(Date.UTC(utcDate.getUTCFullYear(), 0, 1));
-    return Math.ceil(((utcDate.getTime() - yearStart.getTime()) / 86400000 + 1) / 7);
+    return Math.ceil(
+      ((utcDate.getTime() - yearStart.getTime()) / 86400000 + 1) / 7
+    );
   };
 
   // Handlers
@@ -214,15 +295,18 @@ const TimesheetForm: React.FC = () => {
   };
 
   const handleReasonSelect = (reason: Reason) => {
-    if (!selectedReasons.some(r => r.id === reason.reasonID)) {
+    if (!selectedReasons.some((r) => r.id === reason.reasonID)) {
       setSelectedReasons([...selectedReasons, { id: reason.reasonID }]);
     }
     setReasonSearch("");
   };
 
   const handleChecklistSelect = (checklist: Checklist) => {
-    if (!selectedChecklists.some(c => c.id === checklist.checklistID)) {
-      setSelectedChecklists([...selectedChecklists, { id: checklist.checklistID }]);
+    if (!selectedChecklists.some((c) => c.id === checklist.checklistID)) {
+      setSelectedChecklists([
+        ...selectedChecklists,
+        { id: checklist.checklistID },
+      ]);
     }
     setChecklistSearch("");
   };
@@ -239,93 +323,118 @@ const TimesheetForm: React.FC = () => {
       weekNumber,
       year,
       supervisorID,
-      visits: [{
-        date,
-        time: `${time}:00`,
-        agentID: selectedAgent,
-        reasons: selectedReasons,
-        checklists: selectedChecklists,
-      }],
-      status: userPermissions.canCreateTimesheetsForSupervisors ? "validated" : "pending",
+      visits: [
+        {
+          date,
+          time: `${time}:00`,
+          agentID: selectedAgent,
+          reasons: selectedReasons,
+          checklists: selectedChecklists,
+        },
+      ],
+      status: userPermissions.canCreateTimesheetsForSupervisors
+        ? "validated"
+        : "pending",
     };
 
     try {
       await createTimesheet(timesheetData);
       navigate("/timesheet");
     } catch (err) {
-      setError("Failed to create timesheet. Please try again.");
+      setError(t("timesheetForm.errors.createTimesheet"));
       console.error("Submit error:", err);
     } finally {
       setLoading(false);
     }
   };
 
-  const isFormComplete = useMemo(() => (
-    date &&
-    time &&
-    selectedAgent &&
-    selectedReasons.length > 0 &&
-    selectedChecklists.length > 0 &&
-    (!userPermissions.canCreateTimesheetsForSupervisors || selectedSupervisor)
-  ), [date, time, selectedAgent, selectedReasons, selectedChecklists, userPermissions.canCreateTimesheetsForSupervisors, selectedSupervisor]);
+  const isFormComplete = useMemo(
+    () =>
+      date &&
+      time &&
+      selectedAgent &&
+      selectedReasons.length > 0 &&
+      selectedChecklists.length > 0 &&
+      (!userPermissions.canCreateTimesheetsForSupervisors ||
+        selectedSupervisor),
+    [
+      date,
+      time,
+      selectedAgent,
+      selectedReasons,
+      selectedChecklists,
+      userPermissions.canCreateTimesheetsForSupervisors,
+      selectedSupervisor,
+    ]
+  );
 
   if (loading) {
     return (
       <div className="page-loading">
         <div className="spinner"></div>
-        <p>Loading...</p>
+        <p>{t("timesheetForm.loading")}</p>
       </div>
     );
   }
+
   return (
     <div className="timesheet-form-container">
       <header className="form-header">
-        <h1>Create Visit</h1>
+        <h1>{t("timesheetForm.title")}</h1>
       </header>
       <section className="form-card">
         <form onSubmit={handleSubmit}>
-          {userPermissions.canCreateTimesheetsForSupervisors && userPermissions.canReadSupervisors && (
-            <div className="form-group">
-              <label htmlFor="supervisor">Supervisor</label>
-              <input
-                type="text"
-                placeholder="Search supervisors by name..."
-                value={supervisorSearch}
-                onChange={(e) => setSupervisorSearch(e.target.value)}
-                className="search-input"
-              />
-              <input
-                type="tel"
-                placeholder="Or enter supervisor phone number..."
-                value={supervisorPhone}
-                onChange={(e) => setSupervisorPhone(e.target.value)}
-                className="search-input"
-              />
-              <select
-                id="supervisor"
-                value={selectedSupervisor}
-                onChange={(e) => setSelectedSupervisor(e.target.value)}
-                required
-                aria-label="Select a supervisor"
-              >
-                <option value="">Select a supervisor</option>
-                {supervisors
-                  .filter((s) =>
-                    `${s.firstname || ""} ${s.lastname || ""} ${s.phone || ""}`
-                      .toLowerCase()
-                      .includes(supervisorSearch.toLowerCase())
-                  )
-                  .map((s) => (
-                    <option key={s.userID} value={s.userID}>
-                      {s.firstname} {s.lastname} ({s.phone})
-                    </option>
-                  ))}
-              </select>
-            </div>
-          )}
+          {userPermissions.canCreateTimesheetsForSupervisors &&
+            userPermissions.canReadSupervisors && (
+              <div className="form-group">
+                <label htmlFor="supervisor">
+                  {t("timesheetForm.supervisor")}
+                </label>
+                <input
+                  type="text"
+                  placeholder={t("timesheetForm.searchSupervisors")}
+                  value={supervisorSearch}
+                  onChange={(e) => setSupervisorSearch(e.target.value)}
+                  className="search-input"
+                  aria-label={t("timesheetForm.searchSupervisors")}
+                />
+                <input
+                  type="tel"
+                  placeholder={t("timesheetForm.supervisorPhone")}
+                  value={supervisorPhone}
+                  onChange={(e) => setSupervisorPhone(e.target.value)}
+                  className="search-input"
+                  aria-label={t("timesheetForm.supervisorPhone")}
+                />
+                <select
+                  id="supervisor"
+                  value={selectedSupervisor}
+                  onChange={(e) => setSelectedSupervisor(e.target.value)}
+                  required
+                  aria-label={t("timesheetForm.selectSupervisor")}
+                >
+                  <option value="">
+                    {t("timesheetForm.selectSupervisor")}
+                  </option>
+                  {supervisors
+                    .filter((s) =>
+                      `${s.firstname || ""} ${s.lastname || ""} ${
+                        s.phone || ""
+                      }`
+                        .toLowerCase()
+                        .includes(supervisorSearch.toLowerCase())
+                    )
+                    .map((s) => (
+                      <option key={s.userID} value={s.userID}>
+                        {s.firstname} {s.lastname} ({s.phone})
+                      </option>
+                    ))}
+                </select>
+              </div>
+            )}
 
           <div className="form-group">
-            <label htmlFor="date">Date</label>
+            <label htmlFor="date">{t("timesheetForm.date")}</label>
             <input
               type="date"
               id="date"
@@ -333,11 +442,12 @@ const TimesheetForm: React.FC = () => {
               onChange={handleDateChange}
               min={currentDate}
               required
+              aria-label={t("timesheetForm.date")}
             />
           </div>
 
           <div className="form-group">
-            <label htmlFor="time">Time</label>
+            <label htmlFor="time">{t("timesheetForm.time")}</label>
             <input
               type="time"
               id="time"
@@ -345,43 +455,60 @@ const TimesheetForm: React.FC = () => {
               onChange={handleTimeChange}
               required
               disabled={!date}
+              aria-label={t("timesheetForm.time")}
             />
           </div>
 
           <div className="form-group">
-            <label htmlFor="agentPhone">Agent Phone (Optional)</label>
+            <label htmlFor="agentPhone">{t("timesheetForm.agentPhone")}</label>
             <input
               type="tel"
               id="agentPhone"
-              placeholder={userPermissions.canReadAgentsByPhone ? "Enter agent's phone number" : "Permission denied"}
+              placeholder={
+                userPermissions.canReadAgentsByPhone
+                  ? t("timesheetForm.enterAgentPhone")
+                  : t("timesheetForm.permissionDenied")
+              }
               value={agentPhone}
               onChange={(e) => setAgentPhone(e.target.value)}
               className="search-input"
               disabled={!userPermissions.canReadAgentsByPhone}
+              aria-label={t("timesheetForm.agentPhone")}
             />
           </div>
 
           <div className="form-group">
-            <label htmlFor="location">Location</label>
+            <label htmlFor="location">{t("timesheetForm.location")}</label>
             <input
               type="text"
-              placeholder={userPermissions.canReadAgentsByLocation ? "Search locations..." : "Permission denied"}
+              placeholder={
+                userPermissions.canReadAgentsByLocation
+                  ? t("timesheetForm.searchLocations")
+                  : t("timesheetForm.permissionDenied")
+              }
               value={locationSearch}
               onChange={(e) => setLocationSearch(e.target.value)}
               className="search-input"
-              disabled={!!agentPhone || !userPermissions.canReadAgentsByLocation}
+              disabled={
+                !!agentPhone || !userPermissions.canReadAgentsByLocation
+              }
+              aria-label={t("timesheetForm.searchLocations")}
             />
             <select
               id="location"
               value={selectedLocation}
               onChange={(e) => setSelectedLocation(e.target.value)}
               required
-              aria-label="Select a location"
-              disabled={!!agentPhone || !userPermissions.canReadAgentsByLocation}
+              aria-label={t("timesheetForm.selectLocation")}
+              disabled={
+                !!agentPhone || !userPermissions.canReadAgentsByLocation
+              }
             >
-              <option value="">Select a location</option>
+              <option value="">{t("timesheetForm.selectLocation")}</option>
               {locations
-                .filter((loc) => loc.toLowerCase().includes(locationSearch.toLowerCase()))
+                .filter((loc) =>
+                  loc.toLowerCase().includes(locationSearch.toLowerCase())
+                )
                 .map((loc) => (
                   <option key={loc} value={loc}>
                     {loc}
@@ -391,27 +518,42 @@ const TimesheetForm: React.FC = () => {
           </div>
 
           <div className="form-group">
-            <label htmlFor="agent">Agent</label>
+            <label htmlFor="agent">{t("timesheetForm.agent")}</label>
             <input
               type="text"
-              placeholder={userPermissions.canReadAgentsByLocation ? "Search agents..." : "Permission denied"}
+              placeholder={
+                userPermissions.canReadAgentsByLocation
+                  ? t("timesheetForm.searchAgents")
+                  : t("timesheetForm.permissionDenied")
+              }
               value={agentSearch}
               onChange={(e) => setAgentSearch(e.target.value)}
-              disabled={!!agentPhone || !selectedLocation || !userPermissions.canReadAgentsByLocation}
+              disabled={
+                !!agentPhone ||
+                !selectedLocation ||
+                !userPermissions.canReadAgentsByLocation
+              }
               className="search-input"
+              aria-label={t("timesheetForm.searchAgents")}
             />
             <select
               id="agent"
               value={selectedAgent}
               onChange={(e) => setSelectedAgent(e.target.value)}
-              disabled={!!agentPhone || !selectedLocation || !userPermissions.canReadAgentsByLocation}
+              disabled={
+                !!agentPhone ||
+                !selectedLocation ||
+                !userPermissions.canReadAgentsByLocation
+              }
               required
-              aria-label="Select an agent"
+              aria-label={t("timesheetForm.selectAgent")}
             >
-              <option value="">Select an agent</option>
+              <option value="">{t("timesheetForm.selectAgent")}</option>
               {agents
                 .filter((agent) =>
-                  `${agent.name || ""} ${agent.lastname || ""} ${agent.phone || ""}`
+                  `${agent.name || ""} ${agent.lastname || ""} ${
+                    agent.phone || ""
+                  }`
                     .toLowerCase()
                     .includes(agentSearch.toLowerCase())
                 )
@@ -424,27 +566,36 @@ const TimesheetForm: React.FC = () => {
           </div>
 
           <div className="form-group">
-            <label>Reasons</label>
+            <label>{t("timesheetForm.reasons")}</label>
             <input
               type="text"
-              placeholder={userPermissions.canReadReasons ? "Search reasons..." : "Permission denied"}
+              placeholder={
+                userPermissions.canReadReasons
+                  ? t("timesheetForm.searchReasons")
+                  : t("timesheetForm.permissionDenied")
+              }
               value={reasonSearch}
               onChange={(e) => setReasonSearch(e.target.value)}
               className="search-input"
               disabled={!userPermissions.canReadReasons}
+              aria-label={t("timesheetForm.searchReasons")}
             />
             <select
               value=""
               onChange={(e) => {
-                const reason = reasons.find((r) => r.reasonID === e.target.value);
+                const reason = reasons.find(
+                  (r) => r.reasonID === e.target.value
+                );
                 if (reason) handleReasonSelect(reason);
               }}
-              aria-label="Select a reason"
+              aria-label={t("timesheetForm.selectReason")}
               disabled={!userPermissions.canReadReasons}
             >
-              <option value="">Select a reason</option>
+              <option value="">{t("timesheetForm.selectReason")}</option>
               {reasons
-                .filter((reason) => reason.item.toLowerCase().includes(reasonSearch.toLowerCase()))
+                .filter((reason) =>
+                  reason.item.toLowerCase().includes(reasonSearch.toLowerCase())
+                )
                 .map((reason) => (
                   <option key={reason.reasonID} value={reason.reasonID}>
                     {reason.item}
@@ -456,7 +607,22 @@ const TimesheetForm: React.FC = () => {
                 <span
                   key={index}
                   className="selected-item"
-                  onClick={() => setSelectedReasons(selectedReasons.filter((_, i) => i !== index))}
+                  onClick={() =>
+                    setSelectedReasons(
+                      selectedReasons.filter((_, i) => i !== index)
+                    )
+                  }
+                  onKeyDown={(e) =>
+                    e.key === "Enter" &&
+                    setSelectedReasons(
+                      selectedReasons.filter((_, i) => i !== index)
+                    )
+                  }
+                  role="button"
+                  tabIndex={0}
+                  aria-label={t("timesheetForm.removeReason", {
+                    item: reasons.find((r) => r.reasonID === reason.id)?.item,
+                  })}
                 >
                   {reasons.find((r) => r.reasonID === reason.id)?.item} ×
                 </span>
@@ -465,29 +631,43 @@ const TimesheetForm: React.FC = () => {
           </div>
 
           <div className="form-group">
-            <label>Checklists</label>
+            <label>{t("timesheetForm.checklists")}</label>
             <input
               type="text"
-              placeholder={userPermissions.canReadChecklists ? "Search checklists..." : "Permission denied"}
+              placeholder={
+                userPermissions.canReadChecklists
+                  ? t("timesheetForm.searchChecklists")
+                  : t("timesheetForm.permissionDenied")
+              }
               value={checklistSearch}
               onChange={(e) => setChecklistSearch(e.target.value)}
               className="search-input"
               disabled={!userPermissions.canReadChecklists}
+              aria-label={t("timesheetForm.searchChecklists")}
             />
             <select
               value=""
               onChange={(e) => {
-                const checklist = checklists.find((c) => c.checklistID === e.target.value);
+                const checklist = checklists.find(
+                  (c) => c.checklistID === e.target.value
+                );
                 if (checklist) handleChecklistSelect(checklist);
               }}
-              aria-label="Select a checklist"
+              aria-label={t("timesheetForm.selectChecklist")}
               disabled={!userPermissions.canReadChecklists}
             >
-              <option value="">Select a checklist</option>
+              <option value="">{t("timesheetForm.selectChecklist")}</option>
               {checklists
-                .filter((checklist) => checklist.item.toLowerCase().includes(checklistSearch.toLowerCase()))
+                .filter((checklist) =>
+                  checklist.item
+                    .toLowerCase()
+                    .includes(checklistSearch.toLowerCase())
+                )
                 .map((checklist) => (
-                  <option key={checklist.checklistID} value={checklist.checklistID}>
+                  <option
+                    key={checklist.checklistID}
+                    value={checklist.checklistID}
+                  >
                     {checklist.item}
                   </option>
                 ))}
@@ -497,26 +677,56 @@ const TimesheetForm: React.FC = () => {
                 <span
                   key={index}
                   className="selected-item"
-                  onClick={() => setSelectedChecklists(selectedChecklists.filter((_, i) => i !== index))}
+                  onClick={() =>
+                    setSelectedChecklists(
+                      selectedChecklists.filter((_, i) => i !== index)
+                    )
+                  }
+                  onKeyDown={(e) =>
+                    e.key === "Enter" &&
+                    setSelectedChecklists(
+                      selectedChecklists.filter((_, i) => i !== index)
+                    )
+                  }
+                  role="button"
+                  tabIndex={0}
+                  aria-label={t("timesheetForm.removeChecklist", {
+                    item: checklists.find((c) => c.checklistID === checklist.id)
+                      ?.item,
+                  })}
                 >
-                  {checklists.find((c) => c.checklistID === checklist.id)?.item} ×
+                  {checklists.find((c) => c.checklistID === checklist.id)?.item}{" "}
+                  ×
                 </span>
               ))}
             </div>
           </div>
 
           <div className="form-actions">
-            <button type="button" className="submit-btn" onClick={() => navigate(-1)}>Back</button>
+            <button
+              type="button"
+              className="submit-btn"
+              onClick={() => navigate(-1)}
+              aria-label={t("timesheetForm.back")}
+            >
+              {t("timesheetForm.back")}
+            </button>
             <button
               type="submit"
               className="submit-btn"
               disabled={
                 !isFormComplete ||
                 loading ||
-                !(userPermissions.canCreateTimesheets || userPermissions.canCreateTimesheetsForSupervisors)
+                !(
+                  userPermissions.canCreateTimesheets ||
+                  userPermissions.canCreateTimesheetsForSupervisors
+                )
               }
+              aria-label={t("timesheetForm.createTimesheet")}
             >
-              {loading ? "Submitting..." : "Create Timesheet"}
+              {loading
+                ? t("timesheetForm.submitting")
+                : t("timesheetForm.createTimesheet")}
             </button>
           </div>
         </form>

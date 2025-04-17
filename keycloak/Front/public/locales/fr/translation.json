@@ -54,10 +54,6 @@
     },
     "theme": "Thème",
     "selectLanguage": "Sélectionner la langue",
-    "languages": {
-      "en": "Anglais",
-      "fr": "Français"
-    },
     "logout": "Déconnexion",
     "darkMode": "sombre",
     "lightMode": "clair",

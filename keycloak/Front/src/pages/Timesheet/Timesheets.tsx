@@ -6,7 +6,6 @@ import Timesheet from "../../models/Timesheet";
 import Visit from "../../models/Visit";
 import User from "../../models/User";
 import { useAuth } from "../../context/AuthContext";
-import { useTranslation } from "react-i18next";
 import {
   getTimesheetsBySupervisor,
   getAllTimesheets,
@@ -15,6 +14,7 @@ import {
 import { getAllUsers, getSupervisorsByUser } from "../../apis/userAPI";
 import { FaClock, FaMapMarkerAlt, FaRegUser } from "react-icons/fa";
 import TimesheetStatus from "../../models/Enum/TimesheetStatus";
+import { useTranslation } from "react-i18next";
 
 const PERMISSIONS = {
   ACCESS_TIMESHEETS: import.meta.env.VITE_PERMISSIONS_ACCESS_TIMESHEETS,
@@ -46,11 +46,11 @@ interface VisitWithSupervisor extends Visit {
 // Main Component
 const Timesheets: React.FC = () => {
   // Hooks
-  const { t } = useTranslation();
   const navigate = useNavigate();
   const { user, userRoles, effectivePermissions, permissionsLoaded } =
     useAuth();
   const supervisorID = user?.userID;
+  const { t } = useTranslation();
 
   // State
   const [timesheets, setTimesheets] = useState<Timesheet[]>([]);
@@ -442,7 +442,7 @@ const Timesheets: React.FC = () => {
 
   if (loading) {
     return (
-      <div className="page-loading" role="alert">
+      <div className="page-loading">
         <div className="spinner"></div>
         <p>{t("timesheets.loading")}</p>
       </div>
@@ -459,11 +459,9 @@ const Timesheets: React.FC = () => {
               key={mode}
               className={`toggle-btn ${viewMode === mode ? "active" : ""}`}
               onClick={() => setViewMode(mode as ViewMode)}
-              aria-label={t("timesheets.aria.viewToggle", {
-                mode: t(`timesheets.header.view.${mode}`),
-              })}
+              aria-label={t(`timesheets.viewModes.${mode}`)}
             >
-              {t(`timesheets.header.view.${mode}`)}
+              {t(`timesheets.viewModes.${mode}`)}
             </button>
           ))}
         </div>
@@ -471,7 +469,7 @@ const Timesheets: React.FC = () => {
           <button
             className="nav-btn"
             onClick={() => setCurrentYear((prev) => prev - 1)}
-            aria-label={t("timesheets.aria.prevYear")}
+            aria-label={t("timesheets.navigation.previousYear")}
           >
             <span>←</span>
           </button>
@@ -479,7 +477,7 @@ const Timesheets: React.FC = () => {
           <button
             className="nav-btn"
             onClick={() => setCurrentYear((prev) => prev + 1)}
-            aria-label={t("timesheets.aria.nextYear")}
+            aria-label={t("timesheets.navigation.nextYear")}
           >
             <span>→</span>
           </button>
@@ -492,29 +490,27 @@ const Timesheets: React.FC = () => {
               onClick={() =>
                 navigate("/timesheet-form", { state: { year: currentYear } })
               }
-              aria-label={t("timesheets.aria.scheduleVisit")}
+              aria-label={t("timesheets.actions.scheduleVisit")}
             >
-              {t("timesheets.header.actions.scheduleVisit")}
+              {t("timesheets.actions.scheduleVisit")}
             </button>
           )}
           {userPermissions.canAccessReceiptBooks && (
             <button
               className="receipt-books-btn"
               onClick={() => navigate("/receipt-books")}
-              aria-label={t("timesheets.aria.receiptBooks")}
+              aria-label={t("timesheets.actions.viewReceiptBooks")}
             >
-              {t("timesheets.header.actions.receiptBooks")}
+              {t("timesheets.actions.viewReceiptBooks")}
             </button>
           )}
           <button
             className="current-btn"
             onClick={scrollToCurrent}
-            aria-label={t("timesheets.aria.current", {
-              mode: t(`timesheets.header.view.${viewMode}`),
-            })}
+            aria-label={t("timesheets.actions.scrollToCurrent")}
           >
-            {t("timesheets.header.actions.current", {
-              mode: t(`timesheets.header.view.${viewMode}`),
+            {t("timesheets.actions.current", {
+              viewMode: viewMode.charAt(0).toUpperCase() + viewMode.slice(1),
             })}
           </button>
         </div>
@@ -522,8 +518,11 @@ const Timesheets: React.FC = () => {
 
       {(isSuperAdmin || userPermissions.canReadSupervisors) && (
         <div className="filter-bubble">
-          <button className="filter-toggle-btn">
-            {t("timesheets.filter.toggle")}
+          <button
+            className="filter-toggle-btn"
+            aria-label={t("timesheets.actions.filterSupervisors")}
+          >
+            {t("timesheets.actions.filterSupervisors")}
           </button>
           <div className="filter-panel">
             <input
@@ -532,13 +531,13 @@ const Timesheets: React.FC = () => {
               value={supervisorSearch}
               onChange={(e) => setSupervisorSearch(e.target.value)}
               className="supervisor-search"
-              aria-label={t("timesheets.aria.supervisorSearch")}
+              aria-label={t("timesheets.filter.searchPlaceholder")}
             />
             <select
               className="supervisor-filter"
               value={supervisorFilter}
               onChange={(e) => setSupervisorFilter(e.target.value)}
-              aria-label={t("timesheets.aria.supervisorFilter")}
+              aria-label={t("timesheets.filter.supervisorSelect")}
             >
               <option value="all">
                 {t("timesheets.filter.allSupervisors")}
@@ -557,16 +556,7 @@ const Timesheets: React.FC = () => {
       {viewMode === "year" && (
         <section className="year-view">
           {generateYearData().map(({ month, weeks }) => (
-            <div
-              className="month-card"
-              key={month}
-              id={`month-${month}`}
-              aria-label={t("timesheets.aria.month", {
-                month: new Date(currentYear, month).toLocaleString("default", {
-                  month: "long",
-                }),
-              })}
-            >
+            <div className="month-card" key={month} id={`month-${month}`}>
               <h2>
                 {new Date(currentYear, month).toLocaleString("default", {
                   month: "long",
@@ -585,9 +575,6 @@ const Timesheets: React.FC = () => {
                           }
                         : undefined
                     }
-                    aria-label={t("timesheets.aria.weekTile", {
-                      weekNumber: week.weekNumber,
-                    })}
                     role="button"
                     tabIndex={
                       userPermissions.canAccessTimesheetDetails ? 0 : -1
@@ -597,37 +584,32 @@ const Timesheets: React.FC = () => {
                       e.key === "Enter" &&
                       (setCurrentWeek(week.weekNumber), setViewMode("week"))
                     }
+                    aria-label={t("timesheets.yearView.weekTile", {
+                      weekNumber: week.weekNumber,
+                    })}
                   >
                     <span className="week-number">
-                      {t("timesheets.year.week", {
-                        weekNumber: week.weekNumber,
-                      })}
+                      {t("timesheets.yearView.week")} {week.weekNumber} :
                     </span>
                     <span className="week-range">
-                      {t("timesheets.year.range", {
-                        startDay: week.days[0].toLocaleDateString("en-GB", {
-                          day: "numeric",
-                        }),
-                        startMonth: week.days[0].toLocaleDateString("en-GB", {
-                          month: "short",
-                        }),
-                        endDay: week.days[6].toLocaleDateString("en-GB", {
-                          day: "numeric",
-                        }),
-                        endMonth: week.days[6].toLocaleDateString("en-GB", {
-                          month: "short",
-                        }),
-                      })}
+                      {week.days[0].toLocaleDateString("en-GB", {
+                        day: "numeric",
+                        month: "short",
+                      })}{" "}
+                      -{" "}
+                      {week.days[6].toLocaleDateString("en-GB", {
+                        day: "numeric",
+                        month: "short",
+                      })}{" "}
+                      /
                     </span>
                     <span className="visit-count">
-                      {t("timesheets.year.visits", {
-                        count: week.visits.length,
-                      })}
+                      {week.visits.length} {t("timesheets.yearView.visits")}
                     </span>
                     {userPermissions.canReadSupervisors && (
                       <span className="week-info">
                         <br />
-                        {t("timesheets.year.supervisors", {
+                        {t("timesheets.yearView.supervisors", {
                           count: week.supervisorCount,
                         })}
                       </span>
@@ -646,7 +628,7 @@ const Timesheets: React.FC = () => {
             <button
               className="nav-btn"
               onClick={() => setCurrentMonth((prev) => (prev - 1 + 12) % 12)}
-              aria-label={t("timesheets.aria.prevMonth")}
+              aria-label={t("timesheets.navigation.previousMonth")}
             >
               <span>←</span>
             </button>
@@ -658,7 +640,7 @@ const Timesheets: React.FC = () => {
             <button
               className="nav-btn"
               onClick={() => setCurrentMonth((prev) => (prev + 1) % 12)}
-              aria-label={t("timesheets.aria.nextMonth")}
+              aria-label={t("timesheets.navigation.nextMonth")}
             >
               <span>→</span>
             </button>
@@ -677,9 +659,6 @@ const Timesheets: React.FC = () => {
                       }
                     : undefined
                 }
-                aria-label={t("timesheets.aria.weekCard", {
-                  weekNumber: week.weekNumber,
-                })}
                 role="button"
                 tabIndex={userPermissions.canAccessTimesheetDetails ? 0 : -1}
                 onKeyDown={(e) =>
@@ -687,34 +666,30 @@ const Timesheets: React.FC = () => {
                   e.key === "Enter" &&
                   (setCurrentWeek(week.weekNumber), setViewMode("week"))
                 }
+                aria-label={t("timesheets.monthView.weekCard", {
+                  weekNumber: week.weekNumber,
+                })}
               >
                 <h3>
-                  {t("timesheets.month.week", { weekNumber: week.weekNumber })}
+                  {t("timesheets.monthView.week")} {week.weekNumber}
                 </h3>
                 <p className="week-range">
-                  {t("timesheets.month.range", {
-                    startDay: week.days[0].toLocaleDateString("en-GB", {
-                      day: "numeric",
-                    }),
-                    startMonth: week.days[0].toLocaleDateString("en-GB", {
-                      month: "short",
-                    }),
-                    endDay: week.days[6].toLocaleDateString("en-GB", {
-                      day: "numeric",
-                    }),
-                    endMonth: week.days[6].toLocaleDateString("en-GB", {
-                      month: "short",
-                    }),
+                  {week.days[0].toLocaleDateString("en-GB", {
+                    day: "numeric",
+                    month: "short",
+                  })}{" "}
+                  -{" "}
+                  {week.days[6].toLocaleDateString("en-GB", {
+                    day: "numeric",
+                    month: "short",
                   })}
                 </p>
                 <p className="week-info">
-                  {t("timesheets.month.visits", { count: week.visits.length })}
+                  {week.visits.length} {t("timesheets.monthView.visits")}{" "}
                   {!userPermissions.canReadSupervisors &&
-                    ` - ${t("timesheets.month.status", {
-                      status: week.status,
-                    })}`}
+                    `- ${t("timesheets.monthView.status")}: ${week.status}`}
                   {userPermissions.canReadSupervisors &&
-                    ` - ${t("timesheets.month.supervisors", {
+                    ` - ${t("timesheets.monthView.supervisors", {
                       count: week.supervisorCount,
                     })}`}
                 </p>
@@ -730,11 +705,13 @@ const Timesheets: React.FC = () => {
             <button
               className="nav-btn"
               onClick={() => setCurrentWeek((prev) => Math.max(1, prev - 1))}
-              aria-label={t("timesheets.aria.prevWeek")}
+              aria-label={t("timesheets.navigation.previousWeek")}
             >
               <span>←</span>
             </button>
-            <h2>{t("timesheets.week.title", { weekNumber: currentWeek })}</h2>
+            <h2>
+              {t("timesheets.weekView.week")} {currentWeek}
+            </h2>
             <button
               className="nav-btn"
               onClick={() =>
@@ -742,7 +719,7 @@ const Timesheets: React.FC = () => {
                   Math.min(getWeeksInYear(currentYear), prev + 1)
                 )
               }
-              aria-label={t("timesheets.aria.nextWeek")}
+              aria-label={t("timesheets.navigation.nextWeek")}
             >
               <span>→</span>
             </button>
@@ -755,45 +732,29 @@ const Timesheets: React.FC = () => {
                   <div className="week-details-header">
                     <div className="week-details-info">
                       <p className="week-range">
-                        {t("timesheets.week.range", {
-                          startDay: weekData.days[0].toLocaleDateString(
-                            "en-GB",
-                            {
-                              day: "numeric",
-                            }
-                          ),
-                          startMonth: weekData.days[0].toLocaleDateString(
-                            "en-GB",
-                            { month: "short" }
-                          ),
-                          endDay: weekData.days[6].toLocaleDateString("en-GB", {
-                            day: "numeric",
-                          }),
-                          endMonth: weekData.days[6].toLocaleDateString(
-                            "en-GB",
-                            {
-                              month: "short",
-                            }
-                          ),
+                        {weekData.days[0].toLocaleDateString("en-GB", {
+                          day: "numeric",
+                          month: "short",
+                        })}{" "}
+                        -{" "}
+                        {weekData.days[6].toLocaleDateString("en-GB", {
+                          day: "numeric",
+                          month: "short",
                         })}
                       </p>
                       <p className="week-status">
-                        {t("timesheets.week.status", {
-                          status: weekData.status,
-                        })}
+                        {t("timesheets.weekView.status")}: {weekData.status}
                         {userPermissions.canReadSupervisors &&
                           weekData.supervisorID &&
-                          ` - ${t("timesheets.week.supervisor", {
-                            name: `${
-                              users.find(
-                                (u) => u.userID === weekData.supervisorID
-                              )?.firstname || "Unknown"
-                            } ${
-                              users.find(
-                                (u) => u.userID === weekData.supervisorID
-                              )?.lastname || ""
-                            }`,
-                          })}`}
+                          ` - ${t("timesheets.weekView.supervisor")}: ${
+                            users.find(
+                              (u) => u.userID === weekData.supervisorID
+                            )?.firstname || "Unknown"
+                          } ${
+                            users.find(
+                              (u) => u.userID === weekData.supervisorID
+                            )?.lastname || ""
+                          }`}
                       </p>
                     </div>
                     {userPermissions.canValidateTimesheets &&
@@ -807,9 +768,9 @@ const Timesheets: React.FC = () => {
                               )?.timesheetID || ""
                             )
                           }
-                          aria-label={t("timesheets.week.validate")}
+                          aria-label={t("timesheets.actions.validateTimesheet")}
                         >
-                          {t("timesheets.week.validate")}
+                          {t("timesheets.actions.validateTimesheet")}
                         </button>
                       )}
                   </div>
@@ -844,12 +805,6 @@ const Timesheets: React.FC = () => {
                                   }
                                 : undefined
                             }
-                            aria-label={t("timesheets.aria.dayTile", {
-                              weekday: day.toLocaleDateString("en-GB", {
-                                weekday: "short",
-                              }),
-                              day: day.getDate(),
-                            })}
                             role="button"
                             tabIndex={
                               userPermissions.canAccessTimesheetDetails ? 0 : -1
@@ -859,6 +814,12 @@ const Timesheets: React.FC = () => {
                               e.key === "Enter" &&
                               (setCurrentDay(day), setViewMode("day"))
                             }
+                            aria-label={t("timesheets.weekView.dayTile", {
+                              day: day.toLocaleDateString("en-GB", {
+                                weekday: "short",
+                              }),
+                              date: day.getDate(),
+                            })}
                           >
                             <span className="day-name">
                               {day.toLocaleDateString("en-GB", {
@@ -868,9 +829,9 @@ const Timesheets: React.FC = () => {
                             <span className="day-date">{day.getDate()}</span>
                             <span className="visit-count">
                               {dayVisits.length > 0
-                                ? t("timesheets.week.visits", {
-                                    count: dayVisits.length,
-                                  })
+                                ? `/ ${dayVisits.length} ${t(
+                                    "timesheets.weekView.visits"
+                                  )}`
                                 : ""}
                             </span>
                           </div>
@@ -883,38 +844,40 @@ const Timesheets: React.FC = () => {
                                   onClick={() =>
                                     navigate(`/visit/${visit.visitID}`)
                                   }
-                                  aria-label={t("timesheets.aria.visitCard", {
-                                    time: visit.time
-                                      ? visit.time
-                                          .split(":")
-                                          .slice(0, 2)
-                                          .join(":")
-                                      : "unspecified",
-                                    location: visit.location || "unspecified",
-                                  })}
                                   role="button"
                                   tabIndex={0}
                                   onKeyDown={(e) =>
                                     e.key === "Enter" &&
                                     navigate(`/visit/${visit.visitID}`)
                                   }
+                                  aria-label={t(
+                                    "timesheets.weekView.visitCard",
+                                    {
+                                      time: visit.time
+                                        .split(":")
+                                        .slice(0, 2)
+                                        .join(":"),
+                                      location:
+                                        visit.location || "Location TBD",
+                                    }
+                                  )}
                                 >
                                   {userPermissions.canReadSupervisors &&
                                     visit.supervisorID && (
                                       <p className="visit-supervisor">
                                         <FaRegUser />{" "}
-                                        {t("timesheets.visit.supervisor", {
-                                          firstname:
-                                            users.find(
-                                              (u) =>
-                                                u.userID === visit.supervisorID
-                                            )?.firstname || "Unknown",
-                                          lastname:
-                                            users.find(
-                                              (u) =>
-                                                u.userID === visit.supervisorID
-                                            )?.lastname || "",
-                                        })}
+                                        {
+                                          users.find(
+                                            (u) =>
+                                              u.userID === visit.supervisorID
+                                          )?.firstname
+                                        }{" "}
+                                        {
+                                          users.find(
+                                            (u) =>
+                                              u.userID === visit.supervisorID
+                                          )?.lastname
+                                        }
                                       </p>
                                     )}
                                   <hr className="hr" />
@@ -922,44 +885,36 @@ const Timesheets: React.FC = () => {
                                     {visit.time && (
                                       <span className="visit-time">
                                         <FaClock />{" "}
-                                        {t("timesheets.visit.time", {
-                                          time: visit.time
-                                            .split(":")
-                                            .slice(0, 2)
-                                            .join(":"),
-                                        })}
+                                        {visit.time
+                                          .split(":")
+                                          .slice(0, 2)
+                                          .join(":")}
                                       </span>
                                     )}
                                     <span
                                       className={`visit-status status-${visit.status.toLowerCase()}`}
                                     >
-                                      {t("timesheets.visit.status", {
-                                        status: visit.status,
-                                      })}
+                                      {visit.status}
                                     </span>
                                   </div>
                                   <p className="visit-location">
                                     <FaMapMarkerAlt />{" "}
-                                    {visit.location
-                                      ? t("timesheets.visit.location", {
-                                          location: visit.location,
-                                        })
-                                      : t("timesheets.visit.locationTBD")}
+                                    {visit.location ||
+                                      t("timesheets.locationTBD")}
                                   </p>
                                   {visit.Reasons!.length > 0 && (
                                     <p className="visit-reasons">
-                                      {t("timesheets.visit.reasons", {
-                                        reasons: visit
-                                          .Reasons!.map((reason) => reason.item)
-                                          .join(", "),
-                                      })}
+                                      {t("timesheets.reasons")}:{" "}
+                                      {visit
+                                        .Reasons!.map((reason) => reason.item)
+                                        .join(", ")}
                                     </p>
                                   )}
                                 </div>
                               ))
                             ) : (
                               <div className="no-visits">
-                                {t("timesheets.week.noVisits")}
+                                {t("timesheets.dayView.noVisits")}
                               </div>
                             )}
                           </div>
@@ -985,21 +940,18 @@ const Timesheets: React.FC = () => {
                   new Date(currentDay.setDate(currentDay.getDate() - 1))
                 )
               }
-              aria-label={t("timesheets.aria.prevDay")}
+              aria-label={t("timesheets.navigation.previousDay")}
             >
               <span>←</span>
             </button>
             <h2>
-              {currentDay &&
-                t("timesheets.day.title", {
-                  weekday: currentDay.toLocaleDateString("en-GB", {
-                    weekday: "short",
-                  }),
-                  day: currentDay.getDate(),
-                  month: currentDay.toLocaleDateString("en-GB", {
-                    month: "numeric",
-                  }),
-                })}
+              {currentDay
+                ?.toLocaleDateString("en-GB", {
+                  weekday: "short",
+                  day: "2-digit",
+                  month: "2-digit",
+                })
+                .replace(/(\w+)\s(\d+)\/(\d+)/, "$1 $2/$3")}
             </h2>
             <button
               className="nav-btn"
@@ -1009,7 +961,7 @@ const Timesheets: React.FC = () => {
                   new Date(currentDay.setDate(currentDay.getDate() + 1))
                 )
               }
-              aria-label={t("timesheets.aria.nextDay")}
+              aria-label={t("timesheets.navigation.nextDay")}
             >
               <span>→</span>
             </button>
@@ -1021,67 +973,54 @@ const Timesheets: React.FC = () => {
                   key={visit.visitID}
                   className="visit-card"
                   onClick={() => navigate(`/visit/${visit.visitID}`)}
-                  aria-label={t("timesheets.aria.visitCard", {
-                    time: visit.time
-                      ? visit.time.split(":").slice(0, 2).join(":")
-                      : "unspecified",
-                    location: visit.location || "unspecified",
-                  })}
                   role="button"
                   tabIndex={0}
                   onKeyDown={(e) =>
                     e.key === "Enter" && navigate(`/visit/${visit.visitID}`)
                   }
+                  aria-label={t("timesheets.dayView.visitCard", {
+                    time: visit.time.split(":").slice(0, 2).join(":"),
+                    location: visit.location || "Location TBD",
+                  })}
                 >
                   {userPermissions.canReadSupervisors && visit.supervisorID && (
                     <p className="visit-supervisor">
                       <FaRegUser />{" "}
-                      {t("timesheets.visit.supervisor", {
-                        firstname:
-                          users.find((u) => u.userID === visit.supervisorID)
-                            ?.firstname || "Unknown",
-                        lastname:
-                          users.find((u) => u.userID === visit.supervisorID)
-                            ?.lastname || "",
-                      })}
+                      {users.find((u) => u.userID === visit.supervisorID)
+                        ?.firstname || t("timesheets.unknown")}{" "}
+                      {users.find((u) => u.userID === visit.supervisorID)
+                        ?.lastname || ""}
                     </p>
                   )}
                   <div className="visit-header">
                     {visit.time && (
                       <span className="visit-time">
                         <FaClock />{" "}
-                        {t("timesheets.visit.time", {
-                          time: visit.time.split(":").slice(0, 2).join(":"),
-                        })}
+                        {visit.time.split(":").slice(0, 2).join(":")}
                       </span>
                     )}
                     <span
                       className={`visit-status status-${visit.status.toLowerCase()}`}
                     >
-                      {t("timesheets.visit.status", { status: visit.status })}
+                      {visit.status}
                     </span>
                   </div>
                   <p className="visit-location">
                     <FaMapMarkerAlt />{" "}
-                    {visit.location
-                      ? t("timesheets.visit.location", {
-                          location: visit.location,
-                        })
-                      : t("timesheets.visit.locationTBD")}
+                    {visit.location || t("timesheets.locationTBD")}
                   </p>
                   {visit.Reasons!.length > 0 && (
                     <p className="visit-reasons">
-                      {t("timesheets.visit.reasons", {
-                        reasons: visit
-                          .Reasons!.map((reason) => reason.item)
-                          .join(", "),
-                      })}
+                      {t("timesheets.reasons")}:{" "}
+                      {visit.Reasons!.map((reason) => reason.item).join(", ")}
                     </p>
                   )}
                 </div>
               ))
             ) : (
-              <div className="no-visits">{t("timesheets.day.noVisits")}</div>
+              <div className="no-visits">
+                {t("timesheets.dayView.noVisits")}
+              </div>
             )}
           </div>
         </section>
