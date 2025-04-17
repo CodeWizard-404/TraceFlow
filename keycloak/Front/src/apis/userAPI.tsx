@@ -48,6 +48,53 @@ const handleApiError = (error: unknown, defaultMessage: string): string => {
   return defaultMessage; // Fallback for network errors or unexpected issues
 };
 
+
+export interface AssignGoogleAccountResponse {
+  user: User;
+  message: string;
+}
+
+export const assignGoogleAccount = async (
+  userID: string,
+  googleEmail: string
+): Promise<AssignGoogleAccountResponse> => {
+  try {
+    const response = await api.post(`/users/${userID}/google-account`, { googleEmail });
+    return response.data;
+  } catch (error) {
+    const axiosError = error as AxiosErrorResponse;
+    let errorMessage = 'Failed to assign Google account.';
+    if (axiosError.response?.data?.error) {
+      errorMessage = axiosError.response.data.error;
+    } else {
+      switch (axiosError.response?.status) {
+        case 400:
+          errorMessage = 'Invalid request. Please check the Google email.';
+          break;
+        case 401:
+          errorMessage = 'Unauthorized action.';
+          break;
+        case 403:
+          errorMessage = 'Access denied.';
+          break;
+        case 404:
+          errorMessage = 'User not found.';
+          break;
+        case 409:
+          errorMessage = 'Google email already linked to another user.';
+          break;
+        case 500:
+          errorMessage = 'Server error. Please try again.';
+          break;
+        default:
+          errorMessage = 'Failed to assign Google account.';
+      }
+    }
+    throw new Error(errorMessage);
+  }
+};
+
+
 // Create a new user
 export const createUser = async (data: {
   email: string;

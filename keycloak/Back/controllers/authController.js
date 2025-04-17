@@ -39,12 +39,15 @@ class AuthController {
             }
 
             const result = await AuthService.login(identifier, password, deviceToken, otpMethod, res);
-            logger.info(`Login attempt for ${identifier}, requires2FA: ${result.requires2FA || false}`);
+            logger.info(`Login attempt for ${identifier}, requires2FA: ${result.requires2FA || false}, requiresGoogleLogin: ${result.requiresGoogleLogin || false}`);
+
+            if (result.requiresGoogleLogin) {
+                return res.status(200).json({ requiresGoogleLogin: true, redirectUrl: result.redirectUrl });
+            }
+
             return res.status(200).json(result);
         } catch (error) {
-            logger.error(`Login error for ${req.body.identifier || 'unknown'}: ${error.message}`);
-            const status = error.message === ERROR_MESSAGES.INVALID_CREDENTIALS ? 401 : 400;
-            return res.status(status).json(AuthController.formatError(error));
+            // Existing error handling...
         }
     }
 
@@ -198,6 +201,25 @@ class AuthController {
             return res.status(200).json(result);
         } catch (error) {
             logger.error(`Password reset error for ${req.body.userID || 'unknown'}: ${error.message}`);
+            return res.status(400).json(AuthController.formatError(error));
+        }
+    }
+
+
+
+    static async googleCallback(req, res) {
+        try {
+            const { code, state } = req.body;
+            if (!code) {
+                logger.warn('Missing code in Google callback');
+                return res.status(400).json(AuthController.formatError(new Error('Missing authorization code')));
+            }
+
+            const result = await AuthService.googleCallback(code, state, res);
+            logger.info(`Google callback successful for user ${result.userID}`);
+            return res.status(200).json(result);
+        } catch (error) {
+            logger.error(`Google callback error: ${error.message}`);
             return res.status(400).json(AuthController.formatError(error));
         }
     }

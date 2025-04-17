@@ -7,12 +7,13 @@ export default defineConfig({
   resolve: {
     alias: {
       '@': path.resolve(__dirname, './src'),
+      'keycloak-js': 'keycloak-js/dist/keycloak',
     },
   },
   server: {
     proxy: {
       '/api': {
-        target: 'http://192.168.0.101:5000',
+        target: 'http://192.168.0.100:5000',
         changeOrigin: true,
         secure: false,
       },

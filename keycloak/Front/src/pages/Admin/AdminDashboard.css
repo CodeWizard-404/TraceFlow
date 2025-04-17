@@ -3333,3 +3333,15 @@ body.dark .reset-button:disabled {
     border-radius: 4px;
     margin-bottom: 15px;
 }
+
+
+.google-email-form {
+    display: flex;
+    flex-direction: column;
+    gap: 1rem;
+}
+
+.google-email-actions {
+    display: flex;
+    gap: 1rem;
+}

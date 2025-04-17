@@ -1,4 +1,4 @@
-import Role from "./Role";
+import Role from './Role';
 
 interface User {
     userID: string;
@@ -9,6 +9,7 @@ interface User {
     email: string;
     wallet: string;
     password?: string;
+    googleEmail?: string; // New field
     Roles?: Role[];
     supervisors?: User[];
     managers?: User[];

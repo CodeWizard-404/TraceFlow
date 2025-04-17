@@ -46,7 +46,7 @@ export const login = async (
     identifier: string,
     password: string,
     otpMethod: string
-): Promise<LoginResponse> => {
+): Promise<LoginResponse & { requiresGoogleLogin?: boolean; redirectUrl?: string }> => {
     try {
         const response = await api.post('/auth/login', {
             identifier,
@@ -136,5 +136,15 @@ export const resetPassword = async (userID: string, newPassword: string, tempTok
         return response.data;
     } catch (error) {
         throw new Error(handleApiError(error, 'Password reset failed'));
+    }
+};
+
+
+export const handleGoogleCallback = async (code: string, state: string | null): Promise<LoginResponse> => {
+    try {
+        const response = await api.post('/auth/google-callback', { code, state });
+        return response.data;
+    } catch (error) {
+        throw new Error(handleApiError(error, 'Google authentication failed'));
     }
 };

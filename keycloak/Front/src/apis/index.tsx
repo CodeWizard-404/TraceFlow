@@ -146,6 +146,11 @@ export type TimesheetsBySupervisorResponse = Timesheet[];
 export type UpdateTimesheetResponse = Timesheet;
 export type ValidateTimesheetResponse = Timesheet;
 
+
+export interface AssignGoogleAccountResponse {
+    user: User;
+    message: string;
+}
 export type AssignSupervisorsResponse = {
     managerID: string;
     assignedSupervisors: string[];
