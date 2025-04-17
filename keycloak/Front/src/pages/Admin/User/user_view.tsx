@@ -11,7 +11,7 @@ import {
     FaSearch,
 } from "react-icons/fa";
 import { useAuth } from "../../../context/AuthContext";
-import { useError } from "../../../context/ErrorContext"; // Import useError
+import { useError } from "../../../context/ErrorContext";
 import {
     updateUser,
     deleteUser,
@@ -63,10 +63,10 @@ const UserView: React.FC<UserViewProps> = ({
     permissionsList,
     view,
     userRoles,
-    setView
+    setView,
 }) => {
     const { effectivePermissions: authEffectivePermissions, user: currentUser } = useAuth();
-    const { setError } = useError(); // Use ErrorContext
+    const { setError } = useError();
 
     // State Declarations
     const [isEditingUser, setIsEditingUser] = useState(false);
@@ -165,7 +165,6 @@ const UserView: React.FC<UserViewProps> = ({
 
     // Effects
     useEffect(() => {
-        // Load user-specific data (roles, supervisors, overrides, permissions)
         if (selectedUser) {
             setTempRoles(selectedUser.Roles || []);
             setTempSupervisors(selectedUser.supervisors || []);
@@ -191,7 +190,6 @@ const UserView: React.FC<UserViewProps> = ({
     }, [selectedUser, setError]);
 
     useEffect(() => {
-        // Fetch role permissions for popup
         if (activeRolePopup) {
             const fetchRolePermissions = async () => {
                 setLoading(true);
@@ -377,7 +375,7 @@ const UserView: React.FC<UserViewProps> = ({
         setRawPhone(raw);
         setEditedUser({
             ...editedUser,
-            phone: raw === "" ? "" : stripPhoneForDatabase(raw),
+            phone: stripPhoneForDatabase(raw),
         });
         setUserFormErrors({ ...userFormErrors, phone: validatePhone(raw) });
     };
@@ -440,7 +438,12 @@ const UserView: React.FC<UserViewProps> = ({
             resetFormStates();
             setIsEditingUser(false);
         } catch (error) {
-            setError(error instanceof Error ? error.message : "Failed to update user.");
+            let errorMessage = error instanceof Error ? error.message : "Failed to update user.";
+            if (errorMessage.includes("This Google email is already linked to another user")) {
+                errorMessage = "This email is already associated with another Google account.";
+                setUserFormErrors({ ...userFormErrors, email: errorMessage });
+            }
+            setError(errorMessage);
         } finally {
             setLoading(false);
         }
@@ -810,8 +813,7 @@ const UserView: React.FC<UserViewProps> = ({
                             }}
                             onBlur={() => markUserTouched("firstname")}
                             placeholder="First Name *"
-                            className={`user-edit-input ${userTouched.firstname && userFormErrors.firstname ? "invalid-vibrate" : ""
-                                }`}
+                            className={`user-edit-input ${userTouched.firstname && userFormErrors.firstname ? "invalid-vibrate" : ""}`}
                             required
                         />
                         {userFormErrors.firstname && userTouched.firstname && (
@@ -829,8 +831,7 @@ const UserView: React.FC<UserViewProps> = ({
                             }}
                             onBlur={() => markUserTouched("lastname")}
                             placeholder="Last Name *"
-                            className={`user-edit-input ${userTouched.lastname && userFormErrors.lastname ? "invalid-vibrate" : ""
-                                }`}
+                            className={`user-edit-input ${userTouched.lastname && userFormErrors.lastname ? "invalid-vibrate" : ""}`}
                             required
                         />
                         {userFormErrors.lastname && userTouched.lastname && (
@@ -848,8 +849,7 @@ const UserView: React.FC<UserViewProps> = ({
                             }}
                             onBlur={() => markUserTouched("email")}
                             placeholder="Email *"
-                            className={`user-edit-input ${userTouched.email && userFormErrors.email ? "invalid-vibrate" : ""
-                                }`}
+                            className={`user-edit-input ${userTouched.email && userFormErrors.email ? "invalid-vibrate" : ""}`}
                             required
                         />
                         {userFormErrors.email && userTouched.email && (
@@ -861,8 +861,7 @@ const UserView: React.FC<UserViewProps> = ({
                             onChange={handlePhoneChange}
                             onBlur={() => markUserTouched("phone")}
                             placeholder="XX XXX XXX"
-                            className={`user-edit-input ${userTouched.phone && userFormErrors.phone ? "invalid-vibrate" : ""
-                                }`}
+                            className={`user-edit-input ${userTouched.phone && userFormErrors.phone ? "invalid-vibrate" : ""}`}
                             required
                             maxLength={10}
                         />
@@ -875,8 +874,7 @@ const UserView: React.FC<UserViewProps> = ({
                             onChange={handleWalletChange}
                             onBlur={() => markUserTouched("wallet")}
                             placeholder="XXXX-XXXX-XXXX-XXXX"
-                            className={`user-edit-input ${userTouched.wallet && userFormErrors.wallet ? "invalid-vibrate" : ""
-                                }`}
+                            className={`user-edit-input ${userTouched.wallet && userFormErrors.wallet ? "invalid-vibrate" : ""}`}
                             maxLength={19}
                         />
                         {userFormErrors.wallet && userTouched.wallet && (
@@ -898,8 +896,7 @@ const UserView: React.FC<UserViewProps> = ({
                             }}
                             onBlur={() => markUserTouched("password")}
                             placeholder="Password (optional)"
-                            className={`user-edit-input ${userTouched.password && userFormErrors.password ? "invalid-vibrate" : ""
-                                }`}
+                            className={`user-edit-input ${userTouched.password && userFormErrors.password ? "invalid-vibrate" : ""}`}
                         />
                         {userFormErrors.password && userTouched.password && (
                             <span className="error-text">{userFormErrors.password}</span>
@@ -916,8 +913,7 @@ const UserView: React.FC<UserViewProps> = ({
                             }}
                             onBlur={() => markUserTouched("passwordConfirm")}
                             placeholder="Confirm Password (optional)"
-                            className={`user-edit-input ${userTouched.passwordConfirm && userFormErrors.passwordConfirm ? "invalid-vibrate" : ""
-                                }`}
+                            className={`user-edit-input ${userTouched.passwordConfirm && userFormErrors.passwordConfirm ? "invalid-vibrate" : ""}`}
                         />
                         {userFormErrors.passwordConfirm && userTouched.passwordConfirm && (
                             <span className="error-text">{userFormErrors.passwordConfirm}</span>
@@ -982,6 +978,9 @@ const UserView: React.FC<UserViewProps> = ({
                         <p>
                             <strong>Wallet:</strong> {formatWalletDisplay(selectedUser.wallet || "") || "N/A"}
                         </p>
+                        <p>
+                            <strong>Google Email:</strong> {selectedUser.googleEmail || "N/A"}
+                        </p>
                     </div>
                 </div>
             )}
@@ -1001,8 +1000,7 @@ const UserView: React.FC<UserViewProps> = ({
                                     {roles.map((role) => (
                                         <div key={role.roleID} className="role-toggle-container">
                                             <button
-                                                className={`role-toggle-button ${tempRoles.some((r) => r.roleID === role.roleID) ? "active" : ""
-                                                    }`}
+                                                className={`role-toggle-button ${tempRoles.some((r) => r.roleID === role.roleID) ? "active" : ""}`}
                                                 onClick={() => handleToggleRole(role)}
                                                 disabled={
                                                     loading ||
@@ -1100,10 +1098,7 @@ const UserView: React.FC<UserViewProps> = ({
                                                         return (
                                                             <div key={perm.permissionID} className="permission-item">
                                                                 <button
-                                                                    className={`permission-button ${(hasOverride ? overrideAction === "grant" : isEffective)
-                                                                        ? "assigned"
-                                                                        : ""
-                                                                        }`}
+                                                                    className={`permission-button ${(hasOverride ? overrideAction === "grant" : isEffective) ? "assigned" : ""}`}
                                                                     disabled={loading}
                                                                 >
                                                                     {perm.name}
