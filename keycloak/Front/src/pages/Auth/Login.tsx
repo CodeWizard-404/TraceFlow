@@ -41,6 +41,14 @@ const LoginPage: React.FC = () => {
     const { loginUser } = useAuth();
     const { setError, clearError } = useError();
 
+    // Keycloak Google OAuth redirect URL
+    const KEYCLOAK_GOOGLE_LOGIN_URL = `${import.meta.env.VITE_KEYCLOAK_URL}/realms/${import.meta.env.VITE_REALM}/broker/google/login?client_id=${import.meta.env.VITE_CLIENT_ID}&redirect_uri=${encodeURIComponent(window.location.origin + '/auth/callback')}&response_type=code`;
+
+    // Handle Google login redirect
+    const handleGoogleLogin = () => {
+        window.location.href = KEYCLOAK_GOOGLE_LOGIN_URL;
+    };
+
     useEffect(() => {
         if (success || apiError) {
             const timeout = setTimeout(() => {
@@ -127,7 +135,9 @@ const LoginPage: React.FC = () => {
             if (!response) {
                 throw new Error('No response from server. Please try again.');
             }
-            if (response.requires2FA) {
+            if (response.requiresGoogleLogin && response.redirectUrl) {
+                window.location.href = response.redirectUrl;
+            } else if (response.requires2FA) {
                 setStep('verify2FA');
                 setUserID(response.userID!);
                 setTempToken(response.tempToken!);
@@ -422,6 +432,17 @@ const LoginPage: React.FC = () => {
                                 whileTap={{ scale: 0.95 }}
                             >
                                 {loading ? <span className="spinner" /> : 'Sign In'}
+                            </motion.button>
+                            <motion.button
+                                type="button"
+                                className="action-button-0 secondary google-login-button"
+                                onClick={handleGoogleLogin}
+                                disabled={loading}
+                                whileHover={{ scale: 1.05 }}
+                                whileTap={{ scale: 0.95 }}
+                            >
+                                <img src="https://www.google.com/favicon.ico" alt="Google" />
+                                Login with Google
                             </motion.button>
                             <button type="button" className="form-link" onClick={() => setStep('forgot')}>
                                 Forgot Password?
