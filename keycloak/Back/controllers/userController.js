@@ -236,6 +236,23 @@ class UserController {
             return res.status(404).json({ error: error.message });
         }
     }
+
+    static async assignGoogleAccount(req, res) {
+        try {
+            const { userID } = req.params;
+            const { googleEmail } = req.body;
+            if (!userID || !googleEmail) {
+                logger.warn(`Assign Google account failed: Missing fields, user: ${req.user.userID}, IP: ${req.ip}`);
+                return res.status(400).json({ error: 'User ID and Google email are required.' });
+            }
+            const updatedUser = await UserService.assignGoogleAccount(userID, googleEmail, req.user.userID);
+            logger.info(`Assigned Google account to user ${userID} by user ${req.user.userID}, IP: ${req.ip}`);
+            return res.status(200).json(updatedUser);
+        } catch (error) {
+            logger.error(`Assign Google account error: ${error.message}, user: ${req.user.userID}, IP: ${req.ip}`);
+            return res.status(400).json({ error: error.message });
+        }
+    }
 }
 
 module.exports = UserController;

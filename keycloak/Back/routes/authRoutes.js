@@ -12,5 +12,6 @@ router.post('/reset-password/init', otpLimiter, AuthController.initiatePasswordR
 router.post('/reset-password/verify', sensitiveLimiter, AuthController.verifyPasswordResetOTP);
 router.post('/reset-password', sensitiveLimiter, AuthController.resetPassword);
 router.post('/logout', sensitiveLimiter, AuthController.logout);
+router.post('/google-callback', sensitiveLimiter, AuthController.googleCallback);
 
 module.exports = router;

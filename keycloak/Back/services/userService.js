@@ -41,6 +41,8 @@ const ERROR_MESSAGES = {
     USER_NOT_SYNCED: 'User account is not properly set up.',
     INVALID_ROLE: 'Please provide a valid role.',
     INVALID_SUPERVISOR_IDS: 'Supervisor IDs must be a valid array.',
+    INVALID_GOOGLE_EMAIL: 'Please enter a valid Google email address.',
+    GOOGLE_EMAIL_ALREADY_LINKED: 'This Google email is already linked to another user.',
 };
 
 class UserService {
@@ -170,15 +172,44 @@ class UserService {
             throw new Error(ERROR_MESSAGES.KEYCLOAK_CREATE_FAILED);
         }
 
+        // Link Google account in Keycloak
+        try {
+            await axios.post(
+                `${KEYCLOAK_URL}/admin/realms/${REALM}/users/${keycloakUserId}/federated-identity/google`,
+                {
+                    identityProvider: 'google',
+                    userId: keycloakUserId, // Use Keycloak user ID as Google user ID
+                    userName: email, // Use email as Google username
+                },
+                { headers: { Authorization: `Bearer ${token}` } }
+            );
+        } catch (error) {
+            logger.error(`Keycloak link Google account error: ${error.message}`, {
+                user: actorID,
+                keycloakResponse: error.response?.data,
+                status: error.response?.status,
+            });
+            // Roll back Keycloak user creation if Google linking fails
+            await axios.delete(`${KEYCLOAK_URL}/admin/realms/${REALM}/users/${keycloakUserId}`, {
+                headers: { Authorization: `Bearer ${token}` },
+            });
+            throw new Error(ERROR_MESSAGES.KEYCLOAK_UPDATE_FAILED);
+        }
+
         // Check for duplicates in local DB
         const existingUser = await User.findOne({
-            where: { [Op.or]: [{ email }, { phone }, { wallet }] },
+            where: { [Op.or]: [{ email }, { phone }, { wallet }, { googleEmail: email }] },
         });
         if (existingUser) {
             const errors = [];
             if (existingUser.email === email) errors.push(ERROR_MESSAGES.DUPLICATE_EMAIL);
             if (existingUser.phone === phone) errors.push(ERROR_MESSAGES.DUPLICATE_PHONE);
             if (existingUser.wallet === wallet) errors.push(ERROR_MESSAGES.DUPLICATE_WALLET);
+            if (existingUser.googleEmail === email) errors.push(ERROR_MESSAGES.GOOGLE_EMAIL_ALREADY_LINKED);
+            // Roll back Keycloak user creation if DB check fails
+            await axios.delete(`${KEYCLOAK_URL}/admin/realms/${REALM}/users/${keycloakUserId}`, {
+                headers: { Authorization: `Bearer ${token}` },
+            });
             throw new Error(errors.join(' '));
         }
 
@@ -193,11 +224,16 @@ class UserService {
                 phone,
                 wallet,
                 password: 'KEYCLOAK_MANAGED',
+                googleEmail: email, // Store the same email as googleEmail
             });
             logger.info(`User ${email} created by user ${actorID}`, { ip: null });
             return user;
         } catch (error) {
             logger.error(`DB create user error: ${error.message}, user: ${actorID}`, { ip: null });
+            // Roll back Keycloak user creation if DB save fails
+            await axios.delete(`${KEYCLOAK_URL}/admin/realms/${REALM}/users/${keycloakUserId}`, {
+                headers: { Authorization: `Bearer ${token}` },
+            });
             throw new Error(ERROR_MESSAGES.DB_CREATE_FAILED);
         }
     }
@@ -231,6 +267,7 @@ class UserService {
                 where: {
                     [Op.or]: [
                         userData.email ? { email: userData.email } : null,
+                        userData.email ? { googleEmail: userData.email } : null,
                         userData.phone ? { phone: userData.phone } : null,
                         userData.wallet ? { wallet: userData.wallet } : null,
                     ].filter(Boolean),
@@ -241,6 +278,9 @@ class UserService {
                 const errors = [];
                 if (userData.email && existingUser.email === userData.email) {
                     errors.push(ERROR_MESSAGES.DUPLICATE_EMAIL);
+                }
+                if (userData.email && existingUser.googleEmail === userData.email) {
+                    errors.push(ERROR_MESSAGES.GOOGLE_EMAIL_ALREADY_LINKED);
                 }
                 if (userData.phone && existingUser.phone === userData.phone) {
                     errors.push(ERROR_MESSAGES.DUPLICATE_PHONE);
@@ -256,19 +296,43 @@ class UserService {
 
         // Update Keycloak user
         try {
+            const updateData = {
+                username: userData.email || user.email,
+                email: userData.email || user.email,
+                firstName: userData.firstname || user.firstname,
+                lastName: userData.lastname || user.lastname,
+                attributes: { phone: userData.phone || user.phone },
+            };
             await axios.put(
                 `${KEYCLOAK_URL}/admin/realms/${REALM}/users/${user.keycloakId}`,
-                {
-                    username: userData.email || user.email,
-                    email: userData.email || user.email,
-                    firstName: userData.firstname || user.firstname,
-                    lastName: userData.lastname || user.lastname,
-                    attributes: { phone: userData.phone || user.phone },
-                },
+                updateData,
                 { headers: { Authorization: `Bearer ${token}` } }
             );
+
+            // Update Google federated identity if email changed
+            if (userData.email && userData.email !== user.email) {
+                // Remove existing Google identity
+                await axios.delete(
+                    `${KEYCLOAK_URL}/admin/realms/${REALM}/users/${user.keycloakId}/federated-identity/google`,
+                    { headers: { Authorization: `Bearer ${token}` } }
+                );
+                // Add new Google identity
+                await axios.post(
+                    `${KEYCLOAK_URL}/admin/realms/${REALM}/users/${user.keycloakId}/federated-identity/google`,
+                    {
+                        identityProvider: 'google',
+                        userId: user.keycloakId, // Keep Keycloak user ID as Google user ID
+                        userName: userData.email, // Use new email
+                    },
+                    { headers: { Authorization: `Bearer ${token}` } }
+                );
+            }
         } catch (error) {
-            logger.error(`Keycloak update user error: ${error.message}, user: ${actorID}`, { ip: null });
+            logger.error(`Keycloak update user error: ${error.message}`, {
+                user: actorID,
+                keycloakResponse: error.response?.data,
+                status: error.response?.status,
+            });
             throw new Error(ERROR_MESSAGES.KEYCLOAK_UPDATE_FAILED);
         }
 
@@ -294,6 +358,7 @@ class UserService {
                 lastname: userData.lastname || user.lastname,
                 phone: userData.phone || user.phone,
                 wallet: userData.wallet || user.wallet,
+                googleEmail: userData.email || user.googleEmail || user.email,
                 PFP: userData.PFP !== undefined ? userData.PFP : user.PFP,
             });
             logger.info(`User ${userID} updated by user ${actorID}`, { ip: null });
@@ -345,7 +410,7 @@ class UserService {
         try {
             const users = await User.findAll({
                 include: [{ model: Role, through: { attributes: [] }, attributes: ['name'] }],
-                attributes: ['userID', 'email', 'firstname', 'lastname', 'phone', 'wallet'],
+                attributes: ['userID', 'email', 'firstname', 'lastname', 'phone', 'wallet', 'googleEmail'],
             });
             if (!users.length) {
                 throw new Error(ERROR_MESSAGES.NO_USERS_FOUND);
@@ -493,6 +558,7 @@ class UserService {
             return [];
         }
     }
+
     static async assignSupervisorsToManager(managerID, supervisorIDs, actorID) {
         if (!managerID || !supervisorIDs) {
             throw new Error(ERROR_MESSAGES.MISSING_FIELDS);
@@ -560,6 +626,74 @@ class UserService {
         } catch (error) {
             logger.error(`Revoke supervisors error: ${error.message}, user: ${actorID}`, { ip: null });
             throw new Error(error.message || ERROR_MESSAGES.SUPERVISOR_NOT_FOUND);
+        }
+    }
+    static async assignGoogleAccount(userID, googleEmail, actorID) {
+        if (!userID || !googleEmail) {
+            throw new Error(ERROR_MESSAGES.MISSING_FIELDS);
+        }
+
+        // Validate Google email
+        if (!/^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(googleEmail)) {
+            throw new Error(ERROR_MESSAGES.INVALID_GOOGLE_EMAIL);
+        }
+
+        // Check if the Google email is already linked to another user in the local DB
+        const existingUser = await User.findOne({
+            where: { googleEmail, userID: { [Op.ne]: userID } },
+        });
+        if (existingUser) {
+            throw new Error(ERROR_MESSAGES.GOOGLE_EMAIL_ALREADY_LINKED);
+        }
+
+        // Find the user
+        const user = await User.findByPk(userID);
+        if (!user) {
+            throw new Error(ERROR_MESSAGES.USER_NOT_FOUND);
+        }
+        if (!user.keycloakId) {
+            throw new Error(ERROR_MESSAGES.USER_NOT_SYNCED);
+        }
+
+        const token = await this.getAdminToken();
+
+        // Update Keycloak user to link Google identity
+        try {
+            // Check if the Google identity is already linked
+            const federatedIdentities = await axios.get(
+                `${KEYCLOAK_URL}/admin/realms/${REALM}/users/${user.keycloakId}/federated-identity`,
+                { headers: { Authorization: `Bearer ${token}` } }
+            );
+            const googleIdentity = federatedIdentities.data.find(id => id.identityProvider === 'google');
+            if (googleIdentity) {
+                throw new Error(ERROR_MESSAGES.GOOGLE_EMAIL_ALREADY_LINKED);
+            }
+
+            // Link Google identity (Keycloak requires the user to authenticate with Google to complete the linking)
+            // Instead, we'll store the Google email as an attribute and update the local DB
+            await axios.put(
+                `${KEYCLOAK_URL}/admin/realms/${REALM}/users/${user.keycloakId}`,
+                {
+                    attributes: {
+                        ...user.attributes,
+                        googleEmail: googleEmail,
+                    },
+                },
+                { headers: { Authorization: `Bearer ${token}` } }
+            );
+        } catch (error) {
+            logger.error(`Keycloak assign Google account error: ${error.message}, user: ${actorID}`);
+            throw new Error(ERROR_MESSAGES.KEYCLOAK_UPDATE_FAILED);
+        }
+
+        // Update local DB
+        try {
+            await user.update({ googleEmail });
+            logger.info(`Assigned Google account ${googleEmail} to user ${userID} by user ${actorID}`);
+            return user;
+        } catch (error) {
+            logger.error(`DB update Google account error: ${error.message}, user: ${actorID}`);
+            throw new Error(ERROR_MESSAGES.DB_UPDATE_FAILED);
         }
     }
 }

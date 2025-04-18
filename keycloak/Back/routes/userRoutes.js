@@ -4,7 +4,7 @@ const UserController = require('../controllers/userController');
 const { requirePermission } = require('../config/security');
 const { uploadPFP } = require('../config/multer');
 
-router.get('/profile', UserController.getProfile)
+router.get('/profile', UserController.getProfile);
 router.put('/profile', uploadPFP.single('PFP'), UserController.updateProfile);
 
 router.get('/', requirePermission('access_all_users'), UserController.getAllUsers);
@@ -21,5 +21,7 @@ router.post('/revoke-supervisors', requirePermission('revoke_supervisors'), User
 
 router.get('/:userID/supervisors', requirePermission('access_supervisors'), UserController.getSupervisorsByUser);
 router.get('/:userID/managers', requirePermission('access_managers'), UserController.getManagersByUser);
+
+router.post('/:userID/google-account', requirePermission('assign_google_account'), UserController.assignGoogleAccount);
 
 module.exports = router;
