@@ -40,22 +40,21 @@ const app = express();
 
 const allowedOrigins = [
     process.env.FRONTEND_URL || 'http://localhost:5173',
+    'http://192.168.1.16:5000'
 ];
 
 const corsOptions = {
     origin: (origin, callback) => {
-        const allowed = allowedOrigins.includes(origin) || !origin;
-        if (allowed) {
-            callback(null, origin);
+        if (!origin || allowedOrigins.includes(origin)) {
+            callback(null, true);
         } else {
-            callback(new Error(`CORS not allowed for origin: ${origin}`));
+            callback(new Error('Not allowed by CORS'));
         }
     },
+    methods: ['GET', 'POST', 'OPTIONS'],
+    allowedHeaders: ['Content-Type', 'Authorization'],
     credentials: true,
-    methods: ['GET', 'POST', 'PUT', 'DELETE', 'OPTIONS'],
-    allowedHeaders: ['Content-Type', 'Authorization', 'Cookie'],
-    exposedHeaders: ['Set-Cookie'],
-    optionsSuccessStatus: 204,
+    optionsSuccessStatus: 204, // For legacy browsers
 };
 
 
@@ -69,18 +68,17 @@ app.use('/api/uploads', express.static(path.join(__dirname, 'Uploads')));
 app.use('/api/auth', authRoutes);
 
 // Apply authentication to all /api routes
-app.use('/api', authenticateCookie);
 
-app.use('/api/users', userRoutes);
-app.use('/api/roles', roleRoutes);
-app.use('/api/permissions', permissionRoutes);
-app.use('/api/visits', visitRoutes);
-app.use('/api/checklists', checklistRoutes);
-app.use('/api/reasons', reasonRoutes);
-app.use('/api/timesheets', timesheetRoutes);
-app.use('/api/agents', agentRoutes);
-app.use('/api/receipt-books', receiptBookRoutes);
-app.use('/api/receipt-stubs', receiptStubRoutes);
+app.use('/api/users', authenticateCookie, userRoutes);
+app.use('/api/roles', authenticateCookie, roleRoutes);
+app.use('/api/permissions', authenticateCookie, permissionRoutes);
+app.use('/api/visits', authenticateCookie, visitRoutes);
+app.use('/api/checklists', authenticateCookie, checklistRoutes);
+app.use('/api/reasons', authenticateCookie, reasonRoutes);
+app.use('/api/timesheets', authenticateCookie, timesheetRoutes);
+app.use('/api/agents', authenticateCookie, agentRoutes);
+app.use('/api/receipt-books', authenticateCookie, receiptBookRoutes);
+app.use('/api/receipt-stubs', authenticateCookie, receiptStubRoutes);
 
 // Test endpoint
 app.get('/api/test', authenticateCookie, (req, res) => {

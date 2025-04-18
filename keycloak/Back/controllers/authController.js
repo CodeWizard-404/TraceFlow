@@ -1,3 +1,5 @@
+// backend/controllers/authController.js
+
 const { validationResult } = require('express-validator');
 const logger = require('../utils/logger');
 const AuthService = require('../services/authService');
@@ -11,6 +13,7 @@ const ERROR_MESSAGES = {
     INVALID_TOKEN: 'Session expired. Log in again.',
     SERVER_ERROR: 'Something broke. Try again later.',
     INVALID_CREDENTIALS: 'Wrong email or password.',
+    GOOGLE_LOGIN_FAILED: 'Google login failed. Ensure your account is registered.',
 };
 
 class AuthController {
@@ -23,6 +26,30 @@ class AuthController {
         return response;
     }
 
+    static async googleCallback(req, res) {
+        try {
+            const { code, state } = req.query;
+            if (!code) {
+                logger.warn('Google callback: Missing code parameter', { query: req.query });
+                return res.status(400).json({ error: ERROR_MESSAGES.MISSING_FIELDS });
+            }
+
+            const deviceIdentifier = req.headers['x-device-id'] || 'unknown-device';
+            logger.info('Processing Google callback', { code, deviceIdentifier, state });
+            const result = await AuthService.googleLogin(code, deviceIdentifier, res);
+            logger.info(`Google login successful for user ${result.user?.userID || 'unknown'}`, { userID: result.user?.userID });
+            return res.status(200).json(result);
+        } catch (error) {
+            logger.error(`Google callback error: ${error.message}`, {
+                status: error.status,
+                stack: error.stack,
+                query: req.query,
+            });
+            return res.status(error.status || 400).json(AuthController.formatError(error));
+        }
+    }
+
+
     static async login(req, res) {
         try {
             const errors = validationResult(req);
@@ -31,23 +58,19 @@ class AuthController {
                 return res.status(400).json({ error: ERROR_MESSAGES.MISSING_FIELDS, details: errors.array() });
             }
 
-            const { identifier, password, otpMethod } = req.body;
-            const deviceToken = req.cookies.deviceToken || null;
-            if (!identifier || !password) {
+            const { identifier, password, deviceIdentifier, otpMethod } = req.body;
+            if (!identifier || !password || !deviceIdentifier) {
                 logger.warn('Missing login fields');
                 return res.status(400).json(AuthController.formatError(new Error(ERROR_MESSAGES.MISSING_FIELDS)));
             }
 
-            const result = await AuthService.login(identifier, password, deviceToken, otpMethod, res);
-            logger.info(`Login attempt for ${identifier}, requires2FA: ${result.requires2FA || false}, requiresGoogleLogin: ${result.requiresGoogleLogin || false}`);
-
-            if (result.requiresGoogleLogin) {
-                return res.status(200).json({ requiresGoogleLogin: true, redirectUrl: result.redirectUrl });
-            }
-
+            const result = await AuthService.login(identifier, password, deviceIdentifier, otpMethod, res);
+            logger.info(`Login attempt for ${identifier}, requires2FA: ${result.requires2FA || false}`);
             return res.status(200).json(result);
         } catch (error) {
-            // Existing error handling...
+            logger.error(`Login error for ${req.body.identifier || 'unknown'}: ${error.message}`);
+            const status = error.message === ERROR_MESSAGES.INVALID_CREDENTIALS ? 401 : 400;
+            return res.status(status).json(AuthController.formatError(error));
         }
     }
 
@@ -59,21 +82,20 @@ class AuthController {
                 return res.status(400).json({ error: ERROR_MESSAGES.MISSING_FIELDS, details: errors.array() });
             }
 
-            const { userID, otpCode, trustDevice, tempToken, refreshToken } = req.body;
-            const deviceToken = req.cookies.deviceToken || null;
-            if (!userID || !otpCode || trustDevice === undefined || !tempToken || !refreshToken) {
+            const { userID, otpCode, deviceIdentifier, trustDevice, tempToken, refreshToken } = req.body;
+            if (!userID || !otpCode || !deviceIdentifier || trustDevice === undefined || !tempToken || !refreshToken) {
                 logger.warn('Missing 2FA fields');
                 return res.status(400).json(AuthController.formatError(new Error(ERROR_MESSAGES.MISSING_FIELDS)));
             }
 
-            const cacheKey = `2fa_${userID}_${deviceToken || 'unknown'}`;
+            const cacheKey = `2fa_${userID}_${deviceIdentifier}`;
             const cachedResult = cache.get(cacheKey);
             if (cachedResult) {
                 logger.info(`2FA cache hit for ${userID}`);
                 return res.status(200).json(cachedResult);
             }
 
-            const result = await AuthService.verify2FA(userID, otpCode, deviceToken, trustDevice, tempToken, refreshToken, res);
+            const result = await AuthService.verify2FA(userID, otpCode, deviceIdentifier, trustDevice, tempToken, refreshToken, res);
             cache.set(cacheKey, result, 60);
             logger.info(`2FA verified for user ${userID}`);
             return res.status(200).json(result);
@@ -103,13 +125,12 @@ class AuthController {
         try {
             const cookieOptions = {
                 path: '/',
-                sameSite: 'Strict',
+                sameSite: 'Lax',
                 secure: process.env.NODE_ENV === 'production',
             };
             res.clearCookie('accessToken', cookieOptions);
             res.clearCookie('refreshToken', cookieOptions);
-            // Do not clear deviceToken cookie to persist trusted device status
-            logger.info('User logged out, access and refresh cookies cleared');
+            logger.info('User logged out, cookies cleared');
             return res.status(200).json({ message: 'Logged out successfully' });
         } catch (error) {
             logger.error(`Logout error: ${error.message}`);
@@ -201,25 +222,6 @@ class AuthController {
             return res.status(200).json(result);
         } catch (error) {
             logger.error(`Password reset error for ${req.body.userID || 'unknown'}: ${error.message}`);
-            return res.status(400).json(AuthController.formatError(error));
-        }
-    }
-
-
-
-    static async googleCallback(req, res) {
-        try {
-            const { code, state } = req.body;
-            if (!code) {
-                logger.warn('Missing code in Google callback');
-                return res.status(400).json(AuthController.formatError(new Error('Missing authorization code')));
-            }
-
-            const result = await AuthService.googleCallback(code, state, res);
-            logger.info(`Google callback successful for user ${result.userID}`);
-            return res.status(200).json(result);
-        } catch (error) {
-            logger.error(`Google callback error: ${error.message}`);
             return res.status(400).json(AuthController.formatError(error));
         }
     }

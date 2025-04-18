@@ -1,23 +1,18 @@
-const { v4: uuidv4 } = require('uuid');
+const { nanoid } = require('nanoid');
 
 module.exports = (sequelize, DataTypes) => {
     return sequelize.define('TrustedDevice', {
         deviceID: {
             type: DataTypes.STRING,
             primaryKey: true,
-            defaultValue: () => `dev_${uuidv4()}`,
+            defaultValue: () => `dev_${nanoid()}`,
         },
         userID: {
             type: DataTypes.STRING,
             allowNull: false,
             references: { model: 'Users', key: 'userID' },
         },
-        deviceToken: {
-            type: DataTypes.STRING,
-            allowNull: false,
-            unique: true,
-        },
-        userAgent: {
+        deviceIdentifier: {
             type: DataTypes.STRING,
             allowNull: false,
         },
@@ -31,14 +26,14 @@ module.exports = (sequelize, DataTypes) => {
         },
         expiresAt: {
             type: DataTypes.DATE,
-            allowNull: false,
+            allowNull: true,
         },
     }, {
         timestamps: false,
         indexes: [
             {
                 unique: true,
-                fields: ['userID', 'deviceToken'],
+                fields: ['userID', 'deviceIdentifier'],
             },
         ],
     });

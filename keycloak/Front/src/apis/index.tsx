@@ -28,7 +28,7 @@ export interface LoginResponse {
         roles: Role[];
     };
     userID?: string;
-    deviceToken?: string;
+    deviceIdentifier?: string;
     tempToken?: string;
     refreshToken?: string;
     expiresIn?: number;
@@ -65,6 +65,16 @@ export interface VerifyPasswordResetOTPResponse {
 
 export interface ResetPasswordResponse {
     message: string;
+}
+
+export interface GoogleCallbackResponse {
+    requires2FA: boolean;
+    user: User;
+    userID: string;
+    tempToken: string;
+    refreshToken: string;
+    expiresIn: number;
+    deviceIdentifier: string;
 }
 
 export type AgentByIdResponse = Agent;

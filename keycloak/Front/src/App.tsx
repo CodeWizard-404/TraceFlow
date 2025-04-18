@@ -26,7 +26,7 @@ import AccessDenied from "./pages/Error/AccessDenied";
 import "./App.css";
 import LoginPage from "./pages/Auth/Login";
 import ProfilePage from "./pages/Auth/ProfilePage";
-import AuthCallback from "./components/AuthCallback";
+//import AuthCallback from "./components/AuthCallback";
 
 // Static permissions and roles from .env
 const PERMISSIONS = {
@@ -130,7 +130,7 @@ const AppContent: React.FC = () => {
         <Routes>
           <Route path="/login" element={<LoginPage />} />
           <Route path="/access-denied" element={<AccessDenied />} />
-          <Route path="/auth/callback" element={<AuthCallback />} />
+          {/* <Route path="/api/auth/callback" element={<AuthCallback />} /> */}
           <Route path="/" element={<Navigate to="/login" replace />} />
           <Route path="/profile" element={<ProfilePage />} />
           <Route
@@ -230,7 +230,7 @@ const AppContent: React.FC = () => {
 
 // Main App with providers
 const App: React.FC = () => (
-  <Router>
+  <Router future={{ v7_startTransition: true, v7_relativeSplatPath: true }}>
     <ThemeProvider>
       <AuthProvider>
         <ErrorProvider>

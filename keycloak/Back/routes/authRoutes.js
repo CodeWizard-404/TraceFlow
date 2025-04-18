@@ -1,6 +1,7 @@
 const express = require('express');
 const AuthController = require('../controllers/authController');
 const { sensitiveLimiter, otpLimiter, refreshLimiter } = require('../middleware/rateLimit');
+const logger = require('../utils/logger');
 
 const router = express.Router();
 
@@ -12,6 +13,5 @@ router.post('/reset-password/init', otpLimiter, AuthController.initiatePasswordR
 router.post('/reset-password/verify', sensitiveLimiter, AuthController.verifyPasswordResetOTP);
 router.post('/reset-password', sensitiveLimiter, AuthController.resetPassword);
 router.post('/logout', sensitiveLimiter, AuthController.logout);
-router.post('/google-callback', sensitiveLimiter, AuthController.googleCallback);
-
+router.get('/google-callback', sensitiveLimiter, AuthController.googleCallback);
 module.exports = router;

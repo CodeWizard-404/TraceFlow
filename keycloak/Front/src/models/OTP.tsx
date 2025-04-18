@@ -3,7 +3,8 @@ interface OTP {
     code: string;
     expiresAt: string;
     createdAt: string;
-    userID: string;
+    used: boolean;
+    userID?: string;
     agentID?: string;
 }
 

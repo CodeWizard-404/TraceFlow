@@ -13,6 +13,7 @@
     "i18n:scan": "i18next-scanner --config i18next-scanner.config.js"
   },
   "dependencies": {
+    "@fingerprintjs/fingerprintjs": "^4.6.2",
     "@hookform/resolvers": "^5.0.0",
     "@radix-ui/react-label": "^2.1.2",
     "@radix-ui/react-popover": "^1.1.6",
