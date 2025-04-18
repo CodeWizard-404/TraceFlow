@@ -1102,6 +1102,7 @@
       },
       "actions": {
         "create": "إنشاء مستخدم",
+        "cancel": "إلغاء",
         "creating": "جارٍ الإنشاء..."
       },
       "validation": {
