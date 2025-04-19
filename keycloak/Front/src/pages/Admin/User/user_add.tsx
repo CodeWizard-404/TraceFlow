@@ -43,7 +43,9 @@ const UserAdd: React.FC<UserAddProps> = ({
   // State
   const [newUser, setNewUser] = useState<Partial<User>>({});
   const [passwordConfirm, setPasswordConfirm] = useState("");
-  const [selectedRolesForNewUser, setSelectedRolesForNewUser] = useState<string[]>([]);
+  const [selectedRolesForNewUser, setSelectedRolesForNewUser] = useState<
+    string[]
+  >([]);
   const [rawPhone, setRawPhone] = useState("");
   const [rawWallet, setRawWallet] = useState("");
   const [userFormErrors, setUserFormErrors] = useState({
@@ -65,7 +67,9 @@ const UserAdd: React.FC<UserAddProps> = ({
     passwordConfirm: false,
   });
   const [activeRolePopup, setActiveRolePopup] = useState<string | null>(null);
-  const [expandedClasses, setExpandedClasses] = useState<Set<string>>(new Set());
+  const [expandedClasses, setExpandedClasses] = useState<Set<string>>(
+    new Set()
+  );
   const [loading, setLoading] = useState(false);
 
   // Permissions
@@ -78,7 +82,9 @@ const UserAdd: React.FC<UserAddProps> = ({
     ),
   };
 
-  const isSuperAdmin = userRoles?.some((r) => r.name === import.meta.env.VITE_ROLES_SUPER_ADMIN);
+  const isSuperAdmin = userRoles?.some(
+    (r) => r.name === import.meta.env.VITE_ROLES_SUPER_ADMIN
+  );
 
   // Handlers
   const handleCreateUser = async () => {
@@ -91,20 +97,14 @@ const UserAdd: React.FC<UserAddProps> = ({
       phone: validatePhone(rawPhone),
       wallet: validateWallet(rawWallet, true),
       password: validatePassword(newUser.password || "", true),
-      passwordConfirm: validatePasswordConfirm(newUser.password || "", passwordConfirm, true),
+      passwordConfirm: validatePasswordConfirm(
+        newUser.password || "",
+        passwordConfirm,
+        true
+      ),
     };
 
     setUserFormErrors(errors);
-    setUserTouched({
-      firstname: true,
-      lastname: true,
-      email: true,
-      phone: true,
-      wallet: true,
-      password: true,
-      passwordConfirm: true,
-    });
-
     if (Object.values(errors).some((error) => error)) {
       setError("Please correct the errors before submitting.");
       return;
@@ -121,9 +121,14 @@ const UserAdd: React.FC<UserAddProps> = ({
         wallet: stripWalletForDatabase(rawWallet),
       });
 
-      if (selectedRolesForNewUser.length > 0 && userPermissions.canAssignRoles) {
+      if (
+        selectedRolesForNewUser.length > 0 &&
+        userPermissions.canAssignRoles
+      ) {
         const filteredRoles = selectedRolesForNewUser.filter(
-          (roleID) => roles.find((r) => r.roleID === roleID)?.name !== import.meta.env.VITE_ROLES_SUPER_ADMIN
+          (roleID) =>
+            roles.find((r) => r.roleID === roleID)?.name !==
+            import.meta.env.VITE_ROLES_SUPER_ADMIN
         );
         if (filteredRoles.length > 0) {
           await assignRolesToUser(createdUser.userID, filteredRoles);
@@ -137,11 +142,8 @@ const UserAdd: React.FC<UserAddProps> = ({
       setView("users");
       setError(null);
     } catch (error: unknown) {
-      let errorMessage = error instanceof Error ? error.message : "Failed to create user.";
-      if (errorMessage.includes("This Google email is already linked to another user")) {
-        errorMessage = "This email is already associated with another Google account.";
-        setUserFormErrors({ ...userFormErrors, email: errorMessage });
-      }
+      const errorMessage =
+        error instanceof Error ? error.message : "Failed to create user.";
       setError(errorMessage);
     } finally {
       setLoading(false);
@@ -155,40 +157,61 @@ const UserAdd: React.FC<UserAddProps> = ({
 
   const validateName = (value: string, field: string): string => {
     const trimmed = value.trim();
-    if (!trimmed) return `${field} is required.`;
-    if (!/^[a-zA-Z]{2,50}$/.test(trimmed)) return `${field} must be 2–50 letters only.`;
+    if (!trimmed) return `${field} is required`;
+    if (trimmed.length < 3) return `${field} must be at least 3 characters`;
+    if (trimmed.length > 20) return `${field} must be 20 characters or less`;
+    if (!/^[a-zA-Z\s'-]+$/.test(trimmed))
+      return `${field} can only contain letters, spaces, hyphens, or apostrophes`;
     return "";
   };
 
   const validateEmail = (value: string): string => {
     const trimmed = value.trim();
-    if (!trimmed) return "Email is required.";
-    if (!/^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(trimmed)) return "Please enter a valid email.";
+    if (!trimmed) return "Email is required";
+    if (trimmed.length > 70) return "Email must be 70 characters or less";
+    if (!/^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(trimmed))
+      return "Invalid email format";
     return "";
   };
 
   const validatePhone = (value: string): string => {
     const digits = value.replace(/[^\d]/g, "");
-    if (!digits) return "Phone number is required.";
-    if (!/^\d{8}$/.test(digits)) return "Phone number must be 8 digits.";
+    if (!digits) return "Phone is required";
+    if (digits.length !== 8) return "Phone must be 8 digits";
     return "";
   };
 
   const validateWallet = (value: string, isNewUser: boolean): string => {
-    if (!value && isNewUser) return "Wallet address is required.";
-    if (value && !/^[a-zA-Z0-9]{10,50}$/.test(value)) return "Wallet must be 10–50 alphanumeric characters.";
+    const digits = value.replace(/[^\d]/g, "");
+    if (!digits && isNewUser) return "Wallet is required";
+    if (digits && digits.length !== 16)
+      return "Wallet must be exactly 16 digits";
     return "";
   };
 
   const validatePassword = (value: string, isNewUser: boolean): string => {
-    if (!value && isNewUser) return "Password is required.";
-    if (value && value.length < 6) return "Password must be at least 6 characters.";
+    if (!value && isNewUser) return "Password is required";
+    if (value && value.length < 8)
+      return "Password must be at least 8 characters";
+    if (value.length > 128) return "Password must be 128 characters or less";
+    if (
+      value &&
+      !/^(?=.*[a-z])(?=.*[A-Z])(?=.*\d)(?=.*[!@#$%^&*])[^\s]+$/.test(value)
+    ) {
+      return "Password must include uppercase, lowercase, digit, and special character, no spaces";
+    }
     return "";
   };
 
-  const validatePasswordConfirm = (password: string, confirm: string, isNewUser: boolean): string => {
-    if (!password && !confirm && isNewUser) return "Password confirmation is required.";
-    if (password !== confirm) return "Passwords do not match.";
+  const validatePasswordConfirm = (
+    password: string,
+    confirm: string,
+    isNewUser: boolean
+  ): string => {
+    if ((!password && confirm) || (password && !confirm && isNewUser))
+      return "Password confirmation is required";
+    if (password && confirm && password !== confirm)
+      return "Passwords do not match";
     return "";
   };
 
@@ -225,13 +248,6 @@ const UserAdd: React.FC<UserAddProps> = ({
     setRawPhone(raw);
     setNewUser({ ...newUser, phone: stripPhoneForDatabase(raw) });
     setUserFormErrors({ ...userFormErrors, phone: validatePhone(raw) });
-  };
-
-  const handleWalletChange = (e: React.ChangeEvent<HTMLInputElement>) => {
-    const raw = e.target.value.replace(/[^\d]/g, "").slice(0, 16);
-    setRawWallet(raw);
-    setNewUser({ ...newUser, wallet: stripWalletForDatabase(raw) });
-    setUserFormErrors({ ...userFormErrors, wallet: validateWallet(raw, true) });
   };
 
   // Reset Form
@@ -278,7 +294,9 @@ const UserAdd: React.FC<UserAddProps> = ({
   const getCategorizedPermissionsForRole = (role: Role) => {
     const byClass: { [key: string]: Permission[] } = {};
     role.permissions
-      ?.filter((perm) => isSuperAdmin || !["Role", "Permission"].includes(perm.class))
+      ?.filter(
+        (perm) => isSuperAdmin || !["Role", "Permission"].includes(perm.class)
+      )
       .forEach((perm) => {
         const formattedName = perm.name
           .replace(/_/g, " ")
@@ -298,19 +316,32 @@ const UserAdd: React.FC<UserAddProps> = ({
         <p>{role.description || "No description available"}</p>
         <h5>Permissions by Class:</h5>
         {Object.entries(getCategorizedPermissionsForRole(role)).length > 0 ? (
-          Object.entries(getCategorizedPermissionsForRole(role)).map(([className, perms]) => (
-            <div key={className} className="permission-class-item">
-              <button className="class-toggle" onClick={() => toggleClassExpansion(className)}>
-                {className} ({perms.length})
-                <FaAngleDown className={`toggle-icon ${expandedClasses.has(className) ? "expanded" : ""}`} />
-              </button>
-              <ul className={`permission-list ${expandedClasses.has(className) ? "expanded" : ""}`}>
-                {perms.map((perm) => (
-                  <li key={perm.permissionID}>{perm.name}</li>
-                ))}
-              </ul>
-            </div>
-          ))
+          Object.entries(getCategorizedPermissionsForRole(role)).map(
+            ([className, perms]) => (
+              <div key={className} className="permission-class-item">
+                <button
+                  className="class-toggle"
+                  onClick={() => toggleClassExpansion(className)}
+                >
+                  {className} ({perms.length})
+                  <FaAngleDown
+                    className={`toggle-icon ${
+                      expandedClasses.has(className) ? "expanded" : ""
+                    }`}
+                  />
+                </button>
+                <ul
+                  className={`permission-list ${
+                    expandedClasses.has(className) ? "expanded" : ""
+                  }`}
+                >
+                  {perms.map((perm) => (
+                    <li key={perm.permissionID}>{perm.name}</li>
+                  ))}
+                </ul>
+              </div>
+            )
+          )
         ) : (
           <p>No permissions assigned</p>
         )}
@@ -339,7 +370,13 @@ const UserAdd: React.FC<UserAddProps> = ({
                 });
               }}
               onBlur={() => markUserTouched("firstname")}
-              className={`user-edit-input ${userTouched.firstname ? "touched" : ""} ${userTouched.firstname && userFormErrors.firstname ? "invalid-vibrate" : ""}`}
+              className={`user-edit-input ${
+                userTouched.firstname ? "touched" : ""
+              } ${
+                userTouched.firstname && userFormErrors.firstname
+                  ? "invalid-vibrate"
+                  : ""
+              }`}
               required
               disabled={loading}
             />
@@ -360,7 +397,13 @@ const UserAdd: React.FC<UserAddProps> = ({
                 });
               }}
               onBlur={() => markUserTouched("lastname")}
-              className={`user-edit-input ${userTouched.lastname ? "touched" : ""} ${userTouched.lastname && userFormErrors.lastname ? "invalid-vibrate" : ""}`}
+              className={`user-edit-input ${
+                userTouched.lastname ? "touched" : ""
+              } ${
+                userTouched.lastname && userFormErrors.lastname
+                  ? "invalid-vibrate"
+                  : ""
+              }`}
               required
               disabled={loading}
             />
@@ -387,7 +430,13 @@ const UserAdd: React.FC<UserAddProps> = ({
                 });
               }}
               onBlur={() => markUserTouched("email")}
-              className={`user-edit-input ${userTouched.email ? "touched" : ""} ${userTouched.email && userFormErrors.email ? "invalid-vibrate" : ""}`}
+              className={`user-edit-input ${
+                userTouched.email ? "touched" : ""
+              } ${
+                userTouched.email && userFormErrors.email
+                  ? "invalid-vibrate"
+                  : ""
+              }`}
               required
               disabled={loading}
             />
@@ -403,7 +452,13 @@ const UserAdd: React.FC<UserAddProps> = ({
               onChange={handlePhoneChange}
               onBlur={() => markUserTouched("phone")}
               placeholder="XX XXX XXX"
-              className={`user-edit-input ${userTouched.phone ? "touched" : ""} ${userTouched.phone && userFormErrors.phone ? "invalid-vibrate" : ""}`}
+              className={`user-edit-input ${
+                userTouched.phone ? "touched" : ""
+              } ${
+                userTouched.phone && userFormErrors.phone
+                  ? "invalid-vibrate"
+                  : ""
+              }`}
               required
               maxLength={10}
               disabled={loading}
@@ -428,11 +483,21 @@ const UserAdd: React.FC<UserAddProps> = ({
                 setUserFormErrors({
                   ...userFormErrors,
                   password: validatePassword(e.target.value, true),
-                  passwordConfirm: validatePasswordConfirm(e.target.value, passwordConfirm, true),
+                  passwordConfirm: validatePasswordConfirm(
+                    e.target.value,
+                    passwordConfirm,
+                    true
+                  ),
                 });
               }}
               onBlur={() => markUserTouched("password")}
-              className={`user-edit-input ${userTouched.password ? "touched" : ""} ${userTouched.password && userFormErrors.password ? "invalid-vibrate" : ""}`}
+              className={`user-edit-input ${
+                userTouched.password ? "touched" : ""
+              } ${
+                userTouched.password && userFormErrors.password
+                  ? "invalid-vibrate"
+                  : ""
+              }`}
               required
               disabled={loading}
             />
@@ -449,16 +514,28 @@ const UserAdd: React.FC<UserAddProps> = ({
                 setPasswordConfirm(e.target.value);
                 setUserFormErrors({
                   ...userFormErrors,
-                  passwordConfirm: validatePasswordConfirm(newUser.password || "", e.target.value, true),
+                  passwordConfirm: validatePasswordConfirm(
+                    newUser.password || "",
+                    e.target.value,
+                    true
+                  ),
                 });
               }}
               onBlur={() => markUserTouched("passwordConfirm")}
-              className={`user-edit-input ${userTouched.passwordConfirm ? "touched" : ""} ${userTouched.passwordConfirm && userFormErrors.passwordConfirm ? "invalid-vibrate" : ""}`}
+              className={`user-edit-input ${
+                userTouched.passwordConfirm ? "touched" : ""
+              } ${
+                userTouched.passwordConfirm && userFormErrors.passwordConfirm
+                  ? "invalid-vibrate"
+                  : ""
+              }`}
               required
               disabled={loading}
             />
             {userFormErrors.passwordConfirm && userTouched.passwordConfirm && (
-              <span className="error-text">{userFormErrors.passwordConfirm}</span>
+              <span className="error-text">
+                {userFormErrors.passwordConfirm}
+              </span>
             )}
           </div>
         </div>
@@ -471,10 +548,24 @@ const UserAdd: React.FC<UserAddProps> = ({
           <input
             type="text"
             value={formatWalletDisplay(rawWallet)}
-            onChange={handleWalletChange}
+            onChange={(e) => {
+              const raw = e.target.value.replace(/[^\d]/g, "").slice(0, 16);
+              setRawWallet(raw);
+              setNewUser({ ...newUser, wallet: stripWalletForDatabase(raw) });
+              setUserFormErrors({
+                ...userFormErrors,
+                wallet: validateWallet(raw, true),
+              });
+            }}
             onBlur={() => markUserTouched("wallet")}
             placeholder="XXXX-XXXX-XXXX-XXXX"
-            className={`user-edit-input ${userTouched.wallet ? "touched" : ""} ${userTouched.wallet && userFormErrors.wallet ? "invalid-vibrate" : ""}`}
+            className={`user-edit-input ${
+              userTouched.wallet ? "touched" : ""
+            } ${
+              userTouched.wallet && userFormErrors.wallet
+                ? "invalid-vibrate"
+                : ""
+            }`}
             required
             maxLength={19}
             disabled={loading}
@@ -492,11 +583,17 @@ const UserAdd: React.FC<UserAddProps> = ({
             <label>Assign Roles</label>
             <div className="roles-grid">
               {roles
-                .filter((role) => role.name !== import.meta.env.VITE_ROLES_SUPER_ADMIN)
+                .filter(
+                  (role) => role.name !== import.meta.env.VITE_ROLES_SUPER_ADMIN
+                )
                 .map((role) => (
                   <div key={role.roleID} className="role-toggle-container">
                     <button
-                      className={`role-toggle-button ${selectedRolesForNewUser.includes(role.roleID) ? "active" : ""}`}
+                      className={`role-toggle-button ${
+                        selectedRolesForNewUser.includes(role.roleID)
+                          ? "active"
+                          : ""
+                      }`}
                       onClick={() => {
                         setSelectedRolesForNewUser((prev) =>
                           prev.includes(role.roleID)
@@ -521,7 +618,11 @@ const UserAdd: React.FC<UserAddProps> = ({
           </div>
         </div>
       )}
-      <button className="action-button" onClick={handleCreateUser} disabled={loading}>
+      <button
+        className="action-button"
+        onClick={handleCreateUser}
+        disabled={loading}
+      >
         {loading ? "Creating..." : "Create User"}
       </button>
       <InfoPopup

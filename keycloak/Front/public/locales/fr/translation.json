@@ -1100,6 +1100,7 @@
     },
     "actions": {
       "create": "Créer un utilisateur",
+      "cancel": "Annuler",
       "creating": "Création en cours..."
     },
     "validation": {
