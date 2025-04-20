@@ -5,22 +5,20 @@ import App from "./App";
 import "./index.css";
 import "./i18n";
 import "bootstrap/dist/css/bootstrap.min.css";
-import "./App.css"; // Import the global theme CSS
+import "./App.css";
 
-// eslint-disable-next-line react-refresh/only-export-components
-const Root: React.FC = () => {
+// Memoized Root component
+const Root: React.FC = React.memo(() => {
   const { theme } = useTheme();
   React.useEffect(() => {
-    document.body.className = theme; // Apply theme class to body
+    document.body.className = theme;
   }, [theme]);
 
   return <App />;
-};
+});
 
 createRoot(document.getElementById("root")!).render(
-  <React.StrictMode>
-    <ThemeProvider>
-      <Root />
-    </ThemeProvider>
-  </React.StrictMode>
+  <ThemeProvider>
+    <Root />
+  </ThemeProvider>
 );

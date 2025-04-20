@@ -1,11 +1,13 @@
-import React, { useMemo, useState } from "react";
+import React, { useMemo, useState, useEffect, useCallback } from "react";
 import { FaFilter } from "react-icons/fa";
+import { debounce } from "lodash";
 
 // Context and APIs
 import { useAuth } from "../../../context/AuthContext";
 import {
   assignPermissionsToRole,
   getPermissionsByRole,
+  getAllPermissions,
 } from "../../../apis/permissionAPI";
 import { createRole } from "../../../apis/roleAPI";
 
@@ -22,10 +24,47 @@ interface RoleAddProps {
   roles: Role[];
   setRoles: (roles: Role[]) => void;
   permissionsList: Permission[];
-  view: string;
+  view: ViewMode;
   setView: (view: ViewMode) => void;
   setError: (error: string | null) => void;
 }
+
+// Confirmation Modal Component
+const ConfirmationModal: React.FC<{
+  message: string;
+  onConfirm: () => void;
+  onCancel: () => void;
+}> = ({ message, onConfirm, onCancel }) => {
+  const [isFadingOut, setIsFadingOut] = useState(false);
+
+  const handleConfirm = () => {
+    setIsFadingOut(true);
+    setTimeout(() => onConfirm(), 300);
+  };
+
+  const handleCancel = () => {
+    setIsFadingOut(true);
+    setTimeout(() => onCancel(), 300);
+  };
+
+  return (
+    <div
+      className={`confirmation-modal-overlay ${isFadingOut ? "fade-out" : "fade-in"}`}
+    >
+      <div className="confirmation-modal">
+        <p>{message}</p>
+        <div className="confirmation-actions">
+          <button className="confirm-button" onClick={handleConfirm}>
+            Confirm
+          </button>
+          <button className="cancel-button" onClick={handleCancel}>
+            Cancel
+          </button>
+        </div>
+      </div>
+    </div>
+  );
+};
 
 // Main Component
 const RoleAdd: React.FC<RoleAddProps> = ({
@@ -53,6 +92,12 @@ const RoleAdd: React.FC<RoleAddProps> = ({
     description: false,
   });
   const [loading, setLoading] = useState(false);
+  const [permissionsLoading, setPermissionsLoading] = useState(true);
+  const [confirmation, setConfirmation] = useState<{
+    message: string;
+    onConfirm: () => void;
+  } | null>(null);
+  const [localPermissions, setLocalPermissions] = useState<Permission[]>(permissionsList);
 
   // Permissions
   const userPermissions = {
@@ -61,6 +106,9 @@ const RoleAdd: React.FC<RoleAddProps> = ({
     ),
     canAssignPermissions: effectivePermissions?.some(
       (p) => p.name === import.meta.env.VITE_PERMISSIONS_ASSIGN_PERMISSIONS
+    ),
+    canViewPermissions: effectivePermissions?.some(
+      (p) => p.name === import.meta.env.VITE_PERMISSIONS_READ_PERMISSIONS
     ),
   };
 
@@ -71,10 +119,30 @@ const RoleAdd: React.FC<RoleAddProps> = ({
     [userRoles]
   );
 
+  // Fetch Permissions if Empty
+  useEffect(() => {
+    if (localPermissions.length === 0 && userPermissions.canViewPermissions) {
+      const fetchPermissions = async () => {
+        setPermissionsLoading(true);
+        try {
+          const permissions = await getAllPermissions();
+          setLocalPermissions(permissions || []);
+        } catch {
+          setError("Failed to load permissions.");
+        } finally {
+          setPermissionsLoading(false);
+        }
+      };
+      fetchPermissions();
+    } else {
+      setPermissionsLoading(false);
+    }
+  }, [localPermissions, userPermissions.canViewPermissions, setError]);
+
   // Computed Permissions
   const categorizedPermissions = useMemo(() => {
     return Object.entries(
-      permissionsList
+      localPermissions
         .filter(
           (perm) => isSuperAdmin || !["Role", "Permission"].includes(perm.class)
         )
@@ -87,10 +155,10 @@ const RoleAdd: React.FC<RoleAddProps> = ({
           return acc;
         }, {})
     );
-  }, [permissionsList, isSuperAdmin]);
+  }, [localPermissions, isSuperAdmin]);
 
   const filteredPermissions = useMemo(() => {
-    let result = permissionsList.filter(
+    let result = localPermissions.filter(
       (perm) => isSuperAdmin || !["Role", "Permission"].includes(perm.class)
     );
     if (permissionSearch) {
@@ -111,7 +179,19 @@ const RoleAdd: React.FC<RoleAddProps> = ({
       acc[perm.class].push({ ...perm, name: formattedName });
       return acc;
     }, {});
-  }, [permissionsList, permissionSearch, selectedCategory, isSuperAdmin]);
+  }, [localPermissions, permissionSearch, selectedCategory, isSuperAdmin]);
+
+  // Debounced Search
+  const debouncedSetPermissionSearch = useCallback(
+    debounce((value: string) => setPermissionSearch(value), 300),
+    []
+  );
+
+  // Auto-Clear Errors
+  useEffect(() => {
+    const timer = setTimeout(() => setError(null), 3000);
+    return () => clearTimeout(timer);
+  }, [setError]);
 
   // Handlers
   const handleCreateRole = async () => {
@@ -128,38 +208,44 @@ const RoleAdd: React.FC<RoleAddProps> = ({
       return;
     }
 
-    setLoading(true);
-    try {
-      const createdRole = await createRole({
-        name: newRole.name!.trim(),
-        description: newRole.description?.trim(),
-      });
-      if (
-        selectedPermissionsForNewRole.length > 0 &&
-        userPermissions.canAssignPermissions
-      ) {
-        await assignPermissionsToRole(
-          createdRole.roleID,
-          selectedPermissionsForNewRole
-        );
-        createdRole.permissions = await getPermissionsByRole(
-          createdRole.roleID
-        );
-      }
-      setRoles([...roles, createdRole]);
-      setNewRole({});
-      setSelectedPermissionsForNewRole([]);
-      setRoleFormErrors({ name: "", description: "" });
-      setRoleTouched({ name: false, description: false });
-      setView("roles");
-      setError(null);
-    } catch (error: unknown) {
-      const errorMessage =
-        error instanceof Error ? error.message : "Failed to create role.";
-      setError(errorMessage);
-    } finally {
-      setLoading(false);
-    }
+    setConfirmation({
+      message: `Are you sure you want to create the role "${newRole.name}"?`,
+      onConfirm: async () => {
+        setLoading(true);
+        try {
+          const createdRole = await createRole({
+            name: newRole.name!.trim(),
+            description: newRole.description?.trim(),
+          });
+          if (
+            selectedPermissionsForNewRole.length > 0 &&
+            userPermissions.canAssignPermissions
+          ) {
+            await assignPermissionsToRole(
+              createdRole.roleID,
+              selectedPermissionsForNewRole
+            );
+            createdRole.Permissions = await getPermissionsByRole(
+              createdRole.roleID
+            );
+          }
+          setRoles([...roles, createdRole]);
+          setNewRole({});
+          setSelectedPermissionsForNewRole([]);
+          setRoleFormErrors({ name: "", description: "" });
+          setRoleTouched({ name: false, description: false });
+          setView("roles");
+          setError(null);
+        } catch (error: unknown) {
+          const errorMessage =
+            error instanceof Error ? error.message : "Failed to create role.";
+          setError(errorMessage);
+        } finally {
+          setLoading(false);
+          setConfirmation(null);
+        }
+      },
+    });
   };
 
   // Validation
@@ -180,189 +266,250 @@ const RoleAdd: React.FC<RoleAddProps> = ({
     return "";
   };
 
+  // Skeleton Loader
+  const renderSkeleton = () => (
+    <div aria-busy="true">
+      <div className="form-section">
+        <div className="custom-skeleton pulsing" style={{ width: "100px", height: "24px" }} />
+        <div className="form-group">
+          <div className="custom-skeleton pulsing" style={{ width: "100%", height: "32px" }} />
+        </div>
+        <div className="form-group">
+          <div className="custom-skeleton pulsing" style={{ width: "100%", height: "60px" }} />
+        </div>
+      </div>
+      <div className="form-section">
+        <div className="custom-skeleton pulsing" style={{ width: "100px", height: "24px" }} />
+        <div className="permissions-grid">
+          {Array.from({ length: 4 }).map((_, i) => (
+            <div key={i} className="permission-class">
+              <div className="custom-skeleton pulsing" style={{ width: "120px", height: "20px" }} />
+              <div className="permissions-container">
+                {Array.from({ length: 3 }).map((_, j) => (
+                  <div key={j} className="custom-skeleton pulsing" style={{ width: "80%", height: "32px" }} />
+                ))}
+              </div>
+            </div>
+          ))}
+        </div>
+      </div>
+    </div>
+  );
+
   // Render
   if (view !== "add-role" || !userPermissions.canCreateRoles) return null;
 
   return (
     <div className="form-card form-card-0">
-      <div className="form-section">
-        <h3>Role Details</h3>
-        <div className="form-group">
-          <label>Name *</label>
-          <input
-            type="text"
-            value={newRole.name || ""}
-            onChange={(e) => {
-              setNewRole({ ...newRole, name: e.target.value });
-              setRoleFormErrors({
-                ...roleFormErrors,
-                name: validateRoleName(e.target.value),
-              });
-            }}
-            onBlur={() => setRoleTouched({ ...roleTouched, name: true })}
-            className={`user-edit-input ${
-              roleTouched.name && roleFormErrors.name ? "invalid-vibrate" : ""
-            }`}
-            required
-            disabled={loading}
-          />
-          {roleFormErrors.name && roleTouched.name && (
-            <span className="error-text">{roleFormErrors.name}</span>
-          )}
-        </div>
-        <div className="form-group">
-          <label>Description</label>
-          <textarea
-            value={newRole.description || ""}
-            onChange={(e) => {
-              setNewRole({ ...newRole, description: e.target.value });
-              setRoleFormErrors({
-                ...roleFormErrors,
-                description: validateRoleDescription(e.target.value),
-              });
-            }}
-            onBlur={() => setRoleTouched({ ...roleTouched, description: true })}
-            className={`user-edit-input ${
-              roleTouched.description && roleFormErrors.description
-                ? "invalid-vibrate"
-                : ""
-            }`}
-            disabled={loading}
-          />
-          {roleFormErrors.description && roleTouched.description && (
-            <span className="error-text">{roleFormErrors.description}</span>
-          )}
-        </div>
-      </div>
-      {userPermissions.canAssignPermissions && (
-        <div className="form-section">
-          <hr />
-          <h3>Permissions</h3>
-          <div className="form-group">
-            <label>Assign Permissions</label>
-            <div className="permissions-filter-section">
-              <div className="permissions-filter-header">
-                <FaFilter />
-                <label>Filter Permissions</label>
-              </div>
-              <div className="permissions-filter-controls">
-                <div className="permissions-search">
-                  <input
-                    type="text"
-                    placeholder="Search permissions..."
-                    value={permissionSearch}
-                    onChange={(e) => setPermissionSearch(e.target.value)}
-                    disabled={loading}
-                  />
-                </div>
-                <div className="permissions-category">
-                  <select
-                    value={selectedCategory}
-                    onChange={(e) => setSelectedCategory(e.target.value)}
-                    disabled={loading}
-                  >
-                    <option value="all">All Categories</option>
-                    {categorizedPermissions.map(([category]) => (
-                      <option key={category} value={category}>
-                        {category.charAt(0).toUpperCase() + category.slice(1)}
-                      </option>
-                    ))}
-                  </select>
-                </div>
-              </div>
+      {confirmation && (
+        <ConfirmationModal
+          message={confirmation.message}
+          onConfirm={confirmation.onConfirm}
+          onCancel={() => setConfirmation(null)}
+        />
+      )}
+      {permissionsLoading ? renderSkeleton() : (
+        <>
+          <div className="form-section">
+            <h3>Role Details</h3>
+            <div className="form-group">
+              <label>Name *</label>
+              <input
+                type="text"
+                value={newRole.name || ""}
+                onChange={(e) => {
+                  setNewRole({ ...newRole, name: e.target.value });
+                  setRoleFormErrors({
+                    ...roleFormErrors,
+                    name: validateRoleName(e.target.value),
+                  });
+                }}
+                onBlur={() => setRoleTouched({ ...roleTouched, name: true })}
+                className={`user-edit-input ${roleTouched.name && roleFormErrors.name ? "invalid-vibrate" : ""
+                  }`}
+                required
+                disabled={loading}
+                aria-label="Role name"
+                aria-invalid={roleTouched.name && !!roleFormErrors.name}
+              />
+              {roleFormErrors.name && roleTouched.name && (
+                <span className="error-text">{roleFormErrors.name}</span>
+              )}
             </div>
-            <div className="permissions-grid">
-              {Object.entries(filteredPermissions).map(
-                ([className, permissions]) => (
-                  <div key={className} className="permission-class">
-                    <div className="permission-class-header">
-                      <h4>{className}</h4>
-                      <button
-                        className="toggle-all-button"
-                        onClick={() => {
-                          const classPermissions = permissionsList.filter(
-                            (p) => p.class === className
-                          );
-                          const allSelected = classPermissions.every((p) =>
-                            selectedPermissionsForNewRole.includes(
-                              p.permissionID
-                            )
-                          );
-                          setSelectedPermissionsForNewRole((prev) =>
-                            allSelected
-                              ? prev.filter(
-                                  (id) =>
-                                    !classPermissions.some(
-                                      (p) => p.permissionID === id
-                                    )
-                                )
-                              : [
-                                  ...prev,
-                                  ...classPermissions
-                                    .filter(
-                                      (p) => !prev.includes(p.permissionID)
-                                    )
-                                    .map((p) => p.permissionID),
-                                ]
-                          );
-                        }}
+            <div className="form-group">
+              <label>Description</label>
+              <textarea
+                value={newRole.description || ""}
+                onChange={(e) => {
+                  setNewRole({ ...newRole, description: e.target.value });
+                  setRoleFormErrors({
+                    ...roleFormErrors,
+                    description: validateRoleDescription(e.target.value),
+                  });
+                }}
+                onBlur={() => setRoleTouched({ ...roleTouched, description: true })}
+                className={`user-edit-input ${roleTouched.description && roleFormErrors.description
+                  ? "invalid-vibrate"
+                  : ""
+                  }`}
+                disabled={loading}
+                aria-label="Role description"
+                aria-invalid={roleTouched.description && !!roleFormErrors.description}
+              />
+              {roleFormErrors.description && roleTouched.description && (
+                <span className="error-text">{roleFormErrors.description}</span>
+              )}
+            </div>
+          </div>
+          {userPermissions.canAssignPermissions && (
+            <div className="form-section">
+              <hr />
+              <h3>Permissions</h3>
+              <div className="form-group">
+                <label>Assign Permissions</label>
+                <div className="permissions-filter-section">
+                  <div className="permissions-filter-header">
+                    <FaFilter />
+                    <label>Filter Permissions</label>
+                  </div>
+                  <div className="permissions-filter-controls">
+                    <div className="permissions-search">
+                      <input
+                        type="text"
+                        placeholder="Search permissions..."
+                        value={permissionSearch}
+                        onChange={(e) => debouncedSetPermissionSearch(e.target.value)}
                         disabled={loading}
-                      >
-                        {permissionsList
-                          .filter((p) => p.class === className)
-                          .every((p) =>
-                            selectedPermissionsForNewRole.includes(
-                              p.permissionID
-                            )
-                          )
-                          ? "Deselect All"
-                          : "Select All"}
-                      </button>
+                        aria-label="Search permissions"
+                      />
                     </div>
-                    <div className="permissions-container">
-                      {Array.isArray(permissions) ? (
-                        permissions.map((perm) => (
+                    <div className="permissions-category">
+                      <select
+                        value={selectedCategory}
+                        onChange={(e) => setSelectedCategory(e.target.value)}
+                        disabled={loading}
+                        aria-label="Filter by permission category"
+                      >
+                        <option value="all">All Categories</option>
+                        {categorizedPermissions.map(([category]) => (
+                          <option key={category} value={category}>
+                            {category.charAt(0).toUpperCase() + category.slice(1)}
+                          </option>
+                        ))}
+                      </select>
+                    </div>
+                  </div>
+                </div>
+                <div className="permissions-grid">
+                  {Object.entries(filteredPermissions).map(
+                    ([className, permissions]) => (
+                      <div key={className} className="permission-class">
+                        <div className="permission-class-header">
+                          <h4>{className}</h4>
                           <button
-                            key={perm.permissionID}
-                            className={`permission-button ${
-                              selectedPermissionsForNewRole.includes(
-                                perm.permissionID
-                              )
-                                ? "assigned"
-                                : ""
-                            }`}
+                            className="toggle-all-button"
                             onClick={() => {
+                              const classPermissions = localPermissions.filter(
+                                (p) => p.class === className
+                              );
+                              const allSelected = classPermissions.every((p) =>
+                                selectedPermissionsForNewRole.includes(
+                                  p.permissionID
+                                )
+                              );
                               setSelectedPermissionsForNewRole((prev) =>
-                                prev.includes(perm.permissionID)
+                                allSelected
                                   ? prev.filter(
-                                      (id) => id !== perm.permissionID
-                                    )
-                                  : [...prev, perm.permissionID]
+                                    (id) =>
+                                      !classPermissions.some(
+                                        (p) => p.permissionID === id
+                                      )
+                                  )
+                                  : [
+                                    ...prev,
+                                    ...classPermissions
+                                      .filter(
+                                        (p) => !prev.includes(p.permissionID)
+                                      )
+                                      .map((p) => p.permissionID),
+                                  ]
                               );
                             }}
                             disabled={loading}
                           >
-                            {perm.name}
+                            {localPermissions
+                              .filter((p) => p.class === className)
+                              .every((p) =>
+                                selectedPermissionsForNewRole.includes(
+                                  p.permissionID
+                                )
+                              )
+                              ? "Deselect All"
+                              : "Select All"}
                           </button>
-                        ))
-                      ) : (
-                        <p>No permissions available</p>
-                      )}
-                    </div>
-                  </div>
-                )
-              )}
+                        </div>
+                        <div className="permissions-container">
+                          {Array.isArray(permissions) && permissions.length > 0 ? (
+                            permissions.map((perm) => (
+                              <button
+                                key={perm.permissionID}
+                                className={`permission-button ${selectedPermissionsForNewRole.includes(
+                                  perm.permissionID
+                                )
+                                  ? "assigned"
+                                  : ""
+                                  }`}
+                                onClick={() => {
+                                  setSelectedPermissionsForNewRole((prev) =>
+                                    prev.includes(perm.permissionID)
+                                      ? prev.filter(
+                                        (id) => id !== perm.permissionID
+                                      )
+                                      : [...prev, perm.permissionID]
+                                  );
+                                }}
+                                disabled={loading}
+                                aria-label={`Toggle ${perm.name} permission`}
+                              >
+                                {perm.name}
+                              </button>
+                            ))
+                          ) : (
+                            <p>No permissions available</p>
+                          )}
+                        </div>
+                      </div>
+                    )
+                  )}
+                </div>
+              </div>
             </div>
+          )}
+          <div className="form-actions-0">
+            <button
+              className="action-button"
+              onClick={handleCreateRole}
+              disabled={loading}
+              aria-busy={loading ? "true" : "false"}
+            >
+              {loading ? "Creating..." : "Create Role"}
+            </button>
+            <button
+              className="cancel-button"
+              onClick={() => {
+                setNewRole({});
+                setSelectedPermissionsForNewRole([]);
+                setRoleFormErrors({ name: "", description: "" });
+                setRoleTouched({ name: false, description: false });
+                setView("roles");
+              }}
+              disabled={loading}
+            >
+              Cancel
+            </button>
           </div>
-        </div>
+        </>
       )}
-      <button
-        className="action-button"
-        onClick={handleCreateRole}
-        disabled={loading}
-      >
-        {loading ? "Creating..." : "Create Role"}
-      </button>
     </div>
   );
 };

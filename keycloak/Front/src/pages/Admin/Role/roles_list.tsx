@@ -1,434 +1,559 @@
-import React, { useEffect, useMemo, useState } from "react";
+/**
+ * RolesList.tsx
+ * Component for displaying a categorized list of roles with toggleable RoleView under each role.
+ * Optimized with memoization, debouncing, and caching for performance.
+ * Uses role.permissions from getAllRoles for permission counts and InfoPopup, eliminating getPermissionsByRole calls.
+ * Removed getAllPermissions fetch, as it's now handled in RoleView.
+ */
+
+import React, { useCallback, useEffect, useMemo, useState } from "react";
 import { FaAngleDown, FaInfoCircle } from "react-icons/fa";
+import { AnimatePresence, motion } from "framer-motion";
+import { debounce } from "lodash";
 
-// Context and APIs
+// Context
 import { useAuth } from "../../../context/AuthContext";
-import { getPermissionsByRole } from "../../../apis/permissionAPI";
 
-// Models and Types
+// Models
 import Permission from "../../../models/Permission";
 import Role from "../../../models/Role";
 
 // Components
 import InfoPopup from "../InfoPopup";
+import RoleView from "./roles_view";
 
 // Styles
 import "../AdminDashboard.css";
+import PermissionsClass from "models/Enum/PermissionsClass";
 
-// Props Interface
+// Props interface
 interface RolesListProps {
   roles: Role[];
   setRoles: (roles: Role[]) => void;
   userRoles: Role[];
   view: string;
+  setView: (view: string) => void;
   setSelectedRole: (role: Role | null) => void;
   setError: (error: string | null) => void;
   searchQuery: string;
 }
 
-// Main Component
-const RolesList: React.FC<RolesListProps> = ({
-  roles,
-  setRoles,
-  userRoles,
-  view,
-  setSelectedRole,
-  setError,
-  searchQuery,
-}) => {
-  const { effectivePermissions } = useAuth();
+// Constants
+const SKELETON_DELAY = 500; // Delay skeleton visibility for 0.5 seconds
+const SKELETON_ROLES_PER_CATEGORY = [2, 5, 0]; // Fixed, Pre-made, Custom role counts
 
-  // State
-  const [activeRolePopup, setActiveRolePopup] = useState<string | null>(null);
-  const [expandedClasses, setExpandedClasses] = useState<Set<string>>(
-    new Set()
-  );
-  const [hasUnsavedChanges, setHasUnsavedChanges] = useState(false);
-  const [confirmation, setConfirmation] = useState<{
-    message: string;
-    onConfirm: () => void;
-  } | null>(null);
-  const [rolePermissions, setRolePermissions] = useState<Permission[]>([]);
-  const [loading, setLoading] = useState(false);
+// Animation variants
+const viewVariants = {
+  hidden: { height: 0, opacity: 0, marginTop: 0, overflow: "hidden" },
+  visible: { height: "auto", opacity: 1, marginTop: 10, overflow: "visible" },
+  exit: { height: 0, opacity: 0, marginTop: 0, overflow: "hidden" },
+};
 
-  // Permissions
-  const userPermissions = {
-    canViewRoles: effectivePermissions?.some(
-      (p) => p.name === import.meta.env.VITE_PERMISSIONS_READ_ROLES
-    ),
-    canUpdateRoles: effectivePermissions?.some(
-      (p) => p.name === import.meta.env.VITE_PERMISSIONS_UPDATE_ROLES
-    ),
-    canCreateRoles: effectivePermissions?.some(
-      (p) => p.name === import.meta.env.VITE_PERMISSIONS_CREATE_ROLES
-    ),
-    canViewRoleDetails: effectivePermissions?.some(
-      (p) => p.name === import.meta.env.VITE_PERMISSIONS_READ_ROLE_DETAILS
-    ),
-  };
+// RolesList component, memoized
+const RolesList: React.FC<RolesListProps> = React.memo(
+  ({ roles, setRoles, userRoles, view, setSelectedRole, setError, searchQuery }) => {
+    // Auth context
+    const { effectivePermissions } = useAuth();
 
-  const isSuperAdmin = useMemo(
-    () =>
-      userRoles?.some((r) => r.name === import.meta.env.VITE_ROLES_SUPER_ADMIN),
-    [userRoles]
-  );
+    // State declarations
+    const [activeRolePopup, setActiveRolePopup] = useState<string | null>(null);
+    const [confirmation, setConfirmation] = useState<{
+      message: string;
+      onConfirm: () => void;
+    } | null>(null);
+    const [expandedClasses, setExpandedClasses] = useState<Set<string>>(new Set());
+    const [internalSearchQuery, setInternalSearchQuery] = useState(searchQuery);
+    const [loading, setLoading] = useState(true);
+    const [selectedRoleId, setSelectedRoleId] = useState<string | null>(null); // Track toggled role
 
-  // Filtered Roles
-  const filteredRoles = useMemo(() => {
-    return roles.filter(
-      (role) =>
-        role.name.toLowerCase().includes(searchQuery.toLowerCase()) ||
-        role.description?.toLowerCase().includes(searchQuery.toLowerCase())
+    // Log roles to debug permission sums
+    useEffect(() => {
+      console.log(
+        "RolesList roles",
+        roles.map((r) => ({
+          roleId: r.roleID,
+          name: r.name,
+          permissionCount: r.Permissions?.length || 0,
+          hasPermissions: !!r.Permissions,
+        }))
+      );
+    }, [roles]);
+
+    // Memoized permissions object
+    const userPermissions = useMemo(
+      () => ({
+        canUpdateRoles: effectivePermissions?.some(
+          (p) => p.name === import.meta.env.VITE_PERMISSIONS_UPDATE_ROLES
+        ),
+        canViewRoles: effectivePermissions?.some(
+          (p) => p.name === import.meta.env.VITE_PERMISSIONS_READ_ROLES
+        ),
+      }),
+      [effectivePermissions]
     );
-  }, [roles, searchQuery]);
 
-  // Fetch Role Permissions
-  useEffect(() => {
-    if (activeRolePopup) {
-      const fetchRolePermissions = async () => {
-        setLoading(true);
-        try {
-          const permissionsResponse = await getPermissionsByRole(
-            activeRolePopup
-          );
-          setRolePermissions(permissionsResponse || []);
-        } catch (error: unknown) {
-          const errorMessage =
-            error instanceof Error
-              ? error.message
-              : "Failed to load role permissions.";
-          setError(errorMessage);
-          setRolePermissions([]);
-        } finally {
-          setLoading(false);
+    // Memoized super admin check
+    const isSuperAdmin = useMemo(
+      () => userRoles?.some((r) => r.name === import.meta.env.VITE_ROLES_SUPER_ADMIN),
+      [userRoles]
+    );
+
+    // Debounced search query setter
+    const debouncedSetSearchQuery = useCallback(
+      debounce((value: string) => setInternalSearchQuery(value), 300),
+      []
+    );
+
+    // Sync search query
+    useEffect(() => {
+      debouncedSetSearchQuery(searchQuery);
+      return () => debouncedSetSearchQuery.cancel();
+    }, [searchQuery, debouncedSetSearchQuery]);
+
+    // Simulate delayed loading for skeleton
+    useEffect(() => {
+      const timer = setTimeout(() => setLoading(false), SKELETON_DELAY);
+      return () => clearTimeout(timer);
+    }, []);
+
+    // Memoized filtered roles
+    const filteredRoles = useMemo(() => {
+      return roles.filter(
+        (role) =>
+          role.name.toLowerCase().includes(internalSearchQuery.toLowerCase()) ||
+          role.description?.toLowerCase().includes(internalSearchQuery.toLowerCase())
+      );
+    }, [roles, internalSearchQuery]);
+
+    // Handle role toggle
+    const handleRoleToggle = useCallback(
+      (role: Role) => {
+        console.log("handleRoleToggle called", { roleId: role.roleID, roleName: role.name });
+        if (!userPermissions.canUpdateRoles) {
+          console.log("User lacks update roles permission");
+          return;
         }
+        if (!isSuperAdmin && role.name === "Admin") {
+          setError("Only Super Admins can modify the Admin role.");
+          return;
+        }
+        if (role.name === import.meta.env.VITE_ROLES_SUPER_ADMIN) {
+          setError("The Super Admin role cannot be modified.");
+          return;
+        }
+        const fixedRoles = [
+          "Manager",
+          "Supervisor",
+          "Purchase Team",
+          "Regional Manager",
+          "Stock Manager",
+        ];
+        if (fixedRoles.includes(role.name)) {
+          setConfirmation({
+            message:
+              "Warning: Modifying pre-made roles may affect system functionality. Are you sure you want to proceed?",
+            onConfirm: () => {
+              setSelectedRoleId((prev) => {
+                const newId = prev === role.roleID ? null : role.roleID;
+                console.log("setSelectedRoleId", { newId, roleId: role.roleID });
+                return newId;
+              });
+              setSelectedRole(role);
+            },
+          });
+          return;
+        }
+        setSelectedRoleId((prev) => {
+          const newId = prev === role.roleID ? null : role.roleID;
+          console.log("setSelectedRoleId", { newId, roleId: role.roleID });
+          return newId;
+        });
+        setSelectedRole(role);
+      },
+      [isSuperAdmin, userPermissions.canUpdateRoles, setError, setSelectedRole]
+    );
+
+    // Toggle permission class expansion
+    const toggleClassExpansion = useCallback((className: string) => {
+      setExpandedClasses((prev) => {
+        const newSet = new Set(prev);
+        if (newSet.has(className)) newSet.delete(className);
+        else newSet.add(className);
+        return newSet;
+      });
+    }, []);
+
+    // Categorize permissions by class
+    const getCategorizedPermissionsForRole = useCallback(
+      (permissions: Permission[] | undefined) => {
+        const byClass: { [key: string]: Permission[] } = {};
+        if (!permissions || permissions.length === 0) {
+          console.log("No permissions to categorize", { permissions });
+          return byClass;
+        }
+        permissions
+          .filter((perm) => isSuperAdmin || !["Role", "Permission"].includes(perm.class || ""))
+          .forEach((perm) => {
+            const classMatch = perm.description?.match(/Class: (\w+)/);
+            const className = classMatch ? classMatch[1] : "Unknown";
+            const formattedName = perm.name
+              .replace(/_/g, " ")
+              .replace(/\b\w/g, (char) => char.toUpperCase());
+            if (!byClass[className]) byClass[className] = [];
+            byClass[className].push({ ...perm, name: formattedName, class: className as PermissionsClass });
+          });
+        console.log("Categorized permissions", {
+          permissionCount: permissions.length,
+          classes: Object.keys(byClass),
+        });
+        return byClass;
+      },
+      [isSuperAdmin]
+    );
+
+    // Confirmation modal component
+    const ConfirmationModal: React.FC<{
+      message: string;
+      onConfirm: () => void;
+      onCancel: () => void;
+    }> = ({ message, onConfirm, onCancel }) => {
+      const [isFadingOut, setIsFadingOut] = useState(false);
+
+      const handleConfirm = () => {
+        setIsFadingOut(true);
+        setTimeout(() => onConfirm(), 300);
       };
-      fetchRolePermissions();
-    } else {
-      setRolePermissions([]);
-    }
-  }, [activeRolePopup, setError]);
 
-  // Handlers
-  const handleRoleSelect = async (role: Role) => {
-    if (!isSuperAdmin && role.name === "Admin") {
-      setError("Only Super Admins can modify the Admin role.");
-      return;
-    }
-    if (role.name === import.meta.env.VITE_ROLES_SUPER_ADMIN) {
-      setError("The Super Admin role cannot be modified.");
-      return;
-    }
-    const fixedRoles = [
-      "Manager",
-      "Supervisor",
-      "Purchase Team",
-      "Regional Manager",
-      "Stock Manager",
-    ];
-    if (fixedRoles.includes(role.name)) {
-      setConfirmation({
-        message:
-          "Warning: Modifying pre-made roles may affect system functionality. Are you sure you want to proceed?",
-        onConfirm: () => proceedWithRoleSelect(role),
-      });
-      return;
-    }
-    if (hasUnsavedChanges) {
-      setConfirmation({
-        message:
-          "You have unsaved changes. Are you sure you want to switch roles?",
-        onConfirm: () => proceedWithRoleSelect(role),
-      });
-      return;
-    }
-    proceedWithRoleSelect(role);
-  };
+      const handleCancel = () => {
+        setIsFadingOut(true);
+        setTimeout(() => onCancel(), 300);
+      };
 
-  const proceedWithRoleSelect = async (role: Role) => {
-    try {
-      const rolePermissions = await getPermissionsByRole(role.roleID);
-      const updatedRole = { ...role, permissions: rolePermissions };
-      setRoles(roles.map((r) => (r.roleID === role.roleID ? updatedRole : r)));
-      setSelectedRole(updatedRole);
-      setHasUnsavedChanges(false);
-      setError(null);
-    } catch (error: unknown) {
-      const errorMessage =
-        error instanceof Error
-          ? error.message
-          : "Failed to fetch role permissions.";
-      setError(errorMessage);
-    }
-  };
-
-  // UI Helpers
-  const toggleClassExpansion = (className: string) => {
-    setExpandedClasses((prev) => {
-      const newSet = new Set(prev);
-      if (newSet.has(className)) newSet.delete(className);
-      else newSet.add(className);
-      return newSet;
-    });
-  };
-
-  const getCategorizedPermissionsForRole = (permissions: Permission[]) => {
-    const byClass: { [key: string]: Permission[] } = {};
-    permissions
-      .filter(
-        (perm) => isSuperAdmin || !["Role", "Permission"].includes(perm.class)
-      )
-      .forEach((perm) => {
-        const formattedName = perm.name
-          .replace(/_/g, " ")
-          .replace(/\b\w/g, (char) => char.toUpperCase());
-        if (!byClass[perm.class]) byClass[perm.class] = [];
-        byClass[perm.class].push({ ...perm, name: formattedName });
-      });
-    return byClass;
-  };
-
-  // Confirmation Modal
-  const ConfirmationModal: React.FC<{
-    message: string;
-    onConfirm: () => void;
-    onCancel: () => void;
-  }> = ({ message, onConfirm, onCancel }) => {
-    const [isFadingOut, setIsFadingOut] = useState(false);
-
-    const handleConfirm = () => {
-      setIsFadingOut(true);
-      setTimeout(() => {
-        onConfirm();
-      }, 300);
-    };
-
-    const handleCancel = () => {
-      setIsFadingOut(true);
-      setTimeout(() => {
-        onCancel();
-      }, 300);
-    };
-
-    return (
-      <div
-        className={`confirmation-modal-overlay ${
-          isFadingOut ? "fade-out" : "fade-in"
-        }`}
-      >
-        <div className="confirmation-modal">
-          <p>{message}</p>
-          <div className="confirmation-actions">
-            <button className="confirm-button" onClick={handleConfirm}>
-              Confirm
-            </button>
-            <button className="cancel-button" onClick={handleCancel}>
-              Cancel
-            </button>
+      return (
+        <div
+          className={`confirmation-modal-overlay ${isFadingOut ? "fade-out" : "fade-in"}`}
+        >
+          <div className="confirmation-modal">
+            <p>{message}</p>
+            <div className="confirmation-actions">
+              <button className="confirm-button" onClick={handleConfirm}>
+                Confirm
+              </button>
+              <button className="cancel-button" onClick={handleCancel}>
+                Cancel
+              </button>
+            </div>
           </div>
         </div>
+      );
+    };
+
+    // Render skeleton loader
+    const renderSkeleton = () => (
+      <div className="roles-management" aria-busy="true">
+        {["Fixed Roles", "Pre-made Roles", "Custom Roles"].map((category, index) => (
+          <div key={category} className="role-category-section">
+            <h2 className="role-category-header">
+              <div className="custom-skeleton pulsing" style={{ width: "120px" }} />
+            </h2>
+            <div className="roles-grid">
+              {Array.from({ length: SKELETON_ROLES_PER_CATEGORY[index] }).map((_, i) => (
+                <div key={i} className={`role-card ${index === 0 ? "fix" : index === 1 ? "premade" : ""}`}>
+                  <div className="role-card-header">
+                    <div className="custom-skeleton pulsing" style={{ width: "60%" }} />
+                  </div>
+                  <div className="custom-skeleton pulsing" style={{ width: "40%" }} />
+                </div>
+              ))}
+            </div>
+          </div>
+        ))}
       </div>
     );
-  };
 
-  // Render
-  if (view !== "roles" || !userPermissions.canViewRoles) return null;
+    // Return null if not in roles view or no permission
+    if (view !== "roles" || !userPermissions.canViewRoles) {
+      console.log("RolesList not rendered", { view, canViewRoles: userPermissions.canViewRoles });
+      return null;
+    }
 
-  return (
-    <div className="roles-management">
-      {confirmation && (
-        <ConfirmationModal
-          message={confirmation.message}
-          onConfirm={() => {
-            confirmation.onConfirm();
-            setConfirmation(null);
-          }}
-          onCancel={() => setConfirmation(null)}
-        />
-      )}
-      <InfoPopup
-        isOpen={!!activeRolePopup}
-        onClose={() => {
-          setActiveRolePopup(null);
-          setExpandedClasses(new Set());
-        }}
-        contentRenderer={() => {
-          const role = roles.find((role) => role.roleID === activeRolePopup);
-          if (!role) return <p>Role not found</p>;
-          return (
-            <>
-              <h4>{role.name}</h4>
-              <p>{role.description || "No description available"}</p>
-              <h5>Permissions by Class:</h5>
-              {loading ? (
-                <div className="page-loading">
-                  <div className="spinner"></div>
-                  <p>Loading...</p>
-                </div>
-              ) : Object.entries(
-                  getCategorizedPermissionsForRole(rolePermissions)
-                ).length > 0 ? (
-                Object.entries(
-                  getCategorizedPermissionsForRole(rolePermissions)
-                ).map(([className, perms]) => (
-                  <div key={className} className="permission-class-item">
-                    <button
-                      className="class-toggle"
-                      onClick={() => toggleClassExpansion(className)}
-                    >
-                      {className} ({perms.length})
-                      <FaAngleDown
-                        className={`toggle-icon ${
-                          expandedClasses.has(className) ? "expanded" : ""
-                        }`}
-                      />
-                    </button>
-                    <ul
-                      className={`permission-list ${
-                        expandedClasses.has(className) ? "expanded" : ""
-                      }`}
-                    >
-                      {perms.map((perm) => (
-                        <li key={perm.permissionID}>{perm.name}</li>
+    // Render UI
+    return (
+      <div className="roles-management">
+        {loading && renderSkeleton()}
+        {!loading && (
+          <>
+            {confirmation && (
+              <ConfirmationModal
+                message={confirmation.message}
+                onConfirm={() => {
+                  confirmation.onConfirm();
+                  setConfirmation(null);
+                }}
+                onCancel={() => setConfirmation(null)}
+              />
+            )}
+            <InfoPopup
+              isOpen={!!activeRolePopup}
+              onClose={() => {
+                setActiveRolePopup(null);
+                setExpandedClasses(new Set());
+              }}
+              contentRenderer={() => {
+                const role = roles.find((role) => role.roleID === activeRolePopup);
+                if (!role) return <p>Role not found</p>;
+                console.log("Rendering InfoPopup", {
+                  roleId: role.roleID,
+                  roleName: role.name,
+                  permissionCount: role.Permissions?.length || 0,
+                  permissions: role.Permissions,
+                });
+                return (
+                  <>
+                    <h4>{role.name}</h4>
+                    <p>{role.description || "No description available"}</p>
+                    <h5>Permissions by Class:</h5>
+                    {Object.entries(getCategorizedPermissionsForRole(role.Permissions)).length > 0 ? (
+                      Object.entries(getCategorizedPermissionsForRole(role.Permissions)).map(
+                        ([className, perms]) => (
+                          <div key={className} className="permission-class-item">
+                            <button
+                              className="class-toggle"
+                              onClick={() => toggleClassExpansion(className)}
+                            >
+                              {className} ({perms.length})
+                              <FaAngleDown
+                                className={`toggle-icon ${expandedClasses.has(className) ? "expanded" : ""}`}
+                              />
+                            </button>
+                            <ul
+                              className={`permission-list ${expandedClasses.has(className) ? "expanded" : ""}`}
+                            >
+                              {perms.map((perm) => (
+                                <li key={perm.permissionID}>{perm.name}</li>
+                              ))}
+                            </ul>
+                          </div>
+                        )
+                      )
+                    ) : (
+                      <p>No permissions assigned</p>
+                    )}
+                  </>
+                );
+              }}
+            />
+            {(() => {
+              const fixedRoles = filteredRoles.filter((role) =>
+                ["Admin", import.meta.env.VITE_ROLES_SUPER_ADMIN].includes(role.name)
+              );
+              return (
+                fixedRoles.length > 0 && (
+                  <div className="role-category-section">
+                    <h2 className="role-category-header">Fixed Roles</h2>
+                    <div className="roles-grid">
+                      {fixedRoles.map((role) => (
+                        <div
+                          key={role.roleID}
+                          className="role-card fix"
+                          onClick={() => handleRoleToggle(role)}
+                          aria-expanded={selectedRoleId === role.roleID}
+                          role="button"
+                          tabIndex={0}
+                          onKeyDown={(e) => {
+                            if (e.key === "Enter" || e.key === " ") {
+                              handleRoleToggle(role);
+                            }
+                          }}
+                        >
+                          <div className="role-card-header">
+                            <h3>{role.name}</h3>
+                            <FaInfoCircle
+                              className="role-info-icon"
+                              onClick={(e) => {
+                                e.stopPropagation();
+                                setActiveRolePopup(role.roleID);
+                              }}
+                              aria-label={`View details for ${role.name}`}
+                            />
+                          </div>
+                          <span className="permission-count">
+                            {`${role.Permissions?.length || 0} Permissions`}
+                          </span>
+                        </div>
                       ))}
-                    </ul>
-                  </div>
-                ))
-              ) : (
-                <p>No permissions assigned</p>
-              )}
-            </>
-          );
-        }}
-      />
-      {(() => {
-        const fixedRoles = filteredRoles.filter((role) =>
-          ["Admin", import.meta.env.VITE_ROLES_SUPER_ADMIN].includes(role.name)
-        );
-        return (
-          fixedRoles.length > 0 && (
-            <div className="role-category-section">
-              <h2 className="role-category-header">Fixed Roles</h2>
-              <div className="roles-grid">
-                {fixedRoles.map((role) => (
-                  <div
-                    key={role.roleID}
-                    className={`role-card fix`}
-                    onClick={() =>
-                      userPermissions.canUpdateRoles && handleRoleSelect(role)
-                    }
-                  >
-                    <div className="role-card-header">
-                      <h3>{role.name}</h3>
-                      <FaInfoCircle
-                        className="role-info-icon"
-                        onClick={(e) => {
-                          e.stopPropagation();
-                          setActiveRolePopup(role.roleID);
-                        }}
-                      />
                     </div>
-                    <span className="permission-count">
-                      {role.permissions?.length || 0} Permissions
-                    </span>
+                    <AnimatePresence>
+                      {fixedRoles.some((role) => role.roleID === selectedRoleId) && (
+                        <motion.div
+                          className="role-view-container"
+                          variants={viewVariants}
+                          initial="hidden"
+                          animate="visible"
+                          exit="exit"
+                          transition={{ duration: 0.3 }}
+                        >
+                          <RoleView
+                            selectedRole={roles.find((r) => r.roleID === selectedRoleId) || null}
+                            setSelectedRole={setSelectedRole}
+                            roles={roles}
+                            setRoles={setRoles}
+                            userRoles={userRoles}
+                            setError={setError}
+                          />
+                        </motion.div>
+                      )}
+                    </AnimatePresence>
                   </div>
-                ))}
-              </div>
-            </div>
-          )
-        );
-      })()}
-      {(() => {
-        const premadeRoles = filteredRoles.filter((role) =>
-          [
-            "Manager",
-            "Supervisor",
-            "Purchase Team",
-            "Regional Manager",
-            "Stock Manager",
-          ].includes(role.name)
-        );
-        return (
-          premadeRoles.length > 0 && (
-            <div className="role-category-section">
-              <h2 className="role-category-header">Pre-made Roles</h2>
-              <div className="roles-grid">
-                {premadeRoles.map((role) => (
-                  <div
-                    key={role.roleID}
-                    className={`role-card premade`}
-                    onClick={() =>
-                      userPermissions.canUpdateRoles && handleRoleSelect(role)
-                    }
-                  >
-                    <div className="role-card-header">
-                      <h3>{role.name}</h3>
-                      <FaInfoCircle
-                        className="role-info-icon"
-                        onClick={(e) => {
-                          e.stopPropagation();
-                          setActiveRolePopup(role.roleID);
-                        }}
-                      />
+                )
+              );
+            })()}
+            {(() => {
+              const premadeRoles = filteredRoles.filter((role) =>
+                ["Manager", "Supervisor", "Purchase Team", "Regional Manager", "Stock Manager"].includes(
+                  role.name
+                )
+              );
+              return (
+                premadeRoles.length > 0 && (
+                  <div className="role-category-section">
+                    <h2 className="role-category-header">Pre-made Roles</h2>
+                    <div className="roles-grid">
+                      {premadeRoles.map((role) => (
+                        <div
+                          key={role.roleID}
+                          className="role-card premade"
+                          onClick={() => handleRoleToggle(role)}
+                          aria-expanded={selectedRoleId === role.roleID}
+                          role="button"
+                          tabIndex={0}
+                          onKeyDown={(e) => {
+                            if (e.key === "Enter" || e.key === " ") {
+                              handleRoleToggle(role);
+                            }
+                          }}
+                        >
+                          <div className="role-card-header">
+                            <h3>{role.name}</h3>
+                            <FaInfoCircle
+                              className="role-info-icon"
+                              onClick={(e) => {
+                                e.stopPropagation();
+                                setActiveRolePopup(role.roleID);
+                              }}
+                              aria-label={`View details for ${role.name}`}
+                            />
+                          </div>
+                          <span className="permission-count">
+                            {`${role.Permissions?.length || 0} Permissions`}
+                          </span>
+                        </div>
+                      ))}
                     </div>
-                    <span className="permission-count">
-                      {role.permissions?.length || 0} Permissions
-                    </span>
+                    <AnimatePresence>
+                      {premadeRoles.some((role) => role.roleID === selectedRoleId) && (
+                        <motion.div
+                          className="role-view-container"
+                          variants={viewVariants}
+                          initial="hidden"
+                          animate="visible"
+                          exit="exit"
+                          transition={{ duration: 0.3 }}
+                        >
+                          <RoleView
+                            selectedRole={roles.find((r) => r.roleID === selectedRoleId) || null}
+                            setSelectedRole={setSelectedRole}
+                            roles={roles}
+                            setRoles={setRoles}
+                            userRoles={userRoles}
+                            setError={setError}
+                          />
+                        </motion.div>
+                      )}
+                    </AnimatePresence>
                   </div>
-                ))}
-              </div>
-            </div>
-          )
-        );
-      })()}
-      {(() => {
-        const customRoles = filteredRoles.filter(
-          (role) =>
-            ![
-              "Admin",
-              import.meta.env.VITE_ROLES_SUPER_ADMIN,
-              "Manager",
-              "Supervisor",
-              "Purchase Team",
-              "Regional Manager",
-              "Stock Manager",
-            ].includes(role.name)
-        );
-        return (
-          customRoles.length > 0 && (
-            <div className="role-category-section">
-              <h2 className="role-category-header">Custom Roles</h2>
-              <div className="roles-grid">
-                {customRoles.map((role) => (
-                  <div
-                    key={role.roleID}
-                    className={`role-card`}
-                    onClick={() =>
-                      userPermissions.canUpdateRoles && handleRoleSelect(role)
-                    }
-                  >
-                    <div className="role-card-header">
-                      <h3>{role.name}</h3>
-                      <FaInfoCircle
-                        className="role-info-icon"
-                        onClick={(e) => {
-                          e.stopPropagation();
-                          setActiveRolePopup(role.roleID);
-                        }}
-                      />
+                )
+              );
+            })()}
+            {(() => {
+              const customRoles = filteredRoles.filter(
+                (role) =>
+                  ![
+                    "Admin",
+                    import.meta.env.VITE_ROLES_SUPER_ADMIN,
+                    "Manager",
+                    "Supervisor",
+                    "Purchase Team",
+                    "Regional Manager",
+                    "Stock Manager",
+                  ].includes(role.name)
+              );
+              return (
+                customRoles.length > 0 && (
+                  <div className="role-category-section">
+                    <h2 className="role-category-header">Custom Roles</h2>
+                    <div className="roles-grid">
+                      {customRoles.map((role) => (
+                        <div
+                          key={role.roleID}
+                          className="role-card"
+                          onClick={() => handleRoleToggle(role)}
+                          aria-expanded={selectedRoleId === role.roleID}
+                          role="button"
+                          tabIndex={0}
+                          onKeyDown={(e) => {
+                            if (e.key === "Enter" || e.key === " ") {
+                              handleRoleToggle(role);
+                            }
+                          }}
+                        >
+                          <div className="role-card-header">
+                            <h3>{role.name}</h3>
+                            <FaInfoCircle
+                              className="role-info-icon"
+                              onClick={(e) => {
+                                e.stopPropagation();
+                                setActiveRolePopup(role.roleID);
+                              }}
+                              aria-label={`View details for ${role.name}`}
+                            />
+                          </div>
+                          <span className="permission-count">
+                            {`${role.Permissions?.length || 0} Permissions`}
+                          </span>
+                        </div>
+                      ))}
                     </div>
-                    <span className="permission-count">
-                      {role.permissions?.length || 0} Permissions
-                    </span>
+                    <AnimatePresence>
+                      {customRoles.some((role) => role.roleID === selectedRoleId) && (
+                        <motion.div
+                          className="role-view-container"
+                          variants={viewVariants}
+                          initial="hidden"
+                          animate="visible"
+                          exit="exit"
+                          transition={{ duration: 0.3 }}
+                        >
+                          <RoleView
+                            selectedRole={roles.find((r) => r.roleID === selectedRoleId) || null}
+                            setSelectedRole={setSelectedRole}
+                            roles={roles}
+                            setRoles={setRoles}
+                            userRoles={userRoles}
+                            setError={setError}
+                          />
+                        </motion.div>
+                      )}
+                    </AnimatePresence>
                   </div>
-                ))}
-              </div>
-            </div>
-          )
-        );
-      })()}
-    </div>
-  );
-};
+                )
+              );
+            })()}
+          </>
+        )}
+      </div>
+    );
+  }
+);
 
 export default RolesList;

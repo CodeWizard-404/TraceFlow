@@ -466,6 +466,7 @@ class AuthService {
                 throw Object.assign(new Error(ERROR_MESSAGES.OTP_SEND_FAILED), { status: 500 });
             }
 
+            logger.info(`OTP =`, otp.code);
             return {
                 requires2FA: true,
                 userID: user.userID,
@@ -721,6 +722,7 @@ class AuthService {
             }
 
             logger.info(`OTP resent to ${userID} via ${selectedMethod}`);
+            logger.info(`OTP: ${otp.code}`);
             return { userID, message: `OTP resent to your ${selectedMethod}` };
         } catch (error) {
             logger.error(`Resend OTP error for ${userID}: ${error.message}`);

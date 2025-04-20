@@ -1,4 +1,11 @@
-import React, { useState, useEffect, useMemo } from "react";
+/**
+ * UserView.tsx
+ * Component for displaying and managing user details, roles, permissions, and assignments.
+ * Optimized with memoization, lazy loading, and suspense for performance.
+ * Includes skeleton loaders for dropdowns and form validation for user edits.
+ */
+
+import React, { useState, useEffect, useMemo, useCallback, lazy, Suspense } from "react";
 import {
     FaAngleDown,
     FaEdit,
@@ -17,26 +24,35 @@ import {
     deleteUser,
     assignSupervisorsToManager,
     revokeSupervisorsFromManager,
+    getUserById,
+    getSupervisorsByUser,
+    getManagersByUser,
 } from "../../../apis/userAPI";
-import User from "../../../models/User";
-import Role from "../../../models/Role";
-import Permission from "../../../models/Permission";
-import UserPermissionOverride from "../../../models/UserPermissionOverride";
-import PermissionsAction from "../../../models/Enum/PermissionsAction";
-import "../AdminDashboard.css";
 import {
     removePermissionOverride,
     addPermissionOverride,
     getPermissionOverridesByUser,
     getEffectivePermissions,
     getPermissionsByRole,
+    getAllPermissions,
 } from "../../../apis/permissionAPI";
-import { revokeRolesFromUser, assignRolesToUser } from "../../../apis/roleAPI";
+import { revokeRolesFromUser, assignRolesToUser, getAllRoles, getRolesByUser } from "../../../apis/roleAPI";
+import User from "../../../models/User";
+import Role from "../../../models/Role";
+import Permission from "../../../models/Permission";
+import UserPermissionOverride from "../../../models/UserPermissionOverride";
+import PermissionsAction from "../../../models/Enum/PermissionsAction";
+import "../AdminDashboard.css";
 import { ViewMode } from "../adminTypes";
-import InfoPopup from "../InfoPopup";
+
+// Lazy-load InfoPopup
+const InfoPopup = lazy(() => import("../InfoPopup"));
 
 // Constants
 const ITEMS_PER_PAGE = 10;
+const PHONE_REGEX = /^\d{8}$/;
+const WALLET_REGEX = /^[a-zA-Z0-9]{10,50}$/;
+const EMAIL_REGEX = /^[^\s@]+@[^\s@]+\.[^\s@]+$/;
 
 // Interfaces
 interface UserViewProps {
@@ -45,13 +61,146 @@ interface UserViewProps {
     users: User[];
     setUsers: React.Dispatch<React.SetStateAction<User[]>>;
     roles: Role[];
+    setRoles: React.Dispatch<React.SetStateAction<Role[]>>;
     permissionsList: Permission[];
+    setPermissionsList: React.Dispatch<React.SetStateAction<Permission[]>>;
     view: ViewMode;
     userRoles: Role[];
     setView: (view: ViewMode) => void;
     effectivePermissions: Permission[];
     setError: React.Dispatch<React.SetStateAction<string | null>>;
 }
+
+interface FormErrors {
+    firstname: string;
+    lastname: string;
+    email: string;
+    phone: string;
+    wallet: string;
+    password: string;
+    passwordConfirm: string;
+}
+
+interface TouchedFields {
+    firstname: boolean;
+    lastname: boolean;
+    email: boolean;
+    phone: boolean;
+    wallet: boolean;
+    password: boolean;
+    passwordConfirm: boolean;
+}
+
+// Skeleton Component for UserView
+const UserViewSkeleton: React.FC = () => (
+    <div className="details-card skeleton">
+        <div className="card-header">
+            <div className="custom-skeleton" style={{ width: "200px", height: "24px" }} />
+            <div className="user-actions">
+                <div className="custom-skeleton" style={{ width: "80px", height: "32px" }} />
+                <div className="custom-skeleton" style={{ width: "80px", height: "32px" }} />
+            </div>
+        </div>
+        <hr />
+        <div className="form-section">
+            <div className="custom-skeleton" style={{ width: "150px", height: "20px", marginBottom: "10px" }} />
+            <div className="info-grid">
+                {[...Array(5)].map((_, i) => (
+                    <div key={i} className="custom-skeleton" style={{ width: "100%", height: "16px" }} />
+                ))}
+            </div>
+        </div>
+        <div className="dropdown-stack">
+            {[...Array(3)].map((_, i) => (
+                <div key={i} className="dropdown-unit">
+                    <div className="dropdown-bar">
+                        <div className="custom-skeleton" style={{ width: "150px", height: "20px" }} />
+                        <div className="custom-skeleton" style={{ width: "20px", height: "20px" }} />
+                    </div>
+                </div>
+            ))}
+        </div>
+    </div>
+);
+
+// Skeleton Components for Dropdowns
+const RolesDropdownSkeleton: React.FC = () => (
+    <div className="dropdown-body">
+        <div className="roles-grid">
+            {[...Array(7)].map((_, i) => (
+                <div key={i} className="role-toggle-container">
+                    <div className="custom-skeleton" style={{ width: "100%", height: "32px" }} />
+                </div>
+            ))}
+        </div>
+    </div>
+);
+
+const PermissionsDropdownSkeleton: React.FC = () => (
+    <div className="dropdown-body">
+        <div className="group-header">
+            <div className="custom-skeleton" style={{ width: "100px", height: "32px" }} />
+        </div>
+        <div className="permissions-filter-section">
+            <div className="permissions-filter-header">
+                <div className="custom-skeleton" style={{ width: "20px", height: "20px" }} />
+                <div className="custom-skeleton" style={{ width: "100px", height: "16px" }} />
+            </div>
+            <div className="permissions-filter-controls">
+                <div className="permissions-search">
+                    <div className="custom-skeleton" style={{ width: "200px", height: "32px" }} />
+                </div>
+                <div className="permissions-category">
+                    <div className="custom-skeleton" style={{ width: "150px", height: "32px" }} />
+                </div>
+            </div>
+        </div>
+        <div className="custom-skeleton" style={{ width: "150px", height: "20px", marginBottom: "10px" }} />
+        <div className="permissions-list">
+            {[...Array(2)].map((_, i) => (
+                <div key={i} className="permission-class">
+                    <div className="custom-skeleton" style={{ width: "100px", height: "20px", marginBottom: "10px" }} />
+                    <div className="permissions-container">
+                        {[...Array(3)].map((_, j) => (
+                            <div key={j} className="permission-item">
+                                <div className="custom-skeleton" style={{ width: "150px", height: "32px" }} />
+                                <div className="override-controls">
+                                    <div className="custom-skeleton" style={{ width: "24px", height: "24px" }} />
+                                </div>
+                            </div>
+                        ))}
+                    </div>
+                </div>
+            ))}
+        </div>
+    </div>
+);
+
+const AssignmentsDropdownSkeleton: React.FC = () => (
+    <div className="dropdown-body">
+        <div className="group-header">
+            <div className="custom-skeleton" style={{ width: "100px", height: "32px" }} />
+        </div>
+        <div className="assignment-list">
+            <div className="custom-skeleton" style={{ width: "200px", height: "20px", marginBottom: "10px" }} />
+            <div className="search-container assignment-search">
+                <div className="custom-skeleton" style={{ width: "200px", height: "32px" }} />
+            </div>
+            <div className="list-container">
+                {[...Array(3)].map((_, j) => (
+                    <div key={j} className="list-item">
+                        <div className="custom-skeleton" style={{ width: "250px", height: "20px" }} />
+                    </div>
+                ))}
+            </div>
+            <div className="pagination">
+                <div className="custom-skeleton" style={{ width: "80px", height: "32px" }} />
+                <div className="custom-skeleton" style={{ width: "100px", height: "20px" }} />
+                <div className="custom-skeleton" style={{ width: "80px", height: "32px" }} />
+            </div>
+        </div>
+    </div>
+);
 
 // Main Component
 const UserView: React.FC<UserViewProps> = ({
@@ -60,13 +209,17 @@ const UserView: React.FC<UserViewProps> = ({
     users,
     setUsers,
     roles,
+    setRoles,
     permissionsList,
+    setPermissionsList,
     view,
     userRoles,
     setView,
+    effectivePermissions,
 }) => {
-    const { effectivePermissions: authEffectivePermissions, user: currentUser } = useAuth();
-    const { setError } = useError();
+    const { user: currentUser } = useAuth();
+    const { setError: setGlobalError } = useError();
+    const [loading, setLoading] = useState(true);
 
     // State Declarations
     const [isEditingUser, setIsEditingUser] = useState(false);
@@ -89,11 +242,13 @@ const UserView: React.FC<UserViewProps> = ({
     const [expandedClasses, setExpandedClasses] = useState<Set<string>>(new Set());
     const [hasUnsavedSupervisorChanges, setHasUnsavedSupervisorChanges] = useState(false);
     const [hasUnsavedOverrideChanges, setHasUnsavedOverrideChanges] = useState(false);
-    const [loading, setLoading] = useState(false);
+    const [loadingRoles, setLoadingRoles] = useState(false);
+    const [loadingPermissions, setLoadingPermissions] = useState(false);
+    const [loadingAssignments, setLoadingAssignments] = useState(false);
     const [rolePermissions, setRolePermissions] = useState<Permission[]>([]);
     const [rawPhone, setRawPhone] = useState("");
     const [rawWallet, setRawWallet] = useState("");
-    const [userFormErrors, setUserFormErrors] = useState({
+    const [formErrors, setFormErrors] = useState<FormErrors>({
         firstname: "",
         lastname: "",
         email: "",
@@ -102,7 +257,7 @@ const UserView: React.FC<UserViewProps> = ({
         password: "",
         passwordConfirm: "",
     });
-    const [userTouched, setUserTouched] = useState({
+    const [touched, setTouched] = useState<TouchedFields>({
         firstname: false,
         lastname: false,
         email: false,
@@ -113,101 +268,163 @@ const UserView: React.FC<UserViewProps> = ({
     });
 
     // Permission Checks
-    const userPermissions = useMemo(
-        () => ({
-            canViewUserDetails: authEffectivePermissions?.some(
-                (p) => p.name === import.meta.env.VITE_PERMISSIONS_READ_USER_DETAILS
-            ),
-            canUpdateUsers: authEffectivePermissions?.some(
-                (p) => p.name === import.meta.env.VITE_PERMISSIONS_UPDATE_USERS
-            ),
-            canDeleteUsers: authEffectivePermissions?.some(
-                (p) => p.name === import.meta.env.VITE_PERMISSIONS_DELETE_USERS
-            ),
-            canAssignSupervisors: authEffectivePermissions?.some(
-                (p) => p.name === import.meta.env.VITE_PERMISSIONS_ASSIGN_SUPERVISORS
-            ),
-            canRevokeSupervisors: authEffectivePermissions?.some(
-                (p) => p.name === import.meta.env.VITE_PERMISSIONS_REVOKE_SUPERVISORS
-            ),
-            canReadSupervisors: authEffectivePermissions?.some(
-                (p) => p.name === import.meta.env.VITE_PERMISSIONS_READ_SUPERVISORS
-            ),
-            canReadManagers: authEffectivePermissions?.some(
-                (p) => p.name === import.meta.env.VITE_PERMISSIONS_READ_MANAGERS
-            ),
-            canAssignRoles: authEffectivePermissions?.some(
-                (p) => p.name === import.meta.env.VITE_PERMISSIONS_ASSIGN_ROLES
-            ),
-            canRevokeRoles: authEffectivePermissions?.some(
-                (p) => p.name === import.meta.env.VITE_PERMISSIONS_REVOKE_ROLES
-            ),
-            canAssignPermissions: authEffectivePermissions?.some(
-                (p) => p.name === import.meta.env.VITE_PERMISSIONS_ASSIGN_PERMISSIONS
-            ),
-            canReadPermissionsByRole: authEffectivePermissions?.some(
-                (p) => p.name === import.meta.env.VITE_PERMISSIONS_READ_PERMISSIONS_BY_ROLE
-            ),
-            canCreatePermissionOverrides: authEffectivePermissions?.some(
-                (p) => p.name === import.meta.env.VITE_PERMISSIONS_CREATE_PERMISSION_OVERRIDES
-            ),
-            canRemovePermissionOverrides: authEffectivePermissions?.some(
-                (p) => p.name === import.meta.env.VITE_PERMISSIONS_REMOVE_PERMISSION_OVERRIDES
-            ),
-        }),
-        [authEffectivePermissions]
-    );
+    const userPermissions = useMemo(() => ({
+        canViewUserDetails: effectivePermissions.some(
+            (p) => p.name === import.meta.env.VITE_PERMISSIONS_READ_USER_DETAILS
+        ),
+        canUpdateUsers: effectivePermissions.some(
+            (p) => p.name === import.meta.env.VITE_PERMISSIONS_UPDATE_USERS
+        ),
+        canDeleteUsers: effectivePermissions.some(
+            (p) => p.name === import.meta.env.VITE_PERMISSIONS_DELETE_USERS
+        ),
+        canAssignSupervisors: effectivePermissions.some(
+            (p) => p.name === import.meta.env.VITE_PERMISSIONS_ASSIGN_SUPERVISORS
+        ),
+        canRevokeSupervisors: effectivePermissions.some(
+            (p) => p.name === import.meta.env.VITE_PERMISSIONS_REVOKE_SUPERVISORS
+        ),
+        canReadSupervisors: effectivePermissions.some(
+            (p) => p.name === import.meta.env.VITE_PERMISSIONS_READ_SUPERVISORS
+        ),
+        canReadManagers: effectivePermissions.some(
+            (p) => p.name === import.meta.env.VITE_PERMISSIONS_READ_MANAGERS
+        ),
+        canAssignRoles: effectivePermissions.some(
+            (p) => p.name === import.meta.env.VITE_PERMISSIONS_ASSIGN_ROLES
+        ),
+        canRevokeRoles: effectivePermissions.some(
+            (p) => p.name === import.meta.env.VITE_PERMISSIONS_REVOKE_ROLES
+        ),
+        canAssignPermissions: effectivePermissions.some(
+            (p) => p.name === import.meta.env.VITE_PERMISSIONS_ASSIGN_PERMISSIONS
+        ),
+        canReadPermissionsByRole: effectivePermissions.some(
+            (p) => p.name === import.meta.env.VITE_PERMISSIONS_READ_PERMISSIONS_BY_ROLE
+        ),
+        canCreatePermissionOverrides: effectivePermissions.some(
+            (p) => p.name === import.meta.env.VITE_PERMISSIONS_CREATE_PERMISSION_OVERRIDES
+        ),
+        canRemovePermissionOverrides: effectivePermissions.some(
+            (p) => p.name === import.meta.env.VITE_PERMISSIONS_REMOVE_PERMISSION_OVERRIDES
+        ),
+    }), [effectivePermissions]);
 
     const isSuperAdmin = useMemo(
-        () => userRoles?.some((r) => r.name === import.meta.env.VITE_ROLES_SUPER_ADMIN),
+        () => userRoles.some((r) => r.name === import.meta.env.VITE_ROLES_SUPER_ADMIN),
         [userRoles]
     );
 
-    // Effects
+    // Persist view state on refresh
     useEffect(() => {
         if (selectedUser) {
-            setTempRoles(selectedUser.Roles || []);
-            setTempSupervisors(selectedUser.supervisors || []);
-            setTempManagers(selectedUser.managers || []);
-            const fetchOverridesAndPermissions = async () => {
-                setLoading(true);
-                try {
-                    const [overrides, effectivePerms] = await Promise.all([
-                        getPermissionOverridesByUser(selectedUser.userID),
-                        getEffectivePermissions(selectedUser.userID),
-                    ]);
-                    setUserOverrides(overrides);
-                    setTempOverrides(overrides);
-                    setEffectiveUserPermissions(effectivePerms);
-                } catch (error) {
-                    setError(error instanceof Error ? error.message : "Failed to load user permissions.");
-                } finally {
-                    setLoading(false);
-                }
-            };
-            fetchOverridesAndPermissions();
+            localStorage.setItem("adminView", "user-details");
+            localStorage.setItem("selectedUserId", selectedUser.userID);
         }
-    }, [selectedUser, setError]);
+    }, [selectedUser]);
 
+    // Load initial user data
     useEffect(() => {
-        if (activeRolePopup) {
-            const fetchRolePermissions = async () => {
+        const loadInitialData = async () => {
+            if (!selectedUser) {
+                setLoading(false);
+                return;
+            }
+            try {
                 setLoading(true);
-                try {
-                    const permissionsResponse = await getPermissionsByRole(activeRolePopup);
-                    setRolePermissions(permissionsResponse || []);
-                } catch (error) {
-                    setError(error instanceof Error ? error.message : "Failed to load role permissions.");
-                    setRolePermissions([]);
-                } finally {
-                    setLoading(false);
-                }
-            };
-            fetchRolePermissions();
-        } else {
+                const userData = await getUserById(selectedUser.userID);
+                setSelectedUser(userData);
+            } catch (error) {
+                setGlobalError(error instanceof Error ? error.message : "Failed to load user data.");
+            } finally {
+                setLoading(false);
+            }
+        };
+        loadInitialData();
+    }, [selectedUser?.userID, setSelectedUser, setGlobalError]);
+
+    // Load roles when roles dropdown is opened
+    useEffect(() => {
+        if (expandedSection !== "roles") return;
+        const fetchRoles = async () => {
+            try {
+                setLoadingRoles(true);
+                const [rolesData, userRolesData] = await Promise.all([
+                    getAllRoles(),
+                    getRolesByUser(selectedUser!.userID),
+                ]);
+                setRoles(rolesData);
+                setTempRoles(userRolesData || []);
+            } catch (error) {
+                setGlobalError(error instanceof Error ? error.message : "Failed to load roles.");
+            } finally {
+                setLoadingRoles(false);
+            }
+        };
+        fetchRoles();
+    }, [expandedSection, selectedUser, setRoles, setGlobalError]);
+
+    // Load permissions and overrides when permissions dropdown is opened
+    useEffect(() => {
+        if (expandedSection !== "permissions") return;
+        const fetchPermissions = async () => {
+            try {
+                setLoadingPermissions(true);
+                const [permissionsData, overrides, effectivePerms] = await Promise.all([
+                    getAllPermissions(),
+                    getPermissionOverridesByUser(selectedUser!.userID),
+                    getEffectivePermissions(selectedUser!.userID),
+                ]);
+                setPermissionsList(permissionsData);
+                setUserOverrides(overrides || []);
+                setTempOverrides(overrides || []);
+                setEffectiveUserPermissions(effectivePerms || []);
+            } catch (error) {
+                setGlobalError(error instanceof Error ? error.message : "Failed to load permissions.");
+            } finally {
+                setLoadingPermissions(false);
+            }
+        };
+        fetchPermissions();
+    }, [expandedSection, selectedUser, setPermissionsList, setGlobalError]);
+
+    // Load supervisors and managers when assignments dropdown is opened
+    useEffect(() => {
+        if (expandedSection !== "assignments") return;
+        const fetchAssignments = async () => {
+            try {
+                setLoadingAssignments(true);
+                const [supervisors, managers] = await Promise.all([
+                    getSupervisorsByUser(selectedUser!.userID),
+                    getManagersByUser(selectedUser!.userID),
+                ]);
+                setTempSupervisors(supervisors || []);
+                setTempManagers(managers || []);
+            } catch (error) {
+                setGlobalError(error instanceof Error ? error.message : "Failed to load assignments.");
+            } finally {
+                setLoadingAssignments(false);
+            }
+        };
+        fetchAssignments();
+    }, [expandedSection, selectedUser, setGlobalError]);
+
+    // Load role permissions on popup open
+    useEffect(() => {
+        if (!activeRolePopup) {
             setRolePermissions([]);
+            return;
         }
-    }, [activeRolePopup, setError]);
+        const fetchRolePermissions = async () => {
+            try {
+                const permissions = await getPermissionsByRole(activeRolePopup);
+                setRolePermissions(permissions || []);
+            } catch (error) {
+                setGlobalError(error instanceof Error ? error.message : "Failed to load role permissions.");
+            }
+        };
+        fetchRolePermissions();
+    }, [activeRolePopup, setGlobalError]);
 
     // Memoized Computations
     const categorizedPermissions = useMemo(() => {
@@ -218,31 +435,31 @@ const UserView: React.FC<UserViewProps> = ({
                 const formattedName = perm.name
                     .replace(/_/g, " ")
                     .replace(/\b\w/g, (char) => char.toUpperCase());
-                if (!byClass[perm.class]) byClass[perm.class] = [];
+                byClass[perm.class] = byClass[perm.class] || [];
                 byClass[perm.class].push({ ...perm, name: formattedName });
             });
         return byClass;
     }, [permissionsList, isSuperAdmin]);
 
     const filteredPermissions = useMemo(() => {
-        let result = permissionsList.filter(
+        let filtered = permissionsList.filter(
             (perm) => isSuperAdmin || !["Permission", "Role"].includes(perm.class)
         );
         if (permissionSearch) {
-            result = result.filter(
+            filtered = filtered.filter(
                 (perm) =>
                     perm.name.toLowerCase().includes(permissionSearch.toLowerCase()) ||
                     perm.class.toLowerCase().includes(permissionSearch.toLowerCase())
             );
         }
         if (selectedCategory !== "all") {
-            result = result.filter((perm) => perm.class === selectedCategory);
+            filtered = filtered.filter((perm) => perm.class === selectedCategory);
         }
-        return result.reduce((acc: { [key: string]: Permission[] }, perm) => {
+        return filtered.reduce((acc: { [key: string]: Permission[] }, perm) => {
             const formattedName = perm.name
                 .replace(/_/g, " ")
                 .replace(/\b\w/g, (char) => char.toUpperCase());
-            if (!acc[perm.class]) acc[perm.class] = [];
+            acc[perm.class] = acc[perm.class] || [];
             acc[perm.class].push({ ...perm, name: formattedName });
             return acc;
         }, {});
@@ -253,9 +470,7 @@ const UserView: React.FC<UserViewProps> = ({
             .filter((u) => u.Roles?.some((r) => r.name === "Supervisor"))
             .filter(
                 (s) =>
-                    `${s.firstname} ${s.lastname}`
-                        .toLowerCase()
-                        .includes(supervisorSearch.toLowerCase()) ||
+                    `${s.firstname} ${s.lastname}`.toLowerCase().includes(supervisorSearch.toLowerCase()) ||
                     s.email.toLowerCase().includes(supervisorSearch.toLowerCase())
             );
     }, [users, supervisorSearch]);
@@ -265,9 +480,7 @@ const UserView: React.FC<UserViewProps> = ({
             .filter((u) => u.Roles?.some((r) => r.name === "Manager"))
             .filter(
                 (m) =>
-                    `${m.firstname} ${m.lastname}`
-                        .toLowerCase()
-                        .includes(managerSearch.toLowerCase()) ||
+                    `${m.firstname} ${m.lastname}`.toLowerCase().includes(managerSearch.toLowerCase()) ||
                     m.email.toLowerCase().includes(managerSearch.toLowerCase())
             );
     }, [users, managerSearch]);
@@ -283,59 +496,55 @@ const UserView: React.FC<UserViewProps> = ({
     }, [managerUsers, managerPage]);
 
     // Validation Helpers
-    const markUserTouched = (field: keyof typeof userTouched) => {
-        setUserTouched((prev) => ({ ...prev, [field]: true }));
-    };
-
-    const validateName = (value: string, field: string): string => {
+    const validateName = useCallback((value: string, field: string): string => {
         const trimmed = value.trim();
         if (!trimmed) return `${field} is required.`;
         if (!/^[a-zA-Z]{2,50}$/.test(trimmed)) return `${field} must be 2–50 letters only.`;
         return "";
-    };
+    }, []);
 
-    const validateEmail = (value: string): string => {
+    const validateEmail = useCallback((value: string): string => {
         const trimmed = value.trim();
         if (!trimmed) return "Email is required.";
-        if (!/^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(trimmed)) return "Please enter a valid email.";
+        if (!EMAIL_REGEX.test(trimmed)) return "Please enter a valid email.";
         return "";
-    };
+    }, []);
 
-    const validatePhone = (value: string): string => {
+    const validatePhone = useCallback((value: string): string => {
         const digits = value.replace(/[^\d]/g, "");
         if (!digits) return "Phone number is required.";
-        if (!/^\d{8}$/.test(digits)) return "Phone number must be 8 digits.";
+        if (!PHONE_REGEX.test(digits)) return "Phone number must be 8 digits.";
         return "";
-    };
+    }, []);
 
-    const validateWallet = (value: string): string => {
+    const validateWallet = useCallback((value: string): string => {
         if (!value) return "";
-        if (!/^[a-zA-Z0-9]{10,50}$/.test(value)) return "Wallet must be 10–50 alphanumeric characters.";
+        if (!WALLET_REGEX.test(value)) return "Wallet must be 10–50 alphanumeric characters.";
         return "";
-    };
+    }, []);
 
-    const validatePassword = (value: string): string => {
+    const validatePassword = useCallback((value: string): string => {
         if (!value) return "";
         if (value.length < 6) return "Password must be at least 6 characters.";
         return "";
-    };
+    }, []);
 
-    const validatePasswordConfirm = (password: string, confirm: string): string => {
+    const validatePasswordConfirm = useCallback((password: string, confirm: string): string => {
         if (!password && !confirm) return "";
         if (password !== confirm) return "Passwords do not match.";
         return "";
-    };
+    }, []);
 
-    const formatPhoneDisplay = (rawValue: string): string => {
+    const formatPhoneDisplay = useCallback((rawValue: string): string => {
         const digits = rawValue.replace(/[^\d]/g, "");
         let formatted = "";
         if (digits.length > 0) formatted += digits.slice(0, 2);
         if (digits.length > 2) formatted += " " + digits.slice(2, 5);
         if (digits.length > 5) formatted += " " + digits.slice(5, 8);
         return formatted;
-    };
+    }, []);
 
-    const formatWalletDisplay = (rawValue: string): string => {
+    const formatWalletDisplay = useCallback((rawValue: string): string => {
         const digits = rawValue.replace(/[^\d]/g, "");
         let formatted = "";
         if (digits.length > 0) formatted += digits.slice(0, 4);
@@ -343,18 +552,18 @@ const UserView: React.FC<UserViewProps> = ({
         if (digits.length > 8) formatted += "-" + digits.slice(8, 12);
         if (digits.length > 12) formatted += "-" + digits.slice(12, 16);
         return formatted;
-    };
+    }, []);
 
-    const stripPhoneForDatabase = (raw: string): string => {
+    const stripPhoneForDatabase = useCallback((raw: string): string => {
         return raw.replace(/[^\d]/g, "");
-    };
+    }, []);
 
-    const stripWalletForDatabase = (formatted: string): string => {
+    const stripWalletForDatabase = useCallback((formatted: string): string => {
         return formatted.replace(/[^\d]/g, "");
-    };
+    }, []);
 
     // Handlers
-    const handleEditUser = () => {
+    const handleEditUser = useCallback(() => {
         if (!userPermissions.canUpdateUsers || !selectedUser) return;
         setIsEditingUser(true);
         setEditedUser({
@@ -368,34 +577,27 @@ const UserView: React.FC<UserViewProps> = ({
         });
         setRawPhone(selectedUser.phone || "");
         setRawWallet(selectedUser.wallet || "");
-    };
+    }, [selectedUser, userPermissions.canUpdateUsers]);
 
-    const handlePhoneChange = (e: React.ChangeEvent<HTMLInputElement>) => {
+    const handlePhoneChange = useCallback((e: React.ChangeEvent<HTMLInputElement>) => {
         const raw = e.target.value.replace(/[^\d]/g, "").slice(0, 8);
         setRawPhone(raw);
-        setEditedUser({
-            ...editedUser,
-            phone: stripPhoneForDatabase(raw),
-        });
-        setUserFormErrors({ ...userFormErrors, phone: validatePhone(raw) });
-    };
+        setEditedUser((prev) => ({ ...prev, phone: stripPhoneForDatabase(raw) }));
+        setFormErrors((prev) => ({ ...prev, phone: validatePhone(raw) }));
+    }, [stripPhoneForDatabase, validatePhone]);
 
-    const handleWalletChange = (e: React.ChangeEvent<HTMLInputElement>) => {
+    const handleWalletChange = useCallback((e: React.ChangeEvent<HTMLInputElement>) => {
         const raw = e.target.value.replace(/[^\d]/g, "").slice(0, 16);
         setRawWallet(raw);
-        setEditedUser({
-            ...editedUser,
-            wallet: stripWalletForDatabase(raw),
-        });
-        setUserFormErrors({ ...userFormErrors, wallet: validateWallet(raw) });
-    };
+        setEditedUser((prev) => ({ ...prev, wallet: stripWalletForDatabase(raw) }));
+        setFormErrors((prev) => ({ ...prev, wallet: validateWallet(raw) }));
+    }, [stripWalletForDatabase, validateWallet]);
 
-    const handleSaveUserEdit = async () => {
+    const handleSaveUserEdit = useCallback(async () => {
         if (!selectedUser || !userPermissions.canUpdateUsers || !isEditingUser) return;
-
         const phoneValue = rawPhone || selectedUser.phone;
         const walletValue = rawWallet || editedUser.wallet || selectedUser.wallet;
-        const errors = {
+        const errors: FormErrors = {
             firstname: validateName(editedUser.firstname || "", "First name"),
             lastname: validateName(editedUser.lastname || "", "Last name"),
             email: validateEmail(editedUser.email || ""),
@@ -404,9 +606,8 @@ const UserView: React.FC<UserViewProps> = ({
             password: validatePassword(editedUser.password || ""),
             passwordConfirm: validatePasswordConfirm(editedUser.password || "", editedUser.passwordConfirm || ""),
         };
-
-        setUserFormErrors(errors);
-        setUserTouched({
+        setFormErrors(errors);
+        setTouched({
             firstname: true,
             lastname: true,
             email: true,
@@ -415,13 +616,10 @@ const UserView: React.FC<UserViewProps> = ({
             password: true,
             passwordConfirm: true,
         });
-
         if (Object.values(errors).some((error) => error)) {
-            setError("Please fix the errors below before saving.");
+            setGlobalError("Please fix the errors below before saving.");
             return;
         }
-
-        setLoading(true);
         try {
             const updatePayload: Partial<User> = {
                 firstname: editedUser.firstname!.trim(),
@@ -431,79 +629,131 @@ const UserView: React.FC<UserViewProps> = ({
                 wallet: stripWalletForDatabase(walletValue || ""),
             };
             if (editedUser.password) updatePayload.password = editedUser.password;
-
             const updatedUser = await updateUser(selectedUser.userID, updatePayload);
             setUsers(users.map((u) => (u.userID === selectedUser.userID ? updatedUser : u)));
             setSelectedUser(updatedUser);
-            resetFormStates();
             setIsEditingUser(false);
+            setEditedUser({});
+            setFormErrors({
+                firstname: "",
+                lastname: "",
+                email: "",
+                phone: "",
+                wallet: "",
+                password: "",
+                passwordConfirm: "",
+            });
+            setTouched({
+                firstname: false,
+                lastname: false,
+                email: false,
+                phone: false,
+                wallet: false,
+                password: false,
+                passwordConfirm: false,
+            });
+            setRawPhone("");
+            setRawWallet("");
         } catch (error) {
             let errorMessage = error instanceof Error ? error.message : "Failed to update user.";
             if (errorMessage.includes("This Google email is already linked to another user")) {
                 errorMessage = "This email is already associated with another Google account.";
-                setUserFormErrors({ ...userFormErrors, email: errorMessage });
+                setFormErrors((prev) => ({ ...prev, email: errorMessage }));
             }
-            setError(errorMessage);
-        } finally {
-            setLoading(false);
+            setGlobalError(errorMessage);
         }
-    };
+    }, [
+        selectedUser,
+        userPermissions.canUpdateUsers,
+        isEditingUser,
+        editedUser,
+        rawPhone,
+        rawWallet,
+        users,
+        stripPhoneForDatabase,
+        stripWalletForDatabase,
+        validateName,
+        validateEmail,
+        validatePhone,
+        validateWallet,
+        validatePassword,
+        validatePasswordConfirm,
+        setUsers,
+        setSelectedUser,
+        setGlobalError,
+    ]);
 
-    const handleCancelEdit = () => {
-        resetFormStates();
+    const handleCancelEdit = useCallback(() => {
         setIsEditingUser(false);
-    };
+        setEditedUser({});
+        setFormErrors({
+            firstname: "",
+            lastname: "",
+            email: "",
+            phone: "",
+            wallet: "",
+            password: "",
+            passwordConfirm: "",
+        });
+        setTouched({
+            firstname: false,
+            lastname: false,
+            email: false,
+            phone: false,
+            wallet: false,
+            password: false,
+            passwordConfirm: false,
+        });
+        setRawPhone("");
+        setRawWallet("");
+    }, []);
 
-    const handleDeleteUser = async () => {
+    const handleDeleteUser = useCallback(async () => {
         if (!selectedUser || !userPermissions.canDeleteUsers) return;
-        setLoading(true);
         try {
             await deleteUser(selectedUser.userID);
             setUsers(users.filter((u) => u.userID !== selectedUser.userID));
             setSelectedUser(null);
             setView("users");
+            localStorage.removeItem("adminView");
+            localStorage.removeItem("selectedUserId");
         } catch (error) {
-            setError(error instanceof Error ? error.message : "Failed to delete user.");
-        } finally {
-            setLoading(false);
+            setGlobalError(error instanceof Error ? error.message : "Failed to delete user.");
         }
-    };
+    }, [selectedUser, userPermissions.canDeleteUsers, users, setUsers, setSelectedUser, setView, setGlobalError]);
 
-    const handleToggleSupervisor = (supervisor: User) => {
+    const handleToggleSupervisor = useCallback((supervisor: User) => {
         if (!userPermissions.canAssignSupervisors || !selectedUser) return;
-        const hasSupervisor = tempSupervisors.some((s) => s.userID === supervisor.userID);
-        if (hasSupervisor) {
-            setTempSupervisors(tempSupervisors.filter((s) => s.userID !== supervisor.userID));
-        } else {
-            setTempSupervisors([...tempSupervisors, supervisor]);
-        }
+        setTempSupervisors((prev) => {
+            const hasSupervisor = prev.some((s) => s.userID === supervisor.userID);
+            return hasSupervisor
+                ? prev.filter((s) => s.userID !== supervisor.userID)
+                : [...prev, supervisor];
+        });
         setHasUnsavedSupervisorChanges(true);
-    };
+    }, [userPermissions.canAssignSupervisors, selectedUser]);
 
-    const handleToggleManager = (manager: User) => {
+    const handleToggleManager = useCallback((manager: User) => {
         if (!userPermissions.canAssignSupervisors || !selectedUser) return;
-        const hasManager = tempManagers.some((m) => m.userID === manager.userID);
-        if (hasManager) {
-            setTempManagers(tempManagers.filter((m) => m.userID !== manager.userID));
-        } else {
-            setTempManagers([...tempManagers, manager]);
-        }
+        setTempManagers((prev) => {
+            const hasManager = prev.some((m) => m.userID === manager.userID);
+            return hasManager
+                ? prev.filter((m) => m.userID !== manager.userID)
+                : [...prev, manager];
+        });
         setHasUnsavedSupervisorChanges(true);
-    };
+    }, [userPermissions.canAssignSupervisors, selectedUser]);
 
-    const handleSaveSupervisorsAndManagers = async () => {
+    const handleSaveSupervisorsAndManagers = useCallback(async () => {
         if (!selectedUser || !userPermissions.canAssignSupervisors) return;
-        setLoading(true);
         try {
             const supervisorIds = tempSupervisors.map((s) => s.userID);
             const managerIds = tempManagers.map((m) => m.userID);
-
             const isManager = selectedUser.Roles?.some((r) => r.name === "Manager");
             if (isManager) {
                 const currentSupervisorIds = selectedUser.supervisors?.map((s) => s.userID) || [];
                 const toAssign = supervisorIds.filter((id) => !currentSupervisorIds.includes(id));
                 const toRevoke = currentSupervisorIds.filter((id) => !supervisorIds.includes(id));
-
                 if (toAssign.length > 0) {
                     await assignSupervisorsToManager(selectedUser.userID, toAssign);
                 }
@@ -511,13 +761,11 @@ const UserView: React.FC<UserViewProps> = ({
                     await revokeSupervisorsFromManager(selectedUser.userID, toRevoke);
                 }
             }
-
             const isSupervisor = selectedUser.Roles?.some((r) => r.name === "Supervisor");
             if (isSupervisor) {
                 const currentManagerIds = selectedUser.managers?.map((m) => m.userID) || [];
                 const toAssign = managerIds.filter((id) => !currentManagerIds.includes(id));
                 const toRevoke = currentManagerIds.filter((id) => !managerIds.includes(id));
-
                 if (toAssign.length > 0) {
                     await Promise.all(
                         toAssign.map((managerId) =>
@@ -533,28 +781,32 @@ const UserView: React.FC<UserViewProps> = ({
                     );
                 }
             }
-
             const updatedUser = { ...selectedUser, supervisors: tempSupervisors, managers: tempManagers };
             setUsers(users.map((u) => (u.userID === selectedUser.userID ? updatedUser : u)));
             setSelectedUser(updatedUser);
             setHasUnsavedSupervisorChanges(false);
         } catch (error) {
-            setError(error instanceof Error ? error.message : "Failed to save assignments.");
+            setGlobalError(error instanceof Error ? error.message : "Failed to save assignments.");
             setTempSupervisors(selectedUser.supervisors || []);
             setTempManagers(selectedUser.managers || []);
-        } finally {
-            setLoading(false);
         }
-    };
+    }, [
+        selectedUser,
+        userPermissions.canAssignSupervisors,
+        tempSupervisors,
+        tempManagers,
+        users,
+        setUsers,
+        setSelectedUser,
+        setGlobalError,
+    ]);
 
-    const handleToggleRole = async (role: Role) => {
+    const handleToggleRole = useCallback(async (role: Role) => {
         if (!userPermissions.canAssignRoles || !selectedUser) return;
-
         if (role.name === import.meta.env.VITE_ROLES_SUPER_ADMIN) {
-            setError("The Super Admin role cannot be assigned or revoked.");
+            setGlobalError("The Super Admin role cannot be assigned or revoked.");
             return;
         }
-
         const isCurrentUser = selectedUser.userID === currentUser?.userID;
         const hasAdminRole = tempRoles.some((r) => r.name === import.meta.env.VITE_ROLES_ADMIN);
         if (
@@ -563,13 +815,11 @@ const UserView: React.FC<UserViewProps> = ({
             hasAdminRole &&
             !isSuperAdmin
         ) {
-            setError("You cannot revoke your own Admin role.");
+            setGlobalError("You cannot revoke your own Admin role.");
             return;
         }
-
-        const hasRole = tempRoles.some((r) => r.roleID === role.roleID);
-        setLoading(true);
         try {
+            const hasRole = tempRoles.some((r) => r.roleID === role.roleID);
             if (hasRole) {
                 await revokeRolesFromUser(selectedUser.userID, [role.roleID]);
                 const updatedRoles = tempRoles.filter((r) => r.roleID !== role.roleID);
@@ -592,18 +842,26 @@ const UserView: React.FC<UserViewProps> = ({
                 setSelectedUser({ ...selectedUser, Roles: updatedRoles });
             }
         } catch (error) {
-            setError(error instanceof Error ? error.message : "Failed to toggle role.");
+            setGlobalError(error instanceof Error ? error.message : "Failed to toggle role.");
             setTempRoles(selectedUser.Roles || []);
-        } finally {
-            setLoading(false);
         }
-    };
+    }, [
+        userPermissions.canAssignRoles,
+        selectedUser,
+        currentUser,
+        tempRoles,
+        isSuperAdmin,
+        users,
+        setUsers,
+        setSelectedUser,
+        setGlobalError,
+    ]);
 
-    const handleAddOverride = (permissionID: string, action: "grant" | "revoke") => {
+    const handleAddOverride = useCallback((permissionID: string, action: "grant" | "revoke") => {
         if (!selectedUser || !userPermissions.canAssignPermissions) return;
         const roleID = tempRoles[0]?.roleID;
         if (!roleID) {
-            setError("No role selected for override.");
+            setGlobalError("No role selected for override.");
             return;
         }
         const newOverride: UserPermissionOverride = {
@@ -618,27 +876,24 @@ const UserView: React.FC<UserViewProps> = ({
             newOverride,
         ]);
         setHasUnsavedOverrideChanges(true);
-    };
+    }, [selectedUser, userPermissions.canAssignPermissions, tempRoles, tempOverrides, setGlobalError]);
 
-    const handleRemoveOverride = (overrideID: string) => {
+    const handleRemoveOverride = useCallback((overrideID: string) => {
         if (!selectedUser || !userPermissions.canAssignPermissions) return;
         setTempOverrides(tempOverrides.filter((o) => o.overrideID !== overrideID));
         setHasUnsavedOverrideChanges(true);
-    };
+    }, [selectedUser, userPermissions.canAssignPermissions, tempOverrides]);
 
-    const handleSaveOverrides = async () => {
+    const handleSaveOverrides = useCallback(async () => {
         if (!selectedUser || !userPermissions.canAssignPermissions || !hasUnsavedOverrideChanges)
             return;
-        setLoading(true);
         try {
             const currentOverrideIds = userOverrides.map((o) => o.overrideID);
             const tempOverrideIds = tempOverrides.map((o) => o.overrideID);
-
             const toRemove = userOverrides.filter(
                 (o) => !tempOverrideIds.includes(o.overrideID)
             );
             await Promise.all(toRemove.map((o) => removePermissionOverride(o.overrideID)));
-
             const toAddOrUpdate = tempOverrides.filter(
                 (o) => o.overrideID.startsWith("temp_") || !currentOverrideIds.includes(o.overrideID)
             );
@@ -647,12 +902,11 @@ const UserView: React.FC<UserViewProps> = ({
                     o.overrideID.startsWith("temp_")
                         ? addPermissionOverride(
                             selectedUser.userID,
-                            { roleID: o.roleID, permissionID: o.permissionID, action: o.action },
+                            { roleID: o.roleID, permissionID: o.permissionID, action: o.action }
                         )
                         : Promise.resolve()
                 )
             );
-
             const [updatedOverrides, updatedEffectivePerms] = await Promise.all([
                 getPermissionOverridesByUser(selectedUser.userID),
                 getEffectivePermissions(selectedUser.userID),
@@ -662,137 +916,108 @@ const UserView: React.FC<UserViewProps> = ({
             setEffectiveUserPermissions(updatedEffectivePerms);
             setHasUnsavedOverrideChanges(false);
         } catch (error) {
-            setError(error instanceof Error ? error.message : "Failed to save permission overrides.");
+            setGlobalError(error instanceof Error ? error.message : "Failed to save permission overrides.");
             setTempOverrides(userOverrides);
-        } finally {
-            setLoading(false);
         }
-    };
+    }, [
+        selectedUser,
+        userPermissions.canAssignPermissions,
+        hasUnsavedOverrideChanges,
+        userOverrides,
+        tempOverrides,
+        setGlobalError,
+    ]);
 
-    const resetFormStates = () => {
-        setEditedUser({});
-        setUserFormErrors({
-            firstname: "",
-            lastname: "",
-            email: "",
-            phone: "",
-            wallet: "",
-            password: "",
-            passwordConfirm: "",
-        });
-        setUserTouched({
-            firstname: false,
-            lastname: false,
-            email: false,
-            phone: false,
-            wallet: false,
-            password: false,
-            passwordConfirm: false,
-        });
-        setRawPhone("");
-        setRawWallet("");
-    };
+    const toggleSection = useCallback((section: string) => {
+        setExpandedSection((prev) => (prev === section ? null : section));
+    }, []);
 
-    const toggleSection = (section: string) => {
-        setExpandedSection(expandedSection === section ? null : section);
-    };
-
-    const toggleRolePopup = (roleID: string) => {
-        setActiveRolePopup(activeRolePopup === roleID ? null : roleID);
+    const toggleRolePopup = useCallback((roleID: string) => {
+        setActiveRolePopup((prev) => (prev === roleID ? null : roleID));
         setExpandedClasses(new Set());
-    };
+    }, []);
 
-    const toggleOverridePopup = (permissionID: string) => {
-        setActiveOverridePopup(activeOverridePopup === permissionID ? null : permissionID);
+    const toggleOverridePopup = useCallback((permissionID: string) => {
+        setActiveOverridePopup((prev) => (prev === permissionID ? null : permissionID));
         setExpandedClasses(new Set());
-    };
+    }, []);
 
-    const toggleClassExpansion = (className: string) => {
+    const toggleClassExpansion = useCallback((className: string) => {
         setExpandedClasses((prev) => {
             const newSet = new Set(prev);
             if (newSet.has(className)) newSet.delete(className);
             else newSet.add(className);
             return newSet;
         });
-    };
-
-    const getCategorizedPermissionsForRole = (permissions: Permission[]) => {
-        const byClass: { [key: string]: Permission[] } = {};
-        permissions
-            .filter((perm) => isSuperAdmin || !["Role", "Permission"].includes(perm.class))
-            .forEach((perm) => {
-                const formattedName = perm.name
-                    .replace(/_/g, " ")
-                    .replace(/\b\w/g, (char) => char.toUpperCase());
-                if (!byClass[perm.class]) byClass[perm.class] = [];
-                byClass[perm.class].push({ ...perm, name: formattedName });
-            });
-        return byClass;
-    };
+    }, []);
 
     // Render Functions
-    const renderRolePopupContent = (roleID: string) => {
+    const renderRolePopupContent = useCallback((roleID: string) => {
         const role = roles.find((r) => r.roleID === roleID);
         if (!role) return <p>Role not found.</p>;
-
         return (
             <>
                 <h4>{role.name}</h4>
                 <p>{role.description || "No description available."}</p>
                 <h5>Permissions by Class:</h5>
-                {loading ? (
-                    <div className="page-loading">
-                        <div className="spinner"></div>
-                        <p>Loading...</p>
-                    </div>
-                ) : Object.keys(getCategorizedPermissionsForRole(rolePermissions)).length > 0 ? (
-                    Object.entries(getCategorizedPermissionsForRole(rolePermissions)).map(
-                        ([className, perms]) => (
-                            <div key={className} className="permission-class-item">
-                                <button
-                                    className="class-toggle"
-                                    onClick={() => toggleClassExpansion(className)}
-                                >
-                                    {className} ({perms.length})
-                                    <FaAngleDown
-                                        className={`toggle-icon ${expandedClasses.has(className) ? "expanded" : ""}`}
-                                    />
-                                </button>
-                                <ul
-                                    className={`permission-list ${expandedClasses.has(className) ? "expanded" : ""}`}
-                                >
-                                    {perms.map((perm) => (
-                                        <li key={perm.permissionID}>{perm.name}</li>
-                                    ))}
-                                </ul>
-                            </div>
-                        )
-                    )
+                {rolePermissions.length > 0 ? (
+                    Object.entries(
+                        rolePermissions
+                            .filter((perm) => isSuperAdmin || !["Role", "Permission"].includes(perm.class))
+                            .reduce((acc: { [key: string]: Permission[] }, perm) => {
+                                const formattedName = perm.name
+                                    .replace(/_/g, " ")
+                                    .replace(/\b\w/g, (char) => char.toUpperCase());
+                                acc[perm.class] = acc[perm.class] || [];
+                                acc[perm.class].push({ ...perm, name: formattedName });
+                                return acc;
+                            }, {})
+                    ).map(([className, perms]) => (
+                        <div key={className} className="permission-class-item">
+                            <button
+                                className="class-toggle"
+                                onClick={() => toggleClassExpansion(className)}
+                            >
+                                {className} ({perms.length})
+                                <FaAngleDown
+                                    className={`toggle-icon ${expandedClasses.has(className) ? "expanded" : ""}`}
+                                />
+                            </button>
+                            <ul
+                                className={`permission-list ${expandedClasses.has(className) ? "expanded" : ""}`}
+                            >
+                                {perms.map((perm) => (
+                                    <li key={perm.permissionID}>{perm.name}</li>
+                                ))}
+                            </ul>
+                        </div>
+                    ))
                 ) : (
                     <p>No permissions assigned.</p>
                 )}
             </>
         );
-    };
+    }, [rolePermissions, isSuperAdmin, expandedClasses, toggleClassExpansion]);
 
-    const renderOverridePopupContent = (permissionID: string) => {
+    const renderOverridePopupContent = useCallback((permissionID: string) => {
         const permission = permissionsList.find((perm) => perm.permissionID === permissionID);
         if (!permission) return <p>Permission not found.</p>;
-
         return (
             <>
                 <h4>{permission.name}</h4>
                 <p>{permission.description || "No description available."}</p>
-                <p>
-                    <strong>Class:</strong> {permission.class}
-                </p>
+                <p><strong>Class:</strong> {permission.class}</p>
             </>
         );
-    };
+    }, [permissionsList]);
 
     // Main Render
     if (view !== "user-details" || !selectedUser || !userPermissions.canViewUserDetails) {
         return null;
+    }
+
+    if (loading) {
+        return <UserViewSkeleton />;
     }
 
     return (
@@ -805,131 +1030,124 @@ const UserView: React.FC<UserViewProps> = ({
                             type="text"
                             value={editedUser.firstname || ""}
                             onChange={(e) => {
-                                setEditedUser({ ...editedUser, firstname: e.target.value });
-                                setUserFormErrors({
-                                    ...userFormErrors,
+                                setEditedUser((prev) => ({ ...prev, firstname: e.target.value }));
+                                setFormErrors((prev) => ({
+                                    ...prev,
                                     firstname: validateName(e.target.value, "First name"),
-                                });
+                                }));
+                                setTouched((prev) => ({ ...prev, firstname: true }));
                             }}
-                            onBlur={() => markUserTouched("firstname")}
                             placeholder="First Name *"
-                            className={`user-edit-input ${userTouched.firstname && userFormErrors.firstname ? "invalid-vibrate" : ""}`}
+                            className={`user-edit-input ${touched.firstname && formErrors.firstname ? "invalid-vibrate" : ""}`}
                             required
                         />
-                        {userFormErrors.firstname && userTouched.firstname && (
-                            <span className="error-text">{userFormErrors.firstname}</span>
+                        {formErrors.firstname && touched.firstname && (
+                            <span className="error-text">{formErrors.firstname}</span>
                         )}
                         <input
                             type="text"
                             value={editedUser.lastname || ""}
                             onChange={(e) => {
-                                setEditedUser({ ...editedUser, lastname: e.target.value });
-                                setUserFormErrors({
-                                    ...userFormErrors,
+                                setEditedUser((prev) => ({ ...prev, lastname: e.target.value }));
+                                setFormErrors((prev) => ({
+                                    ...prev,
                                     lastname: validateName(e.target.value, "Last name"),
-                                });
+                                }));
+                                setTouched((prev) => ({ ...prev, lastname: true }));
                             }}
-                            onBlur={() => markUserTouched("lastname")}
                             placeholder="Last Name *"
-                            className={`user-edit-input ${userTouched.lastname && userFormErrors.lastname ? "invalid-vibrate" : ""}`}
+                            className={`user-edit-input ${touched.lastname && formErrors.lastname ? "invalid-vibrate" : ""}`}
                             required
                         />
-                        {userFormErrors.lastname && userTouched.lastname && (
-                            <span className="error-text">{userFormErrors.lastname}</span>
+                        {formErrors.lastname && touched.lastname && (
+                            <span className="error-text">{formErrors.lastname}</span>
                         )}
                         <input
                             type="email"
                             value={editedUser.email || ""}
                             onChange={(e) => {
-                                setEditedUser({ ...editedUser, email: e.target.value });
-                                setUserFormErrors({
-                                    ...userFormErrors,
+                                setEditedUser((prev) => ({ ...prev, email: e.target.value }));
+                                setFormErrors((prev) => ({
+                                    ...prev,
                                     email: validateEmail(e.target.value),
-                                });
+                                }));
+                                setTouched((prev) => ({ ...prev, email: true }));
                             }}
-                            onBlur={() => markUserTouched("email")}
                             placeholder="Email *"
-                            className={`user-edit-input ${userTouched.email && userFormErrors.email ? "invalid-vibrate" : ""}`}
+                            className={`user-edit-input ${touched.email && formErrors.email ? "invalid-vibrate" : ""}`}
                             required
                         />
-                        {userFormErrors.email && userTouched.email && (
-                            <span className="error-text">{userFormErrors.email}</span>
+                        {formErrors.email && touched.email && (
+                            <span className="error-text">{formErrors.email}</span>
                         )}
                         <input
                             type="text"
-                            value={formatPhoneDisplay(rawPhone === "" ? "" : rawPhone)}
+                            value={formatPhoneDisplay(rawPhone)}
                             onChange={handlePhoneChange}
-                            onBlur={() => markUserTouched("phone")}
                             placeholder="XX XXX XXX"
-                            className={`user-edit-input ${userTouched.phone && userFormErrors.phone ? "invalid-vibrate" : ""}`}
+                            className={`user-edit-input ${touched.phone && formErrors.phone ? "invalid-vibrate" : ""}`}
                             required
                             maxLength={10}
                         />
-                        {userFormErrors.phone && userTouched.phone && (
-                            <span className="error-text">{userFormErrors.phone}</span>
+                        {formErrors.phone && touched.phone && (
+                            <span className="error-text">{formErrors.phone}</span>
                         )}
                         <input
                             type="text"
-                            value={formatWalletDisplay(rawWallet || "")}
+                            value={formatWalletDisplay(rawWallet)}
                             onChange={handleWalletChange}
-                            onBlur={() => markUserTouched("wallet")}
                             placeholder="XXXX-XXXX-XXXX-XXXX"
-                            className={`user-edit-input ${userTouched.wallet && userFormErrors.wallet ? "invalid-vibrate" : ""}`}
+                            className={`user-edit-input ${touched.wallet && formErrors.wallet ? "invalid-vibrate" : ""}`}
                             maxLength={19}
                         />
-                        {userFormErrors.wallet && userTouched.wallet && (
-                            <span className="error-text">{userFormErrors.wallet}</span>
+                        {formErrors.wallet && touched.wallet && (
+                            <span className="error-text">{formErrors.wallet}</span>
                         )}
                         <input
                             type="password"
                             value={editedUser.password || ""}
                             onChange={(e) => {
-                                setEditedUser({ ...editedUser, password: e.target.value });
-                                setUserFormErrors({
-                                    ...userFormErrors,
+                                setEditedUser((prev) => ({ ...prev, password: e.target.value }));
+                                setFormErrors((prev) => ({
+                                    ...prev,
                                     password: validatePassword(e.target.value),
-                                    passwordConfirm: validatePasswordConfirm(
-                                        e.target.value,
-                                        editedUser.passwordConfirm || ""
-                                    ),
-                                });
+                                    passwordConfirm: validatePasswordConfirm(e.target.value, editedUser.passwordConfirm || ""),
+                                }));
+                                setTouched((prev) => ({ ...prev, password: true }));
                             }}
-                            onBlur={() => markUserTouched("password")}
                             placeholder="Password (optional)"
-                            className={`user-edit-input ${userTouched.password && userFormErrors.password ? "invalid-vibrate" : ""}`}
+                            className={`user-edit-input ${touched.password && formErrors.password ? "invalid-vibrate" : ""}`}
                         />
-                        {userFormErrors.password && userTouched.password && (
-                            <span className="error-text">{userFormErrors.password}</span>
+                        {formErrors.password && touched.password && (
+                            <span className="error-text">{formErrors.password}</span>
                         )}
                         <input
                             type="password"
                             value={editedUser.passwordConfirm || ""}
                             onChange={(e) => {
-                                setEditedUser({ ...editedUser, passwordConfirm: e.target.value });
-                                setUserFormErrors({
-                                    ...userFormErrors,
+                                setEditedUser((prev) => ({ ...prev, passwordConfirm: e.target.value }));
+                                setFormErrors((prev) => ({
+                                    ...prev,
                                     passwordConfirm: validatePasswordConfirm(editedUser.password || "", e.target.value),
-                                });
+                                }));
+                                setTouched((prev) => ({ ...prev, passwordConfirm: true }));
                             }}
-                            onBlur={() => markUserTouched("passwordConfirm")}
                             placeholder="Confirm Password (optional)"
-                            className={`user-edit-input ${userTouched.passwordConfirm && userFormErrors.passwordConfirm ? "invalid-vibrate" : ""}`}
+                            className={`user-edit-input ${touched.passwordConfirm && formErrors.passwordConfirm ? "invalid-vibrate" : ""}`}
                         />
-                        {userFormErrors.passwordConfirm && userTouched.passwordConfirm && (
-                            <span className="error-text">{userFormErrors.passwordConfirm}</span>
+                        {formErrors.passwordConfirm && touched.passwordConfirm && (
+                            <span className="error-text">{formErrors.passwordConfirm}</span>
                         )}
                         <div className="user-edit-actions">
                             <button
                                 className="action-button"
                                 onClick={handleSaveUserEdit}
-                                disabled={loading}
                             >
-                                {loading ? "Saving..." : "Save"}
+                                Save
                             </button>
                             <button
                                 className="cancel-button"
                                 onClick={handleCancelEdit}
-                                disabled={loading}
                             >
                                 Cancel
                             </button>
@@ -943,7 +1161,6 @@ const UserView: React.FC<UserViewProps> = ({
                                 <button
                                     className="edit-button"
                                     onClick={handleEditUser}
-                                    disabled={loading}
                                 >
                                     <FaEdit /> Edit
                                 </button>
@@ -951,7 +1168,6 @@ const UserView: React.FC<UserViewProps> = ({
                                     <button
                                         className="delete-button"
                                         onClick={handleDeleteUser}
-                                        disabled={loading}
                                     >
                                         <FaTrash /> Delete
                                     </button>
@@ -966,25 +1182,13 @@ const UserView: React.FC<UserViewProps> = ({
                 <div className="form-section">
                     <h3>Basic Information</h3>
                     <div className="info-grid">
-                        <p>
-                            <strong>Name:</strong> {selectedUser.firstname} {selectedUser.lastname}
-                        </p>
-                        <p>
-                            <strong>Email:</strong> {selectedUser.email}
-                        </p>
-                        <p>
-                            <strong>Phone:</strong> {`+216 ${formatPhoneDisplay(selectedUser.phone || "N/A")}`}
-                        </p>
-                        <p>
-                            <strong>Wallet:</strong> {formatWalletDisplay(selectedUser.wallet || "") || "N/A"}
-                        </p>
-                        <p>
-                            <strong>Google Email:</strong> {selectedUser.googleEmail || "N/A"}
-                        </p>
+                        <p><strong>Name:</strong> {selectedUser.firstname} {selectedUser.lastname}</p>
+                        <p><strong>Email:</strong> {selectedUser.email}</p>
+                        <p><strong>Phone:</strong> {`+216 ${formatPhoneDisplay(selectedUser.phone || "N/A")}`}</p>
+                        <p><strong>Wallet:</strong> {formatWalletDisplay(selectedUser.wallet || "") || "N/A"}</p>
                     </div>
                 </div>
             )}
-
             <div className="dropdown-stack">
                 {userPermissions.canAssignRoles && (
                     <div className="dropdown-unit">
@@ -995,39 +1199,38 @@ const UserView: React.FC<UserViewProps> = ({
                             />
                         </div>
                         {expandedSection === "roles" && (
-                            <div className="dropdown-body">
-                                <div className="roles-grid">
-                                    {roles.map((role) => (
-                                        <div key={role.roleID} className="role-toggle-container">
-                                            <button
-                                                className={`role-toggle-button ${tempRoles.some((r) => r.roleID === role.roleID) ? "active" : ""}`}
-                                                onClick={() => handleToggleRole(role)}
-                                                disabled={
-                                                    loading ||
-                                                    role.name === import.meta.env.VITE_ROLES_SUPER_ADMIN ||
-                                                    (selectedUser.userID === currentUser?.userID &&
-                                                        role.name === import.meta.env.VITE_ROLES_ADMIN &&
-                                                        !isSuperAdmin &&
-                                                        tempRoles.some((r) => r.name === import.meta.env.VITE_ROLES_ADMIN))
-                                                }
-                                            >
-                                                <span>{role.name}</span>
-                                                <FaInfoCircle
-                                                    className="role-info-icon"
-                                                    onClick={(e) => {
-                                                        e.stopPropagation();
-                                                        toggleRolePopup(role.roleID);
-                                                    }}
-                                                />
-                                            </button>
-                                        </div>
-                                    ))}
+                            loadingRoles ? <RolesDropdownSkeleton /> : (
+                                <div className="dropdown-body">
+                                    <div className="roles-grid">
+                                        {roles.map((role) => (
+                                            <div key={role.roleID} className="role-toggle-container">
+                                                <button
+                                                    className={`role-toggle-button ${tempRoles.some((r) => r.roleID === role.roleID) ? "active" : ""}`}
+                                                    onClick={() => handleToggleRole(role)}
+                                                    disabled={
+                                                        role.name === import.meta.env.VITE_ROLES_SUPER_ADMIN ||
+                                                        (selectedUser.userID === currentUser?.userID &&
+                                                            role.name === import.meta.env.VITE_ROLES_ADMIN &&
+                                                            !isSuperAdmin &&
+                                                            tempRoles.some((r) => r.name === import.meta.env.VITE_ROLES_ADMIN))
+                                                    }
+                                                >
+                                                    <span>{role.name}</span>
+                                                    <FaInfoCircle
+                                                        className="role-info-icon"
+                                                        onClick={(e) => {
+                                                            e.stopPropagation();
+                                                            toggleRolePopup(role.roleID);
+                                                        }}
+                                                    />
+                                                </button>
+                                            </div>
+                                        ))}
+                                    </div>
                                 </div>
-                            </div>
-                        )}
+                            ))}
                     </div>
                 )}
-
                 {userPermissions.canAssignPermissions && (
                     <div className="dropdown-unit">
                         <div className="dropdown-bar" onClick={() => toggleSection("permissions")}>
@@ -1037,132 +1240,124 @@ const UserView: React.FC<UserViewProps> = ({
                             />
                         </div>
                         {expandedSection === "permissions" && (
-                            <div className="dropdown-body">
-                                <div className="group-header">
-                                    {hasUnsavedOverrideChanges && (
-                                        <button
-                                            className="action-button"
-                                            onClick={handleSaveOverrides}
-                                            disabled={loading}
-                                        >
-                                            {loading ? "Saving..." : "Save Changes"}
-                                        </button>
+                            loadingPermissions ? <PermissionsDropdownSkeleton /> : (
+                                <div className="dropdown-body">
+                                    <div className="group-header">
+                                        {hasUnsavedOverrideChanges && (
+                                            <button
+                                                className="action-button"
+                                                onClick={handleSaveOverrides}
+                                            >
+                                                Save Changes
+                                            </button>
+                                        )}
+                                    </div>
+                                    <div className="permissions-filter-section">
+                                        <div className="permissions-filter-header">
+                                            <FaFilter />
+                                            <label>Filter Permissions</label>
+                                        </div>
+                                        <div className="permissions-filter-controls">
+                                            <div className="permissions-search">
+                                                <input
+                                                    type="text"
+                                                    placeholder="Search permissions..."
+                                                    value={permissionSearch}
+                                                    onChange={(e) => setPermissionSearch(e.target.value)}
+                                                    className="search-input"
+                                                />
+                                            </div>
+                                            <div className="permissions-category">
+                                                <select
+                                                    value={selectedCategory}
+                                                    onChange={(e) => setSelectedCategory(e.target.value)}
+                                                >
+                                                    <option value="all">All Categories</option>
+                                                    {Object.keys(categorizedPermissions).map((category) => (
+                                                        <option key={category} value={category}>
+                                                            {category.charAt(0).toUpperCase() + category.slice(1)}
+                                                        </option>
+                                                    ))}
+                                                </select>
+                                            </div>
+                                        </div>
+                                    </div>
+                                    <h4>Effective Permissions</h4>
+                                    {userPermissions.canReadPermissionsByRole && (
+                                        <div className="permissions-list">
+                                            {Object.entries(filteredPermissions).map(([className, permissions]) => (
+                                                <div key={className} className="permission-class">
+                                                    <h4>{className}</h4>
+                                                    <div className="permissions-container">
+                                                        {permissions.map((perm: Permission) => {
+                                                            const isEffective = effectiveUserPermissions.some(
+                                                                (p) => p.permissionID === perm.permissionID
+                                                            );
+                                                            const tempOverride = tempOverrides.find(
+                                                                (o) => o.permissionID === perm.permissionID
+                                                            );
+                                                            const hasOverride = !!tempOverride;
+                                                            const overrideAction = tempOverride?.action;
+                                                            return (
+                                                                <div key={perm.permissionID} className="permission-item">
+                                                                    <button
+                                                                        className={`permission-button ${(hasOverride ? overrideAction === "grant" : isEffective) ? "assigned" : ""}`}
+                                                                    >
+                                                                        {perm.name}
+                                                                        <FaInfoCircle
+                                                                            className="permission-info-icon"
+                                                                            onClick={(e) => {
+                                                                                e.stopPropagation();
+                                                                                toggleOverridePopup(perm.permissionID);
+                                                                            }}
+                                                                        />
+                                                                    </button>
+                                                                    {userPermissions.canAssignPermissions && (
+                                                                        <div className="override-controls">
+                                                                            {!hasOverride && !isEffective && (
+                                                                                <button
+                                                                                    className="override-button grant"
+                                                                                    onClick={() => handleAddOverride(perm.permissionID, "grant")}
+                                                                                    disabled={!userPermissions.canCreatePermissionOverrides}
+                                                                                    title="Grant Permission"
+                                                                                >
+                                                                                    <FaPlus />
+                                                                                </button>
+                                                                            )}
+                                                                            {!hasOverride && isEffective && (
+                                                                                <button
+                                                                                    className="override-button revoke"
+                                                                                    onClick={() => handleAddOverride(perm.permissionID, "revoke")}
+                                                                                    disabled={!userPermissions.canCreatePermissionOverrides}
+                                                                                    title="Revoke Permission"
+                                                                                >
+                                                                                    <FaMinus />
+                                                                                </button>
+                                                                            )}
+                                                                            {hasOverride && (
+                                                                                <button
+                                                                                    className="override-button remove"
+                                                                                    onClick={() => handleRemoveOverride(tempOverride.overrideID)}
+                                                                                    disabled={!userPermissions.canRemovePermissionOverrides}
+                                                                                    title="Remove Override"
+                                                                                >
+                                                                                    <FaTimes />
+                                                                                </button>
+                                                                            )}
+                                                                        </div>
+                                                                    )}
+                                                                </div>
+                                                            );
+                                                        })}
+                                                    </div>
+                                                </div>
+                                            ))}
+                                        </div>
                                     )}
                                 </div>
-                                <div className="permissions-filter-section">
-                                    <div className="permissions-filter-header">
-                                        <FaFilter />
-                                        <label>Filter Permissions</label>
-                                    </div>
-                                    <div className="permissions-filter-controls">
-                                        <div className="permissions-search">
-                                            <input
-                                                type="text"
-                                                placeholder="Search permissions..."
-                                                value={permissionSearch}
-                                                onChange={(e) => setPermissionSearch(e.target.value)}
-                                                className="search-input"
-                                            />
-                                        </div>
-                                        <div className="permissions-category">
-                                            <select
-                                                value={selectedCategory}
-                                                onChange={(e) => setSelectedCategory(e.target.value)}
-                                            >
-                                                <option value="all">All Categories</option>
-                                                {Object.keys(categorizedPermissions).map((category) => (
-                                                    <option key={category} value={category}>
-                                                        {category.charAt(0).toUpperCase() + category.slice(1)}
-                                                    </option>
-                                                ))}
-                                            </select>
-                                        </div>
-                                    </div>
-                                </div>
-                                <h4>Effective Permissions</h4>
-                                {userPermissions.canReadPermissionsByRole && (
-                                    <div className="permissions-list">
-                                        {Object.entries(filteredPermissions).map(([className, permissions]) => (
-                                            <div key={className} className="permission-class">
-                                                <h4>{className}</h4>
-                                                <div className="permissions-container">
-                                                    {permissions.map((perm: Permission) => {
-                                                        const isEffective = effectiveUserPermissions.some(
-                                                            (p) => p.permissionID === perm.permissionID
-                                                        );
-                                                        const tempOverride = tempOverrides.find(
-                                                            (o) => o.permissionID === perm.permissionID
-                                                        );
-                                                        const hasOverride = !!tempOverride;
-                                                        const overrideAction = tempOverride?.action;
-                                                        return (
-                                                            <div key={perm.permissionID} className="permission-item">
-                                                                <button
-                                                                    className={`permission-button ${(hasOverride ? overrideAction === "grant" : isEffective) ? "assigned" : ""}`}
-                                                                    disabled={loading}
-                                                                >
-                                                                    {perm.name}
-                                                                    <FaInfoCircle
-                                                                        className="permission-info-icon"
-                                                                        onClick={(e) => {
-                                                                            e.stopPropagation();
-                                                                            toggleOverridePopup(perm.permissionID);
-                                                                        }}
-                                                                    />
-                                                                </button>
-                                                                {userPermissions.canAssignPermissions && (
-                                                                    <div className="override-controls">
-                                                                        {!hasOverride && !isEffective && (
-                                                                            <button
-                                                                                className="override-button grant"
-                                                                                onClick={() => handleAddOverride(perm.permissionID, "grant")}
-                                                                                disabled={
-                                                                                    loading || !userPermissions.canCreatePermissionOverrides
-                                                                                }
-                                                                                title="Grant Permission"
-                                                                            >
-                                                                                <FaPlus />
-                                                                            </button>
-                                                                        )}
-                                                                        {!hasOverride && isEffective && (
-                                                                            <button
-                                                                                className="override-button revoke"
-                                                                                onClick={() => handleAddOverride(perm.permissionID, "revoke")}
-                                                                                disabled={
-                                                                                    loading || !userPermissions.canCreatePermissionOverrides
-                                                                                }
-                                                                                title="Revoke Permission"
-                                                                            >
-                                                                                <FaMinus />
-                                                                            </button>
-                                                                        )}
-                                                                        {hasOverride && (
-                                                                            <button
-                                                                                className="override-button remove"
-                                                                                onClick={() => handleRemoveOverride(tempOverride.overrideID)}
-                                                                                disabled={
-                                                                                    loading || !userPermissions.canRemovePermissionOverrides
-                                                                                }
-                                                                                title="Remove Override"
-                                                                            >
-                                                                                <FaTimes />
-                                                                            </button>
-                                                                        )}
-                                                                    </div>
-                                                                )}
-                                                            </div>
-                                                        );
-                                                    })}
-                                                </div>
-                                            </div>
-                                        ))}
-                                    </div>
-                                )}
-                            </div>
-                        )}
+                            ))}
                     </div>
                 )}
-
                 {(selectedUser.Roles?.some((r) => r.name === "Manager") ||
                     selectedUser.Roles?.some((r) => r.name === "Supervisor")) &&
                     userPermissions.canAssignSupervisors && (
@@ -1174,137 +1369,135 @@ const UserView: React.FC<UserViewProps> = ({
                                 />
                             </div>
                             {expandedSection === "assignments" && (
-                                <div className="dropdown-body">
-                                    <div className="group-header">
-                                        {hasUnsavedSupervisorChanges && (
-                                            <button
-                                                className="action-button"
-                                                onClick={handleSaveSupervisorsAndManagers}
-                                                disabled={loading}
-                                            >
-                                                {loading ? "Saving..." : "Save Assignments"}
-                                            </button>
-                                        )}
+                                loadingAssignments ? <AssignmentsDropdownSkeleton /> : (
+                                    <div className="dropdown-body">
+                                        <div className="group-header">
+                                            {hasUnsavedSupervisorChanges && (
+                                                <button
+                                                    className="action-button"
+                                                    onClick={handleSaveSupervisorsAndManagers}
+                                                >
+                                                    Save Assignments
+                                                </button>
+                                            )}
+                                        </div>
+                                        {selectedUser.Roles?.some((r) => r.name === "Manager") &&
+                                            userPermissions.canReadSupervisors && (
+                                                <div className="assignment-list">
+                                                    <h4>Supervisors Assigned to This Manager</h4>
+                                                    <div className="search-container assignment-search">
+                                                        <FaSearch className="search-icon" />
+                                                        <input
+                                                            type="text"
+                                                            placeholder="Search supervisors..."
+                                                            value={supervisorSearch}
+                                                            onChange={(e) => setSupervisorSearch(e.target.value)}
+                                                            className="search-input"
+                                                        />
+                                                    </div>
+                                                    <div className="list-container">
+                                                        {paginatedSupervisors.map((supervisor) => (
+                                                            <div key={supervisor.userID} className="list-item">
+                                                                <label>
+                                                                    <input
+                                                                        type="checkbox"
+                                                                        checked={tempSupervisors.some((s) => s.userID === supervisor.userID)}
+                                                                        onChange={() => handleToggleSupervisor(supervisor)}
+                                                                        disabled={!userPermissions.canRevokeSupervisors}
+                                                                    />
+                                                                    {`${supervisor.firstname} ${supervisor.lastname} (${supervisor.phone})`}
+                                                                </label>
+                                                            </div>
+                                                        ))}
+                                                    </div>
+                                                    <div className="pagination">
+                                                        <button
+                                                            onClick={() => setSupervisorPage((p) => Math.max(1, p - 1))}
+                                                            disabled={supervisorPage === 1}
+                                                        >
+                                                            Previous
+                                                        </button>
+                                                        <span>
+                                                            Page {supervisorPage} of {Math.ceil(supervisorUsers.length / ITEMS_PER_PAGE)}
+                                                        </span>
+                                                        <button
+                                                            onClick={() => setSupervisorPage((p) => p + 1)}
+                                                            disabled={
+                                                                supervisorPage >= Math.ceil(supervisorUsers.length / ITEMS_PER_PAGE)
+                                                            }
+                                                        >
+                                                            Next
+                                                        </button>
+                                                    </div>
+                                                </div>
+                                            )}
+                                        {selectedUser.Roles?.some((r) => r.name === "Supervisor") &&
+                                            userPermissions.canReadManagers && (
+                                                <div className="assignment-list">
+                                                    <h4>Managers Assigned to This Supervisor</h4>
+                                                    <div className="search-container assignment-search">
+                                                        <FaSearch className="search-icon" />
+                                                        <input
+                                                            type="text"
+                                                            placeholder="Search managers..."
+                                                            value={managerSearch}
+                                                            onChange={(e) => setManagerSearch(e.target.value)}
+                                                            className="search-input"
+                                                        />
+                                                    </div>
+                                                    <div className="list-container">
+                                                        {paginatedManagers.map((manager) => (
+                                                            <div key={manager.userID} className="list-item">
+                                                                <label>
+                                                                    <input
+                                                                        type="checkbox"
+                                                                        checked={tempManagers.some((m) => m.userID === manager.userID)}
+                                                                        onChange={() => handleToggleManager(manager)}
+                                                                        disabled={!userPermissions.canRevokeSupervisors}
+                                                                    />
+                                                                    {`${manager.firstname} ${manager.lastname} (${manager.phone})`}
+                                                                </label>
+                                                            </div>
+                                                        ))}
+                                                    </div>
+                                                    <div className="pagination">
+                                                        <button
+                                                            onClick={() => setManagerPage((p) => Math.max(1, p - 1))}
+                                                            disabled={managerPage === 1}
+                                                        >
+                                                            Previous
+                                                        </button>
+                                                        <span>
+                                                            Page {managerPage} of {Math.ceil(managerUsers.length / ITEMS_PER_PAGE)}
+                                                        </span>
+                                                        <button
+                                                            onClick={() => setManagerPage((p) => p + 1)}
+                                                            disabled={managerPage >= Math.ceil(managerUsers.length / ITEMS_PER_PAGE)}
+                                                        >
+                                                            Next
+                                                        </button>
+                                                    </div>
+                                                </div>
+                                            )}
                                     </div>
-                                    {selectedUser.Roles?.some((r) => r.name === "Manager") &&
-                                        userPermissions.canReadSupervisors && (
-                                            <div className="assignment-list">
-                                                <h4>Supervisors Assigned to This Manager</h4>
-                                                <div className="search-container assignment-search">
-                                                    <FaSearch className="search-icon" />
-                                                    <input
-                                                        type="text"
-                                                        placeholder="Search supervisors..."
-                                                        value={supervisorSearch}
-                                                        onChange={(e) => setSupervisorSearch(e.target.value)}
-                                                        className="search-input"
-                                                    />
-                                                </div>
-                                                <div className="list-container">
-                                                    {paginatedSupervisors.map((supervisor) => (
-                                                        <div key={supervisor.userID} className="list-item">
-                                                            <label>
-                                                                <input
-                                                                    type="checkbox"
-                                                                    checked={tempSupervisors.some(
-                                                                        (s) => s.userID === supervisor.userID
-                                                                    )}
-                                                                    onChange={() => handleToggleSupervisor(supervisor)}
-                                                                    disabled={loading || !userPermissions.canRevokeSupervisors}
-                                                                />
-                                                                {`${supervisor.firstname} ${supervisor.lastname} (${supervisor.phone})`}
-                                                            </label>
-                                                        </div>
-                                                    ))}
-                                                </div>
-                                                <div className="pagination">
-                                                    <button
-                                                        onClick={() => setSupervisorPage((p) => Math.max(1, p - 1))}
-                                                        disabled={supervisorPage === 1}
-                                                    >
-                                                        Previous
-                                                    </button>
-                                                    <span>
-                                                        Page {supervisorPage} of {Math.ceil(supervisorUsers.length / ITEMS_PER_PAGE)}
-                                                    </span>
-                                                    <button
-                                                        onClick={() => setSupervisorPage((p) => p + 1)}
-                                                        disabled={
-                                                            supervisorPage >= Math.ceil(supervisorUsers.length / ITEMS_PER_PAGE)
-                                                        }
-                                                    >
-                                                        Next
-                                                    </button>
-                                                </div>
-                                            </div>
-                                        )}
-                                    {selectedUser.Roles?.some((r) => r.name === "Supervisor") &&
-                                        userPermissions.canReadManagers && (
-                                            <div className="assignment-list">
-                                                <h4>Managers Assigned to This Supervisor</h4>
-                                                <div className="search-container assignment-search">
-                                                    <FaSearch className="search-icon" />
-                                                    <input
-                                                        type="text"
-                                                        placeholder="Search managers..."
-                                                        value={managerSearch}
-                                                        onChange={(e) => setManagerSearch(e.target.value)}
-                                                        className="search-input"
-                                                    />
-                                                </div>
-                                                <div className="list-container">
-                                                    {paginatedManagers.map((manager) => (
-                                                        <div key={manager.userID} className="list-item">
-                                                            <label>
-                                                                <input
-                                                                    type="checkbox"
-                                                                    checked={tempManagers.some((m) => m.userID === manager.userID)}
-                                                                    onChange={() => handleToggleManager(manager)}
-                                                                    disabled={loading || !userPermissions.canRevokeSupervisors}
-                                                                />
-                                                                {`${manager.firstname} ${manager.lastname} (${manager.phone})`}
-                                                            </label>
-                                                        </div>
-                                                    ))}
-                                                </div>
-                                                <div className="pagination">
-                                                    <button
-                                                        onClick={() => setManagerPage((p) => Math.max(1, p - 1))}
-                                                        disabled={managerPage === 1}
-                                                    >
-                                                        Previous
-                                                    </button>
-                                                    <span>
-                                                        Page {managerPage} of {Math.ceil(managerUsers.length / ITEMS_PER_PAGE)}
-                                                    </span>
-                                                    <button
-                                                        onClick={() => setManagerPage((p) => p + 1)}
-                                                        disabled={managerPage >= Math.ceil(managerUsers.length / ITEMS_PER_PAGE)}
-                                                    >
-                                                        Next
-                                                    </button>
-                                                </div>
-                                            </div>
-                                        )}
-                                </div>
-                            )}
+                                ))}
                         </div>
                     )}
             </div>
-
-            <InfoPopup
-                isOpen={!!activeRolePopup}
-                onClose={() => setActiveRolePopup(null)}
-                contentRenderer={() => renderRolePopupContent(activeRolePopup!)}
-            />
-
-            <InfoPopup
-                isOpen={!!activeOverridePopup}
-                onClose={() => setActiveOverridePopup(null)}
-                contentRenderer={() => renderOverridePopupContent(activeOverridePopup!)}
-            />
+            <Suspense fallback={<div>Loading popup...</div>}>
+                <InfoPopup
+                    isOpen={!!activeRolePopup}
+                    onClose={() => setActiveRolePopup(null)}
+                    contentRenderer={() => renderRolePopupContent(activeRolePopup!)}
+                />
+                <InfoPopup
+                    isOpen={!!activeOverridePopup}
+                    onClose={() => setActiveOverridePopup(null)}
+                    contentRenderer={() => renderOverridePopupContent(activeOverridePopup!)}
+                />
+            </Suspense>
         </div>
     );
 };
 
-export default UserView;
+export default React.memo(UserView);

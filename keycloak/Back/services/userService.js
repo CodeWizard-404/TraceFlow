@@ -452,18 +452,30 @@ class UserService {
         this.validateInput({ userID });
 
         try {
-            const user = await User.findByPk(userID, {
+            // Fetch user by userID in the local DB
+            let user = await User.findByPk(userID, {
                 include: [{ model: Role, through: { attributes: [] }, attributes: ['name'] }],
             });
+
+            if (!user) {
+                // If no user is found with userID, fetch by keycloakId in the local DB
+                user = await User.findOne({
+                    where: { keycloakId: userID },
+                    include: [{ model: Role, through: { attributes: [] }, attributes: ['name'] }],
+                });
+            }
+
             if (!user) {
                 throw new Error(ERROR_MESSAGES.USER_NOT_FOUND);
             }
+
             return user;
         } catch (error) {
             logger.error(`Get user by ID error: ${error.message}`, { ip: null });
             throw new Error(error.message || ERROR_MESSAGES.USER_NOT_FOUND);
         }
     }
+
 
     static async getUsersByRole(roleName) {
         if (!roleName) {

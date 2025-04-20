@@ -12,7 +12,7 @@ interface User {
     googleEmail?: string;
     PFP?: string | null;
     tempResetToken?: string;
-    roles?: Role[];
+    Roles?: Role[];
     supervisors?: User[];
     managers?: User[];
 }

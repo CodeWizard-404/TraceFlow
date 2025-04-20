@@ -242,7 +242,7 @@ const AuthProvider: React.FC<{ children: ReactNode }> = ({ children }) => {
                 wallet: '',
                 password: '',
                 keycloakId: '',
-                roles: response.user.roles.map((role) => ({
+                Roles: response.user.roles.map((role) => ({
                     roleID: role.roleID,
                     name: role.name,
                     description: role.description,

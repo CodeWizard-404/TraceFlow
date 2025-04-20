@@ -4,7 +4,7 @@ interface Role {
     roleID: string;
     name: string;
     description?: string;
-    permissions?: Permission[];
+    Permissions?: Permission[];
 }
 
 export default Role;

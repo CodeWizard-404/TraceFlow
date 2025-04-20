@@ -1,4 +1,4 @@
-import React, { useState } from "react";
+import React, { useState, useEffect } from "react";
 import { FaAngleDown, FaInfoCircle } from "react-icons/fa";
 
 // Context and APIs
@@ -28,6 +28,82 @@ interface UserAddProps {
   setView: (view: ViewMode) => void;
   setError: (error: string | null) => void;
 }
+
+// Skeleton Component for UserAdd
+const UserAddSkeleton: React.FC = () => (
+  <div className="form-card form-card-0 skeleton">
+    {/* Personal Information Section */}
+    <div className="form-section">
+      <div className="custom-skeleton pulsing" style={{ width: "150px", height: "24px", marginBottom: "16px" }} />
+      <div className="form-row">
+        <div className="form-group">
+          <div className="custom-skeleton pulsing" style={{ width: "80px", height: "16px", marginBottom: "8px" }} />
+          <div className="custom-skeleton pulsing" style={{ width: "100%", height: "32px" }} />
+        </div>
+        <div className="form-group">
+          <div className="custom-skeleton pulsing" style={{ width: "80px", height: "16px", marginBottom: "8px" }} />
+          <div className="custom-skeleton pulsing" style={{ width: "100%", height: "32px" }} />
+        </div>
+      </div>
+    </div>
+    {/* Contact Information Section */}
+    <div className="form-section">
+      <hr />
+      <div className="custom-skeleton pulsing" style={{ width: "150px", height: "24px", marginBottom: "16px" }} />
+      <div className="form-row">
+        <div className="form-group">
+          <div className="custom-skeleton pulsing" style={{ width: "80px", height: "16px", marginBottom: "8px" }} />
+          <div className="custom-skeleton pulsing" style={{ width: "100%", height: "32px" }} />
+        </div>
+        <div className="form-group">
+          <div className="custom-skeleton pulsing" style={{ width: "80px", height: "16px", marginBottom: "8px" }} />
+          <div className="custom-skeleton pulsing" style={{ width: "100%", height: "32px" }} />
+        </div>
+      </div>
+    </div>
+    {/* Credentials Section */}
+    <div className="form-section">
+      <hr />
+      <div className="custom-skeleton pulsing" style={{ width: "150px", height: "24px", marginBottom: "16px" }} />
+      <div className="form-row">
+        <div className="form-group">
+          <div className="custom-skeleton pulsing" style={{ width: "80px", height: "16px", marginBottom: "8px" }} />
+          <div className="custom-skeleton pulsing" style={{ width: "100%", height: "32px" }} />
+        </div>
+        <div className="form-group">
+          <div className="custom-skeleton pulsing" style={{ width: "80px", height: "16px", marginBottom: "8px" }} />
+          <div className="custom-skeleton pulsing" style={{ width: "100%", height: "32px" }} />
+        </div>
+      </div>
+    </div>
+    {/* Wallet Section */}
+    <div className="form-section">
+      <hr />
+      <div className="custom-skeleton pulsing" style={{ width: "150px", height: "24px", marginBottom: "16px" }} />
+      <div className="form-group">
+        <div className="custom-skeleton pulsing" style={{ width: "80px", height: "16px", marginBottom: "8px" }} />
+        <div className="custom-skeleton pulsing" style={{ width: "100%", height: "32px" }} />
+      </div>
+    </div>
+    {/* Role Assignment Section */}
+    <div className="form-section">
+      <hr />
+      <div className="custom-skeleton pulsing" style={{ width: "150px", height: "24px", marginBottom: "16px" }} />
+      <div className="form-group">
+        <div className="custom-skeleton pulsing" style={{ width: "80px", height: "16px", marginBottom: "8px" }} />
+        <div className="roles-grid">
+          {[...Array(6)].map((_, i) => (
+            <div key={i} className="role-toggle-container">
+              <div className="custom-skeleton pulsing" style={{ width: "100%", height: "32px" }} />
+            </div>
+          ))}
+        </div>
+      </div>
+    </div>
+    {/* Create Button */}
+    <div className="custom-skeleton pulsing" style={{ width: "120px", height: "40px", marginTop: "16px" }} />
+  </div>
+);
 
 // Main Component
 const UserAdd: React.FC<UserAddProps> = ({
@@ -71,6 +147,27 @@ const UserAdd: React.FC<UserAddProps> = ({
     new Set()
   );
   const [loading, setLoading] = useState(false);
+  const [showSkeleton, setShowSkeleton] = useState(true);
+
+  // Debugging Roles
+  useEffect(() => {
+    console.log("UserAdd: Roles prop received:", roles);
+    console.log("UserAdd: Number of roles:", roles.length);
+    console.log("UserAdd: Selected roles:", selectedRolesForNewUser);
+    if (roles.length === 0) {
+      console.warn("UserAdd: No roles available. Check roles prop or API fetch in parent component.");
+    }
+  }, [roles, selectedRolesForNewUser]);
+
+  // Skeleton Delay
+  useEffect(() => {
+    console.log("UserAdd: Showing skeleton for 3 seconds");
+    const timer = setTimeout(() => {
+      setShowSkeleton(false);
+      console.log("UserAdd: Skeleton hidden, rendering form");
+    }, 500);
+    return () => clearTimeout(timer);
+  }, []);
 
   // Permissions
   const userPermissions = {
@@ -131,8 +228,10 @@ const UserAdd: React.FC<UserAddProps> = ({
             import.meta.env.VITE_ROLES_SUPER_ADMIN
         );
         if (filteredRoles.length > 0) {
+          console.log("UserAdd: Assigning roles:", filteredRoles);
           await assignRolesToUser(createdUser.userID, filteredRoles);
           createdUser.Roles = await getRolesByUser(createdUser.userID);
+          console.log("UserAdd: Assigned roles fetched:", createdUser.Roles);
         }
       }
 
@@ -145,6 +244,7 @@ const UserAdd: React.FC<UserAddProps> = ({
       const errorMessage =
         error instanceof Error ? error.message : "Failed to create user.";
       setError(errorMessage);
+      console.error("UserAdd: Error creating user:", errorMessage);
     } finally {
       setLoading(false);
     }
@@ -250,6 +350,13 @@ const UserAdd: React.FC<UserAddProps> = ({
     setUserFormErrors({ ...userFormErrors, phone: validatePhone(raw) });
   };
 
+  const handleWalletChange = (e: React.ChangeEvent<HTMLInputElement>) => {
+    const raw = e.target.value.replace(/[^\d]/g, "").slice(0, 16);
+    setRawWallet(raw);
+    setNewUser({ ...newUser, wallet: stripWalletForDatabase(raw) });
+    setUserFormErrors({ ...userFormErrors, wallet: validateWallet(raw, true) });
+  };
+
   // Reset Form
   const resetFormStates = () => {
     setNewUser({});
@@ -293,7 +400,7 @@ const UserAdd: React.FC<UserAddProps> = ({
 
   const getCategorizedPermissionsForRole = (role: Role) => {
     const byClass: { [key: string]: Permission[] } = {};
-    role.permissions
+    role.Permissions
       ?.filter(
         (perm) => isSuperAdmin || !["Role", "Permission"].includes(perm.class)
       )
@@ -325,15 +432,13 @@ const UserAdd: React.FC<UserAddProps> = ({
                 >
                   {className} ({perms.length})
                   <FaAngleDown
-                    className={`toggle-icon ${
-                      expandedClasses.has(className) ? "expanded" : ""
-                    }`}
+                    className={`toggle-icon ${expandedClasses.has(className) ? "expanded" : ""
+                      }`}
                   />
                 </button>
                 <ul
-                  className={`permission-list ${
-                    expandedClasses.has(className) ? "expanded" : ""
-                  }`}
+                  className={`permission-list ${expandedClasses.has(className) ? "expanded" : ""
+                    }`}
                 >
                   {perms.map((perm) => (
                     <li key={perm.permissionID}>{perm.name}</li>
@@ -351,6 +456,10 @@ const UserAdd: React.FC<UserAddProps> = ({
 
   // Render
   if (view !== "add-user" || !userPermissions.canCreateUsers) return null;
+
+  if (showSkeleton || loading) {
+    return <UserAddSkeleton />;
+  }
 
   return (
     <div className="form-card form-card-0">
@@ -370,13 +479,11 @@ const UserAdd: React.FC<UserAddProps> = ({
                 });
               }}
               onBlur={() => markUserTouched("firstname")}
-              className={`user-edit-input ${
-                userTouched.firstname ? "touched" : ""
-              } ${
-                userTouched.firstname && userFormErrors.firstname
+              className={`user-edit-input ${userTouched.firstname ? "touched" : ""
+                } ${userTouched.firstname && userFormErrors.firstname
                   ? "invalid-vibrate"
                   : ""
-              }`}
+                }`}
               required
               disabled={loading}
             />
@@ -397,13 +504,11 @@ const UserAdd: React.FC<UserAddProps> = ({
                 });
               }}
               onBlur={() => markUserTouched("lastname")}
-              className={`user-edit-input ${
-                userTouched.lastname ? "touched" : ""
-              } ${
-                userTouched.lastname && userFormErrors.lastname
+              className={`user-edit-input ${userTouched.lastname ? "touched" : ""
+                } ${userTouched.lastname && userFormErrors.lastname
                   ? "invalid-vibrate"
                   : ""
-              }`}
+                }`}
               required
               disabled={loading}
             />
@@ -430,13 +535,11 @@ const UserAdd: React.FC<UserAddProps> = ({
                 });
               }}
               onBlur={() => markUserTouched("email")}
-              className={`user-edit-input ${
-                userTouched.email ? "touched" : ""
-              } ${
-                userTouched.email && userFormErrors.email
+              className={`user-edit-input ${userTouched.email ? "touched" : ""
+                } ${userTouched.email && userFormErrors.email
                   ? "invalid-vibrate"
                   : ""
-              }`}
+                }`}
               required
               disabled={loading}
             />
@@ -452,13 +555,11 @@ const UserAdd: React.FC<UserAddProps> = ({
               onChange={handlePhoneChange}
               onBlur={() => markUserTouched("phone")}
               placeholder="XX XXX XXX"
-              className={`user-edit-input ${
-                userTouched.phone ? "touched" : ""
-              } ${
-                userTouched.phone && userFormErrors.phone
+              className={`user-edit-input ${userTouched.phone ? "touched" : ""
+                } ${userTouched.phone && userFormErrors.phone
                   ? "invalid-vibrate"
                   : ""
-              }`}
+                }`}
               required
               maxLength={10}
               disabled={loading}
@@ -491,13 +592,11 @@ const UserAdd: React.FC<UserAddProps> = ({
                 });
               }}
               onBlur={() => markUserTouched("password")}
-              className={`user-edit-input ${
-                userTouched.password ? "touched" : ""
-              } ${
-                userTouched.password && userFormErrors.password
+              className={`user-edit-input ${userTouched.password ? "touched" : ""
+                } ${userTouched.password && userFormErrors.password
                   ? "invalid-vibrate"
                   : ""
-              }`}
+                }`}
               required
               disabled={loading}
             />
@@ -522,13 +621,11 @@ const UserAdd: React.FC<UserAddProps> = ({
                 });
               }}
               onBlur={() => markUserTouched("passwordConfirm")}
-              className={`user-edit-input ${
-                userTouched.passwordConfirm ? "touched" : ""
-              } ${
-                userTouched.passwordConfirm && userFormErrors.passwordConfirm
+              className={`user-edit-input ${userTouched.passwordConfirm ? "touched" : ""
+                } ${userTouched.passwordConfirm && userFormErrors.passwordConfirm
                   ? "invalid-vibrate"
                   : ""
-              }`}
+                }`}
               required
               disabled={loading}
             />
@@ -548,24 +645,14 @@ const UserAdd: React.FC<UserAddProps> = ({
           <input
             type="text"
             value={formatWalletDisplay(rawWallet)}
-            onChange={(e) => {
-              const raw = e.target.value.replace(/[^\d]/g, "").slice(0, 16);
-              setRawWallet(raw);
-              setNewUser({ ...newUser, wallet: stripWalletForDatabase(raw) });
-              setUserFormErrors({
-                ...userFormErrors,
-                wallet: validateWallet(raw, true),
-              });
-            }}
+            onChange={handleWalletChange}
             onBlur={() => markUserTouched("wallet")}
             placeholder="XXXX-XXXX-XXXX-XXXX"
-            className={`user-edit-input ${
-              userTouched.wallet ? "touched" : ""
-            } ${
-              userTouched.wallet && userFormErrors.wallet
+            className={`user-edit-input ${userTouched.wallet ? "touched" : ""
+              } ${userTouched.wallet && userFormErrors.wallet
                 ? "invalid-vibrate"
                 : ""
-            }`}
+              }`}
             required
             maxLength={19}
             disabled={loading}
@@ -581,40 +668,43 @@ const UserAdd: React.FC<UserAddProps> = ({
           <h3>Role Assignment</h3>
           <div className="form-group">
             <label>Assign Roles</label>
-            <div className="roles-grid">
-              {roles
-                .filter(
-                  (role) => role.name !== import.meta.env.VITE_ROLES_SUPER_ADMIN
-                )
-                .map((role) => (
-                  <div key={role.roleID} className="role-toggle-container">
-                    <button
-                      className={`role-toggle-button ${
-                        selectedRolesForNewUser.includes(role.roleID)
+            {roles.length === 0 ? (
+              <p className="error-text">No roles available. Please check role fetching.</p>
+            ) : (
+              <div className="roles-grid">
+                {roles
+                  .filter(
+                    (role) => role.name !== import.meta.env.VITE_ROLES_SUPER_ADMIN
+                  )
+                  .map((role) => (
+                    <div key={role.roleID} className="role-toggle-container">
+                      <button
+                        className={`role-toggle-button ${selectedRolesForNewUser.includes(role.roleID)
                           ? "active"
                           : ""
-                      }`}
-                      onClick={() => {
-                        setSelectedRolesForNewUser((prev) =>
-                          prev.includes(role.roleID)
-                            ? prev.filter((id) => id !== role.roleID)
-                            : [...prev, role.roleID]
-                        );
-                      }}
-                      disabled={loading}
-                    >
-                      <span>{role.name}</span>
-                      <FaInfoCircle
-                        className="role-info-icon"
-                        onClick={(e) => {
-                          e.stopPropagation();
-                          toggleRolePopup(role.roleID);
+                          }`}
+                        onClick={() => {
+                          setSelectedRolesForNewUser((prev) =>
+                            prev.includes(role.roleID)
+                              ? prev.filter((id) => id !== role.roleID)
+                              : [...prev, role.roleID]
+                          );
                         }}
-                      />
-                    </button>
-                  </div>
-                ))}
-            </div>
+                        disabled={loading}
+                      >
+                        <span>{role.name}</span>
+                        <FaInfoCircle
+                          className="role-info-icon"
+                          onClick={(e) => {
+                            e.stopPropagation();
+                            toggleRolePopup(role.roleID);
+                          }}
+                        />
+                      </button>
+                    </div>
+                  ))}
+              </div>
+            )}
           </div>
         </div>
       )}
