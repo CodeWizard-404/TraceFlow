@@ -13,8 +13,8 @@ import {
 import "./VisitValidation.css";
 import { getAgentById } from "../../apis/agentAPI";
 import { getVisitById, logVisitDetails } from "../../apis/visitAPI";
-import Visit from "../../models/Visit";
-import Agent from "../../models/Agent";
+import Visit from "../models/Visit";
+import Agent from "../models/Agent";
 import { useAuth } from "../../context/AuthContext";
 import { useTranslation } from "react-i18next";
 
@@ -294,9 +294,8 @@ const VisitValidation: React.FC = () => {
 
   return (
     <div
-      className={`visit-validation-container ${
-        isCameraActive ? "camera-active" : ""
-      }`}
+      className={`visit-validation-container ${isCameraActive ? "camera-active" : ""
+        }`}
     >
       {!isCameraActive && (
         <header className="visit-header-0">

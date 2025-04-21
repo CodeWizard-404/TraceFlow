@@ -15,8 +15,8 @@ import { assignPermissionsToRole, revokePermissionsFromRole, getPermissionsByRol
 import { deleteRole, updateRole } from "../../../apis/roleAPI";
 
 // Models
-import Permission from "../../../models/Permission";
-import Role from "../../../models/Role";
+import Permission from "../../models/Permission";
+import Role from "../../models/Role";
 
 // Components
 import InfoPopup from "../InfoPopup";

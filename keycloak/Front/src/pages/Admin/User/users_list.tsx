@@ -1,8 +1,8 @@
 import React, { useMemo, useEffect, useCallback, useState } from "react";
 import { useAuth } from "../../../context/AuthContext";
 import { getSupervisorsByUser, getManagersByUser } from "../../../apis/userAPI";
-import User from "../../../models/User";
-import Role from "../../../models/Role";
+import User from "../../models/User";
+import Role from "../../models/Role";
 import { SortField, SortOrder, ViewMode } from "../adminTypes";
 import { t } from "i18next";
 import { debounce } from "lodash";

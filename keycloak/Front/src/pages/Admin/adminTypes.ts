@@ -15,4 +15,8 @@ export type ViewMode =
     | "checklist-details"
     | "reasons"
     | "add-reason"
-    | "reason-details";
+    | "reason-details"
+    | "notification-rules"
+    | "notification-rule-details"
+    | "add-notification-rule"
+    | "notifications";

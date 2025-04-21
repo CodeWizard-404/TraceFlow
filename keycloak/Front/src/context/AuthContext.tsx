@@ -6,9 +6,9 @@ import { login, verify2FA, logout, refreshToken } from '../apis/authAPI';
 import { getEffectivePermissions } from '../apis/permissionAPI';
 import { getRolesByUser } from '../apis/roleAPI';
 import { setupAxiosInterceptors } from '../apis/axiosConfig';
-import User from '../models/User';
-import Permission from '../models/Permission';
-import Role from '../models/Role';
+import User from '../pages/models/User';
+import Permission from '../pages/models/Permission';
+import Role from '../pages/models/Role';
 import { protectedRoutes, determineTargetRoute } from '../lib/authUtils';
 
 interface AuthContextType {
@@ -233,6 +233,14 @@ const AuthProvider: React.FC<{ children: ReactNode }> = ({ children }) => {
                 }
             }
 
+            // Validate user and roles
+            if (!response.user.userID || !response.user.email || !response.user.phone) {
+                throw new Error('Incomplete user data in response');
+            }
+
+            // Default to empty roles array if undefined
+            const roles = Array.isArray(response.user.roles) ? response.user.roles : [];
+
             const newUser: User = {
                 userID: response.user.userID,
                 email: response.user.email,
@@ -242,22 +250,30 @@ const AuthProvider: React.FC<{ children: ReactNode }> = ({ children }) => {
                 wallet: '',
                 password: '',
                 keycloakId: '',
-                Roles: response.user.roles.map((role) => ({
+                Roles: roles.map((role) => ({
                     roleID: role.roleID,
                     name: role.name,
                     description: role.description,
-                    permissions: role.permissions!.map((perm) => ({
-                        permissionID: perm.permissionID,
-                        name: perm.name,
-                        class: perm.class,
-                        description: perm.description,
-                    })),
+                    // Ensure Permissions is defined, default to empty array
+                    permissions: Array.isArray(role.Permissions)
+                        ? role.Permissions.map((perm) => ({
+                            permissionID: perm.permissionID,
+                            name: perm.name,
+                            class: perm.class,
+                            description: perm.description,
+                        }))
+                        : [],
                 })),
             };
 
             localStorage.setItem('user', JSON.stringify(newUser));
+            document.cookie = `accessToken=${response.accessToken}; path=/; SameSite=Strict; max-age=${response.expiresIn! / 1000
+                }`;
             setUser(newUser);
-            setTokenExpiry(Date.now() + (response.expiresIn || parseInt(import.meta.env.VITE_ACCESS_TOKEN_MAX_AGE) || 900000));
+            setTokenExpiry(
+                Date.now() +
+                (response.expiresIn || parseInt(import.meta.env.VITE_ACCESS_TOKEN_MAX_AGE) || 900000)
+            );
 
             try {
                 setPermissionsLoaded(false);
@@ -308,6 +324,7 @@ const AuthProvider: React.FC<{ children: ReactNode }> = ({ children }) => {
             localStorage.removeItem('user');
             localStorage.removeItem('accessToken');
             localStorage.removeItem('supervisorFilter');
+            document.cookie = 'accessToken=; path=/; expires=Thu, 01 Jan 1970 00:00:00 GMT';
             navigate('/login', { replace: true, state: null });
         }
     };

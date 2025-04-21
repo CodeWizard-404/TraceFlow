@@ -1,3 +1,4 @@
+/* eslint-disable react-hooks/exhaustive-deps */
 import React, { useCallback, useEffect, useMemo, useState, Suspense, lazy } from "react";
 import { FaArrowLeft, FaPlus, FaRedo, FaSearch, FaSort, FaTimes, FaUserPlus } from "react-icons/fa";
 import { motion } from "framer-motion";
@@ -11,14 +12,18 @@ import { getAllPermissions } from "../../apis/permissionAPI";
 import { getAllReasons } from "../../apis/reasonAPI";
 import { getAllRoles, resetMainRoles } from "../../apis/roleAPI";
 import { getAllUsers, getUserById } from "../../apis/userAPI";
-import { Checklist } from "../../models/Checklist";
-import Permission from "../../models/Permission";
-import { Reason } from "../../models/Reason";
-import Role from "../../models/Role";
-import User from "../../models/User";
+import { getNotificationRules } from "../../apis/notificationAPI"; // Import notification API
+import { Checklist } from "../models/Checklist";
+import Permission from "../models/Permission";
+import { Reason } from "../models/Reason";
+import Role from "../models/Role";
+import User from "../models/User";
+import NotificationRule from "../models/NotificationRule"; // Import NotificationRule model
 import { SortField, SortOrder, ViewMode } from "./adminTypes";
+import NotificationPanel from "../../components/ui/notificationPanel"; // Import NotificationPanel
 import "./AdminDashboard.css";
 
+// Lazy load existing components
 const ChecklistAdd = lazy(() => import("./Items/Checklists/ChecklistAdd"));
 const ChecklistView = lazy(() => import("./Items/Checklists/ChecklistView"));
 const ChecklistsList = lazy(() => import("./Items/Checklists/ChecklistsList"));
@@ -32,20 +37,27 @@ const UserAdd = lazy(() => import("./User/user_add"));
 const UserView = lazy(() => import("./User/user_view"));
 const UsersList = lazy(() => import("./User/users_list"));
 
+// Lazy load new notification components
+const NotificationRulesList = lazy(() => import("./Notification/NotificationRulesList"));
+const NotificationRuleAdd = lazy(() => import("./Notification/NotificationRuleAdd"));
+const NotificationRuleView = lazy(() => import("./Notification/NotificationRuleView"));
+
 const CACHE_DURATION = 15 * 60 * 1000;
 const FALLBACK_TIMEOUT = 500;
 const ITEMS_PER_PAGE = 10;
 const COOKIE_NAME = "adminDashboardView";
 const COOKIE_EXPIRES = 7;
 
+// Update valid views to include notification-related views
 const validViews: ViewMode[] = [
     "users", "roles", "permissions", "checklists", "reasons",
     "add-user", "add-role", "add-permission", "user-details",
     "checklist-details", "add-checklist", "reason-details", "add-reason",
+    "notifications", "add-notification-rule", "notification-rule-details", // New views
 ];
 
 interface CacheData {
-    data: User[] | Role[] | Permission[] | Checklist[] | Reason[];
+    data: User[] | Role[] | Permission[] | Checklist[] | Reason[] | NotificationRule[];
     timestamp: number;
 }
 
@@ -58,6 +70,7 @@ const AdminDashboard: React.FC = React.memo(() => {
     const [, setLoading] = useState(false);
     const [roleLoading, setRoleLoading] = useState(false);
     const [isTransitioning, setIsTransitioning] = useState(false);
+    const [showNotificationPanel, setShowNotificationPanel] = useState(false); // State for notification panel
 
     const initialView = useMemo(() => {
         const savedView = Cookies.get(COOKIE_NAME);
@@ -83,10 +96,13 @@ const AdminDashboard: React.FC = React.memo(() => {
     const [selectedReason, setSelectedReason] = useState<Reason | null>(null);
     const [, setSelectedRole] = useState<Role | null>(null);
     const [selectedUser, setSelectedUser] = useState<User | null>(null);
+    const [selectedNotificationRule, setSelectedNotificationRule] = useState<NotificationRule | null>(null); // State for selected rule
     const [sortField, setSortField] = useState<SortField>("role");
     const [sortOrder, setSortOrder] = useState<SortOrder>("asc");
     const [users, setUsers] = useState<User[]>([]);
     const [usersPage, setUsersPage] = useState(1);
+    const [notificationRules, setNotificationRules] = useState<NotificationRule[]>([]); // State for notification rules
+    const [notificationRulesPage, setNotificationRulesPage] = useState(1); // Pagination for rules
     const [view, setView] = useState<ViewMode>(initialView);
 
     useEffect(() => {
@@ -124,6 +140,7 @@ const AdminDashboard: React.FC = React.memo(() => {
         []
     );
 
+    // Update permissions to include notification rule management
     const userPermissions = useMemo(
         () => ({
             canCreateChecklists: effectivePermissions?.some(
@@ -158,6 +175,12 @@ const AdminDashboard: React.FC = React.memo(() => {
             ),
             canViewUsers: effectivePermissions?.some(
                 (p) => p.name === import.meta.env.VITE_PERMISSIONS_READ_USERS
+            ),
+            canManageNotificationRules: effectivePermissions?.some(
+                (p) => p.name === "manage_notification_rules" // New permission
+            ),
+            canViewNotificationRules: effectivePermissions?.some(
+                (p) => p.name === "view_notification_rules" // New permission
             ),
         }),
         [effectivePermissions]
@@ -264,15 +287,18 @@ const AdminDashboard: React.FC = React.memo(() => {
             setSelectedPermission(null);
             setSelectedChecklist(null);
             setSelectedReason(null);
+            setSelectedNotificationRule(null); // Reset selected rule
             if (newView === "users") setUsersPage(1);
             else if (newView === "checklists") setChecklistsPage(1);
             else if (newView === "reasons") setReasonsPage(1);
+            else if (newView === "notifications") setNotificationRulesPage(1); // Reset pagination for notifications
             localStorage.setItem("adminView", newView);
             if (newView !== "user-details") localStorage.removeItem("selectedUserId");
         },
         []
     );
 
+    // Fetch data, including notification rules
     useEffect(() => {
         const fetchData = async () => {
             if (
@@ -280,7 +306,8 @@ const AdminDashboard: React.FC = React.memo(() => {
                 !userPermissions.canViewRoles &&
                 !userPermissions.canViewPermissions &&
                 !userPermissions.canViewChecklists &&
-                !userPermissions.canViewReasons
+                !userPermissions.canViewReasons &&
+                !userPermissions.canViewNotificationRules
             ) {
                 const errorMessage = t("adminDashboard.error.noToken");
                 setLocalError(errorMessage);
@@ -342,6 +369,13 @@ const AdminDashboard: React.FC = React.memo(() => {
                         setCachedData("all_reasons", reasonsData);
                     }
                     setReasons(reasonsData as Reason[]);
+                } else if (view === "notifications" && userPermissions.canViewNotificationRules) {
+                    let rulesData = getCachedData("all_notification_rules");
+                    if (!rulesData) {
+                        rulesData = await getNotificationRules();
+                        setCachedData("all_notification_rules", rulesData);
+                    }
+                    setNotificationRules(rulesData as NotificationRule[]);
                 }
                 clearError();
             } catch (err: unknown) {
@@ -365,8 +399,10 @@ const AdminDashboard: React.FC = React.memo(() => {
         clearError,
         getCachedData,
         setCachedData,
+        notificationRulesPage, // Add dependency for notification rules pagination
     ]);
 
+    // Clear error messages after 3 seconds
     useEffect(() => {
         if (error) {
             const timer = setTimeout(() => {
@@ -427,12 +463,18 @@ const AdminDashboard: React.FC = React.memo(() => {
                         t("adminDashboard.header.reasonDetails", {
                             item: selectedReason.item,
                         })}
+                    {view === "notifications" && "Notifications"} {/* Replace t("adminDashboard.header.notifications") */}
+                    {view === "add-notification-rule" && "Add Notification Rule"} {/* Replace t("adminDashboard.header.addNotificationRule") */}
+                    {view === "notification-rule-details" &&
+                        selectedNotificationRule &&
+                        `Notification Rule Details: ${selectedNotificationRule.event}`} {/* Replace t("adminDashboard.header.notificationRuleDetails") */}
                 </h1>
                 {(view === "users" ||
                     view === "roles" ||
                     view === "permissions" ||
                     view === "checklists" ||
-                    view === "reasons") && (
+                    view === "reasons" ||
+                    view === "notifications") && (
                         <div className="search-container">
                             <FaSearch className="search-icon" aria-hidden="true" />
                             <input
@@ -452,20 +494,24 @@ const AdminDashboard: React.FC = React.memo(() => {
                     view === "add-checklist" ||
                     view === "checklist-details" ||
                     view === "add-reason" ||
-                    view === "reason-details") && (
+                    view === "reason-details" ||
+                    view === "add-notification-rule" ||
+                    view === "notification-rule-details") && (
                         <motion.button
                             className="back-button"
                             onClick={() =>
                                 handleViewChange(
                                     view.includes("user")
                                         ? "users"
-                                        : view.includes("role")
+                                        : view.includes("role") && !view.includes("notification")
                                             ? "roles"
                                             : view.includes("permission")
                                                 ? "permissions"
                                                 : view.includes("checklist")
                                                     ? "checklists"
-                                                    : "reasons"
+                                                    : view.includes("reason") || view.includes("notification")
+                                                        ? view.includes("notification") ? "notifications" : "reasons"
+                                                        : "notifications"
                                 )
                             }
                             whileHover={{ scale: 1.05 }}
@@ -541,6 +587,21 @@ const AdminDashboard: React.FC = React.memo(() => {
                                 aria-current={view === "reasons" ? "page" : undefined}
                             >
                                 {t("adminDashboard.sidebar.reasons")}
+                            </button>
+                        )}
+                        {userPermissions.canViewNotificationRules && (
+                            <button
+                                className={
+                                    view === "notifications" ||
+                                        view === "add-notification-rule" ||
+                                        view === "notification-rule-details"
+                                        ? "active"
+                                        : ""
+                                }
+                                onClick={() => handleViewChange("notifications")}
+                                aria-current={view === "notifications" ? "page" : undefined}
+                            >
+                                {t("Notifications")}
                             </button>
                         )}
                     </div>
@@ -668,8 +729,35 @@ const AdminDashboard: React.FC = React.memo(() => {
                                 <FaPlus aria-hidden="true" /> {t("adminDashboard.sidebar.addReason")}
                             </motion.button>
                         )}
+                    {userPermissions.canViewNotificationRules &&
+                        view === "notifications" &&
+                        userPermissions.canManageNotificationRules && (
+                            <motion.button
+                                className="action-button"
+                                onClick={() => handleViewChange("add-notification-rule")}
+                                whileHover={{ scale: 1.05 }}
+                                whileTap={{ scale: 0.95 }}
+                                aria-label={t("Add NotificationRule")}
+                            >
+                                <FaPlus aria-hidden="true" /> {t("Add Notification Rule")}
+                            </motion.button>
+                        )}
                 </aside>
                 <main className="main-content" role="region" aria-labelledby="dashboard-title">
+                    {/* Notification Panel */}
+                    {showNotificationPanel && (
+                        <motion.div
+                            initial={{ opacity: 0, y: -20 }}
+                            animate={{ opacity: 1, y: 0 }}
+                            exit={{ opacity: 0, y: -20 }}
+                            className="notification-panel-container"
+                        >
+                            <NotificationPanel
+                                className="absolute top-12 right-4"
+                                onClose={() => setShowNotificationPanel(false)}
+                            />
+                        </motion.div>
+                    )}
                     <Suspense fallback={<div>Loading...</div>}>
                         {isTransitioning && view === "user-details" && <div>Loading user details...</div>}
                         {!isTransitioning && view === "users" && (
@@ -810,6 +898,40 @@ const AdminDashboard: React.FC = React.memo(() => {
                             <ReasonAdd
                                 reasons={reasons}
                                 setReasons={setReasons}
+                                view={view}
+                                setView={setView}
+                                setError={setLocalError}
+                            />
+                        )}
+                        {view === "notifications" && (
+                            <NotificationRulesList
+                                rules={notificationRules}
+                                setRules={setNotificationRules}
+                                view={view}
+                                setView={setView}
+                                setSelectedRule={setSelectedNotificationRule}
+                                setError={setLocalError}
+                                searchQuery={searchQuery}
+                                currentPage={notificationRulesPage}
+                                setCurrentPage={setNotificationRulesPage}
+                                itemsPerPage={ITEMS_PER_PAGE}
+                            />
+                        )}
+                        {view === "notification-rule-details" && (
+                            <NotificationRuleView
+                                selectedRule={selectedNotificationRule}
+                                setSelectedRule={setSelectedNotificationRule}
+                                rules={notificationRules}
+                                setRules={setNotificationRules}
+                                view={view}
+                                setView={setView}
+                                setError={setLocalError}
+                            />
+                        )}
+                        {view === "add-notification-rule" && (
+                            <NotificationRuleAdd
+                                rules={notificationRules}
+                                setRules={setNotificationRules}
                                 view={view}
                                 setView={setView}
                                 setError={setLocalError}

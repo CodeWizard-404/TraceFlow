@@ -120,7 +120,6 @@ body.dark .back-button {
 
 .back-button:hover {
     background: #f8fafc;
-    transform: scale(1.05);
 }
 
 body.dark .back-button:hover {
@@ -1806,7 +1805,6 @@ body.dark .cancel-button {
 
 .cancel-button:hover {
     background: #4b5563;
-    transform: scale(1.05);
 }
 
 body.dark .cancel-button:hover {
@@ -2212,7 +2210,6 @@ body.dark .confirm-button {
 
 .confirm-button:hover {
     background: #3a8fa2;
-    transform: scale(1.05);
 }
 
 body.dark .confirm-button:hover {
@@ -2241,7 +2238,6 @@ body.dark .cancel-button {
 
 .cancel-button:hover {
     background: #c81a65;
-    transform: scale(1.05);
 }
 
 body.dark .cancel-button:hover {
@@ -3052,7 +3048,6 @@ body.dark .action-button.create {
 
 .action-button.create:hover:not(:disabled) {
     background: #3a8fa2;
-    transform: scale(1.05);
 }
 
 body.dark .action-button.create:hover:not(:disabled) {
@@ -3339,4 +3334,292 @@ body.dark .custom-skeleton {
     100% {
         opacity: 1;
     }
+}
+
+
+
+
+
+
+
+
+
+
+
+
+.notification-rules-grid {
+    padding: 16px;
+}
+
+.notification-grid {
+    display: grid;
+    grid-template-columns: repeat(auto-fill, minmax(250px, 1fr));
+    gap: 16px;
+}
+
+.notification-card {
+    background: #fff;
+    border-radius: 8px;
+    padding: 16px;
+    box-shadow: 0 2px 4px rgba(0, 0, 0, 0.1);
+    cursor: pointer;
+    transition: transform 0.2s, box-shadow 0.2s;
+    position: relative;
+    display: flex;
+    flex-direction: column;
+    gap: 8px;
+}
+
+.notification-card:hover {
+    transform: translateY(-2px);
+    box-shadow: 0 4px 8px rgba(0, 0, 0, 0.15);
+}
+
+.notification-card-header {
+    display: flex;
+    align-items: center;
+    gap: 8px;
+}
+
+.notification-icon {
+    color: #4a90e2;
+    font-size: 20px;
+}
+
+.notification-card h3 {
+    font-size: 16px;
+    font-weight: 600;
+    margin: 0;
+    color: #333;
+}
+
+.notification-type {
+    font-size: 14px;
+    color: #666;
+    margin: 0;
+}
+
+.notification-template {
+    font-size: 13px;
+    color: #888;
+    margin: 0;
+    line-height: 1.4;
+}
+
+.notification-status {
+    font-size: 12px;
+    font-weight: 500;
+    padding: 4px 8px;
+    border-radius: 12px;
+    align-self: flex-start;
+}
+
+.notification-status.enabled {
+    background: #e6f4ea;
+    color: #2e7d32;
+}
+
+.notification-status.disabled {
+    background: #ffebee;
+    color: #c62828;
+}
+
+.notification-card-actions {
+    display: flex;
+    gap: 8px;
+    margin-top: auto;
+}
+
+.no-rules {
+    grid-column: 1 / -1;
+    text-align: center;
+    padding: 24px;
+    font-size: 16px;
+    color: #666;
+}
+
+.notification-rule-form {
+    background: #fff;
+    border-radius: 8px;
+    padding: 24px;
+    box-shadow: 0 2px 8px rgba(0, 0, 0, 0.1);
+    max-width: 600px;
+    margin: 0 auto;
+}
+
+.form-header {
+    display: flex;
+    align-items: center;
+    gap: 12px;
+    margin-bottom: 24px;
+}
+
+.form-icon {
+    color: #4a90e2;
+    font-size: 24px;
+}
+
+.notification-rule-form h2 {
+    font-size: 20px;
+    font-weight: 600;
+    color: #333;
+    margin: 0;
+}
+
+.form-group {
+    margin-bottom: 16px;
+}
+
+.form-group label {
+    display: block;
+    font-size: 14px;
+    font-weight: 500;
+    color: #333;
+    margin-bottom: 8px;
+}
+
+.channels-group {
+    margin-bottom: 24px;
+}
+
+.channels-grid {
+    display: grid;
+    grid-template-columns: repeat(auto-fit, minmax(120px, 1fr));
+    gap: 12px;
+}
+
+.channel-toggle {
+    display: flex;
+    align-items: center;
+    gap: 8px;
+    font-size: 14px;
+    color: #333;
+    cursor: pointer;
+}
+
+.channel-toggle input {
+    margin: 0;
+}
+
+.enabled-toggle {
+    display: flex;
+    align-items: center;
+    gap: 8px;
+    font-size: 14px;
+    font-weight: 500;
+    color: #333;
+    cursor: pointer;
+}
+
+.enabled-toggle input {
+    margin: 0;
+}
+
+.save-button {
+    background: #4a90e2;
+    color: #fff;
+}
+
+.save-button:hover {
+    background: #357abd;
+}
+
+
+
+
+/* Existing AdminDashboard.css content remains unchanged */
+/* Add new styles for rules-grid, rule-toggle, and enhanced skeleton animations */
+
+.rules-grid {
+    display: grid;
+    grid-template-columns: repeat(auto-fill, minmax(250px, 1fr));
+    gap: 1rem;
+    padding: 1rem;
+    background: #f8fafc;
+    border-radius: 0.75rem;
+}
+
+body.dark .rules-grid {
+    background: #333333;
+}
+
+.rule-toggle-container {
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    margin-top: 0.75rem;
+}
+
+.rule-toggle {
+    display: flex;
+    align-items: center;
+    gap: 0.5rem;
+    font-size: 0.875rem;
+    color: #1f2937;
+    cursor: pointer;
+}
+
+body.dark .rule-toggle {
+    color: #e5e7eb;
+}
+
+.rule-toggle input {
+    margin: 0;
+}
+
+.rule-actions {
+    display: flex;
+    gap: 0.5rem;
+    opacity: 0;
+    transform: translateX(10px);
+    transition: opacity 0.2s ease, transform 0.2s ease;
+}
+
+.permission-card:hover .rule-actions {
+    opacity: 1;
+    transform: translateX(0);
+}
+
+.channels-grid {
+    display: grid;
+    grid-template-columns: repeat(auto-fit, minmax(120px, 1fr));
+    gap: 0.75rem;
+    padding: 0.75rem;
+    background: #f8fafc;
+    border-radius: 0.5rem;
+}
+
+body.dark .channels-grid {
+    background: #333333;
+}
+
+.channel-toggle {
+    display: flex;
+    align-items: center;
+    gap: 0.5rem;
+    font-size: 0.875rem;
+    color: #1f2937;
+    cursor: pointer;
+}
+
+body.dark .channel-toggle {
+    color: #e5e7eb;
+}
+
+.channel-toggle input {
+    margin: 0;
+}
+
+/* Enhance skeleton animation for tiles */
+.custom-skeleton.tile {
+    width: 100%;
+    height: 120px;
+    background: linear-gradient(90deg, #e0e0e0 25%, #f0f0f0 50%, #e0e0e0 75%);
+    background-size: 200% 100%;
+    animation: pulse 1.5s ease-in-out infinite;
+    border-radius: 0.75rem;
+}
+
+body.dark .custom-skeleton.tile {
+    background: linear-gradient(90deg, #333 25%, #444 50%, #333 75%);
 }

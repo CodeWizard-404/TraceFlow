@@ -1,5 +1,5 @@
 // authUtils.ts
-import Role from "../models/Role";
+import Role from "../pages/models/Role";
 
 export const ROLES = {
     ADMIN: import.meta.env.VITE_ROLES_ADMIN,

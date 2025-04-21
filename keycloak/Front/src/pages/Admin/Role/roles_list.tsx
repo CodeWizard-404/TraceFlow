@@ -15,8 +15,8 @@ import { debounce } from "lodash";
 import { useAuth } from "../../../context/AuthContext";
 
 // Models
-import Permission from "../../../models/Permission";
-import Role from "../../../models/Role";
+import Permission from "../../models/Permission";
+import Role from "../../models/Role";
 
 // Components
 import InfoPopup from "../InfoPopup";
@@ -24,7 +24,7 @@ import RoleView from "./roles_view";
 
 // Styles
 import "../AdminDashboard.css";
-import PermissionsClass from "models/Enum/PermissionsClass";
+import PermissionsClass from "pages/models/Enum/PermissionsClass";
 
 // Props interface
 interface RolesListProps {

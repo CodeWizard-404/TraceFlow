@@ -11,7 +11,7 @@ import { Virtuoso } from "react-virtuoso";
 import { debounce } from "lodash";
 import "../../AdminDashboard.css";
 import { useAuth } from "../../../../context/AuthContext";
-import { Checklist } from "../../../../models/Checklist";
+import { Checklist } from "../../../models/Checklist";
 import { deleteChecklist, updateChecklist } from "../../../../apis/checklistAPI";
 
 // Lazy-loaded skeleton component

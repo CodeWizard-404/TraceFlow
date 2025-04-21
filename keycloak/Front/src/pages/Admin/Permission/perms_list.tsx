@@ -12,8 +12,8 @@ import { debounce } from "lodash";
 
 // Context and Models
 import { useAuth } from "../../../context/AuthContext";
-import Permission from "../../../models/Permission";
-import PermissionsClass from "../../../models/Enum/PermissionsClass";
+import Permission from "../../models/Permission";
+import PermissionsClass from "../../models/Enum/PermissionsClass";
 
 // Components
 import PermView from "./perm_view";

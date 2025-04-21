@@ -26,12 +26,12 @@ import {
 import "./VisitDetails.css";
 import { Button } from "../../components/ui/button";
 import { useAuth } from "../../context/AuthContext";
-import VisitStatus from "../../models/Enum/VisitStatus";
-import Visit from "../../models/Visit";
-import Agent from "../../models/Agent";
-import User from "../../models/User";
-import { Checklist } from "../../models/Checklist";
-import { Reason } from "../../models/Reason";
+import VisitStatus from "../models/Enum/VisitStatus";
+import Visit from "../models/Visit";
+import Agent from "../models/Agent";
+import User from "../models/User";
+import { Checklist } from "../models/Checklist";
+import { Reason } from "../models/Reason";
 import {
   getAgentById,
   getAgentsByLocation,

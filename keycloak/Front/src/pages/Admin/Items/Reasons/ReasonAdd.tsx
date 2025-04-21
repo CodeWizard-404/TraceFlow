@@ -10,7 +10,7 @@ import { debounce } from "lodash";
 import "../../AdminDashboard.css";
 import { createReason } from "../../../../apis/reasonAPI";
 import { useAuth } from "../../../../context/AuthContext";
-import { Reason } from "../../../../models/Reason";
+import { Reason } from "../../../models/Reason";
 import { ViewMode } from "pages/Admin/adminTypes";
 
 // Lazy-loaded skeleton component

@@ -1,5 +1,6 @@
 const axios = require('axios');
 const logger = require('../utils/logger');
+const { User } = require('../models');
 require('dotenv').config();
 
 const KEYCLOAK_URL = process.env.KEYCLOAK_URL || 'http://localhost:8080';
@@ -31,8 +32,17 @@ const authenticateCookie = async (req, res, next) => {
                 return res.status(401).json({ error: 'Invalid or expired token' });
             }
 
+            // Fetch local user by keycloakId
+            const keycloakId = response.data.sub;
+            const user = await User.findOne({ where: { keycloakId } });
+
+            if (!user) {
+                logger.error(`No local user found for keycloakId: ${keycloakId}`);
+                return res.status(404).json({ error: 'User not found in local database' });
+            }
+
             req.user = {
-                userID: response.data.sub,
+                userID: user.userID,
                 email: response.data.email,
                 roles: response.data.realm_access?.roles || [],
                 token: accessToken,

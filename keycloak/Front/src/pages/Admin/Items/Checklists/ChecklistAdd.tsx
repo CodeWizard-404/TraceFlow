@@ -10,7 +10,7 @@ import { debounce } from "lodash";
 import "../../AdminDashboard.css";
 import { createChecklist } from "../../../../apis/checklistAPI";
 import { useAuth } from "../../../../context/AuthContext";
-import { Checklist } from "../../../../models/Checklist";
+import { Checklist } from "../../../models/Checklist";
 import { ViewMode } from "pages/Admin/adminTypes";
 
 // Lazy-loaded skeleton component

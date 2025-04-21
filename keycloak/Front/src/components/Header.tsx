@@ -2,6 +2,7 @@ import { useState } from "react";
 import { To, useNavigate } from "react-router-dom";
 import { useTheme } from "../context/ThemeContext";
 import { useAuth } from "../context/AuthContext";
+import { useNotification } from "../context/NotificationContext";
 import { useTranslation } from "react-i18next";
 import {
   FaSun,
@@ -10,18 +11,27 @@ import {
   FaGlobe,
   FaBars,
   FaTimes,
+  FaBell,
 } from "react-icons/fa";
+import NotificationPanel from "./ui/notificationPanel";
+import { motion } from "framer-motion";
 import "./CMP.css";
 
 function Header() {
   const [isMenuOpen, setIsMenuOpen] = useState(false);
+  const [showNotificationPanel, setShowNotificationPanel] = useState(false);
   const { theme, toggleTheme } = useTheme();
-  const { user, userRoles, effectivePermissions, permissionsLoaded, logout } =
-    useAuth();
+  const { user, userRoles, effectivePermissions, permissionsLoaded, logout } = useAuth();
+  const { unreadCount } = useNotification();
   const navigate = useNavigate();
   const { t, i18n } = useTranslation();
 
   const toggleMenu = () => setIsMenuOpen((prev) => !prev);
+
+  const handleLanguageChange = (lang: string) => {
+    i18n.changeLanguage(lang);
+  };
+
   const handleLogout = async () => {
     try {
       await logout();
@@ -31,8 +41,7 @@ function Header() {
   };
 
   const PERMISSIONS = {
-    ACCESS_SUPERVISOR_TIMESHEETS: import.meta.env
-      .VITE_PERMISSIONS_ACCESS_SUPERVISOR_TIMESHEETS,
+    ACCESS_SUPERVISOR_TIMESHEETS: import.meta.env.VITE_PERMISSIONS_ACCESS_SUPERVISOR_TIMESHEETS,
     ACCESS_RECEIPT_BOOKS: import.meta.env.VITE_PERMISSIONS_ACCESS_RECEIPT_BOOKS,
   };
 
@@ -42,17 +51,12 @@ function Header() {
   };
 
   const hasPermission = (permission: string) =>
-    permissionsLoaded &&
-    effectivePermissions?.some((p) => p.name === permission);
+    permissionsLoaded && effectivePermissions?.some((p) => p.name === permission);
   const hasRole = (role: string) =>
     permissionsLoaded && userRoles?.some((r) => r.name === role);
 
   const navItems = [
-    {
-      path: "/dashboard",
-      label: t("header.navbar.dashboard"),
-      visible: () => true,
-    },
+    { path: "/dashboard", label: t("header.navbar.dashboard"), visible: () => true },
     {
       path: "/admin",
       label: t("header.navbar.admin"),
@@ -68,16 +72,13 @@ function Header() {
       label: t("header.navbar.receiptBooks"),
       visible: () => hasPermission(PERMISSIONS.ACCESS_RECEIPT_BOOKS),
     },
-    {
-      path: "/profile",
-      label: t("header.navbar.profile"),
-      visible: () => true,
-    },
+    { path: "/profile", label: t("header.navbar.profile"), visible: () => true },
   ];
 
   const handleNavClick = (path: To) => {
     navigate(path);
     setIsMenuOpen(false);
+    setShowNotificationPanel(false);
   };
 
   return (
@@ -114,51 +115,98 @@ function Header() {
             )}
           <div className="button-group">
             <div className="icon-btn-wrapper">
-              <button
+              <motion.button
                 className="theme-toggle-btn"
                 onClick={toggleTheme}
                 aria-label={t("header.aria.themeToggle", {
-                  mode: t(
-                    `header.${theme === "light" ? "darkMode" : "lightMode"}`
-                  ),
+                  mode: t(`header.${theme === "light" ? "darkMode" : "lightMode"}`),
                 })}
+                whileHover={{ scale: 1.05 }}
+                whileTap={{ scale: 0.95 }}
               >
                 {theme === "light" ? <FaMoon /> : <FaSun />}
                 <span className="btn-text">{t("header.theme")}</span>
-              </button>
+              </motion.button>
             </div>
             <div className="icon-btn-wrapper">
-              <div className="lang-switcher-container">
-                <span className="lang-icon">
-                  <FaGlobe />
+              <motion.button
+                className="lang-toggle-btn"
+                aria-label={t("header.selectLanguage")}
+                whileHover={{ scale: 1.05 }}
+                whileTap={{ scale: 0.95 }}
+              >
+                <FaGlobe />
+                <span className="lang-options">
+                  <span
+                    className={`lang-option ${i18n.language === "en" ? "selected" : ""}`}
+                    onClick={() => handleLanguageChange("en")}
+                  >
+                    EN
+                  </span>
+                  <span className="lang-separator">|</span>
+                  <span
+                    className={`lang-option ${i18n.language === "fr" ? "selected" : ""}`}
+                    onClick={() => handleLanguageChange("fr")}
+                  >
+                    FR
+                  </span>
+                  <span className="lang-separator">|</span>
+                  <span
+                    className={`lang-option ${i18n.language === "ar" ? "selected" : ""}`}
+                    onClick={() => handleLanguageChange("ar")}
+                  >
+                    AR
+                  </span>
                 </span>
-                <select
-                  className="lang-switcher"
-                  value={i18n.language}
-                  onChange={(e) => i18n.changeLanguage(e.target.value)}
-                  aria-label={t("header.selectLanguage")}
-                >
-                  <option value="en">English</option>
-                  <option value="fr">Francais</option>
-                  <option value="ar">العربية</option>
-                </select>
-              </div>
+              </motion.button>
             </div>
             {user && (
-              <div className="icon-btn-wrapper">
-                <button
-                  className="logout-btn"
-                  onClick={handleLogout}
-                  aria-label={t("header.aria.logout")}
-                >
-                  <FaSignOutAlt />
-                  <span className="btn-text">{t("header.logout")}</span>
-                </button>
-              </div>
+              <>
+                <div className="icon-btn-wrapper">
+                  <motion.button
+                    className="notification-btn"
+                    onClick={() => setShowNotificationPanel((prev) => !prev)}
+                    aria-label={t("header.aria.notifications", { count: unreadCount })}
+                    whileHover={{ scale: 1.05 }}
+                    whileTap={{ scale: 0.95 }}
+                  >
+                    <FaBell />
+                    {unreadCount > 0 && (
+                      <span className="notification-badge">{unreadCount}</span>
+                    )}
+                    <span className="btn-text">{t("header.notifications")}</span>
+                  </motion.button>
+                </div>
+                <div className="icon-btn-wrapper">
+                  <motion.button
+                    className="logout-btn"
+                    onClick={handleLogout}
+                    aria-label={t("header.aria.logout")}
+                    whileHover={{ scale: 1.05 }}
+                    whileTap={{ scale: 0.95 }}
+                  >
+                    <FaSignOutAlt />
+                    <span className="btn-text">{t("header.logout")}</span>
+                  </motion.button>
+                </div>
+              </>
             )}
           </div>
         </nav>
       </div>
+      {showNotificationPanel && user && (
+        <motion.div
+          initial={{ opacity: 0, y: -20 }}
+          animate={{ opacity: 1, y: 0 }}
+          exit={{ opacity: 0, y: -20 }}
+          className="notification-panel-container"
+        >
+          <NotificationPanel
+            className="notification-panel"
+            onClose={() => setShowNotificationPanel(false)}
+          />
+        </motion.div>
+      )}
     </header>
   );
 }

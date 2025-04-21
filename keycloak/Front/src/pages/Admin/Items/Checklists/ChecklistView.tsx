@@ -10,7 +10,7 @@ import { FaEdit, FaTrash } from "react-icons/fa";
 import "../../AdminDashboard.css";
 import { updateChecklist, deleteChecklist } from "../../../../apis/checklistAPI";
 import { useAuth } from "../../../../context/AuthContext";
-import { Checklist } from "../../../../models/Checklist";
+import { Checklist } from "../../../models/Checklist";
 
 // Lazy-loaded skeleton component
 const SkeletonDetails = lazy(() => import("../SkeletonComponents").then((module) => ({ default: module.SkeletonDetails })));

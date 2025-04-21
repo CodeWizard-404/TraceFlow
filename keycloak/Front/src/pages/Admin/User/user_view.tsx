@@ -37,11 +37,11 @@ import {
     getAllPermissions,
 } from "../../../apis/permissionAPI";
 import { revokeRolesFromUser, assignRolesToUser, getAllRoles, getRolesByUser } from "../../../apis/roleAPI";
-import User from "../../../models/User";
-import Role from "../../../models/Role";
-import Permission from "../../../models/Permission";
-import UserPermissionOverride from "../../../models/UserPermissionOverride";
-import PermissionsAction from "../../../models/Enum/PermissionsAction";
+import User from "../../models/User";
+import Role from "../../models/Role";
+import Permission from "../../models/Permission";
+import UserPermissionOverride from "../../models/UserPermissionOverride";
+import PermissionsAction from "../../models/Enum/PermissionsAction";
 import "../AdminDashboard.css";
 import { ViewMode } from "../adminTypes";
 
@@ -1024,120 +1024,150 @@ const UserView: React.FC<UserViewProps> = ({
         <div className="details-card">
             <div className="card-header">
                 {isEditingUser ? (
-                    <div className="user-edit-form">
+                    <div className="user-edit-form form-section">
                         <h2>Edit User</h2>
-                        <input
-                            type="text"
-                            value={editedUser.firstname || ""}
-                            onChange={(e) => {
-                                setEditedUser((prev) => ({ ...prev, firstname: e.target.value }));
-                                setFormErrors((prev) => ({
-                                    ...prev,
-                                    firstname: validateName(e.target.value, "First name"),
-                                }));
-                                setTouched((prev) => ({ ...prev, firstname: true }));
-                            }}
-                            placeholder="First Name *"
-                            className={`user-edit-input ${touched.firstname && formErrors.firstname ? "invalid-vibrate" : ""}`}
-                            required
-                        />
-                        {formErrors.firstname && touched.firstname && (
-                            <span className="error-text">{formErrors.firstname}</span>
-                        )}
-                        <input
-                            type="text"
-                            value={editedUser.lastname || ""}
-                            onChange={(e) => {
-                                setEditedUser((prev) => ({ ...prev, lastname: e.target.value }));
-                                setFormErrors((prev) => ({
-                                    ...prev,
-                                    lastname: validateName(e.target.value, "Last name"),
-                                }));
-                                setTouched((prev) => ({ ...prev, lastname: true }));
-                            }}
-                            placeholder="Last Name *"
-                            className={`user-edit-input ${touched.lastname && formErrors.lastname ? "invalid-vibrate" : ""}`}
-                            required
-                        />
-                        {formErrors.lastname && touched.lastname && (
-                            <span className="error-text">{formErrors.lastname}</span>
-                        )}
-                        <input
-                            type="email"
-                            value={editedUser.email || ""}
-                            onChange={(e) => {
-                                setEditedUser((prev) => ({ ...prev, email: e.target.value }));
-                                setFormErrors((prev) => ({
-                                    ...prev,
-                                    email: validateEmail(e.target.value),
-                                }));
-                                setTouched((prev) => ({ ...prev, email: true }));
-                            }}
-                            placeholder="Email *"
-                            className={`user-edit-input ${touched.email && formErrors.email ? "invalid-vibrate" : ""}`}
-                            required
-                        />
-                        {formErrors.email && touched.email && (
-                            <span className="error-text">{formErrors.email}</span>
-                        )}
-                        <input
-                            type="text"
-                            value={formatPhoneDisplay(rawPhone)}
-                            onChange={handlePhoneChange}
-                            placeholder="XX XXX XXX"
-                            className={`user-edit-input ${touched.phone && formErrors.phone ? "invalid-vibrate" : ""}`}
-                            required
-                            maxLength={10}
-                        />
-                        {formErrors.phone && touched.phone && (
-                            <span className="error-text">{formErrors.phone}</span>
-                        )}
-                        <input
-                            type="text"
-                            value={formatWalletDisplay(rawWallet)}
-                            onChange={handleWalletChange}
-                            placeholder="XXXX-XXXX-XXXX-XXXX"
-                            className={`user-edit-input ${touched.wallet && formErrors.wallet ? "invalid-vibrate" : ""}`}
-                            maxLength={19}
-                        />
-                        {formErrors.wallet && touched.wallet && (
-                            <span className="error-text">{formErrors.wallet}</span>
-                        )}
-                        <input
-                            type="password"
-                            value={editedUser.password || ""}
-                            onChange={(e) => {
-                                setEditedUser((prev) => ({ ...prev, password: e.target.value }));
-                                setFormErrors((prev) => ({
-                                    ...prev,
-                                    password: validatePassword(e.target.value),
-                                    passwordConfirm: validatePasswordConfirm(e.target.value, editedUser.passwordConfirm || ""),
-                                }));
-                                setTouched((prev) => ({ ...prev, password: true }));
-                            }}
-                            placeholder="Password (optional)"
-                            className={`user-edit-input ${touched.password && formErrors.password ? "invalid-vibrate" : ""}`}
-                        />
-                        {formErrors.password && touched.password && (
-                            <span className="error-text">{formErrors.password}</span>
-                        )}
-                        <input
-                            type="password"
-                            value={editedUser.passwordConfirm || ""}
-                            onChange={(e) => {
-                                setEditedUser((prev) => ({ ...prev, passwordConfirm: e.target.value }));
-                                setFormErrors((prev) => ({
-                                    ...prev,
-                                    passwordConfirm: validatePasswordConfirm(editedUser.password || "", e.target.value),
-                                }));
-                                setTouched((prev) => ({ ...prev, passwordConfirm: true }));
-                            }}
-                            placeholder="Confirm Password (optional)"
-                            className={`user-edit-input ${touched.passwordConfirm && formErrors.passwordConfirm ? "invalid-vibrate" : ""}`}
-                        />
-                        {formErrors.passwordConfirm && touched.passwordConfirm && (
-                            <span className="error-text">{formErrors.passwordConfirm}</span>
-                        )}
+                        <div className="form-grid">
+                            <div className="form-group">
+                                <label htmlFor="firstname">First Name *</label>
+                                <input
+                                    id="firstname"
+                                    type="text"
+                                    value={editedUser.firstname || ""}
+                                    onChange={(e) => {
+                                        setEditedUser((prev) => ({ ...prev, firstname: e.target.value }));
+                                        setFormErrors((prev) => ({
+                                            ...prev,
+                                            firstname: validateName(e.target.value, "First name"),
+                                        }));
+                                        setTouched((prev) => ({ ...prev, firstname: true }));
+                                    }}
+                                    placeholder="Enter first name"
+                                    className={`user-edit-input ${touched.firstname && formErrors.firstname ? "invalid-vibrate" : ""}`}
+                                    required
+                                />
+                                {formErrors.firstname && touched.firstname && (
+                                    <span className="error-text">{formErrors.firstname}</span>
+                                )}
+                            </div>
+                            <div className="form-group">
+                                <label htmlFor="lastname">Last Name *</label>
+                                <input
+                                    id="lastname"
+                                    type="text"
+                                    value={editedUser.lastname || ""}
+                                    onChange={(e) => {
+                                        setEditedUser((prev) => ({ ...prev, lastname: e.target.value }));
+                                        setFormErrors((prev) => ({
+                                            ...prev,
+                                            lastname: validateName(e.target.value, "Last name"),
+                                        }));
+                                        setTouched((prev) => ({ ...prev, lastname: true }));
+                                    }}
+                                    placeholder="Enter last name"
+                                    className={`user-edit-input ${touched.lastname && formErrors.lastname ? "invalid-vibrate" : ""}`}
+                                    required
+                                />
+                                {formErrors.lastname && touched.lastname && (
+                                    <span className="error-text">{formErrors.lastname}</span>
+                                )}
+                            </div>
+                            <div className="form-group">
+                                <label htmlFor="email">Email *</label>
+                                <input
+                                    id="email"
+                                    type="email"
+                                    value={editedUser.email || ""}
+                                    onChange={(e) => {
+                                        setEditedUser((prev) => ({ ...prev, email: e.target.value }));
+                                        setFormErrors((prev) => ({
+                                            ...prev,
+                                            email: validateEmail(e.target.value),
+                                        }));
+                                        setTouched((prev) => ({ ...prev, email: true }));
+                                    }}
+                                    placeholder="Enter email"
+                                    className={`user-edit-input ${touched.email && formErrors.email ? "invalid-vibrate" : ""}`}
+                                    required
+                                />
+                                {formErrors.email && touched.email && (
+                                    <span className="error-text">{formErrors.email}</span>
+                                )}
+                            </div>
+                            <div className="form-group">
+                                <label htmlFor="phone">Phone Number *</label>
+                                <input
+                                    id="phone"
+                                    type="text"
+                                    value={formatPhoneDisplay(rawPhone)}
+                                    onChange={handlePhoneChange}
+                                    placeholder="XX XXX XXX"
+                                    className={`user-edit-input ${touched.phone && formErrors.phone ? "invalid-vibrate" : ""}`}
+                                    required
+                                    maxLength={10}
+                                />
+                                {formErrors.phone && touched.phone && (
+                                    <span className="error-text">{formErrors.phone}</span>
+                                )}
+                            </div>
+                            <div className="form-group">
+                                <label htmlFor="wallet">Wallet Address</label>
+                                <input
+                                    id="wallet"
+                                    type="text"
+                                    value={formatWalletDisplay(rawWallet)}
+                                    onChange={handleWalletChange}
+                                    placeholder="XXXX-XXXX-XXXX-XXXX"
+                                    className={`user-edit-input ${touched.wallet && formErrors.wallet ? "invalid-vibrate" : ""}`}
+                                    maxLength={19}
+                                />
+                                {formErrors.wallet && touched.wallet && (
+                                    <span className="error-text">{formErrors.wallet}</span>
+                                )}
+                            </div>
+                            <div className="form-group">
+                                <label htmlFor="password">Password (Optional)</label>
+                                <input
+                                    id="password"
+                                    type="password"
+                                    value={editedUser.password || ""}
+                                    onChange={(e) => {
+                                        setEditedUser((prev) => ({ ...prev, password: e.target.value }));
+                                        setFormErrors((prev) => ({
+                                            ...prev,
+                                            password: validatePassword(e.target.value),
+                                            passwordConfirm: validatePasswordConfirm(e.target.value, editedUser.passwordConfirm || ""),
+                                        }));
+                                        setTouched((prev) => ({ ...prev, password: true }));
+                                    }}
+                                    placeholder="Enter new password"
+                                    className={`user-edit-input ${touched.password && formErrors.password ? "invalid-vibrate" : ""}`}
+                                />
+                                {formErrors.password && touched.password && (
+                                    <span className="error-text">{formErrors.password}</span>
+                                )}
+                            </div>
+                            <div className="form-group">
+                                <label htmlFor="passwordConfirm">Confirm Password (Optional)</label>
+                                <input
+                                    id="passwordConfirm"
+                                    type="password"
+                                    value={editedUser.passwordConfirm || ""}
+                                    onChange={(e) => {
+                                        setEditedUser((prev) => ({ ...prev, passwordConfirm: e.target.value }));
+                                        setFormErrors((prev) => ({
+                                            ...prev,
+                                            passwordConfirm: validatePasswordConfirm(editedUser.password || "", e.target.value),
+                                        }));
+                                        setTouched((prev) => ({ ...prev, passwordConfirm: true }));
+                                    }}
+                                    placeholder="Confirm new password"
+                                    className={`user-edit-input ${touched.passwordConfirm && formErrors.passwordConfirm ? "invalid-vibrate" : ""}`}
+                                />
+                                {formErrors.passwordConfirm && touched.passwordConfirm && (
+                                    <span className="error-text">{formErrors.passwordConfirm}</span>
+                                )}
+                            </div>
+                        </div>
                         <div className="user-edit-actions">
                             <button
                                 className="action-button"

@@ -12,7 +12,7 @@ import {
     TransferHistoryResponse,
     ReceiveFromSupplierResponse,
 } from ".";
-import ReceiptBook from "../models/ReceiptBook";
+import ReceiptBook from "../pages/models/ReceiptBook";
 
 // Error response type for Axios errors
 interface AxiosErrorResponse {

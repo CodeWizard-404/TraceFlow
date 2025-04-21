@@ -13,8 +13,8 @@ import { useAuth } from "../../../context/AuthContext";
 import { updatePermission } from "../../../apis/permissionAPI";
 
 // Models
-import Permission from "../../../models/Permission";
-import PermissionsClass from "../../../models/Enum/PermissionsClass";
+import Permission from "../../models/Permission";
+import PermissionsClass from "../../models/Enum/PermissionsClass";
 
 // Styles
 import "../AdminDashboard.css";

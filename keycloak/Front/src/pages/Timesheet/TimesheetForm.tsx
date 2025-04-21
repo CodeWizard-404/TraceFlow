@@ -4,7 +4,7 @@ import React, { useState, useEffect, useCallback, useMemo } from "react";
 import { useNavigate } from "react-router-dom";
 import { debounce } from "lodash";
 import "./TimesheetForm.css";
-import Agent from "../../models/Agent";
+import Agent from "../models/Agent";
 import {
   getAgentLocations,
   getAgentsByLocation,
@@ -14,9 +14,9 @@ import { getAllChecklists } from "../../apis/checklistAPI";
 import { getAllReasons } from "../../apis/reasonAPI";
 import { createTimesheet } from "../../apis/timesheetAPI";
 import { getUserByPhone, getSupervisorsByUser } from "../../apis/userAPI";
-import { Checklist } from "../../models/Checklist";
-import { Reason } from "../../models/Reason";
-import User from "../../models/User";
+import { Checklist } from "../models/Checklist";
+import { Reason } from "../models/Reason";
+import User from "../models/User";
 import { useAuth } from "../../context/AuthContext";
 import { useError } from "../../context/ErrorContext";
 import { useTranslation } from "react-i18next";
@@ -418,9 +418,8 @@ const TimesheetForm: React.FC = () => {
                   </option>
                   {supervisors
                     .filter((s) =>
-                      `${s.firstname || ""} ${s.lastname || ""} ${
-                        s.phone || ""
-                      }`
+                      `${s.firstname || ""} ${s.lastname || ""} ${s.phone || ""
+                        }`
                         .toLowerCase()
                         .includes(supervisorSearch.toLowerCase())
                     )
@@ -551,9 +550,8 @@ const TimesheetForm: React.FC = () => {
               <option value="">{t("timesheetForm.selectAgent")}</option>
               {agents
                 .filter((agent) =>
-                  `${agent.name || ""} ${agent.lastname || ""} ${
-                    agent.phone || ""
-                  }`
+                  `${agent.name || ""} ${agent.lastname || ""} ${agent.phone || ""
+                    }`
                     .toLowerCase()
                     .includes(agentSearch.toLowerCase())
                 )

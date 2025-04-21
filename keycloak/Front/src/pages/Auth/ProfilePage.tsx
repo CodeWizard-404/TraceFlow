@@ -1,7 +1,7 @@
 import React, { useState, useEffect, ChangeEvent, KeyboardEvent } from "react";
 import { useAuth } from "../../context/AuthContext";
 import { updateProfile, fetchUserProfile } from "../../apis/userAPI";
-import User from "../../models/User";
+import User from "../models/User";
 import "./ProfilePage.css";
 import {
   FaUser,

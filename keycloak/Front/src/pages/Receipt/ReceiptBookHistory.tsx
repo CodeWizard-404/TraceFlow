@@ -8,8 +8,8 @@ import {
 } from "../../apis/receiptBookAPI";
 import { getUserById } from "../../apis/userAPI";
 import { getAgentById } from "../../apis/agentAPI";
-import ReceiptBook from "../../models/ReceiptBook";
-import ReceiptBookTransfer from "../../models/ReceiptBookTransfer";
+import ReceiptBook from "../models/ReceiptBook";
+import ReceiptBookTransfer from "../models/ReceiptBookTransfer";
 import "./ReceiptBookHistory.css";
 import { useTranslation } from "react-i18next";
 
@@ -161,9 +161,8 @@ const ReceiptBookHistory: React.FC = () => {
     const isDirect =
       prevRole === "Supervisor" && currentRole === "Stock Manager" && hasStub;
 
-    return `${isSameRole ? "same-role" : ""} ${isReturn ? "return" : ""} ${
-      isDirect ? "direct" : ""
-    }`.trim();
+    return `${isSameRole ? "same-role" : ""} ${isReturn ? "return" : ""} ${isDirect ? "direct" : ""
+      }`.trim();
   };
 
   // Get color for a given status or transfer type
@@ -215,8 +214,8 @@ const ReceiptBookHistory: React.FC = () => {
           {book.currentHolderID
             ? usersMap.get(book.currentHolderID)
             : book.agentID
-            ? agentsMap.get(book.agentID)
-            : t("receiptBookHistory.na")}
+              ? agentsMap.get(book.agentID)
+              : t("receiptBookHistory.na")}
         </p>
       </div>
 
@@ -257,8 +256,8 @@ const ReceiptBookHistory: React.FC = () => {
                   {entry.toUserID
                     ? usersMap.get(entry.toUserID)
                     : entry.toAgentID
-                    ? agentsMap.get(entry.toAgentID)
-                    : t("receiptBookHistory.supplier")}
+                      ? agentsMap.get(entry.toAgentID)
+                      : t("receiptBookHistory.supplier")}
                 </p>
                 <p>
                   <strong>{t("receiptBookHistory.date")}:</strong>{" "}
