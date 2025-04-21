@@ -254,7 +254,6 @@ const AuthProvider: React.FC<{ children: ReactNode }> = ({ children }) => {
                     roleID: role.roleID,
                     name: role.name,
                     description: role.description,
-                    // Ensure Permissions is defined, default to empty array
                     permissions: Array.isArray(role.Permissions)
                         ? role.Permissions.map((perm) => ({
                             permissionID: perm.permissionID,
@@ -267,8 +266,8 @@ const AuthProvider: React.FC<{ children: ReactNode }> = ({ children }) => {
             };
 
             localStorage.setItem('user', JSON.stringify(newUser));
-            document.cookie = `accessToken=${response.accessToken}; path=/; SameSite=Strict; max-age=${response.expiresIn! / 1000
-                }`;
+            const sameSite = import.meta.env.VITE_ENV === 'development' ? 'Lax' : 'Strict';
+            document.cookie = `accessToken=${response.accessToken}; path=/; SameSite=${sameSite}; max-age=${response.expiresIn! / 1000}`;
             setUser(newUser);
             setTokenExpiry(
                 Date.now() +

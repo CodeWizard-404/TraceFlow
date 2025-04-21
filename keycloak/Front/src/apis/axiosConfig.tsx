@@ -37,8 +37,10 @@ export const setupAxiosInterceptors = () => {
                 try {
                     const { accessToken, expiresIn } = await refreshToken();
                     localStorage.setItem('accessToken', accessToken);
-                    document.cookie = `accessToken=${accessToken}; path=/; SameSite=Strict; max-age=${expiresIn / 1000}`;
+                    const sameSite = import.meta.env.VITE_ENV === 'development' ? 'Lax' : 'Strict';
+                    document.cookie = `accessToken=${accessToken}; path=/; SameSite=${sameSite}; max-age=${expiresIn / 1000}`;
                     originalRequest.headers['Authorization'] = `Bearer ${accessToken}`;
+                    window.dispatchEvent(new Event('tokenRefreshed'));
                     return api(originalRequest);
                 } catch (refreshError) {
                     console.error('Refresh token failed:', refreshError);

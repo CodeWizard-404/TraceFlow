@@ -1,7 +1,7 @@
 import React, { createContext, useContext, useReducer, useEffect } from 'react';
 import Notification from '../models/Notification';
 import { useAuth } from './AuthContext';
-import { initSocket, joinRoom, leaveRoom, onNotification, offNotification } from '../lib/socket';
+import { initSocket, joinRoom, leaveRoom, onNotification, offNotification, disconnectSocket } from '../lib/socket';
 
 // Define the shape of a notification
 interface NotificationState {
@@ -71,7 +71,7 @@ const notificationReducer = (state: NotificationState, action: NotificationActio
 
 // Type guard to check if data has a message property
 const isNotificationData = (data: unknown): data is { message?: string } => {
-    return typeof data === 'object' && data !== null && ('message' in data);
+    return typeof data === 'object' && data !== null && 'message' in data;
 };
 
 // Provider component to wrap the app
@@ -79,13 +79,13 @@ export const NotificationProvider: React.FC<{ children: React.ReactNode }> = ({ 
     const [state, dispatch] = useReducer(notificationReducer, initialState);
     const { user } = useAuth();
 
-    // Listen for WebSocket notifications when the user is authenticated
+    // Listen for WebSocket notifications when the user is authenticated and accessToken cookie is present
     useEffect(() => {
-        if (!user?.userID) {
+        if (!user?.userID || !document.cookie.includes('accessToken')) {
             return;
         }
 
-        // Initialize socket (authentication handled via cookies)
+        // Initialize socket
         initSocket();
 
         // Join user-specific and role-based rooms
@@ -107,11 +107,23 @@ export const NotificationProvider: React.FC<{ children: React.ReactNode }> = ({ 
             dispatch({ type: 'ADD_NOTIFICATION', payload: notification });
         });
 
+        // Handle token refresh to reconnect WebSocket
+        const handleTokenRefresh = () => {
+            disconnectSocket();
+            initSocket();
+            joinRoom(user.userID);
+            user.Roles?.forEach((role) => joinRoom(role.name.toLowerCase()));
+        };
+
+        window.addEventListener('tokenRefreshed', handleTokenRefresh);
+
         // Cleanup WebSocket listeners
         return () => {
             leaveRoom(user.userID);
             user.Roles?.forEach((role) => leaveRoom(role.name.toLowerCase()));
             offNotification();
+            disconnectSocket();
+            window.removeEventListener('tokenRefreshed', handleTokenRefresh);
         };
     }, [user]);
 
@@ -144,6 +156,7 @@ export const NotificationProvider: React.FC<{ children: React.ReactNode }> = ({ 
 };
 
 // Hook to use the notification context
+// eslint-disable-next-line react-refresh/only-export-components
 export const useNotification = () => {
     const context = useContext(NotificationContext);
     if (!context) {

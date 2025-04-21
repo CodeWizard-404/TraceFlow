@@ -9,12 +9,10 @@ let socket: Socket | null = null;
 // Connect to the WebSocket server (authentication via cookies)
 export const initSocket = () => {
     if (!socket) {
+        console.log('Sending cookies:', document.cookie);
         socket = io(API_URL, {
             withCredentials: true,
             transports: ['websocket', 'polling'],
-            extraHeaders: {
-                Cookie: document.cookie, // Ensure cookies are sent with the initial handshake
-            },
         });
 
         socket.on('connect', () => {
@@ -27,6 +25,11 @@ export const initSocket = () => {
 
         socket.on('connect_error', (error) => {
             console.error('WebSocket connection error:', error.message);
+            if (error.message.includes('Authentication failed')) {
+                localStorage.removeItem('accessToken');
+                document.cookie = 'accessToken=; path=/; expires=Thu, 01 Jan 1970 00:00:00 GMT';
+                window.location.href = '/login';
+            }
         });
     }
     return socket;

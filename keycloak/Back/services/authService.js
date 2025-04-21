@@ -582,7 +582,7 @@ class AuthService {
             const cookieOptions = {
                 httpOnly: true,
                 secure: process.env.NODE_ENV === 'production',
-                sameSite: 'Lax',
+                sameSite: process.env.NODE_ENV === 'development' ? 'Lax' : 'Strict',
                 path: '/',
             };
 
@@ -639,7 +639,7 @@ class AuthService {
         const cookieOptions = {
             httpOnly: true,
             secure: process.env.NODE_ENV === 'production',
-            sameSite: 'Lax',
+            sameSite: process.env.NODE_ENV === 'development' ? 'Lax' : 'Strict',
             path: '/',
         };
 

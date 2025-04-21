@@ -5,7 +5,11 @@ const logger = require('./logger');
 // Initialize Socket.IO server
 const io = new Server({
     cors: {
-        origin: process.env.FRONTEND_URL || 'http://localhost:5173',
+        origin: [
+            process.env.FRONTEND_URL || 'http://localhost:5173',
+            'http://192.168.1.16:5173',
+            'http://192.168.1.16:5000',
+        ],
         methods: ['GET', 'POST'],
         credentials: true,
     },
@@ -15,6 +19,7 @@ const io = new Server({
 io.use(async (socket, next) => {
     try {
         const cookie = socket.handshake.headers.cookie;
+        logger.info(`WebSocket handshake cookies: ${cookie || 'None'}`);
         if (!cookie) {
             throw new Error('No cookie provided');
         }
