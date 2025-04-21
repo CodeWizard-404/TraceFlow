@@ -1,4 +1,4 @@
-export type SortField = "name" | "email" | "role";
+export type SortField = "name" | "email" | "role" | "event" | "type" | "enabled";
 export type SortOrder = "asc" | "desc";
 export type ViewMode =
     | "users"

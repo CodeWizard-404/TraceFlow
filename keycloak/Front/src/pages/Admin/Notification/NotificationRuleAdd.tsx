@@ -1,7 +1,7 @@
 import React, { useState, useEffect } from "react";
-import { FaSave, FaTimes } from "react-icons/fa";
+import { FaSave } from "react-icons/fa";
 import { motion } from "framer-motion";
-import NotificationRule from "../../models/NotificationRule";
+import NotificationRule from "../../../models/NotificationRule";
 import { createNotificationRule } from "../../../apis/notificationAPI";
 import { ViewMode } from "../adminTypes";
 import "../AdminDashboard.css";
@@ -24,7 +24,7 @@ const formVariants = {
 const NotificationRuleAddSkeleton: React.FC = () => (
     <div className="form-card skeleton">
         <div className="custom-skeleton pulsing" style={{ width: "200px", height: "24px", marginBottom: "16px" }} />
-        {[...Array(3)].map((_, i) => (
+        {[...Array(4)].map((_, i) => (
             <div key={i} className="form-section">
                 <div className="custom-skeleton pulsing" style={{ width: "150px", height: "20px", marginBottom: "12px" }} />
                 <div className="form-row">
@@ -139,10 +139,6 @@ const NotificationRuleAdd: React.FC<NotificationRuleAddProps> = ({
         }
     };
 
-    const handleCancel = () => {
-        setView("notifications");
-    };
-
     if (view !== "add-notification-rule") return null;
 
     return (
@@ -155,13 +151,26 @@ const NotificationRuleAdd: React.FC<NotificationRuleAddProps> = ({
             {loading && <NotificationRuleAddSkeleton />}
             {!loading && (
                 <>
-                    <h2>Add Notification Rule</h2>
+                    <div className="form-header-container">
+                        <h2>Add Notification Rule</h2>
+                        <label className="toggle-switch">
+                            <input
+                                type="checkbox"
+                                name="enabled"
+                                checked={formData.enabled}
+                                onChange={(e) => setFormData((prev) => ({ ...prev, enabled: e.target.checked }))}
+                            />
+                            <span className="slider"></span>
+                            <span>{formData.enabled ? "Enabled" : "Disabled"}</span>
+                        </label>
+                    </div>
                     <div className="form-section">
                         <h3 className="form-header">Rule Details</h3>
                         <div className="form-row">
                             <div className="form-group">
                                 <label htmlFor="event">
                                     Event <span className="required">*</span>
+                                    <span className="tooltip" data-tooltip="Unique event name"></span>
                                 </label>
                                 <input
                                     type="text"
@@ -169,7 +178,7 @@ const NotificationRuleAdd: React.FC<NotificationRuleAddProps> = ({
                                     name="event"
                                     value={formData.event}
                                     onChange={handleChange}
-                                    className={`form-input ${touched.event && formErrors.event ? "invalid-vibrate" : ""}`}
+                                    className={`form-input ${touched.event && formErrors.event ? "invalid" : ""}`}
                                     required
                                 />
                                 {touched.event && formErrors.event && (
@@ -193,23 +202,15 @@ const NotificationRuleAdd: React.FC<NotificationRuleAddProps> = ({
                                 </select>
                             </div>
                         </div>
-                        <div className="form-group">
-                            <label className="channel-toggle">
-                                <input
-                                    type="checkbox"
-                                    name="enabled"
-                                    checked={formData.enabled}
-                                    onChange={(e) => setFormData((prev) => ({ ...prev, enabled: e.target.checked }))}
-                                />
-                                <span>Enabled</span>
-                            </label>
-                        </div>
                     </div>
                     <div className="form-section">
                         <h3 className="form-header">Recipients</h3>
                         <div className="form-row">
                             <div className="form-group">
-                                <label htmlFor="recipients.roles">Recipient Roles</label>
+                                <label htmlFor="recipients.roles">
+                                    Recipient Roles
+                                    <span className="tooltip" data-tooltip="Comma-separated roles, e.g., manager, supervisor"></span>
+                                </label>
                                 <input
                                     type="text"
                                     id="recipients.roles"
@@ -221,7 +222,10 @@ const NotificationRuleAdd: React.FC<NotificationRuleAddProps> = ({
                                 />
                             </div>
                             <div className="form-group">
-                                <label htmlFor="recipients.userIDs">Recipient User IDs</label>
+                                <label htmlFor="recipients.userIDs">
+                                    Recipient User IDs
+                                    <span className="tooltip" data-tooltip="Comma-separated user IDs, e.g., user_123, user_456"></span>
+                                </label>
                                 <input
                                     type="text"
                                     id="recipients.userIDs"
@@ -237,14 +241,15 @@ const NotificationRuleAdd: React.FC<NotificationRuleAddProps> = ({
                     <div className="form-section">
                         <h3 className="form-header">Channels</h3>
                         <div className="channels-grid">
-                            {["websocket", "email", "sms", "inApp"].map((channel) => (
-                                <label key={channel} className="channel-toggle">
+                            {(["websocket", "email", "sms", "inApp"] as Array<keyof typeof formData.channels>).map((channel: string) => (
+                                <label key={channel} className="toggle-switch">
                                     <input
                                         type="checkbox"
                                         name={channel}
-                                        checked={formData.channels?.[channel]}
+                                        checked={formData.channels?.[channel as keyof typeof formData.channels]}
                                         onChange={handleChange}
                                     />
+                                    <span className="slider"></span>
                                     <span>{channel.charAt(0).toUpperCase() + channel.slice(1)}</span>
                                 </label>
                             ))}
@@ -255,13 +260,14 @@ const NotificationRuleAdd: React.FC<NotificationRuleAddProps> = ({
                         <div className="form-group">
                             <label htmlFor="messageTemplate">
                                 Message Template <span className="required">*</span>
+                                <span className="tooltip" data-tooltip="Notification message content"></span>
                             </label>
                             <textarea
                                 id="messageTemplate"
                                 name="messageTemplate"
                                 value={formData.messageTemplate}
                                 onChange={handleChange}
-                                className={`form-input ${touched.messageTemplate && formErrors.messageTemplate ? "invalid-vibrate" : ""}`}
+                                className={`form-input ${touched.messageTemplate && formErrors.messageTemplate ? "invalid" : ""}`}
                                 required
                             />
                             {touched.messageTemplate && formErrors.messageTemplate && (
@@ -271,22 +277,13 @@ const NotificationRuleAdd: React.FC<NotificationRuleAddProps> = ({
                     </div>
                     <div className="form-actions-0">
                         <motion.button
-                            className="action-button"
+                            className="action-button save-button"
                             onClick={handleSubmit}
-                            whileHover={{ scale: 1.05 }}
+                            whileHover={{ scale: 1.05, boxShadow: "0 0 8px rgba(76, 177, 199, 0.5)" }}
                             whileTap={{ scale: 0.95 }}
                             aria-label="Save Rule"
                         >
                             <FaSave /> Save
-                        </motion.button>
-                        <motion.button
-                            className="action-button cancel-button"
-                            onClick={handleCancel}
-                            whileHover={{ scale: 1.05 }}
-                            whileTap={{ scale: 0.95 }}
-                            aria-label="Cancel"
-                        >
-                            <FaTimes /> Cancel
                         </motion.button>
                     </div>
                 </>
