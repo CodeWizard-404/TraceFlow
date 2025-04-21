@@ -36,9 +36,9 @@ import {
   getAgentById,
 } from "../../apis/agentAPI";
 import "./TransferReceiptBook.css";
-import ReceiptBook from "../models/ReceiptBook";
-import User from "../models/User";
-import Agent from "../models/Agent";
+import ReceiptBook from "../../models/ReceiptBook";
+import User from "../../models/User";
+import Agent from "../../models/Agent";
 import { useTranslation } from "react-i18next";
 import { t } from "i18next";
 

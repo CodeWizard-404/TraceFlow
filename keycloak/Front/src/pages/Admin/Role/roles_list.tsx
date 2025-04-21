@@ -15,8 +15,8 @@ import { debounce } from "lodash";
 import { useAuth } from "../../../context/AuthContext";
 
 // Models
-import Permission from "../../models/Permission";
-import Role from "../../models/Role";
+import Permission from "../../../models/Permission";
+import Role from "../../../models/Role";
 
 // Components
 import InfoPopup from "../InfoPopup";
@@ -24,7 +24,7 @@ import RoleView from "./roles_view";
 
 // Styles
 import "../AdminDashboard.css";
-import PermissionsClass from "pages/models/Enum/PermissionsClass";
+import PermissionsClass from "models/Enum/PermissionsClass";
 
 // Props interface
 interface RolesListProps {
@@ -66,18 +66,6 @@ const RolesList: React.FC<RolesListProps> = React.memo(
     const [loading, setLoading] = useState(true);
     const [selectedRoleId, setSelectedRoleId] = useState<string | null>(null); // Track toggled role
 
-    // Log roles to debug permission sums
-    useEffect(() => {
-      console.log(
-        "RolesList roles",
-        roles.map((r) => ({
-          roleId: r.roleID,
-          name: r.name,
-          permissionCount: r.Permissions?.length || 0,
-          hasPermissions: !!r.Permissions,
-        }))
-      );
-    }, [roles]);
 
     // Memoized permissions object
     const userPermissions = useMemo(
@@ -128,9 +116,7 @@ const RolesList: React.FC<RolesListProps> = React.memo(
     // Handle role toggle
     const handleRoleToggle = useCallback(
       (role: Role) => {
-        console.log("handleRoleToggle called", { roleId: role.roleID, roleName: role.name });
         if (!userPermissions.canUpdateRoles) {
-          console.log("User lacks update roles permission");
           return;
         }
         if (!isSuperAdmin && role.name === "Admin") {
@@ -155,7 +141,6 @@ const RolesList: React.FC<RolesListProps> = React.memo(
             onConfirm: () => {
               setSelectedRoleId((prev) => {
                 const newId = prev === role.roleID ? null : role.roleID;
-                console.log("setSelectedRoleId", { newId, roleId: role.roleID });
                 return newId;
               });
               setSelectedRole(role);
@@ -165,7 +150,6 @@ const RolesList: React.FC<RolesListProps> = React.memo(
         }
         setSelectedRoleId((prev) => {
           const newId = prev === role.roleID ? null : role.roleID;
-          console.log("setSelectedRoleId", { newId, roleId: role.roleID });
           return newId;
         });
         setSelectedRole(role);
@@ -188,7 +172,6 @@ const RolesList: React.FC<RolesListProps> = React.memo(
       (permissions: Permission[] | undefined) => {
         const byClass: { [key: string]: Permission[] } = {};
         if (!permissions || permissions.length === 0) {
-          console.log("No permissions to categorize", { permissions });
           return byClass;
         }
         permissions
@@ -202,10 +185,6 @@ const RolesList: React.FC<RolesListProps> = React.memo(
             if (!byClass[className]) byClass[className] = [];
             byClass[className].push({ ...perm, name: formattedName, class: className as PermissionsClass });
           });
-        console.log("Categorized permissions", {
-          permissionCount: permissions.length,
-          classes: Object.keys(byClass),
-        });
         return byClass;
       },
       [isSuperAdmin]
@@ -273,7 +252,6 @@ const RolesList: React.FC<RolesListProps> = React.memo(
 
     // Return null if not in roles view or no permission
     if (view !== "roles" || !userPermissions.canViewRoles) {
-      console.log("RolesList not rendered", { view, canViewRoles: userPermissions.canViewRoles });
       return null;
     }
 
@@ -302,12 +280,6 @@ const RolesList: React.FC<RolesListProps> = React.memo(
               contentRenderer={() => {
                 const role = roles.find((role) => role.roleID === activeRolePopup);
                 if (!role) return <p>Role not found</p>;
-                console.log("Rendering InfoPopup", {
-                  roleId: role.roleID,
-                  roleName: role.name,
-                  permissionCount: role.Permissions?.length || 0,
-                  permissions: role.Permissions,
-                });
                 return (
                   <>
                     <h4>{role.name}</h4>

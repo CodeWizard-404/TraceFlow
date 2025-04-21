@@ -1,15 +1,15 @@
-import Agent from '../pages/models/Agent';
-import { Checklist, VisitChecklist } from '../pages/models/Checklist';
-import { Reason, VisitReason } from '../pages/models/Reason';
-import Timesheet from '../pages/models/Timesheet';
-import Visit from '../pages/models/Visit';
-import User from '../pages/models/User';
-import Role from '../pages/models/Role';
-import Permission from '../pages/models/Permission';
-import ReceiptBook from '../pages/models/ReceiptBook';
-import ReceiptStub from '../pages/models/ReceiptStub';
-import ReceiptBookTransfer from '../pages/models/ReceiptBookTransfer';
-import UserPermissionOverride from '../pages/models/UserPermissionOverride';
+import Agent from '../models/Agent';
+import { Checklist, VisitChecklist } from '../models/Checklist';
+import { Reason, VisitReason } from '../models/Reason';
+import Timesheet from '../models/Timesheet';
+import Visit from '../models/Visit';
+import User from '../models/User';
+import Role from '../models/Role';
+import Permission from '../models/Permission';
+import ReceiptBook from '../models/ReceiptBook';
+import ReceiptStub from '../models/ReceiptStub';
+import ReceiptBookTransfer from '../models/ReceiptBookTransfer';
+import UserPermissionOverride from '../models/UserPermissionOverride';
 
 export interface AxiosErrorResponse {
     response?: {

@@ -12,8 +12,8 @@ import {
 import { createRole } from "../../../apis/roleAPI";
 
 // Models and Types
-import Permission from "../../models/Permission";
-import Role from "../../models/Role";
+import Permission from "../../../models/Permission";
+import Role from "../../../models/Role";
 import { ViewMode } from "../adminTypes";
 
 // Styles

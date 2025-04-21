@@ -16,7 +16,7 @@ import {
   updateReceiptBook,
   deleteReceiptBook,
 } from "../../apis/receiptBookAPI";
-import ReceiptBook from "../models/ReceiptBook";
+import ReceiptBook from "../../models/ReceiptBook";
 import { getUserById } from "../../apis/userAPI";
 import { getAgentById } from "../../apis/agentAPI";
 import { useTranslation } from "react-i18next";

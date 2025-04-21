@@ -11,7 +11,7 @@ import { Virtuoso } from "react-virtuoso";
 import { debounce } from "lodash";
 import "../../AdminDashboard.css";
 import { useAuth } from "../../../../context/AuthContext";
-import { Reason } from "../../../models/Reason";
+import { Reason } from "../../../../models/Reason";
 import { deleteReason, updateReason } from "../../../../apis/reasonAPI";
 
 // Lazy-loaded skeleton component

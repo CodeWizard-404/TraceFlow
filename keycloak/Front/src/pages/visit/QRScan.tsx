@@ -1,7 +1,7 @@
 import React, { useEffect, useState, useRef, useMemo } from "react";
 import { useLocation, useNavigate } from "react-router-dom";
 import { Html5Qrcode } from "html5-qrcode";
-import Visit from "../models/Visit";
+import Visit from "../../models/Visit";
 import "./QRScan.css";
 import { verifyQrCode } from "../../apis/visitAPI";
 import { useAuth } from "../../context/AuthContext";
@@ -230,9 +230,8 @@ const QRScan: React.FC = () => {
 
       {/* QR Scanner Section */}
       <section
-        className={`qr-scan-card ${isShaking ? "shake" : ""} ${
-          isSuccess ? "success" : ""
-        }`}
+        className={`qr-scan-card ${isShaking ? "shake" : ""} ${isSuccess ? "success" : ""
+          }`}
         aria-live="polite"
         aria-label={t("qrScan.aria.qrReader", { status })}
       >

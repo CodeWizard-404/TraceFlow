@@ -1,6 +1,6 @@
 import { clsx, type ClassValue } from 'clsx';
 import { twMerge } from 'tailwind-merge';
-import Notification from '../pages/models/Notification';
+import Notification from '../models/Notification';
 
 // Combine class names using clsx and tailwind-merge
 export function cn(...inputs: ClassValue[]) {

@@ -7,9 +7,9 @@ import { assignRolesToUser, getRolesByUser } from "../../../apis/roleAPI";
 import { createUser } from "../../../apis/userAPI";
 
 // Models and Types
-import Role from "../../models/Role";
-import User from "../../models/User";
-import Permission from "../../models/Permission";
+import Role from "../../../models/Role";
+import User from "../../../models/User";
+import Permission from "../../../models/Permission";
 
 import { ViewMode } from "../adminTypes";
 
@@ -151,9 +151,6 @@ const UserAdd: React.FC<UserAddProps> = ({
 
   // Debugging Roles
   useEffect(() => {
-    console.log("UserAdd: Roles prop received:", roles);
-    console.log("UserAdd: Number of roles:", roles.length);
-    console.log("UserAdd: Selected roles:", selectedRolesForNewUser);
     if (roles.length === 0) {
       console.warn("UserAdd: No roles available. Check roles prop or API fetch in parent component.");
     }
@@ -161,10 +158,8 @@ const UserAdd: React.FC<UserAddProps> = ({
 
   // Skeleton Delay
   useEffect(() => {
-    console.log("UserAdd: Showing skeleton for 3 seconds");
     const timer = setTimeout(() => {
       setShowSkeleton(false);
-      console.log("UserAdd: Skeleton hidden, rendering form");
     }, 500);
     return () => clearTimeout(timer);
   }, []);
@@ -228,10 +223,8 @@ const UserAdd: React.FC<UserAddProps> = ({
             import.meta.env.VITE_ROLES_SUPER_ADMIN
         );
         if (filteredRoles.length > 0) {
-          console.log("UserAdd: Assigning roles:", filteredRoles);
           await assignRolesToUser(createdUser.userID, filteredRoles);
           createdUser.Roles = await getRolesByUser(createdUser.userID);
-          console.log("UserAdd: Assigned roles fetched:", createdUser.Roles);
         }
       }
 

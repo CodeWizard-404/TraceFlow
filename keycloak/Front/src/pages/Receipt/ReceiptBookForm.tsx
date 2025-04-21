@@ -1,4 +1,4 @@
-import ReceiptBook from "pages/models/ReceiptBook";
+import ReceiptBook from "models/ReceiptBook";
 import React from "react";
 
 const ReceiptBookForm: React.FC<{

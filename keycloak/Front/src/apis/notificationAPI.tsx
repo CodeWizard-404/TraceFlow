@@ -1,7 +1,7 @@
 import api from './axiosConfig';
-import Notification from '../pages/models/Notification';
-import NotificationPreference from '../pages/models/NotificationPreference';
-import NotificationRule from '../pages/models/NotificationRule';
+import Notification from '../models/Notification';
+import NotificationPreference from '../models/NotificationPreference';
+import NotificationRule from '../models/NotificationRule';
 
 // Fetch all notifications for the current user
 export const getNotifications = async (): Promise<Notification[]> => {

@@ -1,8 +1,8 @@
 import React, { useMemo, useEffect, useCallback, useState } from "react";
 import { useAuth } from "../../../context/AuthContext";
 import { getSupervisorsByUser, getManagersByUser } from "../../../apis/userAPI";
-import User from "../../models/User";
-import Role from "../../models/Role";
+import User from "../../../models/User";
+import Role from "../../../models/Role";
 import { SortField, SortOrder, ViewMode } from "../adminTypes";
 import { t } from "i18next";
 import { debounce } from "lodash";
@@ -153,11 +153,6 @@ const UsersList: React.FC<UsersListProps> = React.memo(
     );
 
     const filteredAndSortedUsers = useMemo(() => {
-      console.log("Applying filters:", {
-        searchQuery: internalSearchQuery,
-        roleFilter,
-        users: users.map(u => ({ email: u.email, roles: u.Roles })),
-      });
       let result = [...users];
 
       if (!isSuperAdmin) {
@@ -182,11 +177,9 @@ const UsersList: React.FC<UsersListProps> = React.memo(
       }
 
       if (roleFilter !== "all") {
-        console.log("Filtering by role ID:", roleFilter);
         // Map roleFilter ID to roleName using roles array
         const selectedRole = roles.find(r => String(r.roleID).trim() === String(roleFilter).trim());
         const roleNameFilter = selectedRole?.name;
-        console.log("Role filter mapped to name:", { roleFilter, roleNameFilter });
 
         result = result.filter((user) => {
           const userRoles = Array.isArray(user.Roles) ? user.Roles : [];
@@ -200,7 +193,6 @@ const UsersList: React.FC<UsersListProps> = React.memo(
 
             return roleIdMatch || roleNameMatch;
           });
-          console.log(`User ${user.email} roles:`, userRoles.map(r => JSON.stringify(r)), `Final match:`, hasRole);
           return hasRole;
         });
       }
@@ -239,7 +231,6 @@ const UsersList: React.FC<UsersListProps> = React.memo(
           : valueB.localeCompare(valueA);
       });
 
-      console.log("Filtered and sorted users:", result.map(u => ({ email: u.email, roles: u.Roles })));
       return result;
     }, [users, isSuperAdmin, internalSearchQuery, roleFilter, sortField, sortOrder, roles]);
 

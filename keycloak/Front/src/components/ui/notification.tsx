@@ -1,5 +1,5 @@
 import React from 'react';
-import Notification from '../../pages/models/Notification';
+import Notification from '../../models/Notification';
 import { useNotification } from '../../context/NotificationContext';
 import { cn } from '../../lib/utils';
 

@@ -1,5 +1,5 @@
 import React, { createContext, useContext, useReducer, useEffect } from 'react';
-import Notification from '../pages/models/Notification';
+import Notification from '../models/Notification';
 import { useAuth } from './AuthContext';
 import { initSocket, joinRoom, leaveRoom, onNotification, offNotification } from '../lib/socket';
 

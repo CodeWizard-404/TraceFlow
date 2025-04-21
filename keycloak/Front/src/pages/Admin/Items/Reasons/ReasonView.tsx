@@ -10,7 +10,7 @@ import { FaEdit, FaTrash } from "react-icons/fa";
 import "../../AdminDashboard.css";
 import { updateReason, deleteReason } from "../../../../apis/reasonAPI";
 import { useAuth } from "../../../../context/AuthContext";
-import { Reason } from "../../../models/Reason";
+import { Reason } from "../../../../models/Reason";
 
 // Lazy-loaded skeleton component
 const SkeletonDetails = lazy(() => import("../SkeletonComponents").then((module) => ({ default: module.SkeletonDetails })));

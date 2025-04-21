@@ -6,9 +6,9 @@ import { login, verify2FA, logout, refreshToken } from '../apis/authAPI';
 import { getEffectivePermissions } from '../apis/permissionAPI';
 import { getRolesByUser } from '../apis/roleAPI';
 import { setupAxiosInterceptors } from '../apis/axiosConfig';
-import User from '../pages/models/User';
-import Permission from '../pages/models/Permission';
-import Role from '../pages/models/Role';
+import User from '../models/User';
+import Permission from '../models/Permission';
+import Role from '../models/Role';
 import { protectedRoutes, determineTargetRoute } from '../lib/authUtils';
 
 interface AuthContextType {

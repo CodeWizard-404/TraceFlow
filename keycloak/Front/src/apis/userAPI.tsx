@@ -11,7 +11,7 @@ import {
   SupervisorsByUserResponse,
   ManagersByUserResponse,
 } from ".";
-import User from "../pages/models/User";
+import User from "../models/User";
 
 // Error response type for Axios errors
 interface AxiosErrorResponse {

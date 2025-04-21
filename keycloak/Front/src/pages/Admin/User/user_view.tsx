@@ -37,11 +37,11 @@ import {
     getAllPermissions,
 } from "../../../apis/permissionAPI";
 import { revokeRolesFromUser, assignRolesToUser, getAllRoles, getRolesByUser } from "../../../apis/roleAPI";
-import User from "../../models/User";
-import Role from "../../models/Role";
-import Permission from "../../models/Permission";
-import UserPermissionOverride from "../../models/UserPermissionOverride";
-import PermissionsAction from "../../models/Enum/PermissionsAction";
+import User from "../../../models/User";
+import Role from "../../../models/Role";
+import Permission from "../../../models/Permission";
+import UserPermissionOverride from "../../../models/UserPermissionOverride";
+import PermissionsAction from "../../../models/Enum/PermissionsAction";
 import "../AdminDashboard.css";
 import { ViewMode } from "../adminTypes";
 

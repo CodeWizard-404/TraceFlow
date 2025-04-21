@@ -15,8 +15,8 @@ import { assignPermissionsToRole, revokePermissionsFromRole, getPermissionsByRol
 import { deleteRole, updateRole } from "../../../apis/roleAPI";
 
 // Models
-import Permission from "../../models/Permission";
-import Role from "../../models/Role";
+import Permission from "../../../models/Permission";
+import Role from "../../../models/Role";
 
 // Components
 import InfoPopup from "../InfoPopup";
@@ -61,18 +61,6 @@ const RoleView: React.FC<RoleViewProps> = React.memo(
     const [tempPermissions, setTempPermissions] = useState<Permission[]>([]);
     const [hasUnsavedChanges, setHasUnsavedChanges] = useState(false);
 
-    // Debug log for rendering
-    useEffect(() => {
-      console.log("RoleView render attempt", {
-        selectedRoleId: selectedRole?.roleID,
-        roleName: selectedRole?.name,
-        allPermissionsLength: allPermissions.length,
-        tempPermissionsLength: tempPermissions.length,
-        tempPermissions: tempPermissions.map(p => ({ id: p.permissionID, name: p.name })),
-        canViewRoleDetails: userPermissions.canViewRoleDetails,
-        isRendering: !!selectedRole && userPermissions.canViewRoleDetails,
-      });
-    }, [selectedRole, allPermissions, tempPermissions, effectivePermissions]);
 
     // Memoized permissions object
     const userPermissions = useMemo(
@@ -134,7 +122,6 @@ const RoleView: React.FC<RoleViewProps> = React.memo(
         try {
           const permissions = await getAllPermissions();
           setAllPermissions(permissions || []);
-          console.log("Fetched all permissions in RoleView", { permissionsLength: permissions?.length });
         } catch (error: unknown) {
           console.error("Failed to fetch all permissions:", error);
           setError("Failed to load permissions.");
@@ -150,11 +137,6 @@ const RoleView: React.FC<RoleViewProps> = React.memo(
           setPermissionsLoading(true);
           try {
             const permissions = await getPermissionsByRole(selectedRole.roleID);
-            console.log("Fetched role permissions", {
-              roleId: selectedRole.roleID,
-              permissionsLength: permissions?.length,
-              permissions: permissions?.map(p => ({ id: p.permissionID, name: p.name })),
-            });
             setTempPermissions(permissions || []);
           } catch (error: unknown) {
             console.error("Failed to fetch role permissions:", error);
@@ -380,12 +362,6 @@ const RoleView: React.FC<RoleViewProps> = React.memo(
           const newPermissions = isAssigned
             ? prev.filter((p) => p.permissionID !== permission.permissionID)
             : [...prev, permission];
-          console.log("Toggled permission", {
-            permissionId: permission.permissionID,
-            permissionName: permission.name,
-            isAssigned,
-            newPermissionsLength: newPermissions.length,
-          });
           return newPermissions;
         });
         setHasUnsavedChanges(true);
@@ -413,11 +389,6 @@ const RoleView: React.FC<RoleViewProps> = React.memo(
           ];
         setTempPermissions(newPermissions);
         setHasUnsavedChanges(true);
-        console.log("Toggled all permissions in class", {
-          className,
-          allSelected,
-          newPermissionsLength: newPermissions.length,
-        });
       },
       [userPermissions.canAssignPermissions, allPermissions, tempPermissions]
     );
@@ -444,7 +415,6 @@ const RoleView: React.FC<RoleViewProps> = React.memo(
         setSelectedRole(updatedRole);
         setHasUnsavedChanges(false);
         setError(null);
-        console.log("Saved permissions", { toAdd, toRemove });
       } catch (error: unknown) {
         console.error("Failed to save permissions:", error);
         setTempPermissions((await getPermissionsByRole(selectedRole.roleID)) || []);
@@ -536,10 +506,6 @@ const RoleView: React.FC<RoleViewProps> = React.memo(
 
     // Check rendering conditions
     if (!selectedRole || !userPermissions.canViewRoleDetails) {
-      console.log("RoleView not rendered", {
-        selectedRoleExists: !!selectedRole,
-        canViewRoleDetails: userPermissions.canViewRoleDetails,
-      });
       return null;
     }
 

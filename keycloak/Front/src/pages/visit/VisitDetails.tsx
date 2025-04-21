@@ -26,12 +26,12 @@ import {
 import "./VisitDetails.css";
 import { Button } from "../../components/ui/button";
 import { useAuth } from "../../context/AuthContext";
-import VisitStatus from "../models/Enum/VisitStatus";
-import Visit from "../models/Visit";
-import Agent from "../models/Agent";
-import User from "../models/User";
-import { Checklist } from "../models/Checklist";
-import { Reason } from "../models/Reason";
+import VisitStatus from "../../models/Enum/VisitStatus";
+import Visit from "../../models/Visit";
+import Agent from "../../models/Agent";
+import User from "../../models/User";
+import { Checklist } from "../../models/Checklist";
+import { Reason } from "../../models/Reason";
 import {
   getAgentById,
   getAgentsByLocation,
@@ -574,7 +574,7 @@ const VisitDetails: React.FC = () => {
         photosToRemove: editForm.photosToRemove,
         supervisorID:
           selectedSupervisor &&
-          userPermissions.canCreateTimesheetsForSupervisors
+            userPermissions.canCreateTimesheetsForSupervisors
             ? selectedSupervisor
             : undefined,
         duration: updatedDuration,
@@ -687,20 +687,6 @@ const VisitDetails: React.FC = () => {
     }
   };
 
-  // Debug translations with interpolation
-  console.log(
-    "Translation Photos Count:",
-    t("visitDetails.photos.count", { count: visit?.photos?.length || 0 })
-  );
-  console.log(
-    "Translation Form Photos Count:",
-    t("visitDetails.form.photos.count", {
-      count:
-        (visit?.photos?.filter((p) => !editForm.photosToRemove.includes(p))
-          .length || 0) + newPhotos.length,
-    })
-  );
-
   // Fallbacks for interpolated translations
   const photosCount =
     t("visitDetails.photos.count", { count: visit?.photos?.length || 0 }) ||
@@ -711,9 +697,8 @@ const VisitDetails: React.FC = () => {
         (visit?.photos?.filter((p) => !editForm.photosToRemove.includes(p))
           .length || 0) + newPhotos.length,
     }) ||
-    `(${
-      (visit?.photos?.filter((p) => !editForm.photosToRemove.includes(p))
-        .length || 0) + newPhotos.length
+    `(${(visit?.photos?.filter((p) => !editForm.photosToRemove.includes(p))
+      .length || 0) + newPhotos.length
     } photos)`;
 
   if (loading) {
@@ -1014,9 +999,8 @@ const VisitDetails: React.FC = () => {
                     </option>
                     {supervisors
                       .filter((s) =>
-                        `${s.firstname || ""} ${s.lastname || ""} ${
-                          s.phone || ""
-                        }`
+                        `${s.firstname || ""} ${s.lastname || ""} ${s.phone || ""
+                          }`
                           .toLowerCase()
                           .includes(supervisorSearch.toLowerCase())
                       )
@@ -1266,10 +1250,6 @@ const VisitDetails: React.FC = () => {
                   {editForm.reasons.map((r, index) => {
                     const reasonItem =
                       reasons.find((re) => re.reasonID === r.id)?.item || r.id;
-                    console.log(
-                      "Reason Item:",
-                      t("visitDetails.aria.removeReason", { item: reasonItem })
-                    );
                     return (
                       <span
                         key={index}
@@ -1343,12 +1323,6 @@ const VisitDetails: React.FC = () => {
                     const checklistItem =
                       checklists.find((cl) => cl.checklistID === c.id)?.item ||
                       c.id;
-                    console.log(
-                      "Checklist Item:",
-                      t("visitDetails.aria.checklistItem", {
-                        item: checklistItem,
-                      })
-                    );
                     return (
                       <div key={index} className="checklist-item">
                         <input
@@ -1384,7 +1358,7 @@ const VisitDetails: React.FC = () => {
             )}
 
             {canEditField("photos") &&
-            (visit.photos?.length || newPhotos.length) ? (
+              (visit.photos?.length || newPhotos.length) ? (
               <div className="form-group photos-section">
                 <h2>
                   <FaCamera /> {t("visitDetails.form.photos.title")}{" "}
@@ -1402,9 +1376,8 @@ const VisitDetails: React.FC = () => {
                       <FaCamera /> {t("visitDetails.form.photos.startCamera")}
                     </button>
                     <div
-                      className={`camera-container ${
-                        isCameraActive ? "active" : ""
-                      }`}
+                      className={`camera-container ${isCameraActive ? "active" : ""
+                        }`}
                     >
                       <div className="camera-frame">
                         <video
@@ -1414,9 +1387,8 @@ const VisitDetails: React.FC = () => {
                           playsInline
                         />
                         <div
-                          className={`flash-overlay ${
-                            flashEffect ? "active" : ""
-                          }`}
+                          className={`flash-overlay ${flashEffect ? "active" : ""
+                            }`}
                         ></div>
                         <div className="photo-counter">
                           <FaCamera /> {newPhotos.length}

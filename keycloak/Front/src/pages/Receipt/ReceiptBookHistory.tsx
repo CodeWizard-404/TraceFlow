@@ -8,8 +8,8 @@ import {
 } from "../../apis/receiptBookAPI";
 import { getUserById } from "../../apis/userAPI";
 import { getAgentById } from "../../apis/agentAPI";
-import ReceiptBook from "../models/ReceiptBook";
-import ReceiptBookTransfer from "../models/ReceiptBookTransfer";
+import ReceiptBook from "../../models/ReceiptBook";
+import ReceiptBookTransfer from "../../models/ReceiptBookTransfer";
 import "./ReceiptBookHistory.css";
 import { useTranslation } from "react-i18next";
 

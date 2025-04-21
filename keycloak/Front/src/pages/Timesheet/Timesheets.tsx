@@ -2,9 +2,9 @@
 import React, { useEffect, useState, useMemo } from "react";
 import { useNavigate } from "react-router-dom";
 import "./Timesheets.css";
-import Timesheet from "../models/Timesheet";
-import Visit from "../models/Visit";
-import User from "../models/User";
+import Timesheet from "../../models/Timesheet";
+import Visit from "../../models/Visit";
+import User from "../../models/User";
 import { useAuth } from "../../context/AuthContext";
 import {
   getTimesheetsBySupervisor,
@@ -13,7 +13,7 @@ import {
 } from "../../apis/timesheetAPI";
 import { getAllUsers, getSupervisorsByUser } from "../../apis/userAPI";
 import { FaClock, FaMapMarkerAlt, FaRegUser } from "react-icons/fa";
-import TimesheetStatus from "../models/Enum/TimesheetStatus";
+import TimesheetStatus from "../../models/Enum/TimesheetStatus";
 import { useTranslation } from "react-i18next";
 
 const PERMISSIONS = {
