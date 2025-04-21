@@ -26,8 +26,8 @@ export const initSocket = () => {
         socket.on('connect_error', (error) => {
             console.error('WebSocket connection error:', error.message);
             if (error.message.includes('Authentication failed')) {
-                localStorage.removeItem('accessToken');
                 document.cookie = 'accessToken=; path=/; expires=Thu, 01 Jan 1970 00:00:00 GMT';
+                document.cookie = 'userData=; path=/; expires=Thu, 01 Jan 1970 00:00:00 GMT';
                 window.location.href = '/login';
             }
         });

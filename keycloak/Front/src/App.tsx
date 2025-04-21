@@ -10,6 +10,8 @@ import AccessDenied from './pages/Error/AccessDenied';
 import './App.css';
 import LoginPage from './pages/Auth/Login';
 import ProfilePage from './pages/Auth/ProfilePage';
+import { setGlobalNavigate } from './apis/axiosConfig';
+import { useNavigate } from 'react-router-dom';
 
 // Lazy load route components
 const Timesheets = React.lazy(() => import('./pages/Timesheet/Timesheets'));
@@ -227,7 +229,7 @@ const AppContent: React.FC = React.memo(() => {
                 </ProtectedRoute>
               }
             />
-            <Route path="/logout" element={<Navigate to="/login" replace />} />
+            <Route path="/logout" element={<Navigate to="/login" replace state={{ logout: true }} />} />
             <Route path="*" element={<PageNotFound />} />
           </Routes>
         </Suspense>
@@ -238,14 +240,21 @@ const AppContent: React.FC = React.memo(() => {
 });
 
 // Main App with providers
-const App: React.FC = () => (
-  <ThemeProvider>
-    <AuthProvider>
-      <ErrorProvider>
-        <AppContent />
-      </ErrorProvider>
-    </AuthProvider>
-  </ThemeProvider>
-);
+const App: React.FC = () => {
+  const navigate = useNavigate();
+  useEffect(() => {
+    setGlobalNavigate(navigate);
+  }, [navigate]);
+
+  return (
+    <ThemeProvider>
+      <AuthProvider>
+        <ErrorProvider>
+          <AppContent />
+        </ErrorProvider>
+      </AuthProvider>
+    </ThemeProvider>
+  );
+};
 
 export default App;

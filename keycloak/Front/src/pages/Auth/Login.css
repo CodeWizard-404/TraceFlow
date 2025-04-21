@@ -406,9 +406,11 @@ body.dark .login-form {
     border: 1px solid #4b5563;
 }
 
-.form-header {
+.form-header-0 {
     text-align: center;
     margin-bottom: 1.5rem;
+    display: flex;
+    flex-direction: column;
 }
 
 .form-title {

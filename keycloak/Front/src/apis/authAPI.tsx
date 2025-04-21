@@ -1,5 +1,3 @@
-// frontend/src/apis/authAPI.tsx
-
 import api from './axiosConfig';
 import {
     LoginResponse,
@@ -91,9 +89,8 @@ export const refreshToken = async (): Promise<{ accessToken: string; refreshToke
         const response = await api.post('/auth/refresh');
         return response.data;
     } catch (error) {
-        localStorage.removeItem('user');
-        localStorage.removeItem('accessToken');
-        localStorage.removeItem('supervisorFilter');
+        document.cookie = 'accessToken=; path=/; expires=Thu, 01 Jan 1970 00:00:00 GMT';
+        document.cookie = 'userData=; path=/; expires=Thu, 01 Jan 1970 00:00:00 GMT';
         throw new Error(handleApiError(error, 'Unable to refresh session'));
     }
 };
@@ -101,9 +98,8 @@ export const refreshToken = async (): Promise<{ accessToken: string; refreshToke
 export const logout = async (): Promise<void> => {
     try {
         await api.post('/auth/logout');
-        localStorage.removeItem('user');
-        localStorage.removeItem('accessToken');
-        localStorage.removeItem('supervisorFilter');
+        document.cookie = 'accessToken=; path=/; expires=Thu, 01 Jan 1970 00:00:00 GMT';
+        document.cookie = 'userData=; path=/; expires=Thu, 01 Jan 1970 00:00:00 GMT';
     } catch (error) {
         throw new Error(handleApiError(error, 'Logout failed'));
     }
