@@ -1,8 +1,9 @@
-import React, { useEffect } from 'react';
+import React, { useEffect, useRef } from 'react';
 import { useNotification } from '../../context/NotificationContext';
 import NotificationItem from './notification';
 import { getNotifications } from '../../apis/notificationAPI';
 import { cn } from '../../lib/utils';
+import './notification.css';
 
 // Define props for the NotificationPanel
 interface NotificationPanelProps {
@@ -13,6 +14,7 @@ interface NotificationPanelProps {
 // Component to display a list of notifications
 const NotificationPanel: React.FC<NotificationPanelProps> = ({ className, onClose }) => {
     const { notifications, markAllAsRead, addNotification } = useNotification();
+    const panelRef = useRef<HTMLDivElement>(null);
 
     // Fetch notifications on mount
     useEffect(() => {
@@ -27,38 +29,43 @@ const NotificationPanel: React.FC<NotificationPanelProps> = ({ className, onClos
         fetchNotifications();
     }, [addNotification]);
 
+    // Handle clicks outside the panel
+    useEffect(() => {
+        const handleClickOutside = (event: MouseEvent) => {
+            if (panelRef.current && !panelRef.current.contains(event.target as Node)) {
+                if (onClose) onClose();
+            }
+        };
+
+        document.addEventListener('mousedown', handleClickOutside);
+        return () => {
+            document.removeEventListener('mousedown', handleClickOutside);
+        };
+    }, [onClose]);
+
     return (
         <div
-            className={cn(
-                'bg-white dark:bg-gray-800 p-4 rounded-lg shadow-lg max-w-md w-full',
-                className
-            )}
+            ref={panelRef}
+            className={cn('notification-panel', className)}
+            onClick={(e) => e.stopPropagation()}
         >
-            <div className="flex justify-between items-center mb-4">
-                <h2 className="text-lg font-semibold">Notifications</h2>
-                <div>
+            <div className="notification-panel-header">
+                <h2>Notifications</h2>
+                <div className="notification-panel-actions">
                     {notifications.length > 0 && (
                         <button
                             onClick={markAllAsRead}
-                            className="text-sm text-blue-500 hover:underline mr-2"
+                            className="mark-all-read"
                         >
                             Mark All as Read
-                        </button>
-                    )}
-                    {onClose && (
-                        <button
-                            onClick={onClose}
-                            className="text-sm text-gray-500 hover:underline"
-                        >
-                            Close
                         </button>
                     )}
                 </div>
             </div>
             {notifications.length === 0 ? (
-                <p className="text-gray-500">No notifications</p>
+                <p className="no-notifications">No notifications</p>
             ) : (
-                <div className="space-y-2 max-h-96 overflow-y-auto">
+                <div className="notification-list">
                     {notifications.map((notification) => (
                         <NotificationItem
                             key={notification.notificationID}
