@@ -31,6 +31,7 @@ const allowedOrigins = [
     process.env.FRONTEND_URL,
     process.env.FRONTEND_URL1,
     process.env.FRONTEND_URL2,
+    'https://28f6-102-157-68-225.ngrok-free.app'
 ];
 
 // Configure CORS
