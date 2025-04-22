@@ -23,7 +23,7 @@ i18next
             escapeValue: false,
         },
     });
-
+/*
 // Set initial direction based on detected or fallback language
 const initialLang = i18next.language || i18next.options.fallbackLng;
 document.documentElement.setAttribute("dir", languageDirections[initialLang] || "ltr");
@@ -33,5 +33,5 @@ i18next.on("languageChanged", (lng) => {
     document.documentElement.setAttribute("dir", languageDirections[lng] || "ltr");
 });
 
-
+*/
 export default i18next;

@@ -60,7 +60,9 @@ const UsersList: React.FC<UsersListProps> = React.memo(
 
     const isSuperAdmin = useMemo(
       () =>
-        userRoles?.some((r) => r.name === import.meta.env.VITE_ROLES_SUPER_ADMIN),
+        userRoles?.some(
+          (r) => r.name === import.meta.env.VITE_ROLES_SUPER_ADMIN
+        ),
       [userRoles]
     );
 
@@ -102,23 +104,17 @@ const UsersList: React.FC<UsersListProps> = React.memo(
       return () => clearTimeout(timer);
     }, [roleFilter]);
 
-    const getCachedData = useCallback(
-      (key: string): User[] | null => {
-        const cached = cache.get(key);
-        if (cached && Date.now() - cached.timestamp < CACHE_DURATION) {
-          return cached.data;
-        }
-        return null;
-      },
-      []
-    );
+    const getCachedData = useCallback((key: string): User[] | null => {
+      const cached = cache.get(key);
+      if (cached && Date.now() - cached.timestamp < CACHE_DURATION) {
+        return cached.data;
+      }
+      return null;
+    }, []);
 
-    const setCachedData = useCallback(
-      (key: string, data: User[]) => {
-        cache.set(key, { data, timestamp: Date.now() });
-      },
-      []
-    );
+    const setCachedData = useCallback((key: string, data: User[]) => {
+      cache.set(key, { data, timestamp: Date.now() });
+    }, []);
 
     const fetchWithRetry = useCallback(
       async (
@@ -159,8 +155,8 @@ const UsersList: React.FC<UsersListProps> = React.memo(
         result = result.filter((user) =>
           user.Roles
             ? !user.Roles.some(
-              (r) => r.name === import.meta.env.VITE_ROLES_SUPER_ADMIN
-            )
+                (r) => r.name === import.meta.env.VITE_ROLES_SUPER_ADMIN
+              )
             : true
         );
       }
@@ -171,14 +167,18 @@ const UsersList: React.FC<UsersListProps> = React.memo(
             `${user.firstname} ${user.lastname}`
               .toLowerCase()
               .includes(internalSearchQuery.toLowerCase()) ||
-            user.email.toLowerCase().includes(internalSearchQuery.toLowerCase()) ||
+            user.email
+              .toLowerCase()
+              .includes(internalSearchQuery.toLowerCase()) ||
             (user.phone && user.phone.includes(internalSearchQuery))
         );
       }
 
       if (roleFilter !== "all") {
         // Map roleFilter ID to roleName using roles array
-        const selectedRole = roles.find(r => String(r.roleID).trim() === String(roleFilter).trim());
+        const selectedRole = roles.find(
+          (r) => String(r.roleID).trim() === String(roleFilter).trim()
+        );
         const roleNameFilter = selectedRole?.name;
 
         result = result.filter((user) => {
@@ -186,10 +186,14 @@ const UsersList: React.FC<UsersListProps> = React.memo(
           const hasRole = userRoles.some((role) => {
             // Try matching by common ID fields
             const roleIdMatch =
-              (role.roleID && String(role.roleID).trim() === String(roleFilter).trim());
+              role.roleID &&
+              String(role.roleID).trim() === String(roleFilter).trim();
 
             // Fallback to roleName if ID fields are unavailable
-            const roleNameMatch = roleNameFilter && role.name && String(role.name).trim() === String(roleNameFilter).trim();
+            const roleNameMatch =
+              roleNameFilter &&
+              role.name &&
+              String(role.name).trim() === String(roleNameFilter).trim();
 
             return roleIdMatch || roleNameMatch;
           });
@@ -199,10 +203,14 @@ const UsersList: React.FC<UsersListProps> = React.memo(
 
       result.sort((a, b) => {
         const aIsSuperAdmin = a.Roles
-          ? a.Roles.some((r) => r.name === import.meta.env.VITE_ROLES_SUPER_ADMIN)
+          ? a.Roles.some(
+              (r) => r.name === import.meta.env.VITE_ROLES_SUPER_ADMIN
+            )
           : false;
         const bIsSuperAdmin = b.Roles
-          ? b.Roles.some((r) => r.name === import.meta.env.VITE_ROLES_SUPER_ADMIN)
+          ? b.Roles.some(
+              (r) => r.name === import.meta.env.VITE_ROLES_SUPER_ADMIN
+            )
           : false;
 
         if (aIsSuperAdmin && !bIsSuperAdmin) return -1;
@@ -232,7 +240,15 @@ const UsersList: React.FC<UsersListProps> = React.memo(
       });
 
       return result;
-    }, [users, isSuperAdmin, internalSearchQuery, roleFilter, sortField, sortOrder, roles]);
+    }, [
+      users,
+      isSuperAdmin,
+      internalSearchQuery,
+      roleFilter,
+      sortField,
+      sortOrder,
+      roles,
+    ]);
 
     const totalItems = filteredAndSortedUsers.length;
     const totalPages = Math.max(1, Math.ceil(totalItems / itemsPerPage));
@@ -279,7 +295,14 @@ const UsersList: React.FC<UsersListProps> = React.memo(
           setIsTransitioning(false);
         }
       },
-      [setUsers, setSelectedUser, setView, setError, fetchWithRetry, setIsTransitioning]
+      [
+        setUsers,
+        setSelectedUser,
+        setView,
+        setError,
+        fetchWithRetry,
+        setIsTransitioning,
+      ]
     );
 
     const formatPhoneDisplay = useCallback((rawValue: string): string => {
@@ -298,10 +321,18 @@ const UsersList: React.FC<UsersListProps> = React.memo(
           <div className="table-container">
             <div className="table-head">
               <div className="table-row">
-                <div className="table-cell">{t("usersList.tableHeaders.name")}</div>
-                <div className="table-cell">{t("usersList.tableHeaders.email")}</div>
-                <div className="table-cell">{t("usersList.tableHeaders.phone")}</div>
-                <div className="table-cell">{t("usersList.tableHeaders.roles")}</div>
+                <div className="table-cell">
+                  {t("usersList.tableHeaders.name")}
+                </div>
+                <div className="table-cell">
+                  {t("usersList.tableHeaders.email")}
+                </div>
+                <div className="table-cell">
+                  {t("usersList.tableHeaders.phone")}
+                </div>
+                <div className="table-cell">
+                  {t("usersList.tableHeaders.roles")}
+                </div>
               </div>
             </div>
             <div className="table-body">
@@ -340,10 +371,18 @@ const UsersList: React.FC<UsersListProps> = React.memo(
             <div className="table-container">
               <div className="table-head">
                 <div className="table-row">
-                  <div className="table-cell">{t("usersList.tableHeaders.name")}</div>
-                  <div className="table-cell">{t("usersList.tableHeaders.email")}</div>
-                  <div className="table-cell">{t("usersList.tableHeaders.phone")}</div>
-                  <div className="table-cell">{t("usersList.tableHeaders.roles")}</div>
+                  <div className="table-cell">
+                    {t("usersList.tableHeaders.name")}
+                  </div>
+                  <div className="table-cell">
+                    {t("usersList.tableHeaders.email")}
+                  </div>
+                  <div className="table-cell">
+                    {t("usersList.tableHeaders.phone")}
+                  </div>
+                  <div className="table-cell">
+                    {t("usersList.tableHeaders.roles")}
+                  </div>
                 </div>
               </div>
               <div className="table-body">
@@ -362,9 +401,14 @@ const UsersList: React.FC<UsersListProps> = React.memo(
                       <div className="table-cell">
                         {user.Roles == null || user.Roles.length === 0 ? (
                           "No Roles"
-                        ) : user.Roles.map((r) => r.name).join(", ").length > 16 ? (
-                          <span title={user.Roles.map((r) => r.name).join(", ")}>
-                            {`${user.Roles.map((r) => r.name).join(", ").slice(0, 16)}...`}
+                        ) : user.Roles.map((r) => r.name).join(", ").length >
+                          16 ? (
+                          <span
+                            title={user.Roles.map((r) => r.name).join(", ")}
+                          >
+                            {`${user.Roles.map((r) => r.name)
+                              .join(", ")
+                              .slice(0, 16)}...`}
                           </span>
                         ) : (
                           user.Roles.map((r) => r.name).join(", ")
@@ -396,7 +440,9 @@ const UsersList: React.FC<UsersListProps> = React.memo(
                   })}
                 </span>
                 <button
-                  onClick={() => setCurrentPage((p) => Math.min(totalPages, p + 1))}
+                  onClick={() =>
+                    setCurrentPage((p) => Math.min(totalPages, p + 1))
+                  }
                   disabled={currentPage === totalPages}
                 >
                   {t("userView.pagination.next")}

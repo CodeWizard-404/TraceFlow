@@ -256,7 +256,7 @@ const TransferReceiptBook: React.FC = () => {
       return Array.from(userRoleSet).some((role) => {
         const rule =
           ROLE_TRANSFER_RULES[
-          role as unknown as keyof typeof ROLE_TRANSFER_RULES
+            role as unknown as keyof typeof ROLE_TRANSFER_RULES
           ];
         return rule && rule.transferable(book, currentUserID);
       });
@@ -309,7 +309,7 @@ const TransferReceiptBook: React.FC = () => {
         if (
           recipientType === "Stub Collection" &&
           matchingBook.status !==
-          t("common.receiptBookStatuses.assignedToAgent")
+            t("common.receiptBookStatuses.assignedToAgent")
         ) {
           setError(
             t("transferReceiptBook.errors.invalidStubCollectionStatus", {
@@ -321,7 +321,7 @@ const TransferReceiptBook: React.FC = () => {
         if (
           recipientType === "Stock Manager" &&
           matchingBook.ReceiptStub?.status !==
-          t("common.receiptBookStatuses.collected")
+            t("common.receiptBookStatuses.collected")
         ) {
           setError(
             t("transferReceiptBook.errors.stubNotCollected", { number })
@@ -501,7 +501,7 @@ const TransferReceiptBook: React.FC = () => {
     Array.from(userRoleSet).forEach((role) => {
       const rule =
         ROLE_TRANSFER_RULES[
-        role as unknown as keyof typeof ROLE_TRANSFER_RULES
+          role as unknown as keyof typeof ROLE_TRANSFER_RULES
         ];
       if (rule) {
         rule.recipientOptions.forEach((opt) => options.add(opt));
@@ -1172,8 +1172,8 @@ const TransferReceiptBook: React.FC = () => {
                         {recipientType === "Collect from Supplier"
                           ? t("transferReceiptBook.form.labels.scanCollect")
                           : recipientType === "Stub Collection"
-                            ? t("transferReceiptBook.form.labels.scanStub")
-                            : t("transferReceiptBook.form.labels.scanQR")}
+                          ? t("transferReceiptBook.form.labels.scanStub")
+                          : t("transferReceiptBook.form.labels.scanQR")}
                       </label>
                       {error && (
                         <div className="error-above-camera">{error}</div>
@@ -1260,16 +1260,16 @@ const TransferReceiptBook: React.FC = () => {
                           recipientType === "Stub Collection"
                             ? t("transferReceiptBook.actions.aria.initiateStub")
                             : recipientType === "Collect from Supplier"
-                              ? t("transferReceiptBook.actions.aria.collect")
-                              : t("transferReceiptBook.actions.aria.initiate")
+                            ? t("transferReceiptBook.actions.aria.collect")
+                            : t("transferReceiptBook.actions.aria.initiate")
                         }
                       >
                         <FaExchangeAlt aria-hidden="true" />{" "}
                         {recipientType === "Stub Collection"
                           ? t("transferReceiptBook.actions.initiateStub")
                           : recipientType === "Collect from Supplier"
-                            ? t("transferReceiptBook.actions.collect")
-                            : t("transferReceiptBook.actions.initiate")}
+                          ? t("transferReceiptBook.actions.collect")
+                          : t("transferReceiptBook.actions.initiate")}
                       </button>
                     )}
                 </div>

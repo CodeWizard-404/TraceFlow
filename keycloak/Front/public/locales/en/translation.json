@@ -306,7 +306,8 @@
     "actions": {
       "scheduleVisit": "Schedule Visit",
       "receiptBooks": "Receipt Books",
-      "current": "Current {viewMode}",
+      "current": "Current",
+      "viewReceiptBooks": "View Receipt Books",
       "filterSupervisors": "Filter Supervisors",
       "validateTimesheet": "Validate Entire Timesheet"
     },
@@ -315,23 +316,27 @@
       "allSupervisors": "All Supervisors"
     },
     "yearView": {
+      "week": "Week",
+      "visits": "Visits",
+      "supervisors": "Supervisors",
       "month": "{monthName}",
       "weekNumber": "Week {weekNumber} :",
       "weekRange": "{startDate} - {endDate}",
-      "visitCount": "{count} Visits",
       "supervisorCount": "Supervisors: {count}"
     },
     "monthView": {
-      "weekNumber": "Week {weekNumber}",
+      "week": "Week",
       "weekRange": "{startDate} - {endDate}",
       "visitCount": "{count} Visits",
+      "visits" : "Visits",
       "supervisorCount": "Supervisors: {count}",
-      "status": "Status: {status}"
+      "status": "Status",
+      "supervisors": "Supervisors:"
     },
     "weekView": {
-      "weekNumber": "Week {weekNumber}",
+      "week": "Week",
       "weekRange": "{startDate} - {endDate}",
-      "status": "Status: {status}",
+      "status": "Status",
       "supervisor": "Supervisor: {firstname} {lastname}",
       "dayName": "{dayName}",
       "dayDate": "{dayDate}",
@@ -414,7 +419,7 @@
     }
   },
   "transferReceiptBook": {
-    "title": "Transfer Receipt Books ({roles})",
+    "title": "Transfer Receipt Books",
     "loading": "Loading...",
     "form": {
       "recipientType": "Recipient Type",
@@ -448,11 +453,11 @@
     },
     "pagination": {
       "pageInfo": "Page {currentPage} of {totalPages}",
-      "selectedBooks": "Selected Books: {count}"
+      "selectedBooks": "Selected Books"
     },
     "list": {
       "noBooks": "No In Stock books available or matching search.",
-      "selectedBooks": "Selected Books ({count})",
+      "selectedBooks": "Selected Books",
       "scannedQRCodes": "{count} QR codes scanned."
     },
     "otpTimer": "OTP expires in: {time}",
@@ -870,6 +875,8 @@
       "allRoles": "All Roles",
       "addUser": "Add User",
       "addRole": "Add Role",
+      "resetRoles": "Reset Roles",
+      "resetting": "Resetting Roles",
       "addPermission": "Add Permission",
       "addChecklist": "Add Checklist",
       "addReason": "Add Reason"
