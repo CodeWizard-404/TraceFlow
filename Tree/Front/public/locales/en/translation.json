@@ -306,7 +306,8 @@
     "actions": {
       "scheduleVisit": "Schedule Visit",
       "receiptBooks": "Receipt Books",
-      "current": "Current {viewMode}",
+      "current": "Current",
+      "viewReceiptBooks": "View Receipt Books",
       "filterSupervisors": "Filter Supervisors",
       "validateTimesheet": "Validate Entire Timesheet"
     },
@@ -315,23 +316,27 @@
       "allSupervisors": "All Supervisors"
     },
     "yearView": {
+      "week": "Week",
+      "visits": "Visits",
+      "supervisors": "Supervisors",
       "month": "{monthName}",
       "weekNumber": "Week {weekNumber} :",
       "weekRange": "{startDate} - {endDate}",
-      "visitCount": "{count} Visits",
       "supervisorCount": "Supervisors: {count}"
     },
     "monthView": {
-      "weekNumber": "Week {weekNumber}",
+      "week": "Week",
       "weekRange": "{startDate} - {endDate}",
       "visitCount": "{count} Visits",
+      "visits" : "Visits",
       "supervisorCount": "Supervisors: {count}",
-      "status": "Status: {status}"
+      "status": "Status",
+      "supervisors": "Supervisors:"
     },
     "weekView": {
-      "weekNumber": "Week {weekNumber}",
+      "week": "Week",
       "weekRange": "{startDate} - {endDate}",
-      "status": "Status: {status}",
+      "status": "Status",
       "supervisor": "Supervisor: {firstname} {lastname}",
       "dayName": "{dayName}",
       "dayDate": "{dayDate}",
@@ -414,48 +419,83 @@
     }
   },
   "transferReceiptBook": {
-    "title": "Transfer Receipt Books ({roles})",
+    "title": "Transfer Receipt Books",
     "loading": "Loading...",
     "form": {
-      "recipientType": "Recipient Type",
       "agentSelection": "Agent Selection",
       "supplierEmail": "Supplier Email",
       "selectBooks": "Select In Stock Books to Transfer",
       "selectedAgent": "Selected Agent",
       "scanCollect": "Scan Books to Collect from Supplier",
       "scanQR": "Scan QR Codes",
-      "otp": "Enter OTP (Sent to {recipientType} {recipientDetails})",
+      "otp": "Enter OTP (Sent to {type} {details})",
+      "location": "Select Location",
+      "searchAgents": "Search Agents",
+      "selectAgent": "Select Agent",
+      "recipientSelection": "Recipient Selection",
+      "selectRecipient": "Select {type}",
+      "selectedUser": "Selected User",
+      "selectedBooks": "Selected Books",
+      "scanStub": "Scan Stub",
+      "noBooksAvailable": "No Books Available",
+      "or": "or",
       "placeholders": {
-        "recipientType": "Select Recipient Type",
-        "agentPhone": "Enter agent phone number",
-        "location": "Select Location",
-        "agentSearch": "Search agents by name or phone",
-        "agentSelect": "Select Agent",
-        "supplierEmail": "Enter supplier email",
-        "bookSearch": "Search books by number or type",
-        "userSearch": "Enter phone number or search by name",
-        "userSelect": "Select {recipientType}",
-        "otp": "Enter OTP"
+        "selectRecipientType": "Select Recipient Type",
+        "enterAgentPhone": "Enter agent phone number",
+        "selectLocation": "Select Location",
+        "searchAgents": "Search agents by name or phone",
+        "selectAgent": "Select Agent",
+        "enterSupplierEmail": "Enter supplier email",
+        "searchBooks": "Search books by number or type",
+        "searchRecipient": "Enter phone number or search by name",
+        "selectRecipient": "Select {type}",
+        "enterOTP": "Enter OTP"
       }
     },
     "actions": {
-      "back": "Back",
       "initiateTransfer": "Initiate Transfer",
       "initiateStubCollection": "Initiate Stub Collection",
       "collectFromSupplier": "Collect from Supplier",
+      "back": "Back",
+      "initiate": "Initiate Transfer",
+      "initiateStub": "Initiate Stub Collection",
+      "collect": "Collect from Supplier",
       "validateTransfer": "Validate Transfer",
-      "validateStubCollection": "Validate Stub Collection"
+      "validateStubCollection": "Validate Stub Collection",
+      "aria": {
+        "back": "Back to previous step",
+        "initiate": "Initiate transfer of receipt books",
+        "initiateStub": "Initiate stub collection",
+        "collect": "Collect books from supplier",
+        "validateTransfer": "Validate transfer",
+        "validateStubCollection": "Validate stub collection",
+        "removeBook": "Remove book {number}"
+      }
     },
+    "types": {
+        "standard": "Standard"
+      },
     "pagination": {
       "pageInfo": "Page {currentPage} of {totalPages}",
-      "selectedBooks": "Selected Books: {count}"
+      "selectedBooks": "Selected Books",
+      "aria": {
+          "previous": "Go to previous page",
+          "next": "Go to next page"
+        }
     },
+    "otpTimer": "OTP expires in",
     "list": {
       "noBooks": "No In Stock books available or matching search.",
-      "selectedBooks": "Selected Books ({count})",
-      "scannedQRCodes": "{count} QR codes scanned."
+      "selectedBooks": "Selected Books",
+      "scannedQRs": "{count} QR codes scanned."
     },
-    "otpTimer": "OTP expires in: {time}",
+    "recipientTypes": {
+        "agent": "Agent",
+        "supplier": "Supplier",
+        "archive": "Archive",
+        "stubCollection": "Stub Collection",
+        "collectFromSupplier": "Collect from Supplier"
+      },
     "errors": {
       "accessDenied": "Access Denied - Missing transfer_receipt_books permission",
       "loadData": "Failed to load data. Check console for details.",
@@ -870,6 +910,8 @@
       "allRoles": "All Roles",
       "addUser": "Add User",
       "addRole": "Add Role",
+      "resetRoles": "Reset Roles",
+      "resetting": "Resetting Roles",
       "addPermission": "Add Permission",
       "addChecklist": "Add Checklist",
       "addReason": "Add Reason"

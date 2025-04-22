@@ -1,24 +1,27 @@
-import React from "react";
-import { createRoot } from "react-dom/client";
-import { ThemeProvider, useTheme } from "./context/ThemeContext";
-import App from "./App";
-import "./index.css";
-import "./i18n";
-import "bootstrap/dist/css/bootstrap.min.css";
-import "./App.css";
+import { createRoot } from 'react-dom/client';
+import { BrowserRouter as Router } from 'react-router-dom';
+import { ThemeProvider } from './context/ThemeContext';
+import AuthProvider from './context/AuthContext';
+import { NotificationProvider } from './context/NotificationContext';
+import App from './App';
+import './index.css';
+import './i18n';
+import 'bootstrap/dist/css/bootstrap.min.css';
+import './App.css';
+import { ErrorProvider } from './context/ErrorContext';
 
-// Memoized Root component
-const Root: React.FC = React.memo(() => {
-  const { theme } = useTheme();
-  React.useEffect(() => {
-    document.body.className = theme;
-  }, [theme]);
-
-  return <App />;
-});
-
-createRoot(document.getElementById("root")!).render(
-  <ThemeProvider>
-    <Root />
-  </ThemeProvider>
+// Render the app with Router and other providers
+createRoot(document.getElementById('root')!).render(
+  <Router future={{ v7_startTransition: true, v7_relativeSplatPath: true }}>
+    <ErrorProvider>
+      <ThemeProvider>
+        <AuthProvider>
+          <NotificationProvider>
+            <App />
+            {/* <ToastContainer /> */}
+          </NotificationProvider>
+        </AuthProvider>
+      </ThemeProvider>
+    </ErrorProvider>
+  </Router>
 );

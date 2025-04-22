@@ -1,36 +1,32 @@
-import React, { JSX, Suspense, useEffect } from "react";
-import {
-  BrowserRouter as Router,
-  Routes,
-  Route,
-  Navigate,
-} from "react-router-dom";
-import { ThemeProvider, useTheme } from "./context/ThemeContext";
-import { useAuth } from "./context/AuthContext";
-import AuthProvider from "./context/AuthContext";
-import { ErrorProvider } from "./context/ErrorContext";
-import Footer from "./components/Footer";
-import Header from "./components/Header";
-import ErrorDisplay from "./pages/Error/ErrorDisplay";
-import AccessDenied from "./pages/Error/AccessDenied";
-import "./App.css";
-import LoginPage from "./pages/Auth/Login";
-import ProfilePage from "./pages/Auth/ProfilePage";
+import React, { JSX, Suspense, useEffect } from 'react';
+import { Routes, Route, Navigate, useLocation } from 'react-router-dom';
+import { ThemeProvider, useTheme } from './context/ThemeContext';
+import AuthProvider, { useAuth } from './context/AuthContext';
+import { ErrorProvider } from './context/ErrorContext';
+import Footer from './components/Footer';
+import Header from './components/Header';
+import ErrorDisplay from './pages/Error/ErrorDisplay';
+import AccessDenied from './pages/Error/AccessDenied';
+import './App.css';
+import LoginPage from './pages/Auth/Login';
+import ProfilePage from './pages/Auth/ProfilePage';
+import { setGlobalNavigate } from './apis/axiosConfig';
+import { useNavigate } from 'react-router-dom';
 
 // Lazy load route components
-const Timesheets = React.lazy(() => import("./pages/Timesheet/Timesheets"));
-const TimesheetForm = React.lazy(() => import("./pages/Timesheet/TimesheetForm"));
-const QRScan = React.lazy(() => import("./pages/visit/QRScan"));
-const VisitDetails = React.lazy(() => import("./pages/visit/VisitDetails"));
-const VisitValidation = React.lazy(() => import("./pages/visit/VisitValidation"));
-const PageNotFound = React.lazy(() => import("./pages/Error/PageNotFound"));
-const AdminDashboard = React.lazy(() => import("./pages/Admin/AdminDashboard"));
-const ReceiptBooks = React.lazy(() => import("./pages/Receipt/ReceiptBooks"));
+const Timesheets = React.lazy(() => import('./pages/Timesheet/Timesheets'));
+const TimesheetForm = React.lazy(() => import('./pages/Timesheet/TimesheetForm'));
+const QRScan = React.lazy(() => import('./pages/visit/QRScan'));
+const VisitDetails = React.lazy(() => import('./pages/visit/VisitDetails'));
+const VisitValidation = React.lazy(() => import('./pages/visit/VisitValidation'));
+const PageNotFound = React.lazy(() => import('./pages/Error/PageNotFound'));
+const AdminDashboard = React.lazy(() => import('./pages/Admin/AdminDashboard'));
+const ReceiptBooks = React.lazy(() => import('./pages/Receipt/ReceiptBooks'));
 const TransferReceiptBook = React.lazy(() =>
-  import("./pages/Receipt/TransferReceiptBook")
+  import('./pages/Receipt/TransferReceiptBook')
 );
 const ReceiptBookHistory = React.lazy(() =>
-  import("./pages/Receipt/ReceiptBookHistory")
+  import('./pages/Receipt/ReceiptBookHistory')
 );
 
 // Static permissions and roles from .env
@@ -125,6 +121,8 @@ const RoleProtectedRoute: React.FC<RoleProtectedRouteProps> = React.memo(
 // Main content with routing
 const AppContent: React.FC = React.memo(() => {
   const { theme } = useTheme();
+  const location = useLocation();
+
   useEffect(() => {
     document.body.className = theme;
   }, [theme]);
@@ -133,7 +131,7 @@ const AppContent: React.FC = React.memo(() => {
     <div className="app-container">
       <Header />
       <main>
-        {location.pathname !== "/login" && <ErrorDisplay />}
+        {location.pathname !== '/login' && <ErrorDisplay />}
         <Suspense>
           <Routes>
             <Route path="/login" element={<LoginPage />} />
@@ -231,7 +229,7 @@ const AppContent: React.FC = React.memo(() => {
                 </ProtectedRoute>
               }
             />
-            <Route path="/logout" element={<Navigate to="/login" replace />} />
+            <Route path="/logout" element={<Navigate to="/login" replace state={{ logout: true }} />} />
             <Route path="*" element={<PageNotFound />} />
           </Routes>
         </Suspense>
@@ -242,8 +240,13 @@ const AppContent: React.FC = React.memo(() => {
 });
 
 // Main App with providers
-const App: React.FC = () => (
-  <Router future={{ v7_startTransition: true, v7_relativeSplatPath: true }}>
+const App: React.FC = () => {
+  const navigate = useNavigate();
+  useEffect(() => {
+    setGlobalNavigate(navigate);
+  }, [navigate]);
+
+  return (
     <ThemeProvider>
       <AuthProvider>
         <ErrorProvider>
@@ -251,7 +254,7 @@ const App: React.FC = () => (
         </ErrorProvider>
       </AuthProvider>
     </ThemeProvider>
-  </Router>
-);
+  );
+};
 
 export default App;

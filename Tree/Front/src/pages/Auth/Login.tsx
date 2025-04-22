@@ -1,6 +1,5 @@
-// frontend/src/pages/Auth/Login.tsx
-
 import React, { useState, useEffect, useCallback } from 'react';
+import { useLocation, useNavigate } from 'react-router-dom';
 import FingerprintJS from '@fingerprintjs/fingerprintjs';
 import { useAuth } from '../../context/AuthContext';
 import { useError } from '../../context/ErrorContext';
@@ -17,6 +16,7 @@ import { FaClock, FaEye, FaEyeSlash, FaMapMarkerAlt, FaQrcode, FaShieldAlt } fro
 import { RiTimeLine } from 'react-icons/ri';
 import { AiOutlineQrcode } from 'react-icons/ai';
 import './Login.css';
+import { debounce } from 'lodash';
 
 const LoginPage: React.FC = () => {
     const [step, setStep] = useState<'login' | 'verify2FA' | 'forgot' | 'verifyReset' | 'reset'>('login');
@@ -36,7 +36,7 @@ const LoginPage: React.FC = () => {
     const [resendCooldown, setResendCooldown] = useState(0);
     const [otpMethod, setOtpMethod] = useState<'phone' | 'email'>('phone');
     const [errors, setErrors] = useState<{ [key: string]: string }>({});
-    const [apiError, setApiError] = useState<string | null>(null); // Local error state
+    const [apiError, setApiError] = useState<string | null>(null);
     const [showPassword, setShowPassword] = useState(false);
     const [showNewPassword, setShowNewPassword] = useState(false);
     const [showConfirmPassword, setShowConfirmPassword] = useState(false);
@@ -44,6 +44,24 @@ const LoginPage: React.FC = () => {
 
     const { loginUser } = useAuth();
     const { setError, clearError } = useError();
+    const navigate = useNavigate();
+    const location = useLocation();
+
+    // Debounced navigation
+    const debouncedNavigate = debounce((to: string, options: { replace?: boolean; state?: unknown }) => {
+        navigate(to, options);
+    }, 100);
+
+    useEffect(() => {
+        if (location.state?.logout) {
+            document.cookie = 'accessToken=; path=/; expires=Thu, 01 Jan 1970 00:00:00 GMT';
+            document.cookie = 'userData=; path=/; expires=Thu, 01 Jan 1970 00:00:00 GMT';
+            resetForm();
+            if (location.pathname !== '/login') {
+                debouncedNavigate('/login', { replace: true, state: null });
+            }
+        }
+    }, [location.state?.logout, location.pathname, debouncedNavigate]);
 
     useEffect(() => {
         const getFingerprint = async () => {
@@ -150,6 +168,8 @@ const LoginPage: React.FC = () => {
             } else if (response.user) {
                 await loginUser(identifier, password, deviceIdentifier);
                 setSuccess('Login successful!');
+                const from = location.state?.from || '/';
+                debouncedNavigate(from, { replace: true });
             } else {
                 throw new Error('Invalid response from server.');
             }
@@ -189,6 +209,8 @@ const LoginPage: React.FC = () => {
             }
             await loginUser(identifier, password, deviceIdentifier, otpCode, trustDevice, tempToken, refreshToken, userID);
             setSuccess('Login successful!');
+            const from = location.state?.from || '/';
+            debouncedNavigate(from, { replace: true });
         } catch (error: unknown) {
             const errorMessage = error instanceof Error ? error.message : '2FA verification failed.';
             console.error('verify2FA error:', errorMessage);
@@ -373,7 +395,7 @@ const LoginPage: React.FC = () => {
                     transition={{ duration: 0.5, ease: 'easeInOut' }}
                     className="login-form"
                 >
-                    <div className="form-header">
+                    <div className="form-header-0">
                         <h1 className="form-title">TraceFlow</h1>
                         <p className="form-subtitle">Securely Track. Optimize. Succeed.</p>
                     </div>
@@ -400,6 +422,7 @@ const LoginPage: React.FC = () => {
                                     disabled={loading || !deviceIdentifier}
                                     placeholder="Enter your email or phone"
                                     className={errors.identifier ? 'input-error' : ''}
+                                    autoComplete="username"
                                 />
                                 {errors.identifier && <span className="error-text">{errors.identifier}</span>}
                             </div>
@@ -415,6 +438,7 @@ const LoginPage: React.FC = () => {
                                         disabled={loading || !deviceIdentifier}
                                         placeholder="Enter your password"
                                         className={errors.password ? 'input-error' : ''}
+                                        autoComplete="current-password"
                                     />
                                     <button
                                         type="button"
@@ -455,6 +479,7 @@ const LoginPage: React.FC = () => {
                                     placeholder="6-digit code"
                                     maxLength={6}
                                     className={errors.otpCode ? 'input-error' : ''}
+                                    autoComplete="one-time-code"
                                 />
                                 {errors.otpCode && <span className="error-text">{errors.otpCode}</span>}
                             </div>
@@ -533,6 +558,7 @@ const LoginPage: React.FC = () => {
                                     disabled={loading}
                                     placeholder="Enter your email or phone"
                                     className={errors.identifier ? 'input-error' : ''}
+                                    autoComplete="username"
                                 />
                                 {errors.identifier && <span className="error-text">{errors.identifier}</span>}
                             </div>
@@ -564,6 +590,7 @@ const LoginPage: React.FC = () => {
                                     placeholder="6-digit code"
                                     maxLength={6}
                                     className={errors.otpCode ? 'input-error' : ''}
+                                    autoComplete="one-time-code"
                                 />
                                 {errors.otpCode && <span className="error-text">{errors.otpCode}</span>}
                             </div>
@@ -608,6 +635,7 @@ const LoginPage: React.FC = () => {
                                         disabled={loading}
                                         placeholder="Enter new password"
                                         className={errors.newPassword ? 'input-error' : ''}
+                                        autoComplete="new-password"
                                     />
                                     <button
                                         type="button"
@@ -632,6 +660,7 @@ const LoginPage: React.FC = () => {
                                         disabled={loading}
                                         placeholder="Confirm new password"
                                         className={errors.confirmPassword ? 'input-error' : ''}
+                                        autoComplete="new-password"
                                     />
                                     <button
                                         type="button"

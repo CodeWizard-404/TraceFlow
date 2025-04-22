@@ -17,7 +17,7 @@ module.exports = (sequelize, DataTypes) => {
             },
         },
         type: {
-            type: DataTypes.ENUM('timesheet', 'receipt', 'visit', 'anomaly', 'general'),
+            type: DataTypes.STRING,
             allowNull: false,
             defaultValue: 'general',
         },

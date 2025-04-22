@@ -5,7 +5,11 @@ const logger = require('./logger');
 // Initialize Socket.IO server
 const io = new Server({
     cors: {
-        origin: process.env.FRONTEND_URL || 'http://localhost:5173',
+        origin: [
+            process.env.FRONTEND_URL || 'http://localhost:5173',
+            'http://192.168.1.16:5173',
+            'http://192.168.1.16:5000',
+        ],
         methods: ['GET', 'POST'],
         credentials: true,
     },
@@ -15,6 +19,7 @@ const io = new Server({
 io.use(async (socket, next) => {
     try {
         const cookie = socket.handshake.headers.cookie;
+        logger.info(`WebSocket handshake cookies: ${cookie || 'None'}`);
         if (!cookie) {
             throw new Error('No cookie provided');
         }
@@ -40,10 +45,25 @@ io.on('connection', (socket) => {
     console.log(`${new Date().toISOString()} - User connected: ${socket.user.email}`);
 
     // Join role-based and user-specific rooms
-    const role = socket.user.role.toLowerCase();
-    socket.join(role);
-    socket.join(socket.user.userID); // Join user-specific room
-    console.log(`${new Date().toISOString()} - User ${socket.user.email} joined rooms: ${role}, ${socket.user.userID}`);
+    const roles = socket.user.roles || [];
+    roles.forEach((role) => {
+        socket.join(role.toLowerCase());
+        console.log(`${new Date().toISOString()} - User ${socket.user.email} joined room: ${role.toLowerCase()}`);
+    });
+    socket.join(socket.user.userID);
+    console.log(`${new Date().toISOString()} - User ${socket.user.email} joined room: ${socket.user.userID}`);
+
+    // Handle join room
+    socket.on('join', (room) => {
+        socket.join(room);
+        console.log(`${new Date().toISOString()} - User ${socket.user.email} joined room: ${room}`);
+    });
+
+    // Handle leave room
+    socket.on('leave', (room) => {
+        socket.leave(room);
+        console.log(`${new Date().toISOString()} - User ${socket.user.email} left room: ${room}`);
+    });
 
     // Handle disconnection
     socket.on('disconnect', () => {

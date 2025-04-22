@@ -1,6 +1,6 @@
 const axios = require('axios');
 const logger = require('../utils/logger');
-const { User } = require('../models'); // Import User model
+const { User } = require('../models');
 require('dotenv').config();
 
 const KEYCLOAK_URL = process.env.KEYCLOAK_URL || 'http://localhost:8080';
@@ -42,7 +42,7 @@ const authenticateCookie = async (req, res, next) => {
             }
 
             req.user = {
-                userID: user.userID, // Use local database userID
+                userID: user.userID,
                 email: response.data.email,
                 roles: response.data.realm_access?.roles || [],
                 token: accessToken,

@@ -1,41 +1,147 @@
 // notifEvents.ts
-// Centralized definitions for WebSocket notification events, dynamically derived from admin-defined notification rules
+// Centralized definitions for WebSocket notification events and types, combining default events/types and dynamically derived admin-defined notification rules
 
 import { getNotificationRules } from '../apis/notificationAPI';
 import NotificationRule from '../models/NotificationRule';
 
-// Cache for notification events to reduce API calls
+// Default notification events for all entities and actions
+const DEFAULT_EVENTS: string[] = [
+    // User events
+    'user:created',
+    'user:updated',
+    'user:deleted',
+    'user:profile_updated',
+    'user:supervisors_assigned',
+    'user:supervisors_revoked',
+    'user:google_account_assigned',
+    'user:roles_assigned',
+    'user:roles_revoked',
+    // Role events
+    'role:created',
+    'role:updated',
+    'role:deleted',
+    'role:permissions_assigned',
+    'role:permissions_revoked',
+    // Permission events
+    'permission:updated',
+    'permission:override_added',
+    'permission:override_removed',
+    // Timesheet events
+    'timesheet:created',
+    'timesheet:validated',
+    'timesheet:updated',
+    // Visit events
+    'visit:created',
+    'visit:updated',
+    'visit:deleted',
+    'visit:logged',
+    'visit:qr_verified',
+    // Checklist events
+    'checklist:created',
+    'checklist:updated',
+    'checklist:deleted',
+    // Reason events
+    'reason:created',
+    'reason:updated',
+    'reason:deleted',
+    // Receipt Book events
+    'receipt_book:created',
+    'receipt_book:updated',
+    'receipt_book:deleted',
+    'receipt_book:sent',
+    'receipt_book:collected',
+    'receipt_book:transferred',
+    'receipt_book:transfer_validated',
+    // Receipt Stub events
+    'receipt_stub:collected',
+    'receipt_stub:validated',
+    'receipt_stub:archived',
+    // Agent events
+    'agent:created',
+    'agent:updated',
+    'agent:deleted',
+    // Notification events
+    'notification:created',
+    'notification:read',
+    'notification:updated',
+];
+
+// Default notification types corresponding to entities and general
+const DEFAULT_TYPES: string[] = [
+    'general',
+    'anomaly',
+    'urgent',
+    'info',
+    'user',
+    'role',
+    'permission',
+    'timesheet',
+    'visit',
+    'checklist',
+    'reason',
+    'receipt_book',
+    'receipt_stub',
+    'agent',
+    'notification',
+];
+
+// Cache for notification events and types to reduce API calls
 let cachedEvents: string[] | null = null;
+let cachedTypes: string[] | null = null;
 const CACHE_DURATION = 5 * 60 * 1000; // 5 minutes
 let lastCacheTime: number = 0;
 
-// Fetch notification events from backend
-const fetchNotificationEvents = async (): Promise<string[]> => {
+// Fetch notification events and types from backend
+const fetchNotificationData = async (): Promise<{ events: string[]; types: string[] }> => {
     try {
         const rules: NotificationRule[] = await getNotificationRules();
         // Extract unique event strings from notification rules
-        const events = [...new Set(rules.map((rule) => rule.event))].filter(
+        const dynamicEvents = [...new Set(rules.map((rule) => rule.event))].filter(
             (event): event is string => !!event
         );
-        return events;
+        // Extract unique type strings from notification rules
+        const dynamicTypes = [...new Set(rules.map((rule) => rule.type.toLowerCase()))].filter(
+            (type): type is string => !!type
+        );
+        // Combine default and dynamic events/types, ensuring uniqueness
+        return {
+            events: [...new Set([...DEFAULT_EVENTS, ...dynamicEvents])],
+            types: [...new Set([...DEFAULT_TYPES, ...dynamicTypes])],
+        };
     } catch (error) {
-        console.error('Failed to fetch notification events:', error);
-        return [];
+        console.error('Failed to fetch notification data:', error);
+        // Return default events and types if API call fails
+        return {
+            events: [...DEFAULT_EVENTS],
+            types: [...DEFAULT_TYPES],
+        };
     }
 };
 
 // Get all valid notification events, using cache if available
 export const getNotificationEvents = async (): Promise<string[]> => {
-    if (
-        cachedEvents &&
-        Date.now() - lastCacheTime < CACHE_DURATION
-    ) {
+    if (cachedEvents && cachedTypes && Date.now() - lastCacheTime < CACHE_DURATION) {
         return cachedEvents;
     }
 
-    cachedEvents = await fetchNotificationEvents();
+    const { events, types } = await fetchNotificationData();
+    cachedEvents = events;
+    cachedTypes = types;
     lastCacheTime = Date.now();
     return cachedEvents;
+};
+
+// Get all valid notification types, using cache if available
+export const getNotificationTypes = async (): Promise<string[]> => {
+    if (cachedEvents && cachedTypes && Date.now() - lastCacheTime < CACHE_DURATION) {
+        return cachedTypes;
+    }
+
+    const { events, types } = await fetchNotificationData();
+    cachedEvents = events;
+    cachedTypes = types;
+    lastCacheTime = Date.now();
+    return cachedTypes;
 };
 
 // Type for all possible notification events
@@ -51,4 +157,17 @@ export const getEntityEvents = async (entity: string): Promise<NotificationEvent
 export const isValidNotificationEvent = async (event: string): Promise<boolean> => {
     const events = await getNotificationEvents();
     return events.includes(event);
+};
+
+// Utility to get all entities
+export const getNotificationEntities = async (): Promise<string[]> => {
+    const events = await getNotificationEvents();
+    const entities = [...new Set(events.map((event) => event.split(':')[0]))];
+    return entities;
+};
+
+// Utility to get actions for a specific entity
+export const getEntityActions = async (entity: string): Promise<string[]> => {
+    const events = await getEntityEvents(entity);
+    return events.map((event) => event.split(':')[1]);
 };

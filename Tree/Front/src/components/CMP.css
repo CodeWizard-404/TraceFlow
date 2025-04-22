@@ -1,4 +1,4 @@
-/* CMP.css (Fully Updated Styles) */
+/* Existing styles (unchanged, included for context) */
 .header {
     background: #fff;
     padding: 0.9375rem 1.25rem;
@@ -132,93 +132,6 @@
     transition: all 0.3s ease;
 }
 
-/* Language Switcher */
-.lang-switcher {
-    display: flex;
-    align-items: center;
-    justify-content: center;
-    padding: 0.2rem 2rem;
-    font-size: 0.9rem;
-    font-family: "Inter", sans-serif;
-    font-weight: 600;
-    color: #fff;
-    background: #4cb1c7; /* Matches theme-toggle-btn */
-    border: none;
-    border-radius: 1rem;
-    cursor: pointer;
-    height: 2rem;
-    transition: all 0.3s ease;
-    appearance: none; /* Remove default select styling */
-    -webkit-appearance: none;
-    -moz-appearance: none;
-    position: relative;
-    width: 10rem; /* Compact size */
-}
-
-.header.dark .lang-switcher {
-    background: #63b3ed; /* Matches dark theme */
-    color: #1f2937; /* Dark text for contrast */
-}
-
-.lang-switcher:hover {
-    background: #3a8fa2;
-}
-
-.header.dark .lang-switcher:hover {
-    background: #4299e1;
-}
-
-/* Custom arrow for select */
-.lang-switcher::after {
-    content: "▼";
-    position: absolute;
-    right: 0.75rem;
-    font-size: 0.7rem;
-    color: #fff;
-    pointer-events: none;
-    transition: color 0.3s ease;
-}
-
-.header.dark .lang-switcher::after {
-    color: #1f2937;
-}
-
-/* Option styling (limited control, but ensure consistency) */
-.lang-switcher option {
-    background: #fff;
-    color: #1f2937;
-    font-family: "Inter", sans-serif;
-    font-weight: 600;
-}
-
-.header.dark .lang-switcher option {
-    background: #26292e;
-    color: #e2e8f0;
-}
-
-/* Responsive Design */
-@media (max-width: 768px) {
-    .lang-switcher {
-        width: 3.5rem;
-        height: 1.75rem;
-        padding: 0.375rem;
-        font-size: 0.85rem;
-    }
-}
-
-@media (max-width: 480px) {
-    .lang-switcher {
-        width: 3rem;
-        height: 1.5rem;
-        font-size: 0.8rem;
-    }
-
-    .lang-switcher::after {
-        right: 0.5rem;
-        font-size: 0.6rem;
-    }
-}
-
 .header.dark .theme-toggle-btn {
     background: #63b3ed;
 }
@@ -233,6 +146,158 @@
 
 .header.dark .theme-toggle-btn:hover {
     background: #4299e1;
+}
+
+/* Language Toggle Button */
+.lang-toggle-btn {
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    padding: 0.5rem;
+    font-size: 1rem;
+    background: #4cb1c7;
+    color: #fff;
+    border: none;
+    border-radius: 50%;
+    cursor: pointer;
+    width: 2rem;
+    height: 2rem;
+    position: relative;
+    overflow: hidden;
+    transition: all 0.3s ease;
+}
+
+.header.dark .lang-toggle-btn {
+    background: #63b3ed;
+}
+
+.lang-toggle-btn:hover {
+    background: #3a8fa2;
+    width: 8rem;
+    /* Adjusted to fit EN | FR | AR */
+    border-radius: 1rem;
+    justify-content: flex-start;
+    padding-left: 0.75rem;
+}
+
+.header.dark .lang-toggle-btn:hover {
+    background: #4299e1;
+}
+
+/* Language Options */
+.lang-options {
+    display: flex;
+    align-items: center;
+    opacity: 0;
+    position: absolute;
+    top: 50%;
+    left: 2rem;
+    transform: translateY(-50%);
+    transition: opacity 0.3s ease;
+    pointer-events: none;
+}
+
+.lang-toggle-btn:hover .lang-options {
+    opacity: 1;
+    pointer-events: auto;
+}
+
+.lang-option {
+    font-family: 'Inter', sans-serif;
+    font-size: 0.9rem;
+    font-weight: 600;
+    color: #fff;
+    cursor: pointer;
+    transition: color 0.3s ease;
+}
+
+.lang-option:hover {
+    color: #e2e8f0;
+}
+
+.lang-option.selected {
+    color: #e2e8f0;
+    text-decoration: underline;
+}
+
+.lang-separator {
+    color: #fff;
+    margin: 0 0.25rem;
+    font-size: 0.9rem;
+}
+
+/* Notification Button */
+.notification-btn {
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    padding: 0.5rem;
+    font-size: 1rem;
+    background: #ff4444;
+    color: #fff;
+    border: none;
+    border-radius: 50%;
+    cursor: pointer;
+    width: 2rem;
+    height: 2rem;
+    position: relative;
+    overflow: hidden;
+    transition: all 0.3s ease;
+}
+
+.header.dark .notification-btn {
+    background: #f56565;
+}
+
+.notification-btn:hover {
+    background: #cc3333;
+    width: 6rem;
+    border-radius: 1rem;
+    justify-content: flex-start;
+    padding-left: 0.75rem;
+}
+
+.header.dark .notification-btn:hover {
+    background: #e53e3e;
+}
+
+.notification-badge {
+    position: absolute;
+    top: -0.25rem;
+    right: -0.25rem;
+    background: #fff;
+    color: #ff4444;
+    border-radius: 50%;
+    padding: 0.2rem 0.4rem;
+    font-size: 0.7rem;
+    font-weight: 600;
+    border: 1px solid #ff4444;
+    transition: color 0.3s ease, border-color 0.3s ease;
+}
+
+.header.dark .notification-badge {
+    background: #26292e;
+    color: #f56565;
+    border: 1px solid #f56565;
+}
+
+/* Notification Panel Container */
+.notification-panel-container {
+    position: absolute;
+    top: 100%;
+    right: 1rem;
+    z-index: 1000;
+    max-width: 20rem;
+    width: 90%;
+    background: #fff;
+    border-radius: 0.5rem;
+    box-shadow: 0 0.25rem 0.75rem rgba(0, 0, 0, 0.1);
+    border: 1px solid rgba(76, 177, 199, 0.2);
+}
+
+.header.dark .notification-panel-container {
+    background: #2d3748;
+    border: 1px solid rgba(99, 179, 237, 0.2);
 }
 
 /* Logout Button */
@@ -287,6 +352,7 @@
 }
 
 .theme-toggle-btn:hover .btn-text,
+.notification-btn:hover .btn-text,
 .logout-btn:hover .btn-text {
     opacity: 1;
 }
@@ -294,7 +360,7 @@
 /* Button Group for inline buttons */
 .button-group {
     display: flex;
-    gap: 0.5rem; /* Space between buttons */
+    gap: 0.5rem;
     align-items: center;
 }
 
@@ -348,31 +414,41 @@
     }
 
     .button-group {
-        align-self: flex-end; /* Keeps group right-aligned */
-        flex-direction: row; /* Ensures buttons are inline */
+        align-self: flex-end;
+        flex-direction: row;
         gap: 0.5rem;
     }
 
-    .theme-toggle-btn {
-        padding: 0.5rem;
-        width: 2rem;
-        height: 2rem;
-    }
-
-    .theme-toggle-btn:hover {
-        padding-left: 0.75rem;
-        width: 6rem;
-    }
-
+    .theme-toggle-btn,
+    .lang-toggle-btn,
+    .notification-btn,
     .logout-btn {
         padding: 0.5rem;
         width: 2rem;
         height: 2rem;
     }
 
+    .theme-toggle-btn:hover,
+    .lang-toggle-btn:hover,
+    .notification-btn:hover,
     .logout-btn:hover {
         padding-left: 0.75rem;
-        width: 6rem;
+        width: 5rem;
+        /* Reduced to fit EN | FR | AR */
+    }
+
+    .notification-panel-container {
+        right: 0.5rem;
+        width: 95%;
+    }
+
+    .lang-option {
+        font-size: 0.85rem;
+    }
+
+    .lang-separator {
+        margin: 0 0.2rem;
+        font-size: 0.85rem;
     }
 }
 
@@ -395,10 +471,12 @@
     }
 
     .button-group {
-        gap: 0.375rem; /* Slightly smaller gap */
+        gap: 0.375rem;
     }
 
     .theme-toggle-btn,
+    .lang-toggle-btn,
+    .notification-btn,
     .logout-btn {
         width: 1.75rem;
         height: 1.75rem;
@@ -406,14 +484,31 @@
     }
 
     .theme-toggle-btn:hover,
+    .lang-toggle-btn:hover,
+    .notification-btn:hover,
     .logout-btn:hover {
-        width: 4.5rem;
+        width: 4rem;
+        /* Further reduced for small screens */
         padding-left: 0.625rem;
     }
 
     .btn-text {
         font-size: 0.8rem;
         left: 1.75rem;
+    }
+
+    .notification-panel-container {
+        right: 0.25rem;
+        width: 98%;
+    }
+
+    .lang-option {
+        font-size: 0.8rem;
+    }
+
+    .lang-separator {
+        margin: 0 0.15rem;
+        font-size: 0.8rem;
     }
 }
 
@@ -518,7 +613,8 @@
     position: relative;
     display: inline-flex;
     align-items: center;
-    height: 2rem; /* Matches theme-toggle-btn */
+    height: 2rem;
+    /* Matches theme-toggle-btn */
 }
 
 /* Language Switcher */
@@ -532,8 +628,10 @@
     border-radius: 1rem;
     cursor: pointer;
     height: 2.5rem;
-    width: 7rem; /* Wider for English/Français + icon */
-    padding: 0.5rem 0.75rem 0.5rem 2.25rem; /* Left space for icon */
+    width: 7rem;
+    /* Wider for English/Français + icon */
+    padding: 0.5rem 0.75rem 0.5rem 2.25rem;
+    /* Left space for icon */
     transition: all 0.3s ease;
     appearance: none;
     -webkit-appearance: none;
@@ -576,10 +674,13 @@
     left: 0.75rem;
     top: 45%;
     transform: translateY(-50%);
-    font-size: 1rem; /* Matches FaMoon */
+    font-size: 1rem;
+    /* Matches FaMoon */
     color: #fff;
-    z-index: 2; /* Above select */
-    pointer-events: none; /* Clicks pass through */
+    z-index: 2;
+    /* Above select */
+    pointer-events: none;
+    /* Clicks pass through */
     transition: color 0.3s ease;
 }
 

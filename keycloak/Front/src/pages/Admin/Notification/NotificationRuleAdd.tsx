@@ -6,12 +6,11 @@ import NotificationRule from '../../../models/NotificationRule';
 import { createNotificationRule } from '../../../apis/notificationAPI';
 import { getAllUsers } from '../../../apis/userAPI';
 import { getAllRoles } from '../../../apis/roleAPI';
-import { getNotificationRules } from '../../../apis/notificationAPI';
 import { ViewMode } from '../adminTypes';
 import '../AdminDashboard.css';
 import User from '../../../models/User';
 import Role from '../../../models/Role';
-import { isValidNotificationEvent } from '../../../lib/notifEvents';
+import { isValidNotificationEvent, getNotificationEntities, getEntityActions, getNotificationTypes } from '../../../lib/notifEvents';
 
 interface NotificationRuleAddProps {
     rules: NotificationRule[];
@@ -74,51 +73,41 @@ const NotificationRuleAdd: React.FC<NotificationRuleAddProps> = ({
     const [selectedUsers, setSelectedUsers] = useState<{ value: string; label: string }[]>([]);
     const [selectedRoles, setSelectedRoles] = useState<{ value: string; label: string }[]>([]);
 
-    // Cache for entities and actions
+    // Cache for entities, actions, and types
     const cachedEntities = useRef<string[] | null>(null);
     const cachedEntityActions = useRef<Record<string, string[]> | null>(null);
+    const cachedTypes = useRef<string[] | null>(null);
     const lastCacheTime = useRef<number>(0);
 
     useEffect(() => {
         const fetchData = async () => {
             try {
-                const [usersData, rolesData, rulesData] = await Promise.all([
+                const [usersData, rolesData, entitiesData, typesData] = await Promise.all([
                     getAllUsers(),
                     getAllRoles(),
-                    getNotificationRules(),
+                    getNotificationEntities(),
+                    getNotificationTypes(),
                 ]);
                 setUsers(usersData || []);
                 setRoles(rolesData || []);
 
-                // Extract unique notification types
-                const types = [...new Set(rulesData.map((rule) => rule.type.toLowerCase()))].filter(
-                    (type): type is string => !!type
-                );
-                setNotificationTypes(['general', ...types]);
+                // Set notification types
+                setNotificationTypes(typesData || []);
 
-                // Extract entities and actions from rules
+                // Set entities and actions
                 if (
                     !cachedEntities.current ||
                     !cachedEntityActions.current ||
+                    !cachedTypes.current ||
                     Date.now() - lastCacheTime.current >= CACHE_DURATION
                 ) {
-                    const entityActionMap: Record<string, Set<string>> = {};
-                    rulesData.forEach((rule) => {
-                        const [entity, action] = rule.event.split(':');
-                        if (entity && action) {
-                            if (!entityActionMap[entity]) {
-                                entityActionMap[entity] = new Set();
-                            }
-                            entityActionMap[entity].add(action);
-                        }
-                    });
-                    cachedEntities.current = Object.keys(entityActionMap);
-                    cachedEntityActions.current = Object.fromEntries(
-                        Object.entries(entityActionMap).map(([entity, actions]) => [
-                            entity,
-                            Array.from(actions),
-                        ])
-                    );
+                    cachedEntities.current = entitiesData;
+                    cachedTypes.current = typesData;
+                    const actionMap: Record<string, string[]> = {};
+                    for (const entity of entitiesData) {
+                        actionMap[entity] = await getEntityActions(entity);
+                    }
+                    cachedEntityActions.current = actionMap;
                     lastCacheTime.current = Date.now();
                 }
                 setEntities(cachedEntities.current || []);

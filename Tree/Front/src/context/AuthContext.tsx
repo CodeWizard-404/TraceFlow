@@ -1,6 +1,6 @@
 /* eslint-disable react-hooks/exhaustive-deps */
 /* eslint-disable react-refresh/only-export-components */
-import React, { createContext, useContext, useState, useEffect, ReactNode } from 'react';
+import React, { createContext, useContext, useState, useEffect, useRef, ReactNode } from 'react';
 import { useNavigate, useLocation } from 'react-router-dom';
 import { login, verify2FA, logout, refreshToken } from '../apis/authAPI';
 import { getEffectivePermissions } from '../apis/permissionAPI';
@@ -10,6 +10,7 @@ import User from '../models/User';
 import Permission from '../models/Permission';
 import Role from '../models/Role';
 import { protectedRoutes, determineTargetRoute } from '../lib/authUtils';
+import { debounce } from 'lodash';
 
 interface AuthContextType {
     user: User | null;
@@ -37,16 +38,37 @@ export const useAuth = (): AuthContextType => {
     return context;
 };
 
+// Utility to get user from cookies
+const getUserFromCookie = (): User | null => {
+    const cookies = document.cookie.split(';').map(cookie => cookie.trim());
+    const userCookie = cookies.find(cookie => cookie.startsWith('userData='));
+    if (!userCookie) return null;
+    try {
+        const userData = JSON.parse(decodeURIComponent(userCookie.split('=')[1]));
+        return userData as User;
+    } catch {
+        return null;
+    }
+};
+
+// Utility to set user in cookies
+const setUserCookie = (user: User, maxAge: number) => {
+    const encodedUser = encodeURIComponent(JSON.stringify(user));
+    const sameSite = import.meta.env.VITE_ENV === 'development' ? 'Lax' : 'Strict';
+    document.cookie = `userData=${encodedUser}; path=/; ${sameSite}=Strict; max-age=${maxAge}`;
+};
+
+
+
 const AuthProvider: React.FC<{ children: ReactNode }> = ({ children }) => {
-    const [user, setUser] = useState<User | null>(() => {
-        const storedUser = localStorage.getItem('user');
-        return storedUser ? JSON.parse(storedUser) : null;
-    });
+    const [user, setUser] = useState<User | null>(getUserFromCookie());
     const [userRoles, setUserRoles] = useState<Role[] | null>(null);
     const [effectivePermissions, setEffectivePermissions] = useState<Permission[] | null>(null);
     const [permissionsLoaded, setPermissionsLoaded] = useState(false);
     const [noAccess, setNoAccess] = useState(false);
     const [tokenExpiry, setTokenExpiry] = useState<number | null>(null);
+    const isNavigating = useRef(false);
+    const lastNavigatedPath = useRef<string | null>(null);
 
     const navigate = useNavigate();
     const location = useLocation();
@@ -55,13 +77,26 @@ const AuthProvider: React.FC<{ children: ReactNode }> = ({ children }) => {
         setupAxiosInterceptors();
     }, []);
 
+    // Debounced navigation to prevent rapid history changes
+    const debouncedNavigate = debounce((to: string, options: { replace?: boolean; state?: unknown }) => {
+        if (isNavigating.current || lastNavigatedPath.current === to) {
+            return;
+        }
+        isNavigating.current = true;
+        lastNavigatedPath.current = to;
+        navigate(to, options);
+        setTimeout(() => {
+            isNavigating.current = false;
+        }, 100);
+    }, 100);
+
     // Automatic token refresh
     useEffect(() => {
         if (!user || !tokenExpiry) {
             return;
         }
 
-        const refreshBuffer = 30 * 1000; // Refresh 30 seconds before expiry
+        const refreshBuffer = 30 * 1000;
         const timeUntilRefresh = tokenExpiry - Date.now() - refreshBuffer;
 
         if (timeUntilRefresh <= 0) {
@@ -78,8 +113,10 @@ const AuthProvider: React.FC<{ children: ReactNode }> = ({ children }) => {
     const handleRefresh = async (retries = 3) => {
         for (let attempt = 1; attempt <= retries; attempt++) {
             try {
-                const { expiresIn } = await refreshToken();
+                const { expiresIn, accessToken } = await refreshToken();
                 const newExpiry = Date.now() + expiresIn;
+                const sameSite = import.meta.env.VITE_ENV === 'development' ? 'Lax' : 'Strict';
+                document.cookie = `accessToken=${accessToken}; path=/; SameSite=${sameSite}; max-age=${expiresIn / 1000}`;
                 setTokenExpiry(newExpiry);
                 return;
             } catch (error) {
@@ -116,18 +153,19 @@ const AuthProvider: React.FC<{ children: ReactNode }> = ({ children }) => {
     );
 
     useEffect(() => {
-        if (!user) {
-            if (location.pathname !== '/login' && location.pathname !== '/reset-password') {
-                navigate('/login', { replace: true, state: { from: location.pathname } });
-            }
+        if (isNavigating.current) {
             return;
         }
 
-        if (!permissionsLoaded) {
+        const currentPath = location.pathname;
+        if (!user && currentPath !== '/login' && currentPath !== '/reset-password') {
+            debouncedNavigate('/login', { replace: true, state: { from: currentPath } });
             return;
         }
 
-        if (!userRoles?.length && !effectivePermissions?.length) {
+        if (user && !permissionsLoaded) return;
+
+        if (user && (!userRoles?.length && !effectivePermissions?.length)) {
             setNoAccess(true);
             return;
         }
@@ -135,32 +173,24 @@ const AuthProvider: React.FC<{ children: ReactNode }> = ({ children }) => {
         setNoAccess(false);
 
         const targetRoute = determineTargetRoute(userRoles || []);
-        const currentPath = location.pathname;
 
-        if (currentPath === '/login' || currentPath === '/reset-password') {
-            const fromRoute =
-                location.state?.from && hasPermissionForRoute(location.state.from)
-                    ? location.state.from
-                    : targetRoute;
-            navigate(fromRoute, { replace: true });
+        if (
+            currentPath === targetRoute ||
+            (currentPath !== '/login' && currentPath !== '/reset-password' && hasPermissionForRoute(currentPath))
+        ) {
+            lastNavigatedPath.current = currentPath;
             return;
         }
 
-        if (hasPermissionForRoute(currentPath)) {
-            return;
-        }
+        const fromRoute = location.state?.from &&
+            location.state.from !== '/login' &&
+            location.state.from !== '/reset-password' &&
+            hasPermissionForRoute(location.state.from)
+            ? location.state.from
+            : targetRoute;
 
-        if (currentPath === '/' || !hasPermissionForRoute(currentPath)) {
-            const fromRoute =
-                location.state?.from &&
-                    location.state.from !== '/login' &&
-                    location.state.from !== '/reset-password' &&
-                    hasPermissionForRoute(location.state.from)
-                    ? location.state.from
-                    : targetRoute;
-            navigate(fromRoute, { replace: true });
-        }
-    }, [user, permissionsLoaded, userRoles, effectivePermissions, navigate, location, hasPermissionForRoute]);
+        debouncedNavigate(fromRoute, { replace: true });
+    }, [user, permissionsLoaded, userRoles, effectivePermissions, location.pathname, hasPermissionForRoute]);
 
     useEffect(() => {
         const fetchPermissions = async () => {
@@ -242,11 +272,11 @@ const AuthProvider: React.FC<{ children: ReactNode }> = ({ children }) => {
                 wallet: '',
                 password: '',
                 keycloakId: '',
-                Roles: response.user.roles.map((role) => ({
+                Roles: (response.user.roles || []).map((role) => ({
                     roleID: role.roleID,
                     name: role.name,
                     description: role.description,
-                    permissions: role.permissions!.map((perm) => ({
+                    permissions: (role.Permissions || []).map((perm) => ({
                         permissionID: perm.permissionID,
                         name: perm.name,
                         class: perm.class,
@@ -255,35 +285,33 @@ const AuthProvider: React.FC<{ children: ReactNode }> = ({ children }) => {
                 })),
             };
 
-            localStorage.setItem('user', JSON.stringify(newUser));
-            setUser(newUser);
-            setTokenExpiry(Date.now() + (response.expiresIn || parseInt(import.meta.env.VITE_ACCESS_TOKEN_MAX_AGE) || 900000));
+            const sameSite = import.meta.env.VITE_ENV === 'development' ? 'Lax' : 'Strict';
+            const expiresIn = response.expiresIn || parseInt(import.meta.env.VITE_ACCESS_TOKEN_MAX_AGE) || 900000;
+            document.cookie = `accessToken=${response.accessToken}; path=/; SameSite=${sameSite}; max-age=${expiresIn / 1000}`;
+            setUserCookie(newUser, expiresIn / 1000);
 
-            try {
-                setPermissionsLoaded(false);
-                let perms, roles;
-                for (let attempt = 1; attempt <= 3; attempt++) {
-                    try {
-                        [perms, roles] = await Promise.all([
-                            getEffectivePermissions(newUser.userID),
-                            getRolesByUser(newUser.userID),
-                        ]);
-                        break;
-                    } catch (error) {
-                        console.error(`Post-login permission fetch attempt ${attempt} failed:`, error);
-                        if (attempt === 3) throw error;
-                        await new Promise((resolve) => setTimeout(resolve, 1000));
-                    }
+            setPermissionsLoaded(false);
+            let perms, roles;
+            for (let attempt = 1; attempt <= 3; attempt++) {
+                try {
+                    [perms, roles] = await Promise.all([
+                        getEffectivePermissions(newUser.userID),
+                        getRolesByUser(newUser.userID),
+                    ]);
+                    break;
+                } catch (error) {
+                    console.error(`Post-login permission fetch attempt ${attempt} failed:`, error);
+                    if (attempt === 3) throw error;
+                    await new Promise((resolve) => setTimeout(resolve, 1000));
                 }
-                setEffectivePermissions(perms || null);
-                setUserRoles(roles || null);
-            } catch (error) {
-                console.error('Failed to load permissions after login, logging out:', error);
-                await handleLogout();
-                throw new Error('Failed to load user permissions');
-            } finally {
-                setPermissionsLoaded(true);
             }
+
+            // Update state atomically
+            setUser(newUser);
+            setEffectivePermissions(perms || null);
+            setUserRoles(roles || null);
+            setTokenExpiry(Date.now() + expiresIn);
+            setPermissionsLoaded(true);
         } catch (error) {
             console.error('Login failed:', error);
             if (error instanceof Error && error.message.startsWith('{')) {
@@ -305,10 +333,12 @@ const AuthProvider: React.FC<{ children: ReactNode }> = ({ children }) => {
             setPermissionsLoaded(false);
             setNoAccess(false);
             setTokenExpiry(null);
-            localStorage.removeItem('user');
-            localStorage.removeItem('accessToken');
-            localStorage.removeItem('supervisorFilter');
-            navigate('/login', { replace: true, state: null });
+            document.cookie = 'accessToken=; path=/; expires=Thu, 01 Jan 1970 00:00:00 GMT';
+            document.cookie = 'userData=; path=/; expires=Thu, 01 Jan 1970 00:00:00 GMT';
+
+            if (location.pathname !== '/login') {
+                debouncedNavigate('/login', { replace: true, state: null });
+            }
         }
     };
 

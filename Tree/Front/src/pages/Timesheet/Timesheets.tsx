@@ -609,9 +609,7 @@ const Timesheets: React.FC = () => {
                     {userPermissions.canReadSupervisors && (
                       <span className="week-info">
                         <br />
-                        {t("timesheets.yearView.supervisors", {
-                          count: week.supervisorCount,
-                        })}
+                        {t("timesheets.yearView.supervisors")}
                       </span>
                     )}
                   </div>
@@ -685,7 +683,7 @@ const Timesheets: React.FC = () => {
                   })}
                 </p>
                 <p className="week-info">
-                  {week.visits.length} {t("timesheets.monthView.visits")}{" "}
+                  {week.visits.length} {t("timesheets.monthView.visits")}
                   {!userPermissions.canReadSupervisors &&
                     `- ${t("timesheets.monthView.status")}: ${week.status}`}
                   {userPermissions.canReadSupervisors &&

@@ -279,7 +279,7 @@ const PermView: React.FC<PermViewProps> = React.memo(
                                     <h2>{selectedPermission.name}</h2>
                                     <div className="permission-actions">
                                         <button
-                                            className="edit-button"
+                                            className="edit-button edit-button-0"
                                             onClick={() => handleEditPermission(selectedPermission)}
                                             disabled={loading || !userPermissions.canUpdatePermissions}
                                             aria-label="Edit permission"

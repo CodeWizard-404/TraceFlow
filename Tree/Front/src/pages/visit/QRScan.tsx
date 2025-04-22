@@ -230,9 +230,8 @@ const QRScan: React.FC = () => {
 
       {/* QR Scanner Section */}
       <section
-        className={`qr-scan-card ${isShaking ? "shake" : ""} ${
-          isSuccess ? "success" : ""
-        }`}
+        className={`qr-scan-card ${isShaking ? "shake" : ""} ${isSuccess ? "success" : ""
+          }`}
         aria-live="polite"
         aria-label={t("qrScan.aria.qrReader", { status })}
       >

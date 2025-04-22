@@ -37,10 +37,14 @@ const initialState: NotificationState = {
 const notificationReducer = (state: NotificationState, action: NotificationAction): NotificationState => {
     switch (action.type) {
         case 'ADD_NOTIFICATION':
+            // Only add if notificationID doesn't exist
+            if (state.notifications.some((n) => n.notificationID === action.payload.notificationID)) {
+                return state;
+            }
             return {
                 ...state,
                 notifications: [action.payload, ...state.notifications],
-                unreadCount: state.unreadCount + 1,
+                unreadCount: state.unreadCount + (action.payload.status !== 'read' ? 1 : 0),
             };
         case 'MARK_AS_READ':
             return {
@@ -59,10 +63,17 @@ const notificationReducer = (state: NotificationState, action: NotificationActio
                 unreadCount: 0,
             };
         case 'SET_NOTIFICATIONS':
+            // Deduplicate notifications by notificationID
+            const uniqueNotifications = action.payload.reduce((acc, n) => {
+                if (!acc.some((existing) => existing.notificationID === n.notificationID)) {
+                    acc.push(n);
+                }
+                return acc;
+            }, [] as Notification[]);
             return {
                 ...state,
-                notifications: action.payload,
-                unreadCount: action.payload.filter((n) => n.status !== 'read').length,
+                notifications: uniqueNotifications,
+                unreadCount: uniqueNotifications.filter((n) => n.status !== 'read').length,
             };
         default:
             return state;
@@ -70,8 +81,8 @@ const notificationReducer = (state: NotificationState, action: NotificationActio
 };
 
 // Type guard to check if data has a message property
-const isNotificationData = (data: unknown): data is { message?: string } => {
-    return typeof data === 'object' && data !== null && 'message' in data;
+const isNotificationData = (data: unknown): data is { message?: string; notificationID?: string } => {
+    return typeof data === 'object' && data !== null && ('message' in data || 'notificationID' in data);
 };
 
 // Provider component to wrap the app
@@ -95,7 +106,9 @@ export const NotificationProvider: React.FC<{ children: React.ReactNode }> = ({ 
         // Handle incoming notifications
         onNotification((event: string, data: unknown) => {
             const notification: Notification = {
-                notificationID: `notif_${Date.now()}`,
+                notificationID: isNotificationData(data) && data.notificationID
+                    ? data.notificationID
+                    : `notif_${crypto.randomUUID()}`,
                 userID: user.userID,
                 type: event.split(':')[0] as Notification['type'],
                 message: isNotificationData(data) ? data.message || `Received ${event}` : `Received ${event}`,

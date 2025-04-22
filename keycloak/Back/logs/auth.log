@@ -15,3 +15,608 @@
 {"level":"info","message":"Super Admin bypass for user user_mpe0xo17h","timestamp":"2025-04-22T15:06:30.004Z"}
 {"level":"info","message":"Fetched all users by user user_mpe0xo17h, IP: 127.0.0.1","timestamp":"2025-04-22T15:06:30.098Z"}
 {"level":"info","message":"Fetched all roles by user user_mpe0xo17h, IP: 127.0.0.1","timestamp":"2025-04-22T15:06:30.193Z"}
+{"level":"info","message":"Initiating token refresh","timestamp":"2025-04-22T15:20:54.207Z"}
+{"accessTokenExpiresIn":900,"level":"info","message":"Tokens refreshed successfully","refreshTokenRotatedAt":"2025-04-22T15:20:54.427Z","timestamp":"2025-04-22T15:20:54.427Z"}
+{"level":"info","message":"Refresh token successful","timestamp":"2025-04-22T15:20:54.428Z"}
+{"level":"info","message":"Keycloak admin token obtained","timestamp":"2025-04-22T15:33:56.379Z"}
+{"level":"info","message":"Login response generated for user user_mpe0xo17h","timestamp":"2025-04-22T15:33:57.681Z"}
+{"level":"info","message":"Login attempt for superadmin@example.com, requires2FA: false","timestamp":"2025-04-22T15:33:57.684Z"}
+{"level":"info","message":"Keycloak admin token obtained","timestamp":"2025-04-22T15:33:57.957Z"}
+{"level":"info","message":"Login response generated for user user_mpe0xo17h","timestamp":"2025-04-22T15:33:58.906Z"}
+{"level":"info","message":"Login attempt for superadmin@example.com, requires2FA: false","timestamp":"2025-04-22T15:33:58.906Z"}
+{"level":"info","message":"Fetched effective permissions for user user_mpe0xo17h by user_mpe0xo17h, IP: 127.0.0.1","timestamp":"2025-04-22T15:33:59.672Z"}
+{"level":"info","message":"Fetched roles for user user_mpe0xo17h by user_mpe0xo17h, IP: 127.0.0.1","timestamp":"2025-04-22T15:33:59.686Z"}
+{"level":"info","message":"Super Admin bypass for user user_mpe0xo17h","timestamp":"2025-04-22T15:34:03.943Z"}
+{"level":"info","message":"Super Admin bypass for user user_mpe0xo17h","timestamp":"2025-04-22T15:34:03.945Z"}
+{"level":"info","message":"Fetched notification rules by user: user_mpe0xo17h, IP: 127.0.0.1","timestamp":"2025-04-22T15:34:03.949Z"}
+{"level":"info","message":"Super Admin bypass for user user_mpe0xo17h","timestamp":"2025-04-22T15:34:03.986Z"}
+{"level":"info","message":"Fetched notification rules by user: user_mpe0xo17h, IP: 127.0.0.1","timestamp":"2025-04-22T15:34:03.994Z"}
+{"level":"info","message":"Super Admin bypass for user user_mpe0xo17h","timestamp":"2025-04-22T15:34:04.073Z"}
+{"level":"info","message":"Fetched all users by user user_mpe0xo17h, IP: 127.0.0.1","timestamp":"2025-04-22T15:34:04.109Z"}
+{"level":"info","message":"Fetched all roles by user user_mpe0xo17h, IP: 127.0.0.1","timestamp":"2025-04-22T15:34:04.222Z"}
+{"level":"info","message":"Fetched roles for user user_mpe0xo17h by user_mpe0xo17h, IP: 127.0.0.1","timestamp":"2025-04-22T15:47:13.917Z"}
+{"level":"info","message":"Fetched effective permissions for user user_mpe0xo17h by user_mpe0xo17h, IP: 127.0.0.1","timestamp":"2025-04-22T15:47:14.007Z"}
+{"level":"info","message":"Fetched roles for user user_mpe0xo17h by user_mpe0xo17h, IP: 127.0.0.1","timestamp":"2025-04-22T15:47:14.501Z"}
+{"level":"info","message":"Fetched effective permissions for user user_mpe0xo17h by user_mpe0xo17h, IP: 127.0.0.1","timestamp":"2025-04-22T15:47:14.564Z"}
+{"level":"info","message":"Super Admin bypass for user user_mpe0xo17h","timestamp":"2025-04-22T15:47:15.675Z"}
+{"level":"info","message":"Super Admin bypass for user user_mpe0xo17h","timestamp":"2025-04-22T15:47:15.683Z"}
+{"level":"info","message":"Super Admin bypass for user user_mpe0xo17h","timestamp":"2025-04-22T15:47:15.813Z"}
+{"level":"info","message":"Fetched notification rules by user: user_mpe0xo17h, IP: 127.0.0.1","timestamp":"2025-04-22T15:47:15.817Z"}
+{"level":"info","message":"Fetched all users by user user_mpe0xo17h, IP: 127.0.0.1","timestamp":"2025-04-22T15:47:15.835Z"}
+{"level":"info","message":"Fetched all roles by user user_mpe0xo17h, IP: 127.0.0.1","timestamp":"2025-04-22T15:47:15.913Z"}
+{"level":"info","message":"Super Admin bypass for user user_mpe0xo17h","timestamp":"2025-04-22T15:47:16.289Z"}
+{"level":"info","message":"Fetched notification rules by user: user_mpe0xo17h, IP: 127.0.0.1","timestamp":"2025-04-22T15:47:16.293Z"}
+{"level":"info","message":"Super Admin bypass for user user_mpe0xo17h","timestamp":"2025-04-22T15:48:56.606Z"}
+{"level":"info","message":"Super Admin bypass for user user_mpe0xo17h","timestamp":"2025-04-22T15:48:56.609Z"}
+{"level":"info","message":"Fetched all users by user user_mpe0xo17h, IP: 127.0.0.1","timestamp":"2025-04-22T15:48:56.735Z"}
+{"level":"info","message":"Fetched all roles by user user_mpe0xo17h, IP: 127.0.0.1","timestamp":"2025-04-22T15:48:56.799Z"}
+{"level":"warn","message":"Token introspection failed: inactive token","timestamp":"2025-04-22T15:48:58.393Z"}
+{"level":"warn","message":"Token introspection failed: inactive token","timestamp":"2025-04-22T15:48:58.397Z"}
+{"level":"info","message":"Initiating token refresh","timestamp":"2025-04-22T15:48:58.409Z"}
+{"level":"info","message":"Initiating token refresh","timestamp":"2025-04-22T15:48:58.413Z"}
+{"accessTokenExpiresIn":900,"level":"info","message":"Tokens refreshed successfully","refreshTokenRotatedAt":"2025-04-22T15:48:58.446Z","timestamp":"2025-04-22T15:48:58.446Z"}
+{"level":"info","message":"Refresh token successful","timestamp":"2025-04-22T15:48:58.447Z"}
+{"accessTokenExpiresIn":900,"level":"info","message":"Tokens refreshed successfully","refreshTokenRotatedAt":"2025-04-22T15:48:58.462Z","timestamp":"2025-04-22T15:48:58.462Z"}
+{"level":"info","message":"Refresh token successful","timestamp":"2025-04-22T15:48:58.463Z"}
+{"level":"info","message":"Super Admin bypass for user user_mpe0xo17h","timestamp":"2025-04-22T15:48:58.785Z"}
+{"level":"info","message":"Super Admin bypass for user user_mpe0xo17h","timestamp":"2025-04-22T15:48:58.795Z"}
+{"level":"info","message":"Fetched all users by user user_mpe0xo17h, IP: 127.0.0.1","timestamp":"2025-04-22T15:48:58.864Z"}
+{"level":"info","message":"Fetched all roles by user user_mpe0xo17h, IP: 127.0.0.1","timestamp":"2025-04-22T15:48:58.930Z"}
+{"level":"info","message":"Keycloak admin token obtained","timestamp":"2025-04-22T15:49:51.088Z"}
+{"level":"info","message":"Login response generated for user user_mpe0xo17h","timestamp":"2025-04-22T15:49:52.009Z"}
+{"level":"info","message":"Login attempt for superadmin@example.com, requires2FA: false","timestamp":"2025-04-22T15:49:52.010Z"}
+{"level":"info","message":"Keycloak admin token obtained","timestamp":"2025-04-22T15:49:52.255Z"}
+{"level":"info","message":"Login response generated for user user_mpe0xo17h","timestamp":"2025-04-22T15:49:53.275Z"}
+{"level":"info","message":"Login attempt for superadmin@example.com, requires2FA: false","timestamp":"2025-04-22T15:49:53.276Z"}
+{"level":"info","message":"Fetched effective permissions for user user_mpe0xo17h by user_mpe0xo17h, IP: 127.0.0.1","timestamp":"2025-04-22T15:49:54.234Z"}
+{"level":"info","message":"Fetched roles for user user_mpe0xo17h by user_mpe0xo17h, IP: 127.0.0.1","timestamp":"2025-04-22T15:49:54.242Z"}
+{"level":"info","message":"Super Admin bypass for user user_mpe0xo17h","timestamp":"2025-04-22T15:49:55.806Z"}
+{"level":"info","message":"Super Admin bypass for user user_mpe0xo17h","timestamp":"2025-04-22T15:49:55.821Z"}
+{"level":"info","message":"Fetched notification rules by user: user_mpe0xo17h, IP: 127.0.0.1","timestamp":"2025-04-22T15:49:55.834Z"}
+{"level":"info","message":"Super Admin bypass for user user_mpe0xo17h","timestamp":"2025-04-22T15:49:55.877Z"}
+{"level":"info","message":"Fetched notification rules by user: user_mpe0xo17h, IP: 127.0.0.1","timestamp":"2025-04-22T15:49:55.884Z"}
+{"level":"info","message":"Super Admin bypass for user user_mpe0xo17h","timestamp":"2025-04-22T15:49:56.006Z"}
+{"level":"info","message":"Fetched all roles by user user_mpe0xo17h, IP: 127.0.0.1","timestamp":"2025-04-22T15:49:56.059Z"}
+{"level":"info","message":"Fetched all users by user user_mpe0xo17h, IP: 127.0.0.1","timestamp":"2025-04-22T15:49:56.092Z"}
+{"level":"info","message":"Super Admin bypass for user user_mpe0xo17h","timestamp":"2025-04-22T15:51:44.942Z"}
+{"level":"info","message":"Notification rule created: rule_0sSaWbNjkABJpiN8V90Tc by user: user_mpe0xo17h, IP: 127.0.0.1","timestamp":"2025-04-22T15:51:44.965Z"}
+{"level":"info","message":"Super Admin bypass for user user_mpe0xo17h","timestamp":"2025-04-22T15:51:45.035Z"}
+{"level":"info","message":"Fetched notification rules by user: user_mpe0xo17h, IP: 127.0.0.1","timestamp":"2025-04-22T15:51:45.038Z"}
+{"level":"info","message":"Super Admin bypass for user user_mpe0xo17h","timestamp":"2025-04-22T15:51:45.695Z"}
+{"level":"info","message":"Fetched notification rules by user: user_mpe0xo17h, IP: 127.0.0.1","timestamp":"2025-04-22T15:51:45.700Z"}
+{"level":"info","message":"Fetched notifications for user: user_mpe0xo17h, IP: 127.0.0.1","timestamp":"2025-04-22T15:51:56.587Z"}
+{"level":"info","message":"Super Admin bypass for user user_mpe0xo17h","timestamp":"2025-04-22T15:51:59.814Z"}
+{"level":"info","message":"Super Admin bypass for user user_mpe0xo17h","timestamp":"2025-04-22T15:51:59.822Z"}
+{"level":"info","message":"Super Admin bypass for user user_mpe0xo17h","timestamp":"2025-04-22T15:51:59.831Z"}
+{"level":"info","message":"Fetched notification rules by user: user_mpe0xo17h, IP: 127.0.0.1","timestamp":"2025-04-22T15:51:59.928Z"}
+{"level":"info","message":"Fetched all users by user user_mpe0xo17h, IP: 127.0.0.1","timestamp":"2025-04-22T15:52:00.004Z"}
+{"level":"info","message":"Fetched all roles by user user_mpe0xo17h, IP: 127.0.0.1","timestamp":"2025-04-22T15:52:00.100Z"}
+{"level":"info","message":"Super Admin bypass for user user_mpe0xo17h","timestamp":"2025-04-22T15:52:03.565Z"}
+{"level":"info","message":"Notification rule updated: rule_0sSaWbNjkABJpiN8V90Tc by user: user_mpe0xo17h, IP: 127.0.0.1","timestamp":"2025-04-22T15:52:03.573Z"}
+{"level":"info","message":"Super Admin bypass for user user_mpe0xo17h","timestamp":"2025-04-22T15:52:03.674Z"}
+{"level":"info","message":"Fetched notification rules by user: user_mpe0xo17h, IP: 127.0.0.1","timestamp":"2025-04-22T15:52:03.677Z"}
+{"level":"info","message":"Super Admin bypass for user user_mpe0xo17h","timestamp":"2025-04-22T15:52:09.081Z"}
+{"level":"info","message":"Fetched all users by user user_mpe0xo17h, IP: 127.0.0.1","timestamp":"2025-04-22T15:52:09.207Z"}
+{"level":"info","message":"Super Admin bypass for user user_mpe0xo17h","timestamp":"2025-04-22T15:52:09.620Z"}
+{"level":"info","message":"Fetched all roles by user user_mpe0xo17h, IP: 127.0.0.1","timestamp":"2025-04-22T15:52:09.820Z"}
+{"level":"info","message":"Super Admin bypass for user user_mpe0xo17h","timestamp":"2025-04-22T15:52:59.187Z"}
+{"ip":null,"level":"info","message":"User test1@gmail.com created by user user_mpe0xo17h","timestamp":"2025-04-22T15:53:00.786Z"}
+{"level":"error","message":"Error storing notification: invalid input value for enum \"enum_Notifications_type\": \"user\"","timestamp":"2025-04-22T15:53:00.924Z"}
+{"level":"error","message":"Trigger notification error for event user:created: invalid input value for enum \"enum_Notifications_type\": \"user\"","timestamp":"2025-04-22T15:53:00.925Z"}
+{"level":"info","message":"User created: test1@gmail.com by user user_mpe0xo17h, IP: 127.0.0.1","timestamp":"2025-04-22T15:53:00.926Z"}
+{"level":"info","message":"Super Admin bypass for user user_mpe0xo17h","timestamp":"2025-04-22T15:53:01.396Z"}
+{"ip":null,"level":"info","message":"Assigned 1 roles to user usr_8AGjenFaQ1i-ktdPhuaqg by user_mpe0xo17h","timestamp":"2025-04-22T15:53:01.953Z"}
+{"level":"info","message":"No active rules found for event: role:assigned","timestamp":"2025-04-22T15:53:01.962Z"}
+{"level":"info","message":"Assigned roles to user usr_8AGjenFaQ1i-ktdPhuaqg by user_mpe0xo17h, IP: 127.0.0.1","timestamp":"2025-04-22T15:53:01.963Z"}
+{"level":"info","message":"Fetched roles for user usr_8AGjenFaQ1i-ktdPhuaqg by user_mpe0xo17h, IP: 127.0.0.1","timestamp":"2025-04-22T15:53:02.593Z"}
+{"level":"info","message":"Fetched notifications for user: user_mpe0xo17h, IP: 127.0.0.1","timestamp":"2025-04-22T15:53:09.476Z"}
+{"level":"info","message":"Fetched notifications for user: user_mpe0xo17h, IP: 127.0.0.1","timestamp":"2025-04-22T15:53:10.345Z"}
+{"level":"info","message":"Fetched roles for user user_mpe0xo17h by user_mpe0xo17h, IP: 127.0.0.1","timestamp":"2025-04-22T15:54:59.413Z"}
+{"level":"info","message":"Fetched effective permissions for user user_mpe0xo17h by user_mpe0xo17h, IP: 127.0.0.1","timestamp":"2025-04-22T15:54:59.443Z"}
+{"level":"info","message":"Super Admin bypass for user user_mpe0xo17h","timestamp":"2025-04-22T15:54:59.815Z"}
+{"level":"info","message":"Fetched all users by user user_mpe0xo17h, IP: 127.0.0.1","timestamp":"2025-04-22T15:54:59.980Z"}
+{"level":"info","message":"Fetched roles for user user_mpe0xo17h by user_mpe0xo17h, IP: 127.0.0.1","timestamp":"2025-04-22T15:55:00.128Z"}
+{"level":"info","message":"Super Admin bypass for user user_mpe0xo17h","timestamp":"2025-04-22T15:55:00.461Z"}
+{"level":"info","message":"Fetched effective permissions for user user_mpe0xo17h by user_mpe0xo17h, IP: 127.0.0.1","timestamp":"2025-04-22T15:55:00.645Z"}
+{"level":"info","message":"Fetched all roles by user user_mpe0xo17h, IP: 127.0.0.1","timestamp":"2025-04-22T15:55:00.695Z"}
+{"level":"info","message":"Super Admin bypass for user user_mpe0xo17h","timestamp":"2025-04-22T15:55:02.158Z"}
+{"level":"info","message":"Super Admin bypass for user user_mpe0xo17h","timestamp":"2025-04-22T15:55:02.162Z"}
+{"level":"info","message":"Fetched supervisors for user usr_8AGjenFaQ1i-ktdPhuaqg by user user_mpe0xo17h, IP: 127.0.0.1","timestamp":"2025-04-22T15:55:02.176Z"}
+{"level":"info","message":"Fetched managers for user usr_8AGjenFaQ1i-ktdPhuaqg by user user_mpe0xo17h, IP: 127.0.0.1","timestamp":"2025-04-22T15:55:02.180Z"}
+{"level":"info","message":"Super Admin bypass for user user_mpe0xo17h","timestamp":"2025-04-22T15:55:02.637Z"}
+{"level":"info","message":"Fetched user usr_8AGjenFaQ1i-ktdPhuaqg by user user_mpe0xo17h, IP: 127.0.0.1","timestamp":"2025-04-22T15:55:02.715Z"}
+{"level":"info","message":"Super Admin bypass for user user_mpe0xo17h","timestamp":"2025-04-22T15:55:09.002Z"}
+{"ip":null,"level":"info","message":"User usr_8AGjenFaQ1i-ktdPhuaqg deleted by user user_mpe0xo17h","timestamp":"2025-04-22T15:55:10.019Z"}
+{"level":"info","message":"No active rules found for event: user:deleted","timestamp":"2025-04-22T15:55:10.024Z"}
+{"level":"info","message":"Deleted user usr_8AGjenFaQ1i-ktdPhuaqg by user user_mpe0xo17h, IP: 127.0.0.1","timestamp":"2025-04-22T15:55:10.024Z"}
+{"level":"info","message":"Super Admin bypass for user user_mpe0xo17h","timestamp":"2025-04-22T15:57:17.446Z"}
+{"ip":null,"level":"info","message":"User test1@gmail.com created by user user_mpe0xo17h","timestamp":"2025-04-22T15:57:17.638Z"}
+{"level":"info","message":"Notification stored for user user_mpe0xo17h: a new user has been created","timestamp":"2025-04-22T15:57:17.973Z"}
+{"level":"info","message":"WebSocket event emitted: user:created to room Admin","timestamp":"2025-04-22T15:57:17.974Z"}
+{"level":"info","message":"WebSocket event emitted: user:created to room Super Admin","timestamp":"2025-04-22T15:57:17.975Z"}
+{"level":"info","message":"WebSocket event emitted: user:created to user user_mpe0xo17h","timestamp":"2025-04-22T15:57:17.976Z"}
+{"level":"info","message":"Notification notif_J-QxDurjbxt4ldmVP4Wcb status updated to sent","timestamp":"2025-04-22T15:57:17.990Z"}
+{"level":"info","message":"Email sent to superadmin@example.com: TraceFlow Notification: User","timestamp":"2025-04-22T15:57:19.318Z"}
+{"level":"info","message":"SMS sent to 00000000: a new user has been created","timestamp":"2025-04-22T15:57:22.726Z"}
+{"level":"info","message":"Notification stored for user ef0083ee-ae93-40af-9fc5-0a4a390a6251: a new user has been created","timestamp":"2025-04-22T15:57:23.095Z"}
+{"level":"info","message":"WebSocket event emitted: user:created to room Admin","timestamp":"2025-04-22T15:57:23.096Z"}
+{"level":"info","message":"WebSocket event emitted: user:created to room Super Admin","timestamp":"2025-04-22T15:57:23.097Z"}
+{"level":"info","message":"WebSocket event emitted: user:created to user ef0083ee-ae93-40af-9fc5-0a4a390a6251","timestamp":"2025-04-22T15:57:23.098Z"}
+{"level":"info","message":"Notification notif_c6FiV4uxnMjeKEDU0oEJx status updated to sent","timestamp":"2025-04-22T15:57:23.104Z"}
+{"level":"info","message":"Email sent to a@gmail.com: TraceFlow Notification: User","timestamp":"2025-04-22T15:57:24.167Z"}
+{"level":"info","message":"SMS sent to 00000001: a new user has been created","timestamp":"2025-04-22T15:57:25.642Z"}
+{"level":"info","message":"Triggered notifications for event: user:created, processed 2 recipients","timestamp":"2025-04-22T15:57:25.649Z"}
+{"level":"info","message":"User created: test1@gmail.com by user user_mpe0xo17h, IP: 127.0.0.1","timestamp":"2025-04-22T15:57:25.650Z"}
+{"level":"info","message":"Super Admin bypass for user user_mpe0xo17h","timestamp":"2025-04-22T15:57:25.724Z"}
+{"ip":null,"level":"info","message":"Assigned 1 roles to user usr_lfXWfVKS9GEAnXhcei4lg by user_mpe0xo17h","timestamp":"2025-04-22T15:57:26.450Z"}
+{"level":"info","message":"No active rules found for event: role:assigned","timestamp":"2025-04-22T15:57:26.459Z"}
+{"level":"info","message":"Assigned roles to user usr_lfXWfVKS9GEAnXhcei4lg by user_mpe0xo17h, IP: 127.0.0.1","timestamp":"2025-04-22T15:57:26.460Z"}
+{"level":"info","message":"Fetched roles for user usr_lfXWfVKS9GEAnXhcei4lg by user_mpe0xo17h, IP: 127.0.0.1","timestamp":"2025-04-22T15:57:26.670Z"}
+{"level":"info","message":"Fetched notifications for user: user_mpe0xo17h, IP: 127.0.0.1","timestamp":"2025-04-22T15:57:32.235Z"}
+{"level":"info","message":"Fetched notifications for user: user_mpe0xo17h, IP: 127.0.0.1","timestamp":"2025-04-22T15:57:32.269Z"}
+{"level":"info","message":"Fetched notifications for user: user_mpe0xo17h, IP: 127.0.0.1","timestamp":"2025-04-22T15:57:32.306Z"}
+{"level":"info","message":"Fetched notifications for user: user_mpe0xo17h, IP: 127.0.0.1","timestamp":"2025-04-22T15:57:32.336Z"}
+{"level":"info","message":"Fetched notifications for user: user_mpe0xo17h, IP: 127.0.0.1","timestamp":"2025-04-22T15:57:32.372Z"}
+{"level":"info","message":"Fetched notifications for user: user_mpe0xo17h, IP: 127.0.0.1","timestamp":"2025-04-22T15:57:32.404Z"}
+{"level":"info","message":"Fetched notifications for user: user_mpe0xo17h, IP: 127.0.0.1","timestamp":"2025-04-22T15:57:32.445Z"}
+{"level":"info","message":"Fetched notifications for user: user_mpe0xo17h, IP: 127.0.0.1","timestamp":"2025-04-22T15:57:32.478Z"}
+{"level":"info","message":"Fetched notifications for user: user_mpe0xo17h, IP: 127.0.0.1","timestamp":"2025-04-22T15:57:32.510Z"}
+{"level":"info","message":"Fetched notifications for user: user_mpe0xo17h, IP: 127.0.0.1","timestamp":"2025-04-22T15:57:32.543Z"}
+{"level":"info","message":"Fetched notifications for user: user_mpe0xo17h, IP: 127.0.0.1","timestamp":"2025-04-22T15:57:32.581Z"}
+{"level":"info","message":"Fetched notifications for user: user_mpe0xo17h, IP: 127.0.0.1","timestamp":"2025-04-22T15:57:32.619Z"}
+{"level":"info","message":"Fetched notifications for user: user_mpe0xo17h, IP: 127.0.0.1","timestamp":"2025-04-22T15:57:32.654Z"}
+{"level":"info","message":"Fetched notifications for user: user_mpe0xo17h, IP: 127.0.0.1","timestamp":"2025-04-22T15:57:32.695Z"}
+{"level":"info","message":"Fetched notifications for user: user_mpe0xo17h, IP: 127.0.0.1","timestamp":"2025-04-22T15:57:32.731Z"}
+{"level":"info","message":"Fetched notifications for user: user_mpe0xo17h, IP: 127.0.0.1","timestamp":"2025-04-22T15:57:32.770Z"}
+{"level":"info","message":"Fetched notifications for user: user_mpe0xo17h, IP: 127.0.0.1","timestamp":"2025-04-22T15:57:32.812Z"}
+{"level":"info","message":"Fetched notifications for user: user_mpe0xo17h, IP: 127.0.0.1","timestamp":"2025-04-22T15:57:32.853Z"}
+{"level":"info","message":"Fetched notifications for user: user_mpe0xo17h, IP: 127.0.0.1","timestamp":"2025-04-22T15:57:32.890Z"}
+{"level":"info","message":"Fetched notifications for user: user_mpe0xo17h, IP: 127.0.0.1","timestamp":"2025-04-22T15:57:32.924Z"}
+{"level":"info","message":"Fetched notifications for user: user_mpe0xo17h, IP: 127.0.0.1","timestamp":"2025-04-22T15:57:32.961Z"}
+{"level":"info","message":"Fetched notifications for user: user_mpe0xo17h, IP: 127.0.0.1","timestamp":"2025-04-22T15:57:32.996Z"}
+{"level":"info","message":"Fetched notifications for user: user_mpe0xo17h, IP: 127.0.0.1","timestamp":"2025-04-22T15:57:33.032Z"}
+{"level":"info","message":"Fetched notifications for user: user_mpe0xo17h, IP: 127.0.0.1","timestamp":"2025-04-22T15:57:33.072Z"}
+{"level":"info","message":"Fetched notifications for user: user_mpe0xo17h, IP: 127.0.0.1","timestamp":"2025-04-22T15:57:33.109Z"}
+{"level":"info","message":"Fetched notifications for user: user_mpe0xo17h, IP: 127.0.0.1","timestamp":"2025-04-22T15:57:33.146Z"}
+{"level":"info","message":"Fetched notifications for user: user_mpe0xo17h, IP: 127.0.0.1","timestamp":"2025-04-22T15:57:33.188Z"}
+{"level":"info","message":"Fetched notifications for user: user_mpe0xo17h, IP: 127.0.0.1","timestamp":"2025-04-22T15:57:33.229Z"}
+{"level":"info","message":"Fetched notifications for user: user_mpe0xo17h, IP: 127.0.0.1","timestamp":"2025-04-22T15:57:33.271Z"}
+{"level":"info","message":"Fetched notifications for user: user_mpe0xo17h, IP: 127.0.0.1","timestamp":"2025-04-22T15:57:33.308Z"}
+{"level":"info","message":"Fetched notifications for user: user_mpe0xo17h, IP: 127.0.0.1","timestamp":"2025-04-22T15:57:33.344Z"}
+{"level":"info","message":"Fetched notifications for user: user_mpe0xo17h, IP: 127.0.0.1","timestamp":"2025-04-22T15:57:33.380Z"}
+{"level":"info","message":"Fetched notifications for user: user_mpe0xo17h, IP: 127.0.0.1","timestamp":"2025-04-22T15:57:33.420Z"}
+{"level":"info","message":"Fetched notifications for user: user_mpe0xo17h, IP: 127.0.0.1","timestamp":"2025-04-22T15:57:33.464Z"}
+{"level":"info","message":"Fetched notifications for user: user_mpe0xo17h, IP: 127.0.0.1","timestamp":"2025-04-22T15:57:33.506Z"}
+{"level":"info","message":"Fetched notifications for user: user_mpe0xo17h, IP: 127.0.0.1","timestamp":"2025-04-22T15:57:33.544Z"}
+{"level":"info","message":"Fetched notifications for user: user_mpe0xo17h, IP: 127.0.0.1","timestamp":"2025-04-22T15:57:33.584Z"}
+{"level":"info","message":"Fetched notifications for user: user_mpe0xo17h, IP: 127.0.0.1","timestamp":"2025-04-22T15:57:33.626Z"}
+{"level":"info","message":"Fetched notifications for user: user_mpe0xo17h, IP: 127.0.0.1","timestamp":"2025-04-22T15:57:33.663Z"}
+{"level":"info","message":"Fetched notifications for user: user_mpe0xo17h, IP: 127.0.0.1","timestamp":"2025-04-22T15:57:33.697Z"}
+{"level":"info","message":"Fetched notifications for user: user_mpe0xo17h, IP: 127.0.0.1","timestamp":"2025-04-22T15:57:33.730Z"}
+{"level":"info","message":"Fetched notifications for user: user_mpe0xo17h, IP: 127.0.0.1","timestamp":"2025-04-22T15:57:33.771Z"}
+{"level":"info","message":"Fetched notifications for user: user_mpe0xo17h, IP: 127.0.0.1","timestamp":"2025-04-22T15:57:33.807Z"}
+{"level":"info","message":"Fetched notifications for user: user_mpe0xo17h, IP: 127.0.0.1","timestamp":"2025-04-22T15:57:33.844Z"}
+{"level":"info","message":"Fetched notifications for user: user_mpe0xo17h, IP: 127.0.0.1","timestamp":"2025-04-22T15:57:33.885Z"}
+{"level":"info","message":"Fetched notifications for user: user_mpe0xo17h, IP: 127.0.0.1","timestamp":"2025-04-22T15:57:33.931Z"}
+{"level":"info","message":"Fetched notifications for user: user_mpe0xo17h, IP: 127.0.0.1","timestamp":"2025-04-22T15:57:33.974Z"}
+{"level":"info","message":"Fetched notifications for user: user_mpe0xo17h, IP: 127.0.0.1","timestamp":"2025-04-22T15:57:34.018Z"}
+{"level":"info","message":"Fetched notifications for user: user_mpe0xo17h, IP: 127.0.0.1","timestamp":"2025-04-22T15:57:34.060Z"}
+{"level":"info","message":"Fetched notifications for user: user_mpe0xo17h, IP: 127.0.0.1","timestamp":"2025-04-22T15:57:34.105Z"}
+{"level":"info","message":"Fetched notifications for user: user_mpe0xo17h, IP: 127.0.0.1","timestamp":"2025-04-22T15:57:34.149Z"}
+{"level":"info","message":"Fetched notifications for user: user_mpe0xo17h, IP: 127.0.0.1","timestamp":"2025-04-22T15:57:34.191Z"}
+{"level":"info","message":"Fetched notifications for user: user_mpe0xo17h, IP: 127.0.0.1","timestamp":"2025-04-22T15:57:34.238Z"}
+{"level":"info","message":"Fetched notifications for user: user_mpe0xo17h, IP: 127.0.0.1","timestamp":"2025-04-22T15:57:34.291Z"}
+{"level":"info","message":"Fetched notifications for user: user_mpe0xo17h, IP: 127.0.0.1","timestamp":"2025-04-22T15:57:34.334Z"}
+{"level":"info","message":"Fetched notifications for user: user_mpe0xo17h, IP: 127.0.0.1","timestamp":"2025-04-22T15:57:34.370Z"}
+{"level":"info","message":"Fetched notifications for user: user_mpe0xo17h, IP: 127.0.0.1","timestamp":"2025-04-22T15:57:34.404Z"}
+{"level":"info","message":"Fetched notifications for user: user_mpe0xo17h, IP: 127.0.0.1","timestamp":"2025-04-22T15:57:34.440Z"}
+{"level":"info","message":"Fetched notifications for user: user_mpe0xo17h, IP: 127.0.0.1","timestamp":"2025-04-22T15:57:34.479Z"}
+{"level":"info","message":"Fetched notifications for user: user_mpe0xo17h, IP: 127.0.0.1","timestamp":"2025-04-22T15:57:34.519Z"}
+{"level":"info","message":"Fetched notifications for user: user_mpe0xo17h, IP: 127.0.0.1","timestamp":"2025-04-22T15:57:34.564Z"}
+{"level":"info","message":"Fetched notifications for user: user_mpe0xo17h, IP: 127.0.0.1","timestamp":"2025-04-22T15:57:34.601Z"}
+{"level":"info","message":"Fetched notifications for user: user_mpe0xo17h, IP: 127.0.0.1","timestamp":"2025-04-22T15:57:34.635Z"}
+{"level":"info","message":"Fetched notifications for user: user_mpe0xo17h, IP: 127.0.0.1","timestamp":"2025-04-22T15:57:34.672Z"}
+{"level":"info","message":"Fetched notifications for user: user_mpe0xo17h, IP: 127.0.0.1","timestamp":"2025-04-22T15:57:34.708Z"}
+{"level":"info","message":"Fetched notifications for user: user_mpe0xo17h, IP: 127.0.0.1","timestamp":"2025-04-22T15:57:34.747Z"}
+{"level":"info","message":"Fetched notifications for user: user_mpe0xo17h, IP: 127.0.0.1","timestamp":"2025-04-22T15:57:34.784Z"}
+{"level":"info","message":"Fetched notifications for user: user_mpe0xo17h, IP: 127.0.0.1","timestamp":"2025-04-22T15:57:34.821Z"}
+{"level":"info","message":"Fetched notifications for user: user_mpe0xo17h, IP: 127.0.0.1","timestamp":"2025-04-22T15:57:34.860Z"}
+{"level":"info","message":"Fetched notifications for user: user_mpe0xo17h, IP: 127.0.0.1","timestamp":"2025-04-22T15:57:34.906Z"}
+{"level":"info","message":"Fetched notifications for user: user_mpe0xo17h, IP: 127.0.0.1","timestamp":"2025-04-22T15:57:34.960Z"}
+{"level":"info","message":"Fetched notifications for user: user_mpe0xo17h, IP: 127.0.0.1","timestamp":"2025-04-22T15:57:35.009Z"}
+{"level":"info","message":"Fetched notifications for user: user_mpe0xo17h, IP: 127.0.0.1","timestamp":"2025-04-22T15:57:35.057Z"}
+{"level":"info","message":"Fetched notifications for user: user_mpe0xo17h, IP: 127.0.0.1","timestamp":"2025-04-22T15:57:35.111Z"}
+{"level":"info","message":"Fetched notifications for user: user_mpe0xo17h, IP: 127.0.0.1","timestamp":"2025-04-22T15:57:35.164Z"}
+{"level":"info","message":"Fetched notifications for user: user_mpe0xo17h, IP: 127.0.0.1","timestamp":"2025-04-22T15:57:35.222Z"}
+{"level":"info","message":"Fetched notifications for user: user_mpe0xo17h, IP: 127.0.0.1","timestamp":"2025-04-22T15:57:35.276Z"}
+{"level":"info","message":"Fetched notifications for user: user_mpe0xo17h, IP: 127.0.0.1","timestamp":"2025-04-22T15:57:35.325Z"}
+{"level":"info","message":"Fetched notifications for user: user_mpe0xo17h, IP: 127.0.0.1","timestamp":"2025-04-22T15:57:35.370Z"}
+{"level":"info","message":"Fetched notifications for user: user_mpe0xo17h, IP: 127.0.0.1","timestamp":"2025-04-22T15:57:35.413Z"}
+{"level":"info","message":"Fetched notifications for user: user_mpe0xo17h, IP: 127.0.0.1","timestamp":"2025-04-22T15:57:35.457Z"}
+{"level":"info","message":"Fetched notifications for user: user_mpe0xo17h, IP: 127.0.0.1","timestamp":"2025-04-22T15:57:35.498Z"}
+{"level":"info","message":"Fetched notifications for user: user_mpe0xo17h, IP: 127.0.0.1","timestamp":"2025-04-22T15:57:35.544Z"}
+{"level":"info","message":"Fetched notifications for user: user_mpe0xo17h, IP: 127.0.0.1","timestamp":"2025-04-22T15:57:35.585Z"}
+{"level":"info","message":"Fetched notifications for user: user_mpe0xo17h, IP: 127.0.0.1","timestamp":"2025-04-22T15:57:35.625Z"}
+{"level":"info","message":"Fetched notifications for user: user_mpe0xo17h, IP: 127.0.0.1","timestamp":"2025-04-22T15:57:35.661Z"}
+{"level":"info","message":"Fetched notifications for user: user_mpe0xo17h, IP: 127.0.0.1","timestamp":"2025-04-22T15:57:35.702Z"}
+{"level":"info","message":"Fetched notifications for user: user_mpe0xo17h, IP: 127.0.0.1","timestamp":"2025-04-22T15:57:35.737Z"}
+{"level":"info","message":"Fetched notifications for user: user_mpe0xo17h, IP: 127.0.0.1","timestamp":"2025-04-22T15:57:35.771Z"}
+{"level":"info","message":"Fetched notifications for user: user_mpe0xo17h, IP: 127.0.0.1","timestamp":"2025-04-22T15:57:35.813Z"}
+{"level":"info","message":"Fetched notifications for user: user_mpe0xo17h, IP: 127.0.0.1","timestamp":"2025-04-22T15:57:35.855Z"}
+{"level":"info","message":"Fetched notifications for user: user_mpe0xo17h, IP: 127.0.0.1","timestamp":"2025-04-22T15:57:35.893Z"}
+{"level":"info","message":"Fetched notifications for user: user_mpe0xo17h, IP: 127.0.0.1","timestamp":"2025-04-22T15:57:35.945Z"}
+{"level":"info","message":"Fetched notifications for user: user_mpe0xo17h, IP: 127.0.0.1","timestamp":"2025-04-22T15:57:36.002Z"}
+{"level":"info","message":"Fetched notifications for user: user_mpe0xo17h, IP: 127.0.0.1","timestamp":"2025-04-22T15:57:36.106Z"}
+{"level":"info","message":"Fetched notifications for user: user_mpe0xo17h, IP: 127.0.0.1","timestamp":"2025-04-22T15:57:36.184Z"}
+{"level":"info","message":"Fetched notifications for user: user_mpe0xo17h, IP: 127.0.0.1","timestamp":"2025-04-22T15:57:36.234Z"}
+{"level":"info","message":"Fetched notifications for user: user_mpe0xo17h, IP: 127.0.0.1","timestamp":"2025-04-22T15:57:36.283Z"}
+{"level":"info","message":"Fetched notifications for user: user_mpe0xo17h, IP: 127.0.0.1","timestamp":"2025-04-22T15:57:36.334Z"}
+{"level":"info","message":"Fetched notifications for user: user_mpe0xo17h, IP: 127.0.0.1","timestamp":"2025-04-22T15:57:36.382Z"}
+{"level":"info","message":"Fetched notifications for user: user_mpe0xo17h, IP: 127.0.0.1","timestamp":"2025-04-22T15:57:36.425Z"}
+{"level":"info","message":"Fetched notifications for user: user_mpe0xo17h, IP: 127.0.0.1","timestamp":"2025-04-22T15:57:36.472Z"}
+{"level":"info","message":"Fetched notifications for user: user_mpe0xo17h, IP: 127.0.0.1","timestamp":"2025-04-22T15:57:36.517Z"}
+{"level":"info","message":"Fetched notifications for user: user_mpe0xo17h, IP: 127.0.0.1","timestamp":"2025-04-22T15:57:36.549Z"}
+{"level":"info","message":"Fetched notifications for user: user_mpe0xo17h, IP: 127.0.0.1","timestamp":"2025-04-22T15:57:36.584Z"}
+{"level":"info","message":"Fetched notifications for user: user_mpe0xo17h, IP: 127.0.0.1","timestamp":"2025-04-22T15:57:36.637Z"}
+{"level":"info","message":"Fetched notifications for user: user_mpe0xo17h, IP: 127.0.0.1","timestamp":"2025-04-22T15:57:36.682Z"}
+{"level":"info","message":"Fetched notifications for user: user_mpe0xo17h, IP: 127.0.0.1","timestamp":"2025-04-22T15:57:36.721Z"}
+{"level":"info","message":"Fetched notifications for user: user_mpe0xo17h, IP: 127.0.0.1","timestamp":"2025-04-22T15:57:36.760Z"}
+{"level":"info","message":"Fetched notifications for user: user_mpe0xo17h, IP: 127.0.0.1","timestamp":"2025-04-22T15:57:36.802Z"}
+{"level":"info","message":"Fetched notifications for user: user_mpe0xo17h, IP: 127.0.0.1","timestamp":"2025-04-22T15:57:36.840Z"}
+{"level":"info","message":"Fetched notifications for user: user_mpe0xo17h, IP: 127.0.0.1","timestamp":"2025-04-22T15:57:36.879Z"}
+{"level":"info","message":"Fetched notifications for user: user_mpe0xo17h, IP: 127.0.0.1","timestamp":"2025-04-22T15:57:36.919Z"}
+{"level":"info","message":"Fetched notifications for user: user_mpe0xo17h, IP: 127.0.0.1","timestamp":"2025-04-22T15:57:36.983Z"}
+{"level":"info","message":"Fetched notifications for user: user_mpe0xo17h, IP: 127.0.0.1","timestamp":"2025-04-22T15:57:37.037Z"}
+{"level":"info","message":"Fetched notifications for user: user_mpe0xo17h, IP: 127.0.0.1","timestamp":"2025-04-22T15:57:37.097Z"}
+{"level":"info","message":"Fetched notifications for user: user_mpe0xo17h, IP: 127.0.0.1","timestamp":"2025-04-22T15:57:37.157Z"}
+{"level":"info","message":"Fetched notifications for user: user_mpe0xo17h, IP: 127.0.0.1","timestamp":"2025-04-22T15:57:37.224Z"}
+{"level":"info","message":"Fetched notifications for user: user_mpe0xo17h, IP: 127.0.0.1","timestamp":"2025-04-22T15:57:37.270Z"}
+{"level":"info","message":"Fetched notifications for user: user_mpe0xo17h, IP: 127.0.0.1","timestamp":"2025-04-22T15:57:37.315Z"}
+{"level":"info","message":"Fetched notifications for user: user_mpe0xo17h, IP: 127.0.0.1","timestamp":"2025-04-22T15:57:37.364Z"}
+{"level":"info","message":"Fetched notifications for user: user_mpe0xo17h, IP: 127.0.0.1","timestamp":"2025-04-22T15:57:37.405Z"}
+{"level":"info","message":"Fetched notifications for user: user_mpe0xo17h, IP: 127.0.0.1","timestamp":"2025-04-22T15:57:37.450Z"}
+{"level":"info","message":"Fetched notifications for user: user_mpe0xo17h, IP: 127.0.0.1","timestamp":"2025-04-22T15:57:37.496Z"}
+{"level":"info","message":"Fetched notifications for user: user_mpe0xo17h, IP: 127.0.0.1","timestamp":"2025-04-22T15:57:37.543Z"}
+{"level":"info","message":"Fetched notifications for user: user_mpe0xo17h, IP: 127.0.0.1","timestamp":"2025-04-22T15:57:37.591Z"}
+{"level":"info","message":"Fetched notifications for user: user_mpe0xo17h, IP: 127.0.0.1","timestamp":"2025-04-22T15:57:37.644Z"}
+{"level":"info","message":"Fetched notifications for user: user_mpe0xo17h, IP: 127.0.0.1","timestamp":"2025-04-22T15:57:37.699Z"}
+{"level":"info","message":"Fetched notifications for user: user_mpe0xo17h, IP: 127.0.0.1","timestamp":"2025-04-22T15:57:37.750Z"}
+{"level":"info","message":"Fetched notifications for user: user_mpe0xo17h, IP: 127.0.0.1","timestamp":"2025-04-22T15:57:37.795Z"}
+{"level":"info","message":"Fetched notifications for user: user_mpe0xo17h, IP: 127.0.0.1","timestamp":"2025-04-22T15:57:37.844Z"}
+{"level":"info","message":"Fetched notifications for user: user_mpe0xo17h, IP: 127.0.0.1","timestamp":"2025-04-22T15:57:37.891Z"}
+{"level":"info","message":"Fetched notifications for user: user_mpe0xo17h, IP: 127.0.0.1","timestamp":"2025-04-22T15:57:37.936Z"}
+{"level":"info","message":"Fetched notifications for user: user_mpe0xo17h, IP: 127.0.0.1","timestamp":"2025-04-22T15:57:37.999Z"}
+{"level":"info","message":"Fetched notifications for user: user_mpe0xo17h, IP: 127.0.0.1","timestamp":"2025-04-22T15:57:38.064Z"}
+{"level":"info","message":"Fetched notifications for user: user_mpe0xo17h, IP: 127.0.0.1","timestamp":"2025-04-22T15:57:38.139Z"}
+{"level":"info","message":"Fetched notifications for user: user_mpe0xo17h, IP: 127.0.0.1","timestamp":"2025-04-22T15:57:38.205Z"}
+{"level":"info","message":"Fetched notifications for user: user_mpe0xo17h, IP: 127.0.0.1","timestamp":"2025-04-22T15:57:38.251Z"}
+{"level":"info","message":"Fetched notifications for user: user_mpe0xo17h, IP: 127.0.0.1","timestamp":"2025-04-22T15:57:38.290Z"}
+{"level":"info","message":"Fetched notifications for user: user_mpe0xo17h, IP: 127.0.0.1","timestamp":"2025-04-22T15:57:38.334Z"}
+{"level":"info","message":"Fetched notifications for user: user_mpe0xo17h, IP: 127.0.0.1","timestamp":"2025-04-22T15:57:38.379Z"}
+{"level":"info","message":"Fetched notifications for user: user_mpe0xo17h, IP: 127.0.0.1","timestamp":"2025-04-22T15:57:38.425Z"}
+{"level":"info","message":"Fetched notifications for user: user_mpe0xo17h, IP: 127.0.0.1","timestamp":"2025-04-22T15:57:38.478Z"}
+{"level":"info","message":"Fetched notifications for user: user_mpe0xo17h, IP: 127.0.0.1","timestamp":"2025-04-22T15:57:38.523Z"}
+{"level":"info","message":"Fetched notifications for user: user_mpe0xo17h, IP: 127.0.0.1","timestamp":"2025-04-22T15:57:38.572Z"}
+{"level":"info","message":"Fetched notifications for user: user_mpe0xo17h, IP: 127.0.0.1","timestamp":"2025-04-22T15:57:38.614Z"}
+{"level":"info","message":"Fetched notifications for user: user_mpe0xo17h, IP: 127.0.0.1","timestamp":"2025-04-22T15:57:38.664Z"}
+{"level":"info","message":"Fetched notifications for user: user_mpe0xo17h, IP: 127.0.0.1","timestamp":"2025-04-22T15:57:38.709Z"}
+{"level":"info","message":"Fetched notifications for user: user_mpe0xo17h, IP: 127.0.0.1","timestamp":"2025-04-22T15:57:38.750Z"}
+{"level":"info","message":"Fetched notifications for user: user_mpe0xo17h, IP: 127.0.0.1","timestamp":"2025-04-22T15:57:38.793Z"}
+{"level":"info","message":"Fetched notifications for user: user_mpe0xo17h, IP: 127.0.0.1","timestamp":"2025-04-22T15:57:38.843Z"}
+{"level":"info","message":"Fetched notifications for user: user_mpe0xo17h, IP: 127.0.0.1","timestamp":"2025-04-22T15:57:38.894Z"}
+{"level":"info","message":"Fetched notifications for user: user_mpe0xo17h, IP: 127.0.0.1","timestamp":"2025-04-22T15:57:38.941Z"}
+{"level":"info","message":"Fetched notifications for user: user_mpe0xo17h, IP: 127.0.0.1","timestamp":"2025-04-22T15:57:39.017Z"}
+{"level":"info","message":"Fetched notifications for user: user_mpe0xo17h, IP: 127.0.0.1","timestamp":"2025-04-22T15:57:39.080Z"}
+{"level":"info","message":"Fetched notifications for user: user_mpe0xo17h, IP: 127.0.0.1","timestamp":"2025-04-22T15:57:39.153Z"}
+{"level":"info","message":"Fetched notifications for user: user_mpe0xo17h, IP: 127.0.0.1","timestamp":"2025-04-22T15:57:39.224Z"}
+{"level":"info","message":"Fetched notifications for user: user_mpe0xo17h, IP: 127.0.0.1","timestamp":"2025-04-22T15:57:39.267Z"}
+{"level":"info","message":"Fetched notifications for user: user_mpe0xo17h, IP: 127.0.0.1","timestamp":"2025-04-22T15:57:39.316Z"}
+{"level":"info","message":"Fetched notifications for user: user_mpe0xo17h, IP: 127.0.0.1","timestamp":"2025-04-22T15:57:39.364Z"}
+{"level":"info","message":"Fetched notifications for user: user_mpe0xo17h, IP: 127.0.0.1","timestamp":"2025-04-22T15:57:39.412Z"}
+{"level":"info","message":"Fetched notifications for user: user_mpe0xo17h, IP: 127.0.0.1","timestamp":"2025-04-22T15:57:39.461Z"}
+{"level":"info","message":"Fetched notifications for user: user_mpe0xo17h, IP: 127.0.0.1","timestamp":"2025-04-22T15:57:39.519Z"}
+{"level":"info","message":"Fetched notifications for user: user_mpe0xo17h, IP: 127.0.0.1","timestamp":"2025-04-22T15:57:39.566Z"}
+{"level":"info","message":"Fetched notifications for user: user_mpe0xo17h, IP: 127.0.0.1","timestamp":"2025-04-22T15:57:39.624Z"}
+{"level":"info","message":"Fetched notifications for user: user_mpe0xo17h, IP: 127.0.0.1","timestamp":"2025-04-22T15:57:39.679Z"}
+{"level":"info","message":"Fetched notifications for user: user_mpe0xo17h, IP: 127.0.0.1","timestamp":"2025-04-22T15:57:39.735Z"}
+{"level":"info","message":"Fetched notifications for user: user_mpe0xo17h, IP: 127.0.0.1","timestamp":"2025-04-22T15:57:39.795Z"}
+{"level":"info","message":"Fetched notifications for user: user_mpe0xo17h, IP: 127.0.0.1","timestamp":"2025-04-22T15:57:39.859Z"}
+{"level":"info","message":"Fetched notifications for user: user_mpe0xo17h, IP: 127.0.0.1","timestamp":"2025-04-22T15:57:39.911Z"}
+{"level":"info","message":"Fetched notifications for user: user_mpe0xo17h, IP: 127.0.0.1","timestamp":"2025-04-22T15:57:39.958Z"}
+{"level":"info","message":"Fetched notifications for user: user_mpe0xo17h, IP: 127.0.0.1","timestamp":"2025-04-22T15:57:40.036Z"}
+{"level":"info","message":"Fetched notifications for user: user_mpe0xo17h, IP: 127.0.0.1","timestamp":"2025-04-22T15:57:40.111Z"}
+{"level":"info","message":"Fetched notifications for user: user_mpe0xo17h, IP: 127.0.0.1","timestamp":"2025-04-22T15:57:40.199Z"}
+{"level":"info","message":"Fetched notifications for user: user_mpe0xo17h, IP: 127.0.0.1","timestamp":"2025-04-22T15:57:40.257Z"}
+{"level":"info","message":"Fetched notifications for user: user_mpe0xo17h, IP: 127.0.0.1","timestamp":"2025-04-22T15:57:40.307Z"}
+{"level":"info","message":"Fetched notifications for user: user_mpe0xo17h, IP: 127.0.0.1","timestamp":"2025-04-22T15:57:40.359Z"}
+{"level":"info","message":"Fetched notifications for user: user_mpe0xo17h, IP: 127.0.0.1","timestamp":"2025-04-22T15:57:44.726Z"}
+{"level":"info","message":"Fetched notifications for user: user_mpe0xo17h, IP: 127.0.0.1","timestamp":"2025-04-22T15:57:44.833Z"}
+{"level":"info","message":"Fetched notifications for user: user_mpe0xo17h, IP: 127.0.0.1","timestamp":"2025-04-22T15:57:44.910Z"}
+{"level":"info","message":"Fetched notifications for user: user_mpe0xo17h, IP: 127.0.0.1","timestamp":"2025-04-22T15:57:44.964Z"}
+{"level":"info","message":"Fetched notifications for user: user_mpe0xo17h, IP: 127.0.0.1","timestamp":"2025-04-22T15:57:45.020Z"}
+{"level":"info","message":"Fetched notifications for user: user_mpe0xo17h, IP: 127.0.0.1","timestamp":"2025-04-22T15:57:45.073Z"}
+{"level":"info","message":"Fetched notifications for user: user_mpe0xo17h, IP: 127.0.0.1","timestamp":"2025-04-22T15:57:45.120Z"}
+{"level":"info","message":"Fetched notifications for user: user_mpe0xo17h, IP: 127.0.0.1","timestamp":"2025-04-22T15:57:45.173Z"}
+{"level":"info","message":"Fetched notifications for user: user_mpe0xo17h, IP: 127.0.0.1","timestamp":"2025-04-22T15:57:45.225Z"}
+{"level":"info","message":"Fetched notifications for user: user_mpe0xo17h, IP: 127.0.0.1","timestamp":"2025-04-22T15:57:45.274Z"}
+{"level":"info","message":"Fetched notifications for user: user_mpe0xo17h, IP: 127.0.0.1","timestamp":"2025-04-22T15:57:45.327Z"}
+{"level":"info","message":"Fetched notifications for user: user_mpe0xo17h, IP: 127.0.0.1","timestamp":"2025-04-22T15:57:45.376Z"}
+{"level":"info","message":"Fetched notifications for user: user_mpe0xo17h, IP: 127.0.0.1","timestamp":"2025-04-22T15:57:45.424Z"}
+{"level":"info","message":"Fetched notifications for user: user_mpe0xo17h, IP: 127.0.0.1","timestamp":"2025-04-22T15:57:45.470Z"}
+{"level":"info","message":"Fetched notifications for user: user_mpe0xo17h, IP: 127.0.0.1","timestamp":"2025-04-22T15:57:45.515Z"}
+{"level":"info","message":"Fetched notifications for user: user_mpe0xo17h, IP: 127.0.0.1","timestamp":"2025-04-22T15:57:45.565Z"}
+{"level":"info","message":"Fetched notifications for user: user_mpe0xo17h, IP: 127.0.0.1","timestamp":"2025-04-22T15:57:45.615Z"}
+{"level":"info","message":"Fetched notifications for user: user_mpe0xo17h, IP: 127.0.0.1","timestamp":"2025-04-22T15:57:45.654Z"}
+{"level":"info","message":"Fetched notifications for user: user_mpe0xo17h, IP: 127.0.0.1","timestamp":"2025-04-22T15:57:45.785Z"}
+{"level":"info","message":"Fetched notifications for user: user_mpe0xo17h, IP: 127.0.0.1","timestamp":"2025-04-22T15:57:45.822Z"}
+{"level":"info","message":"Fetched notifications for user: user_mpe0xo17h, IP: 127.0.0.1","timestamp":"2025-04-22T15:57:45.933Z"}
+{"level":"info","message":"Fetched notifications for user: user_mpe0xo17h, IP: 127.0.0.1","timestamp":"2025-04-22T15:57:45.961Z"}
+{"level":"info","message":"Fetched notifications for user: user_mpe0xo17h, IP: 127.0.0.1","timestamp":"2025-04-22T15:57:46.030Z"}
+{"level":"info","message":"Fetched notifications for user: user_mpe0xo17h, IP: 127.0.0.1","timestamp":"2025-04-22T15:58:40.062Z"}
+{"level":"info","message":"Fetched notifications for user: user_mpe0xo17h, IP: 127.0.0.1","timestamp":"2025-04-22T15:58:40.144Z"}
+{"level":"info","message":"Fetched notifications for user: user_mpe0xo17h, IP: 127.0.0.1","timestamp":"2025-04-22T15:58:40.227Z"}
+{"level":"info","message":"Fetched notifications for user: user_mpe0xo17h, IP: 127.0.0.1","timestamp":"2025-04-22T15:58:40.298Z"}
+{"level":"info","message":"Fetched notifications for user: user_mpe0xo17h, IP: 127.0.0.1","timestamp":"2025-04-22T15:58:40.360Z"}
+{"level":"info","message":"Fetched notifications for user: user_mpe0xo17h, IP: 127.0.0.1","timestamp":"2025-04-22T15:58:40.413Z"}
+{"level":"info","message":"Fetched notifications for user: user_mpe0xo17h, IP: 127.0.0.1","timestamp":"2025-04-22T15:58:40.465Z"}
+{"level":"info","message":"Fetched notifications for user: user_mpe0xo17h, IP: 127.0.0.1","timestamp":"2025-04-22T15:58:40.518Z"}
+{"level":"info","message":"Fetched notifications for user: user_mpe0xo17h, IP: 127.0.0.1","timestamp":"2025-04-22T15:58:40.567Z"}
+{"level":"info","message":"Fetched notifications for user: user_mpe0xo17h, IP: 127.0.0.1","timestamp":"2025-04-22T15:58:40.646Z"}
+{"level":"info","message":"Fetched notifications for user: user_mpe0xo17h, IP: 127.0.0.1","timestamp":"2025-04-22T15:58:40.725Z"}
+{"level":"info","message":"Fetched notifications for user: user_mpe0xo17h, IP: 127.0.0.1","timestamp":"2025-04-22T15:58:40.810Z"}
+{"level":"info","message":"Fetched notifications for user: user_mpe0xo17h, IP: 127.0.0.1","timestamp":"2025-04-22T15:58:40.876Z"}
+{"level":"info","message":"Fetched notifications for user: user_mpe0xo17h, IP: 127.0.0.1","timestamp":"2025-04-22T15:58:40.928Z"}
+{"level":"info","message":"Fetched notifications for user: user_mpe0xo17h, IP: 127.0.0.1","timestamp":"2025-04-22T15:58:40.988Z"}
+{"level":"info","message":"Fetched notifications for user: user_mpe0xo17h, IP: 127.0.0.1","timestamp":"2025-04-22T15:58:41.043Z"}
+{"level":"info","message":"Fetched notifications for user: user_mpe0xo17h, IP: 127.0.0.1","timestamp":"2025-04-22T15:58:41.094Z"}
+{"level":"info","message":"Fetched notifications for user: user_mpe0xo17h, IP: 127.0.0.1","timestamp":"2025-04-22T15:58:41.160Z"}
+{"level":"info","message":"Fetched notifications for user: user_mpe0xo17h, IP: 127.0.0.1","timestamp":"2025-04-22T15:58:41.219Z"}
+{"level":"info","message":"Fetched notifications for user: user_mpe0xo17h, IP: 127.0.0.1","timestamp":"2025-04-22T15:58:41.275Z"}
+{"level":"info","message":"Fetched notifications for user: user_mpe0xo17h, IP: 127.0.0.1","timestamp":"2025-04-22T15:58:41.329Z"}
+{"level":"info","message":"Fetched notifications for user: user_mpe0xo17h, IP: 127.0.0.1","timestamp":"2025-04-22T15:58:41.381Z"}
+{"level":"info","message":"Fetched notifications for user: user_mpe0xo17h, IP: 127.0.0.1","timestamp":"2025-04-22T15:58:41.436Z"}
+{"level":"info","message":"Fetched notifications for user: user_mpe0xo17h, IP: 127.0.0.1","timestamp":"2025-04-22T15:58:41.489Z"}
+{"level":"info","message":"Fetched notifications for user: user_mpe0xo17h, IP: 127.0.0.1","timestamp":"2025-04-22T15:58:41.539Z"}
+{"level":"info","message":"Fetched notifications for user: user_mpe0xo17h, IP: 127.0.0.1","timestamp":"2025-04-22T15:58:41.591Z"}
+{"level":"info","message":"Fetched notifications for user: user_mpe0xo17h, IP: 127.0.0.1","timestamp":"2025-04-22T15:58:41.667Z"}
+{"level":"info","message":"Fetched notifications for user: user_mpe0xo17h, IP: 127.0.0.1","timestamp":"2025-04-22T15:58:41.745Z"}
+{"level":"info","message":"Fetched notifications for user: user_mpe0xo17h, IP: 127.0.0.1","timestamp":"2025-04-22T15:58:41.821Z"}
+{"level":"info","message":"Fetched notifications for user: user_mpe0xo17h, IP: 127.0.0.1","timestamp":"2025-04-22T15:58:41.877Z"}
+{"level":"info","message":"Fetched notifications for user: user_mpe0xo17h, IP: 127.0.0.1","timestamp":"2025-04-22T15:58:41.976Z"}
+{"level":"info","message":"Fetched notifications for user: user_mpe0xo17h, IP: 127.0.0.1","timestamp":"2025-04-22T15:58:42.073Z"}
+{"level":"info","message":"Fetched notifications for user: user_mpe0xo17h, IP: 127.0.0.1","timestamp":"2025-04-22T15:58:42.124Z"}
+{"level":"info","message":"Fetched notifications for user: user_mpe0xo17h, IP: 127.0.0.1","timestamp":"2025-04-22T15:58:42.179Z"}
+{"level":"info","message":"Fetched notifications for user: user_mpe0xo17h, IP: 127.0.0.1","timestamp":"2025-04-22T15:58:42.237Z"}
+{"level":"info","message":"Fetched notifications for user: user_mpe0xo17h, IP: 127.0.0.1","timestamp":"2025-04-22T15:58:42.308Z"}
+{"level":"info","message":"Fetched notifications for user: user_mpe0xo17h, IP: 127.0.0.1","timestamp":"2025-04-22T15:58:42.370Z"}
+{"level":"info","message":"Fetched notifications for user: user_mpe0xo17h, IP: 127.0.0.1","timestamp":"2025-04-22T15:58:42.430Z"}
+{"level":"info","message":"Fetched notifications for user: user_mpe0xo17h, IP: 127.0.0.1","timestamp":"2025-04-22T15:58:42.489Z"}
+{"level":"info","message":"Fetched notifications for user: user_mpe0xo17h, IP: 127.0.0.1","timestamp":"2025-04-22T15:58:42.542Z"}
+{"level":"info","message":"Fetched notifications for user: user_mpe0xo17h, IP: 127.0.0.1","timestamp":"2025-04-22T15:58:42.597Z"}
+{"level":"info","message":"Fetched notifications for user: user_mpe0xo17h, IP: 127.0.0.1","timestamp":"2025-04-22T15:58:42.678Z"}
+{"level":"info","message":"Fetched notifications for user: user_mpe0xo17h, IP: 127.0.0.1","timestamp":"2025-04-22T15:58:42.765Z"}
+{"level":"info","message":"Fetched notifications for user: user_mpe0xo17h, IP: 127.0.0.1","timestamp":"2025-04-22T15:58:42.837Z"}
+{"level":"info","message":"Fetched notifications for user: user_mpe0xo17h, IP: 127.0.0.1","timestamp":"2025-04-22T15:58:42.899Z"}
+{"level":"info","message":"Fetched notifications for user: user_mpe0xo17h, IP: 127.0.0.1","timestamp":"2025-04-22T15:58:42.959Z"}
+{"level":"info","message":"Fetched notifications for user: user_mpe0xo17h, IP: 127.0.0.1","timestamp":"2025-04-22T15:58:43.026Z"}
+{"level":"info","message":"Fetched notifications for user: user_mpe0xo17h, IP: 127.0.0.1","timestamp":"2025-04-22T15:58:43.113Z"}
+{"level":"info","message":"Fetched notifications for user: user_mpe0xo17h, IP: 127.0.0.1","timestamp":"2025-04-22T15:58:43.180Z"}
+{"level":"info","message":"Fetched notifications for user: user_mpe0xo17h, IP: 127.0.0.1","timestamp":"2025-04-22T15:58:43.232Z"}
+{"level":"info","message":"Fetched notifications for user: user_mpe0xo17h, IP: 127.0.0.1","timestamp":"2025-04-22T15:58:43.295Z"}
+{"level":"info","message":"Fetched notifications for user: user_mpe0xo17h, IP: 127.0.0.1","timestamp":"2025-04-22T15:58:43.359Z"}
+{"level":"info","message":"Fetched notifications for user: user_mpe0xo17h, IP: 127.0.0.1","timestamp":"2025-04-22T15:58:43.417Z"}
+{"level":"info","message":"Fetched notifications for user: user_mpe0xo17h, IP: 127.0.0.1","timestamp":"2025-04-22T15:58:43.478Z"}
+{"level":"info","message":"Fetched notifications for user: user_mpe0xo17h, IP: 127.0.0.1","timestamp":"2025-04-22T15:58:43.545Z"}
+{"level":"info","message":"Fetched notifications for user: user_mpe0xo17h, IP: 127.0.0.1","timestamp":"2025-04-22T15:58:43.601Z"}
+{"level":"info","message":"Fetched notifications for user: user_mpe0xo17h, IP: 127.0.0.1","timestamp":"2025-04-22T15:58:43.695Z"}
+{"level":"info","message":"Fetched notifications for user: user_mpe0xo17h, IP: 127.0.0.1","timestamp":"2025-04-22T15:58:43.792Z"}
+{"level":"info","message":"Fetched notifications for user: user_mpe0xo17h, IP: 127.0.0.1","timestamp":"2025-04-22T15:58:43.873Z"}
+{"level":"info","message":"Fetched notifications for user: user_mpe0xo17h, IP: 127.0.0.1","timestamp":"2025-04-22T15:58:43.924Z"}
+{"level":"info","message":"Fetched notifications for user: user_mpe0xo17h, IP: 127.0.0.1","timestamp":"2025-04-22T15:58:43.977Z"}
+{"level":"info","message":"Fetched notifications for user: user_mpe0xo17h, IP: 127.0.0.1","timestamp":"2025-04-22T15:58:44.030Z"}
+{"level":"info","message":"Fetched notifications for user: user_mpe0xo17h, IP: 127.0.0.1","timestamp":"2025-04-22T15:58:44.086Z"}
+{"level":"info","message":"Cleaning up expired OTPs","timestamp":"2025-04-22T16:00:00.127Z"}
+{"level":"info","message":"Cleaned up 0 expired OTPs","timestamp":"2025-04-22T16:00:00.240Z"}
+{"level":"info","message":"Fetched notifications for user: user_mpe0xo17h, IP: 127.0.0.1","timestamp":"2025-04-22T16:03:15.283Z"}
+{"level":"info","message":"Fetched notifications for user: user_mpe0xo17h, IP: 127.0.0.1","timestamp":"2025-04-22T16:03:15.633Z"}
+{"level":"info","message":"Fetched notifications for user: user_mpe0xo17h, IP: 127.0.0.1","timestamp":"2025-04-22T16:03:15.952Z"}
+{"level":"info","message":"Fetched notifications for user: user_mpe0xo17h, IP: 127.0.0.1","timestamp":"2025-04-22T16:03:16.236Z"}
+{"level":"info","message":"Fetched notifications for user: user_mpe0xo17h, IP: 127.0.0.1","timestamp":"2025-04-22T16:03:16.422Z"}
+{"level":"info","message":"Fetched notifications for user: user_mpe0xo17h, IP: 127.0.0.1","timestamp":"2025-04-22T16:03:16.548Z"}
+{"level":"info","message":"Fetched notifications for user: user_mpe0xo17h, IP: 127.0.0.1","timestamp":"2025-04-22T16:03:16.686Z"}
+{"level":"info","message":"Fetched notifications for user: user_mpe0xo17h, IP: 127.0.0.1","timestamp":"2025-04-22T16:03:16.962Z"}
+{"level":"info","message":"Fetched notifications for user: user_mpe0xo17h, IP: 127.0.0.1","timestamp":"2025-04-22T16:03:17.326Z"}
+{"level":"info","message":"Fetched notifications for user: user_mpe0xo17h, IP: 127.0.0.1","timestamp":"2025-04-22T16:03:17.510Z"}
+{"level":"info","message":"Fetched notifications for user: user_mpe0xo17h, IP: 127.0.0.1","timestamp":"2025-04-22T16:03:17.648Z"}
+{"level":"info","message":"Fetched notifications for user: user_mpe0xo17h, IP: 127.0.0.1","timestamp":"2025-04-22T16:03:17.786Z"}
+{"level":"info","message":"Fetched notifications for user: user_mpe0xo17h, IP: 127.0.0.1","timestamp":"2025-04-22T16:03:18.082Z"}
+{"level":"info","message":"Fetched notifications for user: user_mpe0xo17h, IP: 127.0.0.1","timestamp":"2025-04-22T16:03:18.383Z"}
+{"level":"info","message":"Fetched notifications for user: user_mpe0xo17h, IP: 127.0.0.1","timestamp":"2025-04-22T16:03:18.573Z"}
+{"level":"info","message":"Fetched notifications for user: user_mpe0xo17h, IP: 127.0.0.1","timestamp":"2025-04-22T16:03:18.724Z"}
+{"level":"info","message":"Fetched notifications for user: user_mpe0xo17h, IP: 127.0.0.1","timestamp":"2025-04-22T16:03:18.859Z"}
+{"level":"info","message":"Fetched notifications for user: user_mpe0xo17h, IP: 127.0.0.1","timestamp":"2025-04-22T16:03:19.183Z"}
+{"level":"info","message":"Fetched notifications for user: user_mpe0xo17h, IP: 127.0.0.1","timestamp":"2025-04-22T16:03:19.528Z"}
+{"level":"info","message":"Fetched notifications for user: user_mpe0xo17h, IP: 127.0.0.1","timestamp":"2025-04-22T16:03:19.709Z"}
+{"level":"info","message":"Fetched notifications for user: user_mpe0xo17h, IP: 127.0.0.1","timestamp":"2025-04-22T16:03:19.860Z"}
+{"level":"info","message":"Fetched notifications for user: user_mpe0xo17h, IP: 127.0.0.1","timestamp":"2025-04-22T16:03:20.195Z"}
+{"level":"info","message":"Fetched notifications for user: user_mpe0xo17h, IP: 127.0.0.1","timestamp":"2025-04-22T16:03:20.497Z"}
+{"level":"info","message":"Fetched notifications for user: user_mpe0xo17h, IP: 127.0.0.1","timestamp":"2025-04-22T16:03:20.668Z"}
+{"level":"info","message":"Fetched notifications for user: user_mpe0xo17h, IP: 127.0.0.1","timestamp":"2025-04-22T16:03:20.824Z"}
+{"level":"info","message":"Fetched notifications for user: user_mpe0xo17h, IP: 127.0.0.1","timestamp":"2025-04-22T16:03:20.990Z"}
+{"level":"info","message":"Fetched notifications for user: user_mpe0xo17h, IP: 127.0.0.1","timestamp":"2025-04-22T16:03:21.281Z"}
+{"level":"info","message":"Fetched notifications for user: user_mpe0xo17h, IP: 127.0.0.1","timestamp":"2025-04-22T16:03:21.595Z"}
+{"level":"info","message":"Fetched notifications for user: user_mpe0xo17h, IP: 127.0.0.1","timestamp":"2025-04-22T16:03:21.792Z"}
+{"level":"info","message":"Fetched notifications for user: user_mpe0xo17h, IP: 127.0.0.1","timestamp":"2025-04-22T16:03:22.012Z"}
+{"level":"info","message":"Fetched notifications for user: user_mpe0xo17h, IP: 127.0.0.1","timestamp":"2025-04-22T16:03:22.458Z"}
+{"level":"info","message":"Fetched notifications for user: user_mpe0xo17h, IP: 127.0.0.1","timestamp":"2025-04-22T16:03:22.873Z"}
+{"level":"info","message":"Fetched notifications for user: user_mpe0xo17h, IP: 127.0.0.1","timestamp":"2025-04-22T16:03:23.045Z"}
+{"level":"info","message":"Fetched notifications for user: user_mpe0xo17h, IP: 127.0.0.1","timestamp":"2025-04-22T16:03:23.328Z"}
+{"level":"info","message":"Fetched notifications for user: user_mpe0xo17h, IP: 127.0.0.1","timestamp":"2025-04-22T16:03:23.648Z"}
+{"level":"info","message":"Fetched notifications for user: user_mpe0xo17h, IP: 127.0.0.1","timestamp":"2025-04-22T16:03:23.857Z"}
+{"level":"info","message":"Fetched effective permissions for user user_mpe0xo17h by user_mpe0xo17h, IP: 127.0.0.1","timestamp":"2025-04-22T16:04:52.950Z"}
+{"level":"info","message":"Fetched roles for user user_mpe0xo17h by user_mpe0xo17h, IP: 127.0.0.1","timestamp":"2025-04-22T16:04:52.981Z"}
+{"level":"info","message":"Fetched effective permissions for user user_mpe0xo17h by user_mpe0xo17h, IP: 127.0.0.1","timestamp":"2025-04-22T16:04:53.472Z"}
+{"level":"info","message":"Fetched roles for user user_mpe0xo17h by user_mpe0xo17h, IP: 127.0.0.1","timestamp":"2025-04-22T16:04:53.496Z"}
+{"level":"warn","message":"No access token provided","timestamp":"2025-04-22T16:04:53.545Z"}
+{"level":"info","message":"Initiating token refresh","timestamp":"2025-04-22T16:04:53.563Z"}
+{"accessTokenExpiresIn":900,"level":"info","message":"Tokens refreshed successfully","refreshTokenRotatedAt":"2025-04-22T16:04:53.638Z","timestamp":"2025-04-22T16:04:53.638Z"}
+{"level":"info","message":"Refresh token successful","timestamp":"2025-04-22T16:04:53.638Z"}
+{"level":"info","message":"Super Admin bypass for user user_mpe0xo17h","timestamp":"2025-04-22T16:04:54.065Z"}
+{"level":"info","message":"Fetched all users by user user_mpe0xo17h, IP: 127.0.0.1","timestamp":"2025-04-22T16:04:54.166Z"}
+{"level":"info","message":"Super Admin bypass for user user_mpe0xo17h","timestamp":"2025-04-22T16:04:54.562Z"}
+{"level":"info","message":"Fetched all roles by user user_mpe0xo17h, IP: 127.0.0.1","timestamp":"2025-04-22T16:04:54.773Z"}
+{"level":"info","message":"Fetched notifications for user: user_mpe0xo17h, IP: 127.0.0.1","timestamp":"2025-04-22T16:05:13.616Z"}
+{"level":"info","message":"Fetched notifications for user: user_mpe0xo17h, IP: 127.0.0.1","timestamp":"2025-04-22T16:16:15.514Z"}
+{"level":"info","message":"Fetched notifications for user: user_mpe0xo17h, IP: 127.0.0.1","timestamp":"2025-04-22T16:16:18.456Z"}
+{"level":"info","message":"Fetched notifications for user: user_mpe0xo17h, IP: 127.0.0.1","timestamp":"2025-04-22T16:16:38.120Z"}
+{"level":"info","message":"Fetched notifications for user: user_mpe0xo17h, IP: 127.0.0.1","timestamp":"2025-04-22T16:16:55.535Z"}
+{"level":"info","message":"Fetched notifications for user: user_mpe0xo17h, IP: 127.0.0.1","timestamp":"2025-04-22T16:17:58.309Z"}
+{"level":"warn","message":"No access token provided","timestamp":"2025-04-22T16:23:48.831Z"}
+{"level":"info","message":"Initiating token refresh","timestamp":"2025-04-22T16:23:48.936Z"}
+{"accessTokenExpiresIn":900,"level":"info","message":"Tokens refreshed successfully","refreshTokenRotatedAt":"2025-04-22T16:23:50.180Z","timestamp":"2025-04-22T16:23:50.180Z"}
+{"level":"info","message":"Refresh token successful","timestamp":"2025-04-22T16:23:50.186Z"}
+{"level":"info","message":"Fetched notifications for user: user_mpe0xo17h, IP: 127.0.0.1","timestamp":"2025-04-22T16:23:52.016Z"}
+{"level":"info","message":"Super Admin bypass for user user_mpe0xo17h","timestamp":"2025-04-22T16:30:06.765Z"}
+{"level":"info","message":"Fetched notifications for user: user_mpe0xo17h, IP: 127.0.0.1","timestamp":"2025-04-22T16:30:06.777Z"}
+{"level":"info","message":"Fetched all users by user user_mpe0xo17h, IP: 127.0.0.1","timestamp":"2025-04-22T16:30:06.915Z"}
+{"level":"info","message":"Super Admin bypass for user user_mpe0xo17h","timestamp":"2025-04-22T16:30:07.339Z"}
+{"level":"info","message":"Super Admin bypass for user user_mpe0xo17h","timestamp":"2025-04-22T16:30:07.437Z"}
+{"level":"info","message":"Fetched all users by user user_mpe0xo17h, IP: 127.0.0.1","timestamp":"2025-04-22T16:30:07.509Z"}
+{"level":"info","message":"Fetched all roles by user user_mpe0xo17h, IP: 127.0.0.1","timestamp":"2025-04-22T16:30:07.708Z"}
+{"level":"info","message":"Super Admin bypass for user user_mpe0xo17h","timestamp":"2025-04-22T16:30:08.116Z"}
+{"level":"info","message":"Fetched all roles by user user_mpe0xo17h, IP: 127.0.0.1","timestamp":"2025-04-22T16:30:08.270Z"}
+{"level":"info","message":"Fetched notifications for user: user_mpe0xo17h, IP: 127.0.0.1","timestamp":"2025-04-22T16:34:15.092Z"}
+{"level":"warn","message":"No access token provided","timestamp":"2025-04-22T16:39:03.208Z"}
+{"level":"info","message":"Initiating token refresh","timestamp":"2025-04-22T16:39:03.223Z"}
+{"accessTokenExpiresIn":649,"level":"info","message":"Tokens refreshed successfully","refreshTokenRotatedAt":"2025-04-22T16:39:03.626Z","timestamp":"2025-04-22T16:39:03.626Z"}
+{"level":"info","message":"Refresh token successful","timestamp":"2025-04-22T16:39:03.626Z"}
+{"level":"info","message":"Fetched notifications for user: user_mpe0xo17h, IP: 127.0.0.1","timestamp":"2025-04-22T16:39:03.974Z"}
+{"level":"info","message":"Fetched notifications for user: user_mpe0xo17h, IP: 127.0.0.1","timestamp":"2025-04-22T16:39:05.058Z"}
+{"level":"info","message":"Fetched notifications for user: user_mpe0xo17h, IP: 127.0.0.1","timestamp":"2025-04-22T16:39:05.802Z"}
+{"level":"info","message":"Fetched notifications for user: user_mpe0xo17h, IP: 127.0.0.1","timestamp":"2025-04-22T16:39:06.384Z"}
+{"level":"info","message":"Fetched notifications for user: user_mpe0xo17h, IP: 127.0.0.1","timestamp":"2025-04-22T16:39:11.475Z"}
+{"level":"info","message":"Fetched notifications for user: user_mpe0xo17h, IP: 127.0.0.1","timestamp":"2025-04-22T16:39:37.890Z"}
+{"level":"info","message":"Fetched notifications for user: user_mpe0xo17h, IP: 127.0.0.1","timestamp":"2025-04-22T16:40:55.981Z"}
+{"level":"info","message":"Fetched notifications for user: user_mpe0xo17h, IP: 127.0.0.1","timestamp":"2025-04-22T16:41:05.393Z"}
+{"level":"info","message":"Fetched notifications for user: user_mpe0xo17h, IP: 127.0.0.1","timestamp":"2025-04-22T16:42:20.083Z"}
+{"level":"info","message":"Fetched notifications for user: user_mpe0xo17h, IP: 127.0.0.1","timestamp":"2025-04-22T16:42:20.106Z"}
+{"level":"info","message":"Fetched notifications for user: user_mpe0xo17h, IP: 127.0.0.1","timestamp":"2025-04-22T16:42:20.906Z"}
+{"level":"info","message":"Fetched notifications for user: user_mpe0xo17h, IP: 127.0.0.1","timestamp":"2025-04-22T16:42:40.894Z"}
+{"level":"info","message":"Fetched notifications for user: user_mpe0xo17h, IP: 127.0.0.1","timestamp":"2025-04-22T16:42:41.800Z"}
+{"level":"info","message":"Fetched notifications for user: user_mpe0xo17h, IP: 127.0.0.1","timestamp":"2025-04-22T16:42:43.064Z"}
+{"level":"info","message":"Super Admin bypass for user user_mpe0xo17h","timestamp":"2025-04-22T16:42:47.023Z"}
+{"level":"info","message":"Fetched notification rules by user: user_mpe0xo17h, IP: 127.0.0.1","timestamp":"2025-04-22T16:42:47.037Z"}
+{"level":"info","message":"Super Admin bypass for user user_mpe0xo17h","timestamp":"2025-04-22T16:42:47.083Z"}
+{"level":"info","message":"Fetched notification rules by user: user_mpe0xo17h, IP: 127.0.0.1","timestamp":"2025-04-22T16:42:47.085Z"}
+{"level":"info","message":"Super Admin bypass for user user_mpe0xo17h","timestamp":"2025-04-22T16:42:52.117Z"}
+{"level":"info","message":"Super Admin bypass for user user_mpe0xo17h","timestamp":"2025-04-22T16:42:52.120Z"}
+{"level":"info","message":"Fetched notification rules by user: user_mpe0xo17h, IP: 127.0.0.1","timestamp":"2025-04-22T16:42:52.124Z"}
+{"level":"info","message":"Super Admin bypass for user user_mpe0xo17h","timestamp":"2025-04-22T16:42:52.129Z"}
+{"level":"info","message":"Fetched all users by user user_mpe0xo17h, IP: 127.0.0.1","timestamp":"2025-04-22T16:42:52.254Z"}
+{"level":"info","message":"Fetched all roles by user user_mpe0xo17h, IP: 127.0.0.1","timestamp":"2025-04-22T16:42:52.362Z"}
+{"level":"info","message":"Super Admin bypass for user user_mpe0xo17h","timestamp":"2025-04-22T16:43:09.529Z"}
+{"level":"info","message":"Fetched notification rules by user: user_mpe0xo17h, IP: 127.0.0.1","timestamp":"2025-04-22T16:43:09.533Z"}
+{"level":"info","message":"Super Admin bypass for user user_mpe0xo17h","timestamp":"2025-04-22T16:43:11.840Z"}
+{"level":"info","message":"Fetched notification rules by user: user_mpe0xo17h, IP: 127.0.0.1","timestamp":"2025-04-22T16:43:11.843Z"}
+{"level":"info","message":"Super Admin bypass for user user_mpe0xo17h","timestamp":"2025-04-22T16:43:11.873Z"}
+{"level":"info","message":"Fetched notification rules by user: user_mpe0xo17h, IP: 127.0.0.1","timestamp":"2025-04-22T16:43:11.880Z"}
+{"level":"info","message":"Super Admin bypass for user user_mpe0xo17h","timestamp":"2025-04-22T16:43:12.214Z"}
+{"level":"info","message":"Super Admin bypass for user user_mpe0xo17h","timestamp":"2025-04-22T16:43:12.217Z"}
+{"level":"info","message":"Fetched all users by user user_mpe0xo17h, IP: 127.0.0.1","timestamp":"2025-04-22T16:43:12.298Z"}
+{"level":"info","message":"Fetched all roles by user user_mpe0xo17h, IP: 127.0.0.1","timestamp":"2025-04-22T16:43:12.393Z"}
+{"level":"info","message":"Super Admin bypass for user user_mpe0xo17h","timestamp":"2025-04-22T16:43:14.433Z"}
+{"level":"info","message":"Fetched notification rules by user: user_mpe0xo17h, IP: 127.0.0.1","timestamp":"2025-04-22T16:43:14.436Z"}
+{"level":"info","message":"Fetched notifications for user: user_mpe0xo17h, IP: 127.0.0.1","timestamp":"2025-04-22T16:43:23.992Z"}
+{"level":"info","message":"Fetched notifications for user: user_mpe0xo17h, IP: 127.0.0.1","timestamp":"2025-04-22T16:43:26.298Z"}
+{"level":"info","message":"Fetched notifications for user: user_mpe0xo17h, IP: 127.0.0.1","timestamp":"2025-04-22T16:43:26.905Z"}
+{"level":"info","message":"Fetched notifications for user: user_mpe0xo17h, IP: 127.0.0.1","timestamp":"2025-04-22T16:43:27.214Z"}
+{"level":"info","message":"Fetched notifications for user: user_mpe0xo17h, IP: 127.0.0.1","timestamp":"2025-04-22T16:43:27.392Z"}
+{"level":"info","message":"Fetched notifications for user: user_mpe0xo17h, IP: 127.0.0.1","timestamp":"2025-04-22T16:43:27.552Z"}
+{"level":"info","message":"Fetched notifications for user: user_mpe0xo17h, IP: 127.0.0.1","timestamp":"2025-04-22T16:43:27.714Z"}
+{"level":"info","message":"Fetched notifications for user: user_mpe0xo17h, IP: 127.0.0.1","timestamp":"2025-04-22T16:43:27.882Z"}
+{"level":"info","message":"Fetched notifications for user: user_mpe0xo17h, IP: 127.0.0.1","timestamp":"2025-04-22T16:43:28.053Z"}
+{"level":"info","message":"Fetched notifications for user: user_mpe0xo17h, IP: 127.0.0.1","timestamp":"2025-04-22T16:43:28.225Z"}
+{"level":"info","message":"Fetched notifications for user: user_mpe0xo17h, IP: 127.0.0.1","timestamp":"2025-04-22T16:43:28.387Z"}
+{"level":"info","message":"Fetched notifications for user: user_mpe0xo17h, IP: 127.0.0.1","timestamp":"2025-04-22T16:43:28.537Z"}
+{"level":"info","message":"Fetched notifications for user: user_mpe0xo17h, IP: 127.0.0.1","timestamp":"2025-04-22T16:43:28.715Z"}
+{"level":"info","message":"Fetched notifications for user: user_mpe0xo17h, IP: 127.0.0.1","timestamp":"2025-04-22T16:43:28.892Z"}
+{"level":"info","message":"Fetched notifications for user: user_mpe0xo17h, IP: 127.0.0.1","timestamp":"2025-04-22T16:43:29.045Z"}
+{"level":"info","message":"Fetched notifications for user: user_mpe0xo17h, IP: 127.0.0.1","timestamp":"2025-04-22T16:43:29.213Z"}
+{"level":"info","message":"Fetched notifications for user: user_mpe0xo17h, IP: 127.0.0.1","timestamp":"2025-04-22T16:43:29.379Z"}
+{"level":"info","message":"Fetched notifications for user: user_mpe0xo17h, IP: 127.0.0.1","timestamp":"2025-04-22T16:43:29.567Z"}
+{"level":"info","message":"Fetched notifications for user: user_mpe0xo17h, IP: 127.0.0.1","timestamp":"2025-04-22T16:43:29.735Z"}
+{"level":"info","message":"Fetched notifications for user: user_mpe0xo17h, IP: 127.0.0.1","timestamp":"2025-04-22T16:43:29.895Z"}
+{"level":"info","message":"Fetched notifications for user: user_mpe0xo17h, IP: 127.0.0.1","timestamp":"2025-04-22T16:43:30.066Z"}
+{"level":"info","message":"Fetched notifications for user: user_mpe0xo17h, IP: 127.0.0.1","timestamp":"2025-04-22T16:43:30.230Z"}
+{"level":"info","message":"Fetched notifications for user: user_mpe0xo17h, IP: 127.0.0.1","timestamp":"2025-04-22T16:43:30.412Z"}
+{"level":"info","message":"Fetched notifications for user: user_mpe0xo17h, IP: 127.0.0.1","timestamp":"2025-04-22T16:43:30.578Z"}
+{"level":"info","message":"Fetched notifications for user: user_mpe0xo17h, IP: 127.0.0.1","timestamp":"2025-04-22T16:43:30.756Z"}
+{"level":"info","message":"Fetched notifications for user: user_mpe0xo17h, IP: 127.0.0.1","timestamp":"2025-04-22T16:45:48.398Z"}
+{"level":"info","message":"Keycloak admin token obtained","timestamp":"2025-04-22T17:03:05.325Z"}
+{"level":"info","message":"Login response generated for user user_mpe0xo17h","timestamp":"2025-04-22T17:03:09.091Z"}
+{"level":"info","message":"Login attempt for superadmin@example.com, requires2FA: false","timestamp":"2025-04-22T17:03:09.092Z"}
+{"level":"info","message":"Keycloak admin token obtained","timestamp":"2025-04-22T17:03:09.765Z"}
+{"level":"info","message":"Login response generated for user user_mpe0xo17h","timestamp":"2025-04-22T17:03:11.671Z"}
+{"level":"info","message":"Login attempt for superadmin@example.com, requires2FA: false","timestamp":"2025-04-22T17:03:11.673Z"}
+{"level":"info","message":"Fetched roles for user user_mpe0xo17h by user_mpe0xo17h, IP: 127.0.0.1","timestamp":"2025-04-22T17:03:13.007Z"}
+{"level":"info","message":"Fetched effective permissions for user user_mpe0xo17h by user_mpe0xo17h, IP: 127.0.0.1","timestamp":"2025-04-22T17:03:13.075Z"}
+{"level":"info","message":"Super Admin bypass for user user_mpe0xo17h","timestamp":"2025-04-22T17:03:14.067Z"}
+{"level":"info","message":"Fetched notification rules by user: user_mpe0xo17h, IP: 127.0.0.1","timestamp":"2025-04-22T17:03:14.085Z"}
+{"level":"info","message":"Super Admin bypass for user user_mpe0xo17h","timestamp":"2025-04-22T17:03:14.121Z"}
+{"level":"info","message":"Fetched notification rules by user: user_mpe0xo17h, IP: 127.0.0.1","timestamp":"2025-04-22T17:03:14.142Z"}
+{"level":"info","message":"Super Admin bypass for user user_mpe0xo17h","timestamp":"2025-04-22T17:03:18.654Z"}
+{"level":"info","message":"Fetched all users by user user_mpe0xo17h, IP: 127.0.0.1","timestamp":"2025-04-22T17:03:18.915Z"}
+{"level":"info","message":"Super Admin bypass for user user_mpe0xo17h","timestamp":"2025-04-22T17:03:19.808Z"}
+{"level":"info","message":"Fetched all roles by user user_mpe0xo17h, IP: 127.0.0.1","timestamp":"2025-04-22T17:03:20.205Z"}
+{"level":"info","message":"Super Admin bypass for user user_mpe0xo17h","timestamp":"2025-04-22T17:03:26.863Z"}
+{"level":"info","message":"Fetched all permissions by user user_mpe0xo17h, IP: 127.0.0.1","timestamp":"2025-04-22T17:03:27.072Z"}
+{"level":"info","message":"Super Admin bypass for user user_mpe0xo17h","timestamp":"2025-04-22T17:03:42.434Z"}
+{"ip":null,"level":"info","message":"Role role teest created by user user_mpe0xo17h","timestamp":"2025-04-22T17:03:44.589Z"}
+{"level":"info","message":"No active rules found for event: role:created","timestamp":"2025-04-22T17:03:44.597Z"}
+{"level":"info","message":"Role created: role teest by user user_mpe0xo17h, IP: 127.0.0.1","timestamp":"2025-04-22T17:03:44.598Z"}
+{"level":"info","message":"Super Admin bypass for user user_mpe0xo17h","timestamp":"2025-04-22T17:03:47.457Z"}
+{"level":"info","message":"Fetched notification rules by user: user_mpe0xo17h, IP: 127.0.0.1","timestamp":"2025-04-22T17:03:47.464Z"}
+{"level":"info","message":"Fetched effective permissions for user user_mpe0xo17h by user_mpe0xo17h, IP: 127.0.0.1","timestamp":"2025-04-22T17:03:55.029Z"}
+{"level":"info","message":"Fetched roles for user user_mpe0xo17h by user_mpe0xo17h, IP: 127.0.0.1","timestamp":"2025-04-22T17:03:56.145Z"}
+{"level":"info","message":"Fetched effective permissions for user user_mpe0xo17h by user_mpe0xo17h, IP: 127.0.0.1","timestamp":"2025-04-22T17:03:56.592Z"}
+{"level":"info","message":"Super Admin bypass for user user_mpe0xo17h","timestamp":"2025-04-22T17:03:57.559Z"}
+{"level":"info","message":"Fetched notification rules by user: user_mpe0xo17h, IP: 127.0.0.1","timestamp":"2025-04-22T17:03:57.566Z"}
+{"level":"info","message":"Fetched roles for user user_mpe0xo17h by user_mpe0xo17h, IP: 127.0.0.1","timestamp":"2025-04-22T17:03:57.614Z"}
+{"level":"info","message":"Super Admin bypass for user user_mpe0xo17h","timestamp":"2025-04-22T17:03:57.619Z"}
+{"level":"info","message":"Fetched notification rules by user: user_mpe0xo17h, IP: 127.0.0.1","timestamp":"2025-04-22T17:03:57.623Z"}
+{"level":"info","message":"Super Admin bypass for user user_mpe0xo17h","timestamp":"2025-04-22T17:06:34.715Z"}
+{"level":"info","message":"Fetched all roles by user user_mpe0xo17h, IP: 127.0.0.1","timestamp":"2025-04-22T17:06:35.115Z"}
+{"level":"info","message":"Super Admin bypass for user user_mpe0xo17h","timestamp":"2025-04-22T17:06:39.904Z"}
+{"level":"info","message":"Fetched all permissions by user user_mpe0xo17h, IP: 127.0.0.1","timestamp":"2025-04-22T17:06:39.999Z"}
+{"level":"info","message":"Super Admin bypass for user user_mpe0xo17h","timestamp":"2025-04-22T17:06:53.445Z"}
+{"ip":null,"level":"info","message":"Role test roles created by user user_mpe0xo17h","timestamp":"2025-04-22T17:06:53.901Z"}
+{"level":"info","message":"No active rules found for event: role:created","timestamp":"2025-04-22T17:06:53.913Z"}
+{"level":"info","message":"Role created: test roles by user user_mpe0xo17h, IP: 127.0.0.1","timestamp":"2025-04-22T17:06:53.915Z"}
+{"level":"info","message":"Super Admin bypass for user user_mpe0xo17h","timestamp":"2025-04-22T17:06:59.354Z"}
+{"level":"info","message":"Fetched notification rules by user: user_mpe0xo17h, IP: 127.0.0.1","timestamp":"2025-04-22T17:06:59.362Z"}
+{"level":"info","message":"Fetched effective permissions for user user_mpe0xo17h by user_mpe0xo17h, IP: 127.0.0.1","timestamp":"2025-04-22T17:07:02.974Z"}
+{"level":"info","message":"Fetched roles for user user_mpe0xo17h by user_mpe0xo17h, IP: 127.0.0.1","timestamp":"2025-04-22T17:07:03.918Z"}
+{"level":"info","message":"Fetched effective permissions for user user_mpe0xo17h by user_mpe0xo17h, IP: 127.0.0.1","timestamp":"2025-04-22T17:07:04.407Z"}
+{"level":"info","message":"Super Admin bypass for user user_mpe0xo17h","timestamp":"2025-04-22T17:07:05.249Z"}
+{"level":"info","message":"Fetched notification rules by user: user_mpe0xo17h, IP: 127.0.0.1","timestamp":"2025-04-22T17:07:05.257Z"}
+{"level":"info","message":"Fetched roles for user user_mpe0xo17h by user_mpe0xo17h, IP: 127.0.0.1","timestamp":"2025-04-22T17:07:05.279Z"}
+{"level":"info","message":"Super Admin bypass for user user_mpe0xo17h","timestamp":"2025-04-22T17:07:05.306Z"}
+{"level":"info","message":"Fetched notification rules by user: user_mpe0xo17h, IP: 127.0.0.1","timestamp":"2025-04-22T17:07:05.313Z"}
+{"level":"info","message":"Fetched roles for user user_mpe0xo17h by user_mpe0xo17h, IP: 127.0.0.1","timestamp":"2025-04-22T17:07:51.006Z"}
+{"level":"info","message":"Fetched effective permissions for user user_mpe0xo17h by user_mpe0xo17h, IP: 127.0.0.1","timestamp":"2025-04-22T17:07:51.022Z"}
+{"level":"info","message":"Fetched roles for user user_mpe0xo17h by user_mpe0xo17h, IP: 127.0.0.1","timestamp":"2025-04-22T17:07:51.950Z"}
+{"level":"info","message":"Fetched effective permissions for user user_mpe0xo17h by user_mpe0xo17h, IP: 127.0.0.1","timestamp":"2025-04-22T17:07:51.974Z"}
+{"level":"info","message":"Super Admin bypass for user user_mpe0xo17h","timestamp":"2025-04-22T17:07:52.177Z"}
+{"level":"info","message":"Fetched notification rules by user: user_mpe0xo17h, IP: 127.0.0.1","timestamp":"2025-04-22T17:07:52.183Z"}
+{"level":"info","message":"Super Admin bypass for user user_mpe0xo17h","timestamp":"2025-04-22T17:07:52.217Z"}
+{"level":"info","message":"Fetched notification rules by user: user_mpe0xo17h, IP: 127.0.0.1","timestamp":"2025-04-22T17:07:52.221Z"}
+{"level":"info","message":"Super Admin bypass for user user_mpe0xo17h","timestamp":"2025-04-22T17:09:25.302Z"}
+{"level":"info","message":"Super Admin bypass for user user_mpe0xo17h","timestamp":"2025-04-22T17:09:25.309Z"}
+{"level":"info","message":"Super Admin bypass for user user_mpe0xo17h","timestamp":"2025-04-22T17:09:25.320Z"}
+{"level":"info","message":"Fetched notification rules by user: user_mpe0xo17h, IP: 127.0.0.1","timestamp":"2025-04-22T17:09:25.334Z"}
+{"level":"info","message":"Fetched all users by user user_mpe0xo17h, IP: 127.0.0.1","timestamp":"2025-04-22T17:09:25.577Z"}
+{"level":"info","message":"Fetched all roles by user user_mpe0xo17h, IP: 127.0.0.1","timestamp":"2025-04-22T17:09:25.687Z"}
+{"level":"info","message":"Super Admin bypass for user user_mpe0xo17h","timestamp":"2025-04-22T17:09:26.141Z"}
+{"level":"info","message":"Fetched notification rules by user: user_mpe0xo17h, IP: 127.0.0.1","timestamp":"2025-04-22T17:09:26.148Z"}
+{"level":"info","message":"Super Admin bypass for user user_mpe0xo17h","timestamp":"2025-04-22T17:09:35.080Z"}
+{"level":"info","message":"Fetched notification rules by user: user_mpe0xo17h, IP: 127.0.0.1","timestamp":"2025-04-22T17:09:35.085Z"}

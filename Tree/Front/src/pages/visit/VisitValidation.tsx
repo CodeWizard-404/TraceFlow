@@ -244,18 +244,6 @@ const VisitValidation: React.FC = () => {
   const lastPhotoUrl =
     photos.length > 0 ? URL.createObjectURL(photos[photos.length - 1]) : null;
 
-  // Debug translations with interpolation
-  console.log(
-    "Translation Checklist Count:",
-    t("visitValidation.checklist.count", {
-      completed: completedItems,
-      total: totalItems,
-    })
-  );
-  console.log(
-    "Translation Photos Count:",
-    t("visitValidation.photos.count", { count: photos.length })
-  );
 
   // Fallbacks for interpolated translations
   const checklistCount =
@@ -294,9 +282,8 @@ const VisitValidation: React.FC = () => {
 
   return (
     <div
-      className={`visit-validation-container ${
-        isCameraActive ? "camera-active" : ""
-      }`}
+      className={`visit-validation-container ${isCameraActive ? "camera-active" : ""
+        }`}
     >
       {!isCameraActive && (
         <header className="visit-header-0">
@@ -359,12 +346,6 @@ const VisitValidation: React.FC = () => {
                     t("visitValidation.checklist.itemLabel", {
                       item: item.item,
                     }) || item.item;
-                  console.log(
-                    "Checklist Item Label:",
-                    t("visitValidation.checklist.itemLabel", {
-                      item: item.item,
-                    })
-                  );
                   return (
                     <li key={item.id} className={item.checked ? "checked" : ""}>
                       <label className="custom-checkbox-label">
@@ -474,10 +455,6 @@ const VisitValidation: React.FC = () => {
                   t("visitValidation.photos.capturedAlt", {
                     index: index + 1,
                   }) || `Captured photo ${index + 1}`;
-                console.log(
-                  "Photo Preview Aria:",
-                  t("visitValidation.aria.previewPhoto", { index: index + 1 })
-                );
                 return (
                   <div key={index} className="photo-container">
                     <img

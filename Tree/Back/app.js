@@ -28,8 +28,10 @@ const app = express();
 
 // Define allowed origins for CORS
 const allowedOrigins = [
-    process.env.FRONTEND_URL || 'http://localhost:5173',
-    'http://192.168.1.16:5000',
+    process.env.FRONTEND_URL,
+    process.env.FRONTEND_URL1,
+    process.env.FRONTEND_URL2,
+    'https://28f6-102-157-68-225.ngrok-free.app'
 ];
 
 // Configure CORS
@@ -60,7 +62,7 @@ const checklistRoutes = require('./routes/checklistRoutes');
 const permissionRoutes = require('./routes/permissionRoutes');
 const reasonRoutes = require('./routes/reasonRoutes');
 const receiptBookRoutes = require('./routes/receiptBookRoutes');
-const receiptStubRoutes = require('./routes/receiptStubRoutes');
+const receiptstubRoutes = require('./routes/receiptStubRoutes');
 const roleRoutes = require('./routes/roleRoutes');
 const timesheetRoutes = require('./routes/timesheetRoutes');
 const userRoutes = require('./routes/userRoutes');
@@ -78,7 +80,7 @@ app.use('/api/reasons', authenticateCookie, reasonRoutes);
 app.use('/api/timesheets', authenticateCookie, timesheetRoutes);
 app.use('/api/agents', authenticateCookie, agentRoutes);
 app.use('/api/receipt-books', authenticateCookie, receiptBookRoutes);
-app.use('/api/receipt-stubs', authenticateCookie, receiptStubRoutes);
+app.use('/api/receipt-stubs', authenticateCookie, receiptstubRoutes);
 app.use('/api/notifications', authenticateCookie, notificationRoutes);
 
 // Test endpoint

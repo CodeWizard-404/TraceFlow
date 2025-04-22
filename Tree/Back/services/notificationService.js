@@ -100,13 +100,59 @@ class NotificationService {
         }
     }
 
+    static async createDefaultDisabledRule({ event, data, metadata = {} }) {
+        try {
+            // Validate input
+            if (!event || !data) {
+                logger.error(`Cannot create default rule: Missing event or data`);
+                return null;
+            }
+
+            const defaultRule = {
+                event,
+                type: data.type || 'general',
+                recipients: {
+                    roles: ['admin'], // Default to admin role; adjust as needed
+                    userIDs: []
+                },
+                channels: {
+                    websocket: true,
+                    email: false,
+                    sms: false,
+                    inApp: true
+                },
+                conditions: data.conditions || null,
+                messageTemplate: `Notification for ${event}: ${JSON.stringify(data)}`,
+                enabled: false // Rule is created disabled
+            };
+
+            logger.debug(`Creating default disabled rule with data: ${JSON.stringify(defaultRule)}`);
+
+            const rule = await NotificationRule.create(defaultRule);
+            logger.info(`Created default disabled notification rule for event: ${event}, ruleID: ${rule.ruleID}`);
+            return rule;
+        } catch (error) {
+            logger.error(`Error creating default disabled rule for event ${event}: ${error.message}`);
+            return null;
+        }
+    }
+
     // Trigger notifications based on NotificationRule
     static async triggerNotification({ event, data, metadata = {} }) {
         try {
-            const rules = await NotificationRule.findAll({ where: { event, enabled: true } });
+            let rules = await NotificationRule.findAll({ where: { event, enabled: true } });
+
+            // If no active rules, create a default disabled rule
             if (!rules.length) {
                 logger.info(`No active rules found for event: ${event}`);
-                return [];
+                logger.debug(`Attempting to create default disabled rule for event: ${event}`);
+                const defaultRule = await this.createDefaultDisabledRule({ event, data, metadata });
+                if (defaultRule) {
+                    logger.info(`Created disabled rule for event: ${event}, ruleID: ${defaultRule.ruleID}`);
+                } else {
+                    logger.warn(`Failed to create default disabled rule for event: ${event}`);
+                }
+                return []; // Return empty results since no active rules exist
             }
 
             const results = [];

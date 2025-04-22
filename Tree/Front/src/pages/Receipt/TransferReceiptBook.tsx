@@ -809,7 +809,7 @@ const TransferReceiptBook: React.FC = () => {
             {!forceAgent && (
               <div className="form-group">
                 <label htmlFor="recipientType">
-                  {t("transferReceiptBook.form.labels.recipientType")}
+                  {t("transferReceiptBook.form.recipientType")}
                 </label>
                 <select
                   id="recipientType"
@@ -857,7 +857,7 @@ const TransferReceiptBook: React.FC = () => {
                 {recipientType === "Agent" && !forceAgent && (
                   <div className="form-group">
                     <label htmlFor="agentPhone">
-                      {t("transferReceiptBook.form.labels.agentSelection")}
+                      {t("transferReceiptBook.form.agentSelection")}
                     </label>
                     <input
                       id="agentPhone"
@@ -875,7 +875,7 @@ const TransferReceiptBook: React.FC = () => {
                       <>
                         <p>{t("transferReceiptBook.form.or")}</p>
                         <label htmlFor="agentLocation">
-                          {t("transferReceiptBook.form.labels.location")}
+                          {t("transferReceiptBook.form.location")}
                         </label>
                         <select
                           id="agentLocation"
@@ -899,9 +899,7 @@ const TransferReceiptBook: React.FC = () => {
                         {selectedLocation && (
                           <>
                             <label htmlFor="agentSearch">
-                              {t(
-                                "transferReceiptBook.form.labels.searchAgents"
-                              )}
+                              {t("transferReceiptBook.form.searchAgents")}
                             </label>
                             <input
                               id="agentSearch"
@@ -916,7 +914,7 @@ const TransferReceiptBook: React.FC = () => {
                               )}
                             />
                             <label htmlFor="agentSelect">
-                              {t("transferReceiptBook.form.labels.selectAgent")}
+                              {t("transferReceiptBook.form.selectAgent")}
                             </label>
                             <select
                               id="agentSelect"
@@ -947,7 +945,7 @@ const TransferReceiptBook: React.FC = () => {
                         {agents.find((a) => a.agentID === recipientID)?.name +
                           " " +
                           agents.find((a) => a.agentID === recipientID)
-                            ?.lastname || t("transferReceiptBook.form.loading")}
+                            ?.lastname || t("transferReceiptBook.loading")}
                       </p>
                     )}
                   </div>
@@ -956,7 +954,7 @@ const TransferReceiptBook: React.FC = () => {
                   <>
                     <div className="form-group">
                       <label htmlFor="supplierEmail">
-                        {t("transferReceiptBook.form.labels.supplierEmail")}
+                        {t("transferReceiptBook.form.supplierEmail")}
                       </label>
                       <input
                         id="supplierEmail"
@@ -974,7 +972,7 @@ const TransferReceiptBook: React.FC = () => {
                     </div>
                     <div className="form-group book-selection-section">
                       <label htmlFor="bookSearch">
-                        {t("transferReceiptBook.form.labels.selectBooks")}
+                        {t("transferReceiptBook.form.selectBooks")}
                       </label>
                       <input
                         id="bookSearch"
@@ -1082,12 +1080,9 @@ const TransferReceiptBook: React.FC = () => {
                   recipientType !== "Collect from Supplier" && (
                     <div className="form-group">
                       <label htmlFor="recipientSearch">
-                        {t(
-                          "transferReceiptBook.form.labels.recipientSelection",
-                          {
-                            type: recipientType,
-                          }
-                        )}
+                        {t("transferReceiptBook.form.recipientSelection", {
+                          type: recipientType,
+                        })}
                       </label>
                       <input
                         id="recipientSearch"
@@ -1102,7 +1097,7 @@ const TransferReceiptBook: React.FC = () => {
                         )}
                       />
                       <label htmlFor="recipientSelect">
-                        {t("transferReceiptBook.form.labels.selectRecipient", {
+                        {t("transferReceiptBook.form.selectRecipient", {
                           type: recipientType,
                         })}
                       </label>
@@ -1151,13 +1146,13 @@ const TransferReceiptBook: React.FC = () => {
                   forceAgent && (
                     <div className="form-group">
                       <label>
-                        {t("transferReceiptBook.form.labels.selectedAgent")}
+                        {t("transferReceiptBook.form.selectedAgent")}
                       </label>
                       <p>
                         {agents.find((a) => a.agentID === recipientID)?.name +
                           " " +
                           agents.find((a) => a.agentID === recipientID)
-                            ?.lastname || t("transferReceiptBook.form.loading")}
+                            ?.lastname || t("transferReceiptBook.loading")}
                       </p>
                     </div>
                   )}
@@ -1170,10 +1165,10 @@ const TransferReceiptBook: React.FC = () => {
                     <div className="form-group qr-section">
                       <label>
                         {recipientType === "Collect from Supplier"
-                          ? t("transferReceiptBook.form.labels.scanCollect")
+                          ? t("transferReceiptBook.form.scanCollect")
                           : recipientType === "Stub Collection"
-                          ? t("transferReceiptBook.form.labels.scanStub")
-                          : t("transferReceiptBook.form.labels.scanQR")}
+                          ? t("transferReceiptBook.form.scanStub")
+                          : t("transferReceiptBook.form.scanQR")}
                       </label>
                       {error && (
                         <div className="error-above-camera">{error}</div>
@@ -1229,7 +1224,7 @@ const TransferReceiptBook: React.FC = () => {
                         </ul>
                         {scannedQR.length > 0 && (
                           <p>
-                            {t("transferReceiptBook.form.scannedQRs", {
+                            {t("transferReceiptBook.list.scannedQRs", {
                               count: scannedQR.length,
                             })}
                           </p>
@@ -1282,13 +1277,13 @@ const TransferReceiptBook: React.FC = () => {
               recipientType !== "Collect from Supplier" && (
                 <div className="form-group">
                   <div className="otp-timer">
-                    {t("transferReceiptBook.form.otpTimer")}:{" "}
+                    {t("transferReceiptBook.otpTimer")}:{" "}
                     <span className={otpTimer <= 30 ? "timer-warning" : ""}>
                       {formatTime(otpTimer)}
                     </span>
                   </div>
                   <label htmlFor="otpInput">
-                    {t("transferReceiptBook.form.labels.otp", {
+                    {t("transferReceiptBook.form.otp", {
                       type: recipientType,
                       details: recipientDetails,
                     })}
@@ -1324,14 +1319,16 @@ const TransferReceiptBook: React.FC = () => {
                 className="validate-btn"
                 aria-label={
                   recipientType === "Stub Collection"
-                    ? t("transferReceiptBook.actions.aria.validateStub")
-                    : t("transferReceiptBook.actions.aria.validate")
+                    ? t(
+                        "transferReceiptBook.actions.aria.validateStubCollection"
+                      )
+                    : t("transferReceiptBook.actions.aria.validateTransfer")
                 }
               >
                 <FaCheck aria-hidden="true" />{" "}
                 {recipientType === "Stub Collection"
-                  ? t("transferReceiptBook.actions.validateStub")
-                  : t("transferReceiptBook.actions.validate")}
+                  ? t("transferReceiptBook.actions.validateStubCollection")
+                  : t("transferReceiptBook.actions.validateTransfer")}
               </button>
             </div>
           </form>

@@ -125,7 +125,7 @@ class AuthController {
         try {
             const cookieOptions = {
                 path: '/',
-                sameSite: 'Lax',
+                sameSite: process.env.NODE_ENV === 'development' ? 'Lax' : 'Strict',
                 secure: process.env.NODE_ENV === 'production',
             };
             res.clearCookie('accessToken', cookieOptions);
