@@ -2,10 +2,10 @@
 interface Notification {
     notificationID: string;
     userID: string;
-    type: 'timesheet' | 'receipt' | 'visit' | 'anomaly' | 'general';
+    type: string; // e.g., 'general', 'timesheet', or any admin-defined type
     message: string;
     status: 'pending' | 'sent' | 'read' | 'failed';
-    channel: 'websocket' | 'email' | 'sms' | 'in-app';
+    channel: 'websocket' | 'email' | 'sms' | 'inApp';
     createdAt: Date;
     updatedAt: Date;
 }

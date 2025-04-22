@@ -556,3 +556,173 @@ body.dark .activity-subtext {
 body.dark .field-error {
     color: #ff717d !important;
 }
+
+
+
+
+
+
+/* Base styles for notification panel */
+.notification-panel {
+    background-color: #ffffff;
+    color: #1f2937;
+    border-radius: 0.5rem;
+    box-shadow: 0 4px 6px rgba(0, 0, 0, 0.1);
+    border: 1px solid #e5e7eb;
+    padding: 1rem;
+    max-width: 28rem;
+    width: 100%;
+}
+
+.dark .notification-panel {
+    background-color: #1f2937;
+    color: #f3f4f6;
+    border-color: #374151;
+}
+
+/* Notification item styles */
+.notification-item {
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    padding: 0.75rem;
+    border-radius: 0.375rem;
+}
+
+.notification-item.read {
+    background-color: #f3f4f6;
+}
+
+.dark .notification-item.read {
+    background-color: #374151;
+}
+
+.notification-item.timesheet {
+    border-left: 4px solid #3b82f6;
+}
+
+.notification-item.receipt {
+    border-left: 4px solid #22c55e;
+}
+
+.notification-item.visit {
+    border-left: 4px solid #8b5cf6;
+}
+
+.notification-item.anomaly {
+    border-left: 4px solid #ef4444;
+}
+
+.notification-item.general {
+    border-left: 4px solid #6b7280;
+}
+
+.notification-content {
+    flex: 1;
+}
+
+.notification-content .message {
+    font-size: 0.875rem;
+    font-weight: 500;
+    color: #1f2937;
+}
+
+.dark .notification-content .message {
+    color: #f3f4f6;
+}
+
+.notification-content .timestamp {
+    font-size: 0.75rem;
+    color: #6b7280;
+}
+
+.dark .notification-content .timestamp {
+    color: #9ca3af;
+}
+
+.notification-action {
+    font-size: 0.75rem;
+    color: #2563eb;
+}
+
+.notification-action:hover {
+    color: #1d4ed8;
+}
+
+.dark .notification-action {
+    color: #60a5fa;
+}
+
+.dark .notification-action:hover {
+    color: #3b82f6;
+}
+
+/* Toast styles */
+.toast {
+    position: fixed;
+    bottom: 1rem;
+    right: 1rem;
+    max-width: 20rem;
+    background-color: #ffffff;
+    color: #1f2937;
+    border-radius: 0.5rem;
+    box-shadow: 0 4px 6px rgba(0, 0, 0, 0.1);
+    padding: 1rem;
+    border: 1px solid #e5e7eb;
+    z-index: 50;
+}
+
+.dark .toast {
+    background-color: #1f2937;
+    color: #f3f4f6;
+    border-color: #374151;
+}
+
+.toast.otp {
+    background-color: #fef3c7;
+    border-color: #f59e0b;
+}
+
+.toast.general {
+    background-color: #e0f2fe;
+    border-color: #0ea5e9;
+}
+
+.toast.anomaly {
+    background-color: #fee2e2;
+    border-color: #ef4444;
+}
+
+.dark .toast.otp {
+    background-color: #78350f;
+    border-color: #d97706;
+}
+
+.dark .toast.general {
+    background-color: #164e63;
+    border-color: #0891b2;
+}
+
+.dark .toast.anomaly {
+    background-color: #7f1d1d;
+    border-color: #dc2626;
+}
+
+.toast-content .message {
+    font-size: 0.875rem;
+    font-weight: 500;
+    color: #1f2937;
+}
+
+.dark .toast-content .message {
+    color: #f3f4f6;
+}
+
+.toast-content .timestamp {
+    font-size: 0.75rem;
+    color: #6b7280;
+}
+
+.dark .toast-content .timestamp {
+    color: #9ca3af;
+}

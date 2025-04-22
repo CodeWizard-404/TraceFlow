@@ -11,18 +11,22 @@ export default defineConfig({
     },
   },
   server: {
+    port: parseInt(process.env.PORT || '5173'),
     proxy: {
       '/api': {
-        target: 'http://192.168.0.101:5000',
+        target: process.env.VITE_API_URL || 'http://localhost:5000',
         changeOrigin: true,
         secure: false,
       },
       '/socket.io': {
-        target: 'http://192.168.0.101:5000',
+        target: process.env.VITE_API_URL || 'http://localhost:5000',
         ws: true,
         changeOrigin: true,
         secure: false,
       },
     },
+  },
+  css: {
+    postcss: './postcss.config.js',
   },
 });

@@ -2,10 +2,10 @@
 interface NotificationRule {
     ruleID: string;
     event: string; // e.g., 'user:created', 'timesheet:reminder'
-    type: string; // e.g., 'timesheet', 'receipt', 'general'
+    type: string; // e.g., 'general', 'timesheet', or any admin-defined type
     recipients: {
         roles?: string[]; // e.g., ['manager', 'supervisor']
-        userIDs?: string[]; // CEREBRO: e.g., ['user_123']
+        userIDs?: string[]; // e.g., ['user_123']
     };
     channels: {
         websocket: boolean;

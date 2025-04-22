@@ -1,11 +1,11 @@
-import React, { useMemo, useEffect, useCallback, useState } from "react";
-import { FaTrash, FaEdit, FaChevronDown, FaChevronUp } from "react-icons/fa";
-import { motion, AnimatePresence } from "framer-motion";
-import { debounce } from "lodash";
-import NotificationRule from "../../../models/NotificationRule";
-import { ViewMode } from "../adminTypes";
-import { updateNotificationRule, deleteNotificationRule } from "../../../apis/notificationAPI";
-import "../AdminDashboard.css";
+import React, { useMemo, useEffect, useCallback, useState } from 'react';
+import { FaTrash, FaEdit, FaChevronDown, FaChevronUp } from 'react-icons/fa';
+import { motion, AnimatePresence } from 'framer-motion';
+import { debounce } from 'lodash';
+import NotificationRule from '../../../models/NotificationRule';
+import { updateNotificationRule, deleteNotificationRule, getNotificationRules } from '../../../apis/notificationAPI';
+import { ViewMode } from '../adminTypes';
+import '../AdminDashboard.css';
 
 interface NotificationRulesListProps {
     rules: NotificationRule[];
@@ -36,7 +36,7 @@ const rowVariants = {
 
 const detailsVariants = {
     hidden: { height: 0, opacity: 0 },
-    visible: { height: "auto", opacity: 1, transition: { duration: 0.3, ease: "easeOut" } },
+    visible: { height: 'auto', opacity: 1, transition: { duration: 0.3, ease: 'easeOut' } },
     exit: { height: 0, opacity: 0, transition: { duration: 0.2 } },
 };
 
@@ -61,6 +61,25 @@ const NotificationRulesList: React.FC<NotificationRulesListProps> = React.memo(
         const [internalSearchQuery, setInternalSearchQuery] = useState(searchQuery);
         const [loading, setLoading] = useState(true);
         const [expandedRows, setExpandedRows] = useState<string[]>([]);
+        const [, setNotificationTypes] = useState<string[]>([]);
+
+        useEffect(() => {
+            const fetchTypes = async () => {
+                try {
+                    const rulesData = await getNotificationRules();
+                    const types = [...new Set(rulesData.map((rule) => rule.type.toLowerCase()))].filter(
+                        (type): type is string => !!type
+                    );
+                    setNotificationTypes(['all', ...types]);
+                } catch (err) {
+                    console.error('Failed to fetch notification types:', err);
+                    setNotificationTypes(['all', 'general']);
+                }
+            };
+            fetchTypes();
+            const timer = setTimeout(() => setLoading(false), SKELETON_DELAY);
+            return () => clearTimeout(timer);
+        }, []);
 
         const debouncedSetSearchQuery = useCallback(
             debounce((value: string) => setInternalSearchQuery(value), 300),
@@ -72,11 +91,6 @@ const NotificationRulesList: React.FC<NotificationRulesListProps> = React.memo(
             return () => debouncedSetSearchQuery.cancel();
         }, [searchQuery, debouncedSetSearchQuery]);
 
-        useEffect(() => {
-            const timer = setTimeout(() => setLoading(false), SKELETON_DELAY);
-            return () => clearTimeout(timer);
-        }, []);
-
         const filteredRules = useMemo(() => {
             let filtered = rules.filter(
                 (rule) =>
@@ -85,30 +99,30 @@ const NotificationRulesList: React.FC<NotificationRulesListProps> = React.memo(
                     rule.messageTemplate.toLowerCase().includes(internalSearchQuery.toLowerCase())
             );
 
-            if (typeFilter !== "all") {
+            if (typeFilter !== 'all') {
                 filtered = filtered.filter((rule) => rule.type.toLowerCase() === typeFilter.toLowerCase());
             }
 
-            if (channelFilter !== "all") {
+            if (channelFilter !== 'all') {
                 filtered = filtered.filter((rule) => rule.channels[channelFilter as keyof typeof rule.channels]);
             }
 
-            if (statusFilter !== "all") {
-                filtered = filtered.filter((rule) => rule.enabled === (statusFilter === "enabled"));
+            if (statusFilter !== 'all') {
+                filtered = filtered.filter((rule) => rule.enabled === (statusFilter === 'enabled'));
             }
 
             if (sortField) {
                 filtered.sort((a, b) => {
-                    if (sortField === "event") {
-                        return sortOrder === "asc"
+                    if (sortField === 'event') {
+                        return sortOrder === 'asc'
                             ? a.event.localeCompare(b.event)
                             : b.event.localeCompare(a.event);
-                    } else if (sortField === "type") {
-                        return sortOrder === "asc"
+                    } else if (sortField === 'type') {
+                        return sortOrder === 'asc'
                             ? a.type.localeCompare(b.type)
                             : b.type.localeCompare(a.type);
-                    } else if (sortField === "enabled") {
-                        return sortOrder === "asc"
+                    } else if (sortField === 'enabled') {
+                        return sortOrder === 'asc'
                             ? Number(a.enabled) - Number(b.enabled)
                             : Number(b.enabled) - Number(a.enabled);
                     }
@@ -140,7 +154,7 @@ const NotificationRulesList: React.FC<NotificationRulesListProps> = React.memo(
         const handleEditRule = useCallback(
             (rule: NotificationRule) => {
                 setSelectedRule(rule);
-                setView("notification-rule-details");
+                setView('notification-rule-details');
             },
             [setSelectedRule, setView]
         );
@@ -155,10 +169,10 @@ const NotificationRulesList: React.FC<NotificationRulesListProps> = React.memo(
                     setRules((prev) =>
                         prev.map((r) => (r.ruleID === updatedRule.ruleID ? updatedRule : r))
                     );
-                    setError(`Rule ${updatedRule.enabled ? "enabled" : "disabled"} successfully`);
+                    setError(`Rule ${updatedRule.enabled ? 'enabled' : 'disabled'} successfully`);
                 } catch (err: unknown) {
-                    console.error("Failed to update rule:", err);
-                    setError("Failed to update rule");
+                    console.error('Failed to update rule:', err);
+                    setError('Failed to update rule');
                 }
             },
             [setRules, setError]
@@ -166,15 +180,15 @@ const NotificationRulesList: React.FC<NotificationRulesListProps> = React.memo(
 
         const handleDeleteRule = useCallback(
             async (ruleID: string) => {
-                if (!window.confirm("Are you sure you want to delete this notification rule?")) return;
+                if (!window.confirm('Are you sure you want to delete this notification rule?')) return;
                 try {
                     await deleteNotificationRule(ruleID);
                     setRules((prev) => prev.filter((r) => r.ruleID !== ruleID));
                     setExpandedRows((prev) => prev.filter((id) => id !== ruleID));
-                    setError("Notification rule deleted successfully");
+                    setError('Notification rule deleted successfully');
                 } catch (err: unknown) {
-                    console.error("Failed to delete notification rule:", err);
-                    setError("Failed to delete notification rule");
+                    console.error('Failed to delete notification rule:', err);
+                    setError('Failed to delete notification rule');
                 }
             },
             [setRules, setError]
@@ -192,15 +206,15 @@ const NotificationRulesList: React.FC<NotificationRulesListProps> = React.memo(
                         transition={{ delay: i * 0.1 }}
                     >
                         <div className="rule-header">
-                            <div className="custom-skeleton pulsing" style={{ width: "200px", height: "20px" }} />
-                            <div className="custom-skeleton pulsing" style={{ width: "80px", height: "20px" }} />
+                            <div className="custom-skeleton pulsing" style={{ width: '200px', height: '20px' }} />
+                            <div className="custom-skeleton pulsing" style={{ width: '80px', height: '20px' }} />
                         </div>
                     </motion.div>
                 ))}
             </div>
         );
 
-        if (view !== "notifications") return null;
+        if (view !== 'notifications') return null;
 
         return (
             <div className="table-card">
@@ -253,28 +267,27 @@ const NotificationRulesList: React.FC<NotificationRulesListProps> = React.memo(
                                                         initial="hidden"
                                                         animate="visible"
                                                         exit="exit"
-                                                        style={{ display: "flex", alignItems: "flex-start" }}
+                                                        style={{ display: 'flex', alignItems: 'flex-start' }}
                                                     >
-
                                                         <div className="rule-details-content">
                                                             <p>
-                                                                <strong>Channels:</strong>{" "}
+                                                                <strong>Channels:</strong>{' '}
                                                                 {Object.entries(rule.channels)
                                                                     .filter(([, enabled]) => enabled)
                                                                     .map(([channel]) => channel)
-                                                                    .join(", ") || "None"}
+                                                                    .join(', ') || 'None'}
                                                             </p>
                                                             <p>
-                                                                <strong>Roles:</strong>{" "}
-                                                                {rule.recipients.roles?.join(", ") || "None"}
+                                                                <strong>Roles:</strong>{' '}
+                                                                {rule.recipients.roles?.join(', ') || 'None'}
                                                             </p>
                                                             <p>
-                                                                <strong>Message:</strong>{" "}
+                                                                <strong>Message:</strong>{' '}
                                                                 {rule.messageTemplate.slice(0, 50)}
-                                                                {rule.messageTemplate.length > 50 ? "..." : ""}
+                                                                {rule.messageTemplate.length > 50 ? '...' : ''}
                                                             </p>
                                                         </div>
-                                                        <div className="rule-actions compact" >
+                                                        <div className="rule-actions compact">
                                                             <motion.button
                                                                 className="action-button compact edit-button"
                                                                 onClick={(e) => {
