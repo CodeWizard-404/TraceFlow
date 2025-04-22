@@ -871,6 +871,7 @@
         "filterByRole": "التصفية حسب الدور",
         "allRoles": "جميع الأدوار",
         "addUser": "إضافة مستخدم",
+        "resetRoles": "إعادة تعيين الأدوار",
         "addRole": "إضافة دور",
         "addPermission": "إضافة إذن",
         "addChecklist": "إضافة قائمة تحقق",

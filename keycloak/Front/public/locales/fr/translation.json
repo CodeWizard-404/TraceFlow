@@ -870,6 +870,7 @@
       "allRoles": "Tous les rôles",
       "addUser": "Ajouter un utilisateur",
       "addRole": "Ajouter un rôle",
+      "resetRoles": "Réinitialiser les rôles",
       "addPermission": "Ajouter une permission",
       "addChecklist": "Ajouter une liste de contrôle",
       "addReason": "Ajouter un motif"

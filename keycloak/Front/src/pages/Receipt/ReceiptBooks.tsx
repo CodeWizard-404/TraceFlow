@@ -28,12 +28,15 @@ import "../Admin/AdminDashboard.css";
 // Constants for permissions and roles
 const PERMISSIONS = {
   ACCESS_RECEIPT_BOOKS: import.meta.env.VITE_PERMISSIONS_ACCESS_RECEIPT_BOOKS,
-  ACCESS_RECEIPT_BOOK_DETAILS: import.meta.env.VITE_PERMISSIONS_ACCESS_RECEIPT_BOOK_DETAILS,
-  ACCESS_RECEIPT_BOOK_HISTORY: import.meta.env.VITE_PERMISSIONS_ACCESS_RECEIPT_BOOK_HISTORY,
+  ACCESS_RECEIPT_BOOK_DETAILS: import.meta.env
+    .VITE_PERMISSIONS_ACCESS_RECEIPT_BOOK_DETAILS,
+  ACCESS_RECEIPT_BOOK_HISTORY: import.meta.env
+    .VITE_PERMISSIONS_ACCESS_RECEIPT_BOOK_HISTORY,
   CREATE_RECEIPT_BOOKS: import.meta.env.VITE_PERMISSIONS_CREATE_RECEIPT_BOOKS,
   UPDATE_RECEIPT_BOOKS: import.meta.env.VITE_PERMISSIONS_UPDATE_RECEIPT_BOOKS,
   DELETE_RECEIPT_BOOKS: import.meta.env.VITE_PERMISSIONS_DELETE_RECEIPT_BOOKS,
-  TRANSFER_RECEIPT_BOOKS: import.meta.env.VITE_PERMISSIONS_TRANSFER_RECEIPT_BOOKS,
+  TRANSFER_RECEIPT_BOOKS: import.meta.env
+    .VITE_PERMISSIONS_TRANSFER_RECEIPT_BOOKS,
 };
 
 // Roles for user capabilities
@@ -94,13 +97,27 @@ const ReceiptBooksList: React.FC<{
         {/* Table header */}
         <div className="table-head">
           <div className="table-row-0 table-row-1">
-            <div className="table-cell">{t("receiptBooks.table.headers.number")}</div>
-            <div className="table-cell">{t("receiptBooks.table.headers.type")}</div>
-            <div className="table-cell">{t("receiptBooks.table.headers.bookStatus")}</div>
-            <div className="table-cell">{t("receiptBooks.table.headers.stubStatus")}</div>
-            <div className="table-cell">{t("receiptBooks.table.headers.holder")}</div>
-            <div className="table-cell">{t("receiptBooks.table.headers.qrCode")}</div>
-            <div className="table-cell">{t("receiptBooks.table.headers.actions")}</div>
+            <div className="table-cell">
+              {t("receiptBooks.table.headers.number")}
+            </div>
+            <div className="table-cell">
+              {t("receiptBooks.table.headers.type")}
+            </div>
+            <div className="table-cell">
+              {t("receiptBooks.table.headers.bookStatus")}
+            </div>
+            <div className="table-cell">
+              {t("receiptBooks.table.headers.stubStatus")}
+            </div>
+            <div className="table-cell">
+              {t("receiptBooks.table.headers.holder")}
+            </div>
+            <div className="table-cell">
+              {t("receiptBooks.table.headers.qrCode")}
+            </div>
+            <div className="table-cell">
+              {t("receiptBooks.table.headers.actions")}
+            </div>
           </div>
         </div>
         {/* Table body */}
@@ -116,16 +133,19 @@ const ReceiptBooksList: React.FC<{
                   })}
                 </div>
                 <div className="table-cell">
-                  {t(`common.receiptBookStatuses.${receipt.status.toLowerCase()}`, {
-                    defaultValue: receipt.status,
-                  })}
+                  {t(
+                    `common.receiptBookStatuses.${receipt.status.toLowerCase()}`,
+                    {
+                      defaultValue: receipt.status,
+                    }
+                  )}
                 </div>
                 <div className="table-cell">
                   {receipt.ReceiptStub?.status
                     ? t(
-                      `common.receiptBookStatuses.${receipt.ReceiptStub.status.toLowerCase()}`,
-                      { defaultValue: receipt.ReceiptStub.status }
-                    )
+                        `common.receiptBookStatuses.${receipt.ReceiptStub.status.toLowerCase()}`,
+                        { defaultValue: receipt.ReceiptStub.status }
+                      )
                     : t("receiptBooks.table.na")}
                 </div>
                 <div className="table-cell">
@@ -133,13 +153,19 @@ const ReceiptBooksList: React.FC<{
                     holdersMap.has(receipt.agentID) ? (
                       holdersMap.get(receipt.agentID)
                     ) : (
-                      <div className="custom-skeleton" style={{ width: "100px" }} />
+                      <div
+                        className="custom-skeleton"
+                        style={{ width: "100px" }}
+                      />
                     )
                   ) : receipt.currentHolderID ? (
                     holdersMap.has(receipt.currentHolderID) ? (
                       holdersMap.get(receipt.currentHolderID)
                     ) : (
-                      <div className="custom-skeleton" style={{ width: "100px" }} />
+                      <div
+                        className="custom-skeleton"
+                        style={{ width: "100px" }}
+                      />
                     )
                   ) : (
                     t("receiptBooks.table.na")
@@ -180,7 +206,9 @@ const ReceiptBooksList: React.FC<{
                   {/* History button */}
                   {userPermissions.canViewHistory && (
                     <button
-                      onClick={() => navigate(`/receipt-book/${receipt.bookID}/history`)}
+                      onClick={() =>
+                        navigate(`/receipt-book/${receipt.bookID}/history`)
+                      }
                       aria-label={t("receiptBooks.actions.aria.history", {
                         number: receipt.number,
                       })}
@@ -257,8 +285,8 @@ const ReceiptBookForm: React.FC<{
           maxLength={6}
           pattern="[0-9]*"
           inputMode="numeric"
-          placeholder={t("receiptBooks.form.placeholders.enterNumber")}
-          aria-label={t("receiptBooks.form.placeholders.enterNumber")}
+          placeholder={t("receiptBooks.form.placeholders.number")}
+          aria-label={t("receiptBooks.form.placeholders.number")}
         />
       </div>
       <div className="form-group">
@@ -269,19 +297,23 @@ const ReceiptBookForm: React.FC<{
         <select
           id={isEdit ? "editType" : "newType"}
           value={receiptBook.type || ""}
-          onChange={(e) => setReceiptBook({ ...receiptBook, type: e.target.value })}
-          aria-label={t("receiptBooks.form.placeholders.selectType")}
+          onChange={(e) =>
+            setReceiptBook({ ...receiptBook, type: e.target.value })
+          }
+          aria-label={t("receiptBooks.form.placeholders.type")}
         >
           {!isEdit && (
             <option value="" disabled>
-              {t("receiptBooks.form.placeholders.selectType")}
+              {t("receiptBooks.form.placeholders.type")}
             </option>
           )}
-          {Object.keys(t("receiptBooks.types", { returnObjects: true })).map((key) => (
-            <option key={key} value={key}>
-              {t(`receiptBooks.types.${key}`)}
-            </option>
-          ))}
+          {Object.keys(t("receiptBooks.types", { returnObjects: true })).map(
+            (key) => (
+              <option key={key} value={key}>
+                {t(`receiptBooks.types.${key}`)}
+              </option>
+            )
+          )}
         </select>
       </div>
       <div className="form-actions">
@@ -289,9 +321,15 @@ const ReceiptBookForm: React.FC<{
         <button
           className="action-button-0"
           onClick={handleSubmit}
-          aria-label={t(isEdit ? "receiptBooks.actions.aria.save" : "receiptBooks.actions.aria.create")}
+          aria-label={t(
+            isEdit
+              ? "receiptBooks.actions.aria.save"
+              : "receiptBooks.actions.aria.create"
+          )}
         >
-          {t(isEdit ? "receiptBooks.actions.save" : "receiptBooks.actions.create")}
+          {t(
+            isEdit ? "receiptBooks.actions.save" : "receiptBooks.actions.create"
+          )}
         </button>
         {/* Cancel button */}
         <button
@@ -324,13 +362,27 @@ const ReceiptBooksSkeleton: React.FC = () => (
       {/* Skeleton header */}
       <div className="table-head">
         <div className="table-row-0 table-row-1">
-          <div className="table-cell">{t("receiptBooks.table.headers.number")}</div>
-          <div className="table-cell">{t("receiptBooks.table.headers.type")}</div>
-          <div className="table-cell">{t("receiptBooks.table.headers.bookStatus")}</div>
-          <div className="table-cell">{t("receiptBooks.table.headers.stubStatus")}</div>
-          <div className="table-cell">{t("receiptBooks.table.headers.holder")}</div>
-          <div className="table-cell">{t("receiptBooks.table.headers.qrCode")}</div>
-          <div className="table-cell">{t("receiptBooks.table.headers.actions")}</div>
+          <div className="table-cell">
+            {t("receiptBooks.table.headers.number")}
+          </div>
+          <div className="table-cell">
+            {t("receiptBooks.table.headers.type")}
+          </div>
+          <div className="table-cell">
+            {t("receiptBooks.table.headers.bookStatus")}
+          </div>
+          <div className="table-cell">
+            {t("receiptBooks.table.headers.stubStatus")}
+          </div>
+          <div className="table-cell">
+            {t("receiptBooks.table.headers.holder")}
+          </div>
+          <div className="table-cell">
+            {t("receiptBooks.table.headers.qrCode")}
+          </div>
+          <div className="table-cell">
+            {t("receiptBooks.table.headers.actions")}
+          </div>
         </div>
       </div>
       {/* Skeleton rows */}
@@ -370,23 +422,32 @@ const ReceiptBooks: React.FC = memo(() => {
   // Navigation hook
   const navigate = useNavigate();
   // Authentication context
-  const { effectivePermissions, userRoles, permissionsLoaded, user } = useAuth();
+  const { effectivePermissions, userRoles, permissionsLoaded, user } =
+    useAuth();
   // Translation hook
   const { t } = useTranslation();
 
   // State declarations
-  const [receiptBooksCache, setReceiptBooksCache] = useState<ReceiptBooksCache>({
-    data: [],
-    timestamp: 0,
-  });
+  const [receiptBooksCache, setReceiptBooksCache] = useState<ReceiptBooksCache>(
+    {
+      data: [],
+      timestamp: 0,
+    }
+  );
   const [view, setView] = useState<"list" | "create" | "edit">("list");
   const [searchQuery, setSearchQuery] = useState("");
-  const [sortField, setSortField] = useState<"number" | "type" | "status">("number");
+  const [sortField, setSortField] = useState<"number" | "type" | "status">(
+    "number"
+  );
   const [sortOrder, setSortOrder] = useState<"asc" | "desc">("asc");
   const [filterType, setFilterType] = useState<string>("all");
   const [filterStatus, setFilterStatus] = useState<string>("all");
-  const [newReceiptBook, setNewReceiptBook] = useState<Partial<ReceiptBook>>({});
-  const [editReceiptBook, setEditReceiptBook] = useState<ReceiptBook | null>(null);
+  const [newReceiptBook, setNewReceiptBook] = useState<Partial<ReceiptBook>>(
+    {}
+  );
+  const [editReceiptBook, setEditReceiptBook] = useState<ReceiptBook | null>(
+    null
+  );
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState<string | null>(null);
   const [currentPage, setCurrentPage] = useState(1);
@@ -402,19 +463,34 @@ const ReceiptBooks: React.FC = memo(() => {
   // Memoized permissions to prevent recalculations
   const userPermissions = useMemo(
     () => ({
-      canView: effectivePermissions?.some((p) => p.name === PERMISSIONS.ACCESS_RECEIPT_BOOKS) || false,
-      canViewDetails: effectivePermissions?.some(
-        (p) => p.name === PERMISSIONS.ACCESS_RECEIPT_BOOK_DETAILS
-      ) || false,
-      canViewHistory: effectivePermissions?.some(
-        (p) => p.name === PERMISSIONS.ACCESS_RECEIPT_BOOK_HISTORY
-      ) || false,
-      canCreate: effectivePermissions?.some((p) => p.name === PERMISSIONS.CREATE_RECEIPT_BOOKS) || false,
-      canUpdate: effectivePermissions?.some((p) => p.name === PERMISSIONS.UPDATE_RECEIPT_BOOKS) || false,
-      canDelete: effectivePermissions?.some((p) => p.name === PERMISSIONS.DELETE_RECEIPT_BOOKS) || false,
-      canTransfer: effectivePermissions?.some(
-        (p) => p.name === PERMISSIONS.TRANSFER_RECEIPT_BOOKS
-      ) || false,
+      canView:
+        effectivePermissions?.some(
+          (p) => p.name === PERMISSIONS.ACCESS_RECEIPT_BOOKS
+        ) || false,
+      canViewDetails:
+        effectivePermissions?.some(
+          (p) => p.name === PERMISSIONS.ACCESS_RECEIPT_BOOK_DETAILS
+        ) || false,
+      canViewHistory:
+        effectivePermissions?.some(
+          (p) => p.name === PERMISSIONS.ACCESS_RECEIPT_BOOK_HISTORY
+        ) || false,
+      canCreate:
+        effectivePermissions?.some(
+          (p) => p.name === PERMISSIONS.CREATE_RECEIPT_BOOKS
+        ) || false,
+      canUpdate:
+        effectivePermissions?.some(
+          (p) => p.name === PERMISSIONS.UPDATE_RECEIPT_BOOKS
+        ) || false,
+      canDelete:
+        effectivePermissions?.some(
+          (p) => p.name === PERMISSIONS.DELETE_RECEIPT_BOOKS
+        ) || false,
+      canTransfer:
+        effectivePermissions?.some(
+          (p) => p.name === PERMISSIONS.TRANSFER_RECEIPT_BOOKS
+        ) || false,
     }),
     [effectivePermissions]
   );
@@ -422,11 +498,15 @@ const ReceiptBooks: React.FC = memo(() => {
   // Memoized user roles to prevent recalculations
   const userCapabilities = useMemo(
     () => ({
-      isSupervisorLike: userRoles?.some((role) => role.name === ROLES.SUPERVISOR) || false,
-      isStockManagerLike: userRoles?.some((role) => role.name === ROLES.STOCK_MANAGER) || false,
+      isSupervisorLike:
+        userRoles?.some((role) => role.name === ROLES.SUPERVISOR) || false,
+      isStockManagerLike:
+        userRoles?.some((role) => role.name === ROLES.STOCK_MANAGER) || false,
       isRegionalManagerLike:
-        userRoles?.some((role) => role.name === ROLES.REGIONAL_MANAGER) || false,
-      isPurchaseTeamLike: userRoles?.some((role) => role.name === ROLES.PURCHASE_TEAM) || false,
+        userRoles?.some((role) => role.name === ROLES.REGIONAL_MANAGER) ||
+        false,
+      isPurchaseTeamLike:
+        userRoles?.some((role) => role.name === ROLES.PURCHASE_TEAM) || false,
     }),
     [userRoles]
   );
@@ -466,10 +546,14 @@ const ReceiptBooks: React.FC = memo(() => {
 
         // Apply role-based filtering
         if (userCapabilities.isSupervisorLike) {
-          filteredBooks = filteredBooks.filter((r) => r.currentHolderID === currentUserID);
+          filteredBooks = filteredBooks.filter(
+            (r) => r.currentHolderID === currentUserID
+          );
         }
         if (userCapabilities.isRegionalManagerLike) {
-          filteredBooks = filteredBooks.filter((r) => r.currentHolderID === currentUserID);
+          filteredBooks = filteredBooks.filter(
+            (r) => r.currentHolderID === currentUserID
+          );
         }
         if (userCapabilities.isStockManagerLike) {
           filteredBooks = filteredBooks.filter((r) =>
@@ -511,7 +595,19 @@ const ReceiptBooks: React.FC = memo(() => {
     return () => {
       isMounted = false;
     };
-  }, [userPermissions.canView, userCapabilities.isSupervisorLike, userCapabilities.isStockManagerLike, userCapabilities.isRegionalManagerLike, userCapabilities.isPurchaseTeamLike, currentUserID, permissionsLoaded, t, user, receiptBooksCache.timestamp, receiptBooksCache.data.length]);
+  }, [
+    userPermissions.canView,
+    userCapabilities.isSupervisorLike,
+    userCapabilities.isStockManagerLike,
+    userCapabilities.isRegionalManagerLike,
+    userCapabilities.isPurchaseTeamLike,
+    currentUserID,
+    permissionsLoaded,
+    t,
+    user,
+    receiptBooksCache.timestamp,
+    receiptBooksCache.data.length,
+  ]);
 
   // Effect to fetch holders sequentially for current page
   useEffect(() => {
@@ -529,7 +625,9 @@ const ReceiptBooks: React.FC = memo(() => {
 
       // Collect unique IDs
       const uniqueUserIDs = Array.from(
-        new Set(currentReceipts.map((r) => r.currentHolderID).filter((id) => id))
+        new Set(
+          currentReceipts.map((r) => r.currentHolderID).filter((id) => id)
+        )
       );
       const uniqueAgentIDs = Array.from(
         new Set(currentReceipts.map((r) => r.agentID).filter((id) => id))
@@ -543,7 +641,10 @@ const ReceiptBooks: React.FC = memo(() => {
         if (userID && !newHoldersMap.has(userID)) {
           try {
             const userData = await getUserById(userID);
-            newHoldersMap.set(userID, `${userData.firstname} ${userData.lastname}`);
+            newHoldersMap.set(
+              userID,
+              `${userData.firstname} ${userData.lastname}`
+            );
             hasChanges = true;
           } catch (error) {
             console.error(`Failed to fetch user ${userID}:`, error);
@@ -558,7 +659,10 @@ const ReceiptBooks: React.FC = memo(() => {
         if (agentID && !newHoldersMap.has(agentID)) {
           try {
             const agentData = await getAgentById(agentID);
-            newHoldersMap.set(agentID, `${agentData.name} ${agentData.lastname}`);
+            newHoldersMap.set(
+              agentID,
+              `${agentData.name} ${agentData.lastname}`
+            );
             hasChanges = true;
           } catch (error) {
             console.error(`Failed to fetch agent ${agentID}:`, error);
@@ -585,7 +689,13 @@ const ReceiptBooks: React.FC = memo(() => {
     return () => {
       isMounted = false;
     };
-  }, [receiptBooksCache.data, currentPage, holdersCache.timestamp, t, holdersCache.data]);
+  }, [
+    receiptBooksCache.data,
+    currentPage,
+    holdersCache.timestamp,
+    t,
+    holdersCache.data,
+  ]);
 
   // Memoized unique types for filters
   const uniqueTypes = useMemo(
@@ -607,23 +717,40 @@ const ReceiptBooks: React.FC = memo(() => {
         r.type.toLowerCase().includes(searchQuery.toLowerCase()) ||
         r.status.toLowerCase().includes(searchQuery.toLowerCase())
     );
-    if (filterType !== "all") result = result.filter((r) => r.type === filterType);
-    if (filterStatus !== "all") result = result.filter((r) => r.status === filterStatus);
+    if (filterType !== "all")
+      result = result.filter((r) => r.type === filterType);
+    if (filterStatus !== "all")
+      result = result.filter((r) => r.status === filterStatus);
     result.sort((a, b) => {
       const fieldA =
-        sortField === "number" ? a.number : sortField === "type" ? a.type : a.status;
+        sortField === "number"
+          ? a.number
+          : sortField === "type"
+          ? a.type
+          : a.status;
       const fieldB =
-        sortField === "number" ? b.number : sortField === "type" ? b.type : b.status;
+        sortField === "number"
+          ? b.number
+          : sortField === "type"
+          ? b.type
+          : b.status;
       return sortOrder === "asc"
         ? fieldA > fieldB
           ? 1
           : -1
         : fieldA < fieldB
-          ? 1
-          : -1;
+        ? 1
+        : -1;
     });
     return result;
-  }, [receiptBooksCache.data, searchQuery, sortField, sortOrder, filterType, filterStatus]);
+  }, [
+    receiptBooksCache.data,
+    searchQuery,
+    sortField,
+    sortOrder,
+    filterType,
+    filterStatus,
+  ]);
 
   // Memoized total pages for pagination
   const totalPages = useMemo(
@@ -696,7 +823,9 @@ const ReceiptBooks: React.FC = memo(() => {
       setFormError(
         t("receiptBooks.errors.createFailed", {
           message:
-            error instanceof Error ? error.message : t("receiptBooks.errors.unknown"),
+            error instanceof Error
+              ? error.message
+              : t("receiptBooks.errors.unknown"),
         })
       );
     }
@@ -736,7 +865,9 @@ const ReceiptBooks: React.FC = memo(() => {
       setFormError(
         t("receiptBooks.errors.updateFailed", {
           message:
-            error instanceof Error ? error.message : t("receiptBooks.errors.unknown"),
+            error instanceof Error
+              ? error.message
+              : t("receiptBooks.errors.unknown"),
         })
       );
     }
@@ -758,7 +889,9 @@ const ReceiptBooks: React.FC = memo(() => {
         setFormError(
           t("receiptBooks.errors.deleteFailed", {
             message:
-              error instanceof Error ? error.message : t("receiptBooks.errors.unknown"),
+              error instanceof Error
+                ? error.message
+                : t("receiptBooks.errors.unknown"),
           })
         );
       }
@@ -805,8 +938,8 @@ const ReceiptBooks: React.FC = memo(() => {
           {view === "list"
             ? t("receiptBooks.title.list")
             : view === "create"
-              ? t("receiptBooks.title.create")
-              : t("receiptBooks.title.edit")}
+            ? t("receiptBooks.title.create")
+            : t("receiptBooks.title.edit")}
         </h1>
         {view === "list" && (
           // Search container
@@ -840,9 +973,13 @@ const ReceiptBooks: React.FC = memo(() => {
               }
               aria-label={t("receiptBooks.sort.ariaLabel")}
             >
-              <option value="number">{t("receiptBooks.sort.fields.number")}</option>
+              <option value="number">
+                {t("receiptBooks.sort.fields.number")}
+              </option>
               <option value="type">{t("receiptBooks.sort.fields.type")}</option>
-              <option value="status">{t("receiptBooks.sort.fields.status")}</option>
+              <option value="status">
+                {t("receiptBooks.sort.fields.status")}
+              </option>
             </select>
             {/* Sort order button */}
             <button
@@ -858,7 +995,9 @@ const ReceiptBooks: React.FC = memo(() => {
           <div className="filter-card">
             <h3>{t("receiptBooks.filter.title")}</h3>
             <div className="form-group">
-              <label htmlFor="filterType">{t("receiptBooks.filter.type.label")}</label>
+              <label htmlFor="filterType">
+                {t("receiptBooks.filter.type.label")}
+              </label>
               {/* Filter type select */}
               <select
                 id="filterType"
@@ -877,7 +1016,9 @@ const ReceiptBooks: React.FC = memo(() => {
               </select>
             </div>
             <div className="form-group">
-              <label htmlFor="filterStatus">{t("receiptBooks.filter.status.label")}</label>
+              <label htmlFor="filterStatus">
+                {t("receiptBooks.filter.status.label")}
+              </label>
               {/* Filter status select */}
               <select
                 id="filterStatus"
@@ -885,7 +1026,9 @@ const ReceiptBooks: React.FC = memo(() => {
                 onChange={(e) => setFilterStatus(e.target.value)}
                 aria-label={t("receiptBooks.filter.ariaLabel")}
               >
-                <option value="all">{t("receiptBooks.filter.status.all")}</option>
+                <option value="all">
+                  {t("receiptBooks.filter.status.all")}
+                </option>
                 {uniqueStatuses.map((status) => (
                   <option key={status} value={status}>
                     {t(`common.receiptBookStatuses.${status.toLowerCase()}`, {
@@ -903,7 +1046,8 @@ const ReceiptBooks: React.FC = memo(() => {
               onClick={() => setView("create")}
               aria-label={t("receiptBooks.actions.aria.newReceipt")}
             >
-              <FaPlus aria-hidden="true" /> {t("receiptBooks.actions.newReceipt")}
+              <FaPlus aria-hidden="true" />{" "}
+              {t("receiptBooks.actions.newReceipt")}
             </button>
           )}
           {/* Transfer button */}
@@ -913,7 +1057,8 @@ const ReceiptBooks: React.FC = memo(() => {
               onClick={handleTransfer}
               aria-label={t("receiptBooks.actions.aria.transferBooks")}
             >
-              <FaExchangeAlt aria-hidden="true" /> {t("receiptBooks.actions.transferBooks")}
+              <FaExchangeAlt aria-hidden="true" />{" "}
+              {t("receiptBooks.actions.transferBooks")}
             </button>
           )}
         </aside>
@@ -956,7 +1101,9 @@ const ReceiptBooks: React.FC = memo(() => {
                     // Pagination controls
                     <div className="pagination">
                       <button
-                        onClick={() => setCurrentPage((p) => Math.max(1, p - 1))}
+                        onClick={() =>
+                          setCurrentPage((p) => Math.max(1, p - 1))
+                        }
                         disabled={currentPage === 1}
                         aria-label={t("receiptBooks.pagination.aria.previous")}
                       >
