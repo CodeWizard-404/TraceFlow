@@ -1,7 +1,11 @@
 import React, { useState, useEffect, ChangeEvent, KeyboardEvent } from "react";
 import { useAuth } from "../../context/AuthContext";
 import { updateProfile, fetchUserProfile } from "../../apis/userAPI";
+import { getNotificationPreferences, updateNotificationPreferences } from "../../apis/notificationAPI";
 import User from "../../models/User";
+import NotificationPreference from "../../models/NotificationPreference";
+import NotificationPanel from "../../components/ui/notificationPanel";
+import { initSocket, joinRoom, onNotification, offNotification } from "../../lib/socket";
 import "./ProfilePage.css";
 import {
   FaUser,
@@ -15,10 +19,11 @@ import {
   FaClock,
   FaCheckCircle,
   FaRegUser,
+  FaBell,
 } from "react-icons/fa";
 
 const ProfilePage: React.FC = () => {
-  const { user } = useAuth(); // Removed token
+  const { user } = useAuth();
   const [profileData, setProfileData] = useState<User | null>(null);
   const [editingField, setEditingField] = useState<string | null>(null);
   const [newPassword, setNewPassword] = useState("");
@@ -26,13 +31,13 @@ const ProfilePage: React.FC = () => {
   const [error, setError] = useState<string>("");
   const [success, setSuccess] = useState<string>("");
   const [profilePic, setProfilePic] = useState<string | null>(null);
-  const [activeTab, setActiveTab] = useState<"info" | "settings" | "activity">(
-    "info"
-  );
+  const [activeTab, setActiveTab] = useState<"info" | "settings" | "activity" | "notifications">("info");
   const [formErrors, setFormErrors] = useState<Record<string, string>>({});
   const [rawPhone, setRawPhone] = useState("");
   const [rawWallet, setRawWallet] = useState("");
   const [isLoading, setIsLoading] = useState(true);
+  const [preferences, setPreferences] = useState<NotificationPreference | null>(null);
+  const [showNotificationPanel, setShowNotificationPanel] = useState(false);
 
   const setTempError = (message: string) => {
     setError(message);
@@ -44,6 +49,7 @@ const ProfilePage: React.FC = () => {
     setTimeout(() => setSuccess(""), 3000);
   };
 
+  // Fetch user profile and notification preferences
   useEffect(() => {
     const loadUserProfile = async () => {
       if (!user) {
@@ -54,7 +60,10 @@ const ProfilePage: React.FC = () => {
 
       try {
         setIsLoading(true);
-        const fullUser = await fetchUserProfile();
+        const [fullUser, notificationPrefs] = await Promise.all([
+          fetchUserProfile(),
+          getNotificationPreferences(),
+        ]);
         const completeUser: User = {
           keycloakId: user.keycloakId || "",
           userID: fullUser.userID || user.userID || "",
@@ -70,6 +79,7 @@ const ProfilePage: React.FC = () => {
         setProfileData(completeUser);
         setRawPhone(completeUser.phone || "");
         setRawWallet(completeUser.wallet || "");
+        setPreferences(notificationPrefs);
 
         if (completeUser.PFP) {
           try {
@@ -84,7 +94,7 @@ const ProfilePage: React.FC = () => {
 
         localStorage.setItem("user", JSON.stringify(completeUser));
       } catch (err) {
-        console.error("Failed to load user profile:", err);
+        console.error("Failed to load user profile or preferences:", err);
         setTempError(
           err instanceof Error ? err.message : "Failed to load user profile"
         );
@@ -120,6 +130,64 @@ const ProfilePage: React.FC = () => {
 
     loadUserProfile();
   }, [user]);
+
+  // Initialize WebSocket and listen for notifications
+  useEffect(() => {
+    if (!user?.userID || !document.cookie.includes('accessToken')) {
+      return;
+    }
+
+    initSocket();
+    joinRoom(user.userID);
+
+    onNotification((event: string) => {
+      if (event === 'user:profile_updated' || event === 'otp:generated:user') {
+        // Notifications are handled by NotificationContext and ToastContainer
+        if (event === 'user:profile_updated') {
+          // Refresh profile data
+          fetchUserProfile().then((updatedUser) => {
+            const completeUser: User = {
+              keycloakId: user.keycloakId || "",
+              userID: updatedUser.userID || user.userID || "",
+              firstname: updatedUser.firstname || user.firstname || "",
+              lastname: updatedUser.lastname || user.lastname || "",
+              phone: updatedUser.phone || user.phone || "",
+              email: updatedUser.email || user.email || "",
+              wallet: updatedUser.wallet || user.wallet || "",
+              PFP: updatedUser.PFP || user.PFP || null,
+              password: "",
+            };
+            setProfileData(completeUser);
+            setRawPhone(completeUser.phone || "");
+            setRawWallet(completeUser.wallet || "");
+            localStorage.setItem("user", JSON.stringify(completeUser));
+          }).catch((err) => {
+            console.error("Failed to refresh profile:", err);
+          });
+        }
+      }
+    });
+
+    return () => {
+      offNotification();
+    };
+  }, [user]);
+
+  // Update notification preferences
+  const handlePreferenceChange = async (field: keyof NotificationPreference, value: boolean) => {
+    if (!preferences) return;
+    try {
+      const updatedPrefs = { ...preferences, [field]: value };
+      const response = await updateNotificationPreferences(updatedPrefs);
+      setPreferences(response);
+      setTempSuccess("Notification preferences updated successfully");
+    } catch (err) {
+      console.error("Failed to update notification preferences:", err);
+      setTempError(
+        err instanceof Error ? err.message : "Failed to update notification preferences"
+      );
+    }
+  };
 
   // Validation Functions (unchanged)
   const validateName = (value: string, field: string): string => {
@@ -220,7 +288,7 @@ const ProfilePage: React.FC = () => {
     const raw = e.target.value.replace(/[^\d]/g, "").slice(0, 8);
     setRawPhone(raw);
     setProfileData({ ...profileData!, phone: stripPhoneForDatabase(raw) });
-    setFormErrors({ ...formErrors, Kathy: validatePhone(raw) });
+    setFormErrors({ ...formErrors, phone: validatePhone(raw) });
   };
 
   const handleWalletChange = (e: ChangeEvent<HTMLInputElement>) => {
@@ -322,7 +390,7 @@ const ProfilePage: React.FC = () => {
     try {
       const formData = new FormData();
       formData.append("PFP", file);
-      const response = await updateProfile(formData); // No token
+      const response = await updateProfile(formData);
       if (response.PFP) {
         const imageSrc = `data:image/jpeg;base64,${response.PFP}`;
         setProfilePic(imageSrc);
@@ -352,7 +420,7 @@ const ProfilePage: React.FC = () => {
       return;
     }
     try {
-      const response = await updateProfile({ password: newPassword }); // No token
+      const response = await updateProfile({ password: newPassword });
       const updatedUser: User = { ...profileData!, ...response };
       setProfileData(updatedUser);
       setTempSuccess("Password updated successfully");
@@ -479,6 +547,12 @@ const ProfilePage: React.FC = () => {
           onClick={() => setActiveTab("activity")}
         >
           <FaHistory /> Activity
+        </button>
+        <button
+          className={`nav-tab ${activeTab === "notifications" ? "active" : ""}`}
+          onClick={() => setActiveTab("notifications")}
+        >
+          <FaBell /> Notifications
         </button>
       </nav>
 
@@ -672,6 +746,69 @@ const ProfilePage: React.FC = () => {
                 <span className="activity-amount">+1 Souche</span>
               </div>
             </div>
+          </section>
+        )}
+
+        {activeTab === "notifications" && (
+          <section className="notification-section">
+            <h2>Notification Settings</h2>
+            {preferences ? (
+              <div className="notification-grid">
+                <div className="notification-item">
+                  <h3>Notification Preferences</h3>
+                  <div className="form-group">
+                    <label className="flex items-center">
+                      <input
+                        type="checkbox"
+                        checked={preferences.inAppEnabled}
+                        onChange={(e) => handlePreferenceChange("inAppEnabled", e.target.checked)}
+                        className="mr-2"
+                      />
+                      In-App Notifications
+                    </label>
+                  </div>
+                  <div className="form-group">
+                    <label className="flex items-center">
+                      <input
+                        type="checkbox"
+                        checked={preferences.emailEnabled}
+                        onChange={(e) => handlePreferenceChange("emailEnabled", e.target.checked)}
+                        className="mr-2"
+                      />
+                      Email Notifications
+                    </label>
+                  </div>
+                  <div className="form-group">
+                    <label className="flex items-center">
+                      <input
+                        type="checkbox"
+                        checked={preferences.smsEnabled}
+                        onChange={(e) => handlePreferenceChange("smsEnabled", e.target.checked)}
+                        className="mr-2"
+                      />
+                      SMS Notifications
+                    </label>
+                  </div>
+                </div>
+                <div className="notification-item">
+                  <h3>Your Notifications</h3>
+                  <button
+                    className="action-btn"
+                    onClick={() => setShowNotificationPanel(!showNotificationPanel)}
+                  >
+                    {showNotificationPanel ? "Hide Notifications" : "View Notifications"}
+                  </button>
+                  {showNotificationPanel && (
+                    <NotificationPanel
+                      className="mt-4"
+                      onClose={() => setShowNotificationPanel(false)}
+                    />
+                  )}
+                </div>
+              </div>
+            ) : (
+              <p>Loading notification preferences...</p>
+            )}
           </section>
         )}
 

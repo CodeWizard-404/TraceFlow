@@ -54,7 +54,8 @@ const getUserFromCookie = (): User | null => {
 // Utility to set user in cookies
 const setUserCookie = (user: User, maxAge: number) => {
     const encodedUser = encodeURIComponent(JSON.stringify(user));
-    document.cookie = `userData=${encodedUser}; path=/; SameSite=Strict; max-age=${maxAge}`;
+    const sameSite = import.meta.env.VITE_ENV === 'development' ? 'Lax' : 'Strict';
+    document.cookie = `userData=${encodedUser}; path=/; ${sameSite}=Strict; max-age=${maxAge}`;
 };
 
 

@@ -5,6 +5,7 @@ interface NotificationPreference {
     emailEnabled: boolean;
     smsEnabled: boolean;
     inAppEnabled: boolean;
+    websocketEnabled: boolean;
     createdAt: Date;
     updatedAt: Date;
 }

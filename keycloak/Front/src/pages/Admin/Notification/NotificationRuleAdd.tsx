@@ -1,10 +1,17 @@
-import React, { useState, useEffect } from "react";
-import { FaSave } from "react-icons/fa";
-import { motion } from "framer-motion";
-import NotificationRule from "../../../models/NotificationRule";
-import { createNotificationRule } from "../../../apis/notificationAPI";
-import { ViewMode } from "../adminTypes";
-import "../AdminDashboard.css";
+import React, { useState, useEffect } from 'react';
+import { FaSave } from 'react-icons/fa';
+import { motion } from 'framer-motion';
+import Select, { MultiValue } from 'react-select';
+import NotificationRule from '../../../models/NotificationRule';
+import { createNotificationRule } from '../../../apis/notificationAPI';
+import { getAllUsers } from '../../../apis/userAPI';
+import { getAllRoles } from '../../../apis/roleAPI';
+import { getNotificationRules } from '../../../apis/notificationAPI';
+import { ViewMode } from '../adminTypes';
+import '../AdminDashboard.css';
+import User from '../../../models/User';
+import Role from '../../../models/Role';
+import { isValidNotificationEvent } from '../../../lib/notifEvents';
 
 interface NotificationRuleAddProps {
     rules: NotificationRule[];
@@ -23,18 +30,18 @@ const formVariants = {
 
 const NotificationRuleAddSkeleton: React.FC = () => (
     <div className="form-card skeleton">
-        <div className="custom-skeleton pulsing" style={{ width: "200px", height: "24px", marginBottom: "16px" }} />
+        <div className="custom-skeleton pulsing" style={{ width: '200px', height: '24px', marginBottom: '16px' }} />
         {[...Array(4)].map((_, i) => (
             <div key={i} className="form-section">
-                <div className="custom-skeleton pulsing" style={{ width: "150px", height: "20px", marginBottom: "12px" }} />
+                <div className="custom-skeleton pulsing" style={{ width: '150px', height: '20px', marginBottom: '12px' }} />
                 <div className="form-row">
-                    <div className="custom-skeleton pulsing" style={{ width: "100%", height: "32px" }} />
-                    <div className="custom-skeleton pulsing" style={{ width: "100%", height: "32px" }} />
+                    <div className="custom-skeleton pulsing" style={{ width: '100%', height: '32px' }} />
+                    <div className="custom-skeleton pulsing" style={{ width: '100%', height: '32px' }} />
                 </div>
             </div>
         ))}
         <div className="form-actions-0">
-            <div className="custom-skeleton pulsing" style={{ width: "120px", height: "40px" }} />
+            <div className="custom-skeleton pulsing" style={{ width: '120px', height: '40px' }} />
         </div>
     </div>
 );
@@ -43,44 +50,73 @@ const NotificationRuleAdd: React.FC<NotificationRuleAddProps> = ({
     setRules,
     setView,
     setError,
-    view
+    view,
 }) => {
     const [formData, setFormData] = useState<Partial<NotificationRule>>({
-        event: "",
-        type: "general",
+        event: '',
+        type: 'general',
         recipients: { roles: [], userIDs: [] },
         channels: { websocket: true, email: false, sms: false, inApp: true },
-        messageTemplate: "",
+        messageTemplate: '',
         enabled: true,
     });
-    const [formErrors, setFormErrors] = useState({ event: "", messageTemplate: "" });
+    const [formErrors, setFormErrors] = useState({ event: '', messageTemplate: '' });
     const [touched, setTouched] = useState({ event: false, messageTemplate: false });
     const [loading, setLoading] = useState(true);
+    const [users, setUsers] = useState<User[]>([]);
+    const [roles, setRoles] = useState<Role[]>([]);
+    const [notificationTypes, setNotificationTypes] = useState<string[]>([]);
+    const [selectedUsers, setSelectedUsers] = useState<{ value: string; label: string }[]>([]);
+    const [selectedRoles, setSelectedRoles] = useState<{ value: string; label: string }[]>([]);
 
     useEffect(() => {
-        const timer = setTimeout(() => setLoading(false), SKELETON_DELAY);
+        const fetchData = async () => {
+            try {
+                const [usersData, rolesData, rulesData] = await Promise.all([
+                    getAllUsers(),
+                    getAllRoles(),
+                    getNotificationRules(),
+                ]);
+                setUsers(usersData || []);
+                setRoles(rolesData || []);
+                // Extract unique notification types
+                const types = [...new Set(rulesData.map((rule) => rule.type.toLowerCase()))].filter(
+                    (type): type is string => !!type
+                );
+                setNotificationTypes(['general', ...types]);
+            } catch (err) {
+                setError('Failed to fetch data');
+                console.error(err);
+            } finally {
+                setLoading(false);
+            }
+        };
+        const timer = setTimeout(() => fetchData(), SKELETON_DELAY);
         return () => clearTimeout(timer);
-    }, []);
+    }, [setError]);
 
-    const validateEvent = (value: string): string => {
+    const validateEvent = async (value: string): Promise<string> => {
         const trimmed = value.trim();
-        if (!trimmed) return "Event is required";
-        if (trimmed.length < 3) return "Event must be at least 3 characters";
-        return "";
+        if (!trimmed) return 'Event is required';
+        if (!/^[a-zA-Z]+:[a-zA-Z]+$/.test(trimmed)) return "Event must be in format 'type:action' (e.g., user:created)";
+        // Optionally, check if event is already defined
+        const isValid = await isValidNotificationEvent(trimmed);
+        if (isValid) return 'Event already exists; it will reuse existing rules';
+        return '';
     };
 
     const validateMessageTemplate = (value: string): string => {
         const trimmed = value.trim();
-        if (!trimmed) return "Message template is required";
-        if (trimmed.length < 5) return "Message template must be at least 5 characters";
-        return "";
+        if (!trimmed) return 'Message template is required';
+        if (trimmed.length < 5) return 'Message template must be at least 5 characters';
+        return '';
     };
 
-    const handleChange = (
+    const handleChange = async (
         e: React.ChangeEvent<HTMLInputElement | HTMLSelectElement | HTMLTextAreaElement>
     ) => {
         const { name, value, type } = e.target;
-        if (type === "checkbox") {
+        if (type === 'checkbox') {
             const checked = (e.target as HTMLInputElement).checked;
             setFormData((prev) => ({
                 ...prev,
@@ -92,54 +128,87 @@ const NotificationRuleAdd: React.FC<NotificationRuleAddProps> = ({
                     [name]: checked,
                 },
             }));
-        } else if (name === "recipients.roles") {
-            setFormData((prev) => ({
-                ...prev,
-                recipients: { ...prev.recipients, roles: value.split(",").map((r) => r.trim()) },
-            }));
-        } else if (name === "recipients.userIDs") {
-            setFormData((prev) => ({
-                ...prev,
-                recipients: { ...prev.recipients, userIDs: value.split(",").map((id) => id.trim()) },
-            }));
-        } else {
+        } else if (name === 'event' || name === 'type' || name === 'messageTemplate') {
             setFormData((prev) => ({ ...prev, [name]: value }));
-            if (name === "event" || name === "messageTemplate") {
+            if (name === 'event' || name === 'messageTemplate') {
                 setTouched((prev) => ({ ...prev, [name]: true }));
+                const error = name === 'event' ? await validateEvent(value) : validateMessageTemplate(value);
                 setFormErrors((prev) => ({
                     ...prev,
-                    [name]: name === "event" ? validateEvent(value) : validateMessageTemplate(value),
+                    [name]: error,
                 }));
             }
         }
     };
 
+    const handleUserSelect = (selectedOptions: MultiValue<{ value: string; label: string }>) => {
+        setSelectedUsers(
+            Array.isArray(selectedOptions)
+                ? selectedOptions.map((option) => ({ value: option.value, label: option.label }))
+                : []
+        );
+        const userIDs = selectedOptions.map((option) => option.value);
+        setFormData((prev) => ({
+            ...prev,
+            recipients: { ...prev.recipients, userIDs },
+        }));
+    };
+
+    const handleRoleSelect = (selectedOptions: MultiValue<{ value: string; label: string }>) => {
+        setSelectedRoles(
+            Array.isArray(selectedOptions)
+                ? selectedOptions.map((option) => ({ value: option.value, label: option.label }))
+                : []
+        );
+        const roleNames = selectedOptions.map((option) => option.value);
+        setFormData((prev) => ({
+            ...prev,
+            recipients: { ...prev.recipients, roles: roleNames },
+        }));
+    };
+
+    const userOptions = users.map((user) => ({
+        value: user.userID,
+        label: `${user.firstname} ${user.lastname} (${user.phone})`,
+    }));
+
+    const roleOptions = roles.map((role) => ({
+        value: role.name,
+        label: role.name,
+    }));
+
     const handleSubmit = async (e: React.MouseEvent<HTMLButtonElement>) => {
         e.preventDefault();
         const errors = {
-            event: validateEvent(formData.event || ""),
-            messageTemplate: validateMessageTemplate(formData.messageTemplate || ""),
+            event: await validateEvent(formData.event || ''),
+            messageTemplate: validateMessageTemplate(formData.messageTemplate || ''),
         };
         setFormErrors(errors);
         setTouched({ event: true, messageTemplate: true });
 
-        if (Object.values(errors).some((error) => error)) {
-            setError("Please correct the errors in the form");
+        if (Object.values(errors).some((error) => error && error !== 'Event already exists; it will reuse existing rules')) {
+            setError('Please correct the errors in the form');
             return;
         }
 
         try {
-            const newRule = await createNotificationRule(formData as NotificationRule);
+            const newRule = await createNotificationRule({
+                ...formData,
+                recipients: {
+                    roles: selectedRoles.map((role) => role.value),
+                    userIDs: selectedUsers.map((user) => user.value),
+                },
+            } as NotificationRule);
             setRules((prev) => [...prev, newRule]);
-            setError("Notification rule created successfully");
-            setView("notifications");
+            setError('Notification rule created successfully');
+            setView('notifications');
         } catch (err: unknown) {
-            console.error("Failed to create notification rule:", err);
-            setError("Failed to create notification rule");
+            console.error('Failed to create notification rule:', err);
+            setError('Failed to create notification rule');
         }
     };
 
-    if (view !== "add-notification-rule") return null;
+    if (view !== 'add-notification-rule') return null;
 
     return (
         <motion.div
@@ -161,7 +230,8 @@ const NotificationRuleAdd: React.FC<NotificationRuleAddProps> = ({
                                 onChange={(e) => setFormData((prev) => ({ ...prev, enabled: e.target.checked }))}
                             />
                             <span className="slider"></span>
-                            <span>{formData.enabled ? "Enabled" : "Disabled"}</span>
+                            <span>{formData.enabled ? 'Enabled' : 'Disabled'}</span>
+                            <span className="tooltip" data-tooltip="Toggle to enable or disable this notification rule"></span>
                         </label>
                     </div>
                     <div className="form-section">
@@ -170,7 +240,7 @@ const NotificationRuleAdd: React.FC<NotificationRuleAddProps> = ({
                             <div className="form-group">
                                 <label htmlFor="event">
                                     Event <span className="required">*</span>
-                                    <span className="tooltip" data-tooltip="Unique event name"></span>
+                                    <span className="tooltip" data-tooltip="Enter the event in 'type:action' format (e.g., user:created)"></span>
                                 </label>
                                 <input
                                     type="text"
@@ -178,7 +248,8 @@ const NotificationRuleAdd: React.FC<NotificationRuleAddProps> = ({
                                     name="event"
                                     value={formData.event}
                                     onChange={handleChange}
-                                    className={`form-input ${touched.event && formErrors.event ? "invalid" : ""}`}
+                                    className={`form-input ${touched.event && formErrors.event ? 'invalid' : ''}`}
+                                    placeholder="e.g., user:created"
                                     required
                                 />
                                 {touched.event && formErrors.event && (
@@ -186,7 +257,10 @@ const NotificationRuleAdd: React.FC<NotificationRuleAddProps> = ({
                                 )}
                             </div>
                             <div className="form-group">
-                                <label htmlFor="type">Type</label>
+                                <label htmlFor="type">
+                                    Type
+                                    <span className="tooltip" data-tooltip="Select the category of the notification"></span>
+                                </label>
                                 <select
                                     id="type"
                                     name="type"
@@ -194,11 +268,11 @@ const NotificationRuleAdd: React.FC<NotificationRuleAddProps> = ({
                                     onChange={handleChange}
                                     className="form-input"
                                 >
-                                    <option value="general">General</option>
-                                    <option value="timesheet">Timesheet</option>
-                                    <option value="receipt">Receipt</option>
-                                    <option value="visit">Visit</option>
-                                    <option value="anomaly">Anomaly</option>
+                                    {notificationTypes.map((type) => (
+                                        <option key={type} value={type}>
+                                            {type.charAt(0).toUpperCase() + type.slice(1)}
+                                        </option>
+                                    ))}
                                 </select>
                             </div>
                         </div>
@@ -209,31 +283,31 @@ const NotificationRuleAdd: React.FC<NotificationRuleAddProps> = ({
                             <div className="form-group">
                                 <label htmlFor="recipients.roles">
                                     Recipient Roles
-                                    <span className="tooltip" data-tooltip="Comma-separated roles, e.g., manager, supervisor"></span>
+                                    <span className="tooltip" data-tooltip="Select roles that will receive this notification"></span>
                                 </label>
-                                <input
-                                    type="text"
-                                    id="recipients.roles"
-                                    name="recipients.roles"
-                                    value={formData.recipients?.roles?.join(", ") || ""}
-                                    onChange={handleChange}
-                                    placeholder="e.g., manager, supervisor"
-                                    className="form-input"
+                                <Select
+                                    isMulti
+                                    options={roleOptions}
+                                    value={selectedRoles}
+                                    onChange={handleRoleSelect}
+                                    className="react-select-container"
+                                    classNamePrefix="react-select"
+                                    placeholder="Select roles..."
                                 />
                             </div>
                             <div className="form-group">
                                 <label htmlFor="recipients.userIDs">
-                                    Recipient User IDs
-                                    <span className="tooltip" data-tooltip="Comma-separated user IDs, e.g., user_123, user_456"></span>
+                                    Recipient Users
+                                    <span className="tooltip" data-tooltip="Select specific users to receive this notification"></span>
                                 </label>
-                                <input
-                                    type="text"
-                                    id="recipients.userIDs"
-                                    name="recipients.userIDs"
-                                    value={formData.recipients?.userIDs?.join(", ") || ""}
-                                    onChange={handleChange}
-                                    placeholder="e.g., user_123, user_456"
-                                    className="form-input"
+                                <Select
+                                    isMulti
+                                    options={userOptions}
+                                    value={selectedUsers}
+                                    onChange={handleUserSelect}
+                                    className="react-select-container"
+                                    classNamePrefix="react-select"
+                                    placeholder="Select users..."
                                 />
                             </div>
                         </div>
@@ -241,7 +315,7 @@ const NotificationRuleAdd: React.FC<NotificationRuleAddProps> = ({
                     <div className="form-section">
                         <h3 className="form-header">Channels</h3>
                         <div className="channels-grid">
-                            {(["websocket", "email", "sms", "inApp"] as Array<keyof typeof formData.channels>).map((channel: string) => (
+                            {(['websocket', 'email', 'sms', 'inApp'] as Array<keyof typeof formData.channels>).map((channel: string) => (
                                 <label key={channel} className="toggle-switch">
                                     <input
                                         type="checkbox"
@@ -251,6 +325,7 @@ const NotificationRuleAdd: React.FC<NotificationRuleAddProps> = ({
                                     />
                                     <span className="slider"></span>
                                     <span>{channel.charAt(0).toUpperCase() + channel.slice(1)}</span>
+                                    <span className="tooltip" data-tooltip={`Enable ${channel} notifications`}></span>
                                 </label>
                             ))}
                         </div>
@@ -260,14 +335,14 @@ const NotificationRuleAdd: React.FC<NotificationRuleAddProps> = ({
                         <div className="form-group">
                             <label htmlFor="messageTemplate">
                                 Message Template <span className="required">*</span>
-                                <span className="tooltip" data-tooltip="Notification message content"></span>
+                                <span className="tooltip" data-tooltip="Define the content of the notification message"></span>
                             </label>
                             <textarea
                                 id="messageTemplate"
                                 name="messageTemplate"
                                 value={formData.messageTemplate}
                                 onChange={handleChange}
-                                className={`form-input ${touched.messageTemplate && formErrors.messageTemplate ? "invalid" : ""}`}
+                                className={`form-input ${touched.messageTemplate && formErrors.messageTemplate ? 'invalid' : ''}`}
                                 required
                             />
                             {touched.messageTemplate && formErrors.messageTemplate && (
@@ -279,7 +354,7 @@ const NotificationRuleAdd: React.FC<NotificationRuleAddProps> = ({
                         <motion.button
                             className="action-button save-button"
                             onClick={handleSubmit}
-                            whileHover={{ scale: 1.05, boxShadow: "0 0 8px rgba(76, 177, 199, 0.5)" }}
+                            whileHover={{ scale: 1.05, boxShadow: '0 0 8px rgba(76, 177, 199, 0.5)' }}
                             whileTap={{ scale: 0.95 }}
                             aria-label="Save Rule"
                         >

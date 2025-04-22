@@ -1,10 +1,15 @@
-import React, { useState, useEffect } from "react";
-import { FaSave, FaTrash } from "react-icons/fa";
-import { motion } from "framer-motion";
-import NotificationRule from "../../../models/NotificationRule";
-import { updateNotificationRule, deleteNotificationRule } from "../../../apis/notificationAPI";
-import { ViewMode } from "../adminTypes";
-import "../AdminDashboard.css";
+import React, { useState, useEffect } from 'react';
+import { FaSave, FaTrash } from 'react-icons/fa';
+import { motion } from 'framer-motion';
+import Select, { MultiValue } from 'react-select';
+import NotificationRule from '../../../models/NotificationRule';
+import { updateNotificationRule, deleteNotificationRule, getNotificationRules } from '../../../apis/notificationAPI';
+import { getAllUsers } from '../../../apis/userAPI';
+import { getAllRoles } from '../../../apis/roleAPI';
+import { ViewMode } from '../adminTypes';
+import User from '../../../models/User';
+import Role from '../../../models/Role';
+import '../AdminDashboard.css';
 
 interface NotificationRuleViewProps {
     selectedRule: NotificationRule | null;
@@ -25,19 +30,19 @@ const formVariants = {
 
 const NotificationRuleViewSkeleton: React.FC = () => (
     <div className="form-card skeleton">
-        <div className="custom-skeleton pulsing" style={{ width: "200px", height: "24px", marginBottom: "16px" }} />
+        <div className="custom-skeleton pulsing" style={{ width: '200px', height: '24px', marginBottom: '16px' }} />
         {[...Array(4)].map((_, i) => (
             <div key={i} className="form-section">
-                <div className="custom-skeleton pulsing" style={{ width: "150px", height: "20px", marginBottom: "12px" }} />
+                <div className="custom-skeleton pulsing" style={{ width: '150px', height: '20px', marginBottom: '12px' }} />
                 <div className="form-row">
-                    <div className="custom-skeleton pulsing" style={{ width: "100%", height: "32px" }} />
-                    <div className="custom-skeleton pulsing" style={{ width: "100%", height: "32px" }} />
+                    <div className="custom-skeleton pulsing" style={{ width: '100%', height: '32px' }} />
+                    <div className="custom-skeleton pulsing" style={{ width: '100%', height: '32px' }} />
                 </div>
             </div>
         ))}
         <div className="form-actions-0">
-            <div className="custom-skeleton pulsing" style={{ width: "120px", height: "40px" }} />
-            <div className="custom-skeleton pulsing" style={{ width: "120px", height: "40px" }} />
+            <div className="custom-skeleton pulsing" style={{ width: '120px', height: '40px' }} />
+            <div className="custom-skeleton pulsing" style={{ width: '120px', height: '40px' }} />
         </div>
     </div>
 );
@@ -48,17 +53,59 @@ const NotificationRuleView: React.FC<NotificationRuleViewProps> = ({
     setRules,
     setView,
     setError,
-    view
+    view,
 }) => {
     const [formData, setFormData] = useState<NotificationRule | null>(selectedRule);
-    const [formErrors, setFormErrors] = useState({ event: "", messageTemplate: "" });
+    const [formErrors, setFormErrors] = useState({ event: '', messageTemplate: '' });
     const [touched, setTouched] = useState({ event: false, messageTemplate: false });
     const [loading, setLoading] = useState(true);
+    const [users, setUsers] = useState<User[]>([]);
+    const [roles, setRoles] = useState<Role[]>([]);
+    const [notificationTypes, setNotificationTypes] = useState<string[]>([]);
+    const [selectedUsers, setSelectedUsers] = useState<{ value: string; label: string }[]>([]);
+    const [selectedRoles, setSelectedRoles] = useState<{ value: string; label: string }[]>([]);
 
     useEffect(() => {
-        const timer = setTimeout(() => setLoading(false), SKELETON_DELAY);
+        const fetchData = async () => {
+            try {
+                const [usersData, rolesData, rulesData] = await Promise.all([
+                    getAllUsers(),
+                    getAllRoles(),
+                    getNotificationRules(),
+                ]);
+                setUsers(usersData || []);
+                setRoles(rolesData || []);
+                const types = [...new Set(rulesData.map((rule) => rule.type.toLowerCase()))].filter(
+                    (type): type is string => !!type
+                );
+                setNotificationTypes(['general', ...types]);
+                if (selectedRule) {
+                    setSelectedUsers(
+                        selectedRule.recipients.userIDs?.map((id) => {
+                            const user = usersData.find((u) => u.userID === id);
+                            return {
+                                value: id,
+                                label: user ? `${user.firstname} ${user.lastname} (${user.phone})` : id,
+                            };
+                        }) || []
+                    );
+                    setSelectedRoles(
+                        selectedRule.recipients.roles?.map((name) => ({
+                            value: name,
+                            label: name,
+                        })) || []
+                    );
+                }
+            } catch (err) {
+                setError('Failed to fetch data');
+                console.error(err);
+            } finally {
+                setLoading(false);
+            }
+        };
+        const timer = setTimeout(() => fetchData(), SKELETON_DELAY);
         return () => clearTimeout(timer);
-    }, []);
+    }, [selectedRule, setError]);
 
     useEffect(() => {
         setFormData(selectedRule);
@@ -68,56 +115,72 @@ const NotificationRuleView: React.FC<NotificationRuleViewProps> = ({
 
     const validateEvent = (value: string): string => {
         const trimmed = value.trim();
-        if (!trimmed) return "Event is required";
-        if (trimmed.length < 3) return "Event must be at least 3 characters";
-        return "";
+        if (!trimmed) return 'Event is required';
+        if (!/^[a-zA-Z]+:[a-zA-Z]+$/.test(trimmed)) return "Event must be in format 'type:action' (e.g., user:created)";
+        return '';
     };
 
     const validateMessageTemplate = (value: string): string => {
         const trimmed = value.trim();
-        if (!trimmed) return "Message template is required";
-        if (trimmed.length < 5) return "Message template must be at least 5 characters";
-        return "";
+        if (!trimmed) return 'Message template is required';
+        if (trimmed.length < 5) return 'Message template must be at least 5 characters';
+        return '';
     };
 
     const handleChange = (
         e: React.ChangeEvent<HTMLInputElement | HTMLSelectElement | HTMLTextAreaElement>
     ) => {
         const { name, value, type } = e.target;
-        if (type === "checkbox") {
+        if (type === 'checkbox') {
             const checked = (e.target as HTMLInputElement).checked;
             setFormData((prev) =>
                 prev ? { ...prev, channels: { ...prev.channels, [name]: checked } } : prev
             );
-        } else if (name === "recipients.roles") {
-            setFormData((prev) =>
-                prev
-                    ? {
-                        ...prev,
-                        recipients: { ...prev.recipients, roles: value.split(",").map((r) => r.trim()) },
-                    }
-                    : prev
-            );
-        } else if (name === "recipients.userIDs") {
-            setFormData((prev) =>
-                prev
-                    ? {
-                        ...prev,
-                        recipients: { ...prev.recipients, userIDs: value.split(",").map((id) => id.trim()) },
-                    }
-                    : prev
-            );
-        } else {
+        } else if (name === 'event' || name === 'type' || name === 'messageTemplate') {
             setFormData((prev) => (prev ? { ...prev, [name]: value } : prev));
-            if (name === "event" || name === "messageTemplate") {
+            if (name === 'event' || name === 'messageTemplate') {
                 setTouched((prev) => ({ ...prev, [name]: true }));
                 setFormErrors((prev) => ({
                     ...prev,
-                    [name]: name === "event" ? validateEvent(value) : validateMessageTemplate(value),
+                    [name]: name === 'event' ? validateEvent(value) : validateMessageTemplate(value),
                 }));
             }
         }
     };
+
+    const handleUserSelect = (selectedOptions: MultiValue<{ value: string; label: string }>) => {
+        setSelectedUsers(
+            Array.isArray(selectedOptions)
+                ? selectedOptions.map((option) => ({ value: option.value, label: option.label }))
+                : []
+        );
+        const userIDs = selectedOptions.map((option) => option.value);
+        setFormData((prev) =>
+            prev ? { ...prev, recipients: { ...prev.recipients, userIDs } } : prev
+        );
+    };
+
+    const handleRoleSelect = (selectedOptions: MultiValue<{ value: string; label: string }>) => {
+        setSelectedRoles(
+            Array.isArray(selectedOptions)
+                ? selectedOptions.map((option) => ({ value: option.value, label: option.label }))
+                : []
+        );
+        const roles = selectedOptions.map((option) => option.value);
+        setFormData((prev) =>
+            prev ? { ...prev, recipients: { ...prev.recipients, roles } } : prev
+        );
+    };
+
+    const userOptions = users.map((user) => ({
+        value: user.userID,
+        label: `${user.firstname} ${user.lastname} (${user.phone})`,
+    }));
+
+    const roleOptions = roles.map((role) => ({
+        value: role.name,
+        label: role.name,
+    }));
 
     const handleSubmit = async (e: React.MouseEvent<HTMLButtonElement>) => {
         e.preventDefault();
@@ -131,7 +194,7 @@ const NotificationRuleView: React.FC<NotificationRuleViewProps> = ({
         setTouched({ event: true, messageTemplate: true });
 
         if (Object.values(errors).some((error) => error)) {
-            setError("Please correct the errors in the form");
+            setError('Please correct the errors in the form');
             return;
         }
 
@@ -141,30 +204,29 @@ const NotificationRuleView: React.FC<NotificationRuleViewProps> = ({
                 prev.map((r) => (r.ruleID === updatedRule.ruleID ? updatedRule : r))
             );
             setSelectedRule(updatedRule);
-            setError("Notification rule updated successfully");
-            setView("notifications");
+            setError('Notification rule updated successfully');
+            setView('notifications');
         } catch (err: unknown) {
-            console.error("Failed to update notification rule:", err);
-            setError("Failed to update notification rule");
+            console.error('Failed to update notification rule:', err);
+            setError('Failed to update notification rule');
         }
     };
 
     const handleDelete = async () => {
-        if (!formData || !window.confirm("Are you sure you want to delete this notification rule?")) return;
+        if (!formData || !window.confirm('Are you sure you want to delete this notification rule?')) return;
         try {
             await deleteNotificationRule(formData.ruleID);
             setRules((prev) => prev.filter((r) => r.ruleID !== formData.ruleID));
             setSelectedRule(null);
-            setError("Notification rule deleted successfully");
-            setView("notifications");
+            setError('Notification rule deleted successfully');
+            setView('notifications');
         } catch (err: unknown) {
-            console.error("Failed to delete notification rule:", err);
-            setError("Failed to delete notification rule");
+            console.error('Failed to delete notification rule:', err);
+            setError('Failed to delete notification rule');
         }
     };
 
-
-    if (view !== "notification-rule-details") return null;
+    if (view !== 'notification-rule-details') return null;
 
     return (
         <motion.div
@@ -188,7 +250,7 @@ const NotificationRuleView: React.FC<NotificationRuleViewProps> = ({
                                 }
                             />
                             <span className="slider"></span>
-                            <span>{formData.enabled ? "Enabled" : "Disabled"}</span>
+                            <span>{formData.enabled ? 'Enabled' : 'Disabled'}</span>
                         </label>
                     </div>
                     <div className="form-section">
@@ -205,7 +267,7 @@ const NotificationRuleView: React.FC<NotificationRuleViewProps> = ({
                                     name="event"
                                     value={formData.event}
                                     onChange={handleChange}
-                                    className={`form-input ${touched.event && formErrors.event ? "invalid" : ""}`}
+                                    className={`form-input ${touched.event && formErrors.event ? 'invalid' : ''}`}
                                     required
                                 />
                                 {touched.event && formErrors.event && (
@@ -213,7 +275,10 @@ const NotificationRuleView: React.FC<NotificationRuleViewProps> = ({
                                 )}
                             </div>
                             <div className="form-group">
-                                <label htmlFor="type">Type</label>
+                                <label htmlFor="type">
+                                    Type
+                                    <span className="tooltip" data-tooltip="Select the category of the notification"></span>
+                                </label>
                                 <select
                                     id="type"
                                     name="type"
@@ -221,11 +286,11 @@ const NotificationRuleView: React.FC<NotificationRuleViewProps> = ({
                                     onChange={handleChange}
                                     className="form-input"
                                 >
-                                    <option value="general">General</option>
-                                    <option value="timesheet">Timesheet</option>
-                                    <option value="receipt">Receipt</option>
-                                    <option value="visit">Visit</option>
-                                    <option value="anomaly">Anomaly</option>
+                                    {notificationTypes.map((type) => (
+                                        <option key={type} value={type}>
+                                            {type.charAt(0).toUpperCase() + type.slice(1)}
+                                        </option>
+                                    ))}
                                 </select>
                             </div>
                         </div>
@@ -236,31 +301,31 @@ const NotificationRuleView: React.FC<NotificationRuleViewProps> = ({
                             <div className="form-group">
                                 <label htmlFor="recipients.roles">
                                     Recipient Roles
-                                    <span className="tooltip" data-tooltip="Comma-separated roles, e.g., manager, supervisor"></span>
+                                    <span className="tooltip" data-tooltip="Select roles that will receive this notification"></span>
                                 </label>
-                                <input
-                                    type="text"
-                                    id="recipients.roles"
-                                    name="recipients.roles"
-                                    value={formData.recipients.roles?.join(", ") || ""}
-                                    onChange={handleChange}
-                                    placeholder="e.g., manager, supervisor"
-                                    className="form-input"
+                                <Select
+                                    isMulti
+                                    options={roleOptions}
+                                    value={selectedRoles}
+                                    onChange={handleRoleSelect}
+                                    className="react-select-container"
+                                    classNamePrefix="react-select"
+                                    placeholder="Select roles..."
                                 />
                             </div>
                             <div className="form-group">
                                 <label htmlFor="recipients.userIDs">
-                                    Recipient User IDs
-                                    <span className="tooltip" data-tooltip="Comma-separated user IDs, e.g., user_123, user_456"></span>
+                                    Recipient Users
+                                    <span className="tooltip" data-tooltip="Select specific users to receive this notification"></span>
                                 </label>
-                                <input
-                                    type="text"
-                                    id="recipients.userIDs"
-                                    name="recipients.userIDs"
-                                    value={formData.recipients.userIDs?.join(", ") || ""}
-                                    onChange={handleChange}
-                                    placeholder="e.g., user_123, user_456"
-                                    className="form-input"
+                                <Select
+                                    isMulti
+                                    options={userOptions}
+                                    value={selectedUsers}
+                                    onChange={handleUserSelect}
+                                    className="react-select-container"
+                                    classNamePrefix="react-select"
+                                    placeholder="Select users..."
                                 />
                             </div>
                         </div>
@@ -268,7 +333,7 @@ const NotificationRuleView: React.FC<NotificationRuleViewProps> = ({
                     <div className="form-section">
                         <h3 className="form-header">Channels</h3>
                         <div className="channels-grid">
-                            {(["websocket", "email", "sms", "inApp"] as Array<keyof typeof formData.channels>).map((channel) => (
+                            {(['websocket', 'email', 'sms', 'inApp'] as Array<keyof typeof formData.channels>).map((channel) => (
                                 <label key={channel} className="toggle-switch">
                                     <input
                                         type="checkbox"
@@ -294,7 +359,7 @@ const NotificationRuleView: React.FC<NotificationRuleViewProps> = ({
                                 name="messageTemplate"
                                 value={formData.messageTemplate}
                                 onChange={handleChange}
-                                className={`form-input ${touched.messageTemplate && formErrors.messageTemplate ? "invalid" : ""}`}
+                                className={`form-input ${touched.messageTemplate && formErrors.messageTemplate ? 'invalid' : ''}`}
                                 required
                             />
                             {touched.messageTemplate && formErrors.messageTemplate && (
@@ -306,7 +371,7 @@ const NotificationRuleView: React.FC<NotificationRuleViewProps> = ({
                         <motion.button
                             className="action-button save-button"
                             onClick={handleSubmit}
-                            whileHover={{ scale: 1.05, boxShadow: "0 0 8px rgba(76, 177, 199, 0.5)" }}
+                            whileHover={{ scale: 1.05, boxShadow: '0 0 8px rgba(76, 177, 199, 0.5)' }}
                             whileTap={{ scale: 0.95 }}
                             aria-label="Save Rule"
                         >
@@ -315,7 +380,7 @@ const NotificationRuleView: React.FC<NotificationRuleViewProps> = ({
                         <motion.button
                             className="action-button delete-button"
                             onClick={handleDelete}
-                            whileHover={{ scale: 1.05, boxShadow: "0 0 8px rgba(232, 31, 118, 0.5)" }}
+                            whileHover={{ scale: 1.05, boxShadow: '0 0 8px rgba(232, 31, 118, 0.5)' }}
                             whileTap={{ scale: 0.95 }}
                             aria-label="Delete Rule"
                         >

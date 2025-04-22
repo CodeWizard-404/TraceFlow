@@ -8,16 +8,20 @@ import './index.css';
 import './i18n';
 import 'bootstrap/dist/css/bootstrap.min.css';
 import './App.css';
+import { ErrorProvider } from './context/ErrorContext';
 
 // Render the app with Router and other providers
 createRoot(document.getElementById('root')!).render(
   <Router future={{ v7_startTransition: true, v7_relativeSplatPath: true }}>
-    <ThemeProvider>
-      <AuthProvider>
-        <NotificationProvider>
-          <App />
-        </NotificationProvider>
-      </AuthProvider>
-    </ThemeProvider>
+    <ErrorProvider>
+      <ThemeProvider>
+        <AuthProvider>
+          <NotificationProvider>
+            <App />
+            {/* <ToastContainer /> */}
+          </NotificationProvider>
+        </AuthProvider>
+      </ThemeProvider>
+    </ErrorProvider>
   </Router>
 );

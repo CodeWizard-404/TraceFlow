@@ -1,4 +1,5 @@
 import { io, Socket } from 'socket.io-client';
+import { getNotificationEvents, NotificationEvent } from './notifEvents';
 
 // Get the API URL from environment variables
 const API_URL = import.meta.env.VITE_API_URL || 'http://localhost:5000';
@@ -52,33 +53,9 @@ export const leaveRoom = (room: string) => {
 };
 
 // Listen for notification events
-export const onNotification = (callback: (event: string, data: unknown) => void) => {
+export const onNotification = async (callback: (event: NotificationEvent, data: unknown) => void) => {
     if (socket) {
-        // List of all backend notification events
-        const events = [
-            'user:created',
-            'user:updated',
-            'user:profile_updated',
-            'user:deleted',
-            'user:supervisors_assigned',
-            'user:supervisors_revoked',
-            'user:google_account_assigned',
-            'role:created',
-            'role:updated',
-            'role:deleted',
-            'role:assigned',
-            'role:revoked',
-            'role:reset',
-            'permission:updated',
-            'permission:assigned',
-            'permission:revoked',
-            'permission:override_added',
-            'permission:override_removed',
-            'timesheet:reminder',
-            'otp:generated:user',
-            'otp:generated:agent',
-        ];
-
+        const events = await getNotificationEvents();
         events.forEach((event) => {
             socket!.on(event, (data) => callback(event, data));
         });
