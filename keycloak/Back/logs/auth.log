@@ -19094,3 +19094,363 @@
 {"ip":"192.168.0.101","level":"info","message":"Fetched unique locations by user user_9u8f7lyor, IP: 192.168.0.101","timestamp":"2025-04-22T12:40:53.020Z"}
 {"ip":null,"level":"info","message":"Fetched 1 receipt books in 23ms","timestamp":"2025-04-22T12:40:53.026Z"}
 {"ip":"192.168.0.101","level":"info","message":"Fetched 1 receipt books by user user_9u8f7lyor in 24ms, IP: 192.168.0.101","timestamp":"2025-04-22T12:40:53.027Z"}
+{"level":"info","message":"Cleaning up expired OTPs","timestamp":"2025-04-22T13:00:00.918Z"}
+{"level":"info","message":"Cleaned up 0 expired OTPs","timestamp":"2025-04-22T13:00:01.012Z"}
+{"level":"warn","message":"No access token provided","timestamp":"2025-04-22T13:02:08.542Z"}
+{"level":"warn","message":"No access token provided","timestamp":"2025-04-22T13:02:08.546Z"}
+{"level":"warn","message":"No access token provided","timestamp":"2025-04-22T13:02:08.550Z"}
+{"level":"warn","message":"No access token provided","timestamp":"2025-04-22T13:02:08.557Z"}
+{"level":"warn","message":"No access token provided","timestamp":"2025-04-22T13:02:08.562Z"}
+{"level":"warn","message":"No access token provided","timestamp":"2025-04-22T13:02:08.566Z"}
+{"level":"info","message":"Initiating token refresh","timestamp":"2025-04-22T13:02:08.572Z"}
+{"level":"info","message":"Initiating token refresh","timestamp":"2025-04-22T13:02:08.619Z"}
+{"level":"info","message":"Initiating token refresh","timestamp":"2025-04-22T13:02:08.634Z"}
+{"level":"info","message":"Initiating token refresh","timestamp":"2025-04-22T13:02:08.668Z"}
+{"level":"info","message":"Initiating token refresh","timestamp":"2025-04-22T13:02:08.674Z"}
+{"level":"info","message":"Initiating token refresh","timestamp":"2025-04-22T13:02:08.679Z"}
+{"accessTokenExpiresIn":900,"level":"info","message":"Tokens refreshed successfully","refreshTokenRotatedAt":"2025-04-22T13:02:08.738Z","timestamp":"2025-04-22T13:02:08.738Z"}
+{"level":"info","message":"Refresh token successful","timestamp":"2025-04-22T13:02:08.739Z"}
+{"accessTokenExpiresIn":900,"level":"info","message":"Tokens refreshed successfully","refreshTokenRotatedAt":"2025-04-22T13:02:08.760Z","timestamp":"2025-04-22T13:02:08.760Z"}
+{"level":"info","message":"Refresh token successful","timestamp":"2025-04-22T13:02:08.761Z"}
+{"level":"info","message":"Super Admin bypass for user user_9u8f7lyor","timestamp":"2025-04-22T13:02:08.798Z"}
+{"ip":"192.168.0.101","level":"info","message":"Fetched unique locations by user user_9u8f7lyor, IP: 192.168.0.101","timestamp":"2025-04-22T13:02:08.812Z"}
+{"accessTokenExpiresIn":900,"level":"info","message":"Tokens refreshed successfully","refreshTokenRotatedAt":"2025-04-22T13:02:08.816Z","timestamp":"2025-04-22T13:02:08.816Z"}
+{"level":"info","message":"Refresh token successful","timestamp":"2025-04-22T13:02:08.816Z"}
+{"accessTokenExpiresIn":900,"level":"info","message":"Tokens refreshed successfully","refreshTokenRotatedAt":"2025-04-22T13:02:08.820Z","timestamp":"2025-04-22T13:02:08.820Z"}
+{"level":"info","message":"Refresh token successful","timestamp":"2025-04-22T13:02:08.821Z"}
+{"level":"info","message":"Super Admin bypass for user user_9u8f7lyor","timestamp":"2025-04-22T13:02:08.826Z"}
+{"accessTokenExpiresIn":900,"level":"info","message":"Tokens refreshed successfully","refreshTokenRotatedAt":"2025-04-22T13:02:08.829Z","timestamp":"2025-04-22T13:02:08.829Z"}
+{"level":"info","message":"Refresh token successful","timestamp":"2025-04-22T13:02:08.830Z"}
+{"accessTokenExpiresIn":900,"level":"info","message":"Tokens refreshed successfully","refreshTokenRotatedAt":"2025-04-22T13:02:08.832Z","timestamp":"2025-04-22T13:02:08.833Z"}
+{"level":"info","message":"Refresh token successful","timestamp":"2025-04-22T13:02:08.833Z"}
+{"level":"info","message":"Super Admin bypass for user user_9u8f7lyor","timestamp":"2025-04-22T13:02:08.851Z"}
+{"level":"info","message":"Super Admin bypass for user user_9u8f7lyor","timestamp":"2025-04-22T13:02:08.861Z"}
+{"ip":"192.168.0.101","level":"info","message":"Fetched unique locations by user user_9u8f7lyor, IP: 192.168.0.101","timestamp":"2025-04-22T13:02:08.863Z"}
+{"level":"info","message":"Fetched all users by user user_9u8f7lyor, IP: 192.168.0.101","timestamp":"2025-04-22T13:02:08.867Z"}
+{"ip":null,"level":"info","message":"Fetched 1 receipt books in 59ms","timestamp":"2025-04-22T13:02:08.886Z"}
+{"ip":"192.168.0.101","level":"info","message":"Fetched 1 receipt books by user user_9u8f7lyor in 60ms, IP: 192.168.0.101","timestamp":"2025-04-22T13:02:08.887Z"}
+{"level":"info","message":"Super Admin bypass for user user_9u8f7lyor","timestamp":"2025-04-22T13:02:08.909Z"}
+{"level":"info","message":"Fetched all users by user user_9u8f7lyor, IP: 192.168.0.101","timestamp":"2025-04-22T13:02:08.916Z"}
+{"level":"info","message":"Super Admin bypass for user user_9u8f7lyor","timestamp":"2025-04-22T13:02:08.921Z"}
+{"ip":null,"level":"info","message":"Fetched 1 receipt books in 16ms","timestamp":"2025-04-22T13:02:08.938Z"}
+{"ip":"192.168.0.101","level":"info","message":"Fetched 1 receipt books by user user_9u8f7lyor in 17ms, IP: 192.168.0.101","timestamp":"2025-04-22T13:02:08.938Z"}
+{"ip":"192.168.0.101","level":"error","message":"Server error: Error: Not allowed by CORS\n    at origin (C:\\Users\\user1\\Desktop\\PFE\\code\\TraceFlow\\keycloak\\Back\\app.js:43:22)\n    at C:\\Users\\user1\\Desktop\\PFE\\code\\TraceFlow\\keycloak\\Back\\node_modules\\cors\\lib\\index.js:219:13\n    at optionsCallback (C:\\Users\\user1\\Desktop\\PFE\\code\\TraceFlow\\keycloak\\Back\\node_modules\\cors\\lib\\index.js:199:9)\n    at corsMiddleware (C:\\Users\\user1\\Desktop\\PFE\\code\\TraceFlow\\keycloak\\Back\\node_modules\\cors\\lib\\index.js:204:7)\n    at Layer.handleRequest (C:\\Users\\user1\\Desktop\\PFE\\code\\TraceFlow\\keycloak\\Back\\node_modules\\router\\lib\\layer.js:152:17)\n    at trimPrefix (C:\\Users\\user1\\Desktop\\PFE\\code\\TraceFlow\\keycloak\\Back\\node_modules\\router\\index.js:342:13)\n    at C:\\Users\\user1\\Desktop\\PFE\\code\\TraceFlow\\keycloak\\Back\\node_modules\\router\\index.js:297:9\n    at processParams (C:\\Users\\user1\\Desktop\\PFE\\code\\TraceFlow\\keycloak\\Back\\node_modules\\router\\index.js:582:12)\n    at next (C:\\Users\\user1\\Desktop\\PFE\\code\\TraceFlow\\keycloak\\Back\\node_modules\\router\\index.js:291:5)\n    at Function.handle (C:\\Users\\user1\\Desktop\\PFE\\code\\TraceFlow\\keycloak\\Back\\node_modules\\router\\index.js:186:3)","timestamp":"2025-04-22T13:16:49.049Z"}
+{"ip":"192.168.0.101","level":"error","message":"Server error: Error: Not allowed by CORS\n    at origin (C:\\Users\\user1\\Desktop\\PFE\\code\\TraceFlow\\keycloak\\Back\\app.js:43:22)\n    at C:\\Users\\user1\\Desktop\\PFE\\code\\TraceFlow\\keycloak\\Back\\node_modules\\cors\\lib\\index.js:219:13\n    at optionsCallback (C:\\Users\\user1\\Desktop\\PFE\\code\\TraceFlow\\keycloak\\Back\\node_modules\\cors\\lib\\index.js:199:9)\n    at corsMiddleware (C:\\Users\\user1\\Desktop\\PFE\\code\\TraceFlow\\keycloak\\Back\\node_modules\\cors\\lib\\index.js:204:7)\n    at Layer.handleRequest (C:\\Users\\user1\\Desktop\\PFE\\code\\TraceFlow\\keycloak\\Back\\node_modules\\router\\lib\\layer.js:152:17)\n    at trimPrefix (C:\\Users\\user1\\Desktop\\PFE\\code\\TraceFlow\\keycloak\\Back\\node_modules\\router\\index.js:342:13)\n    at C:\\Users\\user1\\Desktop\\PFE\\code\\TraceFlow\\keycloak\\Back\\node_modules\\router\\index.js:297:9\n    at processParams (C:\\Users\\user1\\Desktop\\PFE\\code\\TraceFlow\\keycloak\\Back\\node_modules\\router\\index.js:582:12)\n    at next (C:\\Users\\user1\\Desktop\\PFE\\code\\TraceFlow\\keycloak\\Back\\node_modules\\router\\index.js:291:5)\n    at Function.handle (C:\\Users\\user1\\Desktop\\PFE\\code\\TraceFlow\\keycloak\\Back\\node_modules\\router\\index.js:186:3)","timestamp":"2025-04-22T13:16:54.279Z"}
+{"ip":"192.168.0.101","level":"error","message":"Server error: Error: Not allowed by CORS\n    at origin (C:\\Users\\user1\\Desktop\\PFE\\code\\TraceFlow\\keycloak\\Back\\app.js:43:22)\n    at C:\\Users\\user1\\Desktop\\PFE\\code\\TraceFlow\\keycloak\\Back\\node_modules\\cors\\lib\\index.js:219:13\n    at optionsCallback (C:\\Users\\user1\\Desktop\\PFE\\code\\TraceFlow\\keycloak\\Back\\node_modules\\cors\\lib\\index.js:199:9)\n    at corsMiddleware (C:\\Users\\user1\\Desktop\\PFE\\code\\TraceFlow\\keycloak\\Back\\node_modules\\cors\\lib\\index.js:204:7)\n    at Layer.handleRequest (C:\\Users\\user1\\Desktop\\PFE\\code\\TraceFlow\\keycloak\\Back\\node_modules\\router\\lib\\layer.js:152:17)\n    at trimPrefix (C:\\Users\\user1\\Desktop\\PFE\\code\\TraceFlow\\keycloak\\Back\\node_modules\\router\\index.js:342:13)\n    at C:\\Users\\user1\\Desktop\\PFE\\code\\TraceFlow\\keycloak\\Back\\node_modules\\router\\index.js:297:9\n    at processParams (C:\\Users\\user1\\Desktop\\PFE\\code\\TraceFlow\\keycloak\\Back\\node_modules\\router\\index.js:582:12)\n    at next (C:\\Users\\user1\\Desktop\\PFE\\code\\TraceFlow\\keycloak\\Back\\node_modules\\router\\index.js:291:5)\n    at Function.handle (C:\\Users\\user1\\Desktop\\PFE\\code\\TraceFlow\\keycloak\\Back\\node_modules\\router\\index.js:186:3)","timestamp":"2025-04-22T13:16:55.265Z"}
+{"ip":"192.168.0.101","level":"error","message":"Server error: Error: Not allowed by CORS\n    at origin (C:\\Users\\user1\\Desktop\\PFE\\code\\TraceFlow\\keycloak\\Back\\app.js:43:22)\n    at C:\\Users\\user1\\Desktop\\PFE\\code\\TraceFlow\\keycloak\\Back\\node_modules\\cors\\lib\\index.js:219:13\n    at optionsCallback (C:\\Users\\user1\\Desktop\\PFE\\code\\TraceFlow\\keycloak\\Back\\node_modules\\cors\\lib\\index.js:199:9)\n    at corsMiddleware (C:\\Users\\user1\\Desktop\\PFE\\code\\TraceFlow\\keycloak\\Back\\node_modules\\cors\\lib\\index.js:204:7)\n    at Layer.handleRequest (C:\\Users\\user1\\Desktop\\PFE\\code\\TraceFlow\\keycloak\\Back\\node_modules\\router\\lib\\layer.js:152:17)\n    at trimPrefix (C:\\Users\\user1\\Desktop\\PFE\\code\\TraceFlow\\keycloak\\Back\\node_modules\\router\\index.js:342:13)\n    at C:\\Users\\user1\\Desktop\\PFE\\code\\TraceFlow\\keycloak\\Back\\node_modules\\router\\index.js:297:9\n    at processParams (C:\\Users\\user1\\Desktop\\PFE\\code\\TraceFlow\\keycloak\\Back\\node_modules\\router\\index.js:582:12)\n    at next (C:\\Users\\user1\\Desktop\\PFE\\code\\TraceFlow\\keycloak\\Back\\node_modules\\router\\index.js:291:5)\n    at Function.handle (C:\\Users\\user1\\Desktop\\PFE\\code\\TraceFlow\\keycloak\\Back\\node_modules\\router\\index.js:186:3)","timestamp":"2025-04-22T13:16:59.266Z"}
+{"ip":"192.168.0.101","level":"error","message":"Server error: Error: Not allowed by CORS\n    at origin (C:\\Users\\user1\\Desktop\\PFE\\code\\TraceFlow\\keycloak\\Back\\app.js:43:22)\n    at C:\\Users\\user1\\Desktop\\PFE\\code\\TraceFlow\\keycloak\\Back\\node_modules\\cors\\lib\\index.js:219:13\n    at optionsCallback (C:\\Users\\user1\\Desktop\\PFE\\code\\TraceFlow\\keycloak\\Back\\node_modules\\cors\\lib\\index.js:199:9)\n    at corsMiddleware (C:\\Users\\user1\\Desktop\\PFE\\code\\TraceFlow\\keycloak\\Back\\node_modules\\cors\\lib\\index.js:204:7)\n    at Layer.handleRequest (C:\\Users\\user1\\Desktop\\PFE\\code\\TraceFlow\\keycloak\\Back\\node_modules\\router\\lib\\layer.js:152:17)\n    at trimPrefix (C:\\Users\\user1\\Desktop\\PFE\\code\\TraceFlow\\keycloak\\Back\\node_modules\\router\\index.js:342:13)\n    at C:\\Users\\user1\\Desktop\\PFE\\code\\TraceFlow\\keycloak\\Back\\node_modules\\router\\index.js:297:9\n    at processParams (C:\\Users\\user1\\Desktop\\PFE\\code\\TraceFlow\\keycloak\\Back\\node_modules\\router\\index.js:582:12)\n    at next (C:\\Users\\user1\\Desktop\\PFE\\code\\TraceFlow\\keycloak\\Back\\node_modules\\router\\index.js:291:5)\n    at Function.handle (C:\\Users\\user1\\Desktop\\PFE\\code\\TraceFlow\\keycloak\\Back\\node_modules\\router\\index.js:186:3)","timestamp":"2025-04-22T13:17:09.768Z"}
+{"ip":"192.168.0.101","level":"error","message":"Server error: Error: Not allowed by CORS\n    at origin (C:\\Users\\user1\\Desktop\\PFE\\code\\TraceFlow\\keycloak\\Back\\app.js:43:22)\n    at C:\\Users\\user1\\Desktop\\PFE\\code\\TraceFlow\\keycloak\\Back\\node_modules\\cors\\lib\\index.js:219:13\n    at optionsCallback (C:\\Users\\user1\\Desktop\\PFE\\code\\TraceFlow\\keycloak\\Back\\node_modules\\cors\\lib\\index.js:199:9)\n    at corsMiddleware (C:\\Users\\user1\\Desktop\\PFE\\code\\TraceFlow\\keycloak\\Back\\node_modules\\cors\\lib\\index.js:204:7)\n    at Layer.handleRequest (C:\\Users\\user1\\Desktop\\PFE\\code\\TraceFlow\\keycloak\\Back\\node_modules\\router\\lib\\layer.js:152:17)\n    at trimPrefix (C:\\Users\\user1\\Desktop\\PFE\\code\\TraceFlow\\keycloak\\Back\\node_modules\\router\\index.js:342:13)\n    at C:\\Users\\user1\\Desktop\\PFE\\code\\TraceFlow\\keycloak\\Back\\node_modules\\router\\index.js:297:9\n    at processParams (C:\\Users\\user1\\Desktop\\PFE\\code\\TraceFlow\\keycloak\\Back\\node_modules\\router\\index.js:582:12)\n    at next (C:\\Users\\user1\\Desktop\\PFE\\code\\TraceFlow\\keycloak\\Back\\node_modules\\router\\index.js:291:5)\n    at Function.handle (C:\\Users\\user1\\Desktop\\PFE\\code\\TraceFlow\\keycloak\\Back\\node_modules\\router\\index.js:186:3)","timestamp":"2025-04-22T13:19:37.402Z"}
+{"ip":"192.168.0.101","level":"error","message":"Server error: Error: Not allowed by CORS\n    at origin (C:\\Users\\user1\\Desktop\\PFE\\code\\TraceFlow\\keycloak\\Back\\app.js:43:22)\n    at C:\\Users\\user1\\Desktop\\PFE\\code\\TraceFlow\\keycloak\\Back\\node_modules\\cors\\lib\\index.js:219:13\n    at optionsCallback (C:\\Users\\user1\\Desktop\\PFE\\code\\TraceFlow\\keycloak\\Back\\node_modules\\cors\\lib\\index.js:199:9)\n    at corsMiddleware (C:\\Users\\user1\\Desktop\\PFE\\code\\TraceFlow\\keycloak\\Back\\node_modules\\cors\\lib\\index.js:204:7)\n    at Layer.handleRequest (C:\\Users\\user1\\Desktop\\PFE\\code\\TraceFlow\\keycloak\\Back\\node_modules\\router\\lib\\layer.js:152:17)\n    at trimPrefix (C:\\Users\\user1\\Desktop\\PFE\\code\\TraceFlow\\keycloak\\Back\\node_modules\\router\\index.js:342:13)\n    at C:\\Users\\user1\\Desktop\\PFE\\code\\TraceFlow\\keycloak\\Back\\node_modules\\router\\index.js:297:9\n    at processParams (C:\\Users\\user1\\Desktop\\PFE\\code\\TraceFlow\\keycloak\\Back\\node_modules\\router\\index.js:582:12)\n    at next (C:\\Users\\user1\\Desktop\\PFE\\code\\TraceFlow\\keycloak\\Back\\node_modules\\router\\index.js:291:5)\n    at Function.handle (C:\\Users\\user1\\Desktop\\PFE\\code\\TraceFlow\\keycloak\\Back\\node_modules\\router\\index.js:186:3)","timestamp":"2025-04-22T13:25:11.771Z"}
+{"level":"info","message":"Keycloak admin token obtained","timestamp":"2025-04-22T13:26:40.084Z"}
+{"level":"info","message":"Login response generated for user user_9u8f7lyor","timestamp":"2025-04-22T13:26:40.379Z"}
+{"level":"info","message":"Login attempt for superadmin@example.com, requires2FA: false","timestamp":"2025-04-22T13:26:40.383Z"}
+{"level":"info","message":"Keycloak admin token obtained","timestamp":"2025-04-22T13:26:40.697Z"}
+{"level":"info","message":"Login response generated for user user_9u8f7lyor","timestamp":"2025-04-22T13:26:40.820Z"}
+{"level":"info","message":"Login attempt for superadmin@example.com, requires2FA: false","timestamp":"2025-04-22T13:26:40.824Z"}
+{"level":"info","message":"Fetched roles for user user_9u8f7lyor by user_9u8f7lyor, IP: 192.168.0.101","timestamp":"2025-04-22T13:26:40.913Z"}
+{"level":"info","message":"Fetched effective permissions for user user_9u8f7lyor by user_9u8f7lyor, IP: 192.168.0.101","timestamp":"2025-04-22T13:26:40.971Z"}
+{"level":"info","message":"Super Admin bypass for user user_9u8f7lyor","timestamp":"2025-04-22T13:26:41.564Z"}
+{"level":"info","message":"Super Admin bypass for user user_9u8f7lyor","timestamp":"2025-04-22T13:26:41.588Z"}
+{"level":"info","message":"Super Admin bypass for user user_9u8f7lyor","timestamp":"2025-04-22T13:26:41.594Z"}
+{"ip":"192.168.0.101","level":"info","message":"Fetched unique locations by user user_9u8f7lyor, IP: 192.168.0.101","timestamp":"2025-04-22T13:26:41.622Z"}
+{"level":"info","message":"Fetched all users by user user_9u8f7lyor, IP: 192.168.0.101","timestamp":"2025-04-22T13:26:41.632Z"}
+{"ip":null,"level":"info","message":"Fetched 1 receipt books in 82ms","timestamp":"2025-04-22T13:26:41.650Z"}
+{"ip":"192.168.0.101","level":"info","message":"Fetched 1 receipt books by user user_9u8f7lyor in 89ms, IP: 192.168.0.101","timestamp":"2025-04-22T13:26:41.657Z"}
+{"level":"info","message":"Super Admin bypass for user user_9u8f7lyor","timestamp":"2025-04-22T13:27:19.719Z"}
+{"level":"info","message":"Super Admin bypass for user user_9u8f7lyor","timestamp":"2025-04-22T13:27:19.722Z"}
+{"level":"info","message":"Super Admin bypass for user user_9u8f7lyor","timestamp":"2025-04-22T13:27:19.728Z"}
+{"level":"info","message":"Fetched all users by user user_9u8f7lyor, IP: 192.168.0.101","timestamp":"2025-04-22T13:27:19.736Z"}
+{"ip":"192.168.0.101","level":"info","message":"Fetched unique locations by user user_9u8f7lyor, IP: 192.168.0.101","timestamp":"2025-04-22T13:27:19.757Z"}
+{"ip":null,"level":"info","message":"Fetched 1 receipt books in 49ms","timestamp":"2025-04-22T13:27:19.772Z"}
+{"ip":"192.168.0.101","level":"info","message":"Fetched 1 receipt books by user user_9u8f7lyor in 51ms, IP: 192.168.0.101","timestamp":"2025-04-22T13:27:19.774Z"}
+{"level":"info","message":"Super Admin bypass for user user_9u8f7lyor","timestamp":"2025-04-22T13:27:19.793Z"}
+{"ip":"192.168.0.101","level":"info","message":"Fetched unique locations by user user_9u8f7lyor, IP: 192.168.0.101","timestamp":"2025-04-22T13:27:19.798Z"}
+{"level":"info","message":"Super Admin bypass for user user_9u8f7lyor","timestamp":"2025-04-22T13:27:19.806Z"}
+{"level":"info","message":"Super Admin bypass for user user_9u8f7lyor","timestamp":"2025-04-22T13:27:19.813Z"}
+{"ip":null,"level":"info","message":"Fetched 1 receipt books in 20ms","timestamp":"2025-04-22T13:27:19.828Z"}
+{"ip":"192.168.0.101","level":"info","message":"Fetched 1 receipt books by user user_9u8f7lyor in 21ms, IP: 192.168.0.101","timestamp":"2025-04-22T13:27:19.829Z"}
+{"level":"info","message":"Fetched all users by user user_9u8f7lyor, IP: 192.168.0.101","timestamp":"2025-04-22T13:27:19.835Z"}
+{"level":"info","message":"Super Admin bypass for user user_9u8f7lyor","timestamp":"2025-04-22T13:27:41.704Z"}
+{"level":"info","message":"Super Admin bypass for user user_9u8f7lyor","timestamp":"2025-04-22T13:27:41.713Z"}
+{"level":"info","message":"Super Admin bypass for user user_9u8f7lyor","timestamp":"2025-04-22T13:27:41.727Z"}
+{"ip":"192.168.0.101","level":"info","message":"Fetched unique locations by user user_9u8f7lyor, IP: 192.168.0.101","timestamp":"2025-04-22T13:27:41.735Z"}
+{"ip":null,"level":"info","message":"Fetched 1 receipt books in 37ms","timestamp":"2025-04-22T13:27:41.742Z"}
+{"ip":"192.168.0.101","level":"info","message":"Fetched 1 receipt books by user user_9u8f7lyor in 39ms, IP: 192.168.0.101","timestamp":"2025-04-22T13:27:41.744Z"}
+{"level":"info","message":"Fetched all users by user user_9u8f7lyor, IP: 192.168.0.101","timestamp":"2025-04-22T13:27:41.757Z"}
+{"level":"info","message":"Super Admin bypass for user user_9u8f7lyor","timestamp":"2025-04-22T13:27:41.790Z"}
+{"level":"info","message":"Super Admin bypass for user user_9u8f7lyor","timestamp":"2025-04-22T13:27:41.793Z"}
+{"level":"info","message":"Super Admin bypass for user user_9u8f7lyor","timestamp":"2025-04-22T13:27:41.797Z"}
+{"ip":"192.168.0.101","level":"info","message":"Fetched unique locations by user user_9u8f7lyor, IP: 192.168.0.101","timestamp":"2025-04-22T13:27:41.806Z"}
+{"level":"info","message":"Fetched all users by user user_9u8f7lyor, IP: 192.168.0.101","timestamp":"2025-04-22T13:27:41.811Z"}
+{"ip":null,"level":"info","message":"Fetched 1 receipt books in 20ms","timestamp":"2025-04-22T13:27:41.820Z"}
+{"ip":"192.168.0.101","level":"info","message":"Fetched 1 receipt books by user user_9u8f7lyor in 21ms, IP: 192.168.0.101","timestamp":"2025-04-22T13:27:41.821Z"}
+{"level":"info","message":"Super Admin bypass for user user_9u8f7lyor","timestamp":"2025-04-22T13:27:49.607Z"}
+{"level":"info","message":"Super Admin bypass for user user_9u8f7lyor","timestamp":"2025-04-22T13:27:49.615Z"}
+{"level":"info","message":"Super Admin bypass for user user_9u8f7lyor","timestamp":"2025-04-22T13:27:49.620Z"}
+{"level":"info","message":"Fetched all users by user user_9u8f7lyor, IP: 192.168.0.101","timestamp":"2025-04-22T13:27:49.630Z"}
+{"ip":"192.168.0.101","level":"info","message":"Fetched unique locations by user user_9u8f7lyor, IP: 192.168.0.101","timestamp":"2025-04-22T13:27:49.639Z"}
+{"ip":null,"level":"info","message":"Fetched 1 receipt books in 38ms","timestamp":"2025-04-22T13:27:49.646Z"}
+{"ip":"192.168.0.101","level":"info","message":"Fetched 1 receipt books by user user_9u8f7lyor in 41ms, IP: 192.168.0.101","timestamp":"2025-04-22T13:27:49.649Z"}
+{"level":"info","message":"Super Admin bypass for user user_9u8f7lyor","timestamp":"2025-04-22T13:27:49.661Z"}
+{"level":"info","message":"Fetched all users by user user_9u8f7lyor, IP: 192.168.0.101","timestamp":"2025-04-22T13:27:49.668Z"}
+{"level":"info","message":"Super Admin bypass for user user_9u8f7lyor","timestamp":"2025-04-22T13:27:49.671Z"}
+{"ip":"192.168.0.101","level":"info","message":"Fetched unique locations by user user_9u8f7lyor, IP: 192.168.0.101","timestamp":"2025-04-22T13:27:49.675Z"}
+{"level":"info","message":"Super Admin bypass for user user_9u8f7lyor","timestamp":"2025-04-22T13:27:49.712Z"}
+{"ip":null,"level":"info","message":"Fetched 1 receipt books in 18ms","timestamp":"2025-04-22T13:27:49.731Z"}
+{"ip":"192.168.0.101","level":"info","message":"Fetched 1 receipt books by user user_9u8f7lyor in 18ms, IP: 192.168.0.101","timestamp":"2025-04-22T13:27:49.732Z"}
+{"level":"info","message":"Super Admin bypass for user user_9u8f7lyor","timestamp":"2025-04-22T13:27:54.562Z"}
+{"ip":null,"level":"info","message":"Fetched 1 receipt books in 22ms","timestamp":"2025-04-22T13:27:54.585Z"}
+{"ip":"192.168.0.101","level":"info","message":"Fetched 1 receipt books by user user_9u8f7lyor in 24ms, IP: 192.168.0.101","timestamp":"2025-04-22T13:27:54.587Z"}
+{"level":"info","message":"Super Admin bypass for user user_9u8f7lyor","timestamp":"2025-04-22T13:27:54.609Z"}
+{"level":"info","message":"Super Admin bypass for user user_9u8f7lyor","timestamp":"2025-04-22T13:27:54.612Z"}
+{"level":"info","message":"Super Admin bypass for user user_9u8f7lyor","timestamp":"2025-04-22T13:27:54.623Z"}
+{"level":"info","message":"Fetched all users by user user_9u8f7lyor, IP: 192.168.0.101","timestamp":"2025-04-22T13:27:54.629Z"}
+{"ip":null,"level":"info","message":"Fetched 1 receipt books in 24ms","timestamp":"2025-04-22T13:27:54.637Z"}
+{"ip":"192.168.0.101","level":"info","message":"Fetched 1 receipt books by user user_9u8f7lyor in 25ms, IP: 192.168.0.101","timestamp":"2025-04-22T13:27:54.638Z"}
+{"ip":"192.168.0.101","level":"info","message":"Fetched unique locations by user user_9u8f7lyor, IP: 192.168.0.101","timestamp":"2025-04-22T13:27:54.643Z"}
+{"level":"info","message":"Super Admin bypass for user user_9u8f7lyor","timestamp":"2025-04-22T13:27:54.660Z"}
+{"level":"info","message":"Super Admin bypass for user user_9u8f7lyor","timestamp":"2025-04-22T13:27:54.663Z"}
+{"ip":"192.168.0.101","level":"info","message":"Fetched unique locations by user user_9u8f7lyor, IP: 192.168.0.101","timestamp":"2025-04-22T13:27:54.667Z"}
+{"level":"info","message":"Fetched all users by user user_9u8f7lyor, IP: 192.168.0.101","timestamp":"2025-04-22T13:27:54.674Z"}
+{"level":"info","message":"Super Admin bypass for user user_9u8f7lyor","timestamp":"2025-04-22T13:27:58.569Z"}
+{"level":"info","message":"Super Admin bypass for user user_9u8f7lyor","timestamp":"2025-04-22T13:27:58.572Z"}
+{"ip":"192.168.0.101","level":"info","message":"Fetched unique locations by user user_9u8f7lyor, IP: 192.168.0.101","timestamp":"2025-04-22T13:27:58.575Z"}
+{"level":"info","message":"Fetched all users by user user_9u8f7lyor, IP: 192.168.0.101","timestamp":"2025-04-22T13:27:58.579Z"}
+{"level":"info","message":"Super Admin bypass for user user_9u8f7lyor","timestamp":"2025-04-22T13:27:58.600Z"}
+{"ip":"192.168.0.101","level":"info","message":"Fetched unique locations by user user_9u8f7lyor, IP: 192.168.0.101","timestamp":"2025-04-22T13:27:58.603Z"}
+{"level":"info","message":"Super Admin bypass for user user_9u8f7lyor","timestamp":"2025-04-22T13:27:58.606Z"}
+{"level":"info","message":"Fetched all users by user user_9u8f7lyor, IP: 192.168.0.101","timestamp":"2025-04-22T13:27:58.611Z"}
+{"level":"info","message":"Super Admin bypass for user user_9u8f7lyor","timestamp":"2025-04-22T13:27:58.617Z"}
+{"ip":null,"level":"info","message":"Fetched 1 receipt books in 35ms","timestamp":"2025-04-22T13:27:58.653Z"}
+{"ip":"192.168.0.101","level":"info","message":"Fetched 1 receipt books by user user_9u8f7lyor in 36ms, IP: 192.168.0.101","timestamp":"2025-04-22T13:27:58.654Z"}
+{"level":"info","message":"Super Admin bypass for user user_9u8f7lyor","timestamp":"2025-04-22T13:27:58.676Z"}
+{"ip":null,"level":"info","message":"Fetched 1 receipt books in 11ms","timestamp":"2025-04-22T13:27:58.687Z"}
+{"ip":"192.168.0.101","level":"info","message":"Fetched 1 receipt books by user user_9u8f7lyor in 12ms, IP: 192.168.0.101","timestamp":"2025-04-22T13:27:58.688Z"}
+{"level":"info","message":"Super Admin bypass for user user_9u8f7lyor","timestamp":"2025-04-22T13:28:06.568Z"}
+{"ip":"192.168.0.101","level":"info","message":"Fetched unique locations by user user_9u8f7lyor, IP: 192.168.0.101","timestamp":"2025-04-22T13:28:06.570Z"}
+{"level":"info","message":"Super Admin bypass for user user_9u8f7lyor","timestamp":"2025-04-22T13:28:06.573Z"}
+{"level":"info","message":"Super Admin bypass for user user_9u8f7lyor","timestamp":"2025-04-22T13:28:06.576Z"}
+{"level":"info","message":"Fetched all users by user user_9u8f7lyor, IP: 192.168.0.101","timestamp":"2025-04-22T13:28:06.594Z"}
+{"ip":null,"level":"info","message":"Fetched 1 receipt books in 24ms","timestamp":"2025-04-22T13:28:06.598Z"}
+{"ip":"192.168.0.101","level":"info","message":"Fetched 1 receipt books by user user_9u8f7lyor in 26ms, IP: 192.168.0.101","timestamp":"2025-04-22T13:28:06.600Z"}
+{"level":"info","message":"Super Admin bypass for user user_9u8f7lyor","timestamp":"2025-04-22T13:28:06.608Z"}
+{"ip":"192.168.0.101","level":"info","message":"Fetched unique locations by user user_9u8f7lyor, IP: 192.168.0.101","timestamp":"2025-04-22T13:28:06.614Z"}
+{"level":"info","message":"Super Admin bypass for user user_9u8f7lyor","timestamp":"2025-04-22T13:28:06.626Z"}
+{"level":"info","message":"Fetched all users by user user_9u8f7lyor, IP: 192.168.0.101","timestamp":"2025-04-22T13:28:06.632Z"}
+{"level":"info","message":"Super Admin bypass for user user_9u8f7lyor","timestamp":"2025-04-22T13:28:06.636Z"}
+{"ip":null,"level":"info","message":"Fetched 1 receipt books in 5ms","timestamp":"2025-04-22T13:28:06.642Z"}
+{"ip":"192.168.0.101","level":"info","message":"Fetched 1 receipt books by user user_9u8f7lyor in 6ms, IP: 192.168.0.101","timestamp":"2025-04-22T13:28:06.643Z"}
+{"level":"info","message":"Super Admin bypass for user user_9u8f7lyor","timestamp":"2025-04-22T13:28:07.559Z"}
+{"level":"info","message":"Super Admin bypass for user user_9u8f7lyor","timestamp":"2025-04-22T13:28:07.567Z"}
+{"ip":"192.168.0.101","level":"info","message":"Fetched unique locations by user user_9u8f7lyor, IP: 192.168.0.101","timestamp":"2025-04-22T13:28:07.574Z"}
+{"level":"info","message":"Fetched all users by user user_9u8f7lyor, IP: 192.168.0.101","timestamp":"2025-04-22T13:28:07.581Z"}
+{"level":"info","message":"Super Admin bypass for user user_9u8f7lyor","timestamp":"2025-04-22T13:28:07.602Z"}
+{"ip":"192.168.0.101","level":"info","message":"Fetched unique locations by user user_9u8f7lyor, IP: 192.168.0.101","timestamp":"2025-04-22T13:28:07.606Z"}
+{"level":"info","message":"Super Admin bypass for user user_9u8f7lyor","timestamp":"2025-04-22T13:28:07.612Z"}
+{"level":"info","message":"Super Admin bypass for user user_9u8f7lyor","timestamp":"2025-04-22T13:28:07.615Z"}
+{"level":"info","message":"Fetched all users by user user_9u8f7lyor, IP: 192.168.0.101","timestamp":"2025-04-22T13:28:07.619Z"}
+{"ip":null,"level":"info","message":"Fetched 1 receipt books in 31ms","timestamp":"2025-04-22T13:28:07.644Z"}
+{"ip":"192.168.0.101","level":"info","message":"Fetched 1 receipt books by user user_9u8f7lyor in 31ms, IP: 192.168.0.101","timestamp":"2025-04-22T13:28:07.645Z"}
+{"level":"info","message":"Super Admin bypass for user user_9u8f7lyor","timestamp":"2025-04-22T13:28:07.667Z"}
+{"ip":null,"level":"info","message":"Fetched 1 receipt books in 5ms","timestamp":"2025-04-22T13:28:07.673Z"}
+{"ip":"192.168.0.101","level":"info","message":"Fetched 1 receipt books by user user_9u8f7lyor in 5ms, IP: 192.168.0.101","timestamp":"2025-04-22T13:28:07.673Z"}
+{"level":"info","message":"Super Admin bypass for user user_9u8f7lyor","timestamp":"2025-04-22T13:28:11.560Z"}
+{"level":"info","message":"Super Admin bypass for user user_9u8f7lyor","timestamp":"2025-04-22T13:28:11.565Z"}
+{"level":"info","message":"Super Admin bypass for user user_9u8f7lyor","timestamp":"2025-04-22T13:28:11.569Z"}
+{"ip":"192.168.0.101","level":"info","message":"Fetched unique locations by user user_9u8f7lyor, IP: 192.168.0.101","timestamp":"2025-04-22T13:28:11.571Z"}
+{"ip":null,"level":"info","message":"Fetched 1 receipt books in 20ms","timestamp":"2025-04-22T13:28:11.581Z"}
+{"ip":"192.168.0.101","level":"info","message":"Fetched 1 receipt books by user user_9u8f7lyor in 21ms, IP: 192.168.0.101","timestamp":"2025-04-22T13:28:11.582Z"}
+{"level":"info","message":"Fetched all users by user user_9u8f7lyor, IP: 192.168.0.101","timestamp":"2025-04-22T13:28:11.586Z"}
+{"level":"info","message":"Super Admin bypass for user user_9u8f7lyor","timestamp":"2025-04-22T13:28:11.595Z"}
+{"ip":"192.168.0.101","level":"info","message":"Fetched unique locations by user user_9u8f7lyor, IP: 192.168.0.101","timestamp":"2025-04-22T13:28:11.600Z"}
+{"level":"info","message":"Super Admin bypass for user user_9u8f7lyor","timestamp":"2025-04-22T13:28:11.606Z"}
+{"ip":null,"level":"info","message":"Fetched 1 receipt books in 4ms","timestamp":"2025-04-22T13:28:11.611Z"}
+{"ip":"192.168.0.101","level":"info","message":"Fetched 1 receipt books by user user_9u8f7lyor in 5ms, IP: 192.168.0.101","timestamp":"2025-04-22T13:28:11.612Z"}
+{"level":"info","message":"Super Admin bypass for user user_9u8f7lyor","timestamp":"2025-04-22T13:28:11.618Z"}
+{"level":"info","message":"Fetched all users by user user_9u8f7lyor, IP: 192.168.0.101","timestamp":"2025-04-22T13:28:11.622Z"}
+{"level":"info","message":"Super Admin bypass for user user_9u8f7lyor","timestamp":"2025-04-22T13:28:12.573Z"}
+{"level":"info","message":"Super Admin bypass for user user_9u8f7lyor","timestamp":"2025-04-22T13:28:12.579Z"}
+{"level":"info","message":"Super Admin bypass for user user_9u8f7lyor","timestamp":"2025-04-22T13:28:12.584Z"}
+{"ip":null,"level":"info","message":"Fetched 1 receipt books in 14ms","timestamp":"2025-04-22T13:28:12.588Z"}
+{"ip":"192.168.0.101","level":"info","message":"Fetched 1 receipt books by user user_9u8f7lyor in 15ms, IP: 192.168.0.101","timestamp":"2025-04-22T13:28:12.588Z"}
+{"ip":"192.168.0.101","level":"info","message":"Fetched unique locations by user user_9u8f7lyor, IP: 192.168.0.101","timestamp":"2025-04-22T13:28:12.594Z"}
+{"level":"info","message":"Fetched all users by user user_9u8f7lyor, IP: 192.168.0.101","timestamp":"2025-04-22T13:28:12.599Z"}
+{"level":"info","message":"Super Admin bypass for user user_9u8f7lyor","timestamp":"2025-04-22T13:28:12.636Z"}
+{"level":"info","message":"Super Admin bypass for user user_9u8f7lyor","timestamp":"2025-04-22T13:28:12.639Z"}
+{"level":"info","message":"Fetched all users by user user_9u8f7lyor, IP: 192.168.0.101","timestamp":"2025-04-22T13:28:12.647Z"}
+{"level":"info","message":"Super Admin bypass for user user_9u8f7lyor","timestamp":"2025-04-22T13:28:12.652Z"}
+{"ip":"192.168.0.101","level":"info","message":"Fetched unique locations by user user_9u8f7lyor, IP: 192.168.0.101","timestamp":"2025-04-22T13:28:12.655Z"}
+{"ip":null,"level":"info","message":"Fetched 1 receipt books in 18ms","timestamp":"2025-04-22T13:28:12.658Z"}
+{"ip":"192.168.0.101","level":"info","message":"Fetched 1 receipt books by user user_9u8f7lyor in 19ms, IP: 192.168.0.101","timestamp":"2025-04-22T13:28:12.659Z"}
+{"level":"info","message":"Super Admin bypass for user user_9u8f7lyor","timestamp":"2025-04-22T13:28:16.619Z"}
+{"level":"info","message":"Super Admin bypass for user user_9u8f7lyor","timestamp":"2025-04-22T13:28:16.621Z"}
+{"level":"info","message":"Super Admin bypass for user user_9u8f7lyor","timestamp":"2025-04-22T13:28:16.625Z"}
+{"ip":null,"level":"info","message":"Fetched 1 receipt books in 16ms","timestamp":"2025-04-22T13:28:16.636Z"}
+{"ip":"192.168.0.101","level":"info","message":"Fetched 1 receipt books by user user_9u8f7lyor in 17ms, IP: 192.168.0.101","timestamp":"2025-04-22T13:28:16.637Z"}
+{"ip":"192.168.0.101","level":"info","message":"Fetched unique locations by user user_9u8f7lyor, IP: 192.168.0.101","timestamp":"2025-04-22T13:28:16.639Z"}
+{"level":"info","message":"Fetched all users by user user_9u8f7lyor, IP: 192.168.0.101","timestamp":"2025-04-22T13:28:16.642Z"}
+{"level":"info","message":"Super Admin bypass for user user_9u8f7lyor","timestamp":"2025-04-22T13:28:16.659Z"}
+{"level":"info","message":"Super Admin bypass for user user_9u8f7lyor","timestamp":"2025-04-22T13:28:16.662Z"}
+{"level":"info","message":"Super Admin bypass for user user_9u8f7lyor","timestamp":"2025-04-22T13:28:16.665Z"}
+{"level":"info","message":"Fetched all users by user user_9u8f7lyor, IP: 192.168.0.101","timestamp":"2025-04-22T13:28:16.674Z"}
+{"ip":"192.168.0.101","level":"info","message":"Fetched unique locations by user user_9u8f7lyor, IP: 192.168.0.101","timestamp":"2025-04-22T13:28:16.677Z"}
+{"ip":null,"level":"info","message":"Fetched 1 receipt books in 19ms","timestamp":"2025-04-22T13:28:16.685Z"}
+{"ip":"192.168.0.101","level":"info","message":"Fetched 1 receipt books by user user_9u8f7lyor in 20ms, IP: 192.168.0.101","timestamp":"2025-04-22T13:28:16.686Z"}
+{"level":"info","message":"Super Admin bypass for user user_9u8f7lyor","timestamp":"2025-04-22T13:30:15.029Z"}
+{"level":"info","message":"Fetched all users by user user_9u8f7lyor, IP: 192.168.0.101","timestamp":"2025-04-22T13:30:15.043Z"}
+{"level":"info","message":"Super Admin bypass for user user_9u8f7lyor","timestamp":"2025-04-22T13:30:15.072Z"}
+{"level":"info","message":"Fetched all roles by user user_9u8f7lyor, IP: 192.168.0.101","timestamp":"2025-04-22T13:30:15.093Z"}
+{"level":"info","message":"Super Admin bypass for user user_9u8f7lyor","timestamp":"2025-04-22T13:30:23.940Z"}
+{"level":"info","message":"Super Admin bypass for user user_9u8f7lyor","timestamp":"2025-04-22T13:30:23.947Z"}
+{"level":"info","message":"Fetched all users by user user_9u8f7lyor, IP: 192.168.0.101","timestamp":"2025-04-22T13:30:23.969Z"}
+{"ip":"192.168.0.101","level":"info","message":"Fetched all timesheets by user user_9u8f7lyor, IP: 192.168.0.101","timestamp":"2025-04-22T13:30:23.994Z"}
+{"level":"info","message":"Super Admin bypass for user user_9u8f7lyor","timestamp":"2025-04-22T13:30:25.784Z"}
+{"ip":null,"level":"info","message":"Fetched 1 receipt books in 30ms","timestamp":"2025-04-22T13:30:25.814Z"}
+{"ip":"192.168.0.101","level":"info","message":"Fetched 1 receipt books by user user_9u8f7lyor in 31ms, IP: 192.168.0.101","timestamp":"2025-04-22T13:30:25.815Z"}
+{"level":"info","message":"Super Admin bypass for user user_9u8f7lyor","timestamp":"2025-04-22T13:30:25.885Z"}
+{"level":"info","message":"Fetched user user_9u8f7lyor by user user_9u8f7lyor, IP: 192.168.0.101","timestamp":"2025-04-22T13:30:25.903Z"}
+{"level":"info","message":"Fetched profile for user user_9u8f7lyor, IP: 192.168.0.101","timestamp":"2025-04-22T13:30:27.125Z"}
+{"level":"info","message":"Super Admin bypass for user user_9u8f7lyor","timestamp":"2025-04-22T13:30:42.329Z"}
+{"level":"info","message":"Fetched all permissions by user user_9u8f7lyor, IP: 192.168.0.101","timestamp":"2025-04-22T13:30:42.337Z"}
+{"level":"info","message":"Super Admin bypass for user user_9u8f7lyor","timestamp":"2025-04-22T13:30:52.020Z"}
+{"ip":"192.168.0.101","level":"info","message":"Fetched all checklists by user user_9u8f7lyor, IP: 192.168.0.101","timestamp":"2025-04-22T13:30:52.033Z"}
+{"level":"info","message":"Super Admin bypass for user user_9u8f7lyor","timestamp":"2025-04-22T13:30:54.985Z"}
+{"level":"info","message":"Fetched notification rules by user: user_9u8f7lyor, IP: 192.168.0.101","timestamp":"2025-04-22T13:30:54.988Z"}
+{"level":"info","message":"Initiating token refresh","timestamp":"2025-04-22T13:41:11.539Z"}
+{"accessTokenExpiresIn":900,"level":"info","message":"Tokens refreshed successfully","refreshTokenRotatedAt":"2025-04-22T13:41:11.610Z","timestamp":"2025-04-22T13:41:11.610Z"}
+{"level":"info","message":"Refresh token successful","timestamp":"2025-04-22T13:41:11.611Z"}
+{"level":"info","message":"Keycloak admin token obtained","timestamp":"2025-04-22T13:48:35.700Z"}
+{"level":"info","message":"Login response generated for user user_9u8f7lyor","timestamp":"2025-04-22T13:48:35.930Z"}
+{"level":"info","message":"Login attempt for superadmin@example.com, requires2FA: false","timestamp":"2025-04-22T13:48:35.932Z"}
+{"level":"info","message":"Keycloak admin token obtained","timestamp":"2025-04-22T13:48:36.248Z"}
+{"level":"info","message":"Login response generated for user user_9u8f7lyor","timestamp":"2025-04-22T13:48:36.344Z"}
+{"level":"info","message":"Login attempt for superadmin@example.com, requires2FA: false","timestamp":"2025-04-22T13:48:36.348Z"}
+{"level":"info","message":"Fetched roles for user user_9u8f7lyor by user_9u8f7lyor, IP: 192.168.0.101","timestamp":"2025-04-22T13:48:36.444Z"}
+{"level":"info","message":"Fetched effective permissions for user user_9u8f7lyor by user_9u8f7lyor, IP: 192.168.0.101","timestamp":"2025-04-22T13:48:36.528Z"}
+{"level":"info","message":"Super Admin bypass for user user_9u8f7lyor","timestamp":"2025-04-22T13:48:36.792Z"}
+{"level":"info","message":"Fetched notification rules by user: user_9u8f7lyor, IP: 192.168.0.101","timestamp":"2025-04-22T13:48:36.795Z"}
+{"level":"info","message":"Super Admin bypass for user user_9u8f7lyor","timestamp":"2025-04-22T13:48:38.371Z"}
+{"ip":null,"level":"info","message":"Fetched 1 receipt books in 31ms","timestamp":"2025-04-22T13:48:38.404Z"}
+{"ip":"192.168.0.101","level":"info","message":"Fetched 1 receipt books by user user_9u8f7lyor in 33ms, IP: 192.168.0.101","timestamp":"2025-04-22T13:48:38.405Z"}
+{"level":"info","message":"Super Admin bypass for user user_9u8f7lyor","timestamp":"2025-04-22T13:48:38.435Z"}
+{"level":"info","message":"Fetched user user_9u8f7lyor by user user_9u8f7lyor, IP: 192.168.0.101","timestamp":"2025-04-22T13:48:38.439Z"}
+{"level":"info","message":"Super Admin bypass for user user_9u8f7lyor","timestamp":"2025-04-22T13:48:39.674Z"}
+{"level":"info","message":"Super Admin bypass for user user_9u8f7lyor","timestamp":"2025-04-22T13:48:39.680Z"}
+{"level":"info","message":"Fetched all users by user user_9u8f7lyor, IP: 192.168.0.101","timestamp":"2025-04-22T13:48:39.683Z"}
+{"ip":"192.168.0.101","level":"info","message":"Fetched all timesheets by user user_9u8f7lyor, IP: 192.168.0.101","timestamp":"2025-04-22T13:48:39.701Z"}
+{"level":"info","message":"Super Admin bypass for user user_9u8f7lyor","timestamp":"2025-04-22T13:48:41.313Z"}
+{"ip":null,"level":"info","message":"Fetched 1 receipt books in 36ms","timestamp":"2025-04-22T13:48:41.350Z"}
+{"ip":"192.168.0.101","level":"info","message":"Fetched 1 receipt books by user user_9u8f7lyor in 37ms, IP: 192.168.0.101","timestamp":"2025-04-22T13:48:41.352Z"}
+{"level":"info","message":"Super Admin bypass for user user_9u8f7lyor","timestamp":"2025-04-22T13:48:41.375Z"}
+{"level":"info","message":"Fetched user user_9u8f7lyor by user user_9u8f7lyor, IP: 192.168.0.101","timestamp":"2025-04-22T13:48:41.380Z"}
+{"level":"info","message":"Super Admin bypass for user user_9u8f7lyor","timestamp":"2025-04-22T13:48:43.350Z"}
+{"level":"info","message":"Super Admin bypass for user user_9u8f7lyor","timestamp":"2025-04-22T13:48:43.358Z"}
+{"level":"info","message":"Fetched all users by user user_9u8f7lyor, IP: 192.168.0.101","timestamp":"2025-04-22T13:48:43.363Z"}
+{"level":"info","message":"Super Admin bypass for user user_9u8f7lyor","timestamp":"2025-04-22T13:48:43.383Z"}
+{"ip":"192.168.0.101","level":"info","message":"Fetched unique locations by user user_9u8f7lyor, IP: 192.168.0.101","timestamp":"2025-04-22T13:48:43.411Z"}
+{"ip":null,"level":"info","message":"Fetched 1 receipt books in 84ms","timestamp":"2025-04-22T13:48:43.434Z"}
+{"ip":"192.168.0.101","level":"info","message":"Fetched 1 receipt books by user user_9u8f7lyor in 85ms, IP: 192.168.0.101","timestamp":"2025-04-22T13:48:43.435Z"}
+{"level":"info","message":"Fetched roles for user user_9u8f7lyor by user_9u8f7lyor, IP: 192.168.0.101","timestamp":"2025-04-22T13:58:58.371Z"}
+{"level":"info","message":"Fetched effective permissions for user user_9u8f7lyor by user_9u8f7lyor, IP: 192.168.0.101","timestamp":"2025-04-22T13:58:58.391Z"}
+{"level":"info","message":"Fetched roles for user user_9u8f7lyor by user_9u8f7lyor, IP: 192.168.0.101","timestamp":"2025-04-22T13:58:58.397Z"}
+{"level":"info","message":"Fetched effective permissions for user user_9u8f7lyor by user_9u8f7lyor, IP: 192.168.0.101","timestamp":"2025-04-22T13:58:58.424Z"}
+{"level":"info","message":"Super Admin bypass for user user_9u8f7lyor","timestamp":"2025-04-22T13:58:58.455Z"}
+{"level":"info","message":"Super Admin bypass for user user_9u8f7lyor","timestamp":"2025-04-22T13:58:58.458Z"}
+{"level":"info","message":"Fetched all users by user user_9u8f7lyor, IP: 192.168.0.101","timestamp":"2025-04-22T13:58:58.469Z"}
+{"level":"info","message":"Super Admin bypass for user user_9u8f7lyor","timestamp":"2025-04-22T13:58:58.474Z"}
+{"ip":"192.168.0.101","level":"info","message":"Fetched unique locations by user user_9u8f7lyor, IP: 192.168.0.101","timestamp":"2025-04-22T13:58:58.494Z"}
+{"ip":null,"level":"info","message":"Fetched 1 receipt books in 44ms","timestamp":"2025-04-22T13:58:58.501Z"}
+{"ip":"192.168.0.101","level":"info","message":"Fetched 1 receipt books by user user_9u8f7lyor in 46ms, IP: 192.168.0.101","timestamp":"2025-04-22T13:58:58.502Z"}
+{"level":"info","message":"Super Admin bypass for user user_9u8f7lyor","timestamp":"2025-04-22T13:59:22.340Z"}
+{"level":"info","message":"Fetched notification rules by user: user_9u8f7lyor, IP: 192.168.0.101","timestamp":"2025-04-22T13:59:22.343Z"}
+{"level":"info","message":"Super Admin bypass for user user_9u8f7lyor","timestamp":"2025-04-22T13:59:29.943Z"}
+{"level":"info","message":"Super Admin bypass for user user_9u8f7lyor","timestamp":"2025-04-22T13:59:29.946Z"}
+{"level":"info","message":"Fetched all users by user user_9u8f7lyor, IP: 192.168.0.101","timestamp":"2025-04-22T13:59:29.954Z"}
+{"ip":"192.168.0.101","level":"info","message":"Fetched all timesheets by user user_9u8f7lyor, IP: 192.168.0.101","timestamp":"2025-04-22T13:59:29.966Z"}
+{"level":"info","message":"Super Admin bypass for user user_9u8f7lyor","timestamp":"2025-04-22T13:59:32.268Z"}
+{"level":"info","message":"Fetched all users by user user_9u8f7lyor, IP: 192.168.0.101","timestamp":"2025-04-22T13:59:32.281Z"}
+{"level":"info","message":"Super Admin bypass for user user_9u8f7lyor","timestamp":"2025-04-22T13:59:32.298Z"}
+{"level":"info","message":"Fetched all roles by user user_9u8f7lyor, IP: 192.168.0.101","timestamp":"2025-04-22T13:59:32.313Z"}
+{"level":"info","message":"Super Admin bypass for user user_9u8f7lyor","timestamp":"2025-04-22T13:59:34.767Z"}
+{"level":"info","message":"Fetched all permissions by user user_9u8f7lyor, IP: 192.168.0.101","timestamp":"2025-04-22T13:59:34.774Z"}
+{"level":"info","message":"Super Admin bypass for user user_9u8f7lyor","timestamp":"2025-04-22T13:59:36.311Z"}
+{"ip":"192.168.0.101","level":"info","message":"Fetched all checklists by user user_9u8f7lyor, IP: 192.168.0.101","timestamp":"2025-04-22T13:59:36.325Z"}
+{"level":"info","message":"Super Admin bypass for user user_9u8f7lyor","timestamp":"2025-04-22T13:59:38.046Z"}
+{"ip":"192.168.0.101","level":"info","message":"Fetched all reasons by user user_9u8f7lyor, IP: 192.168.0.101","timestamp":"2025-04-22T13:59:38.058Z"}
+{"level":"info","message":"Fetched profile for user user_9u8f7lyor, IP: 192.168.0.101","timestamp":"2025-04-22T13:59:59.713Z"}
+{"level":"info","message":"Cleaning up expired OTPs","timestamp":"2025-04-22T14:00:00.822Z"}
+{"level":"info","message":"Cleaned up 0 expired OTPs","timestamp":"2025-04-22T14:00:00.833Z"}
+{"level":"info","message":"Super Admin bypass for user user_9u8f7lyor","timestamp":"2025-04-22T14:00:03.944Z"}
+{"ip":null,"level":"info","message":"Fetched 1 receipt books in 28ms","timestamp":"2025-04-22T14:00:03.974Z"}
+{"ip":"192.168.0.101","level":"info","message":"Fetched 1 receipt books by user user_9u8f7lyor in 29ms, IP: 192.168.0.101","timestamp":"2025-04-22T14:00:03.974Z"}
+{"level":"info","message":"Super Admin bypass for user user_9u8f7lyor","timestamp":"2025-04-22T14:00:03.995Z"}
+{"level":"info","message":"Fetched user user_9u8f7lyor by user user_9u8f7lyor, IP: 192.168.0.101","timestamp":"2025-04-22T14:00:03.998Z"}
+{"level":"info","message":"Super Admin bypass for user user_9u8f7lyor","timestamp":"2025-04-22T14:00:06.536Z"}
+{"level":"info","message":"Super Admin bypass for user user_9u8f7lyor","timestamp":"2025-04-22T14:00:06.549Z"}
+{"level":"info","message":"Fetched all users by user user_9u8f7lyor, IP: 192.168.0.101","timestamp":"2025-04-22T14:00:06.565Z"}
+{"ip":null,"level":"info","message":"Fetched 1 receipt books in 41ms","timestamp":"2025-04-22T14:00:06.579Z"}
+{"ip":"192.168.0.101","level":"info","message":"Fetched 1 receipt books by user user_9u8f7lyor in 42ms, IP: 192.168.0.101","timestamp":"2025-04-22T14:00:06.581Z"}
+{"level":"info","message":"Super Admin bypass for user user_9u8f7lyor","timestamp":"2025-04-22T14:00:06.586Z"}
+{"ip":"192.168.0.101","level":"info","message":"Fetched unique locations by user user_9u8f7lyor, IP: 192.168.0.101","timestamp":"2025-04-22T14:00:06.591Z"}
+{"level":"info","message":"Super Admin bypass for user user_9u8f7lyor","timestamp":"2025-04-22T14:01:37.702Z"}
+{"level":"info","message":"Super Admin bypass for user user_9u8f7lyor","timestamp":"2025-04-22T14:01:37.709Z"}
+{"level":"info","message":"Super Admin bypass for user user_9u8f7lyor","timestamp":"2025-04-22T14:01:37.713Z"}
+{"ip":"192.168.0.101","level":"info","message":"Fetched unique locations by user user_9u8f7lyor, IP: 192.168.0.101","timestamp":"2025-04-22T14:01:37.731Z"}
+{"level":"info","message":"Fetched all users by user user_9u8f7lyor, IP: 192.168.0.101","timestamp":"2025-04-22T14:01:37.739Z"}
+{"ip":null,"level":"info","message":"Fetched 1 receipt books in 41ms","timestamp":"2025-04-22T14:01:37.744Z"}
+{"ip":"192.168.0.101","level":"info","message":"Fetched 1 receipt books by user user_9u8f7lyor in 43ms, IP: 192.168.0.101","timestamp":"2025-04-22T14:01:37.746Z"}
+{"level":"info","message":"Super Admin bypass for user user_9u8f7lyor","timestamp":"2025-04-22T14:01:37.789Z"}
+{"ip":"192.168.0.101","level":"info","message":"Fetched unique locations by user user_9u8f7lyor, IP: 192.168.0.101","timestamp":"2025-04-22T14:01:37.792Z"}
+{"level":"info","message":"Super Admin bypass for user user_9u8f7lyor","timestamp":"2025-04-22T14:01:37.795Z"}
+{"level":"info","message":"Fetched all users by user user_9u8f7lyor, IP: 192.168.0.101","timestamp":"2025-04-22T14:01:37.800Z"}
+{"level":"info","message":"Super Admin bypass for user user_9u8f7lyor","timestamp":"2025-04-22T14:01:37.804Z"}
+{"ip":null,"level":"info","message":"Fetched 1 receipt books in 17ms","timestamp":"2025-04-22T14:01:37.822Z"}
+{"ip":"192.168.0.101","level":"info","message":"Fetched 1 receipt books by user user_9u8f7lyor in 18ms, IP: 192.168.0.101","timestamp":"2025-04-22T14:01:37.823Z"}
+{"level":"info","message":"Super Admin bypass for user user_9u8f7lyor","timestamp":"2025-04-22T14:01:38.278Z"}
+{"level":"info","message":"Super Admin bypass for user user_9u8f7lyor","timestamp":"2025-04-22T14:01:38.282Z"}
+{"level":"info","message":"Super Admin bypass for user user_9u8f7lyor","timestamp":"2025-04-22T14:01:38.287Z"}
+{"level":"info","message":"Fetched all users by user user_9u8f7lyor, IP: 192.168.0.101","timestamp":"2025-04-22T14:01:38.302Z"}
+{"ip":"192.168.0.101","level":"info","message":"Fetched unique locations by user user_9u8f7lyor, IP: 192.168.0.101","timestamp":"2025-04-22T14:01:38.309Z"}
+{"ip":null,"level":"info","message":"Fetched 1 receipt books in 43ms","timestamp":"2025-04-22T14:01:38.322Z"}
+{"ip":"192.168.0.101","level":"info","message":"Fetched 1 receipt books by user user_9u8f7lyor in 44ms, IP: 192.168.0.101","timestamp":"2025-04-22T14:01:38.323Z"}
+{"level":"info","message":"Super Admin bypass for user user_9u8f7lyor","timestamp":"2025-04-22T14:01:38.335Z"}
+{"ip":"192.168.0.101","level":"info","message":"Fetched unique locations by user user_9u8f7lyor, IP: 192.168.0.101","timestamp":"2025-04-22T14:01:38.338Z"}
+{"level":"info","message":"Super Admin bypass for user user_9u8f7lyor","timestamp":"2025-04-22T14:01:38.345Z"}
+{"ip":null,"level":"info","message":"Fetched 1 receipt books in 18ms","timestamp":"2025-04-22T14:01:38.363Z"}
+{"ip":"192.168.0.101","level":"info","message":"Fetched 1 receipt books by user user_9u8f7lyor in 19ms, IP: 192.168.0.101","timestamp":"2025-04-22T14:01:38.364Z"}
+{"level":"info","message":"Super Admin bypass for user user_9u8f7lyor","timestamp":"2025-04-22T14:01:38.376Z"}
+{"level":"info","message":"Fetched all users by user user_9u8f7lyor, IP: 192.168.0.101","timestamp":"2025-04-22T14:01:38.391Z"}
+{"level":"info","message":"Super Admin bypass for user user_9u8f7lyor","timestamp":"2025-04-22T14:02:00.863Z"}
+{"level":"info","message":"Super Admin bypass for user user_9u8f7lyor","timestamp":"2025-04-22T14:02:00.869Z"}
+{"level":"info","message":"Super Admin bypass for user user_9u8f7lyor","timestamp":"2025-04-22T14:02:00.881Z"}
+{"level":"info","message":"Fetched all users by user user_9u8f7lyor, IP: 192.168.0.101","timestamp":"2025-04-22T14:02:00.915Z"}
+{"ip":"192.168.0.101","level":"info","message":"Fetched unique locations by user user_9u8f7lyor, IP: 192.168.0.101","timestamp":"2025-04-22T14:02:00.929Z"}
+{"ip":null,"level":"info","message":"Fetched 1 receipt books in 82ms","timestamp":"2025-04-22T14:02:00.945Z"}
+{"ip":"192.168.0.101","level":"info","message":"Fetched 1 receipt books by user user_9u8f7lyor in 87ms, IP: 192.168.0.101","timestamp":"2025-04-22T14:02:00.950Z"}
+{"level":"info","message":"Super Admin bypass for user user_9u8f7lyor","timestamp":"2025-04-22T14:02:10.334Z"}
+{"level":"info","message":"Super Admin bypass for user user_9u8f7lyor","timestamp":"2025-04-22T14:02:10.338Z"}
+{"level":"info","message":"Fetched all users by user user_9u8f7lyor, IP: 192.168.0.101","timestamp":"2025-04-22T14:02:10.356Z"}
+{"ip":"192.168.0.101","level":"info","message":"Fetched all timesheets by user user_9u8f7lyor, IP: 192.168.0.101","timestamp":"2025-04-22T14:02:10.364Z"}
+{"level":"info","message":"Super Admin bypass for user user_9u8f7lyor","timestamp":"2025-04-22T14:02:11.792Z"}
+{"ip":null,"level":"info","message":"Fetched 1 receipt books in 38ms","timestamp":"2025-04-22T14:02:11.831Z"}
+{"ip":"192.168.0.101","level":"info","message":"Fetched 1 receipt books by user user_9u8f7lyor in 39ms, IP: 192.168.0.101","timestamp":"2025-04-22T14:02:11.832Z"}
+{"level":"info","message":"Super Admin bypass for user user_9u8f7lyor","timestamp":"2025-04-22T14:02:11.911Z"}
+{"level":"info","message":"Fetched user user_9u8f7lyor by user user_9u8f7lyor, IP: 192.168.0.101","timestamp":"2025-04-22T14:02:11.941Z"}
+{"level":"info","message":"Fetched profile for user user_9u8f7lyor, IP: 192.168.0.101","timestamp":"2025-04-22T14:02:13.158Z"}
+{"level":"info","message":"Super Admin bypass for user user_9u8f7lyor","timestamp":"2025-04-22T14:02:16.162Z"}
+{"ip":null,"level":"info","message":"Fetched 1 receipt books in 20ms","timestamp":"2025-04-22T14:02:16.183Z"}
+{"ip":"192.168.0.101","level":"info","message":"Fetched 1 receipt books by user user_9u8f7lyor in 22ms, IP: 192.168.0.101","timestamp":"2025-04-22T14:02:16.185Z"}
+{"level":"info","message":"Super Admin bypass for user user_9u8f7lyor","timestamp":"2025-04-22T14:02:16.211Z"}
+{"level":"info","message":"Fetched user user_9u8f7lyor by user user_9u8f7lyor, IP: 192.168.0.101","timestamp":"2025-04-22T14:02:16.216Z"}
+{"level":"info","message":"Super Admin bypass for user user_9u8f7lyor","timestamp":"2025-04-22T14:02:21.812Z"}
+{"level":"info","message":"Super Admin bypass for user user_9u8f7lyor","timestamp":"2025-04-22T14:02:21.820Z"}
+{"level":"info","message":"Super Admin bypass for user user_9u8f7lyor","timestamp":"2025-04-22T14:02:21.830Z"}
+{"ip":"192.168.0.101","level":"info","message":"Fetched unique locations by user user_9u8f7lyor, IP: 192.168.0.101","timestamp":"2025-04-22T14:02:21.851Z"}
+{"level":"info","message":"Fetched all users by user user_9u8f7lyor, IP: 192.168.0.101","timestamp":"2025-04-22T14:02:21.866Z"}
+{"ip":null,"level":"info","message":"Fetched 1 receipt books in 72ms","timestamp":"2025-04-22T14:02:21.884Z"}
+{"ip":"192.168.0.101","level":"info","message":"Fetched 1 receipt books by user user_9u8f7lyor in 77ms, IP: 192.168.0.101","timestamp":"2025-04-22T14:02:21.889Z"}
+{"level":"info","message":"Super Admin bypass for user user_9u8f7lyor","timestamp":"2025-04-22T14:02:43.826Z"}
+{"ip":null,"level":"info","message":"Fetched 1 receipt books in 43ms","timestamp":"2025-04-22T14:02:43.870Z"}
+{"ip":"192.168.0.101","level":"info","message":"Fetched 1 receipt books by user user_9u8f7lyor in 44ms, IP: 192.168.0.101","timestamp":"2025-04-22T14:02:43.872Z"}
+{"level":"info","message":"Super Admin bypass for user user_9u8f7lyor","timestamp":"2025-04-22T14:02:43.910Z"}
+{"level":"info","message":"Fetched user user_9u8f7lyor by user user_9u8f7lyor, IP: 192.168.0.101","timestamp":"2025-04-22T14:02:43.931Z"}
