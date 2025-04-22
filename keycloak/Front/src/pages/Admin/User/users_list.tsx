@@ -1,12 +1,14 @@
-import React, { useMemo, useEffect, useCallback, useState } from "react";
-import { useAuth } from "../../../context/AuthContext";
-import { getSupervisorsByUser, getManagersByUser } from "../../../apis/userAPI";
-import User from "../../../models/User";
-import Role from "../../../models/Role";
-import { SortField, SortOrder, ViewMode } from "../adminTypes";
-import { t } from "i18next";
-import { debounce } from "lodash";
-import "../AdminDashboard.css";
+import React, { useMemo, useEffect, useCallback, useState } from 'react';
+import { useAuth } from '../../../context/AuthContext';
+import { getSupervisorsByUser, getManagersByUser, getAllUsers } from '../../../apis/userAPI';
+import User from '../../../models/User';
+import Role from '../../../models/Role';
+import { SortField, SortOrder, ViewMode } from '../adminTypes';
+import { t } from 'i18next';
+import { debounce } from 'lodash';
+import { onNotification, offNotification, isSocketConnected } from '../../../lib/socket';
+import { getEntityEvents, NotificationEvent } from '../../../lib/notifEvents';
+import '../AdminDashboard.css';
 
 interface UsersListProps {
   users: User[];
@@ -140,7 +142,7 @@ const UsersList: React.FC<UsersListProps> = React.memo(
           if (
             retries > 0 &&
             err instanceof Error &&
-            err.message.includes("out of shared memory")
+            err.message.includes('out of shared memory')
           ) {
             const delay = BASE_RETRY_DELAY * (MAX_RETRIES - retries + 1);
             await new Promise((resolve) => setTimeout(resolve, delay));
@@ -151,6 +153,114 @@ const UsersList: React.FC<UsersListProps> = React.memo(
       },
       [getCachedData, setCachedData]
     );
+
+    // WebSocket listener for user events
+    useEffect(() => {
+      if (view !== 'users' || !userPermissions.canViewUsers || !isSocketConnected()) return;
+
+      let isMounted = true;
+
+      const setupNotifications = async () => {
+        try {
+          const userEvents = await getEntityEvents('user');
+          if (!isMounted) return;
+
+          const handleUserEvent = async (event: NotificationEvent, data: User) => {
+            console.log(`Received WebSocket event: ${event}`, data);
+            cache.delete('all_users'); // Clear cache to ensure fresh data
+            try {
+              switch (event) {
+                case 'user:created': {
+                  const newUser: User = {
+                    userID: data.userID,
+                    firstname: data.firstname || 'Unknown',
+                    lastname: data.lastname || 'User',
+                    email: data.email,
+                    phone: data.phone,
+                    Roles: data.Roles || [],
+                    password: '',
+                    wallet: data.wallet,
+                  };
+                  // Check if user matches filters
+                  const matchesSearch =
+                    !internalSearchQuery ||
+                    `${newUser.firstname} ${newUser.lastname}`
+                      .toLowerCase()
+                      .includes(internalSearchQuery.toLowerCase()) ||
+                    newUser.email.toLowerCase().includes(internalSearchQuery.toLowerCase()) ||
+                    (newUser.phone && newUser.phone.includes(internalSearchQuery));
+                  const matchesRole =
+                    roleFilter === 'all' ||
+                    newUser.Roles?.some((r) => String(r.roleID) === roleFilter);
+                  if (matchesSearch && matchesRole) {
+                    setUsers((prev) => [...prev, newUser]);
+                  }
+                  break;
+                }
+                case 'user:updated':
+                case 'user:profile_updated':
+                case 'user:supervisors_assigned':
+                case 'user:supervisors_revoked':
+                case 'user:google_account_assigned': {
+                  setUsers((prev) =>
+                    prev.map((u) =>
+                      u.userID === data.userID
+                        ? { ...u, ...data, updatedAt: new Date() }
+                        : u
+                    )
+                  );
+                  break;
+                }
+                case 'user:deleted': {
+                  setUsers((prev) => prev.filter((u) => u.userID !== data.userID));
+                  break;
+                }
+                default:
+                  // Handle custom user events defined by admin
+                  if (event.startsWith('user:')) {
+                    // Refresh user list for unrecognized user events
+                    const usersData = await getAllUsers();
+                    setCachedData('all_users', usersData);
+                    setUsers(usersData);
+                  }
+              }
+              // Update cache
+              const usersData = await getAllUsers();
+              setCachedData('all_users', usersData);
+            } catch (err) {
+              console.error('Failed to handle user event:', err);
+              setError('Failed to update user list in real-time.');
+            }
+          };
+
+          userEvents.forEach((event) => {
+            onNotification((ev: NotificationEvent, data: unknown) => {
+              if (ev === event && isMounted) {
+                handleUserEvent(ev, data as User);
+              }
+            });
+          });
+        } catch (err) {
+          console.error('Failed to set up WebSocket notifications:', err);
+          setError('Failed to initialize real-time updates.');
+        }
+      };
+
+      setupNotifications();
+
+      return () => {
+        isMounted = false;
+        offNotification();
+      };
+    }, [
+      view,
+      userPermissions.canViewUsers,
+      internalSearchQuery,
+      roleFilter,
+      setUsers,
+      setError,
+      setCachedData,
+    ]);
 
     const filteredAndSortedUsers = useMemo(() => {
       let result = [...users];
@@ -176,24 +286,21 @@ const UsersList: React.FC<UsersListProps> = React.memo(
         );
       }
 
-      if (roleFilter !== "all") {
-        // Map roleFilter ID to roleName using roles array
-        const selectedRole = roles.find(r => String(r.roleID).trim() === String(roleFilter).trim());
+      if (roleFilter !== 'all') {
+        const selectedRole = roles.find((r) => String(r.roleID).trim() === String(roleFilter).trim());
         const roleNameFilter = selectedRole?.name;
 
         result = result.filter((user) => {
           const userRoles = Array.isArray(user.Roles) ? user.Roles : [];
-          const hasRole = userRoles.some((role) => {
-            // Try matching by common ID fields
+          return userRoles.some((role) => {
             const roleIdMatch =
-              (role.roleID && String(role.roleID).trim() === String(roleFilter).trim());
-
-            // Fallback to roleName if ID fields are unavailable
-            const roleNameMatch = roleNameFilter && role.name && String(role.name).trim() === String(roleNameFilter).trim();
-
+              role.roleID && String(role.roleID).trim() === String(roleFilter).trim();
+            const roleNameMatch =
+              roleNameFilter &&
+              role.name &&
+              String(role.name).trim() === String(roleNameFilter).trim();
             return roleIdMatch || roleNameMatch;
           });
-          return hasRole;
         });
       }
 
@@ -210,23 +317,23 @@ const UsersList: React.FC<UsersListProps> = React.memo(
 
         let valueA: string, valueB: string;
         switch (sortField) {
-          case "name":
+          case 'name':
             valueA = `${a.firstname} ${a.lastname}`.toLowerCase();
             valueB = `${b.firstname} ${b.lastname}`.toLowerCase();
             break;
-          case "email":
+          case 'email':
             valueA = a.email.toLowerCase();
             valueB = b.email.toLowerCase();
             break;
-          case "role":
-            valueA = a.Roles?.[0]?.name?.toLowerCase() || "no role";
-            valueB = b.Roles?.[0]?.name?.toLowerCase() || "no role";
+          case 'role':
+            valueA = a.Roles?.[0]?.name?.toLowerCase() || 'no role';
+            valueB = b.Roles?.[0]?.name?.toLowerCase() || 'no role';
             break;
           default:
-            valueA = "";
-            valueB = "";
+            valueA = '';
+            valueB = '';
         }
-        return sortOrder === "asc"
+        return sortOrder === 'asc'
           ? valueA.localeCompare(valueB)
           : valueB.localeCompare(valueA);
       });
@@ -269,11 +376,11 @@ const UsersList: React.FC<UsersListProps> = React.memo(
             prev.map((u) => (u.userID === user.userID ? updatedUser : u))
           );
           setSelectedUser(updatedUser);
-          setView("user-details");
+          setView('user-details');
           setError(null);
-        } catch (error: unknown) {
-          console.error("Failed to fetch user details:", error);
-          setError("Failed to load user details.");
+        } catch (error) {
+          console.error('Failed to fetch user details:', error);
+          setError('Failed to load user details.');
         } finally {
           setLoading(false);
           setIsTransitioning(false);
@@ -283,25 +390,25 @@ const UsersList: React.FC<UsersListProps> = React.memo(
     );
 
     const formatPhoneDisplay = useCallback((rawValue: string): string => {
-      const digits = rawValue.replace(/[^\d]/g, "");
-      let formatted = "";
+      const digits = rawValue.replace(/[^\d]/g, '');
+      let formatted = '';
       if (digits.length > 0) formatted += digits.slice(0, 2);
-      if (digits.length > 2) formatted += " " + digits.slice(2, 5);
-      if (digits.length > 5) formatted += " " + digits.slice(5, 8);
+      if (digits.length > 2) formatted += ' ' + digits.slice(2, 5);
+      if (digits.length > 5) formatted += ' ' + digits.slice(5, 8);
       return formatted;
     }, []);
 
     const renderSkeleton = () => (
       <div className="users-list" aria-busy="true">
         <div className="table-card">
-          <h2>{t("usersList.title")}</h2>
+          <h2>{t('usersList.title')}</h2>
           <div className="table-container">
             <div className="table-head">
               <div className="table-row">
-                <div className="table-cell">{t("usersList.tableHeaders.name")}</div>
-                <div className="table-cell">{t("usersList.tableHeaders.email")}</div>
-                <div className="table-cell">{t("usersList.tableHeaders.phone")}</div>
-                <div className="table-cell">{t("usersList.tableHeaders.roles")}</div>
+                <div className="table-cell">{t('usersList.tableHeaders.name')}</div>
+                <div className="table-cell">{t('usersList.tableHeaders.email')}</div>
+                <div className="table-cell">{t('usersList.tableHeaders.phone')}</div>
+                <div className="table-cell">{t('usersList.tableHeaders.roles')}</div>
               </div>
             </div>
             <div className="table-body">
@@ -327,7 +434,7 @@ const UsersList: React.FC<UsersListProps> = React.memo(
       </div>
     );
 
-    if (view !== "users" || !userPermissions.canViewUsers) {
+    if (view !== 'users' || !userPermissions.canViewUsers) {
       return null;
     }
 
@@ -336,14 +443,14 @@ const UsersList: React.FC<UsersListProps> = React.memo(
         {(loading || filterLoading) && renderSkeleton()}
         {!loading && !filterLoading && (
           <div className="table-card">
-            <h2>{t("usersList.title")}</h2>
+            <h2>{t('usersList.title')}</h2>
             <div className="table-container">
               <div className="table-head">
                 <div className="table-row">
-                  <div className="table-cell">{t("usersList.tableHeaders.name")}</div>
-                  <div className="table-cell">{t("usersList.tableHeaders.email")}</div>
-                  <div className="table-cell">{t("usersList.tableHeaders.phone")}</div>
-                  <div className="table-cell">{t("usersList.tableHeaders.roles")}</div>
+                  <div className="table-cell">{t('usersList.tableHeaders.name')}</div>
+                  <div className="table-cell">{t('usersList.tableHeaders.email')}</div>
+                  <div className="table-cell">{t('usersList.tableHeaders.phone')}</div>
+                  <div className="table-cell">{t('usersList.tableHeaders.roles')}</div>
                 </div>
               </div>
               <div className="table-body">
@@ -357,17 +464,17 @@ const UsersList: React.FC<UsersListProps> = React.memo(
                       <div className="table-cell">{`${user.firstname} ${user.lastname}`}</div>
                       <div className="table-cell">{user.email}</div>
                       <div className="table-cell">{`+216 ${formatPhoneDisplay(
-                        user.phone || "-- --- ---"
+                        user.phone || '-- --- ---'
                       )}`}</div>
                       <div className="table-cell">
                         {user.Roles == null || user.Roles.length === 0 ? (
-                          "No Roles"
-                        ) : user.Roles.map((r) => r.name).join(", ").length > 16 ? (
-                          <span title={user.Roles.map((r) => r.name).join(", ")}>
-                            {`${user.Roles.map((r) => r.name).join(", ").slice(0, 16)}...`}
+                          'No Roles'
+                        ) : user.Roles.map((r) => r.name).join(', ').length > 16 ? (
+                          <span title={user.Roles.map((r) => r.name).join(', ')}>
+                            {`${user.Roles.map((r) => r.name).join(', ').slice(0, 16)}...`}
                           </span>
                         ) : (
-                          user.Roles.map((r) => r.name).join(", ")
+                          user.Roles.map((r) => r.name).join(', ')
                         )}
                       </div>
                     </div>
@@ -375,7 +482,7 @@ const UsersList: React.FC<UsersListProps> = React.memo(
                 ) : (
                   <div className="table-row">
                     <div className="table-cell">
-                      {t("usersList.noUsersFound")}
+                      {t('usersList.noUsersFound')}
                     </div>
                   </div>
                 )}
@@ -387,10 +494,10 @@ const UsersList: React.FC<UsersListProps> = React.memo(
                   onClick={() => setCurrentPage((p) => Math.max(1, p - 1))}
                   disabled={currentPage === 1}
                 >
-                  {t("userView.pagination.previous")}
+                  {t('userView.pagination.previous')}
                 </button>
                 <span>
-                  {t("userView.pagination.pageInfo", {
+                  {t('userView.pagination.pageInfo', {
                     currentPage,
                     totalPages,
                   })}
@@ -399,7 +506,7 @@ const UsersList: React.FC<UsersListProps> = React.memo(
                   onClick={() => setCurrentPage((p) => Math.min(totalPages, p + 1))}
                   disabled={currentPage === totalPages}
                 >
-                  {t("userView.pagination.next")}
+                  {t('userView.pagination.next')}
                 </button>
               </div>
             )}
