@@ -112,7 +112,7 @@ class NotificationService {
                 event,
                 type: data.type || 'general',
                 recipients: {
-                    roles: ['admin'], // Default to admin role; adjust as needed
+                    roles: ['admin', 'Super Admin'], // Default to admin role; adjust as needed
                     userIDs: []
                 },
                 channels: {
@@ -122,7 +122,7 @@ class NotificationService {
                     inApp: true
                 },
                 conditions: data.conditions || null,
-                messageTemplate: `Notification for ${event}: ${JSON.stringify(data)}`,
+                messageTemplate: `Notification for ${event}}`,
                 enabled: false // Rule is created disabled
             };
 
