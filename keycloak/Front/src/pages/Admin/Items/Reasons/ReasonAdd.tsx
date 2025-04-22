@@ -1,20 +1,18 @@
 /**
  * ReasonAdd.tsx
  * Component for adding a new reason item with validation and permission checks.
- * Optimized with memoization, debouncing, and skeleton loading for performance.
+ * Optimized with memoization, debouncing, and fade-in animation for performance.
  * Uses existing AdminDashboard.css for styling.
  */
 
-import React, { useState, useCallback, useMemo, lazy, Suspense } from "react";
+import React, { useState, useCallback, useMemo } from "react";
 import { debounce } from "lodash";
+import { motion } from "framer-motion"; // Added Framer Motion import
 import "../../AdminDashboard.css";
 import { createReason } from "../../../../apis/reasonAPI";
 import { useAuth } from "../../../../context/AuthContext";
 import { Reason } from "../../../../models/Reason";
 import { ViewMode } from "pages/Admin/adminTypes";
-
-// Lazy-loaded skeleton component
-const SkeletonForm = lazy(() => import("../SkeletonComponents").then(module => ({ default: module.SkeletonForm })));
 
 // Props interface
 interface ReasonAddProps {
@@ -44,17 +42,20 @@ const ReasonAdd: React.FC<ReasonAddProps> = React.memo(
         );
 
         // Input validation function
-        const validateInput = useCallback((text: string): string | null => {
-            const trimmed = text.trim();
-            if (!trimmed) return "Item cannot be empty.";
-            if (trimmed.length < 5) return "Item must be at least 5 characters.";
-            if (trimmed.length > 100) return "Item cannot exceed 100 characters.";
-            const duplicate = reasons.some(
-                (r) => r.item.toLowerCase() === trimmed.toLowerCase()
-            );
-            if (duplicate) return "Item already exists.";
-            return null;
-        }, [reasons]);
+        const validateInput = useCallback(
+            (text: string): string | null => {
+                const trimmed = text.trim();
+                if (!trimmed) return "Item cannot be empty.";
+                if (trimmed.length < 5) return "Item must be at least 5 characters.";
+                if (trimmed.length > 100) return "Item cannot exceed 100 characters.";
+                const duplicate = reasons.some(
+                    (r) => r.item.toLowerCase() === trimmed.toLowerCase()
+                );
+                if (duplicate) return "Item already exists.";
+                return null;
+            },
+            [reasons]
+        );
 
         // Debounced input change handler
         const debouncedSetNewItem = useCallback(
@@ -107,7 +108,11 @@ const ReasonAdd: React.FC<ReasonAddProps> = React.memo(
         if (view !== "add-reason" || !userPermissions.canCreateReasons) return null;
 
         return (
-            <Suspense fallback={<SkeletonForm />}>
+            <motion.div
+                initial={{ opacity: 0 }}
+                animate={{ opacity: 1 }}
+                transition={{ duration: 0.3 }}
+            >
                 <div className="form-card add-form">
                     <div className="form-section">
                         <h3 className="form-header">Add New Reason</h3>
@@ -140,7 +145,7 @@ const ReasonAdd: React.FC<ReasonAddProps> = React.memo(
                         </div>
                     </div>
                 </div>
-            </Suspense>
+            </motion.div>
         );
     }
 );

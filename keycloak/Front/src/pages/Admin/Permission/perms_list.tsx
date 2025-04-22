@@ -34,7 +34,6 @@ interface PermsListProps {
 // Constants
 const SKELETON_CATEGORIES = 2; // Number of permission categories
 const SKELETON_PERMS_PER_CATEGORY = 4; // Number of permission cards per category
-const SKELETON_DELAY = 500; // Delay skeleton visibility for 0.5 seconds
 
 // Animation variants
 const viewVariants = {
@@ -51,7 +50,7 @@ const PermsList: React.FC<PermsListProps> = React.memo(
 
         // State declarations
         const [internalSearchQuery, setInternalSearchQuery] = useState(searchQuery);
-        const [loading, setLoading] = useState(true);
+        const [loading, setLoading] = useState(true); // Initialize as true
         const [permissionSearch, setPermissionSearch] = useState("");
         const [selectedCategory, setSelectedCategory] = useState<string>("all");
         const [selectedPermissionId, setSelectedPermissionId] = useState<string | null>(null); // Track toggled permission
@@ -92,11 +91,12 @@ const PermsList: React.FC<PermsListProps> = React.memo(
             return () => debouncedSetInternalSearchQuery.cancel();
         }, [searchQuery, debouncedSetInternalSearchQuery]);
 
-        // Simulate delayed loading for skeleton
+        // Dynamic loading state based on permissionsList prop
         useEffect(() => {
-            const timer = setTimeout(() => setLoading(false), SKELETON_DELAY);
-            return () => clearTimeout(timer);
-        }, []);
+            if (permissionsList.length > 0) {
+                setLoading(false); // Set loading to false when permissions are available
+            }
+        }, [permissionsList]);
 
         // Memoized filtered permissions
         const filteredPermissions = useMemo(() => {
@@ -180,7 +180,11 @@ const PermsList: React.FC<PermsListProps> = React.memo(
             <div className="permissions-management">
                 {loading && renderSkeleton()}
                 {!loading && (
-                    <>
+                    <motion.div
+                        initial={{ opacity: 0 }}
+                        animate={{ opacity: 1 }}
+                        transition={{ duration: 0.3 }}
+                    >
                         <div className="permissions-filter-section">
                             <div className="permissions-filter-header">
                                 <FaFilter />
@@ -230,8 +234,9 @@ const PermsList: React.FC<PermsListProps> = React.memo(
                                                             role="button"
                                                             tabIndex={0}
                                                             onKeyDown={(e) => {
-                                                                if (e.key === "Enter" || e.key === " ")
+                                                                if (e.key === "Enter" || e.key === " ") {
                                                                     handlePermissionToggle(permission);
+                                                                }
                                                             }}
                                                         >
                                                             <h4>{permission.name}</h4>
@@ -266,7 +271,7 @@ const PermsList: React.FC<PermsListProps> = React.memo(
                                 renderSkeleton()
                             )}
                         </div>
-                    </>
+                    </motion.div>
                 )}
             </div>
         );

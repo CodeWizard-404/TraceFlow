@@ -1,18 +1,27 @@
+/**
+ * NotificationRuleView.tsx
+ * Component for viewing and editing a selected notification rule's details.
+ * Optimized with dynamic loading state, skeleton loader, fade-in animation, and efficient state management.
+ * Includes validation, caching, and accessibility features.
+ */
+
 import React, { useState, useEffect, useRef } from 'react';
-import { FaSave } from 'react-icons/fa';
+import { FaSave, FaTrash } from 'react-icons/fa';
 import { motion } from 'framer-motion';
 import Select, { MultiValue, SingleValue } from 'react-select';
 import NotificationRule from '../../../models/NotificationRule';
-import { createNotificationRule } from '../../../apis/notificationAPI';
+import { updateNotificationRule, deleteNotificationRule } from '../../../apis/notificationAPI';
 import { getAllUsers } from '../../../apis/userAPI';
 import { getAllRoles } from '../../../apis/roleAPI';
 import { ViewMode } from '../adminTypes';
-import '../AdminDashboard.css';
 import User from '../../../models/User';
 import Role from '../../../models/Role';
 import { isValidNotificationEvent, getNotificationEntities, getEntityActions, getNotificationTypes } from '../../../lib/notifEvents';
+import '../AdminDashboard.css';
 
-interface NotificationRuleAddProps {
+interface NotificationRuleViewProps {
+    selectedRule: NotificationRule | null;
+    setSelectedRule: React.Dispatch<React.SetStateAction<NotificationRule | null>>;
     rules: NotificationRule[];
     setRules: React.Dispatch<React.SetStateAction<NotificationRule[]>>;
     view: ViewMode;
@@ -20,7 +29,6 @@ interface NotificationRuleAddProps {
     setError: React.Dispatch<React.SetStateAction<string | null>>;
 }
 
-const SKELETON_DELAY = 500;
 const CACHE_DURATION = 5 * 60 * 1000; // 5 minutes
 
 const formVariants = {
@@ -28,7 +36,7 @@ const formVariants = {
     visible: { opacity: 1, y: 0, transition: { duration: 0.3 } },
 };
 
-const NotificationRuleAddSkeleton: React.FC = () => (
+const NotificationRuleViewSkeleton: React.FC = () => (
     <div className="form-card skeleton">
         <div className="custom-skeleton pulsing" style={{ width: '200px', height: '24px', marginBottom: '16px' }} />
         {[...Array(4)].map((_, i) => (
@@ -42,17 +50,20 @@ const NotificationRuleAddSkeleton: React.FC = () => (
         ))}
         <div className="form-actions-0">
             <div className="custom-skeleton pulsing" style={{ width: '120px', height: '40px' }} />
+            <div className="custom-skeleton pulsing" style={{ width: '120px', height: '40px' }} />
         </div>
     </div>
 );
 
-const NotificationRuleAdd: React.FC<NotificationRuleAddProps> = ({
+const NotificationRuleView: React.FC<NotificationRuleViewProps> = ({
+    selectedRule,
+    setSelectedRule,
     setRules,
     setView,
     setError,
     view,
 }) => {
-    const [formData, setFormData] = useState<Partial<NotificationRule>>({
+    const [formData, setFormData] = useState<Partial<NotificationRule>>(selectedRule || {
         event: '',
         type: 'general',
         recipients: { roles: [], userIDs: [] },
@@ -82,6 +93,7 @@ const NotificationRuleAdd: React.FC<NotificationRuleAddProps> = ({
     useEffect(() => {
         const fetchData = async () => {
             try {
+                setLoading(true);
                 const [usersData, rolesData, entitiesData, typesData] = await Promise.all([
                     getAllUsers(),
                     getAllRoles(),
@@ -90,8 +102,6 @@ const NotificationRuleAdd: React.FC<NotificationRuleAddProps> = ({
                 ]);
                 setUsers(usersData || []);
                 setRoles(rolesData || []);
-
-                // Set notification types
                 setNotificationTypes(typesData || []);
 
                 // Set entities and actions
@@ -104,14 +114,42 @@ const NotificationRuleAdd: React.FC<NotificationRuleAddProps> = ({
                     cachedEntities.current = entitiesData;
                     cachedTypes.current = typesData;
                     const actionMap: Record<string, string[]> = {};
-                    for (const entity of entitiesData) {
-                        actionMap[entity] = await getEntityActions(entity);
-                    }
+                    await Promise.all(
+                        entitiesData.map(async (entity) => {
+                            actionMap[entity] = await getEntityActions(entity);
+                        })
+                    );
                     cachedEntityActions.current = actionMap;
                     lastCacheTime.current = Date.now();
                 }
                 setEntities(cachedEntities.current || []);
                 setEntityActions(cachedEntityActions.current || {});
+
+                // Initialize form data with selected rule
+                if (selectedRule) {
+                    setFormData({
+                        ...selectedRule,
+                        messageTemplate: selectedRule.messageTemplate || '',
+                    });
+                    const [entity, action] = selectedRule.event.split(':');
+                    setSelectedEntity(entity || null);
+                    setSelectedAction(action || null);
+                    setSelectedUsers(
+                        selectedRule.recipients.userIDs?.map((id) => {
+                            const user = usersData.find((u) => u.userID === id);
+                            return {
+                                value: id,
+                                label: user ? `${user.firstname} ${user.lastname} (${user.phone})` : id,
+                            };
+                        }) || []
+                    );
+                    setSelectedRoles(
+                        selectedRule.recipients.roles?.map((name) => ({
+                            value: name,
+                            label: name,
+                        })) || []
+                    );
+                }
             } catch (err) {
                 setError('Failed to fetch data');
                 console.error(err);
@@ -119,23 +157,23 @@ const NotificationRuleAdd: React.FC<NotificationRuleAddProps> = ({
                 setLoading(false);
             }
         };
-        const timer = setTimeout(() => fetchData(), SKELETON_DELAY);
-        return () => clearTimeout(timer);
-    }, [setError]);
+        fetchData();
+    }, [selectedRule, setError]);
 
     const validateEvent = async (entity: string | null, action: string | null): Promise<string> => {
         if (!entity) return 'Entity is required';
         if (!action) return 'Action is required';
         const event = `${entity}:${action}`;
         const isValid = await isValidNotificationEvent(event);
-        if (isValid) return 'Event already exists; it will reuse existing rules';
+        if (isValid && event !== selectedRule?.event) {
+            return 'Event already exists; it will reuse existing rules';
+        }
         return '';
     };
 
     const validateMessageTemplate = (value: string): string => {
         const trimmed = value.trim();
         if (!trimmed) return 'Message template is required';
-        if (trimmed.length < 5) return 'Message template must be at least 5 characters';
         return '';
     };
 
@@ -144,7 +182,7 @@ const NotificationRuleAdd: React.FC<NotificationRuleAddProps> = ({
     ) => {
         const entity = option ? option.value : null;
         setSelectedEntity(entity);
-        setSelectedAction(null); // Reset action when entity changes
+        setSelectedAction(null);
         const event = entity && selectedAction ? `${entity}:${selectedAction}` : '';
         setFormData((prev) => ({ ...prev, event }));
         setTouched((prev) => ({ ...prev, event: true }));
@@ -259,7 +297,7 @@ const NotificationRuleAdd: React.FC<NotificationRuleAddProps> = ({
         }
 
         try {
-            const newRule = await createNotificationRule({
+            const updatedRule = await updateNotificationRule(formData.ruleID!, {
                 ...formData,
                 event: selectedEntity && selectedAction ? `${selectedEntity}:${selectedAction}` : '',
                 recipients: {
@@ -267,29 +305,51 @@ const NotificationRuleAdd: React.FC<NotificationRuleAddProps> = ({
                     userIDs: selectedUsers.map((user) => user.value),
                 },
             } as NotificationRule);
-            setRules((prev) => [...prev, newRule]);
-            setError('Notification rule created successfully');
+            setRules((prev) =>
+                prev.map((r) => (r.ruleID === updatedRule.ruleID ? updatedRule : r))
+            );
+            setSelectedRule(updatedRule);
+            // Invalidate cache
+            cachedEntities.current = null;
+            cachedEntityActions.current = null;
+            cachedTypes.current = null;
+            lastCacheTime.current = 0;
+            setError('Notification rule updated successfully');
             setView('notifications');
         } catch (err: unknown) {
-            console.error('Failed to create notification rule:', err);
-            setError('Failed to create notification rule');
+            console.error('Failed to update notification rule:', err);
+            setError('Failed to update notification rule');
         }
     };
 
-    if (view !== 'add-notification-rule') return null;
+    const handleDelete = async () => {
+        if (!formData || !window.confirm('Are you sure you want to delete this notification rule?')) return;
+        try {
+            await deleteNotificationRule(formData.ruleID!);
+            setRules((prev) => prev.filter((r) => r.ruleID !== formData.ruleID));
+            setSelectedRule(null);
+            setError('Notification rule deleted successfully');
+            setView('notifications');
+        } catch (err: unknown) {
+            console.error('Failed to delete notification rule:', err);
+            setError('Failed to delete notification rule');
+        }
+    };
+
+    if (view !== 'notification-rule-details') return null;
 
     return (
-        <motion.div
-            className="form-card"
-            variants={formVariants}
-            initial="hidden"
-            animate="visible"
-        >
-            {loading && <NotificationRuleAddSkeleton />}
-            {!loading && (
-                <>
+        <div className="form-card">
+            {loading ? (
+                <NotificationRuleViewSkeleton />
+            ) : (
+                <motion.div
+                    variants={formVariants}
+                    initial="hidden"
+                    animate="visible"
+                >
                     <div className="form-header-container">
-                        <h2>Add Notification Rule</h2>
+                        <h2>Edit Notification Rule</h2>
                         <label className="toggle-switch">
                             <input
                                 type="checkbox"
@@ -372,7 +432,7 @@ const NotificationRuleAdd: React.FC<NotificationRuleAddProps> = ({
                         <h3 className="form-header">Recipients</h3>
                         <div className="form-row">
                             <div className="form-group">
-                                <label htmlFor="recipients.roles">
+                                <label htmlFor="roles">
                                     Recipient Roles
                                     <span className="tooltip" data-tooltip="Select roles that will receive this notification"></span>
                                 </label>
@@ -387,7 +447,7 @@ const NotificationRuleAdd: React.FC<NotificationRuleAddProps> = ({
                                 />
                             </div>
                             <div className="form-group">
-                                <label htmlFor="recipients.userIDs">
+                                <label htmlFor="userIDs">
                                     Recipient Users
                                     <span className="tooltip" data-tooltip="Select specific users to receive this notification"></span>
                                 </label>
@@ -431,7 +491,7 @@ const NotificationRuleAdd: React.FC<NotificationRuleAddProps> = ({
                             <textarea
                                 id="messageTemplate"
                                 name="messageTemplate"
-                                value={formData.messageTemplate}
+                                value={formData.messageTemplate || ''}
                                 onChange={handleChange}
                                 className={`form-input ${touched.messageTemplate && formErrors.messageTemplate ? 'invalid' : ''}`}
                                 required
@@ -451,11 +511,20 @@ const NotificationRuleAdd: React.FC<NotificationRuleAddProps> = ({
                         >
                             <FaSave /> Save
                         </motion.button>
+                        <motion.button
+                            className="action-button delete-button"
+                            onClick={handleDelete}
+                            whileHover={{ scale: 1.05, boxShadow: '0 0 8px rgba(232, 31, 118, 0.5)' }}
+                            whileTap={{ scale: 0.95 }}
+                            aria-label="Delete Rule"
+                        >
+                            <FaTrash /> Delete
+                        </motion.button>
                     </div>
-                </>
+                </motion.div>
             )}
-        </motion.div>
+        </div>
     );
 };
 
-export default NotificationRuleAdd;
+export default NotificationRuleView;

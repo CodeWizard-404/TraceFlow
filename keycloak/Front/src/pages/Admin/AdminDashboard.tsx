@@ -128,6 +128,7 @@ const AdminDashboard: React.FC = React.memo(() => {
     const [roleFilter, setRoleFilter] = useState<string>("all");
     const [roles, setRoles] = useState<Role[]>([]);
     const [searchQuery, setSearchQuery] = useState("");
+    const [inputValue, setInputValue] = useState(""); // New state for immediate input value
     const [selectedChecklist, setSelectedChecklist] = useState<Checklist | null>(
         null
     );
@@ -190,6 +191,11 @@ const AdminDashboard: React.FC = React.memo(() => {
         debounce((value: string) => setSearchQuery(value), 300),
         []
     );
+
+    // Sync inputValue with searchQuery when searchQuery changes
+    useEffect(() => {
+        setInputValue(searchQuery);
+    }, [searchQuery]);
 
     const userPermissions = useMemo(
         () => ({
@@ -533,8 +539,11 @@ const AdminDashboard: React.FC = React.memo(() => {
                             <input
                                 type="text"
                                 placeholder={t("adminDashboard.search.placeholder", { view })}
-                                value={searchQuery}
-                                onChange={(e) => debouncedSetSearchQuery(e.target.value)}
+                                value={inputValue}
+                                onChange={(e) => {
+                                    setInputValue(e.target.value);
+                                    debouncedSetSearchQuery(e.target.value);
+                                }}
                                 className="search-input input-0"
                                 aria-label={t("adminDashboard.search.placeholder", { view })}
                             />
@@ -913,7 +922,7 @@ const AdminDashboard: React.FC = React.memo(() => {
                             />
                         </motion.div>
                     )}
-                    <Suspense fallback={<div>Loading...</div>}>
+                    <Suspense>
                         {isTransitioning && view === "user-details" && (
                             <div>Loading user details...</div>
                         )}

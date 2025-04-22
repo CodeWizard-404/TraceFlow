@@ -25,6 +25,7 @@ module.exports = (sequelize, DataTypes) => {
                 'Agent',       // Permissions related to agents
                 'Auth',        // Permissions related to authentication
                 'Permission',   // Permissions related to permissions
+                'Notification', // Permissions related to notifications
                 'Other'
             ),
             allowNull: false,

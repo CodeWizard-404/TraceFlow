@@ -390,12 +390,20 @@ html {
   background: #4cb1c7;
 }
 
+body.dark .status-visited {
+  background: #63b3ed;
+}
+
 .status-pending {
   background: #f5a800;
 }
 
 .status-validated {
-  background: #e81f76;
+  background: #036318;
+}
+
+.status-rejected {
+  background: #930744;
 }
 
 .visit-location,

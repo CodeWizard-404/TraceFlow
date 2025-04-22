@@ -1,19 +1,17 @@
 /**
  * ChecklistView.tsx
  * Component for viewing and editing a selected checklist item.
- * Optimized with memoization and skeleton loading for performance.
+ * Optimized with memoization, dynamic loading state, and fade-in animation for performance.
  * Uses existing AdminDashboard.css for styling.
  */
 
-import React, { useState, useCallback, useMemo, lazy, Suspense } from "react";
+import React, { useState, useCallback, useMemo, useEffect } from "react";
 import { FaEdit, FaTrash } from "react-icons/fa";
+import { motion } from "framer-motion"; // Added Framer Motion import
 import "../../AdminDashboard.css";
 import { updateChecklist, deleteChecklist } from "../../../../apis/checklistAPI";
 import { useAuth } from "../../../../context/AuthContext";
 import { Checklist } from "../../../../models/Checklist";
-
-// Lazy-loaded skeleton component
-const SkeletonDetails = lazy(() => import("../SkeletonComponents").then((module) => ({ default: module.SkeletonDetails })));
 
 // Props interface
 interface ChecklistViewProps {
@@ -31,7 +29,7 @@ const ChecklistView: React.FC<ChecklistViewProps> = React.memo(
         const { effectivePermissions } = useAuth();
         const [isEditing, setIsEditing] = useState(false);
         const [editedItem, setEditedItem] = useState<string>("");
-        const [loading, setLoading] = useState(false);
+        const [loading, setLoading] = useState(true);
 
         // Memoized permissions check
         const userPermissions = useMemo(
@@ -45,6 +43,14 @@ const ChecklistView: React.FC<ChecklistViewProps> = React.memo(
             }),
             [effectivePermissions]
         );
+
+        // Dynamic loading state
+        useEffect(() => {
+            setLoading(true);
+            if (selectedChecklist) {
+                setLoading(false);
+            }
+        }, [selectedChecklist]);
 
         // Edit handler
         const handleEdit = useCallback(() => {
@@ -105,7 +111,11 @@ const ChecklistView: React.FC<ChecklistViewProps> = React.memo(
         if (view !== "checklist-details" || !selectedChecklist) return null;
 
         return (
-            <Suspense fallback={<SkeletonDetails />}>
+            <motion.div
+                initial={{ opacity: 0 }}
+                animate={{ opacity: 1 }}
+                transition={{ duration: 0.3 }}
+            >
                 <div className="details-card">
                     <div className="card-header">
                         {isEditing ? (
@@ -159,7 +169,7 @@ const ChecklistView: React.FC<ChecklistViewProps> = React.memo(
                         )}
                     </div>
                 </div>
-            </Suspense>
+            </motion.div>
         );
     }
 );

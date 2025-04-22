@@ -390,6 +390,9 @@ button:disabled {
   flex-wrap: wrap;
   gap: 0.5rem;
   margin-top: 0.5rem;
+  width: 5rem;
+  height: 5rem;
+  object-fit: cover;
 }
 
 .photo-item {
@@ -638,10 +641,7 @@ button:disabled {
   }
 }
 
-/* Dark Mode Overrides */
-body.dark .visit-details-container {
-  background: #1a202c;
-}
+
 
 body.dark .visit-details-header {
   background: linear-gradient(135deg, #63b3ed 0%, #4299e1 100%);

@@ -100,12 +100,21 @@ class NotificationService {
         }
     }
 
+
+
     static async createDefaultDisabledRule({ event, data, metadata = {} }) {
         try {
             // Validate input
             if (!event || !data) {
                 logger.error(`Cannot create default rule: Missing event or data`);
                 return null;
+            }
+
+            // Check if a rule (enabled or disabled) already exists for the event
+            const existingRule = await NotificationRule.findOne({ where: { event } });
+            if (existingRule) {
+                logger.info(`Rule already exists for event: ${event}, ruleID: ${existingRule.ruleID}, enabled: ${existingRule.enabled}`);
+                return existingRule; // Return the existing rule instead of creating a new one
             }
 
             const defaultRule = {

@@ -1,3 +1,10 @@
+/**
+ * NotificationRuleView.tsx
+ * Component for viewing and editing a selected notification rule's details.
+ * Optimized with dynamic loading state, skeleton loader, fade-in animation, and efficient state management.
+ * Includes validation, caching, and accessibility features.
+ */
+
 import React, { useState, useEffect, useRef } from 'react';
 import { FaSave, FaTrash } from 'react-icons/fa';
 import { motion } from 'framer-motion';
@@ -22,7 +29,6 @@ interface NotificationRuleViewProps {
     setError: React.Dispatch<React.SetStateAction<string | null>>;
 }
 
-const SKELETON_DELAY = 500;
 const CACHE_DURATION = 5 * 60 * 1000; // 5 minutes
 
 const formVariants = {
@@ -87,6 +93,7 @@ const NotificationRuleView: React.FC<NotificationRuleViewProps> = ({
     useEffect(() => {
         const fetchData = async () => {
             try {
+                setLoading(true);
                 const [usersData, rolesData, entitiesData, typesData] = await Promise.all([
                     getAllUsers(),
                     getAllRoles(),
@@ -107,9 +114,11 @@ const NotificationRuleView: React.FC<NotificationRuleViewProps> = ({
                     cachedEntities.current = entitiesData;
                     cachedTypes.current = typesData;
                     const actionMap: Record<string, string[]> = {};
-                    for (const entity of entitiesData) {
-                        actionMap[entity] = await getEntityActions(entity);
-                    }
+                    await Promise.all(
+                        entitiesData.map(async (entity) => {
+                            actionMap[entity] = await getEntityActions(entity);
+                        })
+                    );
                     cachedEntityActions.current = actionMap;
                     lastCacheTime.current = Date.now();
                 }
@@ -148,8 +157,7 @@ const NotificationRuleView: React.FC<NotificationRuleViewProps> = ({
                 setLoading(false);
             }
         };
-        const timer = setTimeout(() => fetchData(), SKELETON_DELAY);
-        return () => clearTimeout(timer);
+        fetchData();
     }, [selectedRule, setError]);
 
     const validateEvent = async (entity: string | null, action: string | null): Promise<string> => {
@@ -331,15 +339,15 @@ const NotificationRuleView: React.FC<NotificationRuleViewProps> = ({
     if (view !== 'notification-rule-details') return null;
 
     return (
-        <motion.div
-            className="form-card"
-            variants={formVariants}
-            initial="hidden"
-            animate="visible"
-        >
-            {loading && <NotificationRuleViewSkeleton />}
-            {!loading && (
-                <>
+        <div className="form-card">
+            {loading ? (
+                <NotificationRuleViewSkeleton />
+            ) : (
+                <motion.div
+                    variants={formVariants}
+                    initial="hidden"
+                    animate="visible"
+                >
                     <div className="form-header-container">
                         <h2>Edit Notification Rule</h2>
                         <label className="toggle-switch">
@@ -458,7 +466,7 @@ const NotificationRuleView: React.FC<NotificationRuleViewProps> = ({
                     <div className="form-section">
                         <h3 className="form-header">Channels</h3>
                         <div className="channels-grid">
-                            {(['websocket w', 'email', 'sms', 'inApp'] as Array<keyof typeof formData.channels>).map((channel: string) => (
+                            {(['websocket', 'email', 'sms', 'inApp'] as Array<keyof typeof formData.channels>).map((channel: string) => (
                                 <label key={channel} className="toggle-switch">
                                     <input
                                         type="checkbox"
@@ -473,9 +481,7 @@ const NotificationRuleView: React.FC<NotificationRuleViewProps> = ({
                             ))}
                         </div>
                     </div>
-                    <div className="form-section
-
-">
+                    <div className="form-section">
                         <h3 className="form-header">Message</h3>
                         <div className="form-group">
                             <label htmlFor="messageTemplate">
@@ -515,9 +521,9 @@ const NotificationRuleView: React.FC<NotificationRuleViewProps> = ({
                             <FaTrash /> Delete
                         </motion.button>
                     </div>
-                </>
+                </motion.div>
             )}
-        </motion.div>
+        </div>
     );
 };
 

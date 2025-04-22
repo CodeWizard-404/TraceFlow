@@ -17,6 +17,7 @@ import {
 } from "../../../lib/socket";
 import { getEntityEvents, NotificationEvent } from "../../../lib/notifEvents";
 import "../AdminDashboard.css";
+import { motion } from "framer-motion"; // Import Framer Motion
 
 interface UsersListProps {
   users: User[];
@@ -65,7 +66,7 @@ const UsersList: React.FC<UsersListProps> = React.memo(
   }) => {
     const { effectivePermissions } = useAuth();
     const [internalSearchQuery, setInternalSearchQuery] = useState(searchQuery);
-    const [loading, setLoading] = useState(true);
+    const [loading, setLoading] = useState(true); // Initialize as true for initial load
     const [filterLoading, setFilterLoading] = useState(false);
 
     const isSuperAdmin = useMemo(
@@ -98,13 +99,11 @@ const UsersList: React.FC<UsersListProps> = React.memo(
       return () => debouncedSetSearchQuery.cancel();
     }, [searchQuery, debouncedSetSearchQuery]);
 
+    // Remove static skeleton delay; rely on API fetch for loading state
     useEffect(() => {
-      if (users.length === 0) {
-        setLoading(true);
-        const timer = setTimeout(() => setLoading(false), 500);
-        return () => clearTimeout(timer);
-      } else {
-        setLoading(false);
+      // Loading state is now controlled by API fetch and WebSocket events
+      if (users.length > 0) {
+        setLoading(false); // Set loading to false once users are available
       }
     }, [users]);
 
@@ -170,6 +169,7 @@ const UsersList: React.FC<UsersListProps> = React.memo(
       let isMounted = true;
 
       const setupNotifications = async () => {
+        setLoading(true); // Set loading true when starting WebSocket setup
         try {
           const userEvents = await getEntityEvents("user");
           if (!isMounted) return;
@@ -193,7 +193,6 @@ const UsersList: React.FC<UsersListProps> = React.memo(
                     password: "",
                     wallet: data.wallet,
                   };
-                  // Check if user matches filters
                   const matchesSearch =
                     !internalSearchQuery ||
                     `${newUser.firstname} ${newUser.lastname}`
@@ -233,15 +232,12 @@ const UsersList: React.FC<UsersListProps> = React.memo(
                   break;
                 }
                 default:
-                  // Handle custom user events defined by admin
                   if (event.startsWith("user:")) {
-                    // Refresh user list for unrecognized user events
                     const usersData = await getAllUsers();
                     setCachedData("all_users", usersData);
                     setUsers(usersData);
                   }
               }
-              // Update cache
               const usersData = await getAllUsers();
               setCachedData("all_users", usersData);
             } catch (err) {
@@ -260,6 +256,8 @@ const UsersList: React.FC<UsersListProps> = React.memo(
         } catch (err) {
           console.error("Failed to set up WebSocket notifications:", err);
           setError("Failed to initialize real-time updates.");
+        } finally {
+          setLoading(false); // Set loading false after WebSocket setup
         }
       };
 
@@ -286,8 +284,8 @@ const UsersList: React.FC<UsersListProps> = React.memo(
         result = result.filter((user) =>
           user.Roles
             ? !user.Roles.some(
-                (r) => r.name === import.meta.env.VITE_ROLES_SUPER_ADMIN
-              )
+              (r) => r.name === import.meta.env.VITE_ROLES_SUPER_ADMIN
+            )
             : true
         );
       }
@@ -329,13 +327,13 @@ const UsersList: React.FC<UsersListProps> = React.memo(
       result.sort((a, b) => {
         const aIsSuperAdmin = a.Roles
           ? a.Roles.some(
-              (r) => r.name === import.meta.env.VITE_ROLES_SUPER_ADMIN
-            )
+            (r) => r.name === import.meta.env.VITE_ROLES_SUPER_ADMIN
+          )
           : false;
         const bIsSuperAdmin = b.Roles
           ? b.Roles.some(
-              (r) => r.name === import.meta.env.VITE_ROLES_SUPER_ADMIN
-            )
+            (r) => r.name === import.meta.env.VITE_ROLES_SUPER_ADMIN
+          )
           : false;
 
         if (aIsSuperAdmin && !bIsSuperAdmin) return -1;
@@ -393,8 +391,8 @@ const UsersList: React.FC<UsersListProps> = React.memo(
       async (user: User) => {
         setIsTransitioning(true);
         setSelectedUser(user);
+        setLoading(true); // Set loading true when fetching user details
         try {
-          setLoading(true);
           const [supervisors, managers] = await Promise.all([
             fetchWithRetry(
               () => getSupervisorsByUser(user.userID),
@@ -416,7 +414,7 @@ const UsersList: React.FC<UsersListProps> = React.memo(
           console.error("Failed to fetch user details:", error);
           setError("Failed to load user details.");
         } finally {
-          setLoading(false);
+          setLoading(false); // Set loading false after fetch completes
           setIsTransitioning(false);
         }
       },
@@ -491,7 +489,12 @@ const UsersList: React.FC<UsersListProps> = React.memo(
       <div className="users-list">
         {(loading || filterLoading) && renderSkeleton()}
         {!loading && !filterLoading && (
-          <div className="table-card">
+          <motion.div
+            initial={{ opacity: 0 }}
+            animate={{ opacity: 1 }}
+            transition={{ duration: 0.3 }}
+            className="table-card"
+          >
             <h2>{t("usersList.title")}</h2>
             <div className="table-container">
               <div className="table-head">
@@ -573,7 +576,7 @@ const UsersList: React.FC<UsersListProps> = React.memo(
                 </button>
               </div>
             )}
-          </div>
+          </motion.div>
         )}
       </div>
     );

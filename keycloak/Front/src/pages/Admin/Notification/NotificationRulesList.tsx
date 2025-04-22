@@ -5,6 +5,8 @@ import { debounce } from 'lodash';
 import NotificationRule from '../../../models/NotificationRule';
 import { updateNotificationRule, deleteNotificationRule, getNotificationRules } from '../../../apis/notificationAPI';
 import { ViewMode } from '../adminTypes';
+import { onNotification, offNotification, isSocketConnected } from '../../../lib/socket';
+import { getEntityEvents, NotificationEvent } from '../../../lib/notifEvents';
 import '../AdminDashboard.css';
 
 interface NotificationRulesListProps {
@@ -25,8 +27,12 @@ interface NotificationRulesListProps {
     sortOrder: string;
 }
 
-const SKELETON_DELAY = 500;
 const SKELETON_ITEMS = 6;
+const CACHE_DURATION = 15 * 60 * 1000; // 15 minutes
+const MAX_RETRIES = 1;
+const BASE_RETRY_DELAY = 300;
+
+const cache = new Map<string, { data: NotificationRule[]; timestamp: number }>();
 
 const rowVariants = {
     hidden: { opacity: 0, y: 10 },
@@ -66,29 +72,165 @@ const NotificationRulesList: React.FC<NotificationRulesListProps> = React.memo(
     }) => {
         const [internalSearchQuery, setInternalSearchQuery] = useState(searchQuery);
         const [loading, setLoading] = useState(true);
+        const [filterLoading, setFilterLoading] = useState(false);
         const [expandedRows, setExpandedRows] = useState<string[]>([]);
         const [expandedTypes, setExpandedTypes] = useState<string[]>([]);
-        const [, setNotificationTypes] = useState<string[]>([]);
+
+        const getCachedData = useCallback((key: string): NotificationRule[] | null => {
+            const cached = cache.get(key);
+            if (cached && Date.now() - cached.timestamp < CACHE_DURATION) {
+                return cached.data;
+            }
+            return null;
+        }, []);
+
+        const setCachedData = useCallback((key: string, data: NotificationRule[]) => {
+            cache.set(key, { data, timestamp: Date.now() });
+        }, []);
+
+        const fetchWithRetry = useCallback(
+            async (
+                fetchFn: () => Promise<NotificationRule[]>,
+                cacheKey: string,
+                retries = MAX_RETRIES
+            ): Promise<NotificationRule[]> => {
+                const cachedData = getCachedData(cacheKey);
+                if (cachedData) {
+                    return cachedData;
+                }
+
+                try {
+                    const data = await fetchFn();
+                    setCachedData(cacheKey, data);
+                    return data;
+                } catch (err: unknown) {
+                    console.error(`[Error] ${cacheKey}:`, err);
+                    if (
+                        retries > 0 &&
+                        err instanceof Error &&
+                        err.message.includes("out of shared memory")
+                    ) {
+                        const delay = BASE_RETRY_DELAY * (MAX_RETRIES - retries + 1);
+                        await new Promise((resolve) => setTimeout(resolve, delay));
+                        return fetchWithRetry(fetchFn, cacheKey, retries - 1);
+                    }
+                    return [];
+                }
+            },
+            [getCachedData, setCachedData]
+        );
 
         useEffect(() => {
-            const fetchTypes = async () => {
+            const fetchRules = async () => {
+                setLoading(true);
                 try {
-                    const rulesData = await getNotificationRules();
+                    const rulesData = await fetchWithRetry(
+                        getNotificationRules,
+                        'notification_rules'
+                    );
+                    setRules(rulesData);
                     const types = [...new Set(rulesData.map((rule) => rule.type.toLowerCase()))].filter(
                         (type): type is string => !!type
                     );
-                    setNotificationTypes(['all', ...types]);
-                    setExpandedTypes(['all', ...types]); // Expand all types by default
+                    setExpandedTypes(['all', ...types]);
                 } catch (err) {
-                    console.error('Failed to fetch notification types:', err);
-                    setNotificationTypes(['all', 'general']);
+                    console.error('Failed to fetch notification rules:', err);
+                    setError('Failed to load notification rules');
                     setExpandedTypes(['all', 'general']);
+                } finally {
+                    setLoading(false);
                 }
             };
-            fetchTypes();
-            const timer = setTimeout(() => setLoading(false), SKELETON_DELAY);
-            return () => clearTimeout(timer);
-        }, []);
+            if (view === 'notifications') {
+                fetchRules();
+            }
+        }, [view, setRules, setError, fetchWithRetry]);
+
+        // WebSocket listener for notification rule events
+        useEffect(() => {
+            if (view !== 'notifications' || !isSocketConnected()) return;
+
+            let isMounted = true;
+
+            const setupNotifications = async () => {
+                setLoading(true);
+                try {
+                    const ruleEvents = await getEntityEvents('notification_rule');
+                    if (!isMounted) return;
+
+                    const handleRuleEvent = async (
+                        event: NotificationEvent,
+                        data: NotificationRule
+                    ) => {
+                        cache.delete('notification_rules');
+                        try {
+                            switch (event) {
+                                case 'notification_rule:created': {
+                                    const matchesSearch =
+                                        !internalSearchQuery ||
+                                        data.event.toLowerCase().includes(internalSearchQuery.toLowerCase()) ||
+                                        data.type.toLowerCase().includes(internalSearchQuery.toLowerCase()) ||
+                                        data.messageTemplate.toLowerCase().includes(internalSearchQuery.toLowerCase());
+                                    const matchesType = typeFilter === 'all' || data.type.toLowerCase() === typeFilter.toLowerCase();
+                                    const matchesChannel = channelFilter === 'all' || data.channels[channelFilter as keyof typeof data.channels];
+                                    const matchesStatus = statusFilter === 'all' || data.enabled === (statusFilter === 'enabled');
+                                    if (matchesSearch && matchesType && matchesChannel && matchesStatus) {
+                                        setRules((prev) => [...prev, data]);
+                                    }
+                                    break;
+                                }
+                                case 'notification_rule:updated': {
+                                    setRules((prev) =>
+                                        prev.map((r) =>
+                                            r.ruleID === data.ruleID ? { ...r, ...data } : r
+                                        )
+                                    );
+                                    break;
+                                }
+                                case 'notification_rule:deleted': {
+                                    setRules((prev) =>
+                                        prev.filter((r) => r.ruleID !== data.ruleID)
+                                    );
+                                    setExpandedRows((prev) => prev.filter((id) => id !== data.ruleID));
+                                    break;
+                                }
+                                default:
+                                    if (event.startsWith('notification_rule:')) {
+                                        const rulesData = await fetchWithRetry(
+                                            getNotificationRules,
+                                            'notification_rules'
+                                        );
+                                        setRules(rulesData);
+                                    }
+                            }
+                        } catch (err) {
+                            console.error('Failed to handle rule event:', err);
+                            setError('Failed to update notification rules in real-time.');
+                        }
+                    };
+
+                    ruleEvents.forEach((event) => {
+                        onNotification((ev: NotificationEvent, data: unknown) => {
+                            if (ev === event && isMounted) {
+                                handleRuleEvent(ev, data as NotificationRule);
+                            }
+                        });
+                    });
+                } catch (err) {
+                    console.error('Failed to set up WebSocket notifications:', err);
+                    setError('Failed to initialize real-time updates.');
+                } finally {
+                    setLoading(false);
+                }
+            };
+
+            setupNotifications();
+
+            return () => {
+                isMounted = false;
+                offNotification();
+            };
+        }, [view, internalSearchQuery, typeFilter, channelFilter, statusFilter, setRules, setError, fetchWithRetry]);
 
         const debouncedSetSearchQuery = useCallback(
             debounce((value: string) => setInternalSearchQuery(value), 300),
@@ -99,6 +241,12 @@ const NotificationRulesList: React.FC<NotificationRulesListProps> = React.memo(
             debouncedSetSearchQuery(searchQuery);
             return () => debouncedSetSearchQuery.cancel();
         }, [searchQuery, debouncedSetSearchQuery]);
+
+        useEffect(() => {
+            setFilterLoading(true);
+            const timer = setTimeout(() => setFilterLoading(false), 300);
+            return () => clearTimeout(timer);
+        }, [typeFilter, channelFilter, statusFilter]);
 
         const filteredRules = useMemo(() => {
             let filtered = rules.filter(
@@ -127,7 +275,6 @@ const NotificationRulesList: React.FC<NotificationRulesListProps> = React.memo(
                             ? a.event.localeCompare(b.event)
                             : b.event.localeCompare(a.event);
                     } else if (sortField === 'type') {
-                        // Ensure case-insensitive type sorting
                         const typeA = a.type.toLowerCase();
                         const typeB = b.type.toLowerCase();
                         return sortOrder === 'asc'
@@ -159,11 +306,10 @@ const NotificationRulesList: React.FC<NotificationRulesListProps> = React.memo(
 
         const sortedTypes = useMemo(() => {
             return Object.keys(groupedRules).sort((a, b) => {
-                // Respect sortField and sortOrder for type sorting
                 if (sortField === 'type') {
                     return sortOrder === 'asc' ? a.localeCompare(b) : b.localeCompare(a);
                 }
-                return a.localeCompare(b); // Default sorting
+                return a.localeCompare(b);
             });
         }, [groupedRules, sortField, sortOrder]);
 
@@ -272,8 +418,8 @@ const NotificationRulesList: React.FC<NotificationRulesListProps> = React.memo(
         return (
             <div className="table-card">
                 <h2>Notification Rules</h2>
-                {loading && renderSkeleton()}
-                {!loading && (
+                {(loading || filterLoading) && renderSkeleton()}
+                {!loading && !filterLoading && (
                     <>
                         <div className="rule-list">
                             <AnimatePresence>
@@ -414,8 +560,6 @@ const NotificationRulesList: React.FC<NotificationRulesListProps> = React.memo(
                                                                                             )}
                                                                                     </div>
                                                                                 </div>
-                                                                                <hr />
-                                                                                <hr />
                                                                                 <hr />
                                                                                 <div className="pill-group">
                                                                                     <strong>Message:</strong>

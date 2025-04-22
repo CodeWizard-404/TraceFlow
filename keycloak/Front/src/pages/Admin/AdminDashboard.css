@@ -90,8 +90,9 @@ body.dark .search-icon {
 }
 
 body.dark .search-input::placeholder {
-    color: #ffffff;
+    color: #ffffff4d;
 }
+
 
 body.dark .input-0::placeholder {
     color: rgba(255, 255, 255, 0.7);
@@ -561,6 +562,7 @@ body.dark .form-group input:focus, body.dark .form-group textarea:focus {
     align-items: center;
     gap: 0.5rem;
     transition: all 0.3s ease;
+    border-radius: 0.75rem;
 }
 
 body.dark .edit-button {
@@ -1880,7 +1882,6 @@ body.dark .delete-button:hover {
     border-radius: 0.75rem;
     box-shadow: 0 0.375rem 1.25rem rgba(0, 0, 0, 0.1);
     transition: all 0.3s ease;
-    max-height: 50rem !important;
 }
 
 body.dark .permissions-management {
@@ -2321,7 +2322,7 @@ body.dark .error-text {
 }
 
 .permissions-grid-0 {
-    max-height: 50rem !important;
+    max-height: 50rem;
 }
 
 /* Previous imports and styles remain unchanged until permissions-related sections */
@@ -2595,7 +2596,7 @@ body.dark .close-button:hover {
 
 /* Ensure other existing styles remain intact and add any missing ones from your original request */
 .permissions-grid-0 {
-    max-height: 50rem;
+    max-height: 35rem;
     overflow-y: auto;
 }
 
@@ -3870,9 +3871,9 @@ body.dark .form-group label {
 
 .form-input {
     width: 100%;
-    padding: 0.75rem;
+    padding: 0.8rem;
     border: 1px solid #d1d5db;
-    border-radius: 0.375rem;
+    border-radius: 0.75rem;
     font-size: 0.875rem;
     color: #1f2937;
     background: #ffffff;
@@ -4237,6 +4238,7 @@ body.dark .react-select__menu {
 .react-select__menu-list {
     padding: 0;
 }
+
 
 .react-select__option {
     padding: 0.75rem;

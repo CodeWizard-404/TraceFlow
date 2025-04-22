@@ -1,12 +1,13 @@
 /**
  * PermView.tsx
  * Component for viewing and editing a selected permission's details.
- * Optimized with memoization, skeleton loader, and efficient state management.
+ * Optimized with memoization, dynamic loading state, skeleton loader, fade-in animation, and efficient state management.
  * Includes validation and accessibility features.
  */
 
 import React, { useCallback, useEffect, useMemo, useState } from "react";
 import { FaEdit } from "react-icons/fa";
+import { motion } from "framer-motion"; // Added Framer Motion import
 
 // Context and APIs
 import { useAuth } from "../../../context/AuthContext";
@@ -28,9 +29,6 @@ interface PermViewProps {
     view: string;
     setError: (error: string | null) => void;
 }
-
-// Constants
-const SKELETON_DELAY = 500; // Delay skeleton visibility for 0.5 seconds
 
 // PermView component, memoized
 const PermView: React.FC<PermViewProps> = React.memo(
@@ -71,11 +69,13 @@ const PermView: React.FC<PermViewProps> = React.memo(
             [effectivePermissions]
         );
 
-        // Simulate delayed loading for skeleton
+        // Dynamic loading state
         useEffect(() => {
-            const timer = setTimeout(() => setLoading(false), SKELETON_DELAY);
-            return () => clearTimeout(timer);
-        }, []);
+            setLoading(true);
+            if (selectedPermission) {
+                setLoading(false);
+            }
+        }, [selectedPermission]);
 
         // Validation functions
         const validatePermissionClass = useCallback((value: string): string => {
@@ -173,7 +173,6 @@ const PermView: React.FC<PermViewProps> = React.memo(
                 <div className="custom-skeleton" style={{ width: "100%", height: "16px", marginTop: "10px" }} />
                 <div className="custom-skeleton" style={{ width: "100%", height: "16px", marginTop: "8px" }} />
                 <div className="custom-skeleton" style={{ width: "80%", height: "16px", marginTop: "8px" }} />
-
             </div>
         );
 
@@ -183,122 +182,128 @@ const PermView: React.FC<PermViewProps> = React.memo(
 
         // Render UI
         return (
-            <div className="details-card">
-                {loading && renderSkeleton()}
-                {!loading && (
-                    <>
-                        <div className="card-header">
-                            {isEditingPermission && userPermissions.canUpdatePermissions ? (
-                                <div className="permission-edit-form">
-                                    <div className="permission-edit-header">
-                                        <h2>Edit Permission</h2>
-                                    </div>
-                                    <div className="form-group">
-                                        <label>Name</label>
-                                        <input
-                                            type="text"
-                                            value={editedPermission.name || ""}
-                                            disabled
-                                            className="permission-edit-input disabled"
-                                            aria-disabled="true"
-                                        />
-                                    </div>
-                                    <div className="form-group">
-                                        <label>Class *</label>
-                                        <select
-                                            value={editedPermission.class || ""}
+            <motion.div
+                initial={{ opacity: 0 }}
+                animate={{ opacity: 1 }}
+                transition={{ duration: 0.3 }}
+            >
+                <div className="details-card">
+                    {loading && renderSkeleton()}
+                    {!loading && (
+                        <>
+                            <div className="card-header">
+                                {isEditingPermission && userPermissions.canUpdatePermissions ? (
+                                    <div className="permission-edit-form">
+                                        <div className="permission-edit-header">
+                                            <h2>Edit Permission</h2>
+                                        </div>
+                                        <div className="form-group">
+                                            <label>Name</label>
+                                            <input
+                                                type="text"
+                                                value={editedPermission.name || ""}
+                                                disabled
+                                                className="permission-edit-input disabled"
+                                                aria-disabled="true"
+                                            />
+                                        </div>
+                                        <div className="form-group">
+                                            <label>Class *</label>
+                                            <select
+                                                value={editedPermission.class || ""}
+                                                onChange={(e) => {
+                                                    setEditedPermission({ ...editedPermission, class: e.target.value as PermissionsClass });
+                                                    setPermissionFormErrors({
+                                                        ...permissionFormErrors,
+                                                        class: validatePermissionClass(e.target.value),
+                                                    });
+                                                }}
+                                                onBlur={() => setPermissionTouched({ ...permissionTouched, class: true })}
+                                                className={`permission-edit-input ${permissionTouched.class && permissionFormErrors.class ? "invalid-vibrate" : ""
+                                                    }`}
+                                                required
+                                                aria-invalid={permissionTouched.class && !!permissionFormErrors.class}
+                                            >
+                                                <option value="">Select a class</option>
+                                                {Object.values(PermissionsClass).map((className) => (
+                                                    <option key={className} value={className}>
+                                                        {className}
+                                                    </option>
+                                                ))}
+                                            </select>
+                                            {permissionFormErrors.class && permissionTouched.class && (
+                                                <span className="error-text">{permissionFormErrors.class}</span>
+                                            )}
+                                        </div>
+                                        <textarea
+                                            value={editedPermission.description || ""}
                                             onChange={(e) => {
-                                                setEditedPermission({ ...editedPermission, class: e.target.value as PermissionsClass });
+                                                setEditedPermission({ ...editedPermission, description: e.target.value });
                                                 setPermissionFormErrors({
                                                     ...permissionFormErrors,
-                                                    class: validatePermissionClass(e.target.value),
+                                                    description: validatePermissionDescription(e.target.value),
                                                 });
                                             }}
-                                            onBlur={() => setPermissionTouched({ ...permissionTouched, class: true })}
-                                            className={`permission-edit-input ${permissionTouched.class && permissionFormErrors.class ? "invalid-vibrate" : ""
+                                            onBlur={() => setPermissionTouched({ ...permissionTouched, description: true })}
+                                            placeholder="Permission Description"
+                                            className={`permission-edit-textarea ${permissionTouched.description && permissionFormErrors.description
+                                                ? "invalid-vibrate"
+                                                : ""
                                                 }`}
-                                            required
-                                            aria-invalid={permissionTouched.class && !!permissionFormErrors.class}
-                                        >
-                                            <option value="">Select a class</option>
-                                            {Object.values(PermissionsClass).map((className) => (
-                                                <option key={className} value={className}>
-                                                    {className}
-                                                </option>
-                                            ))}
-                                        </select>
-                                        {permissionFormErrors.class && permissionTouched.class && (
-                                            <span className="error-text">{permissionFormErrors.class}</span>
+                                            aria-invalid={
+                                                permissionTouched.description && !!permissionFormErrors.description
+                                            }
+                                        />
+                                        {permissionFormErrors.description && permissionTouched.description && (
+                                            <span className="error-text">{permissionFormErrors.description}</span>
                                         )}
+                                        <div className="permission-edit-actions">
+                                            <button
+                                                className="action-button"
+                                                onClick={handleSavePermissionEdit}
+                                                disabled={loading}
+                                                aria-busy={loading ? "true" : "false"}
+                                            >
+                                                {loading ? "Saving..." : "Save"}
+                                            </button>
+                                            <button
+                                                className="cancel-button"
+                                                onClick={() => {
+                                                    setIsEditingPermission(false);
+                                                    setEditedPermission({});
+                                                }}
+                                                disabled={loading}
+                                            >
+                                                Cancel
+                                            </button>
+                                        </div>
                                     </div>
-                                    <textarea
-                                        value={editedPermission.description || ""}
-                                        onChange={(e) => {
-                                            setEditedPermission({ ...editedPermission, description: e.target.value });
-                                            setPermissionFormErrors({
-                                                ...permissionFormErrors,
-                                                description: validatePermissionDescription(e.target.value),
-                                            });
-                                        }}
-                                        onBlur={() => setPermissionTouched({ ...permissionTouched, description: true })}
-                                        placeholder="Permission Description"
-                                        className={`permission-edit-textarea ${permissionTouched.description && permissionFormErrors.description
-                                            ? "invalid-vibrate"
-                                            : ""
-                                            }`}
-                                        aria-invalid={
-                                            permissionTouched.description && !!permissionFormErrors.description
-                                        }
-                                    />
-                                    {permissionFormErrors.description && permissionTouched.description && (
-                                        <span className="error-text">{permissionFormErrors.description}</span>
-                                    )}
-                                    <div className="permission-edit-actions">
-                                        <button
-                                            className="action-button"
-                                            onClick={handleSavePermissionEdit}
-                                            disabled={loading}
-                                            aria-busy={loading ? "true" : "false"}
-                                        >
-                                            {loading ? "Saving..." : "Save"}
-                                        </button>
-                                        <button
-                                            className="cancel-button"
-                                            onClick={() => {
-                                                setIsEditingPermission(false);
-                                                setEditedPermission({});
-                                            }}
-                                            disabled={loading}
-                                        >
-                                            Cancel
-                                        </button>
-                                    </div>
-                                </div>
-                            ) : (
+                                ) : (
+                                    <>
+                                        <h2>{selectedPermission.name}</h2>
+                                        <div className="permission-actions">
+                                            <button
+                                                className="edit-button edit-button-0"
+                                                onClick={() => handleEditPermission(selectedPermission)}
+                                                disabled={loading || !userPermissions.canUpdatePermissions}
+                                                aria-label="Edit permission"
+                                            >
+                                                <FaEdit /> Edit
+                                            </button>
+                                        </div>
+                                    </>
+                                )}
+                            </div>
+                            {!isEditingPermission && userPermissions.canViewPermissionDetails && (
                                 <>
-                                    <h2>{selectedPermission.name}</h2>
-                                    <div className="permission-actions">
-                                        <button
-                                            className="edit-button edit-button-0"
-                                            onClick={() => handleEditPermission(selectedPermission)}
-                                            disabled={loading || !userPermissions.canUpdatePermissions}
-                                            aria-label="Edit permission"
-                                        >
-                                            <FaEdit /> Edit
-                                        </button>
-                                    </div>
+                                    <p>Class: {selectedPermission.class}</p>
+                                    <p>Description: {selectedPermission.description || "No description"}</p>
                                 </>
                             )}
-                        </div>
-                        {!isEditingPermission && userPermissions.canViewPermissionDetails && (
-                            <>
-                                <p>Class: {selectedPermission.class}</p>
-                                <p>Description: {selectedPermission.description || "No description"}</p>
-                            </>
-                        )}
-                    </>
-                )}
-            </div>
+                        </>
+                    )}
+                </div>
+            </motion.div>
         );
     }
 );

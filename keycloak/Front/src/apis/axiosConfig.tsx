@@ -3,28 +3,39 @@ import { refreshToken } from './authAPI';
 import { useNavigate } from 'react-router-dom';
 import { debounce } from 'lodash';
 
-// Create Axios instance with base configuration
+/**
+ * Axios instance with base configuration
+ */
 const api: AxiosInstance = axios.create({
     baseURL: import.meta.env.VITE_BASE_URL || '/api',
     timeout: parseInt(import.meta.env.VITE_API_TIMEOUT) || 30000,
     withCredentials: true,
 });
 
-// Utility to get accessToken from cookies
+/**
+ * Utility to get access token from cookies
+ * @returns Access token or null
+ */
 const getAccessTokenFromCookie = (): string | null => {
     const cookies = document.cookie.split(';').map(cookie => cookie.trim());
     const tokenCookie = cookies.find(cookie => cookie.startsWith('accessToken='));
     return tokenCookie ? tokenCookie.split('=')[1] : null;
 };
 
-// Store navigate function globally
+// Global navigate function
 let globalNavigate: ReturnType<typeof useNavigate> | null = null;
 
+/**
+ * Sets the global navigate function
+ * @param navigate React Router navigate function
+ */
 export const setGlobalNavigate = (navigate: ReturnType<typeof useNavigate>) => {
     globalNavigate = navigate;
 };
 
-// Debounced navigation for interceptor
+/**
+ * Debounced navigation to prevent rapid redirects
+ */
 const debouncedNavigate = debounce((to: string, options: { replace?: boolean }) => {
     if (globalNavigate) {
         globalNavigate(to, options);
@@ -33,11 +44,13 @@ const debouncedNavigate = debounce((to: string, options: { replace?: boolean }) 
     }
 }, 100);
 
-// Set up Axios interceptors for request and response handling
+/**
+ * Sets up Axios interceptors for request and response handling
+ */
 export const setupAxiosInterceptors = () => {
     // Request interceptor to set headers
     api.interceptors.request.use(
-        (config) => {
+        config => {
             config.headers['Content-Type'] = 'application/json';
             const accessToken = getAccessTokenFromCookie();
             if (accessToken) {
@@ -45,7 +58,7 @@ export const setupAxiosInterceptors = () => {
             }
             return config;
         },
-        (error) => {
+        error => {
             console.error('Request error:', error);
             return Promise.reject(error);
         }
@@ -53,8 +66,8 @@ export const setupAxiosInterceptors = () => {
 
     // Response interceptor to handle errors and token refresh
     api.interceptors.response.use(
-        (response) => response,
-        async (error) => {
+        response => response,
+        async error => {
             const originalRequest = error.config;
             if (error.response?.status === 401 && !originalRequest._retry) {
                 originalRequest._retry = true;

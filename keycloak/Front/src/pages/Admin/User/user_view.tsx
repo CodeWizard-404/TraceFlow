@@ -17,6 +17,7 @@ import {
     FaInfoCircle,
     FaSearch,
 } from "react-icons/fa";
+import { motion } from "framer-motion"; // Import Framer Motion
 import { useAuth } from "../../../context/AuthContext";
 import { useError } from "../../../context/ErrorContext";
 import {
@@ -332,8 +333,28 @@ const UserView: React.FC<UserViewProps> = ({
             }
             try {
                 setLoading(true);
-                const userData = await getUserById(selectedUser.userID);
+                const [
+                    userData,
+                    userRolesData,
+                    overridesData,
+                    effectivePermsData,
+                    supervisorsData,
+                    managersData,
+                ] = await Promise.all([
+                    getUserById(selectedUser.userID),
+                    getRolesByUser(selectedUser.userID),
+                    getPermissionOverridesByUser(selectedUser.userID),
+                    getEffectivePermissions(selectedUser.userID),
+                    getSupervisorsByUser(selectedUser.userID),
+                    getManagersByUser(selectedUser.userID),
+                ]);
                 setSelectedUser(userData);
+                setTempRoles(userRolesData || []);
+                setUserOverrides(overridesData || []);
+                setTempOverrides(overridesData || []);
+                setEffectiveUserPermissions(effectivePermsData || []);
+                setTempSupervisors(supervisorsData || []);
+                setTempManagers(managersData || []);
             } catch (error) {
                 setGlobalError(error instanceof Error ? error.message : "Failed to load user data.");
             } finally {
@@ -1021,512 +1042,518 @@ const UserView: React.FC<UserViewProps> = ({
     }
 
     return (
-        <div className="details-card">
-            <div className="card-header">
-                {isEditingUser ? (
-                    <div className="user-edit-form form-section">
-                        <h2>Edit User</h2>
-                        <div className="form-grid">
-                            <div className="form-group">
-                                <label htmlFor="firstname">First Name *</label>
-                                <input
-                                    id="firstname"
-                                    type="text"
-                                    value={editedUser.firstname || ""}
-                                    onChange={(e) => {
-                                        setEditedUser((prev) => ({ ...prev, firstname: e.target.value }));
-                                        setFormErrors((prev) => ({
-                                            ...prev,
-                                            firstname: validateName(e.target.value, "First name"),
-                                        }));
-                                        setTouched((prev) => ({ ...prev, firstname: true }));
-                                    }}
-                                    placeholder="Enter first name"
-                                    className={`user-edit-input ${touched.firstname && formErrors.firstname ? "invalid-vibrate" : ""}`}
-                                    required
-                                />
-                                {formErrors.firstname && touched.firstname && (
-                                    <span className="error-text">{formErrors.firstname}</span>
-                                )}
-                            </div>
-                            <div className="form-group">
-                                <label htmlFor="lastname">Last Name *</label>
-                                <input
-                                    id="lastname"
-                                    type="text"
-                                    value={editedUser.lastname || ""}
-                                    onChange={(e) => {
-                                        setEditedUser((prev) => ({ ...prev, lastname: e.target.value }));
-                                        setFormErrors((prev) => ({
-                                            ...prev,
-                                            lastname: validateName(e.target.value, "Last name"),
-                                        }));
-                                        setTouched((prev) => ({ ...prev, lastname: true }));
-                                    }}
-                                    placeholder="Enter last name"
-                                    className={`user-edit-input ${touched.lastname && formErrors.lastname ? "invalid-vibrate" : ""}`}
-                                    required
-                                />
-                                {formErrors.lastname && touched.lastname && (
-                                    <span className="error-text">{formErrors.lastname}</span>
-                                )}
-                            </div>
-                            <div className="form-group">
-                                <label htmlFor="email">Email *</label>
-                                <input
-                                    id="email"
-                                    type="email"
-                                    value={editedUser.email || ""}
-                                    onChange={(e) => {
-                                        setEditedUser((prev) => ({ ...prev, email: e.target.value }));
-                                        setFormErrors((prev) => ({
-                                            ...prev,
-                                            email: validateEmail(e.target.value),
-                                        }));
-                                        setTouched((prev) => ({ ...prev, email: true }));
-                                    }}
-                                    placeholder="Enter email"
-                                    className={`user-edit-input ${touched.email && formErrors.email ? "invalid-vibrate" : ""}`}
-                                    required
-                                />
-                                {formErrors.email && touched.email && (
-                                    <span className="error-text">{formErrors.email}</span>
-                                )}
-                            </div>
-                            <div className="form-group">
-                                <label htmlFor="phone">Phone Number *</label>
-                                <input
-                                    id="phone"
-                                    type="text"
-                                    value={formatPhoneDisplay(rawPhone)}
-                                    onChange={handlePhoneChange}
-                                    placeholder="XX XXX XXX"
-                                    className={`user-edit-input ${touched.phone && formErrors.phone ? "invalid-vibrate" : ""}`}
-                                    required
-                                    maxLength={10}
-                                />
-                                {formErrors.phone && touched.phone && (
-                                    <span className="error-text">{formErrors.phone}</span>
-                                )}
-                            </div>
-                            <div className="form-group">
-                                <label htmlFor="wallet">Wallet Address</label>
-                                <input
-                                    id="wallet"
-                                    type="text"
-                                    value={formatWalletDisplay(rawWallet)}
-                                    onChange={handleWalletChange}
-                                    placeholder="XXXX-XXXX-XXXX-XXXX"
-                                    className={`user-edit-input ${touched.wallet && formErrors.wallet ? "invalid-vibrate" : ""}`}
-                                    maxLength={19}
-                                />
-                                {formErrors.wallet && touched.wallet && (
-                                    <span className="error-text">{formErrors.wallet}</span>
-                                )}
-                            </div>
-                            <div className="form-group">
-                                <label htmlFor="password">Password (Optional)</label>
-                                <input
-                                    id="password"
-                                    type="password"
-                                    value={editedUser.password || ""}
-                                    onChange={(e) => {
-                                        setEditedUser((prev) => ({ ...prev, password: e.target.value }));
-                                        setFormErrors((prev) => ({
-                                            ...prev,
-                                            password: validatePassword(e.target.value),
-                                            passwordConfirm: validatePasswordConfirm(e.target.value, editedUser.passwordConfirm || ""),
-                                        }));
-                                        setTouched((prev) => ({ ...prev, password: true }));
-                                    }}
-                                    placeholder="Enter new password"
-                                    className={`user-edit-input ${touched.password && formErrors.password ? "invalid-vibrate" : ""}`}
-                                />
-                                {formErrors.password && touched.password && (
-                                    <span className="error-text">{formErrors.password}</span>
-                                )}
-                            </div>
-                            <div className="form-group">
-                                <label htmlFor="passwordConfirm">Confirm Password (Optional)</label>
-                                <input
-                                    id="passwordConfirm"
-                                    type="password"
-                                    value={editedUser.passwordConfirm || ""}
-                                    onChange={(e) => {
-                                        setEditedUser((prev) => ({ ...prev, passwordConfirm: e.target.value }));
-                                        setFormErrors((prev) => ({
-                                            ...prev,
-                                            passwordConfirm: validatePasswordConfirm(editedUser.password || "", e.target.value),
-                                        }));
-                                        setTouched((prev) => ({ ...prev, passwordConfirm: true }));
-                                    }}
-                                    placeholder="Confirm new password"
-                                    className={`user-edit-input ${touched.passwordConfirm && formErrors.passwordConfirm ? "invalid-vibrate" : ""}`}
-                                />
-                                {formErrors.passwordConfirm && touched.passwordConfirm && (
-                                    <span className="error-text">{formErrors.passwordConfirm}</span>
-                                )}
-                            </div>
-                        </div>
-                        <div className="user-edit-actions">
-                            <button
-                                className="action-button"
-                                onClick={handleSaveUserEdit}
-                            >
-                                Save
-                            </button>
-                            <button
-                                className="cancel-button"
-                                onClick={handleCancelEdit}
-                            >
-                                Cancel
-                            </button>
-                        </div>
-                    </div>
-                ) : (
-                    <>
-                        <h2>User Details</h2>
-                        {userPermissions.canUpdateUsers && (
-                            <div className="user-actions">
-                                <button
-                                    className="edit-button"
-                                    onClick={handleEditUser}
-                                >
-                                    <FaEdit /> Edit
-                                </button>
-                                {userPermissions.canDeleteUsers && (
-                                    <button
-                                        className="delete-button"
-                                        onClick={handleDeleteUser}
-                                    >
-                                        <FaTrash /> Delete
-                                    </button>
-                                )}
-                            </div>
-                        )}
-                    </>
-                )}
-            </div>
-            <hr />
-            {!isEditingUser && (
-                <div className="form-section">
-                    <h3>Basic Information</h3>
-                    <div className="info-grid">
-                        <p><strong>Name:</strong> {selectedUser.firstname} {selectedUser.lastname}</p>
-                        <p><strong>Email:</strong> {selectedUser.email}</p>
-                        <p><strong>Phone:</strong> {`+216 ${formatPhoneDisplay(selectedUser.phone || "N/A")}`}</p>
-                        <p><strong>Wallet:</strong> {formatWalletDisplay(selectedUser.wallet || "") || "N/A"}</p>
-                    </div>
-                </div>
-            )}
-            <div className="dropdown-stack">
-                {userPermissions.canAssignRoles && (
-                    <div className="dropdown-unit">
-                        <div className="dropdown-bar" onClick={() => toggleSection("roles")}>
-                            <h3>Role Management</h3>
-                            <FaAngleDown
-                                className={`dropdown-icon ${expandedSection === "roles" ? "expanded" : ""}`}
-                            />
-                        </div>
-                        {expandedSection === "roles" && (
-                            loadingRoles ? <RolesDropdownSkeleton /> : (
-                                <div className="dropdown-body">
-                                    <div className="roles-grid">
-                                        {roles.map((role) => (
-                                            <div key={role.roleID} className="role-toggle-container">
-                                                <button
-                                                    className={`role-toggle-button ${tempRoles.some((r) => r.roleID === role.roleID) ? "active" : ""}`}
-                                                    onClick={() => handleToggleRole(role)}
-                                                    disabled={
-                                                        role.name === import.meta.env.VITE_ROLES_SUPER_ADMIN ||
-                                                        (selectedUser.userID === currentUser?.userID &&
-                                                            role.name === import.meta.env.VITE_ROLES_ADMIN &&
-                                                            !isSuperAdmin &&
-                                                            tempRoles.some((r) => r.name === import.meta.env.VITE_ROLES_ADMIN))
-                                                    }
-                                                >
-                                                    <span>{role.name}</span>
-                                                    <FaInfoCircle
-                                                        className="role-info-icon"
-                                                        onClick={(e) => {
-                                                            e.stopPropagation();
-                                                            toggleRolePopup(role.roleID);
-                                                        }}
-                                                    />
-                                                </button>
-                                            </div>
-                                        ))}
-                                    </div>
+        <motion.div
+            initial={{ opacity: 0 }}
+            animate={{ opacity: 1 }}
+            transition={{ duration: 0.3 }}
+        >
+            <div className="details-card">
+                <div className="card-header">
+                    {isEditingUser ? (
+                        <div className="user-edit-form form-section">
+                            <h2>Edit User</h2>
+                            <div className="form-grid">
+                                <div className="form-group">
+                                    <label htmlFor="firstname">First Name *</label>
+                                    <input
+                                        id="firstname"
+                                        type="text"
+                                        value={editedUser.firstname || ""}
+                                        onChange={(e) => {
+                                            setEditedUser((prev) => ({ ...prev, firstname: e.target.value }));
+                                            setFormErrors((prev) => ({
+                                                ...prev,
+                                                firstname: validateName(e.target.value, "First name"),
+                                            }));
+                                            setTouched((prev) => ({ ...prev, firstname: true }));
+                                        }}
+                                        placeholder="Enter first name"
+                                        className={`user-edit-input ${touched.firstname && formErrors.firstname ? "invalid-vibrate" : ""}`}
+                                        required
+                                    />
+                                    {formErrors.firstname && touched.firstname && (
+                                        <span className="error-text">{formErrors.firstname}</span>
+                                    )}
                                 </div>
-                            ))}
+                                <div className="form-group">
+                                    <label htmlFor="lastname">Last Name *</label>
+                                    <input
+                                        id="lastname"
+                                        type="text"
+                                        value={editedUser.lastname || ""}
+                                        onChange={(e) => {
+                                            setEditedUser((prev) => ({ ...prev, lastname: e.target.value }));
+                                            setFormErrors((prev) => ({
+                                                ...prev,
+                                                lastname: validateName(e.target.value, "Last name"),
+                                            }));
+                                            setTouched((prev) => ({ ...prev, lastname: true }));
+                                        }}
+                                        placeholder="Enter last name"
+                                        className={`user-edit-input ${touched.lastname && formErrors.lastname ? "invalid-vibrate" : ""}`}
+                                        required
+                                    />
+                                    {formErrors.lastname && touched.lastname && (
+                                        <span className="error-text">{formErrors.lastname}</span>
+                                    )}
+                                </div>
+                                <div className="form-group">
+                                    <label htmlFor="email">Email *</label>
+                                    <input
+                                        id="email"
+                                        type="email"
+                                        value={editedUser.email || ""}
+                                        onChange={(e) => {
+                                            setEditedUser((prev) => ({ ...prev, email: e.target.value }));
+                                            setFormErrors((prev) => ({
+                                                ...prev,
+                                                email: validateEmail(e.target.value),
+                                            }));
+                                            setTouched((prev) => ({ ...prev, email: true }));
+                                        }}
+                                        placeholder="Enter email"
+                                        className={`user-edit-input ${touched.email && formErrors.email ? "invalid-vibrate" : ""}`}
+                                        required
+                                    />
+                                    {formErrors.email && touched.email && (
+                                        <span className="error-text">{formErrors.email}</span>
+                                    )}
+                                </div>
+                                <div className="form-group">
+                                    <label htmlFor="phone">Phone Number *</label>
+                                    <input
+                                        id="phone"
+                                        type="text"
+                                        value={formatPhoneDisplay(rawPhone)}
+                                        onChange={handlePhoneChange}
+                                        placeholder="XX XXX XXX"
+                                        className={`user-edit-input ${touched.phone && formErrors.phone ? "invalid-vibrate" : ""}`}
+                                        required
+                                        maxLength={10}
+                                    />
+                                    {formErrors.phone && touched.phone && (
+                                        <span className="error-text">{formErrors.phone}</span>
+                                    )}
+                                </div>
+                                <div className="form-group">
+                                    <label htmlFor="wallet">Wallet Address</label>
+                                    <input
+                                        id="wallet"
+                                        type="text"
+                                        value={formatWalletDisplay(rawWallet)}
+                                        onChange={handleWalletChange}
+                                        placeholder="XXXX-XXXX-XXXX-XXXX"
+                                        className={`user-edit-input ${touched.wallet && formErrors.wallet ? "invalid-vibrate" : ""}`}
+                                        maxLength={19}
+                                    />
+                                    {formErrors.wallet && touched.wallet && (
+                                        <span className="error-text">{formErrors.wallet}</span>
+                                    )}
+                                </div>
+                                <div className="form-group">
+                                    <label htmlFor="password">Password (Optional)</label>
+                                    <input
+                                        id="password"
+                                        type="password"
+                                        value={editedUser.password || ""}
+                                        onChange={(e) => {
+                                            setEditedUser((prev) => ({ ...prev, password: e.target.value }));
+                                            setFormErrors((prev) => ({
+                                                ...prev,
+                                                password: validatePassword(e.target.value),
+                                                passwordConfirm: validatePasswordConfirm(e.target.value, editedUser.passwordConfirm || ""),
+                                            }));
+                                            setTouched((prev) => ({ ...prev, password: true }));
+                                        }}
+                                        placeholder="Enter new password"
+                                        className={`user-edit-input ${touched.password && formErrors.password ? "invalid-vibrate" : ""}`}
+                                    />
+                                    {formErrors.password && touched.password && (
+                                        <span className="error-text">{formErrors.password}</span>
+                                    )}
+                                </div>
+                                <div className="form-group">
+                                    <label htmlFor="passwordConfirm">Confirm Password (Optional)</label>
+                                    <input
+                                        id="passwordConfirm"
+                                        type="password"
+                                        value={editedUser.passwordConfirm || ""}
+                                        onChange={(e) => {
+                                            setEditedUser((prev) => ({ ...prev, passwordConfirm: e.target.value }));
+                                            setFormErrors((prev) => ({
+                                                ...prev,
+                                                passwordConfirm: validatePasswordConfirm(editedUser.password || "", e.target.value),
+                                            }));
+                                            setTouched((prev) => ({ ...prev, passwordConfirm: true }));
+                                        }}
+                                        placeholder="Confirm new password"
+                                        className={`user-edit-input ${touched.passwordConfirm && formErrors.passwordConfirm ? "invalid-vibrate" : ""}`}
+                                    />
+                                    {formErrors.passwordConfirm && touched.passwordConfirm && (
+                                        <span className="error-text">{formErrors.passwordConfirm}</span>
+                                    )}
+                                </div>
+                            </div>
+                            <div className="user-edit-actions">
+                                <button
+                                    className="action-button"
+                                    onClick={handleSaveUserEdit}
+                                >
+                                    Save
+                                </button>
+                                <button
+                                    className="cancel-button"
+                                    onClick={handleCancelEdit}
+                                >
+                                    Cancel
+                                </button>
+                            </div>
+                        </div>
+                    ) : (
+                        <>
+                            <h2>User Details</h2>
+                            {userPermissions.canUpdateUsers && (
+                                <div className="user-actions">
+                                    <button
+                                        className="edit-button"
+                                        onClick={handleEditUser}
+                                    >
+                                        <FaEdit /> Edit
+                                    </button>
+                                    {userPermissions.canDeleteUsers && (
+                                        <button
+                                            className="delete-button"
+                                            onClick={handleDeleteUser}
+                                        >
+                                            <FaTrash /> Delete
+                                        </button>
+                                    )}
+                                </div>
+                            )}
+                        </>
+                    )}
+                </div>
+                <hr />
+                {!isEditingUser && (
+                    <div className="form-section">
+                        <h3>Basic Information</h3>
+                        <div className="info-grid">
+                            <p><strong>Name:</strong> {selectedUser.firstname} {selectedUser.lastname}</p>
+                            <p><strong>Email:</strong> {selectedUser.email}</p>
+                            <p><strong>Phone:</strong> {`+216 ${formatPhoneDisplay(selectedUser.phone || "N/A")}`}</p>
+                            <p><strong>Wallet:</strong> {formatWalletDisplay(selectedUser.wallet || "") || "N/A"}</p>
+                        </div>
                     </div>
                 )}
-                {userPermissions.canAssignPermissions && (
-                    <div className="dropdown-unit">
-                        <div className="dropdown-bar" onClick={() => toggleSection("permissions")}>
-                            <h3>Permission Overrides</h3>
-                            <FaAngleDown
-                                className={`dropdown-icon ${expandedSection === "permissions" ? "expanded" : ""}`}
-                            />
-                        </div>
-                        {expandedSection === "permissions" && (
-                            loadingPermissions ? <PermissionsDropdownSkeleton /> : (
-                                <div className="dropdown-body">
-                                    <div className="group-header">
-                                        {hasUnsavedOverrideChanges && (
-                                            <button
-                                                className="action-button"
-                                                onClick={handleSaveOverrides}
-                                            >
-                                                Save Changes
-                                            </button>
-                                        )}
-                                    </div>
-                                    <div className="permissions-filter-section">
-                                        <div className="permissions-filter-header">
-                                            <FaFilter />
-                                            <label>Filter Permissions</label>
-                                        </div>
-                                        <div className="permissions-filter-controls">
-                                            <div className="permissions-search">
-                                                <input
-                                                    type="text"
-                                                    placeholder="Search permissions..."
-                                                    value={permissionSearch}
-                                                    onChange={(e) => setPermissionSearch(e.target.value)}
-                                                    className="search-input"
-                                                />
-                                            </div>
-                                            <div className="permissions-category">
-                                                <select
-                                                    value={selectedCategory}
-                                                    onChange={(e) => setSelectedCategory(e.target.value)}
-                                                >
-                                                    <option value="all">All Categories</option>
-                                                    {Object.keys(categorizedPermissions).map((category) => (
-                                                        <option key={category} value={category}>
-                                                            {category.charAt(0).toUpperCase() + category.slice(1)}
-                                                        </option>
-                                                    ))}
-                                                </select>
-                                            </div>
-                                        </div>
-                                    </div>
-                                    <h4>Effective Permissions</h4>
-                                    {userPermissions.canReadPermissionsByRole && (
-                                        <div className="permissions-list">
-                                            {Object.entries(filteredPermissions).map(([className, permissions]) => (
-                                                <div key={className} className="permission-class">
-                                                    <h4>{className}</h4>
-                                                    <div className="permissions-container">
-                                                        {permissions.map((perm: Permission) => {
-                                                            const isEffective = effectiveUserPermissions.some(
-                                                                (p) => p.permissionID === perm.permissionID
-                                                            );
-                                                            const tempOverride = tempOverrides.find(
-                                                                (o) => o.permissionID === perm.permissionID
-                                                            );
-                                                            const hasOverride = !!tempOverride;
-                                                            const overrideAction = tempOverride?.action;
-                                                            return (
-                                                                <div key={perm.permissionID} className="permission-item">
-                                                                    <button
-                                                                        className={`permission-button ${(hasOverride ? overrideAction === "grant" : isEffective) ? "assigned" : ""}`}
-                                                                    >
-                                                                        {perm.name}
-                                                                        <FaInfoCircle
-                                                                            className="permission-info-icon"
-                                                                            onClick={(e) => {
-                                                                                e.stopPropagation();
-                                                                                toggleOverridePopup(perm.permissionID);
-                                                                            }}
-                                                                        />
-                                                                    </button>
-                                                                    {userPermissions.canAssignPermissions && (
-                                                                        <div className="override-controls">
-                                                                            {!hasOverride && !isEffective && (
-                                                                                <button
-                                                                                    className="override-button grant"
-                                                                                    onClick={() => handleAddOverride(perm.permissionID, "grant")}
-                                                                                    disabled={!userPermissions.canCreatePermissionOverrides}
-                                                                                    title="Grant Permission"
-                                                                                >
-                                                                                    <FaPlus />
-                                                                                </button>
-                                                                            )}
-                                                                            {!hasOverride && isEffective && (
-                                                                                <button
-                                                                                    className="override-button revoke"
-                                                                                    onClick={() => handleAddOverride(perm.permissionID, "revoke")}
-                                                                                    disabled={!userPermissions.canCreatePermissionOverrides}
-                                                                                    title="Revoke Permission"
-                                                                                >
-                                                                                    <FaMinus />
-                                                                                </button>
-                                                                            )}
-                                                                            {hasOverride && (
-                                                                                <button
-                                                                                    className="override-button remove"
-                                                                                    onClick={() => handleRemoveOverride(tempOverride.overrideID)}
-                                                                                    disabled={!userPermissions.canRemovePermissionOverrides}
-                                                                                    title="Remove Override"
-                                                                                >
-                                                                                    <FaTimes />
-                                                                                </button>
-                                                                            )}
-                                                                        </div>
-                                                                    )}
-                                                                </div>
-                                                            );
-                                                        })}
-                                                    </div>
+                <div className="dropdown-stack">
+                    {userPermissions.canAssignRoles && (
+                        <div className="dropdown-unit">
+                            <div className="dropdown-bar" onClick={() => toggleSection("roles")}>
+                                <h3>Role Management</h3>
+                                <FaAngleDown
+                                    className={`dropdown-icon ${expandedSection === "roles" ? "expanded" : ""}`}
+                                />
+                            </div>
+                            {expandedSection === "roles" && (
+                                loadingRoles ? <RolesDropdownSkeleton /> : (
+                                    <div className="dropdown-body">
+                                        <div className="roles-grid">
+                                            {roles.map((role) => (
+                                                <div key={role.roleID} className="role-toggle-container">
+                                                    <button
+                                                        className={`role-toggle-button ${tempRoles.some((r) => r.roleID === role.roleID) ? "active" : ""}`}
+                                                        onClick={() => handleToggleRole(role)}
+                                                        disabled={
+                                                            role.name === import.meta.env.VITE_ROLES_SUPER_ADMIN ||
+                                                            (selectedUser.userID === currentUser?.userID &&
+                                                                role.name === import.meta.env.VITE_ROLES_ADMIN &&
+                                                                !isSuperAdmin &&
+                                                                tempRoles.some((r) => r.name === import.meta.env.VITE_ROLES_ADMIN))
+                                                        }
+                                                    >
+                                                        <span>{role.name}</span>
+                                                        <FaInfoCircle
+                                                            className="role-info-icon"
+                                                            onClick={(e) => {
+                                                                e.stopPropagation();
+                                                                toggleRolePopup(role.roleID);
+                                                            }}
+                                                        />
+                                                    </button>
                                                 </div>
                                             ))}
                                         </div>
-                                    )}
-                                </div>
-                            ))}
-                    </div>
-                )}
-                {(selectedUser.Roles?.some((r) => r.name === "Manager") ||
-                    selectedUser.Roles?.some((r) => r.name === "Supervisor")) &&
-                    userPermissions.canAssignSupervisors && (
-                        <div className="dropdown-unit">
-                            <div className="dropdown-bar" onClick={() => toggleSection("assignments")}>
-                                <h3>Assignments</h3>
-                                <FaAngleDown
-                                    className={`dropdown-icon ${expandedSection === "assignments" ? "expanded" : ""}`}
-                                />
-                            </div>
-                            {expandedSection === "assignments" && (
-                                loadingAssignments ? <AssignmentsDropdownSkeleton /> : (
-                                    <div className="dropdown-body">
-                                        <div className="group-header">
-                                            {hasUnsavedSupervisorChanges && (
-                                                <button
-                                                    className="action-button"
-                                                    onClick={handleSaveSupervisorsAndManagers}
-                                                >
-                                                    Save Assignments
-                                                </button>
-                                            )}
-                                        </div>
-                                        {selectedUser.Roles?.some((r) => r.name === "Manager") &&
-                                            userPermissions.canReadSupervisors && (
-                                                <div className="assignment-list">
-                                                    <h4>Supervisors Assigned to This Manager</h4>
-                                                    <div className="search-container assignment-search">
-                                                        <FaSearch className="search-icon" />
-                                                        <input
-                                                            type="text"
-                                                            placeholder="Search supervisors..."
-                                                            value={supervisorSearch}
-                                                            onChange={(e) => setSupervisorSearch(e.target.value)}
-                                                            className="search-input"
-                                                        />
-                                                    </div>
-                                                    <div className="list-container">
-                                                        {paginatedSupervisors.map((supervisor) => (
-                                                            <div key={supervisor.userID} className="list-item">
-                                                                <label>
-                                                                    <input
-                                                                        type="checkbox"
-                                                                        checked={tempSupervisors.some((s) => s.userID === supervisor.userID)}
-                                                                        onChange={() => handleToggleSupervisor(supervisor)}
-                                                                        disabled={!userPermissions.canRevokeSupervisors}
-                                                                    />
-                                                                    {`${supervisor.firstname} ${supervisor.lastname} (${supervisor.phone})`}
-                                                                </label>
-                                                            </div>
-                                                        ))}
-                                                    </div>
-                                                    <div className="pagination">
-                                                        <button
-                                                            onClick={() => setSupervisorPage((p) => Math.max(1, p - 1))}
-                                                            disabled={supervisorPage === 1}
-                                                        >
-                                                            Previous
-                                                        </button>
-                                                        <span>
-                                                            Page {supervisorPage} of {Math.ceil(supervisorUsers.length / ITEMS_PER_PAGE)}
-                                                        </span>
-                                                        <button
-                                                            onClick={() => setSupervisorPage((p) => p + 1)}
-                                                            disabled={
-                                                                supervisorPage >= Math.ceil(supervisorUsers.length / ITEMS_PER_PAGE)
-                                                            }
-                                                        >
-                                                            Next
-                                                        </button>
-                                                    </div>
-                                                </div>
-                                            )}
-                                        {selectedUser.Roles?.some((r) => r.name === "Supervisor") &&
-                                            userPermissions.canReadManagers && (
-                                                <div className="assignment-list">
-                                                    <h4>Managers Assigned to This Supervisor</h4>
-                                                    <div className="search-container assignment-search">
-                                                        <FaSearch className="search-icon" />
-                                                        <input
-                                                            type="text"
-                                                            placeholder="Search managers..."
-                                                            value={managerSearch}
-                                                            onChange={(e) => setManagerSearch(e.target.value)}
-                                                            className="search-input"
-                                                        />
-                                                    </div>
-                                                    <div className="list-container">
-                                                        {paginatedManagers.map((manager) => (
-                                                            <div key={manager.userID} className="list-item">
-                                                                <label>
-                                                                    <input
-                                                                        type="checkbox"
-                                                                        checked={tempManagers.some((m) => m.userID === manager.userID)}
-                                                                        onChange={() => handleToggleManager(manager)}
-                                                                        disabled={!userPermissions.canRevokeSupervisors}
-                                                                    />
-                                                                    {`${manager.firstname} ${manager.lastname} (${manager.phone})`}
-                                                                </label>
-                                                            </div>
-                                                        ))}
-                                                    </div>
-                                                    <div className="pagination">
-                                                        <button
-                                                            onClick={() => setManagerPage((p) => Math.max(1, p - 1))}
-                                                            disabled={managerPage === 1}
-                                                        >
-                                                            Previous
-                                                        </button>
-                                                        <span>
-                                                            Page {managerPage} of {Math.ceil(managerUsers.length / ITEMS_PER_PAGE)}
-                                                        </span>
-                                                        <button
-                                                            onClick={() => setManagerPage((p) => p + 1)}
-                                                            disabled={managerPage >= Math.ceil(managerUsers.length / ITEMS_PER_PAGE)}
-                                                        >
-                                                            Next
-                                                        </button>
-                                                    </div>
-                                                </div>
-                                            )}
                                     </div>
                                 ))}
                         </div>
                     )}
+                    {userPermissions.canAssignPermissions && (
+                        <div className="dropdown-unit">
+                            <div className="dropdown-bar" onClick={() => toggleSection("permissions")}>
+                                <h3>Permission Overrides</h3>
+                                <FaAngleDown
+                                    className={`dropdown-icon ${expandedSection === "permissions" ? "expanded" : ""}`}
+                                />
+                            </div>
+                            {expandedSection === "permissions" && (
+                                loadingPermissions ? <PermissionsDropdownSkeleton /> : (
+                                    <div className="dropdown-body">
+                                        <div className="group-header">
+                                            {hasUnsavedOverrideChanges && (
+                                                <button
+                                                    className="action-button"
+                                                    onClick={handleSaveOverrides}
+                                                >
+                                                    Save Changes
+                                                </button>
+                                            )}
+                                        </div>
+                                        <div className="permissions-filter-section">
+                                            <div className="permissions-filter-header">
+                                                <FaFilter />
+                                                <label>Filter Permissions</label>
+                                            </div>
+                                            <div className="permissions-filter-controls">
+                                                <div className="permissions-search">
+                                                    <input
+                                                        type="text"
+                                                        placeholder="Search permissions..."
+                                                        value={permissionSearch}
+                                                        onChange={(e) => setPermissionSearch(e.target.value)}
+                                                        className="search-input"
+                                                    />
+                                                </div>
+                                                <div className="permissions-category">
+                                                    <select
+                                                        value={selectedCategory}
+                                                        onChange={(e) => setSelectedCategory(e.target.value)}
+                                                    >
+                                                        <option value="all">All Categories</option>
+                                                        {Object.keys(categorizedPermissions).map((category) => (
+                                                            <option key={category} value={category}>
+                                                                {category.charAt(0).toUpperCase() + category.slice(1)}
+                                                            </option>
+                                                        ))}
+                                                    </select>
+                                                </div>
+                                            </div>
+                                        </div>
+                                        <h4>Effective Permissions</h4>
+                                        {userPermissions.canReadPermissionsByRole && (
+                                            <div className="permissions-list">
+                                                {Object.entries(filteredPermissions).map(([className, permissions]) => (
+                                                    <div key={className} className="permission-class">
+                                                        <h4>{className}</h4>
+                                                        <div className="permissions-container">
+                                                            {permissions.map((perm: Permission) => {
+                                                                const isEffective = effectiveUserPermissions.some(
+                                                                    (p) => p.permissionID === perm.permissionID
+                                                                );
+                                                                const tempOverride = tempOverrides.find(
+                                                                    (o) => o.permissionID === perm.permissionID
+                                                                );
+                                                                const hasOverride = !!tempOverride;
+                                                                const overrideAction = tempOverride?.action;
+                                                                return (
+                                                                    <div key={perm.permissionID} className="permission-item">
+                                                                        <button
+                                                                            className={`permission-button ${(hasOverride ? overrideAction === "grant" : isEffective) ? "assigned" : ""}`}
+                                                                        >
+                                                                            {perm.name}
+                                                                            <FaInfoCircle
+                                                                                className="permission-info-icon"
+                                                                                onClick={(e) => {
+                                                                                    e.stopPropagation();
+                                                                                    toggleOverridePopup(perm.permissionID);
+                                                                                }}
+                                                                            />
+                                                                        </button>
+                                                                        {userPermissions.canAssignPermissions && (
+                                                                            <div className="override-controls">
+                                                                                {!hasOverride && !isEffective && (
+                                                                                    <button
+                                                                                        className="override-button grant"
+                                                                                        onClick={() => handleAddOverride(perm.permissionID, "grant")}
+                                                                                        disabled={!userPermissions.canCreatePermissionOverrides}
+                                                                                        title="Grant Permission"
+                                                                                    >
+                                                                                        <FaPlus />
+                                                                                    </button>
+                                                                                )}
+                                                                                {!hasOverride && isEffective && (
+                                                                                    <button
+                                                                                        className="override-button revoke"
+                                                                                        onClick={() => handleAddOverride(perm.permissionID, "revoke")}
+                                                                                        disabled={!userPermissions.canCreatePermissionOverrides}
+                                                                                        title="Revoke Permission"
+                                                                                    >
+                                                                                        <FaMinus />
+                                                                                    </button>
+                                                                                )}
+                                                                                {hasOverride && (
+                                                                                    <button
+                                                                                        className="override-button remove"
+                                                                                        onClick={() => handleRemoveOverride(tempOverride.overrideID)}
+                                                                                        disabled={!userPermissions.canRemovePermissionOverrides}
+                                                                                        title="Remove Override"
+                                                                                    >
+                                                                                        <FaTimes />
+                                                                                    </button>
+                                                                                )}
+                                                                            </div>
+                                                                        )}
+                                                                    </div>
+                                                                );
+                                                            })}
+                                                        </div>
+                                                    </div>
+                                                ))}
+                                            </div>
+                                        )}
+                                    </div>
+                                ))}
+                        </div>
+                    )}
+                    {(selectedUser.Roles?.some((r) => r.name === "Manager") ||
+                        selectedUser.Roles?.some((r) => r.name === "Supervisor")) &&
+                        userPermissions.canAssignSupervisors && (
+                            <div className="dropdown-unit">
+                                <div className="dropdown-bar" onClick={() => toggleSection("assignments")}>
+                                    <h3>Assignments</h3>
+                                    <FaAngleDown
+                                        className={`dropdown-icon ${expandedSection === "assignments" ? "expanded" : ""}`}
+                                    />
+                                </div>
+                                {expandedSection === "assignments" && (
+                                    loadingAssignments ? <AssignmentsDropdownSkeleton /> : (
+                                        <div className="dropdown-body">
+                                            <div className="group-header">
+                                                {hasUnsavedSupervisorChanges && (
+                                                    <button
+                                                        className="action-button"
+                                                        onClick={handleSaveSupervisorsAndManagers}
+                                                    >
+                                                        Save Assignments
+                                                    </button>
+                                                )}
+                                            </div>
+                                            {selectedUser.Roles?.some((r) => r.name === "Manager") &&
+                                                userPermissions.canReadSupervisors && (
+                                                    <div className="assignment-list">
+                                                        <h4>Supervisors Assigned to This Manager</h4>
+                                                        <div className="search-container assignment-search">
+                                                            <FaSearch className="search-icon" />
+                                                            <input
+                                                                type="text"
+                                                                placeholder="Search supervisors..."
+                                                                value={supervisorSearch}
+                                                                onChange={(e) => setSupervisorSearch(e.target.value)}
+                                                                className="search-input"
+                                                            />
+                                                        </div>
+                                                        <div className="list-container">
+                                                            {paginatedSupervisors.map((supervisor) => (
+                                                                <div key={supervisor.userID} className="list-item">
+                                                                    <label>
+                                                                        <input
+                                                                            type="checkbox"
+                                                                            checked={tempSupervisors.some((s) => s.userID === supervisor.userID)}
+                                                                            onChange={() => handleToggleSupervisor(supervisor)}
+                                                                            disabled={!userPermissions.canRevokeSupervisors}
+                                                                        />
+                                                                        {`${supervisor.firstname} ${supervisor.lastname} (${supervisor.phone})`}
+                                                                    </label>
+                                                                </div>
+                                                            ))}
+                                                        </div>
+                                                        <div className="pagination">
+                                                            <button
+                                                                onClick={() => setSupervisorPage((p) => Math.max(1, p - 1))}
+                                                                disabled={supervisorPage === 1}
+                                                            >
+                                                                Previous
+                                                            </button>
+                                                            <span>
+                                                                Page {supervisorPage} of {Math.ceil(supervisorUsers.length / ITEMS_PER_PAGE)}
+                                                            </span>
+                                                            <button
+                                                                onClick={() => setSupervisorPage((p) => p + 1)}
+                                                                disabled={
+                                                                    supervisorPage >= Math.ceil(supervisorUsers.length / ITEMS_PER_PAGE)
+                                                                }
+                                                            >
+                                                                Next
+                                                            </button>
+                                                        </div>
+                                                    </div>
+                                                )}
+                                            {selectedUser.Roles?.some((r) => r.name === "Supervisor") &&
+                                                userPermissions.canReadManagers && (
+                                                    <div className="assignment-list">
+                                                        <h4>Managers Assigned to This Supervisor</h4>
+                                                        <div className="search-container assignment-search">
+                                                            <FaSearch className="search-icon" />
+                                                            <input
+                                                                type="text"
+                                                                placeholder="Search managers..."
+                                                                value={managerSearch}
+                                                                onChange={(e) => setManagerSearch(e.target.value)}
+                                                                className="search-input"
+                                                            />
+                                                        </div>
+                                                        <div className="list-container">
+                                                            {paginatedManagers.map((manager) => (
+                                                                <div key={manager.userID} className="list-item">
+                                                                    <label>
+                                                                        <input
+                                                                            type="checkbox"
+                                                                            checked={tempManagers.some((m) => m.userID === manager.userID)}
+                                                                            onChange={() => handleToggleManager(manager)}
+                                                                            disabled={!userPermissions.canRevokeSupervisors}
+                                                                        />
+                                                                        {`${manager.firstname} ${manager.lastname} (${manager.phone})`}
+                                                                    </label>
+                                                                </div>
+                                                            ))}
+                                                        </div>
+                                                        <div className="pagination">
+                                                            <button
+                                                                onClick={() => setManagerPage((p) => Math.max(1, p - 1))}
+                                                                disabled={managerPage === 1}
+                                                            >
+                                                                Previous
+                                                            </button>
+                                                            <span>
+                                                                Page {managerPage} of {Math.ceil(managerUsers.length / ITEMS_PER_PAGE)}
+                                                            </span>
+                                                            <button
+                                                                onClick={() => setManagerPage((p) => p + 1)}
+                                                                disabled={managerPage >= Math.ceil(managerUsers.length / ITEMS_PER_PAGE)}
+                                                            >
+                                                                Next
+                                                            </button>
+                                                        </div>
+                                                    </div>
+                                                )}
+                                        </div>
+                                    ))}
+                            </div>
+                        )}
+                </div>
+                <Suspense fallback={<div>Loading popup...</div>}>
+                    <InfoPopup
+                        isOpen={!!activeRolePopup}
+                        onClose={() => setActiveRolePopup(null)}
+                        contentRenderer={() => renderRolePopupContent(activeRolePopup!)}
+                    />
+                    <InfoPopup
+                        isOpen={!!activeOverridePopup}
+                        onClose={() => setActiveOverridePopup(null)}
+                        contentRenderer={() => renderOverridePopupContent(activeOverridePopup!)}
+                    />
+                </Suspense>
             </div>
-            <Suspense fallback={<div>Loading popup...</div>}>
-                <InfoPopup
-                    isOpen={!!activeRolePopup}
-                    onClose={() => setActiveRolePopup(null)}
-                    contentRenderer={() => renderRolePopupContent(activeRolePopup!)}
-                />
-                <InfoPopup
-                    isOpen={!!activeOverridePopup}
-                    onClose={() => setActiveOverridePopup(null)}
-                    contentRenderer={() => renderOverridePopupContent(activeOverridePopup!)}
-                />
-            </Suspense>
-        </div>
+        </motion.div>
     );
 };
 
