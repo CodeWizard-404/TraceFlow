@@ -12,14 +12,22 @@ interface NotificationItemProps {
 const NotificationItem: React.FC<NotificationItemProps> = ({ notification, onClose }) => {
     const { markAsRead } = useNotification();
     const [isDismissed, setIsDismissed] = useState(false);
+    const [isLoading, setIsLoading] = useState(false);
 
-    const handleMarkAsRead = () => {
-        if (notification.status !== 'read') {
+    const handleMarkAsRead = async () => {
+        if (notification.status !== 'read' && !isLoading) {
+            setIsLoading(true);
             setIsDismissed(true);
-            setTimeout(() => {
-                markAsRead(notification.notificationID);
-                if (onClose) onClose();
-            }, 300); // Match slideOut animation duration
+            try {
+                await markAsRead(notification.notificationID);
+                setTimeout(() => {
+                    if (onClose) onClose();
+                    setIsLoading(false);
+                }, 300); // Match slideOut animation duration
+            } catch {
+                setIsDismissed(false); // Revert UI if API fails
+                setIsLoading(false);
+            }
         }
     };
 
@@ -32,6 +40,7 @@ const NotificationItem: React.FC<NotificationItemProps> = ({ notification, onClo
                 isDismissed && 'dismissed'
             )}
             onClick={handleMarkAsRead}
+            style={{ pointerEvents: isLoading ? 'none' : 'auto' }}
         >
             <div className="notification-content">
                 <p className="message">{notification.message}</p>

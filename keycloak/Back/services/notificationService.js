@@ -122,7 +122,7 @@ class NotificationService {
                     inApp: true
                 },
                 conditions: data.conditions || null,
-                messageTemplate: `Notification for ${event}}`,
+                messageTemplate: `Notification for ${event}`,
                 enabled: false // Rule is created disabled
             };
 

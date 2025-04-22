@@ -28,6 +28,7 @@ import { getAllReasons } from "../../apis/reasonAPI";
 import { getAllRoles, resetMainRoles } from "../../apis/roleAPI";
 import { getAllUsers, getUserById } from "../../apis/userAPI";
 import { getNotificationRules } from "../../apis/notificationAPI";
+import { getNotificationTypes } from "../../lib/notifEvents";
 import { Checklist } from "../../models/Checklist";
 import Permission from "../../models/Permission";
 import { Reason } from "../../models/Reason";
@@ -92,7 +93,8 @@ interface CacheData {
     | Permission[]
     | Checklist[]
     | Reason[]
-    | NotificationRule[];
+    | NotificationRule[]
+    | string[];
     timestamp: number;
 }
 
@@ -106,6 +108,7 @@ const AdminDashboard: React.FC = React.memo(() => {
     const [roleLoading, setRoleLoading] = useState(false);
     const [isTransitioning, setIsTransitioning] = useState(false);
     const [showNotificationPanel, setShowNotificationPanel] = useState(false);
+    const [notificationTypes, setNotificationTypes] = useState<string[]>([]);
 
     const initialView = useMemo(() => {
         const savedView = Cookies.get(COOKIE_NAME);
@@ -419,6 +422,13 @@ const AdminDashboard: React.FC = React.memo(() => {
                         setCachedData("all_notification_rules", rulesData);
                     }
                     setNotificationRules(rulesData as NotificationRule[]);
+                    // Fetch notification types
+                    let typesData = getCachedData("notification_types");
+                    if (!typesData) {
+                        typesData = await getNotificationTypes();
+                        setCachedData("notification_types", typesData);
+                    }
+                    setNotificationTypes(typesData as string[]);
                 }
                 clearError();
             } catch (err: unknown) {
@@ -763,11 +773,11 @@ const AdminDashboard: React.FC = React.memo(() => {
                                         aria-label="Filter by notification type"
                                     >
                                         <option value="all">All Types</option>
-                                        <option value="general">General</option>
-                                        <option value="visit">Visit</option>
-                                        <option value="timesheet">Timesheet</option>
-                                        <option value="receipt">Receipt</option>
-                                        <option value="anomaly">Anomaly</option>
+                                        {notificationTypes.map((type) => (
+                                            <option key={type} value={type}>
+                                                {type.charAt(0).toUpperCase() + type.slice(1)}
+                                            </option>
+                                        ))}
                                     </select>
                                     <select
                                         style={{ marginTop: "0.5rem" }}
