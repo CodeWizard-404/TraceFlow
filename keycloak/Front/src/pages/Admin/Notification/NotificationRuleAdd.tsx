@@ -1,7 +1,7 @@
-import React, { useState, useEffect } from 'react';
+import React, { useState, useEffect, useRef } from 'react';
 import { FaSave } from 'react-icons/fa';
 import { motion } from 'framer-motion';
-import Select, { MultiValue } from 'react-select';
+import Select, { MultiValue, SingleValue } from 'react-select';
 import NotificationRule from '../../../models/NotificationRule';
 import { createNotificationRule } from '../../../apis/notificationAPI';
 import { getAllUsers } from '../../../apis/userAPI';
@@ -22,6 +22,7 @@ interface NotificationRuleAddProps {
 }
 
 const SKELETON_DELAY = 500;
+const CACHE_DURATION = 5 * 60 * 1000; // 5 minutes
 
 const formVariants = {
     hidden: { opacity: 0, y: 20 },
@@ -60,14 +61,23 @@ const NotificationRuleAdd: React.FC<NotificationRuleAddProps> = ({
         messageTemplate: '',
         enabled: true,
     });
+    const [selectedEntity, setSelectedEntity] = useState<string | null>(null);
+    const [selectedAction, setSelectedAction] = useState<string | null>(null);
     const [formErrors, setFormErrors] = useState({ event: '', messageTemplate: '' });
     const [touched, setTouched] = useState({ event: false, messageTemplate: false });
     const [loading, setLoading] = useState(true);
     const [users, setUsers] = useState<User[]>([]);
     const [roles, setRoles] = useState<Role[]>([]);
     const [notificationTypes, setNotificationTypes] = useState<string[]>([]);
+    const [entities, setEntities] = useState<string[]>([]);
+    const [entityActions, setEntityActions] = useState<Record<string, string[]>>({});
     const [selectedUsers, setSelectedUsers] = useState<{ value: string; label: string }[]>([]);
     const [selectedRoles, setSelectedRoles] = useState<{ value: string; label: string }[]>([]);
+
+    // Cache for entities and actions
+    const cachedEntities = useRef<string[] | null>(null);
+    const cachedEntityActions = useRef<Record<string, string[]> | null>(null);
+    const lastCacheTime = useRef<number>(0);
 
     useEffect(() => {
         const fetchData = async () => {
@@ -79,11 +89,40 @@ const NotificationRuleAdd: React.FC<NotificationRuleAddProps> = ({
                 ]);
                 setUsers(usersData || []);
                 setRoles(rolesData || []);
+
                 // Extract unique notification types
                 const types = [...new Set(rulesData.map((rule) => rule.type.toLowerCase()))].filter(
                     (type): type is string => !!type
                 );
                 setNotificationTypes(['general', ...types]);
+
+                // Extract entities and actions from rules
+                if (
+                    !cachedEntities.current ||
+                    !cachedEntityActions.current ||
+                    Date.now() - lastCacheTime.current >= CACHE_DURATION
+                ) {
+                    const entityActionMap: Record<string, Set<string>> = {};
+                    rulesData.forEach((rule) => {
+                        const [entity, action] = rule.event.split(':');
+                        if (entity && action) {
+                            if (!entityActionMap[entity]) {
+                                entityActionMap[entity] = new Set();
+                            }
+                            entityActionMap[entity].add(action);
+                        }
+                    });
+                    cachedEntities.current = Object.keys(entityActionMap);
+                    cachedEntityActions.current = Object.fromEntries(
+                        Object.entries(entityActionMap).map(([entity, actions]) => [
+                            entity,
+                            Array.from(actions),
+                        ])
+                    );
+                    lastCacheTime.current = Date.now();
+                }
+                setEntities(cachedEntities.current || []);
+                setEntityActions(cachedEntityActions.current || {});
             } catch (err) {
                 setError('Failed to fetch data');
                 console.error(err);
@@ -95,12 +134,11 @@ const NotificationRuleAdd: React.FC<NotificationRuleAddProps> = ({
         return () => clearTimeout(timer);
     }, [setError]);
 
-    const validateEvent = async (value: string): Promise<string> => {
-        const trimmed = value.trim();
-        if (!trimmed) return 'Event is required';
-        if (!/^[a-zA-Z]+:[a-zA-Z]+$/.test(trimmed)) return "Event must be in format 'type:action' (e.g., user:created)";
-        // Optionally, check if event is already defined
-        const isValid = await isValidNotificationEvent(trimmed);
+    const validateEvent = async (entity: string | null, action: string | null): Promise<string> => {
+        if (!entity) return 'Entity is required';
+        if (!action) return 'Action is required';
+        const event = `${entity}:${action}`;
+        const isValid = await isValidNotificationEvent(event);
         if (isValid) return 'Event already exists; it will reuse existing rules';
         return '';
     };
@@ -112,7 +150,32 @@ const NotificationRuleAdd: React.FC<NotificationRuleAddProps> = ({
         return '';
     };
 
-    const handleChange = async (
+    const handleEntityChange = async (
+        option: SingleValue<{ value: string; label: string }>
+    ) => {
+        const entity = option ? option.value : null;
+        setSelectedEntity(entity);
+        setSelectedAction(null); // Reset action when entity changes
+        const event = entity && selectedAction ? `${entity}:${selectedAction}` : '';
+        setFormData((prev) => ({ ...prev, event }));
+        setTouched((prev) => ({ ...prev, event: true }));
+        const error = await validateEvent(entity, selectedAction);
+        setFormErrors((prev) => ({ ...prev, event: error }));
+    };
+
+    const handleActionChange = async (
+        option: SingleValue<{ value: string; label: string }>
+    ) => {
+        const action = option ? option.value : null;
+        setSelectedAction(action);
+        const event = selectedEntity && action ? `${selectedEntity}:${action}` : '';
+        setFormData((prev) => ({ ...prev, event }));
+        setTouched((prev) => ({ ...prev, event: true }));
+        const error = await validateEvent(selectedEntity, action);
+        setFormErrors((prev) => ({ ...prev, event: error }));
+    };
+
+    const handleChange = (
         e: React.ChangeEvent<HTMLInputElement | HTMLSelectElement | HTMLTextAreaElement>
     ) => {
         const { name, value, type } = e.target;
@@ -128,14 +191,13 @@ const NotificationRuleAdd: React.FC<NotificationRuleAddProps> = ({
                     [name]: checked,
                 },
             }));
-        } else if (name === 'event' || name === 'type' || name === 'messageTemplate') {
+        } else if (name === 'type' || name === 'messageTemplate') {
             setFormData((prev) => ({ ...prev, [name]: value }));
-            if (name === 'event' || name === 'messageTemplate') {
-                setTouched((prev) => ({ ...prev, [name]: true }));
-                const error = name === 'event' ? await validateEvent(value) : validateMessageTemplate(value);
+            if (name === 'messageTemplate') {
+                setTouched((prev) => ({ ...prev, messageTemplate: true }));
                 setFormErrors((prev) => ({
                     ...prev,
-                    [name]: error,
+                    messageTemplate: validateMessageTemplate(value),
                 }));
             }
         }
@@ -177,16 +239,32 @@ const NotificationRuleAdd: React.FC<NotificationRuleAddProps> = ({
         label: role.name,
     }));
 
+    const entityOptions = entities.map((entity) => ({
+        value: entity,
+        label: entity.charAt(0).toUpperCase() + entity.slice(1),
+    }));
+
+    const actionOptions = selectedEntity
+        ? (entityActions[selectedEntity] || []).map((action) => ({
+            value: action,
+            label: action.charAt(0).toUpperCase() + action.slice(1),
+        }))
+        : [];
+
     const handleSubmit = async (e: React.MouseEvent<HTMLButtonElement>) => {
         e.preventDefault();
         const errors = {
-            event: await validateEvent(formData.event || ''),
+            event: await validateEvent(selectedEntity, selectedAction),
             messageTemplate: validateMessageTemplate(formData.messageTemplate || ''),
         };
         setFormErrors(errors);
         setTouched({ event: true, messageTemplate: true });
 
-        if (Object.values(errors).some((error) => error && error !== 'Event already exists; it will reuse existing rules')) {
+        if (
+            Object.values(errors).some(
+                (error) => error && error !== 'Event already exists; it will reuse existing rules'
+            )
+        ) {
             setError('Please correct the errors in the form');
             return;
         }
@@ -194,6 +272,7 @@ const NotificationRuleAdd: React.FC<NotificationRuleAddProps> = ({
         try {
             const newRule = await createNotificationRule({
                 ...formData,
+                event: selectedEntity && selectedAction ? `${selectedEntity}:${selectedAction}` : '',
                 recipients: {
                     roles: selectedRoles.map((role) => role.value),
                     userIDs: selectedUsers.map((user) => user.value),
@@ -238,22 +317,45 @@ const NotificationRuleAdd: React.FC<NotificationRuleAddProps> = ({
                         <h3 className="form-header">Rule Details</h3>
                         <div className="form-row">
                             <div className="form-group">
-                                <label htmlFor="event">
-                                    Event <span className="required">*</span>
-                                    <span className="tooltip" data-tooltip="Enter the event in 'type:action' format (e.g., user:created)"></span>
+                                <label htmlFor="entity">
+                                    Entity <span className="required">*</span>
+                                    <span className="tooltip" data-tooltip="Select the entity type for the event (e.g., user, timesheet)"></span>
                                 </label>
-                                <input
-                                    type="text"
-                                    id="event"
-                                    name="event"
-                                    value={formData.event}
-                                    onChange={handleChange}
-                                    className={`form-input ${touched.event && formErrors.event ? 'invalid' : ''}`}
-                                    placeholder="e.g., user:created"
-                                    required
+                                <Select
+                                    id="entity"
+                                    options={entityOptions}
+                                    value={entityOptions.find((option) => option.value === selectedEntity) || null}
+                                    onChange={handleEntityChange}
+                                    className={`react-select-container ${touched.event && formErrors.event && !selectedEntity ? 'invalid' : ''}`}
+                                    classNamePrefix="react-select"
+                                    placeholder="Select entity..."
+                                    isClearable
                                 />
-                                {touched.event && formErrors.event && (
+                                {touched.event && formErrors.event && !selectedEntity && (
                                     <span className="validation-error">{formErrors.event}</span>
+                                )}
+                            </div>
+                            <div className="form-group">
+                                <label htmlFor="action">
+                                    Action <span className="required">*</span>
+                                    <span className="tooltip" data-tooltip="Select the action for the event (e.g., created, updated)"></span>
+                                </label>
+                                <Select
+                                    id="action"
+                                    options={actionOptions}
+                                    value={actionOptions.find((option) => option.value === selectedAction) || null}
+                                    onChange={handleActionChange}
+                                    className={`react-select-container ${touched.event && formErrors.event && selectedEntity && !selectedAction ? 'invalid' : ''}`}
+                                    classNamePrefix="react-select"
+                                    placeholder="Select action..."
+                                    isDisabled={!selectedEntity}
+                                    isClearable
+                                />
+                                {touched.event && formErrors.event && selectedEntity && !selectedAction && (
+                                    <span className="validation-error">{formErrors.event}</span>
+                                )}
+                                {touched.event && formErrors.event && selectedEntity && selectedAction && formErrors.event.includes('already exists') && (
+                                    <span className="validation-warning">{formErrors.event}</span>
                                 )}
                             </div>
                             <div className="form-group">
