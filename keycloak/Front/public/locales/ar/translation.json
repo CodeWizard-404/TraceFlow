@@ -26,7 +26,7 @@
       }
     },
     "statuses": {
-      "pending": "قيد الانتظار",
+      "pending": "في انتظار",
       "visited": "تمت الزيارة",
       "validated": "تم التحقق",
       "rejected": "مرفوض",
@@ -37,13 +37,13 @@
       "sentToSupplier": "تم إرساله إلى المورد",
       "collectFromSupplier": "استلام من المورد",
       "withRegionalManager": "مع المدير الإقليمي",
-      "stubCollected": "تم جمع الجذع",
+      "stubCollected": "تم جمع القسيمة",
       "withSupervisor": "مع المشرف",
-      "assignedToAgent": "تم تخصيصه للوكيل",
+      "assignedToAgent": "تم تعيينه للوكيل",
       "withStockManager": "مع مدير المخزون",
       "stubCollectedStatus": "تم الجمع"
     },
-    "durationUnit": "دقيقة"
+    "durationUnit": "د"
   },
   "header": {
     "logoAlt": "شعار الشركة",
@@ -52,7 +52,7 @@
       "themeToggle": "التبديل إلى وضع {mode}",
       "logout": "تسجيل الخروج"
     },
-    "theme": "السمة",
+    "theme": "الثيم",
     "selectLanguage": "اختر اللغة",
     "logout": "تسجيل الخروج",
     "darkMode": "داكن",
@@ -60,7 +60,7 @@
     "navbar": {
       "dashboard": "لوحة التحكم",
       "admin": "الإدارة",
-      "timesheets": "سجلات الدوام",
+      "timesheets": "جداول العمل",
       "receiptBooks": "دفاتر الإيصالات",
       "profile": "الملف الشخصي"
     }
@@ -69,7 +69,7 @@
     "aria": {
       "label": "تذييل"
     },
-    "copyright": "© {year} TraceFlow. جميع الحقوق محفوظة.",
+    "copyright": "© {{year}} TraceFlow. جميع الحقوق محفوظة.",
     "links": {
       "privacy": "سياسة الخصوصية",
       "terms": "شروط الخدمة",
@@ -79,15 +79,15 @@
   "visitValidation": {
     "title": "التحقق من الزيارة",
     "description": "أكمل قائمة التحقق، أضف صورًا، وقم بالتحقق من الزيارة.",
-    "loading": "جارٍ تحميل تفاصيل الزيارة...",
+    "loading": "جاري تحميل تفاصيل الزيارة...",
     "error": {
       "title": "خطأ",
       "missingData": "معرف الزيارة أو رمز التوثيق مفقود.",
       "fetchFailed": "فشل تحميل بيانات الزيارة أو الوكيل.",
       "accessDenied": "الزيارة غير موجودة أو تم رفض الوصول.",
       "cameraAccess": "فشل الوصول إلى الكاميرا. يرجى التأكد من منح الأذونات.",
-      "cameraInUse": "الكاميرا قيد الاستخدام بواسطة تطبيق آخر أو غير متوفرة. يرجى إغلاق التطبيقات الأخرى أو التحقق من جهازك.",
-      "cameraPlayFailed": "فشل تشغيل تدفق الكاميرا.",
+      "cameraInUse": "الكاميرا قيد الاستخدام بواسطة تطبيق آخر أو غير متاحة. يرجى إغلاق التطبيقات الأخرى أو التحقق من جهازك.",
+      "cameraPlayFailed": "فشل تشغيل بث الكاميرا.",
       "validationFailed": "فشل التحقق من الزيارة.",
       "noPhotos": "مطلوب صورة واحدة على الأقل.",
       "noChecklists": "لا توجد قوائم تحقق متاحة لهذه الزيارة.",
@@ -106,13 +106,13 @@
     "checklist": {
       "title": "قائمة التحقق",
       "noData": "لا توجد عناصر قائمة تحقق متاحة.",
-      "itemLabel": "{item}"
+      "itemLabel": "{{item}}"
     },
     "photos": {
       "title": "الصور",
       "startCamera": "تشغيل الكاميرا",
       "note": "مطلوب صورة واحدة على الأقل.",
-      "alt": "صورة الزيارة {index}"
+      "alt": "صورة الزيارة {{index}}"
     },
     "comment": {
       "title": "تعليق (اختياري)",
@@ -121,7 +121,7 @@
     },
     "actions": {
       "validate": "التحقق من الزيارة",
-      "validating": "جارٍ التحقق...",
+      "validating": "جاري التحقق...",
       "back": "رجوع",
       "cancel": "إلغاء",
       "submit": "إرسال التحقق"
@@ -133,9 +133,9 @@
   },
   "visitDetails": {
     "title": "تفاصيل الزيارة",
-    "loading": "جارٍ تحميل تفاصيل الزيارة...",
+    "loading": "جاري تحميل تفاصيل الزيارة...",
     "error": {
-      "title": "عذرًا!",
+      "title": "أوبس!",
       "notFound": "الزيارة غير موجودة.",
       "fetchFailed": "فشل تحميل تفاصيل الزيارة.",
       "validateFailed": "فشل التحقق من الزيارة.",
@@ -143,10 +143,10 @@
       "updateFailed": "فشل تحديث الزيارة.",
       "deleteFailed": "فشل حذف الزيارة.",
       "cameraAccess": "فشل الوصول إلى الكاميرا. يرجى التأكد من منح الأذونات.",
-      "cameraPlayFailed": "فشل تشغيل تدفق الكاميرا.",
-      "agentNotFound": "لم يتم العثور على وكيل بهذا الرقم.",
-      "supervisorNotFound": "لم يتم العثور على مشرف بهذا الرقم.",
-      "agentsLoadFailed": "فشل تحميل الوكلاء لـ {location}."
+      "cameraPlayFailed": "فشل تشغيل بث الكاميرا.",
+      "agentNotFound": "لم يتم العثور على وكيل بهذا الرقم الهاتفي.",
+      "supervisorNotFound": "لم يتم العثور على مشرف بهذا الرقم الهاتفي.",
+      "agentsLoadFailed": "فشل تحميل الوكلاء لـ {{location}}."
     },
     "whenWhere": {
       "title": "متى وأين",
@@ -157,7 +157,7 @@
     },
     "agent": {
       "title": "الوكيل",
-      "noData": "لم يتم تخصيص وكيل",
+      "noData": "لم يتم تعيين وكيل",
       "phone": "الهاتف"
     },
     "reasons": {
@@ -170,7 +170,7 @@
     },
     "photos": {
       "title": "الصور",
-      "count": "({count})",
+      "count": "({{count}})",
       "startCamera": "تشغيل الكاميرا",
       "alt": "صورة الزيارة {index}"
     },
@@ -215,8 +215,8 @@
         "title": "الصور",
         "startCamera": "تشغيل الكاميرا",
         "lastCapturedAlt": "آخر صورة تم التقاطها",
-        "existingAlt": "الصورة {index}",
-        "newAlt": "صورة جديدة {index}"
+        "existingAlt": "الصورة {{index}}",
+        "newAlt": "صورة جديدة {{index}}"
       },
       "comment": {
         "label": "تعليق",
@@ -250,10 +250,10 @@
       "reject": "رفض",
       "save": "حفظ",
       "cancel": "إلغاء",
-      "deleteConfirm": "هل أنت متأكد من أنك تريد حذف هذه الزيارة؟"
+      "deleteConfirm": "هل أنت متأكد أنك تريد حذف هذه الزيارة؟"
     },
-    "duration": "{duration} دقيقة",
-    "fullscreenAlt": "معاينة ملء الشاشة",
+    "duration": "{{duration}} دقيقة",
+    "fullscreenAlt": "معاينة بملء الشاشة",
     "aria": {
       "backButton": "العودة إلى الصفحة السابقة",
       "logVisit": "تسجيل هذه الزيارة",
@@ -262,46 +262,45 @@
       "cancelVisit": "إلغاء هذه الزيارة",
       "validateVisit": "التحقق من هذه الزيارة",
       "tabGeneral": "عرض المعلومات العامة للزيارة",
-      "tabTimesheet": "عرض معلومات سجل الدوام",
+      "tabTimesheet": "عرض معلومات جدول العمل",
       "tabHistory": "عرض تاريخ الزيارة",
       "errorMessage": "رسالة خطأ",
       "supervisorSelect": "اختر مشرفًا للزيارة"
     }
   },
   "qrScan": {
-    "title": "مسح رمز الاستجابة السريعة",
-    "description": "قم بمحاذاة رمز الاستجابة السريعة داخل الإطار للتحقق من الزيارة.",
-    "loading": "جارٍ التحميل...",
+    "title": "مسح رمز QR",
+    "description": "قم بمحاذاة رمز QR داخل الإطار للتحقق من الزيارة.",
+    "loading": "جاري التحميل...",
     "status": {
-      "startingCamera": "جارٍ تشغيل الكاميرا...",
-      "scanning": "جارٍ المسح...",
-      "detected": "تم اكتشاف رمز الاستجابة السريعة",
-      "checking": "جارٍ التحقق...",
-      "validating": "جارٍ التحقق..."
+      "startingCamera": "تشغيل الكاميرا...",
+      "scanning": "جاري المسح...",
+      "detected": "تم اكتشاف رمز QR",
+      "checking": "جاري التحقق...",
+      "validating": "جاري التحقق..."
     },
     "error": {
-      "title": "عذرًا!",
+      "title": "أوبس!",
       "noVisit": "لم يتم اختيار زيارة.",
       "authRequired": "التوثيق مطلوب.",
-      "accessDenied": "تم رفض الوصول: ليس لديك إذن لمسح الزيارات.",
-      "mismatch": "خطأ في التطابق"
+      "mismatch": "خطأ عدم التطابق"
     },
     "actions": {
       "back": "رجوع"
     },
     "aria": {
       "backButton": "العودة إلى الصفحة السابقة",
-      "qrReader": "ماسح رمز الاستجابة السريعة، الحالة الحالية: {status}",
+      "qrReader": "ماسح رمز QR، الحالة الحالية: {{status}}",
       "errorMessage": "رسالة خطأ"
     }
   },
   "timesheets": {
-    "loading": "جارٍ تحميل سجل الدوام...",
+    "loading": "جاري تحميل جدول العمل...",
     "viewModes": {
-      "year": "العام",
-      "month": "الشهر",
-      "week": "الأسبوع",
-      "day": "اليوم"
+      "year": "سنة",
+      "month": "شهر",
+      "week": "أسبوع",
+      "day": "يوم"
     },
     "actions": {
       "scheduleVisit": "جدولة زيارة",
@@ -309,50 +308,50 @@
       "current": "{{view}} الحالي",
       "viewReceiptBooks": "عرض دفاتر الإيصالات",
       "filterSupervisors": "تصفية المشرفين",
-      "validateTimesheet": "التحقق من سجل الدوام بالكامل"
+      "validateTimesheet": "التحقق من جدول العمل بالكامل"
     },
     "filter": {
-      "searchPlaceholder": "ابحث بالاسم أو الهاتف...",
+      "searchPlaceholder": "البحث بالاسم أو الهاتف...",
       "allSupervisors": "جميع المشرفين"
     },
     "yearView": {
       "week": "أسبوع",
       "visits": "الزيارات",
       "supervisors": "المشرفون",
-      "month": "{monthName}",
-      "weekNumber": "الأسبوع {weekNumber} :",
-      "weekRange": "{startDate} - {endDate}",
-      "supervisorCount": "المشرفون: {count}"
+      "month": "{{monthName}}",
+      "weekNumber": "الأسبوع {{weekNumber}} :",
+      "weekRange": "{{startDate}} - {{endDate}}",
+      "supervisorCount": "المشرفون: {{count}}"
     },
     "monthView": {
       "week": "أسبوع",
-      "weekRange": "{startDate} - {endDate}",
-      "visitCount": "{count} زيارات",
+      "weekRange": "{{startDate}} - {{endDate}}",
+      "visitCount": "{{count}} زيارات",
       "visits": "الزيارات",
-      "supervisorCount": "المشرفون: {count}",
+      "supervisorCount": "المشرفون: {{count}}",
       "status": "الحالة",
       "supervisors": "المشرفون:"
     },
     "weekView": {
       "week": "أسبوع",
-      "weekRange": "{startDate} - {endDate}",
+      "weekRange": "{{startDate}} - {{endDate}}",
       "status": "الحالة",
-      "supervisor": "المشرف: {firstname} {lastname}",
-      "dayName": "{dayName}",
-      "dayDate": "{dayDate}",
-      "visitCount": "/ {count} زيارات"
+      "supervisor": "المشرف: {{firstname}} {{lastname}}",
+      "dayName": "{{dayName}}",
+      "dayDate": "{{dayDate}}",
+      "visitCount": "/ {{count}} زيارات"
     },
     "dayView": {
-      "date": "{weekday} {day}/{month}",
+      "date": "{{weekday}} {{day}}/{{month}}",
       "noVisits": "لا توجد زيارات مجدولة"
     },
     "visitCard": {
-      "supervisor": "{firstname} {lastname}",
-      "time": "{time}",
-      "status": "{status}",
-      "location": "{location}",
+      "supervisor": "{{firstname}} {{lastname}}",
+      "time": "{{time}}",
+      "status": "{{status}}",
+      "location": "{{location}}",
       "locationTBD": "الموقع لم يحدد بعد",
-      "reasons": "الأسباب: {reasons}"
+      "reasons": "الأسباب: {{reasons}}"
     },
     "aria": {
       "prevYear": "السنة السابقة",
@@ -363,22 +362,22 @@
       "nextWeek": "الأسبوع التالي",
       "prevDay": "اليوم السابق",
       "nextDay": "اليوم التالي",
-      "viewToggle": "التبديل إلى عرض {mode}",
+      "viewToggle": "التبديل إلى عرض {{mode}}",
       "scheduleVisit": "جدولة زيارة جديدة",
       "receiptBooks": "عرض دفاتر الإيصالات",
-      "current": "التمرير إلى {mode} الحالي",
+      "current": "التمرير إلى {{mode}} الحالي",
       "supervisorSearch": "البحث عن المشرفين بالاسم أو الهاتف",
-      "supervisorFilter": "تصفية سجلات الدوام حسب المشرف",
-      "month": "عرض سجلات الدوام لـ {month}",
-      "weekTile": "عرض تفاصيل الأسبوع {weekNumber}",
-      "weekCard": "عرض تفاصيل الأسبوع {weekNumber}",
-      "dayTile": "عرض الزيارات لـ {weekday} {day}",
-      "visitCard": "عرض تفاصيل الزيارة لـ {time} في {location}"
+      "supervisorFilter": "تصفية جداول العمل حسب المشرف",
+      "month": "عرض جداول العمل لـ {{month}}",
+      "weekTile": "عرض تفاصيل الأسبوع {{weekNumber}}",
+      "weekCard": "عرض تفاصيل الأسبوع {{weekNumber}}",
+      "dayTile": "عرض الزيارات لـ {{weekday}} {{day}}",
+      "visitCard": "عرض تفاصيل الزيارة لـ {{time}} في {{location}}"
     }
   },
   "timesheetForm": {
     "title": "إنشاء زيارة",
-    "loading": "جارٍ التحميل...",
+    "loading": "جاري التحميل...",
     "form": {
       "supervisor": "المشرف",
       "date": "التاريخ",
@@ -407,37 +406,43 @@
     },
     "actions": {
       "back": "رجوع",
-      "create": "إنشاء سجل دوام",
-      "submitting": "جارٍ الإرسال..."
+      "create": "إنشاء جدول عمل",
+      "submitting": "جاري الإرسال..."
     },
     "errors": {
       "loadInitialData": "فشل تحميل البيانات الأولية. يرجى المحاولة مرة أخرى.",
-      "loadAgents": "فشل تحميل الوكلاء لـ {location}",
-      "agentNotFound": "لم يتم العثور على وكيل بهذا الرقم",
-      "supervisorNotFound": "لم يتم العثور على مشرف بهذا الرقم",
-      "createFailed": "فشل إنشاء سجل الدوام. يرجى المحاولة مرة أخرى."
+      "loadAgents": "فشل تحميل الوكلاء لـ {{location}}",
+      "agentNotFound": "لم يتم العثور على وكيل بهذا الرقم الهاتفي",
+      "supervisorNotFound": "لم يتم العثور على مشرف بهذا الرقم الهاتفي",
+      "createFailed": "فشل إنشاء جدول العمل. يرجى المحاولة مرة أخرى.",
+      "formIncomplete": "يرجى ملء جميع الحقول المطلوبة."
+    },
+    "accessibility": {
+      "removeReason": "إزالة السبب {{item}}",
+      "removeChecklist": "إزالة قائمة التحقق {{item}}",
+      "errorAnnouncement": "خطأ: {{message}}"
     }
   },
   "transferReceiptBook": {
     "title": "نقل دفاتر الإيصالات",
-    "loading": "جارٍ التحميل...",
+    "loading": "جاري التحميل...",
     "form": {
       "agentSelection": "اختيار الوكيل",
       "recipientType": "نوع المستلم",
-      "supplierEmail": "بريد المورد الإلكتروني",
-      "selectBooks": "اختر دفاتر الإيصالات في المخزون للنقل",
+      "supplierEmail": "بريد المورد",
+      "selectBooks": "اختر الدفاتر في المخزون لنقلها",
       "selectedAgent": "الوكيل المختار",
       "scanCollect": "مسح الدفاتر للاستلام من المورد",
-      "scanQR": "مسح رموز الاستجابة السريعة",
-      "otp": "أدخل رمز OTP (تم إرساله إلى {type} {details})",
+      "scanQR": "مسح رموز QR",
+      "otp": "أدخل OTP (تم إرساله إلى {{type}} {{details}})",
       "location": "اختر الموقع",
-      "searchAgents": "ابحث عن الوكلاء",
+      "searchAgents": "البحث عن الوكلاء",
       "selectAgent": "اختر وكيلًا",
       "recipientSelection": "اختيار المستلم",
-      "selectRecipient": "اختر {type}",
+      "selectRecipient": "اختر {{type}}",
       "selectedUser": "المستخدم المختار",
       "selectedBooks": "الدفاتر المختارة",
-      "scanStub": "مسح الجذع",
+      "scanStub": "مسح القسيمة",
       "noBooksAvailable": "لا توجد دفاتر متاحة",
       "or": "أو",
       "placeholders": {
@@ -446,83 +451,83 @@
         "selectLocation": "اختر الموقع",
         "searchAgents": "ابحث عن الوكلاء بالاسم أو الهاتف",
         "selectAgent": "اختر وكيلًا",
-        "enterSupplierEmail": "أدخل بريد المورد الإلكتروني",
-        "searchBooks": "ابحث عن الدفاتر بالرقم أو النوع",
+        "enterSupplierEmail": "أدخل بريد المورد",
+        "searchBooks": "ابحث عن الدفاتر حسب الرقم أو النوع",
         "searchRecipient": "أدخل رقم الهاتف أو ابحث بالاسم",
-        "selectRecipient": "اختر {type}",
-        "enterOTP": "أدخل رمز OTP"
+        "selectRecipient": "اختر {{type}}",
+        "enterOTP": "أدخل OTP"
       }
     },
     "actions": {
       "initiateTransfer": "بدء النقل",
-      "initiateStubCollection": "بدء جمع الجذع",
+      "initiateStubCollection": "بدء جمع القسائم",
       "collectFromSupplier": "الاستلام من المورد",
       "back": "رجوع",
       "initiate": "بدء النقل",
-      "initiateStub": "بدء جمع الجذع",
+      "initiateStub": "بدء جمع القسائم",
       "collect": "الاستلام من المورد",
       "validateTransfer": "التحقق من النقل",
-      "validateStubCollection": "التحقق من جمع الجذع",
+      "validateStubCollection": "التحقق من جمع القسائم",
       "aria": {
-        "back": "العودة إلى الخطوة السابقة",
+        "back": "الرجوع إلى الخطوة السابقة",
         "initiate": "بدء نقل دفاتر الإيصالات",
-        "initiateStub": "بدء جمع الجذع",
+        "initiateStub": "بدء جمع القسائم",
         "collect": "استلام الدفاتر من المورد",
         "validateTransfer": "التحقق من النقل",
-        "validateStubCollection": "التحقق من جمع الجذع",
-        "removeBook": "إزالة الدفتر {number}"
+        "validateStubCollection": "التحقق من جمع القسائم",
+        "removeBook": "إزالة الدفتر {{number}}"
       }
     },
     "types": {
       "standard": "قياسي"
     },
     "pagination": {
-      "pageInfo": "الصفحة {currentPage} من {totalPages}",
+      "pageInfo": "الصفحة {{currentPage}} من {{totalPages}}",
       "selectedBooks": "الدفاتر المختارة",
       "aria": {
-        "previous": "الانتقال إلى الصفحة السابقة",
-        "next": "الانتقال إلى الصفحة التالية"
+        "previous": "الذهاب إلى الصفحة السابقة",
+        "next": "الذهاب إلى الصفحة التالية"
       }
     },
-    "otpTimer": "تنتهي صلاحية OTP في",
+    "otpTimer": "ينتهي OTP في",
     "list": {
       "noBooks": "لا توجد دفاتر في المخزون متاحة أو مطابقة للبحث.",
       "selectedBooks": "الدفاتر المختارة",
-      "scannedQRs": "تم مسح {count} رمز QR."
+      "scannedQRs": "{{count}} رموز QR تم مسحها."
     },
     "recipientTypes": {
       "agent": "وكيل",
       "supplier": "مورد",
       "archive": "أرشيف",
-      "stubCollection": "جمع الجذع",
+      "stubCollection": "جمع القسائم",
       "collectFromSupplier": "الاستلام من المورد"
     },
     "errors": {
       "accessDenied": "تم رفض الوصول - إذن transfer_receipt_books مفقود",
       "loadData": "فشل تحميل البيانات. تحقق من وحدة التحكم للحصول على التفاصيل.",
       "fetchAgent": "فشل جلب تفاصيل الوكيل.",
-      "cameraAccess": "تم رفض الوصول إلى الكاميرا أو غير متوفرة.",
-      "qrNotFound": "رمز QR \"{number}\" غير موجود في دفاتر الإيصالات.",
-      "qrAlreadyScanned": "تم مسح أو اختيار رمز QR \"{number}\" بالفعل.",
-      "bookNotTransferable": "الدفتر \"{number}\" (الحالة: {status}) لا يمكن نقله/جمعه بواسطة دورك (أدوارك).",
-      "stubNotAssigned": "يجب أن يكون الدفتر \"{number}\" \"مخصصًا للوكيل\" لجمع الجذع.",
-      "stubNotCollected": "يجب أن يكون الجذع \"{number}\" \"مجمعًا\" لإدارة المخزون.",
-      "supervisorLimit": "يمكن للمشرفين تخصيص دفتر إيصالات واحد فقط للوكيل.",
+      "cameraAccess": "تم رفض الوصول إلى الكاميرا أو غير متاح.",
+      "qrNotFound": "رمز QR \"{{number}}\" غير موجود في دفاتر الإيصالات.",
+      "qrAlreadyScanned": "رمز QR \"{{number}}\" تم مسحه أو اختياره بالفعل.",
+      "bookNotTransferable": "الدفتر \"{{number}}\" (الحالة: {{status}}) لا يمكن نقله/جمعه بواسطة دورك/أدوارك.",
+      "stubNotAssigned": "يجب أن يكون الدفتر \"{{number}}\" \"معينًا للوكيل\" لجمع القسائم.",
+      "stubNotCollected": "يجب أن تكون القسيمة \"{{number}}\" \"مجمعة\" لإدارة المخزون.",
+      "supervisorLimit": "يمكن للمشرفين تعيين دفتر إيصالات واحد فقط للوكيل.",
       "invalidQR": "تنسيق رمز QR غير صالح. يرجى المحاولة مرة أخرى.",
       "otpExpired": "انتهت صلاحية OTP. يرجى بدء النقل مرة أخرى.",
       "noBooksSelected": "يرجى اختيار دفتر واحد على الأقل.",
       "noRecipientType": "يرجى اختيار نوع المستلم.",
-      "noSupplierEmail": "يرجى إدخال بريد المورد الإلكتروني.",
-      "noAgent": "يرجى إدخال رقم هاتف الوكيل أو اختيار وكيل.",
+      "noSupplierEmail": "يرجى إدخال بريد المورد.",
+      "noAgent": "يرجى إدخال رقم هاتف وكيل أو اختيار وكيل.",
       "noRecipient": "يرجى اختيار مستلم أو إدخال رقم هاتف.",
-      "stubCollectionLimit": "يمكن لجمع الجذع معالجة دفتر واحد فقط في المرة الواحدة.",
-      "initiateFailed": "فشل بدء النقل/الجمع: {message}",
-      "noOTP": "يرجى إدخال رمز OTP.",
-      "stubCollectionSingle": "جمع الجذع يتطلب دفترًا واحدًا بالضبط.",
-      "validationFailed": "رمز OTP غير صالح أو فشل التحقق من النقل: {message}",
-      "agentNotFound": "لم يتم العثور على وكيل بالهاتف {phone}.",
-      "userRoleMismatch": "المستخدم بالهاتف {phone} ليس لديه الدور {recipientType}.",
-      "userNotFound": "لم يتم العثور على مستخدم بالهاتف {phone}.",
+      "stubCollectionLimit": "جمع القسائم يمكنه معالجة دفتر واحد فقط في المرة الواحدة.",
+      "initiateFailed": "فشل بدء النقل/الجمع: {{message}}",
+      "noOTP": "يرجى إدخال OTP.",
+      "stubCollectionSingle": "جمع القسائم يتطلب دفترًا واحدًا بالضبط.",
+      "validationFailed": "OTP غير صالح أو فشل التحقق من النقل: {{message}}",
+      "agentNotFound": "لم يتم العثور على وكيل بالهاتف {{phone}}.",
+      "userRoleMismatch": "المستخدم بالهاتف {{phone}} ليس لديه الدور {{recipientType}}.",
+      "userNotFound": "لم يتم العثور على مستخدم بالهاتف {{phone}}.",
       "fetchAgents": "فشل جلب الوكلاء حسب الموقع."
     }
   },
@@ -532,10 +537,10 @@
       "create": "إنشاء",
       "edit": "تعديل"
     },
-    "loading": "جارٍ التحميل...",
+    "loading": "جاري التحميل...",
     "form": {
       "createTitle": "إيصال جديد",
-      "editTitle": "تعديل الإيصال #{number}",
+      "editTitle": "تعديل الإيصال #{{number}}",
       "labels": {
         "number": "الرقم",
         "type": "النوع"
@@ -546,7 +551,7 @@
       }
     },
     "search": {
-      "placeholder": "...ابحث عن الإيصالات"
+      "placeholder": "ابحث عن الإيصالات..."
     },
     "sort": {
       "title": "ترتيب حسب",
@@ -561,7 +566,7 @@
       }
     },
     "filter": {
-      "title": "الفلاتر",
+      "title": "التصفية",
       "type": {
         "label": "النوع",
         "all": "جميع الأنواع"
@@ -576,16 +581,16 @@
         "number": "الرقم",
         "type": "النوع",
         "bookStatus": "حالة الدفتر",
-        "stubStatus": "حالة الجذع",
-        "holder": "الحائز",
-        "qrCode": "رمز الاستجابة السريعة",
+        "stubStatus": "حالة القسيمة",
+        "holder": "الحامل",
+        "qrCode": "رمز QR",
         "actions": "الإجراءات"
       },
       "na": "غير متاح",
-      "holderLoading": "جارٍ التحميل..."
+      "holderLoading": "جاري التحميل..."
     },
     "pagination": {
-      "pageInfo": "الصفحة {currentPage} من {totalPages}",
+      "pageInfo": "الصفحة {{currentPage}} من {{totalPages}}",
       "previous": "السابق",
       "next": "التالي"
     },
@@ -610,8 +615,8 @@
     }
   },
   "receiptBookHistory": {
-    "title": "تاريخ دفتر الإيصالات #{number}",
-    "loading": "جارٍ تتبع التاريخ...",
+    "title": "تاريخ دفتر الإيصالات #{{number}}",
+    "loading": "جاري تتبع التاريخ...",
     "error": {
       "accessDenied": "تم رفض الوصول أو معرف الدفتر غير صالح",
       "fetchFailed": "فشل جلب التاريخ أو التفاصيل.",
@@ -621,15 +626,15 @@
       "back": "العودة إلى الإيصالات"
     },
     "footer": {
-      "currentStatus": "الحالة الحالية: {status}",
-      "currentHolder": "الحائز الحالي: {holder}",
+      "currentStatus": "الحالة الحالية: ",
+      "currentHolder": "الحامل الحالي: ",
       "na": "غير متاح"
     },
     "timeline": {
-      "from": "من: {from}",
-      "to": "إلى: {to}",
-      "date": "التاريخ: {date}",
-      "status": "الحالة: {status}",
+      "from": "من",
+      "to": "إلى",
+      "date": "التاريخ",
+      "status": "الحالة",
       "initialStock": "المخزون الأولي",
       "supplier": "المورد"
     },
@@ -638,7 +643,7 @@
       "toRegionalManager": "إلى المدير الإقليمي",
       "toSupervisor": "إلى المشرف",
       "toAgent": "إلى الوكيل",
-      "stubToSupervisor": "جذع إلى المشرف",
+      "stubToSupervisor": "القسيمة إلى المشرف",
       "toStockManager": "إلى مدير المخزون",
       "toRegionalManagerFromSupervisor": "إلى المدير الإقليمي من المشرف",
       "archive": "أرشيف"
@@ -648,7 +653,7 @@
     "title": "404",
     "subtitle": "الصفحة غير موجودة",
     "error": {
-      "message": "عذرًا!",
+      "message": "أوبس!",
       "description": "هذه الصفحة غير موجودة أو تم نقلها."
     },
     "actions": {
@@ -674,26 +679,36 @@
   "entry": {
     "charts": {
       "title": "الرسوم البيانية",
-      "timesheetStatus": "حالة سجل الدوام",
+      "timesheetStatus": "حالة جدول العمل",
       "visitStatus": "حالة الزيارة",
-      "supervisorTimesheets": "سجلات الدوام لكل مشرف",
-      "labels": {
-        "pending": "قيد الانتظار",
-        "validated": "تم التحقق"
-      }
+      "timesheetsPerSupervisor": "جداول العمل لكل مشرف",
+      "timesheetStatusPending": "في انتظار",
+      "timesheetStatusValidated": "تم التحقق",
+      "visitStatusPending": "في انتظار",
+      "visitStatusValidated": "تم التحقق"
     },
     "maps": {
       "title": "زيارات اليوم",
       "noVisits": "لا توجد زيارات اليوم"
     },
     "stats": {
-      "supervisorsCount": "عدد المشرفين",
-      "activeSupervisors": "المشرفون النشطون"
+      "supervisorsCount": {
+        "title": "عدد المشرفين",
+        "value": "{{count}} مشرفين"
+      },
+      "activeSupervisors": {
+        "title": "المشرفون النشطون",
+        "value": "{{count}} نشط"
+      }
     },
-    "sections": {
-      "unfinishedVisits": "الزيارات غير المكتملة",
-      "emails": "البريد الإلكتروني",
-      "toDoList": "قائمة المهام"
+    "unfinishedVisits": {
+      "title": "الزيارات غير المكتملة"
+    },
+    "emails": {
+      "title": "البريد الإلكتروني"
+    },
+    "todoList": {
+      "title": "قائمة المهام"
     }
   },
   "navbar": {
@@ -702,19 +717,19 @@
     "help": "المساعدة"
   },
   "profilePage": {
-    "loading": "جارٍ تحميل الملف الشخصي...",
+    "loading": "جاري تحميل الملف الشخصي...",
     "error": {
       "noProfile": "فشل تحميل الملف الشخصي. يرجى المحاولة لاحقًا.",
       "noToken": "لم يتم العثور على رمز التوثيق",
-      "fetchFailed": "فشل تحميل ملف المستخدم",
+      "fetchFailed": "فشل تحميل ملف المستخدم الشخصي",
       "updateFailed": "فشل تحديث الملف الشخصي",
-      "pictureFailed": "فشل تحديث صورة الملف الشخصي",
+      "pictureFailed": "فشل تحديث الصورة الشخصية",
       "passwordFailed": "فشل تحديث كلمة المرور"
     },
     "header": {
-      "userId": "معرف المستخدم: {userId}",
+      "userId": "معرف المستخدم: {{userId}}",
       "firstNameNotSet": "الاسم الأول غير محدد",
-      "lastNameNotSet": "اسم العائلة غير محدد"
+      "lastNameNotSet": "الاسم الأخير غير محدد"
     },
     "nav": {
       "info": "معلومات الملف الشخصي",
@@ -740,59 +755,59 @@
         "update": "تحديث كلمة المرور"
       },
       "twoFactor": {
-        "title": "التحقق الثنائي",
-        "status": "الحالة: {status}",
-        "enabled": "مُفعّل",
-        "enable": "تفعيل التحقق الثنائي"
+        "title": "التوثيق الثنائي",
+        "status": "الحالة: {{status}}",
+        "enabled": "مفعل",
+        "enable": "تفعيل 2FA"
       }
     },
     "activity": {
       "title": "النشاط الأخير",
       "visitLogged": {
         "title": "تم تسجيل الزيارة",
-        "subtext": "الوكيل: {agent} | الموقع: {location}",
+        "subtext": "الوكيل: {{agent}} | الموقع: {{location}}",
         "amount": "+1 زيارة"
       },
       "timesheetSubmitted": {
-        "title": "تم إرسال سجل الدوام",
-        "subtext": "المدة: {duration}",
-        "amount": "قيد الموافقة"
+        "title": "تم تقديم جدول العمل",
+        "subtext": "المدة: {{duration}}",
+        "amount": "في انتظار الموافقة"
       },
       "carnetDistributed": {
         "title": "تم توزيع الدفتر",
-        "subtext": "معرف الدفتر: {carnetId} | الوكيل: {agent}",
+        "subtext": "معرف الدفتر: {{carnetId}} | الوكيل: {{agent}}",
         "amount": "+1 دفتر"
       },
       "soucheCollected": {
-        "title": "تم جمع الجذع",
-        "subtext": "معرف الدفتر: {carnetId} | الحالة: {status}",
-        "amount": "+1 جذع"
+        "title": "تم جمع القسيمة",
+        "subtext": "معرف الدفتر: {{carnetId}} | الحالة: {{status}}",
+        "amount": "+1 قسيمة"
       }
     },
     "validation": {
       "firstnameRequired": "الاسم الأول مطلوب",
       "firstnameLengthMin": "يجب أن يتكون الاسم الأول من 3 أحرف على الأقل",
       "firstnameLengthMax": "يجب ألا يتجاوز الاسم الأول 20 حرفًا",
-      "firstnameFormat": "يجب أن يحتوي الاسم الأول على أحرف، مسافات، شرطات، أو علامات تنصيص فقط",
-      "lastnameRequired": "اسم العائلة مطلوب",
-      "lastnameLengthMin": "يجب أن يتكون اسم العائلة من 3 أحرف على الأقل",
-      "lastnameLengthMax": "يجب ألا يتجاوز اسم العائلة 20 حرفًا",
-      "lastnameFormat": "يجب أن يحتوي اسم العائلة على أحرف، مسافات، شرطات، أو علامات تنصيص فقط",
+      "firstnameFormat": "يمكن أن يحتوي الاسم الأول على أحرف، مسافات، شرطات، أو علامات تنصيص فقط",
+      "lastnameRequired": "الاسم الأخير مطلوب",
+      "lastnameLengthMin": "يجب أن يتكون الاسم الأخير من 3 أحرف على الأقل",
+      "lastnameLengthMax": "يجب ألا يتجاوز الاسم الأخير 20 حرفًا",
+      "lastnameFormat": "يمكن أن يحتوي الاسم الأخير على أحرف، مسافات، شرطات، أو علامات تنصيص فقط",
       "emailRequired": "البريد الإلكتروني مطلوب",
       "emailLength": "يجب ألا يتجاوز البريد الإلكتروني 70 حرفًا",
       "emailFormat": "تنسيق البريد الإلكتروني غير صالح",
-      "phoneRequired": "رقم الهاتف مطلوب",
-      "phoneLength": "يجب أن يتكون رقم الهاتف من 8 أرقام",
+      "phoneRequired": "الهاتف مطلوب",
+      "phoneLength": "يجب أن يتكون الهاتف من 8 أرقام",
       "walletLength": "يجب أن تتكون المحفظة من 16 رقمًا بالضبط",
       "passwordLengthMin": "يجب أن تتكون كلمة المرور من 8 أحرف على الأقل",
       "passwordLengthMax": "يجب ألا تتجاوز كلمة المرور 128 حرفًا",
-      "passwordFormat": "يجب أن تتضمن كلمة المرور حرفًا كبيرًا، حرفًا صغيرًا، رقمًا، وشخصية خاصة، بدون مسافات",
+      "passwordFormat": "يجب أن تتضمن كلمة المرور حرفًا كبيرًا، حرفًا صغيرًا، رقمًا، وحرفًا خاصًا، بدون مسافات",
       "passwordConfirmRequired": "تأكيد كلمة المرور مطلوب",
       "passwordMismatch": "كلمات المرور غير متطابقة"
     },
     "success": {
       "profileUpdated": "تم تحديث الملف الشخصي بنجاح",
-      "pictureUpdated": "تم تحديث صورة الملف الشخصي بنجاح",
+      "pictureUpdated": "تم تحديث الصورة الشخصية بنجاح",
       "passwordUpdated": "تم تحديث كلمة المرور بنجاح"
     }
   },
@@ -811,33 +826,33 @@
       "submit": "تسجيل الدخول"
     },
     "verify2FA": {
-      "title": "أدخل رمز OTP",
+      "title": "أدخل OTP",
       "otpPlaceholder": "رمز مكون من 6 أرقام",
       "phoneMessage": "لقد أرسلنا رمزًا إلى رقم هاتفك.",
       "emailMessage": "لقد أرسلنا رمزًا إلى بريدك الإلكتروني.",
-      "timer": "الوقت المتبقي: {minutes}:{seconds}",
+      "timer": "الوقت المتبقي: {{minutes}}:{{seconds}}",
       "trustDevice": "الثقة بهذا الجهاز",
-      "resend": "إعادة إرسال رمز OTP",
-      "resendCooldown": "إعادة الإرسال بعد {seconds} ثانية",
+      "resend": "إعادة إرسال OTP",
+      "resendCooldown": "إعادة الإرسال خلال {{seconds}} ثانية",
       "switchToEmail": "لا يمكنك الوصول إلى هاتفك؟ أرسل إلى البريد الإلكتروني بدلاً من ذلك.",
       "switchToPhone": "أرسل إلى الهاتف بدلاً من ذلك.",
-      "submit": "التحقق من رمز OTP",
+      "submit": "التحقق من OTP",
       "back": "العودة إلى تسجيل الدخول"
     },
     "forgot": {
-      "title": "إرسال رمز إعادة تعيين OTP",
-      "identifier": "البريد الإلكتروني أو الهاتف",
+      "title": "إرسال OTP لإعادة التعيين",
+      "identifier": "البريد Lechowski أو الهاتف",
       "identifierPlaceholder": "أدخل بريدك الإلكتروني أو هاتفك",
-      "submit": "إرسال رمز إعادة تعيين OTP",
+      "submit": "إرسال OTP لإعادة التعيين",
       "back": "العودة إلى تسجيل الدخول"
     },
     "verifyReset": {
-      "title": "أدخل رمز إعادة تعيين OTP",
+      "title": "أدخل OTP لإعادة التعيين",
       "otpPlaceholder": "رمز مكون من 6 أرقام",
-      "timer": "الوقت المتبقي: {minutes}:{seconds}",
-      "resend": "إعادة إرسال رمز OTP",
-      "resendCooldown": "إعادة الإرسال بعد {seconds} ثانية",
-      "submit": "التحقق من رمز OTP",
+      "timer": "الوقت المتبقي: {{minutes}}:{{seconds}}",
+      "resend": "إعادة إرسال OTP",
+      "resendCooldown": "إعادة الإرسال خلال {{seconds}} ثانية",
+      "submit": "التحقق من OTP",
       "back": "العودة إلى تسجيل الدخول"
     },
     "reset": {
@@ -855,26 +870,29 @@
       "passwordRequired": "يرجى إدخال كلمة المرور.",
       "passwordLengthMin": "يجب أن تتكون كلمة المرور من 8 أحرف على الأقل.",
       "passwordLengthMax": "لا يمكن أن تتجاوز كلمة المرور 128 حرفًا.",
-      "passwordFormat": "يجب أن تتضمن كلمة المرور حرفًا كبيرًا، حرفًا صغيرًا، رقمًا، وشخصية خاصة (بدون مسافات).",
+      "passwordFormat": "يجب أن تتضمن كلمة المرور حرفًا كبيرًا، حرفًا صغيرًا، رقمًا، وحرفًا خاصًا (بدون مسافات).",
       "confirmPasswordRequired": "يرجى تأكيد كلمة المرور.",
       "passwordMismatch": "كلمات المرور غير متطابقة.",
-      "otpRequired": "يرجى إدخال رمز OTP المكون من 6 أرقام.",
-      "otpFormat": "يجب أن يتكون رمز OTP من 6 أرقام بالضبط."
+      "otpRequired": "يرجى إدخال OTP المكون من 6 أرقام.",
+      "otpFormat": "يجب أن يتكون OTP من 6 أرقام بالضبط."
     },
     "error": {
       "loginFailed": "فشل تسجيل الدخول. يرجى التحقق من بريدك الإلكتروني/هاتفك وكلمة المرور.",
       "networkError": "غير قادر على الاتصال بالخادم. يرجى التحقق من اتصالك بالإنترنت.",
-      "invalidOtp": "رمز OTP غير صالح. يرجى المحاولة مرة أخرى.",
-      "resetOtpFailed": "فشل إرسال رمز إعادة تعيين OTP. يرجى التحقق من بريدك الإلكتروني/هاتفك والمحاولة مرة أخرى.",
-      "verifyResetOtpFailed": "رمز إعادة تعيين OTP غير صالح. يرجى المحاولة مرة أخرى أو طلب رمز جديد.",
+      "invalidOtp": "OTP غير صالح. يرجى المحاولة مرة أخرى.",
+      "resetOtpFailed": "فشل إرسال OTP لإعادة التعيين. يرجى التحقق من بريدك الإلكتروني/هاتفك والمحاولة مرة أخرى.",
+      "verifyResetOtpFailed": "OTP لإعادة التعيين غير صالح. يرجى المحاولة مرة أخرى أو طلب واحد جديد.",
       "resetFailed": "فشل إعادة تعيين كلمة المرور. يرجى المحاولة مرة أخرى.",
-      "resendFailed": "فشل إعادة إرسال رمز OTP. يرجى المحاولة لاحقًا."
+      "resendFailed": "فشل إعادة إرسال OTP. يرجى المحاولة لاحقًا."
     },
     "success": {
       "resetSuccess": "تم إعادة تعيين كلمة المرور بنجاح! يرجى تسجيل الدخول بكلمة المرور الجديدة."
     }
   },
   "adminDashboard": {
+    "loading": {
+      "userDetails": "جاري تحميل تفاصيل المستخدم..."
+    },
     "header": {
       "users": "إدارة المستخدمين",
       "roles": "إدارة الأدوار",
@@ -882,15 +900,34 @@
       "addUser": "إضافة مستخدم جديد",
       "addRole": "إنشاء دور جديد",
       "addPermission": "إنشاء إذن جديد",
-      "userDetails": "{firstName} {lastName}",
+      "userDetails": "{{firstName}} {{lastName}}",
       "checklists": "إدارة قوائم التحقق",
       "addChecklist": "إضافة قائمة تحقق جديدة",
-      "checklistDetails": "قائمة التحقق: {item}",
+      "checklistDetails": "قائمة التحقق: {{item}}",
       "reasons": "إدارة الأسباب",
       "addReason": "إضافة سبب جديد",
-      "reasonDetails": "السبب: {item}"
+      "reasonDetails": "السبب: {{item}}",
+      "notifications": "إدارة الإشعارات",
+      "addNotificationRule": "إضافة قاعدة إشعار جديدة",
+      "notificationRuleDetails": "قاعدة الإشعار: {{event}}"
     },
     "sidebar": {
+      "sortNotificationsBy": "ترتيب الإشعارات حسب",
+      "filterNotifications": "تصفية الإشعارات",
+      "filterByNotificationType": "تصفية حسب نوع الإشعار",
+      "filterByNotificationChannel": "تصفية حسب قناة الإشعار",
+      "filterByNotificationStatus": "تصفية حسب حالة الإشعار",
+      "allTypes": "جميع الأنواع",
+      "allChannels": "جميع القنوات",
+      "allStatuses": "جميع الحالات",
+      "websocket": "Websocket",
+      "email": "البريد الإلكتروني",
+      "sms": "رسائل SMS",
+      "inApp": "داخل التطبيق",
+      "enabled": "مفعل",
+      "disabled": "معطل",
+      "addNotificationRule": "إضافة قاعدة إشعار",
+      "notifications": "الإشعارات",
       "view": "عرض",
       "users": "المستخدمون",
       "roles": "الأدوار",
@@ -901,7 +938,10 @@
       "sortOptions": {
         "name": "الاسم",
         "email": "البريد الإلكتروني",
-        "role": "الدور"
+        "role": "الدور",
+        "event": "الحدث",
+        "type": "النوع",
+        "status": "الحالة"
       },
       "sortOrder": {
         "asc": "تصاعدي",
@@ -912,13 +952,13 @@
       "addUser": "إضافة مستخدم",
       "addRole": "إضافة دور",
       "resetRoles": "إعادة تعيين الأدوار",
-      "resetting": "جارٍ إعادة تعيين الأدوار",
+      "resetting": "جاري إعادة تعيين الأدوار",
       "addPermission": "إضافة إذن",
       "addChecklist": "إضافة قائمة تحقق",
       "addReason": "إضافة سبب"
     },
     "search": {
-      "placeholder": "ابحث عن {view}..."
+      "placeholder": "البحث في {{view}}..."
     },
     "error": {
       "noToken": "يرجى تسجيل الدخول للوصول إلى لوحة التحكم.",
@@ -929,7 +969,14 @@
       "createChecklistFailed": "فشل إنشاء قائمة التحقق."
     },
     "actions": {
-      "back": "رجوع"
+      "back": "رجوع",
+      "refreshUsers": "تحديث المستخدمين",
+      "refreshRoles": "تحديث الأدوار",
+      "refreshPermissions": "تحديث الأذونات",
+      "refreshChecklists": "تحديث قوائم التحقق",
+      "refreshReasons": "تحديث الأسباب",
+      "refreshNotifications": "تحديث الإشعارات",
+      "loading": "جاري التحميل..."
     },
     "reasonAdd": {
       "title": "إضافة سبب جديد",
@@ -943,7 +990,7 @@
       },
       "actions": {
         "create": "إنشاء سبب",
-        "creating": "جارٍ الإنشاء..."
+        "creating": "جاري الإنشاء..."
       },
       "validation": {
         "empty": "لا يمكن أن يكون العنصر فارغًا.",
@@ -957,7 +1004,7 @@
         "edit": "تعديل",
         "delete": "حذف",
         "save": "حفظ",
-        "saving": "جارٍ الحفظ...",
+        "saving": "جاري الحفظ...",
         "cancel": "إلغاء"
       }
     },
@@ -967,7 +1014,7 @@
       "pagination": {
         "previous": "السابق",
         "next": "التالي",
-        "pageInfo": "الصفحة {currentPage} من {totalPages}"
+        "pageInfo": "الصفحة {{currentPage}} من {{totalPages}}"
       },
       "validation": {
         "empty": "لا يمكن أن يكون العنصر فارغًا.",
@@ -988,7 +1035,7 @@
       },
       "actions": {
         "create": "إنشاء قائمة تحقق",
-        "creating": "جارٍ الإنشاء..."
+        "creating": "جاري الإنشاء..."
       }
     }
   },
@@ -1004,7 +1051,7 @@
     "pagination": {
       "previous": "السابق",
       "next": "التالي",
-      "pageInfo": "الصفحة {currentPage} من {totalPages}"
+      "pageInfo": "الصفحة {{currentPage}} من {{totalPages}}"
     },
     "error": {
       "fetchFailed": "فشل تحميل تفاصيل المستخدم."
@@ -1026,7 +1073,7 @@
     "form": {
       "placeholders": {
         "firstName": "الاسم الأول *",
-        "lastName": "اسم العائلة *",
+        "lastName": "الاسم الأخير *",
         "email": "البريد الإلكتروني *",
         "phone": "XX XXX XXX",
         "wallet": "XXXX-XXXX-XXXX-XXXX",
@@ -1037,12 +1084,12 @@
     "roleManagement": {
       "title": "إدارة الأدوار",
       "noDescription": "لا توجد وصف متاح",
-      "noPermissions": "لا توجد أذونات مخصصة"
+      "noPermissions": "لم يتم تعيين أذونات"
     },
     "permissionOverrides": {
       "title": "تجاوز الأذونات",
       "filter": "تصفية الأذونات",
-      "searchPlaceholder": "ابحث عن الأذونات...",
+      "searchPlaceholder": "البحث عن الأذونات...",
       "allCategories": "جميع الفئات",
       "effectivePermissions": "الأذونات الفعالة",
       "noPermissions": "لا توجد أذونات متاحة"
@@ -1051,8 +1098,8 @@
       "title": "التعيينات",
       "supervisors": "المشرفون المعينون لهذا المدير",
       "managers": "المديرون المعينون لهذا المشرف",
-      "searchSupervisorsPlaceholder": "ابحث عن المشرفين...",
-      "searchManagersPlaceholder": "ابحث عن المديرين..."
+      "searchSupervisorsPlaceholder": "البحث عن المشرفين...",
+      "searchManagersPlaceholder": "البحث عن المديرين..."
     },
     "actions": {
       "edit": "تعديل",
@@ -1061,8 +1108,8 @@
       "cancel": "إلغاء",
       "saveChanges": "حفظ التغييرات",
       "saveAssignments": "حفظ التعيينات",
-      "grantPermission": "منح الإذن",
-      "revokePermission": "إلغاء الإذن",
+      "grantPermission": "منح إذن",
+      "revokePermission": "إلغاء إذن",
       "removeOverride": "إزالة التجاوز"
     },
     "pagination": {
@@ -1074,20 +1121,20 @@
       "firstnameRequired": "الاسم الأول مطلوب",
       "firstnameLengthMin": "يجب أن يتكون الاسم الأول من 3 أحرف على الأقل",
       "firstnameLengthMax": "يجب ألا يتجاوز الاسم الأول 20 حرفًا",
-      "firstnameFormat": "يجب أن يحتوي الاسم الأول على أحرف، مسافات، شرطات، أو علامات تنصيص فقط",
-      "lastnameRequired": "اسم العائلة مطلوب",
-      "lastnameLengthMin": "يجب أن يتكون اسم العائلة من 3 أحرف على الأقل",
-      "lastnameLengthMax": "يجب ألا يتجاوز اسم العائلة 20 حرفًا",
-      "lastnameFormat": "يجب أن يحتوي اسم العائلة على أحرف، مسافات، شرطات، أو علامات تنصيص فقط",
+      "firstnameFormat": "يمكن أن يحتوي الاسم الأول على أحرف، مسافات، شرطات، أو علامات تنصيص فقط",
+      "lastnameRequired": "الاسم الأخير مطلوب",
+      "lastnameLengthMin": "يجب أن يتكون الاسم الأخير من 3 أحرف على الأقل",
+      "lastnameLengthMax": "يجب ألا يتجاوز الاسم الأخير 20 حرفًا",
+      "lastnameFormat": "يمكن أن يحتوي الاسم الأخير على أحرف، مسافات، شرطات، أو علامات تنصيص فقط",
       "emailRequired": "البريد الإلكتروني مطلوب",
       "emailLength": "يجب ألا يتجاوز البريد الإلكتروني 70 حرفًا",
       "emailFormat": "تنسيق البريد الإلكتروني غير صالح",
-      "phoneRequired": "رقم الهاتف مطلوب",
-      "phoneLength": "يجب أن يتكون رقم الهاتف من 8 أرقام",
+      "phoneRequired": "الهاتف مطلوب",
+      "phoneLength": "يجب أن يتكون الهاتف من 8 أرقام",
       "walletLength": "يجب أن تتكون المحفظة من 16 رقمًا بالضبط",
       "passwordLengthMin": "يجب أن تتكون كلمة المرور من 8 أحرف على الأقل",
       "passwordLengthMax": "يجب ألا تتجاوز كلمة المرور 128 حرفًا",
-      "passwordFormat": "يجب أن تتضمن كلمة المرور حرفًا كبيرًا، حرفًا صغيرًا، رقمًا، وشخصية خاصة، بدون مسافات",
+      "passwordFormat": "يجب أن تتضمن كلمة المرور حرفًا كبيرًا، حرفًا صغيرًا، رقمًا، وحرفًا خاصًا، بدون مسافات",
       "passwordConfirmRequired": "تأكيد كلمة المرور مطلوب",
       "passwordMismatch": "كلمات المرور غير متطابقة"
     },
@@ -1100,12 +1147,12 @@
       "saveAssignmentsFailed": "فشل حفظ التعيينات.",
       "saveOverridesFailed": "فشل حفظ تجاوزات الأذونات.",
       "noRoleSelected": "لم يتم اختيار دور للتجاوز",
-      "superAdminRestricted": "لا يمكن تخصيص أو إلغاء دور المسؤول الأعلى.",
-      "adminSelfRevoke": "لا يمكنك إلغاء دور المسؤول الخاص بك."
+      "superAdminRestricted": "لا يمكن تعيين أو إلغاء دور Super Admin.",
+      "adminSelfRevoke": "لا يمكنك إلغاء دور Admin الخاص بك."
     },
     "loading": {
-      "default": "جارٍ التحميل...",
-      "saving": "جارٍ الحفظ..."
+      "default": "جاري التحميل...",
+      "saving": "جاري الحفظ..."
     }
   },
   "userAdd": {
@@ -1114,22 +1161,22 @@
       "personalInfo": "المعلومات الشخصية",
       "contactInfo": "معلومات الاتصال",
       "credentials": "بيانات الاعتماد",
-      "roleAssignment": "تخصيص الدور"
+      "roleAssignment": "تعيين الدور"
     },
     "form": {
       "labels": {
         "firstName": "الاسم الأول *",
-        "lastName": "اسم العائلة *",
+        "lastName": "الاسم الأخير *",
         "email": "البريد الإلكتروني *",
         "phone": "الهاتف *",
         "password": "كلمة المرور *",
         "confirmPassword": "تأكيد كلمة المرور *",
         "wallet": "المحفظة *",
-        "assignRoles": "تخصيص الأدوار *"
+        "assignRoles": "تعيين الأدوار *"
       },
       "placeholders": {
         "firstName": "الاسم الأول *",
-        "lastName": "اسم العائلة *",
+        "lastName": "الاسم الأخير *",
         "email": "البريد الإلكتروني *",
         "phone": "XX XXX XXX",
         "wallet": "XXXX-XXXX-XXXX-XXXX",
@@ -1139,49 +1186,49 @@
     },
     "roleManagement": {
       "noDescription": "لا توجد وصف متاح",
-      "noPermissions": "لا توجد أذونات مخصصة"
+      "noPermissions": "لم يتم تعيين أذونات"
     },
     "actions": {
       "create": "إنشاء مستخدم",
       "cancel": "إلغاء",
-      "creating": "جارٍ الإنشاء..."
+      "creating": "جاري الإنشاء..."
     },
     "validation": {
       "firstnameRequired": "الاسم الأول مطلوب",
       "firstnameLengthMin": "يجب أن يتكون الاسم الأول من 3 أحرف على الأقل",
       "firstnameLengthMax": "يجب ألا يتجاوز الاسم الأول 20 حرفًا",
-      "firstnameFormat": "يجب أن يحتوي الاسم الأول على أحرف، مسافات، شرطات، أو علامات تنصيص فقط",
-      "lastnameRequired": "اسم العائلة مطلوب",
-      "lastnameLengthMin": "يجب أن يتكون اسم العائلة من 3 أحرف على الأقل",
-      "lastnameLengthMax": "يجب ألا يتجاوز اسم العائلة 20 حرفًا",
-      "lastnameFormat": "يجب أن يحتوي اسم العائلة على أحرف، مسافات، شرطات، أو علامات تنصيص فقط",
+      "firstnameFormat": "يمكن أن يحتوي الاسم الأول على أحرف، مسافات، شرطات، أو علامات تنصيص فقط",
+      "lastnameRequired": "الاسم الأخير مطلوب",
+      "lastnameLengthMin": "يجب أن يتكون الاسم الأخير من 3 أحرف على الأقل",
+      "lastnameLengthMax": "يجب ألا يتجاوز الاسم الأخير 20 حرفًا",
+      "lastnameFormat": "يمكن أن يحتوي الاسم الأخير على أحرف، مسافات، شرطات، أو علامات تنصيص فقط",
       "emailRequired": "البريد الإلكتروني مطلوب",
       "emailLength": "يجب ألا يتجاوز البريد الإلكتروني 70 حرفًا",
       "emailFormat": "تنسيق البريد الإلكتروني غير صالح",
-      "phoneRequired": "رقم الهاتف مطلوب",
-      "phoneLength": "يجب أن يتكون رقم الهاتف من 8 أرقام",
+      "phoneRequired": "الهاتف مطلوب",
+      "phoneLength": "يجب أن يتكون الهاتف من 8 أرقام",
       "walletRequired": "المحفظة مطلوبة",
       "walletLength": "يجب أن تتكون المحفظة من 16 رقمًا بالضبط",
       "passwordRequired": "كلمة المرور مطلوبة",
       "passwordLengthMin": "يجب أن تتكون كلمة المرور من 8 أحرف على الأقل",
       "passwordLengthMax": "يجب ألا تتجاوز كلمة المرور 128 حرفًا",
-      "passwordFormat": "يجب أن تتضمن كلمة المرور حرفًا كبيرًا، حرفًا صغيرًا، رقمًا، وشخصية خاصة، بدون مسافات",
+      "passwordFormat": "يجب أن تتضمن كلمة المرور حرفًا كبيرًا، حرفًا صغيرًا، رقمًا، وحرفًا خاصًا، بدون مسافات",
       "passwordConfirmRequired": "تأكيد كلمة المرور مطلوب",
       "passwordMismatch": "كلمات المرور غير متطابقة"
     },
     "error": {
       "createFailed": "فشل إنشاء المستخدم.",
-      "superAdminRestricted": "يمكن للمسؤول الأعلى فقط تخصيص دور المسؤول الأعلى."
+      "superAdminRestricted": "يمكن لـ Super Admins فقط تعيين دور Super Admin."
     }
   },
   "roleView": {
-    "title": "{roleName}",
+    "title": "{{roleName}}",
     "descriptionPlaceholder": "وصف الدور",
     "permissions": {
       "title": "الأذونات",
       "filter": {
         "label": "تصفية الأذونات",
-        "searchPlaceholder": "ابحث عن الأذونات...",
+        "searchPlaceholder": "البحث عن الأذونات...",
         "categoryPlaceholder": "جميع الفئات"
       },
       "noPermissions": "لا توجد أذونات متاحة"
@@ -1202,23 +1249,23 @@
       "save": "حفظ",
       "cancel": "إلغاء",
       "saveChanges": "حفظ التغييرات",
-      "saving": "جارٍ الحفظ...",
+      "saving": "جاري الحفظ...",
       "toggleAll": "تحديد الكل",
       "toggleAllOff": "إلغاء تحديد الكل",
-      "deleteConfirm": "هل أنت متأكد من أنك تريد حذف الدور \"{roleName}\"؟ لا يمكن التراجع عن هذا الإجراء."
+      "deleteConfirm": "هل أنت متأكد أنك تريد حذف الدور \"{{roleName}}\"؟ هذا الإجراء لا يمكن التراجع عنه."
     },
     "validation": {
       "nameRequired": "اسم الدور مطلوب",
       "nameLengthMin": "يجب أن يتكون اسم الدور من 3 أحرف على الأقل",
       "nameLengthMax": "يجب ألا يتجاوز اسم الدور 20 حرفًا",
-      "nameFormat": "يجب أن يحتوي اسم الدور على أحرف، مسافات، أو شرطات فقط",
-      "descriptionLengthMax": "يجب ألا يتجاوز الوصف 150 حرفًا"
+      "nameFormat": "يمكن أن يحتوي اسم الدور على أحرف، مسافات، أو شرطات فقط",
+      "descriptionLengthMax": "يجب ألا تتجاوز الوصف 150 حرفًا"
     },
     "error": {
       "updateFailed": "فشل تحديث الدور.",
       "deleteFailed": "فشل حذف الدور.",
       "savePermissionsFailed": "فشل حفظ الأذونات.",
-      "superAdminRestricted": "لا يمكن تعديل أو حذف دور المسؤول الأعلى."
+      "superAdminRestricted": "لا يمكن تعديل أو حذف دور Super Admin."
     }
   },
   "rolesList": {
@@ -1229,17 +1276,17 @@
       "custom": "الأدوار المخصصة"
     },
     "roleCard": {
-      "permissionCount": "{count} أذونات"
+      "permissionCount": "{{count}} أذونات"
     },
     "popup": {
       "noDescription": "لا توجد وصف متاح",
       "permissionsTitle": "الأذونات حسب الفئة",
-      "noPermissions": "لا توجد أذونات مخصصة",
-      "loading": "جارٍ التحميل..."
+      "noPermissions": "لم يتم تعيين أذونات",
+      "loading": "جاري التحميل..."
     },
     "confirmation": {
-      "unsavedChanges": "لديك تغييرات غير محفوظة. هل أنت متأكد من أنك تريد تبديل الأدوار؟",
-      "premadeWarning": "تحذير: تعديل الأدوار المعدة مسبقًا قد يؤثر على وظائف النظام. هل أنت متأكد من أنك تريد المتابعة؟"
+      "unsavedChanges": "لديك تغييرات غير محفوظة. هل أنت متأكد أنك تريد تبديل الأدوار؟",
+      "premadeWarning": "تحذير: تعديل الأدوار المعدة مسبقًا قد يؤثر على وظائف النظام. هل أنت متأكد أنك تريد المتابعة؟"
     },
     "actions": {
       "confirm": "تأكيد",
@@ -1247,8 +1294,8 @@
     },
     "error": {
       "fetchPermissionsFailed": "فشل تحميل أذونات الدور.",
-      "superAdminRestricted": "لا يمكن تعديل دور المسؤول الأعلى.",
-      "adminRestricted": "يمكن للمسؤول الأعلى فقط تعديل دور المسؤول."
+      "superAdminRestricted": "لا يمكن تعديل دور Super Admin.",
+      "adminRestricted": "يمكن لـ Super Admins فقط تعديل دور Admin."
     }
   },
   "roleAdd": {
@@ -1261,12 +1308,12 @@
       "labels": {
         "name": "الاسم *",
         "description": "الوصف",
-        "assignPermissions": "تخصيص الأذونات"
+        "assignPermissions": "تعيين الأذونات"
       },
       "placeholders": {
         "name": "أدخل اسم الدور",
         "description": "أدخل وصف الدور",
-        "permissionSearch": "ابحث عن الأذونات..."
+        "permissionSearch": "البحث عن الأذونات..."
       }
     },
     "permissions": {
@@ -1285,8 +1332,8 @@
       "nameRequired": "اسم الدور مطلوب",
       "nameLengthMin": "يجب أن يتكون اسم الدور من 3 أحرف على الأقل",
       "nameLengthMax": "يجب ألا يتجاوز اسم الدور 20 حرفًا",
-      "nameFormat": "يجب أن يحتوي اسم الدور على أحرف، مسافات، أو شرطات فقط",
-      "descriptionLengthMax": "يجب ألا يتجاوز الوصف 150 حرفًا"
+      "nameFormat": "يمكن أن يحتوي اسم الدور على أحرف، مسافات، أو شرطات فقط",
+      "descriptionLengthMax": "يجب ألا تتجاوز الوصف 150 حرفًا"
     },
     "error": {
       "createFailed": "فشل إنشاء الدور.",

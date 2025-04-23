@@ -161,8 +161,9 @@ const ReceiptBookHistory: React.FC = () => {
     const isDirect =
       prevRole === "Supervisor" && currentRole === "Stock Manager" && hasStub;
 
-    return `${isSameRole ? "same-role" : ""} ${isReturn ? "return" : ""} ${isDirect ? "direct" : ""
-      }`.trim();
+    return `${isSameRole ? "same-role" : ""} ${isReturn ? "return" : ""} ${
+      isDirect ? "direct" : ""
+    }`.trim();
   };
 
   // Get color for a given status or transfer type
@@ -195,27 +196,27 @@ const ReceiptBookHistory: React.FC = () => {
         <button
           className="back-btn"
           onClick={() => navigate("/receipt-books")}
-          aria-label={t("receiptBookHistory.back")}
+          aria-label={t("receiptBookHistory.actions.back")}
         >
-          <FaArrowLeft /> {t("receiptBookHistory.back")}
+          <FaArrowLeft /> {t("receiptBookHistory.actions.back")}
         </button>
       </header>
 
       {/* Footer Section with Current Status */}
       <div className="history-footer">
         <p>
-          {t("receiptBookHistory.currentStatus")}:{" "}
+          {t("receiptBookHistory.footer.currentStatus")}
           <span style={{ color: getStatusColor(book.status) }}>
             {book.status}
           </span>
         </p>
         <p>
-          {t("receiptBookHistory.currentHolder")}:{" "}
+          {t("receiptBookHistory.footer.currentHolder")}
           {book.currentHolderID
             ? usersMap.get(book.currentHolderID)
             : book.agentID
-              ? agentsMap.get(book.agentID)
-              : t("receiptBookHistory.na")}
+            ? agentsMap.get(book.agentID)
+            : t("receiptBookHistory.na")}
         </p>
       </div>
 
@@ -246,25 +247,25 @@ const ReceiptBookHistory: React.FC = () => {
               >
                 <h3>{entry.transferType.replace(/([A-Z])/g, " $1").trim()}</h3>
                 <p>
-                  <strong>{t("receiptBookHistory.from")}:</strong>{" "}
+                  <strong>{t("receiptBookHistory.timeline.from")}:</strong>{" "}
                   {entry.fromUserID
                     ? usersMap.get(entry.fromUserID)
                     : t("receiptBookHistory.initialStock")}
                 </p>
                 <p>
-                  <strong>{t("receiptBookHistory.to")}:</strong>{" "}
+                  <strong>{t("receiptBookHistory.timeline.to")}:</strong>{" "}
                   {entry.toUserID
                     ? usersMap.get(entry.toUserID)
                     : entry.toAgentID
-                      ? agentsMap.get(entry.toAgentID)
-                      : t("receiptBookHistory.supplier")}
+                    ? agentsMap.get(entry.toAgentID)
+                    : t("receiptBookHistory.supplier")}
                 </p>
                 <p>
-                  <strong>{t("receiptBookHistory.date")}:</strong>{" "}
+                  <strong>{t("receiptBookHistory.timeline.date")}:</strong>{" "}
                   {new Date(entry.transferDate).toLocaleString()}
                 </p>
                 <p>
-                  <strong>{t("receiptBookHistory.status")}:</strong>{" "}
+                  <strong>{t("receiptBookHistory.timeline.status")}:</strong>{" "}
                   {entry.status}
                 </p>
               </div>
