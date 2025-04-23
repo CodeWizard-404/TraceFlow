@@ -328,7 +328,7 @@
       "week": "Week",
       "weekRange": "{startDate} - {endDate}",
       "visitCount": "{count} Visits",
-      "visits" : "Visits",
+      "visits": "Visits",
       "supervisorCount": "Supervisors: {count}",
       "status": "Status",
       "supervisors": "Supervisors:"
@@ -474,15 +474,15 @@
       }
     },
     "types": {
-        "standard": "Standard"
-      },
+      "standard": "Standard"
+    },
     "pagination": {
       "pageInfo": "Page {{currentPage}} of {{totalPages}}",
       "selectedBooks": "Selected Books",
       "aria": {
-          "previous": "Go to previous page",
-          "next": "Go to next page"
-        }
+        "previous": "Go to previous page",
+        "next": "Go to next page"
+      }
     },
     "otpTimer": "OTP expires in",
     "list": {
@@ -491,12 +491,12 @@
       "scannedQRs": "{count} QR codes scanned."
     },
     "recipientTypes": {
-        "agent": "Agent",
-        "supplier": "Supplier",
-        "archive": "Archive",
-        "stubCollection": "Stub Collection",
-        "collectFromSupplier": "Collect from Supplier"
-      },
+      "agent": "Agent",
+      "supplier": "Supplier",
+      "archive": "Archive",
+      "stubCollection": "Stub Collection",
+      "collectFromSupplier": "Collect from Supplier"
+    },
     "errors": {
       "accessDenied": "Access Denied - Missing transfer_receipt_books permission",
       "loadData": "Failed to load data. Check console for details.",

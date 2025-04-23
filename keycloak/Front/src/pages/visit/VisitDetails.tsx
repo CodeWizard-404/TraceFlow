@@ -732,7 +732,7 @@ const VisitDetails: React.FC = () => {
       <header className="visit-details-header">
         <h1>
           <FaListUl /> {t("visitDetails.title")} -{" "}
-          {t(`visitDetails.status.${visit.status.toLowerCase()}`)}
+          {visit.status.toLowerCase()}
           <span
             className={`status-dot status-${visit.status.toLowerCase()}`}
           ></span>
@@ -752,8 +752,7 @@ const VisitDetails: React.FC = () => {
                 />
               </svg>
               <span className="duration-text">
-                {visit.duration}
-                {t("visitDetails.durationUnit")}
+                {visit.duration}m
               </span>
             </div>
           )}
@@ -1550,7 +1549,7 @@ const VisitDetails: React.FC = () => {
               onClick={handleCloseFullscreen}
               aria-label={t("visitDetails.aria.closeFullscreen")}
             >
-              <FaTimes /> {t("visitDetails.actions.closeFullscreen")}
+              <FaTimes />
             </button>
           </div>
         )}

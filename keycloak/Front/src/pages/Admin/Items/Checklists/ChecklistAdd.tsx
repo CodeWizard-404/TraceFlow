@@ -1,20 +1,18 @@
 /**
  * ChecklistAdd.tsx
  * Component for adding a new checklist item with validation and permission checks.
- * Optimized with memoization, debouncing, and skeleton loading for performance.
+ * Optimized with memoization, debouncing, and fade-in animation for performance.
  * Uses existing AdminDashboard.css for styling.
  */
 
-import React, { useState, useCallback, useMemo, lazy, Suspense } from "react";
+import React, { useState, useCallback, useMemo } from "react";
 import { debounce } from "lodash";
+import { motion } from "framer-motion"; // Added Framer Motion import
 import "../../AdminDashboard.css";
 import { createChecklist } from "../../../../apis/checklistAPI";
 import { useAuth } from "../../../../context/AuthContext";
 import { Checklist } from "../../../../models/Checklist";
 import { ViewMode } from "pages/Admin/adminTypes";
-
-// Lazy-loaded skeleton component
-const SkeletonForm = lazy(() => import("../SkeletonComponents").then(module => ({ default: module.SkeletonForm })));
 
 // Props interface
 interface ChecklistAddProps {
@@ -124,7 +122,11 @@ const ChecklistAdd: React.FC<ChecklistAddProps> = React.memo(
         if (view !== "add-checklist" || !userPermissions.canCreateChecklists) return null;
 
         return (
-            <Suspense fallback={<SkeletonForm />}>
+            <motion.div
+                initial={{ opacity: 0 }}
+                animate={{ opacity: 1 }}
+                transition={{ duration: 0.3 }}
+            >
                 <div className="form-card add-form">
                     <div className="form-section">
                         <h3 className="form-header">Add New Checklist</h3>
@@ -157,7 +159,7 @@ const ChecklistAdd: React.FC<ChecklistAddProps> = React.memo(
                         </div>
                     </div>
                 </div>
-            </Suspense>
+            </motion.div>
         );
     }
 );

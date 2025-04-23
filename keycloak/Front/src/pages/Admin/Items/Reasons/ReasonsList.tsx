@@ -9,6 +9,7 @@ import React, { useMemo, useState, useEffect, useCallback, lazy, Suspense } from
 import { FaTrash, FaEdit, FaSave } from "react-icons/fa";
 import { Virtuoso } from "react-virtuoso";
 import { debounce } from "lodash";
+import { motion } from "framer-motion"; // Import Framer Motion
 import "../../AdminDashboard.css";
 import { useAuth } from "../../../../context/AuthContext";
 import { Reason } from "../../../../models/Reason";
@@ -32,7 +33,6 @@ interface ReasonsListProps {
 
 // Constants
 const SKELETON_ROWS = 10;
-const SKELETON_DELAY = 500;
 
 // Memoized component
 const ReasonsList: React.FC<ReasonsListProps> = React.memo(
@@ -82,11 +82,12 @@ const ReasonsList: React.FC<ReasonsListProps> = React.memo(
             return () => debouncedSetSearchQuery.cancel();
         }, [searchQuery, debouncedSetSearchQuery]);
 
-        // Simulate loading for skeleton
+        // Dynamic loading state based on reasons prop
         useEffect(() => {
-            const timer = setTimeout(() => setLoading(false), SKELETON_DELAY);
-            return () => clearTimeout(timer);
-        }, []);
+            if (reasons.length > 0) {
+                setLoading(false); // Set loading to false when reasons are available
+            }
+        }, [reasons]);
 
         // Memoized filtered reasons
         const filteredReasons = useMemo(
@@ -272,36 +273,42 @@ const ReasonsList: React.FC<ReasonsListProps> = React.memo(
                         {loading ? (
                             <SkeletonList rows={SKELETON_ROWS} />
                         ) : (
-                            <div className="hover-reveal-list">
-                                {paginatedReasons.length > 0 ? (
-                                    <Virtuoso
-                                        style={{ height: "400px" }}
-                                        totalCount={paginatedReasons.length}
-                                        data={paginatedReasons}
-                                        itemContent={renderReasonItem}
-                                    />
-                                ) : (
-                                    <div className="no-items">No reasons found</div>
-                                )}
-                            </div>
+                            <motion.div
+                                initial={{ opacity: 0 }}
+                                animate={{ opacity: 1 }}
+                                transition={{ duration: 0.3 }}
+                            >
+                                <div className="hover-reveal-list">
+                                    {paginatedReasons.length > 0 ? (
+                                        <Virtuoso
+                                            style={{ height: "400px" }}
+                                            totalCount={paginatedReasons.length}
+                                            data={paginatedReasons}
+                                            itemContent={renderReasonItem}
+                                        />
+                                    ) : (
+                                        <div className="no-items">No reasons found</div>
+                                    )}
+                                </div>
+                                <div className="pagination">
+                                    <button
+                                        onClick={() => setCurrentPage((p) => Math.max(1, p - 1))}
+                                        disabled={currentPage === 1}
+                                    >
+                                        Previous
+                                    </button>
+                                    <span>
+                                        Page {currentPage} of {totalPages}
+                                    </span>
+                                    <button
+                                        onClick={() => setCurrentPage((p) => Math.min(totalPages, p + 1))}
+                                        disabled={currentPage === totalPages}
+                                    >
+                                        Next
+                                    </button>
+                                </div>
+                            </motion.div>
                         )}
-                        <div className="pagination">
-                            <button
-                                onClick={() => setCurrentPage((p) => Math.max(1, p - 1))}
-                                disabled={currentPage === 1}
-                            >
-                                Previous
-                            </button>
-                            <span>
-                                Page {currentPage} of {totalPages}
-                            </span>
-                            <button
-                                onClick={() => setCurrentPage((p) => Math.min(totalPages, p + 1))}
-                                disabled={currentPage === totalPages}
-                            >
-                                Next
-                            </button>
-                        </div>
                     </div>
                 </div>
             </Suspense>

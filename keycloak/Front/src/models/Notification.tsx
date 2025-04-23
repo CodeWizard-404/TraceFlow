@@ -5,7 +5,7 @@ interface Notification {
     type: string; // e.g., 'general', 'timesheet', or any admin-defined type
     message: string;
     status: 'pending' | 'sent' | 'read' | 'failed';
-    channel: 'websocket' | 'email' | 'sms' | 'inApp';
+    channel: 'websocket' | 'email' | 'sms' | 'in-app';
     createdAt: Date;
     updatedAt: Date;
 }

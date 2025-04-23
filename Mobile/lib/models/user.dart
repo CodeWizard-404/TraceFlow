@@ -1,22 +1,8 @@
-import 'package:flutter/foundation.dart';
+// lib/models/user.dart
+import 'package:TraceFlow/models/role.dart';
+import 'package:TraceFlow/models/permission.dart';
 
-class Role {
-  final String name;
-
-  Role({required this.name});
-
-  factory Role.fromJson(dynamic json) {
-    if (json is String) {
-      return Role(name: json);
-    } else if (json is Map<String, dynamic>) {
-      return Role(name: json['name'] ?? '');
-    }
-    return Role(name: '');
-  }
-
-  Map<String, dynamic> toJson() => {'name': name};
-}
-
+/// Represents a user with authentication and role/permission data.
 class User {
   final String? userID;
   final String? firstName;
@@ -26,6 +12,7 @@ class User {
   final String? wallet;
   final String? pfp;
   final List<Role> roles;
+  final List<Permission> permissions;
   final String? token;
 
   User({
@@ -37,20 +24,19 @@ class User {
     this.wallet,
     this.pfp,
     this.roles = const [],
+    this.permissions = const [],
     this.token,
   });
 
   factory User.fromJson(Map<String, dynamic> json) {
-    var rolesList = json['roles'] as List<dynamic>? ?? [];
-    List<Role> roles = rolesList.map((roleJson) => Role.fromJson(roleJson)).toList();
+    final rolesList = (json['roles'] as List<dynamic>? ?? []).map((role) => Role.fromJson(role)).toList();
+    final permissionsList = (json['permissions'] as List<dynamic>? ?? []).map((perm) => Permission.fromJson(perm)).toList();
 
-    // Handle PFP field
-    dynamic pfpData = json['PFP'] ?? json['pfp'];
+    // Handle PFP field flexibly (fixes type mismatch issue from April 13, 2025)
     String? pfp;
+    final pfpData = json['pfp'] ?? json['PFP'];
     if (pfpData is String) {
       pfp = pfpData;
-    } else if (pfpData is Map<String, dynamic>) {
-      pfp = null;
     } else {
       pfp = null;
     }
@@ -63,7 +49,8 @@ class User {
       email: json['email']?.toString(),
       wallet: json['wallet']?.toString(),
       pfp: pfp,
-      roles: roles,
+      roles: rolesList,
+      permissions: permissionsList,
       token: json['token']?.toString(),
     );
   }
@@ -77,6 +64,7 @@ class User {
     'wallet': wallet,
     'pfp': pfp,
     'roles': roles.map((role) => role.toJson()).toList(),
+    'permissions': permissions.map((perm) => perm.toJson()).toList(),
     'token': token,
   };
 }

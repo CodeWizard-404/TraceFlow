@@ -1,13 +1,14 @@
 /**
  * RoleView.tsx
  * Component for viewing and editing a selected role's details and permissions.
- * Optimized with memoization, skeleton loader, and efficient state management.
+ * Optimized with dynamic loading state, skeleton loader, and fade-in animation.
  * Fetches all permissions using getAllPermissions and role-specific permissions using getPermissionsByRole.
  */
 
 import React, { useCallback, useEffect, useMemo, useState } from "react";
 import { FaEdit, FaInfoCircle, FaTrash } from "react-icons/fa";
 import { debounce } from "lodash";
+import { motion } from "framer-motion"; // Added Framer Motion import
 
 // Context and APIs
 import { useAuth } from "../../../context/AuthContext";
@@ -34,9 +35,6 @@ interface RoleViewProps {
   setError: (error: string | null) => void;
 }
 
-// Constants
-const SKELETON_DELAY = 500; // Delay skeleton visibility for 0.5 seconds
-
 // RoleView component, memoized
 const RoleView: React.FC<RoleViewProps> = React.memo(
   ({ selectedRole, setSelectedRole, roles, setRoles, userRoles, setError }) => {
@@ -53,14 +51,12 @@ const RoleView: React.FC<RoleViewProps> = React.memo(
     const [editedRole, setEditedRole] = useState<Partial<Role>>({});
     const [isEditingRole, setIsEditingRole] = useState(false);
     const [loading, setLoading] = useState(true);
-    const [permissionsLoading, setPermissionsLoading] = useState(false);
     const [permissionSearch, setPermissionSearch] = useState("");
     const [roleFormErrors, setRoleFormErrors] = useState({ name: "", description: "" });
     const [roleTouched, setRoleTouched] = useState({ name: false, description: false });
     const [selectedCategory, setSelectedCategory] = useState<string>("all");
     const [tempPermissions, setTempPermissions] = useState<Permission[]>([]);
     const [hasUnsavedChanges, setHasUnsavedChanges] = useState(false);
-
 
     // Memoized permissions object
     const userPermissions = useMemo(
@@ -115,52 +111,32 @@ const RoleView: React.FC<RoleViewProps> = React.memo(
       []
     );
 
-    // Fetch all permissions
+    // Fetch initial data
     useEffect(() => {
-      if (allPermissions.length > 0) return; // Prevent redundant fetches
-      const fetchAllPermissions = async () => {
-        try {
-          const permissions = await getAllPermissions();
-          setAllPermissions(permissions || []);
-        } catch (error: unknown) {
-          console.error("Failed to fetch all permissions:", error);
-          setError("Failed to load permissions.");
+      const fetchInitialData = async () => {
+        if (!selectedRole || !userPermissions.canReadPermissionsByRole) {
+          setLoading(false);
+          return;
         }
-      };
-      fetchAllPermissions();
-    }, [setError, allPermissions.length]);
-
-    // Fetch role permissions
-    useEffect(() => {
-      if (selectedRole && userPermissions.canReadPermissionsByRole) {
-        const fetchRolePermissions = async () => {
-          setPermissionsLoading(true);
-          try {
-            const permissions = await getPermissionsByRole(selectedRole.roleID);
-            setTempPermissions(permissions || []);
-          } catch (error: unknown) {
-            console.error("Failed to fetch role permissions:", error);
-            setError("Failed to load role permissions.");
-            setTempPermissions([]);
-          } finally {
-            setPermissionsLoading(false);
-          }
-        };
-        fetchRolePermissions();
-      } else {
-        setTempPermissions([]);
-      }
-    }, [selectedRole, userPermissions.canReadPermissionsByRole, setError]);
-
-    // Simulate delayed loading for skeleton
-    useEffect(() => {
-      const timer = setTimeout(() => {
-        if (allPermissions.length > 0 && !permissionsLoading) {
+        try {
+          setLoading(true);
+          const [allPerms, rolePerms] = await Promise.all([
+            getAllPermissions(),
+            getPermissionsByRole(selectedRole.roleID),
+          ]);
+          setAllPermissions(allPerms || []);
+          setTempPermissions(rolePerms || []);
+        } catch (error: unknown) {
+          console.error("Failed to fetch permissions:", error);
+          setError("Failed to load permissions.");
+          setAllPermissions([]);
+          setTempPermissions([]);
+        } finally {
           setLoading(false);
         }
-      }, SKELETON_DELAY);
-      return () => clearTimeout(timer);
-    }, [allPermissions.length, permissionsLoading]);
+      };
+      fetchInitialData();
+    }, [selectedRole, userPermissions.canReadPermissionsByRole, setError]);
 
     // Computed permissions
     const categorizedPermissions = useMemo(() => {
@@ -511,246 +487,252 @@ const RoleView: React.FC<RoleViewProps> = React.memo(
 
     // Render UI
     return (
-      <div className="details-card">
-        {(loading || permissionsLoading) && renderSkeleton()}
-        {!(loading || permissionsLoading) && (
-          <>
-            {confirmation && (
-              <ConfirmationModal
-                message={confirmation.message}
-                onConfirm={() => {
-                  confirmation.onConfirm();
-                  setConfirmation(null);
-                }}
-                onCancel={() => setConfirmation(null)}
-              />
-            )}
-            <InfoPopup
-              isOpen={!!activePermissionPopup}
-              onClose={() => setActivePermissionPopup(null)}
-              contentRenderer={() => {
-                const permission = allPermissions.find(
-                  (p) => p.permissionID === activePermissionPopup
-                );
-                return permission ? (
-                  <>
-                    <h4>{permission.name}</h4>
-                    <p>
-                      <strong>Class:</strong> {permission.class}
-                    </p>
-                    <p>
-                      <strong>Description:</strong>{" "}
-                      {permission.description || "No description available"}
-                    </p>
-                  </>
-                ) : (
-                  <p>Permission not found</p>
-                );
-              }}
-            />
-            <div className="card-header">
-              {isEditingRole ? (
-                <div className="role-edit-form">
-                  <div className="role-edit-header">
-                    <h2>Edit Role</h2>
-                  </div>
-                  <div className="form-group">
-                    <label>Name *</label>
-                    <input
-                      type="text"
-                      value={editedRole.name || ""}
-                      onChange={(e) => {
-                        setEditedRole({ ...editedRole, name: e.target.value });
-                        setRoleFormErrors({
-                          ...roleFormErrors,
-                          name: validateRoleName(e.target.value),
-                        });
-                      }}
-                      onBlur={() => setRoleTouched({ ...roleTouched, name: true })}
-                      className={`role-edit-input ${roleTouched.name && roleFormErrors.name ? "invalid-vibrate" : ""}`}
-                      required
-                      aria-invalid={roleTouched.name && !!roleFormErrors.name}
-                      disabled={isRestrictedRole}
-                    />
-                    {roleFormErrors.name && roleTouched.name && (
-                      <span className="error-text">{roleFormErrors.name}</span>
-                    )}
-                  </div>
-                  <div className="form-group">
-                    <label>Description</label>
-                    <textarea
-                      value={editedRole.description || ""}
-                      onChange={(e) => {
-                        setEditedRole({ ...editedRole, description: e.target.value });
-                        setRoleFormErrors({
-                          ...roleFormErrors,
-                          description: validateRoleDescription(e.target.value),
-                        });
-                      }}
-                      onBlur={() => setRoleTouched({ ...roleTouched, description: true })}
-                      placeholder="Role Description"
-                      className={`role-edit-textarea ${roleTouched.description && roleFormErrors.description ? "invalid-vibrate" : ""}`}
-                      aria-invalid={roleTouched.description && !!roleFormErrors.description}
-                    />
-                    {roleFormErrors.description && roleTouched.description && (
-                      <span className="error-text">{roleFormErrors.description}</span>
-                    )}
-                  </div>
-                  <div className="role-edit-actions">
-                    <button
-                      className="action-button"
-                      onClick={handleSaveRoleEdit}
-                      disabled={loading}
-                      aria-busy={loading ? "true" : "false"}
-                    >
-                      {loading ? "Saving..." : "Save"}
-                    </button>
-                    <button
-                      className="cancel-button"
-                      onClick={async () => {
-                        setIsEditingRole(false);
-                        setEditedRole({});
-                        setTempPermissions((await getPermissionsByRole(selectedRole.roleID)) || []);
-                        setHasUnsavedChanges(false);
-                      }}
-                      disabled={loading}
-                    >
-                      Cancel
-                    </button>
-                  </div>
-                </div>
-              ) : (
-                <>
-                  <h2>{selectedRole.name}</h2>
-                  <div className="role-actions">
-                    {userPermissions.canUpdateRoles && (
-                      <button
-                        className="edit-button"
-                        onClick={handleEditRole}
-                        disabled={loading}
-                        aria-label="Edit role"
-                      >
-                        <FaEdit /> Edit
-                      </button>
-                    )}
-                    {userPermissions.canDeleteRoles && !isRestrictedRole && (
-                      <button
-                        className="delete-button"
-                        onClick={handleDeleteRole}
-                        disabled={loading}
-                        aria-label="Delete role"
-                      >
-                        <FaTrash />
-                      </button>
-                    )}
-                  </div>
-                </>
+      <motion.div
+        initial={{ opacity: 0 }}
+        animate={{ opacity: 1 }}
+        transition={{ duration: 0.3 }}
+      >
+        <div className="details-card">
+          {loading && renderSkeleton()}
+          {!loading && (
+            <>
+              {confirmation && (
+                <ConfirmationModal
+                  message={confirmation.message}
+                  onConfirm={() => {
+                    confirmation.onConfirm();
+                    setConfirmation(null);
+                  }}
+                  onCancel={() => setConfirmation(null)}
+                />
               )}
-            </div>
-            {!isEditingRole && (
-              <>
-                <p>Description: {selectedRole.description || "No description"}</p>
-                {userPermissions.canReadPermissionsByRole && (
-                  <>
-                    <div className="permissions-filter-section">
-                      <label>Filter Permissions</label>
-                      <div className="permissions-filter-controls">
-                        <div className="permissions-search">
-                          <input
-                            type="text"
-                            placeholder="Search permissions..."
-                            value={permissionSearch}
-                            onChange={(e) => debouncedSetPermissionSearch(e.target.value)}
-                            className="search-input"
-                            aria-label="Search permissions"
-                            disabled={loading}
-                          />
-                        </div>
-                        <div className="permissions-category">
-                          <select
-                            value={selectedCategory}
-                            onChange={(e) => setSelectedCategory(e.target.value)}
-                            aria-label="Filter by permission class"
-                            disabled={loading}
-                          >
-                            <option value="all">All Classes</option>
-                            {categorizedPermissions.map(([className]) => (
-                              <option key={className} value={className}>
-                                {className}
-                              </option>
-                            ))}
-                          </select>
-                        </div>
-                      </div>
+              <InfoPopup
+                isOpen={!!activePermissionPopup}
+                onClose={() => setActivePermissionPopup(null)}
+                contentRenderer={() => {
+                  const permission = allPermissions.find(
+                    (p) => p.permissionID === activePermissionPopup
+                  );
+                  return permission ? (
+                    <>
+                      <h4>{permission.name}</h4>
+                      <p>
+                        <strong>Class:</strong> {permission.class}
+                      </p>
+                      <p>
+                        <strong>Description:</strong>{" "}
+                        {permission.description || "No description available"}
+                      </p>
+                    </>
+                  ) : (
+                    <p>Permission not found</p>
+                  );
+                }}
+              />
+              <div className="card-header">
+                {isEditingRole ? (
+                  <div className="role-edit-form">
+                    <div className="role-edit-header">
+                      <h2>Edit Role</h2>
                     </div>
-                    <h3>Permissions</h3>
-                    <div className="permissions-list">
-                      {Object.entries(filteredPermissions).map(([className, permissions]) => (
-                        <div key={className} className="permission-class">
-                          <div className="permission-class-header">
-                            <h4>{className}</h4>
-                            {userPermissions.canAssignPermissions && (
-                              <button
-                                className="toggle-all-button"
-                                onClick={() => handleToggleAllPermissionsInClass(className)}
-                                disabled={loading}
-                              >
-                                {allPermissions
-                                  .filter((p) => p.class === className)
-                                  .every((p) =>
-                                    tempPermissions.some((tp) => tp.permissionID === p.permissionID)
-                                  )
-                                  ? "Deselect All"
-                                  : "Select All"}
-                              </button>
-                            )}
-                          </div>
-                          <div className="permissions-container">
-                            {permissions.length > 0 ? (
-                              permissions.map((perm) => (
-                                <button
-                                  key={perm.permissionID}
-                                  className={`permission-button ${tempPermissions.some((p) => p.permissionID === perm.permissionID)
-                                    ? "assigned"
-                                    : ""
-                                    }`}
-                                  onClick={() => handleTogglePermission(perm)}
-                                  disabled={loading || !userPermissions.canAssignPermissions}
-                                >
-                                  <span>{perm.name}</span>
-                                  <FaInfoCircle
-                                    className="permission-info-icon"
-                                    onClick={(e) => {
-                                      e.stopPropagation();
-                                      setActivePermissionPopup(perm.permissionID);
-                                    }}
-                                    aria-label={`View details for ${perm.name}`}
-                                  />
-                                </button>
-                              ))
-                            ) : (
-                              <p>No permissions available</p>
-                            )}
-                          </div>
-                        </div>
-                      ))}
+                    <div className="form-group">
+                      <label>Name *</label>
+                      <input
+                        type="text"
+                        value={editedRole.name || ""}
+                        onChange={(e) => {
+                          setEditedRole({ ...editedRole, name: e.target.value });
+                          setRoleFormErrors({
+                            ...roleFormErrors,
+                            name: validateRoleName(e.target.value),
+                          });
+                        }}
+                        onBlur={() => setRoleTouched({ ...roleTouched, name: true })}
+                        className={`role-edit-input ${roleTouched.name && roleFormErrors.name ? "invalid-vibrate" : ""}`}
+                        required
+                        aria-invalid={roleTouched.name && !!roleFormErrors.name}
+                        disabled={isRestrictedRole}
+                      />
+                      {roleFormErrors.name && roleTouched.name && (
+                        <span className="error-text">{roleFormErrors.name}</span>
+                      )}
                     </div>
-                    {hasUnsavedChanges && userPermissions.canAssignPermissions && (
+                    <div className="form-group">
+                      <label>Description</label>
+                      <textarea
+                        value={editedRole.description || ""}
+                        onChange={(e) => {
+                          setEditedRole({ ...editedRole, description: e.target.value });
+                          setRoleFormErrors({
+                            ...roleFormErrors,
+                            description: validateRoleDescription(e.target.value),
+                          });
+                        }}
+                        onBlur={() => setRoleTouched({ ...roleTouched, description: true })}
+                        placeholder="Role Description"
+                        className={`role-edit-textarea ${roleTouched.description && roleFormErrors.description ? "invalid-vibrate" : ""}`}
+                        aria-invalid={roleTouched.description && !!roleFormErrors.description}
+                      />
+                      {roleFormErrors.description && roleTouched.description && (
+                        <span className="error-text">{roleFormErrors.description}</span>
+                      )}
+                    </div>
+                    <div className="role-edit-actions">
                       <button
                         className="action-button"
-                        onClick={handleSavePermissions}
+                        onClick={handleSaveRoleEdit}
+                        disabled={loading}
+                        aria-busy={loading ? "true" : "false"}
+                      >
+                        {loading ? "Saving..." : "Save"}
+                      </button>
+                      <button
+                        className="cancel-button"
+                        onClick={async () => {
+                          setIsEditingRole(false);
+                          setEditedRole({});
+                          setTempPermissions((await getPermissionsByRole(selectedRole.roleID)) || []);
+                          setHasUnsavedChanges(false);
+                        }}
                         disabled={loading}
                       >
-                        {loading ? "Saving..." : "Save Changes"}
+                        Cancel
                       </button>
-                    )}
+                    </div>
+                  </div>
+                ) : (
+                  <>
+                    <h2>{selectedRole.name}</h2>
+                    <div className="role-actions">
+                      {userPermissions.canUpdateRoles && (
+                        <button
+                          className="edit-button"
+                          onClick={handleEditRole}
+                          disabled={loading}
+                          aria-label="Edit role"
+                        >
+                          <FaEdit /> Edit
+                        </button>
+                      )}
+                      {userPermissions.canDeleteRoles && !isRestrictedRole && (
+                        <button
+                          className="delete-button"
+                          onClick={handleDeleteRole}
+                          disabled={loading}
+                          aria-label="Delete role"
+                        >
+                          <FaTrash />
+                        </button>
+                      )}
+                    </div>
                   </>
                 )}
-              </>
-            )}
-          </>
-        )}
-      </div>
+              </div>
+              {!isEditingRole && (
+                <>
+                  <p>Description: {selectedRole.description || "No description"}</p>
+                  {userPermissions.canReadPermissionsByRole && (
+                    <>
+                      <div className="permissions-filter-section">
+                        <label>Filter Permissions</label>
+                        <div className="permissions-filter-controls">
+                          <div className="permissions-search">
+                            <input
+                              type="text"
+                              placeholder="Search permissions..."
+                              value={permissionSearch}
+                              onChange={(e) => debouncedSetPermissionSearch(e.target.value)}
+                              className="search-input"
+                              aria-label="Search permissions"
+                              disabled={loading}
+                            />
+                          </div>
+                          <div className="permissions-category">
+                            <select
+                              value={selectedCategory}
+                              onChange={(e) => setSelectedCategory(e.target.value)}
+                              aria-label="Filter by permission class"
+                              disabled={loading}
+                            >
+                              <option value="all">All Classes</option>
+                              {categorizedPermissions.map(([className]) => (
+                                <option key={className} value={className}>
+                                  {className}
+                                </option>
+                              ))}
+                            </select>
+                          </div>
+                        </div>
+                      </div>
+                      <h3>Permissions</h3>
+                      <div className="permissions-list">
+                        {Object.entries(filteredPermissions).map(([className, permissions]) => (
+                          <div key={className} className="permission-class">
+                            <div className="permission-class-header">
+                              <h4>{className}</h4>
+                              {userPermissions.canAssignPermissions && (
+                                <button
+                                  className="toggle-all-button"
+                                  onClick={() => handleToggleAllPermissionsInClass(className)}
+                                  disabled={loading}
+                                >
+                                  {allPermissions
+                                    .filter((p) => p.class === className)
+                                    .every((p) =>
+                                      tempPermissions.some((tp) => tp.permissionID === p.permissionID)
+                                    )
+                                    ? "Deselect All"
+                                    : "Select All"}
+                                </button>
+                              )}
+                            </div>
+                            <div className="permissions-container">
+                              {permissions.length > 0 ? (
+                                permissions.map((perm) => (
+                                  <button
+                                    key={perm.permissionID}
+                                    className={`permission-button ${tempPermissions.some((p) => p.permissionID === perm.permissionID)
+                                      ? "assigned"
+                                      : ""
+                                      }`}
+                                    onClick={() => handleTogglePermission(perm)}
+                                    disabled={loading || !userPermissions.canAssignPermissions}
+                                  >
+                                    <span>{perm.name}</span>
+                                    <FaInfoCircle
+                                      className="permission-info-icon"
+                                      onClick={(e) => {
+                                        e.stopPropagation();
+                                        setActivePermissionPopup(perm.permissionID);
+                                      }}
+                                      aria-label={`View details for ${perm.name}`}
+                                    />
+                                  </button>
+                                ))
+                              ) : (
+                                <p>No permissions available</p>
+                              )}
+                            </div>
+                          </div>
+                        ))}
+                      </div>
+                      {hasUnsavedChanges && userPermissions.canAssignPermissions && (
+                        <button
+                          className="action-button"
+                          onClick={handleSavePermissions}
+                          disabled={loading}
+                        >
+                          {loading ? "Saving..." : "Save Changes"}
+                        </button>
+                      )}
+                    </>
+                  )}
+                </>
+              )}
+            </>
+          )}
+        </div>
+      </motion.div>
     );
   }
 );

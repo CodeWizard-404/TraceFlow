@@ -28,7 +28,6 @@ const PERMISSIONS = {
   VALIDATE_TIMESHEETS: import.meta.env.VITE_PERMISSIONS_VALIDATE_TIMESHEETS,
   READ_USERS: import.meta.env.VITE_PERMISSIONS_READ_USERS,
   READ_SUPERVISORS: import.meta.env.VITE_PERMISSIONS_READ_SUPERVISORS,
-  ACCESS_RECEIPT_BOOKS: import.meta.env.VITE_PERMISSIONS_ACCESS_RECEIPT_BOOKS,
 };
 
 const ROLES = {
@@ -96,9 +95,7 @@ const Timesheets: React.FC = () => {
       canReadSupervisors: effectivePermissions?.some(
         (p) => p.name === PERMISSIONS.READ_SUPERVISORS
       ),
-      canAccessReceiptBooks: effectivePermissions?.some(
-        (p) => p.name === PERMISSIONS.ACCESS_RECEIPT_BOOKS
-      ),
+
     }),
     [effectivePermissions]
   );
@@ -215,8 +212,8 @@ const Timesheets: React.FC = () => {
     return date >= nextFirstMonday
       ? getWeekNumber(date)
       : weekNum > 0 && weekNum <= getWeeksInYear(year)
-      ? weekNum
-      : 1;
+        ? weekNum
+        : 1;
   };
 
   const getWeeksInYear = (year: number): number => {
@@ -232,8 +229,8 @@ const Timesheets: React.FC = () => {
     );
     return Math.floor(
       (nextFirstMonday.getTime() - firstMonday.getTime()) /
-        (1000 * 60 * 60 * 24) /
-        7
+      (1000 * 60 * 60 * 24) /
+      7
     );
   };
 
@@ -282,14 +279,14 @@ const Timesheets: React.FC = () => {
         week === 1
           ? 0
           : Number(
-              Object.entries(
-                days.reduce((acc, day) => {
-                  const month = day.getMonth();
-                  acc[month] = (acc[month] || 0) + 1;
-                  return acc;
-                }, {} as Record<number, number>)
-              ).reduce((a, b) => (b[1] > a[1] ? b : a))[0]
-            );
+            Object.entries(
+              days.reduce((acc, day) => {
+                const month = day.getMonth();
+                acc[month] = (acc[month] || 0) + 1;
+                return acc;
+              }, {} as Record<number, number>)
+            ).reduce((a, b) => (b[1] > a[1] ? b : a))[0]
+          );
 
       const matchingTimesheets = filteredTimesheets.filter(
         (ts) => ts.weekNumber === week && ts.year === currentYear
@@ -402,8 +399,8 @@ const Timesheets: React.FC = () => {
         viewMode === "year"
           ? `month-${today.getMonth()}`
           : viewMode === "month" || viewMode === "week"
-          ? `week-${currentWeek}`
-          : `day-${today.toISOString().split("T")[0]}`;
+            ? `week-${currentWeek}`
+            : `day-${today.toISOString().split("T")[0]}`;
       document.getElementById(id)?.scrollIntoView({ behavior: "smooth" });
     }, 0);
   };
@@ -430,12 +427,12 @@ const Timesheets: React.FC = () => {
     () =>
       supervisorSearch
         ? users.filter(
-            (user) =>
-              `${user.firstname} ${user.lastname}`
-                .toLowerCase()
-                .includes(supervisorSearch.toLowerCase()) ||
-              user.phone?.toLowerCase().includes(supervisorSearch.toLowerCase())
-          )
+          (user) =>
+            `${user.firstname} ${user.lastname}`
+              .toLowerCase()
+              .includes(supervisorSearch.toLowerCase()) ||
+            user.phone?.toLowerCase().includes(supervisorSearch.toLowerCase())
+        )
         : users,
     [users, supervisorSearch]
   );
@@ -485,25 +482,16 @@ const Timesheets: React.FC = () => {
         <div className="action-buttons">
           {(userPermissions.canCreateTimesheets ||
             userPermissions.canCreateSupervisorTimesheets) && (
-            <button
-              className="create-btn"
-              onClick={() =>
-                navigate("/timesheet-form", { state: { year: currentYear } })
-              }
-              aria-label={t("timesheets.actions.scheduleVisit")}
-            >
-              {t("timesheets.actions.scheduleVisit")}
-            </button>
-          )}
-          {userPermissions.canAccessReceiptBooks && (
-            <button
-              className="receipt-books-btn"
-              onClick={() => navigate("/receipt-books")}
-              aria-label={t("timesheets.actions.viewReceiptBooks")}
-            >
-              {t("timesheets.actions.viewReceiptBooks")}
-            </button>
-          )}
+              <button
+                className="create-btn"
+                onClick={() =>
+                  navigate("/timesheet-form", { state: { year: currentYear } })
+                }
+                aria-label={t("timesheets.actions.scheduleVisit")}
+              >
+                {t("timesheets.actions.scheduleVisit")}
+              </button>
+            )}
           <button
             className="current-btn"
             onClick={scrollToCurrent}
@@ -570,9 +558,9 @@ const Timesheets: React.FC = () => {
                     onClick={
                       userPermissions.canAccessTimesheetDetails
                         ? () => {
-                            setCurrentWeek(week.weekNumber);
-                            setViewMode("week");
-                          }
+                          setCurrentWeek(week.weekNumber);
+                          setViewMode("week");
+                        }
                         : undefined
                     }
                     role="button"
@@ -654,9 +642,9 @@ const Timesheets: React.FC = () => {
                 onClick={
                   userPermissions.canAccessTimesheetDetails
                     ? () => {
-                        setCurrentWeek(week.weekNumber);
-                        setViewMode("week");
-                      }
+                      setCurrentWeek(week.weekNumber);
+                      setViewMode("week");
+                    }
                     : undefined
                 }
                 role="button"
@@ -746,14 +734,12 @@ const Timesheets: React.FC = () => {
                         {t("timesheets.weekView.status")}: {weekData.status}
                         {userPermissions.canReadSupervisors &&
                           weekData.supervisorID &&
-                          ` - ${t("timesheets.weekView.supervisor")}: ${
-                            users.find(
-                              (u) => u.userID === weekData.supervisorID
-                            )?.firstname || "Unknown"
-                          } ${
-                            users.find(
-                              (u) => u.userID === weekData.supervisorID
-                            )?.lastname || ""
+                          ` - ${t("timesheets.weekView.supervisor")}: ${users.find(
+                            (u) => u.userID === weekData.supervisorID
+                          )?.firstname || "Unknown"
+                          } ${users.find(
+                            (u) => u.userID === weekData.supervisorID
+                          )?.lastname || ""
                           }`}
                       </p>
                     </div>
@@ -800,9 +786,9 @@ const Timesheets: React.FC = () => {
                             onClick={
                               userPermissions.canAccessTimesheetDetails
                                 ? () => {
-                                    setCurrentDay(day);
-                                    setViewMode("day");
-                                  }
+                                  setCurrentDay(day);
+                                  setViewMode("day");
+                                }
                                 : undefined
                             }
                             role="button"
@@ -830,8 +816,8 @@ const Timesheets: React.FC = () => {
                             <span className="visit-count">
                               {dayVisits.length > 0
                                 ? `/ ${dayVisits.length} ${t(
-                                    "timesheets.weekView.visits"
-                                  )}`
+                                  "timesheets.weekView.visits"
+                                )}`
                                 : ""}
                             </span>
                           </div>

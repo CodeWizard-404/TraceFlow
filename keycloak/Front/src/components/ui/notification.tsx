@@ -1,23 +1,34 @@
-import React from 'react';
+import React, { useState } from 'react';
 import Notification from '../../models/Notification';
 import { useNotification } from '../../context/NotificationContext';
 import { cn } from '../../lib/utils';
 import './notification.css';
 
-// Define props for the NotificationItem component
 interface NotificationItemProps {
     notification: Notification;
     onClose?: () => void;
 }
 
-// Component to display a single notification
 const NotificationItem: React.FC<NotificationItemProps> = ({ notification, onClose }) => {
     const { markAsRead } = useNotification();
+    const [isDismissed, setIsDismissed] = useState(false);
+    const [isLoading, setIsLoading] = useState(false);
 
-    // Handle marking the notification as read
-    const handleMarkAsRead = () => {
-        markAsRead(notification.notificationID);
-        if (onClose) onClose();
+    const handleMarkAsRead = async () => {
+        if (notification.status !== 'read' && !isLoading) {
+            setIsLoading(true);
+            setIsDismissed(true);
+            try {
+                await markAsRead(notification.notificationID);
+                setTimeout(() => {
+                    if (onClose) onClose();
+                    setIsLoading(false);
+                }, 300); // Match slideOut animation duration
+            } catch {
+                setIsDismissed(false); // Revert UI if API fails
+                setIsLoading(false);
+            }
+        }
     };
 
     return (
@@ -25,8 +36,11 @@ const NotificationItem: React.FC<NotificationItemProps> = ({ notification, onClo
             className={cn(
                 'notification-item',
                 notification.type,
-                notification.status === 'read' && 'read'
+                notification.status === 'read' && 'read',
+                isDismissed && 'dismissed'
             )}
+            onClick={handleMarkAsRead}
+            style={{ pointerEvents: isLoading ? 'none' : 'auto' }}
         >
             <div className="notification-content">
                 <p className="message">{notification.message}</p>
@@ -34,14 +48,6 @@ const NotificationItem: React.FC<NotificationItemProps> = ({ notification, onClo
                     {new Date(notification.createdAt).toLocaleString()}
                 </p>
             </div>
-            {notification.status !== 'read' && (
-                <button
-                    onClick={handleMarkAsRead}
-                    className="notification-action"
-                >
-                    Mark as Read
-                </button>
-            )}
         </div>
     );
 };

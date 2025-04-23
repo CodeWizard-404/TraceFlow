@@ -1,8 +1,10 @@
+// lib/models/otp.dart
+/// Represents a one-time password (OTP) for 2FA or password reset.
 class OTP {
   final String? otpID;
-  final String code;          // Required
-  final DateTime expiresAt;   // Required
-  final DateTime createdAt;   // Required
+  final String code;
+  final DateTime expiresAt;
+  final DateTime createdAt;
   final String? userID;
   final String? agentID;
 
@@ -18,7 +20,7 @@ class OTP {
   factory OTP.fromJson(Map<String, dynamic> json) {
     return OTP(
       otpID: json['otpID'] as String?,
-      code: json['code'] as String,
+      code: json['code'] as String? ?? '',
       expiresAt: DateTime.parse(json['expiresAt'] as String),
       createdAt: DateTime.parse(json['createdAt'] as String),
       userID: json['userID'] as String?,
@@ -26,14 +28,12 @@ class OTP {
     );
   }
 
-  Map<String, dynamic> toJson() {
-    return {
-      'otpID': otpID,
-      'code': code,
-      'expiresAt': expiresAt.toIso8601String(),
-      'createdAt': createdAt.toIso8601String(),
-      'userID': userID,
-      'agentID': agentID,
-    };
-  }
+  Map<String, dynamic> toJson() => {
+    'otpID': otpID,
+    'code': code,
+    'expiresAt': expiresAt.toIso8601String(),
+    'createdAt': createdAt.toIso8601String(),
+    'userID': userID,
+    'agentID': agentID,
+  };
 }

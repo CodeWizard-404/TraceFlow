@@ -1,14 +1,22 @@
-import React, { useState, useEffect } from 'react';
+/**
+ * NotificationRuleView.tsx
+ * Component for viewing and editing a selected notification rule's details.
+ * Optimized with dynamic loading state, skeleton loader, fade-in animation, and efficient state management.
+ * Includes validation, caching, and accessibility features.
+ */
+
+import React, { useState, useEffect, useRef } from 'react';
 import { FaSave, FaTrash } from 'react-icons/fa';
 import { motion } from 'framer-motion';
-import Select, { MultiValue } from 'react-select';
+import Select, { MultiValue, SingleValue } from 'react-select';
 import NotificationRule from '../../../models/NotificationRule';
-import { updateNotificationRule, deleteNotificationRule, getNotificationRules } from '../../../apis/notificationAPI';
+import { updateNotificationRule, deleteNotificationRule } from '../../../apis/notificationAPI';
 import { getAllUsers } from '../../../apis/userAPI';
 import { getAllRoles } from '../../../apis/roleAPI';
 import { ViewMode } from '../adminTypes';
 import User from '../../../models/User';
 import Role from '../../../models/Role';
+import { isValidNotificationEvent, getNotificationEntities, getEntityActions, getNotificationTypes } from '../../../lib/notifEvents';
 import '../AdminDashboard.css';
 
 interface NotificationRuleViewProps {
@@ -21,7 +29,7 @@ interface NotificationRuleViewProps {
     setError: React.Dispatch<React.SetStateAction<string | null>>;
 }
 
-const SKELETON_DELAY = 500;
+const CACHE_DURATION = 5 * 60 * 1000; // 5 minutes
 
 const formVariants = {
     hidden: { opacity: 0, y: 20 },
@@ -55,31 +63,77 @@ const NotificationRuleView: React.FC<NotificationRuleViewProps> = ({
     setError,
     view,
 }) => {
-    const [formData, setFormData] = useState<NotificationRule | null>(selectedRule);
+    const [formData, setFormData] = useState<Partial<NotificationRule>>(selectedRule || {
+        event: '',
+        type: 'general',
+        recipients: { roles: [], userIDs: [] },
+        channels: { websocket: true, email: false, sms: false, inApp: true },
+        messageTemplate: '',
+        enabled: true,
+    });
+    const [selectedEntity, setSelectedEntity] = useState<string | null>(null);
+    const [selectedAction, setSelectedAction] = useState<string | null>(null);
     const [formErrors, setFormErrors] = useState({ event: '', messageTemplate: '' });
     const [touched, setTouched] = useState({ event: false, messageTemplate: false });
     const [loading, setLoading] = useState(true);
     const [users, setUsers] = useState<User[]>([]);
     const [roles, setRoles] = useState<Role[]>([]);
     const [notificationTypes, setNotificationTypes] = useState<string[]>([]);
+    const [entities, setEntities] = useState<string[]>([]);
+    const [entityActions, setEntityActions] = useState<Record<string, string[]>>({});
     const [selectedUsers, setSelectedUsers] = useState<{ value: string; label: string }[]>([]);
     const [selectedRoles, setSelectedRoles] = useState<{ value: string; label: string }[]>([]);
+
+    // Cache for entities, actions, and types
+    const cachedEntities = useRef<string[] | null>(null);
+    const cachedEntityActions = useRef<Record<string, string[]> | null>(null);
+    const cachedTypes = useRef<string[] | null>(null);
+    const lastCacheTime = useRef<number>(0);
 
     useEffect(() => {
         const fetchData = async () => {
             try {
-                const [usersData, rolesData, rulesData] = await Promise.all([
+                setLoading(true);
+                const [usersData, rolesData, entitiesData, typesData] = await Promise.all([
                     getAllUsers(),
                     getAllRoles(),
-                    getNotificationRules(),
+                    getNotificationEntities(),
+                    getNotificationTypes(),
                 ]);
                 setUsers(usersData || []);
                 setRoles(rolesData || []);
-                const types = [...new Set(rulesData.map((rule) => rule.type.toLowerCase()))].filter(
-                    (type): type is string => !!type
-                );
-                setNotificationTypes(['general', ...types]);
+                setNotificationTypes(typesData || []);
+
+                // Set entities and actions
+                if (
+                    !cachedEntities.current ||
+                    !cachedEntityActions.current ||
+                    !cachedTypes.current ||
+                    Date.now() - lastCacheTime.current >= CACHE_DURATION
+                ) {
+                    cachedEntities.current = entitiesData;
+                    cachedTypes.current = typesData;
+                    const actionMap: Record<string, string[]> = {};
+                    await Promise.all(
+                        entitiesData.map(async (entity) => {
+                            actionMap[entity] = await getEntityActions(entity);
+                        })
+                    );
+                    cachedEntityActions.current = actionMap;
+                    lastCacheTime.current = Date.now();
+                }
+                setEntities(cachedEntities.current || []);
+                setEntityActions(cachedEntityActions.current || {});
+
+                // Initialize form data with selected rule
                 if (selectedRule) {
+                    setFormData({
+                        ...selectedRule,
+                        messageTemplate: selectedRule.messageTemplate || '',
+                    });
+                    const [entity, action] = selectedRule.event.split(':');
+                    setSelectedEntity(entity || null);
+                    setSelectedAction(action || null);
                     setSelectedUsers(
                         selectedRule.recipients.userIDs?.map((id) => {
                             const user = usersData.find((u) => u.userID === id);
@@ -103,28 +157,49 @@ const NotificationRuleView: React.FC<NotificationRuleViewProps> = ({
                 setLoading(false);
             }
         };
-        const timer = setTimeout(() => fetchData(), SKELETON_DELAY);
-        return () => clearTimeout(timer);
+        fetchData();
     }, [selectedRule, setError]);
 
-    useEffect(() => {
-        setFormData(selectedRule);
-    }, [selectedRule]);
-
-    if (!formData) return null;
-
-    const validateEvent = (value: string): string => {
-        const trimmed = value.trim();
-        if (!trimmed) return 'Event is required';
-        if (!/^[a-zA-Z]+:[a-zA-Z]+$/.test(trimmed)) return "Event must be in format 'type:action' (e.g., user:created)";
+    const validateEvent = async (entity: string | null, action: string | null): Promise<string> => {
+        if (!entity) return 'Entity is required';
+        if (!action) return 'Action is required';
+        const event = `${entity}:${action}`;
+        const isValid = await isValidNotificationEvent(event);
+        if (isValid && event !== selectedRule?.event) {
+            return 'Event already exists; it will reuse existing rules';
+        }
         return '';
     };
 
     const validateMessageTemplate = (value: string): string => {
         const trimmed = value.trim();
         if (!trimmed) return 'Message template is required';
-        if (trimmed.length < 5) return 'Message template must be at least 5 characters';
         return '';
+    };
+
+    const handleEntityChange = async (
+        option: SingleValue<{ value: string; label: string }>
+    ) => {
+        const entity = option ? option.value : null;
+        setSelectedEntity(entity);
+        setSelectedAction(null);
+        const event = entity && selectedAction ? `${entity}:${selectedAction}` : '';
+        setFormData((prev) => ({ ...prev, event }));
+        setTouched((prev) => ({ ...prev, event: true }));
+        const error = await validateEvent(entity, selectedAction);
+        setFormErrors((prev) => ({ ...prev, event: error }));
+    };
+
+    const handleActionChange = async (
+        option: SingleValue<{ value: string; label: string }>
+    ) => {
+        const action = option ? option.value : null;
+        setSelectedAction(action);
+        const event = selectedEntity && action ? `${selectedEntity}:${action}` : '';
+        setFormData((prev) => ({ ...prev, event }));
+        setTouched((prev) => ({ ...prev, event: true }));
+        const error = await validateEvent(selectedEntity, action);
+        setFormErrors((prev) => ({ ...prev, event: error }));
     };
 
     const handleChange = (
@@ -133,16 +208,23 @@ const NotificationRuleView: React.FC<NotificationRuleViewProps> = ({
         const { name, value, type } = e.target;
         if (type === 'checkbox') {
             const checked = (e.target as HTMLInputElement).checked;
-            setFormData((prev) =>
-                prev ? { ...prev, channels: { ...prev.channels, [name]: checked } } : prev
-            );
-        } else if (name === 'event' || name === 'type' || name === 'messageTemplate') {
-            setFormData((prev) => (prev ? { ...prev, [name]: value } : prev));
-            if (name === 'event' || name === 'messageTemplate') {
-                setTouched((prev) => ({ ...prev, [name]: true }));
+            setFormData((prev) => ({
+                ...prev,
+                channels: {
+                    websocket: prev.channels?.websocket ?? false,
+                    email: prev.channels?.email ?? false,
+                    sms: prev.channels?.sms ?? false,
+                    inApp: prev.channels?.inApp ?? false,
+                    [name]: checked,
+                },
+            }));
+        } else if (name === 'type' || name === 'messageTemplate') {
+            setFormData((prev) => ({ ...prev, [name]: value }));
+            if (name === 'messageTemplate') {
+                setTouched((prev) => ({ ...prev, messageTemplate: true }));
                 setFormErrors((prev) => ({
                     ...prev,
-                    [name]: name === 'event' ? validateEvent(value) : validateMessageTemplate(value),
+                    messageTemplate: validateMessageTemplate(value),
                 }));
             }
         }
@@ -155,9 +237,10 @@ const NotificationRuleView: React.FC<NotificationRuleViewProps> = ({
                 : []
         );
         const userIDs = selectedOptions.map((option) => option.value);
-        setFormData((prev) =>
-            prev ? { ...prev, recipients: { ...prev.recipients, userIDs } } : prev
-        );
+        setFormData((prev) => ({
+            ...prev,
+            recipients: { ...prev.recipients, userIDs },
+        }));
     };
 
     const handleRoleSelect = (selectedOptions: MultiValue<{ value: string; label: string }>) => {
@@ -166,10 +249,11 @@ const NotificationRuleView: React.FC<NotificationRuleViewProps> = ({
                 ? selectedOptions.map((option) => ({ value: option.value, label: option.label }))
                 : []
         );
-        const roles = selectedOptions.map((option) => option.value);
-        setFormData((prev) =>
-            prev ? { ...prev, recipients: { ...prev.recipients, roles } } : prev
-        );
+        const roleNames = selectedOptions.map((option) => option.value);
+        setFormData((prev) => ({
+            ...prev,
+            recipients: { ...prev.recipients, roles: roleNames },
+        }));
     };
 
     const userOptions = users.map((user) => ({
@@ -182,28 +266,54 @@ const NotificationRuleView: React.FC<NotificationRuleViewProps> = ({
         label: role.name,
     }));
 
+    const entityOptions = entities.map((entity) => ({
+        value: entity,
+        label: entity.charAt(0).toUpperCase() + entity.slice(1),
+    }));
+
+    const actionOptions = selectedEntity
+        ? (entityActions[selectedEntity] || []).map((action) => ({
+            value: action,
+            label: action.charAt(0).toUpperCase() + action.slice(1),
+        }))
+        : [];
+
     const handleSubmit = async (e: React.MouseEvent<HTMLButtonElement>) => {
         e.preventDefault();
-        if (!formData) return;
-
         const errors = {
-            event: validateEvent(formData.event),
-            messageTemplate: validateMessageTemplate(formData.messageTemplate),
+            event: await validateEvent(selectedEntity, selectedAction),
+            messageTemplate: validateMessageTemplate(formData.messageTemplate || ''),
         };
         setFormErrors(errors);
         setTouched({ event: true, messageTemplate: true });
 
-        if (Object.values(errors).some((error) => error)) {
+        if (
+            Object.values(errors).some(
+                (error) => error && error !== 'Event already exists; it will reuse existing rules'
+            )
+        ) {
             setError('Please correct the errors in the form');
             return;
         }
 
         try {
-            const updatedRule = await updateNotificationRule(formData.ruleID, formData);
+            const updatedRule = await updateNotificationRule(formData.ruleID!, {
+                ...formData,
+                event: selectedEntity && selectedAction ? `${selectedEntity}:${selectedAction}` : '',
+                recipients: {
+                    roles: selectedRoles.map((role) => role.value),
+                    userIDs: selectedUsers.map((user) => user.value),
+                },
+            } as NotificationRule);
             setRules((prev) =>
                 prev.map((r) => (r.ruleID === updatedRule.ruleID ? updatedRule : r))
             );
             setSelectedRule(updatedRule);
+            // Invalidate cache
+            cachedEntities.current = null;
+            cachedEntityActions.current = null;
+            cachedTypes.current = null;
+            lastCacheTime.current = 0;
             setError('Notification rule updated successfully');
             setView('notifications');
         } catch (err: unknown) {
@@ -215,7 +325,7 @@ const NotificationRuleView: React.FC<NotificationRuleViewProps> = ({
     const handleDelete = async () => {
         if (!formData || !window.confirm('Are you sure you want to delete this notification rule?')) return;
         try {
-            await deleteNotificationRule(formData.ruleID);
+            await deleteNotificationRule(formData.ruleID!);
             setRules((prev) => prev.filter((r) => r.ruleID !== formData.ruleID));
             setSelectedRule(null);
             setError('Notification rule deleted successfully');
@@ -229,15 +339,15 @@ const NotificationRuleView: React.FC<NotificationRuleViewProps> = ({
     if (view !== 'notification-rule-details') return null;
 
     return (
-        <motion.div
-            className="form-card"
-            variants={formVariants}
-            initial="hidden"
-            animate="visible"
-        >
-            {loading && <NotificationRuleViewSkeleton />}
-            {!loading && (
-                <>
+        <div className="form-card">
+            {loading ? (
+                <NotificationRuleViewSkeleton />
+            ) : (
+                <motion.div
+                    variants={formVariants}
+                    initial="hidden"
+                    animate="visible"
+                >
                     <div className="form-header-container">
                         <h2>Edit Notification Rule</h2>
                         <label className="toggle-switch">
@@ -245,33 +355,56 @@ const NotificationRuleView: React.FC<NotificationRuleViewProps> = ({
                                 type="checkbox"
                                 name="enabled"
                                 checked={formData.enabled}
-                                onChange={(e) =>
-                                    setFormData((prev) => (prev ? { ...prev, enabled: e.target.checked } : prev))
-                                }
+                                onChange={(e) => setFormData((prev) => ({ ...prev, enabled: e.target.checked }))}
                             />
                             <span className="slider"></span>
                             <span>{formData.enabled ? 'Enabled' : 'Disabled'}</span>
+                            <span className="tooltip" data-tooltip="Toggle to enable or disable this notification rule"></span>
                         </label>
                     </div>
                     <div className="form-section">
                         <h3 className="form-header">Rule Details</h3>
                         <div className="form-row">
                             <div className="form-group">
-                                <label htmlFor="event">
-                                    Event <span className="required">*</span>
-                                    <span className="tooltip" data-tooltip="Unique event name"></span>
+                                <label htmlFor="entity">
+                                    Entity <span className="required">*</span>
+                                    <span className="tooltip" data-tooltip="Select the entity type for the event (e.g., user, timesheet)"></span>
                                 </label>
-                                <input
-                                    type="text"
-                                    id="event"
-                                    name="event"
-                                    value={formData.event}
-                                    onChange={handleChange}
-                                    className={`form-input ${touched.event && formErrors.event ? 'invalid' : ''}`}
-                                    required
+                                <Select
+                                    id="entity"
+                                    options={entityOptions}
+                                    value={entityOptions.find((option) => option.value === selectedEntity) || null}
+                                    onChange={handleEntityChange}
+                                    className={`react-select-container ${touched.event && formErrors.event && !selectedEntity ? 'invalid' : ''}`}
+                                    classNamePrefix="react-select"
+                                    placeholder="Select entity..."
+                                    isClearable
                                 />
-                                {touched.event && formErrors.event && (
+                                {touched.event && formErrors.event && !selectedEntity && (
                                     <span className="validation-error">{formErrors.event}</span>
+                                )}
+                            </div>
+                            <div className="form-group">
+                                <label htmlFor="action">
+                                    Action <span className="required">*</span>
+                                    <span className="tooltip" data-tooltip="Select the action for the event (e.g., created, updated)"></span>
+                                </label>
+                                <Select
+                                    id="action"
+                                    options={actionOptions}
+                                    value={actionOptions.find((option) => option.value === selectedAction) || null}
+                                    onChange={handleActionChange}
+                                    className={`react-select-container ${touched.event && formErrors.event && selectedEntity && !selectedAction ? 'invalid' : ''}`}
+                                    classNamePrefix="react-select"
+                                    placeholder="Select action..."
+                                    isDisabled={!selectedEntity}
+                                    isClearable
+                                />
+                                {touched.event && formErrors.event && selectedEntity && !selectedAction && (
+                                    <span className="validation-error">{formErrors.event}</span>
+                                )}
+                                {touched.event && formErrors.event && selectedEntity && selectedAction && formErrors.event.includes('already exists') && (
+                                    <span className="validation-warning">{formErrors.event}</span>
                                 )}
                             </div>
                             <div className="form-group">
@@ -299,7 +432,7 @@ const NotificationRuleView: React.FC<NotificationRuleViewProps> = ({
                         <h3 className="form-header">Recipients</h3>
                         <div className="form-row">
                             <div className="form-group">
-                                <label htmlFor="recipients.roles">
+                                <label htmlFor="roles">
                                     Recipient Roles
                                     <span className="tooltip" data-tooltip="Select roles that will receive this notification"></span>
                                 </label>
@@ -314,7 +447,7 @@ const NotificationRuleView: React.FC<NotificationRuleViewProps> = ({
                                 />
                             </div>
                             <div className="form-group">
-                                <label htmlFor="recipients.userIDs">
+                                <label htmlFor="userIDs">
                                     Recipient Users
                                     <span className="tooltip" data-tooltip="Select specific users to receive this notification"></span>
                                 </label>
@@ -333,16 +466,17 @@ const NotificationRuleView: React.FC<NotificationRuleViewProps> = ({
                     <div className="form-section">
                         <h3 className="form-header">Channels</h3>
                         <div className="channels-grid">
-                            {(['websocket', 'email', 'sms', 'inApp'] as Array<keyof typeof formData.channels>).map((channel) => (
+                            {(['websocket', 'email', 'sms', 'inApp'] as Array<keyof typeof formData.channels>).map((channel: string) => (
                                 <label key={channel} className="toggle-switch">
                                     <input
                                         type="checkbox"
                                         name={channel}
-                                        checked={formData.channels[channel]}
+                                        checked={formData.channels?.[channel as keyof typeof formData.channels]}
                                         onChange={handleChange}
                                     />
                                     <span className="slider"></span>
                                     <span>{channel.charAt(0).toUpperCase() + channel.slice(1)}</span>
+                                    <span className="tooltip" data-tooltip={`Enable ${channel} notifications`}></span>
                                 </label>
                             ))}
                         </div>
@@ -352,12 +486,12 @@ const NotificationRuleView: React.FC<NotificationRuleViewProps> = ({
                         <div className="form-group">
                             <label htmlFor="messageTemplate">
                                 Message Template <span className="required">*</span>
-                                <span className="tooltip" data-tooltip="Notification message content"></span>
+                                <span className="tooltip" data-tooltip="Define the content of the notification message"></span>
                             </label>
                             <textarea
                                 id="messageTemplate"
                                 name="messageTemplate"
-                                value={formData.messageTemplate}
+                                value={formData.messageTemplate || ''}
                                 onChange={handleChange}
                                 className={`form-input ${touched.messageTemplate && formErrors.messageTemplate ? 'invalid' : ''}`}
                                 required
@@ -387,9 +521,9 @@ const NotificationRuleView: React.FC<NotificationRuleViewProps> = ({
                             <FaTrash /> Delete
                         </motion.button>
                     </div>
-                </>
+                </motion.div>
             )}
-        </motion.div>
+        </div>
     );
 };
 

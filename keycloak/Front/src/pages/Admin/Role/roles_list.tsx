@@ -39,7 +39,6 @@ interface RolesListProps {
 }
 
 // Constants
-const SKELETON_DELAY = 500; // Delay skeleton visibility for 0.5 seconds
 const SKELETON_ROLES_PER_CATEGORY = [2, 5, 0]; // Fixed, Pre-made, Custom role counts
 
 // Animation variants
@@ -63,9 +62,8 @@ const RolesList: React.FC<RolesListProps> = React.memo(
     } | null>(null);
     const [expandedClasses, setExpandedClasses] = useState<Set<string>>(new Set());
     const [internalSearchQuery, setInternalSearchQuery] = useState(searchQuery);
-    const [loading, setLoading] = useState(true);
+    const [loading, setLoading] = useState(true); // Initialize as true
     const [selectedRoleId, setSelectedRoleId] = useState<string | null>(null); // Track toggled role
-
 
     // Memoized permissions object
     const userPermissions = useMemo(
@@ -98,11 +96,12 @@ const RolesList: React.FC<RolesListProps> = React.memo(
       return () => debouncedSetSearchQuery.cancel();
     }, [searchQuery, debouncedSetSearchQuery]);
 
-    // Simulate delayed loading for skeleton
+    // Dynamic loading state based on roles prop
     useEffect(() => {
-      const timer = setTimeout(() => setLoading(false), SKELETON_DELAY);
-      return () => clearTimeout(timer);
-    }, []);
+      if (roles.length > 0) {
+        setLoading(false); // Set loading to false when roles are available
+      }
+    }, [roles]);
 
     // Memoized filtered roles
     const filteredRoles = useMemo(() => {
@@ -260,7 +259,11 @@ const RolesList: React.FC<RolesListProps> = React.memo(
       <div className="roles-management">
         {loading && renderSkeleton()}
         {!loading && (
-          <>
+          <motion.div
+            initial={{ opacity: 0 }}
+            animate={{ opacity: 1 }}
+            transition={{ duration: 0.3 }}
+          >
             {confirmation && (
               <ConfirmationModal
                 message={confirmation.message}
@@ -521,7 +524,7 @@ const RolesList: React.FC<RolesListProps> = React.memo(
                 )
               );
             })()}
-          </>
+          </motion.div>
         )}
       </div>
     );

@@ -1,6 +1,9 @@
+// lib/models/role.dart
+/// Represents a user role with an ID, name, and optional description.
+/// Matches backend schema for roles managed by Keycloak.
 class Role {
   final String? roleID;
-  final String name;          // Required
+  final String name;
   final String? description;
 
   Role({
@@ -12,16 +15,14 @@ class Role {
   factory Role.fromJson(Map<String, dynamic> json) {
     return Role(
       roleID: json['roleID'] as String?,
-      name: json['name'] as String,
+      name: json['name'] as String? ?? '',
       description: json['description'] as String?,
     );
   }
 
-  Map<String, dynamic> toJson() {
-    return {
-      'roleID': roleID,
-      'name': name,
-      'description': description,
-    };
-  }
+  Map<String, dynamic> toJson() => {
+    'roleID': roleID,
+    'name': name,
+    'description': description,
+  };
 }

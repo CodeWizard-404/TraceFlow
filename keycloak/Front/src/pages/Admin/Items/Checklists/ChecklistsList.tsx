@@ -9,6 +9,7 @@ import React, { useMemo, useState, useEffect, useCallback, lazy, Suspense } from
 import { FaTrash, FaEdit, FaSave } from "react-icons/fa";
 import { Virtuoso } from "react-virtuoso";
 import { debounce } from "lodash";
+import { motion } from "framer-motion"; // Import Framer Motion
 import "../../AdminDashboard.css";
 import { useAuth } from "../../../../context/AuthContext";
 import { Checklist } from "../../../../models/Checklist";
@@ -38,7 +39,6 @@ const FIXED_CHECKLISTS = [
 
 // Constants
 const SKELETON_ROWS = 10;
-const SKELETON_DELAY = 500;
 
 // Memoized component
 const ChecklistsList: React.FC<ChecklistsListProps> = React.memo(
@@ -88,11 +88,12 @@ const ChecklistsList: React.FC<ChecklistsListProps> = React.memo(
             return () => debouncedSetSearchQuery.cancel();
         }, [searchQuery, debouncedSetSearchQuery]);
 
-        // Simulate loading for skeleton
+        // Dynamic loading state based on checklists prop
         useEffect(() => {
-            const timer = setTimeout(() => setLoading(false), SKELETON_DELAY);
-            return () => clearTimeout(timer);
-        }, []);
+            if (checklists.length > 0) {
+                setLoading(false); // Set loading to false when checklists are available
+            }
+        }, [checklists]);
 
         // Memoized checklist aggregation
         const allChecklists = useMemo(
@@ -305,36 +306,42 @@ const ChecklistsList: React.FC<ChecklistsListProps> = React.memo(
                         {loading ? (
                             <SkeletonList rows={SKELETON_ROWS} />
                         ) : (
-                            <div className="hover-reveal-list">
-                                {paginatedChecklists.length > 0 ? (
-                                    <Virtuoso
-                                        style={{ height: "500px" }}
-                                        totalCount={paginatedChecklists.length}
-                                        data={paginatedChecklists}
-                                        itemContent={renderChecklistItem}
-                                    />
-                                ) : (
-                                    <div className="no-items">No checklists found</div>
-                                )}
-                            </div>
+                            <motion.div
+                                initial={{ opacity: 0 }}
+                                animate={{ opacity: 1 }}
+                                transition={{ duration: 0.3 }}
+                            >
+                                <div className="hover-reveal-list">
+                                    {paginatedChecklists.length > 0 ? (
+                                        <Virtuoso
+                                            style={{ height: "500px" }}
+                                            totalCount={paginatedChecklists.length}
+                                            data={paginatedChecklists}
+                                            itemContent={renderChecklistItem}
+                                        />
+                                    ) : (
+                                        <div className="no-items">No checklists found</div>
+                                    )}
+                                </div>
+                                <div className="pagination">
+                                    <button
+                                        onClick={() => setCurrentPage((p) => Math.max(1, p - 1))}
+                                        disabled={currentPage === 1}
+                                    >
+                                        Previous
+                                    </button>
+                                    <span>
+                                        Page {currentPage} of {totalPages}
+                                    </span>
+                                    <button
+                                        onClick={() => setCurrentPage((p) => Math.min(totalPages, p + 1))}
+                                        disabled={currentPage === totalPages}
+                                    >
+                                        Next
+                                    </button>
+                                </div>
+                            </motion.div>
                         )}
-                        <div className="pagination">
-                            <button
-                                onClick={() => setCurrentPage((p) => Math.max(1, p - 1))}
-                                disabled={currentPage === 1}
-                            >
-                                Previous
-                            </button>
-                            <span>
-                                Page {currentPage} of {totalPages}
-                            </span>
-                            <button
-                                onClick={() => setCurrentPage((p) => Math.min(totalPages, p + 1))}
-                                disabled={currentPage === totalPages}
-                            >
-                                Next
-                            </button>
-                        </div>
                     </div>
                 </div>
             </Suspense>

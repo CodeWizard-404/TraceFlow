@@ -1087,6 +1087,12 @@ const AdminDashboard: React.FC = React.memo(() => {
                 view={view}
                 setView={setView}
                 setError={setLocalError}
+                selectedRule={null}
+                setSelectedRule={function (
+                  value: React.SetStateAction<NotificationRule | null>
+                ): void {
+                  throw new Error("Function not implemented.");
+                }}
               />
             )}
           </Suspense>

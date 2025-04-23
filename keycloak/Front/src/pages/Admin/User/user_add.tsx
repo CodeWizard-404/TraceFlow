@@ -1,5 +1,12 @@
+/**
+ * UserAdd.tsx
+ * Component for adding a new user with form validation and role assignment.
+ * Optimized with dynamic loading state and fade-in animation.
+ */
+
 import React, { useState, useEffect } from "react";
 import { FaAngleDown, FaInfoCircle } from "react-icons/fa";
+import { motion } from "framer-motion"; // Added Framer Motion import
 
 // Context and APIs
 import { useAuth } from "../../../context/AuthContext";
@@ -146,8 +153,7 @@ const UserAdd: React.FC<UserAddProps> = ({
   const [expandedClasses, setExpandedClasses] = useState<Set<string>>(
     new Set()
   );
-  const [loading, setLoading] = useState(false);
-  const [showSkeleton, setShowSkeleton] = useState(true);
+  const [loading, setLoading] = useState(true); // Modified to be dynamic
 
   // Debugging Roles
   useEffect(() => {
@@ -156,13 +162,13 @@ const UserAdd: React.FC<UserAddProps> = ({
     }
   }, [roles, selectedRolesForNewUser]);
 
-  // Skeleton Delay
+  // Dynamic Loading State
   useEffect(() => {
-    const timer = setTimeout(() => {
-      setShowSkeleton(false);
-    }, 500);
-    return () => clearTimeout(timer);
-  }, []);
+    setLoading(true);
+    if (roles.length > 0) {
+      setLoading(false);
+    }
+  }, [roles]);
 
   // Permissions
   const userPermissions = {
@@ -450,270 +456,276 @@ const UserAdd: React.FC<UserAddProps> = ({
   // Render
   if (view !== "add-user" || !userPermissions.canCreateUsers) return null;
 
-  if (showSkeleton || loading) {
+  if (loading) {
     return <UserAddSkeleton />;
   }
 
   return (
-    <div className="form-card form-card-0">
-      <div className="form-section">
-        <h3>Personal Information</h3>
-        <div className="form-row">
-          <div className="form-group">
-            <label>First Name *</label>
-            <input
-              type="text"
-              value={newUser.firstname || ""}
-              onChange={(e) => {
-                setNewUser({ ...newUser, firstname: e.target.value });
-                setUserFormErrors({
-                  ...userFormErrors,
-                  firstname: validateName(e.target.value, "First Name"),
-                });
-              }}
-              onBlur={() => markUserTouched("firstname")}
-              className={`user-edit-input ${userTouched.firstname ? "touched" : ""
-                } ${userTouched.firstname && userFormErrors.firstname
-                  ? "invalid-vibrate"
-                  : ""
-                }`}
-              required
-              disabled={loading}
-            />
-            {userFormErrors.firstname && userTouched.firstname && (
-              <span className="error-text">{userFormErrors.firstname}</span>
-            )}
-          </div>
-          <div className="form-group">
-            <label>Last Name *</label>
-            <input
-              type="text"
-              value={newUser.lastname || ""}
-              onChange={(e) => {
-                setNewUser({ ...newUser, lastname: e.target.value });
-                setUserFormErrors({
-                  ...userFormErrors,
-                  lastname: validateName(e.target.value, "Last Name"),
-                });
-              }}
-              onBlur={() => markUserTouched("lastname")}
-              className={`user-edit-input ${userTouched.lastname ? "touched" : ""
-                } ${userTouched.lastname && userFormErrors.lastname
-                  ? "invalid-vibrate"
-                  : ""
-                }`}
-              required
-              disabled={loading}
-            />
-            {userFormErrors.lastname && userTouched.lastname && (
-              <span className="error-text">{userFormErrors.lastname}</span>
-            )}
-          </div>
-        </div>
-      </div>
-      <div className="form-section">
-        <hr />
-        <h3>Contact Information</h3>
-        <div className="form-row">
-          <div className="form-group">
-            <label>Email *</label>
-            <input
-              type="email"
-              value={newUser.email || ""}
-              onChange={(e) => {
-                setNewUser({ ...newUser, email: e.target.value });
-                setUserFormErrors({
-                  ...userFormErrors,
-                  email: validateEmail(e.target.value),
-                });
-              }}
-              onBlur={() => markUserTouched("email")}
-              className={`user-edit-input ${userTouched.email ? "touched" : ""
-                } ${userTouched.email && userFormErrors.email
-                  ? "invalid-vibrate"
-                  : ""
-                }`}
-              required
-              disabled={loading}
-            />
-            {userFormErrors.email && userTouched.email && (
-              <span className="error-text">{userFormErrors.email}</span>
-            )}
-          </div>
-          <div className="form-group">
-            <label>Phone *</label>
-            <input
-              type="text"
-              value={formatPhoneDisplay(rawPhone)}
-              onChange={handlePhoneChange}
-              onBlur={() => markUserTouched("phone")}
-              placeholder="XX XXX XXX"
-              className={`user-edit-input ${userTouched.phone ? "touched" : ""
-                } ${userTouched.phone && userFormErrors.phone
-                  ? "invalid-vibrate"
-                  : ""
-                }`}
-              required
-              maxLength={10}
-              disabled={loading}
-            />
-            {userFormErrors.phone && userTouched.phone && (
-              <span className="error-text">{userFormErrors.phone}</span>
-            )}
+    <motion.div
+      initial={{ opacity: 0 }}
+      animate={{ opacity: 1 }}
+      transition={{ duration: 0.3 }}
+    >
+      <div className="form-card form-card-0">
+        <div className="form-section">
+          <h3>Personal Information</h3>
+          <div className="form-row">
+            <div className="form-group">
+              <label>First Name *</label>
+              <input
+                type="text"
+                value={newUser.firstname || ""}
+                onChange={(e) => {
+                  setNewUser({ ...newUser, firstname: e.target.value });
+                  setUserFormErrors({
+                    ...userFormErrors,
+                    firstname: validateName(e.target.value, "First Name"),
+                  });
+                }}
+                onBlur={() => markUserTouched("firstname")}
+                className={`user-edit-input ${userTouched.firstname ? "touched" : ""
+                  } ${userTouched.firstname && userFormErrors.firstname
+                    ? "invalid-vibrate"
+                    : ""
+                  }`}
+                required
+                disabled={loading}
+              />
+              {userFormErrors.firstname && userTouched.firstname && (
+                <span className="error-text">{userFormErrors.firstname}</span>
+              )}
+            </div>
+            <div className="form-group">
+              <label>Last Name *</label>
+              <input
+                type="text"
+                value={newUser.lastname || ""}
+                onChange={(e) => {
+                  setNewUser({ ...newUser, lastname: e.target.value });
+                  setUserFormErrors({
+                    ...userFormErrors,
+                    lastname: validateName(e.target.value, "Last Name"),
+                  });
+                }}
+                onBlur={() => markUserTouched("lastname")}
+                className={`user-edit-input ${userTouched.lastname ? "touched" : ""
+                  } ${userTouched.lastname && userFormErrors.lastname
+                    ? "invalid-vibrate"
+                    : ""
+                  }`}
+                required
+                disabled={loading}
+              />
+              {userFormErrors.lastname && userTouched.lastname && (
+                <span className="error-text">{userFormErrors.lastname}</span>
+              )}
+            </div>
           </div>
         </div>
-      </div>
-      <div className="form-section">
-        <hr />
-        <h3>Credentials</h3>
-        <div className="form-row">
-          <div className="form-group">
-            <label>Password *</label>
-            <input
-              type="password"
-              value={newUser.password || ""}
-              onChange={(e) => {
-                setNewUser({ ...newUser, password: e.target.value });
-                setUserFormErrors({
-                  ...userFormErrors,
-                  password: validatePassword(e.target.value, true),
-                  passwordConfirm: validatePasswordConfirm(
-                    e.target.value,
-                    passwordConfirm,
-                    true
-                  ),
-                });
-              }}
-              onBlur={() => markUserTouched("password")}
-              className={`user-edit-input ${userTouched.password ? "touched" : ""
-                } ${userTouched.password && userFormErrors.password
-                  ? "invalid-vibrate"
-                  : ""
-                }`}
-              required
-              disabled={loading}
-            />
-            {userFormErrors.password && userTouched.password && (
-              <span className="error-text">{userFormErrors.password}</span>
-            )}
-          </div>
-          <div className="form-group">
-            <label>Confirm Password *</label>
-            <input
-              type="password"
-              value={passwordConfirm}
-              onChange={(e) => {
-                setPasswordConfirm(e.target.value);
-                setUserFormErrors({
-                  ...userFormErrors,
-                  passwordConfirm: validatePasswordConfirm(
-                    newUser.password || "",
-                    e.target.value,
-                    true
-                  ),
-                });
-              }}
-              onBlur={() => markUserTouched("passwordConfirm")}
-              className={`user-edit-input ${userTouched.passwordConfirm ? "touched" : ""
-                } ${userTouched.passwordConfirm && userFormErrors.passwordConfirm
-                  ? "invalid-vibrate"
-                  : ""
-                }`}
-              required
-              disabled={loading}
-            />
-            {userFormErrors.passwordConfirm && userTouched.passwordConfirm && (
-              <span className="error-text">
-                {userFormErrors.passwordConfirm}
-              </span>
-            )}
-          </div>
-        </div>
-      </div>
-      <div className="form-section">
-        <hr />
-        <h3>Wallet</h3>
-        <div className="form-group">
-          <label>Wallet *</label>
-          <input
-            type="text"
-            value={formatWalletDisplay(rawWallet)}
-            onChange={handleWalletChange}
-            onBlur={() => markUserTouched("wallet")}
-            placeholder="XXXX-XXXX-XXXX-XXXX"
-            className={`user-edit-input ${userTouched.wallet ? "touched" : ""
-              } ${userTouched.wallet && userFormErrors.wallet
-                ? "invalid-vibrate"
-                : ""
-              }`}
-            required
-            maxLength={19}
-            disabled={loading}
-          />
-          {userFormErrors.wallet && userTouched.wallet && (
-            <span className="error-text">{userFormErrors.wallet}</span>
-          )}
-        </div>
-      </div>
-      {userPermissions.canAssignRoles && (
         <div className="form-section">
           <hr />
-          <h3>Role Assignment</h3>
+          <h3>Contact Information</h3>
+          <div className="form-row">
+            <div className="form-group">
+              <label>Email *</label>
+              <input
+                type="text"
+                value={newUser.email || ""}
+                onChange={(e) => {
+                  setNewUser({ ...newUser, email: e.target.value });
+                  setUserFormErrors({
+                    ...userFormErrors,
+                    email: validateEmail(e.target.value),
+                  });
+                }}
+                onBlur={() => markUserTouched("email")}
+                className={`user-edit-input ${userTouched.email ? "touched" : ""
+                  } ${userTouched.email && userFormErrors.email
+                    ? "invalid-vibrate"
+                    : ""
+                  }`}
+                required
+                disabled={loading}
+              />
+              {userFormErrors.email && userTouched.email && (
+                <span className="error-text">{userFormErrors.email}</span>
+              )}
+            </div>
+            <div className="form-group">
+              <label>Phone *</label>
+              <input
+                type="text"
+                value={formatPhoneDisplay(rawPhone)}
+                onChange={handlePhoneChange}
+                onBlur={() => markUserTouched("phone")}
+                placeholder="XX XXX XXX"
+                className={`user-edit-input ${userTouched.phone ? "touched" : ""
+                  } ${userTouched.phone && userFormErrors.phone
+                    ? "invalid-vibrate"
+                    : ""
+                  }`}
+                required
+                maxLength={10}
+                disabled={loading}
+              />
+              {userFormErrors.phone && userTouched.phone && (
+                <span className="error-text">{userFormErrors.phone}</span>
+              )}
+            </div>
+          </div>
+        </div>
+        <div className="form-section">
+          <hr />
+          <h3>Credentials</h3>
+          <div className="form-row">
+            <div className="form-group">
+              <label>Password *</label>
+              <input
+                type="password"
+                value={newUser.password || ""}
+                onChange={(e) => {
+                  setNewUser({ ...newUser, password: e.target.value });
+                  setUserFormErrors({
+                    ...userFormErrors,
+                    password: validatePassword(e.target.value, true),
+                    passwordConfirm: validatePasswordConfirm(
+                      e.target.value,
+                      passwordConfirm,
+                      true
+                    ),
+                  });
+                }}
+                onBlur={() => markUserTouched("password")}
+                className={`user-edit-input ${userTouched.password ? "touched" : ""
+                  } ${userTouched.password && userFormErrors.password
+                    ? "invalid-vibrate"
+                    : ""
+                  }`}
+                required
+                disabled={loading}
+              />
+              {userFormErrors.password && userTouched.password && (
+                <span className="error-text">{userFormErrors.password}</span>
+              )}
+            </div>
+            <div className="form-group">
+              <label>Confirm Password *</label>
+              <input
+                type="password"
+                value={passwordConfirm}
+                onChange={(e) => {
+                  setPasswordConfirm(e.target.value);
+                  setUserFormErrors({
+                    ...userFormErrors,
+                    passwordConfirm: validatePasswordConfirm(
+                      newUser.password || "",
+                      e.target.value,
+                      true
+                    ),
+                  });
+                }}
+                onBlur={() => markUserTouched("passwordConfirm")}
+                className={`user-edit-input ${userTouched.passwordConfirm ? "touched" : ""
+                  } ${userTouched.passwordConfirm && userFormErrors.passwordConfirm
+                    ? "invalid-vibrate"
+                    : ""
+                  }`}
+                required
+                disabled={loading}
+              />
+              {userFormErrors.passwordConfirm && userTouched.passwordConfirm && (
+                <span className="error-text">
+                  {userFormErrors.passwordConfirm}
+                </span>
+              )}
+            </div>
+          </div>
+        </div>
+        <div className="form-section">
+          <hr />
+          <h3>Wallet</h3>
           <div className="form-group">
-            <label>Assign Roles</label>
-            {roles.length === 0 ? (
-              <p className="error-text">No roles available. Please check role fetching.</p>
-            ) : (
-              <div className="roles-grid">
-                {roles
-                  .filter(
-                    (role) => role.name !== import.meta.env.VITE_ROLES_SUPER_ADMIN
-                  )
-                  .map((role) => (
-                    <div key={role.roleID} className="role-toggle-container">
-                      <button
-                        className={`role-toggle-button ${selectedRolesForNewUser.includes(role.roleID)
-                          ? "active"
-                          : ""
-                          }`}
-                        onClick={() => {
-                          setSelectedRolesForNewUser((prev) =>
-                            prev.includes(role.roleID)
-                              ? prev.filter((id) => id !== role.roleID)
-                              : [...prev, role.roleID]
-                          );
-                        }}
-                        disabled={loading}
-                      >
-                        <span>{role.name}</span>
-                        <FaInfoCircle
-                          className="role-info-icon"
-                          onClick={(e) => {
-                            e.stopPropagation();
-                            toggleRolePopup(role.roleID);
-                          }}
-                        />
-                      </button>
-                    </div>
-                  ))}
-              </div>
+            <label>Wallet *</label>
+            <input
+              type="text"
+              value={formatWalletDisplay(rawWallet)}
+              onChange={handleWalletChange}
+              onBlur={() => markUserTouched("wallet")}
+              placeholder="XXXX-XXXX-XXXX-XXXX"
+              className={`user-edit-input ${userTouched.wallet ? "touched" : ""
+                } ${userTouched.wallet && userFormErrors.wallet
+                  ? "invalid-vibrate"
+                  : ""
+                }`}
+              required
+              maxLength={19}
+              disabled={loading}
+            />
+            {userFormErrors.wallet && userTouched.wallet && (
+              <span className="error-text">{userFormErrors.wallet}</span>
             )}
           </div>
         </div>
-      )}
-      <button
-        className="action-button"
-        onClick={handleCreateUser}
-        disabled={loading}
-      >
-        {loading ? "Creating..." : "Create User"}
-      </button>
-      <InfoPopup
-        isOpen={!!activeRolePopup}
-        onClose={() => setActiveRolePopup(null)}
-        contentRenderer={() => renderRolePopupContent(activeRolePopup!)}
-      />
-    </div>
+        {userPermissions.canAssignRoles && (
+          <div className="form-section">
+            <hr />
+            <h3>Role Assignment</h3>
+            <div className="form-group">
+              <label>Assign Roles</label>
+              {roles.length === 0 ? (
+                <p className="error-text">No roles available. Please check role fetching.</p>
+              ) : (
+                <div className="roles-grid">
+                  {roles
+                    .filter(
+                      (role) => role.name !== import.meta.env.VITE_ROLES_SUPER_ADMIN
+                    )
+                    .map((role) => (
+                      <div key={role.roleID} className="role-toggle-container">
+                        <button
+                          className={`role-toggle-button ${selectedRolesForNewUser.includes(role.roleID)
+                            ? "active"
+                            : ""
+                            }`}
+                          onClick={() => {
+                            setSelectedRolesForNewUser((prev) =>
+                              prev.includes(role.roleID)
+                                ? prev.filter((id) => id !== role.roleID)
+                                : [...prev, role.roleID]
+                            );
+                          }}
+                          disabled={loading}
+                        >
+                          <span>{role.name}</span>
+                          <FaInfoCircle
+                            className="role-info-icon"
+                            onClick={(e) => {
+                              e.stopPropagation();
+                              toggleRolePopup(role.roleID);
+                            }}
+                          />
+                        </button>
+                      </div>
+                    ))}
+                </div>
+              )}
+            </div>
+          </div>
+        )}
+        <button
+          className="action-button"
+          onClick={handleCreateUser}
+          disabled={loading}
+        >
+          {loading ? "Creating..." : "Create User"}
+        </button>
+        <InfoPopup
+          isOpen={!!activeRolePopup}
+          onClose={() => setActiveRolePopup(null)}
+          contentRenderer={() => renderRolePopupContent(activeRolePopup!)}
+        />
+      </div>
+    </motion.div>
   );
 };
 

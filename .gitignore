@@ -4,3 +4,4 @@ Front-End/src/config.ts
 keycloak/Back/.env
 keycloak/Front/.env
 Mobile/lib/utils/constants.dart
+keycloak/Back/logs/auth.log
