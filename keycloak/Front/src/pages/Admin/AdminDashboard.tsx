@@ -104,7 +104,12 @@ const AdminDashboard: React.FC = React.memo(() => {
     const { t } = useTranslation();
     const { effectivePermissions, userRoles } = useAuth();
     const { clearError, setError: setGlobalError } = useError();
-    const [, setLoading] = useState(false);
+    const [usersLoading, setUsersLoading] = useState(false);
+    const [rolesLoading, setRolesLoading] = useState(false);
+    const [permissionsLoading, setPermissionsLoading] = useState(false);
+    const [checklistsLoading, setChecklistsLoading] = useState(false);
+    const [reasonsLoading, setReasonsLoading] = useState(false);
+    const [notificationsLoading, setNotificationsLoading] = useState(false);
     const [roleLoading, setRoleLoading] = useState(false);
     const [isTransitioning, setIsTransitioning] = useState(false);
     const [showNotificationPanel, setShowNotificationPanel] = useState(false);
@@ -128,7 +133,7 @@ const AdminDashboard: React.FC = React.memo(() => {
     const [roleFilter, setRoleFilter] = useState<string>("all");
     const [roles, setRoles] = useState<Role[]>([]);
     const [searchQuery, setSearchQuery] = useState("");
-    const [inputValue, setInputValue] = useState(""); // New state for immediate input value
+    const [inputValue, setInputValue] = useState("");
     const [selectedChecklist, setSelectedChecklist] = useState<Checklist | null>(
         null
     );
@@ -164,22 +169,22 @@ const AdminDashboard: React.FC = React.memo(() => {
         if (savedView === "user-details" && savedUserId) {
             const loadUser = async () => {
                 try {
-                    setLoading(true);
+                    setUsersLoading(true);
                     const user = await getUserById(savedUserId);
                     setSelectedUser(user);
                     setView("user-details");
                 } catch {
-                    setGlobalError("Failed to restore user view.");
+                    setGlobalError(t("adminDashboard.error.fetchFailed"));
                     setView("users");
                     localStorage.removeItem("adminView");
                     localStorage.removeItem("selectedUserId");
                 } finally {
-                    setLoading(false);
+                    setUsersLoading(false);
                 }
             };
             loadUser();
         }
-    }, [setSelectedUser, setView, setGlobalError]);
+    }, [setSelectedUser, setView, setGlobalError, t]);
 
     useEffect(() => {
         if (validViews.includes(view)) {
@@ -192,7 +197,6 @@ const AdminDashboard: React.FC = React.memo(() => {
         []
     );
 
-    // Sync inputValue with searchQuery when searchQuery changes
     useEffect(() => {
         setInputValue(searchQuery);
     }, [searchQuery]);
@@ -255,11 +259,12 @@ const AdminDashboard: React.FC = React.memo(() => {
         cache.set(key, { data, timestamp: Date.now() });
     }, []);
 
+    // Refresh handler for Users
     const handleRefreshUsers = useCallback(async () => {
         if (!userPermissions.canViewUsers) return;
         cache.delete("all_users");
         try {
-            setLoading(true);
+            setUsersLoading(true);
             const usersData = await getAllUsers();
             const startIndex = (usersPage - 1) * ITEMS_PER_PAGE;
             const endIndex = startIndex + ITEMS_PER_PAGE;
@@ -274,11 +279,162 @@ const AdminDashboard: React.FC = React.memo(() => {
             setLocalError(errorMessage);
             setGlobalError(errorMessage);
         } finally {
-            setLoading(false);
+            setUsersLoading(false);
         }
     }, [
         userPermissions.canViewUsers,
         usersPage,
+        setCachedData,
+        t,
+        setGlobalError,
+        clearError,
+    ]);
+
+    // Refresh handler for Roles
+    const handleRefreshRoles = useCallback(async () => {
+        if (!userPermissions.canViewRoles) return;
+        cache.delete("all_roles");
+        try {
+            setRolesLoading(true);
+            const rolesData = await getAllRoles();
+            setRoles(rolesData);
+            setCachedData("all_roles", rolesData);
+            setLocalError(null);
+            clearError();
+        } catch (err: unknown) {
+            console.error("Failed to refresh roles:", err);
+            const errorMessage = t("adminDashboard.error.fetchFailed");
+            setLocalError(errorMessage);
+            setGlobalError(errorMessage);
+        } finally {
+            setRolesLoading(false);
+        }
+    }, [
+        userPermissions.canViewRoles,
+        setCachedData,
+        t,
+        setGlobalError,
+        clearError,
+    ]);
+
+    // Refresh handler for Permissions
+    const handleRefreshPermissions = useCallback(async () => {
+        if (!userPermissions.canViewPermissions) return;
+        cache.delete("all_permissions");
+        try {
+            setPermissionsLoading(true);
+            const permissionsData = await getAllPermissions();
+            setPermissionsList(permissionsData);
+            setCachedData("all_permissions", permissionsData);
+            setLocalError(null);
+            clearError();
+        } catch (err: unknown) {
+            console.error("Failed to refresh permissions:", err);
+            const errorMessage = t("adminDashboard.error.fetchFailed");
+            setLocalError(errorMessage);
+            setGlobalError(errorMessage);
+        } finally {
+            setPermissionsLoading(false);
+        }
+    }, [
+        userPermissions.canViewPermissions,
+        setCachedData,
+        t,
+        setGlobalError,
+        clearError,
+    ]);
+
+    // Refresh handler for Checklists
+    const handleRefreshChecklists = useCallback(async () => {
+        if (!userPermissions.canViewChecklists) return;
+        cache.delete("all_checklists");
+        try {
+            setChecklistsLoading(true);
+            const checklistsData = await getAllChecklists();
+            const startIndex = (checklistsPage - 1) * ITEMS_PER_PAGE;
+            const endIndex = startIndex + ITEMS_PER_PAGE;
+            const paginatedChecklists = checklistsData.slice(startIndex, endIndex);
+            setChecklists(paginatedChecklists);
+            setCachedData("all_checklists", checklistsData);
+            setLocalError(null);
+            clearError();
+        } catch (err: unknown) {
+            console.error("Failed to refresh checklists:", err);
+            const errorMessage = t("adminDashboard.error.fetchFailed");
+            setLocalError(errorMessage);
+            setGlobalError(errorMessage);
+        } finally {
+            setChecklistsLoading(false);
+        }
+    }, [
+        userPermissions.canViewChecklists,
+        checklistsPage,
+        setCachedData,
+        t,
+        setGlobalError,
+        clearError,
+    ]);
+
+    // Refresh handler for Reasons
+    const handleRefreshReasons = useCallback(async () => {
+        if (!userPermissions.canViewReasons) return;
+        cache.delete("all_reasons");
+        try {
+            setReasonsLoading(true);
+            const reasonsData = await getAllReasons();
+            const startIndex = (reasonsPage - 1) * ITEMS_PER_PAGE;
+            const endIndex = startIndex + ITEMS_PER_PAGE;
+            const paginatedReasons = reasonsData.slice(startIndex, endIndex);
+            setReasons(paginatedReasons);
+            setCachedData("all_reasons", reasonsData);
+            setLocalError(null);
+            clearError();
+        } catch (err: unknown) {
+            console.error("Failed to refresh reasons:", err);
+            const errorMessage = t("adminDashboard.error.fetchFailed");
+            setLocalError(errorMessage);
+            setGlobalError(errorMessage);
+        } finally {
+            setReasonsLoading(false);
+        }
+    }, [
+        userPermissions.canViewReasons,
+        reasonsPage,
+        setCachedData,
+        t,
+        setGlobalError,
+        clearError,
+    ]);
+
+    // Refresh handler for Notification Rules
+    const handleRefreshNotifications = useCallback(async () => {
+        if (!userPermissions.canViewNotificationRules) return;
+        cache.delete("all_notification_rules");
+        cache.delete("notification_types");
+        try {
+            setNotificationsLoading(true);
+            const rulesData = await getNotificationRules();
+            const startIndex = (notificationRulesPage - 1) * ITEMS_PER_PAGE;
+            const endIndex = startIndex + ITEMS_PER_PAGE;
+            const paginatedRules = rulesData.slice(startIndex, endIndex);
+            setNotificationRules(paginatedRules);
+            setCachedData("all_notification_rules", rulesData);
+            const typesData = await getNotificationTypes();
+            setNotificationTypes(typesData);
+            setCachedData("notification_types", typesData);
+            setLocalError(null);
+            clearError();
+        } catch (err: unknown) {
+            console.error("Failed to refresh notifications:", err);
+            const errorMessage = t("adminDashboard.error.fetchFailed");
+            setLocalError(errorMessage);
+            setGlobalError(errorMessage);
+        } finally {
+            setNotificationsLoading(false);
+        }
+    }, [
+        userPermissions.canViewNotificationRules,
+        notificationRulesPage,
         setCachedData,
         t,
         setGlobalError,
@@ -361,8 +517,8 @@ const AdminDashboard: React.FC = React.memo(() => {
             }
 
             try {
-                setLoading(true);
                 if (view === "users" && userPermissions.canViewUsers) {
+                    setUsersLoading(true);
                     let usersData = getCachedData("all_users");
                     if (!usersData) {
                         const timeout = setTimeout(() => {
@@ -388,6 +544,7 @@ const AdminDashboard: React.FC = React.memo(() => {
                     setRoles(rolesData as Role[]);
                     setRoleLoading(false);
                 } else if (view === "roles" && userPermissions.canViewRoles) {
+                    setRolesLoading(true);
                     let rolesData = getCachedData("all_roles");
                     if (!rolesData) {
                         rolesData = await getAllRoles();
@@ -398,6 +555,7 @@ const AdminDashboard: React.FC = React.memo(() => {
                     view === "permissions" &&
                     userPermissions.canViewPermissions
                 ) {
+                    setPermissionsLoading(true);
                     let permissionsData = getCachedData("all_permissions");
                     if (!permissionsData) {
                         permissionsData = await getAllPermissions();
@@ -405,30 +563,50 @@ const AdminDashboard: React.FC = React.memo(() => {
                     }
                     setPermissionsList(permissionsData as Permission[]);
                 } else if (view === "checklists" && userPermissions.canViewChecklists) {
+                    setChecklistsLoading(true);
                     let checklistsData = getCachedData("all_checklists");
                     if (!checklistsData) {
                         checklistsData = await getAllChecklists();
                         setCachedData("all_checklists", checklistsData);
                     }
-                    setChecklists(checklistsData as Checklist[]);
+                    const startIndex = (checklistsPage - 1) * ITEMS_PER_PAGE;
+                    const endIndex = startIndex + ITEMS_PER_PAGE;
+                    const paginatedChecklists = (checklistsData as Checklist[]).slice(
+                        startIndex,
+                        endIndex
+                    );
+                    setChecklists(paginatedChecklists);
                 } else if (view === "reasons" && userPermissions.canViewReasons) {
+                    setReasonsLoading(true);
                     let reasonsData = getCachedData("all_reasons");
                     if (!reasonsData) {
                         reasonsData = await getAllReasons();
                         setCachedData("all_reasons", reasonsData);
                     }
-                    setReasons(reasonsData as Reason[]);
+                    const startIndex = (reasonsPage - 1) * ITEMS_PER_PAGE;
+                    const endIndex = startIndex + ITEMS_PER_PAGE;
+                    const paginatedReasons = (reasonsData as Reason[]).slice(
+                        startIndex,
+                        endIndex
+                    );
+                    setReasons(paginatedReasons);
                 } else if (
                     view === "notifications" &&
                     userPermissions.canViewNotificationRules
                 ) {
+                    setNotificationsLoading(true);
                     let rulesData = getCachedData("all_notification_rules");
                     if (!rulesData) {
                         rulesData = await getNotificationRules();
                         setCachedData("all_notification_rules", rulesData);
                     }
-                    setNotificationRules(rulesData as NotificationRule[]);
-                    // Fetch notification types
+                    const startIndex = (notificationRulesPage - 1) * ITEMS_PER_PAGE;
+                    const endIndex = startIndex + ITEMS_PER_PAGE;
+                    const paginatedRules = (rulesData as NotificationRule[]).slice(
+                        startIndex,
+                        endIndex
+                    );
+                    setNotificationRules(paginatedRules);
                     let typesData = getCachedData("notification_types");
                     if (!typesData) {
                         typesData = await getNotificationTypes();
@@ -443,7 +621,12 @@ const AdminDashboard: React.FC = React.memo(() => {
                 setLocalError(errorMessage);
                 setGlobalError(errorMessage);
             } finally {
-                setLoading(false);
+                setUsersLoading(false);
+                setRolesLoading(false);
+                setPermissionsLoading(false);
+                setChecklistsLoading(false);
+                setReasonsLoading(false);
+                setNotificationsLoading(false);
                 setRoleLoading(false);
             }
         };
@@ -452,13 +635,15 @@ const AdminDashboard: React.FC = React.memo(() => {
     }, [
         view,
         usersPage,
+        checklistsPage,
+        reasonsPage,
+        notificationRulesPage,
         userPermissions,
         t,
         setGlobalError,
         clearError,
         getCachedData,
         setCachedData,
-        notificationRulesPage,
     ]);
 
     useEffect(() => {
@@ -522,11 +707,13 @@ const AdminDashboard: React.FC = React.memo(() => {
                         t("adminDashboard.header.reasonDetails", {
                             item: selectedReason.item,
                         })}
-                    {view === "notifications" && "Notifications"}
-                    {view === "add-notification-rule" && "Add Notification Rule"}
+                    {view === "notifications" && t("adminDashboard.header.notifications")}
+                    {view === "add-notification-rule" && t("adminDashboard.header.addNotificationRule")}
                     {view === "notification-rule-details" &&
                         selectedNotificationRule &&
-                        `Notification Rule Details: ${selectedNotificationRule.event}`}
+                        t("adminDashboard.header.notificationRuleDetails", {
+                            event: selectedNotificationRule.event
+                        })}
                 </h1>
                 {(view === "users" ||
                     view === "roles" ||
@@ -571,10 +758,8 @@ const AdminDashboard: React.FC = React.memo(() => {
                                                 ? "permissions"
                                                 : view.includes("checklist")
                                                     ? "checklists"
-                                                    : view.includes("reason") || view.includes("notification")
-                                                        ? view.includes("notification")
-                                                            ? "notifications"
-                                                            : "reasons"
+                                                    : view.includes("reason")
+                                                        ? "reasons"
                                                         : "notifications"
                                 )
                             }
@@ -672,7 +857,7 @@ const AdminDashboard: React.FC = React.memo(() => {
                                 onClick={() => handleViewChange("notifications")}
                                 aria-current={view === "notifications" ? "page" : undefined}
                             >
-                                {t("Notifications")}
+                                {t("adminDashboard.sidebar.notifications")}
                             </button>
                         )}
                     </div>
@@ -735,11 +920,68 @@ const AdminDashboard: React.FC = React.memo(() => {
                             <motion.button
                                 className="action-button"
                                 onClick={handleRefreshUsers}
-                                whileHover={{ scale: 1.05 }}
-                                whileTap={{ scale: 0.95 }}
-                                aria-label="Refresh Users"
+                                disabled={usersLoading}
+                                whileHover={{ scale: usersLoading ? 1 : 1.05 }}
+                                whileTap={{ scale: usersLoading ? 1 : 0.95 }}
+                                aria-label={usersLoading ? t("adminDashboard.actions.loading") : t("adminDashboard.actions.refreshUsers")}
                             >
-                                <FaRedo aria-hidden="true" /> Refresh Users
+                                <FaRedo aria-hidden="true" /> {usersLoading ? t("adminDashboard.actions.loading") : t("adminDashboard.actions.refreshUsers")}
+                            </motion.button>
+                        </>
+                    )}
+                    {userPermissions.canViewRoles && view === "roles" && (
+                        <>
+                            <motion.button
+                                className="action-button"
+                                onClick={handleRefreshRoles}
+                                disabled={rolesLoading}
+                                whileHover={{ scale: rolesLoading ? 1 : 1.05 }}
+                                whileTap={{ scale: rolesLoading ? 1 : 0.95 }}
+                                aria-label={rolesLoading ? t("adminDashboard.actions.loading") : t("adminDashboard.actions.refreshRoles")}
+                            >
+                                <FaRedo aria-hidden="true" /> {rolesLoading ? t("adminDashboard.actions.loading") : t("adminDashboard.actions.refreshRoles")}
+                            </motion.button>
+                        </>
+                    )}
+                    {userPermissions.canViewPermissions && view === "permissions" && (
+                        <>
+                            <motion.button
+                                className="action-button"
+                                onClick={handleRefreshPermissions}
+                                disabled={permissionsLoading}
+                                whileHover={{ scale: permissionsLoading ? 1 : 1.05 }}
+                                whileTap={{ scale: permissionsLoading ? 1 : 0.95 }}
+                                aria-label={permissionsLoading ? t("adminDashboard.actions.loading") : t("adminDashboard.actions.refreshPermissions")}
+                            >
+                                <FaRedo aria-hidden="true" /> {permissionsLoading ? t("adminDashboard.actions.loading") : t("adminDashboard.actions.refreshPermissions")}
+                            </motion.button>
+                        </>
+                    )}
+                    {userPermissions.canViewChecklists && view === "checklists" && (
+                        <>
+                            <motion.button
+                                className="action-button"
+                                onClick={handleRefreshChecklists}
+                                disabled={checklistsLoading}
+                                whileHover={{ scale: checklistsLoading ? 1 : 1.05 }}
+                                whileTap={{ scale: checklistsLoading ? 1 : 0.95 }}
+                                aria-label={checklistsLoading ? t("adminDashboard.actions.loading") : t("adminDashboard.actions.refreshChecklists")}
+                            >
+                                <FaRedo aria-hidden="true" /> {checklistsLoading ? t("adminDashboard.actions.loading") : t("adminDashboard.actions.refreshChecklists")}
+                            </motion.button>
+                        </>
+                    )}
+                    {userPermissions.canViewReasons && view === "reasons" && (
+                        <>
+                            <motion.button
+                                className="action-button"
+                                onClick={handleRefreshReasons}
+                                disabled={reasonsLoading}
+                                whileHover={{ scale: reasonsLoading ? 1 : 1.05 }}
+                                whileTap={{ scale: reasonsLoading ? 1 : 0.95 }}
+                                aria-label={reasonsLoading ? t("adminDashboard.actions.loading") : t("adminDashboard.actions.refreshReasons")}
+                            >
+                                <FaRedo aria-hidden="true" /> {reasonsLoading ? t("adminDashboard.actions.loading") : t("adminDashboard.actions.refreshReasons")}
                             </motion.button>
                         </>
                     )}
@@ -747,15 +989,15 @@ const AdminDashboard: React.FC = React.memo(() => {
                         view === "notifications" && (
                             <>
                                 <div className="sort-card">
-                                    <h3>Sort Notifications</h3>
+                                    <h3>{t("adminDashboard.sidebar.sortNotificationsBy")}</h3>
                                     <select
                                         value={notificationSortField}
                                         onChange={(e) => setNotificationSortField(e.target.value)}
-                                        aria-label="Sort notifications by"
+                                        aria-label={t("adminDashboard.sidebar.sortNotificationsBy")}
                                     >
-                                        <option value="event">Event</option>
-                                        <option value="type">Type</option>
-                                        <option value="enabled">Status</option>
+                                        <option value="event">{t("adminDashboard.sidebar.sortOptions.event")}</option>
+                                        <option value="type">{t("adminDashboard.sidebar.sortOptions.type")}</option>
+                                        <option value="enabled">{t("adminDashboard.sidebar.sortOptions.status")}</option>
                                     </select>
                                     <motion.button
                                         onClick={() =>
@@ -765,23 +1007,26 @@ const AdminDashboard: React.FC = React.memo(() => {
                                         }
                                         whileHover={{ scale: 1.05 }}
                                         whileTap={{ scale: 0.95 }}
-                                        aria-label={`Sort order: ${notificationSortOrder}`}
+                                        aria-label={t("adminDashboard.sidebar.sortOrder", {
+                                            order: notificationSortOrder === "asc"
+                                                ? t("adminDashboard.sidebar.sortOrder.asc")
+                                                : t("adminDashboard.sidebar.sortOrder.desc"),
+                                        })}
                                     >
                                         <FaSort aria-hidden="true" />{" "}
                                         {notificationSortOrder === "asc"
-                                            ? "Ascending"
-                                            : "Descending"}
+                                            ? t("adminDashboard.sidebar.sortOrder.asc")
+                                            : t("adminDashboard.sidebar.sortOrder.desc")}
                                     </motion.button>
                                 </div>
-
                                 <div className="filter-card">
-                                    <h3>Filter</h3>
+                                    <h3>{t("adminDashboard.sidebar.filterNotifications")}</h3>
                                     <select
                                         value={notificationTypeFilter}
                                         onChange={(e) => setNotificationTypeFilter(e.target.value)}
-                                        aria-label="Filter by notification type"
+                                        aria-label={t("adminDashboard.sidebar.filterByNotificationType")}
                                     >
-                                        <option value="all">All Types</option>
+                                        <option value="all">{t("adminDashboard.sidebar.allTypes")}</option>
                                         {notificationTypes.map((type) => (
                                             <option key={type} value={type}>
                                                 {type.charAt(0).toUpperCase() + type.slice(1)}
@@ -794,13 +1039,13 @@ const AdminDashboard: React.FC = React.memo(() => {
                                         onChange={(e) =>
                                             setNotificationChannelFilter(e.target.value)
                                         }
-                                        aria-label="Filter by notification channel"
+                                        aria-label={t("adminDashboard.sidebar.filterByNotificationChannel")}
                                     >
-                                        <option value="all">All Channels</option>
-                                        <option value="websocket">Websocket</option>
-                                        <option value="email">Email</option>
-                                        <option value="sms">SMS</option>
-                                        <option value="inApp">In-App</option>
+                                        <option value="all">{t("adminDashboard.sidebar.allChannels")}</option>
+                                        <option value="websocket">{t("adminDashboard.sidebar.websocket")}</option>
+                                        <option value="email">{t("adminDashboard.sidebar.email")}</option>
+                                        <option value="sms">{t("adminDashboard.sidebar.sms")}</option>
+                                        <option value="inApp">{t("adminDashboard.sidebar.inApp")}</option>
                                     </select>
                                     <select
                                         style={{ marginTop: "0.5rem" }}
@@ -808,13 +1053,23 @@ const AdminDashboard: React.FC = React.memo(() => {
                                         onChange={(e) =>
                                             setNotificationStatusFilter(e.target.value)
                                         }
-                                        aria-label="Filter by notification status"
+                                        aria-label={t("adminDashboard.sidebar.filterByNotificationStatus")}
                                     >
-                                        <option value="all">All Statuses</option>
-                                        <option value="enabled">Enabled</option>
-                                        <option value="disabled">Disabled</option>
+                                        <option value="all">{t("adminDashboard.sidebar.allStatuses")}</option>
+                                        <option value="enabled">{t("adminDashboard.sidebar.enabled")}</option>
+                                        <option value="disabled">{t("adminDashboard.sidebar.disabled")}</option>
                                     </select>
                                 </div>
+                                <motion.button
+                                    className="action-button"
+                                    onClick={handleRefreshNotifications}
+                                    disabled={notificationsLoading}
+                                    whileHover={{ scale: notificationsLoading ? 1 : 1.05 }}
+                                    whileTap={{ scale: notificationsLoading ? 1 : 0.95 }}
+                                    aria-label={notificationsLoading ? t("adminDashboard.actions.loading") : t("adminDashboard.actions.refreshNotifications")}
+                                >
+                                    <FaRedo aria-hidden="true" /> {notificationsLoading ? t("adminDashboard.actions.loading") : t("adminDashboard.actions.refreshNotifications")}
+                                </motion.button>
                             </>
                         )}
                     {userPermissions.canCreateUsers &&
@@ -851,9 +1106,11 @@ const AdminDashboard: React.FC = React.memo(() => {
                                     className="action-button reset-button"
                                     onClick={handleResetMainRoles}
                                     disabled={resetLoading}
-                                    whileHover={{ scale: 1.05 }}
-                                    whileTap={{ scale: 0.95 }}
-                                    aria-label={t("adminDashboard.sidebar.resetRoles")}
+                                    whileHover={{ scale: resetLoading ? 1 : 1.05 }}
+                                    whileTap={{ scale: resetLoading ? 1 : 0.95 }}
+                                    aria-label={resetLoading
+                                        ? t("adminDashboard.sidebar.resetting")
+                                        : t("adminDashboard.sidebar.resetRoles")}
                                 >
                                     {resetLoading
                                         ? t("adminDashboard.sidebar.resetting")
@@ -898,9 +1155,9 @@ const AdminDashboard: React.FC = React.memo(() => {
                                 onClick={() => handleViewChange("add-notification-rule")}
                                 whileHover={{ scale: 1.05 }}
                                 whileTap={{ scale: 0.95 }}
-                                aria-label={t("Add NotificationRule")}
+                                aria-label={t("adminDashboard.sidebar.addNotificationRule")}
                             >
-                                <FaPlus aria-hidden="true" /> {t("Add Notification")}
+                                <FaPlus aria-hidden="true" /> {t("adminDashboard.sidebar.addNotificationRule")}
                             </motion.button>
                         )}
                 </aside>
@@ -924,7 +1181,7 @@ const AdminDashboard: React.FC = React.memo(() => {
                     )}
                     <Suspense>
                         {isTransitioning && view === "user-details" && (
-                            <div>Loading user details...</div>
+                            <div>{t("adminDashboard.loading.userDetails")}</div>
                         )}
                         {!isTransitioning && view === "users" && (
                             <UsersList
@@ -1101,6 +1358,8 @@ const AdminDashboard: React.FC = React.memo(() => {
                         )}
                         {view === "add-notification-rule" && (
                             <NotificationRuleAdd
+                                setSelectedRule={setSelectedNotificationRule}
+                                selectedRule={selectedNotificationRule}
                                 rules={notificationRules}
                                 setRules={setNotificationRules}
                                 view={view}

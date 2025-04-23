@@ -1,23 +1,22 @@
 import 'package:flutter/material.dart';
 
-class CustomSnackBar {
+class CustomSnackBar extends SnackBar {
+  CustomSnackBar({super.key,
+    required String message,
+    Color super.backgroundColor = Colors.red,
+    super.duration = const Duration(seconds: 3),
+  }) : super(
+    content: Text(message),
+  );
+
   static void show({
     required BuildContext context,
     required String message,
-    Color? backgroundColor,
+    Color backgroundColor = Colors.red,
   }) {
-    final theme = Theme.of(context);
+    ScaffoldMessenger.of(context).removeCurrentSnackBar();
     ScaffoldMessenger.of(context).showSnackBar(
-      SnackBar(
-        content: Text(
-          message,
-          style: theme.textTheme.bodyMedium?.copyWith(color: Colors.white),
-        ),
-        backgroundColor: backgroundColor ?? theme.colorScheme.error.withOpacity(0.9),
-        behavior: SnackBarBehavior.floating,
-        shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(12)),
-        margin: const EdgeInsets.all(16),
-      ),
+      CustomSnackBar(message: message, backgroundColor: backgroundColor),
     );
   }
 }

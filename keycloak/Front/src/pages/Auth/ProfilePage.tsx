@@ -4,6 +4,7 @@
  * Optimized with memoization, debouncing, lazy-loading, and efficient state management.
  * Includes skeleton loader and fade-in animation for performance and UX.
  * Uses existing ProfilePage.css for styling.
+ * Hardened to handle persistent backend PFP serialization issues.
  */
 
 import React, {
@@ -76,6 +77,48 @@ const ProfilePageSkeleton: React.FC = () => (
   </div>
 );
 
+// Utility to detect image MIME type and validate base64
+const detectImageMimeType = (base64: string): string | null => {
+  try {
+    if (base64.length < 100) {
+      console.warn("Base64 string too short to be a valid image:", base64.length);
+      return null;
+    }
+    // Check for known invalid patterns
+    if (base64 === "W29iamVjdCBPYmplY3Rd" || base64.includes("[object Object]")) {
+      console.warn("Invalid PFP data: [object Object] detected");
+      return null;
+    }
+    const prefix = base64.substring(0, 20);
+    if (prefix.includes("/9j/")) return "image/jpeg";
+    if (prefix.includes("iVBORw0KGgo")) return "image/png";
+    return "image/jpeg"; // Default to JPEG
+  } catch {
+    console.warn("Failed to detect MIME type for base64 string");
+    return null;
+  }
+};
+
+// Validate base64 string
+const isValidBase64 = (str: string): boolean => {
+  try {
+    // Check for [object Object] or its base64 equivalent
+    if (str === "[object Object]" || str === "W29iamVjdCBPYmplY3Rd") {
+      console.warn("Invalid base64: [object Object] detected");
+      return false;
+    }
+    const decoded = atob(str);
+    // Ensure decoded string is not [object Object]
+    if (decoded === "[object Object]") {
+      console.warn("Decoded base64 is [object Object]");
+      return false;
+    }
+    return btoa(decoded) === str;
+  } catch {
+    return false;
+  }
+};
+
 const ProfilePage: React.FC = React.memo(() => {
   const { user } = useAuth();
   const [profileData, setProfileData] = useState<User | null>(null);
@@ -90,16 +133,18 @@ const ProfilePage: React.FC = React.memo(() => {
   const [preferences, setPreferences] = useState<NotificationPreference | null>(null);
   const [showNotificationPanel, setShowNotificationPanel] = useState(false);
   const [loading, setLoading] = useState(true);
+  const [failedUploadCount, setFailedUploadCount] = useState(0);
+  const [isUploadDisabled, setIsUploadDisabled] = useState(false);
 
   // Temporary error/success messages
   const setTempError = useCallback((message: string) => {
     setError(message);
-    setTimeout(() => setError(""), 3000);
+    setTimeout(() => setError(""), 5000);
   }, []);
 
   const setTempSuccess = useCallback((message: string) => {
     setSuccess(message);
-    setTimeout(() => setSuccess(""), 3000);
+    setTimeout(() => setSuccess(""), 5000);
   }, []);
 
   // Validation functions
@@ -198,6 +243,51 @@ const ProfilePage: React.FC = React.memo(() => {
     [profileData?.wallet, formatWalletDisplay]
   );
 
+  // Load last valid PFP from localStorage
+  const loadLastValidPFP = useCallback(() => {
+    const storedPFP = localStorage.getItem("lastValidPFP");
+    if (storedPFP && isValidBase64(storedPFP)) {
+      const mimeType = detectImageMimeType(storedPFP);
+      if (mimeType) {
+        return `data:${mimeType};base64,${storedPFP}`;
+      }
+    }
+    return null;
+  }, []);
+
+  // Save valid PFP to localStorage
+  const saveValidPFP = useCallback((pfp: string) => {
+    if (isValidBase64(pfp) && detectImageMimeType(pfp)) {
+      localStorage.setItem("lastValidPFP", pfp);
+    }
+  }, []);
+
+  // Retry fetching profile picture
+  const fetchProfileWithRetry = useCallback(
+    async (retries = 2, delay = 1000): Promise<User> => {
+      try {
+        const user = await fetchUserProfile();
+        // Check for invalid PFP data
+        if (user.PFP && (user.PFP === "[object Object]" || user.PFP === "W29iamVjdCBPYmplY3Rd")) {
+          console.warn("Invalid PFP data in response, setting to null");
+          user.PFP = null;
+        }
+        // Save valid PFP to localStorage
+        if (user.PFP) {
+          saveValidPFP(user.PFP);
+        }
+        return user;
+      } catch (err) {
+        if (retries > 0) {
+          await new Promise((resolve) => setTimeout(resolve, delay));
+          return fetchProfileWithRetry(retries - 1, delay * 2);
+        }
+        throw err;
+      }
+    },
+    [saveValidPFP]
+  );
+
   // Fetch user profile and notification preferences
   useEffect(() => {
     const loadUserProfile = async () => {
@@ -210,7 +300,7 @@ const ProfilePage: React.FC = React.memo(() => {
       try {
         setLoading(true);
         const [fullUser, notificationPrefs] = await Promise.all([
-          fetchUserProfile(),
+          fetchProfileWithRetry(),
           getNotificationPreferences(),
         ]);
         const completeUser: User = {
@@ -228,15 +318,50 @@ const ProfilePage: React.FC = React.memo(() => {
         setProfileData(completeUser);
         setPreferences(notificationPrefs);
 
-        if (completeUser.PFP) {
-          try {
-            const imageSrc = `data:image/jpeg;base64,${completeUser.PFP}`;
-            setProfilePic(imageSrc);
-          } catch (err) {
-            console.error("Error converting profile picture:", err);
-            setProfilePic(null);
-            setTempError("Failed to load profile picture");
+        if (completeUser.PFP && completeUser.PFP.trim()) {
+          console.log("Raw PFP data:", {
+            length: completeUser.PFP.length,
+            preview: completeUser.PFP.substring(0, 50),
+            isValidBase64: isValidBase64(completeUser.PFP),
+          });
+
+          // Skip if PFP is invalid
+          if (!isValidBase64(completeUser.PFP)) {
+            console.warn("Skipping invalid PFP data");
+            setProfilePic(loadLastValidPFP());
+            setTempError("Profile picture data is corrupted. Please upload a new picture.");
+            return;
           }
+
+          const mimeType = detectImageMimeType(completeUser.PFP);
+          if (!mimeType) {
+            console.warn("Invalid image format for PFP");
+            setProfilePic(loadLastValidPFP());
+            setTempError("Profile picture is invalid. Please upload a new picture.");
+            return;
+          }
+
+          const imageSrc = `data:${mimeType};base64,${completeUser.PFP}`;
+          const img = new Image();
+          img.src = imageSrc;
+          img.onload = () => {
+            setProfilePic(imageSrc);
+            saveValidPFP(completeUser.PFP!);
+          };
+          img.onerror = (error) => {
+            console.error("Profile picture load error:", {
+              error,
+              imageSrcLength: imageSrc.length,
+              mimeType,
+              pfpLength: completeUser.PFP!.length,
+              pfpPreview: completeUser.PFP!.substring(0, 50),
+            });
+            setProfilePic(loadLastValidPFP());
+            setTempError("Unable to load profile picture. Please upload a new picture.");
+          };
+        } else {
+          console.log("No PFP data available");
+          setProfilePic(loadLastValidPFP());
         }
 
         localStorage.setItem("user", JSON.stringify(completeUser));
@@ -254,18 +379,11 @@ const ProfilePage: React.FC = React.memo(() => {
             phone: user.phone || "",
             email: user.email || "",
             wallet: user.wallet || "",
-            PFP: user.PFP || null,
+            PFP: null,
             password: "",
           };
           setProfileData(fallbackUser);
-          if (fallbackUser.PFP) {
-            try {
-              const imageSrc = `data:image/jpeg;base64,${fallbackUser.PFP}`;
-              setProfilePic(imageSrc);
-            } catch {
-              setProfilePic(null);
-            }
-          }
+          setProfilePic(loadLastValidPFP());
           localStorage.setItem("user", JSON.stringify(fallbackUser));
         }
       } finally {
@@ -274,7 +392,7 @@ const ProfilePage: React.FC = React.memo(() => {
     };
 
     loadUserProfile();
-  }, [user, setTempError]);
+  }, [user, setTempError, fetchProfileWithRetry, loadLastValidPFP, saveValidPFP]);
 
   // Initialize WebSocket and listen for notifications
   useEffect(() => {
@@ -288,7 +406,7 @@ const ProfilePage: React.FC = React.memo(() => {
     const handleNotification = (event: string) => {
       if (event === "user:profile_updated" || event === "otp:generated:user") {
         if (event === "user:profile_updated") {
-          fetchUserProfile()
+          fetchProfileWithRetry()
             .then((updatedUser) => {
               const completeUser: User = {
                 keycloakId: user.keycloakId || "",
@@ -302,10 +420,54 @@ const ProfilePage: React.FC = React.memo(() => {
                 password: "",
               };
               setProfileData(completeUser);
+              if (completeUser.PFP && completeUser.PFP.trim()) {
+                console.log("Updated PFP data:", {
+                  length: completeUser.PFP.length,
+                  preview: completeUser.PFP.substring(0, 50),
+                  isValidBase64: isValidBase64(completeUser.PFP),
+                });
+
+                if (!isValidBase64(completeUser.PFP)) {
+                  console.warn("Skipping invalid updated PFP data");
+                  setProfilePic(loadLastValidPFP());
+                  setTempError("Updated profile picture is corrupted. Please upload a new picture.");
+                  return;
+                }
+
+                const mimeType = detectImageMimeType(completeUser.PFP);
+                if (!mimeType) {
+                  console.warn("Invalid image format for updated PFP");
+                  setProfilePic(loadLastValidPFP());
+                  setTempError("Updated profile picture is invalid. Please upload a new picture.");
+                  return;
+                }
+
+                const imageSrc = `data:${mimeType};base64,${completeUser.PFP}`;
+                const img = new Image();
+                img.src = imageSrc;
+                img.onload = () => {
+                  setProfilePic(imageSrc);
+                  saveValidPFP(completeUser.PFP!);
+                };
+                img.onerror = (error) => {
+                  console.error("Updated profile picture load error:", {
+                    error,
+                    imageSrcLength: imageSrc.length,
+                    mimeType,
+                    pfpLength: completeUser.PFP!.length,
+                    pfpPreview: completeUser.PFP!.substring(0, 50),
+                  });
+                  setProfilePic(loadLastValidPFP());
+                  setTempError("Unable to load updated profile picture. Please upload a new picture.");
+                };
+              } else {
+                setProfilePic(loadLastValidPFP());
+              }
               localStorage.setItem("user", JSON.stringify(completeUser));
             })
             .catch((err) => {
               console.error("Failed to refresh profile:", err);
+              setProfilePic(loadLastValidPFP());
             });
         }
       }
@@ -316,7 +478,7 @@ const ProfilePage: React.FC = React.memo(() => {
     return () => {
       offNotification();
     };
-  }, [user]);
+  }, [user, setTempError, fetchProfileWithRetry, loadLastValidPFP, saveValidPFP]);
 
   // Update notification preferences
   const handlePreferenceChange = useCallback(
@@ -484,32 +646,153 @@ const ProfilePage: React.FC = React.memo(() => {
 
   const handleProfilePicChange = useCallback(
     async (e: React.ChangeEvent<HTMLInputElement>) => {
-      if (!e.target.files || e.target.files.length === 0) return;
+      if (isUploadDisabled) {
+        setTempError("Profile picture upload is temporarily disabled due to repeated failures. Please contact support.");
+        return;
+      }
+
+      if (!e.target.files || e.target.files.length === 0) {
+        setTempError("No file selected");
+        return;
+      }
       const file = e.target.files[0];
+      // Validate file type and size
+      const allowedTypes = ["image/jpeg", "image/png"];
+      if (!allowedTypes.includes(file.type)) {
+        setTempError("Only JPEG or PNG images are allowed");
+        return;
+      }
+      if (file.size > 5 * 1024 * 1024) {
+        setTempError("Image size must be less than 5MB");
+        return;
+      }
+
       try {
         const formData = new FormData();
         formData.append("PFP", file);
         const response = await updateProfile(formData);
-        if (response.PFP) {
-          const imageSrc = `data:image/jpeg;base64,${response.PFP}`;
-          setProfilePic(imageSrc);
+
+        // Validate response PFP
+        if (response.PFP && response.PFP.trim()) {
+          console.log("New PFP data:", {
+            length: response.PFP.length,
+            preview: response.PFP.substring(0, 50),
+            isValidBase64: isValidBase64(response.PFP),
+          });
+
+          if (!isValidBase64(response.PFP)) {
+            console.warn("Invalid new PFP data");
+            setFailedUploadCount((prev) => prev + 1);
+            if (failedUploadCount + 1 >= 3) {
+              setIsUploadDisabled(true);
+              setTempError(
+                "Unable to upload profile picture due to server issues. Please contact support."
+              );
+            } else {
+              setTempError(
+                "Uploaded profile picture is corrupted. Please try again."
+              );
+            }
+            setProfilePic(loadLastValidPFP());
+            return;
+          }
+
+          const mimeType = detectImageMimeType(response.PFP);
+          if (!mimeType) {
+            console.warn("Invalid image format for new PFP");
+            setFailedUploadCount((prev) => prev + 1);
+            if (failedUploadCount + 1 >= 3) {
+              setIsUploadDisabled(true);
+              setTempError(
+                "Unable to upload profile picture due to server issues. Please contact support."
+              );
+            } else {
+              setTempError(
+                "Uploaded profile picture is invalid. Please try again."
+              );
+            }
+            setProfilePic(loadLastValidPFP());
+            return;
+          }
+
+          const imageSrc = `data:${mimeType};base64,${response.PFP}`;
+          const img = new Image();
+          img.src = imageSrc;
+          img.onload = () => {
+            setProfilePic(imageSrc);
+            setTempSuccess("Profile picture updated successfully");
+            setFailedUploadCount(0); // Reset on success
+            setIsUploadDisabled(false);
+            saveValidPFP(response.PFP!);
+            const updatedUser: User = {
+              ...profileData!,
+              ...response,
+              PFP: response.PFP,
+            };
+            setProfileData(updatedUser);
+            localStorage.setItem("user", JSON.stringify(updatedUser));
+          };
+          img.onerror = (error) => {
+            console.error("New profile picture load error:", {
+              error,
+              imageSrcLength: imageSrc.length,
+              mimeType,
+              pfpLength: response.PFP!.length,
+              pfpPreview: response.PFP!.substring(0, 50),
+            });
+            setFailedUploadCount((prev) => prev + 1);
+            if (failedUploadCount + 1 >= 3) {
+              setIsUploadDisabled(true);
+              setTempError(
+                "Unable to upload profile picture due to server issues. Please contact support."
+              );
+            } else {
+              setTempError(
+                "Unable to load new profile picture. Please try again."
+              );
+            }
+            setProfilePic(loadLastValidPFP());
+          };
+        } else {
+          console.warn("No PFP data returned after update");
+          setProfilePic(null);
+          setTempSuccess("Profile picture removed");
+          setFailedUploadCount(0);
+          setIsUploadDisabled(false);
+          localStorage.removeItem("lastValidPFP");
           const updatedUser: User = {
             ...profileData!,
             ...response,
-            PFP: response.PFP,
+            PFP: null,
           };
           setProfileData(updatedUser);
-          setTempSuccess("Profile picture updated successfully");
           localStorage.setItem("user", JSON.stringify(updatedUser));
         }
       } catch (err) {
         console.error("Profile pic update error:", err);
-        setTempError(
-          err instanceof Error ? err.message : "Failed to update profile picture"
-        );
+        setFailedUploadCount((prev) => prev + 1);
+        if (failedUploadCount + 1 >= 3) {
+          setIsUploadDisabled(true);
+          setTempError(
+            "Unable to upload profile picture due to server issues. Please contact support."
+          );
+        } else {
+          setTempError(
+            err instanceof Error ? err.message : "Failed to update profile picture"
+          );
+        }
+        setProfilePic(loadLastValidPFP());
       }
     },
-    [profileData, setTempSuccess, setTempError]
+    [
+      profileData,
+      setTempSuccess,
+      setTempError,
+      loadLastValidPFP,
+      saveValidPFP,
+      failedUploadCount,
+      isUploadDisabled,
+    ]
   );
 
   const handlePasswordChange = useCallback(async () => {
@@ -577,22 +860,29 @@ const ProfilePage: React.FC = React.memo(() => {
         <header className="profile-header">
           <div
             className="profile-pic-container"
-            onClick={() => document.getElementById("profile-pic-input")?.click()}
+            onClick={() => !isUploadDisabled && document.getElementById("profile-pic-input")?.click()}
           >
             {profilePic ? (
-              <img src={profilePic} alt="Profile" className="profile-pic" />
+              <img
+                src={profilePic}
+                alt={`${profileData.firstname} ${profileData.lastname}'s profile picture`}
+                className="profile-pic"
+              />
             ) : (
               <FaRegUser className="profile-pic-placeholder" />
             )}
-            <div className="profile-pic-overlay">
-              <FaCamera />
-            </div>
+            {!isUploadDisabled && (
+              <div className="profile-pic-overlay">
+                <FaCamera />
+              </div>
+            )}
             <input
               type="file"
               id="profile-pic-input"
               accept="image/*"
               style={{ display: "none" }}
               onChange={handleProfilePicChange}
+              disabled={isUploadDisabled}
             />
           </div>
           <div className="header-info">

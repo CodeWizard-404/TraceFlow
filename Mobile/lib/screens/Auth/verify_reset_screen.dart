@@ -1,4 +1,3 @@
-// lib/screens/verify_reset_screen.dart
 import 'package:flutter/material.dart';
 import 'package:provider/provider.dart';
 import '../../providers/auth_provider.dart';
@@ -10,6 +9,7 @@ import '../../widgets/commen/text_field.dart';
 import '../../widgets/commen/title_text.dart';
 import 'package:flutter/foundation.dart';
 
+// Password reset verification screen for TraceFlow mobile app.
 class VerifyResetScreen extends StatefulWidget {
   const VerifyResetScreen({super.key});
 
@@ -37,15 +37,12 @@ class VerifyResetScreenState extends State<VerifyResetScreen> {
     _otpController.dispose();
     _newPasswordController.dispose();
     _confirmPasswordController.dispose();
-    if (kDebugMode) print('VerifyResetScreen disposed');
     super.dispose();
   }
 
+  // Verifies password reset OTP.
   Future<void> _verifyResetOTP() async {
-    if (!_formKey.currentState!.validate()) {
-      if (kDebugMode) print('OTP validation failed');
-      return;
-    }
+    if (!_formKey.currentState!.validate()) return;
 
     final authProvider = Provider.of<AuthProvider>(context, listen: false);
     await authProvider.verifyPasswordResetOTP(_otpController.text.trim());
@@ -53,83 +50,71 @@ class VerifyResetScreenState extends State<VerifyResetScreen> {
     if (authProvider.errorMessage == null && mounted) {
       setState(() => _showResetFields = true);
       _otpController.clear();
-      if (kDebugMode) print('OTP verified, showing reset fields');
-    } else if (authProvider.errorMessage != null && mounted) {
-      _showErrorSnackBar(authProvider.errorMessage!);
-      authProvider.clearError();
     }
   }
 
+  // Resets password with new password.
   Future<void> _resetPassword() async {
-    if (!_formKey.currentState!.validate()) {
-      if (kDebugMode) print('Password reset validation failed');
-      return;
-    }
+    if (!_formKey.currentState!.validate()) return;
 
     final authProvider = Provider.of<AuthProvider>(context, listen: false);
     await authProvider.resetPassword(_newPasswordController.text.trim());
 
-    if (authProvider.errorMessage != null && mounted) {
-      _showErrorSnackBar(authProvider.errorMessage!);
-      authProvider.clearError();
-    } else if (mounted) {
-      _showSuccessSnackBar('Password reset successfully. Please log in.');
-      Navigator.popUntil(context, (route) => route.isFirst);
+    if (authProvider.errorMessage == null && mounted) {
+      ScaffoldMessenger.of(context).showSnackBar(
+        CustomSnackBar(
+          message: 'Password reset successfully. Please log in.',
+          backgroundColor: Colors.green.withOpacity(0.9),
+        ),
+      );
+      Navigator.pushReplacementNamed(context, '/login');
     }
   }
 
+  // Resends password reset OTP.
   Future<void> _resendOTP() async {
     final authProvider = Provider.of<AuthProvider>(context, listen: false);
     if (authProvider.resendCooldown > 0) return;
 
     await authProvider.resend2FA('phone');
 
-    if (authProvider.errorMessage != null && mounted) {
-      _showErrorSnackBar(authProvider.errorMessage!);
+    if (authProvider.errorMessage != null) {
+      ScaffoldMessenger.of(context).showSnackBar(
+        CustomSnackBar(
+          message: authProvider.errorMessage!,
+          backgroundColor: Theme.of(context).colorScheme.error.withOpacity(0.9),
+        ),
+      );
       authProvider.clearError();
-    } else if (mounted) {
-      _showSuccessSnackBar('New OTP sent successfully.');
-    }
-  }
-
-  void _showErrorSnackBar(String message) {
-    if (mounted) {
-      if (kDebugMode) print('Showing error snackbar: $message');
-      CustomSnackBar.show(
-        context: context,
-        message: message,
-        backgroundColor: Theme.of(context).colorScheme.error.withOpacity(0.9),
+    } else {
+      ScaffoldMessenger.of(context).showSnackBar(
+        CustomSnackBar(
+          message: 'New OTP sent successfully.',
+          backgroundColor: Colors.green.withOpacity(0.9),
+        ),
       );
     }
   }
 
-  void _showSuccessSnackBar(String message) {
-    if (mounted) {
-      if (kDebugMode) print('Showing success snackbar: $message');
-      CustomSnackBar.show(
-        context: context,
-        message: message,
-        backgroundColor: Colors.green.withOpacity(0.9),
-      );
-    }
-  }
-
+  // Validates OTP code.
   String? _validateOTP(String? value) {
     if (value?.trim().isEmpty ?? true) return 'Please enter the 6-digit OTP';
     if (!RegExp(r'^\d{6}$').hasMatch(value!)) return 'OTP must be 6 digits';
     return null;
   }
 
+  // Validates password.
   String? _validatePassword(String? value) {
     if (value?.trim().isEmpty ?? true) return 'Please enter a password';
     if (value!.length < 8) return 'Password must be at least 8 characters';
     if (value.length > 128) return 'Password cannot exceed 128 characters';
     if (!RegExp(r'^(?=.*[a-z])(?=.*[A-Z])(?=.*\d)(?=.*[!@#$%^&*])[^\s]+$').hasMatch(value)) {
-      return 'Must include uppercase, lowercase, number, and special character (no spaces)';
+      return 'Must include uppercase, lowercase, number, and special character';
     }
     return null;
   }
 
+  // Validates confirm password.
   String? _validateConfirmPassword(String? value) {
     if (value?.trim().isEmpty ?? true) return 'Please confirm your password';
     if (value != _newPasswordController.text) return 'Passwords do not match';
@@ -139,7 +124,19 @@ class VerifyResetScreenState extends State<VerifyResetScreen> {
   @override
   Widget build(BuildContext context) {
     final authProvider = Provider.of<AuthProvider>(context);
-    if (kDebugMode) print('Building VerifyResetScreen, isLoading: ${authProvider.isLoading}');
+
+    // Handle errors post-build
+    WidgetsBinding.instance.addPostFrameCallback((_) {
+      if (!mounted || authProvider.errorMessage == null) return;
+      ScaffoldMessenger.of(context).showSnackBar(
+        CustomSnackBar(
+          message: authProvider.errorMessage!,
+          backgroundColor: Theme.of(context).colorScheme.error.withOpacity(0.9),
+        ),
+      );
+      authProvider.clearError();
+    });
+
     return Scaffold(
       backgroundColor: Theme.of(context).scaffoldBackgroundColor,
       body: SafeArea(
@@ -176,7 +173,9 @@ class VerifyResetScreenState extends State<VerifyResetScreen> {
                     ),
                     const CustomSpacer(height: 16),
                     CustomButton(
-                      label: authProvider.resendCooldown > 0 ? 'Resend in ${authProvider.resendCooldown}s' : 'Resend OTP',
+                      label: authProvider.resendCooldown > 0
+                          ? 'Resend in ${authProvider.resendCooldown}s'
+                          : 'Resend OTP',
                       onPressed: authProvider.resendCooldown == 0 ? _resendOTP : () {},
                       isLoading: authProvider.isLoading,
                       isOutlined: true,
@@ -213,7 +212,7 @@ class VerifyResetScreenState extends State<VerifyResetScreen> {
                   const CustomSpacer(height: 16),
                   CustomTextButton(
                     label: 'Back to Login',
-                    onPressed: () => Navigator.popUntil(context, (route) => route.isFirst),
+                    onPressed: () => Navigator.pushReplacementNamed(context, '/login'),
                   ),
                 ],
               ),

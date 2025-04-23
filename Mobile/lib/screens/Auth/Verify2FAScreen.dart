@@ -1,6 +1,6 @@
-
 import 'package:flutter/material.dart';
 import 'package:provider/provider.dart';
+import '../../main.dart';
 import '../../providers/auth_provider.dart';
 import '../../widgets/commen/button.dart';
 import '../../widgets/commen/snack_bar.dar.dart';
@@ -8,9 +8,9 @@ import '../../widgets/commen/spacer.dart';
 import '../../widgets/commen/text_button.dart';
 import '../../widgets/commen/text_field.dart';
 import '../../widgets/commen/title_text.dart';
-import '../Timesheet/Timesheet_details.dart';
 import 'package:flutter/foundation.dart';
 
+// 2FA verification screen for TraceFlow mobile app.
 class Verify2FAScreen extends StatefulWidget {
   const Verify2FAScreen({super.key});
 
@@ -32,58 +32,51 @@ class Verify2FAScreenState extends State<Verify2FAScreen> {
   @override
   void dispose() {
     _otpController.dispose();
-    if (kDebugMode) print('Verify2FAScreen disposed');
     super.dispose();
   }
 
+  // Verifies 2FA OTP code.
   Future<void> _verify2FA() async {
-    if (!_formKey.currentState!.validate()) {
-      if (kDebugMode) print('OTP validation failed');
-      return;
-    }
+    if (!_formKey.currentState!.validate()) return;
 
     final authProvider = Provider.of<AuthProvider>(context, listen: false);
-    if (kDebugMode) print('Attempting OTP verification with code: ${_otpController.text}');
     await authProvider.verify2FA(_otpController.text.trim(), _trustDevice);
-    if (kDebugMode) print('OTP verification attempt completed');
+
+    // Navigate after successful verification
+    if (authProvider.isAuthenticated && authProvider.permissionsLoaded && mounted) {
+      if (ModalRoute.of(context)?.settings.name != '/timesheet-details') {
+        NavigationService.navigatorKey.currentState?.pushReplacementNamed('/timesheet-details');
+      }
+    }
   }
 
+  // Resends 2FA OTP.
   Future<void> _resend2FA(String method) async {
     final authProvider = Provider.of<AuthProvider>(context, listen: false);
     if (authProvider.resendCooldown > 0) return;
 
     await authProvider.resend2FA(method);
 
-    if (authProvider.errorMessage != null && mounted) {
-      _showErrorSnackBar(authProvider.errorMessage!);
+    if (!mounted) return;
+    if (authProvider.errorMessage != null) {
+      ScaffoldMessenger.of(context).showSnackBar(
+        CustomSnackBar(
+          message: authProvider.errorMessage!,
+          backgroundColor: Theme.of(context).colorScheme.error.withOpacity(0.9),
+        ),
+      );
       authProvider.clearError();
-    } else if (mounted) {
-      _showSuccessSnackBar('New OTP sent successfully.');
-    }
-  }
-
-  void _showErrorSnackBar(String message) {
-    if (mounted) {
-      if (kDebugMode) print('Showing error snackbar: $message');
-      CustomSnackBar.show(
-        context: context,
-        message: message,
-        backgroundColor: Theme.of(context).colorScheme.error.withOpacity(0.9),
+    } else {
+      ScaffoldMessenger.of(context).showSnackBar(
+        CustomSnackBar(
+          message: 'New OTP sent successfully.',
+          backgroundColor: Colors.green.withOpacity(0.9),
+        ),
       );
     }
   }
 
-  void _showSuccessSnackBar(String message) {
-    if (mounted) {
-      if (kDebugMode) print('Showing success snackbar: $message');
-      CustomSnackBar.show(
-        context: context,
-        message: message,
-        backgroundColor: Colors.green.withOpacity(0.9),
-      );
-    }
-  }
-
+  // Validates OTP code.
   String? _validateOTP(String? value) {
     if (value?.trim().isEmpty ?? true) return 'Please enter the 6-digit OTP';
     if (!RegExp(r'^\d{6}$').hasMatch(value!)) return 'OTP must be 6 digits';
@@ -94,25 +87,31 @@ class Verify2FAScreenState extends State<Verify2FAScreen> {
   Widget build(BuildContext context) {
     final authProvider = Provider.of<AuthProvider>(context);
 
+    // Handle errors post-build
     WidgetsBinding.instance.addPostFrameCallback((_) {
       if (!mounted) return;
       if (authProvider.errorMessage != null) {
-        _showErrorSnackBar(authProvider.errorMessage!);
-        authProvider.clearError();
-      } else if ( authProvider.permissionsLoaded && authProvider.isSupervisor) {
-        if (kDebugMode) print('Navigating to TimesheetDetailsScreen (Home) from listener');
-        Navigator.pushReplacement(
-          context,
-          MaterialPageRoute(builder: (_) => const TimesheetDetailsScreen()),
+        ScaffoldMessenger.of(context).showSnackBar(
+          CustomSnackBar(
+            message: authProvider.errorMessage!,
+            backgroundColor: Theme.of(context).colorScheme.error.withOpacity(0.9),
+          ),
         );
-      } else if ( authProvider.permissionsLoaded && !authProvider.isSupervisor) {
-        if (kDebugMode) print('Access denied: Not a supervisor');
-        _showErrorSnackBar('Access denied: Only Supervisors can log in.');
+        authProvider.clearError();
+      } else if (authProvider.permissionsLoaded && !authProvider.isSupervisor) {
+        ScaffoldMessenger.of(context).showSnackBar(
+          CustomSnackBar(
+            message: 'Access denied: Only Supervisors can log in.',
+            backgroundColor: Theme.of(context).colorScheme.error.withOpacity(0.9),
+          ),
+        );
         authProvider.logout();
+        if (ModalRoute.of(context)?.settings.name != '/login') {
+          NavigationService.navigatorKey.currentState?.pushReplacementNamed('/login');
+        }
       }
     });
 
-    if (kDebugMode) print('Building Verify2FAScreen, isLoading: ${authProvider.isLoading}');
     return Scaffold(
       backgroundColor: Theme.of(context).scaffoldBackgroundColor,
       body: SafeArea(
@@ -145,7 +144,9 @@ class Verify2FAScreenState extends State<Verify2FAScreen> {
                     children: [
                       Checkbox(
                         value: _trustDevice,
-                        onChanged: authProvider.isLoading ? null : (value) => setState(() => _trustDevice = value!),
+                        onChanged: authProvider.isLoading
+                            ? null
+                            : (value) => setState(() => _trustDevice = value!),
                         checkColor: Colors.white,
                         fillColor: MaterialStateProperty.resolveWith((states) => Colors.blue),
                       ),
@@ -165,15 +166,19 @@ class Verify2FAScreenState extends State<Verify2FAScreen> {
                   ),
                   const CustomSpacer(height: 16),
                   CustomButton(
-                    label: authProvider.resendCooldown > 0 ? 'Resend in ${authProvider.resendCooldown}s' : 'Resend OTP',
-                    onPressed: authProvider.resendCooldown == 0 ? () => _resend2FA(authProvider.otpMethod) : () {},
+                    label: authProvider.resendCooldown > 0
+                        ? 'Resend in ${authProvider.resendCooldown}s'
+                        : 'Resend OTP',
+                    onPressed: authProvider.resendCooldown == 0
+                        ? () => _resend2FA(authProvider.otpMethod)
+                        : () {},
                     isLoading: authProvider.isLoading,
                     isOutlined: true,
                   ),
                   const CustomSpacer(height: 16),
                   if (authProvider.otpMethod == 'phone')
                     CustomTextButton(
-                      label: 'Can’t access your phone? Send to email instead.',
+                      label: 'Send to email instead.',
                       onPressed: () => _resend2FA('email'),
                       enabled: authProvider.resendCooldown == 0 && !authProvider.isLoading,
                     ),
@@ -187,7 +192,12 @@ class Verify2FAScreenState extends State<Verify2FAScreen> {
                   ],
                   CustomTextButton(
                     label: 'Back to Login',
-                    onPressed: () => Navigator.pop(context),
+                    onPressed: () {
+                      authProvider.logout();
+                      if (mounted) {
+                        NavigationService.navigatorKey.currentState?.pushReplacementNamed('/login');
+                      }
+                    },
                   ),
                 ],
               ),
@@ -198,4 +208,3 @@ class Verify2FAScreenState extends State<Verify2FAScreen> {
     );
   }
 }
-

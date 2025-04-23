@@ -1,4 +1,3 @@
-
 import 'package:flutter/material.dart';
 import 'package:provider/provider.dart';
 import '../../providers/auth_provider.dart';
@@ -8,10 +7,9 @@ import '../../widgets/commen/spacer.dart';
 import '../../widgets/commen/text_button.dart';
 import '../../widgets/commen/text_field.dart';
 import '../../widgets/commen/title_text.dart';
-import '../Timesheet/Timesheet_details.dart';
-import 'forgot_password_screen.dart';
 import 'package:flutter/foundation.dart';
 
+// Login screen for TraceFlow mobile app.
 class LoginScreen extends StatefulWidget {
   const LoginScreen({super.key});
 
@@ -35,36 +33,19 @@ class LoginScreenState extends State<LoginScreen> {
   void dispose() {
     _identifierController.dispose();
     _passwordController.dispose();
-    if (kDebugMode) print('LoginScreen disposed');
     super.dispose();
   }
 
+  // Initiates login process.
   Future<void> _login() async {
-    if (!_formKey.currentState!.validate()) {
-      if (kDebugMode) print('Form validation failed');
-      return;
-    }
+    if (!_formKey.currentState!.validate()) return;
 
     final authProvider = Provider.of<AuthProvider>(context, listen: false);
-    if (kDebugMode) print('Attempting login with identifier: ${_identifierController.text}');
-
     authProvider.clearError();
     await authProvider.login(_identifierController.text.trim(), _passwordController.text.trim());
-
-    if (kDebugMode) print('Login attempt completed, waiting for state update');
   }
 
-  void _showErrorSnackBar(String message) {
-    if (mounted) {
-      if (kDebugMode) print('Showing error snackbar: $message');
-      CustomSnackBar.show(
-        context: context,
-        message: message,
-        backgroundColor: Theme.of(context).colorScheme.error.withOpacity(0.9),
-      );
-    }
-  }
-
+  // Validates identifier (email or phone).
   String? _validateIdentifier(String? value) {
     if (value?.trim().isEmpty ?? true) return 'Please enter your email or phone';
     if (!RegExp(r'^([^\s@]+@[^\s@]+\.[^\s@]+|\+?\d{10,15})$').hasMatch(value!)) {
@@ -73,12 +54,13 @@ class LoginScreenState extends State<LoginScreen> {
     return null;
   }
 
+  // Validates password.
   String? _validatePassword(String? value) {
     if (value?.trim().isEmpty ?? true) return 'Please enter a password';
     if (value!.length < 8) return 'Password must be at least 8 characters';
     if (value.length > 128) return 'Password cannot exceed 128 characters';
     if (!RegExp(r'^(?=.*[a-z])(?=.*[A-Z])(?=.*\d)(?=.*[!@#$%^&*])[^\s]+$').hasMatch(value)) {
-      return 'Must include uppercase, lowercase, number, and special character (no spaces)';
+      return 'Must include uppercase, lowercase, number, and special character';
     }
     return null;
   }
@@ -87,24 +69,24 @@ class LoginScreenState extends State<LoginScreen> {
   Widget build(BuildContext context) {
     final authProvider = Provider.of<AuthProvider>(context);
 
+    // Handle navigation and errors post-build
     WidgetsBinding.instance.addPostFrameCallback((_) {
       if (!mounted) return;
       if (authProvider.errorMessage != null) {
-        _showErrorSnackBar(authProvider.errorMessage!);
+        ScaffoldMessenger.of(context).showSnackBar(
+          CustomSnackBar(
+            message: authProvider.errorMessage!,
+            backgroundColor: Theme.of(context).colorScheme.error.withOpacity(0.9),
+          ) as SnackBar,
+        );
         authProvider.clearError();
-      } else if (authProvider.requires2FA && ModalRoute.of(context)?.settings.name != '/verify-2fa') {
-        if (kDebugMode) print('Navigating to Verify2FAScreen from listener');
+      } else if (authProvider.requires2FA) {
         Navigator.pushNamed(context, '/verify-2fa');
       } else if (authProvider.isAuthenticated && authProvider.permissionsLoaded) {
-        if (kDebugMode) print('Navigating to TimesheetDetailsScreen (Home) from listener');
-        Navigator.pushReplacement(
-          context,
-          MaterialPageRoute(builder: (_) => const TimesheetDetailsScreen()),
-        );
+        Navigator.pushReplacementNamed(context, '/timesheet-details');
       }
     });
 
-    if (kDebugMode) print('Building LoginScreen, isLoading: ${authProvider.isLoading}');
     return Scaffold(
       backgroundColor: Theme.of(context).scaffoldBackgroundColor,
       body: SafeArea(
@@ -152,11 +134,7 @@ class LoginScreenState extends State<LoginScreen> {
                   CustomTextButton(
                     label: 'Forgot Password?',
                     onPressed: () {
-                      if (kDebugMode) print('Navigating to ForgotPasswordScreen');
-                      Navigator.push(
-                        context,
-                        MaterialPageRoute(builder: (_) => const ForgotPasswordScreen()),
-                      );
+                      Navigator.pushNamed(context, '/forgot-password');
                     },
                   ),
                 ],

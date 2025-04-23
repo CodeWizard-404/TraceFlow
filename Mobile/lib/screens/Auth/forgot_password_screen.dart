@@ -7,9 +7,9 @@ import '../../widgets/commen/spacer.dart';
 import '../../widgets/commen/text_button.dart';
 import '../../widgets/commen/text_field.dart';
 import '../../widgets/commen/title_text.dart';
-import 'verify_reset_screen.dart';
 import 'package:flutter/foundation.dart';
 
+// Forgot password screen for initiating password reset.
 class ForgotPasswordScreen extends StatefulWidget {
   const ForgotPasswordScreen({super.key});
 
@@ -30,44 +30,22 @@ class ForgotPasswordScreenState extends State<ForgotPasswordScreen> {
   @override
   void dispose() {
     _identifierController.dispose();
-    if (kDebugMode) print('ForgotPasswordScreen disposed');
     super.dispose();
   }
 
+  // Initiates password reset process.
   Future<void> _initiatePasswordReset() async {
-    if (!_formKey.currentState!.validate()) {
-      if (kDebugMode) print('Form validation failed');
-      return;
-    }
+    if (!_formKey.currentState!.validate()) return;
 
     final authProvider = Provider.of<AuthProvider>(context, listen: false);
     await authProvider.initiatePasswordReset(_identifierController.text.trim());
 
     if (authProvider.userID != null && mounted) {
-      if (kDebugMode) print('Navigating to VerifyResetScreen');
-      Navigator.push(
-        context,
-        MaterialPageRoute(builder: (_) => const VerifyResetScreen()),
-      );
-    }
-
-    if (authProvider.errorMessage != null && mounted) {
-      _showErrorSnackBar(authProvider.errorMessage!);
-      authProvider.clearError();
+      Navigator.pushNamed(context, '/verify-reset');
     }
   }
 
-  void _showErrorSnackBar(String message) {
-    if (mounted) {
-      if (kDebugMode) print('Showing error snackbar: $message');
-      CustomSnackBar.show(
-        context: context,
-        message: message,
-        backgroundColor: Theme.of(context).colorScheme.error.withOpacity(0.9),
-      );
-    }
-  }
-
+  // Validates identifier (email or phone).
   String? _validateIdentifier(String? value) {
     if (value?.trim().isEmpty ?? true) return 'Please enter your email or phone';
     if (!RegExp(r'^([^\s@]+@[^\s@]+\.[^\s@]+|\+?\d{10,15})$').hasMatch(value!)) {
@@ -79,7 +57,19 @@ class ForgotPasswordScreenState extends State<ForgotPasswordScreen> {
   @override
   Widget build(BuildContext context) {
     final authProvider = Provider.of<AuthProvider>(context);
-    if (kDebugMode) print('Building ForgotPasswordScreen, isLoading: ${authProvider.isLoading}');
+
+    // Handle errors post-build
+    WidgetsBinding.instance.addPostFrameCallback((_) {
+      if (!mounted || authProvider.errorMessage == null) return;
+      ScaffoldMessenger.of(context).showSnackBar(
+        CustomSnackBar(
+          message: authProvider.errorMessage!,
+          backgroundColor: Theme.of(context).colorScheme.error.withOpacity(0.9),
+        ),
+      );
+      authProvider.clearError();
+    });
+
     return Scaffold(
       backgroundColor: Theme.of(context).scaffoldBackgroundColor,
       body: SafeArea(

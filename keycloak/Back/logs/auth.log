@@ -2147,3 +2147,609 @@
 {"level":"info","message":"Fetched effective permissions for user user_mpe0xo17h by user_mpe0xo17h, IP: 127.0.0.1","timestamp":"2025-04-22T23:51:32.681Z"}
 {"level":"info","message":"Fetched roles for user user_mpe0xo17h by user_mpe0xo17h, IP: 127.0.0.1","timestamp":"2025-04-22T23:51:33.222Z"}
 {"level":"info","message":"Fetched effective permissions for user user_mpe0xo17h by user_mpe0xo17h, IP: 127.0.0.1","timestamp":"2025-04-22T23:51:33.243Z"}
+{"level":"info","message":"User logged out, cookies cleared","timestamp":"2025-04-23T00:00:00.611Z"}
+{"level":"info","message":"Cleaning up expired OTPs","timestamp":"2025-04-23T00:00:00.667Z"}
+{"level":"info","message":"Cleaned up 0 expired OTPs","timestamp":"2025-04-23T00:00:01.138Z"}
+{"level":"info","message":"Keycloak admin token obtained","timestamp":"2025-04-23T00:00:09.253Z"}
+{"level":"info","message":"Login response generated for user user_mpe0xo17h","timestamp":"2025-04-23T00:00:11.448Z"}
+{"level":"info","message":"Login attempt for superadmin@example.com, requires2FA: false","timestamp":"2025-04-23T00:00:11.451Z"}
+{"level":"info","message":"Keycloak admin token obtained","timestamp":"2025-04-23T00:00:12.001Z"}
+{"level":"info","message":"Login response generated for user user_mpe0xo17h","timestamp":"2025-04-23T00:00:13.681Z"}
+{"level":"info","message":"Login attempt for superadmin@example.com, requires2FA: false","timestamp":"2025-04-23T00:00:13.684Z"}
+{"level":"info","message":"Fetched effective permissions for user user_mpe0xo17h by user_mpe0xo17h, IP: 127.0.0.1","timestamp":"2025-04-23T00:00:14.695Z"}
+{"level":"info","message":"Fetched roles for user user_mpe0xo17h by user_mpe0xo17h, IP: 127.0.0.1","timestamp":"2025-04-23T00:00:14.753Z"}
+{"level":"info","message":"Super Admin bypass for user user_mpe0xo17h","timestamp":"2025-04-23T00:00:15.573Z"}
+{"level":"info","message":"Fetched notification rules by user: user_mpe0xo17h, IP: 127.0.0.1","timestamp":"2025-04-23T00:00:15.587Z"}
+{"level":"info","message":"Super Admin bypass for user user_mpe0xo17h","timestamp":"2025-04-23T00:00:15.622Z"}
+{"level":"info","message":"Fetched notification rules by user: user_mpe0xo17h, IP: 127.0.0.1","timestamp":"2025-04-23T00:00:15.627Z"}
+{"level":"info","message":"Super Admin bypass for user user_mpe0xo17h","timestamp":"2025-04-23T00:00:15.680Z"}
+{"level":"info","message":"Fetched notification rules by user: user_mpe0xo17h, IP: 127.0.0.1","timestamp":"2025-04-23T00:00:15.686Z"}
+{"level":"info","message":"Fetched profile for user user_mpe0xo17h, IP: 127.0.0.1","timestamp":"2025-04-23T00:00:25.935Z"}
+{"level":"info","message":"Fetched notification preferences for user: user_mpe0xo17h, IP: 127.0.0.1","timestamp":"2025-04-23T00:00:26.241Z"}
+{"level":"info","message":"User logged out, cookies cleared","timestamp":"2025-04-23T00:00:30.187Z"}
+{"level":"info","message":"Keycloak admin token obtained","timestamp":"2025-04-23T00:00:32.670Z"}
+{"level":"info","message":"Login response generated for user user_mpe0xo17h","timestamp":"2025-04-23T00:00:33.023Z"}
+{"level":"info","message":"Login attempt for superadmin@example.com, requires2FA: false","timestamp":"2025-04-23T00:00:33.023Z"}
+{"level":"info","message":"Keycloak admin token obtained","timestamp":"2025-04-23T00:00:33.551Z"}
+{"level":"info","message":"Login response generated for user user_mpe0xo17h","timestamp":"2025-04-23T00:00:34.546Z"}
+{"level":"info","message":"Login attempt for superadmin@example.com, requires2FA: false","timestamp":"2025-04-23T00:00:34.549Z"}
+{"level":"info","message":"Fetched effective permissions for user user_mpe0xo17h by user_mpe0xo17h, IP: 127.0.0.1","timestamp":"2025-04-23T00:00:35.328Z"}
+{"level":"info","message":"Fetched roles for user user_mpe0xo17h by user_mpe0xo17h, IP: 127.0.0.1","timestamp":"2025-04-23T00:00:35.337Z"}
+{"level":"info","message":"Fetched notification preferences for user: user_mpe0xo17h, IP: 127.0.0.1","timestamp":"2025-04-23T00:01:04.058Z"}
+{"level":"info","message":"Fetched profile for user user_mpe0xo17h, IP: 127.0.0.1","timestamp":"2025-04-23T00:01:04.148Z"}
+{"level":"info","message":"Fetched notification preferences for user: user_mpe0xo17h, IP: 127.0.0.1","timestamp":"2025-04-23T00:01:07.179Z"}
+{"level":"info","message":"Fetched roles for user user_mpe0xo17h by user_mpe0xo17h, IP: 127.0.0.1","timestamp":"2025-04-23T00:01:07.520Z"}
+{"level":"info","message":"Fetched profile for user user_mpe0xo17h, IP: 127.0.0.1","timestamp":"2025-04-23T00:01:07.849Z"}
+{"level":"info","message":"Fetched effective permissions for user user_mpe0xo17h by user_mpe0xo17h, IP: 127.0.0.1","timestamp":"2025-04-23T00:01:08.025Z"}
+{"level":"info","message":"Fetched roles for user user_mpe0xo17h by user_mpe0xo17h, IP: 127.0.0.1","timestamp":"2025-04-23T00:01:08.132Z"}
+{"level":"info","message":"Fetched effective permissions for user user_mpe0xo17h by user_mpe0xo17h, IP: 127.0.0.1","timestamp":"2025-04-23T00:01:08.695Z"}
+{"level":"warn","message":"No refresh token provided","timestamp":"2025-04-23T00:01:56.551Z"}
+{"level":"warn","message":"No refresh token provided","timestamp":"2025-04-23T00:01:57.699Z"}
+{"level":"warn","message":"No refresh token provided","timestamp":"2025-04-23T00:01:58.724Z"}
+{"level":"info","message":"User logged out, cookies cleared","timestamp":"2025-04-23T00:01:58.794Z"}
+{"ip":null,"level":"info","message":"User user_mpe0xo17h updated by user user_mpe0xo17h","timestamp":"2025-04-23T00:02:12.851Z"}
+{"level":"info","message":"No active rules found for event: user:profile_updated","timestamp":"2025-04-23T00:02:12.856Z"}
+{"level":"info","message":"Rule already exists for event: user:profile_updated, ruleID: rule_0nQz7INMrUjQG7HwpLTuy, enabled: false","timestamp":"2025-04-23T00:02:12.862Z"}
+{"level":"info","message":"Created disabled rule for event: user:profile_updated, ruleID: rule_0nQz7INMrUjQG7HwpLTuy","timestamp":"2025-04-23T00:02:12.863Z"}
+{"level":"info","message":"Updated profile for user user_mpe0xo17h by user user_mpe0xo17h, IP: 127.0.0.1","timestamp":"2025-04-23T00:02:12.864Z"}
+{"level":"info","message":"Super Admin bypass for user user_mpe0xo17h","timestamp":"2025-04-23T00:02:19.761Z"}
+{"level":"info","message":"Fetched notification rules by user: user_mpe0xo17h, IP: 127.0.0.1","timestamp":"2025-04-23T00:02:19.764Z"}
+{"level":"info","message":"Super Admin bypass for user user_mpe0xo17h","timestamp":"2025-04-23T00:02:19.785Z"}
+{"level":"info","message":"Fetched notification rules by user: user_mpe0xo17h, IP: 127.0.0.1","timestamp":"2025-04-23T00:02:19.787Z"}
+{"level":"info","message":"Super Admin bypass for user user_mpe0xo17h","timestamp":"2025-04-23T00:02:19.809Z"}
+{"level":"info","message":"Fetched notification rules by user: user_mpe0xo17h, IP: 127.0.0.1","timestamp":"2025-04-23T00:02:19.812Z"}
+{"level":"info","message":"Fetched effective permissions for user user_mpe0xo17h by user_mpe0xo17h, IP: 127.0.0.1","timestamp":"2025-04-23T00:02:23.775Z"}
+{"level":"info","message":"Fetched roles for user user_mpe0xo17h by user_mpe0xo17h, IP: 127.0.0.1","timestamp":"2025-04-23T00:02:24.318Z"}
+{"level":"info","message":"Fetched effective permissions for user user_mpe0xo17h by user_mpe0xo17h, IP: 127.0.0.1","timestamp":"2025-04-23T00:02:24.613Z"}
+{"level":"info","message":"Fetched roles for user user_mpe0xo17h by user_mpe0xo17h, IP: 127.0.0.1","timestamp":"2025-04-23T00:02:25.115Z"}
+{"level":"info","message":"Super Admin bypass for user user_mpe0xo17h","timestamp":"2025-04-23T00:02:25.191Z"}
+{"level":"info","message":"Fetched notification rules by user: user_mpe0xo17h, IP: 127.0.0.1","timestamp":"2025-04-23T00:02:25.196Z"}
+{"level":"info","message":"Super Admin bypass for user user_mpe0xo17h","timestamp":"2025-04-23T00:02:25.225Z"}
+{"level":"info","message":"Fetched notification rules by user: user_mpe0xo17h, IP: 127.0.0.1","timestamp":"2025-04-23T00:02:25.228Z"}
+{"level":"info","message":"Super Admin bypass for user user_mpe0xo17h","timestamp":"2025-04-23T00:02:25.315Z"}
+{"level":"info","message":"Fetched notification rules by user: user_mpe0xo17h, IP: 127.0.0.1","timestamp":"2025-04-23T00:02:25.317Z"}
+{"level":"info","message":"Fetched notification preferences for user: user_mpe0xo17h, IP: 127.0.0.1","timestamp":"2025-04-23T00:05:03.817Z"}
+{"level":"info","message":"Fetched profile for user user_mpe0xo17h, IP: 127.0.0.1","timestamp":"2025-04-23T00:05:03.902Z"}
+{"level":"info","message":"Super Admin bypass for user user_mpe0xo17h","timestamp":"2025-04-23T00:06:29.644Z"}
+{"level":"info","message":"Fetched notification rules by user: user_mpe0xo17h, IP: 127.0.0.1","timestamp":"2025-04-23T00:06:29.653Z"}
+{"level":"info","message":"Fetched roles for user user_mpe0xo17h by user_mpe0xo17h, IP: 127.0.0.1","timestamp":"2025-04-23T00:09:03.328Z"}
+{"level":"info","message":"Fetched effective permissions for user user_mpe0xo17h by user_mpe0xo17h, IP: 127.0.0.1","timestamp":"2025-04-23T00:09:03.337Z"}
+{"level":"info","message":"Super Admin bypass for user user_mpe0xo17h","timestamp":"2025-04-23T00:09:03.733Z"}
+{"level":"info","message":"Fetched notification rules by user: user_mpe0xo17h, IP: 127.0.0.1","timestamp":"2025-04-23T00:09:03.773Z"}
+{"level":"info","message":"Fetched effective permissions for user user_mpe0xo17h by user_mpe0xo17h, IP: 127.0.0.1","timestamp":"2025-04-23T00:09:04.062Z"}
+{"level":"info","message":"Fetched roles for user user_mpe0xo17h by user_mpe0xo17h, IP: 127.0.0.1","timestamp":"2025-04-23T00:09:04.072Z"}
+{"level":"info","message":"Super Admin bypass for user user_mpe0xo17h","timestamp":"2025-04-23T00:09:04.332Z"}
+{"level":"info","message":"Fetched notification rules by user: user_mpe0xo17h, IP: 127.0.0.1","timestamp":"2025-04-23T00:09:04.335Z"}
+{"level":"info","message":"Super Admin bypass for user user_mpe0xo17h","timestamp":"2025-04-23T00:09:04.367Z"}
+{"level":"info","message":"Fetched notification rules by user: user_mpe0xo17h, IP: 127.0.0.1","timestamp":"2025-04-23T00:09:04.371Z"}
+{"level":"info","message":"Super Admin bypass for user user_mpe0xo17h","timestamp":"2025-04-23T00:09:27.885Z"}
+{"level":"info","message":"Fetched all reasons by user user_mpe0xo17h, IP: 127.0.0.1","timestamp":"2025-04-23T00:09:28.080Z"}
+{"level":"info","message":"Super Admin bypass for user user_mpe0xo17h","timestamp":"2025-04-23T00:09:29.906Z"}
+{"level":"info","message":"Fetched all reasons by user user_mpe0xo17h, IP: 127.0.0.1","timestamp":"2025-04-23T00:09:29.986Z"}
+{"level":"info","message":"Super Admin bypass for user user_mpe0xo17h","timestamp":"2025-04-23T00:09:32.105Z"}
+{"level":"info","message":"Fetched all checklists by user user_mpe0xo17h, IP: 127.0.0.1","timestamp":"2025-04-23T00:09:32.244Z"}
+{"level":"info","message":"Super Admin bypass for user user_mpe0xo17h","timestamp":"2025-04-23T00:09:33.677Z"}
+{"level":"info","message":"Fetched all checklists by user user_mpe0xo17h, IP: 127.0.0.1","timestamp":"2025-04-23T00:09:33.755Z"}
+{"level":"info","message":"Super Admin bypass for user user_mpe0xo17h","timestamp":"2025-04-23T00:09:58.447Z"}
+{"level":"info","message":"Fetched all reasons by user user_mpe0xo17h, IP: 127.0.0.1","timestamp":"2025-04-23T00:09:58.563Z"}
+{"level":"info","message":"Super Admin bypass for user user_mpe0xo17h","timestamp":"2025-04-23T00:10:03.908Z"}
+{"level":"info","message":"Fetched notification rules by user: user_mpe0xo17h, IP: 127.0.0.1","timestamp":"2025-04-23T00:10:03.912Z"}
+{"level":"info","message":"Fetched roles for user user_mpe0xo17h by user_mpe0xo17h, IP: 127.0.0.1","timestamp":"2025-04-23T00:12:50.338Z"}
+{"level":"info","message":"Fetched effective permissions for user user_mpe0xo17h by user_mpe0xo17h, IP: 127.0.0.1","timestamp":"2025-04-23T00:12:50.448Z"}
+{"level":"info","message":"Fetched roles for user user_mpe0xo17h by user_mpe0xo17h, IP: 127.0.0.1","timestamp":"2025-04-23T00:12:50.851Z"}
+{"level":"info","message":"Fetched effective permissions for user user_mpe0xo17h by user_mpe0xo17h, IP: 127.0.0.1","timestamp":"2025-04-23T00:12:51.007Z"}
+{"level":"info","message":"Fetched effective permissions for user user_mpe0xo17h by user_mpe0xo17h, IP: 127.0.0.1","timestamp":"2025-04-23T00:13:01.553Z"}
+{"level":"info","message":"Fetched roles for user user_mpe0xo17h by user_mpe0xo17h, IP: 127.0.0.1","timestamp":"2025-04-23T00:13:01.559Z"}
+{"level":"info","message":"Fetched roles for user user_mpe0xo17h by user_mpe0xo17h, IP: 127.0.0.1","timestamp":"2025-04-23T00:13:02.306Z"}
+{"level":"info","message":"Fetched effective permissions for user user_mpe0xo17h by user_mpe0xo17h, IP: 127.0.0.1","timestamp":"2025-04-23T00:13:02.316Z"}
+{"level":"info","message":"Fetched roles for user user_mpe0xo17h by user_mpe0xo17h, IP: 127.0.0.1","timestamp":"2025-04-23T00:13:06.213Z"}
+{"level":"info","message":"Fetched effective permissions for user user_mpe0xo17h by user_mpe0xo17h, IP: 127.0.0.1","timestamp":"2025-04-23T00:13:06.221Z"}
+{"level":"info","message":"Fetched roles for user user_mpe0xo17h by user_mpe0xo17h, IP: 127.0.0.1","timestamp":"2025-04-23T00:13:07.014Z"}
+{"level":"info","message":"Fetched effective permissions for user user_mpe0xo17h by user_mpe0xo17h, IP: 127.0.0.1","timestamp":"2025-04-23T00:13:07.023Z"}
+{"level":"info","message":"Super Admin bypass for user user_mpe0xo17h","timestamp":"2025-04-23T00:13:07.160Z"}
+{"level":"info","message":"Super Admin bypass for user user_mpe0xo17h","timestamp":"2025-04-23T00:13:07.164Z"}
+{"level":"info","message":"Fetched all users by user user_mpe0xo17h, IP: 127.0.0.1","timestamp":"2025-04-23T00:13:07.271Z"}
+{"level":"info","message":"Fetched all timesheets by user user_mpe0xo17h, IP: 127.0.0.1","timestamp":"2025-04-23T00:13:07.351Z"}
+{"level":"info","message":"Fetched roles for user user_mpe0xo17h by user_mpe0xo17h, IP: 127.0.0.1","timestamp":"2025-04-23T00:13:19.250Z"}
+{"level":"info","message":"Fetched effective permissions for user user_mpe0xo17h by user_mpe0xo17h, IP: 127.0.0.1","timestamp":"2025-04-23T00:13:19.395Z"}
+{"level":"info","message":"Fetched roles for user user_mpe0xo17h by user_mpe0xo17h, IP: 127.0.0.1","timestamp":"2025-04-23T00:13:19.756Z"}
+{"level":"info","message":"Fetched effective permissions for user user_mpe0xo17h by user_mpe0xo17h, IP: 127.0.0.1","timestamp":"2025-04-23T00:13:19.863Z"}
+{"level":"info","message":"Fetched roles for user user_mpe0xo17h by user_mpe0xo17h, IP: 127.0.0.1","timestamp":"2025-04-23T00:13:26.624Z"}
+{"level":"info","message":"Fetched effective permissions for user user_mpe0xo17h by user_mpe0xo17h, IP: 127.0.0.1","timestamp":"2025-04-23T00:13:26.634Z"}
+{"level":"info","message":"Fetched effective permissions for user user_mpe0xo17h by user_mpe0xo17h, IP: 127.0.0.1","timestamp":"2025-04-23T00:13:27.413Z"}
+{"level":"info","message":"Fetched roles for user user_mpe0xo17h by user_mpe0xo17h, IP: 127.0.0.1","timestamp":"2025-04-23T00:13:27.425Z"}
+{"level":"info","message":"Fetched effective permissions for user user_mpe0xo17h by user_mpe0xo17h, IP: 127.0.0.1","timestamp":"2025-04-23T00:13:56.726Z"}
+{"level":"info","message":"Fetched roles for user user_mpe0xo17h by user_mpe0xo17h, IP: 127.0.0.1","timestamp":"2025-04-23T00:13:56.736Z"}
+{"level":"info","message":"Fetched roles for user user_mpe0xo17h by user_mpe0xo17h, IP: 127.0.0.1","timestamp":"2025-04-23T00:13:57.306Z"}
+{"level":"info","message":"Fetched effective permissions for user user_mpe0xo17h by user_mpe0xo17h, IP: 127.0.0.1","timestamp":"2025-04-23T00:13:57.314Z"}
+{"level":"info","message":"Fetched roles for user user_mpe0xo17h by user_mpe0xo17h, IP: 127.0.0.1","timestamp":"2025-04-23T00:14:58.641Z"}
+{"level":"info","message":"Fetched effective permissions for user user_mpe0xo17h by user_mpe0xo17h, IP: 127.0.0.1","timestamp":"2025-04-23T00:14:58.650Z"}
+{"level":"info","message":"Fetched roles for user user_mpe0xo17h by user_mpe0xo17h, IP: 127.0.0.1","timestamp":"2025-04-23T00:14:59.158Z"}
+{"level":"info","message":"Fetched effective permissions for user user_mpe0xo17h by user_mpe0xo17h, IP: 127.0.0.1","timestamp":"2025-04-23T00:14:59.168Z"}
+{"level":"info","message":"Fetched roles for user user_mpe0xo17h by user_mpe0xo17h, IP: 127.0.0.1","timestamp":"2025-04-23T00:15:03.233Z"}
+{"level":"info","message":"Fetched effective permissions for user user_mpe0xo17h by user_mpe0xo17h, IP: 127.0.0.1","timestamp":"2025-04-23T00:15:03.241Z"}
+{"level":"info","message":"Super Admin bypass for user user_mpe0xo17h","timestamp":"2025-04-23T00:15:03.653Z"}
+{"level":"info","message":"Super Admin bypass for user user_mpe0xo17h","timestamp":"2025-04-23T00:15:03.664Z"}
+{"level":"info","message":"Fetched all users by user user_mpe0xo17h, IP: 127.0.0.1","timestamp":"2025-04-23T00:15:03.882Z"}
+{"level":"info","message":"Fetched roles for user user_mpe0xo17h by user_mpe0xo17h, IP: 127.0.0.1","timestamp":"2025-04-23T00:15:03.993Z"}
+{"level":"info","message":"Fetched all timesheets by user user_mpe0xo17h, IP: 127.0.0.1","timestamp":"2025-04-23T00:15:04.039Z"}
+{"level":"info","message":"Fetched effective permissions for user user_mpe0xo17h by user_mpe0xo17h, IP: 127.0.0.1","timestamp":"2025-04-23T00:15:04.362Z"}
+{"level":"info","message":"Fetched notification preferences for user: user_mpe0xo17h, IP: 127.0.0.1","timestamp":"2025-04-23T00:15:05.138Z"}
+{"level":"info","message":"Fetched profile for user user_mpe0xo17h, IP: 127.0.0.1","timestamp":"2025-04-23T00:15:05.235Z"}
+{"level":"warn","message":"No refresh token provided","timestamp":"2025-04-23T00:16:28.992Z"}
+{"level":"warn","message":"No refresh token provided","timestamp":"2025-04-23T00:16:30.049Z"}
+{"level":"warn","message":"No refresh token provided","timestamp":"2025-04-23T00:16:31.093Z"}
+{"level":"info","message":"User logged out, cookies cleared","timestamp":"2025-04-23T00:16:31.151Z"}
+{"level":"warn","message":"No access token provided","timestamp":"2025-04-23T00:20:39.355Z"}
+{"level":"warn","message":"No access token provided","timestamp":"2025-04-23T00:20:39.384Z"}
+{"level":"info","message":"Initiating token refresh","timestamp":"2025-04-23T00:20:39.400Z"}
+{"level":"info","message":"Initiating token refresh","timestamp":"2025-04-23T00:20:39.502Z"}
+{"accessTokenExpiresIn":900,"level":"info","message":"Tokens refreshed successfully","refreshTokenRotatedAt":"2025-04-23T00:20:41.361Z","timestamp":"2025-04-23T00:20:41.364Z"}
+{"level":"info","message":"Refresh token successful","timestamp":"2025-04-23T00:20:41.367Z"}
+{"accessTokenExpiresIn":900,"level":"info","message":"Tokens refreshed successfully","refreshTokenRotatedAt":"2025-04-23T00:20:41.380Z","timestamp":"2025-04-23T00:20:41.380Z"}
+{"level":"info","message":"Refresh token successful","timestamp":"2025-04-23T00:20:41.381Z"}
+{"level":"info","message":"Fetched notification preferences for user: user_mpe0xo17h, IP: 127.0.0.1","timestamp":"2025-04-23T00:20:42.353Z"}
+{"level":"info","message":"Fetched profile for user user_mpe0xo17h, IP: 127.0.0.1","timestamp":"2025-04-23T00:20:42.515Z"}
+{"level":"info","message":"Keycloak admin token obtained","timestamp":"2025-04-23T00:20:56.690Z"}
+{"level":"info","message":"Login response generated for user user_mpe0xo17h","timestamp":"2025-04-23T00:20:57.713Z"}
+{"level":"info","message":"Login attempt for superadmin@example.com, requires2FA: false","timestamp":"2025-04-23T00:20:57.714Z"}
+{"level":"info","message":"Keycloak admin token obtained","timestamp":"2025-04-23T00:20:57.936Z"}
+{"level":"info","message":"Login response generated for user user_mpe0xo17h","timestamp":"2025-04-23T00:20:58.732Z"}
+{"level":"info","message":"Login attempt for superadmin@example.com, requires2FA: false","timestamp":"2025-04-23T00:20:58.733Z"}
+{"level":"info","message":"Fetched notification preferences for user: user_mpe0xo17h, IP: 127.0.0.1","timestamp":"2025-04-23T00:20:59.537Z"}
+{"level":"info","message":"Fetched roles for user user_mpe0xo17h by user_mpe0xo17h, IP: 127.0.0.1","timestamp":"2025-04-23T00:20:59.615Z"}
+{"level":"info","message":"Fetched effective permissions for user user_mpe0xo17h by user_mpe0xo17h, IP: 127.0.0.1","timestamp":"2025-04-23T00:20:59.628Z"}
+{"level":"info","message":"Fetched profile for user user_mpe0xo17h, IP: 127.0.0.1","timestamp":"2025-04-23T00:20:59.647Z"}
+{"level":"info","message":"Super Admin bypass for user user_mpe0xo17h","timestamp":"2025-04-23T00:22:14.777Z"}
+{"level":"info","message":"Super Admin bypass for user user_mpe0xo17h","timestamp":"2025-04-23T00:22:14.780Z"}
+{"level":"info","message":"Fetched all users by user user_mpe0xo17h, IP: 127.0.0.1","timestamp":"2025-04-23T00:22:14.951Z"}
+{"level":"info","message":"Fetched all timesheets by user user_mpe0xo17h, IP: 127.0.0.1","timestamp":"2025-04-23T00:22:15.122Z"}
+{"level":"info","message":"Fetched effective permissions for user user_mpe0xo17h by user_mpe0xo17h, IP: 127.0.0.1","timestamp":"2025-04-23T00:22:19.218Z"}
+{"level":"info","message":"Fetched roles for user user_mpe0xo17h by user_mpe0xo17h, IP: 127.0.0.1","timestamp":"2025-04-23T00:22:19.228Z"}
+{"level":"info","message":"Fetched roles for user user_mpe0xo17h by user_mpe0xo17h, IP: 127.0.0.1","timestamp":"2025-04-23T00:22:20.037Z"}
+{"level":"info","message":"Fetched effective permissions for user user_mpe0xo17h by user_mpe0xo17h, IP: 127.0.0.1","timestamp":"2025-04-23T00:22:20.062Z"}
+{"level":"info","message":"Super Admin bypass for user user_mpe0xo17h","timestamp":"2025-04-23T00:22:20.220Z"}
+{"level":"info","message":"Super Admin bypass for user user_mpe0xo17h","timestamp":"2025-04-23T00:22:20.222Z"}
+{"level":"info","message":"Fetched all users by user user_mpe0xo17h, IP: 127.0.0.1","timestamp":"2025-04-23T00:22:20.319Z"}
+{"level":"info","message":"Fetched all timesheets by user user_mpe0xo17h, IP: 127.0.0.1","timestamp":"2025-04-23T00:22:20.422Z"}
+{"level":"info","message":"Fetched roles for user user_mpe0xo17h by user_mpe0xo17h, IP: 127.0.0.1","timestamp":"2025-04-23T00:22:36.869Z"}
+{"level":"info","message":"Fetched effective permissions for user user_mpe0xo17h by user_mpe0xo17h, IP: 127.0.0.1","timestamp":"2025-04-23T00:22:36.989Z"}
+{"level":"info","message":"Fetched roles for user user_mpe0xo17h by user_mpe0xo17h, IP: 127.0.0.1","timestamp":"2025-04-23T00:22:37.402Z"}
+{"level":"info","message":"Fetched effective permissions for user user_mpe0xo17h by user_mpe0xo17h, IP: 127.0.0.1","timestamp":"2025-04-23T00:22:37.518Z"}
+{"level":"info","message":"Super Admin bypass for user user_mpe0xo17h","timestamp":"2025-04-23T00:22:37.745Z"}
+{"level":"info","message":"Super Admin bypass for user user_mpe0xo17h","timestamp":"2025-04-23T00:22:37.755Z"}
+{"level":"info","message":"Fetched all users by user user_mpe0xo17h, IP: 127.0.0.1","timestamp":"2025-04-23T00:22:37.834Z"}
+{"level":"info","message":"Fetched all timesheets by user user_mpe0xo17h, IP: 127.0.0.1","timestamp":"2025-04-23T00:22:37.940Z"}
+{"level":"info","message":"Fetched roles for user user_mpe0xo17h by user_mpe0xo17h, IP: 127.0.0.1","timestamp":"2025-04-23T00:22:40.332Z"}
+{"level":"info","message":"Fetched effective permissions for user user_mpe0xo17h by user_mpe0xo17h, IP: 127.0.0.1","timestamp":"2025-04-23T00:22:40.341Z"}
+{"level":"info","message":"Fetched roles for user user_mpe0xo17h by user_mpe0xo17h, IP: 127.0.0.1","timestamp":"2025-04-23T00:22:40.982Z"}
+{"level":"info","message":"Fetched effective permissions for user user_mpe0xo17h by user_mpe0xo17h, IP: 127.0.0.1","timestamp":"2025-04-23T00:22:40.991Z"}
+{"level":"info","message":"Super Admin bypass for user user_mpe0xo17h","timestamp":"2025-04-23T00:22:41.138Z"}
+{"level":"info","message":"Super Admin bypass for user user_mpe0xo17h","timestamp":"2025-04-23T00:22:41.165Z"}
+{"level":"info","message":"Fetched all users by user user_mpe0xo17h, IP: 127.0.0.1","timestamp":"2025-04-23T00:22:41.235Z"}
+{"level":"info","message":"Fetched all timesheets by user user_mpe0xo17h, IP: 127.0.0.1","timestamp":"2025-04-23T00:22:41.377Z"}
+{"level":"info","message":"Fetched roles for user user_mpe0xo17h by user_mpe0xo17h, IP: 127.0.0.1","timestamp":"2025-04-23T00:23:10.879Z"}
+{"level":"info","message":"Fetched effective permissions for user user_mpe0xo17h by user_mpe0xo17h, IP: 127.0.0.1","timestamp":"2025-04-23T00:23:10.890Z"}
+{"level":"info","message":"Fetched roles for user user_mpe0xo17h by user_mpe0xo17h, IP: 127.0.0.1","timestamp":"2025-04-23T00:23:11.838Z"}
+{"level":"info","message":"Fetched effective permissions for user user_mpe0xo17h by user_mpe0xo17h, IP: 127.0.0.1","timestamp":"2025-04-23T00:23:11.849Z"}
+{"level":"info","message":"Super Admin bypass for user user_mpe0xo17h","timestamp":"2025-04-23T00:23:11.993Z"}
+{"level":"info","message":"Super Admin bypass for user user_mpe0xo17h","timestamp":"2025-04-23T00:23:12.032Z"}
+{"level":"info","message":"Fetched all users by user user_mpe0xo17h, IP: 127.0.0.1","timestamp":"2025-04-23T00:23:12.128Z"}
+{"level":"info","message":"Fetched all timesheets by user user_mpe0xo17h, IP: 127.0.0.1","timestamp":"2025-04-23T00:23:12.177Z"}
+{"level":"info","message":"Fetched roles for user user_mpe0xo17h by user_mpe0xo17h, IP: 127.0.0.1","timestamp":"2025-04-23T00:23:18.179Z"}
+{"level":"info","message":"Fetched effective permissions for user user_mpe0xo17h by user_mpe0xo17h, IP: 127.0.0.1","timestamp":"2025-04-23T00:23:18.188Z"}
+{"level":"info","message":"Fetched roles for user user_mpe0xo17h by user_mpe0xo17h, IP: 127.0.0.1","timestamp":"2025-04-23T00:23:18.959Z"}
+{"level":"info","message":"Fetched effective permissions for user user_mpe0xo17h by user_mpe0xo17h, IP: 127.0.0.1","timestamp":"2025-04-23T00:23:18.969Z"}
+{"level":"info","message":"Super Admin bypass for user user_mpe0xo17h","timestamp":"2025-04-23T00:23:19.096Z"}
+{"level":"info","message":"Super Admin bypass for user user_mpe0xo17h","timestamp":"2025-04-23T00:23:19.101Z"}
+{"level":"info","message":"Fetched all users by user user_mpe0xo17h, IP: 127.0.0.1","timestamp":"2025-04-23T00:23:19.222Z"}
+{"level":"info","message":"Fetched all timesheets by user user_mpe0xo17h, IP: 127.0.0.1","timestamp":"2025-04-23T00:23:19.366Z"}
+{"level":"info","message":"Super Admin bypass for user user_mpe0xo17h","timestamp":"2025-04-23T00:23:32.275Z"}
+{"level":"info","message":"Super Admin bypass for user user_mpe0xo17h","timestamp":"2025-04-23T00:23:32.289Z"}
+{"level":"info","message":"Fetched all users by user user_mpe0xo17h, IP: 127.0.0.1","timestamp":"2025-04-23T00:23:32.430Z"}
+{"level":"info","message":"Fetched all timesheets by user user_mpe0xo17h, IP: 127.0.0.1","timestamp":"2025-04-23T00:23:32.715Z"}
+{"level":"info","message":"Super Admin bypass for user user_mpe0xo17h","timestamp":"2025-04-23T00:23:40.519Z"}
+{"level":"info","message":"Super Admin bypass for user user_mpe0xo17h","timestamp":"2025-04-23T00:23:40.542Z"}
+{"level":"info","message":"Fetched all users by user user_mpe0xo17h, IP: 127.0.0.1","timestamp":"2025-04-23T00:23:40.650Z"}
+{"level":"info","message":"Fetched all timesheets by user user_mpe0xo17h, IP: 127.0.0.1","timestamp":"2025-04-23T00:23:40.761Z"}
+{"level":"info","message":"Super Admin bypass for user user_mpe0xo17h","timestamp":"2025-04-23T00:23:55.159Z"}
+{"level":"info","message":"Super Admin bypass for user user_mpe0xo17h","timestamp":"2025-04-23T00:23:55.162Z"}
+{"level":"info","message":"Fetched all users by user user_mpe0xo17h, IP: 127.0.0.1","timestamp":"2025-04-23T00:23:55.299Z"}
+{"level":"info","message":"Fetched all timesheets by user user_mpe0xo17h, IP: 127.0.0.1","timestamp":"2025-04-23T00:23:55.377Z"}
+{"level":"info","message":"Fetched roles for user user_mpe0xo17h by user_mpe0xo17h, IP: 127.0.0.1","timestamp":"2025-04-23T00:23:58.787Z"}
+{"level":"info","message":"Fetched effective permissions for user user_mpe0xo17h by user_mpe0xo17h, IP: 127.0.0.1","timestamp":"2025-04-23T00:23:58.796Z"}
+{"level":"info","message":"Fetched roles for user user_mpe0xo17h by user_mpe0xo17h, IP: 127.0.0.1","timestamp":"2025-04-23T00:23:59.379Z"}
+{"level":"info","message":"Fetched effective permissions for user user_mpe0xo17h by user_mpe0xo17h, IP: 127.0.0.1","timestamp":"2025-04-23T00:23:59.391Z"}
+{"level":"info","message":"Super Admin bypass for user user_mpe0xo17h","timestamp":"2025-04-23T00:23:59.566Z"}
+{"level":"info","message":"Super Admin bypass for user user_mpe0xo17h","timestamp":"2025-04-23T00:23:59.568Z"}
+{"level":"info","message":"Fetched all users by user user_mpe0xo17h, IP: 127.0.0.1","timestamp":"2025-04-23T00:23:59.698Z"}
+{"level":"info","message":"Fetched all timesheets by user user_mpe0xo17h, IP: 127.0.0.1","timestamp":"2025-04-23T00:23:59.774Z"}
+{"level":"info","message":"Super Admin bypass for user user_mpe0xo17h","timestamp":"2025-04-23T00:24:06.744Z"}
+{"level":"info","message":"Super Admin bypass for user user_mpe0xo17h","timestamp":"2025-04-23T00:24:06.747Z"}
+{"level":"info","message":"Fetched all users by user user_mpe0xo17h, IP: 127.0.0.1","timestamp":"2025-04-23T00:24:06.851Z"}
+{"level":"info","message":"Fetched all timesheets by user user_mpe0xo17h, IP: 127.0.0.1","timestamp":"2025-04-23T00:24:06.923Z"}
+{"level":"info","message":"Super Admin bypass for user user_mpe0xo17h","timestamp":"2025-04-23T00:24:11.988Z"}
+{"level":"info","message":"Super Admin bypass for user user_mpe0xo17h","timestamp":"2025-04-23T00:24:11.990Z"}
+{"level":"info","message":"Fetched all users by user user_mpe0xo17h, IP: 127.0.0.1","timestamp":"2025-04-23T00:24:12.095Z"}
+{"level":"info","message":"Fetched all timesheets by user user_mpe0xo17h, IP: 127.0.0.1","timestamp":"2025-04-23T00:24:12.208Z"}
+{"level":"info","message":"Fetched effective permissions for user user_mpe0xo17h by user_mpe0xo17h, IP: 127.0.0.1","timestamp":"2025-04-23T00:24:16.908Z"}
+{"level":"info","message":"Fetched roles for user user_mpe0xo17h by user_mpe0xo17h, IP: 127.0.0.1","timestamp":"2025-04-23T00:24:16.915Z"}
+{"level":"info","message":"Fetched roles for user user_mpe0xo17h by user_mpe0xo17h, IP: 127.0.0.1","timestamp":"2025-04-23T00:24:17.684Z"}
+{"level":"info","message":"Fetched effective permissions for user user_mpe0xo17h by user_mpe0xo17h, IP: 127.0.0.1","timestamp":"2025-04-23T00:24:17.691Z"}
+{"level":"info","message":"Super Admin bypass for user user_mpe0xo17h","timestamp":"2025-04-23T00:24:17.758Z"}
+{"level":"info","message":"Super Admin bypass for user user_mpe0xo17h","timestamp":"2025-04-23T00:24:17.765Z"}
+{"level":"info","message":"Fetched all users by user user_mpe0xo17h, IP: 127.0.0.1","timestamp":"2025-04-23T00:24:17.882Z"}
+{"level":"info","message":"Fetched all timesheets by user user_mpe0xo17h, IP: 127.0.0.1","timestamp":"2025-04-23T00:24:17.977Z"}
+{"level":"info","message":"Fetched effective permissions for user user_mpe0xo17h by user_mpe0xo17h, IP: 127.0.0.1","timestamp":"2025-04-23T00:24:23.472Z"}
+{"level":"info","message":"Fetched roles for user user_mpe0xo17h by user_mpe0xo17h, IP: 127.0.0.1","timestamp":"2025-04-23T00:24:23.481Z"}
+{"level":"info","message":"Fetched roles for user user_mpe0xo17h by user_mpe0xo17h, IP: 127.0.0.1","timestamp":"2025-04-23T00:24:24.318Z"}
+{"level":"info","message":"Fetched effective permissions for user user_mpe0xo17h by user_mpe0xo17h, IP: 127.0.0.1","timestamp":"2025-04-23T00:24:24.327Z"}
+{"level":"info","message":"Super Admin bypass for user user_mpe0xo17h","timestamp":"2025-04-23T00:24:24.418Z"}
+{"level":"info","message":"Super Admin bypass for user user_mpe0xo17h","timestamp":"2025-04-23T00:24:24.421Z"}
+{"level":"info","message":"Fetched all users by user user_mpe0xo17h, IP: 127.0.0.1","timestamp":"2025-04-23T00:24:24.546Z"}
+{"level":"info","message":"Fetched all timesheets by user user_mpe0xo17h, IP: 127.0.0.1","timestamp":"2025-04-23T00:24:24.634Z"}
+{"level":"info","message":"Fetched effective permissions for user user_mpe0xo17h by user_mpe0xo17h, IP: 127.0.0.1","timestamp":"2025-04-23T00:24:32.476Z"}
+{"level":"info","message":"Fetched roles for user user_mpe0xo17h by user_mpe0xo17h, IP: 127.0.0.1","timestamp":"2025-04-23T00:24:32.483Z"}
+{"level":"info","message":"Fetched roles for user user_mpe0xo17h by user_mpe0xo17h, IP: 127.0.0.1","timestamp":"2025-04-23T00:24:33.237Z"}
+{"level":"info","message":"Fetched effective permissions for user user_mpe0xo17h by user_mpe0xo17h, IP: 127.0.0.1","timestamp":"2025-04-23T00:24:33.246Z"}
+{"level":"info","message":"Super Admin bypass for user user_mpe0xo17h","timestamp":"2025-04-23T00:24:33.358Z"}
+{"level":"info","message":"Super Admin bypass for user user_mpe0xo17h","timestamp":"2025-04-23T00:24:33.360Z"}
+{"level":"info","message":"Fetched all users by user user_mpe0xo17h, IP: 127.0.0.1","timestamp":"2025-04-23T00:24:33.484Z"}
+{"level":"info","message":"Fetched all timesheets by user user_mpe0xo17h, IP: 127.0.0.1","timestamp":"2025-04-23T00:24:33.580Z"}
+{"level":"info","message":"Super Admin bypass for user user_mpe0xo17h","timestamp":"2025-04-23T00:24:45.648Z"}
+{"ip":null,"level":"info","message":"Fetched 12 receipt books in 850ms","timestamp":"2025-04-23T00:24:46.500Z"}
+{"level":"info","message":"Fetched 12 receipt books by user user_mpe0xo17h in 852ms, IP: 127.0.0.1","timestamp":"2025-04-23T00:24:46.502Z"}
+{"level":"info","message":"Super Admin bypass for user user_mpe0xo17h","timestamp":"2025-04-23T00:24:46.595Z"}
+{"level":"info","message":"Fetched user bc51ac0d-9d6b-4852-96a6-323ec1c3db6a by user user_mpe0xo17h, IP: 127.0.0.1","timestamp":"2025-04-23T00:24:46.730Z"}
+{"level":"info","message":"Super Admin bypass for user user_mpe0xo17h","timestamp":"2025-04-23T00:24:47.092Z"}
+{"level":"info","message":"Fetched user 95beb7d8-e9d5-43bc-a954-3493d9ae8387 by user user_mpe0xo17h, IP: 127.0.0.1","timestamp":"2025-04-23T00:24:47.198Z"}
+{"level":"info","message":"Super Admin bypass for user user_mpe0xo17h","timestamp":"2025-04-23T00:24:47.593Z"}
+{"level":"info","message":"Fetched user d26127aa-c142-46fa-8dfe-a1be0b5d5a1e by user user_mpe0xo17h, IP: 127.0.0.1","timestamp":"2025-04-23T00:24:47.689Z"}
+{"level":"info","message":"Super Admin bypass for user user_mpe0xo17h","timestamp":"2025-04-23T00:24:48.083Z"}
+{"level":"info","message":"Fetched user b90e1335-26a1-4e84-a6c4-db2c7f11f45d by user user_mpe0xo17h, IP: 127.0.0.1","timestamp":"2025-04-23T00:24:48.190Z"}
+{"level":"warn","message":"No refresh token provided","timestamp":"2025-04-23T00:31:01.406Z"}
+{"level":"warn","message":"No refresh token provided","timestamp":"2025-04-23T00:31:02.946Z"}
+{"level":"warn","message":"No refresh token provided","timestamp":"2025-04-23T00:31:04.136Z"}
+{"level":"info","message":"User logged out, cookies cleared","timestamp":"2025-04-23T00:31:04.219Z"}
+{"level":"info","message":"Keycloak admin token obtained","timestamp":"2025-04-23T00:41:13.810Z"}
+{"level":"info","message":"Login response generated for user user_mpe0xo17h","timestamp":"2025-04-23T00:41:16.665Z"}
+{"level":"info","message":"Login attempt for superadmin@example.com, requires2FA: false","timestamp":"2025-04-23T00:41:16.678Z"}
+{"level":"info","message":"Keycloak admin token obtained","timestamp":"2025-04-23T00:41:17.265Z"}
+{"level":"info","message":"Login response generated for user user_mpe0xo17h","timestamp":"2025-04-23T00:41:19.151Z"}
+{"level":"info","message":"Login attempt for superadmin@example.com, requires2FA: false","timestamp":"2025-04-23T00:41:19.158Z"}
+{"level":"info","message":"Fetched effective permissions for user user_mpe0xo17h by user_mpe0xo17h, IP: 127.0.0.1","timestamp":"2025-04-23T00:41:19.930Z"}
+{"level":"info","message":"Fetched roles for user user_mpe0xo17h by user_mpe0xo17h, IP: 127.0.0.1","timestamp":"2025-04-23T00:41:19.943Z"}
+{"level":"info","message":"Super Admin bypass for user user_mpe0xo17h","timestamp":"2025-04-23T00:41:20.685Z"}
+{"ip":null,"level":"info","message":"Fetched 12 receipt books in 615ms","timestamp":"2025-04-23T00:41:21.302Z"}
+{"level":"info","message":"Fetched 12 receipt books by user user_mpe0xo17h in 622ms, IP: 127.0.0.1","timestamp":"2025-04-23T00:41:21.308Z"}
+{"level":"info","message":"Super Admin bypass for user user_mpe0xo17h","timestamp":"2025-04-23T00:41:21.377Z"}
+{"level":"info","message":"Fetched user bc51ac0d-9d6b-4852-96a6-323ec1c3db6a by user user_mpe0xo17h, IP: 127.0.0.1","timestamp":"2025-04-23T00:41:21.481Z"}
+{"level":"info","message":"Super Admin bypass for user user_mpe0xo17h","timestamp":"2025-04-23T00:41:21.883Z"}
+{"level":"info","message":"Fetched user 95beb7d8-e9d5-43bc-a954-3493d9ae8387 by user user_mpe0xo17h, IP: 127.0.0.1","timestamp":"2025-04-23T00:41:21.995Z"}
+{"level":"info","message":"Super Admin bypass for user user_mpe0xo17h","timestamp":"2025-04-23T00:41:22.398Z"}
+{"level":"info","message":"Fetched user d26127aa-c142-46fa-8dfe-a1be0b5d5a1e by user user_mpe0xo17h, IP: 127.0.0.1","timestamp":"2025-04-23T00:41:22.500Z"}
+{"level":"info","message":"Super Admin bypass for user user_mpe0xo17h","timestamp":"2025-04-23T00:41:22.875Z"}
+{"level":"info","message":"Fetched user b90e1335-26a1-4e84-a6c4-db2c7f11f45d by user user_mpe0xo17h, IP: 127.0.0.1","timestamp":"2025-04-23T00:41:22.965Z"}
+{"level":"info","message":"Super Admin bypass for user user_mpe0xo17h","timestamp":"2025-04-23T00:41:36.361Z"}
+{"level":"info","message":"Fetched notification rules by user: user_mpe0xo17h, IP: 127.0.0.1","timestamp":"2025-04-23T00:41:36.367Z"}
+{"level":"info","message":"Super Admin bypass for user user_mpe0xo17h","timestamp":"2025-04-23T00:41:36.396Z"}
+{"level":"info","message":"Fetched notification rules by user: user_mpe0xo17h, IP: 127.0.0.1","timestamp":"2025-04-23T00:41:36.398Z"}
+{"level":"info","message":"Super Admin bypass for user user_mpe0xo17h","timestamp":"2025-04-23T00:41:36.425Z"}
+{"level":"info","message":"Fetched notification rules by user: user_mpe0xo17h, IP: 127.0.0.1","timestamp":"2025-04-23T00:41:36.429Z"}
+{"level":"info","message":"Super Admin bypass for user user_mpe0xo17h","timestamp":"2025-04-23T00:41:44.723Z"}
+{"level":"info","message":"Fetched notification rules by user: user_mpe0xo17h, IP: 127.0.0.1","timestamp":"2025-04-23T00:41:44.727Z"}
+{"level":"info","message":"Fetched effective permissions for user user_mpe0xo17h by user_mpe0xo17h, IP: 127.0.0.1","timestamp":"2025-04-23T00:42:25.382Z"}
+{"level":"info","message":"Fetched roles for user user_mpe0xo17h by user_mpe0xo17h, IP: 127.0.0.1","timestamp":"2025-04-23T00:42:25.394Z"}
+{"level":"info","message":"Super Admin bypass for user user_mpe0xo17h","timestamp":"2025-04-23T00:42:25.745Z"}
+{"level":"info","message":"Fetched notification rules by user: user_mpe0xo17h, IP: 127.0.0.1","timestamp":"2025-04-23T00:42:25.869Z"}
+{"level":"info","message":"Fetched roles for user user_mpe0xo17h by user_mpe0xo17h, IP: 127.0.0.1","timestamp":"2025-04-23T00:42:26.073Z"}
+{"level":"info","message":"Fetched effective permissions for user user_mpe0xo17h by user_mpe0xo17h, IP: 127.0.0.1","timestamp":"2025-04-23T00:42:26.085Z"}
+{"level":"info","message":"Super Admin bypass for user user_mpe0xo17h","timestamp":"2025-04-23T00:42:26.405Z"}
+{"level":"info","message":"Fetched notification rules by user: user_mpe0xo17h, IP: 127.0.0.1","timestamp":"2025-04-23T00:42:26.408Z"}
+{"level":"info","message":"Super Admin bypass for user user_mpe0xo17h","timestamp":"2025-04-23T00:42:26.432Z"}
+{"level":"info","message":"Fetched notification rules by user: user_mpe0xo17h, IP: 127.0.0.1","timestamp":"2025-04-23T00:42:26.435Z"}
+{"level":"info","message":"Fetched roles for user user_mpe0xo17h by user_mpe0xo17h, IP: 127.0.0.1","timestamp":"2025-04-23T00:42:46.512Z"}
+{"level":"info","message":"Fetched effective permissions for user user_mpe0xo17h by user_mpe0xo17h, IP: 127.0.0.1","timestamp":"2025-04-23T00:42:46.521Z"}
+{"level":"info","message":"Fetched roles for user user_mpe0xo17h by user_mpe0xo17h, IP: 127.0.0.1","timestamp":"2025-04-23T00:42:47.032Z"}
+{"level":"info","message":"Fetched effective permissions for user user_mpe0xo17h by user_mpe0xo17h, IP: 127.0.0.1","timestamp":"2025-04-23T00:42:47.039Z"}
+{"level":"info","message":"Super Admin bypass for user user_mpe0xo17h","timestamp":"2025-04-23T00:42:47.273Z"}
+{"level":"info","message":"Fetched notification rules by user: user_mpe0xo17h, IP: 127.0.0.1","timestamp":"2025-04-23T00:42:47.276Z"}
+{"level":"info","message":"Super Admin bypass for user user_mpe0xo17h","timestamp":"2025-04-23T00:42:47.302Z"}
+{"level":"info","message":"Fetched notification rules by user: user_mpe0xo17h, IP: 127.0.0.1","timestamp":"2025-04-23T00:42:47.304Z"}
+{"level":"info","message":"Super Admin bypass for user user_mpe0xo17h","timestamp":"2025-04-23T00:42:47.332Z"}
+{"level":"info","message":"Fetched notification rules by user: user_mpe0xo17h, IP: 127.0.0.1","timestamp":"2025-04-23T00:42:47.334Z"}
+{"level":"info","message":"Super Admin bypass for user user_mpe0xo17h","timestamp":"2025-04-23T00:42:52.268Z"}
+{"level":"info","message":"Fetched notification rules by user: user_mpe0xo17h, IP: 127.0.0.1","timestamp":"2025-04-23T00:42:52.270Z"}
+{"level":"info","message":"Super Admin bypass for user user_mpe0xo17h","timestamp":"2025-04-23T00:42:53.746Z"}
+{"level":"info","message":"Fetched notification rules by user: user_mpe0xo17h, IP: 127.0.0.1","timestamp":"2025-04-23T00:42:53.748Z"}
+{"level":"info","message":"Super Admin bypass for user user_mpe0xo17h","timestamp":"2025-04-23T00:42:55.228Z"}
+{"level":"info","message":"Fetched all reasons by user user_mpe0xo17h, IP: 127.0.0.1","timestamp":"2025-04-23T00:42:55.455Z"}
+{"level":"info","message":"Super Admin bypass for user user_mpe0xo17h","timestamp":"2025-04-23T00:42:57.147Z"}
+{"level":"info","message":"Fetched all users by user user_mpe0xo17h, IP: 127.0.0.1","timestamp":"2025-04-23T00:42:57.295Z"}
+{"level":"info","message":"Super Admin bypass for user user_mpe0xo17h","timestamp":"2025-04-23T00:42:57.791Z"}
+{"level":"info","message":"Fetched all roles by user user_mpe0xo17h, IP: 127.0.0.1","timestamp":"2025-04-23T00:42:57.997Z"}
+{"level":"info","message":"Super Admin bypass for user user_mpe0xo17h","timestamp":"2025-04-23T00:42:58.721Z"}
+{"level":"info","message":"Fetched all users by user user_mpe0xo17h, IP: 127.0.0.1","timestamp":"2025-04-23T00:42:58.831Z"}
+{"level":"info","message":"Super Admin bypass for user user_mpe0xo17h","timestamp":"2025-04-23T00:43:00.513Z"}
+{"level":"info","message":"Fetched all users by user user_mpe0xo17h, IP: 127.0.0.1","timestamp":"2025-04-23T00:43:00.640Z"}
+{"level":"info","message":"Super Admin bypass for user user_mpe0xo17h","timestamp":"2025-04-23T00:43:02.038Z"}
+{"level":"info","message":"Fetched all users by user user_mpe0xo17h, IP: 127.0.0.1","timestamp":"2025-04-23T00:43:02.151Z"}
+{"level":"info","message":"Super Admin bypass for user user_mpe0xo17h","timestamp":"2025-04-23T00:43:02.703Z"}
+{"level":"info","message":"Fetched all users by user user_mpe0xo17h, IP: 127.0.0.1","timestamp":"2025-04-23T00:43:02.800Z"}
+{"level":"info","message":"Super Admin bypass for user user_mpe0xo17h","timestamp":"2025-04-23T00:43:08.424Z"}
+{"level":"info","message":"Fetched all permissions by user user_mpe0xo17h, IP: 127.0.0.1","timestamp":"2025-04-23T00:43:08.535Z"}
+{"level":"info","message":"Super Admin bypass for user user_mpe0xo17h","timestamp":"2025-04-23T00:43:10.391Z"}
+{"level":"info","message":"Fetched all checklists by user user_mpe0xo17h, IP: 127.0.0.1","timestamp":"2025-04-23T00:43:10.547Z"}
+{"level":"info","message":"Super Admin bypass for user user_mpe0xo17h","timestamp":"2025-04-23T00:43:26.822Z"}
+{"level":"info","message":"Super Admin bypass for user user_mpe0xo17h","timestamp":"2025-04-23T00:43:26.912Z"}
+{"level":"info","message":"Fetched all users by user user_mpe0xo17h, IP: 127.0.0.1","timestamp":"2025-04-23T00:43:26.926Z"}
+{"level":"info","message":"Fetched all roles by user user_mpe0xo17h, IP: 127.0.0.1","timestamp":"2025-04-23T00:43:27.064Z"}
+{"level":"info","message":"Fetched roles for user user_mpe0xo17h by user_mpe0xo17h, IP: 127.0.0.1","timestamp":"2025-04-23T00:44:28.803Z"}
+{"level":"info","message":"Fetched effective permissions for user user_mpe0xo17h by user_mpe0xo17h, IP: 127.0.0.1","timestamp":"2025-04-23T00:44:28.827Z"}
+{"level":"info","message":"Super Admin bypass for user user_mpe0xo17h","timestamp":"2025-04-23T00:44:29.249Z"}
+{"level":"info","message":"Super Admin bypass for user user_mpe0xo17h","timestamp":"2025-04-23T00:44:29.259Z"}
+{"level":"info","message":"Super Admin bypass for user user_mpe0xo17h","timestamp":"2025-04-23T00:44:29.269Z"}
+{"level":"info","message":"Fetched notification rules by user: user_mpe0xo17h, IP: 127.0.0.1","timestamp":"2025-04-23T00:44:29.326Z"}
+{"level":"info","message":"Fetched all users by user user_mpe0xo17h, IP: 127.0.0.1","timestamp":"2025-04-23T00:44:29.459Z"}
+{"level":"info","message":"Fetched all roles by user user_mpe0xo17h, IP: 127.0.0.1","timestamp":"2025-04-23T00:44:29.661Z"}
+{"level":"info","message":"Fetched effective permissions for user user_mpe0xo17h by user_mpe0xo17h, IP: 127.0.0.1","timestamp":"2025-04-23T00:44:29.677Z"}
+{"level":"info","message":"Super Admin bypass for user user_mpe0xo17h","timestamp":"2025-04-23T00:44:29.921Z"}
+{"level":"info","message":"Fetched notification rules by user: user_mpe0xo17h, IP: 127.0.0.1","timestamp":"2025-04-23T00:44:29.924Z"}
+{"level":"info","message":"Fetched roles for user user_mpe0xo17h by user_mpe0xo17h, IP: 127.0.0.1","timestamp":"2025-04-23T00:44:30.086Z"}
+{"level":"info","message":"Super Admin bypass for user user_mpe0xo17h","timestamp":"2025-04-23T00:44:32.418Z"}
+{"level":"info","message":"Fetched notification rules by user: user_mpe0xo17h, IP: 127.0.0.1","timestamp":"2025-04-23T00:44:32.422Z"}
+{"level":"info","message":"Super Admin bypass for user user_mpe0xo17h","timestamp":"2025-04-23T00:44:32.443Z"}
+{"level":"info","message":"Fetched notification rules by user: user_mpe0xo17h, IP: 127.0.0.1","timestamp":"2025-04-23T00:44:32.444Z"}
+{"level":"info","message":"Super Admin bypass for user user_mpe0xo17h","timestamp":"2025-04-23T00:44:36.876Z"}
+{"level":"info","message":"Super Admin bypass for user user_mpe0xo17h","timestamp":"2025-04-23T00:44:36.878Z"}
+{"level":"info","message":"Fetched all users by user user_mpe0xo17h, IP: 127.0.0.1","timestamp":"2025-04-23T00:44:36.992Z"}
+{"level":"info","message":"Fetched all roles by user user_mpe0xo17h, IP: 127.0.0.1","timestamp":"2025-04-23T00:44:37.093Z"}
+{"level":"info","message":"Super Admin bypass for user user_mpe0xo17h","timestamp":"2025-04-23T00:44:43.430Z"}
+{"level":"info","message":"Fetched all reasons by user user_mpe0xo17h, IP: 127.0.0.1","timestamp":"2025-04-23T00:44:43.571Z"}
+{"level":"info","message":"Super Admin bypass for user user_mpe0xo17h","timestamp":"2025-04-23T00:44:45.029Z"}
+{"level":"info","message":"Fetched all checklists by user user_mpe0xo17h, IP: 127.0.0.1","timestamp":"2025-04-23T00:44:45.144Z"}
+{"level":"info","message":"Super Admin bypass for user user_mpe0xo17h","timestamp":"2025-04-23T00:44:47.481Z"}
+{"level":"info","message":"Fetched all permissions by user user_mpe0xo17h, IP: 127.0.0.1","timestamp":"2025-04-23T00:44:47.566Z"}
+{"level":"info","message":"Super Admin bypass for user user_mpe0xo17h","timestamp":"2025-04-23T00:44:49.404Z"}
+{"level":"info","message":"Fetched all roles by user user_mpe0xo17h, IP: 127.0.0.1","timestamp":"2025-04-23T00:44:49.605Z"}
+{"level":"info","message":"Super Admin bypass for user user_mpe0xo17h","timestamp":"2025-04-23T00:44:57.239Z"}
+{"level":"info","message":"Fetched all users by user user_mpe0xo17h, IP: 127.0.0.1","timestamp":"2025-04-23T00:44:57.329Z"}
+{"level":"info","message":"Fetched notification preferences for user: user_mpe0xo17h, IP: 127.0.0.1","timestamp":"2025-04-23T00:45:05.430Z"}
+{"level":"info","message":"Fetched profile for user user_mpe0xo17h, IP: 127.0.0.1","timestamp":"2025-04-23T00:45:05.496Z"}
+{"level":"info","message":"Fetched notification preferences for user: user_mpe0xo17h, IP: 127.0.0.1","timestamp":"2025-04-23T00:45:14.440Z"}
+{"level":"info","message":"Fetched profile for user user_mpe0xo17h, IP: 127.0.0.1","timestamp":"2025-04-23T00:45:14.537Z"}
+{"level":"info","message":"Fetched effective permissions for user user_mpe0xo17h by user_mpe0xo17h, IP: 127.0.0.1","timestamp":"2025-04-23T00:45:15.145Z"}
+{"level":"info","message":"Fetched roles for user user_mpe0xo17h by user_mpe0xo17h, IP: 127.0.0.1","timestamp":"2025-04-23T00:45:15.193Z"}
+{"level":"info","message":"Fetched roles for user user_mpe0xo17h by user_mpe0xo17h, IP: 127.0.0.1","timestamp":"2025-04-23T00:45:15.730Z"}
+{"level":"info","message":"Fetched effective permissions for user user_mpe0xo17h by user_mpe0xo17h, IP: 127.0.0.1","timestamp":"2025-04-23T00:45:15.744Z"}
+{"level":"info","message":"Fetched notification preferences for user: user_mpe0xo17h, IP: 127.0.0.1","timestamp":"2025-04-23T00:45:47.660Z"}
+{"level":"info","message":"Fetched profile for user user_mpe0xo17h, IP: 127.0.0.1","timestamp":"2025-04-23T00:45:47.737Z"}
+{"level":"info","message":"Fetched notification preferences for user: user_mpe0xo17h, IP: 127.0.0.1","timestamp":"2025-04-23T00:45:51.448Z"}
+{"level":"info","message":"Fetched effective permissions for user user_mpe0xo17h by user_mpe0xo17h, IP: 127.0.0.1","timestamp":"2025-04-23T00:45:51.838Z"}
+{"level":"info","message":"Fetched profile for user user_mpe0xo17h, IP: 127.0.0.1","timestamp":"2025-04-23T00:45:52.175Z"}
+{"level":"info","message":"Fetched roles for user user_mpe0xo17h by user_mpe0xo17h, IP: 127.0.0.1","timestamp":"2025-04-23T00:45:52.450Z"}
+{"level":"info","message":"Fetched effective permissions for user user_mpe0xo17h by user_mpe0xo17h, IP: 127.0.0.1","timestamp":"2025-04-23T00:45:52.613Z"}
+{"level":"info","message":"Fetched roles for user user_mpe0xo17h by user_mpe0xo17h, IP: 127.0.0.1","timestamp":"2025-04-23T00:45:53.053Z"}
+{"ip":null,"level":"info","message":"User user_mpe0xo17h updated by user user_mpe0xo17h","timestamp":"2025-04-23T00:46:15.810Z"}
+{"level":"info","message":"No active rules found for event: user:profile_updated","timestamp":"2025-04-23T00:46:15.815Z"}
+{"level":"info","message":"Rule already exists for event: user:profile_updated, ruleID: rule_0nQz7INMrUjQG7HwpLTuy, enabled: false","timestamp":"2025-04-23T00:46:15.822Z"}
+{"level":"info","message":"Created disabled rule for event: user:profile_updated, ruleID: rule_0nQz7INMrUjQG7HwpLTuy","timestamp":"2025-04-23T00:46:15.824Z"}
+{"level":"info","message":"Updated profile for user user_mpe0xo17h by user user_mpe0xo17h, IP: 127.0.0.1","timestamp":"2025-04-23T00:46:15.824Z"}
+{"ip":null,"level":"info","message":"User user_mpe0xo17h updated by user user_mpe0xo17h","timestamp":"2025-04-23T00:46:38.438Z"}
+{"level":"info","message":"No active rules found for event: user:profile_updated","timestamp":"2025-04-23T00:46:38.443Z"}
+{"level":"info","message":"Rule already exists for event: user:profile_updated, ruleID: rule_0nQz7INMrUjQG7HwpLTuy, enabled: false","timestamp":"2025-04-23T00:46:38.448Z"}
+{"level":"info","message":"Created disabled rule for event: user:profile_updated, ruleID: rule_0nQz7INMrUjQG7HwpLTuy","timestamp":"2025-04-23T00:46:38.449Z"}
+{"level":"info","message":"Updated profile for user user_mpe0xo17h by user user_mpe0xo17h, IP: 127.0.0.1","timestamp":"2025-04-23T00:46:38.449Z"}
+{"level":"warn","message":"Missing login fields","timestamp":"2025-04-23T00:47:13.991Z"}
+{"level":"warn","message":"Missing login fields","timestamp":"2025-04-23T00:47:39.874Z"}
+{"level":"info","message":"Fetched notification preferences for user: user_mpe0xo17h, IP: 127.0.0.1","timestamp":"2025-04-23T00:55:30.805Z"}
+{"level":"info","message":"Fetched profile for user user_mpe0xo17h, IP: 127.0.0.1","timestamp":"2025-04-23T00:55:31.107Z"}
+{"level":"info","message":"Fetched notification preferences for user: user_mpe0xo17h, IP: 127.0.0.1","timestamp":"2025-04-23T00:55:41.461Z"}
+{"level":"info","message":"Fetched profile for user user_mpe0xo17h, IP: 127.0.0.1","timestamp":"2025-04-23T00:55:41.683Z"}
+{"level":"info","message":"Fetched profile for user user_mpe0xo17h, IP: 127.0.0.1","timestamp":"2025-04-23T00:55:46.723Z"}
+{"level":"info","message":"Fetched notification preferences for user: user_mpe0xo17h, IP: 127.0.0.1","timestamp":"2025-04-23T00:55:47.125Z"}
+{"level":"info","message":"Fetched roles for user user_mpe0xo17h by user_mpe0xo17h, IP: 127.0.0.1","timestamp":"2025-04-23T00:55:47.561Z"}
+{"level":"info","message":"Fetched effective permissions for user user_mpe0xo17h by user_mpe0xo17h, IP: 127.0.0.1","timestamp":"2025-04-23T00:55:47.572Z"}
+{"level":"info","message":"Fetched roles for user user_mpe0xo17h by user_mpe0xo17h, IP: 127.0.0.1","timestamp":"2025-04-23T00:55:48.221Z"}
+{"level":"info","message":"Fetched effective permissions for user user_mpe0xo17h by user_mpe0xo17h, IP: 127.0.0.1","timestamp":"2025-04-23T00:55:48.231Z"}
+{"level":"warn","message":"No access token provided","timestamp":"2025-04-23T00:57:02.938Z"}
+{"level":"warn","message":"No access token provided","timestamp":"2025-04-23T00:57:02.943Z"}
+{"level":"info","message":"Initiating token refresh","timestamp":"2025-04-23T00:57:03.006Z"}
+{"level":"info","message":"Initiating token refresh","timestamp":"2025-04-23T00:57:03.064Z"}
+{"accessTokenExpiresIn":900,"level":"info","message":"Tokens refreshed successfully","refreshTokenRotatedAt":"2025-04-23T00:57:03.163Z","timestamp":"2025-04-23T00:57:03.164Z"}
+{"level":"info","message":"Refresh token successful","timestamp":"2025-04-23T00:57:03.165Z"}
+{"accessTokenExpiresIn":900,"level":"info","message":"Tokens refreshed successfully","refreshTokenRotatedAt":"2025-04-23T00:57:03.389Z","timestamp":"2025-04-23T00:57:03.389Z"}
+{"level":"info","message":"Refresh token successful","timestamp":"2025-04-23T00:57:03.389Z"}
+{"level":"info","message":"Fetched notification preferences for user: user_mpe0xo17h, IP: 127.0.0.1","timestamp":"2025-04-23T00:57:03.842Z"}
+{"level":"info","message":"Fetched profile for user user_mpe0xo17h, IP: 127.0.0.1","timestamp":"2025-04-23T00:57:04.362Z"}
+{"level":"info","message":"Cleaning up expired OTPs","timestamp":"2025-04-23T01:00:00.415Z"}
+{"level":"info","message":"Cleaned up 0 expired OTPs","timestamp":"2025-04-23T01:00:00.521Z"}
+{"level":"info","message":"Keycloak admin token obtained","timestamp":"2025-04-23T01:04:20.337Z"}
+{"level":"info","message":"Notification stored for user user_mpe0xo17h: Notification for otp:generated:user","timestamp":"2025-04-23T01:04:22.347Z"}
+{"level":"info","message":"WebSocket event emitted: otp:generated:user to room admin","timestamp":"2025-04-23T01:04:22.364Z"}
+{"level":"info","message":"WebSocket event emitted: otp:generated:user to room Super Admin","timestamp":"2025-04-23T01:04:22.365Z"}
+{"level":"info","message":"WebSocket event emitted: otp:generated:user to user user_mpe0xo17h","timestamp":"2025-04-23T01:04:22.366Z"}
+{"level":"info","message":"Notification notif_4Hapoq70AM53qxV-lz7iA status updated to sent","timestamp":"2025-04-23T01:04:22.385Z"}
+{"level":"info","message":"Triggered notifications for event: otp:generated:user, processed 1 recipients","timestamp":"2025-04-23T01:04:22.386Z"}
+{"level":"info","message":"Generated OTP for user ID: 95beb7d8-e9d5-43bc-a954-3493d9ae8387","timestamp":"2025-04-23T01:04:22.387Z"}
+{"level":"info","message":"OTP =","timestamp":"2025-04-23T01:04:25.353Z"}
+{"level":"info","message":"Login attempt for s@gmail.com, requires2FA: true","timestamp":"2025-04-23T01:04:25.354Z"}
+{"level":"info","message":"Successfully validated OTP for user ID: 95beb7d8-e9d5-43bc-a954-3493d9ae8387","timestamp":"2025-04-23T01:04:41.336Z"}
+{"level":"info","message":"Login response generated for user 95beb7d8-e9d5-43bc-a954-3493d9ae8387","timestamp":"2025-04-23T01:04:41.884Z"}
+{"level":"info","message":"2FA verified for user 95beb7d8-e9d5-43bc-a954-3493d9ae8387","timestamp":"2025-04-23T01:04:41.887Z"}
+{"level":"info","message":"Keycloak admin token obtained","timestamp":"2025-04-23T01:10:29.667Z"}
+{"level":"info","message":"Login response generated for user user_mpe0xo17h","timestamp":"2025-04-23T01:10:30.785Z"}
+{"level":"info","message":"Login attempt for superadmin@example.com, requires2FA: false","timestamp":"2025-04-23T01:10:30.786Z"}
+{"level":"info","message":"Keycloak admin token obtained","timestamp":"2025-04-23T01:10:31.157Z"}
+{"level":"info","message":"Login response generated for user user_mpe0xo17h","timestamp":"2025-04-23T01:10:31.982Z"}
+{"level":"info","message":"Login attempt for superadmin@example.com, requires2FA: false","timestamp":"2025-04-23T01:10:31.982Z"}
+{"level":"info","message":"Fetched profile for user user_mpe0xo17h, IP: 127.0.0.1","timestamp":"2025-04-23T01:10:33.054Z"}
+{"level":"info","message":"Fetched notification preferences for user: user_mpe0xo17h, IP: 127.0.0.1","timestamp":"2025-04-23T01:10:33.058Z"}
+{"level":"info","message":"Fetched effective permissions for user user_mpe0xo17h by user_mpe0xo17h, IP: 127.0.0.1","timestamp":"2025-04-23T01:10:33.197Z"}
+{"level":"info","message":"Fetched roles for user user_mpe0xo17h by user_mpe0xo17h, IP: 127.0.0.1","timestamp":"2025-04-23T01:10:33.390Z"}
+{"ip":null,"level":"info","message":"User user_mpe0xo17h updated by user user_mpe0xo17h","timestamp":"2025-04-23T01:10:45.559Z"}
+{"level":"info","message":"No active rules found for event: user:profile_updated","timestamp":"2025-04-23T01:10:45.566Z"}
+{"level":"info","message":"Rule already exists for event: user:profile_updated, ruleID: rule_0nQz7INMrUjQG7HwpLTuy, enabled: false","timestamp":"2025-04-23T01:10:45.572Z"}
+{"level":"info","message":"Created disabled rule for event: user:profile_updated, ruleID: rule_0nQz7INMrUjQG7HwpLTuy","timestamp":"2025-04-23T01:10:45.574Z"}
+{"level":"info","message":"Updated profile for user user_mpe0xo17h by user user_mpe0xo17h, IP: 127.0.0.1","timestamp":"2025-04-23T01:10:45.575Z"}
+{"level":"info","message":"Fetched profile for user user_mpe0xo17h, IP: 127.0.0.1","timestamp":"2025-04-23T01:10:45.796Z"}
+{"ip":null,"level":"info","message":"User user_mpe0xo17h updated by user user_mpe0xo17h","timestamp":"2025-04-23T01:11:03.049Z"}
+{"level":"info","message":"No active rules found for event: user:profile_updated","timestamp":"2025-04-23T01:11:03.054Z"}
+{"level":"info","message":"Rule already exists for event: user:profile_updated, ruleID: rule_0nQz7INMrUjQG7HwpLTuy, enabled: false","timestamp":"2025-04-23T01:11:03.058Z"}
+{"level":"info","message":"Created disabled rule for event: user:profile_updated, ruleID: rule_0nQz7INMrUjQG7HwpLTuy","timestamp":"2025-04-23T01:11:03.059Z"}
+{"level":"info","message":"Updated profile for user user_mpe0xo17h by user user_mpe0xo17h, IP: 127.0.0.1","timestamp":"2025-04-23T01:11:03.060Z"}
+{"level":"info","message":"Fetched profile for user user_mpe0xo17h, IP: 127.0.0.1","timestamp":"2025-04-23T01:11:03.294Z"}
+{"level":"info","message":"Fetched notification preferences for user: user_mpe0xo17h, IP: 127.0.0.1","timestamp":"2025-04-23T01:16:23.746Z"}
+{"level":"info","message":"Fetched profile for user user_mpe0xo17h, IP: 127.0.0.1","timestamp":"2025-04-23T01:16:23.929Z"}
+{"level":"info","message":"Fetched notification preferences for user: user_mpe0xo17h, IP: 127.0.0.1","timestamp":"2025-04-23T01:16:29.111Z"}
+{"level":"info","message":"Fetched profile for user user_mpe0xo17h, IP: 127.0.0.1","timestamp":"2025-04-23T01:16:29.321Z"}
+{"level":"info","message":"Fetched effective permissions for user user_mpe0xo17h by user_mpe0xo17h, IP: 127.0.0.1","timestamp":"2025-04-23T01:16:30.027Z"}
+{"level":"info","message":"Fetched roles for user user_mpe0xo17h by user_mpe0xo17h, IP: 127.0.0.1","timestamp":"2025-04-23T01:16:30.108Z"}
+{"level":"info","message":"Fetched effective permissions for user user_mpe0xo17h by user_mpe0xo17h, IP: 127.0.0.1","timestamp":"2025-04-23T01:16:30.562Z"}
+{"level":"info","message":"Fetched roles for user user_mpe0xo17h by user_mpe0xo17h, IP: 127.0.0.1","timestamp":"2025-04-23T01:16:30.628Z"}
+{"ip":null,"level":"info","message":"User user_mpe0xo17h updated by user user_mpe0xo17h","timestamp":"2025-04-23T01:16:38.712Z"}
+{"level":"info","message":"No active rules found for event: user:profile_updated","timestamp":"2025-04-23T01:16:38.716Z"}
+{"level":"info","message":"Rule already exists for event: user:profile_updated, ruleID: rule_0nQz7INMrUjQG7HwpLTuy, enabled: false","timestamp":"2025-04-23T01:16:38.720Z"}
+{"level":"info","message":"Created disabled rule for event: user:profile_updated, ruleID: rule_0nQz7INMrUjQG7HwpLTuy","timestamp":"2025-04-23T01:16:38.720Z"}
+{"level":"info","message":"Updated profile for user user_mpe0xo17h by user user_mpe0xo17h, IP: 127.0.0.1","timestamp":"2025-04-23T01:16:38.721Z"}
+{"ip":null,"level":"info","message":"User user_mpe0xo17h updated by user user_mpe0xo17h","timestamp":"2025-04-23T01:16:45.815Z"}
+{"level":"info","message":"No active rules found for event: user:profile_updated","timestamp":"2025-04-23T01:16:45.818Z"}
+{"level":"info","message":"Rule already exists for event: user:profile_updated, ruleID: rule_0nQz7INMrUjQG7HwpLTuy, enabled: false","timestamp":"2025-04-23T01:16:45.821Z"}
+{"level":"info","message":"Created disabled rule for event: user:profile_updated, ruleID: rule_0nQz7INMrUjQG7HwpLTuy","timestamp":"2025-04-23T01:16:45.822Z"}
+{"level":"info","message":"Updated profile for user user_mpe0xo17h by user user_mpe0xo17h, IP: 127.0.0.1","timestamp":"2025-04-23T01:16:45.822Z"}
+{"ip":null,"level":"info","message":"User user_mpe0xo17h updated by user user_mpe0xo17h","timestamp":"2025-04-23T01:16:50.085Z"}
+{"level":"info","message":"No active rules found for event: user:profile_updated","timestamp":"2025-04-23T01:16:50.089Z"}
+{"level":"info","message":"Rule already exists for event: user:profile_updated, ruleID: rule_0nQz7INMrUjQG7HwpLTuy, enabled: false","timestamp":"2025-04-23T01:16:50.090Z"}
+{"level":"info","message":"Created disabled rule for event: user:profile_updated, ruleID: rule_0nQz7INMrUjQG7HwpLTuy","timestamp":"2025-04-23T01:16:50.091Z"}
+{"level":"info","message":"Updated profile for user user_mpe0xo17h by user user_mpe0xo17h, IP: 127.0.0.1","timestamp":"2025-04-23T01:16:50.091Z"}
+{"level":"info","message":"Fetched notification preferences for user: user_mpe0xo17h, IP: 127.0.0.1","timestamp":"2025-04-23T01:16:57.442Z"}
+{"level":"info","message":"Fetched profile for user user_mpe0xo17h, IP: 127.0.0.1","timestamp":"2025-04-23T01:16:57.641Z"}
+{"level":"info","message":"Fetched roles for user user_mpe0xo17h by user_mpe0xo17h, IP: 127.0.0.1","timestamp":"2025-04-23T01:16:57.791Z"}
+{"level":"info","message":"Fetched effective permissions for user user_mpe0xo17h by user_mpe0xo17h, IP: 127.0.0.1","timestamp":"2025-04-23T01:16:57.799Z"}
+{"level":"info","message":"Fetched roles for user user_mpe0xo17h by user_mpe0xo17h, IP: 127.0.0.1","timestamp":"2025-04-23T01:16:58.556Z"}
+{"level":"info","message":"Fetched effective permissions for user user_mpe0xo17h by user_mpe0xo17h, IP: 127.0.0.1","timestamp":"2025-04-23T01:16:58.575Z"}
+{"ip":null,"level":"info","message":"User user_mpe0xo17h updated by user user_mpe0xo17h","timestamp":"2025-04-23T01:17:01.298Z"}
+{"level":"info","message":"No active rules found for event: user:profile_updated","timestamp":"2025-04-23T01:17:01.302Z"}
+{"level":"info","message":"Rule already exists for event: user:profile_updated, ruleID: rule_0nQz7INMrUjQG7HwpLTuy, enabled: false","timestamp":"2025-04-23T01:17:01.305Z"}
+{"level":"info","message":"Created disabled rule for event: user:profile_updated, ruleID: rule_0nQz7INMrUjQG7HwpLTuy","timestamp":"2025-04-23T01:17:01.306Z"}
+{"level":"info","message":"Updated profile for user user_mpe0xo17h by user user_mpe0xo17h, IP: 127.0.0.1","timestamp":"2025-04-23T01:17:01.307Z"}
+{"ip":null,"level":"info","message":"User user_mpe0xo17h updated by user user_mpe0xo17h","timestamp":"2025-04-23T01:17:05.599Z"}
+{"level":"info","message":"No active rules found for event: user:profile_updated","timestamp":"2025-04-23T01:17:05.603Z"}
+{"level":"info","message":"Rule already exists for event: user:profile_updated, ruleID: rule_0nQz7INMrUjQG7HwpLTuy, enabled: false","timestamp":"2025-04-23T01:17:05.605Z"}
+{"level":"info","message":"Created disabled rule for event: user:profile_updated, ruleID: rule_0nQz7INMrUjQG7HwpLTuy","timestamp":"2025-04-23T01:17:05.605Z"}
+{"level":"info","message":"Updated profile for user user_mpe0xo17h by user user_mpe0xo17h, IP: 127.0.0.1","timestamp":"2025-04-23T01:17:05.606Z"}
+{"level":"info","message":"Fetched notification preferences for user: user_mpe0xo17h, IP: 127.0.0.1","timestamp":"2025-04-23T01:17:08.580Z"}
+{"level":"info","message":"Fetched roles for user user_mpe0xo17h by user_mpe0xo17h, IP: 127.0.0.1","timestamp":"2025-04-23T01:17:08.954Z"}
+{"level":"info","message":"Fetched profile for user user_mpe0xo17h, IP: 127.0.0.1","timestamp":"2025-04-23T01:17:09.412Z"}
+{"level":"info","message":"Fetched effective permissions for user user_mpe0xo17h by user_mpe0xo17h, IP: 127.0.0.1","timestamp":"2025-04-23T01:17:09.596Z"}
+{"level":"info","message":"Fetched roles for user user_mpe0xo17h by user_mpe0xo17h, IP: 127.0.0.1","timestamp":"2025-04-23T01:17:09.875Z"}
+{"level":"info","message":"Fetched effective permissions for user user_mpe0xo17h by user_mpe0xo17h, IP: 127.0.0.1","timestamp":"2025-04-23T01:17:10.287Z"}
+{"level":"info","message":"Permission granted for access_supervisor_timesheets to user 95beb7d8-e9d5-43bc-a954-3493d9ae8387","timestamp":"2025-04-23T01:19:07.425Z"}
+{"level":"info","message":"Permission granted for access_supervisor_timesheets to user 95beb7d8-e9d5-43bc-a954-3493d9ae8387","timestamp":"2025-04-23T01:19:07.438Z"}
+{"level":"info","message":"Fetched timesheets for supervisor 95beb7d8-e9d5-43bc-a954-3493d9ae8387 by user 95beb7d8-e9d5-43bc-a954-3493d9ae8387, IP: 192.168.1.100","timestamp":"2025-04-23T01:19:07.741Z"}
+{"level":"info","message":"Fetched timesheets for supervisor 95beb7d8-e9d5-43bc-a954-3493d9ae8387 by user 95beb7d8-e9d5-43bc-a954-3493d9ae8387, IP: 192.168.1.100","timestamp":"2025-04-23T01:19:07.746Z"}
+{"level":"info","message":"Fetched profile for user 95beb7d8-e9d5-43bc-a954-3493d9ae8387, IP: 192.168.1.100","timestamp":"2025-04-23T01:19:17.693Z"}
+{"level":"warn","message":"Token introspection failed: inactive token","timestamp":"2025-04-23T01:19:26.264Z"}
+{"level":"info","message":"User logged out, cookies cleared","timestamp":"2025-04-23T01:19:28.061Z"}
+{"level":"info","message":"User logged out, cookies cleared","timestamp":"2025-04-23T01:19:28.116Z"}
+{"level":"info","message":"Keycloak admin token obtained","timestamp":"2025-04-23T01:19:53.793Z"}
+{"level":"info","message":"Login response generated for user 95beb7d8-e9d5-43bc-a954-3493d9ae8387","timestamp":"2025-04-23T01:19:54.528Z"}
+{"level":"info","message":"Login attempt for s@gmail.com, requires2FA: false","timestamp":"2025-04-23T01:19:54.529Z"}
+{"level":"info","message":"Permission granted for access_supervisor_timesheets to user 95beb7d8-e9d5-43bc-a954-3493d9ae8387","timestamp":"2025-04-23T01:19:56.003Z"}
+{"level":"info","message":"Permission granted for access_supervisor_timesheets to user 95beb7d8-e9d5-43bc-a954-3493d9ae8387","timestamp":"2025-04-23T01:19:56.013Z"}
+{"level":"info","message":"Fetched timesheets for supervisor 95beb7d8-e9d5-43bc-a954-3493d9ae8387 by user 95beb7d8-e9d5-43bc-a954-3493d9ae8387, IP: 192.168.1.100","timestamp":"2025-04-23T01:19:56.213Z"}
+{"level":"info","message":"Fetched timesheets for supervisor 95beb7d8-e9d5-43bc-a954-3493d9ae8387 by user 95beb7d8-e9d5-43bc-a954-3493d9ae8387, IP: 192.168.1.100","timestamp":"2025-04-23T01:19:56.230Z"}
+{"level":"info","message":"Fetched profile for user 95beb7d8-e9d5-43bc-a954-3493d9ae8387, IP: 192.168.1.100","timestamp":"2025-04-23T01:19:58.781Z"}
+{"level":"info","message":"Fetched profile for user 95beb7d8-e9d5-43bc-a954-3493d9ae8387, IP: 192.168.1.100","timestamp":"2025-04-23T01:20:05.508Z"}
+{"level":"info","message":"Permission granted for access_supervisor_timesheets to user 95beb7d8-e9d5-43bc-a954-3493d9ae8387","timestamp":"2025-04-23T01:20:12.373Z"}
+{"level":"info","message":"Fetched timesheets for supervisor 95beb7d8-e9d5-43bc-a954-3493d9ae8387 by user 95beb7d8-e9d5-43bc-a954-3493d9ae8387, IP: 192.168.1.100","timestamp":"2025-04-23T01:20:12.589Z"}
+{"level":"info","message":"Permission granted for access_supervisor_timesheets to user 95beb7d8-e9d5-43bc-a954-3493d9ae8387","timestamp":"2025-04-23T01:20:35.256Z"}
+{"level":"info","message":"Permission granted for access_supervisor_timesheets to user 95beb7d8-e9d5-43bc-a954-3493d9ae8387","timestamp":"2025-04-23T01:20:35.263Z"}
+{"level":"info","message":"Fetched timesheets for supervisor 95beb7d8-e9d5-43bc-a954-3493d9ae8387 by user 95beb7d8-e9d5-43bc-a954-3493d9ae8387, IP: 192.168.1.100","timestamp":"2025-04-23T01:20:35.476Z"}
+{"level":"info","message":"Fetched timesheets for supervisor 95beb7d8-e9d5-43bc-a954-3493d9ae8387 by user 95beb7d8-e9d5-43bc-a954-3493d9ae8387, IP: 192.168.1.100","timestamp":"2025-04-23T01:20:35.513Z"}
+{"level":"info","message":"Permission granted for access_all_receipt_books to user 95beb7d8-e9d5-43bc-a954-3493d9ae8387","timestamp":"2025-04-23T01:21:40.987Z"}
+{"ip":null,"level":"info","message":"Fetched 12 receipt books in 533ms","timestamp":"2025-04-23T01:21:41.521Z"}
+{"level":"info","message":"Fetched 12 receipt books by user 95beb7d8-e9d5-43bc-a954-3493d9ae8387 in 537ms, IP: 192.168.1.100","timestamp":"2025-04-23T01:21:41.525Z"}
+{"level":"info","message":"Super Admin bypass for user user_mpe0xo17h","timestamp":"2025-04-23T01:22:13.884Z"}
+{"ip":null,"level":"info","message":"Fetched 12 receipt books in 538ms","timestamp":"2025-04-23T01:22:14.422Z"}
+{"level":"info","message":"Fetched 12 receipt books by user user_mpe0xo17h in 538ms, IP: 127.0.0.1","timestamp":"2025-04-23T01:22:14.423Z"}
+{"level":"info","message":"Super Admin bypass for user user_mpe0xo17h","timestamp":"2025-04-23T01:22:14.516Z"}
+{"level":"info","message":"Fetched user bc51ac0d-9d6b-4852-96a6-323ec1c3db6a by user user_mpe0xo17h, IP: 127.0.0.1","timestamp":"2025-04-23T01:22:14.680Z"}
+{"level":"info","message":"Super Admin bypass for user user_mpe0xo17h","timestamp":"2025-04-23T01:22:15.245Z"}
+{"level":"info","message":"Fetched user 95beb7d8-e9d5-43bc-a954-3493d9ae8387 by user user_mpe0xo17h, IP: 127.0.0.1","timestamp":"2025-04-23T01:22:15.371Z"}
+{"level":"info","message":"Super Admin bypass for user user_mpe0xo17h","timestamp":"2025-04-23T01:22:15.726Z"}
+{"level":"info","message":"Fetched user d26127aa-c142-46fa-8dfe-a1be0b5d5a1e by user user_mpe0xo17h, IP: 127.0.0.1","timestamp":"2025-04-23T01:22:15.835Z"}
+{"level":"info","message":"Super Admin bypass for user user_mpe0xo17h","timestamp":"2025-04-23T01:22:16.267Z"}
+{"level":"info","message":"Fetched user b90e1335-26a1-4e84-a6c4-db2c7f11f45d by user user_mpe0xo17h, IP: 127.0.0.1","timestamp":"2025-04-23T01:22:16.378Z"}
+{"level":"info","message":"Super Admin bypass for user user_mpe0xo17h","timestamp":"2025-04-23T01:22:29.581Z"}
+{"level":"info","message":"Super Admin bypass for user user_mpe0xo17h","timestamp":"2025-04-23T01:22:29.655Z"}
+{"ip":null,"level":"info","message":"Fetched transfer history for book book_9j1hihiy-ft_I9TOtgbVA in 233ms","timestamp":"2025-04-23T01:22:29.891Z"}
+{"level":"info","message":"Fetched transfer history for book book_9j1hihiy-ft_I9TOtgbVA by user user_mpe0xo17h, IP: 127.0.0.1","timestamp":"2025-04-23T01:22:29.892Z"}
+{"ip":null,"level":"info","message":"Fetched receipt book book_9j1hihiy-ft_I9TOtgbVA in 695ms","timestamp":"2025-04-23T01:22:30.278Z"}
+{"level":"info","message":"Fetched receipt book book_9j1hihiy-ft_I9TOtgbVA by user user_mpe0xo17h, IP: 127.0.0.1","timestamp":"2025-04-23T01:22:30.279Z"}
+{"level":"error","message":"Get receipt book error: Converting circular structure to JSON\n    --> starting at object with constructor 'Array'\n    |     index 0 -> object with constructor 'Object'\n    |     property 'parent' -> object with constructor 'Object'\n    --- property 'include' closes the circle, user: user_mpe0xo17h, IP: 127.0.0.1","timestamp":"2025-04-23T01:22:30.281Z"}
+{"level":"info","message":"Super Admin bypass for user user_mpe0xo17h","timestamp":"2025-04-23T01:23:05.254Z"}
+{"ip":null,"level":"info","message":"Fetched 12 receipt books in 433ms","timestamp":"2025-04-23T01:23:05.688Z"}
+{"level":"info","message":"Fetched 12 receipt books by user user_mpe0xo17h in 435ms, IP: 127.0.0.1","timestamp":"2025-04-23T01:23:05.690Z"}
+{"level":"info","message":"Super Admin bypass for user user_mpe0xo17h","timestamp":"2025-04-23T01:23:05.766Z"}
+{"level":"info","message":"Fetched user bc51ac0d-9d6b-4852-96a6-323ec1c3db6a by user user_mpe0xo17h, IP: 127.0.0.1","timestamp":"2025-04-23T01:23:05.871Z"}
+{"level":"info","message":"Super Admin bypass for user user_mpe0xo17h","timestamp":"2025-04-23T01:23:06.266Z"}
+{"level":"info","message":"Fetched user 95beb7d8-e9d5-43bc-a954-3493d9ae8387 by user user_mpe0xo17h, IP: 127.0.0.1","timestamp":"2025-04-23T01:23:06.388Z"}
+{"level":"info","message":"Super Admin bypass for user user_mpe0xo17h","timestamp":"2025-04-23T01:23:06.760Z"}
+{"level":"info","message":"Fetched user d26127aa-c142-46fa-8dfe-a1be0b5d5a1e by user user_mpe0xo17h, IP: 127.0.0.1","timestamp":"2025-04-23T01:23:06.869Z"}
+{"level":"info","message":"Super Admin bypass for user user_mpe0xo17h","timestamp":"2025-04-23T01:23:07.145Z"}
+{"level":"info","message":"Fetched user b90e1335-26a1-4e84-a6c4-db2c7f11f45d by user user_mpe0xo17h, IP: 127.0.0.1","timestamp":"2025-04-23T01:23:07.250Z"}
+{"level":"info","message":"Fetched profile for user 95beb7d8-e9d5-43bc-a954-3493d9ae8387, IP: 192.168.1.100","timestamp":"2025-04-23T01:23:36.663Z"}
+{"ip":null,"level":"info","message":"User 95beb7d8-e9d5-43bc-a954-3493d9ae8387 updated by user 95beb7d8-e9d5-43bc-a954-3493d9ae8387","timestamp":"2025-04-23T01:23:46.078Z"}
+{"level":"info","message":"No active rules found for event: user:profile_updated","timestamp":"2025-04-23T01:23:46.085Z"}
+{"level":"info","message":"Rule already exists for event: user:profile_updated, ruleID: rule_0nQz7INMrUjQG7HwpLTuy, enabled: false","timestamp":"2025-04-23T01:23:46.091Z"}
+{"level":"info","message":"Created disabled rule for event: user:profile_updated, ruleID: rule_0nQz7INMrUjQG7HwpLTuy","timestamp":"2025-04-23T01:23:46.092Z"}
+{"level":"info","message":"Updated profile for user 95beb7d8-e9d5-43bc-a954-3493d9ae8387 by user 95beb7d8-e9d5-43bc-a954-3493d9ae8387, IP: 192.168.1.100","timestamp":"2025-04-23T01:23:46.093Z"}
+{"level":"info","message":"Fetched profile for user 95beb7d8-e9d5-43bc-a954-3493d9ae8387, IP: 192.168.1.100","timestamp":"2025-04-23T01:23:47.027Z"}
+{"level":"info","message":"Fetched roles for user user_mpe0xo17h by user_mpe0xo17h, IP: 127.0.0.1","timestamp":"2025-04-23T01:24:00.198Z"}
+{"level":"info","message":"Fetched effective permissions for user user_mpe0xo17h by user_mpe0xo17h, IP: 127.0.0.1","timestamp":"2025-04-23T01:24:00.206Z"}
+{"level":"info","message":"Super Admin bypass for user user_mpe0xo17h","timestamp":"2025-04-23T01:24:00.618Z"}
+{"level":"info","message":"Fetched roles for user user_mpe0xo17h by user_mpe0xo17h, IP: 127.0.0.1","timestamp":"2025-04-23T01:24:00.910Z"}
+{"level":"info","message":"Fetched effective permissions for user user_mpe0xo17h by user_mpe0xo17h, IP: 127.0.0.1","timestamp":"2025-04-23T01:24:00.926Z"}
+{"ip":null,"level":"info","message":"Fetched 12 receipt books in 619ms","timestamp":"2025-04-23T01:24:01.238Z"}
+{"level":"info","message":"Fetched 12 receipt books by user user_mpe0xo17h in 620ms, IP: 127.0.0.1","timestamp":"2025-04-23T01:24:01.239Z"}
+{"level":"info","message":"Super Admin bypass for user user_mpe0xo17h","timestamp":"2025-04-23T01:24:01.652Z"}
+{"level":"info","message":"Fetched user bc51ac0d-9d6b-4852-96a6-323ec1c3db6a by user user_mpe0xo17h, IP: 127.0.0.1","timestamp":"2025-04-23T01:24:01.750Z"}
+{"level":"info","message":"Super Admin bypass for user user_mpe0xo17h","timestamp":"2025-04-23T01:24:02.075Z"}
+{"level":"info","message":"Fetched user 95beb7d8-e9d5-43bc-a954-3493d9ae8387 by user user_mpe0xo17h, IP: 127.0.0.1","timestamp":"2025-04-23T01:24:02.164Z"}
+{"level":"info","message":"Super Admin bypass for user user_mpe0xo17h","timestamp":"2025-04-23T01:24:02.499Z"}
+{"level":"info","message":"Fetched user d26127aa-c142-46fa-8dfe-a1be0b5d5a1e by user user_mpe0xo17h, IP: 127.0.0.1","timestamp":"2025-04-23T01:24:02.582Z"}
+{"level":"info","message":"Super Admin bypass for user user_mpe0xo17h","timestamp":"2025-04-23T01:24:02.941Z"}
+{"level":"info","message":"Fetched user b90e1335-26a1-4e84-a6c4-db2c7f11f45d by user user_mpe0xo17h, IP: 127.0.0.1","timestamp":"2025-04-23T01:24:03.028Z"}
+{"level":"info","message":"Permission granted for access_all_receipt_books to user 95beb7d8-e9d5-43bc-a954-3493d9ae8387","timestamp":"2025-04-23T01:24:13.331Z"}
+{"ip":null,"level":"info","message":"Fetched 12 receipt books in 481ms","timestamp":"2025-04-23T01:24:13.812Z"}
+{"level":"info","message":"Fetched 12 receipt books by user 95beb7d8-e9d5-43bc-a954-3493d9ae8387 in 482ms, IP: 192.168.1.100","timestamp":"2025-04-23T01:24:13.813Z"}
+{"level":"info","message":"Permission granted for access_supervisor_timesheets to user 95beb7d8-e9d5-43bc-a954-3493d9ae8387","timestamp":"2025-04-23T01:24:48.252Z"}
+{"level":"info","message":"Fetched timesheets for supervisor 95beb7d8-e9d5-43bc-a954-3493d9ae8387 by user 95beb7d8-e9d5-43bc-a954-3493d9ae8387, IP: 192.168.1.100","timestamp":"2025-04-23T01:24:48.478Z"}
+{"level":"info","message":"Fetched profile for user 95beb7d8-e9d5-43bc-a954-3493d9ae8387, IP: 192.168.1.100","timestamp":"2025-04-23T01:25:30.398Z"}
+{"level":"warn","message":"No access token provided","timestamp":"2025-04-23T01:25:39.962Z"}
+{"level":"info","message":"Initiating token refresh","timestamp":"2025-04-23T01:25:39.981Z"}
+{"accessTokenExpiresIn":900,"level":"info","message":"Tokens refreshed successfully","refreshTokenRotatedAt":"2025-04-23T01:25:40.013Z","timestamp":"2025-04-23T01:25:40.013Z"}
+{"level":"info","message":"Refresh token successful","timestamp":"2025-04-23T01:25:40.014Z"}
+{"level":"info","message":"Super Admin bypass for user user_mpe0xo17h","timestamp":"2025-04-23T01:25:40.496Z"}
+{"level":"info","message":"Fetched all users by user user_mpe0xo17h, IP: 127.0.0.1","timestamp":"2025-04-23T01:25:40.624Z"}
+{"level":"info","message":"Super Admin bypass for user user_mpe0xo17h","timestamp":"2025-04-23T01:25:41.168Z"}
+{"level":"info","message":"Fetched all roles by user user_mpe0xo17h, IP: 127.0.0.1","timestamp":"2025-04-23T01:25:41.364Z"}
+{"ip":null,"level":"info","message":"User 95beb7d8-e9d5-43bc-a954-3493d9ae8387 updated by user 95beb7d8-e9d5-43bc-a954-3493d9ae8387","timestamp":"2025-04-23T01:25:47.680Z"}
+{"level":"info","message":"No active rules found for event: user:profile_updated","timestamp":"2025-04-23T01:25:47.684Z"}
+{"level":"info","message":"Rule already exists for event: user:profile_updated, ruleID: rule_0nQz7INMrUjQG7HwpLTuy, enabled: false","timestamp":"2025-04-23T01:25:47.686Z"}
+{"level":"info","message":"Created disabled rule for event: user:profile_updated, ruleID: rule_0nQz7INMrUjQG7HwpLTuy","timestamp":"2025-04-23T01:25:47.687Z"}
+{"level":"info","message":"Updated profile for user 95beb7d8-e9d5-43bc-a954-3493d9ae8387 by user 95beb7d8-e9d5-43bc-a954-3493d9ae8387, IP: 192.168.1.100","timestamp":"2025-04-23T01:25:47.687Z"}
+{"level":"info","message":"Fetched profile for user 95beb7d8-e9d5-43bc-a954-3493d9ae8387, IP: 192.168.1.100","timestamp":"2025-04-23T01:25:48.545Z"}
+{"level":"info","message":"Super Admin bypass for user user_mpe0xo17h","timestamp":"2025-04-23T01:26:02.062Z"}
+{"level":"info","message":"Fetched all users by user user_mpe0xo17h, IP: 127.0.0.1","timestamp":"2025-04-23T01:26:02.188Z"}
+{"level":"info","message":"Keycloak admin token obtained","timestamp":"2025-04-23T09:32:32.151Z"}
+{"level":"info","message":"Notification stored for user user_mpe0xo17h: Notification for otp:generated:user","timestamp":"2025-04-23T09:32:36.074Z"}
+{"level":"info","message":"WebSocket event emitted: otp:generated:user to room admin","timestamp":"2025-04-23T09:32:36.076Z"}
+{"level":"info","message":"WebSocket event emitted: otp:generated:user to room Super Admin","timestamp":"2025-04-23T09:32:36.077Z"}
+{"level":"info","message":"WebSocket event emitted: otp:generated:user to user user_mpe0xo17h","timestamp":"2025-04-23T09:32:36.079Z"}
+{"level":"info","message":"Notification notif_Vq_56uQNHv6BJWuYfrNmz status updated to sent","timestamp":"2025-04-23T09:32:36.097Z"}
+{"level":"info","message":"Triggered notifications for event: otp:generated:user, processed 1 recipients","timestamp":"2025-04-23T09:32:36.098Z"}
+{"level":"info","message":"Generated OTP for user ID: user_mpe0xo17h","timestamp":"2025-04-23T09:32:36.099Z"}
+{"level":"info","message":"OTP =","timestamp":"2025-04-23T09:32:38.383Z"}
+{"level":"info","message":"Login attempt for superadmin@example.com, requires2FA: true","timestamp":"2025-04-23T09:32:38.388Z"}

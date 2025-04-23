@@ -1,13 +1,15 @@
+import 'package:TraceFlow/screens/Auth/ProfileScreen.dart';
+import 'package:TraceFlow/screens/Auth/Verify2FAScreen.dart';
+import 'package:flutter/foundation.dart';
 import 'package:flutter/material.dart';
 import 'package:provider/provider.dart';
 import 'package:TraceFlow/providers/auth_provider.dart';
-import 'package:TraceFlow/screens/Auth/login_screen.dart';
-import 'package:TraceFlow/screens/Auth/Verify2FAScreen.dart';
-import 'package:TraceFlow/screens/Timesheet/Timesheet_details.dart';
-import 'package:TraceFlow/screens/Receipt/receipt_books.dart';
-import 'package:TraceFlow/screens/Receipt/transfer_receipt_book.dart';
-import 'package:TraceFlow/screens/Error.dart';
-import 'package:TraceFlow/screens/Auth/ProfileScreen.dart';
+import 'package:TraceFlow/providers/notification_provider.dart';
+import 'package:TraceFlow/screens/auth/login_screen.dart';
+import 'package:TraceFlow/screens/timesheet/timesheet_details.dart';
+import 'package:TraceFlow/screens/receipt/receipt_books.dart';
+import 'package:TraceFlow/screens/receipt/transfer_receipt_book.dart';
+import 'package:TraceFlow/screens/error.dart';
 import 'package:TraceFlow/providers/agent_provider.dart';
 import 'package:TraceFlow/providers/checklist_provider.dart';
 import 'package:TraceFlow/providers/reason_provider.dart';
@@ -21,17 +23,16 @@ import 'package:TraceFlow/providers/permission_provider.dart';
 import 'package:TraceFlow/providers/theme_provider.dart';
 import 'package:TraceFlow/themes/app_themes.dart';
 
-// NavigationService to provide global access to Navigator key
+// Navigation service for global navigator access
 class NavigationService {
-  static final GlobalKey<NavigatorState> navigatorKey = GlobalKey<NavigatorState>();
+  static final GlobalKey<NavigatorState> navigatorKey = GlobalKey<NavigatorState>(debugLabel: 'MainNavigator');
   static final RouteObserver<ModalRoute> routeObserver = RouteObserver<ModalRoute>();
 }
 
 void main() {
+  // Suppress specific debug logs
   debugPrint = (String? message, {int? wrapWidth}) {
-    if (message != null && (message.contains("EGL_emulation") || message.contains("libEGL"))) {
-      return;
-    }
+    if (message != null && (message.contains("EGL_emulation") || message.contains("libEGL"))) return;
     print(message);
   };
 
@@ -40,6 +41,7 @@ void main() {
       providers: [
         ChangeNotifierProvider(create: (_) => AgentProvider()),
         ChangeNotifierProvider(create: (_) => AuthProvider()),
+        ChangeNotifierProvider(create: (_) => NotificationProvider()),
         ChangeNotifierProvider(create: (_) => ChecklistProvider()),
         ChangeNotifierProvider(create: (_) => ReasonProvider()),
         ChangeNotifierProvider(create: (_) => ReceiptBookProvider()),
@@ -63,24 +65,99 @@ class MyApp extends StatelessWidget {
   Widget build(BuildContext context) {
     return Consumer<ThemeProvider>(
       builder: (context, themeProvider, child) {
-        debugPrint('MyApp build called');
+        if (kDebugMode) print('MyApp build');
         return MaterialApp(
           title: 'TraceFlow',
           theme: AppThemes.lightTheme,
           darkTheme: AppThemes.darkTheme,
           themeMode: themeProvider.themeMode,
           home: const AuthWrapper(),
+          navigatorKey: NavigationService.navigatorKey,
           navigatorObservers: [NavigationService.routeObserver, RouteLogger()],
+          routes: {
+            '/login': (_) => const LoginScreen(),
+            '/verify-2fa': (_) => const Verify2FAScreen(),
+            '/timesheet-details': (_) => const TimesheetDetailsScreen(),
+            '/receipt-books': (_) => const ReceiptBooksScreen(),
+            '/profile': (_) => const ProfileScreen(),
+            '/transfer-receipt-books': (_) => const TransferReceiptBookScreen(),
+          },
+          onGenerateRoute: (settings) {
+            return MaterialPageRoute(
+              builder: (context) => ErrorPage(
+                errorMessage: 'Page not found: ${settings.name}',
+                onRetry: () {
+                  NavigationService.navigatorKey.currentState?.pushReplacementNamed('/timesheet-details');
+                },
+              ),
+              settings: settings,
+            );
+          },
         );
       },
     );
   }
 }
 
-class NavigationShell extends StatefulWidget {
-  final Widget child;
+class AuthWrapper extends StatefulWidget {
+  const AuthWrapper({super.key});
 
-  const NavigationShell({super.key, required this.child});
+  @override
+  _AuthWrapperState createState() => _AuthWrapperState();
+}
+
+class _AuthWrapperState extends State<AuthWrapper> {
+  @override
+  Widget build(BuildContext context) {
+    final authProvider = Provider.of<AuthProvider>(context);
+    final notificationProvider = Provider.of<NotificationProvider>(context, listen: false);
+
+    if (kDebugMode) {
+      print('AuthWrapper build: user=${authProvider.user?.userID}, '
+          'isLoading=${authProvider.isLoading}, '
+          'isSupervisor=${authProvider.isSupervisor}, '
+          'requires2FA=${authProvider.requires2FA}');
+    }
+
+    if (authProvider.isLoading) {
+      return const Scaffold(body: Center(child: CircularProgressIndicator()));
+    }
+
+    if (authProvider.errorMessage?.contains('Session expired') ?? false) {
+      WidgetsBinding.instance.addPostFrameCallback((_) {
+        if (!mounted) return;
+        if (ModalRoute.of(context)?.settings.name != '/login') {
+          NavigationService.navigatorKey.currentState?.pushReplacementNamed('/login');
+        }
+      });
+      return const SizedBox.shrink();
+    }
+
+    if (authProvider.requires2FA) {
+      return const Verify2FAScreen();
+    }
+
+    if (authProvider.user == null) {
+      return const LoginScreen();
+    }
+
+    // Initialize notifications for authenticated Supervisor
+    if (authProvider.isSupervisor && authProvider.permissionsLoaded) {
+      WidgetsBinding.instance.addPostFrameCallback((_) {
+        if (!mounted) return;
+        notificationProvider.initialize(
+          authProvider.user!.userID!,
+          authProvider.userRoles ?? [],
+        );
+      });
+    }
+
+    return const NavigationShell();
+  }
+}
+
+class NavigationShell extends StatefulWidget {
+  const NavigationShell({super.key});
 
   @override
   _NavigationShellState createState() => _NavigationShellState();
@@ -119,8 +196,7 @@ class _NavigationShellState extends State<NavigationShell> with RouteAware {
 
   void _onItemTapped(int index) {
     final targetRoute = _mainRoutes[index];
-    debugPrint('Tapped index: $index, target route: $targetRoute, current index: $_selectedIndex');
-    if (_selectedIndex != index) {
+    if (_selectedIndex != index || _currentRoute != targetRoute) {
       setState(() {
         _selectedIndex = index;
         _currentRoute = targetRoute;
@@ -137,12 +213,11 @@ class _NavigationShellState extends State<NavigationShell> with RouteAware {
       if (routeIndex >= 0) {
         _selectedIndex = routeIndex;
       } else if (route == '/transfer-receipt-books') {
-        _selectedIndex = 1; // Receipts tab
+        _selectedIndex = 1;
       } else {
-        _selectedIndex = 0; // Default to Timesheet
+        _selectedIndex = 0;
       }
     });
-    debugPrint('Updated route: $_currentRoute, selected index: $_selectedIndex');
   }
 
   @override
@@ -150,13 +225,54 @@ class _NavigationShellState extends State<NavigationShell> with RouteAware {
     final showBottomNav = !['/login', '/verify-2fa'].contains(_currentRoute);
 
     return Scaffold(
-      body: widget.child,
+      body: const RouterOutlet(),
       bottomNavigationBar: showBottomNav
           ? BottomNavBar(
         currentIndex: _selectedIndex,
         onTap: _onItemTapped,
       )
           : null,
+    );
+  }
+}
+
+class RouterOutlet extends StatelessWidget {
+  const RouterOutlet({super.key});
+
+  @override
+  Widget build(BuildContext context) {
+    return Navigator(
+      initialRoute: '/timesheet-details',
+      onGenerateRoute: (settings) {
+        Widget page;
+        String routeName = settings.name ?? '/timesheet-details';
+        if (routeName == '/') routeName = '/timesheet-details';
+        switch (routeName) {
+          case '/timesheet-details':
+            page = const TimesheetDetailsScreen();
+            break;
+          case '/receipt-books':
+            page = const ReceiptBooksScreen();
+            break;
+          case '/profile':
+            page = const ProfileScreen();
+            break;
+          case '/transfer-receipt-books':
+            page = const TransferReceiptBookScreen();
+            break;
+          default:
+            page = ErrorPage(
+              errorMessage: 'Page not found: $routeName',
+              onRetry: () {
+                NavigationService.navigatorKey.currentState?.pushReplacementNamed('/timesheet-details');
+              },
+            );
+        }
+        return MaterialPageRoute(
+          builder: (context) => page,
+          settings: RouteSettings(name: routeName),
+        );
+      },
     );
   }
 }
@@ -222,111 +338,32 @@ class BottomNavBar extends StatelessWidget {
   }
 }
 
-class AuthWrapper extends StatefulWidget {
-  const AuthWrapper({super.key});
-
-  @override
-  _AuthWrapperState createState() => _AuthWrapperState();
-}
-
-class _AuthWrapperState extends State<AuthWrapper> {
-  @override
-  Widget build(BuildContext context) {
-    final authProvider = Provider.of<AuthProvider>(context);
-
-    debugPrint(
-        'AuthWrapper build: '
-            'user=${authProvider.user?.userID},'
-            'isLoading=${authProvider.isLoading}, '
-            'isSupervisor=${authProvider.isSupervisor}, '
-            'requires2FA=${authProvider.requires2FA}, '
-            'error=${authProvider.errorMessage}');
-
-    if (authProvider.isLoading) {
-      return const Scaffold(
-        body: Center(child: CircularProgressIndicator()),
-      );
-    }
-
-    if (authProvider.errorMessage?.contains('Session expired') ?? false) {
-      debugPrint('AuthWrapper: Session expired, redirecting to LoginScreen');
-      WidgetsBinding.instance.addPostFrameCallback((_) {
-        NavigationService.navigatorKey.currentState?.pushReplacementNamed('/login');
-      });
-      return const SizedBox.shrink();
-    }
-
-    if (authProvider.requires2FA) {
-      debugPrint('AuthWrapper: Returning Verify2FAScreen');
-      return const Verify2FAScreen();
-    }
-
-    if (authProvider.user == null) {
-      debugPrint('AuthWrapper: Returning LoginScreen');
-      return const LoginScreen();
-    }
-
-    debugPrint('AuthWrapper: Returning NavigationShell');
-    return NavigationShell(
-      child: Navigator(
-        key: NavigationService.navigatorKey,
-        initialRoute: '/timesheet-details',
-        onGenerateRoute: (settings) {
-          Widget page;
-          String routeName = settings.name ?? '/timesheet-details';
-          if (routeName == '/') {
-            routeName = '/timesheet-details';
-          }
-          switch (routeName) {
-            case '/timesheet-details':
-              page = const TimesheetDetailsScreen();
-              break;
-            case '/receipt-books':
-              page = const ReceiptBooksScreen();
-              break;
-            case '/profile':
-              page = const ProfileScreen();
-              break;
-            case '/transfer-receipt-books':
-              page = const TransferReceiptBookScreen();
-              break;
-            default:
-              page = ErrorPage(
-                errorMessage: 'Page not found: ${settings.name}. Please try again.',
-                onRetry: () {
-                  NavigationService.navigatorKey.currentState?.pop();
-                },
-              );
-          }
-          debugPrint('Generating route: $routeName');
-          return MaterialPageRoute(
-            builder: (context) => page,
-            settings: RouteSettings(name: routeName),
-          );
-        },
-      ),
-    );
-  }
-}
-
 class RouteLogger extends NavigatorObserver {
   @override
   void didPush(Route route, Route? previousRoute) {
-    debugPrint('Route pushed: ${route.settings.name ?? route.runtimeType}, Previous: ${previousRoute?.settings.name ?? previousRoute?.runtimeType}');
+    if (kDebugMode) {
+      print('Route pushed: ${route.settings.name}, Previous: ${previousRoute?.settings.name}');
+    }
   }
 
   @override
   void didPop(Route route, Route? previousRoute) {
-    debugPrint('Route popped: ${route.settings.name ?? route.runtimeType}, Previous: ${previousRoute?.settings.name ?? previousRoute?.runtimeType}');
+    if (kDebugMode) {
+      print('Route popped: ${route.settings.name}, Previous: ${previousRoute?.settings.name}');
+    }
   }
 
   @override
   void didReplace({Route? newRoute, Route? oldRoute}) {
-    debugPrint('Route replaced: ${newRoute?.settings.name ?? newRoute?.runtimeType}, Old: ${oldRoute?.settings.name ?? oldRoute?.runtimeType}');
+    if (kDebugMode) {
+      print('Route replaced: ${newRoute?.settings.name}, Old: ${oldRoute?.settings.name}');
+    }
   }
 
   @override
   void didRemove(Route route, Route? previousRoute) {
-    debugPrint('Route removed: ${route.settings.name ?? route.runtimeType}, Previous: ${previousRoute?.settings.name ?? previousRoute?.runtimeType}');
+    if (kDebugMode) {
+      print('Route removed: ${route.settings.name}, Previous: ${previousRoute?.settings.name}');
+    }
   }
 }

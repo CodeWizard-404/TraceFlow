@@ -874,6 +874,9 @@
     }
   },
   "adminDashboard": {
+    "loading": {
+      "userDetails": "Loading user details..."
+    },
     "header": {
       "users": "Users Management",
       "roles": "Roles Management",
@@ -887,9 +890,28 @@
       "checklistDetails": "Checklist: {item}",
       "reasons": "Reasons Management",
       "addReason": "Add New Reason",
-      "reasonDetails": "Reason: {item}"
+      "reasonDetails": "Reason: {item}",
+      "notifications": "Notifications Management",
+      "addNotificationRule": "Add New Notification Rule",
+      "notificationRuleDetails": "Notification Rule: {{event}}"
     },
     "sidebar": {
+      "sortNotificationsBy": "Sort Notifications By",
+      "filterNotifications": "Filter Notifications",
+      "filterByNotificationType": "Filter by Notification Type",
+      "filterByNotificationChannel": "Filter by Notification Channel",
+      "filterByNotificationStatus": "Filter by Notification Status",
+      "allTypes": "All Types",
+      "allChannels": "All Channels",
+      "allStatuses": "All Statuses",
+      "websocket": "Websocket",
+      "email": "Email",
+      "sms": "SMS",
+      "inApp": "In-App",
+      "enabled": "Enabled",
+      "disabled": "Disabled",
+      "addNotificationRule": "Add Notification Rule",
+      "notifications": "Notifications",
       "view": "View",
       "users": "Users",
       "roles": "Roles",
@@ -900,7 +922,10 @@
       "sortOptions": {
         "name": "Name",
         "email": "Email",
-        "role": "Role"
+        "role": "Role",
+        "event": "Event",
+        "type": "Type",
+        "status": "Status"
       },
       "sortOrder": {
         "asc": "Asc",
@@ -928,7 +953,14 @@
       "createChecklistFailed": "Failed to create checklist."
     },
     "actions": {
-      "back": "Back"
+      "back": "Back",
+      "refreshUsers": "Refresh Users",
+      "refreshRoles": "Refresh Roles",
+      "refreshPermissions": "Refresh Permissions",
+      "refreshChecklists": "Refresh Checklists",
+      "refreshReasons": "Refresh Reasons",
+      "refreshNotifications": "Refresh Notifications",
+      "loading": "Loading..."
     },
     "reasonAdd": {
       "title": "Add New Reason",
