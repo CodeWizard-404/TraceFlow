@@ -30,7 +30,7 @@
       "visited": "Visité",
       "validated": "Validé",
       "rejected": "Rejeté",
-      "notScheduled": "Non planifié"
+      "notScheduled": "Non programmé"
     },
     "receiptBookStatuses": {
       "inStock": "En stock",
@@ -69,7 +69,7 @@
     "aria": {
       "label": "Pied de page"
     },
-    "copyright": "© {year} TraceFlow. Tous droits réservés.",
+    "copyright": "© {{year}} TraceFlow. Tous droits réservés.",
     "links": {
       "privacy": "Politique de confidentialité",
       "terms": "Conditions d'utilisation",
@@ -82,9 +82,9 @@
     "loading": "Chargement des détails de la visite...",
     "error": {
       "title": "Erreur",
-      "missingData": "Identifiant de visite ou jeton d'authentification manquant.",
+      "missingData": "ID de visite ou jeton d'authentification manquant.",
       "fetchFailed": "Échec du chargement des données de la visite ou de l'agent.",
-      "accessDenied": "Visite introuvable ou accès refusé.",
+      "accessDenied": "Visite non trouvée ou accès refusé.",
       "cameraAccess": "Échec de l'accès à la caméra. Veuillez vérifier les autorisations.",
       "cameraInUse": "La caméra est utilisée par une autre application ou indisponible. Veuillez fermer les autres applications ou vérifier votre appareil.",
       "cameraPlayFailed": "Échec de la lecture du flux de la caméra.",
@@ -97,7 +97,7 @@
       "title": "Détails de la visite",
       "agent": "Agent",
       "phone": "Téléphone",
-      "na": "N/D"
+      "na": "N/A"
     },
     "reasons": {
       "title": "Motifs",
@@ -136,7 +136,7 @@
     "loading": "Chargement des détails de la visite...",
     "error": {
       "title": "Oups !",
-      "notFound": "Visite introuvable.",
+      "notFound": "Visite non trouvée.",
       "fetchFailed": "Échec du chargement des détails de la visite.",
       "validateFailed": "Échec de la validation de la visite.",
       "rejectFailed": "Échec du rejet de la visite.",
@@ -144,8 +144,8 @@
       "deleteFailed": "Échec de la suppression de la visite.",
       "cameraAccess": "Échec de l'accès à la caméra. Veuillez vérifier les autorisations.",
       "cameraPlayFailed": "Échec de la lecture du flux de la caméra.",
-      "agentNotFound": "Aucun agent trouvé avec ce numéro de téléphone.",
-      "supervisorNotFound": "Aucun superviseur trouvé avec ce numéro de téléphone.",
+      "agentNotFound": "Agent non trouvé avec ce numéro de téléphone.",
+      "supervisorNotFound": "Superviseur non trouvé avec ce numéro de téléphone.",
       "agentsLoadFailed": "Échec du chargement des agents pour {location}."
     },
     "whenWhere": {
@@ -153,7 +153,7 @@
       "date": "Date",
       "time": "Heure",
       "location": "Lieu",
-      "na": "N/D"
+      "na": "N/A"
     },
     "agent": {
       "title": "Agent",
@@ -170,7 +170,7 @@
     },
     "photos": {
       "title": "Photos",
-      "count": "({{count}})",
+      "count": "({count})",
       "startCamera": "Démarrer la caméra",
       "alt": "Photo de la visite {index}"
     },
@@ -235,7 +235,7 @@
       "time": {
         "label": "Heure"
       },
-      "permissionDenied": "Permission refusée",
+      "permissionDenied": "Autorisation refusée",
       "actions": {
         "save": "Enregistrer",
         "cancel": "Annuler"
@@ -283,7 +283,7 @@
       "title": "Oups !",
       "noVisit": "Aucune visite sélectionnée.",
       "authRequired": "Authentification requise.",
-      "accessDenied": "Accès refusé : Vous n'avez pas la permission de scanner les visites.",
+      "accessDenied": "Accès refusé : Vous n'avez pas la permission de scanner des visites.",
       "mismatch": "Erreur de correspondance"
     },
     "actions": {
@@ -304,9 +304,9 @@
       "day": "Jour"
     },
     "actions": {
-      "scheduleVisit": "Planifier une visite",
+      "scheduleVisit": "Programmer une visite",
       "receiptBooks": "Carnets de reçus",
-      "current": "{{view}} Actuel(le)",
+      "current": "{{view}} actuel",
       "viewReceiptBooks": "Voir les carnets de reçus",
       "filterSupervisors": "Filtrer les superviseurs",
       "validateTimesheet": "Valider l'ensemble de la feuille de temps"
@@ -319,40 +319,40 @@
       "week": "Semaine",
       "visits": "Visites",
       "supervisors": "Superviseurs",
-      "month": "{{monthName}}",
-      "weekNumber": "Semaine {{weekNumber}} :",
-      "weekRange": "{{startDate}} - {{endDate}}",
-      "supervisorCount": "Superviseurs : {{count}}"
+      "month": "{monthName}",
+      "weekNumber": "Semaine {weekNumber} :",
+      "weekRange": "{startDate} - {endDate}",
+      "supervisorCount": "Superviseurs : {count}"
     },
     "monthView": {
       "week": "Semaine",
       "weekRange": "{startDate} - {endDate}",
       "visitCount": "{count} visites",
       "visits": "Visites",
-      "supervisorCount": "Superviseurs : {{count}}",
+      "supervisorCount": "Superviseurs : {count}",
       "status": "Statut",
       "supervisors": "Superviseurs :"
     },
     "weekView": {
       "week": "Semaine",
-      "weekRange": "{{startDate}} - {{endDate}}",
+      "weekRange": "{startDate} - {endDate}",
       "status": "Statut",
       "supervisor": "Superviseur : {firstname} {lastname}",
-      "dayName": "{{dayName}}",
-      "dayDate": "{{dayDate}}",
-      "visitCount": "/ {{count}} visites"
+      "dayName": "{dayName}",
+      "dayDate": "{dayDate}",
+      "visitCount": "/ {count} visites"
     },
     "dayView": {
-      "date": "{{weekday}} {{day}}/{{month}}",
-      "noVisits": "Aucune visite planifiée"
+      "date": "{weekday} {day}/{month}",
+      "noVisits": "Aucune visite programmée"
     },
     "visitCard": {
-      "supervisor": "{{firstname}} {{lastname}}",
-      "time": "{{time}}",
-      "status": "{{status}}",
-      "location": "{{location}}",
+      "supervisor": "{firstname} {lastname}",
+      "time": "{time}",
+      "status": "{status}",
+      "location": "{location}",
       "locationTBD": "Lieu à déterminer",
-      "reasons": "Motifs : {{reasons}}"
+      "reasons": "Motifs : {reasons}"
     },
     "aria": {
       "prevYear": "Année précédente",
@@ -363,17 +363,17 @@
       "nextWeek": "Semaine suivante",
       "prevDay": "Jour précédent",
       "nextDay": "Jour suivant",
-      "viewToggle": "Passer à la vue {{mode}}",
-      "scheduleVisit": "Planifier une nouvelle visite",
+      "viewToggle": "Passer à la vue {mode}",
+      "scheduleVisit": "Programmer une nouvelle visite",
       "receiptBooks": "Voir les carnets de reçus",
-      "current": "Faire défiler jusqu'à {{mode}} actuel",
+      "current": "Faire défiler jusqu'à {mode} actuel",
       "supervisorSearch": "Rechercher des superviseurs par nom ou téléphone",
       "supervisorFilter": "Filtrer les feuilles de temps par superviseur",
-      "month": "Voir les feuilles de temps pour {{month}}",
-      "weekTile": "Voir les détails de la semaine {{weekNumber}}",
-      "weekCard": "Voir les détails de la semaine {{weekNumber}}",
-      "dayTile": "Voir les visites pour {{weekday}} {{day}}",
-      "visitCard": "Voir les détails de la visite pour {{time}} à {{location}}"
+      "month": "Voir les feuilles de temps pour {month}",
+      "weekTile": "Voir les détails de la semaine {weekNumber}",
+      "weekCard": "Voir les détails de la semaine {weekNumber}",
+      "dayTile": "Voir les visites pour {weekday} {day}",
+      "visitCard": "Voir les détails de la visite pour {time} à {location}"
     }
   },
   "timesheetForm": {
@@ -393,7 +393,7 @@
         "supervisorPhone": "Ou entrer le numéro de téléphone du superviseur...",
         "supervisorSelect": "Sélectionner un superviseur",
         "agentPhone": "Entrer le numéro de téléphone de l'agent",
-        "permissionDenied": "Permission refusée",
+        "permissionDenied": "Autorisation refusée",
         "locationSearch": "Rechercher des lieux...",
         "locationSelect": "Sélectionner un lieu",
         "agentSearch": "Rechercher des agents...",
@@ -413,13 +413,19 @@
     "errors": {
       "loadInitialData": "Échec du chargement des données initiales. Veuillez réessayer.",
       "loadAgents": "Échec du chargement des agents pour {location}",
-      "agentNotFound": "Aucun agent trouvé avec ce numéro de téléphone",
-      "supervisorNotFound": "Aucun superviseur trouvé avec ce numéro de téléphone",
-      "createFailed": "Échec de la création de la feuille de temps. Veuillez réessayer."
+      "agentNotFound": "Agent non trouvé avec ce numéro de téléphone",
+      "supervisorNotFound": "Superviseur non trouvé avec ce numéro de téléphone",
+      "createFailed": "Échec de la création de la feuille de temps. Veuillez réessayer.",
+      "formIncomplete": "Veuillez remplir tous les champs requis."
+    },
+    "accessibility": {
+      "removeReason": "Supprimer le motif {item}",
+      "removeChecklist": "Supprimer la liste de contrôle {item}",
+      "errorAnnouncement": "Erreur : {message}"
     }
   },
   "transferReceiptBook": {
-    "title": "Transférer les carnets de reçus",
+    "title": "Transférer des carnets de reçus",
     "loading": "Chargement...",
     "form": {
       "agentSelection": "Sélection de l'agent",
@@ -429,7 +435,7 @@
       "selectedAgent": "Agent sélectionné",
       "scanCollect": "Scanner les carnets à récupérer chez le fournisseur",
       "scanQR": "Scanner les codes QR",
-      "otp": "Entrer l'OTP (envoyé à {type} {details})",
+      "otp": "Entrer le OTP (envoyé à {{type}} {{details}})",
       "location": "Sélectionner le lieu",
       "searchAgents": "Rechercher des agents",
       "selectAgent": "Sélectionner un agent",
@@ -450,41 +456,41 @@
         "searchBooks": "Rechercher des carnets par numéro ou type",
         "searchRecipient": "Entrer le numéro de téléphone ou rechercher par nom",
         "selectRecipient": "Sélectionner {{type}}",
-        "enterOTP": "Entrer l'OTP"
+        "enterOTP": "Entrer le OTP"
       }
     },
     "actions": {
-      "initiateTransfer": "Initiier le transfert",
-      "initiateStubCollection": "Initiier la collecte de souche",
-      "collectFromSupplier": "Récupérer chez le fournisseur",
+      "initiateTransfer": "Lancer le transfert",
+      "initiateStubCollection": "Lancer la collecte de souche",
+      "collectFromSupplier": "Collecter chez le fournisseur",
       "back": "Retour",
-      "initiate": "Initiier le transfert",
-      "initiateStub": "Initiier la collecte de souche",
-      "collect": "Récupérer chez le fournisseur",
+      "initiate": "Lancer le transfert",
+      "initiateStub": "Lancer la collecte de souche",
+      "collect": "Collecter chez le fournisseur",
       "validateTransfer": "Valider le transfert",
       "validateStubCollection": "Valider la collecte de souche",
       "aria": {
         "back": "Retour à l'étape précédente",
-        "initiate": "Initiier le transfert des carnets de reçus",
-        "initiateStub": "Initiier la collecte de souche",
-        "collect": "Récupérer les carnets chez le fournisseur",
+        "initiate": "Lancer le transfert des carnets de reçus",
+        "initiateStub": "Lancer la collecte de souche",
+        "collect": "Collecter les carnets chez le fournisseur",
         "validateTransfer": "Valider le transfert",
         "validateStubCollection": "Valider la collecte de souche",
-        "removeBook": "Supprimer le carnet {number}"
+        "removeBook": "Supprimer le carnet {{number}}"
       }
     },
     "types": {
       "standard": "Standard"
     },
     "pagination": {
-      "pageInfo": "Page {currentPage} sur {totalPages}",
+      "pageInfo": "Page {{currentPage}} de {{totalPages}}",
       "selectedBooks": "Carnets sélectionnés",
       "aria": {
         "previous": "Aller à la page précédente",
         "next": "Aller à la page suivante"
       }
     },
-    "otpTimer": "L'OTP expire dans",
+    "otpTimer": "Le OTP expire dans",
     "list": {
       "noBooks": "Aucun carnet en stock disponible ou correspondant à la recherche.",
       "selectedBooks": "Carnets sélectionnés",
@@ -495,29 +501,29 @@
       "supplier": "Fournisseur",
       "archive": "Archive",
       "stubCollection": "Collecte de souche",
-      "collectFromSupplier": "Récupérer chez le fournisseur"
+      "collectFromSupplier": "Collecter chez le fournisseur"
     },
     "errors": {
       "accessDenied": "Accès refusé - Permission transfer_receipt_books manquante",
-      "loadData": "Échec du chargement des données. Consultez la console pour plus de détails.",
+      "loadData": "Échec du chargement des données. Vérifiez la console pour plus de détails.",
       "fetchAgent": "Échec de la récupération des détails de l'agent.",
       "cameraAccess": "Accès à la caméra refusé ou indisponible.",
       "qrNotFound": "Code QR \"{number}\" introuvable dans les carnets de reçus.",
       "qrAlreadyScanned": "Code QR \"{number}\" déjà scanné ou sélectionné.",
-      "bookNotTransferable": "Le carnet \"{number}\" (statut : {status}) ne peut pas être transféré/collecté par votre(vos) rôle(s).",
+      "bookNotTransferable": "Le carnet \"{number}\" (statut : {status}) ne peut pas être transféré/collecté par votre rôle(s).",
       "stubNotAssigned": "Le carnet \"{number}\" doit être \"Assigné à l'agent\" pour la collecte de souche.",
       "stubNotCollected": "La souche \"{number}\" doit être \"collectée\" pour la gestion de stock.",
       "supervisorLimit": "Les superviseurs ne peuvent assigner qu'un seul carnet de reçus à un agent.",
       "invalidQR": "Format de code QR invalide. Veuillez réessayer.",
-      "otpExpired": "L'OTP a expiré. Veuillez réinitier le transfert.",
+      "otpExpired": "Le OTP a expiré. Veuillez relancer le transfert.",
       "noBooksSelected": "Veuillez sélectionner au moins un carnet.",
       "noRecipientType": "Veuillez sélectionner un type de destinataire.",
       "noSupplierEmail": "Veuillez entrer un email de fournisseur.",
       "noAgent": "Veuillez entrer un numéro de téléphone d'agent ou sélectionner un agent.",
       "noRecipient": "Veuillez sélectionner un destinataire ou entrer un numéro de téléphone.",
       "stubCollectionLimit": "La collecte de souche ne peut traiter qu'un seul carnet à la fois.",
-      "initiateFailed": "Échec de l'initiation du transfert/collecte : {message}",
-      "noOTP": "Veuillez entrer l'OTP.",
+      "initiateFailed": "Échec du lancement du transfert/collecte : {message}",
+      "noOTP": "Veuillez entrer le OTP.",
       "stubCollectionSingle": "La collecte de souche nécessite exactement un carnet.",
       "validationFailed": "OTP invalide ou échec de la validation du transfert : {message}",
       "agentNotFound": "Aucun agent trouvé avec le téléphone {phone}.",
@@ -581,17 +587,17 @@
         "qrCode": "Code QR",
         "actions": "Actions"
       },
-      "na": "N/D",
+      "na": "N/A",
       "holderLoading": "Chargement..."
     },
     "pagination": {
-      "pageInfo": "Page {currentPage} sur {totalPages}",
+      "pageInfo": "Page {currentPage} de {totalPages}",
       "previous": "Précédent",
       "next": "Suivant"
     },
     "actions": {
       "newReceipt": "Nouveau reçu",
-      "transferBooks": "Transférer les carnets",
+      "transferBooks": "Transférer des carnets",
       "create": "Créer",
       "save": "Enregistrer",
       "cancel": "Annuler",
@@ -610,26 +616,26 @@
     }
   },
   "receiptBookHistory": {
-    "title": "Historique du carnet de reçus #{number}",
+    "title": "Historique du carnet de reçus #{{number}}",
     "loading": "Suivi de l'historique...",
     "error": {
-      "accessDenied": "Accès refusé ou identifiant de carnet invalide",
+      "accessDenied": "Accès refusé ou ID de carnet invalide",
       "fetchFailed": "Échec de la récupération de l'historique ou des détails.",
-      "notFound": "Carnet de reçus introuvable."
+      "notFound": "Carnet de reçus non trouvé."
     },
     "actions": {
       "back": "Retour aux reçus"
     },
     "footer": {
-      "currentStatus": "Statut actuel : {{status}}",
-      "currentHolder": "Détenteur actuel : {{holder}}",
-      "na": "N/D"
+      "currentStatus": "Statut actuel : ",
+      "currentHolder": "Détenteur actuel : ",
+      "na": "N/A"
     },
     "timeline": {
-      "from": "De : {from}",
-      "to": "À : {to}",
-      "date": "Date : {date}",
-      "status": "Statut : {status}",
+      "from": "De",
+      "to": "À",
+      "date": "Date",
+      "status": "Statut",
       "initialStock": "Stock initial",
       "supplier": "Fournisseur"
     },
@@ -641,12 +647,12 @@
       "stubToSupervisor": "Souche vers le superviseur",
       "toStockManager": "Vers le gestionnaire de stock",
       "toRegionalManagerFromSupervisor": "Vers le responsable régional depuis le superviseur",
-      "archive": "Archiver"
+      "archive": "Archive"
     }
   },
   "pageNotFound": {
     "title": "404",
-    "subtitle": "Page introuvable",
+    "subtitle": "Page non trouvée",
     "error": {
       "message": "Oups !",
       "description": "Cette page n'existe pas ou a été déplacée."
@@ -662,7 +668,7 @@
   },
   "accessDenied": {
     "title": "Accès refusé",
-    "subtitle": "Vous n'avez pas la permission d'accéder à cette page.",
+    "subtitle": "Vous n'avez pas la permission de voir cette page.",
     "warning": {
       "message": "Zone restreinte",
       "description": "Veuillez contacter un administrateur si vous pensez qu'il s'agit d'une erreur."
@@ -676,24 +682,34 @@
       "title": "Graphiques",
       "timesheetStatus": "Statut des feuilles de temps",
       "visitStatus": "Statut des visites",
-      "supervisorTimesheets": "Feuilles de temps par superviseur",
-      "labels": {
-        "pending": "En attente",
-        "validated": "Validé"
-      }
+      "timesheetsPerSupervisor": "Feuilles de temps par superviseur",
+      "timesheetStatusPending": "En attente",
+      "timesheetStatusValidated": "Validé",
+      "visitStatusPending": "En attente",
+      "visitStatusValidated": "Validé"
     },
     "maps": {
       "title": "Visites d'aujourd'hui",
       "noVisits": "Aucune visite aujourd'hui"
     },
     "stats": {
-      "supervisorsCount": "Nombre de superviseurs",
-      "activeSupervisors": "Superviseurs actifs"
+      "supervisorsCount": {
+        "title": "Nombre de superviseurs",
+        "value": "{count} superviseurs"
+      },
+      "activeSupervisors": {
+        "title": "Superviseurs actifs",
+        "value": "{count} actifs"
+      }
     },
-    "sections": {
-      "unfinishedVisits": "Visites non terminées",
-      "emails": "Emails",
-      "toDoList": "Liste de tâches"
+    "unfinishedVisits": {
+      "title": "Visites non terminées"
+    },
+    "emails": {
+      "title": "Emails"
+    },
+    "todoList": {
+      "title": "Liste de tâches"
     }
   },
   "navbar": {
@@ -712,7 +728,7 @@
       "passwordFailed": "Échec de la mise à jour du mot de passe"
     },
     "header": {
-      "userId": "Identifiant utilisateur : {userId}",
+      "userId": "ID utilisateur : {userId}",
       "firstNameNotSet": "Prénom non défini",
       "lastNameNotSet": "Nom non défini"
     },
@@ -750,22 +766,22 @@
       "title": "Activité récente",
       "visitLogged": {
         "title": "Visite enregistrée",
-        "subtext": "Agent : {agent} | Lieu : {location}",
+        "subtext": "Agent : {{agent}} | Lieu : {{location}}",
         "amount": "+1 Visite"
       },
       "timesheetSubmitted": {
         "title": "Feuille de temps soumise",
-        "subtext": "Durée : {duration}",
+        "subtext": "Durée : {{duration}}",
         "amount": "En attente d'approbation"
       },
       "carnetDistributed": {
         "title": "Carnet distribué",
-        "subtext": "Identifiant du carnet : {carnetId} | Agent : {agent}",
+        "subtext": "ID du carnet : {{carnetId}} | Agent : {{agent}}",
         "amount": "+1 Carnet"
       },
       "soucheCollected": {
         "title": "Souche collectée",
-        "subtext": "Identifiant du carnet : {carnetId} | Statut : {status}",
+        "subtext": "ID du carnet : {{carnetId}} | Statut : {{status}}",
         "amount": "+1 Souche"
       }
     },
@@ -773,11 +789,11 @@
       "firstnameRequired": "Le prénom est requis",
       "firstnameLengthMin": "Le prénom doit comporter au moins 3 caractères",
       "firstnameLengthMax": "Le prénom doit comporter 20 caractères ou moins",
-      "firstnameFormat": "Le prénom ne peut contenir que des lettres, espaces, tirets ou apostrophes",
+      "firstnameFormat": "Le prénom ne peut contenir que des lettres, des espaces, des tirets ou des apostrophes",
       "lastnameRequired": "Le nom est requis",
       "lastnameLengthMin": "Le nom doit comporter au moins 3 caractères",
       "lastnameLengthMax": "Le nom doit comporter 20 caractères ou moins",
-      "lastnameFormat": "Le nom ne peut contenir que des lettres, espaces, tirets ou apostrophes",
+      "lastnameFormat": "Le nom ne peut contenir que des lettres, des espaces, des tirets ou des apostrophes",
       "emailRequired": "L'email est requis",
       "emailLength": "L'email doit comporter 70 caractères ou moins",
       "emailFormat": "Format d'email invalide",
@@ -811,33 +827,33 @@
       "submit": "Se connecter"
     },
     "verify2FA": {
-      "title": "Entrer l'OTP",
+      "title": "Entrer le OTP",
       "otpPlaceholder": "Code à 6 chiffres",
       "phoneMessage": "Nous avons envoyé un code à votre numéro de téléphone.",
       "emailMessage": "Nous avons envoyé un code à votre email.",
       "timer": "Temps restant : {minutes}:{seconds}",
       "trustDevice": "Faire confiance à cet appareil",
-      "resend": "Renvoyer l'OTP",
+      "resend": "Renvoyer le OTP",
       "resendCooldown": "Renvoyer dans {seconds}s",
-      "switchToEmail": "Vous ne pouvez pas accéder à votre téléphone ? Envoyer à l'email à la place.",
+      "switchToEmail": "Vous n'avez pas accès à votre téléphone ? Envoyer à l'email à la place.",
       "switchToPhone": "Envoyer au téléphone à la place.",
-      "submit": "Vérifier l'OTP",
+      "submit": "Vérifier le OTP",
       "back": "Retour à la connexion"
     },
     "forgot": {
-      "title": "Envoyer l'OTP de réinitialisation",
+      "title": "Envoyer le OTP de réinitialisation",
       "identifier": "Email ou téléphone",
       "identifierPlaceholder": "Entrer votre email ou téléphone",
-      "submit": "Envoyer l'OTP de réinitialisation",
+      "submit": "Envoyer le OTP de réinitialisation",
       "back": "Retour à la connexion"
     },
     "verifyReset": {
-      "title": "Entrer l'OTP de réinitialisation",
+      "title": "Entrer le OTP de réinitialisation",
       "otpPlaceholder": "Code à 6 chiffres",
       "timer": "Temps restant : {minutes}:{seconds}",
-      "resend": "Renvoyer l'OTP",
+      "resend": "Renvoyer le OTP",
       "resendCooldown": "Renvoyer dans {seconds}s",
-      "submit": "Vérifier l'OTP",
+      "submit": "Vérifier le OTP",
       "back": "Retour à la connexion"
     },
     "reset": {
@@ -855,26 +871,29 @@
       "passwordRequired": "Veuillez entrer un mot de passe.",
       "passwordLengthMin": "Le mot de passe doit comporter au moins 8 caractères.",
       "passwordLengthMax": "Le mot de passe ne peut pas dépasser 128 caractères.",
-      "passwordFormat": "Le mot de passe doit inclure une lettre majuscule, une lettre minuscule, un chiffre et un caractère spécial (pas d'espaces).",
+      "passwordFormat": "Le mot de passe doit inclure une lettre majuscule, une lettre minuscule, un chiffre et un caractère spécial (sans espaces).",
       "confirmPasswordRequired": "Veuillez confirmer votre mot de passe.",
       "passwordMismatch": "Les mots de passe ne correspondent pas.",
-      "otpRequired": "Veuillez entrer l'OTP à 6 chiffres.",
-      "otpFormat": "L'OTP doit comporter exactement 6 chiffres."
+      "otpRequired": "Veuillez entrer le OTP à 6 chiffres.",
+      "otpFormat": "Le OTP doit comporter exactement 6 chiffres."
     },
     "error": {
       "loginFailed": "Échec de la connexion. Veuillez vérifier votre email/téléphone et mot de passe.",
       "networkError": "Impossible de se connecter au serveur. Veuillez vérifier votre connexion Internet.",
       "invalidOtp": "OTP invalide. Veuillez réessayer.",
-      "resetOtpFailed": "Échec de l'envoi de l'OTP de réinitialisation. Veuillez vérifier votre email/téléphone et réessayer.",
+      "resetOtpFailed": "Échec de l'envoi du OTP de réinitialisation. Veuillez vérifier votre email/téléphone et réessayer.",
       "verifyResetOtpFailed": "OTP de réinitialisation invalide. Veuillez réessayer ou demander un nouveau.",
       "resetFailed": "Échec de la réinitialisation du mot de passe. Veuillez réessayer.",
-      "resendFailed": "Échec du renvoi de l'OTP. Veuillez réessayer plus tard."
+      "resendFailed": "Échec du renvoi du OTP. Veuillez réessayer plus tard."
     },
     "success": {
       "resetSuccess": "Mot de passe réinitialisé avec succès ! Veuillez vous connecter avec votre nouveau mot de passe."
     }
   },
   "adminDashboard": {
+    "loading": {
+      "userDetails": "Chargement des détails de l'utilisateur..."
+    },
     "header": {
       "users": "Gestion des utilisateurs",
       "roles": "Gestion des rôles",
@@ -888,10 +907,29 @@
       "checklistDetails": "Liste de contrôle : {item}",
       "reasons": "Gestion des motifs",
       "addReason": "Ajouter un nouveau motif",
-      "reasonDetails": "Motif : {item}"
+      "reasonDetails": "Motif : {item}",
+      "notifications": "Gestion des notifications",
+      "addNotificationRule": "Ajouter une nouvelle règle de notification",
+      "notificationRuleDetails": "Règle de notification : {{event}}"
     },
     "sidebar": {
-      "view": "Vue",
+      "sortNotificationsBy": "Trier les notifications par",
+      "filterNotifications": "Filtrer les notifications",
+      "filterByNotificationType": "Filtrer par type de notification",
+      "filterByNotificationChannel": "Filtrer par canal de notification",
+      "filterByNotificationStatus": "Filtrer par statut de notification",
+      "allTypes": "Tous les types",
+      "allChannels": "Tous les canaux",
+      "allStatuses": "Tous les statuts",
+      "websocket": "Websocket",
+      "email": "Email",
+      "sms": "SMS",
+      "inApp": "Dans l'application",
+      "enabled": "Activé",
+      "disabled": "Désactivé",
+      "addNotificationRule": "Ajouter une règle de notification",
+      "notifications": "Notifications",
+      "view": "Voir",
       "users": "Utilisateurs",
       "roles": "Rôles",
       "permissions": "Permissions",
@@ -901,7 +939,10 @@
       "sortOptions": {
         "name": "Nom",
         "email": "Email",
-        "role": "Rôle"
+        "role": "Rôle",
+        "event": "Événement",
+        "type": "Type",
+        "status": "Statut"
       },
       "sortOrder": {
         "asc": "Ascendant",
@@ -918,7 +959,7 @@
       "addReason": "Ajouter un motif"
     },
     "search": {
-      "placeholder": "Rechercher {view}..."
+      "placeholder": "Rechercher {{view}}..."
     },
     "error": {
       "noToken": "Veuillez vous connecter pour accéder au tableau de bord.",
@@ -929,7 +970,14 @@
       "createChecklistFailed": "Échec de la création de la liste de contrôle."
     },
     "actions": {
-      "back": "Retour"
+      "back": "Retour",
+      "refreshUsers": "Actualiser les utilisateurs",
+      "refreshRoles": "Actualiser les rôles",
+      "refreshPermissions": "Actualiser les permissions",
+      "refreshChecklists": "Actualiser les listes de contrôle",
+      "refreshReasons": "Actualiser les motifs",
+      "refreshNotifications": "Actualiser les notifications",
+      "loading": "Chargement..."
     },
     "reasonAdd": {
       "title": "Ajouter un nouveau motif",
@@ -942,7 +990,7 @@
         }
       },
       "actions": {
-        "create": "Créer un motif",
+        "create": "Créer le motif",
         "creating": "Création..."
       },
       "validation": {
@@ -967,7 +1015,7 @@
       "pagination": {
         "previous": "Précédent",
         "next": "Suivant",
-        "pageInfo": "Page {currentPage} sur {totalPages}"
+        "pageInfo": "Page {{currentPage}} de {{totalPages}}"
       },
       "validation": {
         "empty": "L'élément ne peut pas être vide.",
@@ -987,7 +1035,7 @@
         }
       },
       "actions": {
-        "create": "Créer une liste de contrôle",
+        "create": "Créer la liste de contrôle",
         "creating": "Création..."
       }
     }
@@ -1004,7 +1052,7 @@
     "pagination": {
       "previous": "Précédent",
       "next": "Suivant",
-      "pageInfo": "Page {currentPage} sur {totalPages}"
+      "pageInfo": "Page {currentPage} de {totalPages}"
     },
     "error": {
       "fetchFailed": "Échec du chargement des détails de l'utilisateur."
@@ -1021,7 +1069,7 @@
       "email": "Email",
       "phone": "Téléphone",
       "wallet": "Portefeuille",
-      "na": "N/D"
+      "na": "N/A"
     },
     "form": {
       "placeholders": {
@@ -1040,7 +1088,7 @@
       "noPermissions": "Aucune permission assignée"
     },
     "permissionOverrides": {
-      "title": "Remplacements de permissions",
+      "title": "Surcharges de permissions",
       "filter": "Filtrer les permissions",
       "searchPlaceholder": "Rechercher des permissions...",
       "allCategories": "Toutes les catégories",
@@ -1049,10 +1097,10 @@
     },
     "assignments": {
       "title": "Assignations",
-      "supervisors": "Superviseurs assignés à ce gestionnaire",
-      "managers": "Gestionnaires assignés à ce superviseur",
+      "supervisors": "Superviseurs assignés à ce manager",
+      "managers": "Managers assignés à ce superviseur",
       "searchSupervisorsPlaceholder": "Rechercher des superviseurs...",
-      "searchManagersPlaceholder": "Rechercher des gestionnaires..."
+      "searchManagersPlaceholder": "Rechercher des managers..."
     },
     "actions": {
       "edit": "Modifier",
@@ -1063,22 +1111,22 @@
       "saveAssignments": "Enregistrer les assignations",
       "grantPermission": "Accorder la permission",
       "revokePermission": "Révoquer la permission",
-      "removeOverride": "Supprimer le remplacement"
+      "removeOverride": "Supprimer la surcharge"
     },
     "pagination": {
       "previous": "Précédent",
       "next": "Suivant",
-      "pageInfo": "Page {{currentPage}} sur {{totalPages}}"
+      "pageInfo": "Page {{currentPage}} de {{totalPages}}"
     },
     "validation": {
       "firstnameRequired": "Le prénom est requis",
       "firstnameLengthMin": "Le prénom doit comporter au moins 3 caractères",
       "firstnameLengthMax": "Le prénom doit comporter 20 caractères ou moins",
-      "firstnameFormat": "Le prénom ne peut contenir que des lettres, espaces, tirets ou apostrophes",
+      "firstnameFormat": "Le prénom ne peut contenir que des lettres, des espaces, des tirets ou des apostrophes",
       "lastnameRequired": "Le nom est requis",
       "lastnameLengthMin": "Le nom doit comporter au moins 3 caractères",
       "lastnameLengthMax": "Le nom doit comporter 20 caractères ou moins",
-      "lastnameFormat": "Le nom ne peut contenir que des lettres, espaces, tirets ou apostrophes",
+      "lastnameFormat": "Le nom ne peut contenir que des lettres, des espaces, des tirets ou des apostrophes",
       "emailRequired": "L'email est requis",
       "emailLength": "L'email doit comporter 70 caractères ou moins",
       "emailFormat": "Format d'email invalide",
@@ -1096,10 +1144,10 @@
       "deleteFailed": "Échec de la suppression de l'utilisateur.",
       "fetchPermissionsFailed": "Échec du chargement des permissions de l'utilisateur.",
       "fetchRolePermissionsFailed": "Échec du chargement des permissions du rôle.",
-      "toggleRoleFailed": "Échec de la modification du rôle.",
+      "toggleRoleFailed": "Échec du basculement du rôle.",
       "saveAssignmentsFailed": "Échec de l'enregistrement des assignations.",
-      "saveOverridesFailed": "Échec de l'enregistrement des remplacements de permissions.",
-      "noRoleSelected": "Aucun rôle sélectionné pour le remplacement",
+      "saveOverridesFailed": "Échec de l'enregistrement des surcharges de permissions.",
+      "noRoleSelected": "Aucun rôle sélectionné pour la surcharge",
       "superAdminRestricted": "Le rôle Super Admin ne peut pas être assigné ou révoqué.",
       "adminSelfRevoke": "Vous ne pouvez pas révoquer votre propre rôle Admin."
     },
@@ -1150,11 +1198,11 @@
       "firstnameRequired": "Le prénom est requis",
       "firstnameLengthMin": "Le prénom doit comporter au moins 3 caractères",
       "firstnameLengthMax": "Le prénom doit comporter 20 caractères ou moins",
-      "firstnameFormat": "Le prénom ne peut contenir que des lettres, espaces, tirets ou apostrophes",
+      "firstnameFormat": "Le prénom ne peut contenir que des lettres, des espaces, des tirets ou des apostrophes",
       "lastnameRequired": "Le nom est requis",
       "lastnameLengthMin": "Le nom doit comporter au moins 3 caractères",
       "lastnameLengthMax": "Le nom doit comporter 20 caractères ou moins",
-      "lastnameFormat": "Le nom ne peut contenir que des lettres, espaces, tirets ou apostrophes",
+      "lastnameFormat": "Le nom ne peut contenir que des lettres, des espaces, des tirets ou des apostrophes",
       "emailRequired": "L'email est requis",
       "emailLength": "L'email doit comporter 70 caractères ou moins",
       "emailFormat": "Format d'email invalide",
@@ -1205,13 +1253,13 @@
       "saving": "Enregistrement...",
       "toggleAll": "Tout sélectionner",
       "toggleAllOff": "Tout désélectionner",
-      "deleteConfirm": "Êtes-vous sûr de vouloir supprimer le rôle \"{roleName}\" ? Cette action est irréversible."
+      "deleteConfirm": "Êtes-vous sûr de vouloir supprimer le rôle \"{roleName}\" ? Cette action ne peut pas être annulée."
     },
     "validation": {
       "nameRequired": "Le nom du rôle est requis",
       "nameLengthMin": "Le nom du rôle doit comporter au moins 3 caractères",
       "nameLengthMax": "Le nom du rôle doit comporter 20 caractères ou moins",
-      "nameFormat": "Le nom du rôle ne peut contenir que des lettres, espaces ou tirets",
+      "nameFormat": "Le nom du rôle ne peut contenir que des lettres, des espaces ou des tirets",
       "descriptionLengthMax": "La description doit comporter 150 caractères ou moins"
     },
     "error": {
@@ -1229,7 +1277,7 @@
       "custom": "Rôles personnalisés"
     },
     "roleCard": {
-      "permissionCount": "{count} permissions"
+      "permissionCount": "{{count}} Permissions"
     },
     "popup": {
       "noDescription": "Aucune description disponible",
@@ -1277,7 +1325,7 @@
       "noPermissions": "Aucune permission disponible"
     },
     "actions": {
-      "create": "Créer un rôle",
+      "create": "Créer le rôle",
       "toggleAll": "Tout sélectionner",
       "toggleAllOff": "Tout désélectionner"
     },
@@ -1285,7 +1333,7 @@
       "nameRequired": "Le nom du rôle est requis",
       "nameLengthMin": "Le nom du rôle doit comporter au moins 3 caractères",
       "nameLengthMax": "Le nom du rôle doit comporter 20 caractères ou moins",
-      "nameFormat": "Le nom du rôle ne peut contenir que des lettres, espaces ou tirets",
+      "nameFormat": "Le nom du rôle ne peut contenir que des lettres, des espaces ou des tirets",
       "descriptionLengthMax": "La description doit comporter 150 caractères ou moins"
     },
     "error": {
@@ -1338,7 +1386,7 @@
       "nameRequired": "Le nom de la permission est requis",
       "nameLengthMin": "Le nom de la permission doit comporter au moins 10 caractères",
       "nameLengthMax": "Le nom de la permission doit comporter 30 caractères ou moins",
-      "nameFormat": "Le nom de la permission ne doit contenir que des lettres minuscules et des tirets bas (ex. : read_users)",
+      "nameFormat": "Le nom de la permission ne doit contenir que des lettres minuscules et des tirets bas (par exemple, read_users)",
       "classRequired": "La classe de la permission est requise",
       "classLengthMin": "La classe doit comporter au moins 3 caractères",
       "classLengthMax": "La classe doit comporter 20 caractères ou moins",
@@ -1366,13 +1414,13 @@
       }
     },
     "actions": {
-      "create": "Créer une permission"
+      "create": "Créer la permission"
     },
     "validation": {
       "nameRequired": "Le nom de la permission est requis",
       "nameLengthMin": "Le nom de la permission doit comporter au moins 10 caractères",
       "nameLengthMax": "Le nom de la permission doit comporter 30 caractères ou moins",
-      "nameFormat": "Le nom de la permission ne doit contenir que des lettres minuscules et des tirets bas (ex. : read_users)",
+      "nameFormat": "Le nom de la permission ne doit contenir que des lettres minuscules et des tirets bas (par exemple, read_users)",
       "classRequired": "La classe de la permission est requise",
       "classLengthMin": "La classe doit comporter au moins 3 caractères",
       "classLengthMax": "La classe doit comporter 20 caractères ou moins",
@@ -1386,7 +1434,7 @@
   },
   "reasonView": {
     "title": {
-      "view": "{reasonItem}",
+      "view": "{{reasonItem}}",
       "edit": "Modifier le motif"
     },
     "actions": {

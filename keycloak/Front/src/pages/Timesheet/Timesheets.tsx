@@ -74,7 +74,6 @@ const TimesheetsSkeleton: React.FC = () => (
           className="custom-skeleton pulsing"
           style={{ width: "40px", height: "40px" }}
         />
-
       </div>
       <div className="action-buttons">
         <div
@@ -134,7 +133,8 @@ const TimesheetsSkeleton: React.FC = () => (
 const Timesheets: React.FC = React.memo(() => {
   // Hooks
   const navigate = useNavigate();
-  const { user, userRoles, effectivePermissions, permissionsLoaded } = useAuth();
+  const { user, userRoles, effectivePermissions, permissionsLoaded } =
+    useAuth();
   const supervisorID = user?.userID;
   const { t } = useTranslation();
 
@@ -266,12 +266,16 @@ const Timesheets: React.FC = React.memo(() => {
     const weekNum = Math.floor(diffDays / 7) + 1;
     const nextJan1 = new Date(year + 1, 0, 1);
     const nextFirstFridayOffset = (5 - nextJan1.getDay() + 7) % 7;
-    const nextFirstMonday = new Date(year + 1, 0, 1 + nextFirstFridayOffset - 4);
+    const nextFirstMonday = new Date(
+      year + 1,
+      0,
+      1 + nextFirstFridayOffset - 4
+    );
     return date >= nextFirstMonday
       ? getWeekNumber(date)
       : weekNum > 0 && weekNum <= getWeeksInYear(year)
-        ? weekNum
-        : 1;
+      ? weekNum
+      : 1;
   }, []);
 
   const getWeeksInYear = useCallback((year: number): number => {
@@ -280,11 +284,15 @@ const Timesheets: React.FC = React.memo(() => {
     const firstMonday = new Date(year, 0, 1 + firstFridayOffset - 4);
     const nextJan1 = new Date(year + 1, 0, 1);
     const nextFirstFridayOffset = (5 - nextJan1.getDay() + 7) % 7;
-    const nextFirstMonday = new Date(year + 1, 0, 1 + nextFirstFridayOffset - 4);
+    const nextFirstMonday = new Date(
+      year + 1,
+      0,
+      1 + nextFirstFridayOffset - 4
+    );
     return Math.floor(
       (nextFirstMonday.getTime() - firstMonday.getTime()) /
-      (1000 * 60 * 60 * 24) /
-      7
+        (1000 * 60 * 60 * 24) /
+        7
     );
   }, []);
 
@@ -337,14 +345,14 @@ const Timesheets: React.FC = React.memo(() => {
         week === 1
           ? 0
           : Number(
-            Object.entries(
-              days.reduce((acc, day) => {
-                const month = day.getMonth();
-                acc[month] = (acc[month] || 0) + 1;
-                return acc;
-              }, {} as Record<number, number>)
-            ).reduce((a, b) => (b[1] > a[1] ? b : a))[0]
-          );
+              Object.entries(
+                days.reduce((acc, day) => {
+                  const month = day.getMonth();
+                  acc[month] = (acc[month] || 0) + 1;
+                  return acc;
+                }, {} as Record<number, number>)
+              ).reduce((a, b) => (b[1] > a[1] ? b : a))[0]
+            );
 
       const matchingTimesheets = filteredTimesheets.filter(
         (ts) => ts.weekNumber === week && ts.year === currentYear
@@ -360,8 +368,9 @@ const Timesheets: React.FC = React.memo(() => {
         days,
         visits: allVisits,
         status: matchingTimesheets[0]?.status || "Not Scheduled",
-        supervisorCount: new Set(matchingTimesheets.map((ts) => ts.supervisorID))
-          .size,
+        supervisorCount: new Set(
+          matchingTimesheets.map((ts) => ts.supervisorID)
+        ).size,
       });
     }
     return months;
@@ -375,7 +384,8 @@ const Timesheets: React.FC = React.memo(() => {
         if (
           !days.some(
             (day) =>
-              day.getMonth() === currentMonth && day.getFullYear() === currentYear
+              day.getMonth() === currentMonth &&
+              day.getFullYear() === currentYear
           )
         )
           return weeks;
@@ -393,8 +403,9 @@ const Timesheets: React.FC = React.memo(() => {
             }))
           ),
           status: matchingTimesheets[0]?.status || "Not Scheduled",
-          supervisorCount: new Set(matchingTimesheets.map((ts) => ts.supervisorID))
-            .size,
+          supervisorCount: new Set(
+            matchingTimesheets.map((ts) => ts.supervisorID)
+          ).size,
         });
       },
       [] as {
@@ -460,8 +471,8 @@ const Timesheets: React.FC = React.memo(() => {
         viewMode === "year"
           ? `month-${today.getMonth()}`
           : viewMode === "month" || viewMode === "week"
-            ? `week-${currentWeek}`
-            : `day-${today.toISOString().split("T")[0]}`;
+          ? `week-${currentWeek}`
+          : `day-${today.toISOString().split("T")[0]}`;
       document.getElementById(id)?.scrollIntoView({ behavior: "smooth" });
     }, 0);
   }, [viewMode, currentWeek, updateCurrentWeekAndDay]);
@@ -491,12 +502,12 @@ const Timesheets: React.FC = React.memo(() => {
     () =>
       supervisorSearch
         ? users.filter(
-          (user) =>
-            `${user.firstname} ${user.lastname}`
-              .toLowerCase()
-              .includes(supervisorSearch.toLowerCase()) ||
-            user.phone?.toLowerCase().includes(supervisorSearch.toLowerCase())
-        )
+            (user) =>
+              `${user.firstname} ${user.lastname}`
+                .toLowerCase()
+                .includes(supervisorSearch.toLowerCase()) ||
+              user.phone?.toLowerCase().includes(supervisorSearch.toLowerCase())
+          )
         : users,
     [users, supervisorSearch]
   );
@@ -593,23 +604,23 @@ const Timesheets: React.FC = React.memo(() => {
           <div className="action-buttons">
             {(userPermissions.canCreateTimesheets ||
               userPermissions.canCreateSupervisorTimesheets) && (
-                <button
-                  className="create-btn"
-                  onClick={() =>
-                    navigate("/timesheet-form", { state: { year: currentYear } })
-                  }
-                  aria-label={t("timesheets.actions.scheduleVisit")}
-                >
-                  {t("timesheets.actions.scheduleVisit")}
-                </button>
-              )}
+              <button
+                className="create-btn"
+                onClick={() =>
+                  navigate("/timesheet-form", { state: { year: currentYear } })
+                }
+                aria-label={t("timesheets.actions.scheduleVisit")}
+              >
+                {t("timesheets.actions.scheduleVisit")}
+              </button>
+            )}
             <button
               className="current-btn"
               onClick={scrollToCurrent}
               aria-label={t("timesheets.actions.scrollToCurrent")}
             >
               {t("timesheets.actions.current", {
-                viewMode: viewMode.charAt(0).toUpperCase() + viewMode.slice(1),
+                view: t(`timesheets.viewModes.${viewMode}`),
               })}
             </button>
           </div>
@@ -669,9 +680,9 @@ const Timesheets: React.FC = React.memo(() => {
                       onClick={
                         userPermissions.canAccessTimesheetDetails
                           ? () => {
-                            setCurrentWeek(week.weekNumber);
-                            setViewMode("week");
-                          }
+                              setCurrentWeek(week.weekNumber);
+                              setViewMode("week");
+                            }
                           : undefined
                       }
                       role="button"
@@ -724,9 +735,7 @@ const Timesheets: React.FC = React.memo(() => {
             <div className="month-header">
               <button
                 className="nav-btn"
-                onClick={() =>
-                  setCurrentMonth((prev) => (prev - 1 + 12) % 12)
-                }
+                onClick={() => setCurrentMonth((prev) => (prev - 1 + 12) % 12)}
                 aria-label={t("timesheets.navigation.previousMonth")}
               >
                 <span>←</span>
@@ -753,9 +762,9 @@ const Timesheets: React.FC = React.memo(() => {
                   onClick={
                     userPermissions.canAccessTimesheetDetails
                       ? () => {
-                        setCurrentWeek(week.weekNumber);
-                        setViewMode("week");
-                      }
+                          setCurrentWeek(week.weekNumber);
+                          setViewMode("week");
+                        }
                       : undefined
                   }
                   role="button"
@@ -841,10 +850,12 @@ const Timesheets: React.FC = React.memo(() => {
                     {t("timesheets.weekView.status")}: {weekData.status}
                     {userPermissions.canReadSupervisors &&
                       weekData.supervisorID &&
-                      ` - ${t("timesheets.weekView.supervisor")}: ${users.find((u) => u.userID === weekData.supervisorID)
-                        ?.firstname || "Unknown"
-                      } ${users.find((u) => u.userID === weekData.supervisorID)
-                        ?.lastname || ""
+                      ` - ${t("timesheets.weekView.supervisor")}: ${
+                        users.find((u) => u.userID === weekData.supervisorID)
+                          ?.firstname || "Unknown"
+                      } ${
+                        users.find((u) => u.userID === weekData.supervisorID)
+                          ?.lastname || ""
                       }`}
                   </p>
                 </div>
@@ -869,16 +880,18 @@ const Timesheets: React.FC = React.memo(() => {
                 {weekData.days.map((day) => {
                   const dayStr = `${day.getFullYear()}-${String(
                     day.getMonth() + 1
-                  ).padStart(2, "0")}-${String(day.getDate()).padStart(2, "0")}`;
+                  ).padStart(2, "0")}-${String(day.getDate()).padStart(
+                    2,
+                    "0"
+                  )}`;
                   const dayVisits = sortVisitsByTime(
                     weekData.visits.filter((v) => {
                       const visitDate = new Date(v.date);
                       const visitDateStr = `${visitDate.getFullYear()}-${String(
                         visitDate.getMonth() + 1
-                      ).padStart(2, "0")}-${String(visitDate.getDate()).padStart(
-                        2,
-                        "0"
-                      )}`;
+                      ).padStart(2, "0")}-${String(
+                        visitDate.getDate()
+                      ).padStart(2, "0")}`;
                       return visitDateStr === dayStr;
                     })
                   );
@@ -889,9 +902,9 @@ const Timesheets: React.FC = React.memo(() => {
                         onClick={
                           userPermissions.canAccessTimesheetDetails
                             ? () => {
-                              setCurrentDay(day);
-                              setViewMode("day");
-                            }
+                                setCurrentDay(day);
+                                setViewMode("day");
+                              }
                             : undefined
                         }
                         role="button"
@@ -919,8 +932,8 @@ const Timesheets: React.FC = React.memo(() => {
                         <span className="visit-count">
                           {dayVisits.length > 0
                             ? `/ ${dayVisits.length} ${t(
-                              "timesheets.weekView.visits"
-                            )}`
+                                "timesheets.weekView.visits"
+                              )}`
                             : ""}
                         </span>
                       </div>
@@ -930,7 +943,9 @@ const Timesheets: React.FC = React.memo(() => {
                             <div
                               key={visit.visitID}
                               className="visit-card"
-                              onClick={() => navigate(`/visit/${visit.visitID}`)}
+                              onClick={() =>
+                                navigate(`/visit/${visit.visitID}`)
+                              }
                               role="button"
                               tabIndex={0}
                               onKeyDown={(e) =>
@@ -938,7 +953,10 @@ const Timesheets: React.FC = React.memo(() => {
                                 navigate(`/visit/${visit.visitID}`)
                               }
                               aria-label={t("timesheets.weekView.visitCard", {
-                                time: visit.time.split(":").slice(0, 2).join(":"),
+                                time: visit.time
+                                  .split(":")
+                                  .slice(0, 2)
+                                  .join(":"),
                                 location: visit.location || "Location TBD",
                               })}
                             >
@@ -963,7 +981,10 @@ const Timesheets: React.FC = React.memo(() => {
                                 {visit.time && (
                                   <span className="visit-time">
                                     <FaClock />{" "}
-                                    {visit.time.split(":").slice(0, 2).join(":")}
+                                    {visit.time
+                                      .split(":")
+                                      .slice(0, 2)
+                                      .join(":")}
                                   </span>
                                 )}
                                 <span
@@ -1054,15 +1075,16 @@ const Timesheets: React.FC = React.memo(() => {
                       location: visit.location || "Location TBD",
                     })}
                   >
-                    {userPermissions.canReadSupervisors && visit.supervisorID && (
-                      <p className="visit-supervisor">
-                        <FaRegUser />{" "}
-                        {users.find((u) => u.userID === visit.supervisorID)
-                          ?.firstname || t("timesheets.unknown")}{" "}
-                        {users.find((u) => u.userID === visit.supervisorID)
-                          ?.lastname || ""}
-                      </p>
-                    )}
+                    {userPermissions.canReadSupervisors &&
+                      visit.supervisorID && (
+                        <p className="visit-supervisor">
+                          <FaRegUser />{" "}
+                          {users.find((u) => u.userID === visit.supervisorID)
+                            ?.firstname || t("timesheets.unknown")}{" "}
+                          {users.find((u) => u.userID === visit.supervisorID)
+                            ?.lastname || ""}
+                        </p>
+                      )}
                     <div className="visit-header">
                       {visit.time && (
                         <span className="visit-time">

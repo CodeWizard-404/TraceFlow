@@ -1,1452 +1,1452 @@
 {
   "common": {
     "months": {
-      "0": "January",
-      "1": "February",
-      "2": "March",
-      "3": "April",
-      "4": "May",
-      "5": "June",
-      "6": "July",
-      "7": "August",
-      "8": "September",
-      "9": "October",
-      "10": "November",
-      "11": "December"
+      "0": "Janvier",
+      "1": "Février",
+      "2": "Mars",
+      "3": "Avril",
+      "4": "Mai",
+      "5": "Juin",
+      "6": "Juillet",
+      "7": "Août",
+      "8": "Septembre",
+      "9": "Octobre",
+      "10": "Novembre",
+      "11": "Décembre"
     },
     "weekdays": {
       "short": {
-        "0": "Sun",
-        "1": "Mon",
-        "2": "Tue",
-        "3": "Wed",
-        "4": "Thu",
-        "5": "Fri",
-        "6": "Sat"
+        "0": "Dim",
+        "1": "Lun",
+        "2": "Mar",
+        "3": "Mer",
+        "4": "Jeu",
+        "5": "Ven",
+        "6": "Sam"
       }
     },
     "statuses": {
-      "pending": "Pending",
-      "visited": "Visited",
-      "validated": "Validated",
-      "rejected": "Rejected",
-      "notScheduled": "Not Scheduled"
+      "pending": "En attente",
+      "visited": "Visité",
+      "validated": "Validé",
+      "rejected": "Rejeté",
+      "notScheduled": "Non planifié"
     },
     "receiptBookStatuses": {
-      "inStock": "In Stock",
-      "sentToSupplier": "Sent to Supplier",
-      "collectFromSupplier": "Collect from Supplier",
-      "withRegionalManager": "With Regional Manager",
-      "stubCollected": "Stub Collected",
-      "withSupervisor": "With Supervisor",
-      "assignedToAgent": "Assigned to Agent",
-      "withStockManager": "With Stock Manager",
-      "stubCollectedStatus": "collected"
+      "inStock": "En stock",
+      "sentToSupplier": "Envoyé au fournisseur",
+      "collectFromSupplier": "À récupérer chez le fournisseur",
+      "withRegionalManager": "Avec le responsable régional",
+      "stubCollected": "Coupon collecté",
+      "withSupervisor": "Avec le superviseur",
+      "assignedToAgent": "Assigné à l'agent",
+      "withStockManager": "Avec le gestionnaire de stock",
+      "stubCollectedStatus": "collecté"
     },
-    "durationUnit": "m"
+    "durationUnit": "min"
   },
   "header": {
-    "logoAlt": "Company Logo",
+    "logoAlt": "Logo de l'entreprise",
     "aria": {
-      "toggleMenu": "Toggle navigation menu",
-      "themeToggle": "Switch to {mode} mode",
-      "logout": "Log out"
+      "toggleMenu": "Basculer le menu de navigation",
+      "themeToggle": "Passer au mode {mode}",
+      "logout": "Se déconnecter"
     },
-    "theme": "Theme",
-    "selectLanguage": "Select language",
-    "logout": "Logout",
-    "darkMode": "dark",
-    "lightMode": "light",
+    "theme": "Thème",
+    "selectLanguage": "Sélectionner la langue",
+    "logout": "Déconnexion",
+    "darkMode": "sombre",
+    "lightMode": "clair",
     "navbar": {
-      "dashboard": "Dashboard",
-      "admin": "Admin",
-      "timesheets": "Timesheets",
-      "receiptBooks": "Receipt Books",
-      "profile": "Profile"
+      "dashboard": "Tableau de bord",
+      "admin": "Administration",
+      "timesheets": "Feuilles de temps",
+      "receiptBooks": "Carnets de reçus",
+      "profile": "Profil"
     }
   },
   "footer": {
     "aria": {
-      "label": "Footer"
+      "label": "Pied de page"
     },
-    "copyright": "© {year} TraceFlow. All rights reserved.",
+    "copyright": "© {{year}} TraceFlow. Tous droits réservés.",
     "links": {
-      "privacy": "Privacy Policy",
-      "terms": "Terms of Service",
-      "contact": "Contact Us"
+      "privacy": "Politique de confidentialité",
+      "terms": "Conditions d'utilisation",
+      "contact": "Nous contacter"
     }
   },
   "visitValidation": {
-    "title": "Validate Visit",
-    "description": "Complete the checklist, add photos, and validate the visit.",
-    "loading": "Loading Visit Details...",
+    "title": "Valider la visite",
+    "description": "Complétez la liste de contrôle, ajoutez des photos et validez la visite.",
+    "loading": "Chargement des détails de la visite...",
     "error": {
-      "title": "Error",
-      "missingData": "Missing visit ID or authentication token.",
-      "fetchFailed": "Failed to load visit or agent data.",
-      "accessDenied": "Visit not found or access denied.",
-      "cameraAccess": "Failed to access camera. Please ensure permissions are granted.",
-      "cameraInUse": "Camera is in use by another app or unavailable. Please close other apps or check your device.",
-      "cameraPlayFailed": "Failed to play camera stream.",
-      "validationFailed": "Failed to validate visit.",
-      "noPhotos": "At least one photo is required.",
-      "noChecklists": "No checklists available for this visit.",
-      "missingChecklists": "Please complete all checklist items before submitting."
+      "title": "Erreur",
+      "missingData": "ID de visite ou jeton d'authentification manquant.",
+      "fetchFailed": "Échec du chargement des données de visite ou d'agent.",
+      "accessDenied": "Visite non trouvée ou accès refusé.",
+      "cameraAccess": "Échec de l'accès à la caméra. Veuillez vérifier que les autorisations sont accordées.",
+      "cameraInUse": "La caméra est utilisée par une autre application ou indisponible. Veuillez fermer les autres applications ou vérifier votre appareil.",
+      "cameraPlayFailed": "Échec de la lecture du flux de la caméra.",
+      "validationFailed": "Échec de la validation de la visite.",
+      "noPhotos": "Au moins une photo est requise.",
+      "noChecklists": "Aucune liste de contrôle disponible pour cette visite.",
+      "missingChecklists": "Veuillez compléter tous les éléments de la liste de contrôle avant de soumettre."
     },
     "visitDetails": {
-      "title": "Visit Details",
+      "title": "Détails de la visite",
       "agent": "Agent",
-      "phone": "Phone",
+      "phone": "Téléphone",
       "na": "N/A"
     },
     "reasons": {
-      "title": "Reasons",
-      "noData": "No reasons specified."
+      "title": "Motifs",
+      "noData": "Aucun motif spécifié."
     },
     "checklist": {
-      "title": "Checklist",
-      "noData": "No checklist items available.",
-      "itemLabel": "{item}"
+      "title": "Liste de contrôle",
+      "noData": "Aucun élément de liste de contrôle disponible.",
+      "itemLabel": "{{item}}"
     },
     "photos": {
       "title": "Photos",
-      "startCamera": "Start Camera",
-      "note": "At least one photo is required.",
-      "alt": "Visit photo {index}"
+      "startCamera": "Démarrer la caméra",
+      "note": "Au moins une photo est requise.",
+      "alt": "Photo de visite {{index}}"
     },
     "comment": {
-      "title": "Comment (Optional)",
-      "label": "Comment",
-      "placeholder": "Add a comment about the visit..."
+      "title": "Commentaire (facultatif)",
+      "label": "Commentaire",
+      "placeholder": "Ajouter un commentaire sur la visite..."
     },
     "actions": {
-      "validate": "Validate Visit",
-      "validating": "Validating...",
-      "back": "Back",
-      "cancel": "Cancel",
-      "submit": "Submit Validation"
+      "validate": "Valider la visite",
+      "validating": "Validation en cours...",
+      "back": "Retour",
+      "cancel": "Annuler",
+      "submit": "Soumettre la validation"
     },
     "success": {
-      "title": "Success",
-      "message": "Visit validated successfully."
+      "title": "Succès",
+      "message": "Visite validée avec succès."
     }
   },
   "visitDetails": {
-    "title": "Visit Details",
-    "loading": "Loading visit details...",
+    "title": "Détails de la visite",
+    "loading": "Chargement des détails de la visite...",
     "error": {
-      "title": "Oops!",
-      "notFound": "Visit not found.",
-      "fetchFailed": "Failed to load visit details.",
-      "validateFailed": "Failed to validate visit.",
-      "rejectFailed": "Failed to reject visit.",
-      "updateFailed": "Failed to update visit.",
-      "deleteFailed": "Failed to delete visit.",
-      "cameraAccess": "Failed to access camera. Please ensure permissions are granted.",
-      "cameraPlayFailed": "Failed to play camera stream.",
-      "agentNotFound": "Agent not found with this phone number.",
-      "supervisorNotFound": "Supervisor not found with this phone number.",
-      "agentsLoadFailed": "Failed to load agents for {location}."
+      "title": "Oups !",
+      "notFound": "Visite non trouvée.",
+      "fetchFailed": "Échec du chargement des détails de la visite.",
+      "validateFailed": "Échec de la validation de la visite.",
+      "rejectFailed": "Échec du rejet de la visite.",
+      "updateFailed": "Échec de la mise à jour de la visite.",
+      "deleteFailed": "Échec de la suppression de la visite.",
+      "cameraAccess": "Échec de l'accès à la caméra. Veuillez vérifier que les autorisations sont accordées.",
+      "cameraPlayFailed": "Échec de la lecture du flux de la caméra.",
+      "agentNotFound": "Agent non trouvé avec ce numéro de téléphone.",
+      "supervisorNotFound": "Superviseur non trouvé avec ce numéro de téléphone.",
+      "agentsLoadFailed": "Échec du chargement des agents pour {{location}}."
     },
     "whenWhere": {
-      "title": "When & Where",
+      "title": "Quand et où",
       "date": "Date",
-      "time": "Time",
-      "location": "Location",
+      "time": "Heure",
+      "location": "Lieu",
       "na": "N/A"
     },
     "agent": {
       "title": "Agent",
-      "noData": "No agent assigned",
-      "phone": "Phone"
+      "noData": "Aucun agent assigné",
+      "phone": "Téléphone"
     },
     "reasons": {
-      "title": "Reasons",
-      "noData": "No reasons listed"
+      "title": "Motifs",
+      "noData": "Aucun motif répertorié"
     },
     "checklist": {
-      "title": "Checklist",
-      "noData": "No checklist items"
+      "title": "Liste de contrôle",
+      "noData": "Aucun élément de liste de contrôle"
     },
     "photos": {
       "title": "Photos",
-      "count": "({count})",
-      "startCamera": "Start Camera",
-      "alt": "Visit photo {index}"
+      "count": "({{count}})",
+      "startCamera": "Démarrer la caméra",
+      "alt": "Photo de visite {index}"
     },
     "comment": {
-      "title": "Comment",
-      "label": "Comment",
-      "placeholder": "Add a comment..."
+      "title": "Commentaire",
+      "label": "Commentaire",
+      "placeholder": "Ajouter un commentaire..."
     },
     "supervisor": {
-      "title": "Supervisor",
-      "searchNamePlaceholder": "Search supervisors by name...",
-      "searchPhonePlaceholder": "Or enter supervisor phone number...",
-      "selectPlaceholder": "Select a supervisor",
-      "ariaLabel": "Select a supervisor"
+      "title": "Superviseur",
+      "searchNamePlaceholder": "Rechercher des superviseurs par nom...",
+      "searchPhonePlaceholder": "Ou saisir le numéro de téléphone du superviseur...",
+      "selectPlaceholder": "Sélectionner un superviseur",
+      "ariaLabel": "Sélectionner un superviseur"
     },
     "form": {
       "agentPhone": {
-        "label": "Agent Phone (Optional)",
-        "placeholder": "Enter agent's phone number"
+        "label": "Téléphone de l'agent (facultatif)",
+        "placeholder": "Saisir le numéro de téléphone de l'agent"
       },
       "location": {
-        "label": "Location",
-        "searchPlaceholder": "Search locations...",
-        "selectPlaceholder": "Select a location"
+        "label": "Lieu",
+        "searchPlaceholder": "Rechercher des lieux...",
+        "selectPlaceholder": "Sélectionner un lieu"
       },
       "agent": {
         "label": "Agent",
-        "searchPlaceholder": "Search agents...",
-        "selectPlaceholder": "Select an agent"
+        "searchPlaceholder": "Rechercher des agents...",
+        "selectPlaceholder": "Sélectionner un agent"
       },
       "reasons": {
-        "label": "Reasons",
-        "searchPlaceholder": "Search reasons...",
-        "selectPlaceholder": "Select a reason"
+        "label": "Motifs",
+        "searchPlaceholder": "Rechercher des motifs...",
+        "selectPlaceholder": "Sélectionner un motif"
       },
       "checklists": {
-        "label": "Checklists",
-        "searchPlaceholder": "Search checklists...",
-        "selectPlaceholder": "Select a checklist"
+        "label": "Listes de contrôle",
+        "searchPlaceholder": "Rechercher des listes de contrôle...",
+        "selectPlaceholder": "Sélectionner une liste de contrôle"
       },
       "photos": {
         "title": "Photos",
-        "startCamera": "Start Camera",
-        "lastCapturedAlt": "Last captured photo",
-        "existingAlt": "Photo {index}",
-        "newAlt": "New photo {index}"
+        "startCamera": "Démarrer la caméra",
+        "lastCapturedAlt": "Dernière photo capturée",
+        "existingAlt": "Photo {{index}}",
+        "newAlt": "Nouvelle photo {{index}}"
       },
       "comment": {
-        "label": "Comment",
-        "placeholder": "Add a comment..."
+        "label": "Commentaire",
+        "placeholder": "Ajouter un commentaire..."
       },
       "supervisor": {
-        "label": "Supervisor",
-        "searchPlaceholder": "Search supervisors by name...",
-        "phonePlaceholder": "Or enter supervisor phone number...",
-        "selectPlaceholder": "Select a supervisor",
-        "ariaLabel": "Select a supervisor"
+        "label": "Superviseur",
+        "searchPlaceholder": "Rechercher des superviseurs par nom...",
+        "phonePlaceholder": "Ou saisir le numéro de téléphone du superviseur...",
+        "selectPlaceholder": "Sélectionner un superviseur",
+        "ariaLabel": "Sélectionner un superviseur"
       },
       "date": {
         "label": "Date"
       },
       "time": {
-        "label": "Time"
+        "label": "Heure"
       },
-      "permissionDenied": "Permission denied",
+      "permissionDenied": "Permission refusée",
       "actions": {
-        "save": "Save",
-        "cancel": "Cancel"
+        "save": "Enregistrer",
+        "cancel": "Annuler"
       }
     },
     "actions": {
-      "edit": "Edit",
-      "delete": "Delete",
-      "back": "Back",
-      "logVisit": "Log Visit",
-      "validate": "Validate",
-      "reject": "Reject",
-      "save": "Save",
-      "cancel": "Cancel",
-      "deleteConfirm": "Are you sure you want to delete this visit?"
+      "edit": "Modifier",
+      "delete": "Supprimer",
+      "back": "Retour",
+      "logVisit": "Enregistrer la visite",
+      "validate": "Valider",
+      "reject": "Rejeter",
+      "save": "Enregistrer",
+      "cancel": "Annuler",
+      "deleteConfirm": "Êtes-vous sûr de vouloir supprimer cette visite ?"
     },
-    "duration": "{duration}m",
-    "fullscreenAlt": "Fullscreen preview",
+    "duration": "{{duration}}min",
+    "fullscreenAlt": "Aperçu en plein écran",
     "aria": {
-      "backButton": "Return to previous page",
-      "logVisit": "Log this visit",
-      "editVisit": "Edit visit details",
-      "deleteVisit": "Delete this visit",
-      "cancelVisit": "Cancel this visit",
-      "validateVisit": "Validate this visit",
-      "tabGeneral": "View general visit information",
-      "tabTimesheet": "View timesheet information",
-      "tabHistory": "View visit history",
-      "errorMessage": "Error message",
-      "supervisorSelect": "Select a supervisor for the visit"
+      "backButton": "Retourner à la page précédente",
+      "logVisit": "Enregistrer cette visite",
+      "editVisit": "Modifier les détails de la visite",
+      "deleteVisit": "Supprimer cette visite",
+      "cancelVisit": "Annuler cette visite",
+      "validateVisit": "Valider cette visite",
+      "tabGeneral": "Voir les informations générales de la visite",
+      "tabTimesheet": "Voir les informations de la feuille de temps",
+      "tabHistory": "Voir l'historique de la visite",
+      "errorMessage": "Message d'erreur",
+      "supervisorSelect": "Sélectionner un superviseur pour la visite"
     }
   },
   "qrScan": {
-    "title": "Scan QR Code",
-    "description": "Align the QR code within the frame to validate the visit.",
-    "loading": "Loading...",
+    "title": "Scanner le code QR",
+    "description": "Alignez le code QR dans le cadre pour valider la visite.",
+    "loading": "Chargement...",
     "status": {
-      "startingCamera": "Starting camera...",
-      "scanning": "Scanning...",
-      "detected": "QR Code Detected",
-      "checking": "Checking...",
-      "validating": "Validating..."
+      "startingCamera": "Démarrage de la caméra...",
+      "scanning": "Scan en cours...",
+      "detected": "Code QR détecté",
+      "checking": "Vérification...",
+      "validating": "Validation..."
     },
     "error": {
-      "title": "Oops!",
-      "noVisit": "No visit selected.",
-      "authRequired": "Authentication required.",
-      "accessDenied": "Access Denied: You lack permission to scan visits.",
-      "mismatch": "Mismatch error"
+      "title": "Oups !",
+      "noVisit": "Aucune visite sélectionnée.",
+      "authRequired": "Authentification requise.",
+      "accessDenied": "Accès refusé : Vous n'avez pas la permission de scanner des visites.",
+      "mismatch": "Erreur de correspondance"
     },
     "actions": {
-      "back": "Back"
+      "back": "Retour"
     },
     "aria": {
-      "backButton": "Return to previous page",
-      "qrReader": "QR code scanner, current status: {status}",
-      "errorMessage": "Error message"
+      "backButton": "Retourner à la page précédente",
+      "qrReader": "Scanner de code QR, état actuel : {{status}}",
+      "errorMessage": "Message d'erreur"
     }
   },
   "timesheets": {
-    "loading": "Loading Timesheet...",
+    "loading": "Chargement de la feuille de temps...",
     "viewModes": {
-      "year": "Year",
-      "month": "Month",
-      "week": "Week",
-      "day": "Day"
+      "year": "Année",
+      "month": "Mois",
+      "week": "Semaine",
+      "day": "Jour"
     },
     "actions": {
-      "scheduleVisit": "Schedule Visit",
-      "receiptBooks": "Receipt Books",
-      "current": "Current {{view}}",
-      "viewReceiptBooks": "View Receipt Books",
-      "filterSupervisors": "Filter Supervisors",
-      "validateTimesheet": "Validate Entire Timesheet"
+      "scheduleVisit": "Planifier une visite",
+      "receiptBooks": "Carnets de reçus",
+      "current": "{{view}} actuel",
+      "viewReceiptBooks": "Voir les carnets de reçus",
+      "filterSupervisors": "Filtrer les superviseurs",
+      "validateTimesheet": "Valider l'ensemble de la feuille de temps"
     },
     "filter": {
-      "searchPlaceholder": "Search by name or phone...",
-      "allSupervisors": "All Supervisors"
+      "searchPlaceholder": "Rechercher par nom ou téléphone...",
+      "allSupervisors": "Tous les superviseurs"
     },
     "yearView": {
-      "week": "Week",
-      "visits": "Visits",
-      "supervisors": "Supervisors",
-      "month": "{monthName}",
-      "weekNumber": "Week {weekNumber} :",
-      "weekRange": "{startDate} - {endDate}",
-      "supervisorCount": "Supervisors: {count}"
+      "week": "Semaine",
+      "visits": "Visites",
+      "supervisors": "Superviseurs",
+      "month": "{{monthName}}",
+      "weekNumber": "Semaine {{weekNumber}} :",
+      "weekRange": "{{startDate}} - {{endDate}}",
+      "supervisorCount": "Superviseurs : {{count}}"
     },
     "monthView": {
-      "week": "Week",
-      "weekRange": "{startDate} - {endDate}",
-      "visitCount": "{count} Visits",
-      "visits": "Visits",
-      "supervisorCount": "Supervisors: {count}",
-      "status": "Status",
-      "supervisors": "Supervisors:"
+      "week": "Semaine",
+      "weekRange": "{{startDate}} - {{endDate}}",
+      "visitCount": "{{count}} Visites",
+      "visits": "Visites",
+      "supervisorCount": "Superviseurs : {{count}}",
+      "status": "Statut",
+      "supervisors": "Superviseurs :"
     },
     "weekView": {
-      "week": "Week",
-      "weekRange": "{startDate} - {endDate}",
-      "status": "Status",
-      "supervisor": "Supervisor: {firstname} {lastname}",
-      "dayName": "{dayName}",
-      "dayDate": "{dayDate}",
-      "visitCount": "/ {count} Visits"
+      "week": "Semaine",
+      "weekRange": "{{startDate}} - {{endDate}}",
+      "status": "Statut",
+      "supervisor": "Superviseur : {{firstname}} {{lastname}}",
+      "dayName": "{{dayName}}",
+      "dayDate": "{{dayDate}}",
+      "visitCount": "/ {{count}} Visites"
     },
     "dayView": {
-      "date": "{weekday} {day}/{month}",
-      "noVisits": "No Visits Scheduled"
+      "date": "{{weekday}} {{day}}/{{month}}",
+      "noVisits": "Aucune visite planifiée"
     },
     "visitCard": {
-      "supervisor": "{firstname} {lastname}",
-      "time": "{time}",
-      "status": "{status}",
-      "location": "{location}",
-      "locationTBD": "Location TBD",
-      "reasons": "Reasons: {reasons}"
+      "supervisor": "{{firstname}} {{lastname}}",
+      "time": "{{time}}",
+      "status": "{{status}}",
+      "location": "{{location}}",
+      "locationTBD": "Lieu à déterminer",
+      "reasons": "Motifs : {{reasons}}"
     },
     "aria": {
-      "prevYear": "Previous year",
-      "nextYear": "Next year",
-      "prevMonth": "Previous month",
-      "nextMonth": "Next month",
-      "prevWeek": "Previous week",
-      "nextWeek": "Next week",
-      "prevDay": "Previous day",
-      "nextDay": "Next day",
-      "viewToggle": "Switch to {mode} view",
-      "scheduleVisit": "Schedule a new visit",
-      "receiptBooks": "View receipt books",
-      "current": "Scroll to current {mode}",
-      "supervisorSearch": "Search supervisors by name or phone",
-      "supervisorFilter": "Filter timesheets by supervisor",
-      "month": "View timesheets for {month}",
-      "weekTile": "View week {weekNumber} details",
-      "weekCard": "View week {weekNumber} details",
-      "dayTile": "View visits for {weekday} {day}",
-      "visitCard": "View visit details for {time} at {location}"
+      "prevYear": "Année précédente",
+      "nextYear": "Année suivante",
+      "prevMonth": "Mois précédent",
+      "nextMonth": "Mois suivant",
+      "prevWeek": "Semaine précédente",
+      "nextWeek": "Semaine suivante",
+      "prevDay": "Jour précédent",
+      "nextDay": "Jour suivant",
+      "viewToggle": "Passer à la vue {{mode}}",
+      "scheduleVisit": "Planifier une nouvelle visite",
+      "receiptBooks": "Voir les carnets de reçus",
+      "current": "Faire défiler jusqu'à {{mode}} actuel",
+      "supervisorSearch": "Rechercher des superviseurs par nom ou téléphone",
+      "supervisorFilter": "Filtrer les feuilles de temps par superviseur",
+      "month": "Voir les feuilles de temps pour {{month}}",
+      "weekTile": "Voir les détails de la semaine {{weekNumber}}",
+      "weekCard": "Voir les détails de la semaine {{weekNumber}}",
+      "dayTile": "Voir les visites pour {{weekday}} {{day}}",
+      "visitCard": "Voir les détails de la visite pour {{time}} à {{location}}"
     }
-  },"timesheetForm": {
-    "title": "Create Visit",
-    "loading": "Loading...",
+  },
+  "timesheetForm": {
+    "title": "Créer une visite",
+    "loading": "Chargement...",
     "form": {
-      "supervisor": "Supervisor",
+      "supervisor": "Superviseur",
       "date": "Date",
-      "time": "Time",
-      "agentPhone": "Agent Phone (Optional)",
-      "location": "Location",
+      "time": "Heure",
+      "agentPhone": "Téléphone de l'agent (facultatif)",
+      "location": "Lieu",
       "agent": "Agent",
-      "reasons": "Reasons",
-      "checklists": "Checklists",
+      "reasons": "Motifs",
+      "checklists": "Listes de contrôle",
       "placeholders": {
-        "supervisorSearch": "Search supervisors by name...",
-        "supervisorPhone": "Or enter supervisor phone number...",
-        "supervisorSelect": "Select a supervisor",
-        "agentPhone": "Enter agent's phone number",
-        "permissionDenied": "Permission denied",
-        "locationSearch": "Search locations...",
-        "locationSelect": "Select a location",
-        "agentSearch": "Search agents...",
-        "agentSearchPlaceholder": "Search agents...",
-        "agentSelect": "Select an agent",
-        "reasonSearch": "Search reasons...",
-        "reasonSelect": "Select a reason",
-        "checklistSearch": "Search checklists...",
-        "checklistSelect": "Select a checklist"
+        "supervisorSearch": "Rechercher des superviseurs par nom...",
+        "supervisorPhone": "Ou saisir le numéro de téléphone du superviseur...",
+        "supervisorSelect": "Sélectionner un superviseur",
+        "agentPhone": "Saisir le numéro de téléphone de l'agent",
+        "permissionDenied": "Permission refusée",
+        "locationSearch": "Rechercher des lieux...",
+        "locationSelect": "Sélectionner un lieu",
+        "agentSearch": "Rechercher des agents...",
+        "agentSearchPlaceholder": "Rechercher des agents...",
+        "agentSelect": "Sélectionner un agent",
+        "reasonSearch": "Rechercher des motifs...",
+        "reasonSelect": "Sélectionner un motif",
+        "checklistSearch": "Rechercher des listes de contrôle...",
+        "checklistSelect": "Sélectionner une liste de contrôle"
       }
     },
     "actions": {
-      "back": "Back",
-      "create": "Create Timesheet",
-      "submitting": "Submitting..."
+      "back": "Retour",
+      "create": "Créer une feuille de temps",
+      "submitting": "Soumission en cours..."
     },
     "errors": {
-      "loadInitialData": "Failed to load initial data. Please try again.",
-      "loadAgents": "Failed to load agents for {location}",
-      "agentNotFound": "Agent not found with this phone number",
-      "supervisorNotFound": "Supervisor not found with this phone number",
-      "createFailed": "Failed to create timesheet. Please try again.",
-      "formIncomplete": "Please fill out all required fields."
+      "loadInitialData": "Échec du chargement des données initiales. Veuillez réessayer.",
+      "loadAgents": "Échec du chargement des agents pour {{location}}",
+      "agentNotFound": "Agent non trouvé avec ce numéro de téléphone",
+      "supervisorNotFound": "Superviseur non trouvé avec ce numéro de téléphone",
+      "createFailed": "Échec de la création de la feuille de temps. Veuillez réessayer.",
+      "formIncomplete": "Veuillez remplir tous les champs requis."
     },
     "accessibility": {
-      "removeReason": "Remove reason {item}",
-      "removeChecklist": "Remove checklist {item}",
-      "errorAnnouncement": "Error: {message}"
+      "removeReason": "Supprimer le motif {{item}}",
+      "removeChecklist": "Supprimer la liste de contrôle {{item}}",
+      "errorAnnouncement": "Erreur : {{message}}"
     }
   },
   "transferReceiptBook": {
-    "title": "Transfer Receipt Books",
-    "loading": "Loading...",
+    "title": "Transférer les carnets de reçus",
+    "loading": "Chargement...",
     "form": {
-      "agentSelection": "Agent Selection",
-      "recipientType": "Recipient Type",
-      "supplierEmail": "Supplier Email",
-      "selectBooks": "Select In Stock Books to Transfer",
-      "selectedAgent": "Selected Agent",
-      "scanCollect": "Scan Books to Collect from Supplier",
-      "scanQR": "Scan QR Codes",
-      "otp": "Enter OTP (Sent to {{type}} {{details}})",
-      "location": "Select Location",
-      "searchAgents": "Search Agents",
-      "selectAgent": "Select Agent",
-      "recipientSelection": "Recipient Selection",
-      "selectRecipient": "Select {{type}}",
-      "selectedUser": "Selected User",
-      "selectedBooks": "Selected Books",
-      "scanStub": "Scan Stub",
-      "noBooksAvailable": "No Books Available",
-      "or": "or",
+      "agentSelection": "Sélection de l'agent",
+      "recipientType": "Type de destinataire",
+      "supplierEmail": "Email du fournisseur",
+      "selectBooks": "Sélectionner les carnets en stock à transférer",
+      "selectedAgent": "Agent sélectionné",
+      "scanCollect": "Scanner les carnets à récupérer chez le fournisseur",
+      "scanQR": "Scanner les codes QR",
+      "otp": "Saisir l'OTP (envoyé à {{type}} {{details}})",
+      "location": "Sélectionner un lieu",
+      "searchAgents": "Rechercher des agents",
+      "selectAgent": "Sélectionner un agent",
+      "recipientSelection": "Sélection du destinataire",
+      "selectRecipient": "Sélectionner {{type}}",
+      "selectedUser": "Utilisateur sélectionné",
+      "selectedBooks": "Carnets sélectionnés",
+      "scanStub": "Scanner le coupon",
+      "noBooksAvailable": "Aucun carnet disponible",
+      "or": "ou",
       "placeholders": {
-        "selectRecipientType": "Select Recipient Type",
-        "enterAgentPhone": "Enter agent phone number",
-        "selectLocation": "Select Location",
-        "searchAgents": "Search agents by name or phone",
-        "selectAgent": "Select Agent",
-        "enterSupplierEmail": "Enter supplier email",
-        "searchBooks": "Search books by number or type",
-        "searchRecipient": "Enter phone number or search by name",
-        "selectRecipient": "Select {{type}}",
-        "enterOTP": "Enter OTP"
+        "selectRecipientType": "Sélectionner le type de destinataire",
+        "enterAgentPhone": "Saisir le numéro de téléphone de l'agent",
+        "selectLocation": "Sélectionner un lieu",
+        "searchAgents": "Rechercher des agents par nom ou téléphone",
+        "selectAgent": "Sélectionner un agent",
+        "enterSupplierEmail": "Saisir l'email du fournisseur",
+        "searchBooks": "Rechercher des carnets par numéro ou type",
+        "searchRecipient": "Saisir le numéro de téléphone ou rechercher par nom",
+        "selectRecipient": "Sélectionner {{type}}",
+        "enterOTP": "Saisir l'OTP"
       }
     },
     "actions": {
-      "initiateTransfer": "Initiate Transfer",
-      "initiateStubCollection": "Initiate Stub Collection",
-      "collectFromSupplier": "Collect from Supplier",
-      "back": "Back",
-      "initiate": "Initiate Transfer",
-      "initiateStub": "Initiate Stub Collection",
-      "collect": "Collect from Supplier",
-      "validateTransfer": "Validate Transfer",
-      "validateStubCollection": "Validate Stub Collection",
+      "initiateTransfer": "Initier le transfert",
+      "initiateStubCollection": "Initier la collecte de coupons",
+      "collectFromSupplier": "Collecter chez le fournisseur",
+      "back": "Retour",
+      "initiate": "Initier le transfert",
+      "initiateStub": "Initier la collecte de coupons",
+      "collect": "Collecter chez le fournisseur",
+      "validateTransfer": "Valider le transfert",
+      "validateStubCollection": "Valider la collecte de coupons",
       "aria": {
-        "back": "Back to previous step",
-        "initiate": "Initiate transfer of receipt books",
-        "initiateStub": "Initiate stub collection",
-        "collect": "Collect books from supplier",
-        "validateTransfer": "Validate transfer",
-        "validateStubCollection": "Validate stub collection",
-        "removeBook": "Remove book {{number}}"
+        "back": "Retour à l'étape précédente",
+        "initiate": "Initier le transfert des carnets de reçus",
+        "initiateStub": "Initier la collecte de coupons",
+        "collect": "Collecter les carnets chez le fournisseur",
+        "validateTransfer": "Valider le transfert",
+        "validateStubCollection": "Valider la collecte de coupons",
+        "removeBook": "Supprimer le carnet {{number}}"
       }
     },
     "types": {
       "standard": "Standard"
     },
     "pagination": {
-      "pageInfo": "Page {{currentPage}} of {{totalPages}}",
-      "selectedBooks": "Selected Books",
+      "pageInfo": "Page {{currentPage}} sur {{totalPages}}",
+      "selectedBooks": "Carnets sélectionnés",
       "aria": {
-        "previous": "Go to previous page",
-        "next": "Go to next page"
+        "previous": "Aller à la page précédente",
+        "next": "Aller à la page suivante"
       }
     },
-    "otpTimer": "OTP expires in",
+    "otpTimer": "L'OTP expire dans",
     "list": {
-      "noBooks": "No In Stock books available or matching search.",
-      "selectedBooks": "Selected Books",
-      "scannedQRs": "{count} QR codes scanned."
+      "noBooks": "Aucun carnet en stock disponible ou correspondant à la recherche.",
+      "selectedBooks": "Carnets sélectionnés",
+      "scannedQRs": "{{count}} codes QR scannés."
     },
     "recipientTypes": {
       "agent": "Agent",
-      "supplier": "Supplier",
+      "supplier": "Fournisseur",
       "archive": "Archive",
-      "stubCollection": "Stub Collection",
-      "collectFromSupplier": "Collect from Supplier"
+      "stubCollection": "Collecte de coupons",
+      "collectFromSupplier": "Collecter chez le fournisseur"
     },
     "errors": {
-      "accessDenied": "Access Denied - Missing transfer_receipt_books permission",
-      "loadData": "Failed to load data. Check console for details.",
-      "fetchAgent": "Failed to fetch agent details.",
-      "cameraAccess": "Camera access denied or unavailable.",
-      "qrNotFound": "QR code \"{number}\" not found in receipt books.",
-      "qrAlreadyScanned": "QR code \"{number}\" has already been scanned or selected.",
-      "bookNotTransferable": "Book \"{number}\" (status: {status}) cannot be transferred/collected by your role(s).",
-      "stubNotAssigned": "Book \"{number}\" must be \"Assigned to Agent\" for stub collection.",
-      "stubNotCollected": "Stub \"{number}\" must be \"collected\" for stock management.",
-      "supervisorLimit": "Supervisors can only assign one receipt book to an Agent.",
-      "invalidQR": "Invalid QR code format. Please try again.",
-      "otpExpired": "OTP has expired. Please initiate the transfer again.",
-      "noBooksSelected": "Please select at least one book.",
-      "noRecipientType": "Please select a recipient type.",
-      "noSupplierEmail": "Please enter a supplier email.",
-      "noAgent": "Please enter an agent phone number or select an agent.",
-      "noRecipient": "Please select a recipient or enter a phone number.",
-      "stubCollectionLimit": "Stub collection can only process one book at a time.",
-      "initiateFailed": "Failed to initiate transfer/collection: {message}",
-      "noOTP": "Please enter the OTP.",
-      "stubCollectionSingle": "Stub collection requires exactly one book.",
-      "validationFailed": "Invalid OTP or transfer validation failed: {message}",
-      "agentNotFound": "No agent found with phone {phone}.",
-      "userRoleMismatch": "User with phone {phone} does not have role {recipientType}.",
-      "userNotFound": "No user found with phone {phone}.",
-      "fetchAgents": "Failed to fetch agents by location."
+      "accessDenied": "Accès refusé - Permission transfer_receipt_books manquante",
+      "loadData": "Échec du chargement des données. Vérifiez la console pour plus de détails.",
+      "fetchAgent": "Échec de la récupération des détails de l'agent.",
+      "cameraAccess": "Accès à la caméra refusé ou indisponible.",
+      "qrNotFound": "Code QR \"{{number}}\" non trouvé dans les carnets de reçus.",
+      "qrAlreadyScanned": "Code QR \"{{number}}\" déjà scanné ou sélectionné.",
+      "bookNotTransferable": "Le carnet \"{{number}}\" (statut : {{status}}) ne peut pas être transféré/collecté par votre rôle(s).",
+      "stubNotAssigned": "Le carnet \"{{number}}\" doit être \"Assigné à l'agent\" pour la collecte de coupons.",
+      "stubNotCollected": "Le coupon \"{{number}}\" doit être \"collecté\" pour la gestion de stock.",
+      "supervisorLimit": "Les superviseurs ne peuvent assigner qu'un seul carnet de reçus à un agent.",
+      "invalidQR": "Format de code QR invalide. Veuillez réessayer.",
+      "otpExpired": "L'OTP a expiré. Veuillez initier le transfert à nouveau.",
+      "noBooksSelected": "Veuillez sélectionner au moins un carnet.",
+      "noRecipientType": "Veuillez sélectionner un type de destinataire.",
+      "noSupplierEmail": "Veuillez saisir un email de fournisseur.",
+      "noAgent": "Veuillez saisir un numéro de téléphone d'agent ou sélectionner un agent.",
+      "noRecipient": "Veuillez sélectionner un destinataire ou saisir un numéro de téléphone.",
+      "stubCollectionLimit": "La collecte de coupons ne peut traiter qu'un seul carnet à la fois.",
+      "initiateFailed": "Échec de l'initiation du transfert/collecte : {{message}}",
+      "noOTP": "Veuillez saisir l'OTP.",
+      "stubCollectionSingle": "La collecte de coupons nécessite exactement un carnet.",
+      "validationFailed": "OTP invalide ou échec de la validation du transfert : {{message}}",
+      "agentNotFound": "Aucun agent trouvé avec le téléphone {{phone}}.",
+      "userRoleMismatch": "L'utilisateur avec le téléphone {{phone}} n'a pas le rôle {{recipientType}}.",
+      "userNotFound": "Aucun utilisateur trouvé avec le téléphone {{phone}}.",
+      "fetchAgents": "Échec de la récupération des agents par lieu."
     }
   },
   "receiptBooks": {
     "title": {
-      "list": "Receipt Books",
-      "create": "Create",
-      "edit": "Edit"
+      "list": "Carnets de reçus",
+      "create": "Créer",
+      "edit": "Modifier"
     },
-    "loading": "Loading...",
+    "loading": "Chargement...",
     "form": {
-      "createTitle": "New Receipt",
-      "editTitle": "Edit Receipt #{number}",
+      "createTitle": "Nouveau reçu",
+      "editTitle": "Modifier le reçu #{{number}}",
       "labels": {
-        "number": "Number",
+        "number": "Numéro",
         "type": "Type"
       },
       "placeholders": {
         "number": "000001",
-        "type": "Select Type"
+        "type": "Sélectionner le type"
       }
     },
     "search": {
-      "placeholder": "Search receipts..."
+      "placeholder": "Rechercher des reçus..."
     },
     "sort": {
-      "title": "Sort By",
+      "title": "Trier par",
       "fields": {
-        "number": "Number",
+        "number": "Numéro",
         "type": "Type",
-        "status": "Status"
+        "status": "Statut"
       },
       "order": {
-        "asc": "Asc",
-        "desc": "Desc"
+        "asc": "Ascendant",
+        "desc": "Descendant"
       }
     },
     "filter": {
-      "title": "Filters",
+      "title": "Filtres",
       "type": {
         "label": "Type",
-        "all": "All Types"
+        "all": "Tous les types"
       },
       "status": {
-        "label": "Status",
-        "all": "All Statuses"
+        "label": "Statut",
+        "all": "Tous les statuts"
       }
     },
     "table": {
       "headers": {
-        "number": "Number",
+        "number": "Numéro",
         "type": "Type",
-        "bookStatus": "Book Status",
-        "stubStatus": "Stub Status",
-        "holder": "Holder",
-        "qrCode": "QR Code",
+        "bookStatus": "Statut du carnet",
+        "stubStatus": "Statut du coupon",
+        "holder": "Détenteur",
+        "qrCode": "Code QR",
         "actions": "Actions"
       },
       "na": "N/A",
-      "holderLoading": "Loading..."
+      "holderLoading": "Chargement..."
     },
     "pagination": {
-      "pageInfo": "Page {currentPage} of {totalPages}",
-      "previous": "Previous",
-      "next": "Next"
+      "pageInfo": "Page {{currentPage}} sur {{totalPages}}",
+      "previous": "Précédent",
+      "next": "Suivant"
     },
     "actions": {
-      "newReceipt": "New Receipt",
-      "transferBooks": "Transfer Books",
-      "create": "Create",
-      "save": "Save",
-      "cancel": "Cancel",
-      "deleteConfirm": "Are you sure?"
+      "newReceipt": "Nouveau reçu",
+      "transferBooks": "Transférer les carnets",
+      "create": "Créer",
+      "save": "Enregistrer",
+      "cancel": "Annuler",
+      "deleteConfirm": "Êtes-vous sûr ?"
     },
     "errors": {
-      "requiredFields": "Please fill in all required fields.",
-      "invalidNumber": "Number must be exactly 6 digits.",
-      "createFailed": "Failed to create receipt book: {message}",
-      "updateFailed": "Failed to update receipt book: {message}",
-      "deleteFailed": "Failed to delete receipt book: {error}"
+      "requiredFields": "Veuillez remplir tous les champs requis.",
+      "invalidNumber": "Le numéro doit comporter exactement 6 chiffres.",
+      "createFailed": "Échec de la création du carnet de reçus : {message}",
+      "updateFailed": "Échec de la mise à jour du carnet de reçus : {message}",
+      "deleteFailed": "Échec de la suppression du carnet de reçus : {error}"
     },
     "types": {
-      "refund": "Refund",
-      "transfer": "Transfer"
+      "refund": "Remboursement",
+      "transfer": "Transfert"
     }
   },
   "receiptBookHistory": {
-    "title": "Receipt Book #{number} History",
-    "loading": "Tracking History...",
+    "title": "Historique du carnet de reçus #{{number}}",
+    "loading": "Suivi de l'historique...",
     "error": {
-      "accessDenied": "Access Denied or Invalid Book ID",
-      "fetchFailed": "Failed to fetch history or details.",
-      "notFound": "Receipt book not found."
+      "accessDenied": "Accès refusé ou ID de carnet invalide",
+      "fetchFailed": "Échec de la récupération de l'historique ou des détails.",
+      "notFound": "Carnet de reçus non trouvé."
     },
     "actions": {
-      "back": "Back to Receipts"
+      "back": "Retour aux reçus"
     },
     "footer": {
-      "currentStatus": "Current Status: {status}",
-      "currentHolder": "Current Holder: {holder}",
+      "currentStatus": "Statut actuel : ",
+      "currentHolder": "Détenteur actuel : ",
       "na": "N/A"
     },
     "timeline": {
-      "from": "From: {from}",
-      "to": "To: {to}",
-      "date": "Date: {date}",
-      "status": "Status: {status}",
-      "initialStock": "Initial Stock",
-      "supplier": "Supplier"
+      "from": "De",
+      "to": "À",
+      "date": "Date",
+      "status": "Statut",
+      "initialStock": "Stock initial",
+      "supplier": "Fournisseur"
     },
     "transferTypes": {
-      "toSupplier": "To Supplier",
-      "toRegionalManager": "To Regional Manager",
-      "toSupervisor": "To Supervisor",
-      "toAgent": "To Agent",
-      "stubToSupervisor": "Stub To Supervisor",
-      "toStockManager": "To Stock Manager",
-      "toRegionalManagerFromSupervisor": "To Regional Manager From Supervisor",
-      "archive": "Archive"
+      "toSupplier": "Au fournisseur",
+      "toRegionalManager": "Au responsable régional",
+      "toSupervisor": "Au superviseur",
+      "toAgent": "À l'agent",
+      "stubToSupervisor": "Coupon au superviseur",
+      "toStockManager": "Au gestionnaire de stock",
+      "toRegionalManagerFromSupervisor": "Au responsable régional depuis le superviseur",
+      "archive": "Archiver"
     }
   },
   "pageNotFound": {
     "title": "404",
-    "subtitle": "Page Not Found",
+    "subtitle": "Page non trouvée",
     "error": {
-      "message": "Oops!",
-      "description": "This page doesn’t exist or has been moved."
+      "message": "Oups !",
+      "description": "Cette page n'existe pas ou a été déplacée."
     },
     "actions": {
-      "back": "Return to Previous Page"
+      "back": "Retourner à la page précédente"
     }
   },
   "errorDisplay": {
     "actions": {
-      "dismiss": "Dismiss"
+      "dismiss": "Ignorer"
     }
   },
   "accessDenied": {
-    "title": "Access Denied",
-    "subtitle": "You don’t have permission to view this page.",
+    "title": "Accès refusé",
+    "subtitle": "Vous n'avez pas la permission de voir cette page.",
     "warning": {
-      "message": "Restricted Area",
-      "description": "Please contact an administrator if you believe this is an error."
+      "message": "Zone restreinte",
+      "description": "Veuillez contacter un administrateur si vous pensez qu'il s'agit d'une erreur."
     },
     "actions": {
-      "back": "Return to Previous Page"
+      "back": "Retourner à la page précédente"
     }
   },
   "entry": {
     "charts": {
-      "title": "Charts",
-      "timesheetStatus": "Timesheet Status",
-      "visitStatus": "Visit Status",
-      "timesheetsPerSupervisor": "Timesheets per Supervisor",
-      "timesheetStatusPending": "Pending",
-      "timesheetStatusValidated": "Validated",
-      "visitStatusPending": "Pending",
-      "visitStatusValidated": "Validated"
+      "title": "Graphiques",
+      "timesheetStatus": "Statut de la feuille de temps",
+      "visitStatus": "Statut de la visite",
+      "timesheetsPerSupervisor": "Feuilles de temps par superviseur",
+      "timesheetStatusPending": "En attente",
+      "timesheetStatusValidated": "Validé",
+      "visitStatusPending": "En attente",
+      "visitStatusValidated": "Validé"
     },
     "maps": {
-      "title": "Today's Visits",
-      "noVisits": "No visits today"
+      "title": "Visites d'aujourd'hui",
+      "noVisits": "Aucune visite aujourd'hui"
     },
     "stats": {
       "supervisorsCount": {
-        "title": "Supervisors Count",
-        "value": "{count} supervisors"
+        "title": "Nombre de superviseurs",
+        "value": "{{count}} superviseurs"
       },
       "activeSupervisors": {
-        "title": "Active Supervisors",
-        "value": "{count} active"
+        "title": "Superviseurs actifs",
+        "value": "{{count}} actifs"
       }
     },
     "unfinishedVisits": {
-      "title": "Unfinished Visits"
+      "title": "Visites non terminées"
     },
     "emails": {
       "title": "Emails"
     },
     "todoList": {
-      "title": "To Do List"
+      "title": "Liste de tâches"
     }
   },
   "navbar": {
-    "monitoring": "Monitoring",
-    "reporting": "Reporting",
-    "help": "Help"
+    "monitoring": "Surveillance",
+    "reporting": "Rapports",
+    "help": "Aide"
   },
   "profilePage": {
-    "loading": "Loading Profile...",
+    "loading": "Chargement du profil...",
     "error": {
-      "noProfile": "Failed to load profile. Please try again later.",
-      "noToken": "No authentication token found",
-      "fetchFailed": "Failed to load user profile",
-      "updateFailed": "Failed to update profile",
-      "pictureFailed": "Failed to update profile picture",
-      "passwordFailed": "Failed to update password"
+      "noProfile": "Échec du chargement du profil. Veuillez réessayer plus tard.",
+      "noToken": "Aucun jeton d'authentification trouvé",
+      "fetchFailed": "Échec du chargement du profil utilisateur",
+      "updateFailed": "Échec de la mise à jour du profil",
+      "pictureFailed": "Échec de la mise à jour de la photo de profil",
+      "passwordFailed": "Échec de la mise à jour du mot de passe"
     },
     "header": {
-      "userId": "User ID: {userId}",
-      "firstNameNotSet": "First Name Not Set",
-      "lastNameNotSet": "Last Name Not Set"
+      "userId": "ID utilisateur : {{userId}}",
+      "firstNameNotSet": "Prénom non défini",
+      "lastNameNotSet": "Nom non défini"
     },
     "nav": {
-      "info": "Profile Info",
-      "settings": "Settings",
-      "activity": "Activity"
+      "info": "Informations du profil",
+      "settings": "Paramètres",
+      "activity": "Activité"
     },
     "info": {
-      "title": "Profile Information",
+      "title": "Informations du profil",
       "email": "Email",
-      "phone": "Phone",
-      "wallet": "Wallet",
-      "notSet": "Not set",
-      "notLinked": "Not linked"
+      "phone": "Téléphone",
+      "wallet": "Portefeuille",
+      "notSet": "Non défini",
+      "notLinked": "Non lié"
     },
     "settings": {
-      "title": "Account Settings",
+      "title": "Paramètres du compte",
       "password": {
-        "title": "Change Password",
-        "newPassword": "New Password",
-        "confirmPassword": "Confirm Password",
-        "newPasswordPlaceholder": "Enter new password",
-        "confirmPasswordPlaceholder": "Confirm new password",
-        "update": "Update Password"
+        "title": "Changer le mot de passe",
+        "newPassword": "Nouveau mot de passe",
+        "confirmPassword": "Confirmer le mot de passe",
+        "newPasswordPlaceholder": "Saisir le nouveau mot de passe",
+        "confirmPasswordPlaceholder": "Confirmer le nouveau mot de passe",
+        "update": "Mettre à jour le mot de passe"
       },
       "twoFactor": {
-        "title": "Two-Factor Authentication",
-        "status": "Status: {status}",
-        "enabled": "Enabled",
-        "enable": "Enable 2FA"
+        "title": "Authentification à deux facteurs",
+        "status": "Statut : {{status}}",
+        "enabled": "Activé",
+        "enable": "Activer 2FA"
       }
     },
     "activity": {
-      "title": "Recent Activity",
+      "title": "Activité récente",
       "visitLogged": {
-        "title": "Visit Logged",
-        "subtext": "Agent: {{agent}} | Location: {{location}}",
-        "amount": "+1 Visit"
+        "title": "Visite enregistrée",
+        "subtext": "Agent : {{agent}} | Lieu : {{location}}",
+        "amount": "+1 Visite"
       },
       "timesheetSubmitted": {
-        "title": "Timesheet Submitted",
-        "subtext": "Duration: {{duration}}",
-        "amount": "Pending Approval"
+        "title": "Feuille de temps soumise",
+        "subtext": "Durée : {{duration}}",
+        "amount": "En attente d'approbation"
       },
       "carnetDistributed": {
-        "title": "Carnet Distributed",
-        "subtext": "Carnet ID: {{carnetId}} | Agent: {{agent}}",
+        "title": "Carnet distribué",
+        "subtext": "ID du carnet : {{carnetId}} | Agent : {{agent}}",
         "amount": "+1 Carnet"
       },
       "soucheCollected": {
-        "title": "Souche Collected",
-        "subtext": "Carnet ID: {{carnetId}} | Status: {{status}}",
-        "amount": "+1 Souche"
+        "title": "Coupon collecté",
+        "subtext": "ID du carnet : {{carnetId}} | Statut : {{status}}",
+        "amount": "+1 Coupon"
       }
     },
     "validation": {
-      "firstnameRequired": "Firstname is required",
-      "firstnameLengthMin": "Firstname must be at least 3 characters",
-      "firstnameLengthMax": "Firstname must be 20 characters or less",
-      "firstnameFormat": "Firstname can only contain letters, spaces, hyphens, or apostrophes",
-      "lastnameRequired": "Lastname is required",
-      "lastnameLengthMin": "Lastname must be at least 3 characters",
-      "lastnameLengthMax": "Lastname must be 20 characters or less",
-      "lastnameFormat": "Lastname can only contain letters, spaces, hyphens, or apostrophes",
-      "emailRequired": "Email is required",
-      "emailLength": "Email must be 70 characters or less",
-      "emailFormat": "Invalid email format",
-      "phoneRequired": "Phone is required",
-      "phoneLength": "Phone must be 8 digits",
-      "walletLength": "Wallet must be exactly 16 digits",
-      "passwordLengthMin": "Password must be at least 8 characters",
-      "passwordLengthMax": "Password must be 128 characters or less",
-      "passwordFormat": "Password must include uppercase, lowercase, digit, and special character, no spaces",
-      "passwordConfirmRequired": "Password confirmation is required",
-      "passwordMismatch": "Passwords do not match"
+      "firstnameRequired": "Le prénom est requis",
+      "firstnameLengthMin": "Le prénom doit comporter au moins 3 caractères",
+      "firstnameLengthMax": "Le prénom doit comporter 20 caractères ou moins",
+      "firstnameFormat": "Le prénom ne peut contenir que des lettres, des espaces, des tirets ou des apostrophes",
+      "lastnameRequired": "Le nom est requis",
+      "lastnameLengthMin": "Le nom doit comporter au moins 3 caractères",
+      "lastnameLengthMax": "Le nom doit comporter 20 caractères ou moins",
+      "lastnameFormat": "Le nom ne peut contenir que des lettres, des espaces, des tirets ou des apostrophes",
+      "emailRequired": "L'email est requis",
+      "emailLength": "L'email doit comporter 70 caractères ou moins",
+      "emailFormat": "Format d'email invalide",
+      "phoneRequired": "Le téléphone est requis",
+      "phoneLength": "Le téléphone doit comporter 8 chiffres",
+      "walletLength": "Le portefeuille doit comporter exactement 16 chiffres",
+      "passwordLengthMin": "Le mot de passe doit comporter au moins 8 caractères",
+      "passwordLengthMax": "Le mot de passe doit comporter 128 caractères ou moins",
+      "passwordFormat": "Le mot de passe doit inclure une majuscule, une minuscule, un chiffre et un caractère spécial, sans espaces",
+      "passwordConfirmRequired": "La confirmation du mot de passe est requise",
+      "passwordMismatch": "Les mots de passe ne correspondent pas"
     },
     "success": {
-      "profileUpdated": "Profile updated successfully",
-      "pictureUpdated": "Profile picture updated successfully",
-      "passwordUpdated": "Password updated successfully"
+      "profileUpdated": "Profil mis à jour avec succès",
+      "pictureUpdated": "Photo de profil mise à jour avec succès",
+      "passwordUpdated": "Mot de passe mis à jour avec succès"
     }
   },
   "login": {
     "header": {
       "title": "TraceFlow",
-      "subtitle": "Securely Track. Optimize. Succeed."
+      "subtitle": "Suivi sécurisé. Optimisation. Réussite."
     },
     "login": {
-      "title": "Sign In",
-      "identifier": "Email or Phone",
-      "password": "Password",
-      "identifierPlaceholder": "Enter your email or phone",
-      "passwordPlaceholder": "Enter your password",
-      "forgotPassword": "Forgot Password?",
-      "submit": "Sign In"
+      "title": "Connexion",
+      "identifier": "Email ou téléphone",
+      "password": "Mot de passe",
+      "identifierPlaceholder": "Saisir votre email ou téléphone",
+      "passwordPlaceholder": "Saisir votre mot de passe",
+      "forgotPassword": "Mot de passe oublié ?",
+      "submit": "Se connecter"
     },
     "verify2FA": {
-      "title": "Enter OTP",
-      "otpPlaceholder": "6-digit code",
-      "phoneMessage": "We sent a code to your phone number.",
-      "emailMessage": "We sent a code to your email.",
-      "timer": "Time remaining: {minutes}:{seconds}",
-      "trustDevice": "Trust this device",
-      "resend": "Resend OTP",
-      "resendCooldown": "Resend in {seconds}s",
-      "switchToEmail": "Can’t access your phone? Send to email instead.",
-      "switchToPhone": "Send to phone instead.",
-      "submit": "Verify OTP",
-      "back": "Back to Sign In"
+      "title": "Saisir l'OTP",
+      "otpPlaceholder": "Code à 6 chiffres",
+      "phoneMessage": "Nous avons envoyé un code à votre numéro de téléphone.",
+      "emailMessage": "Nous avons envoyé un code à votre email.",
+      "timer": "Temps restant : {{minutes}}:{{seconds}}",
+      "trustDevice": "Faire confiance à cet appareil",
+      "resend": "Renvoyer l'OTP",
+      "resendCooldown": "Renvoyer dans {{seconds}}s",
+      "switchToEmail": "Impossible d'accéder à votre téléphone ? Envoyer à l'email à la place.",
+      "switchToPhone": "Envoyer au téléphone à la place.",
+      "submit": "Vérifier l'OTP",
+      "back": "Retour à la connexion"
     },
     "forgot": {
-      "title": "Send Reset OTP",
-      "identifier": "Email or Phone",
-      "identifierPlaceholder": "Enter your email or phone",
-      "submit": "Send Reset OTP",
-      "back": "Back to Sign In"
+      "title": "Envoyer l'OTP de réinitialisation",
+      "identifier": "Email ou téléphone",
+      "identifierPlaceholder": "Saisir votre email ou téléphone",
+      "submit": "Envoyer l'OTP de réinitialisation",
+      "back": "Retour à la connexion"
     },
     "verifyReset": {
-      "title": "Enter Reset OTP",
-      "otpPlaceholder": "6-digit code",
-      "timer": "Time remaining: {minutes}:{seconds}",
-      "resend": "Resend OTP",
-      "resendCooldown": "Resend in {seconds}s",
-      "submit": "Verify OTP",
-      "back": "Back to Sign In"
+      "title": "Saisir l'OTP de réinitialisation",
+      "otpPlaceholder": "Code à 6 chiffres",
+      "timer": "Temps restant : {{minutes}}:{{seconds}}",
+      "resend": "Renvoyer l'OTP",
+      "resendCooldown": "Renvoyer dans {{seconds}}s",
+      "submit": "Vérifier l'OTP",
+      "back": "Retour à la connexion"
     },
     "reset": {
-      "title": "Reset Password",
-      "newPassword": "New Password",
-      "confirmPassword": "Confirm Password",
-      "newPasswordPlaceholder": "Enter new password",
-      "confirmPasswordPlaceholder": "Confirm new password",
-      "submit": "Reset Password",
-      "back": "Back to Sign In"
+      "title": "Réinitialiser le mot de passe",
+      "newPassword": "Nouveau mot de passe",
+      "confirmPassword": "Confirmer le mot de passe",
+      "newPasswordPlaceholder": "Saisir le nouveau mot de passe",
+      "confirmPasswordPlaceholder": "Confirmer le nouveau mot de passe",
+      "submit": "Réinitialiser le mot de passe",
+      "back": "Retour à la connexion"
     },
     "validation": {
-      "identifierRequired": "Please enter your email or phone number.",
-      "identifierFormat": "Invalid email or phone format.",
-      "passwordRequired": "Please enter a password.",
-      "passwordLengthMin": "Password must be at least 8 characters long.",
-      "passwordLengthMax": "Password cannot exceed 128 characters.",
-      "passwordFormat": "Password must include an uppercase letter, lowercase letter, number, and special character (no spaces).",
-      "confirmPasswordRequired": "Please confirm your password.",
-      "passwordMismatch": "Passwords do not match.",
-      "otpRequired": "Please enter the 6-digit OTP.",
-      "otpFormat": "OTP must be exactly 6 digits."
+      "identifierRequired": "Veuillez saisir votre email ou numéro de téléphone.",
+      "identifierFormat": "Format d'email ou de téléphone invalide.",
+      "passwordRequired": "Veuillez saisir un mot de passe.",
+      "passwordLengthMin": "Le mot de passe doit comporter au moins 8 caractères.",
+      "passwordLengthMax": "Le mot de passe ne peut pas dépasser 128 caractères.",
+      "passwordFormat": "Le mot de passe doit inclure une lettre majuscule, une lettre minuscule, un chiffre et un caractère spécial (sans espaces).",
+      "confirmPasswordRequired": "Veuillez confirmer votre mot de passe.",
+      "passwordMismatch": "Les mots de passe ne correspondent pas.",
+      "otpRequired": "Veuillez saisir l'OTP à 6 chiffres.",
+      "otpFormat": "L'OTP doit comporter exactement 6 chiffres."
     },
     "error": {
-      "loginFailed": "Login failed. Please check your email/phone and password.",
-      "networkError": "Unable to connect to the server. Please check your internet connection.",
-      "invalidOtp": "Invalid OTP. Please try again.",
-      "resetOtpFailed": "Failed to send reset OTP. Please check your email/phone and try again.",
-      "verifyResetOtpFailed": "Invalid reset OTP. Please try again or request a new one.",
-      "resetFailed": "Failed to reset password. Please try again.",
-      "resendFailed": "Failed to resend OTP. Please try again later."
+      "loginFailed": "Échec de la connexion. Veuillez vérifier votre email/téléphone et mot de passe.",
+      "networkError": "Impossible de se connecter au serveur. Veuillez vérifier votre connexion Internet.",
+      "invalidOtp": "OTP invalide. Veuillez réessayer.",
+      "resetOtpFailed": "Échec de l'envoi de l'OTP de réinitialisation. Veuillez vérifier votre email/téléphone et réessayer.",
+      "verifyResetOtpFailed": "OTP de réinitialisation invalide. Veuillez réessayer ou demander un nouveau.",
+      "resetFailed": "Échec de la réinitialisation du mot de passe. Veuillez réessayer.",
+      "resendFailed": "Échec du renvoi de l'OTP. Veuillez réessayer plus tard."
     },
     "success": {
-      "resetSuccess": "Password reset successfully! Please log in with your new password."
+      "resetSuccess": "Mot de passe réinitialisé avec succès ! Veuillez vous connecter avec votre nouveau mot de passe."
     }
   },
   "adminDashboard": {
     "loading": {
-      "userDetails": "Loading user details..."
+      "userDetails": "Chargement des détails de l'utilisateur..."
     },
     "header": {
-      "users": "Users Management",
-      "roles": "Roles Management",
-      "permissions": "Permissions Management",
-      "addUser": "Add New User",
-      "addRole": "Create New Role",
-      "addPermission": "Create New Permission",
-      "userDetails": "{firstName} {lastName}",
-      "checklists": "Checklists Management",
-      "addChecklist": "Add New Checklist",
-      "checklistDetails": "Checklist: {item}",
-      "reasons": "Reasons Management",
-      "addReason": "Add New Reason",
-      "reasonDetails": "Reason: {item}",
-      "notifications": "Notifications Management",
-      "addNotificationRule": "Add New Notification Rule",
-      "notificationRuleDetails": "Notification Rule: {{event}}"
+      "users": "Gestion des utilisateurs",
+      "roles": "Gestion des rôles",
+      "permissions": "Gestion des permissions",
+      "addUser": "Ajouter un nouvel utilisateur",
+      "addRole": "Créer un nouveau rôle",
+      "addPermission": "Créer une nouvelle permission",
+      "userDetails": "{{firstName}} {{lastName}}",
+      "checklists": "Gestion des listes de contrôle",
+      "addChecklist": "Ajouter une nouvelle liste de contrôle",
+      "checklistDetails": "Liste de contrôle : {{item}}",
+      "reasons": "Gestion des motifs",
+      "addReason": "Ajouter un nouveau motif",
+      "reasonDetails": "Motif : {{item}}",
+      "notifications": "Gestion des notifications",
+      "addNotificationRule": "Ajouter une nouvelle règle de notification",
+      "notificationRuleDetails": "Règle de notification : {{event}}"
     },
     "sidebar": {
-      "sortNotificationsBy": "Sort Notifications By",
-      "filterNotifications": "Filter Notifications",
-      "filterByNotificationType": "Filter by Notification Type",
-      "filterByNotificationChannel": "Filter by Notification Channel",
-      "filterByNotificationStatus": "Filter by Notification Status",
-      "allTypes": "All Types",
-      "allChannels": "All Channels",
-      "allStatuses": "All Statuses",
+      "sortNotificationsBy": "Trier les notifications par",
+      "filterNotifications": "Filtrer les notifications",
+      "filterByNotificationType": "Filtrer par type de notification",
+      "filterByNotificationChannel": "Filtrer par canal de notification",
+      "filterByNotificationStatus": "Filtrer par statut de notification",
+      "allTypes": "Tous les types",
+      "allChannels": "Tous les canaux",
+      "allStatuses": "Tous les statuts",
       "websocket": "Websocket",
       "email": "Email",
       "sms": "SMS",
-      "inApp": "In-App",
-      "enabled": "Enabled",
-      "disabled": "Disabled",
-      "addNotificationRule": "Add Notification Rule",
+      "inApp": "Dans l'application",
+      "enabled": "Activé",
+      "disabled": "Désactivé",
+      "addNotificationRule": "Ajouter une règle de notification",
       "notifications": "Notifications",
-      "view": "View",
-      "users": "Users",
-      "roles": "Roles",
+      "view": "Voir",
+      "users": "Utilisateurs",
+      "roles": "Rôles",
       "permissions": "Permissions",
-      "checklists": "Checklists",
-      "reasons": "Reasons",
-      "sortUsersBy": "Sort Users By",
+      "checklists": "Listes de contrôle",
+      "reasons": "Motifs",
+      "sortUsersBy": "Trier les utilisateurs par",
       "sortOptions": {
-        "name": "Name",
+        "name": "Nom",
         "email": "Email",
-        "role": "Role",
-        "event": "Event",
+        "role": "Rôle",
+        "event": "Événement",
         "type": "Type",
-        "status": "Status"
+        "status": "Statut"
       },
       "sortOrder": {
-        "asc": "Asc",
-        "desc": "Desc"
+        "asc": "Ascendant",
+        "desc": "Descendant"
       },
-      "filterByRole": "Filter by Role",
-      "allRoles": "All Roles",
-      "addUser": "Add User",
-      "addRole": "Add Role",
-      "resetRoles": "Reset Roles",
-      "resetting": "Resetting Roles",
-      "addPermission": "Add Permission",
-      "addChecklist": "Add Checklist",
-      "addReason": "Add Reason"
+      "filterByRole": "Filtrer par rôle",
+      "allRoles": "Tous les rôles",
+      "addUser": "Ajouter un utilisateur",
+      "addRole": "Ajouter un rôle",
+      "resetRoles": "Réinitialiser les rôles",
+      "resetting": "Réinitialisation des rôles",
+      "addPermission": "Ajouter une permission",
+      "addChecklist": "Ajouter une liste de contrôle",
+      "addReason": "Ajouter un motif"
     },
     "search": {
-      "placeholder": "Search {{view}}..."
+      "placeholder": "Rechercher {{view}}..."
     },
     "error": {
-      "noToken": "Please log in to access the dashboard.",
-      "fetchFailed": "Failed to load dashboard data.",
-      "createReasonFailed": "Failed to create reason.",
-      "updateChecklistFailed": "Failed to update checklist.",
-      "deleteChecklistFailed": "Failed to delete checklist.",
-      "createChecklistFailed": "Failed to create checklist."
+      "noToken": "Veuillez vous connecter pour accéder au tableau de bord.",
+      "fetchFailed": "Échec du chargement des données du tableau de bord.",
+      "createReasonFailed": "Échec de la création du motif.",
+      "updateChecklistFailed": "Échec de la mise à jour de la liste de contrôle.",
+      "deleteChecklistFailed": "Échec de la suppression de la liste de contrôle.",
+      "createChecklistFailed": "Échec de la création de la liste de contrôle."
     },
     "actions": {
-      "back": "Back",
-      "refreshUsers": "Refresh Users",
-      "refreshRoles": "Refresh Roles",
-      "refreshPermissions": "Refresh Permissions",
-      "refreshChecklists": "Refresh Checklists",
-      "refreshReasons": "Refresh Reasons",
-      "refreshNotifications": "Refresh Notifications",
-      "loading": "Loading..."
+      "back": "Retour",
+      "refreshUsers": "Actualiser les utilisateurs",
+      "refreshRoles": "Actualiser les rôles",
+      "refreshPermissions": "Actualiser les permissions",
+      "refreshChecklists": "Actualiser les listes de contrôle",
+      "refreshReasons": "Actualiser les motifs",
+      "refreshNotifications": "Actualiser les notifications",
+      "loading": "Chargement..."
     },
     "reasonAdd": {
-      "title": "Add New Reason",
+      "title": "Ajouter un nouveau motif",
       "form": {
         "labels": {
-          "item": "Item"
+          "item": "Élément"
         },
         "placeholders": {
-          "item": "Enter reason item (5-100 chars)"
+          "item": "Saisir l'élément de motif (5-100 caractères)"
         }
       },
       "actions": {
-        "create": "Create Reason",
-        "creating": "Creating..."
+        "create": "Créer un motif",
+        "creating": "Création..."
       },
       "validation": {
-        "empty": "Item cannot be empty.",
-        "minLength": "Item must be at least 5 characters.",
-        "maxLength": "Item cannot exceed 100 characters.",
-        "duplicate": "Item already exists."
+        "empty": "L'élément ne peut pas être vide.",
+        "minLength": "L'élément doit comporter au moins 5 caractères.",
+        "maxLength": "L'élément ne peut pas dépasser 100 caractères.",
+        "duplicate": "L'élément existe déjà."
       }
     },
     "checklistView": {
       "actions": {
-        "edit": "Edit",
-        "delete": "Delete",
-        "save": "Save",
-        "saving": "Saving...",
-        "cancel": "Cancel"
+        "edit": "Modifier",
+        "delete": "Supprimer",
+        "save": "Enregistrer",
+        "saving": "Enregistrement...",
+        "cancel": "Annuler"
       }
     },
     "checklistsList": {
-      "title": "Checklists",
-      "noItems": "No checklists found",
+      "title": "Listes de contrôle",
+      "noItems": "Aucune liste de contrôle trouvée",
       "pagination": {
-        "previous": "Previous",
-        "next": "Next",
-        "pageInfo": "Page {{currentPage}} of {{totalPages}}"
+        "previous": "Précédent",
+        "next": "Suivant",
+        "pageInfo": "Page {{currentPage}} sur {{totalPages}}"
       },
       "validation": {
-        "empty": "Item cannot be empty.",
-        "minLength": "Item must be at least 5 characters.",
-        "maxLength": "Item cannot exceed 100 characters.",
-        "duplicate": "Item already exists."
+        "empty": "L'élément ne peut pas être vide.",
+        "minLength": "L'élément doit comporter au moins 5 caractères.",
+        "maxLength": "L'élément ne peut pas dépasser 100 caractères.",
+        "duplicate": "L'élément existe déjà."
       }
     },
     "checklistAdd": {
-      "title": "Add New Checklist",
+      "title": "Ajouter une nouvelle liste de contrôle",
       "form": {
         "labels": {
-          "item": "Item"
+          "item": "Élément"
         },
         "placeholders": {
-          "item": "Enter checklist item (5-100 chars)"
+          "item": "Saisir l'élément de la liste de contrôle (5-100 caractères)"
         }
       },
       "actions": {
-        "create": "Create Checklist",
-        "creating": "Creating..."
+        "create": "Créer une liste de contrôle",
+        "creating": "Création..."
       }
     }
   },
   "usersList": {
-    "title": "Users",
+    "title": "Utilisateurs",
     "tableHeaders": {
-      "name": "Name",
+      "name": "Nom",
       "email": "Email",
-      "phone": "Phone",
-      "roles": "Roles"
+      "phone": "Téléphone",
+      "roles": "Rôles"
     },
-    "noUsers": "No users found",
+    "noUsers": "Aucun utilisateur trouvé",
     "pagination": {
-      "previous": "Previous",
-      "next": "Next",
-      "pageInfo": "Page {currentPage} of {totalPages}"
+      "previous": "Précédent",
+      "next": "Suivant",
+      "pageInfo": "Page {{currentPage}} sur {{totalPages}}"
     },
     "error": {
-      "fetchFailed": "Failed to load user details."
+      "fetchFailed": "Échec du chargement des détails de l'utilisateur."
     }
   },
   "userView": {
     "title": {
-      "details": "User Details",
-      "edit": "Edit User"
+      "details": "Détails de l'utilisateur",
+      "edit": "Modifier l'utilisateur"
     },
     "basicInfo": {
-      "title": "Basic Information",
-      "name": "Name",
+      "title": "Informations de base",
+      "name": "Nom",
       "email": "Email",
-      "phone": "Phone",
-      "wallet": "Wallet",
+      "phone": "Téléphone",
+      "wallet": "Portefeuille",
       "na": "N/A"
     },
     "form": {
       "placeholders": {
-        "firstName": "First Name *",
-        "lastName": "Last Name *",
+        "firstName": "Prénom *",
+        "lastName": "Nom *",
         "email": "Email *",
         "phone": "XX XXX XXX",
         "wallet": "XXXX-XXXX-XXXX-XXXX",
-        "password": "Password (optional)",
-        "passwordConfirm": "Confirm Password (optional)"
+        "password": "Mot de passe (facultatif)",
+        "passwordConfirm": "Confirmer le mot de passe (facultatif)"
       }
     },
     "roleManagement": {
-      "title": "Role Management",
-      "noDescription": "No description available",
-      "noPermissions": "No permissions assigned"
+      "title": "Gestion des rôles",
+      "noDescription": "Aucune description disponible",
+      "noPermissions": "Aucune permission assignée"
     },
     "permissionOverrides": {
-      "title": "Permission Overrides",
-      "filter": "Filter Permissions",
-      "searchPlaceholder": "Search permissions...",
-      "allCategories": "All Categories",
-      "effectivePermissions": "Effective Permissions",
-      "noPermissions": "No permissions available"
+      "title": "Surcharges de permissions",
+      "filter": "Filtrer les permissions",
+      "searchPlaceholder": "Rechercher des permissions...",
+      "allCategories": "Toutes les catégories",
+      "effectivePermissions": "Permissions effectives",
+      "noPermissions": "Aucune permission disponible"
     },
     "assignments": {
-      "title": "Assignments",
-      "supervisors": "Supervisors Assigned to This Manager",
-      "managers": "Managers Assigned to This Supervisor",
-      "searchSupervisorsPlaceholder": "Search supervisors...",
-      "searchManagersPlaceholder": "Search managers..."
+      "title": "Affectations",
+      "supervisors": "Superviseurs assignés à ce manager",
+      "managers": "Managers assignés à ce superviseur",
+      "searchSupervisorsPlaceholder": "Rechercher des superviseurs...",
+      "searchManagersPlaceholder": "Rechercher des managers..."
     },
     "actions": {
-      "edit": "Edit",
-      "delete": "Delete",
-      "save": "Save",
-      "cancel": "Cancel",
-      "saveChanges": "Save Changes",
-      "saveAssignments": "Save Assignments",
-      "grantPermission": "Grant Permission",
-      "revokePermission": "Revoke Permission",
-      "removeOverride": "Remove Override"
+      "edit": "Modifier",
+      "delete": "Supprimer",
+      "save": "Enregistrer",
+      "cancel": "Annuler",
+      "saveChanges": "Enregistrer les modifications",
+      "saveAssignments": "Enregistrer les affectations",
+      "grantPermission": "Accorder une permission",
+      "revokePermission": "Révoquer une permission",
+      "removeOverride": "Supprimer la surcharge"
     },
     "pagination": {
-      "previous": "Previous",
-      "next": "Next",
-      "pageInfo": "Page {{currentPage}} of {{totalPages}}"
+      "previous": "Précédent",
+      "next": "Suivant",
+      "pageInfo": "Page {{currentPage}} sur {{totalPages}}"
     },
     "validation": {
-      "firstnameRequired": "First Name is required",
-      "firstnameLengthMin": "First Name must be at least 3 characters",
-      "firstnameLengthMax": "First Name must be 20 characters or less",
-      "firstnameFormat": "First Name can only contain letters, spaces, hyphens, or apostrophes",
-      "lastnameRequired": "Last Name is required",
-      "lastnameLengthMin": "Last Name must be at least 3 characters",
-      "lastnameLengthMax": "Last Name must be 20 characters or less",
-      "lastnameFormat": "Last Name can only contain letters, spaces, hyphens, or apostrophes",
-      "emailRequired": "Email is required",
-      "emailLength": "Email must be 70 characters or less",
-      "emailFormat": "Invalid email format",
-      "phoneRequired": "Phone is required",
-      "phoneLength": "Phone must be 8 digits",
-      "walletLength": "Wallet must be exactly 16 digits",
-      "passwordLengthMin": "Password must be at least 8 characters",
-      "passwordLengthMax": "Password must be 128 characters or less",
-      "passwordFormat": "Password must include uppercase, lowercase, digit, and special character, no spaces",
-      "passwordConfirmRequired": "Password confirmation is required",
-      "passwordMismatch": "Passwords do not match"
+      "firstnameRequired": "Le prénom est requis",
+      "firstnameLengthMin": "Le prénom doit comporter au moins 3 caractères",
+      "firstnameLengthMax": "Le prénom doit comporter 20 caractères ou moins",
+      "firstnameFormat": "Le prénom ne peut contenir que des lettres, des espaces, des tirets ou des apostrophes",
+      "lastnameRequired": "Le nom est requis",
+      "lastnameLengthMin": "Le nom doit comporter au moins 3 caractères",
+      "lastnameLengthMax": "Le nom doit comporter 20 caractères ou moins",
+      "lastnameFormat": "Le nom ne peut contenir que des lettres, des espaces, des tirets ou des apostrophes",
+      "emailRequired": "L'email est requis",
+      "emailLength": "L'email doit comporter 70 caractères ou moins",
+      "emailFormat": "Format d'email invalide",
+      "phoneRequired": "Le téléphone est requis",
+      "phoneLength": "Le téléphone doit comporter 8 chiffres",
+      "walletLength": "Le portefeuille doit comporter exactement 16 chiffres",
+      "passwordLengthMin": "Le mot de passe doit comporter au moins 8 caractères",
+      "passwordLengthMax": "Le mot de passe doit comporter 128 caractères ou moins",
+      "passwordFormat": "Le mot de passe doit inclure une majuscule, une minuscule, un chiffre et un caractère spécial, sans espaces",
+      "passwordConfirmRequired": "La confirmation du mot de passe est requise",
+      "passwordMismatch": "Les mots de passe ne correspondent pas"
     },
     "error": {
-      "updateFailed": "Failed to update user.",
-      "deleteFailed": "Failed to delete user.",
-      "fetchPermissionsFailed": "Failed to load user permissions.",
-      "fetchRolePermissionsFailed": "Failed to load role permissions.",
-      "toggleRoleFailed": "Failed to toggle role.",
-      "saveAssignmentsFailed": "Failed to save assignments.",
-      "saveOverridesFailed": "Failed to save permission overrides.",
-      "noRoleSelected": "No role selected for override",
-      "superAdminRestricted": "The Super Admin role cannot be assigned or revoked.",
-      "adminSelfRevoke": "You cannot revoke your own Admin role."
+      "updateFailed": "Échec de la mise à jour de l'utilisateur.",
+      "deleteFailed": "Échec de la suppression de l'utilisateur.",
+      "fetchPermissionsFailed": "Échec du chargement des permissions de l'utilisateur.",
+      "fetchRolePermissionsFailed": "Échec du chargement des permissions du rôle.",
+      "toggleRoleFailed": "Échec de la bascule du rôle.",
+      "saveAssignmentsFailed": "Échec de l'enregistrement des affectations.",
+      "saveOverridesFailed": "Échec de l'enregistrement des surcharges de permissions.",
+      "noRoleSelected": "Aucun rôle sélectionné pour la surcharge",
+      "superAdminRestricted": "Le rôle Super Admin ne peut pas être assigné ou révoqué.",
+      "adminSelfRevoke": "Vous ne pouvez pas révoquer votre propre rôle Admin."
     },
     "loading": {
-      "default": "Loading...",
-      "saving": "Saving..."
+      "default": "Chargement...",
+      "saving": "Enregistrement..."
     }
   },
   "userAdd": {
-    "title": "Add New User",
+    "title": "Ajouter un nouvel utilisateur",
     "sections": {
-      "personalInfo": "Personal Information",
-      "contactInfo": "Contact Information",
-      "credentials": "Credentials",
-      "roleAssignment": "Role Assignment"
+      "personalInfo": "Informations personnelles",
+      "contactInfo": "Informations de contact",
+      "credentials": "Identifiants",
+      "roleAssignment": "Affectation de rôle"
     },
     "form": {
       "labels": {
-        "firstName": "First Name *",
-        "lastName": "Last Name *",
+        "firstName": "Prénom *",
+        "lastName": "Nom *",
         "email": "Email *",
-        "phone": "Phone *",
-        "password": "Password *",
-        "confirmPassword": "Confirm Password *",
-        "wallet": "Wallet *",
-        "assignRoles": "Assign Roles *"
+        "phone": "Téléphone *",
+        "password": "Mot de passe *",
+        "confirmPassword": "Confirmer le mot de passe *",
+        "wallet": "Portefeuille *",
+        "assignRoles": "Assigner des rôles *"
       },
       "placeholders": {
-        "firstName": "First Name *",
-        "lastName": "Last Name *",
+        "firstName": "Prénom *",
+        "lastName": "Nom *",
         "email": "Email *",
         "phone": "XX XXX XXX",
         "wallet": "XXXX-XXXX-XXXX-XXXX",
-        "password": "Password *",
-        "confirmPassword": "Confirm Password *"
+        "password": "Mot de passe *",
+        "confirmPassword": "Confirmer le mot de passe *"
       }
     },
     "roleManagement": {
-      "noDescription": "No description available",
-      "noPermissions": "No permissions assigned"
+      "noDescription": "Aucune description disponible",
+      "noPermissions": "Aucune permission assignée"
     },
     "actions": {
-      "create": "Create User",
-      "cancel": "Cancel",
-      "creating": "Creating..."
+      "create": "Créer un utilisateur",
+      "cancel": "Annuler",
+      "creating": "Création..."
     },
     "validation": {
-      "firstnameRequired": "First Name is required",
-      "firstnameLengthMin": "First Name must be at least 3 characters",
-      "firstnameLengthMax": "First Name must be 20 characters or less",
-      "firstnameFormat": "First Name can only contain letters, spaces, hyphens, or apostrophes",
-      "lastnameRequired": "Last Name is required",
-      "lastnameLengthMin": "Last Name must be at least 3 characters",
-      "lastnameLengthMax": "Last Name must be 20 characters or less",
-      "lastnameFormat": "Last Name can only contain letters, spaces, hyphens, or apostrophes",
-      "emailRequired": "Email is required",
-      "emailLength": "Email must be 70 characters or less",
-      "emailFormat": "Invalid email format",
-      "phoneRequired": "Phone is required",
-      "phoneLength": "Phone must be 8 digits",
-      "walletRequired": "Wallet is required",
-      "walletLength": "Wallet must be exactly 16 digits",
-      "passwordRequired": "Password is required",
-      "passwordLengthMin": "Password must be at least 8 characters",
-      "passwordLengthMax": "Password must be 128 characters or less",
-      "passwordFormat": "Password must include uppercase, lowercase, digit, and special character, no spaces",
-      "passwordConfirmRequired": "Password confirmation is required",
-      "passwordMismatch": "Passwords do not match"
+      "firstnameRequired": "Le prénom est requis",
+      "firstnameLengthMin": "Le prénom doit comporter au moins 3 caractères",
+      "firstnameLengthMax": "Le prénom doit comporter 20 caractères ou moins",
+      "firstnameFormat": "Le prénom ne peut contenir que des lettres, des espaces, des tirets ou des apostrophes",
+      "lastnameRequired": "Le nom est requis",
+      "lastnameLengthMin": "Le nom doit comporter au moins 3 caractères",
+      "lastnameLengthMax": "Le nom doit comporter 20 caractères ou moins",
+      "lastnameFormat": "Le nom ne peut contenir que des lettres, des espaces, des tirets ou des apostrophes",
+      "emailRequired": "L'email est requis",
+      "emailLength": "L'email doit comporter 70 caractères ou moins",
+      "emailFormat": "Format d'email invalide",
+      "phoneRequired": "Le téléphone est requis",
+      "phoneLength": "Le téléphone doit comporter 8 chiffres",
+      "walletRequired": "Le portefeuille est requis",
+      "walletLength": "Le portefeuille doit comporter exactement 16 chiffres",
+      "passwordRequired": "Le mot de passe est requis",
+      "passwordLengthMin": "Le mot de passe doit comporter au moins 8 caractères",
+      "passwordLengthMax": "Le mot de passe doit comporter 128 caractères ou moins",
+      "passwordFormat": "Le mot de passe doit inclure une majuscule, une minuscule, un chiffre et un caractère spécial, sans espaces",
+      "passwordConfirmRequired": "La confirmation du mot de passe est requise",
+      "passwordMismatch": "Les mots de passe ne correspondent pas"
     },
     "error": {
-      "createFailed": "Failed to create user.",
-      "superAdminRestricted": "Only Super Admins can assign the Super Admin role."
+      "createFailed": "Échec de la création de l'utilisateur.",
+      "superAdminRestricted": "Seuls les Super Admins peuvent assigner le rôle Super Admin."
     }
   },
   "roleView": {
-    "title": "{roleName}",
-    "descriptionPlaceholder": "Role Description",
+    "title": "{{roleName}}",
+    "descriptionPlaceholder": "Description du rôle",
     "permissions": {
       "title": "Permissions",
       "filter": {
-        "label": "Filter Permissions",
-        "searchPlaceholder": "Search permissions...",
-        "categoryPlaceholder": "All Categories"
+        "label": "Filtrer les permissions",
+        "searchPlaceholder": "Rechercher des permissions...",
+        "categoryPlaceholder": "Toutes les catégories"
       },
-      "noPermissions": "No permissions available"
+      "noPermissions": "Aucune permission disponible"
     },
     "form": {
       "labels": {
-        "name": "Role Name",
-        "description": "Role Description"
+        "name": "Nom du rôle",
+        "description": "Description du rôle"
       },
       "placeholders": {
-        "name": "Role Name",
-        "description": "Role Description"
+        "name": "Nom du rôle",
+        "description": "Description du rôle"
       }
     },
     "actions": {
-      "edit": "Edit",
-      "delete": "Delete",
-      "save": "Save",
-      "cancel": "Cancel",
-      "saveChanges": "Save Changes",
-      "saving": "Saving...",
-      "toggleAll": "Select All",
-      "toggleAllOff": "Deselect All",
-      "deleteConfirm": "Are you sure you want to delete the \"{roleName}\" role? This action cannot be undone."
+      "edit": "Modifier",
+      "delete": "Supprimer",
+      "save": "Enregistrer",
+      "cancel": "Annuler",
+      "saveChanges": "Enregistrer les modifications",
+      "saving": "Enregistrement...",
+      "toggleAll": "Tout sélectionner",
+      "toggleAllOff": "Tout désélectionner",
+      "deleteConfirm": "Êtes-vous sûr de vouloir supprimer le rôle \"{{roleName}}\" ? Cette action est irréversible."
     },
     "validation": {
-      "nameRequired": "Role name is required",
-      "nameLengthMin": "Role name must be at least 3 characters",
-      "nameLengthMax": "Role name must be 20 characters or less",
-      "nameFormat": "Role name can only contain letters, spaces, or hyphens",
-      "descriptionLengthMax": "Description must be 150 characters or less"
+      "nameRequired": "Le nom du rôle est requis",
+      "nameLengthMin": "Le nom du rôle doit comporter au moins 3 caractères",
+      "nameLengthMax": "Le nom du rôle doit comporter 20 caractères ou moins",
+      "nameFormat": "Le nom du rôle ne peut contenir que des lettres, des espaces ou des tirets",
+      "descriptionLengthMax": "La description doit comporter 150 caractères ou moins"
     },
     "error": {
-      "updateFailed": "Failed to update role.",
-      "deleteFailed": "Failed to delete role.",
-      "savePermissionsFailed": "Failed to save permissions.",
-      "superAdminRestricted": "The Super Admin role cannot be modified or deleted."
+      "updateFailed": "Échec de la mise à jour du rôle.",
+      "deleteFailed": "Échec de la suppression du rôle.",
+      "savePermissionsFailed": "Échec de l'enregistrement des permissions.",
+      "superAdminRestricted": "Le rôle Super Admin ne peut pas être modifié ou supprimé."
     }
   },
   "rolesList": {
-    "title": "Roles",
+    "title": "Rôles",
     "categories": {
-      "fixed": "Fixed Roles",
-      "premade": "Pre-made Roles",
-      "custom": "Custom Roles"
+      "fixed": "Rôles fixes",
+      "premade": "Rôles prédéfinis",
+      "custom": "Rôles personnalisés"
     },
     "roleCard": {
       "permissionCount": "{{count}} Permissions"
     },
     "popup": {
-      "noDescription": "No description available",
-      "permissionsTitle": "Permissions by Class",
-      "noPermissions": "No permissions assigned",
-      "loading": "Loading..."
+      "noDescription": "Aucune description disponible",
+      "permissionsTitle": "Permissions par classe",
+      "noPermissions": "Aucune permission assignée",
+      "loading": "Chargement..."
     },
     "confirmation": {
-      "unsavedChanges": "You have unsaved changes. Are you sure you want to switch roles?",
-      "premadeWarning": "Warning: Modifying pre-made roles may affect system functionality. Are you sure you want to proceed?"
+      "unsavedChanges": "Vous avez des modifications non enregistrées. Êtes-vous sûr de vouloir changer de rôle ?",
+      "premadeWarning": "Attention : Modifier les rôles prédéfinis peut affecter le fonctionnement du système. Êtes-vous sûr de vouloir continuer ?"
     },
     "actions": {
-      "confirm": "Confirm",
-      "cancel": "Cancel"
+      "confirm": "Confirmer",
+      "cancel": "Annuler"
     },
     "error": {
-      "fetchPermissionsFailed": "Failed to load role permissions.",
-      "superAdminRestricted": "The Super Admin role cannot be modified.",
-      "adminRestricted": "Only Super Admins can modify the Admin role."
+      "fetchPermissionsFailed": "Échec du chargement des permissions du rôle.",
+      "superAdminRestricted": "Le rôle Super Admin ne peut pas être modifié.",
+      "adminRestricted": "Seuls les Super Admins peuvent modifier le rôle Admin."
     }
   },
   "roleAdd": {
-    "title": "Create New Role",
+    "title": "Créer un nouveau rôle",
     "sections": {
-      "roleDetails": "Role Details",
+      "roleDetails": "Détails du rôle",
       "permissions": "Permissions"
     },
     "form": {
       "labels": {
-        "name": "Name *",
+        "name": "Nom *",
         "description": "Description",
-        "assignPermissions": "Assign Permissions"
+        "assignPermissions": "Assigner des permissions"
       },
       "placeholders": {
-        "name": "Enter role name",
-        "description": "Enter role description",
-        "permissionSearch": "Search permissions..."
+        "name": "Saisir le nom du rôle",
+        "description": "Saisir la description du rôle",
+        "permissionSearch": "Rechercher des permissions..."
       }
     },
     "permissions": {
       "filter": {
-        "label": "Filter Permissions",
-        "categoryPlaceholder": "All Categories"
+        "label": "Filtrer les permissions",
+        "categoryPlaceholder": "Toutes les catégories"
       },
-      "noPermissions": "No permissions available"
+      "noPermissions": "Aucune permission disponible"
     },
     "actions": {
-      "create": "Create Role",
-      "toggleAll": "Select All",
-      "toggleAllOff": "Deselect All"
+      "create": "Créer un rôle",
+      "toggleAll": "Tout sélectionner",
+      "toggleAllOff": "Tout désélectionner"
     },
     "validation": {
-      "nameRequired": "Role name is required",
-      "nameLengthMin": "Role name must be at least 3 characters",
-      "nameLengthMax": "Role name must be 20 characters or less",
-      "nameFormat": "Role name can only contain letters, spaces, or hyphens",
-      "descriptionLengthMax": "Description must be 150 characters or less"
+      "nameRequired": "Le nom du rôle est requis",
+      "nameLengthMin": "Le nom du rôle doit comporter au moins 3 caractères",
+      "nameLengthMax": "Le nom du rôle doit comporter 20 caractères ou moins",
+      "nameFormat": "Le nom du rôle ne peut contenir que des lettres, des espaces ou des tirets",
+      "descriptionLengthMax": "La description doit comporter 150 caractères ou moins"
     },
     "error": {
-      "createFailed": "Failed to create role.",
-      "validationFailed": "Please correct the errors before submitting."
+      "createFailed": "Échec de la création du rôle.",
+      "validationFailed": "Veuillez corriger les erreurs avant de soumettre."
     }
   },
   "permsList": {
     "title": "Permissions",
     "filter": {
-      "label": "Filter Permissions",
-      "searchPlaceholder": "Search permissions...",
-      "categoryPlaceholder": "All Classes"
+      "label": "Filtrer les permissions",
+      "searchPlaceholder": "Rechercher des permissions...",
+      "categoryPlaceholder": "Toutes les classes"
     },
     "permissionCard": {
-      "noDescription": "No description"
+      "noDescription": "Aucune description"
     }
   },
   "permView": {
     "title": {
       "view": "{permissionName}",
-      "edit": "Edit Permission"
+      "edit": "Modifier la permission"
     },
     "fields": {
-      "class": "Class",
+      "class": "Classe",
       "description": "Description",
-      "noDescription": "No description"
+      "noDescription": "Aucune description"
     },
     "form": {
       "labels": {
-        "name": "Permission Name *",
-        "class": "Class *",
-        "description": "Permission Description"
+        "name": "Nom de la permission *",
+        "class": "Classe *",
+        "description": "Description de la permission"
       },
       "placeholders": {
-        "name": "Permission Name",
-        "class": "Select a class",
-        "description": "Permission Description"
+        "name": "Nom de la permission",
+        "class": "Sélectionner une classe",
+        "description": "Description de la permission"
       }
     },
     "actions": {
-      "edit": "Edit",
-      "delete": "Delete",
-      "save": "Save",
-      "cancel": "Cancel",
-      "close": "Close",
-      "saving": "Saving..."
+      "edit": "Modifier",
+      "delete": "Supprimer",
+      "save": "Enregistrer",
+      "cancel": "Annuler",
+      "close": "Fermer",
+      "saving": "Enregistrement..."
     },
     "validation": {
-      "nameRequired": "Permission name is required",
-      "nameLengthMin": "Permission name must be at least 10 characters",
-      "nameLengthMax": "Permission name must be 30 characters or less",
-      "nameFormat": "Permission name must contain only lowercase letters and underscores (e.g., read_users)",
-      "classRequired": "Permission class is required",
-      "classLengthMin": "Class must be at least 3 characters",
-      "classLengthMax": "Class must be 20 characters or less",
-      "classFormat": "Class can only contain letters",
-      "descriptionLengthMax": "Description must be 150 characters or less"
+      "nameRequired": "Le nom de la permission est requis",
+      "nameLengthMin": "Le nom de la permission doit comporter au moins 10 caractères",
+      "nameLengthMax": "Le nom de la permission doit comporter 30 caractères ou moins",
+      "nameFormat": "Le nom de la permission ne doit contenir que des lettres minuscules et des tirets bas (ex. : read_users)",
+      "classRequired": "La classe de permission est requise",
+      "classLengthMin": "La classe doit comporter au moins 3 caractères",
+      "classLengthMax": "La classe doit comporter 20 caractères ou moins",
+      "classFormat": "La classe ne peut contenir que des lettres",
+      "descriptionLengthMax": "La description doit comporter 150 caractères ou moins"
     },
     "error": {
-      "updateFailed": "Failed to update permission.",
-      "deleteFailed": "Failed to delete permission.",
-      "validationFailed": "Please correct the errors before saving."
+      "updateFailed": "Échec de la mise à jour de la permission.",
+      "deleteFailed": "Échec de la suppression de la permission.",
+      "validationFailed": "Veuillez corriger les erreurs avant d'enregistrer."
     }
   },
   "permAdd": {
-    "title": "Create New Permission",
+    "title": "Créer une nouvelle permission",
     "form": {
       "labels": {
-        "name": "Name *",
-        "class": "Class *",
+        "name": "Nom *",
+        "class": "Classe *",
         "description": "Description"
       },
       "placeholders": {
-        "name": "Enter permission name",
-        "class": "Select a class",
-        "description": "Enter permission description"
+        "name": "Saisir le nom de la permission",
+        "class": "Sélectionner une classe",
+        "description": "Saisir la description de la permission"
       }
     },
     "actions": {
-      "create": "Create Permission"
+      "create": "Créer une permission"
     },
     "validation": {
-      "nameRequired": "Permission name is required",
-      "nameLengthMin": "Permission name must be at least 10 characters",
-      "nameLengthMax": "Permission name must be 30 characters or less",
-      "nameFormat": "Permission name must contain only lowercase letters and underscores (e.g., read_users)",
-      "classRequired": "Permission class is required",
-      "classLengthMin": "Class must be at least 3 characters",
-      "classLengthMax": "Class must be 20 characters or less",
-      "classFormat": "Class can only contain letters",
-      "descriptionLengthMax": "Description must be 150 characters or less"
+      "nameRequired": "Le nom de la permission est requis",
+      "nameLengthMin": "Le nom de la permission doit comporter au moins 10 caractères",
+      "nameLengthMax": "Le nom de la permission doit comporter 30 caractères ou moins",
+      "nameFormat": "Le nom de la permission ne doit contenir que des lettres minuscules et des tirets bas (ex. : read_users)",
+      "classRequired": "La classe de permission est requise",
+      "classLengthMin": "La classe doit comporter au moins 3 caractères",
+      "classLengthMax": "La classe doit comporter 20 caractères ou moins",
+      "classFormat": "La classe ne peut contenir que des lettres",
+      "descriptionLengthMax": "La description doit comporter 150 caractères ou moins"
     },
     "error": {
-      "createFailed": "Failed to create permission.",
-      "validationFailed": "Please correct the errors before submitting."
+      "createFailed": "Échec de la création de la permission.",
+      "validationFailed": "Veuillez corriger les erreurs avant de soumettre."
     }
   },
   "reasonView": {
     "title": {
       "view": "{{reasonItem}}",
-      "edit": "Edit Reason"
+      "edit": "Modifier le motif"
     },
     "actions": {
-      "edit": "Edit",
-      "delete": "Delete",
-      "save": "Save",
-      "cancel": "Cancel",
-      "saving": "Saving..."
+      "edit": "Modifier",
+      "delete": "Supprimer",
+      "save": "Enregistrer",
+      "cancel": "Annuler",
+      "saving": "Enregistrement..."
     },
     "error": {
-      "updateFailed": "Failed to update reason.",
-      "deleteFailed": "Failed to delete reason."
+      "updateFailed": "Échec de la mise à jour du motif.",
+      "deleteFailed": "Échec de la suppression du motif."
     }
-  
   }
 }
