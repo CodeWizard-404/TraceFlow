@@ -298,15 +298,15 @@
   "timesheets": {
     "loading": "جارٍ تحميل سجل الدوام...",
     "viewModes": {
-      "year": "سنة",
-      "month": "شهر",
-      "week": "أسبوع",
-      "day": "يوم"
+      "year": "العام",
+      "month": "الشهر",
+      "week": "الأسبوع",
+      "day": "اليوم"
     },
     "actions": {
       "scheduleVisit": "جدولة زيارة",
       "receiptBooks": "دفاتر الإيصالات",
-      "current": "الحالي",
+      "current": "{{view}} الحالي",
       "viewReceiptBooks": "عرض دفاتر الإيصالات",
       "filterSupervisors": "تصفية المشرفين",
       "validateTimesheet": "التحقق من سجل الدوام بالكامل"
@@ -423,6 +423,7 @@
     "loading": "جارٍ التحميل...",
     "form": {
       "agentSelection": "اختيار الوكيل",
+      "recipientType": "نوع المستلم",
       "supplierEmail": "بريد المورد الإلكتروني",
       "selectBooks": "اختر دفاتر الإيصالات في المخزون للنقل",
       "selectedAgent": "الوكيل المختار",
@@ -545,7 +546,7 @@
       }
     },
     "search": {
-      "placeholder": "ابحث عن الإيصالات..."
+      "placeholder": "...ابحث عن الإيصالات"
     },
     "sort": {
       "title": "ترتيب حسب",
@@ -1067,8 +1068,7 @@
     "pagination": {
       "previous": "السابق",
       "next": "التالي",
-      "pageInfo1": "من",
-      "pageInfo2": "الصفحة"
+      "pageInfo": "الصفحة {{currentPage}} من {{totalPages}}"
     },
     "validation": {
       "firstnameRequired": "الاسم الأول مطلوب",

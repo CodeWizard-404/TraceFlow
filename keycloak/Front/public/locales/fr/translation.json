@@ -170,7 +170,7 @@
     },
     "photos": {
       "title": "Photos",
-      "count": "({count})",
+      "count": "({{count}})",
       "startCamera": "Démarrer la caméra",
       "alt": "Photo de la visite {index}"
     },
@@ -306,7 +306,7 @@
     "actions": {
       "scheduleVisit": "Planifier une visite",
       "receiptBooks": "Carnets de reçus",
-      "current": "Actuel",
+      "current": "{{view}} Actuel(le)",
       "viewReceiptBooks": "Voir les carnets de reçus",
       "filterSupervisors": "Filtrer les superviseurs",
       "validateTimesheet": "Valider l'ensemble de la feuille de temps"
@@ -319,40 +319,40 @@
       "week": "Semaine",
       "visits": "Visites",
       "supervisors": "Superviseurs",
-      "month": "{monthName}",
-      "weekNumber": "Semaine {weekNumber} :",
-      "weekRange": "{startDate} - {endDate}",
-      "supervisorCount": "Superviseurs : {count}"
+      "month": "{{monthName}}",
+      "weekNumber": "Semaine {{weekNumber}} :",
+      "weekRange": "{{startDate}} - {{endDate}}",
+      "supervisorCount": "Superviseurs : {{count}}"
     },
     "monthView": {
       "week": "Semaine",
       "weekRange": "{startDate} - {endDate}",
       "visitCount": "{count} visites",
       "visits": "Visites",
-      "supervisorCount": "Superviseurs : {count}",
+      "supervisorCount": "Superviseurs : {{count}}",
       "status": "Statut",
       "supervisors": "Superviseurs :"
     },
     "weekView": {
       "week": "Semaine",
-      "weekRange": "{startDate} - {endDate}",
+      "weekRange": "{{startDate}} - {{endDate}}",
       "status": "Statut",
       "supervisor": "Superviseur : {firstname} {lastname}",
-      "dayName": "{dayName}",
-      "dayDate": "{dayDate}",
-      "visitCount": "/ {count} visites"
+      "dayName": "{{dayName}}",
+      "dayDate": "{{dayDate}}",
+      "visitCount": "/ {{count}} visites"
     },
     "dayView": {
-      "date": "{weekday} {day}/{month}",
+      "date": "{{weekday}} {{day}}/{{month}}",
       "noVisits": "Aucune visite planifiée"
     },
     "visitCard": {
-      "supervisor": "{firstname} {lastname}",
-      "time": "{time}",
-      "status": "{status}",
-      "location": "{location}",
+      "supervisor": "{{firstname}} {{lastname}}",
+      "time": "{{time}}",
+      "status": "{{status}}",
+      "location": "{{location}}",
       "locationTBD": "Lieu à déterminer",
-      "reasons": "Motifs : {reasons}"
+      "reasons": "Motifs : {{reasons}}"
     },
     "aria": {
       "prevYear": "Année précédente",
@@ -363,17 +363,17 @@
       "nextWeek": "Semaine suivante",
       "prevDay": "Jour précédent",
       "nextDay": "Jour suivant",
-      "viewToggle": "Passer à la vue {mode}",
+      "viewToggle": "Passer à la vue {{mode}}",
       "scheduleVisit": "Planifier une nouvelle visite",
       "receiptBooks": "Voir les carnets de reçus",
-      "current": "Faire défiler jusqu'à {mode} actuel",
+      "current": "Faire défiler jusqu'à {{mode}} actuel",
       "supervisorSearch": "Rechercher des superviseurs par nom ou téléphone",
       "supervisorFilter": "Filtrer les feuilles de temps par superviseur",
-      "month": "Voir les feuilles de temps pour {month}",
-      "weekTile": "Voir les détails de la semaine {weekNumber}",
-      "weekCard": "Voir les détails de la semaine {weekNumber}",
-      "dayTile": "Voir les visites pour {weekday} {day}",
-      "visitCard": "Voir les détails de la visite pour {time} à {location}"
+      "month": "Voir les feuilles de temps pour {{month}}",
+      "weekTile": "Voir les détails de la semaine {{weekNumber}}",
+      "weekCard": "Voir les détails de la semaine {{weekNumber}}",
+      "dayTile": "Voir les visites pour {{weekday}} {{day}}",
+      "visitCard": "Voir les détails de la visite pour {{time}} à {{location}}"
     }
   },
   "timesheetForm": {
@@ -423,6 +423,7 @@
     "loading": "Chargement...",
     "form": {
       "agentSelection": "Sélection de l'agent",
+      "recipientType": "Type de destinataire",
       "supplierEmail": "Email du fournisseur",
       "selectBooks": "Sélectionner les carnets en stock à transférer",
       "selectedAgent": "Agent sélectionné",
@@ -433,7 +434,7 @@
       "searchAgents": "Rechercher des agents",
       "selectAgent": "Sélectionner un agent",
       "recipientSelection": "Sélection du destinataire",
-      "selectRecipient": "Sélectionner {type}",
+      "selectRecipient": "Sélectionner {{type}}",
       "selectedUser": "Utilisateur sélectionné",
       "selectedBooks": "Carnets sélectionnés",
       "scanStub": "Scanner la souche",
@@ -448,7 +449,7 @@
         "enterSupplierEmail": "Entrer l'email du fournisseur",
         "searchBooks": "Rechercher des carnets par numéro ou type",
         "searchRecipient": "Entrer le numéro de téléphone ou rechercher par nom",
-        "selectRecipient": "Sélectionner {type}",
+        "selectRecipient": "Sélectionner {{type}}",
         "enterOTP": "Entrer l'OTP"
       }
     },
@@ -620,8 +621,8 @@
       "back": "Retour aux reçus"
     },
     "footer": {
-      "currentStatus": "Statut actuel : {status}",
-      "currentHolder": "Détenteur actuel : {holder}",
+      "currentStatus": "Statut actuel : {{status}}",
+      "currentHolder": "Détenteur actuel : {{holder}}",
       "na": "N/D"
     },
     "timeline": {
@@ -1067,7 +1068,7 @@
     "pagination": {
       "previous": "Précédent",
       "next": "Suivant",
-      "pageInfo": "Page {currentPage} sur {totalPages}"
+      "pageInfo": "Page {{currentPage}} sur {{totalPages}}"
     },
     "validation": {
       "firstnameRequired": "Le prénom est requis",

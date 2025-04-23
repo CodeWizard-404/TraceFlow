@@ -306,7 +306,7 @@
     "actions": {
       "scheduleVisit": "Schedule Visit",
       "receiptBooks": "Receipt Books",
-      "current": "Current",
+      "current": "Current {{view}}",
       "viewReceiptBooks": "View Receipt Books",
       "filterSupervisors": "Filter Supervisors",
       "validateTimesheet": "Validate Entire Timesheet"
@@ -375,8 +375,7 @@
       "dayTile": "View visits for {weekday} {day}",
       "visitCard": "View visit details for {time} at {location}"
     }
-  },
-  "timesheetForm": {
+  },"timesheetForm": {
     "title": "Create Visit",
     "loading": "Loading...",
     "form": {
@@ -415,7 +414,13 @@
       "loadAgents": "Failed to load agents for {location}",
       "agentNotFound": "Agent not found with this phone number",
       "supervisorNotFound": "Supervisor not found with this phone number",
-      "createFailed": "Failed to create timesheet. Please try again."
+      "createFailed": "Failed to create timesheet. Please try again.",
+      "formIncomplete": "Please fill out all required fields."
+    },
+    "accessibility": {
+      "removeReason": "Remove reason {item}",
+      "removeChecklist": "Remove checklist {item}",
+      "errorAnnouncement": "Error: {message}"
     }
   },
   "transferReceiptBook": {
@@ -423,17 +428,18 @@
     "loading": "Loading...",
     "form": {
       "agentSelection": "Agent Selection",
+      "recipientType": "Recipient Type",
       "supplierEmail": "Supplier Email",
       "selectBooks": "Select In Stock Books to Transfer",
       "selectedAgent": "Selected Agent",
       "scanCollect": "Scan Books to Collect from Supplier",
       "scanQR": "Scan QR Codes",
-      "otp": "Enter OTP (Sent to {type} {details})",
+      "otp": "Enter OTP (Sent to {{type}} {{details}})",
       "location": "Select Location",
       "searchAgents": "Search Agents",
       "selectAgent": "Select Agent",
       "recipientSelection": "Recipient Selection",
-      "selectRecipient": "Select {type}",
+      "selectRecipient": "Select {{type}}",
       "selectedUser": "Selected User",
       "selectedBooks": "Selected Books",
       "scanStub": "Scan Stub",
@@ -448,7 +454,7 @@
         "enterSupplierEmail": "Enter supplier email",
         "searchBooks": "Search books by number or type",
         "searchRecipient": "Enter phone number or search by name",
-        "selectRecipient": "Select {type}",
+        "selectRecipient": "Select {{type}}",
         "enterOTP": "Enter OTP"
       }
     },
@@ -469,14 +475,14 @@
         "collect": "Collect books from supplier",
         "validateTransfer": "Validate transfer",
         "validateStubCollection": "Validate stub collection",
-        "removeBook": "Remove book {number}"
+        "removeBook": "Remove book {{number}}"
       }
     },
     "types": {
       "standard": "Standard"
     },
     "pagination": {
-      "pageInfo": "Page {currentPage} of {totalPages}",
+      "pageInfo": "Page {{currentPage}} of {{totalPages}}",
       "selectedBooks": "Selected Books",
       "aria": {
         "previous": "Go to previous page",
@@ -675,24 +681,34 @@
       "title": "Charts",
       "timesheetStatus": "Timesheet Status",
       "visitStatus": "Visit Status",
-      "supervisorTimesheets": "Timesheets per Supervisor",
-      "labels": {
-        "pending": "Pending",
-        "validated": "Validated"
-      }
+      "timesheetsPerSupervisor": "Timesheets per Supervisor",
+      "timesheetStatusPending": "Pending",
+      "timesheetStatusValidated": "Validated",
+      "visitStatusPending": "Pending",
+      "visitStatusValidated": "Validated"
     },
     "maps": {
-      "title": "Today’s Visits",
+      "title": "Today's Visits",
       "noVisits": "No visits today"
     },
     "stats": {
-      "supervisorsCount": "Supervisors Count",
-      "activeSupervisors": "Active Supervisors"
+      "supervisorsCount": {
+        "title": "Supervisors Count",
+        "value": "{count} supervisors"
+      },
+      "activeSupervisors": {
+        "title": "Active Supervisors",
+        "value": "{count} active"
+      }
     },
-    "sections": {
-      "unfinishedVisits": "Unfinished Visits",
-      "emails": "Emails",
-      "toDoList": "To Do List"
+    "unfinishedVisits": {
+      "title": "Unfinished Visits"
+    },
+    "emails": {
+      "title": "Emails"
+    },
+    "todoList": {
+      "title": "To Do List"
     }
   },
   "navbar": {
@@ -749,22 +765,22 @@
       "title": "Recent Activity",
       "visitLogged": {
         "title": "Visit Logged",
-        "subtext": "Agent: {agent} | Location: {location}",
+        "subtext": "Agent: {{agent}} | Location: {{location}}",
         "amount": "+1 Visit"
       },
       "timesheetSubmitted": {
         "title": "Timesheet Submitted",
-        "subtext": "Duration: {duration}",
+        "subtext": "Duration: {{duration}}",
         "amount": "Pending Approval"
       },
       "carnetDistributed": {
         "title": "Carnet Distributed",
-        "subtext": "Carnet ID: {carnetId} | Agent: {agent}",
+        "subtext": "Carnet ID: {{carnetId}} | Agent: {{agent}}",
         "amount": "+1 Carnet"
       },
       "soucheCollected": {
         "title": "Souche Collected",
-        "subtext": "Carnet ID: {carnetId} | Status: {status}",
+        "subtext": "Carnet ID: {{carnetId}} | Status: {{status}}",
         "amount": "+1 Souche"
       }
     },
@@ -942,7 +958,7 @@
       "addReason": "Add Reason"
     },
     "search": {
-      "placeholder": "Search {view}..."
+      "placeholder": "Search {{view}}..."
     },
     "error": {
       "noToken": "Please log in to access the dashboard.",
@@ -998,7 +1014,7 @@
       "pagination": {
         "previous": "Previous",
         "next": "Next",
-        "pageInfo": "Page {currentPage} of {totalPages}"
+        "pageInfo": "Page {{currentPage}} of {{totalPages}}"
       },
       "validation": {
         "empty": "Item cannot be empty.",
@@ -1099,7 +1115,7 @@
     "pagination": {
       "previous": "Previous",
       "next": "Next",
-      "pageInfo": "Page {currentPage} of {totalPages}"
+      "pageInfo": "Page {{currentPage}} of {{totalPages}}"
     },
     "validation": {
       "firstnameRequired": "First Name is required",
@@ -1260,7 +1276,7 @@
       "custom": "Custom Roles"
     },
     "roleCard": {
-      "permissionCount": "{count} Permissions"
+      "permissionCount": "{{count}} Permissions"
     },
     "popup": {
       "noDescription": "No description available",
@@ -1417,7 +1433,7 @@
   },
   "reasonView": {
     "title": {
-      "view": "{reasonItem}",
+      "view": "{{reasonItem}}",
       "edit": "Edit Reason"
     },
     "actions": {
@@ -1431,5 +1447,6 @@
       "updateFailed": "Failed to update reason.",
       "deleteFailed": "Failed to delete reason."
     }
+  
   }
 }

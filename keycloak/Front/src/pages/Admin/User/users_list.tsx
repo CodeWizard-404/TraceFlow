@@ -562,9 +562,10 @@ const UsersList: React.FC<UsersListProps> = React.memo(
                   {t("userView.pagination.previous")}
                 </button>
                 <span>
-                  {t("userView.pagination.pageInfo1")}
-                  {currentPage} {t("userView.pagination.pageInfo2")}
-                  {totalPages}
+                  {t("userView.pagination.pageInfo", {
+                    currentPage,
+                    totalPages,
+                  })}
                 </span>
                 <button
                   onClick={() =>
