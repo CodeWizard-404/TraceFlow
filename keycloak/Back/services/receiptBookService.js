@@ -45,8 +45,7 @@ class ReceiptBookService {
                     {
                         model: ReceiptBookTransfer,
                         attributes: ['transferID', 'transferType', 'transferDate'],
-                        // Avoid fetching related models within ReceiptBookTransfer to prevent cycles
-                        include: [], // Explicitly disable nested includes
+                        include: [], // Prevent nested includes
                     },
                     {
                         model: Agent,
@@ -64,17 +63,8 @@ class ReceiptBookService {
                 throw error;
             }
 
-            // Convert Sequelize instance to plain object to break circular references
-            const plainBook = book.toJSON();
-
-            // Manually transform associations to ensure no circular references
-            plainBook.CurrentHolder = plainBook.CurrentHolder || null;
-            plainBook.Agent = plainBook.Agent || null;
-            plainBook.ReceiptBookTransfers = plainBook.ReceiptBookTransfers || [];
-            plainBook.ReceiptStub = plainBook.ReceiptStub || null;
-
             logger.info(`Fetched receipt book ${bookID} in ${Date.now() - startTime}ms`, { ip: null });
-            return plainBook;
+            return book; // Return Sequelize instance
         } catch (error) {
             logger.error(`Get receipt book error: ${error.message}`, { ip: null });
             throw error;

@@ -44,19 +44,21 @@ class ReceiptBookController {
                 return res.status(400).json({ error: 'Book ID is required' });
             }
             const receiptBook = await ReceiptBookService.getReceiptBookById(bookID);
-            // Ensure qrCode is properly encoded
+            // Convert Sequelize instance to plain object
+            const plainBook = receiptBook.toJSON();
+            // Construct response object to avoid circular references
             const responseBook = {
-                bookID: receiptBook.bookID,
-                number: receiptBook.number,
-                type: receiptBook.type,
-                status: receiptBook.status,
-                qrCode: receiptBook.qrCode ? Buffer.from(receiptBook.qrCode).toString('base64') : null,
-                agentID: receiptBook.agentID,
-                currentHolderID: receiptBook.currentHolderID,
-                CurrentHolder: receiptBook.CurrentHolder,
-                ReceiptBookTransfers: receiptBook.ReceiptBookTransfers,
-                Agent: receiptBook.Agent,
-                ReceiptStub: receiptBook.ReceiptStub,
+                bookID: plainBook.bookID,
+                number: plainBook.number,
+                type: plainBook.type,
+                status: plainBook.status,
+                qrCode: plainBook.qrCode ? Buffer.from(plainBook.qrCode).toString('base64') : null,
+                agentID: plainBook.agentID,
+                currentHolderID: plainBook.currentHolderID,
+                CurrentHolder: plainBook.CurrentHolder || null,
+                ReceiptBookTransfers: plainBook.ReceiptBookTransfers || [],
+                Agent: plainBook.Agent || null,
+                ReceiptStub: plainBook.ReceiptStub || null,
             };
             logger.info(`Fetched receipt book ${bookID} by user ${req.user.userID}, IP: ${req.ip}`);
             return res.status(200).json(responseBook);
@@ -307,9 +309,20 @@ class ReceiptBookController {
                 return res.status(400).json({ error: 'Book ID is required' });
             }
             const receiptBook = await ReceiptBookService.updateReceiptBook(bookID, updates, req.user.userID);
+            // Convert Sequelize instance to plain object
+            const plainBook = receiptBook.toJSON();
             const responseBook = {
-                ...receiptBook,
-                qrCode: receiptBook.qrCode ? Buffer.from(receiptBook.qrCode).toString('base64') : null,
+                bookID: plainBook.bookID,
+                number: plainBook.number,
+                type: plainBook.type,
+                status: plainBook.status,
+                qrCode: plainBook.qrCode ? Buffer.from(plainBook.qrCode).toString('base64') : null,
+                agentID: plainBook.agentID,
+                currentHolderID: plainBook.currentHolderID,
+                CurrentHolder: plainBook.CurrentHolder || null,
+                ReceiptBookTransfers: plainBook.ReceiptBookTransfers || [],
+                Agent: plainBook.Agent || null,
+                ReceiptStub: plainBook.ReceiptStub || null,
             };
             // Notify holder and manager of updates
             await NotificationService.triggerNotification({

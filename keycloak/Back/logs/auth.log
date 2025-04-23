@@ -2949,3 +2949,51 @@
 {"level":"info","message":"Initiating token refresh","timestamp":"2025-04-23T10:09:33.665Z"}
 {"accessTokenExpiresIn":900,"level":"info","message":"Tokens refreshed successfully","refreshTokenRotatedAt":"2025-04-23T10:09:33.750Z","timestamp":"2025-04-23T10:09:33.750Z"}
 {"level":"info","message":"Refresh token successful","timestamp":"2025-04-23T10:09:33.751Z"}
+{"level":"info","message":"Super Admin bypass for user user_mpe0xo17h","timestamp":"2025-04-23T10:10:01.373Z"}
+{"ip":null,"level":"info","message":"Fetched 13 receipt books in 789ms","timestamp":"2025-04-23T10:10:02.163Z"}
+{"level":"info","message":"Fetched 13 receipt books by user user_mpe0xo17h in 791ms, IP: 127.0.0.1","timestamp":"2025-04-23T10:10:02.165Z"}
+{"level":"info","message":"Super Admin bypass for user user_mpe0xo17h","timestamp":"2025-04-23T10:10:02.265Z"}
+{"level":"info","message":"Fetched user bc51ac0d-9d6b-4852-96a6-323ec1c3db6a by user user_mpe0xo17h, IP: 127.0.0.1","timestamp":"2025-04-23T10:10:02.531Z"}
+{"level":"info","message":"Super Admin bypass for user user_mpe0xo17h","timestamp":"2025-04-23T10:10:03.056Z"}
+{"level":"info","message":"Fetched user 95beb7d8-e9d5-43bc-a954-3493d9ae8387 by user user_mpe0xo17h, IP: 127.0.0.1","timestamp":"2025-04-23T10:10:03.156Z"}
+{"level":"info","message":"Super Admin bypass for user user_mpe0xo17h","timestamp":"2025-04-23T10:10:03.531Z"}
+{"level":"info","message":"Fetched user d26127aa-c142-46fa-8dfe-a1be0b5d5a1e by user user_mpe0xo17h, IP: 127.0.0.1","timestamp":"2025-04-23T10:10:03.621Z"}
+{"level":"info","message":"Super Admin bypass for user user_mpe0xo17h","timestamp":"2025-04-23T10:10:03.961Z"}
+{"level":"info","message":"Fetched user b90e1335-26a1-4e84-a6c4-db2c7f11f45d by user user_mpe0xo17h, IP: 127.0.0.1","timestamp":"2025-04-23T10:10:04.050Z"}
+{"level":"info","message":"Super Admin bypass for user user_mpe0xo17h","timestamp":"2025-04-23T10:10:21.691Z"}
+{"ip":null,"level":"info","message":"Fetched receipt book book_9sg8kaiLxxZBcPwkRqaDb in 852ms","timestamp":"2025-04-23T10:10:22.544Z"}
+{"ip":null,"level":"error","message":"Update receipt book error: book.update is not a function, user: user_mpe0xo17h","timestamp":"2025-04-23T10:10:24.880Z"}
+{"level":"error","message":"Update receipt book error: book.update is not a function, user: user_mpe0xo17h, IP: 127.0.0.1","timestamp":"2025-04-23T10:10:24.881Z"}
+{"level":"info","message":"Keycloak admin token obtained","timestamp":"2025-04-23T10:10:46.597Z"}
+{"level":"info","message":"Login response generated for user user_mpe0xo17h","timestamp":"2025-04-23T10:10:49.248Z"}
+{"level":"info","message":"Login attempt for superadmin@example.com, requires2FA: false","timestamp":"2025-04-23T10:10:49.249Z"}
+{"level":"info","message":"Keycloak admin token obtained","timestamp":"2025-04-23T10:10:49.504Z"}
+{"level":"info","message":"Login response generated for user user_mpe0xo17h","timestamp":"2025-04-23T10:10:50.119Z"}
+{"level":"info","message":"Login attempt for superadmin@example.com, requires2FA: false","timestamp":"2025-04-23T10:10:50.120Z"}
+{"level":"info","message":"Fetched effective permissions for user user_mpe0xo17h by user_mpe0xo17h, IP: 127.0.0.1","timestamp":"2025-04-23T10:10:50.735Z"}
+{"level":"info","message":"Fetched roles for user user_mpe0xo17h by user_mpe0xo17h, IP: 127.0.0.1","timestamp":"2025-04-23T10:10:50.746Z"}
+{"level":"info","message":"Super Admin bypass for user user_mpe0xo17h","timestamp":"2025-04-23T10:10:52.009Z"}
+{"ip":null,"level":"info","message":"Fetched 13 receipt books in 448ms","timestamp":"2025-04-23T10:10:52.458Z"}
+{"level":"info","message":"Fetched 13 receipt books by user user_mpe0xo17h in 449ms, IP: 127.0.0.1","timestamp":"2025-04-23T10:10:52.459Z"}
+{"level":"info","message":"Super Admin bypass for user user_mpe0xo17h","timestamp":"2025-04-23T10:10:52.853Z"}
+{"level":"info","message":"Fetched user bc51ac0d-9d6b-4852-96a6-323ec1c3db6a by user user_mpe0xo17h, IP: 127.0.0.1","timestamp":"2025-04-23T10:10:52.933Z"}
+{"level":"info","message":"Super Admin bypass for user user_mpe0xo17h","timestamp":"2025-04-23T10:10:53.245Z"}
+{"level":"info","message":"Fetched user 95beb7d8-e9d5-43bc-a954-3493d9ae8387 by user user_mpe0xo17h, IP: 127.0.0.1","timestamp":"2025-04-23T10:10:53.345Z"}
+{"level":"info","message":"Super Admin bypass for user user_mpe0xo17h","timestamp":"2025-04-23T10:10:53.371Z"}
+{"level":"info","message":"Fetched user d26127aa-c142-46fa-8dfe-a1be0b5d5a1e by user user_mpe0xo17h, IP: 127.0.0.1","timestamp":"2025-04-23T10:10:53.441Z"}
+{"level":"info","message":"Super Admin bypass for user user_mpe0xo17h","timestamp":"2025-04-23T10:10:53.771Z"}
+{"level":"info","message":"Fetched user b90e1335-26a1-4e84-a6c4-db2c7f11f45d by user user_mpe0xo17h, IP: 127.0.0.1","timestamp":"2025-04-23T10:10:53.864Z"}
+{"level":"info","message":"Super Admin bypass for user user_mpe0xo17h","timestamp":"2025-04-23T10:14:20.788Z"}
+{"ip":null,"level":"info","message":"Fetched receipt book book_9sg8kaiLxxZBcPwkRqaDb in 929ms","timestamp":"2025-04-23T10:14:21.723Z"}
+{"ip":null,"level":"info","message":"Receipt book book_9sg8kaiLxxZBcPwkRqaDb updated by user user_mpe0xo17h","timestamp":"2025-04-23T10:14:22.802Z"}
+{"level":"info","message":"No active rules found for event: receipt_book:updated","timestamp":"2025-04-23T10:14:22.806Z"}
+{"level":"info","message":"Created default disabled notification rule for event: receipt_book:updated, ruleID: rule_jc19Aaw2s8UdrhBEQw-qw","timestamp":"2025-04-23T10:14:22.812Z"}
+{"level":"info","message":"Created disabled rule for event: receipt_book:updated, ruleID: rule_jc19Aaw2s8UdrhBEQw-qw","timestamp":"2025-04-23T10:14:22.813Z"}
+{"level":"info","message":"Updated receipt book book_9sg8kaiLxxZBcPwkRqaDb by user user_mpe0xo17h, IP: 127.0.0.1","timestamp":"2025-04-23T10:14:22.813Z"}
+{"level":"info","message":"Super Admin bypass for user user_mpe0xo17h","timestamp":"2025-04-23T10:14:29.578Z"}
+{"ip":null,"level":"info","message":"Fetched receipt book book_9sg8kaiLxxZBcPwkRqaDb in 579ms","timestamp":"2025-04-23T10:14:30.159Z"}
+{"ip":null,"level":"info","message":"Receipt book book_9sg8kaiLxxZBcPwkRqaDb deleted by user user_mpe0xo17h","timestamp":"2025-04-23T10:14:30.303Z"}
+{"level":"info","message":"No active rules found for event: receipt_book:deleted","timestamp":"2025-04-23T10:14:30.309Z"}
+{"level":"info","message":"Created default disabled notification rule for event: receipt_book:deleted, ruleID: rule_OZuu7S-jxHCEVlPz2XhYZ","timestamp":"2025-04-23T10:14:30.317Z"}
+{"level":"info","message":"Created disabled rule for event: receipt_book:deleted, ruleID: rule_OZuu7S-jxHCEVlPz2XhYZ","timestamp":"2025-04-23T10:14:30.318Z"}
+{"level":"info","message":"Deleted receipt book book_9sg8kaiLxxZBcPwkRqaDb by user user_mpe0xo17h, IP: 127.0.0.1","timestamp":"2025-04-23T10:14:30.319Z"}
