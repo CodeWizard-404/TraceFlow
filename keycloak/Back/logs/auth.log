@@ -2147,3 +2147,822 @@
 {"level":"info","message":"Fetched effective permissions for user user_mpe0xo17h by user_mpe0xo17h, IP: 127.0.0.1","timestamp":"2025-04-22T23:51:32.681Z"}
 {"level":"info","message":"Fetched roles for user user_mpe0xo17h by user_mpe0xo17h, IP: 127.0.0.1","timestamp":"2025-04-22T23:51:33.222Z"}
 {"level":"info","message":"Fetched effective permissions for user user_mpe0xo17h by user_mpe0xo17h, IP: 127.0.0.1","timestamp":"2025-04-22T23:51:33.243Z"}
+{"level":"info","message":"Fetched roles for user user_9u8f7lyor by user_9u8f7lyor, IP: 127.0.0.1","timestamp":"2025-04-23T02:19:38.910Z"}
+{"level":"info","message":"Fetched effective permissions for user user_9u8f7lyor by user_9u8f7lyor, IP: 127.0.0.1","timestamp":"2025-04-23T02:19:38.940Z"}
+{"level":"info","message":"Fetched roles for user user_9u8f7lyor by user_9u8f7lyor, IP: 127.0.0.1","timestamp":"2025-04-23T02:19:38.985Z"}
+{"level":"info","message":"Fetched effective permissions for user user_9u8f7lyor by user_9u8f7lyor, IP: 127.0.0.1","timestamp":"2025-04-23T02:19:39.000Z"}
+{"level":"info","message":"Keycloak admin token obtained","timestamp":"2025-04-23T02:24:49.998Z"}
+{"level":"info","message":"Login response generated for user user_9u8f7lyor","timestamp":"2025-04-23T02:24:50.334Z"}
+{"level":"info","message":"Login attempt for superadmin@example.com, requires2FA: false","timestamp":"2025-04-23T02:24:50.336Z"}
+{"level":"info","message":"Keycloak admin token obtained","timestamp":"2025-04-23T02:24:50.571Z"}
+{"level":"info","message":"Login response generated for user user_9u8f7lyor","timestamp":"2025-04-23T02:24:50.612Z"}
+{"level":"info","message":"Login attempt for superadmin@example.com, requires2FA: false","timestamp":"2025-04-23T02:24:50.615Z"}
+{"level":"info","message":"Fetched roles for user user_9u8f7lyor by user_9u8f7lyor, IP: 127.0.0.1","timestamp":"2025-04-23T02:24:50.703Z"}
+{"level":"info","message":"Fetched effective permissions for user user_9u8f7lyor by user_9u8f7lyor, IP: 127.0.0.1","timestamp":"2025-04-23T02:24:50.760Z"}
+{"level":"info","message":"Fetched effective permissions for user user_9u8f7lyor by user_9u8f7lyor, IP: 127.0.0.1","timestamp":"2025-04-23T02:25:24.576Z"}
+{"level":"info","message":"Fetched roles for user user_9u8f7lyor by user_9u8f7lyor, IP: 127.0.0.1","timestamp":"2025-04-23T02:25:24.583Z"}
+{"level":"info","message":"Fetched effective permissions for user user_9u8f7lyor by user_9u8f7lyor, IP: 127.0.0.1","timestamp":"2025-04-23T02:25:24.610Z"}
+{"level":"info","message":"Fetched roles for user user_9u8f7lyor by user_9u8f7lyor, IP: 127.0.0.1","timestamp":"2025-04-23T02:25:24.620Z"}
+{"level":"info","message":"Super Admin bypass for user user_9u8f7lyor","timestamp":"2025-04-23T02:25:24.917Z"}
+{"level":"info","message":"Fetched all roles by user user_9u8f7lyor, IP: 127.0.0.1","timestamp":"2025-04-23T02:25:24.925Z"}
+{"level":"info","message":"Super Admin bypass for user user_9u8f7lyor","timestamp":"2025-04-23T02:25:29.582Z"}
+{"level":"info","message":"Fetched all users by user user_9u8f7lyor, IP: 127.0.0.1","timestamp":"2025-04-23T02:25:29.588Z"}
+{"level":"info","message":"Super Admin bypass for user user_9u8f7lyor","timestamp":"2025-04-23T02:25:29.596Z"}
+{"level":"info","message":"Fetched all timesheets by user user_9u8f7lyor, IP: 127.0.0.1","timestamp":"2025-04-23T02:25:29.662Z"}
+{"level":"info","message":"Fetched roles for user user_9u8f7lyor by user_9u8f7lyor, IP: 127.0.0.1","timestamp":"2025-04-23T02:27:15.963Z"}
+{"level":"info","message":"Fetched effective permissions for user user_9u8f7lyor by user_9u8f7lyor, IP: 127.0.0.1","timestamp":"2025-04-23T02:27:15.969Z"}
+{"level":"info","message":"Fetched roles for user user_9u8f7lyor by user_9u8f7lyor, IP: 127.0.0.1","timestamp":"2025-04-23T02:27:15.986Z"}
+{"level":"info","message":"Fetched effective permissions for user user_9u8f7lyor by user_9u8f7lyor, IP: 127.0.0.1","timestamp":"2025-04-23T02:27:15.997Z"}
+{"level":"info","message":"Super Admin bypass for user user_9u8f7lyor","timestamp":"2025-04-23T02:27:16.024Z"}
+{"level":"info","message":"Super Admin bypass for user user_9u8f7lyor","timestamp":"2025-04-23T02:27:16.027Z"}
+{"level":"info","message":"Fetched all users by user user_9u8f7lyor, IP: 127.0.0.1","timestamp":"2025-04-23T02:27:16.032Z"}
+{"level":"info","message":"Fetched all timesheets by user user_9u8f7lyor, IP: 127.0.0.1","timestamp":"2025-04-23T02:27:16.050Z"}
+{"level":"info","message":"Super Admin bypass for user user_9u8f7lyor","timestamp":"2025-04-23T02:27:28.311Z"}
+{"ip":null,"level":"info","message":"Fetched 1 receipt books in 99ms","timestamp":"2025-04-23T02:27:28.413Z"}
+{"level":"info","message":"Fetched 1 receipt books by user user_9u8f7lyor in 101ms, IP: 127.0.0.1","timestamp":"2025-04-23T02:27:28.415Z"}
+{"level":"info","message":"Super Admin bypass for user user_9u8f7lyor","timestamp":"2025-04-23T02:27:28.490Z"}
+{"level":"info","message":"Fetched user user_9u8f7lyor by user user_9u8f7lyor, IP: 127.0.0.1","timestamp":"2025-04-23T02:27:28.503Z"}
+{"level":"info","message":"Fetched profile for user user_9u8f7lyor, IP: 127.0.0.1","timestamp":"2025-04-23T02:27:34.510Z"}
+{"level":"info","message":"Fetched notification preferences for user: user_9u8f7lyor, IP: 127.0.0.1","timestamp":"2025-04-23T02:27:34.535Z"}
+{"level":"info","message":"Fetched notifications for user: user_9u8f7lyor, IP: 127.0.0.1","timestamp":"2025-04-23T02:27:44.253Z"}
+{"level":"info","message":"Fetched notifications for user: user_9u8f7lyor, IP: 127.0.0.1","timestamp":"2025-04-23T02:27:50.340Z"}
+{"level":"info","message":"Super Admin bypass for user user_9u8f7lyor","timestamp":"2025-04-23T02:27:54.721Z"}
+{"level":"info","message":"Fetched all roles by user user_9u8f7lyor, IP: 127.0.0.1","timestamp":"2025-04-23T02:27:54.756Z"}
+{"level":"info","message":"Fetched notification preferences for user: user_9u8f7lyor, IP: 127.0.0.1","timestamp":"2025-04-23T02:27:58.385Z"}
+{"level":"info","message":"Fetched profile for user user_9u8f7lyor, IP: 127.0.0.1","timestamp":"2025-04-23T02:27:58.389Z"}
+{"level":"info","message":"Super Admin bypass for user user_9u8f7lyor","timestamp":"2025-04-23T02:28:23.708Z"}
+{"ip":null,"level":"info","message":"Fetched 1 receipt books in 60ms","timestamp":"2025-04-23T02:28:23.769Z"}
+{"level":"info","message":"Fetched 1 receipt books by user user_9u8f7lyor in 62ms, IP: 127.0.0.1","timestamp":"2025-04-23T02:28:23.771Z"}
+{"level":"info","message":"Super Admin bypass for user user_9u8f7lyor","timestamp":"2025-04-23T02:28:23.811Z"}
+{"level":"info","message":"Fetched user user_9u8f7lyor by user user_9u8f7lyor, IP: 127.0.0.1","timestamp":"2025-04-23T02:28:23.827Z"}
+{"level":"info","message":"Super Admin bypass for user user_9u8f7lyor","timestamp":"2025-04-23T02:28:25.000Z"}
+{"level":"info","message":"Super Admin bypass for user user_9u8f7lyor","timestamp":"2025-04-23T02:28:25.004Z"}
+{"level":"info","message":"Fetched all users by user user_9u8f7lyor, IP: 127.0.0.1","timestamp":"2025-04-23T02:28:25.014Z"}
+{"level":"info","message":"Fetched all timesheets by user user_9u8f7lyor, IP: 127.0.0.1","timestamp":"2025-04-23T02:28:25.017Z"}
+{"level":"info","message":"Super Admin bypass for user user_9u8f7lyor","timestamp":"2025-04-23T02:29:06.023Z"}
+{"level":"info","message":"Fetched all roles by user user_9u8f7lyor, IP: 127.0.0.1","timestamp":"2025-04-23T02:29:06.050Z"}
+{"level":"info","message":"Super Admin bypass for user user_9u8f7lyor","timestamp":"2025-04-23T02:29:07.938Z"}
+{"level":"info","message":"Fetched notification rules by user: user_9u8f7lyor, IP: 127.0.0.1","timestamp":"2025-04-23T02:29:07.941Z"}
+{"level":"info","message":"Super Admin bypass for user user_9u8f7lyor","timestamp":"2025-04-23T02:29:07.964Z"}
+{"level":"info","message":"Fetched notification rules by user: user_9u8f7lyor, IP: 127.0.0.1","timestamp":"2025-04-23T02:29:07.966Z"}
+{"level":"info","message":"Super Admin bypass for user user_9u8f7lyor","timestamp":"2025-04-23T02:29:10.065Z"}
+{"level":"info","message":"Super Admin bypass for user user_9u8f7lyor","timestamp":"2025-04-23T02:29:10.075Z"}
+{"level":"info","message":"Fetched all users by user user_9u8f7lyor, IP: 127.0.0.1","timestamp":"2025-04-23T02:29:10.082Z"}
+{"level":"info","message":"Fetched all timesheets by user user_9u8f7lyor, IP: 127.0.0.1","timestamp":"2025-04-23T02:29:10.095Z"}
+{"level":"info","message":"Fetched effective permissions for user user_9u8f7lyor by user_9u8f7lyor, IP: 127.0.0.1","timestamp":"2025-04-23T02:33:16.532Z"}
+{"level":"info","message":"Fetched roles for user user_9u8f7lyor by user_9u8f7lyor, IP: 127.0.0.1","timestamp":"2025-04-23T02:33:16.538Z"}
+{"level":"info","message":"Fetched effective permissions for user user_9u8f7lyor by user_9u8f7lyor, IP: 127.0.0.1","timestamp":"2025-04-23T02:33:16.561Z"}
+{"level":"info","message":"Fetched roles for user user_9u8f7lyor by user_9u8f7lyor, IP: 127.0.0.1","timestamp":"2025-04-23T02:33:16.568Z"}
+{"level":"info","message":"Super Admin bypass for user user_9u8f7lyor","timestamp":"2025-04-23T02:33:16.589Z"}
+{"level":"info","message":"Super Admin bypass for user user_9u8f7lyor","timestamp":"2025-04-23T02:33:16.592Z"}
+{"level":"info","message":"Fetched all users by user user_9u8f7lyor, IP: 127.0.0.1","timestamp":"2025-04-23T02:33:16.597Z"}
+{"level":"info","message":"Fetched all timesheets by user user_9u8f7lyor, IP: 127.0.0.1","timestamp":"2025-04-23T02:33:16.617Z"}
+{"level":"info","message":"Fetched effective permissions for user user_9u8f7lyor by user_9u8f7lyor, IP: 127.0.0.1","timestamp":"2025-04-23T02:34:31.532Z"}
+{"level":"info","message":"Fetched roles for user user_9u8f7lyor by user_9u8f7lyor, IP: 127.0.0.1","timestamp":"2025-04-23T02:34:31.536Z"}
+{"level":"info","message":"Fetched roles for user user_9u8f7lyor by user_9u8f7lyor, IP: 127.0.0.1","timestamp":"2025-04-23T02:34:31.559Z"}
+{"level":"info","message":"Fetched effective permissions for user user_9u8f7lyor by user_9u8f7lyor, IP: 127.0.0.1","timestamp":"2025-04-23T02:34:31.563Z"}
+{"level":"info","message":"Super Admin bypass for user user_9u8f7lyor","timestamp":"2025-04-23T02:34:31.586Z"}
+{"level":"info","message":"Super Admin bypass for user user_9u8f7lyor","timestamp":"2025-04-23T02:34:31.589Z"}
+{"level":"info","message":"Fetched all users by user user_9u8f7lyor, IP: 127.0.0.1","timestamp":"2025-04-23T02:34:31.592Z"}
+{"level":"info","message":"Fetched all timesheets by user user_9u8f7lyor, IP: 127.0.0.1","timestamp":"2025-04-23T02:34:31.610Z"}
+{"level":"info","message":"Fetched effective permissions for user user_9u8f7lyor by user_9u8f7lyor, IP: 127.0.0.1","timestamp":"2025-04-23T02:34:43.892Z"}
+{"level":"info","message":"Fetched roles for user user_9u8f7lyor by user_9u8f7lyor, IP: 127.0.0.1","timestamp":"2025-04-23T02:34:43.898Z"}
+{"level":"info","message":"Fetched roles for user user_9u8f7lyor by user_9u8f7lyor, IP: 127.0.0.1","timestamp":"2025-04-23T02:34:43.919Z"}
+{"level":"info","message":"Fetched effective permissions for user user_9u8f7lyor by user_9u8f7lyor, IP: 127.0.0.1","timestamp":"2025-04-23T02:34:43.926Z"}
+{"level":"info","message":"Super Admin bypass for user user_9u8f7lyor","timestamp":"2025-04-23T02:34:43.950Z"}
+{"level":"info","message":"Super Admin bypass for user user_9u8f7lyor","timestamp":"2025-04-23T02:34:43.953Z"}
+{"level":"info","message":"Fetched all users by user user_9u8f7lyor, IP: 127.0.0.1","timestamp":"2025-04-23T02:34:43.957Z"}
+{"level":"info","message":"Fetched all timesheets by user user_9u8f7lyor, IP: 127.0.0.1","timestamp":"2025-04-23T02:34:43.982Z"}
+{"level":"info","message":"Fetched roles for user user_9u8f7lyor by user_9u8f7lyor, IP: 127.0.0.1","timestamp":"2025-04-23T02:34:57.110Z"}
+{"level":"info","message":"Fetched effective permissions for user user_9u8f7lyor by user_9u8f7lyor, IP: 127.0.0.1","timestamp":"2025-04-23T02:34:57.118Z"}
+{"level":"info","message":"Fetched roles for user user_9u8f7lyor by user_9u8f7lyor, IP: 127.0.0.1","timestamp":"2025-04-23T02:34:57.141Z"}
+{"level":"info","message":"Fetched effective permissions for user user_9u8f7lyor by user_9u8f7lyor, IP: 127.0.0.1","timestamp":"2025-04-23T02:34:57.146Z"}
+{"level":"info","message":"Super Admin bypass for user user_9u8f7lyor","timestamp":"2025-04-23T02:34:57.165Z"}
+{"level":"info","message":"Super Admin bypass for user user_9u8f7lyor","timestamp":"2025-04-23T02:34:57.168Z"}
+{"level":"info","message":"Fetched all users by user user_9u8f7lyor, IP: 127.0.0.1","timestamp":"2025-04-23T02:34:57.173Z"}
+{"level":"info","message":"Fetched all timesheets by user user_9u8f7lyor, IP: 127.0.0.1","timestamp":"2025-04-23T02:34:57.196Z"}
+{"level":"info","message":"Fetched roles for user user_9u8f7lyor by user_9u8f7lyor, IP: 127.0.0.1","timestamp":"2025-04-23T02:35:14.190Z"}
+{"level":"info","message":"Fetched effective permissions for user user_9u8f7lyor by user_9u8f7lyor, IP: 127.0.0.1","timestamp":"2025-04-23T02:35:14.196Z"}
+{"level":"info","message":"Fetched roles for user user_9u8f7lyor by user_9u8f7lyor, IP: 127.0.0.1","timestamp":"2025-04-23T02:35:14.211Z"}
+{"level":"info","message":"Fetched effective permissions for user user_9u8f7lyor by user_9u8f7lyor, IP: 127.0.0.1","timestamp":"2025-04-23T02:35:14.222Z"}
+{"level":"info","message":"Super Admin bypass for user user_9u8f7lyor","timestamp":"2025-04-23T02:35:14.244Z"}
+{"level":"info","message":"Super Admin bypass for user user_9u8f7lyor","timestamp":"2025-04-23T02:35:14.247Z"}
+{"level":"info","message":"Fetched all users by user user_9u8f7lyor, IP: 127.0.0.1","timestamp":"2025-04-23T02:35:14.251Z"}
+{"level":"info","message":"Fetched all timesheets by user user_9u8f7lyor, IP: 127.0.0.1","timestamp":"2025-04-23T02:35:14.271Z"}
+{"level":"info","message":"Fetched effective permissions for user user_9u8f7lyor by user_9u8f7lyor, IP: 127.0.0.1","timestamp":"2025-04-23T02:35:19.561Z"}
+{"level":"info","message":"Fetched roles for user user_9u8f7lyor by user_9u8f7lyor, IP: 127.0.0.1","timestamp":"2025-04-23T02:35:19.566Z"}
+{"level":"info","message":"Fetched effective permissions for user user_9u8f7lyor by user_9u8f7lyor, IP: 127.0.0.1","timestamp":"2025-04-23T02:35:19.584Z"}
+{"level":"info","message":"Fetched roles for user user_9u8f7lyor by user_9u8f7lyor, IP: 127.0.0.1","timestamp":"2025-04-23T02:35:19.591Z"}
+{"level":"info","message":"Super Admin bypass for user user_9u8f7lyor","timestamp":"2025-04-23T02:35:19.614Z"}
+{"level":"info","message":"Super Admin bypass for user user_9u8f7lyor","timestamp":"2025-04-23T02:35:19.616Z"}
+{"level":"info","message":"Fetched all users by user user_9u8f7lyor, IP: 127.0.0.1","timestamp":"2025-04-23T02:35:19.619Z"}
+{"level":"info","message":"Fetched all timesheets by user user_9u8f7lyor, IP: 127.0.0.1","timestamp":"2025-04-23T02:35:19.634Z"}
+{"level":"info","message":"Fetched effective permissions for user user_9u8f7lyor by user_9u8f7lyor, IP: 127.0.0.1","timestamp":"2025-04-23T02:35:27.978Z"}
+{"level":"info","message":"Fetched roles for user user_9u8f7lyor by user_9u8f7lyor, IP: 127.0.0.1","timestamp":"2025-04-23T02:35:27.982Z"}
+{"level":"info","message":"Fetched effective permissions for user user_9u8f7lyor by user_9u8f7lyor, IP: 127.0.0.1","timestamp":"2025-04-23T02:35:28.002Z"}
+{"level":"info","message":"Fetched roles for user user_9u8f7lyor by user_9u8f7lyor, IP: 127.0.0.1","timestamp":"2025-04-23T02:35:28.006Z"}
+{"level":"info","message":"Super Admin bypass for user user_9u8f7lyor","timestamp":"2025-04-23T02:35:28.030Z"}
+{"level":"info","message":"Super Admin bypass for user user_9u8f7lyor","timestamp":"2025-04-23T02:35:28.032Z"}
+{"level":"info","message":"Fetched all timesheets by user user_9u8f7lyor, IP: 127.0.0.1","timestamp":"2025-04-23T02:35:28.034Z"}
+{"level":"info","message":"Fetched all users by user user_9u8f7lyor, IP: 127.0.0.1","timestamp":"2025-04-23T02:35:28.036Z"}
+{"level":"info","message":"Fetched roles for user user_9u8f7lyor by user_9u8f7lyor, IP: 127.0.0.1","timestamp":"2025-04-23T02:35:36.481Z"}
+{"level":"info","message":"Fetched effective permissions for user user_9u8f7lyor by user_9u8f7lyor, IP: 127.0.0.1","timestamp":"2025-04-23T02:35:36.486Z"}
+{"level":"info","message":"Fetched roles for user user_9u8f7lyor by user_9u8f7lyor, IP: 127.0.0.1","timestamp":"2025-04-23T02:35:36.503Z"}
+{"level":"info","message":"Fetched effective permissions for user user_9u8f7lyor by user_9u8f7lyor, IP: 127.0.0.1","timestamp":"2025-04-23T02:35:36.513Z"}
+{"level":"info","message":"Super Admin bypass for user user_9u8f7lyor","timestamp":"2025-04-23T02:35:36.533Z"}
+{"level":"info","message":"Super Admin bypass for user user_9u8f7lyor","timestamp":"2025-04-23T02:35:36.535Z"}
+{"level":"info","message":"Fetched all users by user user_9u8f7lyor, IP: 127.0.0.1","timestamp":"2025-04-23T02:35:36.538Z"}
+{"level":"info","message":"Fetched all timesheets by user user_9u8f7lyor, IP: 127.0.0.1","timestamp":"2025-04-23T02:35:36.555Z"}
+{"level":"info","message":"Fetched roles for user user_9u8f7lyor by user_9u8f7lyor, IP: 127.0.0.1","timestamp":"2025-04-23T02:35:49.684Z"}
+{"level":"info","message":"Fetched effective permissions for user user_9u8f7lyor by user_9u8f7lyor, IP: 127.0.0.1","timestamp":"2025-04-23T02:35:49.688Z"}
+{"level":"info","message":"Fetched roles for user user_9u8f7lyor by user_9u8f7lyor, IP: 127.0.0.1","timestamp":"2025-04-23T02:35:49.703Z"}
+{"level":"info","message":"Fetched effective permissions for user user_9u8f7lyor by user_9u8f7lyor, IP: 127.0.0.1","timestamp":"2025-04-23T02:35:49.714Z"}
+{"level":"info","message":"Super Admin bypass for user user_9u8f7lyor","timestamp":"2025-04-23T02:35:49.733Z"}
+{"level":"info","message":"Super Admin bypass for user user_9u8f7lyor","timestamp":"2025-04-23T02:35:49.735Z"}
+{"level":"info","message":"Fetched all users by user user_9u8f7lyor, IP: 127.0.0.1","timestamp":"2025-04-23T02:35:49.739Z"}
+{"level":"info","message":"Fetched all timesheets by user user_9u8f7lyor, IP: 127.0.0.1","timestamp":"2025-04-23T02:35:49.757Z"}
+{"level":"info","message":"Fetched roles for user user_9u8f7lyor by user_9u8f7lyor, IP: 127.0.0.1","timestamp":"2025-04-23T02:35:59.322Z"}
+{"level":"info","message":"Fetched effective permissions for user user_9u8f7lyor by user_9u8f7lyor, IP: 127.0.0.1","timestamp":"2025-04-23T02:35:59.329Z"}
+{"level":"info","message":"Fetched roles for user user_9u8f7lyor by user_9u8f7lyor, IP: 127.0.0.1","timestamp":"2025-04-23T02:35:59.358Z"}
+{"level":"info","message":"Fetched effective permissions for user user_9u8f7lyor by user_9u8f7lyor, IP: 127.0.0.1","timestamp":"2025-04-23T02:35:59.365Z"}
+{"level":"info","message":"Super Admin bypass for user user_9u8f7lyor","timestamp":"2025-04-23T02:35:59.389Z"}
+{"level":"info","message":"Super Admin bypass for user user_9u8f7lyor","timestamp":"2025-04-23T02:35:59.390Z"}
+{"level":"info","message":"Fetched all users by user user_9u8f7lyor, IP: 127.0.0.1","timestamp":"2025-04-23T02:35:59.394Z"}
+{"level":"info","message":"Fetched all timesheets by user user_9u8f7lyor, IP: 127.0.0.1","timestamp":"2025-04-23T02:35:59.410Z"}
+{"level":"info","message":"Fetched roles for user user_9u8f7lyor by user_9u8f7lyor, IP: 127.0.0.1","timestamp":"2025-04-23T02:36:05.515Z"}
+{"level":"info","message":"Fetched effective permissions for user user_9u8f7lyor by user_9u8f7lyor, IP: 127.0.0.1","timestamp":"2025-04-23T02:36:05.520Z"}
+{"level":"info","message":"Fetched roles for user user_9u8f7lyor by user_9u8f7lyor, IP: 127.0.0.1","timestamp":"2025-04-23T02:36:05.537Z"}
+{"level":"info","message":"Fetched effective permissions for user user_9u8f7lyor by user_9u8f7lyor, IP: 127.0.0.1","timestamp":"2025-04-23T02:36:05.548Z"}
+{"level":"info","message":"Super Admin bypass for user user_9u8f7lyor","timestamp":"2025-04-23T02:36:05.568Z"}
+{"level":"info","message":"Super Admin bypass for user user_9u8f7lyor","timestamp":"2025-04-23T02:36:05.569Z"}
+{"level":"info","message":"Fetched all users by user user_9u8f7lyor, IP: 127.0.0.1","timestamp":"2025-04-23T02:36:05.571Z"}
+{"level":"info","message":"Fetched all timesheets by user user_9u8f7lyor, IP: 127.0.0.1","timestamp":"2025-04-23T02:36:05.588Z"}
+{"level":"info","message":"Fetched roles for user user_9u8f7lyor by user_9u8f7lyor, IP: 127.0.0.1","timestamp":"2025-04-23T02:38:25.005Z"}
+{"level":"info","message":"Fetched effective permissions for user user_9u8f7lyor by user_9u8f7lyor, IP: 127.0.0.1","timestamp":"2025-04-23T02:38:25.020Z"}
+{"level":"info","message":"Fetched roles for user user_9u8f7lyor by user_9u8f7lyor, IP: 127.0.0.1","timestamp":"2025-04-23T02:38:25.061Z"}
+{"level":"info","message":"Fetched effective permissions for user user_9u8f7lyor by user_9u8f7lyor, IP: 127.0.0.1","timestamp":"2025-04-23T02:38:25.084Z"}
+{"level":"info","message":"Super Admin bypass for user user_9u8f7lyor","timestamp":"2025-04-23T02:38:25.117Z"}
+{"level":"info","message":"Super Admin bypass for user user_9u8f7lyor","timestamp":"2025-04-23T02:38:25.123Z"}
+{"level":"info","message":"Fetched all users by user user_9u8f7lyor, IP: 127.0.0.1","timestamp":"2025-04-23T02:38:25.131Z"}
+{"level":"info","message":"Fetched all timesheets by user user_9u8f7lyor, IP: 127.0.0.1","timestamp":"2025-04-23T02:38:25.154Z"}
+{"level":"info","message":"Super Admin bypass for user user_9u8f7lyor","timestamp":"2025-04-23T02:38:36.950Z"}
+{"level":"info","message":"Super Admin bypass for user user_9u8f7lyor","timestamp":"2025-04-23T02:38:36.956Z"}
+{"level":"info","message":"Super Admin bypass for user user_9u8f7lyor","timestamp":"2025-04-23T02:38:36.961Z"}
+{"level":"info","message":"Super Admin bypass for user user_9u8f7lyor","timestamp":"2025-04-23T02:38:36.965Z"}
+{"level":"info","message":"Fetched all reasons by user user_9u8f7lyor, IP: 127.0.0.1","timestamp":"2025-04-23T02:38:36.973Z"}
+{"level":"info","message":"Fetched all checklists by user user_9u8f7lyor, IP: 127.0.0.1","timestamp":"2025-04-23T02:38:36.978Z"}
+{"level":"info","message":"Fetched supervisors for user user_9u8f7lyor by user user_9u8f7lyor, IP: 127.0.0.1","timestamp":"2025-04-23T02:38:36.992Z"}
+{"level":"info","message":"Fetched unique locations by user user_9u8f7lyor, IP: 127.0.0.1","timestamp":"2025-04-23T02:38:37.000Z"}
+{"level":"info","message":"Super Admin bypass for user user_9u8f7lyor","timestamp":"2025-04-23T02:38:41.900Z"}
+{"level":"info","message":"Fetched notification rules by user: user_9u8f7lyor, IP: 127.0.0.1","timestamp":"2025-04-23T02:38:41.902Z"}
+{"level":"info","message":"Super Admin bypass for user user_9u8f7lyor","timestamp":"2025-04-23T02:38:41.925Z"}
+{"level":"info","message":"Fetched notification rules by user: user_9u8f7lyor, IP: 127.0.0.1","timestamp":"2025-04-23T02:38:41.928Z"}
+{"level":"info","message":"Super Admin bypass for user user_9u8f7lyor","timestamp":"2025-04-23T02:38:49.832Z"}
+{"level":"info","message":"Fetched all users by user user_9u8f7lyor, IP: 127.0.0.1","timestamp":"2025-04-23T02:38:49.854Z"}
+{"level":"info","message":"Super Admin bypass for user user_9u8f7lyor","timestamp":"2025-04-23T02:38:49.867Z"}
+{"level":"info","message":"Fetched notification rules by user: user_9u8f7lyor, IP: 127.0.0.1","timestamp":"2025-04-23T02:38:49.876Z"}
+{"level":"info","message":"Super Admin bypass for user user_9u8f7lyor","timestamp":"2025-04-23T02:38:49.889Z"}
+{"level":"info","message":"Fetched all roles by user user_9u8f7lyor, IP: 127.0.0.1","timestamp":"2025-04-23T02:38:49.931Z"}
+{"level":"info","message":"Fetched effective permissions for user user_9u8f7lyor by user_9u8f7lyor, IP: 127.0.0.1","timestamp":"2025-04-23T02:38:51.452Z"}
+{"level":"info","message":"Fetched roles for user user_9u8f7lyor by user_9u8f7lyor, IP: 127.0.0.1","timestamp":"2025-04-23T02:38:51.462Z"}
+{"level":"info","message":"Fetched effective permissions for user user_9u8f7lyor by user_9u8f7lyor, IP: 127.0.0.1","timestamp":"2025-04-23T02:38:51.504Z"}
+{"level":"info","message":"Fetched roles for user user_9u8f7lyor by user_9u8f7lyor, IP: 127.0.0.1","timestamp":"2025-04-23T02:38:51.517Z"}
+{"level":"info","message":"Super Admin bypass for user user_9u8f7lyor","timestamp":"2025-04-23T02:38:52.114Z"}
+{"level":"info","message":"Fetched all roles by user user_9u8f7lyor, IP: 127.0.0.1","timestamp":"2025-04-23T02:38:52.120Z"}
+{"level":"info","message":"Super Admin bypass for user user_9u8f7lyor","timestamp":"2025-04-23T02:38:52.126Z"}
+{"level":"info","message":"Fetched all users by user user_9u8f7lyor, IP: 127.0.0.1","timestamp":"2025-04-23T02:38:52.137Z"}
+{"level":"info","message":"Super Admin bypass for user user_9u8f7lyor","timestamp":"2025-04-23T02:38:52.168Z"}
+{"level":"info","message":"Fetched notification rules by user: user_9u8f7lyor, IP: 127.0.0.1","timestamp":"2025-04-23T02:38:52.172Z"}
+{"level":"info","message":"Super Admin bypass for user user_9u8f7lyor","timestamp":"2025-04-23T02:38:52.194Z"}
+{"level":"info","message":"Fetched notification rules by user: user_9u8f7lyor, IP: 127.0.0.1","timestamp":"2025-04-23T02:38:52.198Z"}
+{"level":"info","message":"Super Admin bypass for user user_9u8f7lyor","timestamp":"2025-04-23T02:38:54.114Z"}
+{"level":"info","message":"Super Admin bypass for user user_9u8f7lyor","timestamp":"2025-04-23T02:38:54.121Z"}
+{"level":"info","message":"Fetched all users by user user_9u8f7lyor, IP: 127.0.0.1","timestamp":"2025-04-23T02:38:54.126Z"}
+{"level":"info","message":"Fetched all timesheets by user user_9u8f7lyor, IP: 127.0.0.1","timestamp":"2025-04-23T02:38:54.152Z"}
+{"level":"info","message":"Super Admin bypass for user user_9u8f7lyor","timestamp":"2025-04-23T02:39:01.665Z"}
+{"ip":null,"level":"info","message":"Fetched 1 receipt books in 38ms","timestamp":"2025-04-23T02:39:01.704Z"}
+{"level":"info","message":"Fetched 1 receipt books by user user_9u8f7lyor in 39ms, IP: 127.0.0.1","timestamp":"2025-04-23T02:39:01.705Z"}
+{"level":"info","message":"Super Admin bypass for user user_9u8f7lyor","timestamp":"2025-04-23T02:39:01.738Z"}
+{"level":"info","message":"Fetched user user_9u8f7lyor by user user_9u8f7lyor, IP: 127.0.0.1","timestamp":"2025-04-23T02:39:01.744Z"}
+{"level":"info","message":"Fetched roles for user user_9u8f7lyor by user_9u8f7lyor, IP: 127.0.0.1","timestamp":"2025-04-23T02:39:37.744Z"}
+{"level":"info","message":"Fetched effective permissions for user user_9u8f7lyor by user_9u8f7lyor, IP: 127.0.0.1","timestamp":"2025-04-23T02:39:37.751Z"}
+{"level":"info","message":"Fetched roles for user user_9u8f7lyor by user_9u8f7lyor, IP: 127.0.0.1","timestamp":"2025-04-23T02:39:37.773Z"}
+{"level":"info","message":"Fetched effective permissions for user user_9u8f7lyor by user_9u8f7lyor, IP: 127.0.0.1","timestamp":"2025-04-23T02:39:37.787Z"}
+{"level":"info","message":"Super Admin bypass for user user_9u8f7lyor","timestamp":"2025-04-23T02:39:38.104Z"}
+{"ip":null,"level":"info","message":"Fetched 1 receipt books in 36ms","timestamp":"2025-04-23T02:39:38.140Z"}
+{"level":"info","message":"Fetched 1 receipt books by user user_9u8f7lyor in 37ms, IP: 127.0.0.1","timestamp":"2025-04-23T02:39:38.141Z"}
+{"level":"info","message":"Super Admin bypass for user user_9u8f7lyor","timestamp":"2025-04-23T02:39:38.223Z"}
+{"level":"info","message":"Fetched user user_9u8f7lyor by user user_9u8f7lyor, IP: 127.0.0.1","timestamp":"2025-04-23T02:39:38.230Z"}
+{"level":"info","message":"Super Admin bypass for user user_9u8f7lyor","timestamp":"2025-04-23T02:39:49.753Z"}
+{"level":"info","message":"Super Admin bypass for user user_9u8f7lyor","timestamp":"2025-04-23T02:39:49.756Z"}
+{"level":"info","message":"Super Admin bypass for user user_9u8f7lyor","timestamp":"2025-04-23T02:39:49.759Z"}
+{"level":"info","message":"Fetched all users by user user_9u8f7lyor, IP: 127.0.0.1","timestamp":"2025-04-23T02:39:49.768Z"}
+{"level":"info","message":"Fetched unique locations by user user_9u8f7lyor, IP: 127.0.0.1","timestamp":"2025-04-23T02:39:49.776Z"}
+{"ip":null,"level":"info","message":"Fetched 1 receipt books in 29ms","timestamp":"2025-04-23T02:39:49.789Z"}
+{"level":"info","message":"Fetched 1 receipt books by user user_9u8f7lyor in 31ms, IP: 127.0.0.1","timestamp":"2025-04-23T02:39:49.791Z"}
+{"level":"warn","message":"No access token provided","timestamp":"2025-04-23T02:40:06.656Z"}
+{"level":"info","message":"Initiating token refresh","timestamp":"2025-04-23T02:40:06.679Z"}
+{"accessTokenExpiresIn":900,"level":"info","message":"Tokens refreshed successfully","refreshTokenRotatedAt":"2025-04-23T02:40:06.755Z","timestamp":"2025-04-23T02:40:06.755Z"}
+{"level":"info","message":"Refresh token successful","timestamp":"2025-04-23T02:40:06.755Z"}
+{"level":"info","message":"Super Admin bypass for user user_9u8f7lyor","timestamp":"2025-04-23T02:40:06.824Z"}
+{"ip":null,"level":"info","message":"Fetched 1 receipt books in 28ms","timestamp":"2025-04-23T02:40:06.853Z"}
+{"level":"info","message":"Fetched 1 receipt books by user user_9u8f7lyor in 29ms, IP: 127.0.0.1","timestamp":"2025-04-23T02:40:06.854Z"}
+{"level":"info","message":"Super Admin bypass for user user_9u8f7lyor","timestamp":"2025-04-23T02:40:06.884Z"}
+{"level":"info","message":"Fetched user user_9u8f7lyor by user user_9u8f7lyor, IP: 127.0.0.1","timestamp":"2025-04-23T02:40:06.893Z"}
+{"level":"info","message":"Super Admin bypass for user user_9u8f7lyor","timestamp":"2025-04-23T02:40:13.954Z"}
+{"level":"info","message":"Fetched all users by user user_9u8f7lyor, IP: 127.0.0.1","timestamp":"2025-04-23T02:40:13.957Z"}
+{"level":"info","message":"Super Admin bypass for user user_9u8f7lyor","timestamp":"2025-04-23T02:40:13.980Z"}
+{"level":"info","message":"Super Admin bypass for user user_9u8f7lyor","timestamp":"2025-04-23T02:40:13.985Z"}
+{"level":"info","message":"Fetched unique locations by user user_9u8f7lyor, IP: 127.0.0.1","timestamp":"2025-04-23T02:40:13.988Z"}
+{"ip":null,"level":"info","message":"Fetched 1 receipt books in 14ms","timestamp":"2025-04-23T02:40:13.995Z"}
+{"level":"info","message":"Fetched 1 receipt books by user user_9u8f7lyor in 15ms, IP: 127.0.0.1","timestamp":"2025-04-23T02:40:13.996Z"}
+{"level":"info","message":"Super Admin bypass for user user_9u8f7lyor","timestamp":"2025-04-23T02:40:27.903Z"}
+{"level":"info","message":"Super Admin bypass for user user_9u8f7lyor","timestamp":"2025-04-23T02:40:27.908Z"}
+{"level":"info","message":"Super Admin bypass for user user_9u8f7lyor","timestamp":"2025-04-23T02:40:27.914Z"}
+{"level":"info","message":"Fetched all users by user user_9u8f7lyor, IP: 127.0.0.1","timestamp":"2025-04-23T02:40:27.918Z"}
+{"level":"info","message":"Fetched unique locations by user user_9u8f7lyor, IP: 127.0.0.1","timestamp":"2025-04-23T02:40:27.948Z"}
+{"ip":null,"level":"info","message":"Fetched 1 receipt books in 50ms","timestamp":"2025-04-23T02:40:27.959Z"}
+{"level":"info","message":"Fetched 1 receipt books by user user_9u8f7lyor in 51ms, IP: 127.0.0.1","timestamp":"2025-04-23T02:40:27.961Z"}
+{"level":"info","message":"Super Admin bypass for user user_9u8f7lyor","timestamp":"2025-04-23T02:40:29.436Z"}
+{"level":"info","message":"Super Admin bypass for user user_9u8f7lyor","timestamp":"2025-04-23T02:40:29.440Z"}
+{"level":"info","message":"Super Admin bypass for user user_9u8f7lyor","timestamp":"2025-04-23T02:40:29.444Z"}
+{"level":"info","message":"Fetched all users by user user_9u8f7lyor, IP: 127.0.0.1","timestamp":"2025-04-23T02:40:29.455Z"}
+{"level":"info","message":"Fetched unique locations by user user_9u8f7lyor, IP: 127.0.0.1","timestamp":"2025-04-23T02:40:29.460Z"}
+{"ip":null,"level":"info","message":"Fetched 1 receipt books in 26ms","timestamp":"2025-04-23T02:40:29.463Z"}
+{"level":"info","message":"Fetched 1 receipt books by user user_9u8f7lyor in 27ms, IP: 127.0.0.1","timestamp":"2025-04-23T02:40:29.464Z"}
+{"level":"info","message":"Super Admin bypass for user user_9u8f7lyor","timestamp":"2025-04-23T02:40:32.029Z"}
+{"ip":null,"level":"info","message":"Fetched 1 receipt books in 19ms","timestamp":"2025-04-23T02:40:32.050Z"}
+{"level":"info","message":"Fetched 1 receipt books by user user_9u8f7lyor in 20ms, IP: 127.0.0.1","timestamp":"2025-04-23T02:40:32.051Z"}
+{"level":"info","message":"Super Admin bypass for user user_9u8f7lyor","timestamp":"2025-04-23T02:40:32.078Z"}
+{"level":"info","message":"Fetched user user_9u8f7lyor by user user_9u8f7lyor, IP: 127.0.0.1","timestamp":"2025-04-23T02:40:32.090Z"}
+{"level":"info","message":"Fetched profile for user user_9u8f7lyor, IP: 127.0.0.1","timestamp":"2025-04-23T02:40:35.659Z"}
+{"level":"info","message":"Fetched notification preferences for user: user_9u8f7lyor, IP: 127.0.0.1","timestamp":"2025-04-23T02:40:35.708Z"}
+{"level":"info","message":"Super Admin bypass for user user_9u8f7lyor","timestamp":"2025-04-23T02:40:37.472Z"}
+{"ip":null,"level":"info","message":"Fetched 1 receipt books in 22ms","timestamp":"2025-04-23T02:40:37.495Z"}
+{"level":"info","message":"Fetched 1 receipt books by user user_9u8f7lyor in 22ms, IP: 127.0.0.1","timestamp":"2025-04-23T02:40:37.495Z"}
+{"level":"info","message":"Super Admin bypass for user user_9u8f7lyor","timestamp":"2025-04-23T02:40:37.522Z"}
+{"level":"info","message":"Fetched user user_9u8f7lyor by user user_9u8f7lyor, IP: 127.0.0.1","timestamp":"2025-04-23T02:40:37.543Z"}
+{"level":"info","message":"Super Admin bypass for user user_9u8f7lyor","timestamp":"2025-04-23T02:40:43.379Z"}
+{"level":"info","message":"Fetched all users by user user_9u8f7lyor, IP: 127.0.0.1","timestamp":"2025-04-23T02:40:43.383Z"}
+{"level":"info","message":"Super Admin bypass for user user_9u8f7lyor","timestamp":"2025-04-23T02:40:43.388Z"}
+{"level":"info","message":"Fetched all timesheets by user user_9u8f7lyor, IP: 127.0.0.1","timestamp":"2025-04-23T02:40:43.415Z"}
+{"level":"info","message":"Super Admin bypass for user user_9u8f7lyor","timestamp":"2025-04-23T02:40:53.403Z"}
+{"level":"info","message":"Fetched all users by user user_9u8f7lyor, IP: 127.0.0.1","timestamp":"2025-04-23T02:40:53.414Z"}
+{"level":"info","message":"Super Admin bypass for user user_9u8f7lyor","timestamp":"2025-04-23T02:40:53.421Z"}
+{"level":"info","message":"Super Admin bypass for user user_9u8f7lyor","timestamp":"2025-04-23T02:40:53.433Z"}
+{"level":"info","message":"Fetched notification rules by user: user_9u8f7lyor, IP: 127.0.0.1","timestamp":"2025-04-23T02:40:53.445Z"}
+{"level":"info","message":"Fetched all roles by user user_9u8f7lyor, IP: 127.0.0.1","timestamp":"2025-04-23T02:40:53.470Z"}
+{"level":"info","message":"Super Admin bypass for user user_9u8f7lyor","timestamp":"2025-04-23T02:40:53.498Z"}
+{"level":"info","message":"Fetched notification rules by user: user_9u8f7lyor, IP: 127.0.0.1","timestamp":"2025-04-23T02:40:53.501Z"}
+{"level":"info","message":"Super Admin bypass for user user_9u8f7lyor","timestamp":"2025-04-23T02:40:57.380Z"}
+{"level":"info","message":"Super Admin bypass for user user_9u8f7lyor","timestamp":"2025-04-23T02:40:57.385Z"}
+{"level":"info","message":"Fetched all users by user user_9u8f7lyor, IP: 127.0.0.1","timestamp":"2025-04-23T02:40:57.395Z"}
+{"level":"info","message":"Fetched all timesheets by user user_9u8f7lyor, IP: 127.0.0.1","timestamp":"2025-04-23T02:40:57.397Z"}
+{"level":"info","message":"Fetched notification preferences for user: user_9u8f7lyor, IP: 127.0.0.1","timestamp":"2025-04-23T02:41:00.638Z"}
+{"level":"info","message":"Fetched profile for user user_9u8f7lyor, IP: 127.0.0.1","timestamp":"2025-04-23T02:41:00.645Z"}
+{"level":"info","message":"Super Admin bypass for user user_9u8f7lyor","timestamp":"2025-04-23T02:41:05.407Z"}
+{"ip":null,"level":"info","message":"Fetched 1 receipt books in 32ms","timestamp":"2025-04-23T02:41:05.440Z"}
+{"level":"info","message":"Fetched 1 receipt books by user user_9u8f7lyor in 34ms, IP: 127.0.0.1","timestamp":"2025-04-23T02:41:05.442Z"}
+{"level":"info","message":"Super Admin bypass for user user_9u8f7lyor","timestamp":"2025-04-23T02:41:05.506Z"}
+{"level":"info","message":"Fetched user user_9u8f7lyor by user user_9u8f7lyor, IP: 127.0.0.1","timestamp":"2025-04-23T02:41:05.528Z"}
+{"level":"info","message":"Super Admin bypass for user user_9u8f7lyor","timestamp":"2025-04-23T02:41:13.217Z"}
+{"level":"info","message":"Super Admin bypass for user user_9u8f7lyor","timestamp":"2025-04-23T02:41:13.220Z"}
+{"level":"info","message":"Super Admin bypass for user user_9u8f7lyor","timestamp":"2025-04-23T02:41:13.224Z"}
+{"level":"info","message":"Fetched unique locations by user user_9u8f7lyor, IP: 127.0.0.1","timestamp":"2025-04-23T02:41:13.233Z"}
+{"level":"info","message":"Fetched all users by user user_9u8f7lyor, IP: 127.0.0.1","timestamp":"2025-04-23T02:41:13.253Z"}
+{"ip":null,"level":"info","message":"Fetched 1 receipt books in 56ms","timestamp":"2025-04-23T02:41:13.274Z"}
+{"level":"info","message":"Fetched 1 receipt books by user user_9u8f7lyor in 57ms, IP: 127.0.0.1","timestamp":"2025-04-23T02:41:13.276Z"}
+{"level":"info","message":"Super Admin bypass for user user_9u8f7lyor","timestamp":"2025-04-23T02:41:19.436Z"}
+{"ip":null,"level":"info","message":"Fetched 1 receipt books in 23ms","timestamp":"2025-04-23T02:41:19.460Z"}
+{"level":"info","message":"Fetched 1 receipt books by user user_9u8f7lyor in 25ms, IP: 127.0.0.1","timestamp":"2025-04-23T02:41:19.461Z"}
+{"level":"info","message":"Super Admin bypass for user user_9u8f7lyor","timestamp":"2025-04-23T02:41:19.502Z"}
+{"level":"info","message":"Fetched user user_9u8f7lyor by user user_9u8f7lyor, IP: 127.0.0.1","timestamp":"2025-04-23T02:41:19.511Z"}
+{"level":"info","message":"Super Admin bypass for user user_9u8f7lyor","timestamp":"2025-04-23T02:41:29.632Z"}
+{"level":"info","message":"Fetched all timesheets by user user_9u8f7lyor, IP: 127.0.0.1","timestamp":"2025-04-23T02:41:29.652Z"}
+{"level":"info","message":"Super Admin bypass for user user_9u8f7lyor","timestamp":"2025-04-23T02:41:29.667Z"}
+{"level":"info","message":"Fetched all users by user user_9u8f7lyor, IP: 127.0.0.1","timestamp":"2025-04-23T02:41:29.680Z"}
+{"level":"info","message":"Super Admin bypass for user user_9u8f7lyor","timestamp":"2025-04-23T02:41:38.873Z"}
+{"level":"info","message":"Super Admin bypass for user user_9u8f7lyor","timestamp":"2025-04-23T02:41:38.877Z"}
+{"level":"info","message":"Super Admin bypass for user user_9u8f7lyor","timestamp":"2025-04-23T02:41:38.884Z"}
+{"level":"info","message":"Super Admin bypass for user user_9u8f7lyor","timestamp":"2025-04-23T02:41:38.888Z"}
+{"level":"info","message":"Fetched all reasons by user user_9u8f7lyor, IP: 127.0.0.1","timestamp":"2025-04-23T02:41:38.902Z"}
+{"level":"info","message":"Fetched supervisors for user user_9u8f7lyor by user user_9u8f7lyor, IP: 127.0.0.1","timestamp":"2025-04-23T02:41:38.911Z"}
+{"level":"info","message":"Fetched unique locations by user user_9u8f7lyor, IP: 127.0.0.1","timestamp":"2025-04-23T02:41:38.922Z"}
+{"level":"info","message":"Fetched all checklists by user user_9u8f7lyor, IP: 127.0.0.1","timestamp":"2025-04-23T02:41:38.941Z"}
+{"level":"info","message":"Super Admin bypass for user user_9u8f7lyor","timestamp":"2025-04-23T02:41:49.250Z"}
+{"level":"info","message":"Super Admin bypass for user user_9u8f7lyor","timestamp":"2025-04-23T02:41:49.253Z"}
+{"level":"info","message":"Super Admin bypass for user user_9u8f7lyor","timestamp":"2025-04-23T02:41:49.256Z"}
+{"level":"info","message":"Super Admin bypass for user user_9u8f7lyor","timestamp":"2025-04-23T02:41:49.262Z"}
+{"level":"info","message":"Fetched supervisors for user user_9u8f7lyor by user user_9u8f7lyor, IP: 127.0.0.1","timestamp":"2025-04-23T02:41:49.269Z"}
+{"level":"info","message":"Fetched all reasons by user user_9u8f7lyor, IP: 127.0.0.1","timestamp":"2025-04-23T02:41:49.274Z"}
+{"level":"info","message":"Fetched unique locations by user user_9u8f7lyor, IP: 127.0.0.1","timestamp":"2025-04-23T02:41:49.280Z"}
+{"level":"info","message":"Fetched all checklists by user user_9u8f7lyor, IP: 127.0.0.1","timestamp":"2025-04-23T02:41:49.284Z"}
+{"level":"info","message":"Super Admin bypass for user user_9u8f7lyor","timestamp":"2025-04-23T02:43:27.956Z"}
+{"level":"info","message":"Super Admin bypass for user user_9u8f7lyor","timestamp":"2025-04-23T02:43:27.966Z"}
+{"level":"info","message":"Super Admin bypass for user user_9u8f7lyor","timestamp":"2025-04-23T02:43:27.971Z"}
+{"level":"info","message":"Fetched unique locations by user user_9u8f7lyor, IP: 127.0.0.1","timestamp":"2025-04-23T02:43:27.975Z"}
+{"level":"info","message":"Super Admin bypass for user user_9u8f7lyor","timestamp":"2025-04-23T02:43:27.980Z"}
+{"level":"info","message":"Fetched all reasons by user user_9u8f7lyor, IP: 127.0.0.1","timestamp":"2025-04-23T02:43:27.984Z"}
+{"level":"info","message":"Fetched supervisors for user user_9u8f7lyor by user user_9u8f7lyor, IP: 127.0.0.1","timestamp":"2025-04-23T02:43:27.992Z"}
+{"level":"info","message":"Fetched all checklists by user user_9u8f7lyor, IP: 127.0.0.1","timestamp":"2025-04-23T02:43:27.998Z"}
+{"level":"info","message":"Super Admin bypass for user user_9u8f7lyor","timestamp":"2025-04-23T02:43:28.019Z"}
+{"level":"info","message":"Super Admin bypass for user user_9u8f7lyor","timestamp":"2025-04-23T02:43:28.022Z"}
+{"level":"info","message":"Super Admin bypass for user user_9u8f7lyor","timestamp":"2025-04-23T02:43:28.025Z"}
+{"level":"info","message":"Fetched supervisors for user user_9u8f7lyor by user user_9u8f7lyor, IP: 127.0.0.1","timestamp":"2025-04-23T02:43:28.028Z"}
+{"level":"info","message":"Super Admin bypass for user user_9u8f7lyor","timestamp":"2025-04-23T02:43:28.031Z"}
+{"level":"info","message":"Fetched all reasons by user user_9u8f7lyor, IP: 127.0.0.1","timestamp":"2025-04-23T02:43:28.035Z"}
+{"level":"info","message":"Fetched unique locations by user user_9u8f7lyor, IP: 127.0.0.1","timestamp":"2025-04-23T02:43:28.041Z"}
+{"level":"info","message":"Fetched all checklists by user user_9u8f7lyor, IP: 127.0.0.1","timestamp":"2025-04-23T02:43:28.043Z"}
+{"level":"info","message":"Super Admin bypass for user user_9u8f7lyor","timestamp":"2025-04-23T02:43:36.996Z"}
+{"level":"info","message":"Super Admin bypass for user user_9u8f7lyor","timestamp":"2025-04-23T02:43:36.999Z"}
+{"level":"info","message":"Super Admin bypass for user user_9u8f7lyor","timestamp":"2025-04-23T02:43:37.002Z"}
+{"level":"info","message":"Super Admin bypass for user user_9u8f7lyor","timestamp":"2025-04-23T02:43:37.005Z"}
+{"level":"info","message":"Fetched supervisors for user user_9u8f7lyor by user user_9u8f7lyor, IP: 127.0.0.1","timestamp":"2025-04-23T02:43:37.012Z"}
+{"level":"info","message":"Fetched all reasons by user user_9u8f7lyor, IP: 127.0.0.1","timestamp":"2025-04-23T02:43:37.015Z"}
+{"level":"info","message":"Fetched all checklists by user user_9u8f7lyor, IP: 127.0.0.1","timestamp":"2025-04-23T02:43:37.018Z"}
+{"level":"info","message":"Fetched unique locations by user user_9u8f7lyor, IP: 127.0.0.1","timestamp":"2025-04-23T02:43:37.023Z"}
+{"level":"info","message":"Super Admin bypass for user user_9u8f7lyor","timestamp":"2025-04-23T02:43:37.042Z"}
+{"level":"info","message":"Super Admin bypass for user user_9u8f7lyor","timestamp":"2025-04-23T02:43:37.046Z"}
+{"level":"info","message":"Super Admin bypass for user user_9u8f7lyor","timestamp":"2025-04-23T02:43:37.051Z"}
+{"level":"info","message":"Fetched supervisors for user user_9u8f7lyor by user user_9u8f7lyor, IP: 127.0.0.1","timestamp":"2025-04-23T02:43:37.055Z"}
+{"level":"info","message":"Super Admin bypass for user user_9u8f7lyor","timestamp":"2025-04-23T02:43:37.059Z"}
+{"level":"info","message":"Fetched all reasons by user user_9u8f7lyor, IP: 127.0.0.1","timestamp":"2025-04-23T02:43:37.063Z"}
+{"level":"info","message":"Fetched all checklists by user user_9u8f7lyor, IP: 127.0.0.1","timestamp":"2025-04-23T02:43:37.066Z"}
+{"level":"info","message":"Fetched unique locations by user user_9u8f7lyor, IP: 127.0.0.1","timestamp":"2025-04-23T02:43:37.083Z"}
+{"level":"info","message":"Super Admin bypass for user user_9u8f7lyor","timestamp":"2025-04-23T02:43:47.901Z"}
+{"level":"info","message":"Super Admin bypass for user user_9u8f7lyor","timestamp":"2025-04-23T02:43:47.905Z"}
+{"level":"info","message":"Fetched unique locations by user user_9u8f7lyor, IP: 127.0.0.1","timestamp":"2025-04-23T02:43:47.926Z"}
+{"level":"info","message":"Fetched supervisors for user user_9u8f7lyor by user user_9u8f7lyor, IP: 127.0.0.1","timestamp":"2025-04-23T02:43:47.933Z"}
+{"level":"info","message":"Super Admin bypass for user user_9u8f7lyor","timestamp":"2025-04-23T02:43:47.940Z"}
+{"level":"info","message":"Super Admin bypass for user user_9u8f7lyor","timestamp":"2025-04-23T02:43:47.945Z"}
+{"level":"info","message":"Fetched all reasons by user user_9u8f7lyor, IP: 127.0.0.1","timestamp":"2025-04-23T02:43:47.954Z"}
+{"level":"info","message":"Fetched all checklists by user user_9u8f7lyor, IP: 127.0.0.1","timestamp":"2025-04-23T02:43:47.960Z"}
+{"level":"info","message":"Super Admin bypass for user user_9u8f7lyor","timestamp":"2025-04-23T02:43:47.979Z"}
+{"level":"info","message":"Super Admin bypass for user user_9u8f7lyor","timestamp":"2025-04-23T02:43:47.995Z"}
+{"level":"info","message":"Super Admin bypass for user user_9u8f7lyor","timestamp":"2025-04-23T02:43:48.000Z"}
+{"level":"info","message":"Fetched supervisors for user user_9u8f7lyor by user user_9u8f7lyor, IP: 127.0.0.1","timestamp":"2025-04-23T02:43:48.004Z"}
+{"level":"info","message":"Fetched unique locations by user user_9u8f7lyor, IP: 127.0.0.1","timestamp":"2025-04-23T02:43:48.009Z"}
+{"level":"info","message":"Fetched all checklists by user user_9u8f7lyor, IP: 127.0.0.1","timestamp":"2025-04-23T02:43:48.014Z"}
+{"level":"info","message":"Super Admin bypass for user user_9u8f7lyor","timestamp":"2025-04-23T02:43:48.026Z"}
+{"level":"info","message":"Fetched all reasons by user user_9u8f7lyor, IP: 127.0.0.1","timestamp":"2025-04-23T02:43:48.038Z"}
+{"level":"info","message":"Super Admin bypass for user user_9u8f7lyor","timestamp":"2025-04-23T02:44:38.996Z"}
+{"level":"info","message":"Super Admin bypass for user user_9u8f7lyor","timestamp":"2025-04-23T02:44:38.998Z"}
+{"level":"info","message":"Super Admin bypass for user user_9u8f7lyor","timestamp":"2025-04-23T02:44:39.011Z"}
+{"level":"info","message":"Fetched all reasons by user user_9u8f7lyor, IP: 127.0.0.1","timestamp":"2025-04-23T02:44:39.018Z"}
+{"level":"info","message":"Fetched unique locations by user user_9u8f7lyor, IP: 127.0.0.1","timestamp":"2025-04-23T02:44:39.021Z"}
+{"level":"info","message":"Super Admin bypass for user user_9u8f7lyor","timestamp":"2025-04-23T02:44:39.025Z"}
+{"level":"info","message":"Fetched supervisors for user user_9u8f7lyor by user user_9u8f7lyor, IP: 127.0.0.1","timestamp":"2025-04-23T02:44:39.031Z"}
+{"level":"info","message":"Fetched all checklists by user user_9u8f7lyor, IP: 127.0.0.1","timestamp":"2025-04-23T02:44:39.039Z"}
+{"level":"info","message":"Super Admin bypass for user user_9u8f7lyor","timestamp":"2025-04-23T02:44:39.062Z"}
+{"level":"info","message":"Super Admin bypass for user user_9u8f7lyor","timestamp":"2025-04-23T02:44:39.065Z"}
+{"level":"info","message":"Fetched supervisors for user user_9u8f7lyor by user user_9u8f7lyor, IP: 127.0.0.1","timestamp":"2025-04-23T02:44:39.072Z"}
+{"level":"info","message":"Super Admin bypass for user user_9u8f7lyor","timestamp":"2025-04-23T02:44:39.076Z"}
+{"level":"info","message":"Super Admin bypass for user user_9u8f7lyor","timestamp":"2025-04-23T02:44:39.079Z"}
+{"level":"info","message":"Fetched all checklists by user user_9u8f7lyor, IP: 127.0.0.1","timestamp":"2025-04-23T02:44:39.082Z"}
+{"level":"info","message":"Fetched unique locations by user user_9u8f7lyor, IP: 127.0.0.1","timestamp":"2025-04-23T02:44:39.086Z"}
+{"level":"info","message":"Fetched all reasons by user user_9u8f7lyor, IP: 127.0.0.1","timestamp":"2025-04-23T02:44:39.092Z"}
+{"level":"info","message":"Super Admin bypass for user user_9u8f7lyor","timestamp":"2025-04-23T02:44:52.032Z"}
+{"level":"info","message":"Fetched all reasons by user user_9u8f7lyor, IP: 127.0.0.1","timestamp":"2025-04-23T02:44:52.043Z"}
+{"level":"info","message":"Super Admin bypass for user user_9u8f7lyor","timestamp":"2025-04-23T02:44:52.048Z"}
+{"level":"info","message":"Super Admin bypass for user user_9u8f7lyor","timestamp":"2025-04-23T02:44:52.055Z"}
+{"level":"info","message":"Super Admin bypass for user user_9u8f7lyor","timestamp":"2025-04-23T02:44:52.060Z"}
+{"level":"info","message":"Fetched supervisors for user user_9u8f7lyor by user user_9u8f7lyor, IP: 127.0.0.1","timestamp":"2025-04-23T02:44:52.069Z"}
+{"level":"info","message":"Fetched all checklists by user user_9u8f7lyor, IP: 127.0.0.1","timestamp":"2025-04-23T02:44:52.073Z"}
+{"level":"info","message":"Fetched unique locations by user user_9u8f7lyor, IP: 127.0.0.1","timestamp":"2025-04-23T02:44:52.079Z"}
+{"level":"info","message":"Super Admin bypass for user user_9u8f7lyor","timestamp":"2025-04-23T02:44:52.088Z"}
+{"level":"info","message":"Fetched all reasons by user user_9u8f7lyor, IP: 127.0.0.1","timestamp":"2025-04-23T02:44:52.102Z"}
+{"level":"info","message":"Super Admin bypass for user user_9u8f7lyor","timestamp":"2025-04-23T02:44:52.118Z"}
+{"level":"info","message":"Fetched supervisors for user user_9u8f7lyor by user user_9u8f7lyor, IP: 127.0.0.1","timestamp":"2025-04-23T02:44:52.124Z"}
+{"level":"info","message":"Super Admin bypass for user user_9u8f7lyor","timestamp":"2025-04-23T02:44:52.131Z"}
+{"level":"info","message":"Fetched unique locations by user user_9u8f7lyor, IP: 127.0.0.1","timestamp":"2025-04-23T02:44:52.136Z"}
+{"level":"info","message":"Super Admin bypass for user user_9u8f7lyor","timestamp":"2025-04-23T02:44:52.161Z"}
+{"level":"info","message":"Fetched all checklists by user user_9u8f7lyor, IP: 127.0.0.1","timestamp":"2025-04-23T02:44:52.174Z"}
+{"level":"info","message":"Super Admin bypass for user user_9u8f7lyor","timestamp":"2025-04-23T02:45:19.005Z"}
+{"level":"info","message":"Fetched unique locations by user user_9u8f7lyor, IP: 127.0.0.1","timestamp":"2025-04-23T02:45:19.023Z"}
+{"level":"info","message":"Super Admin bypass for user user_9u8f7lyor","timestamp":"2025-04-23T02:45:19.034Z"}
+{"level":"info","message":"Super Admin bypass for user user_9u8f7lyor","timestamp":"2025-04-23T02:45:19.044Z"}
+{"level":"info","message":"Super Admin bypass for user user_9u8f7lyor","timestamp":"2025-04-23T02:45:19.047Z"}
+{"level":"info","message":"Fetched all reasons by user user_9u8f7lyor, IP: 127.0.0.1","timestamp":"2025-04-23T02:45:19.052Z"}
+{"level":"info","message":"Super Admin bypass for user user_9u8f7lyor","timestamp":"2025-04-23T02:45:19.057Z"}
+{"level":"info","message":"Fetched all checklists by user user_9u8f7lyor, IP: 127.0.0.1","timestamp":"2025-04-23T02:45:19.063Z"}
+{"level":"info","message":"Fetched supervisors for user user_9u8f7lyor by user user_9u8f7lyor, IP: 127.0.0.1","timestamp":"2025-04-23T02:45:19.071Z"}
+{"level":"info","message":"Fetched unique locations by user user_9u8f7lyor, IP: 127.0.0.1","timestamp":"2025-04-23T02:45:19.078Z"}
+{"level":"info","message":"Super Admin bypass for user user_9u8f7lyor","timestamp":"2025-04-23T02:45:19.086Z"}
+{"level":"info","message":"Fetched all reasons by user user_9u8f7lyor, IP: 127.0.0.1","timestamp":"2025-04-23T02:45:19.108Z"}
+{"level":"info","message":"Super Admin bypass for user user_9u8f7lyor","timestamp":"2025-04-23T02:45:19.115Z"}
+{"level":"info","message":"Super Admin bypass for user user_9u8f7lyor","timestamp":"2025-04-23T02:45:19.121Z"}
+{"level":"info","message":"Fetched supervisors for user user_9u8f7lyor by user user_9u8f7lyor, IP: 127.0.0.1","timestamp":"2025-04-23T02:45:19.125Z"}
+{"level":"info","message":"Fetched all checklists by user user_9u8f7lyor, IP: 127.0.0.1","timestamp":"2025-04-23T02:45:19.129Z"}
+{"level":"info","message":"Super Admin bypass for user user_9u8f7lyor","timestamp":"2025-04-23T02:45:35.003Z"}
+{"level":"info","message":"Super Admin bypass for user user_9u8f7lyor","timestamp":"2025-04-23T02:45:35.008Z"}
+{"level":"info","message":"Super Admin bypass for user user_9u8f7lyor","timestamp":"2025-04-23T02:45:35.014Z"}
+{"level":"info","message":"Fetched all reasons by user user_9u8f7lyor, IP: 127.0.0.1","timestamp":"2025-04-23T02:45:35.020Z"}
+{"level":"info","message":"Super Admin bypass for user user_9u8f7lyor","timestamp":"2025-04-23T02:45:35.026Z"}
+{"level":"info","message":"Fetched supervisors for user user_9u8f7lyor by user user_9u8f7lyor, IP: 127.0.0.1","timestamp":"2025-04-23T02:45:35.030Z"}
+{"level":"info","message":"Fetched unique locations by user user_9u8f7lyor, IP: 127.0.0.1","timestamp":"2025-04-23T02:45:35.038Z"}
+{"level":"info","message":"Fetched all checklists by user user_9u8f7lyor, IP: 127.0.0.1","timestamp":"2025-04-23T02:45:35.044Z"}
+{"level":"info","message":"Super Admin bypass for user user_9u8f7lyor","timestamp":"2025-04-23T02:45:35.057Z"}
+{"level":"info","message":"Fetched all reasons by user user_9u8f7lyor, IP: 127.0.0.1","timestamp":"2025-04-23T02:45:35.060Z"}
+{"level":"info","message":"Super Admin bypass for user user_9u8f7lyor","timestamp":"2025-04-23T02:45:35.071Z"}
+{"level":"info","message":"Super Admin bypass for user user_9u8f7lyor","timestamp":"2025-04-23T02:45:35.076Z"}
+{"level":"info","message":"Fetched unique locations by user user_9u8f7lyor, IP: 127.0.0.1","timestamp":"2025-04-23T02:45:35.079Z"}
+{"level":"info","message":"Super Admin bypass for user user_9u8f7lyor","timestamp":"2025-04-23T02:45:35.082Z"}
+{"level":"info","message":"Fetched supervisors for user user_9u8f7lyor by user user_9u8f7lyor, IP: 127.0.0.1","timestamp":"2025-04-23T02:45:35.085Z"}
+{"level":"info","message":"Fetched all checklists by user user_9u8f7lyor, IP: 127.0.0.1","timestamp":"2025-04-23T02:45:35.094Z"}
+{"level":"info","message":"Super Admin bypass for user user_9u8f7lyor","timestamp":"2025-04-23T02:45:43.901Z"}
+{"level":"info","message":"Super Admin bypass for user user_9u8f7lyor","timestamp":"2025-04-23T02:45:43.911Z"}
+{"level":"info","message":"Super Admin bypass for user user_9u8f7lyor","timestamp":"2025-04-23T02:45:43.919Z"}
+{"level":"info","message":"Fetched all reasons by user user_9u8f7lyor, IP: 127.0.0.1","timestamp":"2025-04-23T02:45:43.929Z"}
+{"level":"info","message":"Super Admin bypass for user user_9u8f7lyor","timestamp":"2025-04-23T02:45:43.937Z"}
+{"level":"info","message":"Fetched all checklists by user user_9u8f7lyor, IP: 127.0.0.1","timestamp":"2025-04-23T02:45:43.941Z"}
+{"level":"info","message":"Fetched unique locations by user user_9u8f7lyor, IP: 127.0.0.1","timestamp":"2025-04-23T02:45:43.949Z"}
+{"level":"info","message":"Fetched supervisors for user user_9u8f7lyor by user user_9u8f7lyor, IP: 127.0.0.1","timestamp":"2025-04-23T02:45:43.955Z"}
+{"level":"info","message":"Super Admin bypass for user user_9u8f7lyor","timestamp":"2025-04-23T02:45:43.977Z"}
+{"level":"info","message":"Super Admin bypass for user user_9u8f7lyor","timestamp":"2025-04-23T02:45:43.979Z"}
+{"level":"info","message":"Super Admin bypass for user user_9u8f7lyor","timestamp":"2025-04-23T02:45:43.987Z"}
+{"level":"info","message":"Fetched all checklists by user user_9u8f7lyor, IP: 127.0.0.1","timestamp":"2025-04-23T02:45:43.993Z"}
+{"level":"info","message":"Fetched all reasons by user user_9u8f7lyor, IP: 127.0.0.1","timestamp":"2025-04-23T02:45:44.002Z"}
+{"level":"info","message":"Fetched unique locations by user user_9u8f7lyor, IP: 127.0.0.1","timestamp":"2025-04-23T02:45:44.010Z"}
+{"level":"info","message":"Super Admin bypass for user user_9u8f7lyor","timestamp":"2025-04-23T02:45:44.035Z"}
+{"level":"info","message":"Fetched supervisors for user user_9u8f7lyor by user user_9u8f7lyor, IP: 127.0.0.1","timestamp":"2025-04-23T02:45:44.041Z"}
+{"level":"info","message":"Super Admin bypass for user user_9u8f7lyor","timestamp":"2025-04-23T02:45:59.994Z"}
+{"level":"info","message":"Super Admin bypass for user user_9u8f7lyor","timestamp":"2025-04-23T02:45:59.999Z"}
+{"level":"info","message":"Super Admin bypass for user user_9u8f7lyor","timestamp":"2025-04-23T02:46:00.003Z"}
+{"level":"info","message":"Fetched all reasons by user user_9u8f7lyor, IP: 127.0.0.1","timestamp":"2025-04-23T02:46:00.010Z"}
+{"level":"info","message":"Fetched all checklists by user user_9u8f7lyor, IP: 127.0.0.1","timestamp":"2025-04-23T02:46:00.022Z"}
+{"level":"info","message":"Fetched unique locations by user user_9u8f7lyor, IP: 127.0.0.1","timestamp":"2025-04-23T02:46:00.027Z"}
+{"level":"info","message":"Super Admin bypass for user user_9u8f7lyor","timestamp":"2025-04-23T02:46:00.034Z"}
+{"level":"info","message":"Fetched supervisors for user user_9u8f7lyor by user user_9u8f7lyor, IP: 127.0.0.1","timestamp":"2025-04-23T02:46:00.041Z"}
+{"level":"info","message":"Super Admin bypass for user user_9u8f7lyor","timestamp":"2025-04-23T02:46:00.057Z"}
+{"level":"info","message":"Fetched all reasons by user user_9u8f7lyor, IP: 127.0.0.1","timestamp":"2025-04-23T02:46:00.063Z"}
+{"level":"info","message":"Super Admin bypass for user user_9u8f7lyor","timestamp":"2025-04-23T02:46:00.072Z"}
+{"level":"info","message":"Super Admin bypass for user user_9u8f7lyor","timestamp":"2025-04-23T02:46:00.084Z"}
+{"level":"info","message":"Fetched all checklists by user user_9u8f7lyor, IP: 127.0.0.1","timestamp":"2025-04-23T02:46:00.090Z"}
+{"level":"info","message":"Super Admin bypass for user user_9u8f7lyor","timestamp":"2025-04-23T02:46:00.094Z"}
+{"level":"info","message":"Fetched supervisors for user user_9u8f7lyor by user user_9u8f7lyor, IP: 127.0.0.1","timestamp":"2025-04-23T02:46:00.105Z"}
+{"level":"info","message":"Fetched unique locations by user user_9u8f7lyor, IP: 127.0.0.1","timestamp":"2025-04-23T02:46:00.136Z"}
+{"level":"info","message":"Super Admin bypass for user user_9u8f7lyor","timestamp":"2025-04-23T02:46:01.097Z"}
+{"level":"info","message":"Super Admin bypass for user user_9u8f7lyor","timestamp":"2025-04-23T02:46:01.106Z"}
+{"level":"info","message":"Super Admin bypass for user user_9u8f7lyor","timestamp":"2025-04-23T02:46:01.109Z"}
+{"level":"info","message":"Super Admin bypass for user user_9u8f7lyor","timestamp":"2025-04-23T02:46:01.113Z"}
+{"level":"info","message":"Fetched all checklists by user user_9u8f7lyor, IP: 127.0.0.1","timestamp":"2025-04-23T02:46:01.119Z"}
+{"level":"info","message":"Fetched supervisors for user user_9u8f7lyor by user user_9u8f7lyor, IP: 127.0.0.1","timestamp":"2025-04-23T02:46:01.122Z"}
+{"level":"info","message":"Fetched unique locations by user user_9u8f7lyor, IP: 127.0.0.1","timestamp":"2025-04-23T02:46:01.126Z"}
+{"level":"info","message":"Fetched all reasons by user user_9u8f7lyor, IP: 127.0.0.1","timestamp":"2025-04-23T02:46:01.129Z"}
+{"level":"info","message":"Super Admin bypass for user user_9u8f7lyor","timestamp":"2025-04-23T02:46:01.145Z"}
+{"level":"info","message":"Super Admin bypass for user user_9u8f7lyor","timestamp":"2025-04-23T02:46:01.151Z"}
+{"level":"info","message":"Super Admin bypass for user user_9u8f7lyor","timestamp":"2025-04-23T02:46:01.157Z"}
+{"level":"info","message":"Fetched supervisors for user user_9u8f7lyor by user user_9u8f7lyor, IP: 127.0.0.1","timestamp":"2025-04-23T02:46:01.160Z"}
+{"level":"info","message":"Super Admin bypass for user user_9u8f7lyor","timestamp":"2025-04-23T02:46:01.163Z"}
+{"level":"info","message":"Fetched all checklists by user user_9u8f7lyor, IP: 127.0.0.1","timestamp":"2025-04-23T02:46:01.168Z"}
+{"level":"info","message":"Fetched all reasons by user user_9u8f7lyor, IP: 127.0.0.1","timestamp":"2025-04-23T02:46:01.178Z"}
+{"level":"info","message":"Fetched unique locations by user user_9u8f7lyor, IP: 127.0.0.1","timestamp":"2025-04-23T02:46:01.182Z"}
+{"level":"info","message":"Keycloak admin token obtained","timestamp":"2025-04-23T02:46:03.926Z"}
+{"level":"info","message":"Login response generated for user user_9u8f7lyor","timestamp":"2025-04-23T02:46:04.012Z"}
+{"level":"info","message":"Login attempt for superadmin@example.com, requires2FA: false","timestamp":"2025-04-23T02:46:04.013Z"}
+{"level":"info","message":"Keycloak admin token obtained","timestamp":"2025-04-23T02:46:04.299Z"}
+{"level":"info","message":"Login response generated for user user_9u8f7lyor","timestamp":"2025-04-23T02:46:04.358Z"}
+{"level":"info","message":"Login attempt for superadmin@example.com, requires2FA: false","timestamp":"2025-04-23T02:46:04.358Z"}
+{"level":"info","message":"Fetched effective permissions for user user_9u8f7lyor by user_9u8f7lyor, IP: 127.0.0.1","timestamp":"2025-04-23T02:46:04.429Z"}
+{"level":"info","message":"Fetched roles for user user_9u8f7lyor by user_9u8f7lyor, IP: 127.0.0.1","timestamp":"2025-04-23T02:46:04.441Z"}
+{"level":"info","message":"Super Admin bypass for user user_9u8f7lyor","timestamp":"2025-04-23T02:46:04.798Z"}
+{"level":"info","message":"Fetched all reasons by user user_9u8f7lyor, IP: 127.0.0.1","timestamp":"2025-04-23T02:46:04.803Z"}
+{"level":"info","message":"Super Admin bypass for user user_9u8f7lyor","timestamp":"2025-04-23T02:46:04.809Z"}
+{"level":"info","message":"Super Admin bypass for user user_9u8f7lyor","timestamp":"2025-04-23T02:46:04.812Z"}
+{"level":"info","message":"Super Admin bypass for user user_9u8f7lyor","timestamp":"2025-04-23T02:46:04.818Z"}
+{"level":"info","message":"Fetched unique locations by user user_9u8f7lyor, IP: 127.0.0.1","timestamp":"2025-04-23T02:46:04.821Z"}
+{"level":"info","message":"Fetched all checklists by user user_9u8f7lyor, IP: 127.0.0.1","timestamp":"2025-04-23T02:46:04.823Z"}
+{"level":"info","message":"Fetched supervisors for user user_9u8f7lyor by user user_9u8f7lyor, IP: 127.0.0.1","timestamp":"2025-04-23T02:46:04.828Z"}
+{"level":"info","message":"Super Admin bypass for user user_9u8f7lyor","timestamp":"2025-04-23T02:46:21.008Z"}
+{"level":"info","message":"Super Admin bypass for user user_9u8f7lyor","timestamp":"2025-04-23T02:46:21.012Z"}
+{"level":"info","message":"Fetched unique locations by user user_9u8f7lyor, IP: 127.0.0.1","timestamp":"2025-04-23T02:46:21.037Z"}
+{"level":"info","message":"Super Admin bypass for user user_9u8f7lyor","timestamp":"2025-04-23T02:46:21.049Z"}
+{"level":"info","message":"Super Admin bypass for user user_9u8f7lyor","timestamp":"2025-04-23T02:46:21.054Z"}
+{"level":"info","message":"Fetched all checklists by user user_9u8f7lyor, IP: 127.0.0.1","timestamp":"2025-04-23T02:46:21.059Z"}
+{"level":"info","message":"Fetched supervisors for user user_9u8f7lyor by user user_9u8f7lyor, IP: 127.0.0.1","timestamp":"2025-04-23T02:46:21.070Z"}
+{"level":"info","message":"Fetched all reasons by user user_9u8f7lyor, IP: 127.0.0.1","timestamp":"2025-04-23T02:46:21.076Z"}
+{"level":"info","message":"Super Admin bypass for user user_9u8f7lyor","timestamp":"2025-04-23T02:46:21.080Z"}
+{"level":"info","message":"Super Admin bypass for user user_9u8f7lyor","timestamp":"2025-04-23T02:46:21.103Z"}
+{"level":"info","message":"Super Admin bypass for user user_9u8f7lyor","timestamp":"2025-04-23T02:46:21.106Z"}
+{"level":"info","message":"Fetched unique locations by user user_9u8f7lyor, IP: 127.0.0.1","timestamp":"2025-04-23T02:46:21.112Z"}
+{"level":"info","message":"Fetched supervisors for user user_9u8f7lyor by user user_9u8f7lyor, IP: 127.0.0.1","timestamp":"2025-04-23T02:46:21.115Z"}
+{"level":"info","message":"Fetched all checklists by user user_9u8f7lyor, IP: 127.0.0.1","timestamp":"2025-04-23T02:46:21.119Z"}
+{"level":"info","message":"Super Admin bypass for user user_9u8f7lyor","timestamp":"2025-04-23T02:46:21.131Z"}
+{"level":"info","message":"Fetched all reasons by user user_9u8f7lyor, IP: 127.0.0.1","timestamp":"2025-04-23T02:46:21.142Z"}
+{"level":"info","message":"Super Admin bypass for user user_9u8f7lyor","timestamp":"2025-04-23T02:46:22.892Z"}
+{"level":"info","message":"Super Admin bypass for user user_9u8f7lyor","timestamp":"2025-04-23T02:46:22.896Z"}
+{"level":"info","message":"Super Admin bypass for user user_9u8f7lyor","timestamp":"2025-04-23T02:46:22.900Z"}
+{"level":"info","message":"Super Admin bypass for user user_9u8f7lyor","timestamp":"2025-04-23T02:46:22.902Z"}
+{"level":"info","message":"Fetched supervisors for user user_9u8f7lyor by user user_9u8f7lyor, IP: 127.0.0.1","timestamp":"2025-04-23T02:46:22.905Z"}
+{"level":"info","message":"Fetched all reasons by user user_9u8f7lyor, IP: 127.0.0.1","timestamp":"2025-04-23T02:46:22.912Z"}
+{"level":"info","message":"Fetched unique locations by user user_9u8f7lyor, IP: 127.0.0.1","timestamp":"2025-04-23T02:46:22.915Z"}
+{"level":"info","message":"Fetched all checklists by user user_9u8f7lyor, IP: 127.0.0.1","timestamp":"2025-04-23T02:46:22.918Z"}
+{"level":"info","message":"Super Admin bypass for user user_9u8f7lyor","timestamp":"2025-04-23T02:46:22.932Z"}
+{"level":"info","message":"Super Admin bypass for user user_9u8f7lyor","timestamp":"2025-04-23T02:46:22.935Z"}
+{"level":"info","message":"Fetched supervisors for user user_9u8f7lyor by user user_9u8f7lyor, IP: 127.0.0.1","timestamp":"2025-04-23T02:46:22.939Z"}
+{"level":"info","message":"Super Admin bypass for user user_9u8f7lyor","timestamp":"2025-04-23T02:46:22.944Z"}
+{"level":"info","message":"Fetched all reasons by user user_9u8f7lyor, IP: 127.0.0.1","timestamp":"2025-04-23T02:46:22.948Z"}
+{"level":"info","message":"Fetched unique locations by user user_9u8f7lyor, IP: 127.0.0.1","timestamp":"2025-04-23T02:46:22.962Z"}
+{"level":"info","message":"Super Admin bypass for user user_9u8f7lyor","timestamp":"2025-04-23T02:46:22.980Z"}
+{"level":"info","message":"Fetched all checklists by user user_9u8f7lyor, IP: 127.0.0.1","timestamp":"2025-04-23T02:46:22.988Z"}
+{"level":"info","message":"Fetched roles for user user_9u8f7lyor by user_9u8f7lyor, IP: 127.0.0.1","timestamp":"2025-04-23T02:46:24.637Z"}
+{"level":"info","message":"Fetched effective permissions for user user_9u8f7lyor by user_9u8f7lyor, IP: 127.0.0.1","timestamp":"2025-04-23T02:46:24.642Z"}
+{"level":"info","message":"Fetched roles for user user_9u8f7lyor by user_9u8f7lyor, IP: 127.0.0.1","timestamp":"2025-04-23T02:46:24.660Z"}
+{"level":"info","message":"Fetched effective permissions for user user_9u8f7lyor by user_9u8f7lyor, IP: 127.0.0.1","timestamp":"2025-04-23T02:46:24.666Z"}
+{"level":"info","message":"Super Admin bypass for user user_9u8f7lyor","timestamp":"2025-04-23T02:46:24.705Z"}
+{"level":"info","message":"Super Admin bypass for user user_9u8f7lyor","timestamp":"2025-04-23T02:46:24.707Z"}
+{"level":"info","message":"Super Admin bypass for user user_9u8f7lyor","timestamp":"2025-04-23T02:46:24.708Z"}
+{"level":"info","message":"Fetched unique locations by user user_9u8f7lyor, IP: 127.0.0.1","timestamp":"2025-04-23T02:46:24.710Z"}
+{"level":"info","message":"Super Admin bypass for user user_9u8f7lyor","timestamp":"2025-04-23T02:46:24.712Z"}
+{"level":"info","message":"Fetched supervisors for user user_9u8f7lyor by user user_9u8f7lyor, IP: 127.0.0.1","timestamp":"2025-04-23T02:46:24.717Z"}
+{"level":"info","message":"Fetched all reasons by user user_9u8f7lyor, IP: 127.0.0.1","timestamp":"2025-04-23T02:46:24.719Z"}
+{"level":"info","message":"Fetched all checklists by user user_9u8f7lyor, IP: 127.0.0.1","timestamp":"2025-04-23T02:46:24.722Z"}
+{"level":"info","message":"Super Admin bypass for user user_9u8f7lyor","timestamp":"2025-04-23T02:46:42.416Z"}
+{"level":"info","message":"Super Admin bypass for user user_9u8f7lyor","timestamp":"2025-04-23T02:46:42.434Z"}
+{"level":"info","message":"Fetched unique locations by user user_9u8f7lyor, IP: 127.0.0.1","timestamp":"2025-04-23T02:46:42.441Z"}
+{"level":"info","message":"Super Admin bypass for user user_9u8f7lyor","timestamp":"2025-04-23T02:46:42.445Z"}
+{"level":"info","message":"Fetched all reasons by user user_9u8f7lyor, IP: 127.0.0.1","timestamp":"2025-04-23T02:46:42.454Z"}
+{"level":"info","message":"Super Admin bypass for user user_9u8f7lyor","timestamp":"2025-04-23T02:46:42.464Z"}
+{"level":"info","message":"Fetched all checklists by user user_9u8f7lyor, IP: 127.0.0.1","timestamp":"2025-04-23T02:46:42.472Z"}
+{"level":"info","message":"Fetched supervisors for user user_9u8f7lyor by user user_9u8f7lyor, IP: 127.0.0.1","timestamp":"2025-04-23T02:46:42.476Z"}
+{"level":"info","message":"Super Admin bypass for user user_9u8f7lyor","timestamp":"2025-04-23T02:46:42.492Z"}
+{"level":"info","message":"Super Admin bypass for user user_9u8f7lyor","timestamp":"2025-04-23T02:46:42.503Z"}
+{"level":"info","message":"Fetched all reasons by user user_9u8f7lyor, IP: 127.0.0.1","timestamp":"2025-04-23T02:46:42.506Z"}
+{"level":"info","message":"Super Admin bypass for user user_9u8f7lyor","timestamp":"2025-04-23T02:46:42.509Z"}
+{"level":"info","message":"Fetched all checklists by user user_9u8f7lyor, IP: 127.0.0.1","timestamp":"2025-04-23T02:46:42.514Z"}
+{"level":"info","message":"Super Admin bypass for user user_9u8f7lyor","timestamp":"2025-04-23T02:46:42.518Z"}
+{"level":"info","message":"Fetched unique locations by user user_9u8f7lyor, IP: 127.0.0.1","timestamp":"2025-04-23T02:46:42.524Z"}
+{"level":"info","message":"Fetched supervisors for user user_9u8f7lyor by user user_9u8f7lyor, IP: 127.0.0.1","timestamp":"2025-04-23T02:46:42.528Z"}
+{"level":"info","message":"Super Admin bypass for user user_9u8f7lyor","timestamp":"2025-04-23T02:46:58.979Z"}
+{"level":"info","message":"Super Admin bypass for user user_9u8f7lyor","timestamp":"2025-04-23T02:46:58.993Z"}
+{"level":"info","message":"Super Admin bypass for user user_9u8f7lyor","timestamp":"2025-04-23T02:46:58.999Z"}
+{"level":"info","message":"Fetched unique locations by user user_9u8f7lyor, IP: 127.0.0.1","timestamp":"2025-04-23T02:46:59.003Z"}
+{"level":"info","message":"Super Admin bypass for user user_9u8f7lyor","timestamp":"2025-04-23T02:46:59.008Z"}
+{"level":"info","message":"Fetched supervisors for user user_9u8f7lyor by user user_9u8f7lyor, IP: 127.0.0.1","timestamp":"2025-04-23T02:46:59.012Z"}
+{"level":"info","message":"Fetched all checklists by user user_9u8f7lyor, IP: 127.0.0.1","timestamp":"2025-04-23T02:46:59.018Z"}
+{"level":"info","message":"Fetched all reasons by user user_9u8f7lyor, IP: 127.0.0.1","timestamp":"2025-04-23T02:46:59.031Z"}
+{"level":"info","message":"Super Admin bypass for user user_9u8f7lyor","timestamp":"2025-04-23T02:46:59.042Z"}
+{"level":"info","message":"Super Admin bypass for user user_9u8f7lyor","timestamp":"2025-04-23T02:46:59.063Z"}
+{"level":"info","message":"Super Admin bypass for user user_9u8f7lyor","timestamp":"2025-04-23T02:46:59.067Z"}
+{"level":"info","message":"Super Admin bypass for user user_9u8f7lyor","timestamp":"2025-04-23T02:46:59.069Z"}
+{"level":"info","message":"Fetched unique locations by user user_9u8f7lyor, IP: 127.0.0.1","timestamp":"2025-04-23T02:46:59.072Z"}
+{"level":"info","message":"Fetched all checklists by user user_9u8f7lyor, IP: 127.0.0.1","timestamp":"2025-04-23T02:46:59.075Z"}
+{"level":"info","message":"Fetched supervisors for user user_9u8f7lyor by user user_9u8f7lyor, IP: 127.0.0.1","timestamp":"2025-04-23T02:46:59.081Z"}
+{"level":"info","message":"Fetched all reasons by user user_9u8f7lyor, IP: 127.0.0.1","timestamp":"2025-04-23T02:46:59.086Z"}
+{"level":"info","message":"Super Admin bypass for user user_9u8f7lyor","timestamp":"2025-04-23T02:47:15.763Z"}
+{"level":"info","message":"Super Admin bypass for user user_9u8f7lyor","timestamp":"2025-04-23T02:47:15.773Z"}
+{"level":"info","message":"Super Admin bypass for user user_9u8f7lyor","timestamp":"2025-04-23T02:47:15.776Z"}
+{"level":"info","message":"Super Admin bypass for user user_9u8f7lyor","timestamp":"2025-04-23T02:47:15.782Z"}
+{"level":"info","message":"Fetched unique locations by user user_9u8f7lyor, IP: 127.0.0.1","timestamp":"2025-04-23T02:47:15.789Z"}
+{"level":"info","message":"Fetched all reasons by user user_9u8f7lyor, IP: 127.0.0.1","timestamp":"2025-04-23T02:47:15.797Z"}
+{"level":"info","message":"Fetched supervisors for user user_9u8f7lyor by user user_9u8f7lyor, IP: 127.0.0.1","timestamp":"2025-04-23T02:47:15.802Z"}
+{"level":"info","message":"Fetched all checklists by user user_9u8f7lyor, IP: 127.0.0.1","timestamp":"2025-04-23T02:47:15.820Z"}
+{"level":"info","message":"Super Admin bypass for user user_9u8f7lyor","timestamp":"2025-04-23T02:47:15.825Z"}
+{"level":"info","message":"Super Admin bypass for user user_9u8f7lyor","timestamp":"2025-04-23T02:47:15.831Z"}
+{"level":"info","message":"Super Admin bypass for user user_9u8f7lyor","timestamp":"2025-04-23T02:47:15.836Z"}
+{"level":"info","message":"Fetched all reasons by user user_9u8f7lyor, IP: 127.0.0.1","timestamp":"2025-04-23T02:47:15.854Z"}
+{"level":"info","message":"Fetched supervisors for user user_9u8f7lyor by user user_9u8f7lyor, IP: 127.0.0.1","timestamp":"2025-04-23T02:47:15.858Z"}
+{"level":"info","message":"Super Admin bypass for user user_9u8f7lyor","timestamp":"2025-04-23T02:47:15.865Z"}
+{"level":"info","message":"Fetched unique locations by user user_9u8f7lyor, IP: 127.0.0.1","timestamp":"2025-04-23T02:47:15.872Z"}
+{"level":"info","message":"Fetched all checklists by user user_9u8f7lyor, IP: 127.0.0.1","timestamp":"2025-04-23T02:47:15.880Z"}
+{"level":"info","message":"Cleaning up expired OTPs","timestamp":"2025-04-23T03:00:00.556Z"}
+{"level":"info","message":"Cleaned up 0 expired OTPs","timestamp":"2025-04-23T03:00:00.779Z"}
+{"level":"info","message":"Super Admin bypass for user user_9u8f7lyor","timestamp":"2025-04-23T03:00:59.035Z"}
+{"level":"info","message":"Super Admin bypass for user user_9u8f7lyor","timestamp":"2025-04-23T03:00:59.040Z"}
+{"level":"info","message":"Super Admin bypass for user user_9u8f7lyor","timestamp":"2025-04-23T03:00:59.044Z"}
+{"level":"info","message":"Super Admin bypass for user user_9u8f7lyor","timestamp":"2025-04-23T03:00:59.053Z"}
+{"level":"info","message":"Fetched all reasons by user user_9u8f7lyor, IP: 127.0.0.1","timestamp":"2025-04-23T03:00:59.064Z"}
+{"level":"info","message":"Fetched unique locations by user user_9u8f7lyor, IP: 127.0.0.1","timestamp":"2025-04-23T03:00:59.069Z"}
+{"level":"info","message":"Fetched supervisors for user user_9u8f7lyor by user user_9u8f7lyor, IP: 127.0.0.1","timestamp":"2025-04-23T03:00:59.079Z"}
+{"level":"info","message":"Fetched all checklists by user user_9u8f7lyor, IP: 127.0.0.1","timestamp":"2025-04-23T03:00:59.094Z"}
+{"level":"info","message":"Keycloak admin token obtained","timestamp":"2025-04-23T03:01:50.151Z"}
+{"level":"info","message":"Login response generated for user user_9u8f7lyor","timestamp":"2025-04-23T03:01:50.302Z"}
+{"level":"info","message":"Login attempt for superadmin@example.com, requires2FA: false","timestamp":"2025-04-23T03:01:50.303Z"}
+{"level":"info","message":"Keycloak admin token obtained","timestamp":"2025-04-23T03:01:50.500Z"}
+{"level":"info","message":"Login response generated for user user_9u8f7lyor","timestamp":"2025-04-23T03:01:50.583Z"}
+{"level":"info","message":"Login attempt for superadmin@example.com, requires2FA: false","timestamp":"2025-04-23T03:01:50.584Z"}
+{"level":"info","message":"Fetched effective permissions for user user_9u8f7lyor by user_9u8f7lyor, IP: 127.0.0.1","timestamp":"2025-04-23T03:01:50.655Z"}
+{"level":"info","message":"Fetched roles for user user_9u8f7lyor by user_9u8f7lyor, IP: 127.0.0.1","timestamp":"2025-04-23T03:01:50.665Z"}
+{"level":"info","message":"Super Admin bypass for user user_9u8f7lyor","timestamp":"2025-04-23T03:01:51.022Z"}
+{"level":"info","message":"Super Admin bypass for user user_9u8f7lyor","timestamp":"2025-04-23T03:01:51.042Z"}
+{"level":"info","message":"Super Admin bypass for user user_9u8f7lyor","timestamp":"2025-04-23T03:01:51.047Z"}
+{"level":"info","message":"Fetched unique locations by user user_9u8f7lyor, IP: 127.0.0.1","timestamp":"2025-04-23T03:01:51.057Z"}
+{"level":"info","message":"Fetched all reasons by user user_9u8f7lyor, IP: 127.0.0.1","timestamp":"2025-04-23T03:01:51.075Z"}
+{"level":"info","message":"Fetched all checklists by user user_9u8f7lyor, IP: 127.0.0.1","timestamp":"2025-04-23T03:01:51.096Z"}
+{"level":"info","message":"Super Admin bypass for user user_9u8f7lyor","timestamp":"2025-04-23T03:01:51.105Z"}
+{"level":"info","message":"Fetched supervisors for user user_9u8f7lyor by user user_9u8f7lyor, IP: 127.0.0.1","timestamp":"2025-04-23T03:01:51.119Z"}
+{"level":"info","message":"Super Admin bypass for user user_9u8f7lyor","timestamp":"2025-04-23T03:02:01.643Z"}
+{"level":"info","message":"Super Admin bypass for user user_9u8f7lyor","timestamp":"2025-04-23T03:02:01.651Z"}
+{"level":"info","message":"Fetched all users by user user_9u8f7lyor, IP: 127.0.0.1","timestamp":"2025-04-23T03:02:01.679Z"}
+{"level":"info","message":"Fetched all timesheets by user user_9u8f7lyor, IP: 127.0.0.1","timestamp":"2025-04-23T03:02:01.693Z"}
+{"level":"info","message":"Fetched notification preferences for user: user_9u8f7lyor, IP: 127.0.0.1","timestamp":"2025-04-23T03:02:04.327Z"}
+{"level":"info","message":"Fetched profile for user user_9u8f7lyor, IP: 127.0.0.1","timestamp":"2025-04-23T03:02:04.331Z"}
+{"level":"info","message":"Super Admin bypass for user user_9u8f7lyor","timestamp":"2025-04-23T03:02:05.478Z"}
+{"ip":null,"level":"info","message":"Fetched 1 receipt books in 33ms","timestamp":"2025-04-23T03:02:05.512Z"}
+{"level":"info","message":"Fetched 1 receipt books by user user_9u8f7lyor in 34ms, IP: 127.0.0.1","timestamp":"2025-04-23T03:02:05.513Z"}
+{"level":"info","message":"Super Admin bypass for user user_9u8f7lyor","timestamp":"2025-04-23T03:02:05.564Z"}
+{"level":"info","message":"Fetched user user_9u8f7lyor by user user_9u8f7lyor, IP: 127.0.0.1","timestamp":"2025-04-23T03:02:05.574Z"}
+{"level":"info","message":"Super Admin bypass for user user_9u8f7lyor","timestamp":"2025-04-23T03:02:10.627Z"}
+{"level":"info","message":"Super Admin bypass for user user_9u8f7lyor","timestamp":"2025-04-23T03:02:10.630Z"}
+{"level":"info","message":"Super Admin bypass for user user_9u8f7lyor","timestamp":"2025-04-23T03:02:10.632Z"}
+{"level":"info","message":"Fetched unique locations by user user_9u8f7lyor, IP: 127.0.0.1","timestamp":"2025-04-23T03:02:10.636Z"}
+{"level":"info","message":"Fetched all users by user user_9u8f7lyor, IP: 127.0.0.1","timestamp":"2025-04-23T03:02:10.642Z"}
+{"ip":null,"level":"info","message":"Fetched 1 receipt books in 23ms","timestamp":"2025-04-23T03:02:10.651Z"}
+{"level":"info","message":"Fetched 1 receipt books by user user_9u8f7lyor in 24ms, IP: 127.0.0.1","timestamp":"2025-04-23T03:02:10.652Z"}
+{"level":"info","message":"Super Admin bypass for user user_9u8f7lyor","timestamp":"2025-04-23T03:02:13.912Z"}
+{"level":"info","message":"Super Admin bypass for user user_9u8f7lyor","timestamp":"2025-04-23T03:02:13.916Z"}
+{"level":"info","message":"Fetched all users by user user_9u8f7lyor, IP: 127.0.0.1","timestamp":"2025-04-23T03:02:13.920Z"}
+{"level":"info","message":"Super Admin bypass for user user_9u8f7lyor","timestamp":"2025-04-23T03:02:13.924Z"}
+{"level":"info","message":"Fetched notification rules by user: user_9u8f7lyor, IP: 127.0.0.1","timestamp":"2025-04-23T03:02:13.927Z"}
+{"level":"info","message":"Fetched all roles by user user_9u8f7lyor, IP: 127.0.0.1","timestamp":"2025-04-23T03:02:13.938Z"}
+{"level":"info","message":"Super Admin bypass for user user_9u8f7lyor","timestamp":"2025-04-23T03:02:13.950Z"}
+{"level":"info","message":"Fetched notification rules by user: user_9u8f7lyor, IP: 127.0.0.1","timestamp":"2025-04-23T03:02:13.954Z"}
+{"level":"info","message":"Super Admin bypass for user user_9u8f7lyor","timestamp":"2025-04-23T03:02:15.043Z"}
+{"level":"info","message":"Super Admin bypass for user user_9u8f7lyor","timestamp":"2025-04-23T03:02:15.047Z"}
+{"level":"info","message":"Fetched all users by user user_9u8f7lyor, IP: 127.0.0.1","timestamp":"2025-04-23T03:02:15.054Z"}
+{"level":"info","message":"Fetched all timesheets by user user_9u8f7lyor, IP: 127.0.0.1","timestamp":"2025-04-23T03:02:15.094Z"}
+{"level":"info","message":"Super Admin bypass for user user_9u8f7lyor","timestamp":"2025-04-23T03:02:19.616Z"}
+{"level":"info","message":"Super Admin bypass for user user_9u8f7lyor","timestamp":"2025-04-23T03:02:19.620Z"}
+{"level":"info","message":"Super Admin bypass for user user_9u8f7lyor","timestamp":"2025-04-23T03:02:19.626Z"}
+{"level":"info","message":"Super Admin bypass for user user_9u8f7lyor","timestamp":"2025-04-23T03:02:19.631Z"}
+{"level":"info","message":"Fetched all reasons by user user_9u8f7lyor, IP: 127.0.0.1","timestamp":"2025-04-23T03:02:19.633Z"}
+{"level":"info","message":"Fetched supervisors for user user_9u8f7lyor by user user_9u8f7lyor, IP: 127.0.0.1","timestamp":"2025-04-23T03:02:19.640Z"}
+{"level":"info","message":"Fetched unique locations by user user_9u8f7lyor, IP: 127.0.0.1","timestamp":"2025-04-23T03:02:19.645Z"}
+{"level":"info","message":"Fetched all checklists by user user_9u8f7lyor, IP: 127.0.0.1","timestamp":"2025-04-23T03:02:19.650Z"}
+{"level":"info","message":"Super Admin bypass for user user_9u8f7lyor","timestamp":"2025-04-23T03:02:29.067Z"}
+{"ip":null,"level":"info","message":"Fetched 1 receipt books in 16ms","timestamp":"2025-04-23T03:02:29.084Z"}
+{"level":"info","message":"Fetched 1 receipt books by user user_9u8f7lyor in 17ms, IP: 127.0.0.1","timestamp":"2025-04-23T03:02:29.085Z"}
+{"level":"info","message":"Super Admin bypass for user user_9u8f7lyor","timestamp":"2025-04-23T03:02:29.112Z"}
+{"level":"info","message":"Fetched user user_9u8f7lyor by user user_9u8f7lyor, IP: 127.0.0.1","timestamp":"2025-04-23T03:02:29.132Z"}
+{"level":"info","message":"Super Admin bypass for user user_9u8f7lyor","timestamp":"2025-04-23T03:02:30.840Z"}
+{"level":"info","message":"Super Admin bypass for user user_9u8f7lyor","timestamp":"2025-04-23T03:02:30.846Z"}
+{"level":"info","message":"Fetched all users by user user_9u8f7lyor, IP: 127.0.0.1","timestamp":"2025-04-23T03:02:30.853Z"}
+{"level":"info","message":"Fetched all timesheets by user user_9u8f7lyor, IP: 127.0.0.1","timestamp":"2025-04-23T03:02:30.863Z"}
+{"level":"info","message":"Super Admin bypass for user user_9u8f7lyor","timestamp":"2025-04-23T03:02:31.905Z"}
+{"level":"info","message":"Super Admin bypass for user user_9u8f7lyor","timestamp":"2025-04-23T03:02:31.909Z"}
+{"level":"info","message":"Fetched all users by user user_9u8f7lyor, IP: 127.0.0.1","timestamp":"2025-04-23T03:02:31.914Z"}
+{"level":"info","message":"Fetched all roles by user user_9u8f7lyor, IP: 127.0.0.1","timestamp":"2025-04-23T03:02:31.942Z"}
+{"level":"info","message":"Fetched roles for user user_9u8f7lyor by user_9u8f7lyor, IP: 127.0.0.1","timestamp":"2025-04-23T03:07:24.140Z"}
+{"level":"info","message":"Fetched effective permissions for user user_9u8f7lyor by user_9u8f7lyor, IP: 127.0.0.1","timestamp":"2025-04-23T03:07:24.151Z"}
+{"level":"info","message":"Fetched roles for user user_9u8f7lyor by user_9u8f7lyor, IP: 127.0.0.1","timestamp":"2025-04-23T03:07:24.184Z"}
+{"level":"info","message":"Fetched effective permissions for user user_9u8f7lyor by user_9u8f7lyor, IP: 127.0.0.1","timestamp":"2025-04-23T03:07:24.200Z"}
+{"level":"info","message":"Fetched effective permissions for user user_9u8f7lyor by user_9u8f7lyor, IP: 127.0.0.1","timestamp":"2025-04-23T03:11:31.678Z"}
+{"level":"info","message":"Fetched roles for user user_9u8f7lyor by user_9u8f7lyor, IP: 127.0.0.1","timestamp":"2025-04-23T03:11:31.686Z"}
+{"level":"info","message":"Fetched effective permissions for user user_9u8f7lyor by user_9u8f7lyor, IP: 127.0.0.1","timestamp":"2025-04-23T03:11:31.727Z"}
+{"level":"info","message":"Fetched roles for user user_9u8f7lyor by user_9u8f7lyor, IP: 127.0.0.1","timestamp":"2025-04-23T03:11:31.736Z"}
+{"level":"info","message":"Fetched effective permissions for user user_9u8f7lyor by user_9u8f7lyor, IP: 127.0.0.1","timestamp":"2025-04-23T03:11:39.517Z"}
+{"level":"info","message":"Fetched roles for user user_9u8f7lyor by user_9u8f7lyor, IP: 127.0.0.1","timestamp":"2025-04-23T03:11:39.525Z"}
+{"level":"info","message":"Fetched effective permissions for user user_9u8f7lyor by user_9u8f7lyor, IP: 127.0.0.1","timestamp":"2025-04-23T03:11:39.551Z"}
+{"level":"info","message":"Fetched roles for user user_9u8f7lyor by user_9u8f7lyor, IP: 127.0.0.1","timestamp":"2025-04-23T03:11:39.560Z"}
+{"level":"info","message":"Fetched effective permissions for user user_9u8f7lyor by user_9u8f7lyor, IP: 127.0.0.1","timestamp":"2025-04-23T03:12:13.171Z"}
+{"level":"info","message":"Fetched roles for user user_9u8f7lyor by user_9u8f7lyor, IP: 127.0.0.1","timestamp":"2025-04-23T03:12:13.177Z"}
+{"level":"info","message":"Fetched effective permissions for user user_9u8f7lyor by user_9u8f7lyor, IP: 127.0.0.1","timestamp":"2025-04-23T03:12:13.212Z"}
+{"level":"info","message":"Fetched roles for user user_9u8f7lyor by user_9u8f7lyor, IP: 127.0.0.1","timestamp":"2025-04-23T03:12:13.222Z"}
+{"level":"info","message":"Fetched effective permissions for user user_9u8f7lyor by user_9u8f7lyor, IP: 127.0.0.1","timestamp":"2025-04-23T03:12:20.931Z"}
+{"level":"info","message":"Fetched roles for user user_9u8f7lyor by user_9u8f7lyor, IP: 127.0.0.1","timestamp":"2025-04-23T03:12:20.935Z"}
+{"level":"info","message":"Fetched effective permissions for user user_9u8f7lyor by user_9u8f7lyor, IP: 127.0.0.1","timestamp":"2025-04-23T03:12:20.955Z"}
+{"level":"info","message":"Fetched roles for user user_9u8f7lyor by user_9u8f7lyor, IP: 127.0.0.1","timestamp":"2025-04-23T03:12:20.962Z"}
+{"level":"info","message":"Super Admin bypass for user user_9u8f7lyor","timestamp":"2025-04-23T03:12:33.116Z"}
+{"level":"info","message":"Super Admin bypass for user user_9u8f7lyor","timestamp":"2025-04-23T03:12:33.124Z"}
+{"level":"info","message":"Fetched all timesheets by user user_9u8f7lyor, IP: 127.0.0.1","timestamp":"2025-04-23T03:12:33.150Z"}
+{"level":"info","message":"Fetched all users by user user_9u8f7lyor, IP: 127.0.0.1","timestamp":"2025-04-23T03:12:33.165Z"}
+{"level":"info","message":"Super Admin bypass for user user_9u8f7lyor","timestamp":"2025-04-23T03:12:35.483Z"}
+{"level":"info","message":"Super Admin bypass for user user_9u8f7lyor","timestamp":"2025-04-23T03:12:35.486Z"}
+{"level":"info","message":"Super Admin bypass for user user_9u8f7lyor","timestamp":"2025-04-23T03:12:35.490Z"}
+{"level":"info","message":"Fetched notification rules by user: user_9u8f7lyor, IP: 127.0.0.1","timestamp":"2025-04-23T03:12:35.493Z"}
+{"level":"info","message":"Fetched all users by user user_9u8f7lyor, IP: 127.0.0.1","timestamp":"2025-04-23T03:12:35.496Z"}
+{"level":"info","message":"Fetched all roles by user user_9u8f7lyor, IP: 127.0.0.1","timestamp":"2025-04-23T03:12:35.506Z"}
+{"level":"info","message":"Super Admin bypass for user user_9u8f7lyor","timestamp":"2025-04-23T03:12:35.515Z"}
+{"level":"info","message":"Fetched notification rules by user: user_9u8f7lyor, IP: 127.0.0.1","timestamp":"2025-04-23T03:12:35.519Z"}
+{"level":"info","message":"Super Admin bypass for user user_9u8f7lyor","timestamp":"2025-04-23T03:12:38.217Z"}
+{"level":"info","message":"Fetched all users by user user_9u8f7lyor, IP: 127.0.0.1","timestamp":"2025-04-23T03:12:38.227Z"}
+{"level":"info","message":"Super Admin bypass for user user_9u8f7lyor","timestamp":"2025-04-23T03:12:38.275Z"}
+{"level":"info","message":"Fetched all roles by user user_9u8f7lyor, IP: 127.0.0.1","timestamp":"2025-04-23T03:12:38.296Z"}
+{"level":"info","message":"Super Admin bypass for user user_9u8f7lyor","timestamp":"2025-04-23T03:12:41.922Z"}
+{"ip":null,"level":"info","message":"Fetched 1 receipt books in 36ms","timestamp":"2025-04-23T03:12:41.959Z"}
+{"level":"info","message":"Fetched 1 receipt books by user user_9u8f7lyor in 37ms, IP: 127.0.0.1","timestamp":"2025-04-23T03:12:41.960Z"}
+{"level":"info","message":"Super Admin bypass for user user_9u8f7lyor","timestamp":"2025-04-23T03:12:41.982Z"}
+{"level":"info","message":"Fetched user user_9u8f7lyor by user user_9u8f7lyor, IP: 127.0.0.1","timestamp":"2025-04-23T03:12:41.990Z"}
+{"level":"info","message":"Fetched notification preferences for user: user_9u8f7lyor, IP: 127.0.0.1","timestamp":"2025-04-23T03:12:43.826Z"}
+{"level":"info","message":"Fetched profile for user user_9u8f7lyor, IP: 127.0.0.1","timestamp":"2025-04-23T03:12:43.848Z"}
+{"level":"info","message":"Super Admin bypass for user user_9u8f7lyor","timestamp":"2025-04-23T03:13:15.101Z"}
+{"level":"info","message":"Super Admin bypass for user user_9u8f7lyor","timestamp":"2025-04-23T03:13:15.106Z"}
+{"level":"info","message":"Fetched all timesheets by user user_9u8f7lyor, IP: 127.0.0.1","timestamp":"2025-04-23T03:13:15.122Z"}
+{"level":"info","message":"Fetched all users by user user_9u8f7lyor, IP: 127.0.0.1","timestamp":"2025-04-23T03:13:15.135Z"}
+{"level":"info","message":"Super Admin bypass for user user_9u8f7lyor","timestamp":"2025-04-23T03:13:16.998Z"}
+{"ip":null,"level":"info","message":"Fetched 1 receipt books in 40ms","timestamp":"2025-04-23T03:13:17.039Z"}
+{"level":"info","message":"Fetched 1 receipt books by user user_9u8f7lyor in 41ms, IP: 127.0.0.1","timestamp":"2025-04-23T03:13:17.040Z"}
+{"level":"info","message":"Super Admin bypass for user user_9u8f7lyor","timestamp":"2025-04-23T03:13:17.360Z"}
+{"level":"info","message":"Fetched user user_9u8f7lyor by user user_9u8f7lyor, IP: 127.0.0.1","timestamp":"2025-04-23T03:13:17.372Z"}
+{"level":"info","message":"Fetched profile for user user_9u8f7lyor, IP: 127.0.0.1","timestamp":"2025-04-23T03:13:21.633Z"}
+{"level":"info","message":"Fetched notification preferences for user: user_9u8f7lyor, IP: 127.0.0.1","timestamp":"2025-04-23T03:13:21.667Z"}
+{"level":"info","message":"Super Admin bypass for user user_9u8f7lyor","timestamp":"2025-04-23T03:13:23.465Z"}
+{"ip":null,"level":"info","message":"Fetched 1 receipt books in 43ms","timestamp":"2025-04-23T03:13:23.508Z"}
+{"level":"info","message":"Fetched 1 receipt books by user user_9u8f7lyor in 44ms, IP: 127.0.0.1","timestamp":"2025-04-23T03:13:23.509Z"}
+{"level":"info","message":"Super Admin bypass for user user_9u8f7lyor","timestamp":"2025-04-23T03:13:23.533Z"}
+{"level":"info","message":"Fetched user user_9u8f7lyor by user user_9u8f7lyor, IP: 127.0.0.1","timestamp":"2025-04-23T03:13:23.557Z"}
+{"level":"info","message":"Super Admin bypass for user user_9u8f7lyor","timestamp":"2025-04-23T03:13:24.510Z"}
+{"level":"info","message":"Super Admin bypass for user user_9u8f7lyor","timestamp":"2025-04-23T03:13:24.515Z"}
+{"level":"info","message":"Fetched all users by user user_9u8f7lyor, IP: 127.0.0.1","timestamp":"2025-04-23T03:13:24.523Z"}
+{"level":"info","message":"Fetched all timesheets by user user_9u8f7lyor, IP: 127.0.0.1","timestamp":"2025-04-23T03:13:24.534Z"}
+{"level":"info","message":"Super Admin bypass for user user_9u8f7lyor","timestamp":"2025-04-23T03:16:26.436Z"}
+{"ip":null,"level":"info","message":"Fetched 1 receipt books in 63ms","timestamp":"2025-04-23T03:16:26.500Z"}
+{"level":"info","message":"Fetched 1 receipt books by user user_9u8f7lyor in 64ms, IP: 127.0.0.1","timestamp":"2025-04-23T03:16:26.501Z"}
+{"level":"info","message":"Super Admin bypass for user user_9u8f7lyor","timestamp":"2025-04-23T03:16:26.535Z"}
+{"level":"info","message":"Fetched user user_9u8f7lyor by user user_9u8f7lyor, IP: 127.0.0.1","timestamp":"2025-04-23T03:16:26.551Z"}
+{"level":"warn","message":"No access token provided","timestamp":"2025-04-23T03:17:11.129Z"}
+{"level":"warn","message":"No access token provided","timestamp":"2025-04-23T03:17:11.134Z"}
+{"level":"info","message":"Initiating token refresh","timestamp":"2025-04-23T03:17:11.145Z"}
+{"level":"info","message":"Initiating token refresh","timestamp":"2025-04-23T03:17:11.152Z"}
+{"accessTokenExpiresIn":900,"level":"info","message":"Tokens refreshed successfully","refreshTokenRotatedAt":"2025-04-23T03:17:11.194Z","timestamp":"2025-04-23T03:17:11.194Z"}
+{"level":"info","message":"Refresh token successful","timestamp":"2025-04-23T03:17:11.195Z"}
+{"accessTokenExpiresIn":900,"level":"info","message":"Tokens refreshed successfully","refreshTokenRotatedAt":"2025-04-23T03:17:11.214Z","timestamp":"2025-04-23T03:17:11.214Z"}
+{"level":"info","message":"Refresh token successful","timestamp":"2025-04-23T03:17:11.214Z"}
+{"level":"info","message":"Super Admin bypass for user user_9u8f7lyor","timestamp":"2025-04-23T03:17:11.300Z"}
+{"level":"info","message":"Super Admin bypass for user user_9u8f7lyor","timestamp":"2025-04-23T03:17:11.303Z"}
+{"level":"info","message":"Fetched all users by user user_9u8f7lyor, IP: 127.0.0.1","timestamp":"2025-04-23T03:17:11.314Z"}
+{"level":"info","message":"Fetched all timesheets by user user_9u8f7lyor, IP: 127.0.0.1","timestamp":"2025-04-23T03:17:11.325Z"}
+{"level":"info","message":"Fetched notification preferences for user: user_9u8f7lyor, IP: 127.0.0.1","timestamp":"2025-04-23T03:17:28.115Z"}
+{"level":"info","message":"Fetched profile for user user_9u8f7lyor, IP: 127.0.0.1","timestamp":"2025-04-23T03:17:28.135Z"}
+{"level":"info","message":"Super Admin bypass for user user_9u8f7lyor","timestamp":"2025-04-23T03:17:30.203Z"}
+{"level":"info","message":"Super Admin bypass for user user_9u8f7lyor","timestamp":"2025-04-23T03:17:30.209Z"}
+{"level":"info","message":"Fetched all timesheets by user user_9u8f7lyor, IP: 127.0.0.1","timestamp":"2025-04-23T03:17:30.232Z"}
+{"level":"info","message":"Fetched all users by user user_9u8f7lyor, IP: 127.0.0.1","timestamp":"2025-04-23T03:17:30.237Z"}
+{"level":"info","message":"Super Admin bypass for user user_9u8f7lyor","timestamp":"2025-04-23T03:17:37.542Z"}
+{"level":"info","message":"Super Admin bypass for user user_9u8f7lyor","timestamp":"2025-04-23T03:17:37.545Z"}
+{"level":"info","message":"Fetched all users by user user_9u8f7lyor, IP: 127.0.0.1","timestamp":"2025-04-23T03:17:37.557Z"}
+{"level":"info","message":"Fetched all timesheets by user user_9u8f7lyor, IP: 127.0.0.1","timestamp":"2025-04-23T03:17:37.565Z"}
+{"level":"info","message":"Keycloak admin token obtained","timestamp":"2025-04-23T03:50:58.360Z"}
+{"level":"info","message":"Login response generated for user user_9u8f7lyor","timestamp":"2025-04-23T03:50:58.609Z"}
+{"level":"info","message":"Login attempt for superadmin@example.com, requires2FA: false","timestamp":"2025-04-23T03:50:58.610Z"}
+{"level":"info","message":"Keycloak admin token obtained","timestamp":"2025-04-23T03:50:58.895Z"}
+{"level":"info","message":"Login response generated for user user_9u8f7lyor","timestamp":"2025-04-23T03:50:59.058Z"}
+{"level":"info","message":"Login attempt for superadmin@example.com, requires2FA: false","timestamp":"2025-04-23T03:50:59.059Z"}
+{"level":"info","message":"Fetched effective permissions for user user_9u8f7lyor by user_9u8f7lyor, IP: 127.0.0.1","timestamp":"2025-04-23T03:50:59.147Z"}
+{"level":"info","message":"Fetched roles for user user_9u8f7lyor by user_9u8f7lyor, IP: 127.0.0.1","timestamp":"2025-04-23T03:50:59.158Z"}
+{"level":"info","message":"Super Admin bypass for user user_9u8f7lyor","timestamp":"2025-04-23T03:50:59.495Z"}
+{"level":"info","message":"Super Admin bypass for user user_9u8f7lyor","timestamp":"2025-04-23T03:50:59.501Z"}
+{"level":"info","message":"Fetched all users by user user_9u8f7lyor, IP: 127.0.0.1","timestamp":"2025-04-23T03:50:59.508Z"}
+{"level":"info","message":"Fetched all timesheets by user user_9u8f7lyor, IP: 127.0.0.1","timestamp":"2025-04-23T03:50:59.524Z"}
+{"level":"info","message":"Super Admin bypass for user user_9u8f7lyor","timestamp":"2025-04-23T03:56:11.226Z"}
+{"level":"info","message":"Fetched all users by user user_9u8f7lyor, IP: 127.0.0.1","timestamp":"2025-04-23T03:56:11.244Z"}
+{"level":"info","message":"Super Admin bypass for user user_9u8f7lyor","timestamp":"2025-04-23T03:56:11.279Z"}
+{"level":"info","message":"Fetched all roles by user user_9u8f7lyor, IP: 127.0.0.1","timestamp":"2025-04-23T03:56:11.304Z"}
+{"level":"info","message":"Super Admin bypass for user user_9u8f7lyor","timestamp":"2025-04-23T03:56:14.354Z"}
+{"level":"info","message":"Fetched notification rules by user: user_9u8f7lyor, IP: 127.0.0.1","timestamp":"2025-04-23T03:56:14.358Z"}
+{"level":"info","message":"Super Admin bypass for user user_9u8f7lyor","timestamp":"2025-04-23T03:56:14.608Z"}
+{"level":"info","message":"Fetched notification rules by user: user_9u8f7lyor, IP: 127.0.0.1","timestamp":"2025-04-23T03:56:14.614Z"}
+{"level":"info","message":"Super Admin bypass for user user_9u8f7lyor","timestamp":"2025-04-23T03:56:20.817Z"}
+{"level":"info","message":"Fetched all permissions by user user_9u8f7lyor, IP: 127.0.0.1","timestamp":"2025-04-23T03:56:20.839Z"}
+{"level":"info","message":"Super Admin bypass for user user_9u8f7lyor","timestamp":"2025-04-23T03:56:22.391Z"}
+{"level":"info","message":"Fetched all checklists by user user_9u8f7lyor, IP: 127.0.0.1","timestamp":"2025-04-23T03:56:22.415Z"}
+{"level":"info","message":"Fetched effective permissions for user user_9u8f7lyor by user_9u8f7lyor, IP: 127.0.0.1","timestamp":"2025-04-23T03:56:25.511Z"}
+{"level":"info","message":"Fetched effective permissions for user user_9u8f7lyor by user_9u8f7lyor, IP: 127.0.0.1","timestamp":"2025-04-23T03:56:25.551Z"}
+{"level":"info","message":"Fetched roles for user user_9u8f7lyor by user_9u8f7lyor, IP: 127.0.0.1","timestamp":"2025-04-23T03:56:25.601Z"}
+{"level":"info","message":"Fetched roles for user user_9u8f7lyor by user_9u8f7lyor, IP: 127.0.0.1","timestamp":"2025-04-23T03:56:25.633Z"}
+{"level":"info","message":"Super Admin bypass for user user_9u8f7lyor","timestamp":"2025-04-23T03:56:25.961Z"}
+{"level":"info","message":"Fetched all checklists by user user_9u8f7lyor, IP: 127.0.0.1","timestamp":"2025-04-23T03:56:25.988Z"}
+{"level":"info","message":"Super Admin bypass for user user_9u8f7lyor","timestamp":"2025-04-23T03:56:31.754Z"}
+{"ip":null,"level":"info","message":"Fetched 1 receipt books in 46ms","timestamp":"2025-04-23T03:56:31.800Z"}
+{"level":"info","message":"Fetched 1 receipt books by user user_9u8f7lyor in 47ms, IP: 127.0.0.1","timestamp":"2025-04-23T03:56:31.801Z"}
+{"level":"info","message":"Super Admin bypass for user user_9u8f7lyor","timestamp":"2025-04-23T03:56:31.827Z"}
+{"level":"info","message":"Fetched user user_9u8f7lyor by user user_9u8f7lyor, IP: 127.0.0.1","timestamp":"2025-04-23T03:56:31.833Z"}
+{"level":"info","message":"Super Admin bypass for user user_9u8f7lyor","timestamp":"2025-04-23T03:56:51.775Z"}
+{"level":"info","message":"Super Admin bypass for user user_9u8f7lyor","timestamp":"2025-04-23T03:56:51.778Z"}
+{"level":"info","message":"Super Admin bypass for user user_9u8f7lyor","timestamp":"2025-04-23T03:56:51.788Z"}
+{"level":"info","message":"Fetched all users by user user_9u8f7lyor, IP: 127.0.0.1","timestamp":"2025-04-23T03:56:51.814Z"}
+{"level":"info","message":"Fetched unique locations by user user_9u8f7lyor, IP: 127.0.0.1","timestamp":"2025-04-23T03:56:51.827Z"}
+{"ip":null,"level":"info","message":"Fetched 1 receipt books in 60ms","timestamp":"2025-04-23T03:56:51.836Z"}
+{"level":"info","message":"Fetched 1 receipt books by user user_9u8f7lyor in 63ms, IP: 127.0.0.1","timestamp":"2025-04-23T03:56:51.839Z"}
+{"level":"info","message":"Fetched effective permissions for user user_9u8f7lyor by user_9u8f7lyor, IP: 127.0.0.1","timestamp":"2025-04-23T03:57:38.732Z"}
+{"level":"info","message":"Fetched roles for user user_9u8f7lyor by user_9u8f7lyor, IP: 127.0.0.1","timestamp":"2025-04-23T03:57:38.737Z"}
+{"level":"info","message":"Fetched effective permissions for user user_9u8f7lyor by user_9u8f7lyor, IP: 127.0.0.1","timestamp":"2025-04-23T03:57:38.766Z"}
+{"level":"info","message":"Fetched roles for user user_9u8f7lyor by user_9u8f7lyor, IP: 127.0.0.1","timestamp":"2025-04-23T03:57:38.774Z"}
+{"level":"info","message":"Super Admin bypass for user user_9u8f7lyor","timestamp":"2025-04-23T03:57:39.839Z"}
+{"level":"info","message":"Super Admin bypass for user user_9u8f7lyor","timestamp":"2025-04-23T03:57:39.842Z"}
+{"level":"info","message":"Fetched all users by user user_9u8f7lyor, IP: 127.0.0.1","timestamp":"2025-04-23T03:57:39.847Z"}
+{"level":"info","message":"Super Admin bypass for user user_9u8f7lyor","timestamp":"2025-04-23T03:57:39.855Z"}
+{"level":"info","message":"Fetched unique locations by user user_9u8f7lyor, IP: 127.0.0.1","timestamp":"2025-04-23T03:57:39.880Z"}
+{"ip":null,"level":"info","message":"Fetched 1 receipt books in 46ms","timestamp":"2025-04-23T03:57:39.889Z"}
+{"level":"info","message":"Fetched 1 receipt books by user user_9u8f7lyor in 48ms, IP: 127.0.0.1","timestamp":"2025-04-23T03:57:39.891Z"}
+{"level":"info","message":"Keycloak admin token obtained","timestamp":"2025-04-23T07:14:11.860Z"}
+{"level":"info","message":"Login response generated for user user_9u8f7lyor","timestamp":"2025-04-23T07:14:12.111Z"}
+{"level":"info","message":"Login attempt for superadmin@example.com, requires2FA: false","timestamp":"2025-04-23T07:14:12.112Z"}
+{"level":"info","message":"Keycloak admin token obtained","timestamp":"2025-04-23T07:14:12.388Z"}
+{"level":"info","message":"Login response generated for user user_9u8f7lyor","timestamp":"2025-04-23T07:14:12.476Z"}
+{"level":"info","message":"Login attempt for superadmin@example.com, requires2FA: false","timestamp":"2025-04-23T07:14:12.477Z"}
+{"level":"info","message":"Fetched effective permissions for user user_9u8f7lyor by user_9u8f7lyor, IP: 127.0.0.1","timestamp":"2025-04-23T07:14:12.566Z"}
+{"level":"info","message":"Fetched roles for user user_9u8f7lyor by user_9u8f7lyor, IP: 127.0.0.1","timestamp":"2025-04-23T07:14:12.576Z"}
+{"level":"info","message":"Super Admin bypass for user user_9u8f7lyor","timestamp":"2025-04-23T07:14:12.925Z"}
+{"level":"info","message":"Super Admin bypass for user user_9u8f7lyor","timestamp":"2025-04-23T07:14:12.932Z"}
+{"level":"info","message":"Fetched all users by user user_9u8f7lyor, IP: 127.0.0.1","timestamp":"2025-04-23T07:14:12.942Z"}
+{"level":"info","message":"Super Admin bypass for user user_9u8f7lyor","timestamp":"2025-04-23T07:14:12.970Z"}
+{"level":"info","message":"Fetched unique locations by user user_9u8f7lyor, IP: 127.0.0.1","timestamp":"2025-04-23T07:14:13.000Z"}
+{"ip":null,"level":"info","message":"Fetched 1 receipt books in 81ms","timestamp":"2025-04-23T07:14:13.015Z"}
+{"level":"info","message":"Fetched 1 receipt books by user user_9u8f7lyor in 83ms, IP: 127.0.0.1","timestamp":"2025-04-23T07:14:13.018Z"}
+{"level":"info","message":"Super Admin bypass for user user_9u8f7lyor","timestamp":"2025-04-23T07:14:16.593Z"}
+{"level":"info","message":"Fetched all checklists by user user_9u8f7lyor, IP: 127.0.0.1","timestamp":"2025-04-23T07:14:16.600Z"}
+{"level":"info","message":"Super Admin bypass for user user_9u8f7lyor","timestamp":"2025-04-23T07:14:18.205Z"}
+{"level":"info","message":"Fetched all timesheets by user user_9u8f7lyor, IP: 127.0.0.1","timestamp":"2025-04-23T07:14:18.231Z"}
+{"level":"info","message":"Super Admin bypass for user user_9u8f7lyor","timestamp":"2025-04-23T07:14:18.255Z"}
+{"level":"info","message":"Fetched all users by user user_9u8f7lyor, IP: 127.0.0.1","timestamp":"2025-04-23T07:14:18.269Z"}

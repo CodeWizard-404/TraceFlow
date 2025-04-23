@@ -218,7 +218,7 @@ const Entry: React.FC = () => {
             </div>
             {/* Map */}
             <div className="maps-card">
-              <h2 className="">{t("maps_card_title")}</h2>
+              <h2 className="">{t("Today's visits")}</h2>
               <div className="maps-card__container">
                 <LoadScript googleMapsApiKey={""}>
                   <GoogleMap

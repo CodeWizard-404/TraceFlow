@@ -306,7 +306,7 @@
     "actions": {
       "scheduleVisit": "Planifier une visite",
       "receiptBooks": "Carnets de reçus",
-      "current": "{{view}} Actuel",
+      "current": "{{view}} Actuel(le)",
       "viewReceiptBooks": "Voir les carnets de reçus",
       "filterSupervisors": "Filtrer les superviseurs",
       "validateTimesheet": "Valider l'ensemble de la feuille de temps"
@@ -363,17 +363,17 @@
       "nextWeek": "Semaine suivante",
       "prevDay": "Jour précédent",
       "nextDay": "Jour suivant",
-      "viewToggle": "Passer à la vue {mode}",
+      "viewToggle": "Passer à la vue {{mode}}",
       "scheduleVisit": "Planifier une nouvelle visite",
       "receiptBooks": "Voir les carnets de reçus",
-      "current": "Faire défiler jusqu'à {mode} actuel",
+      "current": "Faire défiler jusqu'à {{mode}} actuel",
       "supervisorSearch": "Rechercher des superviseurs par nom ou téléphone",
       "supervisorFilter": "Filtrer les feuilles de temps par superviseur",
-      "month": "Voir les feuilles de temps pour {month}",
-      "weekTile": "Voir les détails de la semaine {weekNumber}",
-      "weekCard": "Voir les détails de la semaine {weekNumber}",
-      "dayTile": "Voir les visites pour {weekday} {day}",
-      "visitCard": "Voir les détails de la visite pour {time} à {location}"
+      "month": "Voir les feuilles de temps pour {{month}}",
+      "weekTile": "Voir les détails de la semaine {{weekNumber}}",
+      "weekCard": "Voir les détails de la semaine {{weekNumber}}",
+      "dayTile": "Voir les visites pour {{weekday}} {{day}}",
+      "visitCard": "Voir les détails de la visite pour {{time}} à {{location}}"
     }
   },
   "timesheetForm": {
@@ -621,8 +621,8 @@
       "back": "Retour aux reçus"
     },
     "footer": {
-      "currentStatus": "Statut actuel : {status}",
-      "currentHolder": "Détenteur actuel : {holder}",
+      "currentStatus": "Statut actuel : {{status}}",
+      "currentHolder": "Détenteur actuel : {{holder}}",
       "na": "N/D"
     },
     "timeline": {

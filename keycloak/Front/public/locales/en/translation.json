@@ -375,8 +375,7 @@
       "dayTile": "View visits for {weekday} {day}",
       "visitCard": "View visit details for {time} at {location}"
     }
-  },
-  "timesheetForm": {
+  },"timesheetForm": {
     "title": "Create Visit",
     "loading": "Loading...",
     "form": {
@@ -415,7 +414,13 @@
       "loadAgents": "Failed to load agents for {location}",
       "agentNotFound": "Agent not found with this phone number",
       "supervisorNotFound": "Supervisor not found with this phone number",
-      "createFailed": "Failed to create timesheet. Please try again."
+      "createFailed": "Failed to create timesheet. Please try again.",
+      "formIncomplete": "Please fill out all required fields."
+    },
+    "accessibility": {
+      "removeReason": "Remove reason {item}",
+      "removeChecklist": "Remove checklist {item}",
+      "errorAnnouncement": "Error: {message}"
     }
   },
   "transferReceiptBook": {
@@ -676,24 +681,34 @@
       "title": "Charts",
       "timesheetStatus": "Timesheet Status",
       "visitStatus": "Visit Status",
-      "supervisorTimesheets": "Timesheets per Supervisor",
-      "labels": {
-        "pending": "Pending",
-        "validated": "Validated"
-      }
+      "timesheetsPerSupervisor": "Timesheets per Supervisor",
+      "timesheetStatusPending": "Pending",
+      "timesheetStatusValidated": "Validated",
+      "visitStatusPending": "Pending",
+      "visitStatusValidated": "Validated"
     },
     "maps": {
-      "title": "Today’s Visits",
+      "title": "Today's Visits",
       "noVisits": "No visits today"
     },
     "stats": {
-      "supervisorsCount": "Supervisors Count",
-      "activeSupervisors": "Active Supervisors"
+      "supervisorsCount": {
+        "title": "Supervisors Count",
+        "value": "{count} supervisors"
+      },
+      "activeSupervisors": {
+        "title": "Active Supervisors",
+        "value": "{count} active"
+      }
     },
-    "sections": {
-      "unfinishedVisits": "Unfinished Visits",
-      "emails": "Emails",
-      "toDoList": "To Do List"
+    "unfinishedVisits": {
+      "title": "Unfinished Visits"
+    },
+    "emails": {
+      "title": "Emails"
+    },
+    "todoList": {
+      "title": "To Do List"
     }
   },
   "navbar": {
@@ -1400,5 +1415,6 @@
       "updateFailed": "Failed to update reason.",
       "deleteFailed": "Failed to delete reason."
     }
+  
   }
 }

@@ -298,15 +298,15 @@
   "timesheets": {
     "loading": "جارٍ تحميل سجل الدوام...",
     "viewModes": {
-      "year": "سنة",
-      "month": "شهر",
-      "week": "أسبوع",
-      "day": "يوم"
+      "year": "العام",
+      "month": "الشهر",
+      "week": "الأسبوع",
+      "day": "اليوم"
     },
     "actions": {
       "scheduleVisit": "جدولة زيارة",
       "receiptBooks": "دفاتر الإيصالات",
-      "current": "{{view}} الحالي ",
+      "current": "{{view}} الحالي",
       "viewReceiptBooks": "عرض دفاتر الإيصالات",
       "filterSupervisors": "تصفية المشرفين",
       "validateTimesheet": "التحقق من سجل الدوام بالكامل"
@@ -546,7 +546,7 @@
       }
     },
     "search": {
-      "placeholder": "ابحث عن الإيصالات..."
+      "placeholder": "...ابحث عن الإيصالات"
     },
     "sort": {
       "title": "ترتيب حسب",

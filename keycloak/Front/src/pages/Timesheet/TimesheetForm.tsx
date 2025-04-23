@@ -37,7 +37,7 @@ const PERMISSIONS = {
 const TimesheetForm: React.FC = () => {
   const navigate = useNavigate();
   const { user, effectivePermissions, permissionsLoaded } = useAuth();
-  const { setError } = useError();
+  const { setError, error } = useError();
   const { t } = useTranslation();
 
   // State
@@ -65,6 +65,8 @@ const TimesheetForm: React.FC = () => {
   const [selectedSupervisor, setSelectedSupervisor] = useState<string>("");
   const [supervisorPhone, setSupervisorPhone] = useState<string>("");
   const [supervisorSearch, setSupervisorSearch] = useState<string>("");
+  const [agentLoading, setAgentLoading] = useState<boolean>(false);
+  const [supervisorLoading, setSupervisorLoading] = useState<boolean>(false);
 
   // Current date setup
   const currentDate = new Date().toISOString().split("T")[0];
@@ -144,7 +146,7 @@ const TimesheetForm: React.FC = () => {
           setSupervisors(supervisorsData as User[]);
         }
       } catch (err) {
-        setError(t("timesheetForm.errors.initialData"));
+        setError(t("timesheetForm.errors.loadInitialData"));
         console.error("Fetch initial data error:", err);
       } finally {
         setLoading(false);
@@ -161,14 +163,17 @@ const TimesheetForm: React.FC = () => {
       userPermissions.canReadAgentsByLocation
     ) {
       const fetchAgents = async () => {
+        setAgentLoading(true);
         try {
           const agentsData = await getAgentsByLocation(selectedLocation);
           setAgents(agentsData);
         } catch (err) {
           setError(
-            t("timesheetForm.errors.agentsByLocation", { selectedLocation })
+            t("timesheetForm.errors.loadAgents", { location: selectedLocation })
           );
           console.error("Fetch agents by location error:", err);
+        } finally {
+          setAgentLoading(false);
         }
       };
       fetchAgents();
@@ -188,6 +193,7 @@ const TimesheetForm: React.FC = () => {
   const fetchAgentByPhone = useCallback(
     debounce(async (phone: string) => {
       if (phone.length < 7 || !userPermissions.canReadAgentsByPhone) return;
+      setAgentLoading(true);
       try {
         const agentData = await getAgentByPhone(phone);
         setSelectedAgent(agentData.agentID);
@@ -200,6 +206,8 @@ const TimesheetForm: React.FC = () => {
         setAgents([]);
         setSelectedLocation("");
         console.error("Fetch agent by phone error:", err);
+      } finally {
+        setAgentLoading(false);
       }
     }, 500),
     [userPermissions.canReadAgentsByPhone, setError, t]
@@ -225,6 +233,7 @@ const TimesheetForm: React.FC = () => {
         !userPermissions.canCreateTimesheetsForSupervisors
       )
         return;
+      setSupervisorLoading(true);
       try {
         const supervisor = await getUserByPhone(phone);
         setSelectedSupervisor(supervisor.userID);
@@ -240,6 +249,8 @@ const TimesheetForm: React.FC = () => {
         setError(t("timesheetForm.errors.supervisorNotFound"));
         setSelectedSupervisor("");
         console.error("Fetch supervisor by phone error:", err);
+      } finally {
+        setSupervisorLoading(false);
       }
     }, 500),
     [
@@ -313,6 +324,10 @@ const TimesheetForm: React.FC = () => {
 
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
+    if (!isFormComplete) {
+      setError(t("timesheetForm.errors.formIncomplete"));
+      return;
+    }
     setLoading(true);
     setError(null);
 
@@ -341,7 +356,7 @@ const TimesheetForm: React.FC = () => {
       await createTimesheet(timesheetData);
       navigate("/timesheet");
     } catch (err) {
-      setError(t("timesheetForm.errors.createTimesheet"));
+      setError(t("timesheetForm.errors.createFailed"));
       console.error("Submit error:", err);
     } finally {
       setLoading(false);
@@ -382,36 +397,67 @@ const TimesheetForm: React.FC = () => {
       <header className="form-header">
         <h1>{t("timesheetForm.title")}</h1>
       </header>
-      <section className="form-card">
+      <section className="form-card" role="form" aria-labelledby="form-title">
+        {error && (
+          <div
+            className="error-message"
+            role="alert"
+            aria-live="assertive"
+            tabIndex={0}
+          >
+            {t("timesheetForm.accessibility.errorAnnouncement", {
+              message: error,
+            })}
+          </div>
+        )}
         <form onSubmit={handleSubmit}>
           {userPermissions.canCreateTimesheetsForSupervisors &&
             userPermissions.canReadSupervisors && (
               <div className="form-group">
                 <label htmlFor="supervisor">
-                  {t("timesheetForm.form.supervisor")}
+                  {t("timesheetForm.form.supervisor")}{" "}
+                  <span aria-hidden>*</span>
                 </label>
                 <input
                   type="text"
-                  placeholder={t("timesheetForm.form.searchSupervisors")}
+                  id="supervisor-search"
+                  placeholder={t(
+                    "timesheetForm.form.placeholders.supervisorSearch"
+                  )}
                   value={supervisorSearch}
                   onChange={(e) => setSupervisorSearch(e.target.value)}
                   className="search-input"
-                  aria-label={t("timesheetForm.form.searchSupervisors")}
+                  aria-label={t(
+                    "timesheetForm.form.placeholders.supervisorSearch"
+                  )}
+                  disabled={supervisorLoading}
                 />
                 <input
                   type="tel"
-                  placeholder={t("timesheetForm.form.supervisorPhone")}
+                  id="supervisor-phone"
+                  placeholder={t(
+                    "timesheetForm.form.placeholders.supervisorPhone"
+                  )}
                   value={supervisorPhone}
                   onChange={(e) => setSupervisorPhone(e.target.value)}
                   className="search-input"
-                  aria-label={t("timesheetForm.form.supervisorPhone")}
+                  aria-label={t(
+                    "timesheetForm.form.placeholders.supervisorPhone"
+                  )}
+                  disabled={supervisorLoading}
                 />
+                {supervisorLoading && (
+                  <span className="loading-spinner" aria-hidden="true"></span>
+                )}
                 <select
                   id="supervisor"
                   value={selectedSupervisor}
                   onChange={(e) => setSelectedSupervisor(e.target.value)}
                   required
-                  aria-label={t("timesheetForm.form.selectSupervisor")}
+                  aria-label={t(
+                    "timesheetForm.form.placeholders.supervisorSelect"
+                  )}
+                  disabled={supervisorLoading}
                 >
                   <option value="">
                     {t("timesheetForm.form.placeholders.supervisorSelect")}
@@ -434,7 +480,9 @@ const TimesheetForm: React.FC = () => {
             )}
 
           <div className="form-group">
-            <label htmlFor="date">{t("timesheetForm.date")}</label>
+            <label htmlFor="date">
+              {t("timesheetForm.form.date")} <span aria-hidden>*</span>
+            </label>
             <input
               type="date"
               id="date"
@@ -442,12 +490,14 @@ const TimesheetForm: React.FC = () => {
               onChange={handleDateChange}
               min={currentDate}
               required
-              aria-label={t("timesheetForm.date")}
+              aria-label={t("timesheetForm.form.date")}
             />
           </div>
 
           <div className="form-group">
-            <label htmlFor="time">{t("timesheetForm.time")}</label>
+            <label htmlFor="time">
+              {t("timesheetForm.form.time")} <span aria-hidden>*</span>
+            </label>
             <input
               type="time"
               id="time"
@@ -468,8 +518,8 @@ const TimesheetForm: React.FC = () => {
               id="agentPhone"
               placeholder={
                 userPermissions.canReadAgentsByPhone
-                  ? t("timesheetForm.form.enterAgentPhone")
-                  : t("timesheetForm.form.permissionDenied")
+                  ? t("timesheetForm.form.placeholders.agentPhone")
+                  : t("timesheetForm.form.placeholders.permissionDenied")
               }
               value={agentPhone}
               onChange={(e) => setAgentPhone(e.target.value)}
@@ -480,13 +530,16 @@ const TimesheetForm: React.FC = () => {
           </div>
 
           <div className="form-group">
-            <label htmlFor="location">{t("timesheetForm.form.location")}</label>
+            <label htmlFor="location">
+              {t("timesheetForm.form.location")} <span aria-hidden>*</span>
+            </label>
             <input
               type="text"
+              id="location-search"
               placeholder={
                 userPermissions.canReadAgentsByLocation
-                  ? t("timesheetForm.form.searchLocations")
-                  : t("timesheetForm.form.permissionDenied")
+                  ? t("timesheetForm.form.placeholders.locationSearch")
+                  : t("timesheetForm.form.placeholders.permissionDenied")
               }
               value={locationSearch}
               onChange={(e) => setLocationSearch(e.target.value)}
@@ -494,19 +547,21 @@ const TimesheetForm: React.FC = () => {
               disabled={
                 !!agentPhone || !userPermissions.canReadAgentsByLocation
               }
-              aria-label={t("timesheetForm.form.searchLocations")}
+              aria-label={t("timesheetForm.form.placeholders.locationSearch")}
             />
             <select
               id="location"
               value={selectedLocation}
               onChange={(e) => setSelectedLocation(e.target.value)}
               required
-              aria-label={t("timesheetForm.form.selectLocation")}
+              aria-label={t("timesheetForm.form.placeholders.locationSelect")}
               disabled={
                 !!agentPhone || !userPermissions.canReadAgentsByLocation
               }
             >
-              <option value="">{t("timesheetForm.form.selectLocation")}</option>
+              <option value="">
+                {t("timesheetForm.form.placeholders.locationSelect")}
+              </option>
               {locations
                 .filter((loc) =>
                   loc.toLowerCase().includes(locationSearch.toLowerCase())
@@ -520,13 +575,16 @@ const TimesheetForm: React.FC = () => {
           </div>
 
           <div className="form-group">
-            <label htmlFor="agent">{t("timesheetForm.form.agent")}</label>
+            <label htmlFor="agent">
+              {t("timesheetForm.form.agent")} <span aria-hidden>*</span>
+            </label>
             <input
               type="text"
+              id="agent-search"
               placeholder={
                 userPermissions.canReadAgentsByLocation
-                  ? t("timesheetForm.form.searchAgents")
-                  : t("timesheetForm.form.permissionDenied")
+                  ? t("timesheetForm.form.placeholders.agentSearch")
+                  : t("timesheetForm.form.placeholders.permissionDenied")
               }
               value={agentSearch}
               onChange={(e) => setAgentSearch(e.target.value)}
@@ -536,8 +594,11 @@ const TimesheetForm: React.FC = () => {
                 !userPermissions.canReadAgentsByLocation
               }
               className="search-input"
-              aria-label={t("timesheetForm.form.searchAgents")}
+              aria-label={t("timesheetForm.form.placeholders.agentSearch")}
             />
+            {agentLoading && (
+              <span className="loading-spinner" aria-hidden="true"></span>
+            )}
             <select
               id="agent"
               value={selectedAgent}
@@ -545,12 +606,15 @@ const TimesheetForm: React.FC = () => {
               disabled={
                 !!agentPhone ||
                 !selectedLocation ||
-                !userPermissions.canReadAgentsByLocation
+                !userPermissions.canReadAgentsByLocation ||
+                agentLoading
               }
               required
-              aria-label={t("timesheetForm.form.selectAgent")}
+              aria-label={t("timesheetForm.form.placeholders.agentSelect")}
             >
-              <option value="">{t("timesheetForm.form.selectAgent")}</option>
+              <option value="">
+                {t("timesheetForm.form.placeholders.agentSelect")}
+              </option>
               {agents
                 .filter((agent) =>
                   `${agent.name || ""} ${agent.lastname || ""} ${
@@ -568,21 +632,25 @@ const TimesheetForm: React.FC = () => {
           </div>
 
           <div className="form-group">
-            <label>{t("timesheetForm.form.reasons")}</label>
+            <label>
+              {t("timesheetForm.form.reasons")} <span aria-hidden>*</span>
+            </label>
             <input
               type="text"
+              id="reason-search"
               placeholder={
                 userPermissions.canReadReasons
-                  ? t("timesheetForm.form.searchReasons")
-                  : t("timesheetForm.form.permissionDenied")
+                  ? t("timesheetForm.form.placeholders.reasonSearch")
+                  : t("timesheetForm.form.placeholders.permissionDenied")
               }
               value={reasonSearch}
               onChange={(e) => setReasonSearch(e.target.value)}
               className="search-input"
               disabled={!userPermissions.canReadReasons}
-              aria-label={t("timesheetForm.form.searchReasons")}
+              aria-label={t("timesheetForm.form.placeholders.reasonSearch")}
             />
             <select
+              id="reason-select"
               value=""
               onChange={(e) => {
                 const reason = reasons.find(
@@ -590,10 +658,12 @@ const TimesheetForm: React.FC = () => {
                 );
                 if (reason) handleReasonSelect(reason);
               }}
-              aria-label={t("timesheetForm.form.selectReason")}
+              aria-label={t("timesheetForm.form.placeholders.reasonSelect")}
               disabled={!userPermissions.canReadReasons}
             >
-              <option value="">{t("timesheetForm.form.selectReason")}</option>
+              <option value="">
+                {t("timesheetForm.form.placeholders.reasonSelect")}
+              </option>
               {reasons
                 .filter((reason) =>
                   reason.item.toLowerCase().includes(reasonSearch.toLowerCase())
@@ -622,7 +692,7 @@ const TimesheetForm: React.FC = () => {
                   }
                   role="button"
                   tabIndex={0}
-                  aria-label={t("timesheetForm.removeReason", {
+                  aria-label={t("timesheetForm.accessibility.removeReason", {
                     item: reasons.find((r) => r.reasonID === reason.id)?.item,
                   })}
                 >
@@ -633,21 +703,25 @@ const TimesheetForm: React.FC = () => {
           </div>
 
           <div className="form-group">
-            <label>{t("timesheetForm.checklists")}</label>
+            <label>
+              {t("timesheetForm.form.checklists")} <span aria-hidden>*</span>
+            </label>
             <input
               type="text"
+              id="checklist-search"
               placeholder={
                 userPermissions.canReadChecklists
-                  ? t("timesheetForm.searchChecklists")
-                  : t("timesheetForm.permissionDenied")
+                  ? t("timesheetForm.form.placeholders.checklistSearch")
+                  : t("timesheetForm.form.placeholders.permissionDenied")
               }
               value={checklistSearch}
               onChange={(e) => setChecklistSearch(e.target.value)}
               className="search-input"
               disabled={!userPermissions.canReadChecklists}
-              aria-label={t("timesheetForm.searchChecklists")}
+              aria-label={t("timesheetForm.form.placeholders.checklistSearch")}
             />
             <select
+              id="checklist-select"
               value=""
               onChange={(e) => {
                 const checklist = checklists.find(
@@ -655,10 +729,12 @@ const TimesheetForm: React.FC = () => {
                 );
                 if (checklist) handleChecklistSelect(checklist);
               }}
-              aria-label={t("timesheetForm.selectChecklist")}
+              aria-label={t("timesheetForm.form.placeholders.checklistSelect")}
               disabled={!userPermissions.canReadChecklists}
             >
-              <option value="">{t("timesheetForm.selectChecklist")}</option>
+              <option value="">
+                {t("timesheetForm.form.placeholders.checklistSelect")}
+              </option>
               {checklists
                 .filter((checklist) =>
                   checklist.item
@@ -692,7 +768,7 @@ const TimesheetForm: React.FC = () => {
                   }
                   role="button"
                   tabIndex={0}
-                  aria-label={t("timesheetForm.removeChecklist", {
+                  aria-label={t("timesheetForm.accessibility.removeChecklist", {
                     item: checklists.find((c) => c.checklistID === checklist.id)
                       ?.item,
                   })}
@@ -707,7 +783,7 @@ const TimesheetForm: React.FC = () => {
           <div className="form-actions">
             <button
               type="button"
-              className="submit-btn"
+              className="submit-btn secondary"
               onClick={() => navigate(-1)}
               aria-label={t("timesheetForm.actions.back")}
             >
@@ -715,7 +791,7 @@ const TimesheetForm: React.FC = () => {
             </button>
             <button
               type="submit"
-              className="submit-btn"
+              className="submit-btn primary"
               disabled={
                 !isFormComplete ||
                 loading ||
@@ -724,7 +800,7 @@ const TimesheetForm: React.FC = () => {
                   userPermissions.canCreateTimesheetsForSupervisors
                 )
               }
-              aria-label={t("timesheetForm.createTimesheet")}
+              aria-label={t("timesheetForm.actions.create")}
             >
               {loading
                 ? t("timesheetForm.actions.submitting")
