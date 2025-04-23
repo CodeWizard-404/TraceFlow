@@ -510,7 +510,7 @@ const Timesheets: React.FC = () => {
             aria-label={t("timesheets.actions.scrollToCurrent")}
           >
             {t("timesheets.actions.current", {
-              viewMode: viewMode.charAt(0).toUpperCase() + viewMode.slice(1),
+              view: t(`timesheets.viewModes.${viewMode}`),
             })}
           </button>
         </div>
@@ -609,7 +609,9 @@ const Timesheets: React.FC = () => {
                     {userPermissions.canReadSupervisors && (
                       <span className="week-info">
                         <br />
-                        {t("timesheets.yearView.supervisors")}
+                        {t("timesheets.yearView.supervisors", {
+                          count: week.supervisorCount,
+                        })}
                       </span>
                     )}
                   </div>
@@ -683,7 +685,7 @@ const Timesheets: React.FC = () => {
                   })}
                 </p>
                 <p className="week-info">
-                  {week.visits.length} {t("timesheets.monthView.visits")}
+                  {week.visits.length} {t("timesheets.monthView.visits")}{" "}
                   {!userPermissions.canReadSupervisors &&
                     `- ${t("timesheets.monthView.status")}: ${week.status}`}
                   {userPermissions.canReadSupervisors &&

@@ -306,7 +306,7 @@
     "actions": {
       "scheduleVisit": "Schedule Visit",
       "receiptBooks": "Receipt Books",
-      "current": "Current",
+      "current": "Current {{view}}",
       "viewReceiptBooks": "View Receipt Books",
       "filterSupervisors": "Filter Supervisors",
       "validateTimesheet": "Validate Entire Timesheet"
@@ -423,17 +423,18 @@
     "loading": "Loading...",
     "form": {
       "agentSelection": "Agent Selection",
+      "recipientType": "Recipient Type",
       "supplierEmail": "Supplier Email",
       "selectBooks": "Select In Stock Books to Transfer",
       "selectedAgent": "Selected Agent",
       "scanCollect": "Scan Books to Collect from Supplier",
       "scanQR": "Scan QR Codes",
-      "otp": "Enter OTP (Sent to {type} {details})",
+      "otp": "Enter OTP (Sent to {{type}} {{details}})",
       "location": "Select Location",
       "searchAgents": "Search Agents",
       "selectAgent": "Select Agent",
       "recipientSelection": "Recipient Selection",
-      "selectRecipient": "Select {type}",
+      "selectRecipient": "Select {{type}}",
       "selectedUser": "Selected User",
       "selectedBooks": "Selected Books",
       "scanStub": "Scan Stub",
@@ -448,7 +449,7 @@
         "enterSupplierEmail": "Enter supplier email",
         "searchBooks": "Search books by number or type",
         "searchRecipient": "Enter phone number or search by name",
-        "selectRecipient": "Select {type}",
+        "selectRecipient": "Select {{type}}",
         "enterOTP": "Enter OTP"
       }
     },
@@ -469,14 +470,14 @@
         "collect": "Collect books from supplier",
         "validateTransfer": "Validate transfer",
         "validateStubCollection": "Validate stub collection",
-        "removeBook": "Remove book {number}"
+        "removeBook": "Remove book {{number}}"
       }
     },
     "types": {
         "standard": "Standard"
       },
     "pagination": {
-      "pageInfo": "Page {currentPage} of {totalPages}",
+      "pageInfo": "Page {{currentPage}} of {{totalPages}}",
       "selectedBooks": "Selected Books",
       "aria": {
           "previous": "Go to previous page",
@@ -749,22 +750,22 @@
       "title": "Recent Activity",
       "visitLogged": {
         "title": "Visit Logged",
-        "subtext": "Agent: {agent} | Location: {location}",
+        "subtext": "Agent: {{agent}} | Location: {{location}}",
         "amount": "+1 Visit"
       },
       "timesheetSubmitted": {
         "title": "Timesheet Submitted",
-        "subtext": "Duration: {duration}",
+        "subtext": "Duration: {{duration}}",
         "amount": "Pending Approval"
       },
       "carnetDistributed": {
         "title": "Carnet Distributed",
-        "subtext": "Carnet ID: {carnetId} | Agent: {agent}",
+        "subtext": "Carnet ID: {{carnetId}} | Agent: {{agent}}",
         "amount": "+1 Carnet"
       },
       "soucheCollected": {
         "title": "Souche Collected",
-        "subtext": "Carnet ID: {carnetId} | Status: {status}",
+        "subtext": "Carnet ID: {{carnetId}} | Status: {{status}}",
         "amount": "+1 Souche"
       }
     },
@@ -917,7 +918,7 @@
       "addReason": "Add Reason"
     },
     "search": {
-      "placeholder": "Search {view}..."
+      "placeholder": "Search {{view}}..."
     },
     "error": {
       "noToken": "Please log in to access the dashboard.",
@@ -966,7 +967,7 @@
       "pagination": {
         "previous": "Previous",
         "next": "Next",
-        "pageInfo": "Page {currentPage} of {totalPages}"
+        "pageInfo": "Page {{currentPage}} of {{totalPages}}"
       },
       "validation": {
         "empty": "Item cannot be empty.",
@@ -1067,7 +1068,7 @@
     "pagination": {
       "previous": "Previous",
       "next": "Next",
-      "pageInfo": "Page {currentPage} of {totalPages}"
+      "pageInfo": "Page {{currentPage}} of {{totalPages}}"
     },
     "validation": {
       "firstnameRequired": "First Name is required",
@@ -1228,7 +1229,7 @@
       "custom": "Custom Roles"
     },
     "roleCard": {
-      "permissionCount": "{count} Permissions"
+      "permissionCount": "{{count}} Permissions"
     },
     "popup": {
       "noDescription": "No description available",
@@ -1385,7 +1386,7 @@
   },
   "reasonView": {
     "title": {
-      "view": "{reasonItem}",
+      "view": "{{reasonItem}}",
       "edit": "Edit Reason"
     },
     "actions": {

@@ -1,32 +1,37 @@
-import React, { JSX, Suspense, useEffect } from 'react';
-import { Routes, Route, Navigate, useLocation } from 'react-router-dom';
-import { ThemeProvider, useTheme } from './context/ThemeContext';
-import AuthProvider, { useAuth } from './context/AuthContext';
-import { ErrorProvider } from './context/ErrorContext';
-import Footer from './components/Footer';
-import Header from './components/Header';
-import ErrorDisplay from './pages/Error/ErrorDisplay';
-import AccessDenied from './pages/Error/AccessDenied';
-import './App.css';
-import LoginPage from './pages/Auth/Login';
-import ProfilePage from './pages/Auth/ProfilePage';
-import { setGlobalNavigate } from './apis/axiosConfig';
-import { useNavigate } from 'react-router-dom';
+import React, { JSX, Suspense, useEffect } from "react";
+import { Routes, Route, Navigate, useLocation } from "react-router-dom";
+import { ThemeProvider, useTheme } from "./context/ThemeContext";
+import AuthProvider, { useAuth } from "./context/AuthContext";
+import { ErrorProvider } from "./context/ErrorContext";
+import Footer from "./components/Footer";
+import Header from "./components/Header";
+import ErrorDisplay from "./pages/Error/ErrorDisplay";
+import AccessDenied from "./pages/Error/AccessDenied";
+import "./App.css";
+import LoginPage from "./pages/Auth/Login";
+import ProfilePage from "./pages/Auth/ProfilePage";
+import { setGlobalNavigate } from "./apis/axiosConfig";
+import { useNavigate } from "react-router-dom";
+import Entry from "./pages/Dashboard/Entry";
 
 // Lazy load route components
-const Timesheets = React.lazy(() => import('./pages/Timesheet/Timesheets'));
-const TimesheetForm = React.lazy(() => import('./pages/Timesheet/TimesheetForm'));
-const QRScan = React.lazy(() => import('./pages/visit/QRScan'));
-const VisitDetails = React.lazy(() => import('./pages/visit/VisitDetails'));
-const VisitValidation = React.lazy(() => import('./pages/visit/VisitValidation'));
-const PageNotFound = React.lazy(() => import('./pages/Error/PageNotFound'));
-const AdminDashboard = React.lazy(() => import('./pages/Admin/AdminDashboard'));
-const ReceiptBooks = React.lazy(() => import('./pages/Receipt/ReceiptBooks'));
-const TransferReceiptBook = React.lazy(() =>
-  import('./pages/Receipt/TransferReceiptBook')
+const Timesheets = React.lazy(() => import("./pages/Timesheet/Timesheets"));
+const TimesheetForm = React.lazy(
+  () => import("./pages/Timesheet/TimesheetForm")
 );
-const ReceiptBookHistory = React.lazy(() =>
-  import('./pages/Receipt/ReceiptBookHistory')
+const QRScan = React.lazy(() => import("./pages/visit/QRScan"));
+const VisitDetails = React.lazy(() => import("./pages/visit/VisitDetails"));
+const VisitValidation = React.lazy(
+  () => import("./pages/visit/VisitValidation")
+);
+const PageNotFound = React.lazy(() => import("./pages/Error/PageNotFound"));
+const AdminDashboard = React.lazy(() => import("./pages/Admin/AdminDashboard"));
+const ReceiptBooks = React.lazy(() => import("./pages/Receipt/ReceiptBooks"));
+const TransferReceiptBook = React.lazy(
+  () => import("./pages/Receipt/TransferReceiptBook")
+);
+const ReceiptBookHistory = React.lazy(
+  () => import("./pages/Receipt/ReceiptBookHistory")
 );
 
 // Static permissions and roles from .env
@@ -114,7 +119,11 @@ const RoleProtectedRoute: React.FC<RoleProtectedRouteProps> = React.memo(
     const hasRequiredRole = userRoles.some((role) =>
       requiredRoles.includes(role.name)
     );
-    return hasRequiredRole ? children : <Navigate to="/access-denied" replace />;
+    return hasRequiredRole ? (
+      children
+    ) : (
+      <Navigate to="/access-denied" replace />
+    );
   }
 );
 
@@ -131,13 +140,14 @@ const AppContent: React.FC = React.memo(() => {
     <div className="app-container">
       <Header />
       <main>
-        {location.pathname !== '/login' && <ErrorDisplay />}
+        {location.pathname !== "/login" && <ErrorDisplay />}
         <Suspense>
           <Routes>
             <Route path="/login" element={<LoginPage />} />
             <Route path="/access-denied" element={<AccessDenied />} />
             <Route path="/" element={<Navigate to="/login" replace />} />
             <Route path="/profile" element={<ProfilePage />} />
+            <Route path="/dashboard" element={<Entry />} />
             <Route
               path="/admin"
               element={
@@ -213,7 +223,9 @@ const AppContent: React.FC = React.memo(() => {
               path="/receipt-book/:bookID/history"
               element={
                 <ProtectedRoute
-                  requiredPermissions={[PERMISSIONS.ACCESS_RECEIPT_BOOK_HISTORY]}
+                  requiredPermissions={[
+                    PERMISSIONS.ACCESS_RECEIPT_BOOK_HISTORY,
+                  ]}
                 >
                   <ReceiptBookHistory />
                 </ProtectedRoute>
@@ -229,7 +241,12 @@ const AppContent: React.FC = React.memo(() => {
                 </ProtectedRoute>
               }
             />
-            <Route path="/logout" element={<Navigate to="/login" replace state={{ logout: true }} />} />
+            <Route
+              path="/logout"
+              element={
+                <Navigate to="/login" replace state={{ logout: true }} />
+              }
+            />
             <Route path="*" element={<PageNotFound />} />
           </Routes>
         </Suspense>
