@@ -2997,3 +2997,676 @@
 {"level":"info","message":"Created default disabled notification rule for event: receipt_book:deleted, ruleID: rule_OZuu7S-jxHCEVlPz2XhYZ","timestamp":"2025-04-23T10:14:30.317Z"}
 {"level":"info","message":"Created disabled rule for event: receipt_book:deleted, ruleID: rule_OZuu7S-jxHCEVlPz2XhYZ","timestamp":"2025-04-23T10:14:30.318Z"}
 {"level":"info","message":"Deleted receipt book book_9sg8kaiLxxZBcPwkRqaDb by user user_mpe0xo17h, IP: 127.0.0.1","timestamp":"2025-04-23T10:14:30.319Z"}
+{"level":"info","message":"Super Admin bypass for user user_mpe0xo17h","timestamp":"2025-04-23T10:15:56.036Z"}
+{"level":"info","message":"Super Admin bypass for user user_mpe0xo17h","timestamp":"2025-04-23T10:15:56.045Z"}
+{"level":"info","message":"Fetched all users by user user_mpe0xo17h, IP: 127.0.0.1","timestamp":"2025-04-23T10:15:56.209Z"}
+{"level":"info","message":"Fetched all timesheets by user user_mpe0xo17h, IP: 127.0.0.1","timestamp":"2025-04-23T10:15:56.343Z"}
+{"level":"info","message":"Super Admin bypass for user user_mpe0xo17h","timestamp":"2025-04-23T10:16:02.256Z"}
+{"level":"info","message":"Super Admin bypass for user user_mpe0xo17h","timestamp":"2025-04-23T10:16:02.259Z"}
+{"level":"info","message":"Super Admin bypass for user user_mpe0xo17h","timestamp":"2025-04-23T10:16:02.322Z"}
+{"level":"info","message":"Super Admin bypass for user user_mpe0xo17h","timestamp":"2025-04-23T10:16:02.325Z"}
+{"level":"info","message":"Fetched supervisors for user user_mpe0xo17h by user user_mpe0xo17h, IP: 127.0.0.1","timestamp":"2025-04-23T10:16:02.354Z"}
+{"level":"info","message":"Fetched all checklists by user user_mpe0xo17h, IP: 127.0.0.1","timestamp":"2025-04-23T10:16:02.429Z"}
+{"level":"info","message":"Fetched all reasons by user user_mpe0xo17h, IP: 127.0.0.1","timestamp":"2025-04-23T10:16:02.461Z"}
+{"level":"info","message":"Fetched unique locations by user user_mpe0xo17h, IP: 127.0.0.1","timestamp":"2025-04-23T10:16:02.518Z"}
+{"level":"info","message":"User logged out, cookies cleared","timestamp":"2025-04-23T10:16:08.238Z"}
+{"level":"error","message":"Keycloak login error for m@gmail.com: Request failed with status code 401","timestamp":"2025-04-23T10:16:20.929Z"}
+{"level":"error","message":"Login error for m@gmail.com: Wrong email or password.","timestamp":"2025-04-23T10:16:20.949Z"}
+{"level":"warn","message":"No refresh token provided","timestamp":"2025-04-23T10:16:21.031Z"}
+{"level":"error","message":"Keycloak login error for m@gmail.com: Request failed with status code 401","timestamp":"2025-04-23T10:16:35.066Z"}
+{"level":"error","message":"Login error for m@gmail.com: Wrong email or password.","timestamp":"2025-04-23T10:16:35.071Z"}
+{"level":"warn","message":"No refresh token provided","timestamp":"2025-04-23T10:16:35.115Z"}
+{"level":"info","message":"Keycloak admin token obtained","timestamp":"2025-04-23T10:17:03.428Z"}
+{"level":"info","message":"Notification stored for user user_mpe0xo17h: Notification for otp:generated:user","timestamp":"2025-04-23T10:17:05.567Z"}
+{"level":"info","message":"WebSocket event emitted: otp:generated:user to room admin","timestamp":"2025-04-23T10:17:05.569Z"}
+{"level":"info","message":"WebSocket event emitted: otp:generated:user to room Super Admin","timestamp":"2025-04-23T10:17:05.570Z"}
+{"level":"info","message":"WebSocket event emitted: otp:generated:user to user user_mpe0xo17h","timestamp":"2025-04-23T10:17:05.571Z"}
+{"level":"info","message":"Notification notif_bZgm_dsVlGazGoKeTJJFz status updated to sent","timestamp":"2025-04-23T10:17:05.586Z"}
+{"level":"info","message":"Triggered notifications for event: otp:generated:user, processed 1 recipients","timestamp":"2025-04-23T10:17:05.586Z"}
+{"level":"info","message":"Generated OTP for user ID: ef0083ee-ae93-40af-9fc5-0a4a390a6251","timestamp":"2025-04-23T10:17:05.588Z"}
+{"level":"info","message":"OTP =","timestamp":"2025-04-23T10:17:07.015Z"}
+{"level":"info","message":"Login attempt for a@gmail.com, requires2FA: true","timestamp":"2025-04-23T10:17:07.043Z"}
+{"level":"info","message":"Successfully validated OTP for user ID: ef0083ee-ae93-40af-9fc5-0a4a390a6251","timestamp":"2025-04-23T10:17:33.478Z"}
+{"level":"info","message":"Login response generated for user ef0083ee-ae93-40af-9fc5-0a4a390a6251","timestamp":"2025-04-23T10:17:35.744Z"}
+{"level":"info","message":"2FA verified for user ef0083ee-ae93-40af-9fc5-0a4a390a6251","timestamp":"2025-04-23T10:17:35.745Z"}
+{"level":"info","message":"2FA cache hit for ef0083ee-ae93-40af-9fc5-0a4a390a6251","timestamp":"2025-04-23T10:17:35.759Z"}
+{"level":"info","message":"Fetched effective permissions for user ef0083ee-ae93-40af-9fc5-0a4a390a6251 by ef0083ee-ae93-40af-9fc5-0a4a390a6251, IP: 127.0.0.1","timestamp":"2025-04-23T10:17:36.281Z"}
+{"level":"info","message":"Fetched roles for user ef0083ee-ae93-40af-9fc5-0a4a390a6251 by ef0083ee-ae93-40af-9fc5-0a4a390a6251, IP: 127.0.0.1","timestamp":"2025-04-23T10:17:36.960Z"}
+{"level":"info","message":"Permission granted for access_all_permissions to user ef0083ee-ae93-40af-9fc5-0a4a390a6251","timestamp":"2025-04-23T10:17:42.425Z"}
+{"level":"info","message":"Fetched all permissions by user ef0083ee-ae93-40af-9fc5-0a4a390a6251, IP: 127.0.0.1","timestamp":"2025-04-23T10:17:42.548Z"}
+{"level":"info","message":"Permission granted for access_all_permissions to user ef0083ee-ae93-40af-9fc5-0a4a390a6251","timestamp":"2025-04-23T10:17:43.067Z"}
+{"level":"info","message":"Fetched all permissions by user ef0083ee-ae93-40af-9fc5-0a4a390a6251, IP: 127.0.0.1","timestamp":"2025-04-23T10:17:43.176Z"}
+{"level":"info","message":"Permission granted for access_all_users to user ef0083ee-ae93-40af-9fc5-0a4a390a6251","timestamp":"2025-04-23T10:17:44.650Z"}
+{"level":"info","message":"Fetched all users by user ef0083ee-ae93-40af-9fc5-0a4a390a6251, IP: 127.0.0.1","timestamp":"2025-04-23T10:17:44.748Z"}
+{"level":"info","message":"Permission granted for access_all_roles to user ef0083ee-ae93-40af-9fc5-0a4a390a6251","timestamp":"2025-04-23T10:17:45.304Z"}
+{"level":"info","message":"Fetched all roles by user ef0083ee-ae93-40af-9fc5-0a4a390a6251, IP: 127.0.0.1","timestamp":"2025-04-23T10:17:45.467Z"}
+{"level":"info","message":"User logged out, cookies cleared","timestamp":"2025-04-23T10:17:50.312Z"}
+{"level":"info","message":"Keycloak admin token obtained","timestamp":"2025-04-23T10:17:54.762Z"}
+{"level":"info","message":"Notification stored for user user_mpe0xo17h: Notification for otp:generated:user","timestamp":"2025-04-23T10:18:04.399Z"}
+{"level":"info","message":"WebSocket event emitted: otp:generated:user to room admin","timestamp":"2025-04-23T10:18:04.400Z"}
+{"level":"info","message":"WebSocket event emitted: otp:generated:user to room Super Admin","timestamp":"2025-04-23T10:18:04.401Z"}
+{"level":"info","message":"WebSocket event emitted: otp:generated:user to user user_mpe0xo17h","timestamp":"2025-04-23T10:18:04.401Z"}
+{"level":"info","message":"Notification notif_YS96knEdmZwjFpe7aJ2Jo status updated to sent","timestamp":"2025-04-23T10:18:04.412Z"}
+{"level":"info","message":"Triggered notifications for event: otp:generated:user, processed 1 recipients","timestamp":"2025-04-23T10:18:04.413Z"}
+{"level":"info","message":"Generated OTP for user ID: 95beb7d8-e9d5-43bc-a954-3493d9ae8387","timestamp":"2025-04-23T10:18:04.413Z"}
+{"level":"info","message":"OTP =","timestamp":"2025-04-23T10:18:05.796Z"}
+{"level":"info","message":"Login attempt for s@gmail.com, requires2FA: true","timestamp":"2025-04-23T10:18:05.801Z"}
+{"level":"info","message":"Successfully validated OTP for user ID: 95beb7d8-e9d5-43bc-a954-3493d9ae8387","timestamp":"2025-04-23T10:18:19.906Z"}
+{"level":"info","message":"Login response generated for user 95beb7d8-e9d5-43bc-a954-3493d9ae8387","timestamp":"2025-04-23T10:18:23.255Z"}
+{"level":"info","message":"2FA verified for user 95beb7d8-e9d5-43bc-a954-3493d9ae8387","timestamp":"2025-04-23T10:18:23.257Z"}
+{"level":"info","message":"2FA cache hit for 95beb7d8-e9d5-43bc-a954-3493d9ae8387","timestamp":"2025-04-23T10:18:23.310Z"}
+{"level":"info","message":"Fetched effective permissions for user 95beb7d8-e9d5-43bc-a954-3493d9ae8387 by 95beb7d8-e9d5-43bc-a954-3493d9ae8387, IP: 127.0.0.1","timestamp":"2025-04-23T10:18:25.100Z"}
+{"level":"info","message":"Keycloak admin token obtained","timestamp":"2025-04-23T10:18:27.102Z"}
+{"level":"info","message":"Fetched roles for user 95beb7d8-e9d5-43bc-a954-3493d9ae8387 by 95beb7d8-e9d5-43bc-a954-3493d9ae8387, IP: 127.0.0.1","timestamp":"2025-04-23T10:18:28.546Z"}
+{"level":"info","message":"Login response generated for user 95beb7d8-e9d5-43bc-a954-3493d9ae8387","timestamp":"2025-04-23T10:18:28.972Z"}
+{"level":"info","message":"Login attempt for s@gmail.com, requires2FA: false","timestamp":"2025-04-23T10:18:28.972Z"}
+{"level":"info","message":"Keycloak admin token obtained","timestamp":"2025-04-23T10:18:29.179Z"}
+{"level":"info","message":"Login response generated for user 95beb7d8-e9d5-43bc-a954-3493d9ae8387","timestamp":"2025-04-23T10:18:29.840Z"}
+{"level":"info","message":"Login attempt for s@gmail.com, requires2FA: false","timestamp":"2025-04-23T10:18:29.840Z"}
+{"level":"info","message":"Fetched effective permissions for user 95beb7d8-e9d5-43bc-a954-3493d9ae8387 by 95beb7d8-e9d5-43bc-a954-3493d9ae8387, IP: 127.0.0.1","timestamp":"2025-04-23T10:18:30.715Z"}
+{"level":"info","message":"Fetched roles for user 95beb7d8-e9d5-43bc-a954-3493d9ae8387 by 95beb7d8-e9d5-43bc-a954-3493d9ae8387, IP: 127.0.0.1","timestamp":"2025-04-23T10:18:30.728Z"}
+{"level":"info","message":"Permission granted for access_supervisor_timesheets to user 95beb7d8-e9d5-43bc-a954-3493d9ae8387","timestamp":"2025-04-23T10:18:36.745Z"}
+{"level":"info","message":"Fetched timesheets for supervisor 95beb7d8-e9d5-43bc-a954-3493d9ae8387 by user 95beb7d8-e9d5-43bc-a954-3493d9ae8387, IP: 127.0.0.1","timestamp":"2025-04-23T10:18:37.082Z"}
+{"level":"info","message":"Permission granted for access_agents_locations to user 95beb7d8-e9d5-43bc-a954-3493d9ae8387","timestamp":"2025-04-23T10:18:41.833Z"}
+{"level":"info","message":"Permission granted for access_reason_items to user 95beb7d8-e9d5-43bc-a954-3493d9ae8387","timestamp":"2025-04-23T10:18:41.837Z"}
+{"level":"info","message":"Permission granted for access_checklists_items to user 95beb7d8-e9d5-43bc-a954-3493d9ae8387","timestamp":"2025-04-23T10:18:41.915Z"}
+{"level":"info","message":"Fetched all reasons by user 95beb7d8-e9d5-43bc-a954-3493d9ae8387, IP: 127.0.0.1","timestamp":"2025-04-23T10:18:41.959Z"}
+{"level":"info","message":"Fetched all checklists by user 95beb7d8-e9d5-43bc-a954-3493d9ae8387, IP: 127.0.0.1","timestamp":"2025-04-23T10:18:42.015Z"}
+{"level":"info","message":"Fetched unique locations by user 95beb7d8-e9d5-43bc-a954-3493d9ae8387, IP: 127.0.0.1","timestamp":"2025-04-23T10:18:42.066Z"}
+{"level":"info","message":"Permission granted for access_agents_by_location to user 95beb7d8-e9d5-43bc-a954-3493d9ae8387","timestamp":"2025-04-23T10:18:52.465Z"}
+{"level":"info","message":"Fetched agents by location LocTest by user 95beb7d8-e9d5-43bc-a954-3493d9ae8387, IP: 127.0.0.1","timestamp":"2025-04-23T10:18:52.683Z"}
+{"level":"info","message":"Permission granted for create_self_timesheets to user 95beb7d8-e9d5-43bc-a954-3493d9ae8387","timestamp":"2025-04-23T10:19:00.535Z"}
+{"ip":null,"level":"info","message":"Visit created for agent agent_001 by user 95beb7d8-e9d5-43bc-a954-3493d9ae8387","timestamp":"2025-04-23T10:19:01.054Z"}
+{"ip":null,"level":"info","message":"Timesheet created for supervisor 95beb7d8-e9d5-43bc-a954-3493d9ae8387 by user 95beb7d8-e9d5-43bc-a954-3493d9ae8387","timestamp":"2025-04-23T10:19:01.063Z"}
+{"level":"info","message":"No active rules found for event: timesheet:created","timestamp":"2025-04-23T10:19:01.073Z"}
+{"level":"info","message":"Created default disabled notification rule for event: timesheet:created, ruleID: rule_n-QeTz6ZqUIIywlXBcG0Y","timestamp":"2025-04-23T10:19:01.080Z"}
+{"level":"info","message":"Created disabled rule for event: timesheet:created, ruleID: rule_n-QeTz6ZqUIIywlXBcG0Y","timestamp":"2025-04-23T10:19:01.081Z"}
+{"level":"info","message":"Timesheet created for supervisor 95beb7d8-e9d5-43bc-a954-3493d9ae8387 by user 95beb7d8-e9d5-43bc-a954-3493d9ae8387, IP: 127.0.0.1","timestamp":"2025-04-23T10:19:01.082Z"}
+{"level":"info","message":"Permission granted for access_supervisor_timesheets to user 95beb7d8-e9d5-43bc-a954-3493d9ae8387","timestamp":"2025-04-23T10:19:01.656Z"}
+{"level":"info","message":"Fetched timesheets for supervisor 95beb7d8-e9d5-43bc-a954-3493d9ae8387 by user 95beb7d8-e9d5-43bc-a954-3493d9ae8387, IP: 127.0.0.1","timestamp":"2025-04-23T10:19:01.845Z"}
+{"level":"info","message":"Permission granted for access_reason_items to user 95beb7d8-e9d5-43bc-a954-3493d9ae8387","timestamp":"2025-04-23T10:19:04.516Z"}
+{"level":"info","message":"Permission granted for access_agents_locations to user 95beb7d8-e9d5-43bc-a954-3493d9ae8387","timestamp":"2025-04-23T10:19:04.522Z"}
+{"level":"info","message":"Permission granted for access_checklists_items to user 95beb7d8-e9d5-43bc-a954-3493d9ae8387","timestamp":"2025-04-23T10:19:04.574Z"}
+{"level":"info","message":"Fetched all reasons by user 95beb7d8-e9d5-43bc-a954-3493d9ae8387, IP: 127.0.0.1","timestamp":"2025-04-23T10:19:04.660Z"}
+{"level":"info","message":"Fetched all checklists by user 95beb7d8-e9d5-43bc-a954-3493d9ae8387, IP: 127.0.0.1","timestamp":"2025-04-23T10:19:04.691Z"}
+{"level":"info","message":"Fetched unique locations by user 95beb7d8-e9d5-43bc-a954-3493d9ae8387, IP: 127.0.0.1","timestamp":"2025-04-23T10:19:04.734Z"}
+{"level":"info","message":"Permission granted for access_agents_by_location to user 95beb7d8-e9d5-43bc-a954-3493d9ae8387","timestamp":"2025-04-23T10:19:16.505Z"}
+{"level":"info","message":"Fetched agents by location LocTest by user 95beb7d8-e9d5-43bc-a954-3493d9ae8387, IP: 127.0.0.1","timestamp":"2025-04-23T10:19:16.749Z"}
+{"level":"info","message":"Permission granted for create_self_timesheets to user 95beb7d8-e9d5-43bc-a954-3493d9ae8387","timestamp":"2025-04-23T10:19:25.125Z"}
+{"ip":null,"level":"info","message":"Visit created for agent agent_001 by user 95beb7d8-e9d5-43bc-a954-3493d9ae8387","timestamp":"2025-04-23T10:19:25.511Z"}
+{"ip":null,"level":"info","message":"Timesheet created for supervisor 95beb7d8-e9d5-43bc-a954-3493d9ae8387 by user 95beb7d8-e9d5-43bc-a954-3493d9ae8387","timestamp":"2025-04-23T10:19:25.518Z"}
+{"level":"info","message":"No active rules found for event: timesheet:created","timestamp":"2025-04-23T10:19:25.529Z"}
+{"level":"info","message":"Rule already exists for event: timesheet:created, ruleID: rule_n-QeTz6ZqUIIywlXBcG0Y, enabled: false","timestamp":"2025-04-23T10:19:25.531Z"}
+{"level":"info","message":"Created disabled rule for event: timesheet:created, ruleID: rule_n-QeTz6ZqUIIywlXBcG0Y","timestamp":"2025-04-23T10:19:25.532Z"}
+{"level":"info","message":"Timesheet created for supervisor 95beb7d8-e9d5-43bc-a954-3493d9ae8387 by user 95beb7d8-e9d5-43bc-a954-3493d9ae8387, IP: 127.0.0.1","timestamp":"2025-04-23T10:19:25.533Z"}
+{"level":"info","message":"Permission granted for access_supervisor_timesheets to user 95beb7d8-e9d5-43bc-a954-3493d9ae8387","timestamp":"2025-04-23T10:19:26.124Z"}
+{"level":"info","message":"Fetched timesheets for supervisor 95beb7d8-e9d5-43bc-a954-3493d9ae8387 by user 95beb7d8-e9d5-43bc-a954-3493d9ae8387, IP: 127.0.0.1","timestamp":"2025-04-23T10:19:26.361Z"}
+{"level":"info","message":"Permission granted for access_reason_items to user 95beb7d8-e9d5-43bc-a954-3493d9ae8387","timestamp":"2025-04-23T10:19:29.183Z"}
+{"level":"info","message":"Permission granted for access_checklists_items to user 95beb7d8-e9d5-43bc-a954-3493d9ae8387","timestamp":"2025-04-23T10:19:29.186Z"}
+{"level":"info","message":"Permission granted for access_agents_locations to user 95beb7d8-e9d5-43bc-a954-3493d9ae8387","timestamp":"2025-04-23T10:19:29.188Z"}
+{"level":"info","message":"Fetched all checklists by user 95beb7d8-e9d5-43bc-a954-3493d9ae8387, IP: 127.0.0.1","timestamp":"2025-04-23T10:19:29.311Z"}
+{"level":"info","message":"Fetched all reasons by user 95beb7d8-e9d5-43bc-a954-3493d9ae8387, IP: 127.0.0.1","timestamp":"2025-04-23T10:19:29.318Z"}
+{"level":"info","message":"Fetched unique locations by user 95beb7d8-e9d5-43bc-a954-3493d9ae8387, IP: 127.0.0.1","timestamp":"2025-04-23T10:19:29.413Z"}
+{"level":"info","message":"Permission granted for access_agents_by_location to user 95beb7d8-e9d5-43bc-a954-3493d9ae8387","timestamp":"2025-04-23T10:19:31.944Z"}
+{"level":"info","message":"Fetched agents by location LocTest by user 95beb7d8-e9d5-43bc-a954-3493d9ae8387, IP: 127.0.0.1","timestamp":"2025-04-23T10:19:32.088Z"}
+{"level":"info","message":"Permission granted for create_self_timesheets to user 95beb7d8-e9d5-43bc-a954-3493d9ae8387","timestamp":"2025-04-23T10:19:51.179Z"}
+{"ip":null,"level":"info","message":"Visit created for agent agent_001 by user 95beb7d8-e9d5-43bc-a954-3493d9ae8387","timestamp":"2025-04-23T10:19:51.598Z"}
+{"ip":null,"level":"info","message":"Timesheet created for supervisor 95beb7d8-e9d5-43bc-a954-3493d9ae8387 by user 95beb7d8-e9d5-43bc-a954-3493d9ae8387","timestamp":"2025-04-23T10:19:51.606Z"}
+{"level":"info","message":"No active rules found for event: timesheet:created","timestamp":"2025-04-23T10:19:51.623Z"}
+{"level":"info","message":"Rule already exists for event: timesheet:created, ruleID: rule_n-QeTz6ZqUIIywlXBcG0Y, enabled: false","timestamp":"2025-04-23T10:19:51.628Z"}
+{"level":"info","message":"Created disabled rule for event: timesheet:created, ruleID: rule_n-QeTz6ZqUIIywlXBcG0Y","timestamp":"2025-04-23T10:19:51.628Z"}
+{"level":"info","message":"Timesheet created for supervisor 95beb7d8-e9d5-43bc-a954-3493d9ae8387 by user 95beb7d8-e9d5-43bc-a954-3493d9ae8387, IP: 127.0.0.1","timestamp":"2025-04-23T10:19:51.629Z"}
+{"level":"info","message":"Permission granted for access_supervisor_timesheets to user 95beb7d8-e9d5-43bc-a954-3493d9ae8387","timestamp":"2025-04-23T10:19:52.196Z"}
+{"level":"info","message":"Fetched timesheets for supervisor 95beb7d8-e9d5-43bc-a954-3493d9ae8387 by user 95beb7d8-e9d5-43bc-a954-3493d9ae8387, IP: 127.0.0.1","timestamp":"2025-04-23T10:19:52.396Z"}
+{"level":"info","message":"Permission granted for access_agents_locations to user 95beb7d8-e9d5-43bc-a954-3493d9ae8387","timestamp":"2025-04-23T10:20:01.066Z"}
+{"level":"info","message":"Permission granted for access_reason_items to user 95beb7d8-e9d5-43bc-a954-3493d9ae8387","timestamp":"2025-04-23T10:20:01.105Z"}
+{"level":"info","message":"Permission granted for access_checklists_items to user 95beb7d8-e9d5-43bc-a954-3493d9ae8387","timestamp":"2025-04-23T10:20:01.107Z"}
+{"level":"info","message":"Fetched all checklists by user 95beb7d8-e9d5-43bc-a954-3493d9ae8387, IP: 127.0.0.1","timestamp":"2025-04-23T10:20:01.237Z"}
+{"level":"info","message":"Fetched all reasons by user 95beb7d8-e9d5-43bc-a954-3493d9ae8387, IP: 127.0.0.1","timestamp":"2025-04-23T10:20:01.239Z"}
+{"level":"info","message":"Fetched unique locations by user 95beb7d8-e9d5-43bc-a954-3493d9ae8387, IP: 127.0.0.1","timestamp":"2025-04-23T10:20:01.297Z"}
+{"level":"info","message":"Permission granted for access_agents_by_location to user 95beb7d8-e9d5-43bc-a954-3493d9ae8387","timestamp":"2025-04-23T10:20:20.144Z"}
+{"level":"info","message":"Fetched agents by location LocTest by user 95beb7d8-e9d5-43bc-a954-3493d9ae8387, IP: 127.0.0.1","timestamp":"2025-04-23T10:20:20.360Z"}
+{"level":"info","message":"Permission granted for create_self_timesheets to user 95beb7d8-e9d5-43bc-a954-3493d9ae8387","timestamp":"2025-04-23T10:20:39.288Z"}
+{"ip":null,"level":"info","message":"Visit created for agent agent_001 by user 95beb7d8-e9d5-43bc-a954-3493d9ae8387","timestamp":"2025-04-23T10:20:39.766Z"}
+{"ip":null,"level":"info","message":"Timesheet created for supervisor 95beb7d8-e9d5-43bc-a954-3493d9ae8387 by user 95beb7d8-e9d5-43bc-a954-3493d9ae8387","timestamp":"2025-04-23T10:20:39.775Z"}
+{"level":"info","message":"No active rules found for event: timesheet:created","timestamp":"2025-04-23T10:20:39.790Z"}
+{"level":"info","message":"Rule already exists for event: timesheet:created, ruleID: rule_n-QeTz6ZqUIIywlXBcG0Y, enabled: false","timestamp":"2025-04-23T10:20:39.794Z"}
+{"level":"info","message":"Created disabled rule for event: timesheet:created, ruleID: rule_n-QeTz6ZqUIIywlXBcG0Y","timestamp":"2025-04-23T10:20:39.795Z"}
+{"level":"info","message":"Timesheet created for supervisor 95beb7d8-e9d5-43bc-a954-3493d9ae8387 by user 95beb7d8-e9d5-43bc-a954-3493d9ae8387, IP: 127.0.0.1","timestamp":"2025-04-23T10:20:39.796Z"}
+{"level":"info","message":"Permission granted for access_supervisor_timesheets to user 95beb7d8-e9d5-43bc-a954-3493d9ae8387","timestamp":"2025-04-23T10:20:40.356Z"}
+{"level":"info","message":"Fetched timesheets for supervisor 95beb7d8-e9d5-43bc-a954-3493d9ae8387 by user 95beb7d8-e9d5-43bc-a954-3493d9ae8387, IP: 127.0.0.1","timestamp":"2025-04-23T10:20:40.561Z"}
+{"level":"info","message":"Permission granted for access_reason_items to user 95beb7d8-e9d5-43bc-a954-3493d9ae8387","timestamp":"2025-04-23T10:20:50.035Z"}
+{"level":"info","message":"Permission granted for access_checklists_items to user 95beb7d8-e9d5-43bc-a954-3493d9ae8387","timestamp":"2025-04-23T10:20:50.064Z"}
+{"level":"info","message":"Permission granted for access_agents_locations to user 95beb7d8-e9d5-43bc-a954-3493d9ae8387","timestamp":"2025-04-23T10:20:50.067Z"}
+{"level":"info","message":"Fetched unique locations by user 95beb7d8-e9d5-43bc-a954-3493d9ae8387, IP: 127.0.0.1","timestamp":"2025-04-23T10:20:50.074Z"}
+{"level":"info","message":"Fetched all reasons by user 95beb7d8-e9d5-43bc-a954-3493d9ae8387, IP: 127.0.0.1","timestamp":"2025-04-23T10:20:50.156Z"}
+{"level":"info","message":"Fetched all checklists by user 95beb7d8-e9d5-43bc-a954-3493d9ae8387, IP: 127.0.0.1","timestamp":"2025-04-23T10:20:50.176Z"}
+{"level":"info","message":"Permission granted for access_agents_by_location to user 95beb7d8-e9d5-43bc-a954-3493d9ae8387","timestamp":"2025-04-23T10:20:59.916Z"}
+{"level":"info","message":"Fetched agents by location LocTest by user 95beb7d8-e9d5-43bc-a954-3493d9ae8387, IP: 127.0.0.1","timestamp":"2025-04-23T10:21:00.195Z"}
+{"level":"info","message":"Permission granted for create_self_timesheets to user 95beb7d8-e9d5-43bc-a954-3493d9ae8387","timestamp":"2025-04-23T10:21:07.929Z"}
+{"ip":null,"level":"info","message":"Visit created for agent agent_001 by user 95beb7d8-e9d5-43bc-a954-3493d9ae8387","timestamp":"2025-04-23T10:21:08.473Z"}
+{"ip":null,"level":"info","message":"Timesheet created for supervisor 95beb7d8-e9d5-43bc-a954-3493d9ae8387 by user 95beb7d8-e9d5-43bc-a954-3493d9ae8387","timestamp":"2025-04-23T10:21:08.486Z"}
+{"level":"info","message":"No active rules found for event: timesheet:created","timestamp":"2025-04-23T10:21:08.500Z"}
+{"level":"info","message":"Rule already exists for event: timesheet:created, ruleID: rule_n-QeTz6ZqUIIywlXBcG0Y, enabled: false","timestamp":"2025-04-23T10:21:08.504Z"}
+{"level":"info","message":"Created disabled rule for event: timesheet:created, ruleID: rule_n-QeTz6ZqUIIywlXBcG0Y","timestamp":"2025-04-23T10:21:08.505Z"}
+{"level":"info","message":"Timesheet created for supervisor 95beb7d8-e9d5-43bc-a954-3493d9ae8387 by user 95beb7d8-e9d5-43bc-a954-3493d9ae8387, IP: 127.0.0.1","timestamp":"2025-04-23T10:21:08.506Z"}
+{"level":"info","message":"Permission granted for access_supervisor_timesheets to user 95beb7d8-e9d5-43bc-a954-3493d9ae8387","timestamp":"2025-04-23T10:21:09.096Z"}
+{"level":"info","message":"Fetched timesheets for supervisor 95beb7d8-e9d5-43bc-a954-3493d9ae8387 by user 95beb7d8-e9d5-43bc-a954-3493d9ae8387, IP: 127.0.0.1","timestamp":"2025-04-23T10:21:09.317Z"}
+{"level":"info","message":"Permission granted for access_checklists_items to user 95beb7d8-e9d5-43bc-a954-3493d9ae8387","timestamp":"2025-04-23T10:21:12.525Z"}
+{"level":"info","message":"Permission granted for access_reason_items to user 95beb7d8-e9d5-43bc-a954-3493d9ae8387","timestamp":"2025-04-23T10:21:12.528Z"}
+{"level":"info","message":"Permission granted for access_agents_locations to user 95beb7d8-e9d5-43bc-a954-3493d9ae8387","timestamp":"2025-04-23T10:21:12.530Z"}
+{"level":"info","message":"Fetched all reasons by user 95beb7d8-e9d5-43bc-a954-3493d9ae8387, IP: 127.0.0.1","timestamp":"2025-04-23T10:21:12.633Z"}
+{"level":"info","message":"Fetched all checklists by user 95beb7d8-e9d5-43bc-a954-3493d9ae8387, IP: 127.0.0.1","timestamp":"2025-04-23T10:21:12.639Z"}
+{"level":"info","message":"Fetched unique locations by user 95beb7d8-e9d5-43bc-a954-3493d9ae8387, IP: 127.0.0.1","timestamp":"2025-04-23T10:21:12.722Z"}
+{"level":"info","message":"Permission granted for access_agents_by_location to user 95beb7d8-e9d5-43bc-a954-3493d9ae8387","timestamp":"2025-04-23T10:21:20.454Z"}
+{"level":"info","message":"Fetched agents by location LocTest by user 95beb7d8-e9d5-43bc-a954-3493d9ae8387, IP: 127.0.0.1","timestamp":"2025-04-23T10:21:20.658Z"}
+{"level":"info","message":"Permission granted for create_self_timesheets to user 95beb7d8-e9d5-43bc-a954-3493d9ae8387","timestamp":"2025-04-23T10:21:27.460Z"}
+{"ip":null,"level":"info","message":"Visit created for agent agent_001 by user 95beb7d8-e9d5-43bc-a954-3493d9ae8387","timestamp":"2025-04-23T10:21:27.888Z"}
+{"ip":null,"level":"info","message":"Timesheet created for supervisor 95beb7d8-e9d5-43bc-a954-3493d9ae8387 by user 95beb7d8-e9d5-43bc-a954-3493d9ae8387","timestamp":"2025-04-23T10:21:27.896Z"}
+{"level":"info","message":"No active rules found for event: timesheet:created","timestamp":"2025-04-23T10:21:27.908Z"}
+{"level":"info","message":"Rule already exists for event: timesheet:created, ruleID: rule_n-QeTz6ZqUIIywlXBcG0Y, enabled: false","timestamp":"2025-04-23T10:21:27.911Z"}
+{"level":"info","message":"Created disabled rule for event: timesheet:created, ruleID: rule_n-QeTz6ZqUIIywlXBcG0Y","timestamp":"2025-04-23T10:21:27.911Z"}
+{"level":"info","message":"Timesheet created for supervisor 95beb7d8-e9d5-43bc-a954-3493d9ae8387 by user 95beb7d8-e9d5-43bc-a954-3493d9ae8387, IP: 127.0.0.1","timestamp":"2025-04-23T10:21:27.912Z"}
+{"level":"info","message":"Permission granted for access_supervisor_timesheets to user 95beb7d8-e9d5-43bc-a954-3493d9ae8387","timestamp":"2025-04-23T10:21:28.581Z"}
+{"level":"info","message":"Fetched timesheets for supervisor 95beb7d8-e9d5-43bc-a954-3493d9ae8387 by user 95beb7d8-e9d5-43bc-a954-3493d9ae8387, IP: 127.0.0.1","timestamp":"2025-04-23T10:21:28.828Z"}
+{"level":"info","message":"Permission granted for access_checklists_items to user 95beb7d8-e9d5-43bc-a954-3493d9ae8387","timestamp":"2025-04-23T10:21:31.811Z"}
+{"level":"info","message":"Permission granted for access_agents_locations to user 95beb7d8-e9d5-43bc-a954-3493d9ae8387","timestamp":"2025-04-23T10:21:31.817Z"}
+{"level":"info","message":"Permission granted for access_reason_items to user 95beb7d8-e9d5-43bc-a954-3493d9ae8387","timestamp":"2025-04-23T10:21:31.824Z"}
+{"level":"info","message":"Fetched all reasons by user 95beb7d8-e9d5-43bc-a954-3493d9ae8387, IP: 127.0.0.1","timestamp":"2025-04-23T10:21:31.917Z"}
+{"level":"info","message":"Fetched all checklists by user 95beb7d8-e9d5-43bc-a954-3493d9ae8387, IP: 127.0.0.1","timestamp":"2025-04-23T10:21:31.920Z"}
+{"level":"info","message":"Fetched unique locations by user 95beb7d8-e9d5-43bc-a954-3493d9ae8387, IP: 127.0.0.1","timestamp":"2025-04-23T10:21:32.001Z"}
+{"level":"info","message":"Permission granted for access_agents_by_location to user 95beb7d8-e9d5-43bc-a954-3493d9ae8387","timestamp":"2025-04-23T10:21:40.575Z"}
+{"level":"info","message":"Fetched agents by location LocTest by user 95beb7d8-e9d5-43bc-a954-3493d9ae8387, IP: 127.0.0.1","timestamp":"2025-04-23T10:21:40.767Z"}
+{"level":"info","message":"Permission granted for create_self_timesheets to user 95beb7d8-e9d5-43bc-a954-3493d9ae8387","timestamp":"2025-04-23T10:21:54.384Z"}
+{"ip":null,"level":"info","message":"Visit created for agent agent_001 by user 95beb7d8-e9d5-43bc-a954-3493d9ae8387","timestamp":"2025-04-23T10:21:54.875Z"}
+{"ip":null,"level":"info","message":"Timesheet created for supervisor 95beb7d8-e9d5-43bc-a954-3493d9ae8387 by user 95beb7d8-e9d5-43bc-a954-3493d9ae8387","timestamp":"2025-04-23T10:21:54.885Z"}
+{"level":"info","message":"No active rules found for event: timesheet:created","timestamp":"2025-04-23T10:21:54.898Z"}
+{"level":"info","message":"Rule already exists for event: timesheet:created, ruleID: rule_n-QeTz6ZqUIIywlXBcG0Y, enabled: false","timestamp":"2025-04-23T10:21:54.900Z"}
+{"level":"info","message":"Created disabled rule for event: timesheet:created, ruleID: rule_n-QeTz6ZqUIIywlXBcG0Y","timestamp":"2025-04-23T10:21:54.900Z"}
+{"level":"info","message":"Timesheet created for supervisor 95beb7d8-e9d5-43bc-a954-3493d9ae8387 by user 95beb7d8-e9d5-43bc-a954-3493d9ae8387, IP: 127.0.0.1","timestamp":"2025-04-23T10:21:54.901Z"}
+{"level":"info","message":"Permission granted for access_supervisor_timesheets to user 95beb7d8-e9d5-43bc-a954-3493d9ae8387","timestamp":"2025-04-23T10:21:55.362Z"}
+{"level":"info","message":"Fetched timesheets for supervisor 95beb7d8-e9d5-43bc-a954-3493d9ae8387 by user 95beb7d8-e9d5-43bc-a954-3493d9ae8387, IP: 127.0.0.1","timestamp":"2025-04-23T10:21:55.529Z"}
+{"level":"info","message":"Permission granted for access_agents_locations to user 95beb7d8-e9d5-43bc-a954-3493d9ae8387","timestamp":"2025-04-23T10:21:58.947Z"}
+{"level":"info","message":"Permission granted for access_reason_items to user 95beb7d8-e9d5-43bc-a954-3493d9ae8387","timestamp":"2025-04-23T10:21:58.978Z"}
+{"level":"info","message":"Permission granted for access_checklists_items to user 95beb7d8-e9d5-43bc-a954-3493d9ae8387","timestamp":"2025-04-23T10:21:58.981Z"}
+{"level":"info","message":"Fetched all reasons by user 95beb7d8-e9d5-43bc-a954-3493d9ae8387, IP: 127.0.0.1","timestamp":"2025-04-23T10:21:59.091Z"}
+{"level":"info","message":"Fetched all checklists by user 95beb7d8-e9d5-43bc-a954-3493d9ae8387, IP: 127.0.0.1","timestamp":"2025-04-23T10:21:59.094Z"}
+{"level":"info","message":"Fetched unique locations by user 95beb7d8-e9d5-43bc-a954-3493d9ae8387, IP: 127.0.0.1","timestamp":"2025-04-23T10:21:59.147Z"}
+{"level":"info","message":"Permission granted for access_agents_by_location to user 95beb7d8-e9d5-43bc-a954-3493d9ae8387","timestamp":"2025-04-23T10:22:20.096Z"}
+{"level":"info","message":"Fetched agents by location LocTest by user 95beb7d8-e9d5-43bc-a954-3493d9ae8387, IP: 127.0.0.1","timestamp":"2025-04-23T10:22:20.277Z"}
+{"level":"info","message":"Permission granted for create_self_timesheets to user 95beb7d8-e9d5-43bc-a954-3493d9ae8387","timestamp":"2025-04-23T10:22:31.848Z"}
+{"ip":null,"level":"info","message":"Visit created for agent agent_001 by user 95beb7d8-e9d5-43bc-a954-3493d9ae8387","timestamp":"2025-04-23T10:22:32.317Z"}
+{"ip":null,"level":"info","message":"Timesheet created for supervisor 95beb7d8-e9d5-43bc-a954-3493d9ae8387 by user 95beb7d8-e9d5-43bc-a954-3493d9ae8387","timestamp":"2025-04-23T10:22:32.325Z"}
+{"level":"info","message":"No active rules found for event: timesheet:created","timestamp":"2025-04-23T10:22:32.337Z"}
+{"level":"info","message":"Rule already exists for event: timesheet:created, ruleID: rule_n-QeTz6ZqUIIywlXBcG0Y, enabled: false","timestamp":"2025-04-23T10:22:32.340Z"}
+{"level":"info","message":"Created disabled rule for event: timesheet:created, ruleID: rule_n-QeTz6ZqUIIywlXBcG0Y","timestamp":"2025-04-23T10:22:32.340Z"}
+{"level":"info","message":"Timesheet created for supervisor 95beb7d8-e9d5-43bc-a954-3493d9ae8387 by user 95beb7d8-e9d5-43bc-a954-3493d9ae8387, IP: 127.0.0.1","timestamp":"2025-04-23T10:22:32.341Z"}
+{"level":"info","message":"Permission granted for access_supervisor_timesheets to user 95beb7d8-e9d5-43bc-a954-3493d9ae8387","timestamp":"2025-04-23T10:22:32.847Z"}
+{"level":"info","message":"Fetched timesheets for supervisor 95beb7d8-e9d5-43bc-a954-3493d9ae8387 by user 95beb7d8-e9d5-43bc-a954-3493d9ae8387, IP: 127.0.0.1","timestamp":"2025-04-23T10:22:33.038Z"}
+{"level":"info","message":"Permission granted for access_visit_details to user 95beb7d8-e9d5-43bc-a954-3493d9ae8387","timestamp":"2025-04-23T10:22:35.821Z"}
+{"level":"info","message":"Fetched visit vis_F3USvD2suzVXs2l2MlFXi by user 95beb7d8-e9d5-43bc-a954-3493d9ae8387, IP: 127.0.0.1","timestamp":"2025-04-23T10:22:35.977Z"}
+{"level":"info","message":"Permission granted for access_agents_by_id to user 95beb7d8-e9d5-43bc-a954-3493d9ae8387","timestamp":"2025-04-23T10:22:36.390Z"}
+{"level":"info","message":"Fetched agent agent_001 by user 95beb7d8-e9d5-43bc-a954-3493d9ae8387, IP: 127.0.0.1","timestamp":"2025-04-23T10:22:36.632Z"}
+{"level":"info","message":"Permission granted for access_agents_locations to user 95beb7d8-e9d5-43bc-a954-3493d9ae8387","timestamp":"2025-04-23T10:22:37.266Z"}
+{"level":"info","message":"Permission granted for access_reason_items to user 95beb7d8-e9d5-43bc-a954-3493d9ae8387","timestamp":"2025-04-23T10:22:37.294Z"}
+{"level":"info","message":"Permission granted for access_agents_by_location to user 95beb7d8-e9d5-43bc-a954-3493d9ae8387","timestamp":"2025-04-23T10:22:37.324Z"}
+{"level":"info","message":"Permission granted for access_checklists_items to user 95beb7d8-e9d5-43bc-a954-3493d9ae8387","timestamp":"2025-04-23T10:22:37.333Z"}
+{"level":"info","message":"Fetched all reasons by user 95beb7d8-e9d5-43bc-a954-3493d9ae8387, IP: 127.0.0.1","timestamp":"2025-04-23T10:22:37.443Z"}
+{"level":"info","message":"Fetched all checklists by user 95beb7d8-e9d5-43bc-a954-3493d9ae8387, IP: 127.0.0.1","timestamp":"2025-04-23T10:22:37.484Z"}
+{"level":"info","message":"Fetched unique locations by user 95beb7d8-e9d5-43bc-a954-3493d9ae8387, IP: 127.0.0.1","timestamp":"2025-04-23T10:22:37.526Z"}
+{"level":"info","message":"Fetched agents by location LocTest by user 95beb7d8-e9d5-43bc-a954-3493d9ae8387, IP: 127.0.0.1","timestamp":"2025-04-23T10:22:37.588Z"}
+{"level":"info","message":"Permission granted for access_supervisor_timesheets to user 95beb7d8-e9d5-43bc-a954-3493d9ae8387","timestamp":"2025-04-23T10:22:44.112Z"}
+{"level":"info","message":"Fetched timesheets for supervisor 95beb7d8-e9d5-43bc-a954-3493d9ae8387 by user 95beb7d8-e9d5-43bc-a954-3493d9ae8387, IP: 127.0.0.1","timestamp":"2025-04-23T10:22:44.350Z"}
+{"level":"info","message":"User logged out, cookies cleared","timestamp":"2025-04-23T10:22:45.549Z"}
+{"level":"error","message":"Keycloak login error for m@gmail.com: Request failed with status code 401","timestamp":"2025-04-23T10:22:50.872Z"}
+{"level":"error","message":"Login error for m@gmail.com: Wrong email or password.","timestamp":"2025-04-23T10:22:50.879Z"}
+{"level":"warn","message":"No refresh token provided","timestamp":"2025-04-23T10:22:50.968Z"}
+{"level":"info","message":"Keycloak admin token obtained","timestamp":"2025-04-23T10:23:01.326Z"}
+{"level":"info","message":"Login response generated for user ef0083ee-ae93-40af-9fc5-0a4a390a6251","timestamp":"2025-04-23T10:23:12.761Z"}
+{"level":"info","message":"Login attempt for a@gmail.com, requires2FA: false","timestamp":"2025-04-23T10:23:12.762Z"}
+{"level":"info","message":"Keycloak admin token obtained","timestamp":"2025-04-23T10:23:12.940Z"}
+{"level":"info","message":"Login response generated for user ef0083ee-ae93-40af-9fc5-0a4a390a6251","timestamp":"2025-04-23T10:23:13.675Z"}
+{"level":"info","message":"Login attempt for a@gmail.com, requires2FA: false","timestamp":"2025-04-23T10:23:13.676Z"}
+{"level":"info","message":"Fetched roles for user ef0083ee-ae93-40af-9fc5-0a4a390a6251 by ef0083ee-ae93-40af-9fc5-0a4a390a6251, IP: 127.0.0.1","timestamp":"2025-04-23T10:23:14.663Z"}
+{"level":"info","message":"Fetched effective permissions for user ef0083ee-ae93-40af-9fc5-0a4a390a6251 by ef0083ee-ae93-40af-9fc5-0a4a390a6251, IP: 127.0.0.1","timestamp":"2025-04-23T10:23:14.678Z"}
+{"level":"info","message":"Permission granted for access_supervisors to user ef0083ee-ae93-40af-9fc5-0a4a390a6251","timestamp":"2025-04-23T10:23:32.430Z"}
+{"level":"info","message":"Permission granted for access_managers to user ef0083ee-ae93-40af-9fc5-0a4a390a6251","timestamp":"2025-04-23T10:23:32.433Z"}
+{"level":"info","message":"Fetched supervisors for user 6730d208-c93c-4945-b646-7a7d1da0dca9 by user ef0083ee-ae93-40af-9fc5-0a4a390a6251, IP: 127.0.0.1","timestamp":"2025-04-23T10:23:32.453Z"}
+{"level":"info","message":"Fetched managers for user 6730d208-c93c-4945-b646-7a7d1da0dca9 by user ef0083ee-ae93-40af-9fc5-0a4a390a6251, IP: 127.0.0.1","timestamp":"2025-04-23T10:23:32.461Z"}
+{"level":"info","message":"Permission granted for access_user_details to user ef0083ee-ae93-40af-9fc5-0a4a390a6251","timestamp":"2025-04-23T10:23:33.487Z"}
+{"level":"info","message":"Fetched user 6730d208-c93c-4945-b646-7a7d1da0dca9 by user ef0083ee-ae93-40af-9fc5-0a4a390a6251, IP: 127.0.0.1","timestamp":"2025-04-23T10:23:33.588Z"}
+{"level":"info","message":"Permission granted for access_managers to user ef0083ee-ae93-40af-9fc5-0a4a390a6251","timestamp":"2025-04-23T10:23:36.317Z"}
+{"level":"info","message":"Permission granted for access_supervisors to user ef0083ee-ae93-40af-9fc5-0a4a390a6251","timestamp":"2025-04-23T10:23:36.329Z"}
+{"level":"info","message":"Fetched managers for user 6730d208-c93c-4945-b646-7a7d1da0dca9 by user ef0083ee-ae93-40af-9fc5-0a4a390a6251, IP: 127.0.0.1","timestamp":"2025-04-23T10:23:36.342Z"}
+{"level":"info","message":"Fetched supervisors for user 6730d208-c93c-4945-b646-7a7d1da0dca9 by user ef0083ee-ae93-40af-9fc5-0a4a390a6251, IP: 127.0.0.1","timestamp":"2025-04-23T10:23:36.354Z"}
+{"level":"info","message":"Permission granted for delete_users to user ef0083ee-ae93-40af-9fc5-0a4a390a6251","timestamp":"2025-04-23T10:23:42.556Z"}
+{"ip":null,"level":"info","message":"User 6730d208-c93c-4945-b646-7a7d1da0dca9 deleted by user ef0083ee-ae93-40af-9fc5-0a4a390a6251","timestamp":"2025-04-23T10:23:42.985Z"}
+{"level":"info","message":"No active rules found for event: user:deleted","timestamp":"2025-04-23T10:23:42.987Z"}
+{"level":"info","message":"Created default disabled notification rule for event: user:deleted, ruleID: rule_j23w3cpXkEVr6A-eHleQL","timestamp":"2025-04-23T10:23:42.992Z"}
+{"level":"info","message":"Created disabled rule for event: user:deleted, ruleID: rule_j23w3cpXkEVr6A-eHleQL","timestamp":"2025-04-23T10:23:42.993Z"}
+{"level":"info","message":"Deleted user 6730d208-c93c-4945-b646-7a7d1da0dca9 by user ef0083ee-ae93-40af-9fc5-0a4a390a6251, IP: 127.0.0.1","timestamp":"2025-04-23T10:23:42.993Z"}
+{"level":"info","message":"Permission granted for access_all_users to user ef0083ee-ae93-40af-9fc5-0a4a390a6251","timestamp":"2025-04-23T10:23:55.642Z"}
+{"level":"info","message":"Fetched all users by user ef0083ee-ae93-40af-9fc5-0a4a390a6251, IP: 127.0.0.1","timestamp":"2025-04-23T10:23:55.754Z"}
+{"level":"info","message":"Fetched roles for user ef0083ee-ae93-40af-9fc5-0a4a390a6251 by ef0083ee-ae93-40af-9fc5-0a4a390a6251, IP: 127.0.0.1","timestamp":"2025-04-23T10:24:18.649Z"}
+{"level":"info","message":"Fetched effective permissions for user ef0083ee-ae93-40af-9fc5-0a4a390a6251 by ef0083ee-ae93-40af-9fc5-0a4a390a6251, IP: 127.0.0.1","timestamp":"2025-04-23T10:24:18.655Z"}
+{"level":"info","message":"Fetched roles for user ef0083ee-ae93-40af-9fc5-0a4a390a6251 by ef0083ee-ae93-40af-9fc5-0a4a390a6251, IP: 127.0.0.1","timestamp":"2025-04-23T10:24:19.282Z"}
+{"level":"info","message":"Fetched effective permissions for user ef0083ee-ae93-40af-9fc5-0a4a390a6251 by ef0083ee-ae93-40af-9fc5-0a4a390a6251, IP: 127.0.0.1","timestamp":"2025-04-23T10:24:19.287Z"}
+{"level":"info","message":"Permission granted for access_all_users to user ef0083ee-ae93-40af-9fc5-0a4a390a6251","timestamp":"2025-04-23T10:24:26.600Z"}
+{"level":"info","message":"Fetched all users by user ef0083ee-ae93-40af-9fc5-0a4a390a6251, IP: 127.0.0.1","timestamp":"2025-04-23T10:24:26.738Z"}
+{"level":"info","message":"Permission granted for access_all_roles to user ef0083ee-ae93-40af-9fc5-0a4a390a6251","timestamp":"2025-04-23T10:24:27.406Z"}
+{"level":"info","message":"Fetched all roles by user ef0083ee-ae93-40af-9fc5-0a4a390a6251, IP: 127.0.0.1","timestamp":"2025-04-23T10:24:27.614Z"}
+{"level":"info","message":"Permission granted for create_users to user ef0083ee-ae93-40af-9fc5-0a4a390a6251","timestamp":"2025-04-23T10:25:18.963Z"}
+{"ip":null,"level":"info","message":"User m@gmail.com created by user ef0083ee-ae93-40af-9fc5-0a4a390a6251","timestamp":"2025-04-23T10:25:19.197Z"}
+{"level":"info","message":"Notification stored for user user_mpe0xo17h: a new user has been created","timestamp":"2025-04-23T10:25:19.641Z"}
+{"level":"info","message":"WebSocket event emitted: user:created to room Admin","timestamp":"2025-04-23T10:25:19.642Z"}
+{"level":"info","message":"WebSocket event emitted: user:created to room Super Admin","timestamp":"2025-04-23T10:25:19.643Z"}
+{"level":"info","message":"WebSocket event emitted: user:created to user user_mpe0xo17h","timestamp":"2025-04-23T10:25:19.643Z"}
+{"level":"info","message":"Notification notif_R_ZCCsUViLz02qeT2OaQd status updated to sent","timestamp":"2025-04-23T10:25:19.655Z"}
+{"level":"info","message":"Email sent to superadmin@example.com: TraceFlow Notification: User","timestamp":"2025-04-23T10:25:21.099Z"}
+{"level":"info","message":"SMS sent to 00000000: a new user has been created","timestamp":"2025-04-23T10:25:22.858Z"}
+{"level":"info","message":"Notification stored for user ef0083ee-ae93-40af-9fc5-0a4a390a6251: a new user has been created","timestamp":"2025-04-23T10:25:23.271Z"}
+{"level":"info","message":"WebSocket event emitted: user:created to room Admin","timestamp":"2025-04-23T10:25:23.271Z"}
+{"level":"info","message":"WebSocket event emitted: user:created to room Super Admin","timestamp":"2025-04-23T10:25:23.272Z"}
+{"level":"info","message":"WebSocket event emitted: user:created to user ef0083ee-ae93-40af-9fc5-0a4a390a6251","timestamp":"2025-04-23T10:25:23.272Z"}
+{"level":"info","message":"Notification notif_nO79Vx4HfVpcfu_0IUNXe status updated to sent","timestamp":"2025-04-23T10:25:23.278Z"}
+{"level":"info","message":"Email sent to a@gmail.com: TraceFlow Notification: User","timestamp":"2025-04-23T10:25:24.463Z"}
+{"level":"info","message":"SMS sent to 00000001: a new user has been created","timestamp":"2025-04-23T10:25:26.301Z"}
+{"level":"info","message":"Triggered notifications for event: user:created, processed 2 recipients","timestamp":"2025-04-23T10:25:26.311Z"}
+{"level":"info","message":"User created: m@gmail.com by user ef0083ee-ae93-40af-9fc5-0a4a390a6251, IP: 127.0.0.1","timestamp":"2025-04-23T10:25:26.312Z"}
+{"level":"info","message":"Permission granted for assign_roles to user ef0083ee-ae93-40af-9fc5-0a4a390a6251","timestamp":"2025-04-23T10:25:26.386Z"}
+{"level":"info","message":"Permission granted for access_all_users to user ef0083ee-ae93-40af-9fc5-0a4a390a6251","timestamp":"2025-04-23T10:25:27.181Z"}
+{"ip":null,"level":"info","message":"Assigned 1 roles to user usr_H--aSL7w0WsOampX44Tc6 by ef0083ee-ae93-40af-9fc5-0a4a390a6251","timestamp":"2025-04-23T10:25:27.316Z"}
+{"level":"info","message":"No active rules found for event: role:assigned","timestamp":"2025-04-23T10:25:27.328Z"}
+{"level":"info","message":"Created default disabled notification rule for event: role:assigned, ruleID: rule_zMMmQicfcMjo8n7sNz140","timestamp":"2025-04-23T10:25:27.335Z"}
+{"level":"info","message":"Created disabled rule for event: role:assigned, ruleID: rule_zMMmQicfcMjo8n7sNz140","timestamp":"2025-04-23T10:25:27.336Z"}
+{"level":"info","message":"Assigned roles to user usr_H--aSL7w0WsOampX44Tc6 by ef0083ee-ae93-40af-9fc5-0a4a390a6251, IP: 127.0.0.1","timestamp":"2025-04-23T10:25:27.337Z"}
+{"level":"info","message":"Fetched all users by user ef0083ee-ae93-40af-9fc5-0a4a390a6251, IP: 127.0.0.1","timestamp":"2025-04-23T10:25:27.387Z"}
+{"level":"info","message":"Fetched roles for user usr_H--aSL7w0WsOampX44Tc6 by ef0083ee-ae93-40af-9fc5-0a4a390a6251, IP: 127.0.0.1","timestamp":"2025-04-23T10:25:28.224Z"}
+{"level":"info","message":"Permission granted for access_supervisors to user ef0083ee-ae93-40af-9fc5-0a4a390a6251","timestamp":"2025-04-23T10:25:29.630Z"}
+{"level":"info","message":"Permission granted for access_managers to user ef0083ee-ae93-40af-9fc5-0a4a390a6251","timestamp":"2025-04-23T10:25:29.633Z"}
+{"level":"info","message":"Fetched supervisors for user usr_H--aSL7w0WsOampX44Tc6 by user ef0083ee-ae93-40af-9fc5-0a4a390a6251, IP: 127.0.0.1","timestamp":"2025-04-23T10:25:29.657Z"}
+{"level":"info","message":"Fetched managers for user usr_H--aSL7w0WsOampX44Tc6 by user ef0083ee-ae93-40af-9fc5-0a4a390a6251, IP: 127.0.0.1","timestamp":"2025-04-23T10:25:29.692Z"}
+{"level":"info","message":"Permission granted for access_user_details to user ef0083ee-ae93-40af-9fc5-0a4a390a6251","timestamp":"2025-04-23T10:25:30.074Z"}
+{"level":"info","message":"Fetched user usr_H--aSL7w0WsOampX44Tc6 by user ef0083ee-ae93-40af-9fc5-0a4a390a6251, IP: 127.0.0.1","timestamp":"2025-04-23T10:25:30.225Z"}
+{"level":"info","message":"Permission granted for access_managers to user ef0083ee-ae93-40af-9fc5-0a4a390a6251","timestamp":"2025-04-23T10:25:32.034Z"}
+{"level":"info","message":"Fetched managers for user usr_H--aSL7w0WsOampX44Tc6 by user ef0083ee-ae93-40af-9fc5-0a4a390a6251, IP: 127.0.0.1","timestamp":"2025-04-23T10:25:32.066Z"}
+{"level":"info","message":"Permission granted for access_supervisors to user ef0083ee-ae93-40af-9fc5-0a4a390a6251","timestamp":"2025-04-23T10:25:32.483Z"}
+{"level":"info","message":"Fetched supervisors for user usr_H--aSL7w0WsOampX44Tc6 by user ef0083ee-ae93-40af-9fc5-0a4a390a6251, IP: 127.0.0.1","timestamp":"2025-04-23T10:25:32.516Z"}
+{"level":"info","message":"Permission granted for assign_supervisors to user ef0083ee-ae93-40af-9fc5-0a4a390a6251","timestamp":"2025-04-23T10:25:37.191Z"}
+{"ip":null,"level":"info","message":"Assigned 3 supervisors to manager usr_H--aSL7w0WsOampX44Tc6 by user ef0083ee-ae93-40af-9fc5-0a4a390a6251","timestamp":"2025-04-23T10:25:37.276Z"}
+{"level":"info","message":"No active rules found for event: user:supervisors_assigned","timestamp":"2025-04-23T10:25:37.291Z"}
+{"level":"info","message":"Created default disabled notification rule for event: user:supervisors_assigned, ruleID: rule_4CCqY0KC3jrrE0O_tK_dY","timestamp":"2025-04-23T10:25:37.297Z"}
+{"level":"info","message":"Created disabled rule for event: user:supervisors_assigned, ruleID: rule_4CCqY0KC3jrrE0O_tK_dY","timestamp":"2025-04-23T10:25:37.298Z"}
+{"level":"info","message":"Assigned supervisors to manager usr_H--aSL7w0WsOampX44Tc6 by user ef0083ee-ae93-40af-9fc5-0a4a390a6251, IP: 127.0.0.1","timestamp":"2025-04-23T10:25:37.300Z"}
+{"level":"info","message":"Permission granted for access_managers to user ef0083ee-ae93-40af-9fc5-0a4a390a6251","timestamp":"2025-04-23T10:25:37.394Z"}
+{"level":"info","message":"Fetched managers for user usr_H--aSL7w0WsOampX44Tc6 by user ef0083ee-ae93-40af-9fc5-0a4a390a6251, IP: 127.0.0.1","timestamp":"2025-04-23T10:25:37.437Z"}
+{"level":"info","message":"Permission granted for access_supervisors to user ef0083ee-ae93-40af-9fc5-0a4a390a6251","timestamp":"2025-04-23T10:25:37.997Z"}
+{"level":"info","message":"Fetched supervisors for user usr_H--aSL7w0WsOampX44Tc6 by user ef0083ee-ae93-40af-9fc5-0a4a390a6251, IP: 127.0.0.1","timestamp":"2025-04-23T10:25:38.016Z"}
+{"level":"info","message":"User logged out, cookies cleared","timestamp":"2025-04-23T10:25:43.142Z"}
+{"level":"info","message":"Keycloak admin token obtained","timestamp":"2025-04-23T10:25:48.238Z"}
+{"level":"info","message":"Notification stored for user user_mpe0xo17h: Notification for otp:generated:user","timestamp":"2025-04-23T10:25:51.479Z"}
+{"level":"info","message":"WebSocket event emitted: otp:generated:user to room admin","timestamp":"2025-04-23T10:25:51.480Z"}
+{"level":"info","message":"WebSocket event emitted: otp:generated:user to room Super Admin","timestamp":"2025-04-23T10:25:51.480Z"}
+{"level":"info","message":"WebSocket event emitted: otp:generated:user to user user_mpe0xo17h","timestamp":"2025-04-23T10:25:51.480Z"}
+{"level":"info","message":"Notification notif_MzXW-XtwZ3784aPrN2fpA status updated to sent","timestamp":"2025-04-23T10:25:51.490Z"}
+{"level":"info","message":"Triggered notifications for event: otp:generated:user, processed 1 recipients","timestamp":"2025-04-23T10:25:51.491Z"}
+{"level":"info","message":"Generated OTP for user ID: usr_H--aSL7w0WsOampX44Tc6","timestamp":"2025-04-23T10:25:51.491Z"}
+{"level":"info","message":"OTP =","timestamp":"2025-04-23T10:25:52.851Z"}
+{"level":"info","message":"Login attempt for m@gmail.com, requires2FA: true","timestamp":"2025-04-23T10:25:52.852Z"}
+{"level":"info","message":"Successfully validated OTP for user ID: usr_H--aSL7w0WsOampX44Tc6","timestamp":"2025-04-23T10:26:05.257Z"}
+{"level":"info","message":"Login response generated for user usr_H--aSL7w0WsOampX44Tc6","timestamp":"2025-04-23T10:26:09.778Z"}
+{"level":"info","message":"2FA verified for user usr_H--aSL7w0WsOampX44Tc6","timestamp":"2025-04-23T10:26:09.782Z"}
+{"level":"info","message":"2FA cache hit for usr_H--aSL7w0WsOampX44Tc6","timestamp":"2025-04-23T10:26:09.829Z"}
+{"level":"info","message":"Fetched effective permissions for user usr_H--aSL7w0WsOampX44Tc6 by usr_H--aSL7w0WsOampX44Tc6, IP: 127.0.0.1","timestamp":"2025-04-23T10:26:11.879Z"}
+{"level":"info","message":"Fetched roles for user usr_H--aSL7w0WsOampX44Tc6 by usr_H--aSL7w0WsOampX44Tc6, IP: 127.0.0.1","timestamp":"2025-04-23T10:26:14.712Z"}
+{"level":"info","message":"Permission granted for access_supervisors to user usr_H--aSL7w0WsOampX44Tc6","timestamp":"2025-04-23T10:26:15.628Z"}
+{"level":"info","message":"Fetched supervisors for user usr_H--aSL7w0WsOampX44Tc6 by user usr_H--aSL7w0WsOampX44Tc6, IP: 127.0.0.1","timestamp":"2025-04-23T10:26:15.645Z"}
+{"level":"info","message":"Permission granted for access_supervisors to user usr_H--aSL7w0WsOampX44Tc6","timestamp":"2025-04-23T10:26:15.688Z"}
+{"level":"info","message":"Permission granted for access_supervisor_timesheets to user usr_H--aSL7w0WsOampX44Tc6","timestamp":"2025-04-23T10:26:15.721Z"}
+{"level":"info","message":"Fetched supervisors for user usr_H--aSL7w0WsOampX44Tc6 by user usr_H--aSL7w0WsOampX44Tc6, IP: 127.0.0.1","timestamp":"2025-04-23T10:26:15.736Z"}
+{"level":"info","message":"Permission granted for access_supervisor_timesheets to user usr_H--aSL7w0WsOampX44Tc6","timestamp":"2025-04-23T10:26:15.769Z"}
+{"level":"info","message":"Fetched timesheets for supervisor 7014dc9c-833f-4597-93c4-a8d92a947ae1 by user usr_H--aSL7w0WsOampX44Tc6, IP: 127.0.0.1","timestamp":"2025-04-23T10:26:16.132Z"}
+{"level":"info","message":"Fetched timesheets for supervisor 95beb7d8-e9d5-43bc-a954-3493d9ae8387 by user usr_H--aSL7w0WsOampX44Tc6, IP: 127.0.0.1","timestamp":"2025-04-23T10:26:16.153Z"}
+{"level":"info","message":"Permission granted for access_supervisor_timesheets to user usr_H--aSL7w0WsOampX44Tc6","timestamp":"2025-04-23T10:26:16.324Z"}
+{"level":"info","message":"Fetched timesheets for supervisor a114a8b7-dac0-4982-b373-e5bd9e4317a8 by user usr_H--aSL7w0WsOampX44Tc6, IP: 127.0.0.1","timestamp":"2025-04-23T10:26:16.520Z"}
+{"level":"info","message":"Permission granted for access_visit_details to user usr_H--aSL7w0WsOampX44Tc6","timestamp":"2025-04-23T10:26:21.129Z"}
+{"level":"info","message":"Fetched visit vis_SVBLu5owHU5ep96F3JOvA by user usr_H--aSL7w0WsOampX44Tc6, IP: 127.0.0.1","timestamp":"2025-04-23T10:26:21.304Z"}
+{"level":"info","message":"Permission granted for access_agents_by_id to user usr_H--aSL7w0WsOampX44Tc6","timestamp":"2025-04-23T10:26:21.700Z"}
+{"level":"info","message":"Fetched agent agent_001 by user usr_H--aSL7w0WsOampX44Tc6, IP: 127.0.0.1","timestamp":"2025-04-23T10:26:21.927Z"}
+{"level":"info","message":"Permission granted for access_agents_locations to user usr_H--aSL7w0WsOampX44Tc6","timestamp":"2025-04-23T10:26:22.697Z"}
+{"level":"info","message":"Permission granted for access_reason_items to user usr_H--aSL7w0WsOampX44Tc6","timestamp":"2025-04-23T10:26:22.711Z"}
+{"level":"info","message":"Permission granted for access_supervisors to user usr_H--aSL7w0WsOampX44Tc6","timestamp":"2025-04-23T10:26:22.735Z"}
+{"level":"info","message":"Fetched supervisors for user usr_H--aSL7w0WsOampX44Tc6 by user usr_H--aSL7w0WsOampX44Tc6, IP: 127.0.0.1","timestamp":"2025-04-23T10:26:22.761Z"}
+{"level":"info","message":"Permission granted for access_agents_by_location to user usr_H--aSL7w0WsOampX44Tc6","timestamp":"2025-04-23T10:26:22.765Z"}
+{"level":"info","message":"Permission granted for access_checklists_items to user usr_H--aSL7w0WsOampX44Tc6","timestamp":"2025-04-23T10:26:22.769Z"}
+{"level":"info","message":"Fetched all reasons by user usr_H--aSL7w0WsOampX44Tc6, IP: 127.0.0.1","timestamp":"2025-04-23T10:26:22.861Z"}
+{"level":"info","message":"Fetched all checklists by user usr_H--aSL7w0WsOampX44Tc6, IP: 127.0.0.1","timestamp":"2025-04-23T10:26:22.899Z"}
+{"level":"info","message":"Fetched unique locations by user usr_H--aSL7w0WsOampX44Tc6, IP: 127.0.0.1","timestamp":"2025-04-23T10:26:22.972Z"}
+{"level":"info","message":"Fetched agents by location LocTest by user usr_H--aSL7w0WsOampX44Tc6, IP: 127.0.0.1","timestamp":"2025-04-23T10:26:22.980Z"}
+{"level":"info","message":"Permission granted for validate_timesheets to user usr_H--aSL7w0WsOampX44Tc6","timestamp":"2025-04-23T10:26:25.457Z"}
+{"ip":null,"level":"info","message":"Timesheet ts_nI4oMKR2cIMRPTjQ4zx3x validated by user usr_H--aSL7w0WsOampX44Tc6","timestamp":"2025-04-23T10:26:25.469Z"}
+{"level":"info","message":"No active rules found for event: timesheet:validated","timestamp":"2025-04-23T10:26:25.473Z"}
+{"level":"info","message":"Created default disabled notification rule for event: timesheet:validated, ruleID: rule_s3xPAANxbbS90zUHW3JoP","timestamp":"2025-04-23T10:26:25.476Z"}
+{"level":"info","message":"Created disabled rule for event: timesheet:validated, ruleID: rule_s3xPAANxbbS90zUHW3JoP","timestamp":"2025-04-23T10:26:25.477Z"}
+{"level":"info","message":"Timesheet ts_nI4oMKR2cIMRPTjQ4zx3x validated by user usr_H--aSL7w0WsOampX44Tc6, IP: 127.0.0.1","timestamp":"2025-04-23T10:26:25.477Z"}
+{"level":"info","message":"Permission granted for access_supervisors to user usr_H--aSL7w0WsOampX44Tc6","timestamp":"2025-04-23T10:26:26.834Z"}
+{"level":"info","message":"Fetched supervisors for user usr_H--aSL7w0WsOampX44Tc6 by user usr_H--aSL7w0WsOampX44Tc6, IP: 127.0.0.1","timestamp":"2025-04-23T10:26:26.854Z"}
+{"level":"info","message":"Permission granted for access_supervisors to user usr_H--aSL7w0WsOampX44Tc6","timestamp":"2025-04-23T10:26:26.892Z"}
+{"level":"info","message":"Permission granted for access_supervisor_timesheets to user usr_H--aSL7w0WsOampX44Tc6","timestamp":"2025-04-23T10:26:26.909Z"}
+{"level":"info","message":"Permission granted for access_supervisor_timesheets to user usr_H--aSL7w0WsOampX44Tc6","timestamp":"2025-04-23T10:26:26.914Z"}
+{"level":"info","message":"Fetched timesheets for supervisor 7014dc9c-833f-4597-93c4-a8d92a947ae1 by user usr_H--aSL7w0WsOampX44Tc6, IP: 127.0.0.1","timestamp":"2025-04-23T10:26:27.315Z"}
+{"level":"info","message":"Fetched timesheets for supervisor 95beb7d8-e9d5-43bc-a954-3493d9ae8387 by user usr_H--aSL7w0WsOampX44Tc6, IP: 127.0.0.1","timestamp":"2025-04-23T10:26:27.348Z"}
+{"level":"info","message":"Fetched supervisors for user usr_H--aSL7w0WsOampX44Tc6 by user usr_H--aSL7w0WsOampX44Tc6, IP: 127.0.0.1","timestamp":"2025-04-23T10:26:27.640Z"}
+{"level":"info","message":"Permission granted for access_supervisor_timesheets to user usr_H--aSL7w0WsOampX44Tc6","timestamp":"2025-04-23T10:26:27.643Z"}
+{"level":"info","message":"Fetched timesheets for supervisor a114a8b7-dac0-4982-b373-e5bd9e4317a8 by user usr_H--aSL7w0WsOampX44Tc6, IP: 127.0.0.1","timestamp":"2025-04-23T10:26:27.846Z"}
+{"level":"info","message":"Permission granted for access_visit_details to user usr_H--aSL7w0WsOampX44Tc6","timestamp":"2025-04-23T10:26:29.112Z"}
+{"level":"info","message":"Fetched visit vis_48z8Vn6iuJaeL1oEFsANj by user usr_H--aSL7w0WsOampX44Tc6, IP: 127.0.0.1","timestamp":"2025-04-23T10:26:29.327Z"}
+{"level":"info","message":"Permission granted for access_agents_by_id to user usr_H--aSL7w0WsOampX44Tc6","timestamp":"2025-04-23T10:26:29.871Z"}
+{"level":"info","message":"Fetched agent agent_001 by user usr_H--aSL7w0WsOampX44Tc6, IP: 127.0.0.1","timestamp":"2025-04-23T10:26:30.127Z"}
+{"level":"info","message":"Permission granted for access_checklists_items to user usr_H--aSL7w0WsOampX44Tc6","timestamp":"2025-04-23T10:26:30.183Z"}
+{"level":"info","message":"Fetched all checklists by user usr_H--aSL7w0WsOampX44Tc6, IP: 127.0.0.1","timestamp":"2025-04-23T10:26:30.422Z"}
+{"level":"info","message":"Permission granted for access_agents_locations to user usr_H--aSL7w0WsOampX44Tc6","timestamp":"2025-04-23T10:26:30.999Z"}
+{"level":"info","message":"Permission granted for access_reason_items to user usr_H--aSL7w0WsOampX44Tc6","timestamp":"2025-04-23T10:26:31.003Z"}
+{"level":"info","message":"Permission granted for access_supervisors to user usr_H--aSL7w0WsOampX44Tc6","timestamp":"2025-04-23T10:26:31.005Z"}
+{"level":"info","message":"Fetched supervisors for user usr_H--aSL7w0WsOampX44Tc6 by user usr_H--aSL7w0WsOampX44Tc6, IP: 127.0.0.1","timestamp":"2025-04-23T10:26:31.031Z"}
+{"level":"info","message":"Permission granted for access_agents_by_location to user usr_H--aSL7w0WsOampX44Tc6","timestamp":"2025-04-23T10:26:31.050Z"}
+{"level":"info","message":"Fetched all reasons by user usr_H--aSL7w0WsOampX44Tc6, IP: 127.0.0.1","timestamp":"2025-04-23T10:26:31.139Z"}
+{"level":"info","message":"Fetched unique locations by user usr_H--aSL7w0WsOampX44Tc6, IP: 127.0.0.1","timestamp":"2025-04-23T10:26:31.278Z"}
+{"level":"info","message":"Fetched agents by location LocTest by user usr_H--aSL7w0WsOampX44Tc6, IP: 127.0.0.1","timestamp":"2025-04-23T10:26:31.326Z"}
+{"level":"info","message":"Permission granted for validate_timesheets to user usr_H--aSL7w0WsOampX44Tc6","timestamp":"2025-04-23T10:26:32.891Z"}
+{"ip":null,"level":"info","message":"Timesheet ts_nI4oMKR2cIMRPTjQ4zx3x validated by user usr_H--aSL7w0WsOampX44Tc6","timestamp":"2025-04-23T10:26:32.901Z"}
+{"level":"info","message":"No active rules found for event: timesheet:validated","timestamp":"2025-04-23T10:26:32.905Z"}
+{"level":"info","message":"Rule already exists for event: timesheet:validated, ruleID: rule_s3xPAANxbbS90zUHW3JoP, enabled: false","timestamp":"2025-04-23T10:26:32.907Z"}
+{"level":"info","message":"Created disabled rule for event: timesheet:validated, ruleID: rule_s3xPAANxbbS90zUHW3JoP","timestamp":"2025-04-23T10:26:32.908Z"}
+{"level":"info","message":"Timesheet ts_nI4oMKR2cIMRPTjQ4zx3x validated by user usr_H--aSL7w0WsOampX44Tc6, IP: 127.0.0.1","timestamp":"2025-04-23T10:26:32.908Z"}
+{"level":"info","message":"Permission granted for access_supervisors to user usr_H--aSL7w0WsOampX44Tc6","timestamp":"2025-04-23T10:26:33.158Z"}
+{"level":"info","message":"Fetched supervisors for user usr_H--aSL7w0WsOampX44Tc6 by user usr_H--aSL7w0WsOampX44Tc6, IP: 127.0.0.1","timestamp":"2025-04-23T10:26:33.190Z"}
+{"level":"info","message":"Permission granted for access_supervisors to user usr_H--aSL7w0WsOampX44Tc6","timestamp":"2025-04-23T10:26:33.229Z"}
+{"level":"info","message":"Permission granted for access_supervisor_timesheets to user usr_H--aSL7w0WsOampX44Tc6","timestamp":"2025-04-23T10:26:33.238Z"}
+{"level":"info","message":"Fetched supervisors for user usr_H--aSL7w0WsOampX44Tc6 by user usr_H--aSL7w0WsOampX44Tc6, IP: 127.0.0.1","timestamp":"2025-04-23T10:26:33.260Z"}
+{"level":"info","message":"Fetched timesheets for supervisor a114a8b7-dac0-4982-b373-e5bd9e4317a8 by user usr_H--aSL7w0WsOampX44Tc6, IP: 127.0.0.1","timestamp":"2025-04-23T10:26:33.595Z"}
+{"level":"info","message":"Permission granted for access_supervisor_timesheets to user usr_H--aSL7w0WsOampX44Tc6","timestamp":"2025-04-23T10:26:33.841Z"}
+{"level":"info","message":"Permission granted for access_supervisor_timesheets to user usr_H--aSL7w0WsOampX44Tc6","timestamp":"2025-04-23T10:26:33.848Z"}
+{"level":"info","message":"Fetched timesheets for supervisor 7014dc9c-833f-4597-93c4-a8d92a947ae1 by user usr_H--aSL7w0WsOampX44Tc6, IP: 127.0.0.1","timestamp":"2025-04-23T10:26:34.069Z"}
+{"level":"info","message":"Fetched timesheets for supervisor 95beb7d8-e9d5-43bc-a954-3493d9ae8387 by user usr_H--aSL7w0WsOampX44Tc6, IP: 127.0.0.1","timestamp":"2025-04-23T10:26:34.080Z"}
+{"level":"info","message":"Permission granted for access_visit_details to user usr_H--aSL7w0WsOampX44Tc6","timestamp":"2025-04-23T10:26:41.352Z"}
+{"level":"info","message":"Fetched visit vis_ttNAMALpy-i-q5J3XX0re by user usr_H--aSL7w0WsOampX44Tc6, IP: 127.0.0.1","timestamp":"2025-04-23T10:26:41.523Z"}
+{"level":"info","message":"Permission granted for access_agents_by_id to user usr_H--aSL7w0WsOampX44Tc6","timestamp":"2025-04-23T10:26:41.939Z"}
+{"level":"info","message":"Fetched agent agent_001 by user usr_H--aSL7w0WsOampX44Tc6, IP: 127.0.0.1","timestamp":"2025-04-23T10:26:42.122Z"}
+{"level":"info","message":"Permission granted for access_agents_by_location to user usr_H--aSL7w0WsOampX44Tc6","timestamp":"2025-04-23T10:26:42.171Z"}
+{"level":"info","message":"Permission granted for access_checklists_items to user usr_H--aSL7w0WsOampX44Tc6","timestamp":"2025-04-23T10:26:42.175Z"}
+{"level":"info","message":"Fetched all checklists by user usr_H--aSL7w0WsOampX44Tc6, IP: 127.0.0.1","timestamp":"2025-04-23T10:26:42.381Z"}
+{"level":"info","message":"Fetched agents by location LocTest by user usr_H--aSL7w0WsOampX44Tc6, IP: 127.0.0.1","timestamp":"2025-04-23T10:26:42.545Z"}
+{"level":"info","message":"Permission granted for access_agents_locations to user usr_H--aSL7w0WsOampX44Tc6","timestamp":"2025-04-23T10:26:42.761Z"}
+{"level":"info","message":"Permission granted for access_supervisors to user usr_H--aSL7w0WsOampX44Tc6","timestamp":"2025-04-23T10:26:42.768Z"}
+{"level":"info","message":"Permission granted for access_reason_items to user usr_H--aSL7w0WsOampX44Tc6","timestamp":"2025-04-23T10:26:42.774Z"}
+{"level":"info","message":"Fetched supervisors for user usr_H--aSL7w0WsOampX44Tc6 by user usr_H--aSL7w0WsOampX44Tc6, IP: 127.0.0.1","timestamp":"2025-04-23T10:26:42.789Z"}
+{"level":"info","message":"Fetched all reasons by user usr_H--aSL7w0WsOampX44Tc6, IP: 127.0.0.1","timestamp":"2025-04-23T10:26:42.872Z"}
+{"level":"info","message":"Fetched unique locations by user usr_H--aSL7w0WsOampX44Tc6, IP: 127.0.0.1","timestamp":"2025-04-23T10:26:42.967Z"}
+{"level":"info","message":"Permission granted for validate_timesheets to user usr_H--aSL7w0WsOampX44Tc6","timestamp":"2025-04-23T10:26:44.425Z"}
+{"ip":null,"level":"info","message":"Timesheet ts_nI4oMKR2cIMRPTjQ4zx3x validated by user usr_H--aSL7w0WsOampX44Tc6","timestamp":"2025-04-23T10:26:44.434Z"}
+{"level":"info","message":"No active rules found for event: timesheet:validated","timestamp":"2025-04-23T10:26:44.438Z"}
+{"level":"info","message":"Rule already exists for event: timesheet:validated, ruleID: rule_s3xPAANxbbS90zUHW3JoP, enabled: false","timestamp":"2025-04-23T10:26:44.440Z"}
+{"level":"info","message":"Created disabled rule for event: timesheet:validated, ruleID: rule_s3xPAANxbbS90zUHW3JoP","timestamp":"2025-04-23T10:26:44.440Z"}
+{"level":"info","message":"Timesheet ts_nI4oMKR2cIMRPTjQ4zx3x validated by user usr_H--aSL7w0WsOampX44Tc6, IP: 127.0.0.1","timestamp":"2025-04-23T10:26:44.441Z"}
+{"level":"info","message":"Permission granted for access_supervisors to user usr_H--aSL7w0WsOampX44Tc6","timestamp":"2025-04-23T10:26:44.966Z"}
+{"level":"info","message":"Fetched supervisors for user usr_H--aSL7w0WsOampX44Tc6 by user usr_H--aSL7w0WsOampX44Tc6, IP: 127.0.0.1","timestamp":"2025-04-23T10:26:44.985Z"}
+{"level":"info","message":"Permission granted for access_supervisors to user usr_H--aSL7w0WsOampX44Tc6","timestamp":"2025-04-23T10:26:45.024Z"}
+{"level":"info","message":"Permission granted for access_supervisor_timesheets to user usr_H--aSL7w0WsOampX44Tc6","timestamp":"2025-04-23T10:26:45.040Z"}
+{"level":"info","message":"Permission granted for access_supervisor_timesheets to user usr_H--aSL7w0WsOampX44Tc6","timestamp":"2025-04-23T10:26:45.043Z"}
+{"level":"info","message":"Permission granted for access_supervisor_timesheets to user usr_H--aSL7w0WsOampX44Tc6","timestamp":"2025-04-23T10:26:45.046Z"}
+{"level":"info","message":"Fetched timesheets for supervisor a114a8b7-dac0-4982-b373-e5bd9e4317a8 by user usr_H--aSL7w0WsOampX44Tc6, IP: 127.0.0.1","timestamp":"2025-04-23T10:26:45.362Z"}
+{"level":"info","message":"Fetched timesheets for supervisor 95beb7d8-e9d5-43bc-a954-3493d9ae8387 by user usr_H--aSL7w0WsOampX44Tc6, IP: 127.0.0.1","timestamp":"2025-04-23T10:26:45.387Z"}
+{"level":"info","message":"Fetched timesheets for supervisor 7014dc9c-833f-4597-93c4-a8d92a947ae1 by user usr_H--aSL7w0WsOampX44Tc6, IP: 127.0.0.1","timestamp":"2025-04-23T10:26:45.397Z"}
+{"level":"info","message":"Fetched supervisors for user usr_H--aSL7w0WsOampX44Tc6 by user usr_H--aSL7w0WsOampX44Tc6, IP: 127.0.0.1","timestamp":"2025-04-23T10:26:45.646Z"}
+{"level":"info","message":"Permission granted for access_visit_details to user usr_H--aSL7w0WsOampX44Tc6","timestamp":"2025-04-23T10:26:46.141Z"}
+{"level":"info","message":"Fetched visit vis_rzo4wWUqM3zDj66p4UUfY by user usr_H--aSL7w0WsOampX44Tc6, IP: 127.0.0.1","timestamp":"2025-04-23T10:26:46.337Z"}
+{"level":"info","message":"Permission granted for access_agents_by_id to user usr_H--aSL7w0WsOampX44Tc6","timestamp":"2025-04-23T10:26:46.786Z"}
+{"level":"info","message":"Fetched agent agent_001 by user usr_H--aSL7w0WsOampX44Tc6, IP: 127.0.0.1","timestamp":"2025-04-23T10:26:46.986Z"}
+{"level":"info","message":"Permission granted for access_agents_locations to user usr_H--aSL7w0WsOampX44Tc6","timestamp":"2025-04-23T10:26:47.848Z"}
+{"level":"info","message":"Permission granted for access_reason_items to user usr_H--aSL7w0WsOampX44Tc6","timestamp":"2025-04-23T10:26:47.851Z"}
+{"level":"info","message":"Permission granted for access_supervisors to user usr_H--aSL7w0WsOampX44Tc6","timestamp":"2025-04-23T10:26:47.853Z"}
+{"level":"info","message":"Fetched supervisors for user usr_H--aSL7w0WsOampX44Tc6 by user usr_H--aSL7w0WsOampX44Tc6, IP: 127.0.0.1","timestamp":"2025-04-23T10:26:47.875Z"}
+{"level":"info","message":"Permission granted for access_agents_by_location to user usr_H--aSL7w0WsOampX44Tc6","timestamp":"2025-04-23T10:26:47.885Z"}
+{"level":"info","message":"Permission granted for access_checklists_items to user usr_H--aSL7w0WsOampX44Tc6","timestamp":"2025-04-23T10:26:47.908Z"}
+{"level":"info","message":"Fetched all reasons by user usr_H--aSL7w0WsOampX44Tc6, IP: 127.0.0.1","timestamp":"2025-04-23T10:26:48.004Z"}
+{"level":"info","message":"Fetched all checklists by user usr_H--aSL7w0WsOampX44Tc6, IP: 127.0.0.1","timestamp":"2025-04-23T10:26:48.038Z"}
+{"level":"info","message":"Fetched unique locations by user usr_H--aSL7w0WsOampX44Tc6, IP: 127.0.0.1","timestamp":"2025-04-23T10:26:48.104Z"}
+{"level":"info","message":"Fetched agents by location LocTest by user usr_H--aSL7w0WsOampX44Tc6, IP: 127.0.0.1","timestamp":"2025-04-23T10:26:48.120Z"}
+{"level":"info","message":"Permission granted for validate_timesheets to user usr_H--aSL7w0WsOampX44Tc6","timestamp":"2025-04-23T10:26:49.093Z"}
+{"ip":null,"level":"info","message":"Timesheet ts_nI4oMKR2cIMRPTjQ4zx3x validated by user usr_H--aSL7w0WsOampX44Tc6","timestamp":"2025-04-23T10:26:49.100Z"}
+{"level":"info","message":"No active rules found for event: timesheet:validated","timestamp":"2025-04-23T10:26:49.104Z"}
+{"level":"info","message":"Rule already exists for event: timesheet:validated, ruleID: rule_s3xPAANxbbS90zUHW3JoP, enabled: false","timestamp":"2025-04-23T10:26:49.105Z"}
+{"level":"info","message":"Created disabled rule for event: timesheet:validated, ruleID: rule_s3xPAANxbbS90zUHW3JoP","timestamp":"2025-04-23T10:26:49.106Z"}
+{"level":"info","message":"Timesheet ts_nI4oMKR2cIMRPTjQ4zx3x validated by user usr_H--aSL7w0WsOampX44Tc6, IP: 127.0.0.1","timestamp":"2025-04-23T10:26:49.106Z"}
+{"level":"info","message":"Permission granted for access_supervisors to user usr_H--aSL7w0WsOampX44Tc6","timestamp":"2025-04-23T10:26:49.901Z"}
+{"level":"info","message":"Fetched supervisors for user usr_H--aSL7w0WsOampX44Tc6 by user usr_H--aSL7w0WsOampX44Tc6, IP: 127.0.0.1","timestamp":"2025-04-23T10:26:49.924Z"}
+{"level":"info","message":"Permission granted for access_supervisors to user usr_H--aSL7w0WsOampX44Tc6","timestamp":"2025-04-23T10:26:49.970Z"}
+{"level":"info","message":"Permission granted for access_supervisor_timesheets to user usr_H--aSL7w0WsOampX44Tc6","timestamp":"2025-04-23T10:26:49.991Z"}
+{"level":"info","message":"Permission granted for access_supervisor_timesheets to user usr_H--aSL7w0WsOampX44Tc6","timestamp":"2025-04-23T10:26:49.996Z"}
+{"level":"info","message":"Fetched timesheets for supervisor 7014dc9c-833f-4597-93c4-a8d92a947ae1 by user usr_H--aSL7w0WsOampX44Tc6, IP: 127.0.0.1","timestamp":"2025-04-23T10:26:50.353Z"}
+{"level":"info","message":"Fetched timesheets for supervisor 95beb7d8-e9d5-43bc-a954-3493d9ae8387 by user usr_H--aSL7w0WsOampX44Tc6, IP: 127.0.0.1","timestamp":"2025-04-23T10:26:50.359Z"}
+{"level":"info","message":"Fetched supervisors for user usr_H--aSL7w0WsOampX44Tc6 by user usr_H--aSL7w0WsOampX44Tc6, IP: 127.0.0.1","timestamp":"2025-04-23T10:26:50.592Z"}
+{"level":"info","message":"Permission granted for access_supervisor_timesheets to user usr_H--aSL7w0WsOampX44Tc6","timestamp":"2025-04-23T10:26:50.602Z"}
+{"level":"info","message":"Fetched timesheets for supervisor a114a8b7-dac0-4982-b373-e5bd9e4317a8 by user usr_H--aSL7w0WsOampX44Tc6, IP: 127.0.0.1","timestamp":"2025-04-23T10:26:50.776Z"}
+{"level":"info","message":"Permission granted for access_visit_details to user usr_H--aSL7w0WsOampX44Tc6","timestamp":"2025-04-23T10:26:52.733Z"}
+{"level":"info","message":"Fetched visit vis_kPM1E6bgMUp4wttVBOwJo by user usr_H--aSL7w0WsOampX44Tc6, IP: 127.0.0.1","timestamp":"2025-04-23T10:26:52.933Z"}
+{"level":"info","message":"Permission granted for access_agents_by_id to user usr_H--aSL7w0WsOampX44Tc6","timestamp":"2025-04-23T10:26:53.425Z"}
+{"level":"info","message":"Fetched agent agent_001 by user usr_H--aSL7w0WsOampX44Tc6, IP: 127.0.0.1","timestamp":"2025-04-23T10:26:53.644Z"}
+{"level":"info","message":"Permission granted for access_reason_items to user usr_H--aSL7w0WsOampX44Tc6","timestamp":"2025-04-23T10:26:53.695Z"}
+{"level":"info","message":"Permission granted for access_supervisors to user usr_H--aSL7w0WsOampX44Tc6","timestamp":"2025-04-23T10:26:53.711Z"}
+{"level":"info","message":"Fetched supervisors for user usr_H--aSL7w0WsOampX44Tc6 by user usr_H--aSL7w0WsOampX44Tc6, IP: 127.0.0.1","timestamp":"2025-04-23T10:26:53.741Z"}
+{"level":"info","message":"Fetched all reasons by user usr_H--aSL7w0WsOampX44Tc6, IP: 127.0.0.1","timestamp":"2025-04-23T10:26:53.881Z"}
+{"level":"info","message":"Permission granted for access_agents_locations to user usr_H--aSL7w0WsOampX44Tc6","timestamp":"2025-04-23T10:26:54.309Z"}
+{"level":"info","message":"Permission granted for access_agents_by_location to user usr_H--aSL7w0WsOampX44Tc6","timestamp":"2025-04-23T10:26:54.315Z"}
+{"level":"info","message":"Permission granted for access_checklists_items to user usr_H--aSL7w0WsOampX44Tc6","timestamp":"2025-04-23T10:26:54.323Z"}
+{"level":"info","message":"Fetched all checklists by user usr_H--aSL7w0WsOampX44Tc6, IP: 127.0.0.1","timestamp":"2025-04-23T10:26:54.437Z"}
+{"level":"info","message":"Fetched unique locations by user usr_H--aSL7w0WsOampX44Tc6, IP: 127.0.0.1","timestamp":"2025-04-23T10:26:54.537Z"}
+{"level":"info","message":"Fetched agents by location LocTest by user usr_H--aSL7w0WsOampX44Tc6, IP: 127.0.0.1","timestamp":"2025-04-23T10:26:54.544Z"}
+{"level":"info","message":"Permission granted for validate_timesheets to user usr_H--aSL7w0WsOampX44Tc6","timestamp":"2025-04-23T10:26:55.799Z"}
+{"ip":null,"level":"info","message":"Timesheet ts_nI4oMKR2cIMRPTjQ4zx3x validated by user usr_H--aSL7w0WsOampX44Tc6","timestamp":"2025-04-23T10:26:55.807Z"}
+{"level":"info","message":"No active rules found for event: timesheet:validated","timestamp":"2025-04-23T10:26:55.810Z"}
+{"level":"info","message":"Rule already exists for event: timesheet:validated, ruleID: rule_s3xPAANxbbS90zUHW3JoP, enabled: false","timestamp":"2025-04-23T10:26:55.812Z"}
+{"level":"info","message":"Created disabled rule for event: timesheet:validated, ruleID: rule_s3xPAANxbbS90zUHW3JoP","timestamp":"2025-04-23T10:26:55.812Z"}
+{"level":"info","message":"Timesheet ts_nI4oMKR2cIMRPTjQ4zx3x validated by user usr_H--aSL7w0WsOampX44Tc6, IP: 127.0.0.1","timestamp":"2025-04-23T10:26:55.812Z"}
+{"level":"info","message":"Permission granted for access_supervisors to user usr_H--aSL7w0WsOampX44Tc6","timestamp":"2025-04-23T10:26:57.296Z"}
+{"level":"info","message":"Fetched supervisors for user usr_H--aSL7w0WsOampX44Tc6 by user usr_H--aSL7w0WsOampX44Tc6, IP: 127.0.0.1","timestamp":"2025-04-23T10:26:57.327Z"}
+{"level":"info","message":"Permission granted for access_supervisors to user usr_H--aSL7w0WsOampX44Tc6","timestamp":"2025-04-23T10:26:57.381Z"}
+{"level":"info","message":"Permission granted for access_supervisor_timesheets to user usr_H--aSL7w0WsOampX44Tc6","timestamp":"2025-04-23T10:26:57.390Z"}
+{"level":"info","message":"Fetched supervisors for user usr_H--aSL7w0WsOampX44Tc6 by user usr_H--aSL7w0WsOampX44Tc6, IP: 127.0.0.1","timestamp":"2025-04-23T10:26:57.428Z"}
+{"level":"info","message":"Fetched timesheets for supervisor 95beb7d8-e9d5-43bc-a954-3493d9ae8387 by user usr_H--aSL7w0WsOampX44Tc6, IP: 127.0.0.1","timestamp":"2025-04-23T10:26:57.727Z"}
+{"level":"info","message":"Permission granted for access_supervisor_timesheets to user usr_H--aSL7w0WsOampX44Tc6","timestamp":"2025-04-23T10:26:57.986Z"}
+{"level":"info","message":"Permission granted for access_supervisor_timesheets to user usr_H--aSL7w0WsOampX44Tc6","timestamp":"2025-04-23T10:26:57.989Z"}
+{"level":"info","message":"Fetched timesheets for supervisor a114a8b7-dac0-4982-b373-e5bd9e4317a8 by user usr_H--aSL7w0WsOampX44Tc6, IP: 127.0.0.1","timestamp":"2025-04-23T10:26:57.995Z"}
+{"level":"info","message":"Fetched timesheets for supervisor 7014dc9c-833f-4597-93c4-a8d92a947ae1 by user usr_H--aSL7w0WsOampX44Tc6, IP: 127.0.0.1","timestamp":"2025-04-23T10:26:58.212Z"}
+{"level":"info","message":"User logged out, cookies cleared","timestamp":"2025-04-23T10:27:05.485Z"}
+{"level":"info","message":"Keycloak admin token obtained","timestamp":"2025-04-23T10:27:11.204Z"}
+{"level":"info","message":"Login response generated for user 95beb7d8-e9d5-43bc-a954-3493d9ae8387","timestamp":"2025-04-23T10:27:14.104Z"}
+{"level":"info","message":"Login attempt for s@gmail.com, requires2FA: false","timestamp":"2025-04-23T10:27:14.105Z"}
+{"level":"info","message":"Keycloak admin token obtained","timestamp":"2025-04-23T10:27:14.754Z"}
+{"level":"info","message":"Login response generated for user 95beb7d8-e9d5-43bc-a954-3493d9ae8387","timestamp":"2025-04-23T10:27:18.406Z"}
+{"level":"info","message":"Login attempt for s@gmail.com, requires2FA: false","timestamp":"2025-04-23T10:27:18.407Z"}
+{"level":"info","message":"Fetched roles for user 95beb7d8-e9d5-43bc-a954-3493d9ae8387 by 95beb7d8-e9d5-43bc-a954-3493d9ae8387, IP: 127.0.0.1","timestamp":"2025-04-23T10:27:22.923Z"}
+{"level":"info","message":"Fetched effective permissions for user 95beb7d8-e9d5-43bc-a954-3493d9ae8387 by 95beb7d8-e9d5-43bc-a954-3493d9ae8387, IP: 127.0.0.1","timestamp":"2025-04-23T10:27:22.961Z"}
+{"level":"info","message":"Permission granted for access_supervisor_timesheets to user 95beb7d8-e9d5-43bc-a954-3493d9ae8387","timestamp":"2025-04-23T10:27:23.647Z"}
+{"level":"info","message":"Fetched timesheets for supervisor 95beb7d8-e9d5-43bc-a954-3493d9ae8387 by user 95beb7d8-e9d5-43bc-a954-3493d9ae8387, IP: 127.0.0.1","timestamp":"2025-04-23T10:27:23.880Z"}
+{"level":"info","message":"Permission granted for access_visit_details to user 95beb7d8-e9d5-43bc-a954-3493d9ae8387","timestamp":"2025-04-23T10:27:26.704Z"}
+{"level":"info","message":"Fetched visit vis_kPM1E6bgMUp4wttVBOwJo by user 95beb7d8-e9d5-43bc-a954-3493d9ae8387, IP: 127.0.0.1","timestamp":"2025-04-23T10:27:26.879Z"}
+{"level":"info","message":"Permission granted for access_agents_by_id to user 95beb7d8-e9d5-43bc-a954-3493d9ae8387","timestamp":"2025-04-23T10:27:27.340Z"}
+{"level":"info","message":"Fetched agent agent_001 by user 95beb7d8-e9d5-43bc-a954-3493d9ae8387, IP: 127.0.0.1","timestamp":"2025-04-23T10:27:27.605Z"}
+{"level":"info","message":"Permission granted for access_agents_locations to user 95beb7d8-e9d5-43bc-a954-3493d9ae8387","timestamp":"2025-04-23T10:27:28.400Z"}
+{"level":"info","message":"Permission granted for access_reason_items to user 95beb7d8-e9d5-43bc-a954-3493d9ae8387","timestamp":"2025-04-23T10:27:28.405Z"}
+{"level":"info","message":"Permission granted for access_checklists_items to user 95beb7d8-e9d5-43bc-a954-3493d9ae8387","timestamp":"2025-04-23T10:27:28.536Z"}
+{"level":"info","message":"Permission granted for access_agents_by_location to user 95beb7d8-e9d5-43bc-a954-3493d9ae8387","timestamp":"2025-04-23T10:27:28.544Z"}
+{"level":"info","message":"Fetched all reasons by user 95beb7d8-e9d5-43bc-a954-3493d9ae8387, IP: 127.0.0.1","timestamp":"2025-04-23T10:27:28.563Z"}
+{"level":"info","message":"Fetched all checklists by user 95beb7d8-e9d5-43bc-a954-3493d9ae8387, IP: 127.0.0.1","timestamp":"2025-04-23T10:27:28.678Z"}
+{"level":"info","message":"Fetched unique locations by user 95beb7d8-e9d5-43bc-a954-3493d9ae8387, IP: 127.0.0.1","timestamp":"2025-04-23T10:27:28.716Z"}
+{"level":"info","message":"Fetched agents by location LocTest by user 95beb7d8-e9d5-43bc-a954-3493d9ae8387, IP: 127.0.0.1","timestamp":"2025-04-23T10:27:28.781Z"}
+{"level":"info","message":"Permission granted for access_supervisor_timesheets to user 95beb7d8-e9d5-43bc-a954-3493d9ae8387","timestamp":"2025-04-23T10:27:30.901Z"}
+{"level":"info","message":"Fetched timesheets for supervisor 95beb7d8-e9d5-43bc-a954-3493d9ae8387 by user 95beb7d8-e9d5-43bc-a954-3493d9ae8387, IP: 127.0.0.1","timestamp":"2025-04-23T10:27:31.123Z"}
+{"level":"info","message":"Permission granted for access_visit_details to user 95beb7d8-e9d5-43bc-a954-3493d9ae8387","timestamp":"2025-04-23T10:27:34.171Z"}
+{"level":"info","message":"Fetched visit vis_kPM1E6bgMUp4wttVBOwJo by user 95beb7d8-e9d5-43bc-a954-3493d9ae8387, IP: 127.0.0.1","timestamp":"2025-04-23T10:27:34.322Z"}
+{"level":"info","message":"Permission granted for access_agents_by_id to user 95beb7d8-e9d5-43bc-a954-3493d9ae8387","timestamp":"2025-04-23T10:27:34.611Z"}
+{"level":"info","message":"Fetched agent agent_001 by user 95beb7d8-e9d5-43bc-a954-3493d9ae8387, IP: 127.0.0.1","timestamp":"2025-04-23T10:27:34.728Z"}
+{"level":"info","message":"Permission granted for access_reason_items to user 95beb7d8-e9d5-43bc-a954-3493d9ae8387","timestamp":"2025-04-23T10:27:35.556Z"}
+{"level":"info","message":"Permission granted for access_agents_locations to user 95beb7d8-e9d5-43bc-a954-3493d9ae8387","timestamp":"2025-04-23T10:27:35.561Z"}
+{"level":"info","message":"Permission granted for access_checklists_items to user 95beb7d8-e9d5-43bc-a954-3493d9ae8387","timestamp":"2025-04-23T10:27:35.563Z"}
+{"level":"info","message":"Permission granted for access_agents_by_location to user 95beb7d8-e9d5-43bc-a954-3493d9ae8387","timestamp":"2025-04-23T10:27:35.567Z"}
+{"level":"info","message":"Fetched all reasons by user 95beb7d8-e9d5-43bc-a954-3493d9ae8387, IP: 127.0.0.1","timestamp":"2025-04-23T10:27:35.752Z"}
+{"level":"info","message":"Fetched all checklists by user 95beb7d8-e9d5-43bc-a954-3493d9ae8387, IP: 127.0.0.1","timestamp":"2025-04-23T10:27:35.758Z"}
+{"level":"info","message":"Fetched unique locations by user 95beb7d8-e9d5-43bc-a954-3493d9ae8387, IP: 127.0.0.1","timestamp":"2025-04-23T10:27:35.865Z"}
+{"level":"info","message":"Fetched agents by location LocTest by user 95beb7d8-e9d5-43bc-a954-3493d9ae8387, IP: 127.0.0.1","timestamp":"2025-04-23T10:27:35.870Z"}
+{"level":"info","message":"Permission granted for access_supervisor_timesheets to user 95beb7d8-e9d5-43bc-a954-3493d9ae8387","timestamp":"2025-04-23T10:27:37.617Z"}
+{"level":"info","message":"Fetched timesheets for supervisor 95beb7d8-e9d5-43bc-a954-3493d9ae8387 by user 95beb7d8-e9d5-43bc-a954-3493d9ae8387, IP: 127.0.0.1","timestamp":"2025-04-23T10:27:37.945Z"}
+{"level":"info","message":"Permission granted for access_visit_details to user 95beb7d8-e9d5-43bc-a954-3493d9ae8387","timestamp":"2025-04-23T10:28:19.112Z"}
+{"level":"info","message":"Fetched visit vis_LRugiKOwLXACBD2rA_Gyx by user 95beb7d8-e9d5-43bc-a954-3493d9ae8387, IP: 127.0.0.1","timestamp":"2025-04-23T10:28:19.309Z"}
+{"level":"info","message":"Permission granted for access_agents_by_id to user 95beb7d8-e9d5-43bc-a954-3493d9ae8387","timestamp":"2025-04-23T10:28:19.620Z"}
+{"level":"info","message":"Fetched agent agent_001 by user 95beb7d8-e9d5-43bc-a954-3493d9ae8387, IP: 127.0.0.1","timestamp":"2025-04-23T10:28:19.833Z"}
+{"level":"info","message":"Permission granted for access_agents_locations to user 95beb7d8-e9d5-43bc-a954-3493d9ae8387","timestamp":"2025-04-23T10:28:20.476Z"}
+{"level":"info","message":"Permission granted for access_checklists_items to user 95beb7d8-e9d5-43bc-a954-3493d9ae8387","timestamp":"2025-04-23T10:28:20.555Z"}
+{"level":"info","message":"Permission granted for access_reason_items to user 95beb7d8-e9d5-43bc-a954-3493d9ae8387","timestamp":"2025-04-23T10:28:20.627Z"}
+{"level":"info","message":"Permission granted for access_agents_by_location to user 95beb7d8-e9d5-43bc-a954-3493d9ae8387","timestamp":"2025-04-23T10:28:20.635Z"}
+{"level":"info","message":"Fetched all checklists by user 95beb7d8-e9d5-43bc-a954-3493d9ae8387, IP: 127.0.0.1","timestamp":"2025-04-23T10:28:20.701Z"}
+{"level":"info","message":"Fetched unique locations by user 95beb7d8-e9d5-43bc-a954-3493d9ae8387, IP: 127.0.0.1","timestamp":"2025-04-23T10:28:20.743Z"}
+{"level":"info","message":"Fetched all reasons by user 95beb7d8-e9d5-43bc-a954-3493d9ae8387, IP: 127.0.0.1","timestamp":"2025-04-23T10:28:20.757Z"}
+{"level":"info","message":"Fetched agents by location LocTest by user 95beb7d8-e9d5-43bc-a954-3493d9ae8387, IP: 127.0.0.1","timestamp":"2025-04-23T10:28:20.851Z"}
+{"level":"info","message":"Permission granted for access_supervisor_timesheets to user 95beb7d8-e9d5-43bc-a954-3493d9ae8387","timestamp":"2025-04-23T10:28:23.658Z"}
+{"level":"info","message":"Fetched timesheets for supervisor 95beb7d8-e9d5-43bc-a954-3493d9ae8387 by user 95beb7d8-e9d5-43bc-a954-3493d9ae8387, IP: 127.0.0.1","timestamp":"2025-04-23T10:28:23.841Z"}
+{"level":"info","message":"Permission granted for access_visit_details to user 95beb7d8-e9d5-43bc-a954-3493d9ae8387","timestamp":"2025-04-23T10:28:25.036Z"}
+{"level":"info","message":"Fetched visit vis_kPM1E6bgMUp4wttVBOwJo by user 95beb7d8-e9d5-43bc-a954-3493d9ae8387, IP: 127.0.0.1","timestamp":"2025-04-23T10:28:25.204Z"}
+{"level":"info","message":"Permission granted for access_agents_by_id to user 95beb7d8-e9d5-43bc-a954-3493d9ae8387","timestamp":"2025-04-23T10:28:25.481Z"}
+{"level":"info","message":"Fetched agent agent_001 by user 95beb7d8-e9d5-43bc-a954-3493d9ae8387, IP: 127.0.0.1","timestamp":"2025-04-23T10:28:25.645Z"}
+{"level":"info","message":"Permission granted for access_agents_by_location to user 95beb7d8-e9d5-43bc-a954-3493d9ae8387","timestamp":"2025-04-23T10:28:26.171Z"}
+{"level":"info","message":"Permission granted for access_reason_items to user 95beb7d8-e9d5-43bc-a954-3493d9ae8387","timestamp":"2025-04-23T10:28:26.174Z"}
+{"level":"info","message":"Permission granted for access_agents_locations to user 95beb7d8-e9d5-43bc-a954-3493d9ae8387","timestamp":"2025-04-23T10:28:26.176Z"}
+{"level":"info","message":"Permission granted for access_checklists_items to user 95beb7d8-e9d5-43bc-a954-3493d9ae8387","timestamp":"2025-04-23T10:28:26.178Z"}
+{"level":"info","message":"Fetched all checklists by user 95beb7d8-e9d5-43bc-a954-3493d9ae8387, IP: 127.0.0.1","timestamp":"2025-04-23T10:28:26.330Z"}
+{"level":"info","message":"Fetched all reasons by user 95beb7d8-e9d5-43bc-a954-3493d9ae8387, IP: 127.0.0.1","timestamp":"2025-04-23T10:28:26.337Z"}
+{"level":"info","message":"Fetched unique locations by user 95beb7d8-e9d5-43bc-a954-3493d9ae8387, IP: 127.0.0.1","timestamp":"2025-04-23T10:28:26.422Z"}
+{"level":"info","message":"Fetched agents by location LocTest by user 95beb7d8-e9d5-43bc-a954-3493d9ae8387, IP: 127.0.0.1","timestamp":"2025-04-23T10:28:26.451Z"}
+{"level":"info","message":"Permission granted for scan_visits to user 95beb7d8-e9d5-43bc-a954-3493d9ae8387","timestamp":"2025-04-23T10:28:40.079Z"}
+{"level":"info","message":"Permission granted for scan_visits to user 95beb7d8-e9d5-43bc-a954-3493d9ae8387","timestamp":"2025-04-23T10:28:40.186Z"}
+{"level":"info","message":"Permission granted for scan_visits to user 95beb7d8-e9d5-43bc-a954-3493d9ae8387","timestamp":"2025-04-23T10:28:40.193Z"}
+{"ip":null,"level":"info","message":"QR code verified for visit vis_kPM1E6bgMUp4wttVBOwJo by user 95beb7d8-e9d5-43bc-a954-3493d9ae8387","timestamp":"2025-04-23T10:28:40.398Z"}
+{"level":"info","message":"No active rules found for event: visit:qr_verified","timestamp":"2025-04-23T10:28:40.402Z"}
+{"level":"info","message":"Created default disabled notification rule for event: visit:qr_verified, ruleID: rule_779cfW_C-u52Fq8HxIf6f","timestamp":"2025-04-23T10:28:40.407Z"}
+{"level":"info","message":"Created disabled rule for event: visit:qr_verified, ruleID: rule_779cfW_C-u52Fq8HxIf6f","timestamp":"2025-04-23T10:28:40.408Z"}
+{"level":"info","message":"QR code verified for visit vis_kPM1E6bgMUp4wttVBOwJo by user 95beb7d8-e9d5-43bc-a954-3493d9ae8387, IP: 127.0.0.1","timestamp":"2025-04-23T10:28:40.409Z"}
+{"ip":null,"level":"info","message":"QR code verified for visit vis_kPM1E6bgMUp4wttVBOwJo by user 95beb7d8-e9d5-43bc-a954-3493d9ae8387","timestamp":"2025-04-23T10:28:40.487Z"}
+{"level":"info","message":"No active rules found for event: visit:qr_verified","timestamp":"2025-04-23T10:28:40.490Z"}
+{"level":"info","message":"Rule already exists for event: visit:qr_verified, ruleID: rule_779cfW_C-u52Fq8HxIf6f, enabled: false","timestamp":"2025-04-23T10:28:40.492Z"}
+{"level":"info","message":"Created disabled rule for event: visit:qr_verified, ruleID: rule_779cfW_C-u52Fq8HxIf6f","timestamp":"2025-04-23T10:28:40.492Z"}
+{"level":"info","message":"QR code verified for visit vis_kPM1E6bgMUp4wttVBOwJo by user 95beb7d8-e9d5-43bc-a954-3493d9ae8387, IP: 127.0.0.1","timestamp":"2025-04-23T10:28:40.493Z"}
+{"ip":null,"level":"info","message":"QR code verified for visit vis_kPM1E6bgMUp4wttVBOwJo by user 95beb7d8-e9d5-43bc-a954-3493d9ae8387","timestamp":"2025-04-23T10:28:40.497Z"}
+{"level":"info","message":"No active rules found for event: visit:qr_verified","timestamp":"2025-04-23T10:28:40.504Z"}
+{"level":"info","message":"Rule already exists for event: visit:qr_verified, ruleID: rule_779cfW_C-u52Fq8HxIf6f, enabled: false","timestamp":"2025-04-23T10:28:40.507Z"}
+{"level":"info","message":"Created disabled rule for event: visit:qr_verified, ruleID: rule_779cfW_C-u52Fq8HxIf6f","timestamp":"2025-04-23T10:28:40.508Z"}
+{"level":"info","message":"QR code verified for visit vis_kPM1E6bgMUp4wttVBOwJo by user 95beb7d8-e9d5-43bc-a954-3493d9ae8387, IP: 127.0.0.1","timestamp":"2025-04-23T10:28:40.509Z"}
+{"level":"info","message":"Permission granted for access_visit_details to user 95beb7d8-e9d5-43bc-a954-3493d9ae8387","timestamp":"2025-04-23T10:28:41.349Z"}
+{"level":"info","message":"Fetched visit vis_kPM1E6bgMUp4wttVBOwJo by user 95beb7d8-e9d5-43bc-a954-3493d9ae8387, IP: 127.0.0.1","timestamp":"2025-04-23T10:28:41.555Z"}
+{"level":"info","message":"Permission granted for access_agents_by_id to user 95beb7d8-e9d5-43bc-a954-3493d9ae8387","timestamp":"2025-04-23T10:28:41.964Z"}
+{"level":"info","message":"Fetched agent agent_001 by user 95beb7d8-e9d5-43bc-a954-3493d9ae8387, IP: 127.0.0.1","timestamp":"2025-04-23T10:28:42.136Z"}
+{"level":"info","message":"Permission granted for log_visits to user 95beb7d8-e9d5-43bc-a954-3493d9ae8387","timestamp":"2025-04-23T10:29:12.978Z"}
+{"ip":null,"level":"error","message":"Log visit error: At least one photo is required to log a visit, user: 95beb7d8-e9d5-43bc-a954-3493d9ae8387","timestamp":"2025-04-23T10:29:12.980Z"}
+{"level":"error","message":"Log visit error: At least one photo is required to log a visit, user: 95beb7d8-e9d5-43bc-a954-3493d9ae8387, IP: 127.0.0.1","timestamp":"2025-04-23T10:29:12.980Z"}
+{"level":"info","message":"Fetched effective permissions for user 95beb7d8-e9d5-43bc-a954-3493d9ae8387 by 95beb7d8-e9d5-43bc-a954-3493d9ae8387, IP: 127.0.0.1","timestamp":"2025-04-23T10:29:17.313Z"}
+{"level":"info","message":"Fetched roles for user 95beb7d8-e9d5-43bc-a954-3493d9ae8387 by 95beb7d8-e9d5-43bc-a954-3493d9ae8387, IP: 127.0.0.1","timestamp":"2025-04-23T10:29:17.326Z"}
+{"level":"info","message":"Permission granted for access_visit_details to user 95beb7d8-e9d5-43bc-a954-3493d9ae8387","timestamp":"2025-04-23T10:29:17.703Z"}
+{"level":"info","message":"Fetched visit vis_kPM1E6bgMUp4wttVBOwJo by user 95beb7d8-e9d5-43bc-a954-3493d9ae8387, IP: 127.0.0.1","timestamp":"2025-04-23T10:29:17.993Z"}
+{"level":"info","message":"Fetched roles for user 95beb7d8-e9d5-43bc-a954-3493d9ae8387 by 95beb7d8-e9d5-43bc-a954-3493d9ae8387, IP: 127.0.0.1","timestamp":"2025-04-23T10:29:18.359Z"}
+{"level":"info","message":"Fetched effective permissions for user 95beb7d8-e9d5-43bc-a954-3493d9ae8387 by 95beb7d8-e9d5-43bc-a954-3493d9ae8387, IP: 127.0.0.1","timestamp":"2025-04-23T10:29:18.374Z"}
+{"level":"info","message":"Permission granted for access_agents_by_id to user 95beb7d8-e9d5-43bc-a954-3493d9ae8387","timestamp":"2025-04-23T10:29:18.533Z"}
+{"level":"info","message":"Fetched agent agent_001 by user 95beb7d8-e9d5-43bc-a954-3493d9ae8387, IP: 127.0.0.1","timestamp":"2025-04-23T10:29:18.698Z"}
+{"level":"info","message":"Permission granted for access_supervisor_timesheets to user 95beb7d8-e9d5-43bc-a954-3493d9ae8387","timestamp":"2025-04-23T10:29:31.249Z"}
+{"level":"info","message":"Fetched timesheets for supervisor 95beb7d8-e9d5-43bc-a954-3493d9ae8387 by user 95beb7d8-e9d5-43bc-a954-3493d9ae8387, IP: 127.0.0.1","timestamp":"2025-04-23T10:29:31.451Z"}
+{"level":"info","message":"Permission granted for access_visit_details to user 95beb7d8-e9d5-43bc-a954-3493d9ae8387","timestamp":"2025-04-23T10:29:35.648Z"}
+{"level":"info","message":"Fetched visit vis_mDFJR0e7WRJx-23n_B0nb by user 95beb7d8-e9d5-43bc-a954-3493d9ae8387, IP: 127.0.0.1","timestamp":"2025-04-23T10:29:35.854Z"}
+{"level":"info","message":"Permission granted for access_agents_by_id to user 95beb7d8-e9d5-43bc-a954-3493d9ae8387","timestamp":"2025-04-23T10:29:36.299Z"}
+{"level":"info","message":"Fetched agent agent_001 by user 95beb7d8-e9d5-43bc-a954-3493d9ae8387, IP: 127.0.0.1","timestamp":"2025-04-23T10:29:36.448Z"}
+{"level":"info","message":"Permission granted for access_agents_locations to user 95beb7d8-e9d5-43bc-a954-3493d9ae8387","timestamp":"2025-04-23T10:29:37.056Z"}
+{"level":"info","message":"Permission granted for access_reason_items to user 95beb7d8-e9d5-43bc-a954-3493d9ae8387","timestamp":"2025-04-23T10:29:37.131Z"}
+{"level":"info","message":"Permission granted for access_checklists_items to user 95beb7d8-e9d5-43bc-a954-3493d9ae8387","timestamp":"2025-04-23T10:29:37.211Z"}
+{"level":"info","message":"Permission granted for access_agents_by_location to user 95beb7d8-e9d5-43bc-a954-3493d9ae8387","timestamp":"2025-04-23T10:29:37.215Z"}
+{"level":"info","message":"Fetched all reasons by user 95beb7d8-e9d5-43bc-a954-3493d9ae8387, IP: 127.0.0.1","timestamp":"2025-04-23T10:29:37.269Z"}
+{"level":"info","message":"Fetched unique locations by user 95beb7d8-e9d5-43bc-a954-3493d9ae8387, IP: 127.0.0.1","timestamp":"2025-04-23T10:29:37.315Z"}
+{"level":"info","message":"Fetched all checklists by user 95beb7d8-e9d5-43bc-a954-3493d9ae8387, IP: 127.0.0.1","timestamp":"2025-04-23T10:29:37.335Z"}
+{"level":"info","message":"Fetched agents by location LocTest by user 95beb7d8-e9d5-43bc-a954-3493d9ae8387, IP: 127.0.0.1","timestamp":"2025-04-23T10:29:37.555Z"}
+{"level":"info","message":"Permission granted for access_supervisor_timesheets to user 95beb7d8-e9d5-43bc-a954-3493d9ae8387","timestamp":"2025-04-23T10:30:17.973Z"}
+{"level":"info","message":"Fetched timesheets for supervisor 95beb7d8-e9d5-43bc-a954-3493d9ae8387 by user 95beb7d8-e9d5-43bc-a954-3493d9ae8387, IP: 127.0.0.1","timestamp":"2025-04-23T10:30:18.220Z"}
+{"level":"info","message":"Permission granted for access_visit_details to user 95beb7d8-e9d5-43bc-a954-3493d9ae8387","timestamp":"2025-04-23T10:30:25.121Z"}
+{"level":"info","message":"Fetched visit vis_kPM1E6bgMUp4wttVBOwJo by user 95beb7d8-e9d5-43bc-a954-3493d9ae8387, IP: 127.0.0.1","timestamp":"2025-04-23T10:30:25.302Z"}
+{"level":"info","message":"Permission granted for access_agents_by_id to user 95beb7d8-e9d5-43bc-a954-3493d9ae8387","timestamp":"2025-04-23T10:30:25.804Z"}
+{"level":"info","message":"Fetched agent agent_001 by user 95beb7d8-e9d5-43bc-a954-3493d9ae8387, IP: 127.0.0.1","timestamp":"2025-04-23T10:30:26.186Z"}
+{"level":"info","message":"Permission granted for access_agents_locations to user 95beb7d8-e9d5-43bc-a954-3493d9ae8387","timestamp":"2025-04-23T10:30:26.796Z"}
+{"level":"info","message":"Permission granted for access_agents_by_location to user 95beb7d8-e9d5-43bc-a954-3493d9ae8387","timestamp":"2025-04-23T10:30:26.864Z"}
+{"level":"info","message":"Permission granted for access_reason_items to user 95beb7d8-e9d5-43bc-a954-3493d9ae8387","timestamp":"2025-04-23T10:30:26.971Z"}
+{"level":"info","message":"Permission granted for access_checklists_items to user 95beb7d8-e9d5-43bc-a954-3493d9ae8387","timestamp":"2025-04-23T10:30:26.979Z"}
+{"level":"info","message":"Fetched unique locations by user 95beb7d8-e9d5-43bc-a954-3493d9ae8387, IP: 127.0.0.1","timestamp":"2025-04-23T10:30:27.107Z"}
+{"level":"info","message":"Fetched all reasons by user 95beb7d8-e9d5-43bc-a954-3493d9ae8387, IP: 127.0.0.1","timestamp":"2025-04-23T10:30:27.119Z"}
+{"level":"info","message":"Fetched all checklists by user 95beb7d8-e9d5-43bc-a954-3493d9ae8387, IP: 127.0.0.1","timestamp":"2025-04-23T10:30:27.124Z"}
+{"level":"info","message":"Fetched agents by location LocTest by user 95beb7d8-e9d5-43bc-a954-3493d9ae8387, IP: 127.0.0.1","timestamp":"2025-04-23T10:30:27.191Z"}
+{"level":"info","message":"Permission granted for scan_visits to user 95beb7d8-e9d5-43bc-a954-3493d9ae8387","timestamp":"2025-04-23T10:30:38.881Z"}
+{"level":"info","message":"Permission granted for scan_visits to user 95beb7d8-e9d5-43bc-a954-3493d9ae8387","timestamp":"2025-04-23T10:30:39.048Z"}
+{"level":"info","message":"Permission granted for scan_visits to user 95beb7d8-e9d5-43bc-a954-3493d9ae8387","timestamp":"2025-04-23T10:30:39.075Z"}
+{"level":"info","message":"Permission granted for scan_visits to user 95beb7d8-e9d5-43bc-a954-3493d9ae8387","timestamp":"2025-04-23T10:30:39.224Z"}
+{"ip":null,"level":"info","message":"QR code verified for visit vis_kPM1E6bgMUp4wttVBOwJo by user 95beb7d8-e9d5-43bc-a954-3493d9ae8387","timestamp":"2025-04-23T10:30:39.344Z"}
+{"level":"info","message":"No active rules found for event: visit:qr_verified","timestamp":"2025-04-23T10:30:39.358Z"}
+{"level":"info","message":"Rule already exists for event: visit:qr_verified, ruleID: rule_779cfW_C-u52Fq8HxIf6f, enabled: false","timestamp":"2025-04-23T10:30:39.388Z"}
+{"level":"info","message":"Created disabled rule for event: visit:qr_verified, ruleID: rule_779cfW_C-u52Fq8HxIf6f","timestamp":"2025-04-23T10:30:39.392Z"}
+{"level":"info","message":"QR code verified for visit vis_kPM1E6bgMUp4wttVBOwJo by user 95beb7d8-e9d5-43bc-a954-3493d9ae8387, IP: 127.0.0.1","timestamp":"2025-04-23T10:30:39.394Z"}
+{"ip":null,"level":"info","message":"QR code verified for visit vis_kPM1E6bgMUp4wttVBOwJo by user 95beb7d8-e9d5-43bc-a954-3493d9ae8387","timestamp":"2025-04-23T10:30:39.477Z"}
+{"level":"info","message":"No active rules found for event: visit:qr_verified","timestamp":"2025-04-23T10:30:39.481Z"}
+{"level":"info","message":"Rule already exists for event: visit:qr_verified, ruleID: rule_779cfW_C-u52Fq8HxIf6f, enabled: false","timestamp":"2025-04-23T10:30:39.484Z"}
+{"level":"info","message":"Created disabled rule for event: visit:qr_verified, ruleID: rule_779cfW_C-u52Fq8HxIf6f","timestamp":"2025-04-23T10:30:39.484Z"}
+{"level":"info","message":"QR code verified for visit vis_kPM1E6bgMUp4wttVBOwJo by user 95beb7d8-e9d5-43bc-a954-3493d9ae8387, IP: 127.0.0.1","timestamp":"2025-04-23T10:30:39.486Z"}
+{"level":"info","message":"Permission granted for scan_visits to user 95beb7d8-e9d5-43bc-a954-3493d9ae8387","timestamp":"2025-04-23T10:30:39.520Z"}
+{"ip":null,"level":"info","message":"QR code verified for visit vis_kPM1E6bgMUp4wttVBOwJo by user 95beb7d8-e9d5-43bc-a954-3493d9ae8387","timestamp":"2025-04-23T10:30:39.543Z"}
+{"level":"info","message":"No active rules found for event: visit:qr_verified","timestamp":"2025-04-23T10:30:39.556Z"}
+{"level":"info","message":"Rule already exists for event: visit:qr_verified, ruleID: rule_779cfW_C-u52Fq8HxIf6f, enabled: false","timestamp":"2025-04-23T10:30:39.560Z"}
+{"level":"info","message":"Created disabled rule for event: visit:qr_verified, ruleID: rule_779cfW_C-u52Fq8HxIf6f","timestamp":"2025-04-23T10:30:39.561Z"}
+{"level":"info","message":"QR code verified for visit vis_kPM1E6bgMUp4wttVBOwJo by user 95beb7d8-e9d5-43bc-a954-3493d9ae8387, IP: 127.0.0.1","timestamp":"2025-04-23T10:30:39.561Z"}
+{"ip":null,"level":"info","message":"QR code verified for visit vis_kPM1E6bgMUp4wttVBOwJo by user 95beb7d8-e9d5-43bc-a954-3493d9ae8387","timestamp":"2025-04-23T10:30:39.689Z"}
+{"level":"info","message":"No active rules found for event: visit:qr_verified","timestamp":"2025-04-23T10:30:39.694Z"}
+{"level":"info","message":"Rule already exists for event: visit:qr_verified, ruleID: rule_779cfW_C-u52Fq8HxIf6f, enabled: false","timestamp":"2025-04-23T10:30:39.709Z"}
+{"level":"info","message":"Created disabled rule for event: visit:qr_verified, ruleID: rule_779cfW_C-u52Fq8HxIf6f","timestamp":"2025-04-23T10:30:39.715Z"}
+{"level":"info","message":"QR code verified for visit vis_kPM1E6bgMUp4wttVBOwJo by user 95beb7d8-e9d5-43bc-a954-3493d9ae8387, IP: 127.0.0.1","timestamp":"2025-04-23T10:30:39.721Z"}
+{"ip":null,"level":"info","message":"QR code verified for visit vis_kPM1E6bgMUp4wttVBOwJo by user 95beb7d8-e9d5-43bc-a954-3493d9ae8387","timestamp":"2025-04-23T10:30:39.977Z"}
+{"level":"info","message":"No active rules found for event: visit:qr_verified","timestamp":"2025-04-23T10:30:39.984Z"}
+{"level":"info","message":"Rule already exists for event: visit:qr_verified, ruleID: rule_779cfW_C-u52Fq8HxIf6f, enabled: false","timestamp":"2025-04-23T10:30:39.992Z"}
+{"level":"info","message":"Created disabled rule for event: visit:qr_verified, ruleID: rule_779cfW_C-u52Fq8HxIf6f","timestamp":"2025-04-23T10:30:39.993Z"}
+{"level":"info","message":"QR code verified for visit vis_kPM1E6bgMUp4wttVBOwJo by user 95beb7d8-e9d5-43bc-a954-3493d9ae8387, IP: 127.0.0.1","timestamp":"2025-04-23T10:30:39.994Z"}
+{"level":"info","message":"Permission granted for scan_visits to user 95beb7d8-e9d5-43bc-a954-3493d9ae8387","timestamp":"2025-04-23T10:30:40.022Z"}
+{"ip":null,"level":"info","message":"QR code verified for visit vis_kPM1E6bgMUp4wttVBOwJo by user 95beb7d8-e9d5-43bc-a954-3493d9ae8387","timestamp":"2025-04-23T10:30:40.032Z"}
+{"level":"info","message":"No active rules found for event: visit:qr_verified","timestamp":"2025-04-23T10:30:40.036Z"}
+{"level":"info","message":"Rule already exists for event: visit:qr_verified, ruleID: rule_779cfW_C-u52Fq8HxIf6f, enabled: false","timestamp":"2025-04-23T10:30:40.040Z"}
+{"level":"info","message":"Created disabled rule for event: visit:qr_verified, ruleID: rule_779cfW_C-u52Fq8HxIf6f","timestamp":"2025-04-23T10:30:40.040Z"}
+{"level":"info","message":"QR code verified for visit vis_kPM1E6bgMUp4wttVBOwJo by user 95beb7d8-e9d5-43bc-a954-3493d9ae8387, IP: 127.0.0.1","timestamp":"2025-04-23T10:30:40.041Z"}
+{"level":"info","message":"Permission granted for access_visit_details to user 95beb7d8-e9d5-43bc-a954-3493d9ae8387","timestamp":"2025-04-23T10:30:40.319Z"}
+{"level":"info","message":"Fetched visit vis_kPM1E6bgMUp4wttVBOwJo by user 95beb7d8-e9d5-43bc-a954-3493d9ae8387, IP: 127.0.0.1","timestamp":"2025-04-23T10:30:40.484Z"}
+{"level":"info","message":"Permission granted for access_agents_by_id to user 95beb7d8-e9d5-43bc-a954-3493d9ae8387","timestamp":"2025-04-23T10:30:40.933Z"}
+{"level":"info","message":"Fetched agent agent_001 by user 95beb7d8-e9d5-43bc-a954-3493d9ae8387, IP: 127.0.0.1","timestamp":"2025-04-23T10:30:41.189Z"}
+{"level":"info","message":"Fetched roles for user 95beb7d8-e9d5-43bc-a954-3493d9ae8387 by 95beb7d8-e9d5-43bc-a954-3493d9ae8387, IP: 127.0.0.1","timestamp":"2025-04-23T10:32:19.306Z"}
+{"level":"info","message":"Fetched effective permissions for user 95beb7d8-e9d5-43bc-a954-3493d9ae8387 by 95beb7d8-e9d5-43bc-a954-3493d9ae8387, IP: 127.0.0.1","timestamp":"2025-04-23T10:32:19.359Z"}
+{"level":"info","message":"Fetched effective permissions for user 95beb7d8-e9d5-43bc-a954-3493d9ae8387 by 95beb7d8-e9d5-43bc-a954-3493d9ae8387, IP: 127.0.0.1","timestamp":"2025-04-23T10:32:21.296Z"}
+{"level":"info","message":"Fetched roles for user 95beb7d8-e9d5-43bc-a954-3493d9ae8387 by 95beb7d8-e9d5-43bc-a954-3493d9ae8387, IP: 127.0.0.1","timestamp":"2025-04-23T10:32:21.330Z"}
+{"level":"info","message":"Permission granted for access_visit_details to user 95beb7d8-e9d5-43bc-a954-3493d9ae8387","timestamp":"2025-04-23T10:32:21.445Z"}
+{"level":"info","message":"Fetched visit vis_kPM1E6bgMUp4wttVBOwJo by user 95beb7d8-e9d5-43bc-a954-3493d9ae8387, IP: 127.0.0.1","timestamp":"2025-04-23T10:32:21.878Z"}
+{"level":"info","message":"Permission granted for access_agents_by_id to user 95beb7d8-e9d5-43bc-a954-3493d9ae8387","timestamp":"2025-04-23T10:32:22.891Z"}
+{"level":"info","message":"Fetched agent agent_001 by user 95beb7d8-e9d5-43bc-a954-3493d9ae8387, IP: 127.0.0.1","timestamp":"2025-04-23T10:32:23.516Z"}
+{"level":"info","message":"Permission granted for access_supervisor_timesheets to user 95beb7d8-e9d5-43bc-a954-3493d9ae8387","timestamp":"2025-04-23T10:41:57.977Z"}
+{"level":"info","message":"Fetched timesheets for supervisor 95beb7d8-e9d5-43bc-a954-3493d9ae8387 by user 95beb7d8-e9d5-43bc-a954-3493d9ae8387, IP: 127.0.0.1","timestamp":"2025-04-23T10:41:58.344Z"}
+{"level":"info","message":"User logged out, cookies cleared","timestamp":"2025-04-23T10:44:59.603Z"}
+{"level":"error","message":"Keycloak login error for superadmin@example.com: Request failed with status code 401","timestamp":"2025-04-23T10:50:47.894Z"}
+{"level":"error","message":"Login error for superadmin@example.com: Wrong email or password.","timestamp":"2025-04-23T10:50:48.107Z"}
+{"level":"info","message":"Keycloak admin token obtained","timestamp":"2025-04-23T10:51:03.835Z"}
+{"level":"info","message":"Login response generated for user user_mpe0xo17h","timestamp":"2025-04-23T10:51:15.988Z"}
+{"level":"info","message":"Login attempt for superadmin@example.com, requires2FA: false","timestamp":"2025-04-23T10:51:15.990Z"}
+{"level":"info","message":"Keycloak admin token obtained","timestamp":"2025-04-23T10:51:47.725Z"}
+{"level":"info","message":"Login response generated for user user_mpe0xo17h","timestamp":"2025-04-23T10:52:08.938Z"}
+{"level":"info","message":"Login attempt for superadmin@example.com, requires2FA: false","timestamp":"2025-04-23T10:52:08.942Z"}
+{"ip":"127.0.0.1","level":"error","message":"Server error: Error: Not allowed by CORS\n    at origin (C:\\Users\\Kayto\\Desktop\\IT\\Projects\\Stage\\Stage PFE\\TraceFlow\\keycloak\\Back\\app.js:40:22)\n    at C:\\Users\\Kayto\\Desktop\\IT\\Projects\\Stage\\Stage PFE\\TraceFlow\\keycloak\\Back\\node_modules\\cors\\lib\\index.js:219:13\n    at optionsCallback (C:\\Users\\Kayto\\Desktop\\IT\\Projects\\Stage\\Stage PFE\\TraceFlow\\keycloak\\Back\\node_modules\\cors\\lib\\index.js:199:9)\n    at corsMiddleware (C:\\Users\\Kayto\\Desktop\\IT\\Projects\\Stage\\Stage PFE\\TraceFlow\\keycloak\\Back\\node_modules\\cors\\lib\\index.js:204:7)\n    at Layer.handleRequest (C:\\Users\\Kayto\\Desktop\\IT\\Projects\\Stage\\Stage PFE\\TraceFlow\\keycloak\\Back\\node_modules\\router\\lib\\layer.js:152:17)\n    at trimPrefix (C:\\Users\\Kayto\\Desktop\\IT\\Projects\\Stage\\Stage PFE\\TraceFlow\\keycloak\\Back\\node_modules\\router\\index.js:342:13)\n    at C:\\Users\\Kayto\\Desktop\\IT\\Projects\\Stage\\Stage PFE\\TraceFlow\\keycloak\\Back\\node_modules\\router\\index.js:297:9\n    at processParams (C:\\Users\\Kayto\\Desktop\\IT\\Projects\\Stage\\Stage PFE\\TraceFlow\\keycloak\\Back\\node_modules\\router\\index.js:582:12)\n    at next (C:\\Users\\Kayto\\Desktop\\IT\\Projects\\Stage\\Stage PFE\\TraceFlow\\keycloak\\Back\\node_modules\\router\\index.js:291:5)\n    at Function.handle (C:\\Users\\Kayto\\Desktop\\IT\\Projects\\Stage\\Stage PFE\\TraceFlow\\keycloak\\Back\\node_modules\\router\\index.js:186:3)","timestamp":"2025-04-23T10:56:34.977Z"}
+{"ip":"127.0.0.1","level":"error","message":"Server error: Error: Not allowed by CORS\n    at origin (C:\\Users\\Kayto\\Desktop\\IT\\Projects\\Stage\\Stage PFE\\TraceFlow\\keycloak\\Back\\app.js:40:22)\n    at C:\\Users\\Kayto\\Desktop\\IT\\Projects\\Stage\\Stage PFE\\TraceFlow\\keycloak\\Back\\node_modules\\cors\\lib\\index.js:219:13\n    at optionsCallback (C:\\Users\\Kayto\\Desktop\\IT\\Projects\\Stage\\Stage PFE\\TraceFlow\\keycloak\\Back\\node_modules\\cors\\lib\\index.js:199:9)\n    at corsMiddleware (C:\\Users\\Kayto\\Desktop\\IT\\Projects\\Stage\\Stage PFE\\TraceFlow\\keycloak\\Back\\node_modules\\cors\\lib\\index.js:204:7)\n    at Layer.handleRequest (C:\\Users\\Kayto\\Desktop\\IT\\Projects\\Stage\\Stage PFE\\TraceFlow\\keycloak\\Back\\node_modules\\router\\lib\\layer.js:152:17)\n    at trimPrefix (C:\\Users\\Kayto\\Desktop\\IT\\Projects\\Stage\\Stage PFE\\TraceFlow\\keycloak\\Back\\node_modules\\router\\index.js:342:13)\n    at C:\\Users\\Kayto\\Desktop\\IT\\Projects\\Stage\\Stage PFE\\TraceFlow\\keycloak\\Back\\node_modules\\router\\index.js:297:9\n    at processParams (C:\\Users\\Kayto\\Desktop\\IT\\Projects\\Stage\\Stage PFE\\TraceFlow\\keycloak\\Back\\node_modules\\router\\index.js:582:12)\n    at next (C:\\Users\\Kayto\\Desktop\\IT\\Projects\\Stage\\Stage PFE\\TraceFlow\\keycloak\\Back\\node_modules\\router\\index.js:291:5)\n    at Function.handle (C:\\Users\\Kayto\\Desktop\\IT\\Projects\\Stage\\Stage PFE\\TraceFlow\\keycloak\\Back\\node_modules\\router\\index.js:186:3)","timestamp":"2025-04-23T11:00:00.412Z"}
+{"level":"info","message":"Cleaning up expired OTPs","timestamp":"2025-04-23T11:00:00.457Z"}
+{"level":"info","message":"Cleaned up 0 expired OTPs","timestamp":"2025-04-23T11:00:00.723Z"}
+{"ip":"127.0.0.1","level":"error","message":"Server error: Error: Not allowed by CORS\n    at origin (C:\\Users\\Kayto\\Desktop\\IT\\Projects\\Stage\\Stage PFE\\TraceFlow\\keycloak\\Back\\app.js:40:22)\n    at C:\\Users\\Kayto\\Desktop\\IT\\Projects\\Stage\\Stage PFE\\TraceFlow\\keycloak\\Back\\node_modules\\cors\\lib\\index.js:219:13\n    at optionsCallback (C:\\Users\\Kayto\\Desktop\\IT\\Projects\\Stage\\Stage PFE\\TraceFlow\\keycloak\\Back\\node_modules\\cors\\lib\\index.js:199:9)\n    at corsMiddleware (C:\\Users\\Kayto\\Desktop\\IT\\Projects\\Stage\\Stage PFE\\TraceFlow\\keycloak\\Back\\node_modules\\cors\\lib\\index.js:204:7)\n    at Layer.handleRequest (C:\\Users\\Kayto\\Desktop\\IT\\Projects\\Stage\\Stage PFE\\TraceFlow\\keycloak\\Back\\node_modules\\router\\lib\\layer.js:152:17)\n    at trimPrefix (C:\\Users\\Kayto\\Desktop\\IT\\Projects\\Stage\\Stage PFE\\TraceFlow\\keycloak\\Back\\node_modules\\router\\index.js:342:13)\n    at C:\\Users\\Kayto\\Desktop\\IT\\Projects\\Stage\\Stage PFE\\TraceFlow\\keycloak\\Back\\node_modules\\router\\index.js:297:9\n    at processParams (C:\\Users\\Kayto\\Desktop\\IT\\Projects\\Stage\\Stage PFE\\TraceFlow\\keycloak\\Back\\node_modules\\router\\index.js:582:12)\n    at next (C:\\Users\\Kayto\\Desktop\\IT\\Projects\\Stage\\Stage PFE\\TraceFlow\\keycloak\\Back\\node_modules\\router\\index.js:291:5)\n    at Function.handle (C:\\Users\\Kayto\\Desktop\\IT\\Projects\\Stage\\Stage PFE\\TraceFlow\\keycloak\\Back\\node_modules\\router\\index.js:186:3)","timestamp":"2025-04-23T11:01:29.837Z"}
+{"ip":"127.0.0.1","level":"error","message":"Server error: Error: Not allowed by CORS\n    at origin (C:\\Users\\Kayto\\Desktop\\IT\\Projects\\Stage\\Stage PFE\\TraceFlow\\keycloak\\Back\\app.js:40:22)\n    at C:\\Users\\Kayto\\Desktop\\IT\\Projects\\Stage\\Stage PFE\\TraceFlow\\keycloak\\Back\\node_modules\\cors\\lib\\index.js:219:13\n    at optionsCallback (C:\\Users\\Kayto\\Desktop\\IT\\Projects\\Stage\\Stage PFE\\TraceFlow\\keycloak\\Back\\node_modules\\cors\\lib\\index.js:199:9)\n    at corsMiddleware (C:\\Users\\Kayto\\Desktop\\IT\\Projects\\Stage\\Stage PFE\\TraceFlow\\keycloak\\Back\\node_modules\\cors\\lib\\index.js:204:7)\n    at Layer.handleRequest (C:\\Users\\Kayto\\Desktop\\IT\\Projects\\Stage\\Stage PFE\\TraceFlow\\keycloak\\Back\\node_modules\\router\\lib\\layer.js:152:17)\n    at trimPrefix (C:\\Users\\Kayto\\Desktop\\IT\\Projects\\Stage\\Stage PFE\\TraceFlow\\keycloak\\Back\\node_modules\\router\\index.js:342:13)\n    at C:\\Users\\Kayto\\Desktop\\IT\\Projects\\Stage\\Stage PFE\\TraceFlow\\keycloak\\Back\\node_modules\\router\\index.js:297:9\n    at processParams (C:\\Users\\Kayto\\Desktop\\IT\\Projects\\Stage\\Stage PFE\\TraceFlow\\keycloak\\Back\\node_modules\\router\\index.js:582:12)\n    at next (C:\\Users\\Kayto\\Desktop\\IT\\Projects\\Stage\\Stage PFE\\TraceFlow\\keycloak\\Back\\node_modules\\router\\index.js:291:5)\n    at Function.handle (C:\\Users\\Kayto\\Desktop\\IT\\Projects\\Stage\\Stage PFE\\TraceFlow\\keycloak\\Back\\node_modules\\router\\index.js:186:3)","timestamp":"2025-04-23T11:01:52.003Z"}
