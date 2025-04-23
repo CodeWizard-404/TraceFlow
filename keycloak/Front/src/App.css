@@ -507,3 +507,9 @@ body.dark .form-control {
 body.dark .form-control::placeholder {
   color: #d1d3d739 !important;
 }
+
+
+body {
+  background-color: none !important;
+
+}

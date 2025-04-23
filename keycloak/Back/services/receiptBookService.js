@@ -37,10 +37,25 @@ class ReceiptBookService {
             const book = await ReceiptBook.findByPk(bookID, {
                 attributes: ['bookID', 'number', 'type', 'status', 'qrCode', 'agentID', 'currentHolderID'],
                 include: [
-                    { model: User, as: 'CurrentHolder', attributes: ['userID', 'firstname', 'lastname'] },
-                    { model: ReceiptBookTransfer, attributes: ['transferID', 'transferType', 'transferDate'] },
-                    { model: Agent, attributes: ['agentID', 'name', 'lastname'] },
-                    { model: ReceiptStub, attributes: ['stubID', 'status'] },
+                    {
+                        model: User,
+                        as: 'CurrentHolder',
+                        attributes: ['userID', 'firstname', 'lastname'],
+                    },
+                    {
+                        model: ReceiptBookTransfer,
+                        attributes: ['transferID', 'transferType', 'transferDate'],
+                        // Avoid fetching related models within ReceiptBookTransfer to prevent cycles
+                        include: [], // Explicitly disable nested includes
+                    },
+                    {
+                        model: Agent,
+                        attributes: ['agentID', 'name', 'lastname'],
+                    },
+                    {
+                        model: ReceiptStub,
+                        attributes: ['stubID', 'status'],
+                    },
                 ],
             });
             if (!book) {
@@ -48,8 +63,18 @@ class ReceiptBookService {
                 error.status = 404;
                 throw error;
             }
+
+            // Convert Sequelize instance to plain object to break circular references
+            const plainBook = book.toJSON();
+
+            // Manually transform associations to ensure no circular references
+            plainBook.CurrentHolder = plainBook.CurrentHolder || null;
+            plainBook.Agent = plainBook.Agent || null;
+            plainBook.ReceiptBookTransfers = plainBook.ReceiptBookTransfers || [];
+            plainBook.ReceiptStub = plainBook.ReceiptStub || null;
+
             logger.info(`Fetched receipt book ${bookID} in ${Date.now() - startTime}ms`, { ip: null });
-            return book;
+            return plainBook;
         } catch (error) {
             logger.error(`Get receipt book error: ${error.message}`, { ip: null });
             throw error;
@@ -59,7 +84,6 @@ class ReceiptBookService {
     static async getAllReceiptBooks() {
         try {
             const startTime = Date.now();
-            // Fetch only essential fields for ReceiptBook
             const books = await ReceiptBook.findAll({
                 attributes: ['bookID', 'number', 'type', 'status', 'qrCode', 'agentID', 'currentHolderID'],
                 include: [
@@ -86,22 +110,22 @@ class ReceiptBookService {
                 ReceiptBookTransfer.findAll({
                     where: { bookID: bookIDs },
                     attributes: ['transferID', 'bookID', 'transferType', 'transferDate'],
+                    include: [], // Prevent nested includes
                 }),
             ]);
 
             // Map associations to books
-            const holderMap = new Map(holders.map(h => [h.userID, { ...h.toJSON() }]));
-            const agentMap = new Map(agents.map(a => [a.agentID, { ...a.toJSON() }]));
+            const holderMap = new Map(holders.map(h => [h.userID, h.toJSON()]));
+            const agentMap = new Map(agents.map(a => [a.agentID, a.toJSON()]));
             const transferMap = new Map();
             transfers.forEach(t => {
                 if (!transferMap.has(t.bookID)) transferMap.set(t.bookID, []);
-                transferMap.get(t.bookID).push({ ...t.toJSON() });
+                transferMap.get(t.bookID).push(t.toJSON());
             });
 
-            // Safely serialize books
+            // Construct plain objects
             const enrichedBooks = books.map(book => {
-                // Ensure book is a Sequelize instance or convert safely
-                const bookData = book && typeof book.toJSON === 'function' ? book.toJSON() : { ...book };
+                const bookData = book.toJSON();
                 bookData.CurrentHolder = book.currentHolderID ? holderMap.get(book.currentHolderID) : null;
                 bookData.Agent = book.agentID ? agentMap.get(book.agentID) : null;
                 bookData.ReceiptBookTransfers = transferMap.get(book.bookID) || [];

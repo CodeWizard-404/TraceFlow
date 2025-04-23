@@ -44,9 +44,19 @@ class ReceiptBookController {
                 return res.status(400).json({ error: 'Book ID is required' });
             }
             const receiptBook = await ReceiptBookService.getReceiptBookById(bookID);
+            // Ensure qrCode is properly encoded
             const responseBook = {
-                ...receiptBook,
+                bookID: receiptBook.bookID,
+                number: receiptBook.number,
+                type: receiptBook.type,
+                status: receiptBook.status,
                 qrCode: receiptBook.qrCode ? Buffer.from(receiptBook.qrCode).toString('base64') : null,
+                agentID: receiptBook.agentID,
+                currentHolderID: receiptBook.currentHolderID,
+                CurrentHolder: receiptBook.CurrentHolder,
+                ReceiptBookTransfers: receiptBook.ReceiptBookTransfers,
+                Agent: receiptBook.Agent,
+                ReceiptStub: receiptBook.ReceiptStub,
             };
             logger.info(`Fetched receipt book ${bookID} by user ${req.user.userID}, IP: ${req.ip}`);
             return res.status(200).json(responseBook);
