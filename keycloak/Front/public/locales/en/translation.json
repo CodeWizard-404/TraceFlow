@@ -30,23 +30,23 @@
       "visited": "Visited",
       "validated": "Validated",
       "rejected": "Rejected",
-      "notScheduled": "Not scheduled"
+      "notScheduled": "Not Scheduled"
     },
     "receiptBookStatuses": {
-      "inStock": "In stock",
-      "sentToSupplier": "Sent to supplier",
-      "collectFromSupplier": "To be collected from supplier",
-      "withRegionalManager": "With regional manager",
-      "stubCollected": "Stub collected",
-      "withSupervisor": "With supervisor",
-      "assignedToAgent": "Assigned to agent",
-      "withStockManager": "With stock manager",
-      "stubCollectedStatus": "Collected"
+      "inStock": "In Stock",
+      "sentToSupplier": "Sent to Supplier",
+      "collectFromSupplier": "Collect from Supplier",
+      "withRegionalManager": "With Regional Manager",
+      "stubCollected": "Stub Collected",
+      "withSupervisor": "With Supervisor",
+      "assignedToAgent": "Assigned to Agent",
+      "withStockManager": "With Stock Manager",
+      "stubCollectedStatus": "collected"
     },
-    "durationUnit": "min"
+    "durationUnit": "m"
   },
   "header": {
-    "logoAlt": "Company logo",
+    "logoAlt": "Company Logo",
     "aria": {
       "toggleMenu": "Toggle navigation menu",
       "themeToggle": "Switch to {mode} mode",
@@ -59,9 +59,9 @@
     "lightMode": "light",
     "navbar": {
       "dashboard": "Dashboard",
-      "admin": "Administration",
+      "admin": "Admin",
       "timesheets": "Timesheets",
-      "receiptBooks": "Receipt books",
+      "receiptBooks": "Receipt Books",
       "profile": "Profile"
     }
   },
@@ -72,23 +72,23 @@
     "copyright": "© {{year}} TraceFlow. All rights reserved.",
     "links": {
       "privacy": "Privacy Policy",
-      "terms": "Terms of Use",
+      "terms": "Terms of Service",
       "contact": "Contact Us"
     }
   },
   "visitValidation": {
     "title": "Validate Visit",
     "description": "Complete the checklist, add photos, and validate the visit.",
-    "loading": "Loading visit details...",
+    "loading": "Loading Visit Details...",
     "error": {
       "title": "Error",
-      "missingData": "Visit ID or authentication token missing.",
+      "missingData": "Missing visit ID or authentication token.",
       "fetchFailed": "Failed to load visit or agent data.",
       "accessDenied": "Visit not found or access denied.",
-      "cameraAccess": "Failed to access the camera. Please ensure permissions are granted.",
-      "cameraInUse": "Camera is in use by another application or unavailable. Please close other applications or check your device.",
-      "cameraPlayFailed": "Failed to play the camera stream.",
-      "validationFailed": "Failed to validate the visit.",
+      "cameraAccess": "Failed to access camera. Please ensure permissions are granted.",
+      "cameraInUse": "Camera is in use by another app or unavailable. Please close other apps or check your device.",
+      "cameraPlayFailed": "Failed to play camera stream.",
+      "validationFailed": "Failed to validate visit.",
       "noPhotos": "At least one photo is required.",
       "noChecklists": "No checklists available for this visit.",
       "missingChecklists": "Please complete all checklist items before submitting."
@@ -115,7 +115,7 @@
       "alt": "Visit photo {{index}}"
     },
     "comment": {
-      "title": "Comment (optional)",
+      "title": "Comment (Optional)",
       "label": "Comment",
       "placeholder": "Add a comment about the visit..."
     },
@@ -138,18 +138,18 @@
       "title": "Oops!",
       "notFound": "Visit not found.",
       "fetchFailed": "Failed to load visit details.",
-      "validateFailed": "Failed to validate the visit.",
-      "rejectFailed": "Failed to reject the visit.",
-      "updateFailed": "Failed to update the visit.",
-      "deleteFailed": "Failed to delete the visit.",
-      "cameraAccess": "Failed to access the camera. Please ensure permissions are granted.",
-      "cameraPlayFailed": "Failed to play the camera stream.",
+      "validateFailed": "Failed to validate visit.",
+      "rejectFailed": "Failed to reject visit.",
+      "updateFailed": "Failed to update visit.",
+      "deleteFailed": "Failed to delete visit.",
+      "cameraAccess": "Failed to access camera. Please ensure permissions are granted.",
+      "cameraPlayFailed": "Failed to play camera stream.",
       "agentNotFound": "Agent not found with this phone number.",
       "supervisorNotFound": "Supervisor not found with this phone number.",
       "agentsLoadFailed": "Failed to load agents for {{location}}."
     },
     "whenWhere": {
-      "title": "When and Where",
+      "title": "When & Where",
       "date": "Date",
       "time": "Time",
       "location": "Location",
@@ -182,14 +182,14 @@
     "supervisor": {
       "title": "Supervisor",
       "searchNamePlaceholder": "Search supervisors by name...",
-      "searchPhonePlaceholder": "Or enter the supervisor's phone number...",
+      "searchPhonePlaceholder": "Or enter supervisor phone number...",
       "selectPlaceholder": "Select a supervisor",
       "ariaLabel": "Select a supervisor"
     },
     "form": {
       "agentPhone": {
-        "label": "Agent Phone (optional)",
-        "placeholder": "Enter the agent's phone number"
+        "label": "Agent Phone (Optional)",
+        "placeholder": "Enter agent's phone number"
       },
       "location": {
         "label": "Location",
@@ -225,7 +225,7 @@
       "supervisor": {
         "label": "Supervisor",
         "searchPlaceholder": "Search supervisors by name...",
-        "phonePlaceholder": "Or enter the supervisor's phone number...",
+        "phonePlaceholder": "Or enter supervisor phone number...",
         "selectPlaceholder": "Select a supervisor",
         "ariaLabel": "Select a supervisor"
       },
@@ -252,10 +252,10 @@
       "cancel": "Cancel",
       "deleteConfirm": "Are you sure you want to delete this visit?"
     },
-    "duration": "{{duration}}min",
+    "duration": "{{duration}}m",
     "fullscreenAlt": "Fullscreen preview",
     "aria": {
-      "backButton": "Return to the previous page",
+      "backButton": "Return to previous page",
       "logVisit": "Log this visit",
       "editVisit": "Edit visit details",
       "deleteVisit": "Delete this visit",
@@ -275,7 +275,7 @@
     "status": {
       "startingCamera": "Starting camera...",
       "scanning": "Scanning...",
-      "detected": "QR code detected",
+      "detected": "QR Code Detected",
       "checking": "Checking...",
       "validating": "Validating..."
     },
@@ -283,20 +283,20 @@
       "title": "Oops!",
       "noVisit": "No visit selected.",
       "authRequired": "Authentication required.",
-      "accessDenied": "Access denied: You do not have permission to scan visits.",
+      "accessDenied": "Access Denied: You lack permission to scan visits.",
       "mismatch": "Mismatch error"
     },
     "actions": {
       "back": "Back"
     },
     "aria": {
-      "backButton": "Return to the previous page",
+      "backButton": "Return to previous page",
       "qrReader": "QR code scanner, current status: {{status}}",
       "errorMessage": "Error message"
     }
   },
   "timesheets": {
-    "loading": "Loading timesheet...",
+    "loading": "Loading Timesheet...",
     "viewModes": {
       "year": "Year",
       "month": "Month",
@@ -304,23 +304,23 @@
       "day": "Day"
     },
     "actions": {
-      "scheduleVisit": "Schedule a visit",
-      "receiptBooks": "Receipt books",
+      "scheduleVisit": "Schedule Visit",
+      "receiptBooks": "Receipt Books",
       "current": "Current {{view}}",
-      "viewReceiptBooks": "View receipt books",
-      "filterSupervisors": "Filter supervisors",
-      "validateTimesheet": "Validate the entire timesheet"
+      "viewReceiptBooks": "View Receipt Books",
+      "filterSupervisors": "Filter Supervisors",
+      "validateTimesheet": "Validate Entire Timesheet"
     },
     "filter": {
       "searchPlaceholder": "Search by name or phone...",
-      "allSupervisors": "All supervisors"
+      "allSupervisors": "All Supervisors"
     },
     "yearView": {
       "week": "Week",
       "visits": "Visits",
       "supervisors": "Supervisors",
       "month": "{{monthName}}",
-      "weekNumber": "Week {{weekNumber}}:",
+      "weekNumber": "Week {{weekNumber}} :",
       "weekRange": "{{startDate}} - {{endDate}}",
       "supervisorCount": "Supervisors: {{count}}"
     },
@@ -344,14 +344,14 @@
     },
     "dayView": {
       "date": "{{weekday}} {{day}}/{{month}}",
-      "noVisits": "No visits scheduled"
+      "noVisits": "No Visits Scheduled"
     },
     "visitCard": {
       "supervisor": "{{firstname}} {{lastname}}",
       "time": "{{time}}",
       "status": "{{status}}",
       "location": "{{location}}",
-      "locationTBD": "Location to be determined",
+      "locationTBD": "Location TBD",
       "reasons": "Reasons: {{reasons}}"
     },
     "aria": {
@@ -370,29 +370,28 @@
       "supervisorSearch": "Search supervisors by name or phone",
       "supervisorFilter": "Filter timesheets by supervisor",
       "month": "View timesheets for {{month}}",
-      "weekTile": "View details for week {{weekNumber}}",
-      "weekCard": "View details for week {{weekNumber}}",
+      "weekTile": "View week {{weekNumber}} details",
+      "weekCard": "View week {{weekNumber}} details",
       "dayTile": "View visits for {{weekday}} {{day}}",
       "visitCard": "View visit details for {{time}} at {{location}}"
     }
-  },
-  "timesheetForm": {
+  },"timesheetForm": {
     "title": "Create Visit",
     "loading": "Loading...",
     "form": {
       "supervisor": "Supervisor",
       "date": "Date",
       "time": "Time",
-      "agentPhone": "Agent Phone (optional)",
+      "agentPhone": "Agent Phone (Optional)",
       "location": "Location",
       "agent": "Agent",
       "reasons": "Reasons",
       "checklists": "Checklists",
       "placeholders": {
         "supervisorSearch": "Search supervisors by name...",
-        "supervisorPhone": "Or enter the supervisor's phone number...",
+        "supervisorPhone": "Or enter supervisor phone number...",
         "supervisorSelect": "Select a supervisor",
-        "agentPhone": "Enter the agent's phone number",
+        "agentPhone": "Enter agent's phone number",
         "permissionDenied": "Permission denied",
         "locationSearch": "Search locations...",
         "locationSelect": "Select a location",
@@ -416,7 +415,7 @@
       "agentNotFound": "Agent not found with this phone number",
       "supervisorNotFound": "Supervisor not found with this phone number",
       "createFailed": "Failed to create timesheet. Please try again.",
-      "formIncomplete": "Please fill in all required fields."
+      "formIncomplete": "Please fill out all required fields."
     },
     "accessibility": {
       "removeReason": "Remove reason {{item}}",
@@ -431,28 +430,28 @@
       "agentSelection": "Agent Selection",
       "recipientType": "Recipient Type",
       "supplierEmail": "Supplier Email",
-      "selectBooks": "Select in-stock books to transfer",
+      "selectBooks": "Select In Stock Books to Transfer",
       "selectedAgent": "Selected Agent",
-      "scanCollect": "Scan books to collect from supplier",
-      "scanQR": "Scan QR codes",
-      "otp": "Enter OTP (sent to {{type}} {{details}})",
-      "location": "Select a location",
-      "searchAgents": "Search agents",
-      "selectAgent": "Select an agent",
+      "scanCollect": "Scan Books to Collect from Supplier",
+      "scanQR": "Scan QR Codes",
+      "otp": "Enter OTP (Sent to {{type}} {{details}})",
+      "location": "Select Location",
+      "searchAgents": "Search Agents",
+      "selectAgent": "Select Agent",
       "recipientSelection": "Recipient Selection",
       "selectRecipient": "Select {{type}}",
       "selectedUser": "Selected User",
       "selectedBooks": "Selected Books",
-      "scanStub": "Scan stub",
-      "noBooksAvailable": "No books available",
+      "scanStub": "Scan Stub",
+      "noBooksAvailable": "No Books Available",
       "or": "or",
       "placeholders": {
-        "selectRecipientType": "Select recipient type",
-        "enterAgentPhone": "Enter agent's phone number",
-        "selectLocation": "Select a location",
+        "selectRecipientType": "Select Recipient Type",
+        "enterAgentPhone": "Enter agent phone number",
+        "selectLocation": "Select Location",
         "searchAgents": "Search agents by name or phone",
-        "selectAgent": "Select an agent",
-        "enterSupplierEmail": "Enter supplier's email",
+        "selectAgent": "Select Agent",
+        "enterSupplierEmail": "Enter supplier email",
         "searchBooks": "Search books by number or type",
         "searchRecipient": "Enter phone number or search by name",
         "selectRecipient": "Select {{type}}",
@@ -470,11 +469,11 @@
       "validateTransfer": "Validate Transfer",
       "validateStubCollection": "Validate Stub Collection",
       "aria": {
-        "back": "Return to the previous step",
-        "initiate": "Initiate the transfer of receipt books",
+        "back": "Back to previous step",
+        "initiate": "Initiate transfer of receipt books",
         "initiateStub": "Initiate stub collection",
         "collect": "Collect books from supplier",
-        "validateTransfer": "Validate the transfer",
+        "validateTransfer": "Validate transfer",
         "validateStubCollection": "Validate stub collection",
         "removeBook": "Remove book {{number}}"
       }
@@ -492,7 +491,7 @@
     },
     "otpTimer": "OTP expires in",
     "list": {
-      "noBooks": "No in-stock books available or matching the search.",
+      "noBooks": "No In Stock books available or matching search.",
       "selectedBooks": "Selected Books",
       "scannedQRs": "{{count}} QR codes scanned."
     },
@@ -504,16 +503,16 @@
       "collectFromSupplier": "Collect from Supplier"
     },
     "errors": {
-      "accessDenied": "Access denied - Missing transfer_receipt_books permission",
+      "accessDenied": "Access Denied - Missing transfer_receipt_books permission",
       "loadData": "Failed to load data. Check console for details.",
       "fetchAgent": "Failed to fetch agent details.",
       "cameraAccess": "Camera access denied or unavailable.",
       "qrNotFound": "QR code \"{{number}}\" not found in receipt books.",
-      "qrAlreadyScanned": "QR code \"{{number}}\" already scanned or selected.",
+      "qrAlreadyScanned": "QR code \"{{number}}\" has already been scanned or selected.",
       "bookNotTransferable": "Book \"{{number}}\" (status: {{status}}) cannot be transferred/collected by your role(s).",
       "stubNotAssigned": "Book \"{{number}}\" must be \"Assigned to Agent\" for stub collection.",
-      "stubNotCollected": "Stub \"{{number}}\" must be \"Collected\" for stock management.",
-      "supervisorLimit": "Supervisors can only assign one receipt book to an agent.",
+      "stubNotCollected": "Stub \"{{number}}\" must be \"collected\" for stock management.",
+      "supervisorLimit": "Supervisors can only assign one receipt book to an Agent.",
       "invalidQR": "Invalid QR code format. Please try again.",
       "otpExpired": "OTP has expired. Please initiate the transfer again.",
       "noBooksSelected": "Please select at least one book.",
@@ -527,7 +526,7 @@
       "stubCollectionSingle": "Stub collection requires exactly one book.",
       "validationFailed": "Invalid OTP or transfer validation failed: {{message}}",
       "agentNotFound": "No agent found with phone {{phone}}.",
-      "userRoleMismatch": "User with phone {{phone}} does not have the {{recipientType}} role.",
+      "userRoleMismatch": "User with phone {{phone}} does not have role {{recipientType}}.",
       "userNotFound": "No user found with phone {{phone}}.",
       "fetchAgents": "Failed to fetch agents by location."
     }
@@ -548,33 +547,33 @@
       },
       "placeholders": {
         "number": "000001",
-        "type": "Select type"
+        "type": "Select Type"
       }
     },
     "search": {
       "placeholder": "Search receipts..."
     },
     "sort": {
-      "title": "Sort by",
+      "title": "Sort By",
       "fields": {
         "number": "Number",
         "type": "Type",
         "status": "Status"
       },
       "order": {
-        "asc": "Ascending",
-        "desc": "Descending"
+        "asc": "Asc",
+        "desc": "Desc"
       }
     },
     "filter": {
       "title": "Filters",
       "type": {
         "label": "Type",
-        "all": "All types"
+        "all": "All Types"
       },
       "status": {
         "label": "Status",
-        "all": "All statuses"
+        "all": "All Statuses"
       }
     },
     "table": {
@@ -616,15 +615,15 @@
     }
   },
   "receiptBookHistory": {
-    "title": "Receipt Book History #{{number}}",
-    "loading": "Tracking history...",
+    "title": "Receipt Book #{{number}} History",
+    "loading": "Tracking History...",
     "error": {
-      "accessDenied": "Access denied or invalid book ID",
+      "accessDenied": "Access Denied or Invalid Book ID",
       "fetchFailed": "Failed to fetch history or details.",
       "notFound": "Receipt book not found."
     },
     "actions": {
-      "back": "Back to receipts"
+      "back": "Back to Receipts"
     },
     "footer": {
       "currentStatus": "Current Status: ",
@@ -644,9 +643,9 @@
       "toRegionalManager": "To Regional Manager",
       "toSupervisor": "To Supervisor",
       "toAgent": "To Agent",
-      "stubToSupervisor": "Stub to Supervisor",
+      "stubToSupervisor": "Stub To Supervisor",
       "toStockManager": "To Stock Manager",
-      "toRegionalManagerFromSupervisor": "To Regional Manager from Supervisor",
+      "toRegionalManagerFromSupervisor": "To Regional Manager From Supervisor",
       "archive": "Archive"
     }
   },
@@ -655,10 +654,10 @@
     "subtitle": "Page Not Found",
     "error": {
       "message": "Oops!",
-      "description": "This page does not exist or has been moved."
+      "description": "This page doesn’t exist or has been moved."
     },
     "actions": {
-      "back": "Return to the previous page"
+      "back": "Return to Previous Page"
     }
   },
   "errorDisplay": {
@@ -668,13 +667,13 @@
   },
   "accessDenied": {
     "title": "Access Denied",
-    "subtitle": "You do not have permission to view this page.",
+    "subtitle": "You don’t have permission to view this page.",
     "warning": {
       "message": "Restricted Area",
       "description": "Please contact an administrator if you believe this is an error."
     },
     "actions": {
-      "back": "Return to the previous page"
+      "back": "Return to Previous Page"
     }
   },
   "entry": {
@@ -694,7 +693,7 @@
     },
     "stats": {
       "supervisorsCount": {
-        "title": "Number of Supervisors",
+        "title": "Supervisors Count",
         "value": "{{count}} supervisors"
       },
       "activeSupervisors": {
@@ -709,7 +708,7 @@
       "title": "Emails"
     },
     "todoList": {
-      "title": "To-Do List"
+      "title": "To Do List"
     }
   },
   "navbar": {
@@ -718,7 +717,7 @@
     "help": "Help"
   },
   "profilePage": {
-    "loading": "Loading profile...",
+    "loading": "Loading Profile...",
     "error": {
       "noProfile": "Failed to load profile. Please try again later.",
       "noToken": "No authentication token found",
@@ -729,11 +728,11 @@
     },
     "header": {
       "userId": "User ID: {{userId}}",
-      "firstNameNotSet": "First name not set",
-      "lastNameNotSet": "Last name not set"
+      "firstNameNotSet": "First Name Not Set",
+      "lastNameNotSet": "Last Name Not Set"
     },
     "nav": {
-      "info": "Profile Information",
+      "info": "Profile Info",
       "settings": "Settings",
       "activity": "Activity"
     },
@@ -772,37 +771,37 @@
       "timesheetSubmitted": {
         "title": "Timesheet Submitted",
         "subtext": "Duration: {{duration}}",
-        "amount": "Pending approval"
+        "amount": "Pending Approval"
       },
       "carnetDistributed": {
-        "title": "Book Distributed",
-        "subtext": "Book ID: {{carnetId}} | Agent: {{agent}}",
-        "amount": "+1 Book"
+        "title": "Carnet Distributed",
+        "subtext": "Carnet ID: {{carnetId}} | Agent: {{agent}}",
+        "amount": "+1 Carnet"
       },
       "soucheCollected": {
-        "title": "Stub Collected",
-        "subtext": "Book ID: {{carnetId}} | Status: {{status}}",
-        "amount": "+1 Stub"
+        "title": "Souche Collected",
+        "subtext": "Carnet ID: {{carnetId}} | Status: {{status}}",
+        "amount": "+1 Souche"
       }
     },
     "validation": {
-      "firstnameRequired": "First name is required",
-      "firstnameLengthMin": "First name must be at least 3 characters",
-      "firstnameLengthMax": "First name must be 20 characters or fewer",
-      "firstnameFormat": "First name can only contain letters, spaces, hyphens, or apostrophes",
-      "lastnameRequired": "Last name is required",
-      "lastnameLengthMin": "Last name must be at least 3 characters",
-      "lastnameLengthMax": "Last name must be 20 characters or fewer",
-      "lastnameFormat": "Last name can only contain letters, spaces, hyphens, or apostrophes",
+      "firstnameRequired": "Firstname is required",
+      "firstnameLengthMin": "Firstname must be at least 3 characters",
+      "firstnameLengthMax": "Firstname must be 20 characters or less",
+      "firstnameFormat": "Firstname can only contain letters, spaces, hyphens, or apostrophes",
+      "lastnameRequired": "Lastname is required",
+      "lastnameLengthMin": "Lastname must be at least 3 characters",
+      "lastnameLengthMax": "Lastname must be 20 characters or less",
+      "lastnameFormat": "Lastname can only contain letters, spaces, hyphens, or apostrophes",
       "emailRequired": "Email is required",
-      "emailLength": "Email must be 70 characters or fewer",
+      "emailLength": "Email must be 70 characters or less",
       "emailFormat": "Invalid email format",
       "phoneRequired": "Phone is required",
       "phoneLength": "Phone must be 8 digits",
       "walletLength": "Wallet must be exactly 16 digits",
       "passwordLengthMin": "Password must be at least 8 characters",
-      "passwordLengthMax": "Password must be 128 characters or fewer",
-      "passwordFormat": "Password must include an uppercase letter, lowercase letter, number, and special character, with no spaces",
+      "passwordLengthMax": "Password must be 128 characters or less",
+      "passwordFormat": "Password must include uppercase, lowercase, digit, and special character, no spaces",
       "passwordConfirmRequired": "Password confirmation is required",
       "passwordMismatch": "Passwords do not match"
     },
@@ -815,16 +814,16 @@
   "login": {
     "header": {
       "title": "TraceFlow",
-      "subtitle": "Secure Tracking. Optimization. Success."
+      "subtitle": "Securely Track. Optimize. Succeed."
     },
     "login": {
-      "title": "Login",
-      "identifier": "Email or phone",
+      "title": "Sign In",
+      "identifier": "Email or Phone",
       "password": "Password",
       "identifierPlaceholder": "Enter your email or phone",
       "passwordPlaceholder": "Enter your password",
-      "forgotPassword": "Forgot password?",
-      "submit": "Sign in"
+      "forgotPassword": "Forgot Password?",
+      "submit": "Sign In"
     },
     "verify2FA": {
       "title": "Enter OTP",
@@ -835,17 +834,17 @@
       "trustDevice": "Trust this device",
       "resend": "Resend OTP",
       "resendCooldown": "Resend in {{seconds}}s",
-      "switchToEmail": "Can't access your phone? Send to email instead.",
+      "switchToEmail": "Can’t access your phone? Send to email instead.",
       "switchToPhone": "Send to phone instead.",
       "submit": "Verify OTP",
-      "back": "Back to login"
+      "back": "Back to Sign In"
     },
     "forgot": {
       "title": "Send Reset OTP",
-      "identifier": "Email or phone",
+      "identifier": "Email or Phone",
       "identifierPlaceholder": "Enter your email or phone",
       "submit": "Send Reset OTP",
-      "back": "Back to login"
+      "back": "Back to Sign In"
     },
     "verifyReset": {
       "title": "Enter Reset OTP",
@@ -854,7 +853,7 @@
       "resend": "Resend OTP",
       "resendCooldown": "Resend in {{seconds}}s",
       "submit": "Verify OTP",
-      "back": "Back to login"
+      "back": "Back to Sign In"
     },
     "reset": {
       "title": "Reset Password",
@@ -863,13 +862,13 @@
       "newPasswordPlaceholder": "Enter new password",
       "confirmPasswordPlaceholder": "Confirm new password",
       "submit": "Reset Password",
-      "back": "Back to login"
+      "back": "Back to Sign In"
     },
     "validation": {
       "identifierRequired": "Please enter your email or phone number.",
       "identifierFormat": "Invalid email or phone format.",
       "passwordRequired": "Please enter a password.",
-      "passwordLengthMin": "Password must be at least 8 characters.",
+      "passwordLengthMin": "Password must be at least 8 characters long.",
       "passwordLengthMax": "Password cannot exceed 128 characters.",
       "passwordFormat": "Password must include an uppercase letter, lowercase letter, number, and special character (no spaces).",
       "confirmPasswordRequired": "Please confirm your password.",
@@ -895,39 +894,39 @@
       "userDetails": "Loading user details..."
     },
     "header": {
-      "users": "User Management",
-      "roles": "Role Management",
-      "permissions": "Permission Management",
+      "users": "Users Management",
+      "roles": "Roles Management",
+      "permissions": "Permissions Management",
       "addUser": "Add New User",
       "addRole": "Create New Role",
       "addPermission": "Create New Permission",
       "userDetails": "{{firstName}} {{lastName}}",
-      "checklists": "Checklist Management",
+      "checklists": "Checklists Management",
       "addChecklist": "Add New Checklist",
       "checklistDetails": "Checklist: {{item}}",
-      "reasons": "Reason Management",
+      "reasons": "Reasons Management",
       "addReason": "Add New Reason",
       "reasonDetails": "Reason: {{item}}",
-      "notifications": "Notification Management",
+      "notifications": "Notifications Management",
       "addNotificationRule": "Add New Notification Rule",
       "notificationRuleDetails": "Notification Rule: {{event}}"
     },
     "sidebar": {
-      "sortNotificationsBy": "Sort notifications by",
-      "filterNotifications": "Filter notifications",
-      "filterByNotificationType": "Filter by notification type",
-      "filterByNotificationChannel": "Filter by notification channel",
-      "filterByNotificationStatus": "Filter by notification status",
-      "allTypes": "All types",
-      "allChannels": "All channels",
-      "allStatuses": "All statuses",
+      "sortNotificationsBy": "Sort Notifications By",
+      "filterNotifications": "Filter Notifications",
+      "filterByNotificationType": "Filter by Notification Type",
+      "filterByNotificationChannel": "Filter by Notification Channel",
+      "filterByNotificationStatus": "Filter by Notification Status",
+      "allTypes": "All Types",
+      "allChannels": "All Channels",
+      "allStatuses": "All Statuses",
       "websocket": "Websocket",
       "email": "Email",
       "sms": "SMS",
-      "inApp": "In-app",
+      "inApp": "In-App",
       "enabled": "Enabled",
       "disabled": "Disabled",
-      "addNotificationRule": "Add notification rule",
+      "addNotificationRule": "Add Notification Rule",
       "notifications": "Notifications",
       "view": "View",
       "users": "Users",
@@ -935,7 +934,7 @@
       "permissions": "Permissions",
       "checklists": "Checklists",
       "reasons": "Reasons",
-      "sortUsersBy": "Sort users by",
+      "sortUsersBy": "Sort Users By",
       "sortOptions": {
         "name": "Name",
         "email": "Email",
@@ -945,18 +944,18 @@
         "status": "Status"
       },
       "sortOrder": {
-        "asc": "Ascending",
-        "desc": "Descending"
+        "asc": "Asc",
+        "desc": "Desc"
       },
-      "filterByRole": "Filter by role",
-      "allRoles": "All roles",
-      "addUser": "Add user",
-      "addRole": "Add role",
-      "resetRoles": "Reset roles",
-      "resetting": "Resetting roles",
-      "addPermission": "Add permission",
-      "addChecklist": "Add checklist",
-      "addReason": "Add reason"
+      "filterByRole": "Filter by Role",
+      "allRoles": "All Roles",
+      "addUser": "Add User",
+      "addRole": "Add Role",
+      "resetRoles": "Reset Roles",
+      "resetting": "Resetting Roles",
+      "addPermission": "Add Permission",
+      "addChecklist": "Add Checklist",
+      "addReason": "Add Reason"
     },
     "search": {
       "placeholder": "Search {{view}}..."
@@ -971,12 +970,12 @@
     },
     "actions": {
       "back": "Back",
-      "refreshUsers": "Refresh users",
-      "refreshRoles": "Refresh roles",
-      "refreshPermissions": "Refresh permissions",
-      "refreshChecklists": "Refresh checklists",
-      "refreshReasons": "Refresh reasons",
-      "refreshNotifications": "Refresh notifications",
+      "refreshUsers": "Refresh Users",
+      "refreshRoles": "Refresh Roles",
+      "refreshPermissions": "Refresh Permissions",
+      "refreshChecklists": "Refresh Checklists",
+      "refreshReasons": "Refresh Reasons",
+      "refreshNotifications": "Refresh Notifications",
       "loading": "Loading..."
     },
     "reasonAdd": {
@@ -986,7 +985,7 @@
           "item": "Item"
         },
         "placeholders": {
-          "item": "Enter reason item (5-100 characters)"
+          "item": "Enter reason item (5-100 chars)"
         }
       },
       "actions": {
@@ -1031,7 +1030,7 @@
           "item": "Item"
         },
         "placeholders": {
-          "item": "Enter checklist item (5-100 characters)"
+          "item": "Enter checklist item (5-100 chars)"
         }
       },
       "actions": {
@@ -1089,16 +1088,16 @@
     },
     "permissionOverrides": {
       "title": "Permission Overrides",
-      "filter": "Filter permissions",
+      "filter": "Filter Permissions",
       "searchPlaceholder": "Search permissions...",
-      "allCategories": "All categories",
+      "allCategories": "All Categories",
       "effectivePermissions": "Effective Permissions",
       "noPermissions": "No permissions available"
     },
     "assignments": {
       "title": "Assignments",
-      "supervisors": "Supervisors assigned to this manager",
-      "managers": "Managers assigned to this supervisor",
+      "supervisors": "Supervisors Assigned to This Manager",
+      "managers": "Managers Assigned to This Supervisor",
       "searchSupervisorsPlaceholder": "Search supervisors...",
       "searchManagersPlaceholder": "Search managers..."
     },
@@ -1119,23 +1118,23 @@
       "pageInfo": "Page {{currentPage}} of {{totalPages}}"
     },
     "validation": {
-      "firstnameRequired": "First name is required",
-      "firstnameLengthMin": "First name must be at least 3 characters",
-      "firstnameLengthMax": "First name must be 20 characters or fewer",
-      "firstnameFormat": "First name can only contain letters, spaces, hyphens, or apostrophes",
-      "lastnameRequired": "Last name is required",
-      "lastnameLengthMin": "Last name must be at least 3 characters",
-      "lastnameLengthMax": "Last name must be 20 characters or fewer",
-      "lastnameFormat": "Last name can only contain letters, spaces, hyphens, or apostrophes",
+      "firstnameRequired": "First Name is required",
+      "firstnameLengthMin": "First Name must be at least 3 characters",
+      "firstnameLengthMax": "First Name must be 20 characters or less",
+      "firstnameFormat": "First Name can only contain letters, spaces, hyphens, or apostrophes",
+      "lastnameRequired": "Last Name is required",
+      "lastnameLengthMin": "Last Name must be at least 3 characters",
+      "lastnameLengthMax": "Last Name must be 20 characters or less",
+      "lastnameFormat": "Last Name can only contain letters, spaces, hyphens, or apostrophes",
       "emailRequired": "Email is required",
-      "emailLength": "Email must be 70 characters or fewer",
+      "emailLength": "Email must be 70 characters or less",
       "emailFormat": "Invalid email format",
       "phoneRequired": "Phone is required",
       "phoneLength": "Phone must be 8 digits",
       "walletLength": "Wallet must be exactly 16 digits",
       "passwordLengthMin": "Password must be at least 8 characters",
-      "passwordLengthMax": "Password must be 128 characters or fewer",
-      "passwordFormat": "Password must include an uppercase letter, lowercase letter, number, and special character, with no spaces",
+      "passwordLengthMax": "Password must be 128 characters or less",
+      "passwordFormat": "Password must include uppercase, lowercase, digit, and special character, no spaces",
       "passwordConfirmRequired": "Password confirmation is required",
       "passwordMismatch": "Passwords do not match"
     },
@@ -1148,7 +1147,7 @@
       "saveAssignmentsFailed": "Failed to save assignments.",
       "saveOverridesFailed": "Failed to save permission overrides.",
       "noRoleSelected": "No role selected for override",
-      "superAdminRestricted": "Super Admin role cannot be assigned or revoked.",
+      "superAdminRestricted": "The Super Admin role cannot be assigned or revoked.",
       "adminSelfRevoke": "You cannot revoke your own Admin role."
     },
     "loading": {
@@ -1192,19 +1191,19 @@
     "actions": {
       "create": "Create User",
       "cancel": "Cancel",
-      " dispensing": "Creating..."
+      "creating": "Creating..."
     },
     "validation": {
-      "firstnameRequired": "First name is required",
-      "firstnameLengthMin": "First name must be at least 3 characters",
-      "firstnameLengthMax": "First name must be 20 characters or fewer",
-      "firstnameFormat": "First name can only contain letters, spaces, hyphens, or apostrophes",
-      "lastnameRequired": "Last name is required",
-      "lastnameLengthMin": "Last name must be at least 3 characters",
-      "lastnameLengthMax": "Last name must be 20 characters or fewer",
-      "lastnameFormat": "Last name can only contain letters, spaces, hyphens, or apostrophes",
+      "firstnameRequired": "First Name is required",
+      "firstnameLengthMin": "First Name must be at least 3 characters",
+      "firstnameLengthMax": "First Name must be 20 characters or less",
+      "firstnameFormat": "First Name can only contain letters, spaces, hyphens, or apostrophes",
+      "lastnameRequired": "Last Name is required",
+      "lastnameLengthMin": "Last Name must be at least 3 characters",
+      "lastnameLengthMax": "Last Name must be 20 characters or less",
+      "lastnameFormat": "Last Name can only contain letters, spaces, hyphens, or apostrophes",
       "emailRequired": "Email is required",
-      "emailLength": "Email must be 70 characters or fewer",
+      "emailLength": "Email must be 70 characters or less",
       "emailFormat": "Invalid email format",
       "phoneRequired": "Phone is required",
       "phoneLength": "Phone must be 8 digits",
@@ -1212,8 +1211,8 @@
       "walletLength": "Wallet must be exactly 16 digits",
       "passwordRequired": "Password is required",
       "passwordLengthMin": "Password must be at least 8 characters",
-      "passwordLengthMax": "Password must be 128 characters or fewer",
-      "passwordFormat": "Password must include an uppercase letter, lowercase letter, number, and special character, with no spaces",
+      "passwordLengthMax": "Password must be 128 characters or less",
+      "passwordFormat": "Password must include uppercase, lowercase, digit, and special character, no spaces",
       "passwordConfirmRequired": "Password confirmation is required",
       "passwordMismatch": "Passwords do not match"
     },
@@ -1224,13 +1223,13 @@
   },
   "roleView": {
     "title": "{{roleName}}",
-    "descriptionPlaceholder": "Role description",
+    "descriptionPlaceholder": "Role Description",
     "permissions": {
       "title": "Permissions",
       "filter": {
-        "label": "Filter permissions",
+        "label": "Filter Permissions",
         "searchPlaceholder": "Search permissions...",
-        "categoryPlaceholder": "All categories"
+        "categoryPlaceholder": "All Categories"
       },
       "noPermissions": "No permissions available"
     },
@@ -1253,27 +1252,27 @@
       "saving": "Saving...",
       "toggleAll": "Select All",
       "toggleAllOff": "Deselect All",
-      "deleteConfirm": "Are you sure you want to delete the role \"{{roleName}}\"? This action is irreversible."
+      "deleteConfirm": "Are you sure you want to delete the \"{{roleName}}\" role? This action cannot be undone."
     },
     "validation": {
       "nameRequired": "Role name is required",
       "nameLengthMin": "Role name must be at least 3 characters",
-      "nameLengthMax": "Role name must be 20 characters or fewer",
+      "nameLengthMax": "Role name must be 20 characters or less",
       "nameFormat": "Role name can only contain letters, spaces, or hyphens",
-      "descriptionLengthMax": "Description must be 150 characters or fewer"
+      "descriptionLengthMax": "Description must be 150 characters or less"
     },
     "error": {
       "updateFailed": "Failed to update role.",
       "deleteFailed": "Failed to delete role.",
       "savePermissionsFailed": "Failed to save permissions.",
-      "superAdminRestricted": "Super Admin role cannot be modified or deleted."
+      "superAdminRestricted": "The Super Admin role cannot be modified or deleted."
     }
   },
   "rolesList": {
     "title": "Roles",
     "categories": {
       "fixed": "Fixed Roles",
-      "premade": "Premade Roles",
+      "premade": "Pre-made Roles",
       "custom": "Custom Roles"
     },
     "roleCard": {
@@ -1287,7 +1286,7 @@
     },
     "confirmation": {
       "unsavedChanges": "You have unsaved changes. Are you sure you want to switch roles?",
-      "premadeWarning": "Warning: Modifying premade roles may affect system functionality. Are you sure you want to proceed?"
+      "premadeWarning": "Warning: Modifying pre-made roles may affect system functionality. Are you sure you want to proceed?"
     },
     "actions": {
       "confirm": "Confirm",
@@ -1295,7 +1294,7 @@
     },
     "error": {
       "fetchPermissionsFailed": "Failed to load role permissions.",
-      "superAdminRestricted": "Super Admin role cannot be modified.",
+      "superAdminRestricted": "The Super Admin role cannot be modified.",
       "adminRestricted": "Only Super Admins can modify the Admin role."
     }
   },
@@ -1319,8 +1318,8 @@
     },
     "permissions": {
       "filter": {
-        "label": "Filter permissions",
-        "categoryPlaceholder": "All categories"
+        "label": "Filter Permissions",
+        "categoryPlaceholder": "All Categories"
       },
       "noPermissions": "No permissions available"
     },
@@ -1332,21 +1331,21 @@
     "validation": {
       "nameRequired": "Role name is required",
       "nameLengthMin": "Role name must be at least 3 characters",
-      "nameLengthMax": "Role name must be 20 characters or fewer",
+      "nameLengthMax": "Role name must be 20 characters or less",
       "nameFormat": "Role name can only contain letters, spaces, or hyphens",
-      "descriptionLengthMax": "Description must be 150 characters or fewer"
+      "descriptionLengthMax": "Description must be 150 characters or less"
     },
     "error": {
       "createFailed": "Failed to create role.",
-      "validationFailed": "Please fix errors before submitting."
+      "validationFailed": "Please correct the errors before submitting."
     }
   },
   "permsList": {
     "title": "Permissions",
     "filter": {
-      "label": "Filter permissions",
+      "label": "Filter Permissions",
       "searchPlaceholder": "Search permissions...",
-      "categoryPlaceholder": "All classes"
+      "categoryPlaceholder": "All Classes"
     },
     "permissionCard": {
       "noDescription": "No description"
@@ -1385,18 +1384,18 @@
     "validation": {
       "nameRequired": "Permission name is required",
       "nameLengthMin": "Permission name must be at least 10 characters",
-      "nameLengthMax": "Permission name must be 30 characters or fewer",
+      "nameLengthMax": "Permission name must be 30 characters or less",
       "nameFormat": "Permission name must contain only lowercase letters and underscores (e.g., read_users)",
       "classRequired": "Permission class is required",
       "classLengthMin": "Class must be at least 3 characters",
-      "classLengthMax": "Class must be 20 characters or fewer",
+      "classLengthMax": "Class must be 20 characters or less",
       "classFormat": "Class can only contain letters",
-      "descriptionLengthMax": "Description must be 150 characters or fewer"
+      "descriptionLengthMax": "Description must be 150 characters or less"
     },
     "error": {
       "updateFailed": "Failed to update permission.",
       "deleteFailed": "Failed to delete permission.",
-      "validationFailed": "Please fix errors before saving."
+      "validationFailed": "Please correct the errors before saving."
     }
   },
   "permAdd": {
@@ -1419,17 +1418,17 @@
     "validation": {
       "nameRequired": "Permission name is required",
       "nameLengthMin": "Permission name must be at least 10 characters",
-      "nameLengthMax": "Permission name must be 30 characters or fewer",
+      "nameLengthMax": "Permission name must be 30 characters or less",
       "nameFormat": "Permission name must contain only lowercase letters and underscores (e.g., read_users)",
       "classRequired": "Permission class is required",
       "classLengthMin": "Class must be at least 3 characters",
-      "classLengthMax": "Class must be 20 characters or fewer",
+      "classLengthMax": "Class must be 20 characters or less",
       "classFormat": "Class can only contain letters",
-      "descriptionLengthMax": "Description must be 150 characters or fewer"
+      "descriptionLengthMax": "Description must be 150 characters or less"
     },
     "error": {
       "createFailed": "Failed to create permission.",
-      "validationFailed": "Please fix errors before submitting."
+      "validationFailed": "Please correct the errors before submitting."
     }
   },
   "reasonView": {
@@ -1448,5 +1447,6 @@
       "updateFailed": "Failed to update reason.",
       "deleteFailed": "Failed to delete reason."
     }
+  
   }
 }
