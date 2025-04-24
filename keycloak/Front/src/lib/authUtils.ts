@@ -1,4 +1,3 @@
-// authUtils.ts
 import Role from "../models/Role";
 
 export const ROLES = {
@@ -24,9 +23,9 @@ export const protectedRoutes: { [key: string]: string[] } = {
 };
 
 export const determineTargetRoute = (roles: Role[]): string => {
-    if (!roles || roles.length === 0) return "/";
+    if (!roles || roles.length === 0) return "/login";
     if (roles.some((r) => [ROLES.ADMIN, ROLES.SUPER_ADMIN].includes(r.name))) return "/admin";
     if (roles.some((r) => [ROLES.MANAGER, ROLES.SUPERVISOR].includes(r.name))) return "/timesheet";
     if (roles.some((r) => [ROLES.PURCHASE_TEAM, ROLES.REGIONAL_MANAGER, ROLES.STOCK_MANAGER].includes(r.name))) return "/receipt-books";
-    return "/";
+    return "/login";
 };

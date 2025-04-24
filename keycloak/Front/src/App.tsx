@@ -10,45 +10,31 @@ import AccessDenied from "./pages/Error/AccessDenied";
 import "./App.css";
 import LoginPage from "./pages/Auth/Login";
 import ProfilePage from "./pages/Auth/ProfilePage";
-import { setGlobalNavigate } from "./apis/axiosConfig";
-import { useNavigate } from "react-router-dom";
 import Entry from "./pages/Dashboard/Entry";
 
 // Lazy load route components
 const Timesheets = React.lazy(() => import("./pages/Timesheet/Timesheets"));
-const TimesheetForm = React.lazy(
-  () => import("./pages/Timesheet/TimesheetForm")
-);
+const TimesheetForm = React.lazy(() => import("./pages/Timesheet/TimesheetForm"));
 const QRScan = React.lazy(() => import("./pages/visit/QRScan"));
 const VisitDetails = React.lazy(() => import("./pages/visit/VisitDetails"));
-const VisitValidation = React.lazy(
-  () => import("./pages/visit/VisitValidation")
-);
+const VisitValidation = React.lazy(() => import("./pages/visit/VisitValidation"));
 const PageNotFound = React.lazy(() => import("./pages/Error/PageNotFound"));
 const AdminDashboard = React.lazy(() => import("./pages/Admin/AdminDashboard"));
 const ReceiptBooks = React.lazy(() => import("./pages/Receipt/ReceiptBooks"));
-const TransferReceiptBook = React.lazy(
-  () => import("./pages/Receipt/TransferReceiptBook")
-);
-const ReceiptBookHistory = React.lazy(
-  () => import("./pages/Receipt/ReceiptBookHistory")
-);
+const TransferReceiptBook = React.lazy(() => import("./pages/Receipt/TransferReceiptBook"));
+const ReceiptBookHistory = React.lazy(() => import("./pages/Receipt/ReceiptBookHistory"));
 
 // Static permissions and roles from .env
 const PERMISSIONS = {
-  ACCESS_SUPERVISOR_TIMESHEETS: import.meta.env
-    .VITE_PERMISSIONS_ACCESS_SUPERVISOR_TIMESHEETS,
+  ACCESS_SUPERVISOR_TIMESHEETS: import.meta.env.VITE_PERMISSIONS_ACCESS_SUPERVISOR_TIMESHEETS,
   CREATE_TIMESHEETS: import.meta.env.VITE_PERMISSIONS_CREATE_TIMESHEETS,
-  CREATE_SUPERVISOR_TIMESHEETS: import.meta.env
-    .VITE_PERMISSIONS_CREATE_TIMESHEETS_FOR_SUPERVISOR,
+  CREATE_SUPERVISOR_TIMESHEETS: import.meta.env.VITE_PERMISSIONS_CREATE_TIMESHEETS_FOR_SUPERVISOR,
   SCAN_VISITS: import.meta.env.VITE_PERMISSIONS_SCAN_VISITS,
   ACCESS_VISIT_DETAILS: import.meta.env.VITE_PERMISSIONS_ACCESS_VISIT_DETAILS,
   LOG_VISITS: import.meta.env.VITE_PERMISSIONS_LOG_VISITS,
   ACCESS_RECEIPT_BOOKS: import.meta.env.VITE_PERMISSIONS_ACCESS_RECEIPT_BOOKS,
-  ACCESS_RECEIPT_BOOK_HISTORY: import.meta.env
-    .VITE_PERMISSIONS_ACCESS_RECEIPT_BOOK_HISTORY,
-  TRANSFER_RECEIPT_BOOKS: import.meta.env
-    .VITE_PERMISSIONS_TRANSFER_RECEIPT_BOOKS,
+  ACCESS_RECEIPT_BOOK_HISTORY: import.meta.env.VITE_PERMISSIONS_ACCESS_RECEIPT_BOOK_HISTORY,
+  TRANSFER_RECEIPT_BOOKS: import.meta.env.VITE_PERMISSIONS_TRANSFER_RECEIPT_BOOKS,
 };
 
 const ROLES = {
@@ -62,32 +48,27 @@ interface ProtectedRouteProps {
   requiredPermissions: string[];
 }
 
-const ProtectedRoute: React.FC<ProtectedRouteProps> = React.memo(
-  ({ children, requiredPermissions }) => {
-    const { user, effectivePermissions, permissionsLoaded } = useAuth();
-    if (!user) {
-      return (
-        <Navigate
-          to="/login"
-          replace
-          state={{ from: window.location.pathname }}
-        />
-      );
-    }
-    if (!permissionsLoaded) {
-      return (
-        <div className="permissions-loading">
-          <div className="spinner"></div>
-          <div>Loading permissions...</div>
-        </div>
-      );
-    }
-    const hasPermission = requiredPermissions.some((perm) =>
-      effectivePermissions?.some((p) => p.name === perm)
-    );
-    return hasPermission ? children : <Navigate to="/access-denied" replace />;
+const ProtectedRoute: React.FC<ProtectedRouteProps> = React.memo(({ children, requiredPermissions }) => {
+  const { user, effectivePermissions, permissionsLoaded } = useAuth();
+
+  if (!user) {
+    return <Navigate to="/login" replace state={{ from: window.location.pathname }} />;
   }
-);
+
+  if (!permissionsLoaded) {
+    return (
+      <div className="loading-container">
+        <div className="spinner"></div>
+        <p>Loading permissions...</p>
+      </div>
+    );
+  }
+
+  const hasPermission = requiredPermissions.some((perm) =>
+    effectivePermissions?.some((p) => p.name === perm)
+  );
+  return hasPermission ? children : <Navigate to="/access-denied" replace />;
+});
 
 // Role-based ProtectedRoute component
 interface RoleProtectedRouteProps {
@@ -95,53 +76,52 @@ interface RoleProtectedRouteProps {
   requiredRoles: string[];
 }
 
-const RoleProtectedRoute: React.FC<RoleProtectedRouteProps> = React.memo(
-  ({ children, requiredRoles }) => {
-    const { user, userRoles, permissionsLoaded } = useAuth();
-    if (!user) {
-      return (
-        <Navigate
-          to="/login"
-          replace
-          state={{ from: window.location.pathname }}
-        />
-      );
-    }
-    if (!permissionsLoaded || !userRoles) {
-      return (
-        <div className="page-loading">
-          <div className="spinner"></div>
-          <p>Loading...</p>
-        </div>
-      );
-    }
+const RoleProtectedRoute: React.FC<RoleProtectedRouteProps> = React.memo(({ children, requiredRoles }) => {
+  const { user, userRoles, permissionsLoaded } = useAuth();
 
-    const hasRequiredRole = userRoles.some((role) =>
-      requiredRoles.includes(role.name)
-    );
-    return hasRequiredRole ? (
-      children
-    ) : (
-      <Navigate to="/access-denied" replace />
+  if (!user) {
+    return <Navigate to="/login" replace state={{ from: window.location.pathname }} />;
+  }
+
+  if (!permissionsLoaded || !userRoles) {
+    return (
+      <div className="loading-container">
+        <div className="spinner"></div>
+        <p>Loading...</p>
+      </div>
     );
   }
-);
+
+  const hasRequiredRole = userRoles.some((role) => requiredRoles.includes(role.name));
+  return hasRequiredRole ? children : <Navigate to="/access-denied" replace />;
+});
 
 // Main content with routing
 const AppContent: React.FC = React.memo(() => {
   const { theme } = useTheme();
   const location = useLocation();
+  const { user, permissionsLoaded } = useAuth();
 
   useEffect(() => {
     document.body.className = theme;
   }, [theme]);
+
+  // Show loading screen if user is logged in but permissions are not loaded
+  if (user && !permissionsLoaded) {
+    return (
+      <div className="loading-container">
+        <div className="spinner"></div>
+        <p>Loading application...</p>
+      </div>
+    );
+  }
 
   return (
     <div className="app-container">
       <Header />
       <main>
         {location.pathname !== "/login" && <ErrorDisplay />}
-        <Suspense>
+        <Suspense fallback={<div className="loading-container"><div className="spinner"></div><p>Loading...</p></div>}>
           <Routes>
             <Route path="/login" element={<LoginPage />} />
             <Route path="/access-denied" element={<AccessDenied />} />
@@ -151,9 +131,7 @@ const AppContent: React.FC = React.memo(() => {
             <Route
               path="/admin"
               element={
-                <RoleProtectedRoute
-                  requiredRoles={[ROLES.ADMIN, ROLES.SUPER_ADMIN]}
-                >
+                <RoleProtectedRoute requiredRoles={[ROLES.ADMIN, ROLES.SUPER_ADMIN]}>
                   <AdminDashboard />
                 </RoleProtectedRoute>
               }
@@ -161,11 +139,7 @@ const AppContent: React.FC = React.memo(() => {
             <Route
               path="/timesheet"
               element={
-                <ProtectedRoute
-                  requiredPermissions={[
-                    PERMISSIONS.ACCESS_SUPERVISOR_TIMESHEETS,
-                  ]}
-                >
+                <ProtectedRoute requiredPermissions={[PERMISSIONS.ACCESS_SUPERVISOR_TIMESHEETS]}>
                   <Timesheets />
                 </ProtectedRoute>
               }
@@ -173,12 +147,7 @@ const AppContent: React.FC = React.memo(() => {
             <Route
               path="/timesheet-form"
               element={
-                <ProtectedRoute
-                  requiredPermissions={[
-                    PERMISSIONS.CREATE_TIMESHEETS,
-                    PERMISSIONS.CREATE_SUPERVISOR_TIMESHEETS,
-                  ]}
-                >
+                <ProtectedRoute requiredPermissions={[PERMISSIONS.CREATE_TIMESHEETS, PERMISSIONS.CREATE_SUPERVISOR_TIMESHEETS]}>
                   <TimesheetForm />
                 </ProtectedRoute>
               }
@@ -194,9 +163,7 @@ const AppContent: React.FC = React.memo(() => {
             <Route
               path="/visit/:idVisit"
               element={
-                <ProtectedRoute
-                  requiredPermissions={[PERMISSIONS.ACCESS_VISIT_DETAILS]}
-                >
+                <ProtectedRoute requiredPermissions={[PERMISSIONS.ACCESS_VISIT_DETAILS]}>
                   <VisitDetails />
                 </ProtectedRoute>
               }
@@ -212,9 +179,7 @@ const AppContent: React.FC = React.memo(() => {
             <Route
               path="/receipt-books"
               element={
-                <ProtectedRoute
-                  requiredPermissions={[PERMISSIONS.ACCESS_RECEIPT_BOOKS]}
-                >
+                <ProtectedRoute requiredPermissions={[PERMISSIONS.ACCESS_RECEIPT_BOOKS]}>
                   <ReceiptBooks />
                 </ProtectedRoute>
               }
@@ -222,11 +187,7 @@ const AppContent: React.FC = React.memo(() => {
             <Route
               path="/receipt-book/:bookID/history"
               element={
-                <ProtectedRoute
-                  requiredPermissions={[
-                    PERMISSIONS.ACCESS_RECEIPT_BOOK_HISTORY,
-                  ]}
-                >
+                <ProtectedRoute requiredPermissions={[PERMISSIONS.ACCESS_RECEIPT_BOOK_HISTORY]}>
                   <ReceiptBookHistory />
                 </ProtectedRoute>
               }
@@ -234,18 +195,14 @@ const AppContent: React.FC = React.memo(() => {
             <Route
               path="/transfer-receipt-books"
               element={
-                <ProtectedRoute
-                  requiredPermissions={[PERMISSIONS.TRANSFER_RECEIPT_BOOKS]}
-                >
+                <ProtectedRoute requiredPermissions={[PERMISSIONS.TRANSFER_RECEIPT_BOOKS]}>
                   <TransferReceiptBook />
                 </ProtectedRoute>
               }
             />
             <Route
               path="/logout"
-              element={
-                <Navigate to="/login" replace state={{ logout: true }} />
-              }
+              element={<Navigate to="/login" replace state={{ logout: true }} />}
             />
             <Route path="*" element={<PageNotFound />} />
           </Routes>
@@ -258,11 +215,6 @@ const AppContent: React.FC = React.memo(() => {
 
 // Main App with providers
 const App: React.FC = () => {
-  const navigate = useNavigate();
-  useEffect(() => {
-    setGlobalNavigate(navigate);
-  }, [navigate]);
-
   return (
     <ThemeProvider>
       <AuthProvider>

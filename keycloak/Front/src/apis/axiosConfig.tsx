@@ -3,39 +3,24 @@ import { refreshToken } from './authAPI';
 import { useNavigate } from 'react-router-dom';
 import { debounce } from 'lodash';
 
-/**
- * Axios instance with base configuration
- */
 const api: AxiosInstance = axios.create({
     baseURL: import.meta.env.VITE_BASE_URL || '/api',
     timeout: parseInt(import.meta.env.VITE_API_TIMEOUT) || 30000,
     withCredentials: true,
 });
 
-/**
- * Utility to get access token from cookies
- * @returns Access token or null
- */
 const getAccessTokenFromCookie = (): string | null => {
     const cookies = document.cookie.split(';').map(cookie => cookie.trim());
     const tokenCookie = cookies.find(cookie => cookie.startsWith('accessToken='));
     return tokenCookie ? tokenCookie.split('=')[1] : null;
 };
 
-// Global navigate function
 let globalNavigate: ReturnType<typeof useNavigate> | null = null;
 
-/**
- * Sets the global navigate function
- * @param navigate React Router navigate function
- */
 export const setGlobalNavigate = (navigate: ReturnType<typeof useNavigate>) => {
     globalNavigate = navigate;
 };
 
-/**
- * Debounced navigation to prevent rapid redirects
- */
 const debouncedNavigate = debounce((to: string, options: { replace?: boolean }) => {
     if (globalNavigate) {
         globalNavigate(to, options);
@@ -44,11 +29,7 @@ const debouncedNavigate = debounce((to: string, options: { replace?: boolean }) 
     }
 }, 100);
 
-/**
- * Sets up Axios interceptors for request and response handling
- */
 export const setupAxiosInterceptors = () => {
-    // Request interceptor to set headers
     api.interceptors.request.use(
         config => {
             config.headers['Content-Type'] = 'application/json';
@@ -64,12 +45,15 @@ export const setupAxiosInterceptors = () => {
         }
     );
 
-    // Response interceptor to handle errors and token refresh
     api.interceptors.response.use(
         response => response,
         async error => {
             const originalRequest = error.config;
-            if (error.response?.status === 401 && !originalRequest._retry) {
+            if (
+                error.response?.status === 401 &&
+                !originalRequest._retry &&
+                !['/auth/login', '/auth/verify-2fa', '/auth/refresh'].includes(originalRequest.url)
+            ) {
                 originalRequest._retry = true;
                 try {
                     const { accessToken, expiresIn } = await refreshToken();

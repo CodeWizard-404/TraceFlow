@@ -28,8 +28,7 @@ const app = express();
 
 // Define allowed origins for CORS
 const allowedOrigins = [
-    process.env.FRONTEND_URL,
-
+    process.env.FRONTEND_URL
 ];
 
 // Configure CORS

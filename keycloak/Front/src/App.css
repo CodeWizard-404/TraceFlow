@@ -513,3 +513,45 @@ body {
   background-color: none !important;
 
 }
+
+
+.loading-container {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  justify-content: center;
+  height: 100vh;
+}
+
+.spinner {
+  border: 4px solid #f3f3f3;
+  border-top: 4px solid #3498db;
+  border-radius: 50%;
+  width: 40px;
+  height: 40px;
+  animation: spin 1s linear infinite;
+}
+
+body.dark .spinner {
+  border-top-color: #3b3b3b;
+}
+
+.loading-container p {
+  color: #ffffff !important;
+  z-index: 100000 !important;
+}
+
+body.dark .loading-container p {
+  color: #3b3b3b !important;
+  font-weight: bold;
+}
+
+@keyframes spin {
+  0% {
+    transform: rotate(0deg);
+  }
+
+  100% {
+    transform: rotate(360deg);
+  }
+}

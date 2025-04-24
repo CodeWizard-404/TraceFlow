@@ -5,7 +5,6 @@ import { useAuth } from '../../context/AuthContext';
 import { useError } from '../../context/ErrorContext';
 import {
     login,
-    verify2FA,
     resend2FA,
     initiatePasswordReset,
     verifyPasswordResetOTP,
@@ -17,6 +16,7 @@ import { RiTimeLine } from 'react-icons/ri';
 import { AiOutlineQrcode } from 'react-icons/ai';
 import './Login.css';
 import { debounce } from 'lodash';
+import { determineTargetRoute } from '../../lib/authUtils';
 
 /**
  * Login page component handling authentication flows
@@ -45,7 +45,7 @@ const LoginPage: React.FC = () => {
     const [showConfirmPassword, setShowConfirmPassword] = useState(false);
     const [success, setSuccess] = useState<string | null>(null);
 
-    const { loginUser } = useAuth();
+    const { loginUser, user, permissionsLoaded, userRoles } = useAuth();
     const { setError, clearError } = useError();
     const navigate = useNavigate();
     const location = useLocation();
@@ -54,6 +54,7 @@ const LoginPage: React.FC = () => {
     const debouncedNavigate = useCallback(
         debounce(
             (to: string, options: { replace?: boolean; state?: unknown }) => {
+                console.debug('Navigating to:', to, options);
                 navigate(to, options);
             },
             100,
@@ -64,19 +65,33 @@ const LoginPage: React.FC = () => {
 
     // Clean up debounced navigation on unmount
     useEffect(() => {
+        console.debug('Mounting LoginPage, step:', step);
         return () => {
+            console.debug('Unmounting LoginPage, cancelling debouncedNavigate');
             debouncedNavigate.cancel();
         };
-    }, [debouncedNavigate]);
+    }, [debouncedNavigate, step]);
 
     // Handle logout state on mount
     useEffect(() => {
         if (location.state?.logout) {
+            console.debug('Handling logout state, resetting form');
             resetForm();
             clearAuthCookies();
+            setApiError(null);
+            clearError();
             debouncedNavigate('/login', { replace: true, state: null });
         }
-    }, [location.state?.logout, debouncedNavigate]);
+    }, [location.state?.logout, debouncedNavigate, clearError]);
+
+    // Fallback redirect for authenticated users
+    useEffect(() => {
+        if (user && permissionsLoaded && userRoles?.length && ['/login', '/verify-2fa'].includes(location.pathname)) {
+            const targetRoute = determineTargetRoute(userRoles || []);
+            console.debug('Fallback redirect in LoginPage:', { targetRoute, currentPath: location.pathname });
+            debouncedNavigate(targetRoute, { replace: true });
+        }
+    }, [user, permissionsLoaded, userRoles, location.pathname, debouncedNavigate]);
 
     // Generate device fingerprint
     useEffect(() => {
@@ -84,6 +99,7 @@ const LoginPage: React.FC = () => {
             const fp = await FingerprintJS.load();
             const result = await fp.get();
             setDeviceIdentifier(result.visitorId);
+            console.debug('Device fingerprint generated:', result.visitorId);
         };
         getFingerprint();
     }, []);
@@ -91,11 +107,13 @@ const LoginPage: React.FC = () => {
     // Clear success/error messages after timeout
     useEffect(() => {
         if (success || apiError) {
+            console.debug('Setting timeout for success/apiError:', { success, apiError });
             const timeout = setTimeout(() => {
                 setSuccess(null);
                 setApiError(null);
                 clearError();
-            }, 3000);
+                console.debug('Cleared success/apiError');
+            }, 5000);
             return () => clearTimeout(timeout);
         }
     }, [success, apiError, clearError]);
@@ -174,6 +192,7 @@ const LoginPage: React.FC = () => {
             newErrors.confirmPassword = validatePasswordConfirm(newPassword, confirmPassword);
         }
         setErrors(newErrors);
+        console.debug('Form validation errors:', newErrors);
         return Object.values(newErrors).every(err => !err);
     }, [step, identifier, password, otpCode, newPassword, confirmPassword]);
 
@@ -187,14 +206,19 @@ const LoginPage: React.FC = () => {
      */
     const handleLogin = async (e: React.FormEvent) => {
         e.preventDefault();
-        if (!deviceIdentifier || !validateForm() || loading) return;
+        if (!deviceIdentifier || !validateForm() || loading) {
+            console.debug('Login prevented:', { deviceIdentifier, isValid: validateForm(), loading });
+            return;
+        }
         setLoading(true);
         setApiError(null);
         clearError();
         setSuccess(null);
+        console.debug('Attempting login:', { identifier, deviceIdentifier });
 
         try {
             const response = await login(identifier, password, deviceIdentifier, 'phone');
+            console.debug('Login response:', response);
             if (!response) {
                 throw new Error('No response from server. Please try again.');
             }
@@ -205,21 +229,22 @@ const LoginPage: React.FC = () => {
                 setRefreshToken(response.refreshToken!);
                 setTimer(600);
                 setSuccess('OTP sent to your phone.');
+                console.debug('2FA required, transitioning to verify2FA step');
             } else if (response.user) {
                 await loginUser(identifier, password, deviceIdentifier);
-                setSuccess('Login successful!');
-                const from = location.state?.from || '/';
-                debouncedNavigate(from, { replace: true });
+                console.debug('Login successful, user authenticated');
             } else {
                 throw new Error('Invalid response from server.');
             }
         } catch (error: unknown) {
-            const errorMessage = error instanceof Error ? error.message : 'Login failed. Please try again.';
-            console.error('Login error:', errorMessage);
+            const errorMessage = error instanceof Error ? error.message : 'An unexpected error occurred.';
+            console.error('Login error:', errorMessage, { error });
             setApiError(errorMessage);
             setError(errorMessage);
+            clearAuthCookies(); // Clear cookies on error
         } finally {
             setLoading(false);
+            console.debug('Login attempt completed, loading:', false);
         }
     };
 
@@ -229,37 +254,31 @@ const LoginPage: React.FC = () => {
     const handleVerify2FA = async (e: React.FormEvent) => {
         e.preventDefault();
         if (!deviceIdentifier || !validateForm() || !userID || !tempToken || !refreshToken || loading) {
-            setApiError('Invalid session. Please try logging in again.');
-            setError('Invalid session. Please try logging in again.');
+            const errorMessage = 'Invalid session. Please try logging in again.';
+            console.debug('Verify2FA prevented:', { deviceIdentifier, isValid: validateForm(), userID, tempToken, refreshToken, loading });
+            setApiError(errorMessage);
+            setError(errorMessage);
+            handleBackToLogin();
             return;
         }
         setLoading(true);
         setApiError(null);
         clearError();
         setSuccess(null);
+        console.debug('Attempting 2FA verification:', { userID, otpCode, deviceIdentifier, trustDevice });
 
         try {
-            const response = await verify2FA(userID, otpCode, deviceIdentifier, trustDevice, tempToken, refreshToken);
-            if (!response) {
-                throw new Error('No response from verify2FA.');
-            }
-            if (response.requires2FA) {
-                throw new Error('Unexpected requires2FA: true after verification.');
-            }
-            if (!response.user) {
-                throw new Error('User data missing in verify2FA response.');
-            }
             await loginUser(identifier, password, deviceIdentifier, otpCode, trustDevice, tempToken, refreshToken, userID);
             setSuccess('Login successful!');
-            const from = location.state?.from || '/';
-            debouncedNavigate(from, { replace: true });
+            console.debug('2FA verification successful');
         } catch (error: unknown) {
             const errorMessage = error instanceof Error ? error.message : '2FA verification failed.';
-            console.error('verify2FA error:', errorMessage);
+            console.error('Verify2FA error:', errorMessage, { error });
             setApiError(errorMessage);
             setError(errorMessage);
         } finally {
             setLoading(false);
+            console.debug('Verify2FA attempt completed, loading:', false);
         }
     };
 
@@ -268,11 +287,15 @@ const LoginPage: React.FC = () => {
      */
     const handleInitiateReset = async (e: React.FormEvent) => {
         e.preventDefault();
-        if (!validateForm() || loading) return;
+        if (!validateForm() || loading) {
+            console.debug('Initiate reset prevented:', { isValid: validateForm(), loading });
+            return;
+        }
         setLoading(true);
         setApiError(null);
         clearError();
         setSuccess(null);
+        console.debug('Initiating password reset:', { identifier });
 
         try {
             const response = await initiatePasswordReset(identifier);
@@ -280,13 +303,15 @@ const LoginPage: React.FC = () => {
             setStep('verifyReset');
             setTimer(600);
             setSuccess(response.message);
+            console.debug('Password reset initiated, transitioning to verifyReset step');
         } catch (error: unknown) {
             const errorMessage = error instanceof Error ? error.message : 'Failed to initiate password reset.';
-            console.error('Initiate reset error:', errorMessage);
+            console.error('Initiate reset error:', errorMessage, { error });
             setApiError(errorMessage);
             setError(errorMessage);
         } finally {
             setLoading(false);
+            console.debug('Initiate reset attempt completed, loading:', false);
         }
     };
 
@@ -296,14 +321,17 @@ const LoginPage: React.FC = () => {
     const handleVerifyResetOTP = async (e: React.FormEvent) => {
         e.preventDefault();
         if (!validateForm() || !userID || loading) {
-            setApiError('Invalid session. Please try again.');
-            setError('Invalid session. Please try again.');
+            const errorMessage = 'Invalid session. Please try again.';
+            console.debug('Verify reset OTP prevented:', { isValid: validateForm(), userID, loading });
+            setApiError(errorMessage);
+            setError(errorMessage);
             return;
         }
         setLoading(true);
         setApiError(null);
         clearError();
         setSuccess(null);
+        console.debug('Verifying password reset OTP:', { userID, otpCode });
 
         try {
             const response = await verifyPasswordResetOTP(userID, otpCode);
@@ -311,13 +339,15 @@ const LoginPage: React.FC = () => {
             setStep('reset');
             setOtpCode('');
             setSuccess(response.message);
+            console.debug('Password reset OTP verified, transitioning to reset step');
         } catch (error: unknown) {
             const errorMessage = error instanceof Error ? error.message : 'Invalid OTP. Please try again.';
-            console.error('Verify reset OTP error:', errorMessage);
+            console.error('Verify reset OTP error:', errorMessage, { error });
             setApiError(errorMessage);
             setError(errorMessage);
         } finally {
             setLoading(false);
+            console.debug('Verify reset OTP attempt completed, loading:', false);
         }
     };
 
@@ -327,27 +357,32 @@ const LoginPage: React.FC = () => {
     const handleResetPassword = async (e: React.FormEvent) => {
         e.preventDefault();
         if (!validateForm() || !userID || !tempResetToken || loading) {
-            setApiError('Invalid session. Please try again.');
-            setError('Invalid session. Please try again.');
+            const errorMessage = 'Invalid session. Please try again.';
+            console.debug('Reset password prevented:', { isValid: validateForm(), userID, tempResetToken, loading });
+            setApiError(errorMessage);
+            setError(errorMessage);
             return;
         }
         setLoading(true);
         setApiError(null);
         clearError();
         setSuccess(null);
+        console.debug('Resetting password:', { userID });
 
         try {
             await resetPassword(userID, newPassword, tempResetToken);
             setSuccess('Password reset successfully! Please log in with your new password.');
             setStep('login');
             resetForm();
+            console.debug('Password reset successful, returning to login step');
         } catch (error: unknown) {
             const errorMessage = error instanceof Error ? error.message : 'Password reset failed.';
-            console.error('Reset password error:', errorMessage);
+            console.error('Reset password error:', errorMessage, { error });
             setApiError(errorMessage);
             setError(errorMessage);
         } finally {
             setLoading(false);
+            console.debug('Reset password attempt completed, loading:', false);
         }
     };
 
@@ -355,11 +390,15 @@ const LoginPage: React.FC = () => {
      * Resends OTP for 2FA or password reset
      */
     const handleResendOTP = async (method: 'phone' | 'email') => {
-        if (resendCooldown > 0 || !userID || loading) return;
+        if (resendCooldown > 0 || !userID || loading) {
+            console.debug('Resend OTP prevented:', { resendCooldown, userID, loading });
+            return;
+        }
         setLoading(true);
         setApiError(null);
         clearError();
         setSuccess(null);
+        console.debug('Resending OTP:', { userID, method });
 
         try {
             if (step === 'verify2FA') {
@@ -368,20 +407,23 @@ const LoginPage: React.FC = () => {
                 setTimer(600);
                 setResendCooldown(60);
                 setSuccess(response.message);
+                console.debug('OTP resent for 2FA:', response);
             } else if (step === 'verifyReset') {
                 const response = await initiatePasswordReset(identifier);
                 setTimer(600);
                 setResendCooldown(60);
                 setOtpMethod(method);
                 setSuccess(response.message);
+                console.debug('OTP resent for password reset:', response);
             }
         } catch (error: unknown) {
             const errorMessage = error instanceof Error ? error.message : 'Failed to resend OTP.';
-            console.error('Resend OTP error:', errorMessage);
+            console.error('Resend OTP error:', errorMessage, { error });
             setApiError(errorMessage);
             setError(errorMessage);
         } finally {
             setLoading(false);
+            console.debug('Resend OTP attempt completed, loading:', false);
         }
     };
 
@@ -390,6 +432,7 @@ const LoginPage: React.FC = () => {
      */
     const handleResendClick = (e: React.MouseEvent<HTMLButtonElement>, method: 'phone' | 'email') => {
         e.preventDefault();
+        console.debug('Resend OTP clicked:', { method });
         handleResendOTP(method);
     };
 
@@ -416,12 +459,14 @@ const LoginPage: React.FC = () => {
         setShowConfirmPassword(false);
         setOtpMethod('phone');
         setStep('login');
+        console.debug('Form reset');
     };
 
     /**
      * Handles back to login navigation
      */
     const handleBackToLogin = () => {
+        console.debug('Navigating back to login');
         resetForm();
         setApiError(null);
         clearError();
@@ -435,6 +480,7 @@ const LoginPage: React.FC = () => {
     const clearAuthCookies = () => {
         document.cookie = 'accessToken=; path=/; expires=Thu, 01 Jan 1970 00:00:00 GMT';
         document.cookie = 'userData=; path=/; expires=Thu, 01 Jan 1970 00:00:00 GMT';
+        console.debug('Auth cookies cleared');
     };
 
     return (

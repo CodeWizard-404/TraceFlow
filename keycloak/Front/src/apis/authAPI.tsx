@@ -13,6 +13,8 @@ interface AxiosErrorResponse {
         status?: number;
         data?: {
             error?: string;
+            message?: string;
+            error_description?: string;
             waitTime?: number;
             failureCount?: number;
         };
@@ -21,14 +23,25 @@ interface AxiosErrorResponse {
 
 const handleApiError = (error: unknown, defaultMessage: string): string => {
     const axiosError = error as AxiosErrorResponse;
-    if (axiosError.response?.data?.error) {
-        return axiosError.response.data.error; // Use backend's error message
+    console.debug('handleApiError:', { error, axiosError });
+
+    // Check for backend error messages in multiple possible fields
+    const errorMessage =
+        axiosError.response?.data?.error ||
+        axiosError.response?.data?.message ||
+        axiosError.response?.data?.error_description;
+
+    if (errorMessage) {
+        console.debug('Extracted error message:', errorMessage);
+        return errorMessage; // e.g., "Wrong email or password"
     }
+
+    // Fallback to status-based messages
     switch (axiosError.response?.status) {
         case 400:
             return 'Invalid request. Please check your input.';
         case 401:
-            return 'Wrong email or password.';
+            return 'Authentication failed. Please check your credentials.';
         case 403:
             return 'Account locked or access denied.';
         case 404:
@@ -36,8 +49,9 @@ const handleApiError = (error: unknown, defaultMessage: string): string => {
         case 429:
             return 'Too many attempts. Please wait.';
         case 500:
-            return 'Server error. Please try again.';
+            return 'Server error. Please try again later.';
         default:
+            console.warn('Falling back to default message:', defaultMessage);
             return defaultMessage;
     }
 };
@@ -51,13 +65,16 @@ export const login = async (
     try {
         const response = await api.post('/auth/login', {
             identifier,
-            password,
             deviceIdentifier,
+            password,
             otpMethod,
         });
+        console.debug('Login response:', response.data);
         return response.data;
     } catch (error) {
-        throw new Error(handleApiError(error, 'Login failed'));
+        const errorMessage = handleApiError(error, 'An unexpected error occurred during login');
+        console.error('Login API error:', errorMessage, { error });
+        throw new Error(errorMessage);
     }
 };
 
@@ -78,20 +95,26 @@ export const verify2FA = async (
             tempToken,
             refreshToken,
         });
+        console.debug('Verify2FA response:', response.data);
         return response.data;
     } catch (error) {
-        throw new Error(handleApiError(error, '2FA verification failed'));
+        const errorMessage = handleApiError(error, '2FA verification failed');
+        console.error('Verify2FA API error:', errorMessage, { error });
+        throw new Error(errorMessage);
     }
 };
 
 export const refreshToken = async (): Promise<{ accessToken: string; refreshToken: string; expiresIn: number }> => {
     try {
         const response = await api.post('/auth/refresh');
+        console.debug('Refresh token response:', response.data);
         return response.data;
     } catch (error) {
         document.cookie = 'accessToken=; path=/; expires=Thu, 01 Jan 1970 00:00:00 GMT';
         document.cookie = 'userData=; path=/; expires=Thu, 01 Jan 1970 00:00:00 GMT';
-        throw new Error(handleApiError(error, 'Unable to refresh session'));
+        const errorMessage = handleApiError(error, 'Unable to refresh session');
+        console.error('Refresh token API error:', errorMessage, { error });
+        throw new Error(errorMessage);
     }
 };
 
@@ -100,43 +123,58 @@ export const logout = async (): Promise<void> => {
         await api.post('/auth/logout');
         document.cookie = 'accessToken=; path=/; expires=Thu, 01 Jan 1970 00:00:00 GMT';
         document.cookie = 'userData=; path=/; expires=Thu, 01 Jan 1970 00:00:00 GMT';
+        console.debug('Logout successful');
     } catch (error) {
-        throw new Error(handleApiError(error, 'Logout failed'));
+        const errorMessage = handleApiError(error, 'Logout failed');
+        console.error('Logout API error:', errorMessage, { error });
+        throw new Error(errorMessage);
     }
 };
 
 export const resend2FA = async (userID: string, otpMethod: string): Promise<Resend2FAResponse> => {
     try {
         const response = await api.post('/auth/resend-2fa', { userID, otpMethod });
+        console.debug('Resend2FA response:', response.data);
         return response.data;
     } catch (error) {
-        throw new Error(handleApiError(error, 'Resend 2FA failed'));
+        const errorMessage = handleApiError(error, 'Failed to resend OTP');
+        console.error('Resend2FA API error:', errorMessage, { error });
+        throw new Error(errorMessage);
     }
 };
 
 export const initiatePasswordReset = async (identifier: string): Promise<InitiatePasswordResetResponse> => {
     try {
         const response = await api.post('/auth/reset-password/init', { identifier });
+        console.debug('Initiate password reset response:', response.data);
         return response.data;
     } catch (error) {
-        throw new Error(handleApiError(error, 'Password reset initiation failed'));
+        const errorMessage = handleApiError(error, 'Password reset initiation failed');
+        console.error('Initiate password reset API error:', errorMessage, { error });
+        throw new Error(errorMessage);
     }
 };
 
 export const verifyPasswordResetOTP = async (userID: string, otpCode: string): Promise<VerifyPasswordResetOTPResponse> => {
     try {
         const response = await api.post('/auth/reset-password/verify', { userID, otpCode });
+        console.debug('Verify password reset OTP response:', response.data);
         return response.data;
     } catch (error) {
-        throw new Error(handleApiError(error, 'Password reset OTP verification failed'));
+        const errorMessage = handleApiError(error, 'Password reset OTP verification failed');
+        console.error('Verify password reset OTP API error:', errorMessage, { error });
+        throw new Error(errorMessage);
     }
 };
 
 export const resetPassword = async (userID: string, newPassword: string, tempToken: string): Promise<ResetPasswordResponse> => {
     try {
         const response = await api.post('/auth/reset-password', { userID, newPassword, tempToken });
+        console.debug('Reset password response:', response.data);
         return response.data;
     } catch (error) {
-        throw new Error(handleApiError(error, 'Password reset failed'));
+        const errorMessage = handleApiError(error, 'Password reset failed');
+        console.error('Reset password API error:', errorMessage, { error });
+        throw new Error(errorMessage);
     }
 };
