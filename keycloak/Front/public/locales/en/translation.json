@@ -50,10 +50,12 @@
     "aria": {
       "toggleMenu": "Toggle navigation menu",
       "themeToggle": "Switch to {mode} mode",
+      "notifications": "Notifications",
       "logout": "Log out"
     },
     "theme": "Theme",
     "selectLanguage": "Select language",
+    "notifications": "Notifications",
     "logout": "Logout",
     "darkMode": "dark",
     "lightMode": "light",
@@ -375,7 +377,8 @@
       "dayTile": "View visits for {{weekday}} {{day}}",
       "visitCard": "View visit details for {{time}} at {{location}}"
     }
-  },"timesheetForm": {
+  },
+  "timesheetForm": {
     "title": "Create Visit",
     "loading": "Loading...",
     "form": {
@@ -948,6 +951,7 @@
         "desc": "Desc"
       },
       "filterByRole": "Filter by Role",
+      "noRoles": "No Roles",
       "allRoles": "All Roles",
       "addUser": "Add User",
       "addRole": "Add Role",
@@ -1447,6 +1451,5 @@
       "updateFailed": "Failed to update reason.",
       "deleteFailed": "Failed to delete reason."
     }
-  
   }
 }

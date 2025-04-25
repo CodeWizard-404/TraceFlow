@@ -1,4 +1,4 @@
-/* Existing styles (unchanged, included for context) */
+/* Header Styles */
 .header {
     background: #fff;
     padding: 0.9375rem 1.25rem;
@@ -125,11 +125,10 @@
     border: none;
     border-radius: 50%;
     cursor: pointer;
-    width: 2rem;
+    width: auto;
+    max-width: 2rem;
     height: 2rem;
-    position: relative;
-    overflow: hidden;
-    transition: all 0.3s ease;
+    transition: max-width 0.3s ease, padding 0.3s ease, border-radius 0.3s ease, background 0.3s ease;
 }
 
 .header.dark .theme-toggle-btn {
@@ -138,10 +137,11 @@
 
 .theme-toggle-btn:hover {
     background: #3a8fa2;
-    width: 6rem;
+    max-width: 10rem;
     border-radius: 1rem;
+    padding: 0.5rem 1rem;
     justify-content: flex-start;
-    padding-left: 0.75rem;
+    overflow: hidden;
 }
 
 .header.dark .theme-toggle-btn:hover {
@@ -160,11 +160,10 @@
     border: none;
     border-radius: 50%;
     cursor: pointer;
-    width: 2rem;
+    width: auto;
+    max-width: 2rem;
     height: 2rem;
-    position: relative;
-    overflow: hidden;
-    transition: all 0.3s ease;
+    transition: max-width 0.3s ease, padding 0.3s ease, border-radius 0.3s ease, background 0.3s ease;
 }
 
 .header.dark .lang-toggle-btn {
@@ -173,11 +172,11 @@
 
 .lang-toggle-btn:hover {
     background: #3a8fa2;
-    width: 8rem;
-    /* Adjusted to fit EN | FR | AR */
+    max-width: 12rem;
     border-radius: 1rem;
+    padding: 0.5rem 1rem;
     justify-content: flex-start;
-    padding-left: 0.75rem;
+    overflow: hidden;
 }
 
 .header.dark .lang-toggle-btn:hover {
@@ -186,20 +185,18 @@
 
 /* Language Options */
 .lang-options {
-    display: flex;
+    display: none;
     align-items: center;
+    margin-left: 0.5rem;
     opacity: 0;
-    position: absolute;
-    top: 50%;
-    left: 2rem;
-    transform: translateY(-50%);
-    transition: opacity 0.3s ease;
-    pointer-events: none;
+    transform: translateX(10px);
+    transition: opacity 0.3s ease 0.1s, transform 0.3s ease 0.1s;
 }
 
 .lang-toggle-btn:hover .lang-options {
+    display: flex;
     opacity: 1;
-    pointer-events: auto;
+    transform: translateX(0);
 }
 
 .lang-option {
@@ -238,11 +235,11 @@
     border: none;
     border-radius: 50%;
     cursor: pointer;
-    width: 2rem;
+    width: auto;
+    max-width: 2rem;
     height: 2rem;
     position: relative;
-    overflow: hidden;
-    transition: all 0.3s ease;
+    transition: max-width 0.3s ease, padding 0.3s ease, border-radius 0.3s ease, background 0.3s ease;
 }
 
 .header.dark .notification-btn {
@@ -251,10 +248,11 @@
 
 .notification-btn:hover {
     background: #cc3333;
-    width: 6rem;
+    max-width: 10rem;
     border-radius: 1rem;
+    padding: 0.5rem 1rem;
     justify-content: flex-start;
-    padding-left: 0.75rem;
+    overflow: hidden;
 }
 
 .header.dark .notification-btn:hover {
@@ -281,11 +279,14 @@
     border: 1px solid #f56565;
 }
 
+.notification-btn:hover .notification-badge {
+    right: 0.5rem;
+}
+
 /* Notification Panel Container */
 .notification-panel-container {
     position: absolute;
     top: 3.5rem;
-    /* Adjusted to align with header height */
     right: 1rem;
     z-index: 1000;
     max-width: 400px;
@@ -304,11 +305,10 @@
     border: none;
     border-radius: 50%;
     cursor: pointer;
-    width: 2rem;
+    width: auto;
+    max-width: 2rem;
     height: 2rem;
-    position: relative;
-    overflow: hidden;
-    transition: all 0.3s ease;
+    transition: max-width 0.3s ease, padding 0.3s ease, border-radius 0.3s ease, background 0.3s ease;
 }
 
 .header.dark .logout-btn {
@@ -317,10 +317,11 @@
 
 .logout-btn:hover {
     background: #c53030;
-    width: 6rem;
+    max-width: 10rem;
     border-radius: 1rem;
+    padding: 0.5rem 1rem;
     justify-content: flex-start;
-    padding-left: 0.75rem;
+    overflow: hidden;
 }
 
 .header.dark .logout-btn:hover {
@@ -329,24 +330,24 @@
 
 /* Text inside buttons */
 .btn-text {
-    position: absolute;
-    top: 50%;
-    left: 2rem;
-    transform: translateY(-50%);
-    opacity: 0;
+    display: none;
     color: #fff;
     font-family: 'Inter', sans-serif;
     font-size: 0.9rem;
     font-weight: 600;
     white-space: nowrap;
-    transition: opacity 0.3s ease;
-    pointer-events: none;
+    margin-left: 0.5rem;
+    opacity: 0;
+    transform: translateX(10px);
+    transition: opacity 0.3s ease 0.1s, transform 0.3s ease 0.1s;
 }
 
 .theme-toggle-btn:hover .btn-text,
 .notification-btn:hover .btn-text,
 .logout-btn:hover .btn-text {
+    display: inline;
     opacity: 1;
+    transform: translateX(0);
 }
 
 /* Button Group for inline buttons */
@@ -376,7 +377,7 @@
         flex-direction: column;
         gap: 1rem;
         width: 100%;
-        padding: 1rem;
+        padding: 1rem 0;
         background: #fff;
         position: absolute;
         top: 100%;
@@ -416,7 +417,7 @@
     .notification-btn,
     .logout-btn {
         padding: 0.5rem;
-        width: 2rem;
+        max-width: 2rem;
         height: 2rem;
     }
 
@@ -424,9 +425,8 @@
     .lang-toggle-btn:hover,
     .notification-btn:hover,
     .logout-btn:hover {
-        padding-left: 0.75rem;
-        width: 5rem;
-        /* Reduced to fit EN | FR | AR */
+        max-width: 8rem;
+        padding: 0.5rem 0.75rem;
     }
 
     .notification-panel-container {
@@ -470,7 +470,7 @@
     .lang-toggle-btn,
     .notification-btn,
     .logout-btn {
-        width: 1.75rem;
+        max-width: 1.75rem;
         height: 1.75rem;
         padding: 0.375rem;
     }
@@ -479,14 +479,17 @@
     .lang-toggle-btn:hover,
     .notification-btn:hover,
     .logout-btn:hover {
-        width: 4rem;
-        /* Further reduced for small screens */
-        padding-left: 0.625rem;
+        max-width: 6rem;
+        padding: 0.375rem 0.625rem;
     }
 
     .btn-text {
         font-size: 0.8rem;
-        left: 1.75rem;
+        margin-left: 0.4rem;
+    }
+
+    .lang-options {
+        margin-left: 0.4rem;
     }
 
     .notification-panel-container {
@@ -503,10 +506,6 @@
         font-size: 0.8rem;
     }
 }
-
-
-
-
 
 
 

@@ -1,4 +1,4 @@
-import React, { JSX, Suspense, useEffect } from "react";
+import React, { JSX, Suspense, useEffect, useState } from "react";
 import { Routes, Route, Navigate, useLocation } from "react-router-dom";
 import { ThemeProvider, useTheme } from "./context/ThemeContext";
 import AuthProvider, { useAuth } from "./context/AuthContext";
@@ -101,13 +101,27 @@ const AppContent: React.FC = React.memo(() => {
   const { theme } = useTheme();
   const location = useLocation();
   const { user, permissionsLoaded } = useAuth();
+  const [loadingTimeout, setLoadingTimeout] = useState(false);
 
   useEffect(() => {
     document.body.className = theme;
   }, [theme]);
 
-  // Show loading screen if user is logged in but permissions are not loaded
+  // Timeout for loading screen
+  useEffect(() => {
+    if (user && !permissionsLoaded) {
+      const timeout = setTimeout(() => {
+        setLoadingTimeout(true);
+      }, 10000); // 10 seconds timeout
+      return () => clearTimeout(timeout);
+    }
+  }, [user, permissionsLoaded]);
+
+  // Show loading screen or redirect if timed out
   if (user && !permissionsLoaded) {
+    if (loadingTimeout) {
+      return <Navigate to="/login" replace state={{ error: 'Failed to load application. Please log in again.' }} />;
+    }
     return (
       <div className="loading-container">
         <div className="spinner"></div>
@@ -121,6 +135,11 @@ const AppContent: React.FC = React.memo(() => {
       <Header />
       <main>
         {location.pathname !== "/login" && <ErrorDisplay />}
+        {location.state?.error && (
+          <div className="error-message" style={{ textAlign: 'center', margin: '10px 0', color: '#ff4444' }}>
+            {location.state.error}
+          </div>
+        )}
         <Suspense fallback={<div className="loading-container"><div className="spinner"></div><p>Loading...</p></div>}>
           <Routes>
             <Route path="/login" element={<LoginPage />} />

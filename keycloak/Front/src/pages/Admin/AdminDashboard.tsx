@@ -37,6 +37,7 @@ import User from "../../models/User";
 import NotificationRule from "../../models/NotificationRule";
 import { SortField, SortOrder, ViewMode } from "./adminTypes";
 import NotificationPanel from "../../components/ui/notificationPanel";
+import Select from "react-select";
 import "./AdminDashboard.css";
 
 const ChecklistAdd = lazy(() => import("./Items/Checklists/ChecklistAdd"));
@@ -130,7 +131,7 @@ const AdminDashboard: React.FC = React.memo(() => {
     const [reasons, setReasons] = useState<Reason[]>([]);
     const [reasonsPage, setReasonsPage] = useState(1);
     const [resetLoading, setResetLoading] = useState(false);
-    const [roleFilter, setRoleFilter] = useState<string>("all");
+    const [roleFilter, setRoleFilter] = useState<string[]>([]);
     const [roles, setRoles] = useState<Role[]>([]);
     const [searchQuery, setSearchQuery] = useState("");
     const [inputValue, setInputValue] = useState("");
@@ -150,7 +151,6 @@ const AdminDashboard: React.FC = React.memo(() => {
     const [notificationRules, setNotificationRules] = useState<
         NotificationRule[]
     >([]);
-    const [notificationRulesPage, setNotificationRulesPage] = useState(1);
     const [notificationTypeFilter, setNotificationTypeFilter] =
         useState<string>("all");
     const [notificationChannelFilter, setNotificationChannelFilter] =
@@ -158,7 +158,7 @@ const AdminDashboard: React.FC = React.memo(() => {
     const [notificationStatusFilter, setNotificationStatusFilter] =
         useState<string>("all");
     const [notificationSortField, setNotificationSortField] =
-        useState<string>("event");
+        useState<string>("type");
     const [notificationSortOrder, setNotificationSortOrder] =
         useState<string>("asc");
     const [view, setView] = useState<ViewMode>(initialView);
@@ -266,10 +266,7 @@ const AdminDashboard: React.FC = React.memo(() => {
         try {
             setUsersLoading(true);
             const usersData = await getAllUsers();
-            const startIndex = (usersPage - 1) * ITEMS_PER_PAGE;
-            const endIndex = startIndex + ITEMS_PER_PAGE;
-            const paginatedUsers = usersData.slice(startIndex, endIndex);
-            setUsers(paginatedUsers);
+            setUsers(usersData);
             setCachedData("all_users", usersData);
             setLocalError(null);
             clearError();
@@ -283,7 +280,6 @@ const AdminDashboard: React.FC = React.memo(() => {
         }
     }, [
         userPermissions.canViewUsers,
-        usersPage,
         setCachedData,
         t,
         setGlobalError,
@@ -414,10 +410,7 @@ const AdminDashboard: React.FC = React.memo(() => {
         try {
             setNotificationsLoading(true);
             const rulesData = await getNotificationRules();
-            const startIndex = (notificationRulesPage - 1) * ITEMS_PER_PAGE;
-            const endIndex = startIndex + ITEMS_PER_PAGE;
-            const paginatedRules = rulesData.slice(startIndex, endIndex);
-            setNotificationRules(paginatedRules);
+            setNotificationRules(rulesData);
             setCachedData("all_notification_rules", rulesData);
             const typesData = await getNotificationTypes();
             setNotificationTypes(typesData);
@@ -434,7 +427,6 @@ const AdminDashboard: React.FC = React.memo(() => {
         }
     }, [
         userPermissions.canViewNotificationRules,
-        notificationRulesPage,
         setCachedData,
         t,
         setGlobalError,
@@ -495,7 +487,6 @@ const AdminDashboard: React.FC = React.memo(() => {
         if (newView === "users") setUsersPage(1);
         else if (newView === "checklists") setChecklistsPage(1);
         else if (newView === "reasons") setReasonsPage(1);
-        else if (newView === "notifications") setNotificationRulesPage(1);
         localStorage.setItem("adminView", newView);
         if (newView !== "user-details") localStorage.removeItem("selectedUserId");
     }, []);
@@ -528,13 +519,7 @@ const AdminDashboard: React.FC = React.memo(() => {
                         clearTimeout(timeout);
                         setCachedData("all_users", usersData);
                     }
-                    const startIndex = (usersPage - 1) * ITEMS_PER_PAGE;
-                    const endIndex = startIndex + ITEMS_PER_PAGE;
-                    const paginatedUsers = (usersData as User[]).slice(
-                        startIndex,
-                        endIndex
-                    );
-                    setUsers(paginatedUsers);
+                    setUsers(usersData as User[]);
                     setRoleLoading(true);
                     let rolesData = getCachedData("all_roles");
                     if (!rolesData) {
@@ -600,13 +585,7 @@ const AdminDashboard: React.FC = React.memo(() => {
                         rulesData = await getNotificationRules();
                         setCachedData("all_notification_rules", rulesData);
                     }
-                    const startIndex = (notificationRulesPage - 1) * ITEMS_PER_PAGE;
-                    const endIndex = startIndex + ITEMS_PER_PAGE;
-                    const paginatedRules = (rulesData as NotificationRule[]).slice(
-                        startIndex,
-                        endIndex
-                    );
-                    setNotificationRules(paginatedRules);
+                    setNotificationRules(rulesData as NotificationRule[]);
                     let typesData = getCachedData("notification_types");
                     if (!typesData) {
                         typesData = await getNotificationTypes();
@@ -637,7 +616,6 @@ const AdminDashboard: React.FC = React.memo(() => {
         usersPage,
         checklistsPage,
         reasonsPage,
-        notificationRulesPage,
         userPermissions,
         t,
         setGlobalError,
@@ -655,6 +633,18 @@ const AdminDashboard: React.FC = React.memo(() => {
             return () => clearTimeout(timer);
         }
     }, [error, clearError]);
+
+    // Options for react-select
+    const roleOptions = useMemo(
+        () => [
+            { value: "No Roles", label: t("adminDashboard.sidebar.noRoles") },
+            ...roles.map((role) => ({
+                value: role.name,
+                label: role.name,
+            })),
+        ],
+        [roles, t]
+    );
 
     return (
         <div className="admin-dashboard" role="main">
@@ -901,21 +891,25 @@ const AdminDashboard: React.FC = React.memo(() => {
                             </div>
                             <div className="role-filter-card">
                                 <h3>{t("adminDashboard.sidebar.filterByRole")}</h3>
-                                <select
-                                    value={roleFilter}
-                                    onChange={(e) => setRoleFilter(e.target.value)}
+                                <Select
+                                    isMulti
+                                    options={roleOptions}
+                                    value={roleOptions.filter((option) =>
+                                        roleFilter.includes(option.value)
+                                    )}
+                                    onChange={(selectedOptions) =>
+                                        setRoleFilter(
+                                            selectedOptions
+                                                ? selectedOptions.map((option) => option.value)
+                                                : []
+                                        )
+                                    }
+                                    placeholder={t("adminDashboard.sidebar.allRoles")}
+                                    isDisabled={roleLoading || roles.length === 0}
                                     aria-label={t("adminDashboard.sidebar.filterByRole")}
-                                    disabled={roleLoading || roles.length === 0}
-                                >
-                                    <option value="all">
-                                        {t("adminDashboard.sidebar.allRoles")}
-                                    </option>
-                                    {roles.map((role) => (
-                                        <option key={role.roleID} value={role.roleID}>
-                                            {role.name}
-                                        </option>
-                                    ))}
-                                </select>
+                                    className="react-select-container"
+                                    classNamePrefix="react-select"
+                                />
                             </div>
                             <motion.button
                                 className="action-button"
@@ -1196,7 +1190,6 @@ const AdminDashboard: React.FC = React.memo(() => {
                                 sortOrder={sortOrder}
                                 userRoles={userRoles || []}
                                 roleFilter={roleFilter}
-                                roles={roles}
                                 currentPage={usersPage}
                                 setCurrentPage={setUsersPage}
                                 itemsPerPage={ITEMS_PER_PAGE}
@@ -1335,9 +1328,6 @@ const AdminDashboard: React.FC = React.memo(() => {
                                 setSelectedRule={setSelectedNotificationRule}
                                 setError={setLocalError}
                                 searchQuery={searchQuery}
-                                currentPage={notificationRulesPage}
-                                setCurrentPage={setNotificationRulesPage}
-                                itemsPerPage={ITEMS_PER_PAGE}
                                 typeFilter={notificationTypeFilter}
                                 channelFilter={notificationChannelFilter}
                                 statusFilter={notificationStatusFilter}

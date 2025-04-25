@@ -6,6 +6,7 @@ const { Notification, NotificationPreference, NotificationRule, User, Role } = r
 const { Op } = require('sequelize');
 
 class NotificationService {
+
     // Send a real-time WebSocket notification to specific roles or users
     static async sendWebSocketNotification(event, data, roles = [], userIDs = []) {
         try {

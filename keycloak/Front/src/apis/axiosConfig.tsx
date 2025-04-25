@@ -21,7 +21,8 @@ export const setGlobalNavigate = (navigate: ReturnType<typeof useNavigate>) => {
     globalNavigate = navigate;
 };
 
-const debouncedNavigate = debounce((to: string, options: { replace?: boolean }) => {
+const debouncedNavigate = debounce((to: string, options: { replace?: boolean; state?: Record<string, unknown> }) => {
+    console.debug('Axios interceptor navigating to:', to, options);
     if (globalNavigate) {
         globalNavigate(to, options);
     } else {
@@ -37,6 +38,7 @@ export const setupAxiosInterceptors = () => {
             if (accessToken) {
                 config.headers['Authorization'] = `Bearer ${accessToken}`;
             }
+            console.debug('Request sent:', { url: config.url, method: config.method });
             return config;
         },
         error => {
@@ -46,7 +48,10 @@ export const setupAxiosInterceptors = () => {
     );
 
     api.interceptors.response.use(
-        response => response,
+        response => {
+            console.debug('Response received:', { url: response.config.url, status: response.status });
+            return response;
+        },
         async error => {
             const originalRequest = error.config;
             if (
@@ -55,8 +60,10 @@ export const setupAxiosInterceptors = () => {
                 !['/auth/login', '/auth/verify-2fa', '/auth/refresh'].includes(originalRequest.url)
             ) {
                 originalRequest._retry = true;
+                console.debug('Attempting token refresh for request:', originalRequest.url);
                 try {
                     const { accessToken, expiresIn } = await refreshToken();
+                    console.debug('Token refresh successful:', { expiresIn });
                     const sameSite = import.meta.env.VITE_ENV === 'development' ? 'Lax' : 'Strict';
                     document.cookie = `accessToken=${accessToken}; path=/; SameSite=${sameSite}; max-age=${expiresIn / 1000}`;
                     originalRequest.headers['Authorization'] = `Bearer ${accessToken}`;
@@ -66,14 +73,14 @@ export const setupAxiosInterceptors = () => {
                     console.error('Refresh token failed:', refreshError);
                     document.cookie = 'accessToken=; path=/; expires=Thu, 01 Jan 1970 00:00:00 GMT';
                     document.cookie = 'userData=; path=/; expires=Thu, 01 Jan 1970 00:00:00 GMT';
-                    debouncedNavigate('/login', { replace: true });
+                    debouncedNavigate('/login', { replace: true, state: { error: 'Session expired. Please log in again.' } });
                     return Promise.reject(refreshError);
                 }
             }
             if (error.config.url.includes('/notifications')) {
                 console.error('Notification API error:', error.response?.data?.error || error.message);
             } else {
-                console.error('Response error:', error);
+                console.error('Response error:', { url: error.config.url, status: error.response?.status, message: error.message });
             }
             return Promise.reject(error);
         }

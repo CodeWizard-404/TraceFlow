@@ -17,7 +17,7 @@ import {
 } from "../../../lib/socket";
 import { getEntityEvents, NotificationEvent } from "../../../lib/notifEvents";
 import "../AdminDashboard.css";
-import { motion } from "framer-motion"; // Import Framer Motion
+import { motion } from "framer-motion";
 
 interface UsersListProps {
   users: User[];
@@ -30,8 +30,7 @@ interface UsersListProps {
   sortField: SortField;
   sortOrder: SortOrder;
   userRoles: Role[];
-  roleFilter: string;
-  roles: Role[];
+  roleFilter: string[]; // Changed to string[]
   currentPage: number;
   setCurrentPage: React.Dispatch<React.SetStateAction<number>>;
   itemsPerPage: number;
@@ -58,7 +57,6 @@ const UsersList: React.FC<UsersListProps> = React.memo(
     sortOrder,
     userRoles,
     roleFilter,
-    roles,
     currentPage,
     setCurrentPage,
     itemsPerPage,
@@ -66,7 +64,7 @@ const UsersList: React.FC<UsersListProps> = React.memo(
   }) => {
     const { effectivePermissions } = useAuth();
     const [internalSearchQuery, setInternalSearchQuery] = useState(searchQuery);
-    const [loading, setLoading] = useState(true); // Initialize as true for initial load
+    const [loading, setLoading] = useState(true);
     const [filterLoading, setFilterLoading] = useState(false);
 
     const isSuperAdmin = useMemo(
@@ -99,11 +97,9 @@ const UsersList: React.FC<UsersListProps> = React.memo(
       return () => debouncedSetSearchQuery.cancel();
     }, [searchQuery, debouncedSetSearchQuery]);
 
-    // Remove static skeleton delay; rely on API fetch for loading state
     useEffect(() => {
-      // Loading state is now controlled by API fetch and WebSocket events
       if (users.length > 0) {
-        setLoading(false); // Set loading to false once users are available
+        setLoading(false);
       }
     }, [users]);
 
@@ -112,6 +108,11 @@ const UsersList: React.FC<UsersListProps> = React.memo(
       const timer = setTimeout(() => setFilterLoading(false), 300);
       return () => clearTimeout(timer);
     }, [roleFilter]);
+
+    // Clear cache on filter changes
+    useEffect(() => {
+      cache.delete("all_users");
+    }, [searchQuery, roleFilter]);
 
     const getCachedData = useCallback((key: string): User[] | null => {
       const cached = cache.get(key);
@@ -157,7 +158,6 @@ const UsersList: React.FC<UsersListProps> = React.memo(
       [getCachedData, setCachedData]
     );
 
-    // WebSocket listener for user events
     useEffect(() => {
       if (
         view !== "users" ||
@@ -169,7 +169,7 @@ const UsersList: React.FC<UsersListProps> = React.memo(
       let isMounted = true;
 
       const setupNotifications = async () => {
-        setLoading(true); // Set loading true when starting WebSocket setup
+        setLoading(true);
         try {
           const userEvents = await getEntityEvents("user");
           if (!isMounted) return;
@@ -178,8 +178,7 @@ const UsersList: React.FC<UsersListProps> = React.memo(
             event: NotificationEvent,
             data: User
           ) => {
-            console.log(`Received WebSocket event: ${event}`, data);
-            cache.delete("all_users"); // Clear cache to ensure fresh data
+            cache.delete("all_users");
             try {
               switch (event) {
                 case "user:created": {
@@ -204,8 +203,10 @@ const UsersList: React.FC<UsersListProps> = React.memo(
                     (newUser.phone &&
                       newUser.phone.includes(internalSearchQuery));
                   const matchesRole =
-                    roleFilter === "all" ||
-                    newUser.Roles?.some((r) => String(r.roleID) === roleFilter);
+                    roleFilter.length === 0 ||
+                    (roleFilter.includes("No Roles") &&
+                      (!newUser.Roles || newUser.Roles.length === 0)) ||
+                    newUser.Roles?.some((r) => roleFilter.includes(r.name));
                   if (matchesSearch && matchesRole) {
                     setUsers((prev) => [...prev, newUser]);
                   }
@@ -238,8 +239,6 @@ const UsersList: React.FC<UsersListProps> = React.memo(
                     setUsers(usersData);
                   }
               }
-              const usersData = await getAllUsers();
-              setCachedData("all_users", usersData);
             } catch (err) {
               console.error("Failed to handle user event:", err);
               setError("Failed to update user list in real-time.");
@@ -257,7 +256,7 @@ const UsersList: React.FC<UsersListProps> = React.memo(
           console.error("Failed to set up WebSocket notifications:", err);
           setError("Failed to initialize real-time updates.");
         } finally {
-          setLoading(false); // Set loading false after WebSocket setup
+          setLoading(false);
         }
       };
 
@@ -303,24 +302,14 @@ const UsersList: React.FC<UsersListProps> = React.memo(
         );
       }
 
-      if (roleFilter !== "all") {
-        const selectedRole = roles.find(
-          (r) => String(r.roleID).trim() === String(roleFilter).trim()
-        );
-        const roleNameFilter = selectedRole?.name;
-
+      if (roleFilter.length > 0) {
         result = result.filter((user) => {
           const userRoles = Array.isArray(user.Roles) ? user.Roles : [];
-          return userRoles.some((role) => {
-            const roleIdMatch =
-              role.roleID &&
-              String(role.roleID).trim() === String(roleFilter).trim();
-            const roleNameMatch =
-              roleNameFilter &&
-              role.name &&
-              String(role.name).trim() === String(roleNameFilter).trim();
-            return roleIdMatch || roleNameMatch;
-          });
+          const hasNoRoles = !userRoles || userRoles.length === 0;
+          return (
+            (roleFilter.includes("No Roles") && hasNoRoles) ||
+            userRoles.some((role) => roleFilter.includes(role.name))
+          );
         });
       }
 
@@ -363,18 +352,11 @@ const UsersList: React.FC<UsersListProps> = React.memo(
       });
 
       return result;
-    }, [
-      users,
-      isSuperAdmin,
-      internalSearchQuery,
-      roleFilter,
-      sortField,
-      sortOrder,
-      roles,
-    ]);
+    }, [users, isSuperAdmin, internalSearchQuery, roleFilter, sortField, sortOrder]);
 
     const totalItems = filteredAndSortedUsers.length;
     const totalPages = Math.max(1, Math.ceil(totalItems / itemsPerPage));
+
     const paginatedUsers = useMemo(() => {
       const start = (currentPage - 1) * itemsPerPage;
       const end = start + itemsPerPage;
@@ -391,7 +373,7 @@ const UsersList: React.FC<UsersListProps> = React.memo(
       async (user: User) => {
         setIsTransitioning(true);
         setSelectedUser(user);
-        setLoading(true); // Set loading true when fetching user details
+        setLoading(true);
         try {
           const [supervisors, managers] = await Promise.all([
             fetchWithRetry(
@@ -414,7 +396,7 @@ const UsersList: React.FC<UsersListProps> = React.memo(
           console.error("Failed to fetch user details:", error);
           setError("Failed to load user details.");
         } finally {
-          setLoading(false); // Set loading false after fetch completes
+          setLoading(false);
           setIsTransitioning(false);
         }
       },
@@ -556,7 +538,9 @@ const UsersList: React.FC<UsersListProps> = React.memo(
             {totalItems > 0 && (
               <div className="pagination">
                 <button
-                  onClick={() => setCurrentPage((p) => Math.max(1, p - 1))}
+                  onClick={() => {
+                    setCurrentPage((p) => Math.max(1, p - 1));
+                  }}
                   disabled={currentPage === 1}
                 >
                   {t("userView.pagination.previous")}
@@ -568,9 +552,9 @@ const UsersList: React.FC<UsersListProps> = React.memo(
                   })}
                 </span>
                 <button
-                  onClick={() =>
-                    setCurrentPage((p) => Math.min(totalPages, p + 1))
-                  }
+                  onClick={() => {
+                    setCurrentPage((p) => Math.min(totalPages, p + 1));
+                  }}
                   disabled={currentPage === totalPages}
                 >
                   {t("userView.pagination.next")}

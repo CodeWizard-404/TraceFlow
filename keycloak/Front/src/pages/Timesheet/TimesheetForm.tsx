@@ -13,7 +13,7 @@ import {
 import { getAllChecklists } from "../../apis/checklistAPI";
 import { getAllReasons } from "../../apis/reasonAPI";
 import { createTimesheet } from "../../apis/timesheetAPI";
-import { getUserByPhone, getSupervisorsByUser } from "../../apis/userAPI";
+import { getUserByPhone, getSupervisorsByUser, getAllUsers } from "../../apis/userAPI";
 import { Checklist } from "../../models/Checklist";
 import { Reason } from "../../models/Reason";
 import User from "../../models/User";
@@ -33,10 +33,15 @@ const PERMISSIONS = {
   READ_CHECKLISTS_ITEMS: import.meta.env.VITE_PERMISSIONS_READ_CHECKLISTS_ITEMS,
 };
 
+const ROLES = {
+  SUPER_ADMIN: import.meta.env.VITE_ROLES_SUPER_ADMIN,
+  SUPERVISOR: import.meta.env.VITE_ROLES_SUPERVISOR,
+};
+
 // Main Component
 const TimesheetForm: React.FC = () => {
   const navigate = useNavigate();
-  const { user, effectivePermissions, permissionsLoaded } = useAuth();
+  const { user, effectivePermissions, permissionsLoaded, userRoles } = useAuth();
   const { setError, error } = useError();
   const { t } = useTranslation();
 
@@ -99,6 +104,12 @@ const TimesheetForm: React.FC = () => {
     [effectivePermissions]
   );
 
+  // Role Checks
+  const isSuperAdmin = useMemo(
+    () => userRoles?.some((role) => role.name === ROLES.SUPER_ADMIN),
+    [userRoles]
+  );
+
   if (!permissionsLoaded)
     return (
       <div className="page-loading">
@@ -130,7 +141,16 @@ const TimesheetForm: React.FC = () => {
             ? getAllChecklists()
             : Promise.resolve([]),
           userPermissions.canReadSupervisors
-            ? getSupervisorsByUser(user.userID)
+            ? isSuperAdmin
+              ? getAllUsers().then((users) =>
+                users.filter((u) =>
+                  u.Roles?.some(
+                    (role) =>
+                      role.name.toLowerCase() === ROLES.SUPERVISOR.toLowerCase()
+                  )
+                )
+              )
+              : getSupervisorsByUser(user.userID)
             : Promise.resolve([]),
         ];
         const [locationsData, reasonsData, checklistsData, supervisorsData] =
@@ -153,7 +173,7 @@ const TimesheetForm: React.FC = () => {
       }
     };
     fetchData();
-  }, [userPermissions, user.userID, setError, t]);
+  }, [userPermissions, user.userID, setError, t, isSuperAdmin]);
 
   // Fetch Agents by Location
   useEffect(() => {
@@ -236,6 +256,14 @@ const TimesheetForm: React.FC = () => {
       setSupervisorLoading(true);
       try {
         const supervisor = await getUserByPhone(phone);
+        if (
+          isSuperAdmin &&
+          !supervisor.Roles?.some(
+            (role) => role.name.toLowerCase() === ROLES.SUPERVISOR.toLowerCase()
+          )
+        ) {
+          throw new Error("User is not a supervisor");
+        }
         setSelectedSupervisor(supervisor.userID);
         setSupervisors((prev) =>
           prev.some((s) => s.userID === supervisor.userID)
@@ -258,6 +286,7 @@ const TimesheetForm: React.FC = () => {
       userPermissions.canCreateTimesheetsForSupervisors,
       setError,
       t,
+      isSuperAdmin,
     ]
   );
 
@@ -464,9 +493,8 @@ const TimesheetForm: React.FC = () => {
                   </option>
                   {supervisors
                     .filter((s) =>
-                      `${s.firstname || ""} ${s.lastname || ""} ${
-                        s.phone || ""
-                      }`
+                      `${s.firstname || ""} ${s.lastname || ""} ${s.phone || ""
+                        }`
                         .toLowerCase()
                         .includes(supervisorSearch.toLowerCase())
                     )
@@ -617,9 +645,8 @@ const TimesheetForm: React.FC = () => {
               </option>
               {agents
                 .filter((agent) =>
-                  `${agent.name || ""} ${agent.lastname || ""} ${
-                    agent.phone || ""
-                  }`
+                  `${agent.name || ""} ${agent.lastname || ""} ${agent.phone || ""
+                    }`
                     .toLowerCase()
                     .includes(agentSearch.toLowerCase())
                 )

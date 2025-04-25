@@ -49,10 +49,16 @@ export const useAuth = (): AuthContextType => {
 const getUserFromCookie = (): User | null => {
     const cookies = document.cookie.split(';').map(cookie => cookie.trim());
     const userCookie = cookies.find(cookie => cookie.startsWith('userData='));
-    if (!userCookie) return null;
+    if (!userCookie) {
+        console.debug('No userData cookie found');
+        return null;
+    }
     try {
-        return JSON.parse(decodeURIComponent(userCookie.split('=')[1])) as User;
-    } catch {
+        const user = JSON.parse(decodeURIComponent(userCookie.split('=')[1])) as User;
+        console.debug('User loaded from cookie:', { userID: user.userID, email: user.email });
+        return user;
+    } catch (error) {
+        console.error('Failed to parse userData cookie:', error);
         return null;
     }
 };
@@ -74,6 +80,7 @@ const setUserCookie = (user: User, maxAge: number) => {
 const clearAuthCookies = () => {
     document.cookie = 'accessToken=; path=/; expires=Thu, 01 Jan 1970 00:00:00 GMT';
     document.cookie = 'userData=; path=/; expires=Thu, 01 Jan 1970 00:00:00 GMT';
+    console.debug('Auth cookies cleared');
 };
 
 const AuthProvider: React.FC<{ children: ReactNode }> = ({ children }) => {
@@ -92,6 +99,52 @@ const AuthProvider: React.FC<{ children: ReactNode }> = ({ children }) => {
     useEffect(() => {
         setupAxiosInterceptors();
     }, []);
+
+    // Fetch permissions for user loaded from cookie on mount
+    useEffect(() => {
+        const loadPermissions = async () => {
+            if (!user || permissionsLoaded) {
+                console.debug('Skipping permission load: no user or permissions already loaded', { user: !!user, permissionsLoaded });
+                return;
+            }
+
+            console.debug('Loading permissions for user:', { userID: user.userID });
+            setPermissionsLoaded(false);
+            try {
+                const [perms, roles] = await Promise.all([
+                    getEffectivePermissions(user.userID),
+                    getRolesByUser(user.userID),
+                ]);
+                console.debug('Permissions and roles loaded:', {
+                    permissions: perms.map(p => p.name),
+                    roles: roles.map(r => r.name),
+                });
+                setEffectivePermissions(perms);
+                setUserRoles(roles);
+                setPermissionsLoaded(true);
+            } catch (error) {
+                console.error('Failed to load permissions on mount:', error);
+                await handleLogout();
+                debouncedNavigate('/login', { replace: true, state: { error: 'Session expired. Please log in again.' } });
+            }
+        };
+
+        loadPermissions();
+    }, [user]);
+
+    // Timeout for permission loading to prevent infinite loading
+    useEffect(() => {
+        if (user && !permissionsLoaded) {
+            const timeout = setTimeout(() => {
+                if (!permissionsLoaded) {
+                    console.error('Permission loading timed out');
+                    handleLogout();
+                    debouncedNavigate('/login', { replace: true, state: { error: 'Failed to load permissions. Please log in again.' } });
+                }
+            }, 10000); // 10 seconds timeout
+            return () => clearTimeout(timeout);
+        }
+    }, [user, permissionsLoaded]);
 
     // Debounced navigation with cancellation
     const debouncedNavigate = useCallback(
@@ -151,6 +204,7 @@ const AuthProvider: React.FC<{ children: ReactNode }> = ({ children }) => {
                 document.cookie = `accessToken=${accessToken}; path=/; SameSite=${sameSite}; max-age=${expiresIn / 1000}`;
                 setTokenExpiry(newExpiry);
                 window.dispatchEvent(new Event('tokenRefreshed'));
+                console.debug('Token refreshed successfully:', { newExpiry });
                 return;
             } catch (error) {
                 console.error(`Refresh attempt ${attempt} failed:`, error);
@@ -335,11 +389,15 @@ const AuthProvider: React.FC<{ children: ReactNode }> = ({ children }) => {
                     getEffectivePermissions(newUser.userID),
                     getRolesByUser(newUser.userID),
                 ]);
+                console.debug('Permissions and roles loaded after login:', {
+                    permissions: perms.map(p => p.name),
+                    roles: roles.map(r => r.name),
+                });
                 setEffectivePermissions(perms);
                 setUserRoles(roles);
                 setPermissionsLoaded(true);
             } catch (error) {
-                console.error('Failed to load permissions:', error);
+                console.error('Failed to load permissions after login:', error);
                 throw new Error('Failed to load permissions');
             }
         } catch (error) {
