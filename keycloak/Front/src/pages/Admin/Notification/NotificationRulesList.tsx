@@ -122,7 +122,6 @@ const NotificationRulesList: React.FC<NotificationRulesListProps> = React.memo(
                         getNotificationRules,
                         'notification_rules'
                     );
-                    console.log('Fetched rules:', rulesData.length);
                     setRules(rulesData);
                     // Initialize expandedTypes as an empty array to keep all types collapsed by default
                     setExpandedTypes([]);
@@ -156,7 +155,6 @@ const NotificationRulesList: React.FC<NotificationRulesListProps> = React.memo(
                         event: NotificationEvent,
                         data: NotificationRule
                     ) => {
-                        console.log(`Received WebSocket event: ${event}`, data);
                         cache.delete('notification_rules');
                         try {
                             switch (event) {
@@ -244,7 +242,6 @@ const NotificationRulesList: React.FC<NotificationRulesListProps> = React.memo(
         }, [typeFilter, channelFilter, statusFilter]);
 
         const filteredRules = useMemo(() => {
-            console.log('Rules before filtering:', rules.length);
             let filtered = rules.filter(
                 (rule) =>
                     rule.event.toLowerCase().includes(internalSearchQuery.toLowerCase()) ||
@@ -285,7 +282,6 @@ const NotificationRulesList: React.FC<NotificationRulesListProps> = React.memo(
                 });
             }
 
-            console.log('Filtered rules:', filtered.length);
             return filtered;
         }, [rules, internalSearchQuery, typeFilter, channelFilter, statusFilter, sortField, sortOrder]);
 

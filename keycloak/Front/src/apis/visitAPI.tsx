@@ -63,19 +63,23 @@ export const logVisitDetails = async (
         if (data.duration) formData.append("duration", data.duration.toString());
         if (data.checklistUpdates) formData.append("checklistUpdates", JSON.stringify(data.checklistUpdates));
         if (data.comment) formData.append("comment", data.comment);
-        data.photos.forEach((photo) => formData.append("photos", photo));
-
-        const response = await api.put<LogVisitResponse>(`/visits/${id}/log`, formData, {
-            headers: {
-                "Content-Type": "multipart/form-data",
-            },
+        data.photos.forEach((photo) => {
+            console.log("Appending photo:", photo.name, photo.size); // Log each photo
+            formData.append("photos", photo);
         });
+
+        // Log all FormData entries
+        console.log("FormData entries:");
+        for (const [key, value] of formData.entries()) {
+            console.log(`${key}:`, value instanceof File ? `${value.name} (${value.size} bytes)` : value);
+        }
+
+        const response = await api.put<LogVisitResponse>(`/visits/${id}/log`, formData);
         return response.data;
     } catch (error) {
         throw new Error(handleApiError(error, "Unable to log visit details."));
     }
 };
-
 // Get visit by ID
 export const getVisitById = async (id: string): Promise<VisitByIdResponse> => {
     try {

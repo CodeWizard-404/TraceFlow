@@ -23,7 +23,6 @@ async function initializeServer(app, io) {
         const allowedOrigins = [
             process.env.FRONTEND_URL,
             process.env.FRONTEND_URL1,
-            process.env.FRONTEND_URL2,
         ];
         io.attach(server, {
             cors: {

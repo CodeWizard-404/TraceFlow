@@ -61,23 +61,40 @@ const memoryStorage = multer.memoryStorage();
 
 // Shared file filter for both uploads
 const fileFilter = (req, file, cb) => {
-    const allowedTypes = /jpeg|jpg|png/;
+    const allowedTypes = ['image/jpeg', 'image/jpg', 'image/png'];
     console.log('File mimetype:', file.mimetype);
-    const extname = allowedTypes.test(path.extname(file.originalname).toLowerCase());
-    const mimetype = allowedTypes.test(file.mimetype);
+    console.log('File originalname:', file.originalname);
+    const extname = /\.(jpeg|jpg|png)$/i.test(path.extname(file.originalname).toLowerCase());
+    const mimetype = allowedTypes.includes(file.mimetype);
     if (extname && mimetype) {
         return cb(null, true);
     }
+    console.error('File rejected:', { mimetype: file.mimetype, originalname: file.originalname });
     cb(new Error('Only JPEG/JPG/PNG images are allowed'), false);
+};
+
+const uploadPhotos = multer({
+    storage: diskStorage,
+    fileFilter,
+    limits: { fileSize: 5 * 1024 * 1024 }, // 5MB limit
+}).array('photos', 10); // Add max file count for clarity
+
+// Add error handling middleware
+const handleMulterError = (err, req, res, next) => {
+    if (err instanceof multer.MulterError) {
+        console.error('Multer error:', err.message, err.field);
+        return res.status(400).json({ error: `Multer error: ${err.message}` });
+    }
+    if (err) {
+        console.error('File upload error:', err.message);
+        return res.status(400).json({ error: err.message });
+    }
+    next();
 };
 
 // Export two multer instances
 module.exports = {
-    uploadPhotos: multer({
-        storage: diskStorage,
-        fileFilter,
-        limits: { fileSize: 5 * 1024 * 1024 }, // 5MB limit
-    }),
+    uploadPhotos: [uploadPhotos, handleMulterError],
     uploadPFP: multer({
         storage: memoryStorage,
         fileFilter,

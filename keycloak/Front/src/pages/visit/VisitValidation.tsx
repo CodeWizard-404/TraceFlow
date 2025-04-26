@@ -160,12 +160,17 @@ const VisitValidation: React.FC = () => {
             const file = new File([blob], `photo-${Date.now()}.jpg`, {
               type: "image/jpeg",
             });
+            console.log("Captured photo:", file); // Debug log
             setPhotos((prev) => [...prev, file]);
             setFlashEffect(true);
             setTimeout(() => setFlashEffect(false), 300);
+          } else {
+            console.error("Blob is null");
           }
         }, "image/jpeg");
       }
+    } else {
+      console.error("Video or canvas ref is null");
     }
   };
 
@@ -204,6 +209,9 @@ const VisitValidation: React.FC = () => {
       );
       return;
     }
+
+    console.log("Photos before sending:", photos); // Debug log
+    console.log("Photos length:", photos.length);
 
     setIsSubmitting(true);
     setError(null);
@@ -428,14 +436,14 @@ const VisitValidation: React.FC = () => {
                     onClick={stopCamera}
                     aria-label={t("visitValidation.aria.stopCamera")}
                   >
-                    <FaTimes /> {t("visitValidation.actions.stopCamera")}
+                    <FaTimes />
                   </button>
                   <button
                     className="capture-btn"
                     onClick={capturePhoto}
                     aria-label={t("visitValidation.aria.capturePhoto")}
                   >
-                    <FaCamera /> {t("visitValidation.actions.capturePhoto")}
+                    <FaCamera />
                   </button>
                 </>
               )}
@@ -469,7 +477,7 @@ const VisitValidation: React.FC = () => {
                       onClick={() => removePhoto(index)}
                       aria-label={removePhotoAria}
                     >
-                      <FaTimes /> {t("visitValidation.actions.removePhoto")}
+                      <FaTimes />
                     </button>
                   </div>
                 );
@@ -526,9 +534,9 @@ const VisitValidation: React.FC = () => {
           <button
             className="close-preview-btn"
             onClick={closePhotoPreview}
-            aria-label={t("visitValidation.aria.closePreview")}
+            aria-label='X'
           >
-            <FaTimes /> {t("visitValidation.actions.closePreview")}
+            <FaTimes />
           </button>
         </div>
       )}

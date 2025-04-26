@@ -2,7 +2,6 @@ const express = require('express');
 const router = express.Router();
 const { requirePermission } = require('../config/security');
 const TimesheetController = require('../controllers/timesheetController');
-const { uploadPhotos } = require('../config/multer');
 
 router.post('/manager', requirePermission('create_timesheets_for_supervisor'), TimesheetController.createTimesheet);
 router.post('/supervisor', requirePermission('create_self_timesheets'), TimesheetController.createTimesheet);

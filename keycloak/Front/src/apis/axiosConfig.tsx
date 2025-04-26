@@ -22,7 +22,6 @@ export const setGlobalNavigate = (navigate: ReturnType<typeof useNavigate>) => {
 };
 
 const debouncedNavigate = debounce((to: string, options: { replace?: boolean; state?: Record<string, unknown> }) => {
-    console.debug('Axios interceptor navigating to:', to, options);
     if (globalNavigate) {
         globalNavigate(to, options);
     } else {
@@ -33,12 +32,14 @@ const debouncedNavigate = debounce((to: string, options: { replace?: boolean; st
 export const setupAxiosInterceptors = () => {
     api.interceptors.request.use(
         config => {
-            config.headers['Content-Type'] = 'application/json';
+            // Only set Content-Type to application/json if the body is not FormData
+            if (!(config.data instanceof FormData)) {
+                config.headers['Content-Type'] = 'application/json';
+            }
             const accessToken = getAccessTokenFromCookie();
             if (accessToken) {
                 config.headers['Authorization'] = `Bearer ${accessToken}`;
             }
-            console.debug('Request sent:', { url: config.url, method: config.method });
             return config;
         },
         error => {
@@ -49,7 +50,6 @@ export const setupAxiosInterceptors = () => {
 
     api.interceptors.response.use(
         response => {
-            console.debug('Response received:', { url: response.config.url, status: response.status });
             return response;
         },
         async error => {
@@ -60,10 +60,8 @@ export const setupAxiosInterceptors = () => {
                 !['/auth/login', '/auth/verify-2fa', '/auth/refresh'].includes(originalRequest.url)
             ) {
                 originalRequest._retry = true;
-                console.debug('Attempting token refresh for request:', originalRequest.url);
                 try {
                     const { accessToken, expiresIn } = await refreshToken();
-                    console.debug('Token refresh successful:', { expiresIn });
                     const sameSite = import.meta.env.VITE_ENV === 'development' ? 'Lax' : 'Strict';
                     document.cookie = `accessToken=${accessToken}; path=/; SameSite=${sameSite}; max-age=${expiresIn / 1000}`;
                     originalRequest.headers['Authorization'] = `Bearer ${accessToken}`;

@@ -319,11 +319,6 @@ const ProfilePage: React.FC = React.memo(() => {
         setPreferences(notificationPrefs);
 
         if (completeUser.PFP && completeUser.PFP.trim()) {
-          console.log("Raw PFP data:", {
-            length: completeUser.PFP.length,
-            preview: completeUser.PFP.substring(0, 50),
-            isValidBase64: isValidBase64(completeUser.PFP),
-          });
 
           // Skip if PFP is invalid
           if (!isValidBase64(completeUser.PFP)) {
@@ -360,7 +355,6 @@ const ProfilePage: React.FC = React.memo(() => {
             setTempError("Unable to load profile picture. Please upload a new picture.");
           };
         } else {
-          console.log("No PFP data available");
           setProfilePic(loadLastValidPFP());
         }
 
@@ -421,11 +415,6 @@ const ProfilePage: React.FC = React.memo(() => {
               };
               setProfileData(completeUser);
               if (completeUser.PFP && completeUser.PFP.trim()) {
-                console.log("Updated PFP data:", {
-                  length: completeUser.PFP.length,
-                  preview: completeUser.PFP.substring(0, 50),
-                  isValidBase64: isValidBase64(completeUser.PFP),
-                });
 
                 if (!isValidBase64(completeUser.PFP)) {
                   console.warn("Skipping invalid updated PFP data");
@@ -674,11 +663,7 @@ const ProfilePage: React.FC = React.memo(() => {
 
         // Validate response PFP
         if (response.PFP && response.PFP.trim()) {
-          console.log("New PFP data:", {
-            length: response.PFP.length,
-            preview: response.PFP.substring(0, 50),
-            isValidBase64: isValidBase64(response.PFP),
-          });
+
 
           if (!isValidBase64(response.PFP)) {
             console.warn("Invalid new PFP data");
