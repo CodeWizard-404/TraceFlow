@@ -2,37 +2,99 @@ import { io, Socket } from 'socket.io-client';
 import { getNotificationEvents, NotificationEvent } from './notifEvents';
 
 // Get the API URL from environment variables
-const API_URL = import.meta.env.VITE_API_URL || 'http://localhost:5000';
+const API_URL = import.meta.env.VITE_API_URL || 'http://192.168.1.14:5000';
 
 // Initialize the Socket.IO client
 let socket: Socket | null = null;
 
 // Connect to the WebSocket server (authentication via cookies)
-export const initSocket = () => {
-    if (!socket) {
-        console.log('Sending cookies:', document.cookie);
-        socket = io(API_URL, {
+export const initSocket = (retryCount = 3, retryDelay = 2000) => {
+    if (socket && socket.connected) {
+        console.debug('Socket already connected, skipping initialization', {
+            socketId: socket?.id,
+            timestamp: new Date().toISOString(),
+        });
+        return socket;
+    }
+
+    const connect = (attempt = 1, useProxy = true) => {
+        const url = useProxy ? '/' : API_URL;
+        console.debug(`Attempting WebSocket connection (Attempt ${attempt}/${retryCount})`, {
+            url,
+            useProxy,
+            timestamp: new Date().toISOString(),
+        });
+
+        socket = io(url, {
             withCredentials: true,
-            transports: ['websocket', 'polling'],
+            transports: ['websocket'],
+            reconnection: true,
+            reconnectionAttempts: 5,
+            reconnectionDelay: 2000,
         });
 
         socket.on('connect', () => {
-            console.log('Connected to WebSocket server');
-        });
-
-        socket.on('disconnect', () => {
-            console.log('Disconnected from WebSocket server');
+            console.debug('Connected to WebSocket server', {
+                socketId: socket?.id,
+                timestamp: new Date().toISOString(),
+            });
         });
 
         socket.on('connect_error', (error) => {
-            console.error('WebSocket connection error:', error.message);
-            if (error.message.includes('Authentication failed')) {
-                document.cookie = 'accessToken=; path=/; expires=Thu, 01 Jan 1970 00:00:00 GMT';
-                document.cookie = 'userData=; path=/; expires=Thu, 01 Jan 1970 00:00:00 GMT';
-                window.location.href = '/login';
+            console.error('WebSocket connection error:', {
+                message: error.message,
+                attempt,
+                useProxy,
+                timestamp: new Date().toISOString(),
+            });
+
+            if (error.message.includes('ECONNRESET') || error.message.includes('ECONNREFUSED')) {
+                console.warn('Network error detected, increasing retry delay', {
+                    attempt,
+                    timestamp: new Date().toISOString(),
+                });
+                retryDelay = 5000; // Increase delay for network issues
+            }
+
+            if (attempt < retryCount) {
+                console.debug(`Retrying WebSocket connection in ${retryDelay}ms`, {
+                    attempt: attempt + 1,
+                    useProxy: attempt === retryCount - 1 ? false : useProxy,
+                    timestamp: new Date().toISOString(),
+                });
+                setTimeout(() => connect(attempt + 1, attempt === retryCount - 1 ? false : useProxy), retryDelay);
+            } else {
+                console.error('Max WebSocket connection attempts reached. Please check logs and try again.', {
+                    timestamp: new Date().toISOString(),
+                });
+                // Do not redirect to allow debugging
             }
         });
-    }
+
+        socket.on('disconnect', (reason) => {
+            console.debug('Disconnected from WebSocket server', {
+                reason,
+                timestamp: new Date().toISOString(),
+            });
+        });
+
+        socket.on('reconnect', (attempt) => {
+            console.debug('Reconnected to WebSocket server', {
+                attempt,
+                socketId: socket?.id,
+                timestamp: new Date().toISOString(),
+            });
+        });
+
+        socket.on('reconnect_error', (error) => {
+            console.error('WebSocket reconnection error:', {
+                message: error.message,
+                timestamp: new Date().toISOString(),
+            });
+        });
+    };
+
+    setTimeout(() => connect(), 1000); // Delay to ensure cookies are set
     return socket;
 };
 
@@ -40,7 +102,9 @@ export const initSocket = () => {
 export const joinRoom = (room: string) => {
     if (socket && socket.connected) {
         socket.emit('join', room);
-        console.log(`Joined room: ${room}`);
+        console.debug(`Joined room: ${room}`, { timestamp: new Date().toISOString() });
+    } else {
+        console.warn(`Cannot join room ${room}: Socket not connected`, { timestamp: new Date().toISOString() });
     }
 };
 
@@ -48,7 +112,7 @@ export const joinRoom = (room: string) => {
 export const leaveRoom = (room: string) => {
     if (socket && socket.connected) {
         socket.emit('leave', room);
-        console.log(`Left room: ${room}`);
+        console.debug(`Left room: ${room}`, { timestamp: new Date().toISOString() });
     }
 };
 
@@ -57,8 +121,16 @@ export const onNotification = async (callback: (event: NotificationEvent, data: 
     if (socket) {
         const events = await getNotificationEvents();
         events.forEach((event) => {
-            socket!.on(event, (data) => callback(event, data));
+            socket!.on(event, (data) => {
+                console.debug(`Received WebSocket event: ${event}`, {
+                    data,
+                    timestamp: new Date().toISOString(),
+                });
+                callback(event, data);
+            });
         });
+    } else {
+        console.warn('Cannot listen for notifications: Socket not initialized', { timestamp: new Date().toISOString() });
     }
 };
 
@@ -66,6 +138,7 @@ export const onNotification = async (callback: (event: NotificationEvent, data: 
 export const offNotification = () => {
     if (socket) {
         socket.removeAllListeners();
+        console.debug('Removed all WebSocket event listeners', { timestamp: new Date().toISOString() });
     }
 };
 
@@ -74,7 +147,6 @@ export const disconnectSocket = () => {
     if (socket) {
         socket.disconnect();
         socket = null;
-        console.log('Socket disconnected');
     }
 };
 

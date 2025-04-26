@@ -9,12 +9,6 @@ const api: AxiosInstance = axios.create({
     withCredentials: true,
 });
 
-const getAccessTokenFromCookie = (): string | null => {
-    const cookies = document.cookie.split(';').map(cookie => cookie.trim());
-    const tokenCookie = cookies.find(cookie => cookie.startsWith('accessToken='));
-    return tokenCookie ? tokenCookie.split('=')[1] : null;
-};
-
 let globalNavigate: ReturnType<typeof useNavigate> | null = null;
 
 export const setGlobalNavigate = (navigate: ReturnType<typeof useNavigate>) => {
@@ -32,14 +26,10 @@ const debouncedNavigate = debounce((to: string, options: { replace?: boolean; st
 export const setupAxiosInterceptors = () => {
     api.interceptors.request.use(
         config => {
-            // Only set Content-Type to application/json if the body is not FormData
             if (!(config.data instanceof FormData)) {
                 config.headers['Content-Type'] = 'application/json';
             }
-            const accessToken = getAccessTokenFromCookie();
-            if (accessToken) {
-                config.headers['Authorization'] = `Bearer ${accessToken}`;
-            }
+            // No need to set Authorization header since accessToken is HTTP-only
             return config;
         },
         error => {
@@ -63,8 +53,7 @@ export const setupAxiosInterceptors = () => {
                 try {
                     const { accessToken, expiresIn } = await refreshToken();
                     const sameSite = import.meta.env.VITE_ENV === 'development' ? 'Lax' : 'Strict';
-                    document.cookie = `accessToken=${accessToken}; path=/; SameSite=${sameSite}; max-age=${expiresIn / 1000}`;
-                    originalRequest.headers['Authorization'] = `Bearer ${accessToken}`;
+                    document.cookie = `accessToken=${accessToken}; path=/; SameSite=${sameSite}; max-age=${expiresIn / 1000}; HttpOnly`;
                     window.dispatchEvent(new Event('tokenRefreshed'));
                     return api(originalRequest);
                 } catch (refreshError) {

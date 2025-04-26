@@ -109,7 +109,7 @@ cron.schedule('0 8 * * *', async () => {
         const timesheets = await Timesheet.findAll({
             where: {
                 status: 'draft',
-                createdAt: { [Op.lte]: new Date(Date.now() - 24 * 60 * 60 * 1000) }, // Older than 24 hours
+                createdAt: { [Op.lte]: new Date(Date.now() - 24 * 60 * 60 * 1000) },
             },
         });
         for (const timesheet of timesheets) {
@@ -166,11 +166,11 @@ async function startApp() {
         await seedMissingPermissions();
         addStep('Permission Seeding', true, 'Completed');
 
-        const server = await initializeServer(app, io);
-        addStep('Server Initialization', true, 'Completed');
-
         await seedSuperAdmin();
         addStep('Super Admin Seeding', true, 'Completed');
+
+        const server = await initializeServer(app, io); // Initialize server with Socket.IO
+        addStep('Server Initialization', true, 'Completed with WebSocket');
 
         const endTime = new Date();
         const duration = ((endTime - startTime) / 1000).toFixed(2);

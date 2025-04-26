@@ -1,11 +1,10 @@
-/* eslint-disable react-hooks/exhaustive-deps */
-/* eslint-disable react-refresh/only-export-components */
 import React, { createContext, useContext, useState, useEffect, useRef, ReactNode, useCallback } from 'react';
 import { useNavigate, useLocation } from 'react-router-dom';
 import { login, verify2FA, logout, refreshToken } from '../apis/authAPI';
 import { getEffectivePermissions } from '../apis/permissionAPI';
 import { getRolesByUser } from '../apis/roleAPI';
 import { setupAxiosInterceptors } from '../apis/axiosConfig';
+import { initSocket, disconnectSocket } from '../lib/socket';
 import User from '../models/User';
 import Permission from '../models/Permission';
 import Role from '../models/Role';
@@ -32,30 +31,22 @@ interface AuthContextType {
 
 const AuthContext = createContext<AuthContextType | undefined>(undefined);
 
-/**
- * Hook to access authentication context
- * @throws Error if used outside AuthProvider
- */
 export const useAuth = (): AuthContextType => {
     const context = useContext(AuthContext);
     if (!context) throw new Error('useAuth must be used within an AuthProvider');
     return context;
 };
 
-/**
- * Utility to get user from cookies
- * @returns User object or null if not found
- */
 const getUserFromCookie = (): User | null => {
     const cookies = document.cookie.split(';').map(cookie => cookie.trim());
     const userCookie = cookies.find(cookie => cookie.startsWith('userData='));
     if (!userCookie) {
-        console.debug('No userData cookie found');
+        console.debug('No userData cookie found', { timestamp: new Date().toISOString() });
         return null;
     }
     try {
         const user = JSON.parse(decodeURIComponent(userCookie.split('=')[1])) as User;
-        console.debug('User loaded from cookie:', { userID: user.userID, email: user.email });
+        console.debug('User loaded from cookie:', { userID: user.userID, email: user.email, timestamp: new Date().toISOString() });
         return user;
     } catch (error) {
         console.error('Failed to parse userData cookie:', error);
@@ -63,24 +54,16 @@ const getUserFromCookie = (): User | null => {
     }
 };
 
-/**
- * Utility to set user in cookies
- * @param user User object to store
- * @param maxAge Cookie expiration in seconds
- */
 const setUserCookie = (user: User, maxAge: number) => {
     const encodedUser = encodeURIComponent(JSON.stringify(user));
     const sameSite = import.meta.env.VITE_ENV === 'development' ? 'Lax' : 'Strict';
     document.cookie = `userData=${encodedUser}; path=/; SameSite=${sameSite}; max-age=${maxAge}`;
 };
 
-/**
- * Utility to clear authentication cookies
- */
 const clearAuthCookies = () => {
     document.cookie = 'accessToken=; path=/; expires=Thu, 01 Jan 1970 00:00:00 GMT';
     document.cookie = 'userData=; path=/; expires=Thu, 01 Jan 1970 00:00:00 GMT';
-    console.debug('Auth cookies cleared');
+    console.debug('Auth cookies cleared', { timestamp: new Date().toISOString() });
 };
 
 const AuthProvider: React.FC<{ children: ReactNode }> = ({ children }) => {
@@ -95,20 +78,25 @@ const AuthProvider: React.FC<{ children: ReactNode }> = ({ children }) => {
     const navigate = useNavigate();
     const location = useLocation();
 
-    // Initialize Axios interceptors on mount
     useEffect(() => {
         setupAxiosInterceptors();
     }, []);
 
-    // Fetch permissions for user loaded from cookie on mount
     useEffect(() => {
         const loadPermissions = async () => {
             if (!user || permissionsLoaded) {
-                console.debug('Skipping permission load: no user or permissions already loaded', { user: !!user, permissionsLoaded });
+                console.debug('Skipping permission load: no user or permissions already loaded', {
+                    user: !!user,
+                    permissionsLoaded,
+                    timestamp: new Date().toISOString(),
+                });
                 return;
             }
 
-            console.debug('Loading permissions for user:', { userID: user.userID });
+            console.debug('Loading permissions for user:', {
+                userID: user.userID,
+                timestamp: new Date().toISOString(),
+            });
             setPermissionsLoaded(false);
             try {
                 const [perms, roles] = await Promise.all([
@@ -118,43 +106,55 @@ const AuthProvider: React.FC<{ children: ReactNode }> = ({ children }) => {
                 console.debug('Permissions and roles loaded:', {
                     permissions: perms.map(p => p.name),
                     roles: roles.map(r => r.name),
+                    timestamp: new Date().toISOString(),
                 });
                 setEffectivePermissions(perms);
                 setUserRoles(roles);
                 setPermissionsLoaded(true);
+
+                // Initialize WebSocket after permissions are loaded
+                initSocket();
             } catch (error) {
                 console.error('Failed to load permissions on mount:', error);
                 await handleLogout();
-                debouncedNavigate('/login', { replace: true, state: { error: 'Session expired. Please log in again.' } });
+                debouncedNavigate('/login', {
+                    replace: true,
+                    state: { error: 'Session expired. Please log in again.' },
+                });
             }
         };
 
         loadPermissions();
     }, [user]);
 
-    // Timeout for permission loading to prevent infinite loading
     useEffect(() => {
         if (user && !permissionsLoaded) {
             const timeout = setTimeout(() => {
                 if (!permissionsLoaded) {
-                    console.error('Permission loading timed out');
+                    console.error('Permission loading timed out', { timestamp: new Date().toISOString() });
                     handleLogout();
-                    debouncedNavigate('/login', { replace: true, state: { error: 'Failed to load permissions. Please log in again.' } });
+                    debouncedNavigate('/login', {
+                        replace: true,
+                        state: { error: 'Failed to load permissions. Please log in again.' },
+                    });
                 }
-            }, 10000); // 10 seconds timeout
+            }, 10000);
             return () => clearTimeout(timeout);
         }
     }, [user, permissionsLoaded]);
 
-    // Debounced navigation with cancellation
     const debouncedNavigate = useCallback(
         debounce(
             (to: string, options: { replace?: boolean; state?: unknown }) => {
                 if (isNavigating.current || lastNavigatedPath.current === to) {
-                    console.debug('Skipping navigation: already navigating or same path', { to, lastNavigatedPath: lastNavigatedPath.current });
+                    console.debug('Skipping navigation: already navigating or same path', {
+                        to,
+                        lastNavigatedPath: lastNavigatedPath.current,
+                        timestamp: new Date().toISOString(),
+                    });
                     return;
                 }
-                console.debug('Executing navigation:', { to, options });
+                console.debug('Executing navigation:', { to, options, timestamp: new Date().toISOString() });
                 isNavigating.current = true;
                 lastNavigatedPath.current = to;
                 navigate(to, options);
@@ -168,14 +168,12 @@ const AuthProvider: React.FC<{ children: ReactNode }> = ({ children }) => {
         [navigate]
     );
 
-    // Clean up debounced navigation on unmount
     useEffect(() => {
         return () => {
             debouncedNavigate.cancel();
         };
     }, [debouncedNavigate]);
 
-    // Token refresh logic
     useEffect(() => {
         if (!user || !tokenExpiry || ['/login', '/verify-2fa', '/reset-password'].includes(location.pathname)) return;
 
@@ -191,20 +189,17 @@ const AuthProvider: React.FC<{ children: ReactNode }> = ({ children }) => {
         return () => clearTimeout(timer);
     }, [tokenExpiry, user, location.pathname]);
 
-    /**
-     * Refreshes the access token with retry logic
-     * @param retries Number of retry attempts
-     */
     const handleRefresh = async (retries = 3) => {
         for (let attempt = 1; attempt <= retries; attempt++) {
             try {
                 const { accessToken, expiresIn } = await refreshToken();
                 const newExpiry = Date.now() + expiresIn;
                 const sameSite = import.meta.env.VITE_ENV === 'development' ? 'Lax' : 'Strict';
-                document.cookie = `accessToken=${accessToken}; path=/; SameSite=${sameSite}; max-age=${expiresIn / 1000}`;
+                document.cookie = `accessToken=${accessToken}; path=/; SameSite=${sameSite}; max-age=${expiresIn / 1000
+                    }; HttpOnly`;
                 setTokenExpiry(newExpiry);
                 window.dispatchEvent(new Event('tokenRefreshed'));
-                console.debug('Token refreshed successfully:', { newExpiry });
+                console.debug('Token refreshed successfully:', { newExpiry, timestamp: new Date().toISOString() });
                 return;
             } catch (error) {
                 console.error(`Refresh attempt ${attempt} failed:`, error);
@@ -216,11 +211,6 @@ const AuthProvider: React.FC<{ children: ReactNode }> = ({ children }) => {
         }
     };
 
-    /**
-     * Checks if the user has permission for a given route
-     * @param pathname Route to check
-     * @returns True if user has permission
-     */
     const hasPermissionForRoute = useCallback(
         (pathname: string): boolean => {
             if (!effectivePermissions || !userRoles) return false;
@@ -244,10 +234,13 @@ const AuthProvider: React.FC<{ children: ReactNode }> = ({ children }) => {
         [effectivePermissions, userRoles]
     );
 
-    // Navigation and permission check
     useEffect(() => {
         if (isNavigating.current || !permissionsLoaded) {
-            console.debug('Skipping navigation: isNavigating or permissions not loaded', { isNavigating: isNavigating.current, permissionsLoaded });
+            console.debug('Skipping navigation: isNavigating or permissions not loaded', {
+                isNavigating: isNavigating.current,
+                permissionsLoaded,
+                timestamp: new Date().toISOString(),
+            });
             return;
         }
 
@@ -258,45 +251,53 @@ const AuthProvider: React.FC<{ children: ReactNode }> = ({ children }) => {
             permissionsLoaded,
             userRoles: userRoles?.map(r => r.name) || [],
             effectivePermissions: effectivePermissions?.map(p => p.name) || [],
+            timestamp: new Date().toISOString(),
         });
 
-        // Redirect unauthenticated users to login
         if (!user) {
             if (!['/login', '/reset-password', '/verify-2fa'].includes(currentPath)) {
-                console.debug('Redirecting to /login: user not authenticated', { currentPath });
+                console.debug('Redirecting to /login: user not authenticated', {
+                    currentPath,
+                    timestamp: new Date().toISOString(),
+                });
                 debouncedNavigate('/login', { replace: true, state: { from: currentPath } });
             }
             return;
         }
 
-        // Check for no roles or permissions
         if (!userRoles?.length && !effectivePermissions?.length) {
-            console.debug('Setting noAccess: no roles or permissions');
+            console.debug('Setting noAccess: no roles or permissions', { timestamp: new Date().toISOString() });
             setNoAccess(true);
             return;
         }
 
         setNoAccess(false);
 
-        // Determine target route based on roles
         const targetRoute = determineTargetRoute(userRoles || []);
-        console.debug('Determined target route:', { targetRoute, roles: userRoles?.map(r => r.name) });
+        console.debug('Determined target route:', {
+            targetRoute,
+            roles: userRoles?.map(r => r.name),
+            timestamp: new Date().toISOString(),
+        });
 
-        // Redirect authenticated users away from login-related pages
         if (['/login', '/verify-2fa', '/reset-password'].includes(currentPath)) {
-            console.debug('Redirecting authenticated user from login-related page to:', targetRoute);
+            console.debug('Redirecting authenticated user from login-related page to:', targetRoute, {
+                timestamp: new Date().toISOString(),
+            });
             debouncedNavigate(targetRoute, { replace: true });
             return;
         }
 
-        // Skip navigation if already on target or permitted route
         if (currentPath === targetRoute || hasPermissionForRoute(currentPath)) {
-            console.debug('Skipping navigation: already on target or permitted route', { currentPath, targetRoute });
+            console.debug('Skipping navigation: already on target or permitted route', {
+                currentPath,
+                targetRoute,
+                timestamp: new Date().toISOString(),
+            });
             lastNavigatedPath.current = currentPath;
             return;
         }
 
-        // Navigate to the intended route or target route
         const fromRoute =
             location.state?.from &&
                 location.state.from !== '/login' &&
@@ -305,14 +306,15 @@ const AuthProvider: React.FC<{ children: ReactNode }> = ({ children }) => {
                 hasPermissionForRoute(location.state.from)
                 ? location.state.from
                 : targetRoute;
-        console.debug('Navigating to:', { fromRoute, locationStateFrom: location.state?.from });
+        console.debug('Navigating to:', {
+            fromRoute,
+            locationStateFrom: location.state?.from,
+            timestamp: new Date().toISOString(),
+        });
 
         debouncedNavigate(fromRoute, { replace: true });
     }, [user, permissionsLoaded, userRoles, effectivePermissions, location.pathname, hasPermissionForRoute, debouncedNavigate]);
 
-    /**
-     * Logs in a user, handling both direct login and 2FA verification
-     */
     const loginUser = async (
         identifier: string,
         password: string,
@@ -375,15 +377,23 @@ const AuthProvider: React.FC<{ children: ReactNode }> = ({ children }) => {
 
             const sameSite = import.meta.env.VITE_ENV === 'development' ? 'Lax' : 'Strict';
             const expiresIn = response.expiresIn || parseInt(import.meta.env.VITE_ACCESS_TOKEN_MAX_AGE) || 900000;
-            document.cookie = `accessToken=${response.accessToken}; path=/; SameSite=${sameSite}; max-age=${expiresIn / 1000}`;
+            document.cookie = `accessToken=${response.accessToken}; path=/; SameSite=${sameSite}; max-age=${expiresIn / 1000
+                }; HttpOnly`;
             setUserCookie(newUser, expiresIn / 1000);
 
-            // Batch state updates
+            console.debug('Cookies set after login:', {
+                accessToken: 'Set (HttpOnly)',
+                userData: newUser.userID,
+                sameSite,
+                maxAge: expiresIn / 1000,
+                cookieString: `accessToken=...; path=/; SameSite=${sameSite}; max-age=${expiresIn / 1000}; HttpOnly`,
+                timestamp: new Date().toISOString(),
+            });
+
             setUser(newUser);
             setTokenExpiry(Date.now() + expiresIn);
             setPermissionsLoaded(false);
 
-            // Fetch permissions immediately to reduce delay
             try {
                 const [perms, roles] = await Promise.all([
                     getEffectivePermissions(newUser.userID),
@@ -392,6 +402,7 @@ const AuthProvider: React.FC<{ children: ReactNode }> = ({ children }) => {
                 console.debug('Permissions and roles loaded after login:', {
                     permissions: perms.map(p => p.name),
                     roles: roles.map(r => r.name),
+                    timestamp: new Date().toISOString(),
                 });
                 setEffectivePermissions(perms);
                 setUserRoles(roles);
@@ -409,16 +420,13 @@ const AuthProvider: React.FC<{ children: ReactNode }> = ({ children }) => {
         }
     };
 
-    /**
-     * Logs out the user, clearing state and cookies
-     */
     const handleLogout = async () => {
         try {
             await logout();
         } catch (error) {
             console.error('Logout error:', error);
         } finally {
-            // Batch state resets
+            disconnectSocket();
             setUser(null);
             setUserRoles(null);
             setEffectivePermissions(null);
@@ -427,7 +435,7 @@ const AuthProvider: React.FC<{ children: ReactNode }> = ({ children }) => {
             setTokenExpiry(null);
             clearAuthCookies();
             lastNavigatedPath.current = null;
-            debouncedNavigate.cancel(); // Cancel any pending navigations
+            debouncedNavigate.cancel();
 
             if (location.pathname !== '/login') {
                 debouncedNavigate('/login', { replace: true, state: { logout: true } });

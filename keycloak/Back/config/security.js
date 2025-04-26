@@ -9,11 +9,31 @@ const CLIENT_ID = process.env.KEYCLOAK_CLIENT_ID || 'traceflow-backend';
 const CLIENT_SECRET = process.env.KEYCLOAK_CLIENT_SECRET || '';
 
 const authenticateCookie = async (req, res, next) => {
+    const isWebSocket = !res.status; // Detect WebSocket context (res lacks status method)
     try {
-        const accessToken = req.cookies?.accessToken;
+        const cookieHeader = req.headers?.cookie;
+        if (!cookieHeader) {
+            logger.warn('No cookie header provided', { isWebSocket, timestamp: new Date().toISOString() });
+            if (isWebSocket) throw new Error('No cookie header provided');
+            return res.status(401).json({ error: 'Access token required' });
+        }
+
+        // Parse cookies manually
+        const cookies = cookieHeader.split(';').map(c => c.trim());
+        const tokenCookie = cookies.find(c => c.startsWith('accessToken='));
+        const accessToken = tokenCookie ? tokenCookie.split('=')[1] : null;
+
+        logger.debug('Cookie parsing:', {
+            rawCookie: cookieHeader,
+            parsedCookies: cookies,
+            accessToken: accessToken ? `${accessToken.substring(0, 20)}...` : 'None',
+            isWebSocket,
+            timestamp: new Date().toISOString(),
+        });
 
         if (!accessToken) {
-            logger.warn('No access token provided');
+            logger.warn('No accessToken cookie found', { isWebSocket, cookies, timestamp: new Date().toISOString() });
+            if (isWebSocket) throw new Error('accessToken cookie not found');
             return res.status(401).json({ error: 'Access token required' });
         }
 
@@ -27,8 +47,18 @@ const authenticateCookie = async (req, res, next) => {
                 })
             );
 
+            logger.debug('Keycloak introspection response:', {
+                active: response.data.active,
+                sub: response.data.sub,
+                email: response.data.email,
+                roles: response.data.realm_access?.roles || [],
+                isWebSocket,
+                timestamp: new Date().toISOString(),
+            });
+
             if (!response.data.active) {
-                logger.warn('Token introspection failed: inactive token');
+                logger.warn('Token introspection failed: inactive token', { isWebSocket, timestamp: new Date().toISOString() });
+                if (isWebSocket) throw new Error('Invalid or expired token');
                 return res.status(401).json({ error: 'Invalid or expired token' });
             }
 
@@ -37,7 +67,8 @@ const authenticateCookie = async (req, res, next) => {
             const user = await User.findOne({ where: { keycloakId } });
 
             if (!user) {
-                logger.error(`No local user found for keycloakId: ${keycloakId}`);
+                logger.error(`No local user found for keycloakId: ${keycloakId}`, { isWebSocket, timestamp: new Date().toISOString() });
+                if (isWebSocket) throw new Error('User not found in local database');
                 return res.status(404).json({ error: 'User not found in local database' });
             }
 
@@ -47,16 +78,26 @@ const authenticateCookie = async (req, res, next) => {
                 roles: response.data.realm_access?.roles || [],
                 token: accessToken,
             };
+            logger.info(`Authentication successful for user: ${req.user.email}`, {
+                userID: req.user.userID,
+                roles: req.user.roles.join(', '),
+                isWebSocket,
+                timestamp: new Date().toISOString(),
+            });
             next();
         } catch (error) {
             logger.error(`Keycloak introspection error: ${error.message}`, {
                 status: error.response?.status,
                 data: error.response?.data,
+                isWebSocket,
+                timestamp: new Date().toISOString(),
             });
+            if (isWebSocket) throw new Error('Invalid token');
             return res.status(error.response?.status || 401).json({ error: 'Invalid token' });
         }
     } catch (error) {
-        logger.error(`Authentication error: ${error.message}`);
+        logger.error(`Authentication error: ${error.message}`, { isWebSocket, stack: error.stack, timestamp: new Date().toISOString() });
+        if (isWebSocket) throw new Error('Authentication failed');
         return res.status(500).json({ error: 'Authentication failed' });
     }
 };
@@ -67,7 +108,7 @@ const requirePermission = (permissionName) => {
             const roles = req.user.roles || [];
 
             if (roles.includes('Super Admin')) {
-                logger.info(`Super Admin bypass for user ${req.user.userID}`);
+                logger.info(`Super Admin bypass for user ${req.user.userID}`, { timestamp: new Date().toISOString() });
                 return next();
             }
 
@@ -93,16 +134,17 @@ const requirePermission = (permissionName) => {
             const hasPermission = permissions.some((p) => p.rsname === permissionName);
 
             if (!hasPermission) {
-                logger.warn(`Permission denied for ${permissionName} to user ${req.user.userID}`);
+                logger.warn(`Permission denied for ${permissionName} to user ${req.user.userID}`, { timestamp: new Date().toISOString() });
                 return res.status(403).json({ error: `Permission '${permissionName}' required` });
             }
 
-            logger.info(`Permission granted for ${permissionName} to user ${req.user.userID}`);
+            logger.info(`Permission granted for ${permissionName} to user ${req.user.userID}`, { timestamp: new Date().toISOString() });
             next();
         } catch (error) {
             logger.error(`Permission check failed for ${permissionName}: ${error.message}`, {
                 status: error.response?.status,
                 data: error.response?.data,
+                timestamp: new Date().toISOString(),
             });
             if (error.response?.status === 401) {
                 return res.status(401).json({ error: 'Token expired, please refresh' });

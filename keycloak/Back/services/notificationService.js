@@ -6,26 +6,37 @@ const { Notification, NotificationPreference, NotificationRule, User, Role } = r
 const { Op } = require('sequelize');
 
 class NotificationService {
-
-    // Send a real-time WebSocket notification to specific roles or users
     static async sendWebSocketNotification(event, data, roles = [], userIDs = []) {
         try {
+            const payload = { event, data, timestamp: new Date().toISOString() };
             roles.forEach((role) => {
-                io.to(role.toLowerCase()).emit(event, data);
-                logger.info(`WebSocket event emitted: ${event} to room ${role}`);
+                io.to(role.toLowerCase()).emit(event, payload);
+                logger.info(`WebSocket event emitted`, {
+                    event,
+                    room: role.toLowerCase(),
+                    data: payload,
+                });
             });
             userIDs.forEach((userID) => {
-                io.to(userID).emit(event, data);
-                logger.info(`WebSocket event emitted: ${event} to user ${userID}`);
+                io.to(userID).emit(event, payload);
+                logger.info(`WebSocket event emitted`, {
+                    event,
+                    userID,
+                    data: payload,
+                });
             });
             return { success: true, method: 'WebSocket' };
         } catch (error) {
-            logger.error(`WebSocket notification error: ${error.message}`);
+            logger.error(`WebSocket notification error: ${error.message}`, {
+                event,
+                roles,
+                userIDs,
+                stack: error.stack,
+            });
             return { success: false, method: 'WebSocket', reason: error.message };
         }
     }
 
-    // Send an email notification
     static async sendEmailNotification(to, subject, text) {
         try {
             await transporter.sendMail({
@@ -34,42 +45,39 @@ class NotificationService {
                 subject,
                 text,
             });
-            logger.info(`Email sent to ${to}: ${subject}`);
+            logger.info(`Email sent`, { to, subject });
             return { success: true, method: 'Email' };
         } catch (error) {
-            logger.error(`Email notification error: ${error.message}`);
+            logger.error(`Email notification error: ${error.message}`, { to, subject, stack: error.stack });
             return { success: false, method: 'Email', reason: error.message };
         }
     }
 
-    // Send an SMS notification
     static async sendSMSNotification(to, message) {
         try {
             const result = await sendSMS(to, message, 'notification');
             if (result.success) {
-                logger.info(`SMS sent to ${to}: ${message}`);
+                logger.info(`SMS sent`, { to, message });
             } else {
-                logger.error(`SMS failed: ${result.reason}`);
+                logger.error(`SMS failed: ${result.reason}`, { to, message });
             }
             return result;
         } catch (error) {
-            logger.error(`SMS notification error: ${error.message}`);
+            logger.error(`SMS notification error: ${error.message}`, { to, stack: error.stack });
             return { success: false, method: 'SMS', reason: error.message };
         }
     }
 
-    // Check user notification preferences
     static async getUserPreferences(userID) {
         try {
             const preferences = await NotificationPreference.findOne({ where: { userID } });
             return preferences || { emailEnabled: true, smsEnabled: true, inAppEnabled: true };
         } catch (error) {
-            logger.error(`Error fetching user preferences: ${error.message}`);
-            return { emailEnabled: true, smsEnabled: true, inAppEnabled: true }; // Default to all enabled
+            logger.error(`Error fetching user preferences: ${error.message}`, { userID, stack: error.stack });
+            return { emailEnabled: true, smsEnabled: true, inAppEnabled: true };
         }
     }
 
-    // Store notification in database
     static async storeNotification({ userID, type, message, channel }) {
         try {
             const notification = await Notification.create({
@@ -79,87 +87,78 @@ class NotificationService {
                 channel,
                 status: 'pending',
             });
-            logger.info(`Notification stored for user ${userID}: ${message}`);
+            logger.info(`Notification stored`, { userID, notificationID: notification.notificationID, message });
             return notification;
         } catch (error) {
-            logger.error(`Error storing notification: ${error.message}`);
+            logger.error(`Error storing notification: ${error.message}`, { userID, stack: error.stack });
             throw error;
         }
     }
 
-    // Update notification status
     static async updateNotificationStatus(notificationID, status) {
         try {
             const notification = await Notification.findByPk(notificationID);
             if (notification) {
                 notification.status = status;
                 await notification.save();
-                logger.info(`Notification ${notificationID} status updated to ${status}`);
+                logger.info(`Notification status updated`, { notificationID, status });
             }
         } catch (error) {
-            logger.error(`Error updating notification status: ${error.message}`);
+            logger.error(`Error updating notification status: ${error.message}`, { notificationID, stack: error.stack });
         }
     }
 
-
-
     static async createDefaultDisabledRule({ event, data, metadata = {} }) {
         try {
-            // Validate input
             if (!event || !data) {
                 logger.error(`Cannot create default rule: Missing event or data`);
                 return null;
             }
 
-            // Check if a rule (enabled or disabled) already exists for the event
             const existingRule = await NotificationRule.findOne({ where: { event } });
             if (existingRule) {
-                logger.info(`Rule already exists for event: ${event}, ruleID: ${existingRule.ruleID}, enabled: ${existingRule.enabled}`);
-                return existingRule; // Return the existing rule instead of creating a new one
+                logger.info(`Rule already exists`, { event, ruleID: existingRule.ruleID, enabled: existingRule.enabled });
+                return existingRule;
             }
 
             const defaultRule = {
                 event,
                 type: data.type || 'general',
                 recipients: {
-                    roles: ['admin', 'Super Admin'], // Default to admin role; adjust as needed
-                    userIDs: []
+                    roles: ['admin', 'Super Admin'],
+                    userIDs: [],
                 },
                 channels: {
                     websocket: true,
                     email: false,
                     sms: false,
-                    inApp: true
+                    inApp: true,
                 },
                 conditions: data.conditions || null,
                 messageTemplate: `Notification for ${event}`,
-                enabled: false // Rule is created disabled
+                enabled: false,
             };
 
             const rule = await NotificationRule.create(defaultRule);
-            logger.info(`Created default disabled notification rule for event: ${event}, ruleID: ${rule.ruleID}`);
+            logger.info(`Created default disabled notification rule`, { event, ruleID: rule.ruleID });
             return rule;
         } catch (error) {
-            logger.error(`Error creating default disabled rule for event ${event}: ${error.message}`);
+            logger.error(`Error creating default disabled rule: ${error.message}`, { event, stack: error.stack });
             return null;
         }
     }
 
-    // Trigger notifications based on NotificationRule
     static async triggerNotification({ event, data, metadata = {} }) {
         try {
             let rules = await NotificationRule.findAll({ where: { event, enabled: true } });
 
-            // If no active rules, create a default disabled rule
             if (!rules.length) {
                 logger.info(`No active rules found for event: ${event}`);
                 const defaultRule = await this.createDefaultDisabledRule({ event, data, metadata });
                 if (defaultRule) {
-                    logger.info(`Created disabled rule for event: ${event}, ruleID: ${defaultRule.ruleID}`);
-                } else {
-                    logger.warn(`Failed to create default disabled rule for event: ${event}`);
+                    logger.info(`Created disabled rule`, { event, ruleID: defaultRule.ruleID });
                 }
-                return []; // Return empty results since no active rules exist
+                return [];
             }
 
             const results = [];
@@ -183,19 +182,18 @@ class NotificationService {
                     }
                 }
             }
-            logger.info(`Triggered notifications for event: ${event}, processed ${results.length} recipients`);
+            logger.info(`Triggered notifications`, { event, recipientCount: results.length });
             return results;
         } catch (error) {
-            logger.error(`Trigger notification error for event ${event}: ${error.message}`);
+            logger.error(`Trigger notification error: ${error.message}`, { event, stack: error.stack });
             return [{ success: false, reason: error.message }];
         }
     }
 
-    // Resolve recipients from roles and userIDs
     static async resolveRecipients(recipients) {
         try {
             const users = new Set();
-            if (recipients.roles && recipients.roles.length) {
+            if (recipients.roles?.length) {
                 const roleUsers = await User.findAll({
                     include: [{
                         model: Role,
@@ -205,7 +203,7 @@ class NotificationService {
                 });
                 roleUsers.forEach(user => users.add(user));
             }
-            if (recipients.userIDs && recipients.userIDs.length) {
+            if (recipients.userIDs?.length) {
                 const specificUsers = await User.findAll({
                     where: { userID: { [Op.in]: recipients.userIDs } },
                 });
@@ -213,31 +211,26 @@ class NotificationService {
             }
             return Array.from(users);
         } catch (error) {
-            logger.error(`Error resolving recipients: ${error.message}`);
+            logger.error(`Error resolving recipients: ${error.message}`, { stack: error.stack });
             throw error;
         }
     }
 
-    // Match event data against rule conditions
     static matchConditions(data, conditions) {
         if (!conditions) return true;
         return Object.entries(conditions).every(([key, value]) => data[key] === value);
     }
 
-    // Format message using template and data
     static formatMessage(template, data) {
         return template.replace(/{(\w+)}/g, (_, key) => data[key] || '');
     }
 
-    // Send a combined notification (WebSocket, email, SMS, in-app)
     static async sendNotification({ event, data, roles, userIDs, type, message, email, sms }) {
         const results = [];
         let notification;
 
-        // Check user preferences
         const preferences = userIDs.length ? await this.getUserPreferences(userIDs[0]) : { inAppEnabled: true };
 
-        // Store notification for in-app display
         if (preferences.inAppEnabled && userIDs.length) {
             notification = await this.storeNotification({
                 userID: userIDs[0],
@@ -247,7 +240,6 @@ class NotificationService {
             });
         }
 
-        // Send WebSocket notification
         if (event && data && (roles.length || userIDs.length) && preferences.inAppEnabled) {
             const wsResult = await this.sendWebSocketNotification(event, data, roles, userIDs);
             if (wsResult.success && notification) {
@@ -256,7 +248,6 @@ class NotificationService {
             results.push(wsResult);
         }
 
-        // Send email if enabled and specified
         if (email && preferences.emailEnabled && message) {
             const subject = `TraceFlow Notification: ${type.charAt(0).toUpperCase() + type.slice(1)}`;
             const emailResult = await this.sendEmailNotification(email, subject, message);
@@ -280,7 +271,6 @@ class NotificationService {
             results.push(emailResult);
         }
 
-        // Send SMS if enabled and specified
         if (sms && preferences.smsEnabled && message) {
             const smsResult = await this.sendSMSNotification(sms, message);
             if (smsResult.success && userIDs.length) {

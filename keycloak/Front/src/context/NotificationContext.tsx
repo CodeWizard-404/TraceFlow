@@ -96,11 +96,16 @@ const isNotificationData = (data: unknown): data is { message?: string; notifica
 // Provider component to wrap the app
 export const NotificationProvider: React.FC<{ children: React.ReactNode }> = ({ children }) => {
     const [state, dispatch] = useReducer(notificationReducer, initialState);
-    const { user } = useAuth();
+    const { user, permissionsLoaded } = useAuth();
 
-    // Listen for WebSocket notifications when the user is authenticated and accessToken cookie is present
+    // Listen for WebSocket notifications when the user is authenticated
     useEffect(() => {
-        if (!user?.userID || !document.cookie.includes('accessToken')) {
+        if (!user?.userID || !permissionsLoaded) {
+            console.debug('Skipping WebSocket initialization', {
+                userID: user?.userID,
+                permissionsLoaded,
+                timestamp: new Date().toISOString(),
+            });
             return;
         }
 
@@ -130,6 +135,7 @@ export const NotificationProvider: React.FC<{ children: React.ReactNode }> = ({ 
 
         // Handle token refresh to reconnect WebSocket
         const handleTokenRefresh = () => {
+            console.debug('Reconnecting WebSocket due to token refresh', { timestamp: new Date().toISOString() });
             disconnectSocket();
             initSocket();
             joinRoom(user.userID);
@@ -146,7 +152,7 @@ export const NotificationProvider: React.FC<{ children: React.ReactNode }> = ({ 
             disconnectSocket();
             window.removeEventListener('tokenRefreshed', handleTokenRefresh);
         };
-    }, [user]);
+    }, [user, permissionsLoaded]);
 
     // Actions to interact with notifications
     const addNotification = (notification: Notification) => {
@@ -155,10 +161,9 @@ export const NotificationProvider: React.FC<{ children: React.ReactNode }> = ({ 
 
     const markAsRead = async (notificationID: string) => {
         try {
-            // Call API to mark notification as read
             await markNotificationAsRead(notificationID);
-            // Update local state only if API call succeeds
             dispatch({ type: 'MARK_AS_READ', payload: notificationID });
+            console.debug(`Marked notification as read: ${notificationID}`, { timestamp: new Date().toISOString() });
         } catch (error) {
             console.error('Failed to mark notification as read:', error);
         }
@@ -166,13 +171,12 @@ export const NotificationProvider: React.FC<{ children: React.ReactNode }> = ({ 
 
     const markAllAsRead = async () => {
         try {
-            // Option 1: Call API for each unread notification
             const unreadNotifications = state.notifications.filter(n => n.status !== 'read');
             await Promise.all(
                 unreadNotifications.map(n => markNotificationAsRead(n.notificationID))
             );
-            // Update local state
             dispatch({ type: 'MARK_ALL_AS_READ' });
+            console.debug('Marked all notifications as read', { timestamp: new Date().toISOString() });
         } catch (error) {
             console.error('Failed to mark all notifications as read:', error);
         }
@@ -194,7 +198,6 @@ export const NotificationProvider: React.FC<{ children: React.ReactNode }> = ({ 
 };
 
 // Hook to use the notification context
-// eslint-disable-next-line react-refresh/only-export-components
 export const useNotification = () => {
     const context = useContext(NotificationContext);
     if (!context) {
