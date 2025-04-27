@@ -23,9 +23,9 @@ const NotificationItem: React.FC<NotificationItemProps> = ({ notification, onClo
                 setTimeout(() => {
                     if (onClose) onClose();
                     setIsLoading(false);
-                }, 300); // Match slideOut animation duration
+                }, 300);
             } catch {
-                setIsDismissed(false); // Revert UI if API fails
+                setIsDismissed(false);
                 setIsLoading(false);
             }
         }

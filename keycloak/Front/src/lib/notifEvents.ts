@@ -1,6 +1,3 @@
-// notifEvents.ts
-// Centralized definitions for WebSocket notification events and types, combining default events/types and dynamically derived admin-defined notification rules
-
 import { getNotificationRules } from '../apis/notificationAPI';
 import NotificationRule from '../models/NotificationRule';
 
@@ -20,6 +17,8 @@ const DEFAULT_EVENTS: string[] = [
     'role:created',
     'role:updated',
     'role:deleted',
+    'role:users_assigned',
+    'role:users_revoked',
     'role:permissions_assigned',
     'role:permissions_revoked',
     // Permission events
@@ -95,6 +94,10 @@ let lastCacheTime: number = 0;
 const fetchNotificationData = async (): Promise<{ events: string[]; types: string[] }> => {
     try {
         const rules: NotificationRule[] = await getNotificationRules();
+        console.log('Fetched notification rules:', {
+            rules: rules.map(r => ({ event: r.event, type: r.type })),
+            timestamp: new Date().toISOString(),
+        });
         // Extract unique event strings from notification rules
         const dynamicEvents = [...new Set(rules.map((rule) => rule.event))].filter(
             (event): event is string => !!event
@@ -104,12 +107,19 @@ const fetchNotificationData = async (): Promise<{ events: string[]; types: strin
             (type): type is string => !!type
         );
         // Combine default and dynamic events/types, ensuring uniqueness
-        return {
-            events: [...new Set([...DEFAULT_EVENTS, ...dynamicEvents])],
-            types: [...new Set([...DEFAULT_TYPES, ...dynamicTypes])],
-        };
+        const events = [...new Set([...DEFAULT_EVENTS, ...dynamicEvents])];
+        const types = [...new Set([...DEFAULT_TYPES, ...dynamicTypes])];
+        console.log('Combined notification events and types:', {
+            events,
+            types,
+            timestamp: new Date().toISOString(),
+        });
+        return { events, types };
     } catch (error) {
-        console.error('Failed to fetch notification data:', error);
+        console.error('Failed to fetch notification data:', {
+            error: error instanceof Error ? error.message : 'Unknown error',
+            timestamp: new Date().toISOString(),
+        });
         // Return default events and types if API call fails
         return {
             events: [...DEFAULT_EVENTS],
@@ -121,6 +131,10 @@ const fetchNotificationData = async (): Promise<{ events: string[]; types: strin
 // Get all valid notification events, using cache if available
 export const getNotificationEvents = async (): Promise<string[]> => {
     if (cachedEvents && cachedTypes && Date.now() - lastCacheTime < CACHE_DURATION) {
+        console.log('Returning cached notification events:', {
+            events: cachedEvents,
+            timestamp: new Date().toISOString(),
+        });
         return cachedEvents;
     }
 
@@ -128,6 +142,10 @@ export const getNotificationEvents = async (): Promise<string[]> => {
     cachedEvents = events;
     cachedTypes = types;
     lastCacheTime = Date.now();
+    console.log('Cached new notification events:', {
+        events,
+        timestamp: new Date().toISOString(),
+    });
     return cachedEvents;
 };
 

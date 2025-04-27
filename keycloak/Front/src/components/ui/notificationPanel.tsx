@@ -1,10 +1,11 @@
 import React, { useEffect, useRef, useState } from 'react';
 import { FaSync } from 'react-icons/fa';
 import { useNotification } from '../../context/NotificationContext';
+import { useAuth } from '../../context/AuthContext';
 import NotificationItem from './notification';
-import { getNotifications } from '../../apis/notificationAPI';
 import { cn } from '../../lib/utils';
 import './notification.css';
+import { getNotifications } from '../../apis/notificationAPI';
 
 interface NotificationPanelProps {
     className?: string;
@@ -21,34 +22,32 @@ const FILTER_OPTIONS = [
     { value: 'visit', label: 'Visit' },
     { value: 'anomaly', label: 'Anomaly' },
     { value: 'notification', label: 'Notification' },
+    { value: 'role', label: 'Role' },
 ];
 
 const NotificationPanel: React.FC<NotificationPanelProps> = ({ className, onClose }) => {
-    const { notifications, markAllAsRead, addNotification } = useNotification();
+    const { notifications, markAllAsRead, mergeNotifications } = useNotification();
+    const { user } = useAuth();
     const panelRef = useRef<HTMLDivElement>(null);
     const [filter, setFilter] = useState<string>('all-desc');
     const [isLoading, setIsLoading] = useState(false);
 
     useEffect(() => {
-        const fetchNotifications = async () => {
-            setIsLoading(true);
-            try {
-                const fetchedNotifications = await getNotifications();
-                fetchedNotifications.forEach((n) => {
-                    if (!notifications.some((existing) => existing.notificationID === n.notificationID)) {
-                        addNotification(n);
-                    }
-                });
-            } catch (error) {
-                console.error('Failed to fetch notifications:', error);
-            } finally {
-                setIsLoading(false);
-            }
-        };
-        fetchNotifications();
-    }, []);
+        console.log('[NotificationPanel] Notifications updated:', {
+            count: notifications.length,
+            unread: notifications.filter((n) => n.status !== 'read').length,
+            userID: user?.userID,
+            notifications: notifications.map((n) => ({
+                id: n.notificationID,
+                message: n.message,
+                status: n.status,
+                type: n.type,
+                channel: n.channel,
+                userID: n.userID,
+            })),
+            timestamp: new Date().toISOString(),
+        });
 
-    useEffect(() => {
         const handleClickOutside = (event: MouseEvent) => {
             if (panelRef.current && !panelRef.current.contains(event.target as Node)) {
                 if (onClose) onClose();
@@ -58,7 +57,7 @@ const NotificationPanel: React.FC<NotificationPanelProps> = ({ className, onClos
         return () => {
             document.removeEventListener('mousedown', handleClickOutside);
         };
-    }, [onClose]);
+    }, [notifications, onClose, user?.userID]);
 
     const [filterType, sortOrder] = filter.split('-');
     const filteredNotifications = notifications
@@ -74,14 +73,32 @@ const NotificationPanel: React.FC<NotificationPanelProps> = ({ className, onClos
     const handleRefresh = async () => {
         setIsLoading(true);
         try {
-            const fetchedNotifications = await getNotifications();
-            fetchedNotifications.forEach((n) => {
-                if (!notifications.some((existing) => existing.notificationID === n.notificationID)) {
-                    addNotification(n);
-                }
+            console.log('[NotificationPanel] Refreshing notifications for user:', {
+                userID: user?.userID,
+                timestamp: new Date().toISOString(),
             });
+            const fetchedNotifications = await getNotifications();
+            console.log('[NotificationPanel] Fetched notifications:', {
+                count: fetchedNotifications.length,
+                notificationIDs: fetchedNotifications.map((n) => n.notificationID),
+                userIDs: fetchedNotifications.map((n) => n.userID),
+                notifications: fetchedNotifications.map((n) => ({
+                    id: n.notificationID,
+                    message: n.message,
+                    status: n.status,
+                    type: n.type,
+                    channel: n.channel,
+                    userID: n.userID,
+                })),
+                timestamp: new Date().toISOString(),
+            });
+            mergeNotifications(fetchedNotifications);
         } catch (error) {
-            console.error('Failed to refresh notifications:', error);
+            console.error('[NotificationPanel] Failed to refresh notifications:', {
+                error: error instanceof Error ? error.message : 'Unknown error',
+                userID: user?.userID,
+                timestamp: new Date().toISOString(),
+            });
         } finally {
             setIsLoading(false);
         }

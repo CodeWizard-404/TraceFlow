@@ -9,22 +9,42 @@ class NotificationService {
     static async sendWebSocketNotification(event, data, roles = [], userIDs = []) {
         try {
             const payload = { event, data, timestamp: new Date().toISOString() };
+            logger.info(`[WebSocket] Preparing to emit event: ${event}`, {
+                roles,
+                userIDs,
+                payload,
+                timestamp: new Date().toISOString(),
+            });
+
+            // Emit to role-based rooms
             roles.forEach((role) => {
-                io.to(role.toLowerCase()).emit(event, payload);
-                logger.info(`WebSocket event emitted`, {
+                const room = role.toLowerCase();
+                logger.info(`[WebSocket] Emitting to room: ${room}`, {
                     event,
-                    room: role.toLowerCase(),
-                    data: payload,
+                    payload,
+                    timestamp: new Date().toISOString(),
                 });
+                io.to(room).emit(event, payload);
             });
+
+            // Emit to user-specific rooms
             userIDs.forEach((userID) => {
-                io.to(userID).emit(event, payload);
-                logger.info(`WebSocket event emitted`, {
+                logger.info(`[WebSocket] Emitting to user: ${userID}`, {
                     event,
-                    userID,
-                    data: payload,
+                    payload,
+                    timestamp: new Date().toISOString(),
                 });
+                io.to(userID).emit(event, payload);
             });
+
+            // Emit to default room for traceability
+            logger.info(`[WebSocket] Emitting to room: default-roles-traceflow`, {
+                event,
+                payload,
+                timestamp: new Date().toISOString(),
+            });
+            io.to('default-roles-traceflow').emit(event, payload);
+
             return { success: true, method: 'WebSocket' };
         } catch (error) {
             logger.error(`WebSocket notification error: ${error.message}`, {
@@ -32,6 +52,7 @@ class NotificationService {
                 roles,
                 userIDs,
                 stack: error.stack,
+                timestamp: new Date().toISOString(),
             });
             return { success: false, method: 'WebSocket', reason: error.message };
         }
@@ -88,6 +109,29 @@ class NotificationService {
                 status: 'pending',
             });
             logger.info(`Notification stored`, { userID, notificationID: notification.notificationID, message });
+
+            // Emit WebSocket event for in-app notifications
+            if (channel === 'in-app') {
+                const preferences = await this.getUserPreferences(userID);
+                if (preferences.inAppEnabled) {
+                    const event = 'notification:created';
+                    const data = {
+                        notificationID: notification.notificationID,
+                        userID,
+                        type,
+                        message,
+                        channel,
+                        status: 'pending',
+                        createdAt: notification.createdAt,
+                        updatedAt: notification.updatedAt,
+                    };
+                    const wsResult = await this.sendWebSocketNotification(event, data, [], [userID]);
+                    if (wsResult.success) {
+                        await this.updateNotificationStatus(notification.notificationID, 'sent');
+                    }
+                }
+            }
+
             return notification;
         } catch (error) {
             logger.error(`Error storing notification: ${error.message}`, { userID, stack: error.stack });
@@ -102,6 +146,15 @@ class NotificationService {
                 notification.status = status;
                 await notification.save();
                 logger.info(`Notification status updated`, { notificationID, status });
+
+                // Emit WebSocket event for status updates
+                const event = 'notification:updated';
+                const data = {
+                    notificationID,
+                    status,
+                    updatedAt: new Date(),
+                };
+                await this.sendWebSocketNotification(event, data, [], [notification.userID]);
             }
         } catch (error) {
             logger.error(`Error updating notification status: ${error.message}`, { notificationID, stack: error.stack });
@@ -121,11 +174,21 @@ class NotificationService {
                 return existingRule;
             }
 
+            // Define critical events that should have enabled default rules
+            const criticalEvents = [
+                'role:created',
+                'role:updated',
+                'role:deleted',
+                'role:assigned',
+                'role:revoked',
+                'role:reset'
+            ];
+
             const defaultRule = {
                 event,
                 type: data.type || 'general',
                 recipients: {
-                    roles: ['admin', 'Super Admin'],
+                    roles: ['Admin', 'Super Admin'],
                     userIDs: [],
                 },
                 channels: {
@@ -136,14 +199,14 @@ class NotificationService {
                 },
                 conditions: data.conditions || null,
                 messageTemplate: `Notification for ${event}`,
-                enabled: false,
+                enabled: criticalEvents.includes(event), // Enable rule for critical events
             };
 
             const rule = await NotificationRule.create(defaultRule);
-            logger.info(`Created default disabled notification rule`, { event, ruleID: rule.ruleID });
+            logger.info(`Created default notification rule`, { event, ruleID: rule.ruleID, enabled: defaultRule.enabled });
             return rule;
         } catch (error) {
-            logger.error(`Error creating default disabled rule: ${error.message}`, { event, stack: error.stack });
+            logger.error(`Error creating default rule: ${error.message}`, { event, stack: error.stack });
             return null;
         }
     }
@@ -155,10 +218,11 @@ class NotificationService {
             if (!rules.length) {
                 logger.info(`No active rules found for event: ${event}`);
                 const defaultRule = await this.createDefaultDisabledRule({ event, data, metadata });
-                if (defaultRule) {
-                    logger.info(`Created disabled rule`, { event, ruleID: defaultRule.ruleID });
+                if (defaultRule && defaultRule.enabled) {
+                    rules = [defaultRule]; // Include newly created enabled rule
+                } else {
+                    return [];
                 }
-                return [];
             }
 
             const results = [];
@@ -180,6 +244,9 @@ class NotificationService {
                         });
                         results.push({ userID: user.userID, ruleID: rule.ruleID, result });
                     }
+                    // Emit the triggering event to role-based rooms and default room
+                    const triggerEventPayload = { event, data, timestamp: new Date().toISOString() };
+                    await this.sendWebSocketNotification(event, triggerEventPayload, rule.recipients.roles || [], []);
                 }
             }
             logger.info(`Triggered notifications`, { event, recipientCount: results.length });
@@ -242,9 +309,6 @@ class NotificationService {
 
         if (event && data && (roles.length || userIDs.length) && preferences.inAppEnabled) {
             const wsResult = await this.sendWebSocketNotification(event, data, roles, userIDs);
-            if (wsResult.success && notification) {
-                await this.updateNotificationStatus(notification.notificationID, 'sent');
-            }
             results.push(wsResult);
         }
 

@@ -1,4 +1,5 @@
 const { Sequelize } = require('sequelize');
+const logger = require('../utils/logger');
 require('dotenv').config();
 
 const sequelize = new Sequelize(
@@ -10,12 +11,7 @@ const sequelize = new Sequelize(
         port: process.env.DB_PORT,
         dialect: 'postgres',
         logging: false,
-        pool: {
-            max: 10, // Maximum number of connections
-            min: 0,  // Minimum number of connections
-            acquire: 30000, // Maximum time (ms) to acquire a connection
-            idle: 10000,    // Maximum time (ms) a connection can be idle
-        },
+
     }
 );
 
@@ -35,9 +31,9 @@ async function initializeDatabase() {
 
         if (result[0].length === 0) {
             await adminSequelize.query(`CREATE DATABASE "${process.env.DB_NAME}"`);
-            console.log(`${new Date().toISOString()} - Database '${process.env.DB_NAME}' created successfully`);
+            console.log(`${new Date().toISOString()} [\x1b[36minfo\x1b[0m]: \x1b[36mDatabase '${process.env.DB_NAME}' created successfully\x1b[0m`);
         } else {
-            console.log(`${new Date().toISOString()} - Database '${process.env.DB_NAME}' already exists`);
+            console.log(`${new Date().toISOString()} [\x1b[36minfo\x1b[0m]: \x1b[36mDatabase '${process.env.DB_NAME}' already exists\x1b[0m`);
         }
 
         await sequelize.authenticate();

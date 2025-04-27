@@ -2,6 +2,7 @@ const multer = require('multer');
 const path = require('path');
 const fs = require('fs');
 const { Timesheet, User } = require('../models');
+const logger = require('../utils/logger');
 
 // Disk storage for timesheet photos
 const diskStorage = multer.diskStorage({
@@ -19,7 +20,7 @@ const diskStorage = multer.diskStorage({
             const time = visit.time.replace(/:/g, '-'); // e.g., "10-00"
             const supervisorName = `${visit.Timesheet.User.firstname.toLowerCase()}_${visit.Timesheet.User.lastname.toLowerCase()}`; // e.g., "supervisor_user"
             const folderName = `${date}_${time}_${supervisorName}`; // e.g., "2025-03-27_10-00_supervisor_user"
-            const uploadPath = path.join(__dirname, '../uploads/photos', folderName);
+            const uploadPath = path.join(__dirname, '../Uploads/photos', folderName);
 
             if (!fs.existsSync(uploadPath)) {
                 fs.mkdirSync(uploadPath, { recursive: true });
@@ -62,14 +63,12 @@ const memoryStorage = multer.memoryStorage();
 // Shared file filter for both uploads
 const fileFilter = (req, file, cb) => {
     const allowedTypes = ['image/jpeg', 'image/jpg', 'image/png'];
-    console.log('File mimetype:', file.mimetype);
-    console.log('File originalname:', file.originalname);
     const extname = /\.(jpeg|jpg|png)$/i.test(path.extname(file.originalname).toLowerCase());
     const mimetype = allowedTypes.includes(file.mimetype);
     if (extname && mimetype) {
         return cb(null, true);
     }
-    console.error('File rejected:', { mimetype: file.mimetype, originalname: file.originalname });
+    logger.error(`File rejected: mimetype=${file.mimetype}, originalname=${file.originalname}`);
     cb(new Error('Only JPEG/JPG/PNG images are allowed'), false);
 };
 
@@ -82,11 +81,11 @@ const uploadPhotos = multer({
 // Add error handling middleware
 const handleMulterError = (err, req, res, next) => {
     if (err instanceof multer.MulterError) {
-        console.error('Multer error:', err.message, err.field);
+        logger.error(`Multer error: ${err.message}, field=${err.field}`);
         return res.status(400).json({ error: `Multer error: ${err.message}` });
     }
     if (err) {
-        console.error('File upload error:', err.message);
+        logger.error(`File upload error: ${err.message}`);
         return res.status(400).json({ error: err.message });
     }
     next();

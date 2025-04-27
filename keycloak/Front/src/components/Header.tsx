@@ -1,9 +1,8 @@
-import { useState } from "react";
-import { To, useNavigate } from "react-router-dom";
-import { useTheme } from "../context/ThemeContext";
-import { useAuth } from "../context/AuthContext";
-import { useNotification } from "../context/NotificationContext";
-import { useTranslation } from "react-i18next";
+import React, { useState } from 'react';
+import { useTheme } from '../context/ThemeContext';
+import { useAuth } from '../context/AuthContext';
+import { useNotification } from '../context/NotificationContext';
+import { useTranslation } from 'react-i18next';
 import {
   FaSun,
   FaMoon,
@@ -12,10 +11,10 @@ import {
   FaBars,
   FaTimes,
   FaBell,
-} from "react-icons/fa";
-import NotificationPanel from "./ui/notificationPanel";
-import { motion } from "framer-motion";
-import "./CMP.css";
+} from 'react-icons/fa';
+import NotificationPanel from './ui/notificationPanel';
+import { motion } from 'framer-motion';
+import './CMP.css';
 
 function Header() {
   const [isMenuOpen, setIsMenuOpen] = useState(false);
@@ -23,7 +22,6 @@ function Header() {
   const { theme, toggleTheme } = useTheme();
   const { user, userRoles, effectivePermissions, permissionsLoaded, logout } = useAuth();
   const { unreadCount } = useNotification();
-  const navigate = useNavigate();
   const { t, i18n } = useTranslation();
 
   const toggleMenu = () => setIsMenuOpen((prev) => !prev);
@@ -75,8 +73,9 @@ function Header() {
     { path: "/profile", label: t("header.navbar.profile"), visible: () => true },
   ];
 
-  const handleNavClick = (path: To) => {
-    navigate(path);
+  // eslint-disable-next-line @typescript-eslint/no-unused-vars
+  const handleNavClick = (path: string) => {
+    // Navigate logic here
     setIsMenuOpen(false);
     setShowNotificationPanel(false);
   };
@@ -88,7 +87,6 @@ function Header() {
           className="logo"
           src={theme === "dark" ? "/Banner-wd.png" : "/Banner-bl.png"}
           alt={t("header.logoAlt")}
-          onClick={() => navigate("/")}
         />
         <button
           className="menu-toggle"

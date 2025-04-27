@@ -1,8 +1,6 @@
 const express = require('express');
-const cors = require('cors');
 const cookieParser = require('cookie-parser');
 const path = require('path');
-const cron = require('node-cron');
 const logger = require('./utils/logger');
 const { sequelize } = require('./config/db');
 const { authenticateCookie } = require('./config/security');
@@ -15,71 +13,22 @@ const {
 const { setupAssociations } = require('./models');
 const { seedSuperAdmin } = require('./scripts/SeedSuperAdmin');
 const { seedMissingPermissions } = require('./scripts/seedPermissions');
-const otpService = require('./services/otpService');
-const NotificationService = require('./services/notificationService');
-const { Timesheet } = require('./models');
+const { corsOptions } = require('./config/cors');
+const { setupCron } = require('./config/scheduler');
+const { setupMiddleware } = require('./config/middleware');
+const { setupRoutes } = require('./config/routes');
 const io = require('./utils/socket');
-const { Op } = require('sequelize');
 
 require('dotenv').config();
 
 // Create Express app
 const app = express();
 
-// Define allowed origins for CORS
-const allowedOrigins = [
-    process.env.FRONTEND_URL,
-    process.env.FRONTEND_URL1,
-];
-
-// Configure CORS
-const corsOptions = {
-    origin: (origin, callback) => {
-        if (!origin || allowedOrigins.includes(origin)) {
-            callback(null, true);
-        } else {
-            callback(new Error('Not allowed by CORS'));
-        }
-    },
-    methods: ['GET', 'POST', 'PUT', 'DELETE', 'OPTIONS'],
-    allowedHeaders: ['Content-Type', 'Authorization'],
-    credentials: true,
-    optionsSuccessStatus: 204,
-};
-
 // Middleware setup
-app.use(cors(corsOptions));
-app.use(cookieParser());
-app.use(express.json());
-app.use('/api/uploads', express.static(path.join(__dirname, 'Uploads')));
-
-// Import route handlers
-const agentRoutes = require('./routes/agentRoutes');
-const authRoutes = require('./routes/authRoutes');
-const checklistRoutes = require('./routes/checklistRoutes');
-const permissionRoutes = require('./routes/permissionRoutes');
-const reasonRoutes = require('./routes/reasonRoutes');
-const receiptBookRoutes = require('./routes/receiptBookRoutes');
-const receiptstubRoutes = require('./routes/receiptStubRoutes');
-const roleRoutes = require('./routes/roleRoutes');
-const timesheetRoutes = require('./routes/timesheetRoutes');
-const userRoutes = require('./routes/userRoutes');
-const visitRoutes = require('./routes/visitRoutes');
-const notificationRoutes = require('./routes/notificationRoutes');
+setupMiddleware(app);
 
 // Route setup
-app.use('/api/auth', authRoutes);
-app.use('/api/users', authenticateCookie, userRoutes);
-app.use('/api/roles', authenticateCookie, roleRoutes);
-app.use('/api/permissions', authenticateCookie, permissionRoutes);
-app.use('/api/visits', authenticateCookie, visitRoutes);
-app.use('/api/checklists', authenticateCookie, checklistRoutes);
-app.use('/api/reasons', authenticateCookie, reasonRoutes);
-app.use('/api/timesheets', authenticateCookie, timesheetRoutes);
-app.use('/api/agents', authenticateCookie, agentRoutes);
-app.use('/api/receipt-books', authenticateCookie, receiptBookRoutes);
-app.use('/api/receipt-stubs', authenticateCookie, receiptstubRoutes);
-app.use('/api/notifications', authenticateCookie, notificationRoutes);
+setupRoutes(app);
 
 // Test endpoint
 app.get('/api/test', authenticateCookie, (req, res) => {
@@ -92,38 +41,8 @@ app.use((err, req, res, next) => {
     res.status(500).json({ error: 'Something went wrong!' });
 });
 
-// Schedule hourly OTP cleanup
-cron.schedule('0 * * * *', async () => {
-    try {
-        logger.info('Cleaning up expired OTPs');
-        await otpService.cleanupExpiredOTPs();
-    } catch (error) {
-        logger.error(`Error cleaning up OTPs: ${error.message}`);
-    }
-});
-
-// Schedule daily timesheet reminder at 8 AM
-cron.schedule('0 8 * * *', async () => {
-    try {
-        logger.info('Checking for unsubmitted timesheets');
-        const timesheets = await Timesheet.findAll({
-            where: {
-                status: 'draft',
-                createdAt: { [Op.lte]: new Date(Date.now() - 24 * 60 * 60 * 1000) },
-            },
-        });
-        for (const timesheet of timesheets) {
-            await NotificationService.triggerNotification({
-                event: 'timesheet:reminder',
-                data: { timesheetId: timesheet.timesheetID },
-                metadata: { userID: timesheet.supervisorID },
-            });
-        }
-        logger.info(`Processed ${timesheets.length} timesheet reminders`);
-    } catch (error) {
-        logger.error(`Error processing timesheet reminders: ${error.message}`);
-    }
-});
+// Schedule tasks
+setupCron();
 
 // Start the application
 async function startApp() {
@@ -169,40 +88,40 @@ async function startApp() {
         await seedSuperAdmin();
         addStep('Super Admin Seeding', true, 'Completed');
 
-        const server = await initializeServer(app, io); // Initialize server with Socket.IO
+        await initializeServer(app, io);
         addStep('Server Initialization', true, 'Completed with WebSocket');
 
         const endTime = new Date();
         const duration = ((endTime - startTime) / 1000).toFixed(2);
-        console.log(`\n${colors.cyan}========== TraceFlow Initialization Summary ========${colors.reset}`);
-        console.log(`Date: ${new Date().toISOString()}`);
-        console.log('Steps Completed:');
+        logger.info(`${colors.cyan}========== TraceFlow Initialization Summary ========${colors.reset}`);
+        logger.info(`Date: ${new Date().toISOString()}`);
+        logger.info('Steps Completed:');
         summary.steps.forEach(({ step, success, message }) => {
             const status = success ? `${colors.green}Success${colors.reset}` : `${colors.red}Failed${colors.reset}`;
-            console.log(`  - ${step}: ${status} - ${message}`);
+            logger.info(`  - ${step}: ${status} - ${message}`);
         });
-        console.log(`Total Steps: ${summary.steps.length}`);
-        console.log(`${colors.yellow}Successes: ${summary.successes}${colors.reset}`);
-        console.log(`${colors.yellow}Failures: ${summary.failures}${colors.reset}`);
-        console.log(`Duration: ${duration} seconds`);
-        console.log(`${colors.cyan}====================================================${colors.reset}\n`);
+        logger.info(`Total Steps: ${summary.steps.length}`);
+        logger.info(`${colors.yellow}Successes: ${summary.successes}${colors.reset}`);
+        logger.info(`${colors.yellow}Failures: ${summary.failures}${colors.reset}`);
+        logger.info(`Duration: ${duration} seconds`);
+        logger.info(`${colors.cyan}====================================================${colors.reset}\n`);
     } catch (error) {
         addStep('Initialization', false, `Failed: ${error.message}`);
         const endTime = new Date();
         const duration = ((endTime - startTime) / 1000).toFixed(2);
 
-        console.log(`\n${colors.cyan}=== TraceFlow Initialization Summary ===${colors.reset}`);
-        console.log(`Date: ${new Date().toISOString()}`);
-        console.log('Steps Completed:');
+        logger.info(`\n${colors.cyan}=== TraceFlow Initialization Summary ===${colors.reset}`);
+        logger.info(`Date: ${new Date().toISOString()}`);
+        logger.info('Steps Completed:');
         summary.steps.forEach(({ step, success, message }) => {
             const status = success ? `${colors.green}Success${colors.reset}` : `${colors.red}Failed${colors.reset}`;
-            console.log(`  - ${step}: ${status} - ${message}`);
+            logger.info(`  - ${step}: ${status} - ${message}`);
         });
-        console.log(`Total Steps: ${summary.steps.length}`);
-        console.log(`${colors.yellow}Successes: ${summary.successes}${colors.reset}`);
-        console.log(`${colors.yellow}Failures: ${summary.failures}${colors.reset}`);
-        console.log(`Duration: ${duration} seconds`);
-        console.log(`${colors.cyan}=======================================${colors.reset}\n`);
+        logger.info(`Total Steps: ${summary.steps.length}`);
+        logger.info(`${colors.yellow}Successes: ${summary.successes}${colors.reset}`);
+        logger.info(`${colors.yellow}Failures: ${summary.failures}${colors.reset}`);
+        logger.info(`Duration: ${duration} seconds`);
+        logger.info(`${colors.cyan}=======================================${colors.reset}\n`);
         process.exit(1);
     }
 }

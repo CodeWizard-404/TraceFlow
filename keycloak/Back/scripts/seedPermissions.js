@@ -3,6 +3,7 @@ const path = require('path');
 const { nanoid } = require('nanoid');
 const { Permission } = require('../models');
 const { migratePermissionsKeycloakAssignments } = require('./migratePe');
+const logger = require('../utils/logger');
 require('dotenv').config();
 
 // Configuration constants
@@ -97,7 +98,7 @@ const seedMissingPermissions = async () => {
         );
 
         if (missingPermissions.length === 0) {
-            console.log(`${new Date().toISOString()} - No new permissions to seed`);
+            logger.info(`No new permissions to seed`);
             return;
         }
 
@@ -120,10 +121,10 @@ const seedMissingPermissions = async () => {
         }));
 
         await migratePermissionsKeycloakAssignments();
-        console.log(`${new Date().toISOString()} - Seeded To Keycloak permissions`);
-        console.log(`${new Date().toISOString()} - Seeded ${newPermissionsCount} new permissions`);
+        logger.info(`Seeded To Keycloak permissions`);
+        logger.info(`Seeded ${newPermissionsCount} new permissions`);
     } catch (error) {
-        console.error('Error seeding permissions:', error);
+        logger.error(`Error seeding permissions: ${error.message}`);
         throw error;
     }
 };
@@ -157,7 +158,7 @@ const extractRoutePermissions = async () => {
             route: classToRouteMap[perm.class] || '/api/unknown', // Fallback to avoid invalid routes
         }));
     } catch (error) {
-        console.error('Error in extractRoutePermissions:', error);
+        logger.error(`Error in extractRoutePermissions: ${error.message}`);
         throw error;
     }
 };
@@ -175,7 +176,7 @@ if (require.main === module) {
     seedMissingPermissions()
         .then(() => sequelize.close())
         .catch(error => {
-            console.error('Script execution failed:', error);
+            logger.error(`Script execution failed: ${error.message}`);
             sequelize.close();
         });
 }

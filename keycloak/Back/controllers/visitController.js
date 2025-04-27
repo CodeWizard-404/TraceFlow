@@ -73,9 +73,6 @@ class VisitController {
             const { id } = req.params;
             const { duration, checklistUpdates, comment } = req.body;
             const files = req.files || [];
-            console.log('Received files:', files); // Log files
-            console.log('Received body:', req.body); // Log body
-            console.log('Received params:', req.body.photos);
             if (!id) {
                 logger.warn(`Log visit failed: Missing visit ID, user: ${req.user.userID}, IP: ${req.ip}`);
                 return res.status(400).json({ error: 'Visit ID is required' });

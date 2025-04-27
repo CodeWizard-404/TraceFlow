@@ -1,6 +1,7 @@
 const axios = require('axios');
 const { User, Agent } = require('../models');
 const { transporter } = require('./smtp');
+const logger = require('../utils/logger');
 require('dotenv').config();
 
 async function sendSMS(to, message, context = 'general') {
@@ -14,10 +15,10 @@ async function sendSMS(to, message, context = 'general') {
                 'Content-Type': 'application/json',
             },
         });
-        console.log(`${new Date().toISOString()} - Traccar SMS Gateway sent (${context}):`, response.data);
+        logger.info(`Traccar SMS Gateway sent (${context}): ${JSON.stringify(response.data)}`);
         return { success: true, method: 'SMS' };
     } catch (error) {
-        console.error(`${new Date().toISOString()} - Traccar SMS Gateway error (${context}):`, error.response?.data || error.message);
+        logger.error(`Traccar SMS Gateway error (${context}): ${error.response?.data || error.message}`);
 
         try {
             const email = await findEmailByPhone(to);
@@ -32,13 +33,13 @@ async function sendSMS(to, message, context = 'general') {
                     subject,
                     text,
                 });
-                console.log(`${new Date().toISOString()} - Fallback email sent to ${email} (${context})`);
+                logger.info(`Fallback email sent to ${email} (${context})`);
                 return { success: true, method: 'Email', fallback: true };
             }
-            console.log(`${new Date().toISOString()} - No email found for phone: ${to} (${context})`);
+            logger.info(`No email found for phone: ${to} (${context})`);
             return { success: false, method: 'None', reason: 'No SMS or email available' };
         } catch (emailError) {
-            console.error(`${new Date().toISOString()} - Email fallback error (${context}):`, emailError.message);
+            logger.error(`Email fallback error (${context}): ${emailError.message}`);
             return { success: false, method: 'None', reason: 'Failed to send SMS and email' };
         }
     }
@@ -53,17 +54,17 @@ async function findEmailByPhone(phone) {
         const agent = await Agent.findOne({ where: { phone } });
         email = agent?.email || null;
     }
-    console.log(`${new Date().toISOString()} - Email lookup result: ${email || 'Not found'}`);
+    logger.info(`Email lookup result: ${email || 'Not found'}`);
     return email;
 }
 
 async function initializeSMS() {
     try {
         // Optional: Add a health check for SMS gateway if your provider supports it
-        console.log(`${new Date().toISOString()} - SMS gateway initialized`);
+        logger.info(`SMS gateway initialized`);
         return true;
     } catch (error) {
-        console.error(`${new Date().toISOString()} - SMS initialization error:`, error.message);
+        logger.error(`SMS initialization error: ${error.message}`);
         throw error;
     }
 }

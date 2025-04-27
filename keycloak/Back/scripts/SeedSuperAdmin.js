@@ -1,5 +1,6 @@
 const axios = require('axios');
 const { sequelize, User, Role, Permission } = require('../models');
+const logger = require('../utils/logger');
 require('dotenv').config();
 
 const SUPER_ADMIN_CONFIG = {
@@ -191,12 +192,12 @@ async function seedSuperAdmin() {
 
         // Show credentials in development
         if (process.env.NODE_ENV === 'development') {
-            console.log(`\n\x1b[31mSuper Admin Credentials:`);
-            console.log(`\tEmail:\t\t${SUPER_ADMIN_CONFIG.email}`);
-            console.log(`\tPassword:\t${SUPER_ADMIN_CONFIG.password}\x1b[0m\n`);
+            logger.info(`\nSuper Admin Credentials:`);
+            logger.info(`\tEmail:\t\t${SUPER_ADMIN_CONFIG.email}`);
+            logger.info(`\tPassword:\t${SUPER_ADMIN_CONFIG.password}\n`);
         }
     } catch (error) {
-        console.error('Error seeding Super Admin:', error);
+        logger.error(`Error seeding Super Admin: ${error.message}`);
         throw error;
     }
 }

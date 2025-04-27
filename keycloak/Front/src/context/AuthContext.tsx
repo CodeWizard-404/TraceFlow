@@ -1,3 +1,5 @@
+/* eslint-disable react-hooks/exhaustive-deps */
+/* eslint-disable react-refresh/only-export-components */
 import React, { createContext, useContext, useState, useEffect, useRef, ReactNode, useCallback } from 'react';
 import { useNavigate, useLocation } from 'react-router-dom';
 import { login, verify2FA, logout, refreshToken } from '../apis/authAPI';
@@ -93,21 +95,13 @@ const AuthProvider: React.FC<{ children: ReactNode }> = ({ children }) => {
                 return;
             }
 
-            console.debug('Loading permissions for user:', {
-                userID: user.userID,
-                timestamp: new Date().toISOString(),
-            });
+
             setPermissionsLoaded(false);
             try {
                 const [perms, roles] = await Promise.all([
                     getEffectivePermissions(user.userID),
                     getRolesByUser(user.userID),
                 ]);
-                console.debug('Permissions and roles loaded:', {
-                    permissions: perms.map(p => p.name),
-                    roles: roles.map(r => r.name),
-                    timestamp: new Date().toISOString(),
-                });
                 setEffectivePermissions(perms);
                 setUserRoles(roles);
                 setPermissionsLoaded(true);
@@ -125,7 +119,7 @@ const AuthProvider: React.FC<{ children: ReactNode }> = ({ children }) => {
         };
 
         loadPermissions();
-    }, [user]);
+    }, [permissionsLoaded, user]);
 
     useEffect(() => {
         if (user && !permissionsLoaded) {
@@ -199,7 +193,6 @@ const AuthProvider: React.FC<{ children: ReactNode }> = ({ children }) => {
                     }; HttpOnly`;
                 setTokenExpiry(newExpiry);
                 window.dispatchEvent(new Event('tokenRefreshed'));
-                console.debug('Token refreshed successfully:', { newExpiry, timestamp: new Date().toISOString() });
                 return;
             } catch (error) {
                 console.error(`Refresh attempt ${attempt} failed:`, error);
@@ -245,14 +238,6 @@ const AuthProvider: React.FC<{ children: ReactNode }> = ({ children }) => {
         }
 
         const currentPath = location.pathname;
-        console.debug('Navigation check:', {
-            currentPath,
-            user: !!user,
-            permissionsLoaded,
-            userRoles: userRoles?.map(r => r.name) || [],
-            effectivePermissions: effectivePermissions?.map(p => p.name) || [],
-            timestamp: new Date().toISOString(),
-        });
 
         if (!user) {
             if (!['/login', '/reset-password', '/verify-2fa'].includes(currentPath)) {

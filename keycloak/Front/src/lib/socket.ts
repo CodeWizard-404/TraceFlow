@@ -1,16 +1,12 @@
 import { io, Socket } from 'socket.io-client';
 import { getNotificationEvents, NotificationEvent } from './notifEvents';
 
-// Get the API URL from environment variables
 const API_URL = import.meta.env.VITE_API_URL || 'http://192.168.1.14:5000';
-
-// Initialize the Socket.IO client
 let socket: Socket | null = null;
 
-// Connect to the WebSocket server (authentication via cookies)
 export const initSocket = (retryCount = 3, retryDelay = 2000) => {
     if (socket && socket.connected) {
-        console.debug('Socket already connected, skipping initialization', {
+        console.log('Socket already connected, skipping initialization', {
             socketId: socket?.id,
             timestamp: new Date().toISOString(),
         });
@@ -19,7 +15,7 @@ export const initSocket = (retryCount = 3, retryDelay = 2000) => {
 
     const connect = (attempt = 1, useProxy = true) => {
         const url = useProxy ? '/' : API_URL;
-        console.debug(`Attempting WebSocket connection (Attempt ${attempt}/${retryCount})`, {
+        console.log(`Attempting WebSocket connection (Attempt ${attempt}/${retryCount})`, {
             url,
             useProxy,
             timestamp: new Date().toISOString(),
@@ -34,10 +30,12 @@ export const initSocket = (retryCount = 3, retryDelay = 2000) => {
         });
 
         socket.on('connect', () => {
-            console.debug('Connected to WebSocket server', {
+            console.log('Connected to WebSocket server', {
                 socketId: socket?.id,
                 timestamp: new Date().toISOString(),
             });
+            // Join default room on connect
+            joinRoom('default-roles-traceflow');
         });
 
         socket.on('connect_error', (error) => {
@@ -48,42 +46,52 @@ export const initSocket = (retryCount = 3, retryDelay = 2000) => {
                 timestamp: new Date().toISOString(),
             });
 
+            if (error.message.includes('Authentication failed') || error.message.includes('Invalid token')) {
+                console.warn('Authentication error detected, triggering token refresh', {
+                    attempt,
+                    timestamp: new Date().toISOString(),
+                });
+                window.dispatchEvent(new Event('tokenRefreshed'));
+            }
+
             if (error.message.includes('ECONNRESET') || error.message.includes('ECONNREFUSED')) {
                 console.warn('Network error detected, increasing retry delay', {
                     attempt,
                     timestamp: new Date().toISOString(),
                 });
-                retryDelay = 5000; // Increase delay for network issues
+                retryDelay = 5000;
             }
 
             if (attempt < retryCount) {
-                console.debug(`Retrying WebSocket connection in ${retryDelay}ms`, {
+                console.log(`Retrying WebSocket connection in ${retryDelay}ms`, {
                     attempt: attempt + 1,
                     useProxy: attempt === retryCount - 1 ? false : useProxy,
                     timestamp: new Date().toISOString(),
                 });
                 setTimeout(() => connect(attempt + 1, attempt === retryCount - 1 ? false : useProxy), retryDelay);
             } else {
-                console.error('Max WebSocket connection attempts reached. Please check logs and try again.', {
+                console.error('Max WebSocket connection attempts reached.', {
                     timestamp: new Date().toISOString(),
                 });
-                // Do not redirect to allow debugging
             }
         });
 
         socket.on('disconnect', (reason) => {
-            console.debug('Disconnected from WebSocket server', {
+            console.log('Disconnected from WebSocket server', {
                 reason,
                 timestamp: new Date().toISOString(),
             });
+            setTimeout(() => connect(1, true), 2000);
         });
 
         socket.on('reconnect', (attempt) => {
-            console.debug('Reconnected to WebSocket server', {
+            console.log('Reconnected to WebSocket server', {
                 attempt,
                 socketId: socket?.id,
                 timestamp: new Date().toISOString(),
             });
+            // Rejoin default room on reconnect
+            joinRoom('default-roles-traceflow');
         });
 
         socket.on('reconnect_error', (error) => {
@@ -94,66 +102,129 @@ export const initSocket = (retryCount = 3, retryDelay = 2000) => {
         });
     };
 
-    setTimeout(() => connect(), 1000); // Delay to ensure cookies are set
+    setTimeout(() => connect(), 1000);
     return socket;
 };
 
-// Join a room (e.g., userID or role like 'admin')
-export const joinRoom = (room: string) => {
+export const joinRoom = (room: string, retries = 3, delay = 1000) => {
     if (socket && socket.connected) {
         socket.emit('join', room);
-        console.debug(`Joined room: ${room}`, { timestamp: new Date().toISOString() });
+        console.log(`Joined room: ${room}`, { timestamp: new Date().toISOString() });
     } else {
         console.warn(`Cannot join room ${room}: Socket not connected`, { timestamp: new Date().toISOString() });
+        if (retries > 0) {
+            console.log(`Retrying join room ${room} in ${delay}ms`, {
+                retriesLeft: retries - 1,
+                timestamp: new Date().toISOString(),
+            });
+            setTimeout(() => joinRoom(room, retries - 1, delay * 2), delay);
+        } else {
+            console.error(`Failed to join room ${room}: Max retries reached`, { timestamp: new Date().toISOString() });
+        }
     }
 };
 
-// Leave a room
 export const leaveRoom = (room: string) => {
     if (socket && socket.connected) {
         socket.emit('leave', room);
-        console.debug(`Left room: ${room}`, { timestamp: new Date().toISOString() });
+        console.log(`Left room: ${room}`, { timestamp: new Date().toISOString() });
     }
 };
 
-// Listen for notification events
 export const onNotification = async (callback: (event: NotificationEvent, data: unknown) => void) => {
-    if (socket) {
-        const events = await getNotificationEvents();
-        events.forEach((event) => {
-            socket!.on(event, (data) => {
-                console.debug(`Received WebSocket event: ${event}`, {
-                    data,
-                    timestamp: new Date().toISOString(),
-                });
-                callback(event, data);
+    if (!socket) {
+        console.warn('[WebSocket] Cannot listen: Socket not initialized', {
+            timestamp: new Date().toISOString(),
+        });
+        socket = initSocket();
+    }
+
+    const registerListeners = async (retries = 3, delay = 1000) => {
+        if (!socket) {
+            console.error('[WebSocket] Socket still not initialized after initSocket', {
+                timestamp: new Date().toISOString(),
+            });
+            return;
+        }
+
+        socket.onAny((event, data) => {
+            console.log('[WebSocket] Received ANY event:', {
+                event,
+                data,
+                timestamp: new Date().toISOString(),
             });
         });
+
+        try {
+            const events = await getNotificationEvents();
+            console.log('[WebSocket] Registering listeners for events:', {
+                events,
+                timestamp: new Date().toISOString(),
+            });
+
+            events.forEach((event) => {
+                socket!.on(event, (data) => {
+                    console.log(`[WebSocket] Received event: ${event}`, {
+                        data,
+                        timestamp: new Date().toISOString(),
+                    });
+                    callback(event, data);
+                });
+            });
+        } catch (error) {
+            console.error('[WebSocket] Failed to fetch notification events:', {
+                error: error instanceof Error ? error.message : 'Unknown error',
+                timestamp: new Date().toISOString(),
+            });
+            if (retries > 0) {
+                console.log(`Retrying listener registration in ${delay}ms`, {
+                    retriesLeft: retries - 1,
+                    timestamp: new Date().toISOString(),
+                });
+                setTimeout(() => registerListeners(retries - 1, delay * 2), delay);
+            } else {
+                console.error('[WebSocket] Max retries reached for listener registration', {
+                    timestamp: new Date().toISOString(),
+                });
+            }
+        }
+    };
+
+    if (socket!.connected) {
+        console.log('[WebSocket] Socket connected, registering listeners immediately', {
+            timestamp: new Date().toISOString(),
+        });
+        await registerListeners();
     } else {
-        console.warn('Cannot listen for notifications: Socket not initialized', { timestamp: new Date().toISOString() });
+        console.log('[WebSocket] Waiting for socket connection to register listeners', {
+            timestamp: new Date().toISOString(),
+        });
+        socket!.on('connect', async () => {
+            console.log('[WebSocket] Socket connected, registering listeners', {
+                timestamp: new Date().toISOString(),
+            });
+            await registerListeners();
+        });
     }
 };
 
-// Stop listening for notifications
 export const offNotification = () => {
     if (socket) {
         socket.removeAllListeners();
-        console.debug('Removed all WebSocket event listeners', { timestamp: new Date().toISOString() });
+        console.log('Removed all WebSocket event listeners', { timestamp: new Date().toISOString() });
     }
 };
 
-// Disconnect the socket
 export const disconnectSocket = () => {
     if (socket) {
         socket.disconnect();
         socket = null;
+        console.log('Socket disconnected', { timestamp: new Date().toISOString() });
     }
 };
 
-// Get the socket instance
 export const getSocket = () => socket;
 
-// Check if socket is connected
 export const isSocketConnected = () => {
     return socket?.connected || false;
 };

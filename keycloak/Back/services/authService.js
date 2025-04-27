@@ -52,7 +52,6 @@ class AuthService {
                     password: process.env.KEYCLOAK_KEYCLOAK_ADMIN_PASSWORDWORD || 'admin',
                 })
             );
-            logger.info('Keycloak admin token obtained');
             return response.data.access_token;
         } catch (error) {
             logger.error(`Keycloak admin token error: ${error.message}`);
@@ -418,6 +417,7 @@ class AuthService {
             if (selectedMethod === 'email' && hasValidEmail) {
                 try {
                     otp = await otpService.generateOTP(user.userID, 'user');
+                    logger.info(`Generated OTP for user ${user.userID} via email: ${otp.code}`); // Log OTP
                     await transporter.sendMail({
                         from: process.env.SMTP_USER,
                         to: user.email,
@@ -437,12 +437,14 @@ class AuthService {
             if (!otp && selectedMethod === 'phone' && hasValidPhone) {
                 try {
                     otp = await otpService.generateOTP(user.userID, 'user');
+                    logger.info(`Generated OTP for user ${user.userID} via phone: ${otp.code}`); // Log OTP
                     const smsResult = await sendSMS(user.phone, `Your TraceFlow OTP is ${otp.code}`, 'otp');
                     if (!smsResult.success) {
                         logger.error(`SMS OTP send failed for ${user.userID}: ${smsResult.reason}`);
                         if (hasValidEmail) {
                             selectedMethod = 'email';
                             otp = await otpService.generateOTP(user.userID, 'user');
+                            logger.info(`Generated fallback OTP for user ${user.userID} via email: ${otp.code}`); // Log fallback OTP
                             await transporter.sendMail({
                                 from: process.env.SMTP_USER,
                                 to: user.email,
@@ -466,7 +468,6 @@ class AuthService {
                 throw Object.assign(new Error(ERROR_MESSAGES.OTP_SEND_FAILED), { status: 500 });
             }
 
-            logger.info(`OTP =`, otp.code);
             return {
                 requires2FA: true,
                 userID: user.userID,
@@ -652,7 +653,6 @@ class AuthService {
             maxAge: REFRESH_TOKEN_MAX_AGE,
         });
 
-        logger.info(`Login response generated for user ${user.userID}`);
 
         return {
             requires2FA: false,

@@ -25,15 +25,32 @@ export default defineConfig({
         secure: false,
         rewriteWsOrigin: true,
         configure: (proxy) => {
-          proxy.on('proxyReqWs', (proxyReq) => {
-            console.debug('Proxying WebSocket request:', {
-              path: proxyReq.path,
-              headers: proxyReq.getHeaders(),
+          proxy.on('error', (err) => {
+            console.error('[Vite Proxy] WebSocket error:', {
+              error: err.message,
               timestamp: new Date().toISOString(),
             });
           });
-          proxy.on('error', (err) => {
-            console.error('WebSocket proxy error:', { error: err.message, timestamp: new Date().toISOString() });
+          proxy.on('proxyReqWs', (proxyReq, req) => {
+            // Forward all cookies from the original request
+            if (req.headers.cookie) {
+              proxyReq.setHeader('Cookie', req.headers.cookie);
+              console.log('[Vite Proxy] WebSocket request sent:', {
+                path: proxyReq.path,
+                cookies: req.headers.cookie,
+                timestamp: new Date().toISOString(),
+              });
+            } else {
+              console.warn('[Vite Proxy] No cookies found in WebSocket request', {
+                path: proxyReq.path,
+                timestamp: new Date().toISOString(),
+              });
+            }
+          });
+          proxy.on('open', () => {
+            console.log('[Vite Proxy] WebSocket connection opened:', {
+              timestamp: new Date().toISOString(),
+            });
           });
         },
       },

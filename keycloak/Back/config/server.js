@@ -22,9 +22,9 @@ async function initializeServer(app, io) {
 
     if (io) {
         const allowedOrigins = [
-            process.env.FRONTEND_URL,
-            process.env.FRONTEND_URL1,
-        ].filter(Boolean);
+            'http://localhost:5173',
+            'http://192.168.1.14:5173',
+        ];
         io.attach(server, {
             cors: {
                 origin: allowedOrigins,
@@ -36,22 +36,20 @@ async function initializeServer(app, io) {
         });
 
         io.on('connection', (socket) => {
-            logger.info(`WebSocket handshake successful for client: ${socket.id}`);
+            logger.info('Client connected', { socketId: socket.id, timestamp: new Date().toISOString() });
 
-            socket.on('error', (error) => {
-                logger.error(`WebSocket error for client ${socket.id}: ${error.message}`, {
-                    stack: error.stack,
-                    ip: socket.handshake.address,
-                    timestamp: new Date().toISOString(),
-                });
+            socket.on('join', (room) => {
+                socket.join(room);
+                logger.info(`Client joined room: ${room}`, { socketId: socket.id, timestamp: new Date().toISOString() });
             });
 
-            socket.on('disconnect', (reason) => {
-                logger.info(`WebSocket disconnected for client ${socket.id}: ${reason}`, {
-                    ip: socket.handshake.address,
-                    user: socket.user?.email || 'unknown',
-                    timestamp: new Date().toISOString(),
-                });
+            socket.on('leave', (room) => {
+                socket.leave(room);
+                logger.info(`Client left room: ${room}`, { socketId: socket.id, timestamp: new Date().toISOString() });
+            });
+
+            socket.on('disconnect', () => {
+                logger.info('Client disconnected', { socketId: socket.id, timestamp: new Date().toISOString() });
             });
         });
 

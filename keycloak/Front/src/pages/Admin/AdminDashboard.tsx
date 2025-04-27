@@ -135,32 +135,22 @@ const AdminDashboard: React.FC = React.memo(() => {
     const [roles, setRoles] = useState<Role[]>([]);
     const [searchQuery, setSearchQuery] = useState("");
     const [inputValue, setInputValue] = useState("");
-    const [selectedChecklist, setSelectedChecklist] = useState<Checklist | null>(
-        null
-    );
+    const [selectedChecklist, setSelectedChecklist] = useState<Checklist | null>(null);
     const [, setSelectedPermission] = useState<Permission | null>(null);
     const [selectedReason, setSelectedReason] = useState<Reason | null>(null);
     const [, setSelectedRole] = useState<Role | null>(null);
     const [selectedUser, setSelectedUser] = useState<User | null>(null);
-    const [selectedNotificationRule, setSelectedNotificationRule] =
-        useState<NotificationRule | null>(null);
+    const [selectedNotificationRule, setSelectedNotificationRule] = useState<NotificationRule | null>(null);
     const [sortField, setSortField] = useState<SortField>("role");
     const [sortOrder, setSortOrder] = useState<SortOrder>("asc");
     const [users, setUsers] = useState<User[]>([]);
     const [usersPage, setUsersPage] = useState(1);
-    const [notificationRules, setNotificationRules] = useState<
-        NotificationRule[]
-    >([]);
-    const [notificationTypeFilter, setNotificationTypeFilter] =
-        useState<string>("all");
-    const [notificationChannelFilter, setNotificationChannelFilter] =
-        useState<string>("all");
-    const [notificationStatusFilter, setNotificationStatusFilter] =
-        useState<string>("all");
-    const [notificationSortField, setNotificationSortField] =
-        useState<string>("type");
-    const [notificationSortOrder, setNotificationSortOrder] =
-        useState<string>("asc");
+    const [notificationRules, setNotificationRules] = useState<NotificationRule[]>([]);
+    const [notificationTypeFilter, setNotificationTypeFilter] = useState<string>("all");
+    const [notificationChannelFilter, setNotificationChannelFilter] = useState<string>("all");
+    const [notificationStatusFilter, setNotificationStatusFilter] = useState<string>("all");
+    const [notificationSortField, setNotificationSortField] = useState<string>("type");
+    const [notificationSortOrder, setNotificationSortOrder] = useState<string>("asc");
     const [view, setView] = useState<ViewMode>(initialView);
 
     useEffect(() => {
@@ -508,7 +498,9 @@ const AdminDashboard: React.FC = React.memo(() => {
             }
 
             try {
-                if (view === "users" && userPermissions.canViewUsers) {
+                if (
+                    view === "users" && userPermissions.canViewUsers
+                ) {
                     setUsersLoading(true);
                     let usersData = getCachedData("all_users");
                     if (!usersData) {
@@ -757,8 +749,7 @@ const AdminDashboard: React.FC = React.memo(() => {
                             whileTap={{ scale: 0.95 }}
                             aria-label={t("adminDashboard.actions.back")}
                         >
-                            <FaArrowLeft aria-hidden="true" />{" "}
-                            {t("adminDashboard.actions.back")}
+                            <FaArrowLeft aria-hidden="true" />{" "}{t("adminDashboard.actions.back")}
                         </motion.button>
                     )}
             </header>
@@ -883,9 +874,9 @@ const AdminDashboard: React.FC = React.memo(() => {
                                                 : t("adminDashboard.sidebar.sortOrder.desc"),
                                     })}
                                 >
-                                    <FaSort aria-hidden="true" />{" "}
-                                    {sortOrder === "asc"
-                                        ? t("adminDashboard.sidebar.sortOrder.asc")
+                                    <FaSort aria-hidden="true" />{" "}{sortOrder === "asc"
+                                        ?
+                                        t("adminDashboard.sidebar.sortOrder.asc")
                                         : t("adminDashboard.sidebar.sortOrder.desc")}
                                 </motion.button>
                             </div>
@@ -1007,8 +998,7 @@ const AdminDashboard: React.FC = React.memo(() => {
                                                 : t("adminDashboard.sidebar.sortOrder.desc"),
                                         })}
                                     >
-                                        <FaSort aria-hidden="true" />{" "}
-                                        {notificationSortOrder === "asc"
+                                        <FaSort aria-hidden="true" />{" "}{notificationSortOrder === "asc"
                                             ? t("adminDashboard.sidebar.sortOrder.asc")
                                             : t("adminDashboard.sidebar.sortOrder.desc")}
                                     </motion.button>
@@ -1077,8 +1067,7 @@ const AdminDashboard: React.FC = React.memo(() => {
                                 whileTap={{ scale: 0.95 }}
                                 aria-label={t("adminDashboard.sidebar.addUser")}
                             >
-                                <FaUserPlus aria-hidden="true" />{" "}
-                                {t("adminDashboard.sidebar.addUser")}
+                                <FaUserPlus aria-hidden="true" />{" "}{t("adminDashboard.sidebar.addUser")}
                             </motion.button>
                         )}
                     {userPermissions.canViewRoles && view === "roles" && (
@@ -1091,8 +1080,7 @@ const AdminDashboard: React.FC = React.memo(() => {
                                     whileTap={{ scale: 0.95 }}
                                     aria-label={t("adminDashboard.sidebar.addRole")}
                                 >
-                                    <FaPlus aria-hidden="true" />{" "}
-                                    {t("adminDashboard.sidebar.addRole")}
+                                    <FaPlus aria-hidden="true" />{" "}{t("adminDashboard.sidebar.addRole")}
                                 </motion.button>
                             )}
                             {userPermissions.canResetRoles && (
@@ -1123,8 +1111,7 @@ const AdminDashboard: React.FC = React.memo(() => {
                                 whileTap={{ scale: 0.95 }}
                                 aria-label={t("adminDashboard.sidebar.addChecklist")}
                             >
-                                <FaPlus aria-hidden="true" />{" "}
-                                {t("adminDashboard.sidebar.addChecklist")}
+                                <FaPlus aria-hidden="true" />{" "}{t("adminDashboard.sidebar.addChecklist")}
                             </motion.button>
                         )}
                     {userPermissions.canViewReasons &&
@@ -1137,8 +1124,7 @@ const AdminDashboard: React.FC = React.memo(() => {
                                 whileTap={{ scale: 0.95 }}
                                 aria-label={t("adminDashboard.sidebar.addReason")}
                             >
-                                <FaPlus aria-hidden="true" />{" "}
-                                {t("adminDashboard.sidebar.addReason")}
+                                <FaPlus aria-hidden="true" />{" "}{t("adminDashboard.sidebar.addReason")}
                             </motion.button>
                         )}
                     {userPermissions.canViewNotificationRules &&

@@ -1,4 +1,5 @@
 const nodemailer = require('nodemailer');
+const logger = require('../utils/logger');
 require('dotenv').config();
 
 const transporter = nodemailer.createTransport({
@@ -14,10 +15,10 @@ const transporter = nodemailer.createTransport({
 async function initializeSMTP() {
     try {
         await transporter.verify();
-        console.log(`${new Date().toISOString()} - SMTP server verified successfully`);
+        logger.info(`SMTP server verified successfully`);
         return true;
     } catch (error) {
-        console.error(`${new Date().toISOString()} - SMTP verification error:`, error.message);
+        logger.error(`SMTP verification error: ${error.message}`);
         throw error; // Re-throw to be caught by the caller
     }
 }
