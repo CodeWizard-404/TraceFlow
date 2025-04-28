@@ -281,10 +281,10 @@ async function startApp() {
     // Show credentials in development
     if (process.env.NODE_ENV === 'development') {
         logger.info(`${colors.cyan('===================================================')}`);
-        logger.warn(`\nSuper Admin Credentials:`);
-        logger.warn(`\tEmail:\t\t${process.env.SUPER_ADMIN_EMAIL}\n`);
-        logger.warn(`\tPassword:\t${process.env.SUPER_ADMIN_PASSWORD}\n`);
-        logger.warn(`${colors.cyan('===================================================')}`);
+        logger.info(`\tSuper Admin Credentials:`);
+        logger.info(`\tEmail:\t\t${process.env.SUPER_ADMIN_EMAIL}`);
+        logger.info(`\tPassword:\t${process.env.SUPER_ADMIN_PASSWORD}`);
+        logger.info(`${colors.cyan('===================================================')}`);
 
     }
 

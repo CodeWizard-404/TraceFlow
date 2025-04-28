@@ -2,7 +2,7 @@ const fs = require('fs').promises;
 const path = require('path');
 const { nanoid } = require('nanoid');
 const { Permission } = require('../models');
-const { migratePermissionsKeycloakAssignments } = require('./migratePe');
+const { migratePermissionsToKeycloak } = require('./migratePe');
 const logger = require('../utils/logger');
 require('dotenv').config();
 
@@ -13,13 +13,13 @@ const DIRECTORIES_TO_SCAN = [
 
 // Regular expressions for parsing code
 const PERMISSION_REGEX = /requirePermission\(['"`]([^'`"]+)['"`]\)/g;
-const ROUTE_PATH_REGEX = /app\.use\(['"`]([^'`"]+)['"`],\s*[a-zA-Z0-9_]+Routes\)/g;
+const ROUTE_PATH_REGEX = /app\.use\(['"`]([^'`"]+)['"`],\s*(?:[a-zA-Z0-9_]+,\s*)*[a-zA-Z0-9_]+Routes\)/g;
 
 // Determines the class type based on route path
 const getRouteClass = (routePath) => {
     const basePath = routePath.toLowerCase().replace('/api/', '');
     const routeClassMap = {
-        notifications: 'Notification', // Added for notification routes
+        notifications: 'Notification',
         timesheets: 'Timesheet',
         visits: 'Visit',
         agents: 'Agent',
@@ -41,15 +41,21 @@ const getRouteClass = (routePath) => {
 const extractPermissionsFromFiles = async () => {
     const permissionsMap = new Map();
 
-    // Read and parse app.js for route definitions
-    const appFilePath = path.join(__dirname, '../app.js');
-    const appContent = await fs.readFile(appFilePath, 'utf8');
-    const routeClasses = new Map();
+    // Read and parse route definitions from config/routes.js
+    const routesFilePath = path.join(__dirname, '../config/routes.js');
+    let routeClasses = new Map();
+    try {
+        const routesContent = await fs.readFile(routesFilePath, 'utf8');
+        [...routesContent.matchAll(ROUTE_PATH_REGEX)].forEach(([_, routePath]) => {
+            routeClasses.set(routePath, getRouteClass(routePath));
+        });
+    } catch (error) {
+        logger.error(`Failed to read routes.js: ${error.message}`);
+        throw error;
+    }
 
-    // Extract route paths and their classes
-    [...appContent.matchAll(ROUTE_PATH_REGEX)].forEach(([_, routePath]) => {
-        routeClasses.set(routePath, getRouteClass(routePath));
-    });
+    // Log extracted routes for debugging
+    logger.info('Extracted routes:', Array.from(routeClasses.entries()));
 
     // Scan directories for permission definitions
     for (const dir of DIRECTORIES_TO_SCAN) {
@@ -63,16 +69,19 @@ const extractPermissionsFromFiles = async () => {
                 const content = await fs.readFile(filePath, 'utf8');
                 const routeName = file.replace('Routes.js', '').toLowerCase();
 
-                // Infer class from route name
+                // Find matching route
                 const matchingRoute = Array.from(routeClasses.keys()).find(route => {
                     const routeLower = route.toLowerCase();
                     return routeLower.includes(routeName) ||
                         (routeName.includes('receiptbook') && routeLower.includes('receipt-books')) ||
                         (routeName.includes('receiptstub') && routeLower.includes('receipt-stubs')) ||
-                        (routeName.includes('notification') && routeLower.includes('notifications'));
+                        (routeName === 'notification' && routeLower.includes('notifications'));
                 });
 
                 const inferredClass = matchingRoute ? routeClasses.get(matchingRoute) : 'Other';
+
+                // Log matching details for debugging
+                logger.info(`File: ${file}, RouteName: ${routeName}, MatchingRoute: ${matchingRoute || 'None'}, Class: ${inferredClass}`);
 
                 // Extract permissions from file content
                 [...content.matchAll(PERMISSION_REGEX)].forEach(([_, permission]) => {
@@ -84,7 +93,6 @@ const extractPermissionsFromFiles = async () => {
 
     return Array.from(permissionsMap, ([name, className]) => ({ name, class: className }));
 };
-
 // Seeds missing permissions into the database
 const seedMissingPermissions = async () => {
     try {
@@ -120,7 +128,7 @@ const seedMissingPermissions = async () => {
             if (created) newPermissionsCount++;
         }));
 
-        await migratePermissionsKeycloakAssignments();
+        await migratePermissionsToKeycloak();
         logger.info(`Seeded To Keycloak permissions`);
         logger.info(`Seeded ${newPermissionsCount} new permissions`);
     } catch (error) {
