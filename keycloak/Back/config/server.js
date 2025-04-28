@@ -5,7 +5,7 @@ const mdns = require('mdns-js');
 const logger = require('../utils/logger');
 require('dotenv').config();
 
-// Sets up the HTTP/HTTPS server, attaches Socket.IO, and advertises via mDNS
+// Sets up the HTTP/HTTPS server, attaches Socket.IO (if enabled), and advertises via mDNS
 async function initializeServer(app, io) {
     const PORT = process.env.PORT || 5000;
     let server;
@@ -20,7 +20,7 @@ async function initializeServer(app, io) {
         server = http.createServer(app);
     }
 
-    if (io) {
+    if (io && process.env.INIT_SOCKET === 'true') { // Check environment variable
         const allowedOrigins = [
             process.env.FRONTEND_URL,
             process.env.FRONTEND_URL1,

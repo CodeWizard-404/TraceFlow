@@ -13,7 +13,6 @@ const {
 const { setupAssociations } = require('./models');
 const { seedSuperAdmin } = require('./scripts/SeedSuperAdmin');
 const { seedMissingPermissions } = require('./scripts/seedPermissions');
-const { corsOptions } = require('./config/cors');
 const { setupCron } = require('./config/scheduler');
 const { setupMiddleware } = require('./config/middleware');
 const { setupRoutes } = require('./config/routes');
@@ -95,6 +94,15 @@ const initSteps = [
         key: 'superadmin',
         default: process.env.INIT_SUPERADMIN === 'true',
         fn: seedSuperAdmin,
+        weight: 15,
+    },
+    {
+        name: 'Socket Initialization',
+        key: 'socket',
+        default: process.env.INIT_SOCKET !== 'false',
+        fn: () => {
+            process.env.INIT_SOCKET = 'true';
+        },
         weight: 15,
     },
     {
@@ -243,7 +251,9 @@ async function startApp() {
     }
 
     progressBar.stop();
+    console.clear(); // Clear console after initialization
 
+    // Log summary
     // Log summary
     const endTime = new Date();
     summary.duration = ((endTime - startTime) / 1000).toFixed(2);
@@ -255,10 +265,9 @@ async function startApp() {
     logger.info('Steps Completed:');
     summary.steps.forEach(({ step, status, message, duration }) => {
         const color = status === 'success' ? colors.green : status === 'skipped' ? colors.yellow : colors.red;
-        logger.info(`  - ${step}: ${color(status.toUpperCase())} - ${message} (${duration}s)`, {
+        logger.info(`  - ${step}: ${color(status.toUpperCase())} - (${duration}s)`, {
             step,
             status,
-            message,
             duration,
         });
     });

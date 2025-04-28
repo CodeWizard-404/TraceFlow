@@ -21856,3 +21856,150 @@
 {"level":"info","message":"Total Duration: 3.73 seconds","timestamp":"2025-04-28T17:05:18.148Z"}
 {"level":"info","message":"\u001b[36m===================================================\u001b[39m","timestamp":"2025-04-28T17:05:18.148Z"}
 {"level":"info","message":"2025-04-28T17:05:18.153Z - HTTP Server running on port 5000","timestamp":"2025-04-28T17:05:18.153Z"}
+{"level":"info","message":"Database Initialization: Starting","step":"database","timestamp":"2025-04-28T17:10:47.605Z"}
+{"duration":"0.23","level":"info","message":"Database Initialization: Completed","status":"success","step":"database","timestamp":"2025-04-28T17:10:47.839Z"}
+{"level":"info","message":"SMTP Initialization: Starting","step":"smtp","timestamp":"2025-04-28T17:10:47.841Z"}
+{"level":"info","message":"SMTP server verified successfully","timestamp":"2025-04-28T17:10:48.456Z"}
+{"duration":"0.61","level":"info","message":"SMTP Initialization: Completed","status":"success","step":"smtp","timestamp":"2025-04-28T17:10:48.456Z"}
+{"level":"info","message":"SMS Initialization: Starting","step":"sms","timestamp":"2025-04-28T17:10:48.457Z"}
+{"level":"info","message":"SMS gateway initialized","timestamp":"2025-04-28T17:10:48.458Z"}
+{"duration":"0.00","level":"info","message":"SMS Initialization: Completed","status":"success","step":"sms","timestamp":"2025-04-28T17:10:48.458Z"}
+{"level":"info","message":"Model Associations: Starting","step":"associations","timestamp":"2025-04-28T17:10:48.459Z"}
+{"duration":"0.02","level":"info","message":"Model Associations: Completed","status":"success","step":"associations","timestamp":"2025-04-28T17:10:48.476Z"}
+{"level":"info","message":"Database Synchronization: Skipped","status":"skipped","step":"sync","timestamp":"2025-04-28T17:10:48.477Z"}
+{"level":"info","message":"Permission Seeding: Skipped","status":"skipped","step":"permissions","timestamp":"2025-04-28T17:10:48.477Z"}
+{"level":"info","message":"Super Admin Seeding: Skipped","status":"skipped","step":"superadmin","timestamp":"2025-04-28T17:10:48.477Z"}
+{"level":"info","message":"Socket Initialization: Starting","step":"socket","timestamp":"2025-04-28T17:10:48.478Z"}
+{"duration":"0.00","level":"info","message":"Socket Initialization: Completed","status":"success","step":"socket","timestamp":"2025-04-28T17:10:48.478Z"}
+{"level":"info","message":"Server Initialization: Starting","step":"server","timestamp":"2025-04-28T17:10:48.479Z"}
+{"level":"info","message":"2025-04-28T17:10:48.481Z - mDNS advertisement skipped in development mode","timestamp":"2025-04-28T17:10:48.481Z"}
+{"duration":"0.00","level":"info","message":"Server Initialization: Completed","status":"success","step":"server","timestamp":"2025-04-28T17:10:48.482Z"}
+{"level":"info","message":"\u001b[36m========== TraceFlow Initialization Summary ========\u001b[39m","timestamp":"2025-04-28T17:10:48.483Z"}
+{"level":"info","message":"Date: 2025-04-28T17:10:48.484Z","timestamp":"2025-04-28T17:10:48.484Z"}
+{"level":"info","message":"Steps Completed:","timestamp":"2025-04-28T17:10:48.484Z"}
+{"duration":"0.24","level":"info","message":"  - Database Initialization: \u001b[32mSUCCESS\u001b[39m - Completed successfully (0.24s) Completed successfully","status":"success","step":"Database Initialization","timestamp":"2025-04-28T17:10:48.484Z"}
+{"duration":"0.62","level":"info","message":"  - SMTP Initialization: \u001b[32mSUCCESS\u001b[39m - Completed successfully (0.62s) Completed successfully","status":"success","step":"SMTP Initialization","timestamp":"2025-04-28T17:10:48.485Z"}
+{"duration":"0.00","level":"info","message":"  - SMS Initialization: \u001b[32mSUCCESS\u001b[39m - Completed successfully (0.00s) Completed successfully","status":"success","step":"SMS Initialization","timestamp":"2025-04-28T17:10:48.485Z"}
+{"duration":"0.02","level":"info","message":"  - Model Associations: \u001b[32mSUCCESS\u001b[39m - Completed successfully (0.02s) Completed successfully","status":"success","step":"Model Associations","timestamp":"2025-04-28T17:10:48.485Z"}
+{"duration":"0.00","level":"info","message":"  - Database Synchronization: \u001b[33mSKIPPED\u001b[39m - Skipped by user (0.00s) Skipped by user","status":"skipped","step":"Database Synchronization","timestamp":"2025-04-28T17:10:48.485Z"}
+{"duration":"0.00","level":"info","message":"  - Permission Seeding: \u001b[33mSKIPPED\u001b[39m - Skipped by user (0.00s) Skipped by user","status":"skipped","step":"Permission Seeding","timestamp":"2025-04-28T17:10:48.485Z"}
+{"duration":"0.00","level":"info","message":"  - Super Admin Seeding: \u001b[33mSKIPPED\u001b[39m - Skipped by user (0.00s) Skipped by user","status":"skipped","step":"Super Admin Seeding","timestamp":"2025-04-28T17:10:48.486Z"}
+{"duration":"0.00","level":"info","message":"  - Socket Initialization: \u001b[32mSUCCESS\u001b[39m - Completed successfully (0.00s) Completed successfully","status":"success","step":"Socket Initialization","timestamp":"2025-04-28T17:10:48.486Z"}
+{"duration":"0.00","level":"info","message":"  - Server Initialization: \u001b[32mSUCCESS\u001b[39m - Completed successfully (0.00s) Completed successfully","status":"success","step":"Server Initialization","timestamp":"2025-04-28T17:10:48.486Z"}
+{"level":"info","message":"Total Steps: 9","timestamp":"2025-04-28T17:10:48.486Z"}
+{"level":"info","message":"\u001b[32mSuccesses: 6\u001b[39m","timestamp":"2025-04-28T17:10:48.486Z"}
+{"level":"info","message":"\u001b[33mSkipped: 3\u001b[39m","timestamp":"2025-04-28T17:10:48.487Z"}
+{"level":"info","message":"\u001b[31mFailures: 0\u001b[39m","timestamp":"2025-04-28T17:10:48.487Z"}
+{"level":"info","message":"Total Duration: 5.17 seconds","timestamp":"2025-04-28T17:10:48.487Z"}
+{"level":"info","message":"\u001b[36m===================================================\u001b[39m","timestamp":"2025-04-28T17:10:48.487Z"}
+{"level":"info","message":"2025-04-28T17:10:48.496Z - HTTP Server running on port 5000","timestamp":"2025-04-28T17:10:48.496Z"}
+{"level":"info","message":"Database Initialization: Starting","step":"database","timestamp":"2025-04-28T17:11:04.267Z"}
+{"duration":"1.50","level":"info","message":"Database Initialization: Completed","status":"success","step":"database","timestamp":"2025-04-28T17:11:04.449Z"}
+{"level":"info","message":"SMTP Initialization: Starting","step":"smtp","timestamp":"2025-04-28T17:11:04.673Z"}
+{"level":"info","message":"SMTP server verified successfully","timestamp":"2025-04-28T17:11:05.241Z"}
+{"duration":"0.79","level":"info","message":"SMTP Initialization: Completed","status":"success","step":"smtp","timestamp":"2025-04-28T17:11:05.241Z"}
+{"level":"info","message":"SMS Initialization: Starting","step":"sms","timestamp":"2025-04-28T17:11:05.477Z"}
+{"level":"info","message":"SMS gateway initialized","timestamp":"2025-04-28T17:11:05.477Z"}
+{"duration":"0.23","level":"info","message":"SMS Initialization: Completed","status":"success","step":"sms","timestamp":"2025-04-28T17:11:05.477Z"}
+{"level":"info","message":"Model Associations: Starting","step":"associations","timestamp":"2025-04-28T17:11:06.039Z"}
+{"duration":"0.58","level":"info","message":"Model Associations: Completed","status":"success","step":"associations","timestamp":"2025-04-28T17:11:06.055Z"}
+{"level":"info","message":"Database Synchronization: Skipped","status":"skipped","step":"sync","timestamp":"2025-04-28T17:11:06.700Z"}
+{"level":"info","message":"Permission Seeding: Skipped","status":"skipped","step":"permissions","timestamp":"2025-04-28T17:11:07.379Z"}
+{"level":"info","message":"Super Admin Seeding: Skipped","status":"skipped","step":"superadmin","timestamp":"2025-04-28T17:11:10.212Z"}
+{"level":"info","message":"Socket Initialization: Skipped","status":"skipped","step":"socket","timestamp":"2025-04-28T17:11:17.337Z"}
+{"level":"info","message":"Server Initialization: Starting","step":"server","timestamp":"2025-04-28T17:11:22.885Z"}
+{"level":"info","message":"2025-04-28T17:11:22.887Z - mDNS advertisement skipped in development mode","timestamp":"2025-04-28T17:11:22.887Z"}
+{"duration":"5.55","level":"info","message":"Server Initialization: Completed","status":"success","step":"server","timestamp":"2025-04-28T17:11:22.888Z"}
+{"level":"info","message":"\u001b[36m========== TraceFlow Initialization Summary ========\u001b[39m","timestamp":"2025-04-28T17:11:22.888Z"}
+{"level":"info","message":"Date: 2025-04-28T17:11:22.889Z","timestamp":"2025-04-28T17:11:22.889Z"}
+{"level":"info","message":"Steps Completed:","timestamp":"2025-04-28T17:11:22.889Z"}
+{"duration":"1.50","level":"info","message":"  - Database Initialization: \u001b[32mSUCCESS\u001b[39m - Completed successfully (1.50s) Completed successfully","status":"success","step":"Database Initialization","timestamp":"2025-04-28T17:11:22.889Z"}
+{"duration":"0.79","level":"info","message":"  - SMTP Initialization: \u001b[32mSUCCESS\u001b[39m - Completed successfully (0.79s) Completed successfully","status":"success","step":"SMTP Initialization","timestamp":"2025-04-28T17:11:22.889Z"}
+{"duration":"0.24","level":"info","message":"  - SMS Initialization: \u001b[32mSUCCESS\u001b[39m - Completed successfully (0.24s) Completed successfully","status":"success","step":"SMS Initialization","timestamp":"2025-04-28T17:11:22.890Z"}
+{"duration":"0.58","level":"info","message":"  - Model Associations: \u001b[32mSUCCESS\u001b[39m - Completed successfully (0.58s) Completed successfully","status":"success","step":"Model Associations","timestamp":"2025-04-28T17:11:22.890Z"}
+{"duration":"0.65","level":"info","message":"  - Database Synchronization: \u001b[33mSKIPPED\u001b[39m - Skipped by user (0.65s) Skipped by user","status":"skipped","step":"Database Synchronization","timestamp":"2025-04-28T17:11:22.890Z"}
+{"duration":"0.68","level":"info","message":"  - Permission Seeding: \u001b[33mSKIPPED\u001b[39m - Skipped by user (0.68s) Skipped by user","status":"skipped","step":"Permission Seeding","timestamp":"2025-04-28T17:11:22.890Z"}
+{"duration":"2.83","level":"info","message":"  - Super Admin Seeding: \u001b[33mSKIPPED\u001b[39m - Skipped by user (2.83s) Skipped by user","status":"skipped","step":"Super Admin Seeding","timestamp":"2025-04-28T17:11:22.890Z"}
+{"duration":"7.13","level":"info","message":"  - Socket Initialization: \u001b[33mSKIPPED\u001b[39m - Skipped by user (7.13s) Skipped by user","status":"skipped","step":"Socket Initialization","timestamp":"2025-04-28T17:11:22.891Z"}
+{"duration":"5.55","level":"info","message":"  - Server Initialization: \u001b[32mSUCCESS\u001b[39m - Completed successfully (5.55s) Completed successfully","status":"success","step":"Server Initialization","timestamp":"2025-04-28T17:11:22.891Z"}
+{"level":"info","message":"Total Steps: 9","timestamp":"2025-04-28T17:11:22.891Z"}
+{"level":"info","message":"\u001b[32mSuccesses: 5\u001b[39m","timestamp":"2025-04-28T17:11:22.891Z"}
+{"level":"info","message":"\u001b[33mSkipped: 4\u001b[39m","timestamp":"2025-04-28T17:11:22.891Z"}
+{"level":"info","message":"\u001b[31mFailures: 0\u001b[39m","timestamp":"2025-04-28T17:11:22.891Z"}
+{"level":"info","message":"Total Duration: 23.40 seconds","timestamp":"2025-04-28T17:11:22.892Z"}
+{"level":"info","message":"\u001b[36m===================================================\u001b[39m","timestamp":"2025-04-28T17:11:22.892Z"}
+{"level":"info","message":"2025-04-28T17:11:22.899Z - HTTP Server running on port 5000","timestamp":"2025-04-28T17:11:22.899Z"}
+{"level":"info","message":"Database Initialization: Starting","step":"database","timestamp":"2025-04-28T17:15:20.206Z"}
+{"duration":"0.14","level":"info","message":"Database Initialization: Completed","status":"success","step":"database","timestamp":"2025-04-28T17:15:20.346Z"}
+{"level":"info","message":"SMTP Initialization: Starting","step":"smtp","timestamp":"2025-04-28T17:15:20.347Z"}
+{"level":"info","message":"SMTP server verified successfully","timestamp":"2025-04-28T17:15:21.033Z"}
+{"duration":"0.69","level":"info","message":"SMTP Initialization: Completed","status":"success","step":"smtp","timestamp":"2025-04-28T17:15:21.033Z"}
+{"level":"info","message":"SMS Initialization: Starting","step":"sms","timestamp":"2025-04-28T17:15:21.034Z"}
+{"level":"info","message":"SMS gateway initialized","timestamp":"2025-04-28T17:15:21.035Z"}
+{"duration":"0.00","level":"info","message":"SMS Initialization: Completed","status":"success","step":"sms","timestamp":"2025-04-28T17:15:21.035Z"}
+{"level":"info","message":"Model Associations: Starting","step":"associations","timestamp":"2025-04-28T17:15:21.036Z"}
+{"duration":"0.02","level":"info","message":"Model Associations: Completed","status":"success","step":"associations","timestamp":"2025-04-28T17:15:21.053Z"}
+{"level":"info","message":"Database Synchronization: Skipped","status":"skipped","step":"sync","timestamp":"2025-04-28T17:15:21.053Z"}
+{"level":"info","message":"Permission Seeding: Skipped","status":"skipped","step":"permissions","timestamp":"2025-04-28T17:15:21.053Z"}
+{"level":"info","message":"Super Admin Seeding: Skipped","status":"skipped","step":"superadmin","timestamp":"2025-04-28T17:15:21.054Z"}
+{"level":"info","message":"Socket Initialization: Starting","step":"socket","timestamp":"2025-04-28T17:15:21.054Z"}
+{"duration":"0.00","level":"info","message":"Socket Initialization: Completed","status":"success","step":"socket","timestamp":"2025-04-28T17:15:21.055Z"}
+{"level":"info","message":"Server Initialization: Starting","step":"server","timestamp":"2025-04-28T17:15:21.055Z"}
+{"level":"info","message":"2025-04-28T17:15:21.057Z - mDNS advertisement skipped in development mode","timestamp":"2025-04-28T17:15:21.057Z"}
+{"duration":"0.00","level":"info","message":"Server Initialization: Completed","status":"success","step":"server","timestamp":"2025-04-28T17:15:21.058Z"}
+{"level":"info","message":"\u001b[36m========== TraceFlow Initialization Summary ========\u001b[39m","timestamp":"2025-04-28T17:15:21.060Z"}
+{"level":"info","message":"Date: 2025-04-28T17:15:21.060Z","timestamp":"2025-04-28T17:15:21.060Z"}
+{"level":"info","message":"Steps Completed:","timestamp":"2025-04-28T17:15:21.061Z"}
+{"duration":"0.14","level":"info","message":"  - Database Initialization: \u001b[32mSUCCESS\u001b[39m - Completed successfully (0.14s) Completed successfully","status":"success","step":"Database Initialization","timestamp":"2025-04-28T17:15:21.061Z"}
+{"duration":"0.69","level":"info","message":"  - SMTP Initialization: \u001b[32mSUCCESS\u001b[39m - Completed successfully (0.69s) Completed successfully","status":"success","step":"SMTP Initialization","timestamp":"2025-04-28T17:15:21.061Z"}
+{"duration":"0.00","level":"info","message":"  - SMS Initialization: \u001b[32mSUCCESS\u001b[39m - Completed successfully (0.00s) Completed successfully","status":"success","step":"SMS Initialization","timestamp":"2025-04-28T17:15:21.062Z"}
+{"duration":"0.02","level":"info","message":"  - Model Associations: \u001b[32mSUCCESS\u001b[39m - Completed successfully (0.02s) Completed successfully","status":"success","step":"Model Associations","timestamp":"2025-04-28T17:15:21.062Z"}
+{"duration":"0.00","level":"info","message":"  - Database Synchronization: \u001b[33mSKIPPED\u001b[39m - Skipped by user (0.00s) Skipped by user","status":"skipped","step":"Database Synchronization","timestamp":"2025-04-28T17:15:21.062Z"}
+{"duration":"0.00","level":"info","message":"  - Permission Seeding: \u001b[33mSKIPPED\u001b[39m - Skipped by user (0.00s) Skipped by user","status":"skipped","step":"Permission Seeding","timestamp":"2025-04-28T17:15:21.063Z"}
+{"duration":"0.00","level":"info","message":"  - Super Admin Seeding: \u001b[33mSKIPPED\u001b[39m - Skipped by user (0.00s) Skipped by user","status":"skipped","step":"Super Admin Seeding","timestamp":"2025-04-28T17:15:21.063Z"}
+{"duration":"0.00","level":"info","message":"  - Socket Initialization: \u001b[32mSUCCESS\u001b[39m - Completed successfully (0.00s) Completed successfully","status":"success","step":"Socket Initialization","timestamp":"2025-04-28T17:15:21.064Z"}
+{"duration":"0.00","level":"info","message":"  - Server Initialization: \u001b[32mSUCCESS\u001b[39m - Completed successfully (0.00s) Completed successfully","status":"success","step":"Server Initialization","timestamp":"2025-04-28T17:15:21.065Z"}
+{"level":"info","message":"Total Steps: 9","timestamp":"2025-04-28T17:15:21.065Z"}
+{"level":"info","message":"\u001b[32mSuccesses: 6\u001b[39m","timestamp":"2025-04-28T17:15:21.065Z"}
+{"level":"info","message":"\u001b[33mSkipped: 3\u001b[39m","timestamp":"2025-04-28T17:15:21.066Z"}
+{"level":"info","message":"\u001b[31mFailures: 0\u001b[39m","timestamp":"2025-04-28T17:15:21.066Z"}
+{"level":"info","message":"Total Duration: 0.87 seconds","timestamp":"2025-04-28T17:15:21.066Z"}
+{"level":"info","message":"\u001b[36m===================================================\u001b[39m","timestamp":"2025-04-28T17:15:21.066Z"}
+{"level":"info","message":"2025-04-28T17:15:21.077Z - HTTP Server running on port 5000","timestamp":"2025-04-28T17:15:21.077Z"}
+{"level":"info","message":"Database Initialization: Starting","step":"database","timestamp":"2025-04-28T17:16:48.065Z"}
+{"duration":"0.16","level":"info","message":"Database Initialization: Completed","status":"success","step":"database","timestamp":"2025-04-28T17:16:48.224Z"}
+{"level":"info","message":"SMTP Initialization: Starting","step":"smtp","timestamp":"2025-04-28T17:16:48.226Z"}
+{"level":"info","message":"SMTP server verified successfully","timestamp":"2025-04-28T17:16:48.811Z"}
+{"duration":"0.59","level":"info","message":"SMTP Initialization: Completed","status":"success","step":"smtp","timestamp":"2025-04-28T17:16:48.812Z"}
+{"level":"info","message":"SMS Initialization: Starting","step":"sms","timestamp":"2025-04-28T17:16:48.813Z"}
+{"level":"info","message":"SMS gateway initialized","timestamp":"2025-04-28T17:16:48.814Z"}
+{"duration":"0.00","level":"info","message":"SMS Initialization: Completed","status":"success","step":"sms","timestamp":"2025-04-28T17:16:48.814Z"}
+{"level":"info","message":"Model Associations: Starting","step":"associations","timestamp":"2025-04-28T17:16:48.814Z"}
+{"duration":"0.02","level":"info","message":"Model Associations: Completed","status":"success","step":"associations","timestamp":"2025-04-28T17:16:48.832Z"}
+{"level":"info","message":"Database Synchronization: Skipped","status":"skipped","step":"sync","timestamp":"2025-04-28T17:16:48.832Z"}
+{"level":"info","message":"Permission Seeding: Skipped","status":"skipped","step":"permissions","timestamp":"2025-04-28T17:16:48.833Z"}
+{"level":"info","message":"Super Admin Seeding: Skipped","status":"skipped","step":"superadmin","timestamp":"2025-04-28T17:16:48.833Z"}
+{"level":"info","message":"Socket Initialization: Starting","step":"socket","timestamp":"2025-04-28T17:16:48.834Z"}
+{"duration":"0.00","level":"info","message":"Socket Initialization: Completed","status":"success","step":"socket","timestamp":"2025-04-28T17:16:48.834Z"}
+{"level":"info","message":"Server Initialization: Starting","step":"server","timestamp":"2025-04-28T17:16:48.835Z"}
+{"level":"info","message":"2025-04-28T17:16:48.838Z - mDNS advertisement skipped in development mode","timestamp":"2025-04-28T17:16:48.838Z"}
+{"duration":"0.00","level":"info","message":"Server Initialization: Completed","status":"success","step":"server","timestamp":"2025-04-28T17:16:48.838Z"}
+{"level":"info","message":"\u001b[36m========== TraceFlow Initialization Summary ========\u001b[39m","timestamp":"2025-04-28T17:16:48.840Z"}
+{"level":"info","message":"Date: 2025-04-28T17:16:48.841Z","timestamp":"2025-04-28T17:16:48.841Z"}
+{"level":"info","message":"Steps Completed:","timestamp":"2025-04-28T17:16:48.841Z"}
+{"duration":"0.16","level":"info","message":"  - Database Initialization: \u001b[32mSUCCESS\u001b[39m - (0.16s)","status":"success","step":"Database Initialization","timestamp":"2025-04-28T17:16:48.842Z"}
+{"duration":"0.59","level":"info","message":"  - SMTP Initialization: \u001b[32mSUCCESS\u001b[39m - (0.59s)","status":"success","step":"SMTP Initialization","timestamp":"2025-04-28T17:16:48.842Z"}
+{"duration":"0.00","level":"info","message":"  - SMS Initialization: \u001b[32mSUCCESS\u001b[39m - (0.00s)","status":"success","step":"SMS Initialization","timestamp":"2025-04-28T17:16:48.842Z"}
+{"duration":"0.02","level":"info","message":"  - Model Associations: \u001b[32mSUCCESS\u001b[39m - (0.02s)","status":"success","step":"Model Associations","timestamp":"2025-04-28T17:16:48.843Z"}
+{"duration":"0.00","level":"info","message":"  - Database Synchronization: \u001b[33mSKIPPED\u001b[39m - (0.00s)","status":"skipped","step":"Database Synchronization","timestamp":"2025-04-28T17:16:48.844Z"}
+{"duration":"0.00","level":"info","message":"  - Permission Seeding: \u001b[33mSKIPPED\u001b[39m - (0.00s)","status":"skipped","step":"Permission Seeding","timestamp":"2025-04-28T17:16:48.844Z"}
+{"duration":"0.00","level":"info","message":"  - Super Admin Seeding: \u001b[33mSKIPPED\u001b[39m - (0.00s)","status":"skipped","step":"Super Admin Seeding","timestamp":"2025-04-28T17:16:48.844Z"}
+{"duration":"0.00","level":"info","message":"  - Socket Initialization: \u001b[32mSUCCESS\u001b[39m - (0.00s)","status":"success","step":"Socket Initialization","timestamp":"2025-04-28T17:16:48.844Z"}
+{"duration":"0.00","level":"info","message":"  - Server Initialization: \u001b[32mSUCCESS\u001b[39m - (0.00s)","status":"success","step":"Server Initialization","timestamp":"2025-04-28T17:16:48.845Z"}
+{"level":"info","message":"Total Steps: 9","timestamp":"2025-04-28T17:16:48.845Z"}
+{"level":"info","message":"\u001b[32mSuccesses: 6\u001b[39m","timestamp":"2025-04-28T17:16:48.845Z"}
+{"level":"info","message":"\u001b[33mSkipped: 3\u001b[39m","timestamp":"2025-04-28T17:16:48.845Z"}
+{"level":"info","message":"\u001b[31mFailures: 0\u001b[39m","timestamp":"2025-04-28T17:16:48.846Z"}
+{"level":"info","message":"Total Duration: 1.06 seconds","timestamp":"2025-04-28T17:16:48.846Z"}
+{"level":"info","message":"\u001b[36m===================================================\u001b[39m","timestamp":"2025-04-28T17:16:48.846Z"}
+{"level":"info","message":"2025-04-28T17:16:48.857Z - HTTP Server running on port 5000","timestamp":"2025-04-28T17:16:48.857Z"}
