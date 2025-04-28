@@ -1,7 +1,8 @@
-import React, { createContext, useContext, useReducer, useEffect } from 'react';
+import React, { createContext, useContext, useReducer, useEffect, useCallback } from 'react';
+import { debounce } from 'lodash';
 import Notification from '../models/Notification';
 import { useAuth } from './AuthContext';
-import { initSocket, joinRoom, leaveRoom, onNotification, offNotification, disconnectSocket } from '../lib/socket';
+import { initSocket, joinRoom, leaveRoom, onNotification, offNotification, disconnectSocket, isSocketConnected, getSocket } from '../lib/socket';
 import { markNotificationAsRead, getNotifications } from '../apis/notificationAPI';
 
 interface NotificationState {
@@ -124,31 +125,54 @@ const notificationReducer = (state: NotificationState, action: NotificationActio
 
 export const NotificationProvider: React.FC<{ children: React.ReactNode }> = ({ children }) => {
     const [state, dispatch] = useReducer(notificationReducer, initialState);
-    const { user } = useAuth();
+    const { user, userRoles } = useAuth();
 
-    useEffect(() => {
-        if (!user?.userID) {
-            console.log('[NotificationContext] Skipping WebSocket init: no user', {
-                userID: user?.userID,
+    const fetchNotifications = useCallback(async () => {
+        if (!user?.userID) return;
+        try {
+            console.log('[NotificationContext] Fetching notifications for user:', {
+                userID: user.userID,
                 timestamp: new Date().toISOString(),
             });
-            return;
+            const fetchedNotifications = await getNotifications();
+            console.log('[NotificationContext] Fetch response:', {
+                count: fetchedNotifications.length,
+                notificationIDs: fetchedNotifications.map((n) => n.notificationID),
+                userIDs: fetchedNotifications.map((n) => n.userID),
+                timestamp: new Date().toISOString(),
+            });
+            if (fetchedNotifications.length === 0) {
+                console.warn('[NotificationContext] No notifications fetched', {
+                    userID: user.userID,
+                    timestamp: new Date().toISOString(),
+                });
+            }
+            dispatch({ type: 'SET_NOTIFICATIONS', payload: fetchedNotifications });
+        } catch (error) {
+            console.error('[NotificationContext] Failed to fetch notifications:', {
+                error: error instanceof Error ? error.message : 'Unknown error',
+                userID: user.userID,
+                timestamp: new Date().toISOString(),
+            });
         }
+    }, [user?.userID]);
 
-        console.log('[NotificationContext] Initializing WebSocket for user:', {
+    const debouncedFetchNotifications = useCallback(
+        debounce(fetchNotifications, 1000, { leading: true, trailing: false }),
+        [fetchNotifications]
+    );
+
+    const joinRooms = useCallback(() => {
+        if (!user?.userID) return;
+        console.log('[NotificationContext] Joining rooms for user:', {
             userID: user.userID,
-            roles: user.Roles?.map((r) => r.name) || [],
+            roles: userRoles?.map((r) => r.name) || [],
             timestamp: new Date().toISOString(),
         });
-
-        initSocket();
-
-        // Join user-specific room immediately
         joinRoom(user.userID);
         joinRoom('default-roles-traceflow');
-        // Join role-based rooms if roles are available
-        if (user.Roles?.length) {
-            user.Roles.forEach((role) => {
+        if (userRoles?.length) {
+            userRoles.forEach((role) => {
                 const room = role.name.toLowerCase();
                 joinRoom(room);
                 console.log('[NotificationContext] Joined room:', {
@@ -157,122 +181,129 @@ export const NotificationProvider: React.FC<{ children: React.ReactNode }> = ({ 
                 });
             });
         }
+    }, [user?.userID, userRoles]);
 
-        // Initial fetch of notifications to sync state
-        const fetchNotifications = async () => {
-            try {
-                console.log('[NotificationContext] Fetching notifications for user:', {
-                    userID: user.userID,
-                    timestamp: new Date().toISOString(),
-                });
-                const fetchedNotifications = await getNotifications();
-                console.log('[NotificationContext] Fetch response:', {
-                    count: fetchedNotifications.length,
-                    notificationIDs: fetchedNotifications.map((n) => n.notificationID),
-                    userIDs: fetchedNotifications.map((n) => n.userID),
-                    timestamp: new Date().toISOString(),
-                });
-                if (fetchedNotifications.length === 0) {
-                    console.warn('[NotificationContext] No notifications fetched', {
-                        userID: user.userID,
-                        timestamp: new Date().toISOString(),
-                    });
-                }
-                dispatch({ type: 'SET_NOTIFICATIONS', payload: fetchedNotifications });
-            } catch (error) {
-                console.error('[NotificationContext] Failed to fetch notifications:', {
-                    error: error instanceof Error ? error.message : 'Unknown error',
-                    userID: user.userID,
-                    timestamp: new Date().toISOString(),
-                });
-            }
-        };
-        fetchNotifications();
-
-        // Periodic fetch to ensure no notifications are missed
-        const interval = setInterval(() => {
-            console.log('[NotificationContext] Periodic notification fetch for user:', {
-                userID: user.userID,
+    const setupWebSocket = useCallback(() => {
+        if (!user?.userID || !userRoles) {
+            console.log('[NotificationContext] Skipping WebSocket setup: missing user or roles', {
+                userID: user?.userID,
+                hasRoles: !!userRoles,
                 timestamp: new Date().toISOString(),
             });
-            fetchNotifications();
-        }, 10000);
+            return () => { };
+        }
 
-        onNotification((event: string, data: unknown) => {
-            console.log('[NotificationContext] Received WebSocket event:', {
-                event,
-                rawData: JSON.stringify(data),
-                userID: user.userID,
+        console.log('[NotificationContext] Initializing WebSocket for user:', {
+            userID: user.userID,
+            roles: userRoles.map((r) => r.name),
+            timestamp: new Date().toISOString(),
+        });
+
+        // Ensure socket is initialized only once
+        if (!isSocketConnected()) {
+            initSocket();
+        }
+
+        const socket = getSocket();
+        if (!socket) {
+            console.error('[NotificationContext] Socket not initialized', {
+                timestamp: new Date().toISOString(),
+            });
+            return () => { };
+        }
+
+        const handleConnect = async () => {
+            console.log('[NotificationContext] WebSocket connected, setting up listeners', {
+                socketId: socket.id,
                 timestamp: new Date().toISOString(),
             });
 
-            if (event === 'notification:created' && typeof data === 'object' && data) {
-                // Handle nested data structure
-                let notification: Notification;
-                if ('data' in data && typeof data.data === 'object' && data.data) {
-                    notification = data.data as Notification;
-                } else {
-                    notification = data as Notification;
-                }
+            await onNotification((event: string, data: unknown) => {
+                console.log('[NotificationContext] Received WebSocket event:', {
+                    event,
+                    rawData: JSON.stringify(data),
+                    userID: user.userID,
+                    timestamp: new Date().toISOString(),
+                });
 
-                if (!notification.notificationID || !notification.userID) {
-                    console.error('[NotificationContext] Invalid notification data:', {
+                if (event === 'notification:created' && typeof data === 'object' && data) {
+                    let notification: Notification;
+                    if ('data' in data && typeof data.data === 'object' && data.data) {
+                        notification = data.data as Notification;
+                    } else {
+                        notification = data as Notification;
+                    }
+
+                    if (!notification.notificationID || !notification.userID) {
+                        console.error('[NotificationContext] Invalid notification data:', {
+                            event,
+                            data: JSON.stringify(data),
+                            timestamp: new Date().toISOString(),
+                        });
+                        return;
+                    }
+                    if (notification.channel === 'in-app') {
+                        console.log('[NotificationContext] Processing WebSocket notification:', {
+                            event,
+                            notificationID: notification.notificationID,
+                            userID: notification.userID,
+                            message: notification.message,
+                            type: notification.type,
+                            channel: notification.channel,
+                            timestamp: new Date().toISOString(),
+                        });
+                        dispatch({ type: 'ADD_NOTIFICATION', payload: notification });
+                    } else {
+                        console.log('[NotificationContext] Skipping notification: non in-app me:', {
+                            event,
+                            notificationUserID: notification.userID,
+                            channel: notification.channel,
+                            timestamp: new Date().toISOString(),
+                        });
+                    }
+                } else if (event === 'notification:updated' && typeof data === 'object' && data) {
+                    let updateData: { notificationID: string; status: string };
+                    if ('data' in data && typeof data.data === 'object' && data.data) {
+                        updateData = data.data as { notificationID: string; status: string };
+                    } else {
+                        updateData = data as { notificationID: string; status: string };
+                    }
+                    if (updateData.status === 'read') {
+                        console.log('[NotificationContext] Processing notification update:', {
+                            notificationID: updateData.notificationID,
+                            status: updateData.status,
+                            timestamp: new Date().toISOString(),
+                        });
+                        dispatch({ type: 'MARK_AS_READ', payload: updateData.notificationID });
+                    }
+                } else if (event.includes(':created') || event.includes(':updated') || event.includes(':deleted')) {
+                    console.log('[NotificationContext] Processing entity-specific event:', {
                         event,
                         data: JSON.stringify(data),
                         timestamp: new Date().toISOString(),
                     });
-                    return;
-                }
-                if (notification.channel === 'in-app') {
-                    console.log('[NotificationContext] Processing WebSocket notification:', {
-                        event,
-                        notificationID: notification.notificationID,
-                        userID: notification.userID,
-                        message: notification.message,
-                        type: notification.type,
-                        channel: notification.channel,
-                        timestamp: new Date().toISOString(),
-                    });
-                    dispatch({ type: 'ADD_NOTIFICATION', payload: notification });
+                    debouncedFetchNotifications();
                 } else {
-                    console.log('[NotificationContext] Skipping notification: non in-app channel', {
+                    console.warn('[NotificationContext] Unhandled WebSocket event or invalid data:', {
                         event,
-                        notificationUserID: notification.userID,
-                        channel: notification.channel,
+                        data: JSON.stringify(data),
                         timestamp: new Date().toISOString(),
                     });
                 }
-            } else if (event === 'notification:updated' && typeof data === 'object' && data) {
-                // Handle nested data structure for updates
-                let updateData: { notificationID: string; status: string };
-                if ('data' in data && typeof data.data === 'object' && data.data) {
-                    updateData = data.data as { notificationID: string; status: string };
-                } else {
-                    updateData = data as { notificationID: string; status: string };
-                }
-                if (updateData.status === 'read') {
-                    console.log('[NotificationContext] Processing notification update:', {
-                        notificationID: updateData.notificationID,
-                        status: updateData.status,
-                        timestamp: new Date().toISOString(),
-                    });
-                    dispatch({ type: 'MARK_AS_READ', payload: updateData.notificationID });
-                }
-            } else if (event.includes(':created') || event.includes(':updated') || event.includes(':deleted')) {
-                console.log('[NotificationContext] Processing entity-specific event:', {
-                    event,
-                    data: JSON.stringify(data),
-                    timestamp: new Date().toISOString(),
-                });
-                fetchNotifications();
-            } else {
-                console.warn('[NotificationContext] Unhandled WebSocket event or invalid data:', {
-                    event,
-                    data: JSON.stringify(data),
-                    timestamp: new Date().toISOString(),
-                });
-            }
-        });
+            });
+
+            console.log('[NotificationContext] Listeners registered, joining rooms', {
+                timestamp: new Date().toISOString(),
+            });
+            joinRooms();
+            await fetchNotifications();
+        };
+
+        if (isSocketConnected()) {
+            handleConnect();
+        } else {
+            socket.once('connect', handleConnect);
+        }
 
         const handleTokenRefresh = () => {
             console.log('[NotificationContext] Reconnecting WebSocket due to token refresh', {
@@ -280,10 +311,9 @@ export const NotificationProvider: React.FC<{ children: React.ReactNode }> = ({ 
             });
             disconnectSocket();
             initSocket();
-            joinRoom(user.userID);
-            joinRoom('default-roles-traceflow');
-            if (user.Roles?.length) {
-                user.Roles.forEach((role) => joinRoom(role.name.toLowerCase()));
+            const newSocket = getSocket();
+            if (newSocket) {
+                newSocket.once('connect', handleConnect);
             }
         };
 
@@ -291,20 +321,26 @@ export const NotificationProvider: React.FC<{ children: React.ReactNode }> = ({ 
 
         return () => {
             console.log('[NotificationContext] Cleaning up WebSocket for user:', {
-                userID: user.userID,
+                userID: user?.userID,
                 timestamp: new Date().toISOString(),
             });
-            leaveRoom(user.userID);
-            leaveRoom('default-roles-traceflow');
-            if (user.Roles?.length) {
-                user.Roles.forEach((role) => leaveRoom(role.name.toLowerCase()));
+            window.removeEventListener('tokenRefreshed', handleTokenRefresh);
+            if (user?.userID) {
+                leaveRoom(user.userID);
+                leaveRoom('default-roles-traceflow');
+                if (userRoles?.length) {
+                    userRoles.forEach((role) => leaveRoom(role.name.toLowerCase()));
+                }
             }
             offNotification();
             disconnectSocket();
-            window.removeEventListener('tokenRefreshed', handleTokenRefresh);
-            clearInterval(interval);
         };
-    }, [user?.userID]); // Removed permissionsLoaded dependency
+    }, [user?.userID, userRoles, fetchNotifications, debouncedFetchNotifications, joinRooms]);
+
+    useEffect(() => {
+        const cleanup = setupWebSocket();
+        return cleanup;
+    }, [setupWebSocket]);
 
     const addNotification = (notification: Notification) => {
         dispatch({ type: 'ADD_NOTIFICATION', payload: notification });

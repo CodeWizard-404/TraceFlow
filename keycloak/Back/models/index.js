@@ -136,6 +136,6 @@ module.exports = {
     Log,
     Notification,
     NotificationPreference,
-    NotificationRule, // Export NotificationRule model
+    NotificationRule,
     setupAssociations,
 };

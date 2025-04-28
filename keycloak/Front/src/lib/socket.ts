@@ -4,7 +4,7 @@ import { getNotificationEvents, NotificationEvent } from './notifEvents';
 const API_URL = import.meta.env.VITE_API_URL || 'http://192.168.1.14:5000';
 let socket: Socket | null = null;
 
-export const initSocket = (retryCount = 3, retryDelay = 2000) => {
+export const initSocket = (retryCount = 5, retryDelay = 2000) => {
     if (socket && socket.connected) {
         console.log('Socket already connected, skipping initialization', {
             socketId: socket?.id,
@@ -17,6 +17,7 @@ export const initSocket = (retryCount = 3, retryDelay = 2000) => {
         const url = useProxy ? '/' : API_URL;
         console.log(`Attempting WebSocket connection (Attempt ${attempt}/${retryCount})`, {
             url,
+            cookies: document.cookie,
             useProxy,
             timestamp: new Date().toISOString(),
         });
@@ -24,9 +25,10 @@ export const initSocket = (retryCount = 3, retryDelay = 2000) => {
         socket = io(url, {
             withCredentials: true,
             transports: ['websocket'],
-            reconnection: true,
-            reconnectionAttempts: 5,
-            reconnectionDelay: 2000,
+            reconnection: false, // Disable automatic reconnection to handle manually
+            extraHeaders: {
+                Cookie: document.cookie, // Explicitly pass cookies
+            },
         });
 
         socket.on('connect', () => {
@@ -34,7 +36,6 @@ export const initSocket = (retryCount = 3, retryDelay = 2000) => {
                 socketId: socket?.id,
                 timestamp: new Date().toISOString(),
             });
-            // Join default room on connect
             joinRoom('default-roles-traceflow');
         });
 
@@ -52,23 +53,17 @@ export const initSocket = (retryCount = 3, retryDelay = 2000) => {
                     timestamp: new Date().toISOString(),
                 });
                 window.dispatchEvent(new Event('tokenRefreshed'));
-            }
-
-            if (error.message.includes('ECONNRESET') || error.message.includes('ECONNREFUSED')) {
-                console.warn('Network error detected, increasing retry delay', {
-                    attempt,
-                    timestamp: new Date().toISOString(),
-                });
-                retryDelay = 5000;
+                return;
             }
 
             if (attempt < retryCount) {
-                console.log(`Retrying WebSocket connection in ${retryDelay}ms`, {
+                const newDelay = retryDelay * Math.pow(2, attempt - 1); // Exponential backoff
+                console.log(`Retrying WebSocket connection in ${newDelay}ms`, {
                     attempt: attempt + 1,
                     useProxy: attempt === retryCount - 1 ? false : useProxy,
                     timestamp: new Date().toISOString(),
                 });
-                setTimeout(() => connect(attempt + 1, attempt === retryCount - 1 ? false : useProxy), retryDelay);
+                setTimeout(() => connect(attempt + 1, attempt === retryCount - 1 ? false : useProxy), newDelay);
             } else {
                 console.error('Max WebSocket connection attempts reached.', {
                     timestamp: new Date().toISOString(),
@@ -81,29 +76,19 @@ export const initSocket = (retryCount = 3, retryDelay = 2000) => {
                 reason,
                 timestamp: new Date().toISOString(),
             });
-            setTimeout(() => connect(1, true), 2000);
-        });
-
-        socket.on('reconnect', (attempt) => {
-            console.log('Reconnected to WebSocket server', {
-                attempt,
-                socketId: socket?.id,
-                timestamp: new Date().toISOString(),
-            });
-            // Rejoin default room on reconnect
-            joinRoom('default-roles-traceflow');
-        });
-
-        socket.on('reconnect_error', (error) => {
-            console.error('WebSocket reconnection error:', {
-                message: error.message,
-                timestamp: new Date().toISOString(),
-            });
         });
     };
 
-    setTimeout(() => connect(), 1000);
+    connect();
     return socket;
+};
+
+export const reconnectSocket = () => {
+    if (socket) {
+        console.log('Initiating WebSocket reconnection', { timestamp: new Date().toISOString() });
+        disconnectSocket();
+        initSocket();
+    }
 };
 
 export const joinRoom = (room: string, retries = 3, delay = 1000) => {
@@ -171,6 +156,15 @@ export const onNotification = async (callback: (event: NotificationEvent, data: 
                     callback(event, data);
                 });
             });
+
+            // Ensure notification:created is explicitly registered
+            socket!.on('notification:created', (data) => {
+                console.log('[WebSocket] Explicit notification:created received:', {
+                    data,
+                    timestamp: new Date().toISOString(),
+                });
+                callback('notification:created', data);
+            });
         } catch (error) {
             console.error('[WebSocket] Failed to fetch notification events:', {
                 error: error instanceof Error ? error.message : 'Unknown error',
@@ -199,7 +193,7 @@ export const onNotification = async (callback: (event: NotificationEvent, data: 
         console.log('[WebSocket] Waiting for socket connection to register listeners', {
             timestamp: new Date().toISOString(),
         });
-        socket!.on('connect', async () => {
+        socket!.once('connect', async () => {
             console.log('[WebSocket] Socket connected, registering listeners', {
                 timestamp: new Date().toISOString(),
             });

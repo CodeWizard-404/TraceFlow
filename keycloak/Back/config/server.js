@@ -22,8 +22,8 @@ async function initializeServer(app, io) {
 
     if (io) {
         const allowedOrigins = [
-            'http://localhost:5173',
-            'http://192.168.1.14:5173',
+            process.env.FRONTEND_URL,
+            process.env.FRONTEND_URL1,
         ];
         io.attach(server, {
             cors: {

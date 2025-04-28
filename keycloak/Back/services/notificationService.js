@@ -8,6 +8,11 @@ const { Op } = require('sequelize');
 class NotificationService {
     static async sendWebSocketNotification(event, data, roles = [], userIDs = []) {
         try {
+            if (!io || !io.sockets) {
+                logger.error('WebSocket server not initialized', { event, timestamp: new Date().toISOString() });
+                return { success: false, method: 'WebSocket', reason: 'Server not initialized' };
+            }
+
             const payload = { event, data, timestamp: new Date().toISOString() };
             logger.info(`[WebSocket] Preparing to emit event: ${event}`, {
                 roles,
@@ -66,10 +71,15 @@ class NotificationService {
                 subject,
                 text,
             });
-            logger.info(`Email sent`, { to, subject });
+            logger.info(`Email sent`, { to, subject, timestamp: new Date().toISOString() });
             return { success: true, method: 'Email' };
         } catch (error) {
-            logger.error(`Email notification error: ${error.message}`, { to, subject, stack: error.stack });
+            logger.error(`Email notification error: ${error.message}`, {
+                to,
+                subject,
+                stack: error.stack,
+                timestamp: new Date().toISOString(),
+            });
             return { success: false, method: 'Email', reason: error.message };
         }
     }
@@ -78,13 +88,17 @@ class NotificationService {
         try {
             const result = await sendSMS(to, message, 'notification');
             if (result.success) {
-                logger.info(`SMS sent`, { to, message });
+                logger.info(`SMS sent`, { to, message, timestamp: new Date().toISOString() });
             } else {
-                logger.error(`SMS failed: ${result.reason}`, { to, message });
+                logger.error(`SMS failed: ${result.reason}`, { to, message, timestamp: new Date().toISOString() });
             }
             return result;
         } catch (error) {
-            logger.error(`SMS notification error: ${error.message}`, { to, stack: error.stack });
+            logger.error(`SMS notification error: ${error.message}`, {
+                to,
+                stack: error.stack,
+                timestamp: new Date().toISOString(),
+            });
             return { success: false, method: 'SMS', reason: error.message };
         }
     }
@@ -94,7 +108,11 @@ class NotificationService {
             const preferences = await NotificationPreference.findOne({ where: { userID } });
             return preferences || { emailEnabled: true, smsEnabled: true, inAppEnabled: true };
         } catch (error) {
-            logger.error(`Error fetching user preferences: ${error.message}`, { userID, stack: error.stack });
+            logger.error(`Error fetching user preferences: ${error.message}`, {
+                userID,
+                stack: error.stack,
+                timestamp: new Date().toISOString(),
+            });
             return { emailEnabled: true, smsEnabled: true, inAppEnabled: true };
         }
     }
@@ -108,7 +126,12 @@ class NotificationService {
                 channel,
                 status: 'pending',
             });
-            logger.info(`Notification stored`, { userID, notificationID: notification.notificationID, message });
+            logger.info(`Notification stored`, {
+                userID,
+                notificationID: notification.notificationID,
+                message,
+                timestamp: new Date().toISOString(),
+            });
 
             // Emit WebSocket event for in-app notifications
             if (channel === 'in-app') {
@@ -134,8 +157,12 @@ class NotificationService {
 
             return notification;
         } catch (error) {
-            logger.error(`Error storing notification: ${error.message}`, { userID, stack: error.stack });
-            throw error;
+            logger.error(`Error storing notification: ${error.message}`, {
+                userID,
+                stack: error.stack,
+                timestamp: new Date().toISOString(),
+            });
+            return null; // Return null instead of throwing to prevent crashes
         }
     }
 
@@ -145,7 +172,7 @@ class NotificationService {
             if (notification) {
                 notification.status = status;
                 await notification.save();
-                logger.info(`Notification status updated`, { notificationID, status });
+                logger.info(`Notification status updated`, { notificationID, status, timestamp: new Date().toISOString() });
 
                 // Emit WebSocket event for status updates
                 const event = 'notification:updated';
@@ -157,20 +184,29 @@ class NotificationService {
                 await this.sendWebSocketNotification(event, data, [], [notification.userID]);
             }
         } catch (error) {
-            logger.error(`Error updating notification status: ${error.message}`, { notificationID, stack: error.stack });
+            logger.error(`Error updating notification status: ${error.message}`, {
+                notificationID,
+                stack: error.stack,
+                timestamp: new Date().toISOString(),
+            });
         }
     }
 
     static async createDefaultDisabledRule({ event, data, metadata = {} }) {
         try {
             if (!event || !data) {
-                logger.error(`Cannot create default rule: Missing event or data`);
+                logger.error(`Cannot create default rule: Missing event or data`, { timestamp: new Date().toISOString() });
                 return null;
             }
 
             const existingRule = await NotificationRule.findOne({ where: { event } });
             if (existingRule) {
-                logger.info(`Rule already exists`, { event, ruleID: existingRule.ruleID, enabled: existingRule.enabled });
+                logger.info(`Rule already exists`, {
+                    event,
+                    ruleID: existingRule.ruleID,
+                    enabled: existingRule.enabled,
+                    timestamp: new Date().toISOString(),
+                });
                 return existingRule;
             }
 
@@ -199,14 +235,23 @@ class NotificationService {
                 },
                 conditions: data.conditions || null,
                 messageTemplate: `Notification for ${event}`,
-                enabled: criticalEvents.includes(event), // Enable rule for critical events
+                enabled: criticalEvents.includes(event),
             };
 
             const rule = await NotificationRule.create(defaultRule);
-            logger.info(`Created default notification rule`, { event, ruleID: rule.ruleID, enabled: defaultRule.enabled });
+            logger.info(`Created default notification rule`, {
+                event,
+                ruleID: rule.ruleID,
+                enabled: defaultRule.enabled,
+                timestamp: new Date().toISOString(),
+            });
             return rule;
         } catch (error) {
-            logger.error(`Error creating default rule: ${error.message}`, { event, stack: error.stack });
+            logger.error(`Error creating default rule: ${error.message}`, {
+                event,
+                stack: error.stack,
+                timestamp: new Date().toISOString(),
+            });
             return null;
         }
     }
@@ -216,10 +261,10 @@ class NotificationService {
             let rules = await NotificationRule.findAll({ where: { event, enabled: true } });
 
             if (!rules.length) {
-                logger.info(`No active rules found for event: ${event}`);
+                logger.info(`No active rules found for event: ${event}`, { timestamp: new Date().toISOString() });
                 const defaultRule = await this.createDefaultDisabledRule({ event, data, metadata });
                 if (defaultRule && defaultRule.enabled) {
-                    rules = [defaultRule]; // Include newly created enabled rule
+                    rules = [defaultRule];
                 } else {
                     return [];
                 }
@@ -249,10 +294,18 @@ class NotificationService {
                     await this.sendWebSocketNotification(event, triggerEventPayload, rule.recipients.roles || [], []);
                 }
             }
-            logger.info(`Triggered notifications`, { event, recipientCount: results.length });
+            logger.info(`Triggered notifications`, {
+                event,
+                recipientCount: results.length,
+                timestamp: new Date().toISOString(),
+            });
             return results;
         } catch (error) {
-            logger.error(`Trigger notification error: ${error.message}`, { event, stack: error.stack });
+            logger.error(`Trigger notification error: ${error.message}`, {
+                event,
+                stack: error.stack,
+                timestamp: new Date().toISOString(),
+            });
             return [{ success: false, reason: error.message }];
         }
     }
@@ -278,8 +331,11 @@ class NotificationService {
             }
             return Array.from(users);
         } catch (error) {
-            logger.error(`Error resolving recipients: ${error.message}`, { stack: error.stack });
-            throw error;
+            logger.error(`Error resolving recipients: ${error.message}`, {
+                stack: error.stack,
+                timestamp: new Date().toISOString(),
+            });
+            return [];
         }
     }
 

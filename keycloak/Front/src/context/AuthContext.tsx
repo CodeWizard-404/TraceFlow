@@ -1,12 +1,10 @@
-/* eslint-disable react-hooks/exhaustive-deps */
-/* eslint-disable react-refresh/only-export-components */
 import React, { createContext, useContext, useState, useEffect, useRef, ReactNode, useCallback } from 'react';
 import { useNavigate, useLocation } from 'react-router-dom';
 import { login, verify2FA, logout, refreshToken } from '../apis/authAPI';
 import { getEffectivePermissions } from '../apis/permissionAPI';
 import { getRolesByUser } from '../apis/roleAPI';
 import { setupAxiosInterceptors } from '../apis/axiosConfig';
-import { initSocket, disconnectSocket } from '../lib/socket';
+import { initSocket, reconnectSocket, disconnectSocket } from '../lib/socket';
 import User from '../models/User';
 import Permission from '../models/Permission';
 import Role from '../models/Role';
@@ -84,6 +82,34 @@ const AuthProvider: React.FC<{ children: ReactNode }> = ({ children }) => {
         setupAxiosInterceptors();
     }, []);
 
+    const loadPermissionsWithRetry = async (userID: string, retries = 3, delay = 2000): Promise<boolean> => {
+        for (let attempt = 1; attempt <= retries; attempt++) {
+            try {
+                const [perms, roles] = await Promise.all([
+                    getEffectivePermissions(userID),
+                    getRolesByUser(userID),
+                ]);
+                setEffectivePermissions(perms);
+                setUserRoles(roles);
+                setPermissionsLoaded(true);
+                console.debug('Permissions and roles loaded:', {
+                    permissions: perms.map(p => p.name),
+                    roles: roles.map(r => r.name),
+                    timestamp: new Date().toISOString(),
+                });
+                return true;
+            } catch (error) {
+                console.error(`Permission load attempt ${attempt} failed:`, error);
+                if (attempt < retries) {
+                    console.debug(`Retrying permission load in ${delay}ms`, { attempt: attempt + 1 });
+                    await new Promise(resolve => setTimeout(resolve, delay));
+                }
+            }
+        }
+        console.error('Failed to load permissions after retries');
+        return false;
+    };
+
     useEffect(() => {
         const loadPermissions = async () => {
             if (!user || permissionsLoaded) {
@@ -95,21 +121,9 @@ const AuthProvider: React.FC<{ children: ReactNode }> = ({ children }) => {
                 return;
             }
 
-
             setPermissionsLoaded(false);
-            try {
-                const [perms, roles] = await Promise.all([
-                    getEffectivePermissions(user.userID),
-                    getRolesByUser(user.userID),
-                ]);
-                setEffectivePermissions(perms);
-                setUserRoles(roles);
-                setPermissionsLoaded(true);
-
-                // Initialize WebSocket after permissions are loaded
-                initSocket();
-            } catch (error) {
-                console.error('Failed to load permissions on mount:', error);
+            const success = await loadPermissionsWithRetry(user.userID);
+            if (!success) {
                 await handleLogout();
                 debouncedNavigate('/login', {
                     replace: true,
@@ -119,7 +133,7 @@ const AuthProvider: React.FC<{ children: ReactNode }> = ({ children }) => {
         };
 
         loadPermissions();
-    }, [permissionsLoaded, user]);
+    }, [user, permissionsLoaded]);
 
     useEffect(() => {
         if (user && !permissionsLoaded) {
@@ -132,7 +146,7 @@ const AuthProvider: React.FC<{ children: ReactNode }> = ({ children }) => {
                         state: { error: 'Failed to load permissions. Please log in again.' },
                     });
                 }
-            }, 10000);
+            }, 15000);
             return () => clearTimeout(timeout);
         }
     }, [user, permissionsLoaded]);
@@ -189,10 +203,10 @@ const AuthProvider: React.FC<{ children: ReactNode }> = ({ children }) => {
                 const { accessToken, expiresIn } = await refreshToken();
                 const newExpiry = Date.now() + expiresIn;
                 const sameSite = import.meta.env.VITE_ENV === 'development' ? 'Lax' : 'Strict';
-                document.cookie = `accessToken=${accessToken}; path=/; SameSite=${sameSite}; max-age=${expiresIn / 1000
-                    }; HttpOnly`;
+                document.cookie = `accessToken=${accessToken}; path=/; SameSite=${sameSite}; max-age=${expiresIn / 1000}; HttpOnly`;
                 setTokenExpiry(newExpiry);
                 window.dispatchEvent(new Event('tokenRefreshed'));
+                reconnectSocket();
                 return;
             } catch (error) {
                 console.error(`Refresh attempt ${attempt} failed:`, error);
@@ -362,8 +376,7 @@ const AuthProvider: React.FC<{ children: ReactNode }> = ({ children }) => {
 
             const sameSite = import.meta.env.VITE_ENV === 'development' ? 'Lax' : 'Strict';
             const expiresIn = response.expiresIn || parseInt(import.meta.env.VITE_ACCESS_TOKEN_MAX_AGE) || 900000;
-            document.cookie = `accessToken=${response.accessToken}; path=/; SameSite=${sameSite}; max-age=${expiresIn / 1000
-                }; HttpOnly`;
+            document.cookie = `accessToken=${response.accessToken}; path=/; SameSite=${sameSite}; max-age=${expiresIn / 1000}; HttpOnly`;
             setUserCookie(newUser, expiresIn / 1000);
 
             console.debug('Cookies set after login:', {
@@ -379,19 +392,14 @@ const AuthProvider: React.FC<{ children: ReactNode }> = ({ children }) => {
             setTokenExpiry(Date.now() + expiresIn);
             setPermissionsLoaded(false);
 
+            // Initialize WebSocket immediately after setting user
+            initSocket();
+
             try {
-                const [perms, roles] = await Promise.all([
-                    getEffectivePermissions(newUser.userID),
-                    getRolesByUser(newUser.userID),
-                ]);
-                console.debug('Permissions and roles loaded after login:', {
-                    permissions: perms.map(p => p.name),
-                    roles: roles.map(r => r.name),
-                    timestamp: new Date().toISOString(),
-                });
-                setEffectivePermissions(perms);
-                setUserRoles(roles);
-                setPermissionsLoaded(true);
+                const success = await loadPermissionsWithRetry(newUser.userID);
+                if (!success) {
+                    throw new Error('Failed to load permissions');
+                }
             } catch (error) {
                 console.error('Failed to load permissions after login:', error);
                 throw new Error('Failed to load permissions');

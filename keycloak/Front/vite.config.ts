@@ -32,11 +32,10 @@ export default defineConfig({
             });
           });
           proxy.on('proxyReqWs', (proxyReq, req) => {
-            // Forward all cookies from the original request
+            // Ensure cookies are forwarded correctly
             if (req.headers.cookie) {
               proxyReq.setHeader('Cookie', req.headers.cookie);
-              console.log('[Vite Proxy] WebSocket request sent:', {
-                path: proxyReq.path,
+              console.log('[Vite Proxy] Forwarding cookies in WebSocket request:', {
                 cookies: req.headers.cookie,
                 timestamp: new Date().toISOString(),
               });
@@ -46,6 +45,8 @@ export default defineConfig({
                 timestamp: new Date().toISOString(),
               });
             }
+            // Set origin header to match target
+            proxyReq.setHeader('origin', process.env.VITE_API_URL || 'http://192.168.1.14:5000');
           });
           proxy.on('open', () => {
             console.log('[Vite Proxy] WebSocket connection opened:', {
