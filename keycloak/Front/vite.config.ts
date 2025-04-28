@@ -35,10 +35,6 @@ export default defineConfig({
             // Ensure cookies are forwarded correctly
             if (req.headers.cookie) {
               proxyReq.setHeader('Cookie', req.headers.cookie);
-              console.log('[Vite Proxy] Forwarding cookies in WebSocket request:', {
-                cookies: req.headers.cookie,
-                timestamp: new Date().toISOString(),
-              });
             } else {
               console.warn('[Vite Proxy] No cookies found in WebSocket request', {
                 path: proxyReq.path,

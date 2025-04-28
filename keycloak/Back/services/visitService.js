@@ -80,7 +80,6 @@ class VisitService {
                 error.status = 400;
                 throw error;
             }
-            logger.info(`QR code verified for visit ${visitId} by user ${actorID}`, { ip: null });
             return { valid: true, message: 'Verification successful' };
         } catch (error) {
             logger.error(`Verify QR code error: ${error.message}, user: ${actorID}`, { ip: null });
@@ -139,7 +138,6 @@ class VisitService {
             visit.comment = comment || visit.comment;
             visit.status = 'visited';
             await visit.save();
-            logger.info(`Visit ${visitID} logged by user ${actorID}`, { ip: null });
             return visit.reload({ include: [Checklist] });
         } catch (error) {
             logger.error(`Log visit error: ${error.message}, user: ${actorID}`, { ip: null });
@@ -308,7 +306,6 @@ class VisitService {
             visit.comment = comment !== undefined ? comment : visit.comment;
 
             await visit.save();
-            logger.info(`Visit ${visitID} updated by user ${actorID}`, { ip: null });
             return visit.reload({ include: [Checklist, Reason] });
         } catch (error) {
             logger.error(`Update visit error: ${error.message}, user: ${actorID}`, { ip: null });
@@ -346,7 +343,6 @@ class VisitService {
                 fs.rmSync(folderPath, { recursive: true, force: true });
             }
             await visit.destroy();
-            logger.info(`Visit ${visitID} deleted by user ${actorID}`, { ip: null });
             return { message: 'Visit and associated photos deleted successfully' };
         } catch (error) {
             logger.error(`Delete visit error: ${error.message}, user: ${actorID}`, { ip: null });

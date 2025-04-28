@@ -99,7 +99,6 @@ class PermissionService {
                 description: updates.description || permission.description,
             });
 
-            logger.info(`Permission ${permissionID} updated by user ${actorID}`, { ip: null });
             return permission;
         } catch (error) {
             logger.error(`Update permission error: ${error.message}, user: ${actorID}`, { ip: null });
@@ -255,7 +254,6 @@ class PermissionService {
                 await role.addPermissions(newPermissions);
             }
 
-            logger.info(`Assigned ${newPermissions.length} permissions to role ${roleID} by user ${actorID}`, { ip: null });
             return {
                 roleID,
                 assignedPermissions: newPermissions.map((p) => p.name),
@@ -286,7 +284,6 @@ class PermissionService {
                 // Check if permission is assigned to role
                 const hasPermission = await role.hasPermission(permission);
                 if (!hasPermission) {
-                    logger.info(`Permission ${permission.name} not assigned to role ${role.name}, skipping revocation`);
                     continue;
                 }
 
@@ -340,7 +337,6 @@ class PermissionService {
                 });
             }
 
-            logger.info(`Revoked ${results.length} permissions from role ${roleID} by user ${actorID}`, { ip: null });
             return results.length === 1 ? results[0] : results;
         } catch (error) {
             logger.error(`Revoke permissions error: ${error.message}, user: ${actorID}`, { ip: null });
@@ -430,7 +426,6 @@ class PermissionService {
             );
 
             await transaction.commit();
-            logger.info(`Permission override added for user ${userID} by ${actorID}`, { ip: null });
             return override;
         } catch (error) {
             await transaction.rollback();
@@ -490,7 +485,6 @@ class PermissionService {
             await override.destroy({ transaction });
 
             await transaction.commit();
-            logger.info(`Permission override ${overrideID} removed by user ${actorID}`, { ip: null });
             return { message: 'Override removed successfully.' };
         } catch (error) {
             await transaction.rollback();

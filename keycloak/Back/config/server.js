@@ -62,7 +62,7 @@ async function initializeServer(app, io) {
     }
 
     server.listen(PORT, '0.0.0.0', () => {
-        logger.info(`${new Date().toISOString()} - ${process.env.NODE_ENV === 'production' ? 'HTTPS' : 'HTTP'} Server running on port ${PORT}`);
+        logger.info(`${process.env.NODE_ENV === 'production' ? 'HTTPS' : 'HTTP'} Server running on port ${PORT}`);
     });
 
     // mDNS advertisement (disabled in development to avoid conflicts)
@@ -72,9 +72,9 @@ async function initializeServer(app, io) {
             txt: { path: '/api' },
         });
         service.start();
-        logger.info(`${new Date().toISOString()} - mDNS service advertised as TraceFlow-backend`);
+        logger.info(`mDNS service advertised as TraceFlow-backend`);
     } else {
-        logger.info(`${new Date().toISOString()} - mDNS advertisement skipped in development mode`);
+        logger.info(`mDNS advertisement skipped in development mode`);
     }
 
     return server;

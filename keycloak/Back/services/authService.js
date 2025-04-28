@@ -89,7 +89,6 @@ class AuthService {
 
     static async googleLogin(code, deviceIdentifier, res) {
         try {
-            logger.info('Initiating Google login', { code, deviceIdentifier });
 
             // Exchange Google code for Keycloak tokens
             const tokenResponse = await axios.post(
@@ -116,7 +115,6 @@ class AuthService {
                 logger.error('Invalid Keycloak token response', { response: tokenResponse.data });
                 throw Object.assign(new Error(ERROR_MESSAGES.INVALID_GOOGLE_CODE), { status: 400 });
             }
-            logger.info('Keycloak tokens obtained', { expires_in });
 
             // Introspect token to get user info
             const introspectResponse = await axios.post(
@@ -146,7 +144,6 @@ class AuthService {
                 logger.error('Missing email or username in token introspection', { response: introspectResponse.data });
                 throw Object.assign(new Error(ERROR_MESSAGES.GOOGLE_LOGIN_FAILED), { status: 400 });
             }
-            logger.info('User info retrieved from token', { email, username, keycloakId });
 
             // Find user by googleEmail (which matches email and username)
             const user = await User.findOne({
@@ -417,7 +414,7 @@ class AuthService {
             if (selectedMethod === 'email' && hasValidEmail) {
                 try {
                     otp = await otpService.generateOTP(user.userID, 'user');
-                    logger.info(`Generated OTP for user ${user.userID} via email: ${otp.code}`); // Log OTP
+                    logger.info(`Generated OTP for user ${user.userID} via email: ${otp.code}`);
                     await transporter.sendMail({
                         from: process.env.SMTP_USER,
                         to: user.email,
@@ -437,14 +434,14 @@ class AuthService {
             if (!otp && selectedMethod === 'phone' && hasValidPhone) {
                 try {
                     otp = await otpService.generateOTP(user.userID, 'user');
-                    logger.info(`Generated OTP for user ${user.userID} via phone: ${otp.code}`); // Log OTP
+                    logger.info(`Generated OTP for user ${user.userID} via phone: ${otp.code}`);
                     const smsResult = await sendSMS(user.phone, `Your TraceFlow OTP is ${otp.code}`, 'otp');
                     if (!smsResult.success) {
                         logger.error(`SMS OTP send failed for ${user.userID}: ${smsResult.reason}`);
                         if (hasValidEmail) {
                             selectedMethod = 'email';
                             otp = await otpService.generateOTP(user.userID, 'user');
-                            logger.info(`Generated fallback OTP for user ${user.userID} via email: ${otp.code}`); // Log fallback OTP
+                            logger.info(`Generated fallback OTP for user ${user.userID} via email: ${otp.code}`);
                             await transporter.sendMail({
                                 from: process.env.SMTP_USER,
                                 to: user.email,
@@ -504,7 +501,6 @@ class AuthService {
         const cacheKey = `${userID}:${otpCode}:${deviceIdentifier}`;
         const cachedResult = verificationCache.get(cacheKey);
         if (cachedResult) {
-            logger.info(`2FA cache hit for ${userID}`);
             return cachedResult;
         }
 
@@ -595,11 +591,6 @@ class AuthService {
             res.cookie('refreshToken', response.data.refresh_token, {
                 ...cookieOptions,
                 maxAge: REFRESH_TOKEN_MAX_AGE,
-            });
-
-            logger.info('Tokens refreshed successfully', {
-                accessTokenExpiresIn: response.data.expires_in,
-                refreshTokenRotatedAt: new Date().toISOString(),
             });
 
             return {
@@ -721,8 +712,7 @@ class AuthService {
                 throw Object.assign(new Error(ERROR_MESSAGES.NO_OTP_METHOD), { status: 400 });
             }
 
-            logger.info(`OTP resent to ${userID} via ${selectedMethod}`);
-            logger.info(`OTP: ${otp.code}`);
+            logger.info(`OTP resent to ${userID} via ${selectedMethod} : ${otp.code}`);
             return { userID, message: `OTP resent to your ${selectedMethod}` };
         } catch (error) {
             logger.error(`Resend OTP error for ${userID}: ${error.message}`);
@@ -780,7 +770,7 @@ class AuthService {
                 throw Object.assign(new Error(ERROR_MESSAGES.NO_OTP_METHOD), { status: 400 });
             }
 
-            logger.info(`Password reset OTP sent to ${user.userID} via ${selectedMethod}`);
+            logger.info(`Password reset OTP sent to ${user.userID} via ${selectedMethod} : ${otp.code}`);
             return { userID: user.userID, message: `OTP sent to your ${selectedMethod}` };
         } catch (error) {
             logger.error(`Password reset OTP error for ${user.userID}: ${error.message}`);

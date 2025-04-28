@@ -14,40 +14,19 @@ class NotificationService {
             }
 
             const payload = { event, data, timestamp: new Date().toISOString() };
-            logger.info(`[WebSocket] Preparing to emit event: ${event}`, {
-                roles,
-                userIDs,
-                payload,
-                timestamp: new Date().toISOString(),
-            });
 
             // Emit to role-based rooms
             roles.forEach((role) => {
                 const room = role.toLowerCase();
-                logger.info(`[WebSocket] Emitting to room: ${room}`, {
-                    event,
-                    payload,
-                    timestamp: new Date().toISOString(),
-                });
                 io.to(room).emit(event, payload);
             });
 
             // Emit to user-specific rooms
             userIDs.forEach((userID) => {
-                logger.info(`[WebSocket] Emitting to user: ${userID}`, {
-                    event,
-                    payload,
-                    timestamp: new Date().toISOString(),
-                });
                 io.to(userID).emit(event, payload);
             });
 
             // Emit to default room for traceability
-            logger.info(`[WebSocket] Emitting to room: default-roles-traceflow`, {
-                event,
-                payload,
-                timestamp: new Date().toISOString(),
-            });
             io.to('default-roles-traceflow').emit(event, payload);
 
             return { success: true, method: 'WebSocket' };
@@ -201,12 +180,6 @@ class NotificationService {
 
             const existingRule = await NotificationRule.findOne({ where: { event } });
             if (existingRule) {
-                logger.info(`Rule already exists`, {
-                    event,
-                    ruleID: existingRule.ruleID,
-                    enabled: existingRule.enabled,
-                    timestamp: new Date().toISOString(),
-                });
                 return existingRule;
             }
 

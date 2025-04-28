@@ -190,12 +190,7 @@ async function seedSuperAdmin() {
             );
         }
 
-        // Show credentials in development
-        if (process.env.NODE_ENV === 'development') {
-            logger.info(`\nSuper Admin Credentials:`);
-            logger.info(`\tEmail:\t\t${SUPER_ADMIN_CONFIG.email}`);
-            logger.info(`\tPassword:\t${SUPER_ADMIN_CONFIG.password}\n`);
-        }
+
     } catch (error) {
         logger.error(`Error seeding Super Admin: ${error.message}`);
         throw error;

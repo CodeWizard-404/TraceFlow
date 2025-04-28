@@ -278,6 +278,16 @@ async function startApp() {
     logger.info(`Total Duration: ${summary.duration} seconds`);
     logger.info(`${colors.cyan('===================================================')}`);
 
+    // Show credentials in development
+    if (process.env.NODE_ENV === 'development') {
+        logger.info(`${colors.cyan('===================================================')}`);
+        logger.warn(`\nSuper Admin Credentials:`);
+        logger.warn(`\tEmail:\t\t${process.env.SUPER_ADMIN_EMAIL}\n`);
+        logger.warn(`\tPassword:\t${process.env.SUPER_ADMIN_PASSWORD}\n`);
+        logger.warn(`${colors.cyan('===================================================')}`);
+
+    }
+
     if (summary.failures > 0) {
         process.exit(1);
     }

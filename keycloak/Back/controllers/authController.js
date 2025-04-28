@@ -35,7 +35,6 @@ class AuthController {
             }
 
             const deviceIdentifier = req.headers['x-device-id'] || 'unknown-device';
-            logger.info('Processing Google callback', { code, deviceIdentifier, state });
             const result = await AuthService.googleLogin(code, deviceIdentifier, res);
             logger.info(`Google login successful for user ${result.user?.userID || 'unknown'}`, { userID: result.user?.userID });
             return res.status(200).json(result);
@@ -65,7 +64,6 @@ class AuthController {
             }
 
             const result = await AuthService.login(identifier, password, deviceIdentifier, otpMethod, res);
-            logger.info(`Login attempt for ${identifier}, requires2FA: ${result.requires2FA || false}`);
             return res.status(200).json(result);
         } catch (error) {
             logger.error(`Login error for ${req.body.identifier || 'unknown'}: ${error.message}`);
@@ -91,7 +89,6 @@ class AuthController {
             const cacheKey = `2fa_${userID}_${deviceIdentifier}`;
             const cachedResult = cache.get(cacheKey);
             if (cachedResult) {
-                logger.info(`2FA cache hit for ${userID}`);
                 return res.status(200).json(cachedResult);
             }
 
@@ -152,7 +149,6 @@ class AuthController {
                 return res.status(400).json(AuthController.formatError(new Error(ERROR_MESSAGES.MISSING_FIELDS)));
             }
             const result = await AuthService.resend2FA(userID, otpMethod);
-            logger.info(`2FA resent for ${userID}`);
             return res.status(200).json(result);
         } catch (error) {
             logger.error(`Resend 2FA error for ${req.body.userID || 'unknown'}: ${error.message}`);

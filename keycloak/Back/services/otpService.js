@@ -23,8 +23,6 @@ class OTPService {
                 metadata: { expiresAt: expiresAt.toISOString() },
             });
 
-            logger.info(`Generated OTP for ${type} ID: ${entityID}`);
-
             return otp;
         } catch (error) {
             logger.error('OTP generation error', {
@@ -60,8 +58,6 @@ class OTPService {
             // Mark OTP as used and delete
             await otp.update({ used: true });
             await otp.destroy();
-
-            logger.info(`Successfully validated OTP for ${type} ID: ${entityID}`);
 
             return true;
         } catch (error) {

@@ -5,7 +5,6 @@ class ReasonService {
     static async createItem(text, actorID) {
         try {
             const reason = await Reason.create({ item: text });
-            logger.info(`Reason created by user ${actorID}`, { ip: null });
             return reason;
         } catch (error) {
             logger.error(`Create reason error: ${error.message}, user: ${actorID}`, { ip: null });
@@ -23,7 +22,6 @@ class ReasonService {
             }
             item.item = text;
             await item.save();
-            logger.info(`Reason ${id} updated by user ${actorID}`, { ip: null });
             return item;
         } catch (error) {
             logger.error(`Update reason error: ${error.message}, user: ${actorID}`, { ip: null });
@@ -40,7 +38,6 @@ class ReasonService {
                 throw error;
             }
             await item.destroy();
-            logger.info(`Reason ${id} deleted by user ${actorID}`, { ip: null });
             return item;
         } catch (error) {
             logger.error(`Delete reason error: ${error.message}, user: ${actorID}`, { ip: null });

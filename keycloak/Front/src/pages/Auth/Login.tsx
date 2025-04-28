@@ -53,7 +53,7 @@ const LoginPage: React.FC = () => {
     // Debounced navigation with cancellation
     const debouncedNavigate = useCallback(
         debounce(
-            (to: string, options: { replace?: boolean; state?: unknown }) => {
+            (to: string, options: { replace?: boolean; state?: Record<string, unknown> }) => {
                 console.debug('Navigating to:', to, options);
                 navigate(to, options);
             },
@@ -80,7 +80,7 @@ const LoginPage: React.FC = () => {
             clearAuthCookies();
             setApiError(null);
             clearError();
-            debouncedNavigate('/login', { replace: true, state: null });
+            debouncedNavigate('/login', { replace: true, state: undefined });
         }
     }, [location.state?.logout, debouncedNavigate, clearError]);
 

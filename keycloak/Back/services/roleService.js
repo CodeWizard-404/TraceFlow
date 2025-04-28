@@ -110,7 +110,6 @@ class RoleService {
             });
             if (!created) throw new Error('Role already exists.');
 
-            logger.info(`Role ${name} created by user ${actorID}`, { ip: null });
             return role;
         } catch (error) {
             logger.error(`Create role error: ${error.message}, user: ${actorID}`, { ip: null });
@@ -187,7 +186,6 @@ class RoleService {
                 description: updates.description || role.description,
             });
 
-            logger.info(`Role ${roleID} updated by user ${actorID}`, { ip: null });
             return role;
         } catch (error) {
             logger.error(`Update role error: ${error.message}, user: ${actorID}`, { ip: null });
@@ -234,7 +232,6 @@ class RoleService {
             // Delete from local DB
             await role.destroy();
 
-            logger.info(`Role ${roleID} deleted by user ${actorID}`, { ip: null });
             return { message: 'Role deleted successfully.' };
         } catch (error) {
             logger.error(`Delete role error: ${error.message}, user: ${actorID}`, { ip: null });
@@ -278,7 +275,6 @@ class RoleService {
                 );
             }
 
-            logger.info(`Assigned ${newRoles.length} roles to user ${userID} by ${actorID}`, { ip: null });
             return {
                 userID,
                 assignedRoles: newRoles.map((r) => r.name),
@@ -329,7 +325,6 @@ class RoleService {
                 });
             }
 
-            logger.info(`Revoked ${results.length} roles from user ${userID} by ${actorID}`, { ip: null });
             return results.length === 1 ? results[0] : results;
         } catch (error) {
             logger.error(`Revoke roles error: ${error.message}, user: ${actorID}`, { ip: null });
@@ -890,7 +885,6 @@ class RoleService {
                 result.keycloakPermissionsRemoved = keycloakPermissionsRemoved;
             });
 
-            logger.info(`Reset main roles by user ${actorID}`, { ip: null });
             return results;
         } catch (error) {
             logger.error(`Reset roles error: ${error.message}, user: ${actorID}`, { ip: null });

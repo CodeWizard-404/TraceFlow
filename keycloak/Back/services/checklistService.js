@@ -5,7 +5,6 @@ class ChecklistService {
     static async createItem(text, actorID) {
         try {
             const checklist = await Checklist.create({ item: text });
-            logger.info(`Checklist created by user ${actorID}`, { ip: null });
             return checklist;
         } catch (error) {
             logger.error(`Create checklist error: ${error.message}, user: ${actorID}`, { ip: null });
@@ -23,7 +22,6 @@ class ChecklistService {
             }
             item.item = text;
             await item.save();
-            logger.info(`Checklist ${id} updated by user ${actorID}`, { ip: null });
             return item;
         } catch (error) {
             logger.error(`Update checklist error: ${error.message}, user: ${actorID}`, { ip: null });
@@ -40,7 +38,6 @@ class ChecklistService {
                 throw error;
             }
             await item.destroy();
-            logger.info(`Checklist ${id} deleted by user ${actorID}`, { ip: null });
             return item;
         } catch (error) {
             logger.error(`Delete checklist error: ${error.message}, user: ${actorID}`, { ip: null });

@@ -21,7 +21,6 @@ class ReceiptBookService {
             await ReceiptStub.create({ bookID: book.bookID, status: 'pending' });
             await this.logTransfer(book.bookID, purchaseUserID, null, 'Pending', 'ToSupplier');
 
-            logger.info(`Receipt book ${number} created by user ${purchaseUserID}`, { ip: null });
             return book;
         } catch (error) {
             logger.error(`Create receipt book error: ${error.message}, user: ${purchaseUserID}`, { ip: null });
@@ -63,7 +62,6 @@ class ReceiptBookService {
                 throw error;
             }
 
-            logger.info(`Fetched receipt book ${bookID} in ${Date.now() - startTime}ms`, { ip: null });
             return book; // Return Sequelize instance
         } catch (error) {
             logger.error(`Get receipt book error: ${error.message}`, { ip: null });
@@ -122,7 +120,6 @@ class ReceiptBookService {
                 return bookData;
             });
 
-            logger.info(`Fetched ${enrichedBooks.length} receipt books in ${Date.now() - startTime}ms`, { ip: null });
             return enrichedBooks;
         } catch (error) {
             logger.error(`Get all receipt books error: ${error.message}`, { ip: null });
@@ -150,7 +147,6 @@ class ReceiptBookService {
                 error.status = 404;
                 throw error;
             }
-            logger.info(`Fetched receipt book number ${number} in ${Date.now() - startTime}ms`, { ip: null });
             return book;
         } catch (error) {
             logger.error(`Get receipt book by number error: ${error.message}`, { ip: null });
@@ -180,7 +176,6 @@ class ReceiptBookService {
                 );
             }
             await book.update(updateData);
-            logger.info(`Receipt book ${bookID} updated by user ${userID}`, { ip: null });
             return book;
         } catch (error) {
             logger.error(`Update receipt book error: ${error.message}, user: ${userID}`, { ip: null });
@@ -206,7 +201,6 @@ class ReceiptBookService {
                 ReceiptBookTransfer.destroy({ where: { bookID } }),
                 book.destroy(),
             ]);
-            logger.info(`Receipt book ${bookID} deleted by user ${userID}`, { ip: null });
             return { message: `Receipt Book #${book.number} deleted successfully` };
         } catch (error) {
             logger.error(`Delete receipt book error: ${error.message}, user: ${userID}`, { ip: null });
@@ -233,7 +227,6 @@ class ReceiptBookService {
                 error.status = 404;
                 throw error;
             }
-            logger.info(`Fetched receipt books for holder ${holderID} (${holderType}) in ${Date.now() - startTime}ms`, { ip: null });
             return books;
         } catch (error) {
             logger.error(`Get receipt books by holder error: ${error.message}`, { ip: null });
@@ -277,7 +270,6 @@ class ReceiptBookService {
                 })),
             });
 
-            logger.info(`Sent ${bookIDs.length} books to supplier by user ${userID}`, { ip: null });
             return { message: `${books.length} books sent to supplier` };
         } catch (error) {
             logger.error(`Send to supplier error: ${error.message}, user: ${userID}`, { ip: null });
@@ -310,7 +302,6 @@ class ReceiptBookService {
                 )
             );
 
-            logger.info(`Collected ${bookIDs.length} books from supplier by user ${userID}`, { ip: null });
             return { message: `${books.length} books collected from supplier` };
         } catch (error) {
             logger.error(`Collect from supplier error: ${error.message}, user: ${userID}`, { ip: null });
@@ -364,7 +355,6 @@ class ReceiptBookService {
                 )
             );
 
-            logger.info(`Initiated transfer of ${bookIDs.length} books to ${recipientType} ${recipientID} by user ${senderID}`, { ip: null });
             return { message: `Transfer initiated for ${bookIDs.length} books to ${recipientType} ${recipientID}`, otpID: otp.otpID };
         } catch (error) {
             logger.error(`Transfer error: ${error.message}, user: ${senderID}`, { ip: null });
@@ -424,7 +414,6 @@ class ReceiptBookService {
                 text: `${bookIDs.length} receipt books transferred to ${recipientType} ${recipientID}.`,
             });
 
-            logger.info(`Validated transfer of ${bookIDs.length} books to ${recipientType} ${recipientID}`, { ip: null });
             return { message: `${bookIDs.length} receipt books transferred and validated` };
         } catch (error) {
             logger.error(`Validate transfer error: ${error.message}`, { ip: null });
@@ -444,7 +433,6 @@ class ReceiptBookService {
                 ],
                 order: [['transferDate', 'ASC']],
             });
-            logger.info(`Fetched transfer history for book ${bookID} in ${Date.now() - startTime}ms`, { ip: null });
             return history;
         } catch (error) {
             logger.error(`Get transfer history error: ${error.message}`, { ip: null });
@@ -472,7 +460,6 @@ class ReceiptBookService {
             const isSuperAdmin = sender?.Roles?.some(r => r.name === 'Super Admin');
 
             if (isSuperAdmin) {
-                logger.info(`Super Admin bypass for senderID: ${senderID}`, { ip: null });
                 return true;
             }
 

@@ -226,7 +226,6 @@ class UserService {
                 password: 'KEYCLOAK_MANAGED',
                 googleEmail: email, // Store the same email as googleEmail
             });
-            logger.info(`User ${email} created by user ${actorID}`, { ip: null });
             return user;
         } catch (error) {
             logger.error(`DB create user error: ${error.message}, user: ${actorID}`, { ip: null });
@@ -361,7 +360,6 @@ class UserService {
                 googleEmail: userData.email || user.googleEmail || user.email,
                 PFP: userData.PFP !== undefined ? userData.PFP : user.PFP,
             });
-            logger.info(`User ${userID} updated by user ${actorID}`, { ip: null });
             return user;
         } catch (error) {
             logger.error(`DB update user error: ${error.message}, user: ${actorID}`, { ip: null });
@@ -398,7 +396,6 @@ class UserService {
         // Delete from local DB
         try {
             await user.destroy();
-            logger.info(`User ${userID} deleted by user ${actorID}`, { ip: null });
             return { message: 'User deleted successfully.' };
         } catch (error) {
             logger.error(`DB delete user error: ${error.message}, user: ${actorID}`, { ip: null });
@@ -594,7 +591,6 @@ class UserService {
             if (newSupervisors.length > 0) {
                 await manager.addSupervisors(newSupervisors);
             }
-            logger.info(`Assigned ${newSupervisors.length} supervisors to manager ${managerID} by user ${actorID}`, { ip: null });
             return {
                 managerID,
                 assignedSupervisors: newSupervisors.map((s) => s.userID),
@@ -629,7 +625,6 @@ class UserService {
             if (revokedSupervisors.length > 0) {
                 await manager.removeSupervisors(revokedSupervisors);
             }
-            logger.info(`Revoked ${revokedSupervisors.length} supervisors from manager ${managerID} by user ${actorID}`, { ip: null });
             return {
                 managerID,
                 revokedSupervisors: revokedSupervisors.map((s) => s.userID),
@@ -701,7 +696,6 @@ class UserService {
         // Update local DB
         try {
             await user.update({ googleEmail });
-            logger.info(`Assigned Google account ${googleEmail} to user ${userID} by user ${actorID}`);
             return user;
         } catch (error) {
             logger.error(`DB update Google account error: ${error.message}, user: ${actorID}`);

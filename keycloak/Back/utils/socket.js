@@ -6,8 +6,8 @@ const logger = require('./logger');
 const io = new Server({
     cors: {
         origin: [
-            'http://localhost:5173',
-            'http://192.168.1.14:5173',
+            process.env.FRONTEND_URL,
+            process.env.FRONTEND_URL1,
         ],
         methods: ['GET', 'POST'],
         credentials: true,

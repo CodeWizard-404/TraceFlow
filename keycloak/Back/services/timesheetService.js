@@ -56,7 +56,6 @@ class TimesheetService {
                 );
             }
 
-            logger.info(`Timesheet created for supervisor ${supervisorID} by user ${actorID}`, { ip: null });
             return await Timesheet.findByPk(timesheet.timesheetID, {
                 include: [
                     {
@@ -119,7 +118,6 @@ class TimesheetService {
                 await timesheet.save();
             }
 
-            logger.info(`Timesheet ${timesheetID} validated by user ${actorID}`, { ip: null });
             return timesheet;
         } catch (error) {
             logger.error(`Validate timesheet error: ${error.message}, user: ${actorID}`, { ip: null });

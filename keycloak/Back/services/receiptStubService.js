@@ -44,7 +44,6 @@ class ReceiptStubService {
                 logger.warn(`SMS notification failed for agent ${agentID}: ${smsResult.reason}`, { ip: null });
             }
 
-            logger.info(`Initiated stub collection for ${bookIDs.length} books by user ${userID}`, { ip: null });
             return { message: `OTP sent to agent for ${bookIDs.length} books` };
         } catch (error) {
             logger.error(`Collect stub error: ${error.message}, user: ${userID}`, { ip: null });
@@ -108,7 +107,6 @@ class ReceiptStubService {
                 text: `Stubs for ${bookIDs.length} receipt books have been collected by Supervisor ${supervisorID}.`,
             });
 
-            logger.info(`Validated stub collection for ${bookIDs.length} books by user ${supervisorID}`, { ip: null });
             return { message: `${bookIDs.length} stubs collected` };
         } catch (error) {
             logger.error(`Validate stub collection error: ${error.message}, user: ${supervisorID}`, { ip: null });
@@ -159,7 +157,6 @@ class ReceiptStubService {
                 text: `Stub for Book #${book.number} has been archived by Stock Manager ${stockManagerID}.`,
             });
 
-            logger.info(`Archived stub for book ${bookID} by user ${stockManagerID}`, { ip: null });
             return { message: 'Stub archived' };
         } catch (error) {
             logger.error(`Archive stub error: ${error.message}, user: ${stockManagerID}`, { ip: null });
