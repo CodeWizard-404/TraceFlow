@@ -22,6 +22,9 @@ const Log = require("./log")(sequelize, DataTypes);
 const Notification = require("./notif/notification")(sequelize, DataTypes);
 const NotificationPreference = require("./notif/notificationPreference")(sequelize, DataTypes);
 const NotificationRule = require("./notif/notificationRule")(sequelize, DataTypes);
+const Region = require('./location/region')(sequelize, DataTypes);
+const Governorate = require('./location/governorate')(sequelize, DataTypes);
+const Delegation = require('./location/delegation')(sequelize, DataTypes);
 
 // Define model associations
 const setupAssociations = () => {
@@ -119,7 +122,13 @@ const setupAssociations = () => {
     User.hasMany(NotificationRule, { foreignKey: "creatorID" });
     NotificationRule.belongsTo(User, { foreignKey: "creatorID" });
 
+    // Region - Governorate (1-to-many): Region can have multiple Governorates
+    Region.hasMany(Governorate, { foreignKey: 'regionID' });
+    Governorate.belongsTo(Region, { foreignKey: 'regionID' });
 
+    // Governorate - Delegation (1-to-many): Governorate can have multiple Delegations
+    Governorate.hasMany(Delegation, { foreignKey: 'governorateID' });
+    Delegation.belongsTo(Governorate, { foreignKey: 'governorateID' });
 };
 
 // Export models and setup function
@@ -145,5 +154,8 @@ module.exports = {
     Notification,
     NotificationPreference,
     NotificationRule,
+    Region,
+    Governorate,
+    Delegation,
     setupAssociations,
 };

@@ -11,6 +11,7 @@ const {
     initializeServer,
 } = require('./config');
 const { setupAssociations } = require('./models');
+const populateGeographicData = require('./scripts/seedLocations');
 const { seedSuperAdmin } = require('./scripts/SeedSuperAdmin');
 const { seedMissingPermissions } = require('./scripts/seedPermissions');
 const { setupCron } = require('./config/scheduler');
@@ -81,6 +82,20 @@ const initSteps = [
         default: process.env.INIT_DB_SYNC === 'true',
         fn: () => sequelize.sync({ alter: true }),
         weight: 20,
+    },
+    {
+
+        name: 'Geographic Data Initialization',
+        key: 'geoData',
+        default: process.env.INIT_GEO_DATA !== 'false',
+        fn: async () => {
+            try {
+                await populateGeographicData();
+            } catch (error) {
+                throw error;
+            }
+        },
+        weight: 10,
     },
     {
         name: 'Permission Seeding',

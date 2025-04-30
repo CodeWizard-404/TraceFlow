@@ -47569,3 +47569,556 @@
 {"level":"info","message":"Fetched notification rules by user: user_6nki0x8pi, IP: 192.168.0.117","timestamp":"2025-04-30T16:49:34.574Z"}
 {"level":"info","message":"User disconnected: superadmin@example.com","reason":"transport close","socketId":"-WGRjS3wHgRqEL6MAAAN","timestamp":"2025-04-30T16:52:48.749Z"}
 {"level":"info","message":"Client disconnected","socketId":"-WGRjS3wHgRqEL6MAAAN","timestamp":"2025-04-30T16:52:48.758Z"}
+{"level":"info","message":"Database Initialization: Starting","step":"database","timestamp":"2025-04-30T21:41:51.454Z"}
+{"duration":"7.29","level":"info","message":"Database Initialization: Completed","status":"success","step":"database","timestamp":"2025-04-30T21:41:57.045Z"}
+{"level":"info","message":"Database Initialization: Starting","step":"database","timestamp":"2025-04-30T21:42:08.318Z"}
+{"duration":"1.47","level":"info","message":"Database Initialization: Completed","status":"success","step":"database","timestamp":"2025-04-30T21:42:08.583Z"}
+{"level":"info","message":"SMTP Initialization: Starting","step":"smtp","timestamp":"2025-04-30T21:42:09.816Z"}
+{"level":"info","message":"SMTP server verified successfully","timestamp":"2025-04-30T21:42:12.451Z"}
+{"duration":"3.87","level":"info","message":"SMTP Initialization: Completed","status":"success","step":"smtp","timestamp":"2025-04-30T21:42:12.452Z"}
+{"level":"info","message":"SMS Initialization: Skipped","status":"skipped","step":"sms","timestamp":"2025-04-30T21:42:13.667Z"}
+{"level":"info","message":"Model Associations: Starting","step":"associations","timestamp":"2025-04-30T21:42:36.279Z"}
+{"duration":"22.65","level":"info","message":"Model Associations: Completed","status":"success","step":"associations","timestamp":"2025-04-30T21:42:36.318Z"}
+{"level":"info","message":"Database Synchronization: Skipped","status":"skipped","step":"sync","timestamp":"2025-04-30T21:42:39.512Z"}
+{"level":"info","message":"Database Initialization: Starting","step":"database","timestamp":"2025-04-30T21:42:50.877Z"}
+{"duration":"0.32","level":"info","message":"Database Initialization: Completed","status":"success","step":"database","timestamp":"2025-04-30T21:42:51.201Z"}
+{"level":"info","message":"SMTP Initialization: Starting","step":"smtp","timestamp":"2025-04-30T21:42:51.204Z"}
+{"level":"info","message":"SMTP server verified successfully","timestamp":"2025-04-30T21:42:51.897Z"}
+{"duration":"0.69","level":"info","message":"SMTP Initialization: Completed","status":"success","step":"smtp","timestamp":"2025-04-30T21:42:51.897Z"}
+{"level":"info","message":"SMS Initialization: Starting","step":"sms","timestamp":"2025-04-30T21:42:51.898Z"}
+{"level":"info","message":"Initializing SMS gateway with URL: https://wbm.tn/wbmonitor/send/webapi/v5/enquire_credit and headers: {\"X-API-Key\":\"8dc15c888d7489f473766c5717ed0132\",\"Content-Type\":\"application/json\"}","timestamp":"2025-04-30T21:42:51.899Z"}
+{"level":"error","message":"SMS gateway initialization failed: {\"op\":null,\"status\":-400,\"status_desc\":\"unauthorised\",\"apiVersion\":\"5\"}","timestamp":"2025-04-30T21:42:52.082Z"}
+{"level":"error","message":"SMS gateway initialization error: SMS gateway initialization failed with status: -400 - unauthorised","timestamp":"2025-04-30T21:42:52.083Z"}
+{"duration":"0.19","error":"SMS gateway initialization error: SMS gateway initialization failed with status: -400 - unauthorised","level":"error","message":"SMS Initialization: Failed","stack":"Error: SMS gateway initialization error: SMS gateway initialization failed with status: -400 - unauthorised\n    at Object.initializeSMS [as fn] (C:\\Users\\Kayto\\Desktop\\IT\\Projects\\Stage\\Stage PFE\\TraceFlow\\Code\\Back\\config\\sms.js:105:15)\n    at process.processTicksAndRejections (node:internal/process/task_queues:105:5)\n    at async startApp (C:\\Users\\Kayto\\Desktop\\IT\\Projects\\Stage\\Stage PFE\\TraceFlow\\Code\\Back\\app.js:199:17)","status":"failed","step":"sms","timestamp":"2025-04-30T21:42:52.084Z"}
+{"level":"error","message":"Initialization failed: Initialization aborted after SMS Initialization failure","stack":"Error: Initialization aborted after SMS Initialization failure\n    at startApp (C:\\Users\\Kayto\\Desktop\\IT\\Projects\\Stage\\Stage PFE\\TraceFlow\\Code\\Back\\app.js:244:23)\n    at process.processTicksAndRejections (node:internal/process/task_queues:105:5)","timestamp":"2025-04-30T21:42:52.671Z"}
+{"level":"info","message":"Database Initialization: Starting","step":"database","timestamp":"2025-04-30T21:43:17.213Z"}
+{"duration":"0.16","level":"info","message":"Database Initialization: Completed","status":"success","step":"database","timestamp":"2025-04-30T21:43:17.377Z"}
+{"level":"info","message":"SMTP Initialization: Starting","step":"smtp","timestamp":"2025-04-30T21:43:17.378Z"}
+{"level":"info","message":"SMTP server verified successfully","timestamp":"2025-04-30T21:43:17.948Z"}
+{"duration":"0.57","level":"info","message":"SMTP Initialization: Completed","status":"success","step":"smtp","timestamp":"2025-04-30T21:43:17.949Z"}
+{"level":"info","message":"SMS Initialization: Starting","step":"sms","timestamp":"2025-04-30T21:43:17.950Z"}
+{"level":"info","message":"Initializing SMS gateway with URL: https://wbm.tn/wbmonitor/send/webapi/v5/enquire_credit and headers: {\"X-API-Key\":\"8dc15c888d7489f473766c5717ed0132\",\"Content-Type\":\"application/json\"}","timestamp":"2025-04-30T21:43:17.951Z"}
+{"level":"error","message":"SMS gateway initialization failed: {\"op\":null,\"status\":-400,\"status_desc\":\"unauthorised\",\"apiVersion\":\"5\"}","timestamp":"2025-04-30T21:43:18.068Z"}
+{"level":"error","message":"SMS gateway initialization error: SMS gateway initialization failed with status: -400 - unauthorised","timestamp":"2025-04-30T21:43:18.069Z"}
+{"duration":"0.12","error":"SMS gateway initialization error: SMS gateway initialization failed with status: -400 - unauthorised","level":"error","message":"SMS Initialization: Failed","stack":"Error: SMS gateway initialization error: SMS gateway initialization failed with status: -400 - unauthorised\n    at Object.initializeSMS [as fn] (C:\\Users\\Kayto\\Desktop\\IT\\Projects\\Stage\\Stage PFE\\TraceFlow\\Code\\Back\\config\\sms.js:105:15)\n    at process.processTicksAndRejections (node:internal/process/task_queues:105:5)\n    at async startApp (C:\\Users\\Kayto\\Desktop\\IT\\Projects\\Stage\\Stage PFE\\TraceFlow\\Code\\Back\\app.js:199:17)","status":"failed","step":"sms","timestamp":"2025-04-30T21:43:18.070Z"}
+{"level":"info","message":"Model Associations: Starting","step":"associations","timestamp":"2025-04-30T21:43:20.588Z"}
+{"duration":"0.06","level":"info","message":"Model Associations: Completed","status":"success","step":"associations","timestamp":"2025-04-30T21:43:20.645Z"}
+{"level":"info","message":"Database Synchronization: Starting","step":"sync","timestamp":"2025-04-30T21:43:20.647Z"}
+{"duration":"0.65","level":"info","message":"Database Synchronization: Completed","status":"success","step":"sync","timestamp":"2025-04-30T21:43:21.301Z"}
+{"level":"info","message":"Permission Seeding: Starting","step":"permissions","timestamp":"2025-04-30T21:43:21.303Z"}
+{"duration":"3.81","level":"info","message":"Permission Seeding: Completed","status":"success","step":"permissions","timestamp":"2025-04-30T21:43:25.110Z"}
+{"level":"info","message":"Super Admin Seeding: Starting","step":"superadmin","timestamp":"2025-04-30T21:43:25.120Z"}
+{"duration":"1.37","level":"info","message":"Super Admin Seeding: Completed","status":"success","step":"superadmin","timestamp":"2025-04-30T21:43:26.494Z"}
+{"level":"info","message":"Database Initialization: Starting","step":"database","timestamp":"2025-04-30T21:43:31.477Z"}
+{"duration":"0.28","level":"info","message":"Database Initialization: Completed","status":"success","step":"database","timestamp":"2025-04-30T21:43:31.756Z"}
+{"level":"info","message":"SMTP Initialization: Starting","step":"smtp","timestamp":"2025-04-30T21:43:31.757Z"}
+{"level":"info","message":"SMTP server verified successfully","timestamp":"2025-04-30T21:43:32.394Z"}
+{"duration":"0.64","level":"info","message":"SMTP Initialization: Completed","status":"success","step":"smtp","timestamp":"2025-04-30T21:43:32.394Z"}
+{"level":"info","message":"SMS Initialization: Starting","step":"sms","timestamp":"2025-04-30T21:43:32.396Z"}
+{"level":"info","message":"Initializing SMS gateway with URL: https://wbm.tn/wbmonitor/send/webapi/v5/enquire_credit and headers: {\"X-API-Key\":\"8dc15c888d7489f473766c5717ed0132\",\"Content-Type\":\"application/json\"}","timestamp":"2025-04-30T21:43:32.396Z"}
+{"level":"error","message":"SMS gateway initialization failed: {\"op\":null,\"status\":-400,\"status_desc\":\"unauthorised\",\"apiVersion\":\"5\"}","timestamp":"2025-04-30T21:43:32.499Z"}
+{"level":"error","message":"SMS gateway initialization error: SMS gateway initialization failed with status: -400 - unauthorised","timestamp":"2025-04-30T21:43:32.500Z"}
+{"duration":"0.10","error":"SMS gateway initialization error: SMS gateway initialization failed with status: -400 - unauthorised","level":"error","message":"SMS Initialization: Failed","stack":"Error: SMS gateway initialization error: SMS gateway initialization failed with status: -400 - unauthorised\n    at Object.initializeSMS [as fn] (C:\\Users\\Kayto\\Desktop\\IT\\Projects\\Stage\\Stage PFE\\TraceFlow\\Code\\Back\\config\\sms.js:105:15)\n    at process.processTicksAndRejections (node:internal/process/task_queues:105:5)\n    at async startApp (C:\\Users\\Kayto\\Desktop\\IT\\Projects\\Stage\\Stage PFE\\TraceFlow\\Code\\Back\\app.js:199:17)","status":"failed","step":"sms","timestamp":"2025-04-30T21:43:32.501Z"}
+{"level":"info","message":"Model Associations: Starting","step":"associations","timestamp":"2025-04-30T21:43:33.664Z"}
+{"duration":"0.02","level":"info","message":"Model Associations: Completed","status":"success","step":"associations","timestamp":"2025-04-30T21:43:33.683Z"}
+{"level":"info","message":"Database Synchronization: Starting","step":"sync","timestamp":"2025-04-30T21:43:33.683Z"}
+{"duration":"0.78","level":"info","message":"Database Synchronization: Completed","status":"success","step":"sync","timestamp":"2025-04-30T21:43:34.467Z"}
+{"level":"info","message":"Permission Seeding: Starting","step":"permissions","timestamp":"2025-04-30T21:43:34.469Z"}
+{"duration":"0.01","level":"info","message":"Permission Seeding: Completed","status":"success","step":"permissions","timestamp":"2025-04-30T21:43:34.479Z"}
+{"level":"info","message":"Super Admin Seeding: Starting","step":"superadmin","timestamp":"2025-04-30T21:43:34.480Z"}
+{"duration":"0.95","level":"info","message":"Super Admin Seeding: Completed","status":"success","step":"superadmin","timestamp":"2025-04-30T21:43:35.434Z"}
+{"level":"info","message":"Database Initialization: Starting","step":"database","timestamp":"2025-04-30T21:43:45.785Z"}
+{"duration":"3.82","level":"info","message":"Database Initialization: Completed","status":"success","step":"database","timestamp":"2025-04-30T21:43:46.057Z"}
+{"level":"info","message":"SMTP Initialization: Starting","step":"smtp","timestamp":"2025-04-30T21:43:49.094Z"}
+{"level":"info","message":"SMTP server verified successfully","timestamp":"2025-04-30T21:43:49.712Z"}
+{"duration":"3.65","level":"info","message":"SMTP Initialization: Completed","status":"success","step":"smtp","timestamp":"2025-04-30T21:43:49.712Z"}
+{"level":"info","message":"SMS Initialization: Skipped","status":"skipped","step":"sms","timestamp":"2025-04-30T21:43:50.552Z"}
+{"level":"info","message":"Model Associations: Starting","step":"associations","timestamp":"2025-04-30T21:43:51.367Z"}
+{"duration":"0.85","level":"info","message":"Model Associations: Completed","status":"success","step":"associations","timestamp":"2025-04-30T21:43:51.401Z"}
+{"level":"info","message":"Database Synchronization: Skipped","status":"skipped","step":"sync","timestamp":"2025-04-30T21:43:51.541Z"}
+{"level":"info","message":"Permission Seeding: Skipped","status":"skipped","step":"permissions","timestamp":"2025-04-30T21:43:51.715Z"}
+{"level":"info","message":"Super Admin Seeding: Skipped","status":"skipped","step":"superadmin","timestamp":"2025-04-30T21:43:51.898Z"}
+{"level":"info","message":"Socket Initialization: Starting","step":"socket","timestamp":"2025-04-30T21:43:52.066Z"}
+{"duration":"0.17","level":"info","message":"Socket Initialization: Completed","status":"success","step":"socket","timestamp":"2025-04-30T21:43:52.067Z"}
+{"level":"info","message":"Server Initialization: Starting","step":"server","timestamp":"2025-04-30T21:43:52.230Z"}
+{"level":"info","message":"mDNS advertisement skipped in development mode","timestamp":"2025-04-30T21:43:52.233Z"}
+{"duration":"0.17","level":"info","message":"Server Initialization: Completed","status":"success","step":"server","timestamp":"2025-04-30T21:43:52.233Z"}
+{"level":"info","message":"\u001b[36m========== TraceFlow Initialization Summary ========\u001b[39m","timestamp":"2025-04-30T21:43:52.235Z"}
+{"level":"info","message":"Date: 2025-04-30T21:43:52.235Z","timestamp":"2025-04-30T21:43:52.235Z"}
+{"level":"info","message":"Steps Completed:","timestamp":"2025-04-30T21:43:52.236Z"}
+{"duration":"3.82","level":"info","message":"  - Database Initialization: \u001b[32mSUCCESS\u001b[39m - (3.82s)","status":"success","step":"Database Initialization","timestamp":"2025-04-30T21:43:52.236Z"}
+{"duration":"3.65","level":"info","message":"  - SMTP Initialization: \u001b[32mSUCCESS\u001b[39m - (3.65s)","status":"success","step":"SMTP Initialization","timestamp":"2025-04-30T21:43:52.236Z"}
+{"duration":"0.84","level":"info","message":"  - SMS Initialization: \u001b[33mSKIPPED\u001b[39m - (0.84s)","status":"skipped","step":"SMS Initialization","timestamp":"2025-04-30T21:43:52.236Z"}
+{"duration":"0.85","level":"info","message":"  - Model Associations: \u001b[32mSUCCESS\u001b[39m - (0.85s)","status":"success","step":"Model Associations","timestamp":"2025-04-30T21:43:52.237Z"}
+{"duration":"0.14","level":"info","message":"  - Database Synchronization: \u001b[33mSKIPPED\u001b[39m - (0.14s)","status":"skipped","step":"Database Synchronization","timestamp":"2025-04-30T21:43:52.237Z"}
+{"duration":"0.17","level":"info","message":"  - Permission Seeding: \u001b[33mSKIPPED\u001b[39m - (0.17s)","status":"skipped","step":"Permission Seeding","timestamp":"2025-04-30T21:43:52.237Z"}
+{"duration":"0.18","level":"info","message":"  - Super Admin Seeding: \u001b[33mSKIPPED\u001b[39m - (0.18s)","status":"skipped","step":"Super Admin Seeding","timestamp":"2025-04-30T21:43:52.237Z"}
+{"duration":"0.17","level":"info","message":"  - Socket Initialization: \u001b[32mSUCCESS\u001b[39m - (0.17s)","status":"success","step":"Socket Initialization","timestamp":"2025-04-30T21:43:52.238Z"}
+{"duration":"0.17","level":"info","message":"  - Server Initialization: \u001b[32mSUCCESS\u001b[39m - (0.17s)","status":"success","step":"Server Initialization","timestamp":"2025-04-30T21:43:52.238Z"}
+{"level":"info","message":"Total Steps: 9","timestamp":"2025-04-30T21:43:52.238Z"}
+{"level":"info","message":"\u001b[32mSuccesses: 5\u001b[39m","timestamp":"2025-04-30T21:43:52.239Z"}
+{"level":"info","message":"\u001b[33mSkipped: 4\u001b[39m","timestamp":"2025-04-30T21:43:52.240Z"}
+{"level":"info","message":"\u001b[31mFailures: 0\u001b[39m","timestamp":"2025-04-30T21:43:52.240Z"}
+{"level":"info","message":"Total Duration: 12.32 seconds","timestamp":"2025-04-30T21:43:52.240Z"}
+{"level":"info","message":"\u001b[36m===================================================\u001b[39m","timestamp":"2025-04-30T21:43:52.241Z"}
+{"level":"info","message":"\u001b[36m===================================================\u001b[39m","timestamp":"2025-04-30T21:43:52.241Z"}
+{"level":"info","message":"\tSuper Admin Credentials:","timestamp":"2025-04-30T21:43:52.241Z"}
+{"level":"info","message":"\tEmail:\t\tsuperadmin@example.com","timestamp":"2025-04-30T21:43:52.241Z"}
+{"level":"info","message":"\tPassword:\tSuperSecurePassword123!","timestamp":"2025-04-30T21:43:52.242Z"}
+{"level":"info","message":"\u001b[36m===================================================\u001b[39m","timestamp":"2025-04-30T21:43:52.242Z"}
+{"level":"info","message":"HTTP Server running on port 5000","timestamp":"2025-04-30T21:43:52.272Z"}
+{"level":"info","message":"No active rules found for event: otp:generated:user","timestamp":"2025-04-30T21:44:25.440Z"}
+{"enabled":true,"event":"otp:generated:user","level":"info","message":"Created default notification rule","ruleID":"rule_wDaFbU0tHJCT1YOnhjhaN","timestamp":"2025-04-30T21:44:25.464Z"}
+{"level":"info","message":"Notification stored Notification for otp:generated:user","notificationID":"notif_V7cPbC9rlxj1igTO7bZCW","timestamp":"2025-04-30T21:44:25.496Z","userID":"user_eguozxlj1"}
+{"level":"info","message":"Notification status updated","notificationID":"notif_V7cPbC9rlxj1igTO7bZCW","status":"sent","timestamp":"2025-04-30T21:44:25.511Z"}
+{"event":"otp:generated:user","level":"info","message":"Triggered notifications","recipientCount":1,"timestamp":"2025-04-30T21:44:25.517Z"}
+{"level":"info","message":"Generated OTP for user user_eguozxlj1 via phone: 248691","timestamp":"2025-04-30T21:44:25.518Z"}
+{"level":"info","message":"Sending SMS request to https://wbm.tn/wbmonitor/send/webapi/v5/send_generic with headers: {\"X-API-Key\":\"8dc15c888d7489f473766c5717ed0132\",\"Content-Type\":\"application/json\"} and payload: {\"dest_num\":\"00000000\",\"msg\":\"Your TraceFlow OTP is 248691\",\"type\":0,\"auto_detect\":1,\"dt\":\"30/04/2025\",\"hr\":21,\"mn\":44,\"label\":\"NG Trend\",\"ref\":\"test otp SMS\"}","timestamp":"2025-04-30T21:44:25.584Z"}
+{"level":"error","message":"w-Board SMS Gateway error (otp): {\"op\":null,\"status\":-400,\"status_desc\":\"unauthorised\",\"apiVersion\":\"5\"}","timestamp":"2025-04-30T21:44:25.734Z"}
+{"level":"error","message":"w-Board SMS Gateway error (otp): SMS sending failed with status: -400 - unauthorised","timestamp":"2025-04-30T21:44:25.735Z"}
+{"level":"info","message":"Email lookup result: superadmin@example.com","timestamp":"2025-04-30T21:44:25.748Z"}
+{"level":"info","message":"Fallback email sent to superadmin@example.com (otp)","timestamp":"2025-04-30T21:44:27.231Z"}
+{"level":"info","message":"Login successful for superadmin@example.com","timestamp":"2025-04-30T21:44:27.232Z"}
+{"level":"info","message":"2FA verified for user user_eguozxlj1","timestamp":"2025-04-30T21:44:33.680Z"}
+{"isWebSocket":false,"level":"info","message":"Authentication successful for user: superadmin@example.com","roles":"default-roles-traceflow, Super Admin","timestamp":"2025-04-30T21:44:33.776Z","userID":"user_eguozxlj1"}
+{"isWebSocket":true,"level":"info","message":"Authentication successful for user: superadmin@example.com","roles":"default-roles-traceflow, Super Admin","timestamp":"2025-04-30T21:44:33.786Z","userID":"user_eguozxlj1"}
+{"email":"superadmin@example.com","level":"info","message":"WebSocket authentication successful","roles":"default-roles-traceflow, Super Admin","socketId":"FDgaALBVP5TGYOrTAAAB","timestamp":"2025-04-30T21:44:33.791Z","userID":"user_eguozxlj1"}
+{"level":"info","message":"User connected: superadmin@example.com","socketId":"FDgaALBVP5TGYOrTAAAB","timestamp":"2025-04-30T21:44:33.809Z","userID":"user_eguozxlj1"}
+{"level":"info","message":"User superadmin@example.com joined room: default-roles-traceflow","socketId":"FDgaALBVP5TGYOrTAAAB","timestamp":"2025-04-30T21:44:33.813Z"}
+{"level":"info","message":"User superadmin@example.com joined room: super admin","socketId":"FDgaALBVP5TGYOrTAAAB","timestamp":"2025-04-30T21:44:33.814Z"}
+{"level":"info","message":"User superadmin@example.com joined room: user_eguozxlj1","socketId":"FDgaALBVP5TGYOrTAAAB","timestamp":"2025-04-30T21:44:33.815Z"}
+{"level":"info","message":"Client connected","socketId":"FDgaALBVP5TGYOrTAAAB","timestamp":"2025-04-30T21:44:33.818Z"}
+{"isWebSocket":false,"level":"info","message":"Authentication successful for user: superadmin@example.com","roles":"default-roles-traceflow, Super Admin","timestamp":"2025-04-30T21:44:33.838Z","userID":"user_eguozxlj1"}
+{"level":"info","message":"Fetched roles for user user_eguozxlj1 by user_eguozxlj1, IP: 192.168.1.11","timestamp":"2025-04-30T21:44:33.861Z"}
+{"level":"info","message":"User superadmin@example.com joined room: default-roles-traceflow","socketId":"FDgaALBVP5TGYOrTAAAB","timestamp":"2025-04-30T21:44:33.888Z"}
+{"level":"info","message":"Client joined room: default-roles-traceflow","socketId":"FDgaALBVP5TGYOrTAAAB","timestamp":"2025-04-30T21:44:33.890Z"}
+{"level":"info","message":"Fetched effective permissions for user user_eguozxlj1 by user_eguozxlj1, IP: 192.168.1.11","timestamp":"2025-04-30T21:44:33.932Z"}
+{"isWebSocket":false,"level":"info","message":"Authentication successful for user: superadmin@example.com","roles":"default-roles-traceflow, Super Admin","timestamp":"2025-04-30T21:44:33.984Z","userID":"user_eguozxlj1"}
+{"isWebSocket":false,"level":"info","message":"Authentication successful for user: superadmin@example.com","roles":"default-roles-traceflow, Super Admin","timestamp":"2025-04-30T21:44:33.990Z","userID":"user_eguozxlj1"}
+{"level":"info","message":"Fetched effective permissions for user user_eguozxlj1 by user_eguozxlj1, IP: 192.168.1.11","timestamp":"2025-04-30T21:44:34.029Z"}
+{"level":"info","message":"Fetched roles for user user_eguozxlj1 by user_eguozxlj1, IP: 192.168.1.11","timestamp":"2025-04-30T21:44:34.075Z"}
+{"isWebSocket":false,"level":"info","message":"Authentication successful for user: superadmin@example.com","roles":"default-roles-traceflow, Super Admin","timestamp":"2025-04-30T21:44:34.801Z","userID":"user_eguozxlj1"}
+{"level":"info","message":"Super Admin bypass for user user_eguozxlj1","timestamp":"2025-04-30T21:44:34.802Z"}
+{"level":"info","message":"Fetched all users by user user_eguozxlj1, IP: 192.168.1.11","timestamp":"2025-04-30T21:44:34.807Z"}
+{"isWebSocket":false,"level":"info","message":"Authentication successful for user: superadmin@example.com","roles":"default-roles-traceflow, Super Admin","timestamp":"2025-04-30T21:44:34.843Z","userID":"user_eguozxlj1"}
+{"level":"info","message":"Super Admin bypass for user user_eguozxlj1","timestamp":"2025-04-30T21:44:34.844Z"}
+{"level":"info","message":"Fetched all roles by user user_eguozxlj1, IP: 192.168.1.11","timestamp":"2025-04-30T21:44:34.852Z"}
+{"isWebSocket":false,"level":"info","message":"Authentication successful for user: superadmin@example.com","roles":"default-roles-traceflow, Super Admin","timestamp":"2025-04-30T21:44:34.902Z","userID":"user_eguozxlj1"}
+{"level":"info","message":"Super Admin bypass for user user_eguozxlj1","timestamp":"2025-04-30T21:44:34.904Z"}
+{"level":"info","message":"Fetched notification rules by user: user_eguozxlj1, IP: 192.168.1.11","timestamp":"2025-04-30T21:44:34.910Z"}
+{"isWebSocket":false,"level":"info","message":"Authentication successful for user: superadmin@example.com","roles":"default-roles-traceflow, Super Admin","timestamp":"2025-04-30T21:44:45.235Z","userID":"user_eguozxlj1"}
+{"level":"info","message":"Super Admin bypass for user user_eguozxlj1","timestamp":"2025-04-30T21:44:45.236Z"}
+{"isWebSocket":false,"level":"info","message":"Authentication successful for user: superadmin@example.com","roles":"default-roles-traceflow, Super Admin","timestamp":"2025-04-30T21:44:50.091Z","userID":"user_eguozxlj1"}
+{"level":"info","message":"Super Admin bypass for user user_eguozxlj1","timestamp":"2025-04-30T21:44:50.092Z"}
+{"level":"info","message":"No active rules found for event: role:reset","timestamp":"2025-04-30T21:44:53.520Z"}
+{"enabled":true,"event":"role:reset","level":"info","message":"Created default notification rule","ruleID":"rule_eBRfYCAQCdniLJdEvVVvO","timestamp":"2025-04-30T21:44:53.527Z"}
+{"level":"info","message":"Notification stored Notification for role:reset","notificationID":"notif_iGMAvHzCMvw28JwGRNmIl","timestamp":"2025-04-30T21:44:53.537Z","userID":"user_eguozxlj1"}
+{"level":"info","message":"Notification status updated","notificationID":"notif_iGMAvHzCMvw28JwGRNmIl","status":"sent","timestamp":"2025-04-30T21:44:53.545Z"}
+{"event":"role:reset","level":"info","message":"Triggered notifications","recipientCount":1,"timestamp":"2025-04-30T21:44:53.547Z"}
+{"level":"info","message":"Reset main roles by user user_eguozxlj1, IP: 192.168.1.11","timestamp":"2025-04-30T21:44:53.547Z"}
+{"isWebSocket":false,"level":"info","message":"Authentication successful for user: superadmin@example.com","roles":"default-roles-traceflow, Super Admin","timestamp":"2025-04-30T21:44:53.585Z","userID":"user_eguozxlj1"}
+{"level":"info","message":"Super Admin bypass for user user_eguozxlj1","timestamp":"2025-04-30T21:44:53.587Z"}
+{"level":"info","message":"Fetched all roles by user user_eguozxlj1, IP: 192.168.1.11","timestamp":"2025-04-30T21:44:53.603Z"}
+{"level":"info","message":"Notification stored Notification for role:reset","notificationID":"notif_jjkbrvgEVsI2ranxgQ1lM","timestamp":"2025-04-30T21:44:54.043Z","userID":"user_eguozxlj1"}
+{"level":"info","message":"Notification status updated","notificationID":"notif_jjkbrvgEVsI2ranxgQ1lM","status":"sent","timestamp":"2025-04-30T21:44:54.049Z"}
+{"event":"role:reset","level":"info","message":"Triggered notifications","recipientCount":1,"timestamp":"2025-04-30T21:44:54.050Z"}
+{"level":"info","message":"Reset main roles by user user_eguozxlj1, IP: 192.168.1.11","timestamp":"2025-04-30T21:44:54.051Z"}
+{"isWebSocket":false,"level":"info","message":"Authentication successful for user: superadmin@example.com","roles":"default-roles-traceflow, Super Admin","timestamp":"2025-04-30T21:44:54.075Z","userID":"user_eguozxlj1"}
+{"level":"info","message":"Super Admin bypass for user user_eguozxlj1","timestamp":"2025-04-30T21:44:54.076Z"}
+{"level":"info","message":"Fetched all roles by user user_eguozxlj1, IP: 192.168.1.11","timestamp":"2025-04-30T21:44:54.089Z"}
+{"level":"info","message":"Initiating token refresh","timestamp":"2025-04-30T21:59:04.237Z"}
+{"accessTokenExpiresIn":900,"level":"info","message":"Tokens refreshed successfully","refreshTokenRotatedAt":"2025-04-30T21:59:04.304Z","timestamp":"2025-04-30T21:59:04.304Z"}
+{"level":"info","message":"Refresh token successful","timestamp":"2025-04-30T21:59:04.304Z"}
+{"level":"info","message":"User disconnected: superadmin@example.com","reason":"client namespace disconnect","socketId":"FDgaALBVP5TGYOrTAAAB","timestamp":"2025-04-30T21:59:04.311Z"}
+{"level":"info","message":"Client disconnected","socketId":"FDgaALBVP5TGYOrTAAAB","timestamp":"2025-04-30T21:59:04.311Z"}
+{"isWebSocket":true,"level":"info","message":"Authentication successful for user: superadmin@example.com","roles":"default-roles-traceflow, Super Admin","timestamp":"2025-04-30T21:59:04.420Z","userID":"user_eguozxlj1"}
+{"email":"superadmin@example.com","level":"info","message":"WebSocket authentication successful","roles":"default-roles-traceflow, Super Admin","socketId":"_s-z5x2Nu4_dUs9wAAAD","timestamp":"2025-04-30T21:59:04.421Z","userID":"user_eguozxlj1"}
+{"level":"info","message":"User connected: superadmin@example.com","socketId":"_s-z5x2Nu4_dUs9wAAAD","timestamp":"2025-04-30T21:59:04.422Z","userID":"user_eguozxlj1"}
+{"level":"info","message":"User superadmin@example.com joined room: default-roles-traceflow","socketId":"_s-z5x2Nu4_dUs9wAAAD","timestamp":"2025-04-30T21:59:04.422Z"}
+{"level":"info","message":"User superadmin@example.com joined room: super admin","socketId":"_s-z5x2Nu4_dUs9wAAAD","timestamp":"2025-04-30T21:59:04.423Z"}
+{"level":"info","message":"User superadmin@example.com joined room: user_eguozxlj1","socketId":"_s-z5x2Nu4_dUs9wAAAD","timestamp":"2025-04-30T21:59:04.423Z"}
+{"level":"info","message":"Client connected","socketId":"_s-z5x2Nu4_dUs9wAAAD","timestamp":"2025-04-30T21:59:04.423Z"}
+{"level":"info","message":"User superadmin@example.com joined room: default-roles-traceflow","socketId":"_s-z5x2Nu4_dUs9wAAAD","timestamp":"2025-04-30T21:59:04.426Z"}
+{"level":"info","message":"Client joined room: default-roles-traceflow","socketId":"_s-z5x2Nu4_dUs9wAAAD","timestamp":"2025-04-30T21:59:04.427Z"}
+{"level":"info","message":"Cleaning up expired OTPs","timestamp":"2025-04-30T22:00:00.486Z"}
+{"level":"info","message":"Cleaned up 0 expired OTPs","timestamp":"2025-04-30T22:00:00.600Z"}
+{"level":"info","message":"Updated 0 visits from pending to validated","timestamp":"2025-04-30T22:00:00.608Z"}
+{"level":"info","message":"Initiating token refresh","timestamp":"2025-04-30T22:13:35.235Z"}
+{"accessTokenExpiresIn":900,"level":"info","message":"Tokens refreshed successfully","refreshTokenRotatedAt":"2025-04-30T22:13:35.264Z","timestamp":"2025-04-30T22:13:35.264Z"}
+{"level":"info","message":"Refresh token successful","timestamp":"2025-04-30T22:13:35.265Z"}
+{"level":"info","message":"User disconnected: superadmin@example.com","reason":"client namespace disconnect","socketId":"_s-z5x2Nu4_dUs9wAAAD","timestamp":"2025-04-30T22:13:35.273Z"}
+{"level":"info","message":"Client disconnected","socketId":"_s-z5x2Nu4_dUs9wAAAD","timestamp":"2025-04-30T22:13:35.276Z"}
+{"isWebSocket":true,"level":"info","message":"Authentication successful for user: superadmin@example.com","roles":"default-roles-traceflow, Super Admin","timestamp":"2025-04-30T22:13:35.408Z","userID":"user_eguozxlj1"}
+{"email":"superadmin@example.com","level":"info","message":"WebSocket authentication successful","roles":"default-roles-traceflow, Super Admin","socketId":"KymTVvoVQjrgAKhCAAAF","timestamp":"2025-04-30T22:13:35.409Z","userID":"user_eguozxlj1"}
+{"level":"info","message":"User connected: superadmin@example.com","socketId":"KymTVvoVQjrgAKhCAAAF","timestamp":"2025-04-30T22:13:35.411Z","userID":"user_eguozxlj1"}
+{"level":"info","message":"User superadmin@example.com joined room: default-roles-traceflow","socketId":"KymTVvoVQjrgAKhCAAAF","timestamp":"2025-04-30T22:13:35.411Z"}
+{"level":"info","message":"User superadmin@example.com joined room: super admin","socketId":"KymTVvoVQjrgAKhCAAAF","timestamp":"2025-04-30T22:13:35.413Z"}
+{"level":"info","message":"User superadmin@example.com joined room: user_eguozxlj1","socketId":"KymTVvoVQjrgAKhCAAAF","timestamp":"2025-04-30T22:13:35.413Z"}
+{"level":"info","message":"Client connected","socketId":"KymTVvoVQjrgAKhCAAAF","timestamp":"2025-04-30T22:13:35.414Z"}
+{"level":"info","message":"User superadmin@example.com joined room: default-roles-traceflow","socketId":"KymTVvoVQjrgAKhCAAAF","timestamp":"2025-04-30T22:13:35.417Z"}
+{"level":"info","message":"Client joined room: default-roles-traceflow","socketId":"KymTVvoVQjrgAKhCAAAF","timestamp":"2025-04-30T22:13:35.417Z"}
+{"level":"info","message":"Initiating token refresh","timestamp":"2025-04-30T22:28:06.237Z"}
+{"accessTokenExpiresIn":900,"level":"info","message":"Tokens refreshed successfully","refreshTokenRotatedAt":"2025-04-30T22:28:06.274Z","timestamp":"2025-04-30T22:28:06.274Z"}
+{"level":"info","message":"Refresh token successful","timestamp":"2025-04-30T22:28:06.275Z"}
+{"level":"info","message":"User disconnected: superadmin@example.com","reason":"client namespace disconnect","socketId":"KymTVvoVQjrgAKhCAAAF","timestamp":"2025-04-30T22:28:06.286Z"}
+{"level":"info","message":"Client disconnected","socketId":"KymTVvoVQjrgAKhCAAAF","timestamp":"2025-04-30T22:28:06.289Z"}
+{"isWebSocket":true,"level":"info","message":"Authentication successful for user: superadmin@example.com","roles":"default-roles-traceflow, Super Admin","timestamp":"2025-04-30T22:28:06.538Z","userID":"user_eguozxlj1"}
+{"email":"superadmin@example.com","level":"info","message":"WebSocket authentication successful","roles":"default-roles-traceflow, Super Admin","socketId":"PfQxviLo0MQyWWGsAAAH","timestamp":"2025-04-30T22:28:06.539Z","userID":"user_eguozxlj1"}
+{"level":"info","message":"User connected: superadmin@example.com","socketId":"PfQxviLo0MQyWWGsAAAH","timestamp":"2025-04-30T22:28:06.543Z","userID":"user_eguozxlj1"}
+{"level":"info","message":"User superadmin@example.com joined room: default-roles-traceflow","socketId":"PfQxviLo0MQyWWGsAAAH","timestamp":"2025-04-30T22:28:06.544Z"}
+{"level":"info","message":"User superadmin@example.com joined room: super admin","socketId":"PfQxviLo0MQyWWGsAAAH","timestamp":"2025-04-30T22:28:06.545Z"}
+{"level":"info","message":"User superadmin@example.com joined room: user_eguozxlj1","socketId":"PfQxviLo0MQyWWGsAAAH","timestamp":"2025-04-30T22:28:06.546Z"}
+{"level":"info","message":"Client connected","socketId":"PfQxviLo0MQyWWGsAAAH","timestamp":"2025-04-30T22:28:06.547Z"}
+{"level":"info","message":"User superadmin@example.com joined room: default-roles-traceflow","socketId":"PfQxviLo0MQyWWGsAAAH","timestamp":"2025-04-30T22:28:06.553Z"}
+{"level":"info","message":"Client joined room: default-roles-traceflow","socketId":"PfQxviLo0MQyWWGsAAAH","timestamp":"2025-04-30T22:28:06.555Z"}
+{"level":"info","message":"Database Initialization: Skipped","status":"skipped","step":"database","timestamp":"2025-04-30T22:32:01.407Z"}
+{"level":"info","message":"SMTP Initialization: Skipped","status":"skipped","step":"smtp","timestamp":"2025-04-30T22:32:02.075Z"}
+{"level":"info","message":"Database Initialization: Starting","step":"database","timestamp":"2025-04-30T22:32:17.415Z"}
+{"duration":"1.72","level":"info","message":"Database Initialization: Completed","status":"success","step":"database","timestamp":"2025-04-30T22:32:17.650Z"}
+{"level":"info","message":"SMTP Initialization: Skipped","status":"skipped","step":"smtp","timestamp":"2025-04-30T22:32:19.018Z"}
+{"level":"info","message":"SMS Initialization: Skipped","status":"skipped","step":"sms","timestamp":"2025-04-30T22:32:19.904Z"}
+{"level":"info","message":"Model Associations: Starting","step":"associations","timestamp":"2025-04-30T22:32:23.812Z"}
+{"duration":"3.93","level":"info","message":"Model Associations: Completed","status":"success","step":"associations","timestamp":"2025-04-30T22:32:23.834Z"}
+{"level":"info","message":"Database Synchronization: Starting","step":"sync","timestamp":"2025-04-30T22:32:25.221Z"}
+{"duration":"2.34","level":"info","message":"Database Synchronization: Completed","status":"success","step":"sync","timestamp":"2025-04-30T22:32:26.178Z"}
+{"level":"info","message":"Permission Seeding: Starting","step":"permissions","timestamp":"2025-04-30T22:32:30.339Z"}
+{"duration":"4.17","level":"info","message":"Permission Seeding: Completed","status":"success","step":"permissions","timestamp":"2025-04-30T22:32:30.349Z"}
+{"level":"info","message":"Super Admin Seeding: Starting","step":"superadmin","timestamp":"2025-04-30T22:32:31.203Z"}
+{"duration":"1.87","level":"info","message":"Super Admin Seeding: Completed","status":"success","step":"superadmin","timestamp":"2025-04-30T22:32:32.222Z"}
+{"level":"info","message":"Socket Initialization: Starting","step":"socket","timestamp":"2025-04-30T22:32:33.128Z"}
+{"duration":"0.91","level":"info","message":"Socket Initialization: Completed","status":"success","step":"socket","timestamp":"2025-04-30T22:32:33.128Z"}
+{"level":"info","message":"Server Initialization: Starting","step":"server","timestamp":"2025-04-30T22:32:34.288Z"}
+{"level":"info","message":"mDNS advertisement skipped in development mode","timestamp":"2025-04-30T22:32:34.290Z"}
+{"duration":"1.16","level":"info","message":"Server Initialization: Completed","status":"success","step":"server","timestamp":"2025-04-30T22:32:34.290Z"}
+{"level":"info","message":"\u001b[36m========== TraceFlow Initialization Summary ========\u001b[39m","timestamp":"2025-04-30T22:32:34.292Z"}
+{"level":"info","message":"Date: 2025-04-30T22:32:34.292Z","timestamp":"2025-04-30T22:32:34.292Z"}
+{"level":"info","message":"Steps Completed:","timestamp":"2025-04-30T22:32:34.292Z"}
+{"duration":"1.72","level":"info","message":"  - Database Initialization: \u001b[32mSUCCESS\u001b[39m - (1.72s)","status":"success","step":"Database Initialization","timestamp":"2025-04-30T22:32:34.293Z"}
+{"duration":"1.37","level":"info","message":"  - SMTP Initialization: \u001b[33mSKIPPED\u001b[39m - (1.37s)","status":"skipped","step":"SMTP Initialization","timestamp":"2025-04-30T22:32:34.293Z"}
+{"duration":"0.89","level":"info","message":"  - SMS Initialization: \u001b[33mSKIPPED\u001b[39m - (0.89s)","status":"skipped","step":"SMS Initialization","timestamp":"2025-04-30T22:32:34.293Z"}
+{"duration":"3.93","level":"info","message":"  - Model Associations: \u001b[32mSUCCESS\u001b[39m - (3.93s)","status":"success","step":"Model Associations","timestamp":"2025-04-30T22:32:34.294Z"}
+{"duration":"2.34","level":"info","message":"  - Database Synchronization: \u001b[32mSUCCESS\u001b[39m - (2.34s)","status":"success","step":"Database Synchronization","timestamp":"2025-04-30T22:32:34.294Z"}
+{"duration":"4.17","level":"info","message":"  - Permission Seeding: \u001b[32mSUCCESS\u001b[39m - (4.17s)","status":"success","step":"Permission Seeding","timestamp":"2025-04-30T22:32:34.294Z"}
+{"duration":"1.87","level":"info","message":"  - Super Admin Seeding: \u001b[32mSUCCESS\u001b[39m - (1.87s)","status":"success","step":"Super Admin Seeding","timestamp":"2025-04-30T22:32:34.294Z"}
+{"duration":"0.91","level":"info","message":"  - Socket Initialization: \u001b[32mSUCCESS\u001b[39m - (0.91s)","status":"success","step":"Socket Initialization","timestamp":"2025-04-30T22:32:34.294Z"}
+{"duration":"1.16","level":"info","message":"  - Server Initialization: \u001b[32mSUCCESS\u001b[39m - (1.16s)","status":"success","step":"Server Initialization","timestamp":"2025-04-30T22:32:34.295Z"}
+{"level":"info","message":"Total Steps: 9","timestamp":"2025-04-30T22:32:34.295Z"}
+{"level":"info","message":"\u001b[32mSuccesses: 7\u001b[39m","timestamp":"2025-04-30T22:32:34.295Z"}
+{"level":"info","message":"\u001b[33mSkipped: 2\u001b[39m","timestamp":"2025-04-30T22:32:34.295Z"}
+{"level":"info","message":"\u001b[31mFailures: 0\u001b[39m","timestamp":"2025-04-30T22:32:34.295Z"}
+{"level":"info","message":"Total Duration: 23.76 seconds","timestamp":"2025-04-30T22:32:34.295Z"}
+{"level":"info","message":"\u001b[36m===================================================\u001b[39m","timestamp":"2025-04-30T22:32:34.295Z"}
+{"level":"info","message":"\u001b[36m===================================================\u001b[39m","timestamp":"2025-04-30T22:32:34.296Z"}
+{"level":"info","message":"\tSuper Admin Credentials:","timestamp":"2025-04-30T22:32:34.296Z"}
+{"level":"info","message":"\tEmail:\t\tsuperadmin@example.com","timestamp":"2025-04-30T22:32:34.297Z"}
+{"level":"info","message":"\tPassword:\tSuperSecurePassword123!","timestamp":"2025-04-30T22:32:34.298Z"}
+{"level":"info","message":"\u001b[36m===================================================\u001b[39m","timestamp":"2025-04-30T22:32:34.298Z"}
+{"level":"info","message":"HTTP Server running on port 5000","timestamp":"2025-04-30T22:32:34.305Z"}
+{"level":"info","message":"Database Initialization: Starting","step":"database","timestamp":"2025-04-30T22:36:17.396Z"}
+{"duration":"2.00","level":"info","message":"Database Initialization: Completed","status":"success","step":"database","timestamp":"2025-04-30T22:36:17.549Z"}
+{"level":"info","message":"SMTP Initialization: Starting","step":"smtp","timestamp":"2025-04-30T22:36:19.178Z"}
+{"level":"info","message":"SMTP server verified successfully","timestamp":"2025-04-30T22:36:19.763Z"}
+{"duration":"2.21","level":"info","message":"SMTP Initialization: Completed","status":"success","step":"smtp","timestamp":"2025-04-30T22:36:19.764Z"}
+{"level":"info","message":"SMS Initialization: Skipped","status":"skipped","step":"sms","timestamp":"2025-04-30T22:36:22.139Z"}
+{"level":"info","message":"Model Associations: Starting","step":"associations","timestamp":"2025-04-30T22:36:26.149Z"}
+{"duration":"4.03","level":"info","message":"Model Associations: Completed","status":"success","step":"associations","timestamp":"2025-04-30T22:36:26.171Z"}
+{"level":"info","message":"Database Synchronization: Starting","step":"sync","timestamp":"2025-04-30T22:36:29.675Z"}
+{"duration":"4.33","level":"info","message":"Database Synchronization: Completed","status":"success","step":"sync","timestamp":"2025-04-30T22:36:30.505Z"}
+{"level":"info","message":"Geographic Data Initialization: Starting","step":"geoData","timestamp":"2025-04-30T22:36:34.188Z"}
+{"duration":"3.73","level":"info","message":"Geographic Data Initialization: Completed","status":"success","step":"geoData","timestamp":"2025-04-30T22:36:34.230Z"}
+{"level":"info","message":"Database Initialization: Starting","step":"database","timestamp":"2025-04-30T22:41:00.980Z"}
+{"duration":"1.68","level":"info","message":"Database Initialization: Completed","status":"success","step":"database","timestamp":"2025-04-30T22:41:01.229Z"}
+{"level":"info","message":"SMTP Initialization: Starting","step":"smtp","timestamp":"2025-04-30T22:41:01.973Z"}
+{"level":"info","message":"SMTP server verified successfully","timestamp":"2025-04-30T22:41:02.558Z"}
+{"duration":"1.33","level":"info","message":"SMTP Initialization: Completed","status":"success","step":"smtp","timestamp":"2025-04-30T22:41:02.559Z"}
+{"level":"info","message":"SMS Initialization: Skipped","status":"skipped","step":"sms","timestamp":"2025-04-30T22:41:03.287Z"}
+{"level":"info","message":"Model Associations: Starting","step":"associations","timestamp":"2025-04-30T22:41:05.896Z"}
+{"duration":"2.64","level":"info","message":"Model Associations: Completed","status":"success","step":"associations","timestamp":"2025-04-30T22:41:05.926Z"}
+{"level":"info","message":"Database Synchronization: Starting","step":"sync","timestamp":"2025-04-30T22:41:06.781Z"}
+{"duration":"1.89","level":"info","message":"Database Synchronization: Completed","status":"success","step":"sync","timestamp":"2025-04-30T22:41:07.814Z"}
+{"level":"info","message":"Geographic Data Initialization: Starting","step":"geoData","timestamp":"2025-04-30T22:41:08.733Z"}
+{"duration":"0.95","error":"Governorate.bulkCreate is not a function","level":"error","message":"Geographic Data Initialization: Failed","stack":"TypeError: Governorate.bulkCreate is not a function\n    at Object.populateGeographicData [as fn] (C:\\Users\\Kayto\\Desktop\\IT\\Projects\\Stage\\Stage PFE\\TraceFlow\\Code\\Back\\scripts\\seedLocations.js:39:27)\n    at startApp (C:\\Users\\Kayto\\Desktop\\IT\\Projects\\Stage\\Stage PFE\\TraceFlow\\Code\\Back\\app.js:208:28)\n    at process.processTicksAndRejections (node:internal/process/task_queues:105:5)","status":"failed","step":"geoData","timestamp":"2025-04-30T22:41:08.763Z"}
+{"level":"info","message":"Database Initialization: Starting","step":"database","timestamp":"2025-04-30T22:44:07.973Z"}
+{"duration":"1.26","level":"info","message":"Database Initialization: Completed","status":"success","step":"database","timestamp":"2025-04-30T22:44:08.135Z"}
+{"level":"info","message":"SMTP Initialization: Starting","step":"smtp","timestamp":"2025-04-30T22:44:08.539Z"}
+{"level":"info","message":"SMTP server verified successfully","timestamp":"2025-04-30T22:44:09.133Z"}
+{"duration":"1.00","level":"info","message":"SMTP Initialization: Completed","status":"success","step":"smtp","timestamp":"2025-04-30T22:44:09.134Z"}
+{"level":"info","message":"SMS Initialization: Skipped","status":"skipped","step":"sms","timestamp":"2025-04-30T22:44:09.708Z"}
+{"level":"info","message":"Model Associations: Starting","step":"associations","timestamp":"2025-04-30T22:44:11.351Z"}
+{"duration":"1.66","level":"info","message":"Model Associations: Completed","status":"success","step":"associations","timestamp":"2025-04-30T22:44:11.369Z"}
+{"level":"info","message":"Database Synchronization: Starting","step":"sync","timestamp":"2025-04-30T22:44:11.943Z"}
+{"duration":"1.60","level":"info","message":"Database Synchronization: Completed","status":"success","step":"sync","timestamp":"2025-04-30T22:44:12.966Z"}
+{"level":"info","message":"Geographic Data Initialization: Starting","step":"geoData","timestamp":"2025-04-30T22:44:13.637Z"}
+{"duration":"0.70","level":"info","message":"Geographic Data Initialization: Completed","status":"success","step":"geoData","timestamp":"2025-04-30T22:44:13.669Z"}
+{"level":"info","message":"Database Initialization: Starting","step":"database","timestamp":"2025-04-30T22:47:39.061Z"}
+{"duration":"2.17","level":"info","message":"Database Initialization: Completed","status":"success","step":"database","timestamp":"2025-04-30T22:47:40.039Z"}
+{"level":"info","message":"SMTP Initialization: Starting","step":"smtp","timestamp":"2025-04-30T22:47:40.047Z"}
+{"level":"info","message":"SMTP server verified successfully","timestamp":"2025-04-30T22:47:40.663Z"}
+{"duration":"0.62","level":"info","message":"SMTP Initialization: Completed","status":"success","step":"smtp","timestamp":"2025-04-30T22:47:40.664Z"}
+{"level":"info","message":"SMS Initialization: Skipped","status":"skipped","step":"sms","timestamp":"2025-04-30T22:47:44.347Z"}
+{"level":"info","message":"Model Associations: Starting","step":"associations","timestamp":"2025-04-30T22:47:46.183Z"}
+{"duration":"1.86","level":"info","message":"Model Associations: Completed","status":"success","step":"associations","timestamp":"2025-04-30T22:47:46.204Z"}
+{"level":"info","message":"Database Synchronization: Starting","step":"sync","timestamp":"2025-04-30T22:47:46.751Z"}
+{"duration":"0.97","level":"info","message":"Database Synchronization: Completed","status":"success","step":"sync","timestamp":"2025-04-30T22:47:47.171Z"}
+{"level":"info","message":"Geographic Data Initialization: Skipped","status":"skipped","step":"geoData","timestamp":"2025-04-30T22:47:50.152Z"}
+{"level":"info","message":"Permission Seeding: Starting","step":"permissions","timestamp":"2025-04-30T22:47:51.665Z"}
+{"duration":"2.18","level":"info","message":"Permission Seeding: Completed","status":"success","step":"permissions","timestamp":"2025-04-30T22:47:52.332Z"}
+{"level":"info","message":"Super Admin Seeding: Starting","step":"superadmin","timestamp":"2025-04-30T22:47:54.061Z"}
+{"duration":"2.65","level":"info","message":"Super Admin Seeding: Completed","status":"success","step":"superadmin","timestamp":"2025-04-30T22:47:54.986Z"}
+{"level":"info","message":"Socket Initialization: Starting","step":"socket","timestamp":"2025-04-30T22:47:56.426Z"}
+{"duration":"1.44","level":"info","message":"Socket Initialization: Completed","status":"success","step":"socket","timestamp":"2025-04-30T22:47:56.427Z"}
+{"level":"info","message":"Server Initialization: Starting","step":"server","timestamp":"2025-04-30T22:47:58.604Z"}
+{"level":"info","message":"mDNS advertisement skipped in development mode","timestamp":"2025-04-30T22:47:58.606Z"}
+{"duration":"2.18","level":"info","message":"Server Initialization: Completed","status":"success","step":"server","timestamp":"2025-04-30T22:47:58.607Z"}
+{"level":"info","message":"\u001b[36m========== TraceFlow Initialization Summary ========\u001b[39m","timestamp":"2025-04-30T22:47:58.608Z"}
+{"level":"info","message":"Date: 2025-04-30T22:47:58.608Z","timestamp":"2025-04-30T22:47:58.608Z"}
+{"level":"info","message":"Steps Completed:","timestamp":"2025-04-30T22:47:58.608Z"}
+{"duration":"2.17","level":"info","message":"  - Database Initialization: \u001b[32mSUCCESS\u001b[39m - (2.17s)","status":"success","step":"Database Initialization","timestamp":"2025-04-30T22:47:58.608Z"}
+{"duration":"0.62","level":"info","message":"  - SMTP Initialization: \u001b[32mSUCCESS\u001b[39m - (0.62s)","status":"success","step":"SMTP Initialization","timestamp":"2025-04-30T22:47:58.609Z"}
+{"duration":"3.68","level":"info","message":"  - SMS Initialization: \u001b[33mSKIPPED\u001b[39m - (3.68s)","status":"skipped","step":"SMS Initialization","timestamp":"2025-04-30T22:47:58.609Z"}
+{"duration":"1.86","level":"info","message":"  - Model Associations: \u001b[32mSUCCESS\u001b[39m - (1.86s)","status":"success","step":"Model Associations","timestamp":"2025-04-30T22:47:58.609Z"}
+{"duration":"0.97","level":"info","message":"  - Database Synchronization: \u001b[32mSUCCESS\u001b[39m - (0.97s)","status":"success","step":"Database Synchronization","timestamp":"2025-04-30T22:47:58.609Z"}
+{"duration":"2.98","level":"info","message":"  - Geographic Data Initialization: \u001b[33mSKIPPED\u001b[39m - (2.98s)","status":"skipped","step":"Geographic Data Initialization","timestamp":"2025-04-30T22:47:58.609Z"}
+{"duration":"2.18","level":"info","message":"  - Permission Seeding: \u001b[32mSUCCESS\u001b[39m - (2.18s)","status":"success","step":"Permission Seeding","timestamp":"2025-04-30T22:47:58.609Z"}
+{"duration":"2.65","level":"info","message":"  - Super Admin Seeding: \u001b[32mSUCCESS\u001b[39m - (2.65s)","status":"success","step":"Super Admin Seeding","timestamp":"2025-04-30T22:47:58.610Z"}
+{"duration":"1.44","level":"info","message":"  - Socket Initialization: \u001b[32mSUCCESS\u001b[39m - (1.44s)","status":"success","step":"Socket Initialization","timestamp":"2025-04-30T22:47:58.610Z"}
+{"duration":"2.18","level":"info","message":"  - Server Initialization: \u001b[32mSUCCESS\u001b[39m - (2.18s)","status":"success","step":"Server Initialization","timestamp":"2025-04-30T22:47:58.610Z"}
+{"level":"info","message":"Total Steps: 10","timestamp":"2025-04-30T22:47:58.610Z"}
+{"level":"info","message":"\u001b[32mSuccesses: 8\u001b[39m","timestamp":"2025-04-30T22:47:58.610Z"}
+{"level":"info","message":"\u001b[33mSkipped: 2\u001b[39m","timestamp":"2025-04-30T22:47:58.610Z"}
+{"level":"info","message":"\u001b[31mFailures: 0\u001b[39m","timestamp":"2025-04-30T22:47:58.611Z"}
+{"level":"info","message":"Total Duration: 22.07 seconds","timestamp":"2025-04-30T22:47:58.611Z"}
+{"level":"info","message":"\u001b[36m===================================================\u001b[39m","timestamp":"2025-04-30T22:47:58.611Z"}
+{"level":"info","message":"\u001b[36m===================================================\u001b[39m","timestamp":"2025-04-30T22:47:58.611Z"}
+{"level":"info","message":"\tSuper Admin Credentials:","timestamp":"2025-04-30T22:47:58.611Z"}
+{"level":"info","message":"\tEmail:\t\tsuperadmin@example.com","timestamp":"2025-04-30T22:47:58.611Z"}
+{"level":"info","message":"\tPassword:\tSuperSecurePassword123!","timestamp":"2025-04-30T22:47:58.611Z"}
+{"level":"info","message":"\u001b[36m===================================================\u001b[39m","timestamp":"2025-04-30T22:47:58.612Z"}
+{"level":"info","message":"HTTP Server running on port 5000","timestamp":"2025-04-30T22:47:58.617Z"}
+{"level":"info","message":"Database Initialization: Skipped","status":"skipped","step":"database","timestamp":"2025-04-30T22:48:05.268Z"}
+{"level":"info","message":"SMTP Initialization: Starting","step":"smtp","timestamp":"2025-04-30T22:48:09.010Z"}
+{"level":"info","message":"SMTP server verified successfully","timestamp":"2025-04-30T22:48:09.577Z"}
+{"duration":"4.30","level":"info","message":"SMTP Initialization: Completed","status":"success","step":"smtp","timestamp":"2025-04-30T22:48:09.578Z"}
+{"level":"info","message":"Database Initialization: Starting","step":"database","timestamp":"2025-04-30T22:48:18.333Z"}
+{"duration":"1.34","level":"info","message":"Database Initialization: Completed","status":"success","step":"database","timestamp":"2025-04-30T22:48:18.493Z"}
+{"level":"info","message":"SMTP Initialization: Starting","step":"smtp","timestamp":"2025-04-30T22:48:19.617Z"}
+{"level":"info","message":"SMTP server verified successfully","timestamp":"2025-04-30T22:48:20.186Z"}
+{"duration":"1.69","level":"info","message":"SMTP Initialization: Completed","status":"success","step":"smtp","timestamp":"2025-04-30T22:48:20.186Z"}
+{"level":"info","message":"SMS Initialization: Skipped","status":"skipped","step":"sms","timestamp":"2025-04-30T22:48:22.374Z"}
+{"level":"info","message":"Model Associations: Starting","step":"associations","timestamp":"2025-04-30T22:48:25.518Z"}
+{"duration":"3.16","level":"info","message":"Model Associations: Completed","status":"success","step":"associations","timestamp":"2025-04-30T22:48:25.537Z"}
+{"level":"info","message":"Database Synchronization: Starting","step":"sync","timestamp":"2025-04-30T22:48:30.129Z"}
+{"duration":"5.44","level":"info","message":"Database Synchronization: Completed","status":"success","step":"sync","timestamp":"2025-04-30T22:48:30.979Z"}
+{"level":"info","message":"Geographic Data Initialization: Skipped","status":"skipped","step":"geoData","timestamp":"2025-04-30T22:48:33.778Z"}
+{"level":"info","message":"Permission Seeding: Starting","step":"permissions","timestamp":"2025-04-30T22:48:41.570Z"}
+{"duration":"7.80","level":"info","message":"Permission Seeding: Completed","status":"success","step":"permissions","timestamp":"2025-04-30T22:48:41.579Z"}
+{"level":"info","message":"Super Admin Seeding: Starting","step":"superadmin","timestamp":"2025-04-30T22:48:42.676Z"}
+{"duration":"1.89","level":"info","message":"Super Admin Seeding: Completed","status":"success","step":"superadmin","timestamp":"2025-04-30T22:48:43.471Z"}
+{"level":"info","message":"Socket Initialization: Starting","step":"socket","timestamp":"2025-04-30T22:48:44.671Z"}
+{"duration":"1.20","level":"info","message":"Socket Initialization: Completed","status":"success","step":"socket","timestamp":"2025-04-30T22:48:44.671Z"}
+{"level":"info","message":"Server Initialization: Starting","step":"server","timestamp":"2025-04-30T22:48:45.844Z"}
+{"level":"info","message":"mDNS advertisement skipped in development mode","timestamp":"2025-04-30T22:48:45.847Z"}
+{"duration":"1.18","level":"info","message":"Server Initialization: Completed","status":"success","step":"server","timestamp":"2025-04-30T22:48:45.847Z"}
+{"level":"info","message":"\u001b[36m========== TraceFlow Initialization Summary ========\u001b[39m","timestamp":"2025-04-30T22:48:45.849Z"}
+{"level":"info","message":"Date: 2025-04-30T22:48:45.850Z","timestamp":"2025-04-30T22:48:45.850Z"}
+{"level":"info","message":"Steps Completed:","timestamp":"2025-04-30T22:48:45.850Z"}
+{"duration":"1.35","level":"info","message":"  - Database Initialization: \u001b[32mSUCCESS\u001b[39m - (1.35s)","status":"success","step":"Database Initialization","timestamp":"2025-04-30T22:48:45.850Z"}
+{"duration":"1.69","level":"info","message":"  - SMTP Initialization: \u001b[32mSUCCESS\u001b[39m - (1.69s)","status":"success","step":"SMTP Initialization","timestamp":"2025-04-30T22:48:45.850Z"}
+{"duration":"2.19","level":"info","message":"  - SMS Initialization: \u001b[33mSKIPPED\u001b[39m - (2.19s)","status":"skipped","step":"SMS Initialization","timestamp":"2025-04-30T22:48:45.850Z"}
+{"duration":"3.16","level":"info","message":"  - Model Associations: \u001b[32mSUCCESS\u001b[39m - (3.16s)","status":"success","step":"Model Associations","timestamp":"2025-04-30T22:48:45.851Z"}
+{"duration":"5.44","level":"info","message":"  - Database Synchronization: \u001b[32mSUCCESS\u001b[39m - (5.44s)","status":"success","step":"Database Synchronization","timestamp":"2025-04-30T22:48:45.851Z"}
+{"duration":"2.80","level":"info","message":"  - Geographic Data Initialization: \u001b[33mSKIPPED\u001b[39m - (2.80s)","status":"skipped","step":"Geographic Data Initialization","timestamp":"2025-04-30T22:48:45.852Z"}
+{"duration":"7.80","level":"info","message":"  - Permission Seeding: \u001b[32mSUCCESS\u001b[39m - (7.80s)","status":"success","step":"Permission Seeding","timestamp":"2025-04-30T22:48:45.852Z"}
+{"duration":"1.89","level":"info","message":"  - Super Admin Seeding: \u001b[32mSUCCESS\u001b[39m - (1.89s)","status":"success","step":"Super Admin Seeding","timestamp":"2025-04-30T22:48:45.852Z"}
+{"duration":"1.20","level":"info","message":"  - Socket Initialization: \u001b[32mSUCCESS\u001b[39m - (1.20s)","status":"success","step":"Socket Initialization","timestamp":"2025-04-30T22:48:45.853Z"}
+{"duration":"1.18","level":"info","message":"  - Server Initialization: \u001b[32mSUCCESS\u001b[39m - (1.18s)","status":"success","step":"Server Initialization","timestamp":"2025-04-30T22:48:45.854Z"}
+{"level":"info","message":"Total Steps: 10","timestamp":"2025-04-30T22:48:45.854Z"}
+{"level":"info","message":"\u001b[32mSuccesses: 8\u001b[39m","timestamp":"2025-04-30T22:48:45.854Z"}
+{"level":"info","message":"\u001b[33mSkipped: 2\u001b[39m","timestamp":"2025-04-30T22:48:45.855Z"}
+{"level":"info","message":"\u001b[31mFailures: 0\u001b[39m","timestamp":"2025-04-30T22:48:45.855Z"}
+{"level":"info","message":"Total Duration: 30.72 seconds","timestamp":"2025-04-30T22:48:45.855Z"}
+{"level":"info","message":"\u001b[36m===================================================\u001b[39m","timestamp":"2025-04-30T22:48:45.856Z"}
+{"level":"info","message":"\u001b[36m===================================================\u001b[39m","timestamp":"2025-04-30T22:48:45.856Z"}
+{"level":"info","message":"\tSuper Admin Credentials:","timestamp":"2025-04-30T22:48:45.856Z"}
+{"level":"info","message":"\tEmail:\t\tsuperadmin@example.com","timestamp":"2025-04-30T22:48:45.856Z"}
+{"level":"info","message":"\tPassword:\tSuperSecurePassword123!","timestamp":"2025-04-30T22:48:45.857Z"}
+{"level":"info","message":"\u001b[36m===================================================\u001b[39m","timestamp":"2025-04-30T22:48:45.857Z"}
+{"level":"info","message":"HTTP Server running on port 5000","timestamp":"2025-04-30T22:48:45.865Z"}
+{"level":"info","message":"Database Initialization: Starting","step":"database","timestamp":"2025-04-30T22:48:54.390Z"}
+{"duration":"1.31","level":"info","message":"Database Initialization: Completed","status":"success","step":"database","timestamp":"2025-04-30T22:48:54.627Z"}
+{"level":"info","message":"SMTP Initialization: Starting","step":"smtp","timestamp":"2025-04-30T22:48:55.852Z"}
+{"level":"info","message":"SMTP server verified successfully","timestamp":"2025-04-30T22:48:56.393Z"}
+{"duration":"1.77","level":"info","message":"SMTP Initialization: Completed","status":"success","step":"smtp","timestamp":"2025-04-30T22:48:56.394Z"}
+{"level":"info","message":"SMS Initialization: Skipped","status":"skipped","step":"sms","timestamp":"2025-04-30T22:48:56.985Z"}
+{"level":"info","message":"Model Associations: Starting","step":"associations","timestamp":"2025-04-30T22:49:02.052Z"}
+{"duration":"5.09","level":"info","message":"Model Associations: Completed","status":"success","step":"associations","timestamp":"2025-04-30T22:49:02.074Z"}
+{"level":"info","message":"Database Synchronization: Starting","step":"sync","timestamp":"2025-04-30T22:49:02.811Z"}
+{"duration":"1.47","level":"info","message":"Database Synchronization: Completed","status":"success","step":"sync","timestamp":"2025-04-30T22:49:03.540Z"}
+{"level":"info","message":"Geographic Data Initialization: Starting","step":"geoData","timestamp":"2025-04-30T22:49:04.191Z"}
+{"duration":"0.69","level":"info","message":"Geographic Data Initialization: Completed","status":"success","step":"geoData","timestamp":"2025-04-30T22:49:04.226Z"}
+{"level":"info","message":"Permission Seeding: Starting","step":"permissions","timestamp":"2025-04-30T22:50:53.212Z"}
+{"duration":"109.05","level":"info","message":"Permission Seeding: Completed","status":"success","step":"permissions","timestamp":"2025-04-30T22:50:53.277Z"}
+{"level":"info","message":"Super Admin Seeding: Starting","step":"superadmin","timestamp":"2025-04-30T22:50:54.883Z"}
+{"duration":"2.41","level":"info","message":"Super Admin Seeding: Completed","status":"success","step":"superadmin","timestamp":"2025-04-30T22:50:55.684Z"}
+{"level":"info","message":"Socket Initialization: Starting","step":"socket","timestamp":"2025-04-30T22:50:56.986Z"}
+{"duration":"1.30","level":"info","message":"Socket Initialization: Completed","status":"success","step":"socket","timestamp":"2025-04-30T22:50:56.987Z"}
+{"level":"info","message":"Server Initialization: Skipped","status":"skipped","step":"server","timestamp":"2025-04-30T22:51:01.539Z"}
+{"level":"info","message":"\u001b[36m========== TraceFlow Initialization Summary ========\u001b[39m","timestamp":"2025-04-30T22:51:01.540Z"}
+{"level":"info","message":"Date: 2025-04-30T22:51:01.541Z","timestamp":"2025-04-30T22:51:01.541Z"}
+{"level":"info","message":"Steps Completed:","timestamp":"2025-04-30T22:51:01.541Z"}
+{"duration":"1.31","level":"info","message":"  - Database Initialization: \u001b[32mSUCCESS\u001b[39m - (1.31s)","status":"success","step":"Database Initialization","timestamp":"2025-04-30T22:51:01.541Z"}
+{"duration":"1.77","level":"info","message":"  - SMTP Initialization: \u001b[32mSUCCESS\u001b[39m - (1.77s)","status":"success","step":"SMTP Initialization","timestamp":"2025-04-30T22:51:01.541Z"}
+{"duration":"0.59","level":"info","message":"  - SMS Initialization: \u001b[33mSKIPPED\u001b[39m - (0.59s)","status":"skipped","step":"SMS Initialization","timestamp":"2025-04-30T22:51:01.542Z"}
+{"duration":"5.09","level":"info","message":"  - Model Associations: \u001b[32mSUCCESS\u001b[39m - (5.09s)","status":"success","step":"Model Associations","timestamp":"2025-04-30T22:51:01.542Z"}
+{"duration":"1.47","level":"info","message":"  - Database Synchronization: \u001b[32mSUCCESS\u001b[39m - (1.47s)","status":"success","step":"Database Synchronization","timestamp":"2025-04-30T22:51:01.542Z"}
+{"duration":"0.69","level":"info","message":"  - Geographic Data Initialization: \u001b[32mSUCCESS\u001b[39m - (0.69s)","status":"success","step":"Geographic Data Initialization","timestamp":"2025-04-30T22:51:01.542Z"}
+{"duration":"109.05","level":"info","message":"  - Permission Seeding: \u001b[32mSUCCESS\u001b[39m - (109.05s)","status":"success","step":"Permission Seeding","timestamp":"2025-04-30T22:51:01.543Z"}
+{"duration":"2.41","level":"info","message":"  - Super Admin Seeding: \u001b[32mSUCCESS\u001b[39m - (2.41s)","status":"success","step":"Super Admin Seeding","timestamp":"2025-04-30T22:51:01.543Z"}
+{"duration":"1.30","level":"info","message":"  - Socket Initialization: \u001b[32mSUCCESS\u001b[39m - (1.30s)","status":"success","step":"Socket Initialization","timestamp":"2025-04-30T22:51:01.543Z"}
+{"duration":"4.55","level":"info","message":"  - Server Initialization: \u001b[33mSKIPPED\u001b[39m - (4.55s)","status":"skipped","step":"Server Initialization","timestamp":"2025-04-30T22:51:01.543Z"}
+{"level":"info","message":"Total Steps: 10","timestamp":"2025-04-30T22:51:01.543Z"}
+{"level":"info","message":"\u001b[32mSuccesses: 8\u001b[39m","timestamp":"2025-04-30T22:51:01.544Z"}
+{"level":"info","message":"\u001b[33mSkipped: 2\u001b[39m","timestamp":"2025-04-30T22:51:01.544Z"}
+{"level":"info","message":"\u001b[31mFailures: 0\u001b[39m","timestamp":"2025-04-30T22:51:01.544Z"}
+{"level":"info","message":"Total Duration: 130.54 seconds","timestamp":"2025-04-30T22:51:01.544Z"}
+{"level":"info","message":"\u001b[36m===================================================\u001b[39m","timestamp":"2025-04-30T22:51:01.544Z"}
+{"level":"info","message":"\u001b[36m===================================================\u001b[39m","timestamp":"2025-04-30T22:51:01.544Z"}
+{"level":"info","message":"\tSuper Admin Credentials:","timestamp":"2025-04-30T22:51:01.545Z"}
+{"level":"info","message":"\tEmail:\t\tsuperadmin@example.com","timestamp":"2025-04-30T22:51:01.545Z"}
+{"level":"info","message":"\tPassword:\tSuperSecurePassword123!","timestamp":"2025-04-30T22:51:01.545Z"}
+{"level":"info","message":"\u001b[36m===================================================\u001b[39m","timestamp":"2025-04-30T22:51:01.545Z"}
+{"level":"info","message":"Database Initialization: Starting","step":"database","timestamp":"2025-04-30T22:51:10.586Z"}
+{"duration":"1.99","level":"info","message":"Database Initialization: Completed","status":"success","step":"database","timestamp":"2025-04-30T22:51:10.890Z"}
+{"level":"info","message":"SMTP Initialization: Starting","step":"smtp","timestamp":"2025-04-30T22:51:11.709Z"}
+{"level":"info","message":"SMTP server verified successfully","timestamp":"2025-04-30T22:51:12.270Z"}
+{"duration":"1.38","level":"info","message":"SMTP Initialization: Completed","status":"success","step":"smtp","timestamp":"2025-04-30T22:51:12.270Z"}
+{"level":"info","message":"SMS Initialization: Skipped","status":"skipped","step":"sms","timestamp":"2025-04-30T22:51:13.487Z"}
+{"level":"info","message":"Model Associations: Starting","step":"associations","timestamp":"2025-04-30T22:51:14.965Z"}
+{"duration":"1.50","level":"info","message":"Model Associations: Completed","status":"success","step":"associations","timestamp":"2025-04-30T22:51:14.991Z"}
+{"level":"info","message":"Database Synchronization: Starting","step":"sync","timestamp":"2025-04-30T22:51:16.863Z"}
+{"duration":"2.77","level":"info","message":"Database Synchronization: Completed","status":"success","step":"sync","timestamp":"2025-04-30T22:51:17.763Z"}
+{"level":"info","message":"Geographic Data Initialization: Starting","step":"geoData","timestamp":"2025-04-30T22:51:17.846Z"}
+{"duration":"0.42","error":"WHERE parameter \"nameFr\" has invalid \"undefined\" value","level":"error","message":"Geographic Data Initialization: Failed","stack":"Error: WHERE parameter \"nameFr\" has invalid \"undefined\" value\n    at PostgresQueryGenerator.whereItemQuery (C:\\Users\\Kayto\\Desktop\\IT\\Projects\\Stage\\Stage PFE\\TraceFlow\\Code\\Back\\node_modules\\sequelize\\lib\\dialects\\abstract\\query-generator.js:1746:13)\n    at C:\\Users\\Kayto\\Desktop\\IT\\Projects\\Stage\\Stage PFE\\TraceFlow\\Code\\Back\\node_modules\\sequelize\\lib\\dialects\\abstract\\query-generator.js:1737:25\n    at Array.forEach (<anonymous>)\n    at PostgresQueryGenerator.whereItemsQuery (C:\\Users\\Kayto\\Desktop\\IT\\Projects\\Stage\\Stage PFE\\TraceFlow\\Code\\Back\\node_modules\\sequelize\\lib\\dialects\\abstract\\query-generator.js:1735:35)\n    at PostgresQueryGenerator.getWhereConditions (C:\\Users\\Kayto\\Desktop\\IT\\Projects\\Stage\\Stage PFE\\TraceFlow\\Code\\Back\\node_modules\\sequelize\\lib\\dialects\\abstract\\query-generator.js:2078:19)\n    at PostgresQueryGenerator.selectQuery (C:\\Users\\Kayto\\Desktop\\IT\\Projects\\Stage\\Stage PFE\\TraceFlow\\Code\\Back\\node_modules\\sequelize\\lib\\dialects\\abstract\\query-generator.js:991:28)\n    at PostgresQueryInterface.select (C:\\Users\\Kayto\\Desktop\\IT\\Projects\\Stage\\Stage PFE\\TraceFlow\\Code\\Back\\node_modules\\sequelize\\lib\\dialects\\abstract\\query-interface.js:407:59)\n    at Delegation.findAll (C:\\Users\\Kayto\\Desktop\\IT\\Projects\\Stage\\Stage PFE\\TraceFlow\\Code\\Back\\node_modules\\sequelize\\lib\\model.js:1140:47)\n    at process.processTicksAndRejections (node:internal/process/task_queues:105:5)\n    at async Delegation.findOne (C:\\Users\\Kayto\\Desktop\\IT\\Projects\\Stage\\Stage PFE\\TraceFlow\\Code\\Back\\node_modules\\sequelize\\lib\\model.js:1240:12)","status":"failed","step":"geoData","timestamp":"2025-04-30T22:51:18.189Z"}
+{"level":"info","message":"Database Initialization: Starting","step":"database","timestamp":"2025-04-30T22:55:34.024Z"}
+{"duration":"1.53","level":"info","message":"Database Initialization: Completed","status":"success","step":"database","timestamp":"2025-04-30T22:55:34.274Z"}
+{"level":"info","message":"SMTP Initialization: Starting","step":"smtp","timestamp":"2025-04-30T22:55:34.336Z"}
+{"level":"info","message":"SMTP server verified successfully","timestamp":"2025-04-30T22:55:34.897Z"}
+{"duration":"0.62","level":"info","message":"SMTP Initialization: Completed","status":"success","step":"smtp","timestamp":"2025-04-30T22:55:34.897Z"}
+{"level":"info","message":"SMS Initialization: Skipped","status":"skipped","step":"sms","timestamp":"2025-04-30T22:55:36.444Z"}
+{"level":"info","message":"Model Associations: Starting","step":"associations","timestamp":"2025-04-30T22:55:37.788Z"}
+{"duration":"1.36","level":"info","message":"Model Associations: Completed","status":"success","step":"associations","timestamp":"2025-04-30T22:55:37.809Z"}
+{"level":"info","message":"Database Synchronization: Starting","step":"sync","timestamp":"2025-04-30T22:55:39.509Z"}
+{"duration":"2.36","level":"info","message":"Database Synchronization: Completed","status":"success","step":"sync","timestamp":"2025-04-30T22:55:40.173Z"}
+{"level":"info","message":"Geographic Data Initialization: Starting","step":"geoData","timestamp":"2025-04-30T22:55:41.466Z"}
+{"duration":"1.71","level":"info","message":"Geographic Data Initialization: Completed","status":"success","step":"geoData","timestamp":"2025-04-30T22:55:41.879Z"}
+{"level":"info","message":"Permission Seeding: Starting","step":"permissions","timestamp":"2025-04-30T22:55:51.796Z"}
+{"duration":"9.93","level":"info","message":"Permission Seeding: Completed","status":"success","step":"permissions","timestamp":"2025-04-30T22:55:51.810Z"}
+{"level":"info","message":"Super Admin Seeding: Starting","step":"superadmin","timestamp":"2025-04-30T22:55:54.461Z"}
+{"duration":"3.75","level":"info","message":"Super Admin Seeding: Completed","status":"success","step":"superadmin","timestamp":"2025-04-30T22:55:55.559Z"}
+{"level":"info","message":"Socket Initialization: Starting","step":"socket","timestamp":"2025-04-30T22:55:56.841Z"}
+{"duration":"1.28","level":"info","message":"Socket Initialization: Completed","status":"success","step":"socket","timestamp":"2025-04-30T22:55:56.842Z"}
+{"level":"info","message":"Server Initialization: Starting","step":"server","timestamp":"2025-04-30T22:55:58.195Z"}
+{"level":"info","message":"mDNS advertisement skipped in development mode","timestamp":"2025-04-30T22:55:58.197Z"}
+{"duration":"1.35","level":"info","message":"Server Initialization: Completed","status":"success","step":"server","timestamp":"2025-04-30T22:55:58.197Z"}
+{"level":"info","message":"\u001b[36m========== TraceFlow Initialization Summary ========\u001b[39m","timestamp":"2025-04-30T22:55:58.198Z"}
+{"level":"info","message":"Date: 2025-04-30T22:55:58.199Z","timestamp":"2025-04-30T22:55:58.199Z"}
+{"level":"info","message":"Steps Completed:","timestamp":"2025-04-30T22:55:58.199Z"}
+{"duration":"1.54","level":"info","message":"  - Database Initialization: \u001b[32mSUCCESS\u001b[39m - (1.54s)","status":"success","step":"Database Initialization","timestamp":"2025-04-30T22:55:58.199Z"}
+{"duration":"0.62","level":"info","message":"  - SMTP Initialization: \u001b[32mSUCCESS\u001b[39m - (0.62s)","status":"success","step":"SMTP Initialization","timestamp":"2025-04-30T22:55:58.199Z"}
+{"duration":"1.55","level":"info","message":"  - SMS Initialization: \u001b[33mSKIPPED\u001b[39m - (1.55s)","status":"skipped","step":"SMS Initialization","timestamp":"2025-04-30T22:55:58.200Z"}
+{"duration":"1.36","level":"info","message":"  - Model Associations: \u001b[32mSUCCESS\u001b[39m - (1.36s)","status":"success","step":"Model Associations","timestamp":"2025-04-30T22:55:58.200Z"}
+{"duration":"2.36","level":"info","message":"  - Database Synchronization: \u001b[32mSUCCESS\u001b[39m - (2.36s)","status":"success","step":"Database Synchronization","timestamp":"2025-04-30T22:55:58.200Z"}
+{"duration":"1.71","level":"info","message":"  - Geographic Data Initialization: \u001b[32mSUCCESS\u001b[39m - (1.71s)","status":"success","step":"Geographic Data Initialization","timestamp":"2025-04-30T22:55:58.200Z"}
+{"duration":"9.93","level":"info","message":"  - Permission Seeding: \u001b[32mSUCCESS\u001b[39m - (9.93s)","status":"success","step":"Permission Seeding","timestamp":"2025-04-30T22:55:58.200Z"}
+{"duration":"3.75","level":"info","message":"  - Super Admin Seeding: \u001b[32mSUCCESS\u001b[39m - (3.75s)","status":"success","step":"Super Admin Seeding","timestamp":"2025-04-30T22:55:58.200Z"}
+{"duration":"1.28","level":"info","message":"  - Socket Initialization: \u001b[32mSUCCESS\u001b[39m - (1.28s)","status":"success","step":"Socket Initialization","timestamp":"2025-04-30T22:55:58.201Z"}
+{"duration":"1.36","level":"info","message":"  - Server Initialization: \u001b[32mSUCCESS\u001b[39m - (1.36s)","status":"success","step":"Server Initialization","timestamp":"2025-04-30T22:55:58.201Z"}
+{"level":"info","message":"Total Steps: 10","timestamp":"2025-04-30T22:55:58.201Z"}
+{"level":"info","message":"\u001b[32mSuccesses: 9\u001b[39m","timestamp":"2025-04-30T22:55:58.201Z"}
+{"level":"info","message":"\u001b[33mSkipped: 1\u001b[39m","timestamp":"2025-04-30T22:55:58.202Z"}
+{"level":"info","message":"\u001b[31mFailures: 0\u001b[39m","timestamp":"2025-04-30T22:55:58.202Z"}
+{"level":"info","message":"Total Duration: 26.44 seconds","timestamp":"2025-04-30T22:55:58.202Z"}
+{"level":"info","message":"\u001b[36m===================================================\u001b[39m","timestamp":"2025-04-30T22:55:58.202Z"}
+{"level":"info","message":"\u001b[36m===================================================\u001b[39m","timestamp":"2025-04-30T22:55:58.202Z"}
+{"level":"info","message":"\tSuper Admin Credentials:","timestamp":"2025-04-30T22:55:58.202Z"}
+{"level":"info","message":"\tEmail:\t\tsuperadmin@example.com","timestamp":"2025-04-30T22:55:58.202Z"}
+{"level":"info","message":"\tPassword:\tSuperSecurePassword123!","timestamp":"2025-04-30T22:55:58.204Z"}
+{"level":"info","message":"\u001b[36m===================================================\u001b[39m","timestamp":"2025-04-30T22:55:58.205Z"}
+{"level":"info","message":"HTTP Server running on port 5000","timestamp":"2025-04-30T22:55:58.211Z"}
+{"level":"info","message":"Cleaning up expired OTPs","timestamp":"2025-04-30T23:00:00.387Z"}
+{"level":"info","message":"Cleaned up 0 expired OTPs","timestamp":"2025-04-30T23:00:00.567Z"}
+{"level":"info","message":"Updated 0 visits from pending to validated","timestamp":"2025-04-30T23:00:00.570Z"}
+{"level":"info","message":"Database Initialization: Starting","step":"database","timestamp":"2025-04-30T23:00:03.027Z"}
+{"duration":"0.11","level":"info","message":"Database Initialization: Completed","status":"success","step":"database","timestamp":"2025-04-30T23:00:03.134Z"}
+{"level":"info","message":"SMTP Initialization: Starting","step":"smtp","timestamp":"2025-04-30T23:00:03.135Z"}
+{"level":"info","message":"SMTP server verified successfully","timestamp":"2025-04-30T23:00:03.652Z"}
+{"duration":"0.52","level":"info","message":"SMTP Initialization: Completed","status":"success","step":"smtp","timestamp":"2025-04-30T23:00:03.652Z"}
+{"level":"info","message":"SMS Initialization: Starting","step":"sms","timestamp":"2025-04-30T23:00:03.653Z"}
+{"level":"info","message":"Initializing SMS gateway with URL: https://wbm.tn/wbmonitor/send/webapi/v5/enquire_credit and headers: {\"X-API-Key\":\"8dc15c888d7489f473766c5717ed0132\",\"Content-Type\":\"application/json\"}","timestamp":"2025-04-30T23:00:03.653Z"}
+{"level":"error","message":"SMS gateway initialization failed: {\"op\":null,\"status\":-400,\"status_desc\":\"unauthorised\",\"apiVersion\":\"5\"}","timestamp":"2025-04-30T23:00:03.744Z"}
+{"level":"error","message":"SMS gateway initialization error: SMS gateway initialization failed with status: -400 - unauthorised","timestamp":"2025-04-30T23:00:03.745Z"}
+{"duration":"0.09","error":"SMS gateway initialization error: SMS gateway initialization failed with status: -400 - unauthorised","level":"error","message":"SMS Initialization: Failed","stack":"Error: SMS gateway initialization error: SMS gateway initialization failed with status: -400 - unauthorised\n    at Object.initializeSMS [as fn] (C:\\Users\\Kayto\\Desktop\\IT\\Projects\\Stage\\Stage PFE\\TraceFlow\\Code\\Back\\config\\sms.js:105:15)\n    at process.processTicksAndRejections (node:internal/process/task_queues:105:5)\n    at async startApp (C:\\Users\\Kayto\\Desktop\\IT\\Projects\\Stage\\Stage PFE\\TraceFlow\\Code\\Back\\app.js:214:17)","status":"failed","step":"sms","timestamp":"2025-04-30T23:00:03.745Z"}
+{"level":"info","message":"Model Associations: Starting","step":"associations","timestamp":"2025-04-30T23:00:07.076Z"}
+{"duration":"0.02","level":"info","message":"Model Associations: Completed","status":"success","step":"associations","timestamp":"2025-04-30T23:00:07.100Z"}
+{"level":"info","message":"Database Synchronization: Starting","step":"sync","timestamp":"2025-04-30T23:00:07.101Z"}
+{"duration":"1.05","level":"info","message":"Database Synchronization: Completed","status":"success","step":"sync","timestamp":"2025-04-30T23:00:08.154Z"}
+{"level":"info","message":"Geographic Data Initialization: Starting","step":"geoData","timestamp":"2025-04-30T23:00:08.155Z"}
+{"duration":"0.71","level":"info","message":"Geographic Data Initialization: Completed","status":"success","step":"geoData","timestamp":"2025-04-30T23:00:08.861Z"}
+{"level":"info","message":"Permission Seeding: Starting","step":"permissions","timestamp":"2025-04-30T23:00:08.862Z"}
+{"duration":"0.01","level":"info","message":"Permission Seeding: Completed","status":"success","step":"permissions","timestamp":"2025-04-30T23:00:08.873Z"}
+{"level":"info","message":"Super Admin Seeding: Starting","step":"superadmin","timestamp":"2025-04-30T23:00:08.873Z"}
+{"duration":"1.16","level":"info","message":"Super Admin Seeding: Completed","status":"success","step":"superadmin","timestamp":"2025-04-30T23:00:10.031Z"}
+{"level":"info","message":"Database Initialization: Starting","step":"database","timestamp":"2025-04-30T23:09:30.915Z"}
+{"duration":"0.33","level":"info","message":"Database Initialization: Completed","status":"success","step":"database","timestamp":"2025-04-30T23:09:31.245Z"}
+{"level":"info","message":"SMTP Initialization: Starting","step":"smtp","timestamp":"2025-04-30T23:09:31.247Z"}
+{"level":"info","message":"SMTP server verified successfully","timestamp":"2025-04-30T23:09:31.866Z"}
+{"duration":"0.62","level":"info","message":"SMTP Initialization: Completed","status":"success","step":"smtp","timestamp":"2025-04-30T23:09:31.867Z"}
+{"level":"info","message":"SMS Initialization: Starting","step":"sms","timestamp":"2025-04-30T23:09:31.868Z"}
+{"level":"info","message":"Initializing SMS gateway with URL: https://wbm.tn/wbmonitor/send/webapi/v5/enquire_credit and headers: {\"X-API-Key\":\"8dc15c888d7489f473766c5717ed0132\",\"Content-Type\":\"application/json\"}","timestamp":"2025-04-30T23:09:31.869Z"}
+{"level":"error","message":"SMS gateway initialization failed: {\"op\":null,\"status\":-400,\"status_desc\":\"unauthorised\",\"apiVersion\":\"5\"}","timestamp":"2025-04-30T23:09:31.965Z"}
+{"level":"error","message":"SMS gateway initialization error: SMS gateway initialization failed with status: -400 - unauthorised","timestamp":"2025-04-30T23:09:31.965Z"}
+{"duration":"0.10","error":"SMS gateway initialization error: SMS gateway initialization failed with status: -400 - unauthorised","level":"error","message":"SMS Initialization: Failed","stack":"Error: SMS gateway initialization error: SMS gateway initialization failed with status: -400 - unauthorised\n    at Object.initializeSMS [as fn] (C:\\Users\\Kayto\\Desktop\\IT\\Projects\\Stage\\Stage PFE\\TraceFlow\\Code\\Back\\config\\sms.js:105:15)\n    at process.processTicksAndRejections (node:internal/process/task_queues:105:5)\n    at async startApp (C:\\Users\\Kayto\\Desktop\\IT\\Projects\\Stage\\Stage PFE\\TraceFlow\\Code\\Back\\app.js:214:17)","status":"failed","step":"sms","timestamp":"2025-04-30T23:09:31.966Z"}
+{"level":"info","message":"Model Associations: Starting","step":"associations","timestamp":"2025-04-30T23:09:33.818Z"}
+{"duration":"0.02","level":"info","message":"Model Associations: Completed","status":"success","step":"associations","timestamp":"2025-04-30T23:09:33.837Z"}
+{"level":"info","message":"Database Synchronization: Starting","step":"sync","timestamp":"2025-04-30T23:09:33.838Z"}
+{"duration":"1.07","error":"column \"regionID\" of relation \"Governorates\" contains null values","level":"error","message":"Database Synchronization: Failed","stack":"Error\n    at Query.run (C:\\Users\\Kayto\\Desktop\\IT\\Projects\\Stage\\Stage PFE\\TraceFlow\\Code\\Back\\node_modules\\sequelize\\lib\\dialects\\postgres\\query.js:50:25)\n    at C:\\Users\\Kayto\\Desktop\\IT\\Projects\\Stage\\Stage PFE\\TraceFlow\\Code\\Back\\node_modules\\sequelize\\lib\\sequelize.js:315:28\n    at process.processTicksAndRejections (node:internal/process/task_queues:105:5)\n    at async PostgresQueryInterface.addColumn (C:\\Users\\Kayto\\Desktop\\IT\\Projects\\Stage\\Stage PFE\\TraceFlow\\Code\\Back\\node_modules\\sequelize\\lib\\dialects\\abstract\\query-interface.js:184:12)\n    at async Governorate.sync (C:\\Users\\Kayto\\Desktop\\IT\\Projects\\Stage\\Stage PFE\\TraceFlow\\Code\\Back\\node_modules\\sequelize\\lib\\model.js:958:11)\n    at async Sequelize.sync (C:\\Users\\Kayto\\Desktop\\IT\\Projects\\Stage\\Stage PFE\\TraceFlow\\Code\\Back\\node_modules\\sequelize\\lib\\sequelize.js:377:9)\n    at async startApp (C:\\Users\\Kayto\\Desktop\\IT\\Projects\\Stage\\Stage PFE\\TraceFlow\\Code\\Back\\app.js:214:17)","status":"failed","step":"sync","timestamp":"2025-04-30T23:09:34.910Z"}
+{"level":"info","message":"Database Initialization: Starting","step":"database","timestamp":"2025-04-30T23:10:01.559Z"}
+{"duration":"0.81","level":"info","message":"Database Initialization: Completed","status":"success","step":"database","timestamp":"2025-04-30T23:10:02.367Z"}
+{"level":"info","message":"SMTP Initialization: Starting","step":"smtp","timestamp":"2025-04-30T23:10:02.369Z"}
+{"level":"info","message":"SMTP server verified successfully","timestamp":"2025-04-30T23:10:02.970Z"}
+{"duration":"0.60","level":"info","message":"SMTP Initialization: Completed","status":"success","step":"smtp","timestamp":"2025-04-30T23:10:02.971Z"}
+{"level":"info","message":"SMS Initialization: Starting","step":"sms","timestamp":"2025-04-30T23:10:02.972Z"}
+{"level":"info","message":"Initializing SMS gateway with URL: https://wbm.tn/wbmonitor/send/webapi/v5/enquire_credit and headers: {\"X-API-Key\":\"8dc15c888d7489f473766c5717ed0132\",\"Content-Type\":\"application/json\"}","timestamp":"2025-04-30T23:10:02.973Z"}
+{"level":"error","message":"SMS gateway initialization failed: {\"op\":null,\"status\":-400,\"status_desc\":\"unauthorised\",\"apiVersion\":\"5\"}","timestamp":"2025-04-30T23:10:03.068Z"}
+{"level":"error","message":"SMS gateway initialization error: SMS gateway initialization failed with status: -400 - unauthorised","timestamp":"2025-04-30T23:10:03.069Z"}
+{"duration":"0.10","error":"SMS gateway initialization error: SMS gateway initialization failed with status: -400 - unauthorised","level":"error","message":"SMS Initialization: Failed","stack":"Error: SMS gateway initialization error: SMS gateway initialization failed with status: -400 - unauthorised\n    at Object.initializeSMS [as fn] (C:\\Users\\Kayto\\Desktop\\IT\\Projects\\Stage\\Stage PFE\\TraceFlow\\Code\\Back\\config\\sms.js:105:15)\n    at process.processTicksAndRejections (node:internal/process/task_queues:105:5)\n    at async startApp (C:\\Users\\Kayto\\Desktop\\IT\\Projects\\Stage\\Stage PFE\\TraceFlow\\Code\\Back\\app.js:214:17)","status":"failed","step":"sms","timestamp":"2025-04-30T23:10:03.070Z"}
+{"level":"info","message":"Model Associations: Starting","step":"associations","timestamp":"2025-04-30T23:10:06.360Z"}
+{"duration":"0.02","level":"info","message":"Model Associations: Completed","status":"success","step":"associations","timestamp":"2025-04-30T23:10:06.377Z"}
+{"level":"info","message":"Database Synchronization: Starting","step":"sync","timestamp":"2025-04-30T23:10:06.378Z"}
+{"duration":"0.53","level":"info","message":"Database Synchronization: Completed","status":"success","step":"sync","timestamp":"2025-04-30T23:10:06.908Z"}
+{"level":"info","message":"Geographic Data Initialization: Starting","step":"geoData","timestamp":"2025-04-30T23:10:06.909Z"}
+{"duration":"0.58","level":"info","message":"Geographic Data Initialization: Completed","status":"success","step":"geoData","timestamp":"2025-04-30T23:10:07.493Z"}
+{"level":"info","message":"Permission Seeding: Starting","step":"permissions","timestamp":"2025-04-30T23:10:07.495Z"}
+{"duration":"0.27","level":"info","message":"Permission Seeding: Completed","status":"success","step":"permissions","timestamp":"2025-04-30T23:10:07.768Z"}
+{"level":"info","message":"Super Admin Seeding: Starting","step":"superadmin","timestamp":"2025-04-30T23:10:07.769Z"}
+{"duration":"0.91","level":"info","message":"Super Admin Seeding: Completed","status":"success","step":"superadmin","timestamp":"2025-04-30T23:10:08.683Z"}
+{"level":"info","message":"Database Initialization: Starting","step":"database","timestamp":"2025-04-30T23:10:12.139Z"}
+{"duration":"0.33","level":"info","message":"Database Initialization: Completed","status":"success","step":"database","timestamp":"2025-04-30T23:10:12.471Z"}
+{"level":"info","message":"SMTP Initialization: Starting","step":"smtp","timestamp":"2025-04-30T23:10:12.472Z"}
+{"level":"info","message":"SMTP server verified successfully","timestamp":"2025-04-30T23:10:13.070Z"}
+{"duration":"0.60","level":"info","message":"SMTP Initialization: Completed","status":"success","step":"smtp","timestamp":"2025-04-30T23:10:13.071Z"}
+{"level":"info","message":"SMS Initialization: Starting","step":"sms","timestamp":"2025-04-30T23:10:13.072Z"}
+{"level":"info","message":"Initializing SMS gateway with URL: https://wbm.tn/wbmonitor/send/webapi/v5/enquire_credit and headers: {\"X-API-Key\":\"8dc15c888d7489f473766c5717ed0132\",\"Content-Type\":\"application/json\"}","timestamp":"2025-04-30T23:10:13.072Z"}
+{"level":"error","message":"SMS gateway initialization failed: {\"op\":null,\"status\":-400,\"status_desc\":\"unauthorised\",\"apiVersion\":\"5\"}","timestamp":"2025-04-30T23:10:13.164Z"}
+{"level":"error","message":"SMS gateway initialization error: SMS gateway initialization failed with status: -400 - unauthorised","timestamp":"2025-04-30T23:10:13.165Z"}
+{"duration":"0.09","error":"SMS gateway initialization error: SMS gateway initialization failed with status: -400 - unauthorised","level":"error","message":"SMS Initialization: Failed","stack":"Error: SMS gateway initialization error: SMS gateway initialization failed with status: -400 - unauthorised\n    at Object.initializeSMS [as fn] (C:\\Users\\Kayto\\Desktop\\IT\\Projects\\Stage\\Stage PFE\\TraceFlow\\Code\\Back\\config\\sms.js:105:15)\n    at process.processTicksAndRejections (node:internal/process/task_queues:105:5)\n    at async startApp (C:\\Users\\Kayto\\Desktop\\IT\\Projects\\Stage\\Stage PFE\\TraceFlow\\Code\\Back\\app.js:214:17)","status":"failed","step":"sms","timestamp":"2025-04-30T23:10:13.166Z"}
+{"level":"info","message":"Model Associations: Starting","step":"associations","timestamp":"2025-04-30T23:10:14.826Z"}
+{"duration":"0.02","level":"info","message":"Model Associations: Completed","status":"success","step":"associations","timestamp":"2025-04-30T23:10:14.850Z"}
+{"level":"info","message":"Database Synchronization: Starting","step":"sync","timestamp":"2025-04-30T23:10:14.851Z"}
+{"duration":"0.77","level":"info","message":"Database Synchronization: Completed","status":"success","step":"sync","timestamp":"2025-04-30T23:10:15.620Z"}
+{"level":"info","message":"Geographic Data Initialization: Starting","step":"geoData","timestamp":"2025-04-30T23:10:15.621Z"}
+{"duration":"0.25","level":"info","message":"Geographic Data Initialization: Completed","status":"success","step":"geoData","timestamp":"2025-04-30T23:10:15.871Z"}
+{"level":"info","message":"Permission Seeding: Starting","step":"permissions","timestamp":"2025-04-30T23:10:15.872Z"}
+{"duration":"0.01","level":"info","message":"Permission Seeding: Completed","status":"success","step":"permissions","timestamp":"2025-04-30T23:10:15.879Z"}
+{"level":"info","message":"Super Admin Seeding: Starting","step":"superadmin","timestamp":"2025-04-30T23:10:15.880Z"}
+{"duration":"0.88","level":"info","message":"Super Admin Seeding: Completed","status":"success","step":"superadmin","timestamp":"2025-04-30T23:10:16.764Z"}
