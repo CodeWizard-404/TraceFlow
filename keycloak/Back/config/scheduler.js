@@ -2,7 +2,7 @@ const cron = require('node-cron');
 const logger = require('../utils/logger');
 const otpService = require('../services/otpService');
 const NotificationService = require('../services/notificationService');
-const { Timesheet } = require('../models');
+const { Timesheet, Visit } = require('../models');
 const { Op } = require('sequelize');
 
 function setupCron() {
@@ -36,6 +36,26 @@ function setupCron() {
             logger.info(`Processed ${timesheets.length} timesheet reminders`);
         } catch (error) {
             logger.error(`Error processing timesheet reminders: ${error.message}`);
+        }
+    });
+
+    // Schedule hourly visit status update
+    cron.schedule('0 * * * *', async () => {
+        try {
+            const twentyFourHoursAgo = new Date(Date.now() - 24 * 60 * 60 * 1000);
+            const result = await Visit.update(
+                { status: 'validated' },
+                {
+                    where: {
+                        status: 'pending',
+                        createdAt: { [Op.lte]: twentyFourHoursAgo },
+                    },
+                }
+            );
+            const updatedCount = result[0];
+            logger.info(`Updated ${updatedCount} visits from pending to validated`);
+        } catch (error) {
+            logger.error(`Error updating visits: ${error.message}`);
         }
     });
 }

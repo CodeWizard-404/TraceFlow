@@ -1,6 +1,6 @@
 const axios = require('axios');
 const { sequelize, User, Role, Permission } = require('../models');
-const logger = require('../utils/logger');
+
 require('dotenv').config();
 
 const SUPER_ADMIN_CONFIG = {
@@ -192,7 +192,7 @@ async function seedSuperAdmin() {
 
 
     } catch (error) {
-        logger.error(`Error seeding Super Admin: ${error.message}`);
+
         throw error;
     }
 }

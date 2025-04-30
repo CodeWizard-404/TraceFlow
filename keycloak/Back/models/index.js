@@ -6,6 +6,7 @@ const Agent = require("./agent")(sequelize, DataTypes);
 const ReceiptBook = require("./receipt/receiptBook")(sequelize, DataTypes);
 const ReceiptStub = require("./receipt/receiptStub")(sequelize, DataTypes);
 const ReceiptBookTransfer = require("./receipt/ReceiptBookTransfer")(sequelize, DataTypes);
+const ReceiptBookType = require("./receipt/receiptBookType")(sequelize, DataTypes);
 const Timesheet = require("./visit/timesheet")(sequelize, DataTypes);
 const OTP = require("./user/otp")(sequelize, DataTypes);
 const Permission = require("./user/permission")(sequelize, DataTypes);
@@ -20,7 +21,7 @@ const TrustedDevice = require("./user/trustedDevice")(sequelize, DataTypes);
 const Log = require("./log")(sequelize, DataTypes);
 const Notification = require("./notif/notification")(sequelize, DataTypes);
 const NotificationPreference = require("./notif/notificationPreference")(sequelize, DataTypes);
-const NotificationRule = require("./notif/notificationRule")(sequelize, DataTypes); // Add NotificationRule model
+const NotificationRule = require("./notif/notificationRule")(sequelize, DataTypes);
 
 // Define model associations
 const setupAssociations = () => {
@@ -102,6 +103,10 @@ const setupAssociations = () => {
     ReceiptBook.hasOne(ReceiptStub, { foreignKey: "bookID" });
     ReceiptStub.belongsTo(ReceiptBook, { foreignKey: "bookID" });
 
+    // ReceiptBook - ReceiptBookType (many-to-one): ReceiptBook has one Type
+    ReceiptBook.belongsTo(ReceiptBookType, { foreignKey: "typeID" });
+    ReceiptBookType.hasMany(ReceiptBook, { foreignKey: "typeID" });
+
     // User - Notification (1-to-many): User can have multiple Notifications
     User.hasMany(Notification, { foreignKey: "userID" });
     Notification.belongsTo(User, { foreignKey: "userID" });
@@ -113,6 +118,8 @@ const setupAssociations = () => {
     // User - NotificationRule (1-to-many): User can create multiple NotificationRules
     User.hasMany(NotificationRule, { foreignKey: "creatorID" });
     NotificationRule.belongsTo(User, { foreignKey: "creatorID" });
+
+
 };
 
 // Export models and setup function
@@ -131,6 +138,7 @@ module.exports = {
     ReceiptBook,
     ReceiptStub,
     ReceiptBookTransfer,
+    ReceiptBookType,
     UserPermissionOverride,
     TrustedDevice,
     Log,

@@ -1,4 +1,3 @@
-// models/receipt/receiptBook.js
 const { nanoid } = require('nanoid');
 
 module.exports = (sequelize, DataTypes) => {
@@ -12,10 +11,6 @@ module.exports = (sequelize, DataTypes) => {
             type: DataTypes.STRING,
             allowNull: false,
             unique: true,
-        },
-        type: {
-            type: DataTypes.STRING,
-            allowNull: false,
         },
         status: {
             type: DataTypes.ENUM(
@@ -45,6 +40,11 @@ module.exports = (sequelize, DataTypes) => {
             type: DataTypes.STRING,
             allowNull: true, // Null when with agent or in stock initially
             references: { model: 'Users', key: 'userID' },
+        },
+        typeID: {
+            type: DataTypes.STRING,
+            allowNull: false,
+            references: { model: 'ReceiptBookTypes', key: 'typeID' },
         },
     });
 };

@@ -82,22 +82,44 @@ class NotificationService {
         }
     }
 
-    static async getUserPreferences(userID) {
+    static async getUserPreferences(userID, event = null) {
         try {
             const preferences = await NotificationPreference.findOne({ where: { userID } });
-            return preferences || { emailEnabled: true, smsEnabled: true, inAppEnabled: true };
+            if (!preferences || !preferences.preferences) {
+                return event ? { email: true, sms: true, inApp: true } : { emailEnabled: true, smsEnabled: true, inAppEnabled: true };
+            }
+            if (event) {
+                return preferences.preferences[event] || { email: true, sms: true, inApp: true };
+            }
+            // For backward compatibility with existing code
+            return {
+                emailEnabled: true,
+                smsEnabled: true,
+                inAppEnabled: true,
+            };
         } catch (error) {
             logger.error(`Error fetching user preferences: ${error.message}`, {
                 userID,
                 stack: error.stack,
                 timestamp: new Date().toISOString(),
             });
-            return { emailEnabled: true, smsEnabled: true, inAppEnabled: true };
+            return event ? { email: true, sms: true, inApp: true } : { emailEnabled: true, smsEnabled: true, inAppEnabled: true };
         }
     }
 
-    static async storeNotification({ userID, type, message, channel }) {
+    static async storeNotification({ userID, type, message, channel, event }) {
         try {
+            const preferences = await this.getUserPreferences(userID, event);
+            if (channel === 'in-app' && !preferences.inApp) {
+                return null; // Skip storing if inApp is disabled for this event
+            }
+            if (channel === 'email' && !preferences.email) {
+                return null; // Skip storing if email is disabled for this event
+            }
+            if (channel === 'sms' && !preferences.sms) {
+                return null; // Skip storing if sms is disabled for this event
+            }
+
             const notification = await Notification.create({
                 userID,
                 type,
@@ -113,24 +135,21 @@ class NotificationService {
             });
 
             // Emit WebSocket event for in-app notifications
-            if (channel === 'in-app') {
-                const preferences = await this.getUserPreferences(userID);
-                if (preferences.inAppEnabled) {
-                    const event = 'notification:created';
-                    const data = {
-                        notificationID: notification.notificationID,
-                        userID,
-                        type,
-                        message,
-                        channel,
-                        status: 'pending',
-                        createdAt: notification.createdAt,
-                        updatedAt: notification.updatedAt,
-                    };
-                    const wsResult = await this.sendWebSocketNotification(event, data, [], [userID]);
-                    if (wsResult.success) {
-                        await this.updateNotificationStatus(notification.notificationID, 'sent');
-                    }
+            if (channel === 'in-app' && preferences.inApp) {
+                const eventName = 'notification:created';
+                const data = {
+                    notificationID: notification.notificationID,
+                    userID,
+                    type,
+                    message,
+                    channel,
+                    status: 'pending',
+                    createdAt: notification.createdAt,
+                    updatedAt: notification.updatedAt,
+                };
+                const wsResult = await this.sendWebSocketNotification(eventName, data, [], [userID]);
+                if (wsResult.success) {
+                    await this.updateNotificationStatus(notification.notificationID, 'sent');
                 }
             }
 
@@ -249,7 +268,7 @@ class NotificationService {
                     const recipients = await this.resolveRecipients(rule.recipients);
                     for (const user of recipients) {
                         const message = this.formatMessage(rule.messageTemplate, { ...data, ...metadata });
-                        const preferences = await this.getUserPreferences(user.userID);
+                        const preferences = await this.getUserPreferences(user.userID, rule.event);
                         const result = await this.sendNotification({
                             event: rule.event,
                             data,
@@ -257,8 +276,8 @@ class NotificationService {
                             userIDs: [user.userID],
                             type: rule.type,
                             message,
-                            email: rule.channels.email && preferences.emailEnabled ? user.email : null,
-                            sms: rule.channels.sms && preferences.smsEnabled ? user.phone : null,
+                            email: rule.channels.email && preferences.email ? user.email : null,
+                            sms: rule.channels.sms && preferences.sms ? user.phone : null,
                         });
                         results.push({ userID: user.userID, ruleID: rule.ruleID, result });
                     }
@@ -325,62 +344,67 @@ class NotificationService {
         const results = [];
         let notification;
 
-        const preferences = userIDs.length ? await this.getUserPreferences(userIDs[0]) : { inAppEnabled: true };
+        const preferences = userIDs.length ? await this.getUserPreferences(userIDs[0], event) : { inApp: true };
 
-        if (preferences.inAppEnabled && userIDs.length) {
+        if (preferences.inApp && userIDs.length) {
             notification = await this.storeNotification({
                 userID: userIDs[0],
                 type,
                 message,
                 channel: 'in-app',
+                event
             });
         }
 
-        if (event && data && (roles.length || userIDs.length) && preferences.inAppEnabled) {
+        if (event && data && (roles.length || userIDs.length) && preferences.inApp) {
             const wsResult = await this.sendWebSocketNotification(event, data, roles, userIDs);
             results.push(wsResult);
         }
 
-        if (email && preferences.emailEnabled && message) {
+        if (email && preferences.email && message) {
             const subject = `TraceFlow Notification: ${type.charAt(0).toUpperCase() + type.slice(1)}`;
             const emailResult = await this.sendEmailNotification(email, subject, message);
             if (emailResult.success && userIDs.length) {
-                await Notification.create({
+                await this.storeNotification({
                     userID: userIDs[0],
                     type,
                     message,
                     channel: 'email',
                     status: 'sent',
+                    event
                 });
             } else if (!emailResult.success && userIDs.length) {
-                await Notification.create({
+                await this.storeNotification({
                     userID: userIDs[0],
                     type,
                     message,
                     channel: 'email',
                     status: 'failed',
+                    event
                 });
             }
             results.push(emailResult);
         }
 
-        if (sms && preferences.smsEnabled && message) {
+        if (sms && preferences.sms && message) {
             const smsResult = await this.sendSMSNotification(sms, message);
             if (smsResult.success && userIDs.length) {
-                await Notification.create({
+                await this.storeNotification({
                     userID: userIDs[0],
                     type,
                     message,
                     channel: 'sms',
                     status: 'sent',
+                    event
                 });
             } else if (!smsResult.success && userIDs.length) {
-                await Notification.create({
+                await this.storeNotification({
                     userID: userIDs[0],
                     type,
                     message,
                     channel: 'sms',
                     status: 'failed',
+                    event
                 });
             }
             results.push(smsResult);

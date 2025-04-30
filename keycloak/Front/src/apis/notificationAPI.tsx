@@ -25,8 +25,22 @@ export const markNotificationAsRead = async (notificationID: string): Promise<No
     }
 };
 
+// Mark all notifications as read
+export const markAllNotificationsAsRead = async (): Promise<{ message: string }> => {
+    try {
+        const response = await api.put('/notifications/read-all');
+        return response.data;
+    } catch (error) {
+        console.error('Error marking all notifications as read:', error);
+        throw error;
+    }
+};
+
 // Fetch user notification preferences
-export const getNotificationPreferences = async (): Promise<NotificationPreference> => {
+export const getNotificationPreferences = async (): Promise<{
+    preferences: NotificationPreference['preferences'];
+    availableEvents: string[];
+}> => {
     try {
         const response = await api.get('/notifications/preferences');
         return response.data;
@@ -38,10 +52,10 @@ export const getNotificationPreferences = async (): Promise<NotificationPreferen
 
 // Update user notification preferences
 export const updateNotificationPreferences = async (
-    preferences: Partial<NotificationPreference>
+    preferences: NotificationPreference['preferences']
 ): Promise<NotificationPreference> => {
     try {
-        const response = await api.put('/notifications/preferences', preferences);
+        const response = await api.put('/notifications/preferences', { preferences });
         return response.data;
     } catch (error) {
         console.error('Error updating notification preferences:', error);
@@ -91,6 +105,17 @@ export const deleteNotificationRule = async (ruleID: string): Promise<void> => {
         await api.delete(`/notifications/rules/${ruleID}`);
     } catch (error) {
         console.error('Error deleting notification rule:', error);
+        throw error;
+    }
+};
+
+// Fetch available notification types
+export const getNotificationTypes = async (): Promise<string[]> => {
+    try {
+        const response = await api.get('/notifications/types');
+        return response.data.types;
+    } catch (error) {
+        console.error('Error fetching notification types:', error);
         throw error;
     }
 };

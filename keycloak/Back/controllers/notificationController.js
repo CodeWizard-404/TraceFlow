@@ -49,7 +49,8 @@ class NotificationController {
                 channels,
                 conditions,
                 messageTemplate,
-                enabled,
+                enabled
+
             });
             logger.info(`Notification rule updated: ${ruleID} by user: ${req.user.userID}, IP: ${req.ip}`);
             return res.status(200).json(rule);
@@ -93,25 +94,57 @@ class NotificationController {
         }
     }
 
+    // Get available notification types
+    static async getNotificationTypes(req, res) {
+        try {
+            const rules = await NotificationRule.findAll({
+                attributes: ['type'],
+                group: ['type'],
+            });
+            const types = rules.map(rule => rule.type);
+            logger.info(`Fetched notification types for user: ${req.user.userID}, IP: ${req.ip}`);
+            return res.status(200).json({ types });
+        } catch (error) {
+            logger.error(`Fetch notification types error: ${error.message}, user: ${req.user.userID}, IP: ${req.ip}`);
+            return res.status(500).json({ error: 'Failed to fetch notification types.' });
+        }
+    }
+
     // Update user notification preferences
     static async updatePreferences(req, res) {
         try {
-            const { emailEnabled, smsEnabled, inAppEnabled } = req.body;
-            if (emailEnabled === undefined || smsEnabled === undefined || inAppEnabled === undefined) {
-                logger.warn(`Update notification preferences failed: Missing fields, user: ${req.user.userID}, IP: ${req.ip}`);
-                return res.status(400).json({ error: 'All preference fields must be provided.' });
+            const { preferences } = req.body;
+            if (!preferences || typeof preferences !== 'object') {
+                logger.warn(`Update notification preferences failed: Invalid preferences, user: ${req.user.userID}, IP: ${req.ip}`);
+                return res.status(400).json({ error: 'Preferences must be a valid object.' });
             }
+
             let preference = await NotificationPreference.findOne({ where: { userID: req.user.userID } });
             if (!preference) {
                 preference = await NotificationPreference.create({
                     userID: req.user.userID,
-                    emailEnabled,
-                    smsEnabled,
-                    inAppEnabled,
+                    preferences: {},
                 });
-            } else {
-                await preference.update({ emailEnabled, smsEnabled, inAppEnabled });
             }
+
+            // Merge new preferences with existing ones
+            const currentPreferences = preference.preferences || {};
+            const updatedPreferences = { ...currentPreferences };
+
+            // Validate and update each event's preferences
+            for (const [event, channels] of Object.entries(preferences)) {
+                if (typeof channels !== 'object' || !['email', 'sms', 'inApp'].every(c => typeof channels[c] === 'boolean')) {
+                    logger.warn(`Update notification preferences failed: Invalid channel settings for event ${event}, user: ${req.user.userID}, IP: ${req.ip}`);
+                    return res.status(400).json({ error: `Invalid channel settings for event ${event}.` });
+                }
+                updatedPreferences[event] = {
+                    email: channels.email,
+                    sms: channels.sms,
+                    inApp: channels.inApp,
+                };
+            }
+
+            await preference.update({ preferences: updatedPreferences });
             logger.info(`Notification preferences updated for user: ${req.user.userID}, IP: ${req.ip}`);
             return res.status(200).json(preference);
         } catch (error) {
@@ -124,8 +157,22 @@ class NotificationController {
     static async getPreferences(req, res) {
         try {
             const preference = await NotificationPreference.findOne({ where: { userID: req.user.userID } });
+            const rules = await NotificationRule.findAll({
+                attributes: ['event'],
+                group: ['event'],
+            });
+            const availableEvents = rules.map(rule => rule.event);
+
+            // Default preferences for all available events if not set
+            const defaultPrefs = availableEvents.reduce((acc, event) => {
+                acc[event] = { email: true, sms: true, inApp: true };
+                return acc;
+            }, {});
+
+            const preferences = preference && preference.preferences ? { ...defaultPrefs, ...preference.preferences } : defaultPrefs;
+
             logger.info(`Fetched notification preferences for user: ${req.user.userID}, IP: ${req.ip}`);
-            return res.status(200).json(preference || { emailEnabled: true, smsEnabled: true, inAppEnabled: true });
+            return res.status(200).json({ preferences, availableEvents });
         } catch (error) {
             logger.error(`Fetch notification preferences error: ${error.message}, user: ${req.user.userID}, IP: ${req.ip}`);
             return res.status(500).json({ error: 'Failed to fetch notification preferences.' });
@@ -166,6 +213,26 @@ class NotificationController {
         } catch (error) {
             logger.error(`Mark notification as read error: ${error.message}, user: ${req.user.userID}, IP: ${req.ip}`);
             return res.status(500).json({ error: 'Failed to mark notification as read.' });
+        }
+    }
+
+    // Mark all user notifications as read
+    static async markAllNotificationsAsRead(req, res) {
+        try {
+            const updatedCount = await Notification.update(
+                { status: 'read' },
+                {
+                    where: {
+                        userID: req.user.userID,
+                        status: { [require('sequelize').Op.in]: ['pending', 'sent'] } // Only update non-read notifications
+                    }
+                }
+            );
+            logger.info(`All notifications marked as read for user: ${req.user.userID}, count: ${updatedCount[0]}, IP: ${req.ip}`);
+            return res.status(200).json({ message: `Marked ${updatedCount[0]} notifications as read.` });
+        } catch (error) {
+            logger.error(`Mark all notifications as read error: ${error.message}, user: ${req.user.userID}, IP: ${req.ip}`);
+            return res.status(500).json({ error: 'Failed to mark all notifications as read.' });
         }
     }
 }

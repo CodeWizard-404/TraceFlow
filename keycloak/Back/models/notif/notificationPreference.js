@@ -1,3 +1,5 @@
+const { nanoid } = require('nanoid');
+
 module.exports = (sequelize, DataTypes) => {
     const NotificationPreference = sequelize.define('NotificationPreference', {
         preferenceID: {
@@ -15,20 +17,11 @@ module.exports = (sequelize, DataTypes) => {
                 key: 'userID',
             },
         },
-        emailEnabled: {
-            type: DataTypes.BOOLEAN,
+        preferences: {
+            type: DataTypes.JSON,
             allowNull: false,
-            defaultValue: true,
-        },
-        smsEnabled: {
-            type: DataTypes.BOOLEAN,
-            allowNull: false,
-            defaultValue: true,
-        },
-        inAppEnabled: {
-            type: DataTypes.BOOLEAN,
-            allowNull: false,
-            defaultValue: true,
+            defaultValue: {},
+            comment: 'JSON object mapping notification events to channel preferences (e.g., { "timesheet:updated": { "email": true, "sms": true, "inApp": true } })',
         },
         createdAt: {
             type: DataTypes.DATE,

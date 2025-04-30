@@ -566,6 +566,14 @@ body.dark .loading-text {
     /* Adjusted for select and QR code */
 }
 
+.table-row-3 {
+    text-align: left !important;
+    display: flex;
+    justify-content: space-between;
+    grid-template-columns: 1.5fr 0.5fr !important;
+    /* Adjusted for select and QR code */
+}
+
 /* QR Code styling */
 .table-cell img {
     max-width: 2rem;

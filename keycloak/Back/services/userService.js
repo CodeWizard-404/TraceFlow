@@ -358,7 +358,7 @@ class UserService {
                 phone: userData.phone || user.phone,
                 wallet: userData.wallet || user.wallet,
                 googleEmail: userData.email || user.googleEmail || user.email,
-                PFP: userData.PFP !== undefined ? userData.PFP : user.PFP,
+                PFP: userData.PFP === null ? null : (userData.PFP !== undefined ? userData.PFP : user.PFP),
             });
             return user;
         } catch (error) {

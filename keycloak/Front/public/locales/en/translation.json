@@ -41,7 +41,8 @@
       "withSupervisor": "With Supervisor",
       "assignedToAgent": "Assigned to Agent",
       "withStockManager": "With Stock Manager",
-      "stubCollectedStatus": "collected"
+      "stubCollectedStatus": "collected",
+      "archived": "Archived"
     },
     "durationUnit": "m"
   },
@@ -554,10 +555,12 @@
       }
     },
     "search": {
-      "placeholder": "Search receipts..."
+      "placeholder": "Search receipts...",
+      "ariaLabel": "Search receipt books by number, type, or status"
     },
     "sort": {
       "title": "Sort By",
+      "ariaLabel": "Sort receipt books",
       "fields": {
         "number": "Number",
         "type": "Type",
@@ -570,6 +573,7 @@
     },
     "filter": {
       "title": "Filters",
+      "ariaLabel": "Filter receipt books",
       "type": {
         "label": "Type",
         "all": "All Types"
@@ -580,6 +584,7 @@
       }
     },
     "table": {
+      "noData": "No receipt books found",
       "headers": {
         "number": "Number",
         "type": "Type",
@@ -598,6 +603,22 @@
       "next": "Next"
     },
     "actions": {
+      "aria": {
+        "save": "Save receipt book changes",
+        "create": "Create new receipt book",
+        "cancel": "Cancel receipt book action",
+        "edit": "Edit receipt book {{number}}",
+        "delete": "Delete receipt book {{number}}",
+        "history": "View history for receipt book {{number}}",
+        "retry": "Retry fetching receipt books",
+        "viewBooks": "View receipt books list",
+        "viewTypes": "View receipt book types list",
+        "newReceipt": "Create a new receipt book",
+        "transferBooks": "Transfer receipt books"
+      },
+      "viewBooks": "View Books",
+      "viewTypes": "View Types",
+      "retry": "Retry",
       "newReceipt": "New Receipt",
       "transferBooks": "Transfer Books",
       "create": "Create",
@@ -610,11 +631,57 @@
       "invalidNumber": "Number must be exactly 6 digits.",
       "createFailed": "Failed to create receipt book: {message}",
       "updateFailed": "Failed to update receipt book: {message}",
-      "deleteFailed": "Failed to delete receipt book: {error}"
+      "deleteFailed": "Failed to delete receipt book: {error}",
+      "fetchFailed": "Failed to fetch receipt books.",
+      "unknown": "An unknown error occurred."
     },
     "types": {
-      "refund": "Refund",
-      "transfer": "Transfer"
+      "title": {
+        "list": "Receipt Book Types",
+        "create": "Create Type",
+        "edit": "Edit Type"
+      },
+      "table": {
+        "headers": {
+          "name": "Name",
+          "actions": "Actions"
+        },
+        "noData": "No receipt book types found"
+      },
+      "actions": {
+        "newType": "New Type",
+        "deleteConfirm": "Are you sure you want to delete this type?",
+        "retry": "Retry",
+        "aria": {
+          "newType": "Create a new receipt book type",
+          "edit": "Edit receipt book type {{name}}",
+          "delete": "Delete receipt book type {{name}}",
+          "save": "Save receipt book type changes",
+          "create": "Create new receipt book type",
+          "cancel": "Cancel receipt book type action",
+          "retry": "Retry fetching receipt book types"
+        },
+        "save": "Save",
+        "create": "Create",
+        "cancel": "Cancel"
+      },
+      "form": {
+        "createTitle": "New Receipt Book Type",
+        "editTitle": "Edit Receipt Book Type {{name}}",
+        "labels": {
+          "name": "Name"
+        },
+        "placeholders": {
+          "name": "Enter type name"
+        }
+      },
+      "errors": {
+        "requiredFields": "Please fill in all required fields.",
+        "createFailed": "Failed to create receipt book type: {{message}}",
+        "updateFailed": "Failed to update receipt book type: {{message}}",
+        "deleteFailed": "Failed to delete receipt book type: {{message}}",
+        "fetchFailed": "Failed to fetch receipt book types."
+      }
     }
   },
   "receiptBookHistory": {
@@ -974,6 +1041,9 @@
     },
     "actions": {
       "back": "Back",
+      "resetRolesConfirm": "Are you sure you want to reset roles?",
+      "confirm": "Confirm",
+      "cancel": "Cancel",
       "refreshUsers": "Refresh Users",
       "refreshRoles": "Refresh Roles",
       "refreshPermissions": "Refresh Permissions",

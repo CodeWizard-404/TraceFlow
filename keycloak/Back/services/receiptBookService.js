@@ -1,18 +1,96 @@
 const { sendSMS } = require('../config/sms');
 const { transporter } = require('../config/smtp');
-const { ReceiptBook, User, Agent, OTP, ReceiptBookTransfer, ReceiptStub, Role } = require('../models');
+const { ReceiptBook, User, Agent, OTP, ReceiptBookTransfer, ReceiptStub, Role, ReceiptBookType } = require('../models');
 const OTPService = require('../services/otpService');
 const QRGenerator = require('../utils/qrGenerator');
 const logger = require('../utils/logger');
 const { Sequelize } = require('sequelize');
 
 class ReceiptBookService {
-    static async createReceiptBook(number, type, purchaseUserID) {
+    // --- Type Management Methods ---
+    static async createReceiptBookType(name) {
         try {
-            const qrCode = await QRGenerator.generateReceiptBookQR(number, type);
+            const type = await ReceiptBookType.create({ name });
+            return type;
+        } catch (error) {
+            logger.error(`Create receipt book type error: ${error.message}`);
+            const err = new Error('Failed to create receipt book type: ' + error.message);
+            err.status = 400;
+            throw err;
+        }
+    }
+
+    static async getAllReceiptBookTypes() {
+        try {
+            const types = await ReceiptBookType.findAll({
+                attributes: ['typeID', 'name'],
+                order: [['name', 'ASC']],
+            });
+            return await Promise.all(types.map(type => type.toJSON()));
+        } catch (error) {
+            logger.error(`Get all receipt book types error: ${error.message}`);
+            const err = new Error('Failed to retrieve receipt book types: ' + error.message);
+            err.status = 500;
+            throw err;
+        }
+    }
+
+    static async getReceiptBookTypeById(typeID) {
+        try {
+            const type = await ReceiptBookType.findByPk(typeID);
+            if (!type) {
+                const error = new Error('Receipt book type not found');
+                error.status = 404;
+                throw error;
+            }
+            return type;
+        } catch (error) {
+            logger.error(`Get receipt book type error: ${error.message}`);
+            throw error;
+        }
+    }
+
+    static async updateReceiptBookType(typeID, name) {
+        try {
+            const type = await this.getReceiptBookTypeById(typeID);
+            await type.update({ name });
+            return type;
+        } catch (error) {
+            logger.error(`Update receipt book type error: ${error.message}`);
+            throw error;
+        }
+    }
+
+    static async deleteReceiptBookType(typeID) {
+        try {
+            const type = await this.getReceiptBookTypeById(typeID);
+            const bookCount = await ReceiptBook.count({ where: { typeID } });
+            if (bookCount > 0) {
+                const error = new Error('Cannot delete type with associated receipt books');
+                error.status = 400;
+                throw error;
+            }
+            await type.destroy();
+            return { message: `Receipt book type ${type.name} deleted successfully` };
+        } catch (error) {
+            logger.error(`Delete receipt book type error: ${error.message}`);
+            throw error;
+        }
+    }
+
+    // --- Receipt Book Methods ---
+    static async createReceiptBook(number, typeID, purchaseUserID) {
+        try {
+            const type = await ReceiptBookType.findByPk(typeID);
+            if (!type) {
+                const error = new Error('Invalid receipt book type');
+                error.status = 400;
+                throw error;
+            }
+            const qrCode = await QRGenerator.generateReceiptBookQR(number, type.name);
             const book = await ReceiptBook.create({
                 number,
-                type,
+                typeID,
                 qrCode,
                 status: 'In Stock',
                 currentHolderID: purchaseUserID,
@@ -34,7 +112,7 @@ class ReceiptBookService {
         try {
             const startTime = Date.now();
             const book = await ReceiptBook.findByPk(bookID, {
-                attributes: ['bookID', 'number', 'type', 'status', 'qrCode', 'agentID', 'currentHolderID'],
+                attributes: ['bookID', 'number', 'status', 'qrCode', 'agentID', 'currentHolderID', 'typeID'],
                 include: [
                     {
                         model: User,
@@ -44,7 +122,7 @@ class ReceiptBookService {
                     {
                         model: ReceiptBookTransfer,
                         attributes: ['transferID', 'transferType', 'transferDate'],
-                        include: [], // Prevent nested includes
+                        include: [],
                     },
                     {
                         model: Agent,
@@ -54,6 +132,10 @@ class ReceiptBookService {
                         model: ReceiptStub,
                         attributes: ['stubID', 'status'],
                     },
+                    {
+                        model: ReceiptBookType,
+                        attributes: ['typeID', 'name'],
+                    },
                 ],
             });
             if (!book) {
@@ -62,7 +144,7 @@ class ReceiptBookService {
                 throw error;
             }
 
-            return book; // Return Sequelize instance
+            return book;
         } catch (error) {
             logger.error(`Get receipt book error: ${error.message}`, { ip: null });
             throw error;
@@ -73,18 +155,21 @@ class ReceiptBookService {
         try {
             const startTime = Date.now();
             const books = await ReceiptBook.findAll({
-                attributes: ['bookID', 'number', 'type', 'status', 'qrCode', 'agentID', 'currentHolderID'],
+                attributes: ['bookID', 'number', 'status', 'qrCode', 'agentID', 'currentHolderID', 'typeID'],
                 include: [
                     {
                         model: ReceiptStub,
                         attributes: ['stubID', 'status'],
                         required: false,
                     },
+                    {
+                        model: ReceiptBookType,
+                        attributes: ['typeID', 'name'],
+                    },
                 ],
                 order: [['number', 'ASC']],
             });
 
-            // Batch fetch associations for visible books
             const bookIDs = books.map(book => book.bookID);
             const [holders, agents, transfers] = await Promise.all([
                 User.findAll({
@@ -98,11 +183,10 @@ class ReceiptBookService {
                 ReceiptBookTransfer.findAll({
                     where: { bookID: bookIDs },
                     attributes: ['transferID', 'bookID', 'transferType', 'transferDate'],
-                    include: [], // Prevent nested includes
+                    include: [],
                 }),
             ]);
 
-            // Map associations to books
             const holderMap = new Map(holders.map(h => [h.userID, h.toJSON()]));
             const agentMap = new Map(agents.map(a => [a.agentID, a.toJSON()]));
             const transferMap = new Map();
@@ -111,12 +195,13 @@ class ReceiptBookService {
                 transferMap.get(t.bookID).push(t.toJSON());
             });
 
-            // Construct plain objects
             const enrichedBooks = books.map(book => {
                 const bookData = book.toJSON();
                 bookData.CurrentHolder = book.currentHolderID ? holderMap.get(book.currentHolderID) : null;
                 bookData.Agent = book.agentID ? agentMap.get(book.agentID) : null;
                 bookData.ReceiptBookTransfers = transferMap.get(book.bookID) || [];
+                bookData.type = bookData.ReceiptBookType ? bookData.ReceiptBookType.name : null;
+                delete bookData.ReceiptBookType;
                 return bookData;
             });
 
@@ -134,12 +219,13 @@ class ReceiptBookService {
             const startTime = Date.now();
             const book = await ReceiptBook.findOne({
                 where: { number },
-                attributes: ['bookID', 'number', 'type', 'status', 'qrCode', 'agentID', 'currentHolderID'],
+                attributes: ['bookID', 'number', 'status', 'qrCode', 'agentID', 'currentHolderID', 'typeID'],
                 include: [
                     { model: User, as: 'CurrentHolder', attributes: ['userID', 'firstname', 'lastname'] },
                     { model: ReceiptBookTransfer, attributes: ['transferID', 'transferType', 'transferDate'] },
                     { model: Agent, attributes: ['agentID', 'name', 'lastname'] },
                     { model: ReceiptStub, attributes: ['stubID', 'status'] },
+                    { model: ReceiptBookType, attributes: ['typeID', 'name'] },
                 ],
             });
             if (!book) {
@@ -147,7 +233,10 @@ class ReceiptBookService {
                 error.status = 404;
                 throw error;
             }
-            return book;
+            const bookData = book.toJSON();
+            bookData.type = bookData.ReceiptBookType ? bookData.ReceiptBookType.name : null;
+            delete bookData.ReceiptBookType;
+            return bookData;
         } catch (error) {
             logger.error(`Get receipt book by number error: ${error.message}`, { ip: null });
             throw error;
@@ -159,20 +248,32 @@ class ReceiptBookService {
             const book = await this.getReceiptBookById(bookID);
             if (book.currentHolderID !== userID) {
                 const error = new Error('Only the current holder can update this receipt book');
+                error.ascertainable = true;
                 error.status = 403;
                 throw error;
             }
-            const allowedUpdates = ['number', 'type'];
+            const allowedUpdates = ['number', 'typeID'];
             const updateData = {};
             for (const key of allowedUpdates) {
                 if (updates[key] !== undefined) {
                     updateData[key] = updates[key];
                 }
             }
-            if (updateData.number || updateData.type) {
+            if (updateData.typeID) {
+                const type = await ReceiptBookType.findByPk(updateData.typeID);
+                if (!type) {
+                    const error = new Error('Invalid receipt book type');
+                    error.status = 400;
+                    throw error;
+                }
                 updateData.qrCode = await QRGenerator.generateReceiptBookQR(
                     updateData.number || book.number,
-                    updateData.type || book.type
+                    type.name
+                );
+            } else if (updateData.number) {
+                updateData.qrCode = await QRGenerator.generateReceiptBookQR(
+                    updateData.number,
+                    book.ReceiptBookType.name
                 );
             }
             await book.update(updateData);
@@ -214,12 +315,13 @@ class ReceiptBookService {
             const whereClause = holderType === 'user' ? { currentHolderID: holderID } : { agentID: holderID };
             const books = await ReceiptBook.findAll({
                 where: whereClause,
-                attributes: ['bookID', 'number', 'type', 'status', 'qrCode', 'agentID', 'currentHolderID'],
+                attributes: ['bookID', 'number', 'status', 'qrCode', 'agentID', 'currentHolderID', 'typeID'],
                 include: [
                     { model: User, as: 'CurrentHolder', attributes: ['userID', 'firstname', 'lastname'] },
                     { model: ReceiptBookTransfer, attributes: ['transferID', 'transferType', 'transferDate'] },
                     { model: Agent, attributes: ['agentID', 'name', 'lastname'] },
                     { model: ReceiptStub, attributes: ['stubID', 'status'] },
+                    { model: ReceiptBookType, attributes: ['typeID', 'name'] },
                 ],
             });
             if (!books.length) {
@@ -227,16 +329,28 @@ class ReceiptBookService {
                 error.status = 404;
                 throw error;
             }
-            return books;
+            return books.map(book => {
+                const bookData = book.toJSON();
+                bookData.type = bookData.ReceiptBookType ? bookData.ReceiptBookType.name : null;
+                delete bookData.ReceiptBookType;
+                return bookData;
+            });
         } catch (error) {
             logger.error(`Get receipt books by holder error: ${error.message}`, { ip: null });
             throw error;
         }
     }
 
+
+
+    // --- Receipt Book Transfer ---
+
     static async sendToSupplier(bookIDs, supplierEmail, userID) {
         try {
-            const books = await ReceiptBook.findAll({ where: { bookID: bookIDs, status: 'In Stock', currentHolderID: userID } });
+            const books = await ReceiptBook.findAll({
+                where: { bookID: bookIDs, status: 'In Stock', currentHolderID: userID },
+                include: [{ model: ReceiptBookType, attributes: ['name'] }],
+            });
             if (books.length !== bookIDs.length) {
                 const error = new Error('Some books are not in stock or not held by you');
                 error.status = 400;
@@ -257,7 +371,7 @@ class ReceiptBookService {
                 })
             );
 
-            const table = books.map(b => `${b.number} | ${b.type}`).join('\n');
+            const table = books.map(b => `${b.number} | ${b.ReceiptBookType.name}`).join('\n');
             await transporter.sendMail({
                 from: process.env.SMTP_USER,
                 to: supplierEmail,
@@ -311,7 +425,10 @@ class ReceiptBookService {
 
     static async transfer(bookIDs, recipientID, senderID, recipientType = 'user') {
         try {
-            const books = await ReceiptBook.findAll({ where: { bookID: bookIDs } });
+            const books = await ReceiptBook.findAll({
+                where: { bookID: bookIDs },
+                include: [{ model: ReceiptBookType, attributes: ['name'] }],
+            });
             if (books.length !== bookIDs.length) {
                 const error = new Error('Some books not found');
                 error.status = 404;

@@ -1,11 +1,13 @@
-// Interface for notification preferences, matching the backend NotificationPreference model
 interface NotificationPreference {
     preferenceID: string;
     userID: string;
-    emailEnabled: boolean;
-    smsEnabled: boolean;
-    inAppEnabled: boolean;
-    websocketEnabled: boolean;
+    preferences: {
+        [event: string]: {
+            email: boolean;
+            sms: boolean;
+            inApp: boolean;
+        };
+    };
     createdAt: Date;
     updatedAt: Date;
 }

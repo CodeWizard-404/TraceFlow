@@ -4,9 +4,9 @@ import ReceiptStub from "./ReceiptStub";
 interface ReceiptBook {
     bookID: string;
     number: string;
-    type: string;
+    typeID: string;
     qrCode: string;
-    status: ReceiptBookStatus
+    status: ReceiptBookStatus;
     currentHolderID?: string;
     agentID?: string;
     ReceiptStub?: ReceiptStub;

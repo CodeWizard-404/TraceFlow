@@ -64,6 +64,7 @@ class AuthController {
             }
 
             const result = await AuthService.login(identifier, password, deviceIdentifier, otpMethod, res);
+            logger.info(`Login successful for ${identifier}`);
             return res.status(200).json(result);
         } catch (error) {
             logger.error(`Login error for ${req.body.identifier || 'unknown'}: ${error.message}`);

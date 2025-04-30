@@ -143,11 +143,14 @@ body.dark .control-button:disabled {
 }
 
 .notification-list {
-    max-height: 300px;
     overflow-y: auto;
     display: flex;
     flex-direction: column;
     gap: 0.375rem;
+}
+
+.notification-list-0 {
+    max-height: 300px;
 }
 
 .notification-list::-webkit-scrollbar {

@@ -53,6 +53,8 @@ export const logVisitDetails = async (
         checklistUpdates: Array<{ checklistID: string; checked: boolean }>;
         photos: File[];
         comment?: string;
+        date?: string;
+        time?: string;
     }
 ): Promise<LogVisitResponse> => {
     try {
@@ -63,6 +65,8 @@ export const logVisitDetails = async (
         if (data.duration) formData.append("duration", data.duration.toString());
         if (data.checklistUpdates) formData.append("checklistUpdates", JSON.stringify(data.checklistUpdates));
         if (data.comment) formData.append("comment", data.comment);
+        if (data.date) formData.append("date", data.date);
+        if (data.time) formData.append("time", data.time);
         data.photos.forEach((photo) => {
             console.log("Appending photo:", photo.name, photo.size); // Log each photo
             formData.append("photos", photo);
@@ -80,6 +84,7 @@ export const logVisitDetails = async (
         throw new Error(handleApiError(error, "Unable to log visit details."));
     }
 };
+
 // Get visit by ID
 export const getVisitById = async (id: string): Promise<VisitByIdResponse> => {
     try {

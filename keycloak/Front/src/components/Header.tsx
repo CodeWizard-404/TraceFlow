@@ -1,4 +1,5 @@
-import React, { useState } from 'react';
+import { useState } from 'react';
+import { useNavigate } from 'react-router-dom';
 import { useTheme } from '../context/ThemeContext';
 import { useAuth } from '../context/AuthContext';
 import { useNotification } from '../context/NotificationContext';
@@ -73,9 +74,10 @@ function Header() {
     { path: "/profile", label: t("header.navbar.profile"), visible: () => true },
   ];
 
-  // eslint-disable-next-line @typescript-eslint/no-unused-vars
+  const navigate = useNavigate();
+
   const handleNavClick = (path: string) => {
-    // Navigate logic here
+    navigate(path);
     setIsMenuOpen(false);
     setShowNotificationPanel(false);
   };

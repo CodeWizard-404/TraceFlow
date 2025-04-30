@@ -1,11 +1,10 @@
-// Interface for a notification rule, matching the backend NotificationRule model
 interface NotificationRule {
     ruleID: string;
-    event: string; // e.g., 'user:created', 'timesheet:reminder'
-    type: string; // e.g., 'general', 'timesheet', or any admin-defined type
+    event: string;
+    type: string;
     recipients: {
-        roles?: string[]; // e.g., ['manager', 'supervisor']
-        userIDs?: string[]; // e.g., ['user_123']
+        roles?: string[];
+        userIDs?: string[];
     };
     channels: {
         websocket: boolean;
@@ -13,10 +12,10 @@ interface NotificationRule {
         sms: boolean;
         inApp: boolean;
     };
-    conditions?: Record<string, unknown>; // e.g., { status: 'validated' }
-    messageTemplate: string; // e.g., 'New user {email} created'
+    conditions?: Record<string, unknown>;
+    messageTemplate: string;
     enabled: boolean;
-    creatorID: string; // ID of the user who created the rule
+    creatorID: string;
     createdAt: Date;
     updatedAt: Date;
 }

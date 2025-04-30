@@ -3,7 +3,6 @@ const path = require('path');
 const { nanoid } = require('nanoid');
 const { Permission } = require('../models');
 const { migratePermissionsToKeycloak } = require('./migratePe');
-const logger = require('../utils/logger');
 require('dotenv').config();
 
 // Configuration constants
@@ -50,12 +49,9 @@ const extractPermissionsFromFiles = async () => {
             routeClasses.set(routePath, getRouteClass(routePath));
         });
     } catch (error) {
-        logger.error(`Failed to read routes.js: ${error.message}`);
         throw error;
     }
 
-    // Log extracted routes for debugging
-    logger.info('Extracted routes:', Array.from(routeClasses.entries()));
 
     // Scan directories for permission definitions
     for (const dir of DIRECTORIES_TO_SCAN) {
@@ -80,8 +76,6 @@ const extractPermissionsFromFiles = async () => {
 
                 const inferredClass = matchingRoute ? routeClasses.get(matchingRoute) : 'Other';
 
-                // Log matching details for debugging
-                logger.info(`File: ${file}, RouteName: ${routeName}, MatchingRoute: ${matchingRoute || 'None'}, Class: ${inferredClass}`);
 
                 // Extract permissions from file content
                 [...content.matchAll(PERMISSION_REGEX)].forEach(([_, permission]) => {
@@ -106,7 +100,6 @@ const seedMissingPermissions = async () => {
         );
 
         if (missingPermissions.length === 0) {
-            logger.info(`No new permissions to seed`);
             return;
         }
 
@@ -129,10 +122,7 @@ const seedMissingPermissions = async () => {
         }));
 
         await migratePermissionsToKeycloak();
-        logger.info(`Seeded To Keycloak permissions`);
-        logger.info(`Seeded ${newPermissionsCount} new permissions`);
     } catch (error) {
-        logger.error(`Error seeding permissions: ${error.message}`);
         throw error;
     }
 };
@@ -166,7 +156,6 @@ const extractRoutePermissions = async () => {
             route: classToRouteMap[perm.class] || '/api/unknown', // Fallback to avoid invalid routes
         }));
     } catch (error) {
-        logger.error(`Error in extractRoutePermissions: ${error.message}`);
         throw error;
     }
 };
@@ -184,7 +173,6 @@ if (require.main === module) {
     seedMissingPermissions()
         .then(() => sequelize.close())
         .catch(error => {
-            logger.error(`Script execution failed: ${error.message}`);
             sequelize.close();
         });
 }

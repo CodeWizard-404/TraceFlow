@@ -9,12 +9,11 @@ const CLIENT_ID = process.env.KEYCLOAK_CLIENT_ID || 'traceflow-backend';
 const CLIENT_SECRET = process.env.KEYCLOAK_CLIENT_SECRET || '';
 
 const authenticateCookie = async (req, res, next) => {
-    const isWebSocket = !res.status; // Detect WebSocket context (res lacks status method)
+    const isWebSocket = !res.status;
     try {
         const cookieHeader = req.headers?.cookie;
         if (!cookieHeader) {
             logger.warn('No cookie header provided', { isWebSocket, timestamp: new Date().toISOString() });
-            if (isWebSocket) throw new Error('No cookie header provided');
             return res.status(401).json({ error: 'Access token required' });
         }
 
@@ -33,7 +32,6 @@ const authenticateCookie = async (req, res, next) => {
 
         if (!accessToken) {
             logger.warn('No accessToken cookie found', { isWebSocket, cookies, timestamp: new Date().toISOString() });
-            if (isWebSocket) throw new Error('accessToken cookie not found');
             return res.status(401).json({ error: 'Access token required' });
         }
 
@@ -58,7 +56,6 @@ const authenticateCookie = async (req, res, next) => {
 
             if (!response.data.active) {
                 logger.warn('Token introspection failed: inactive token', { isWebSocket, timestamp: new Date().toISOString() });
-                if (isWebSocket) throw new Error('Invalid or expired token');
                 return res.status(401).json({ error: 'Invalid or expired token' });
             }
 
@@ -68,7 +65,6 @@ const authenticateCookie = async (req, res, next) => {
 
             if (!user) {
                 logger.error(`No local user found for keycloakId: ${keycloakId}`, { isWebSocket, timestamp: new Date().toISOString() });
-                if (isWebSocket) throw new Error('User not found in local database');
                 return res.status(404).json({ error: 'User not found in local database' });
             }
 
@@ -92,12 +88,10 @@ const authenticateCookie = async (req, res, next) => {
                 isWebSocket,
                 timestamp: new Date().toISOString(),
             });
-            if (isWebSocket) throw new Error('Invalid token');
             return res.status(error.response?.status || 401).json({ error: 'Invalid token' });
         }
     } catch (error) {
         logger.error(`Authentication error: ${error.message}`, { isWebSocket, stack: error.stack, timestamp: new Date().toISOString() });
-        if (isWebSocket) throw new Error('Authentication failed');
         return res.status(500).json({ error: 'Authentication failed' });
     }
 };

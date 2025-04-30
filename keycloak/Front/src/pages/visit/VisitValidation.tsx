@@ -17,6 +17,7 @@ import Visit from "../../models/Visit";
 import Agent from "../../models/Agent";
 import { useAuth } from "../../context/AuthContext";
 import { useTranslation } from "react-i18next";
+import { format } from "date-fns";
 
 const PERMISSIONS = {
   LOG_VISITS: import.meta.env.VITE_PERMISSIONS_LOG_VISITS,
@@ -35,6 +36,8 @@ const VisitValidation: React.FC = () => {
     Array<{ id: string; item: string; checked: boolean }>
   >([]);
   const [entryTime, setEntryTime] = useState<number | null>(null);
+  const [qrScanDate, setQrScanDate] = useState<string | null>(null);
+  const [qrScanTime, setQrScanTime] = useState<string | null>(null);
   const [photos, setPhotos] = useState<File[]>([]);
   const [comment, setComment] = useState<string>("");
   const [loading, setLoading] = useState<boolean>(true);
@@ -62,6 +65,13 @@ const VisitValidation: React.FC = () => {
       navigate(`/visit/${idVisit}`, { replace: true });
     }
   }, [location.state, permissionsLoaded, navigate, idVisit, t]);
+
+  // Capture date and time when QR code is scanned (on component mount)
+  useEffect(() => {
+    const now = new Date();
+    setQrScanDate(format(now, "yyyy-MM-dd"));
+    setQrScanTime(format(now, "HH:mm"));
+  }, []);
 
   useEffect(() => {
     const fetchVisitData = async () => {
@@ -231,6 +241,8 @@ const VisitValidation: React.FC = () => {
         checklistUpdates,
         photos,
         comment,
+        date: qrScanDate ?? undefined,
+        time: qrScanTime ?? undefined,
       };
 
       await logVisitDetails(idVisit, updatedVisitData);
@@ -251,7 +263,6 @@ const VisitValidation: React.FC = () => {
   const totalItems = checklist.length;
   const lastPhotoUrl =
     photos.length > 0 ? URL.createObjectURL(photos[photos.length - 1]) : null;
-
 
   // Fallbacks for interpolated translations
   const checklistCount =

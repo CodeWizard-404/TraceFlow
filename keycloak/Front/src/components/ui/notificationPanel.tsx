@@ -12,24 +12,10 @@ interface NotificationPanelProps {
     onClose?: () => void;
 }
 
-const FILTER_OPTIONS = [
-    { value: 'all-desc', label: 'All (Newest)' },
-    { value: 'all-asc', label: 'All (Oldest)' },
-    { value: 'general', label: 'General' },
-    { value: 'user', label: 'User' },
-    { value: 'timesheet', label: 'Timesheet' },
-    { value: 'receipt', label: 'Receipt' },
-    { value: 'visit', label: 'Visit' },
-    { value: 'anomaly', label: 'Anomaly' },
-    { value: 'notification', label: 'Notification' },
-    { value: 'role', label: 'Role' },
-];
-
 const NotificationPanel: React.FC<NotificationPanelProps> = ({ className, onClose }) => {
-    const { notifications, markAllAsRead, mergeNotifications } = useNotification();
+    const { notifications, mergeNotifications } = useNotification();
     const { user } = useAuth();
     const panelRef = useRef<HTMLDivElement>(null);
-    const [filter, setFilter] = useState<string>('all-desc');
     const [isLoading, setIsLoading] = useState(false);
 
     useEffect(() => {
@@ -59,16 +45,16 @@ const NotificationPanel: React.FC<NotificationPanelProps> = ({ className, onClos
         };
     }, [notifications, onClose, user?.userID]);
 
-    const [filterType, sortOrder] = filter.split('-');
+    // Filter only unread notifications
     const filteredNotifications = notifications
-        .filter((n) => (filterType === 'all' || n.type === filterType) && n.channel === 'in-app')
+        .filter((n) => n.status !== 'read' && n.channel === 'in-app')
         .sort((a, b) => {
             const dateA = new Date(a.createdAt).getTime();
             const dateB = new Date(b.createdAt).getTime();
-            return sortOrder === 'desc' ? dateB - dateA : dateA - dateB;
+            return dateB - dateA; // Always sort by newest
         });
 
-    const unreadCount = filteredNotifications.filter((n) => n.status !== 'read').length;
+    const unreadCount = filteredNotifications.length;
 
     const handleRefresh = async () => {
         setIsLoading(true);
@@ -118,18 +104,6 @@ const NotificationPanel: React.FC<NotificationPanelProps> = ({ className, onClos
                     )}
                 </h2>
                 <div className="notification-panel-controls">
-                    <select
-                        value={filter}
-                        onChange={(e) => setFilter(e.target.value)}
-                        className="control-select"
-                        aria-label="Filter and sort notifications"
-                    >
-                        {FILTER_OPTIONS.map((option) => (
-                            <option key={option.value} value={option.value}>
-                                {option.label}
-                            </option>
-                        ))}
-                    </select>
                     <button
                         onClick={handleRefresh}
                         className="control-button"
@@ -138,15 +112,6 @@ const NotificationPanel: React.FC<NotificationPanelProps> = ({ className, onClos
                     >
                         <FaSync className={cn(isLoading && 'spinning')} />
                     </button>
-                    {notifications.length > 0 && (
-                        <button
-                            onClick={markAllAsRead}
-                            className="control-button"
-                            aria-label="Clear all notifications"
-                        >
-                            Clear
-                        </button>
-                    )}
                 </div>
             </div>
             {isLoading && (
@@ -157,9 +122,9 @@ const NotificationPanel: React.FC<NotificationPanelProps> = ({ className, onClos
                 </div>
             )}
             {!isLoading && filteredNotifications.length === 0 ? (
-                <p className="no-notifications">No notifications</p>
+                <p className="no-notifications">No unread notifications</p>
             ) : (
-                <div className="notification-list">
+                <div className="notification-list notification-list-0">
                     {filteredNotifications.map((notification) => (
                         <NotificationItem
                             key={notification.notificationID}

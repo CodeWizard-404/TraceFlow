@@ -146,8 +146,9 @@ async function startApp() {
             name: 'mode',
             message: 'Select server initialization mode:',
             choices: [
-                { name: 'Run all steps (default)', value: 'default' },
-                { name: 'Control each step', value: 'controlled' },
+                { name: 'Default: Run steps based on their configured defaults (env variables)', value: 'default' },
+                { name: 'Controlled: Manually choose which steps to execute', value: 'controlled' },
+                { name: 'Launch all: Execute all steps regardless of defaults', value: 'all' },
             ],
             default: 'default',
         },
@@ -162,9 +163,12 @@ async function startApp() {
         let stepProgress = 0;
 
         try {
-            let executeStep = mode === 'default' ? step.default : false;
-
-            if (mode === 'controlled') {
+            let executeStep = false;
+            if (mode === 'default') {
+                executeStep = step.default;
+            } else if (mode === 'all') {
+                executeStep = true;
+            } else if (mode === 'controlled') {
                 const { confirm } = await inquirer.prompt([
                     {
                         type: 'confirm',
@@ -250,10 +254,10 @@ async function startApp() {
         });
     }
 
+    // Rest of the function remains unchanged
     progressBar.stop();
-    console.clear(); // Clear console after initialization
+    console.clear();
 
-    // Log summary
     // Log summary
     const endTime = new Date();
     summary.duration = ((endTime - startTime) / 1000).toFixed(2);
@@ -285,7 +289,6 @@ async function startApp() {
         logger.info(`\tEmail:\t\t${process.env.SUPER_ADMIN_EMAIL}`);
         logger.info(`\tPassword:\t${process.env.SUPER_ADMIN_PASSWORD}`);
         logger.info(`${colors.cyan('===================================================')}`);
-
     }
 
     if (summary.failures > 0) {

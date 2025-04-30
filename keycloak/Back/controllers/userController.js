@@ -234,6 +234,50 @@ class UserController {
     }
 
     /**
+     * Update a user's details.
+     * @param {Object} req - Express request object with userID in params and data in body.
+     * @param {Object} res - Express response object.
+     * @returns {Promise<void>} JSON response with updated user or error.
+     */
+    static async updateUser(req, res) {
+        try {
+            const { userID } = req.params;
+            const userData = req.body;
+            if (!userID) {
+                logger.warn(`Update user failed: Missing userID, user: ${req.user.userID}, IP: ${req.ip}`);
+                return res.status(400).json({ error: 'User ID is required' });
+            }
+            if (req.file) {
+                if (!req.file.mimetype.startsWith('image/')) {
+                    logger.warn(`Update user failed: Invalid image, user: ${req.user.userID}, IP: ${req.ip}`);
+                    return res.status(400).json({ error: 'Please upload a valid image' });
+                }
+                userData.PFP = req.file.buffer;
+            } else if (userData.removePFP === true) {
+                userData.PFP = null; // Explicitly set PFP to null to remove it
+            }
+            const updatedUser = await UserService.updateUser(userID, userData, req.user.userID);
+            const responseUser = updatedUser.toJSON();
+            if (responseUser.PFP) {
+                responseUser.PFP = responseUser.PFP.toString('base64');
+            } else {
+                delete responseUser.PFP;
+            }
+            // Notify user and their manager of update
+            await NotificationService.triggerNotification({
+                event: 'user:updated',
+                data: { userID, email: updatedUser.email },
+                metadata: { updatedBy: req.user.email }
+            });
+            logger.info(`Updated user ${userID} by user ${req.user.userID}, IP: ${req.ip}`);
+            return res.status(200).json(responseUser);
+        } catch (error) {
+            logger.error(`Update user error: ${error.message}, user: ${req.user.userID}, IP: ${req.ip}`);
+            return res.status(400).json({ error: error.message });
+        }
+    }
+
+    /**
      * Update the current user's profile.
      * @param {Object} req - Express request object with authenticated user and data in body.
      * @param {Object} res - Express response object.
@@ -253,6 +297,8 @@ class UserController {
                     return res.status(400).json({ error: 'Please upload a valid image' });
                 }
                 userData.PFP = req.file.buffer;
+            } else if (userData.removePFP === true) {
+                userData.PFP = null;
             }
             const updatedUser = await UserService.updateUser(userID, userData, req.user.userID);
             const responseUser = updatedUser.toJSON();

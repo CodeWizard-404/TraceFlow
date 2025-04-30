@@ -5,6 +5,7 @@ const ReasonService = require('./reasonService');
 const path = require('path');
 const fs = require('fs');
 const logger = require('../utils/logger');
+const { sequelize } = require('../config/db');
 
 class VisitService {
     static async createVisit(data, actorID) {
@@ -90,8 +91,9 @@ class VisitService {
     }
 
     static async logVisit(visitID, data, files, actorID) {
+        const transaction = await sequelize.transaction();
         try {
-            const { duration, checklistUpdates, comment } = data;
+            const { duration, checklistUpdates, comment, date, time } = data;
             if (!files || files.length === 0) {
                 const error = new Error('At least one photo is required to log a visit');
                 error.status = 400;
@@ -100,19 +102,96 @@ class VisitService {
 
             const visit = await Visit.findByPk(visitID, {
                 include: [{ model: Timesheet, include: [User] }],
+                transaction,
             });
             if (!visit) {
                 const error = new Error('Visit not found');
                 error.status = 404;
                 throw error;
             }
-            const date = visit.date;
-            const time = visit.time.replace(/:/g, '-');
+
+            // Use new date and time if provided, otherwise keep existing
+            const newDate = date || visit.date;
+            const newTime = time || visit.time;
+
+            // Calculate weekNumber and year for timesheet assignment
+            const newDateObj = new Date(newDate);
+            const newYear = newDateObj.getFullYear();
+            const newWeekNumber = this.getISOWeekNumber(newDateObj);
+            const oldTimesheet = visit.Timesheet;
+
+            // Determine target timesheet
+            let targetTimesheet = oldTimesheet;
+            if (newWeekNumber !== oldTimesheet.weekNumber || newYear !== oldTimesheet.year) {
+                targetTimesheet = await Timesheet.findOne({
+                    where: {
+                        weekNumber: newWeekNumber,
+                        year: newYear,
+                        supervisorID: oldTimesheet.supervisorID,
+                    },
+                    transaction,
+                });
+                if (!targetTimesheet) {
+                    targetTimesheet = await Timesheet.create(
+                        {
+                            weekNumber: newWeekNumber,
+                            year: newYear,
+                            supervisorID: oldTimesheet.supervisorID,
+                            status: 'pending',
+                        },
+                        { transaction }
+                    );
+                }
+                visit.timesheetID = targetTimesheet.timesheetID;
+            }
+
+            // Handle photo folder (create new folder based on new date and time)
+            const oldDate = visit.date;
+            const oldTime = visit.time.replace(/:/g, '-');
             const supervisorName = `${visit.Timesheet.User.firstname.toLowerCase()}_${visit.Timesheet.User.lastname.toLowerCase()}`;
-            const folderName = `${date}_${time}_${supervisorName}`;
-            const folderPath = path.join(__dirname, '../Uploads/photos', folderName);
-            if (!fs.existsSync(folderPath)) fs.mkdirSync(folderPath, { recursive: true });
-            const photoPaths = files.map((file) => `/uploads/photos/${folderName}/${file.filename}`);
+            const oldFolderName = `${oldDate}_${oldTime}_${supervisorName}`;
+            const oldFolderPath = path.join(__dirname, '../Uploads/photos', oldFolderName);
+
+            const newTimeForFolder = newTime.replace(/:/g, '-');
+            const newFolderName = `${newDate}_${newTimeForFolder}_${supervisorName}`;
+            const newFolderPath = path.join(__dirname, '../Uploads/photos', newFolderName);
+
+            let photoPaths = visit.photos ? [...visit.photos] : [];
+
+            // Move existing photos to new folder if date or time changed
+            if (newDate !== oldDate || newTime !== visit.time) {
+                if (!fs.existsSync(newFolderPath)) {
+                    fs.mkdirSync(newFolderPath, { recursive: true });
+                }
+                if (photoPaths.length > 0) {
+                    const updatedPhotoPaths = [];
+                    for (const photo of photoPaths) {
+                        const oldPhotoPath = path.join(__dirname, '..', photo);
+                        const filename = path.basename(photo);
+                        const newPhotoPath = path.join(newFolderPath, filename);
+                        if (fs.existsSync(oldPhotoPath)) {
+                            fs.renameSync(oldPhotoPath, newPhotoPath);
+                        }
+                        updatedPhotoPaths.push(`/uploads/photos/${newFolderName}/${filename}`);
+                    }
+                    photoPaths = updatedPhotoPaths;
+                }
+                // Remove old folder if it exists and is empty
+                if (fs.existsSync(oldFolderPath) && fs.readdirSync(oldFolderPath).length === 0) {
+                    fs.rmSync(oldFolderPath, { recursive: true, force: true });
+                }
+            }
+
+            // Save new photos to the new folder
+            if (!fs.existsSync(newFolderPath)) {
+                fs.mkdirSync(newFolderPath, { recursive: true });
+            }
+            const newPhotoPaths = files.map((file) => {
+                const destPath = path.join(newFolderPath, file.filename);
+                fs.renameSync(file.path, destPath);
+                return `/uploads/photos/${newFolderName}/${file.filename}`;
+            });
+            photoPaths = [...photoPaths, ...newPhotoPaths];
 
             // Parse checklistUpdates if it’s a string
             let parsedChecklistUpdates = checklistUpdates;
@@ -129,17 +208,23 @@ class VisitService {
 
             if (parsedChecklistUpdates && Array.isArray(parsedChecklistUpdates)) {
                 for (const update of parsedChecklistUpdates) {
-                    await ChecklistService.updateChecklistStatus(visitID, update.checklistID, update.checked);
+                    await ChecklistService.updateChecklistStatus(visitID, update.checklistID, update.checked, { transaction });
                 }
             }
 
+            // Update visit fields
+            visit.date = newDate;
+            visit.time = newTime;
             visit.duration = duration || visit.duration;
             visit.photos = photoPaths;
             visit.comment = comment || visit.comment;
             visit.status = 'visited';
-            await visit.save();
-            return visit.reload({ include: [Checklist] });
+            await visit.save({ transaction });
+
+            await transaction.commit();
+            return visit.reload({ include: [Checklist], transaction });
         } catch (error) {
+            await transaction.rollback();
             logger.error(`Log visit error: ${error.message}, user: ${actorID}`, { ip: null });
             throw error;
         }

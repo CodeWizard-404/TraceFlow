@@ -10,11 +10,13 @@ router.delete('/rules/:ruleID', requirePermission('manage_notification_rules'), 
 router.get('/rules', requirePermission('view_notification_rules'), NotificationController.getRules);
 
 // User notification preferences
+router.get('/types', NotificationController.getNotificationTypes);
 router.put('/preferences', NotificationController.updatePreferences);
 router.get('/preferences', NotificationController.getPreferences);
 
 // User notifications
 router.get('/', NotificationController.getNotifications);
 router.put('/:notificationID/read', NotificationController.markNotificationAsRead);
+router.put('/read-all', NotificationController.markAllNotificationsAsRead);
 
 module.exports = router;

@@ -6,14 +6,84 @@ const logger = require('../utils/logger');
  * Controller for managing receipt book operations.
  */
 class ReceiptBookController {
-    // --- Receipt Book Retrieval Methods ---
+    // --- Receipt Book Type Management ---
+    static async createReceiptBookType(req, res) {
+        try {
+            const { name } = req.body;
+            if (!name) {
+                logger.warn(`Create receipt book type failed: Missing name, user: ${req.user.userID}, IP: ${req.ip}`);
+                return res.status(400).json({ error: 'Type name is required' });
+            }
+            const type = await ReceiptBookService.createReceiptBookType(name);
+            logger.info(`Receipt book type ${name} created by user ${req.user.userID}, IP: ${req.ip}`);
+            return res.status(201).json(type);
+        } catch (error) {
+            logger.error(`Create receipt book type error: ${error.message}, user: ${req.user.userID}, IP: ${req.ip}`);
+            return res.status(error.status || 400).json({ error: error.message || 'Failed to create receipt book type' });
+        }
+    }
 
-    /**
-     * Get all receipt books.
-     * @param {Object} req - Express request object.
-     * @param {Object} res - Express response object.
-     * @returns {Promise<void>} JSON response with receipt books or error.
-     */
+    static async getAllReceiptBookTypes(req, res) {
+        try {
+            const types = await ReceiptBookService.getAllReceiptBookTypes();
+            logger.info(`Fetched ${types.length} receipt book types by user ${req.user.userID}, IP: ${req.ip}`);
+            return res.status(200).json(types);
+        } catch (error) {
+            logger.error(`Get all receipt book types error: ${error.message}, user: ${req.user.userID}, IP: ${req.ip}`);
+            return res.status(error.status || 500).json({ error: error.message || 'Failed to retrieve receipt book types' });
+        }
+    }
+
+    static async getReceiptBookTypeById(req, res) {
+        try {
+            const { typeID } = req.params;
+            if (!typeID) {
+                logger.warn(`Get receipt book type failed: Missing typeID, user: ${req.user.userID}, IP: ${req.ip}`);
+                return res.status(400).json({ error: 'Type ID is required' });
+            }
+            const type = await ReceiptBookService.getReceiptBookTypeById(typeID);
+            logger.info(`Fetched receipt book type ${typeID} by user ${req.user.userID}, IP: ${req.ip}`);
+            return res.status(200).json(type);
+        } catch (error) {
+            logger.error(`Get receipt book type error: ${error.message}, user: ${req.user.userID}, IP: ${req.ip}`);
+            return res.status(error.status || 404).json({ error: error.message || 'Receipt book type not found' });
+        }
+    }
+
+    static async updateReceiptBookType(req, res) {
+        try {
+            const { typeID } = req.params;
+            const { name } = req.body;
+            if (!typeID || !name) {
+                logger.warn(`Update receipt book type failed: Missing typeID or name, user: ${req.user.userID}, IP: ${req.ip}`);
+                return res.status(400).json({ error: 'Type ID and name are required' });
+            }
+            const type = await ReceiptBookService.updateReceiptBookType(typeID, name);
+            logger.info(`Updated receipt book type ${typeID} by user ${req.user.userID}, IP: ${req.ip}`);
+            return res.status(200).json(type);
+        } catch (error) {
+            logger.error(`Update receipt book type error: ${error.message}, user: ${req.user.userID}, IP: ${req.ip}`);
+            return res.status(error.status || 400).json({ error: error.message || 'Failed to update receipt book type' });
+        }
+    }
+
+    static async deleteReceiptBookType(req, res) {
+        try {
+            const { typeID } = req.params;
+            if (!typeID) {
+                logger.warn(`Delete receipt book type failed: Missing typeID, user: ${req.user.userID}, IP: ${req.ip}`);
+                return res.status(400).json({ error: 'Type ID is required' });
+            }
+            const result = await ReceiptBookService.deleteReceiptBookType(typeID);
+            logger.info(`Deleted receipt book type ${typeID} by user ${req.user.userID}, IP: ${req.ip}`);
+            return res.status(200).json(result);
+        } catch (error) {
+            logger.error(`Delete receipt book type error: ${error.message}, user: ${req.user.userID}, IP: ${req.ip}`);
+            return res.status(error.status || 400).json({ error: error.message || 'Failed to delete receipt book type' });
+        }
+    }
+
+    // --- Receipt Book Retrieval Methods ---
     static async getAllReceiptBooks(req, res) {
         try {
             const startTime = Date.now();
@@ -30,12 +100,6 @@ class ReceiptBookController {
         }
     }
 
-    /**
-     * Get a receipt book by ID.
-     * @param {Object} req - Express request object with bookID in params.
-     * @param {Object} res - Express response object.
-     * @returns {Promise<void>} JSON response with receipt book or error.
-     */
     static async getReceiptBookById(req, res) {
         try {
             const { bookID } = req.params;
@@ -44,17 +108,16 @@ class ReceiptBookController {
                 return res.status(400).json({ error: 'Book ID is required' });
             }
             const receiptBook = await ReceiptBookService.getReceiptBookById(bookID);
-            // Convert Sequelize instance to plain object
             const plainBook = receiptBook.toJSON();
-            // Construct response object to avoid circular references
             const responseBook = {
                 bookID: plainBook.bookID,
                 number: plainBook.number,
-                type: plainBook.type,
+                type: plainBook.ReceiptBookType ? plainBook.ReceiptBookType.name : null,
                 status: plainBook.status,
                 qrCode: plainBook.qrCode ? Buffer.from(plainBook.qrCode).toString('base64') : null,
                 agentID: plainBook.agentID,
                 currentHolderID: plainBook.currentHolderID,
+                typeID: plainBook.typeID,
                 CurrentHolder: plainBook.CurrentHolder || null,
                 ReceiptBookTransfers: plainBook.ReceiptBookTransfers || [],
                 Agent: plainBook.Agent || null,
@@ -68,12 +131,6 @@ class ReceiptBookController {
         }
     }
 
-    /**
-     * Get a receipt book by number.
-     * @param {Object} req - Express request object with number in params.
-     * @param {Object} res - Express response object.
-     * @returns {Promise<void>} JSON response with receipt book or error.
-     */
     static async getReceiptBookByNumber(req, res) {
         try {
             const { number } = req.params;
@@ -94,12 +151,6 @@ class ReceiptBookController {
         }
     }
 
-    /**
-     * Get receipt books by holder.
-     * @param {Object} req - Express request object with holderID in params and userType in body.
-     * @param {Object} res - Express response object.
-     * @returns {Promise<void>} JSON response with receipt books or error.
-     */
     static async getReceiptBooksByHolder(req, res) {
         try {
             const { holderID } = req.params;
@@ -126,12 +177,6 @@ class ReceiptBookController {
         }
     }
 
-    /**
-     * Get transfer history for a receipt book.
-     * @param {Object} req - Express request object with bookID in params.
-     * @param {Object} res - Express response object.
-     * @returns {Promise<void>} JSON response with transfer history or error.
-     */
     static async getTransferHistory(req, res) {
         try {
             const { bookID } = req.params;
@@ -149,29 +194,24 @@ class ReceiptBookController {
     }
 
     // --- Receipt Book Modification Methods ---
-
-    /**
-     * Create a new receipt book.
-     * @param {Object} req - Express request object with number and type in body.
-     * @param {Object} res - Express response object.
-     * @returns {Promise<void>} JSON response with created receipt book or error.
-     */
     static async createReceiptBook(req, res) {
         try {
-            const { number, type } = req.body;
-            if (!number || !type) {
-                logger.warn(`Create receipt book failed: Missing number or type, user: ${req.user.userID}, IP: ${req.ip}`);
-                return res.status(400).json({ error: 'Number and type are required' });
+            const { number, typeID } = req.body;
+            if (!number || !typeID) {
+                logger.warn(`Create receipt book failed: Missing number or typeID, user: ${req.user.userID}, IP: ${req.ip}`);
+                return res.status(400).json({ error: 'Number and typeID are required' });
             }
-            const receiptBook = await ReceiptBookService.createReceiptBook(number, type, req.user.userID);
+            const receiptBook = await ReceiptBookService.createReceiptBook(number, typeID, req.user.userID);
+            const plainBook = receiptBook.toJSON();
             const responseBook = {
-                ...receiptBook,
-                qrCode: receiptBook.qrCode ? Buffer.from(receiptBook.qrCode).toString('base64') : null,
+                ...plainBook,
+                type: plainBook.ReceiptBookType ? plainBook.ReceiptBookType.name : null,
+                qrCode: plainBook.qrCode ? Buffer.from(plainBook.qrCode).toString('base64') : null,
             };
-            // Notify creator and manager of new receipt book
+            delete responseBook.ReceiptBookType;
             await NotificationService.triggerNotification({
                 event: 'receipt_book:created',
-                data: { bookID: receiptBook.bookID, number, type },
+                data: { bookID: receiptBook.bookID, number, typeID },
                 metadata: { createdBy: req.user.email },
             });
             logger.info(`Receipt book ${number} created by user ${req.user.userID}, IP: ${req.ip}`);
@@ -182,12 +222,6 @@ class ReceiptBookController {
         }
     }
 
-    /**
-     * Send receipt books to a supplier.
-     * @param {Object} req - Express request object with bookIDs and supplierEmail in body.
-     * @param {Object} res - Express response object.
-     * @returns {Promise<void>} JSON response with result or error.
-     */
     static async sendToSupplier(req, res) {
         try {
             const { bookIDs, supplierEmail } = req.body;
@@ -196,7 +230,6 @@ class ReceiptBookController {
                 return res.status(400).json({ error: 'Book IDs (array) and supplier email are required' });
             }
             const result = await ReceiptBookService.sendToSupplier(bookIDs, supplierEmail, req.user.userID);
-            // Notify supplier and manager of books sent
             await NotificationService.triggerNotification({
                 event: 'receipt_book:sent_to_supplier',
                 data: { bookIDs, supplierEmail },
@@ -210,12 +243,6 @@ class ReceiptBookController {
         }
     }
 
-    /**
-     * Initiate transfer of receipt books to a recipient.
-     * @param {Object} req - Express request object with bookIDs, recipientID, and recipientType in body.
-     * @param {Object} res - Express response object.
-     * @returns {Promise<void>} JSON response with result or error.
-     */
     static async transfer(req, res) {
         try {
             const { bookIDs, recipientID, recipientType = 'user' } = req.body;
@@ -224,7 +251,6 @@ class ReceiptBookController {
                 return res.status(400).json({ error: 'Book IDs (array) and recipient ID are required' });
             }
             const result = await ReceiptBookService.transfer(bookIDs, recipientID, req.user.userID, recipientType);
-            // Notify recipient and manager of transfer initiation
             await NotificationService.triggerNotification({
                 event: 'receipt_book:transferred',
                 data: { bookIDs, recipientID, recipientType },
@@ -238,12 +264,6 @@ class ReceiptBookController {
         }
     }
 
-    /**
-     * Collect receipt books from a supplier.
-     * @param {Object} req - Express request object with bookIDs and userID in body.
-     * @param {Object} res - Express response object.
-     * @returns {Promise<void>} JSON response with result or error.
-     */
     static async collectFromSupplier(req, res) {
         try {
             const { bookIDs, userID } = req.body;
@@ -252,7 +272,6 @@ class ReceiptBookController {
                 return res.status(400).json({ error: 'Book IDs (array) and user ID are required' });
             }
             const result = await ReceiptBookService.collectFromSupplier(bookIDs, userID);
-            // Notify user and manager of books collected
             await NotificationService.triggerNotification({
                 event: 'receipt_book:collected',
                 data: { bookIDs, userID },
@@ -266,12 +285,6 @@ class ReceiptBookController {
         }
     }
 
-    /**
-     * Validate a receipt book transfer.
-     * @param {Object} req - Express request object with bookIDs, recipientID, otpCode, and recipientType in body.
-     * @param {Object} res - Express response object.
-     * @returns {Promise<void>} JSON response with result or error.
-     */
     static async validateTransfer(req, res) {
         try {
             const { bookIDs, recipientID, otpCode, recipientType = 'user' } = req.body;
@@ -280,7 +293,6 @@ class ReceiptBookController {
                 return res.status(400).json({ error: 'Book IDs (array), recipient ID, and OTP code are required' });
             }
             const result = await ReceiptBookService.validateTransfer(bookIDs, recipientID, otpCode, recipientType);
-            // Notify recipient and manager of transfer validation
             await NotificationService.triggerNotification({
                 event: 'receipt_book:transfer_validated',
                 data: { bookIDs, recipientID, recipientType },
@@ -294,12 +306,6 @@ class ReceiptBookController {
         }
     }
 
-    /**
-     * Update a receipt book.
-     * @param {Object} req - Express request object with bookID in params and updates in body.
-     * @param {Object} res - Express response object.
-     * @returns {Promise<void>} JSON response with updated receipt book or error.
-     */
     static async updateReceiptBook(req, res) {
         try {
             const { bookID } = req.params;
@@ -309,22 +315,21 @@ class ReceiptBookController {
                 return res.status(400).json({ error: 'Book ID is required' });
             }
             const receiptBook = await ReceiptBookService.updateReceiptBook(bookID, updates, req.user.userID);
-            // Convert Sequelize instance to plain object
             const plainBook = receiptBook.toJSON();
             const responseBook = {
                 bookID: plainBook.bookID,
                 number: plainBook.number,
-                type: plainBook.type,
+                type: plainBook.ReceiptBookType ? plainBook.ReceiptBookType.name : null,
                 status: plainBook.status,
                 qrCode: plainBook.qrCode ? Buffer.from(plainBook.qrCode).toString('base64') : null,
                 agentID: plainBook.agentID,
                 currentHolderID: plainBook.currentHolderID,
+                typeID: plainBook.typeID,
                 CurrentHolder: plainBook.CurrentHolder || null,
                 ReceiptBookTransfers: plainBook.ReceiptBookTransfers || [],
                 Agent: plainBook.Agent || null,
                 ReceiptStub: plainBook.ReceiptStub || null,
             };
-            // Notify holder and manager of updates
             await NotificationService.triggerNotification({
                 event: 'receipt_book:updated',
                 data: { bookID, updates: Object.keys(updates) },
@@ -338,12 +343,6 @@ class ReceiptBookController {
         }
     }
 
-    /**
-     * Delete a receipt book.
-     * @param {Object} req - Express request object with bookID in params.
-     * @param {Object} res - Express response object.
-     * @returns {Promise<void>} JSON response with result or error.
-     */
     static async deleteReceiptBook(req, res) {
         try {
             const { bookID } = req.params;
@@ -352,7 +351,6 @@ class ReceiptBookController {
                 return res.status(400).json({ error: 'Book ID is required' });
             }
             const result = await ReceiptBookService.deleteReceiptBook(bookID, req.user.userID);
-            // Notify holder and manager of deletion
             await NotificationService.triggerNotification({
                 event: 'receipt_book:deleted',
                 data: { bookID },

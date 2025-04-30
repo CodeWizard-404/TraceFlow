@@ -13,6 +13,7 @@ import {
     ReceiveFromSupplierResponse,
 } from ".";
 import ReceiptBook from "../models/ReceiptBook";
+import ReceiptBookType from "models/ReceiptBookType";
 
 // Error response type for Axios errors
 interface AxiosErrorResponse {
@@ -45,11 +46,8 @@ const handleApiError = (error: unknown, defaultMessage: string): string => {
 };
 
 // Create a new receipt book
-export const createReceiptBook = async (data: { number: string; type: string }): Promise<CreateReceiptBookResponse> => {
+export const createReceiptBook = async (data: Partial<ReceiptBook>): Promise<CreateReceiptBookResponse> => {
     try {
-        if (!data.number || !data.type) {
-            throw new Error("Number and type are required.");
-        }
         const response = await api.post<CreateReceiptBookResponse>("/receipt-books", data);
         return response.data;
     } catch (error) {
@@ -70,9 +68,6 @@ export const getAllReceiptBooks = async (): Promise<ListReceiptBooksResponse> =>
 // Get receipt book by ID
 export const getReceiptBookById = async (bookID: string): Promise<ReceiptBookByIdResponse> => {
     try {
-        if (!bookID) {
-            throw new Error("Book ID is required.");
-        }
         const response = await api.get<ReceiptBookByIdResponse>(`/receipt-books/${bookID}`);
         return response.data;
     } catch (error) {
@@ -207,5 +202,63 @@ export const getTransferHistory = async (bookID: string): Promise<TransferHistor
         return response.data;
     } catch (error) {
         throw new Error(handleApiError(error, "Unable to fetch transfer history for receipt book."));
+    }
+};
+
+
+// Fetch all receipt book types
+export const getAllReceiptBookTypes = async (): Promise<ReceiptBookType[]> => {
+    try {
+        const response = await api.get(`/receipt-books/types`, {
+            headers: { 'Accept': 'application/json' },
+        });
+        return response.data;
+    } catch (error) {
+        throw new Error(handleApiError(error, 'Failed to fetch receipt book types'));
+    }
+};
+
+// Fetch a single receipt book type by ID
+export const getReceiptBookTypeById = async (typeID: string): Promise<ReceiptBookType> => {
+    try {
+        const response = await api.get(`/receipt-books/types/${typeID}`, {
+            headers: { 'Accept': 'application/json' },
+        });
+        return response.data;
+    } catch (error) {
+        throw new Error(handleApiError(error, 'Failed to fetch receipt book type'));
+    }
+};
+
+// Create a new receipt book type
+export const createReceiptBookType = async (data: Partial<ReceiptBookType>): Promise<ReceiptBookType> => {
+    try {
+        const response = await api.post(`/receipt-books/types`, data, {
+            headers: { 'Content-Type': 'application/json' },
+        });
+        return response.data;
+    } catch (error) {
+        throw new Error(handleApiError(error, 'Failed to create receipt book type'));
+    }
+};
+
+// Update a receipt book type
+export const updateReceiptBookType = async (typeID: string, data: Partial<ReceiptBookType>): Promise<ReceiptBookType> => {
+    try {
+        const response = await api.put(`/receipt-books/types/${typeID}`, data, {
+            headers: { 'Content-Type': 'application/json' },
+        });
+        return response.data;
+    } catch (error) {
+        throw new Error(handleApiError(error, 'Failed to update receipt book type'));
+    }
+};
+
+// Delete a receipt book type
+export const deleteReceiptBookType = async (typeID: string): Promise<void> => {
+    try {
+        await api.delete(`/receipt-books/types/${typeID}`);
+    } catch (error) {
+        throw new Error(handleApiError(error, 'Failed to delete receipt book type'));
     }
 };
