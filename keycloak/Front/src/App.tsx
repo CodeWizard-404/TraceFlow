@@ -45,10 +45,10 @@ const ROLES = {
 // Permission-based ProtectedRoute component
 interface ProtectedRouteProps {
   children: JSX.Element;
-  requiredPermissions: string[];
+  requiredPermissions?: string[]; // Optional permissions
 }
 
-const ProtectedRoute: React.FC<ProtectedRouteProps> = React.memo(({ children, requiredPermissions }) => {
+const ProtectedRoute: React.FC<ProtectedRouteProps> = React.memo(({ children, requiredPermissions = [] }) => {
   const { user, effectivePermissions, permissionsLoaded } = useAuth();
 
   if (!user) {
@@ -64,6 +64,12 @@ const ProtectedRoute: React.FC<ProtectedRouteProps> = React.memo(({ children, re
     );
   }
 
+  // If no permissions are required, allow access
+  if (requiredPermissions.length === 0) {
+    return children;
+  }
+
+  // Check if user has at least one required permission
   const hasPermission = requiredPermissions.some((perm) =>
     effectivePermissions?.some((p) => p.name === perm)
   );
@@ -145,8 +151,22 @@ const AppContent: React.FC = React.memo(() => {
             <Route path="/login" element={<LoginPage />} />
             <Route path="/access-denied" element={<AccessDenied />} />
             <Route path="/" element={<Navigate to="/login" replace />} />
-            <Route path="/profile" element={<ProfilePage />} />
-            <Route path="/dashboard" element={<Entry />} />
+            <Route
+              path="/dashboard"
+              element={
+                <ProtectedRoute>
+                  <Entry />
+                </ProtectedRoute>
+              }
+            />
+            <Route
+              path="/profile"
+              element={
+                <ProtectedRoute>
+                  <ProfilePage />
+                </ProtectedRoute>
+              }
+            />
             <Route
               path="/admin"
               element={

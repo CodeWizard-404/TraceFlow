@@ -202,19 +202,12 @@ class NotificationService {
                 return existingRule;
             }
 
-            // Define critical events that should have enabled default rules
-            const criticalEvents = [
-                'role:created',
-                'role:updated',
-                'role:deleted',
-                'role:assigned',
-                'role:revoked',
-                'role:reset'
-            ];
+            // Derive notification type from event (e.g., 'timesheet:updated' -> 'timesheet')
+            const notificationType = event.split(':')[0];
 
             const defaultRule = {
                 event,
-                type: data.type || 'general',
+                type: notificationType,
                 recipients: {
                     roles: ['Admin', 'Super Admin'],
                     userIDs: [],
@@ -227,7 +220,7 @@ class NotificationService {
                 },
                 conditions: data.conditions || null,
                 messageTemplate: `Notification for ${event}`,
-                enabled: criticalEvents.includes(event),
+                enabled: true,
             };
 
             const rule = await NotificationRule.create(defaultRule);

@@ -42,7 +42,7 @@ class VisitController {
         try {
             const { qrData, visitId } = req.body;
             if (!qrData || !visitId) {
-                logger.warn(`Verify QR code failed: Missing qrData or visitId, user: ${req.user.userID}, IP: ${req.ip}`);
+                logger.warn(`Verify QR code failed: Missing qrData orregexp visitId, user: ${req.user.userID}, IP: ${req.ip}`);
                 return res.status(400).json({ error: 'qrData and visitId are required' });
             }
             const result = await VisitService.verifyQRCode(qrData, visitId, req.user.userID);
@@ -71,7 +71,7 @@ class VisitController {
     static async logVisit(req, res) {
         try {
             const { id } = req.params;
-            const { duration, checklistUpdates, comment } = req.body;
+            const { duration, checklistUpdates, comment, date, time } = req.body;
             const files = req.files || [];
             if (!id) {
                 logger.warn(`Log visit failed: Missing visit ID, user: ${req.user.userID}, IP: ${req.ip}`);
@@ -81,7 +81,7 @@ class VisitController {
                 logger.warn(`Log visit failed: At least one photo is required to log a visit, user: ${req.user.userID}, IP: ${req.ip}`);
                 return res.status(400).json({ error: 'At least one photo is required to log a visit' });
             }
-            const visit = await VisitService.logVisit(id, { duration, checklistUpdates, comment }, files, req.user.userID);
+            const visit = await VisitService.logVisit(id, { duration, checklistUpdates, comment, date, time }, files, req.user.userID);
             await NotificationService.triggerNotification({
                 event: 'visit:logged',
                 data: { visitId: id, duration, comment },

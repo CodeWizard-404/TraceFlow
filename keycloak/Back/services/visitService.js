@@ -221,8 +221,14 @@ class VisitService {
             visit.status = 'visited';
             await visit.save({ transaction });
 
+            // Reload visit with associations before committing transaction
+            const reloadedVisit = await Visit.findByPk(visitID, {
+                include: [Checklist],
+                transaction,
+            });
+
             await transaction.commit();
-            return visit.reload({ include: [Checklist], transaction });
+            return reloadedVisit;
         } catch (error) {
             await transaction.rollback();
             logger.error(`Log visit error: ${error.message}, user: ${actorID}`, { ip: null });

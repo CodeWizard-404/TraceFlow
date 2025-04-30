@@ -170,7 +170,7 @@ const VisitValidation: React.FC = () => {
             const file = new File([blob], `photo-${Date.now()}.jpg`, {
               type: "image/jpeg",
             });
-            console.log("Captured photo:", file); // Debug log
+            console.log("Captured photo:", file);
             setPhotos((prev) => [...prev, file]);
             setFlashEffect(true);
             setTimeout(() => setFlashEffect(false), 300);
@@ -220,8 +220,10 @@ const VisitValidation: React.FC = () => {
       return;
     }
 
-    console.log("Photos before sending:", photos); // Debug log
+    console.log("Photos before sending:", photos);
     console.log("Photos length:", photos.length);
+    console.log("QR Scan Date:", qrScanDate);
+    console.log("QR Scan Time:", qrScanTime);
 
     setIsSubmitting(true);
     setError(null);
@@ -256,6 +258,12 @@ const VisitValidation: React.FC = () => {
     }
   };
 
+  // Handle cancellation
+  const handleCancel = () => {
+    stopCamera();
+    navigate("/timesheet");
+  };
+
   const completedItems = useMemo(
     () => checklist.filter((item) => item.checked).length,
     [checklist]
@@ -264,7 +272,6 @@ const VisitValidation: React.FC = () => {
   const lastPhotoUrl =
     photos.length > 0 ? URL.createObjectURL(photos[photos.length - 1]) : null;
 
-  // Fallbacks for interpolated translations
   const checklistCount =
     t("visitValidation.checklist.count", {
       completed: completedItems,
@@ -290,7 +297,7 @@ const VisitValidation: React.FC = () => {
         </div>
         <button
           className="back-btn"
-          onClick={() => navigate(0)}
+          onClick={handleCancel}
           aria-label={t("visitValidation.aria.backButton")}
         >
           <FaArrowLeft /> {t("visitValidation.actions.back")}
@@ -301,8 +308,7 @@ const VisitValidation: React.FC = () => {
 
   return (
     <div
-      className={`visit-validation-container ${isCameraActive ? "camera-active" : ""
-        }`}
+      className={`visit-validation-container ${isCameraActive ? "camera-active" : ""}`}
     >
       {!isCameraActive && (
         <header className="visit-header-0">
@@ -523,10 +529,7 @@ const VisitValidation: React.FC = () => {
           </button>
           <button
             className="back-btn"
-            onClick={() => {
-              stopCamera();
-              navigate("/timesheet");
-            }}
+            onClick={handleCancel}
             aria-label={t("visitValidation.aria.backButton")}
           >
             <FaArrowLeft /> {t("visitValidation.actions.back")}
@@ -545,7 +548,7 @@ const VisitValidation: React.FC = () => {
           <button
             className="close-preview-btn"
             onClick={closePhotoPreview}
-            aria-label='X'
+            aria-label="Close photo preview"
           >
             <FaTimes />
           </button>

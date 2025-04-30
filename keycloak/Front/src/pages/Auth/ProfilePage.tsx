@@ -48,6 +48,7 @@ import {
   FaTimes,
   FaFilter,
   FaSort,
+  FaTrash, // Added for remove profile picture icon
 } from "react-icons/fa";
 
 // Skeleton component
@@ -135,6 +136,7 @@ const ProfilePage: React.FC = React.memo(() => {
   const [failedUploadCount, setFailedUploadCount] = useState(0);
   const [isUploadDisabled, setIsUploadDisabled] = useState(false);
   const [loading, setLoading] = useState(true);
+  const [showProfilePicPopup, setShowProfilePicPopup] = useState(false); // New state for popup
 
   // Notification-specific states
   const [notificationView, setNotificationView] = useState<"list" | "preferences">("list");
@@ -748,13 +750,14 @@ const ProfilePage: React.FC = React.memo(() => {
             };
             setProfileData(updatedUser);
             localStorage.setItem("user", JSON.stringify(updatedUser));
+            setShowProfilePicPopup(false); // Close popup after successful upload
           };
           img.onerror = (error) => {
             console.error("New profile picture load error:", {
               error,
               imageSrcLength: imageSrc.length,
               mimeType,
-              pfpLength: response.PFP!.length,
+              pfpLengthxae: response.PFP!.length,
               pfpPreview: response.PFP!.substring(0, 50),
             });
             setFailedUploadCount((prev) => prev + 1);
@@ -784,6 +787,7 @@ const ProfilePage: React.FC = React.memo(() => {
           };
           setProfileData(updatedUser);
           localStorage.setItem("user", JSON.stringify(updatedUser));
+          setShowProfilePicPopup(false); // Close popup
         }
       } catch (err) {
         console.error("Profile pic update error:", err);
@@ -811,6 +815,37 @@ const ProfilePage: React.FC = React.memo(() => {
       isUploadDisabled,
     ]
   );
+
+  // New handler for removing profile picture
+  const handleRemoveProfilePic = useCallback(async () => {
+    if (isUploadDisabled) {
+      setTempError("Profile picture actions are temporarily disabled due to repeated failures. Please contact support.");
+      return;
+    }
+
+    try {
+      const response = await updateProfile({ removePFP: true });
+      setProfilePic(null);
+      setTempSuccess("Profile picture removed successfully");
+      setFailedUploadCount(0);
+      setIsUploadDisabled(false);
+      localStorage.removeItem("lastValidPFP");
+      const updatedUser: User = {
+        ...profileData!,
+        ...response,
+        PFP: null,
+      };
+      setProfileData(updatedUser);
+      localStorage.setItem("user", JSON.stringify(updatedUser));
+      setShowProfilePicPopup(false); // Close popup after removal
+    } catch (err) {
+      console.error("Profile pic removal error:", err);
+      setTempError(
+        err instanceof Error ? err.message : "Failed to remove profile picture"
+      );
+      setProfilePic(loadLastValidPFP());
+    }
+  }, [profileData, setTempSuccess, setTempError, loadLastValidPFP, isUploadDisabled]);
 
   const handlePasswordChange = useCallback(async () => {
     if (!newPassword || !confirmPassword) return;
@@ -1046,7 +1081,15 @@ const ProfilePage: React.FC = React.memo(() => {
         <header className="profile-header">
           <div
             className="profile-pic-container"
-            onClick={() => !isUploadDisabled && document.getElementById("profile-pic-input")?.click()}
+            onClick={() => {
+              if (!isUploadDisabled) {
+                if (profilePic) {
+                  setShowProfilePicPopup(true);
+                } else {
+                  document.getElementById("profile-pic-input")?.click();
+                }
+              }
+            }}
           >
             {profilePic ? (
               <img
@@ -1123,6 +1166,39 @@ const ProfilePage: React.FC = React.memo(() => {
             <p className="user-role">User ID: {profileData.userID}</p>
           </div>
         </header>
+
+        {/* Profile Picture Popup */}
+        {showProfilePicPopup && profilePic && (
+          <div className="profile-pic-popup">
+            <div className="profile-pic-popup-content">
+              <button
+                className="popup-close-btn"
+                onClick={() => setShowProfilePicPopup(false)}
+              >
+                <FaTimes />
+              </button>
+              <img
+                src={profilePic}
+                alt={`${profileData.firstname} ${profileData.lastname}'s profile picture`}
+                className="popup-profile-pic"
+              />
+              <div className="popup-buttons">
+                <button
+                  className="popup-change-btn"
+                  onClick={() => document.getElementById("profile-pic-input")?.click()}
+                >
+                  <FaCamera /> Change
+                </button>
+                <button
+                  className="popup-delete-btn"
+                  onClick={handleRemoveProfilePic}
+                >
+                  <FaTrash /> Delete
+                </button>
+              </div>
+            </div>
+          </div>
+        )}
 
         <nav className="profile-nav">
           <button

@@ -50,7 +50,6 @@
   padding: 0.75rem;
   border: 1px solid #e5e7eb;
   border-radius: 0.5rem;
-  font-size: 0.9rem;
   background: #fff;
   color: #1f2937;
 }
@@ -425,7 +424,8 @@ body.dark .pagination .page-info {
 }
 
 .timer-warning {
-  color: #e81f76; /* Red warning when 30 seconds or less remain */
+  color: #e81f76;
+  /* Red warning when 30 seconds or less remain */
 }
 
 /* Dark Theme Overrides */

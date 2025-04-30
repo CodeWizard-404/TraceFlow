@@ -2,7 +2,6 @@ import { AxiosError } from "axios";
 import api from "./axiosConfig";
 import { VerifyQrResponse, LogVisitResponse, VisitByIdResponse, UpdateVisitResponse, DeleteVisitResponse } from ".";
 
-// Error response type for Axios errors
 interface AxiosErrorResponse {
     response?: {
         data?: { error?: string };
@@ -10,11 +9,10 @@ interface AxiosErrorResponse {
     };
 }
 
-// Generic error handler
 const handleApiError = (error: unknown, defaultMessage: string): string => {
     const axiosError = error as AxiosError<AxiosErrorResponse>;
     if (axiosError.response?.data) {
-        return axiosError.message; // Use backend's user-friendly error
+        return axiosError.message;
     }
     switch (axiosError.response?.status) {
         case 400:
@@ -32,7 +30,6 @@ const handleApiError = (error: unknown, defaultMessage: string): string => {
     }
 };
 
-// Verify QR code for a visit
 export const verifyQrCode = async (data: { qrData: string; visitId: string }): Promise<VerifyQrResponse> => {
     try {
         if (!data.qrData || !data.visitId) {
@@ -45,7 +42,6 @@ export const verifyQrCode = async (data: { qrData: string; visitId: string }): P
     }
 };
 
-// Log visit details
 export const logVisitDetails = async (
     id: string,
     data: {
@@ -61,31 +57,36 @@ export const logVisitDetails = async (
         if (!id) {
             throw new Error("Visit ID is required.");
         }
+        if (!data.photos || data.photos.length === 0) {
+            throw new Error("At least one photo is required.");
+        }
         const formData = new FormData();
-        if (data.duration) formData.append("duration", data.duration.toString());
-        if (data.checklistUpdates) formData.append("checklistUpdates", JSON.stringify(data.checklistUpdates));
+        formData.append("duration", data.duration.toString());
+        formData.append("checklistUpdates", JSON.stringify(data.checklistUpdates));
         if (data.comment) formData.append("comment", data.comment);
         if (data.date) formData.append("date", data.date);
         if (data.time) formData.append("time", data.time);
-        data.photos.forEach((photo) => {
-            console.log("Appending photo:", photo.name, photo.size); // Log each photo
+        data.photos.forEach((photo, index) => {
+            console.log(`Appending photo ${index + 1}:`, photo.name, photo.size);
             formData.append("photos", photo);
         });
 
-        // Log all FormData entries
         console.log("FormData entries:");
         for (const [key, value] of formData.entries()) {
             console.log(`${key}:`, value instanceof File ? `${value.name} (${value.size} bytes)` : value);
         }
 
-        const response = await api.put<LogVisitResponse>(`/visits/${id}/log`, formData);
+        const response = await api.put<LogVisitResponse>(`/visits/${id}/log`, formData, {
+            headers: {
+                "Content-Type": "multipart/form-data",
+            },
+        });
         return response.data;
     } catch (error) {
         throw new Error(handleApiError(error, "Unable to log visit details."));
     }
 };
 
-// Get visit by ID
 export const getVisitById = async (id: string): Promise<VisitByIdResponse> => {
     try {
         if (!id) {
@@ -98,7 +99,6 @@ export const getVisitById = async (id: string): Promise<VisitByIdResponse> => {
     }
 };
 
-// Update visit details
 export const updateVisit = async (
     id: string,
     data: {
@@ -147,7 +147,6 @@ export const updateVisit = async (
     }
 };
 
-// Delete a visit
 export const deleteVisit = async (id: string): Promise<DeleteVisitResponse> => {
     try {
         if (!id) {
@@ -158,4 +157,4 @@ export const deleteVisit = async (id: string): Promise<DeleteVisitResponse> => {
     } catch (error) {
         throw new Error(handleApiError(error, "Unable to delete visit."));
     }
-};
+};  

@@ -22,6 +22,9 @@ interface AxiosErrorResponse {
     status?: number;
   };
 }
+interface RemovePFPRequest {
+  removePFP: boolean;
+}
 
 // Generic error handler
 const handleApiError = (error: unknown, defaultMessage: string): string => {
@@ -157,7 +160,8 @@ export const fetchUserProfile = async (): Promise<User> => {
     const response = await api.get<User>("/users/profile");
     return response.data;
   } catch (error) {
-    throw new Error(handleApiError(error, "Unable to fetch profile. Please try again."));
+    console.error("Error fetching profile:", error);
+    throw error instanceof Error ? error : new Error("Failed to fetch profile");
   }
 };
 
@@ -190,18 +194,17 @@ export const updateUser = async (
   }
 };
 
-// Update user profile
-export const updateProfile = async (data: Partial<User> | FormData): Promise<User> => {
+// Update the parameter type to include RemovePFPRequest
+export const updateProfile = async (
+  data: Partial<User> | FormData | RemovePFPRequest
+): Promise<User> => {
   try {
-    const config = {
-      headers: {
-        ...(data instanceof FormData ? { "Content-Type": "multipart/form-data" } : { "Content-Type": "application/json" }),
-      },
-    };
-    const response = await api.put<User>("/users/profile", data, config);
+    const headers = data instanceof FormData ? { "Content-Type": "multipart/form-data" } : {};
+    const response = await api.put<User>("/users/profile", data, { headers });
     return response.data;
   } catch (error) {
-    throw new Error(handleApiError(error, "Unable to update profile. Please try again."));
+    console.error("Error updating profile:", error);
+    throw error instanceof Error ? error : new Error("Failed to update profile");
   }
 };
 
