@@ -56,7 +56,6 @@ const Entry: React.FC = () => {
         lastname: "Laghouanem",
         phone: "",
         email: "",
-        wallet: "",
         password: "",
       },
       {
@@ -65,7 +64,6 @@ const Entry: React.FC = () => {
         lastname: "Othmani",
         phone: "",
         email: "",
-        wallet: "",
         password: "",
       },
     ];

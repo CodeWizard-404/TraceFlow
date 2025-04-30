@@ -46785,3 +46785,787 @@
 {"level":"info","message":"Fetched notification preferences for user: user_b6w054ass, IP: 192.168.0.117","timestamp":"2025-04-30T13:45:18.420Z"}
 {"isWebSocket":false,"level":"info","message":"Authentication successful for user: superadmin@example.com","roles":"default-roles-traceflow, offline_access, Super Admin, uma_authorization","timestamp":"2025-04-30T13:45:20.142Z","userID":"user_b6w054ass"}
 {"level":"info","message":"Fetched notifications for user: user_b6w054ass, IP: 192.168.0.117","timestamp":"2025-04-30T13:45:20.149Z"}
+{"level":"info","message":"Initiating token refresh","timestamp":"2025-04-30T13:54:22.801Z"}
+{"accessTokenExpiresIn":900,"level":"info","message":"Tokens refreshed successfully","refreshTokenRotatedAt":"2025-04-30T13:54:22.953Z","timestamp":"2025-04-30T13:54:22.953Z"}
+{"level":"info","message":"Refresh token successful","timestamp":"2025-04-30T13:54:22.954Z"}
+{"level":"info","message":"User disconnected: superadmin@example.com","reason":"client namespace disconnect","socketId":"GqMZJyViSdRah81oAAAE","timestamp":"2025-04-30T13:54:22.966Z"}
+{"level":"info","message":"Client disconnected","socketId":"GqMZJyViSdRah81oAAAE","timestamp":"2025-04-30T13:54:22.967Z"}
+{"isWebSocket":true,"level":"info","message":"Authentication successful for user: superadmin@example.com","roles":"default-roles-traceflow, offline_access, Super Admin, uma_authorization","timestamp":"2025-04-30T13:54:23.069Z","userID":"user_b6w054ass"}
+{"email":"superadmin@example.com","level":"info","message":"WebSocket authentication successful","roles":"default-roles-traceflow, offline_access, Super Admin, uma_authorization","socketId":"pfke3Fm_GJHvyABaAAAG","timestamp":"2025-04-30T13:54:23.076Z","userID":"user_b6w054ass"}
+{"level":"info","message":"User connected: superadmin@example.com","socketId":"pfke3Fm_GJHvyABaAAAG","timestamp":"2025-04-30T13:54:23.081Z","userID":"user_b6w054ass"}
+{"level":"info","message":"User superadmin@example.com joined room: default-roles-traceflow","socketId":"pfke3Fm_GJHvyABaAAAG","timestamp":"2025-04-30T13:54:23.087Z"}
+{"level":"info","message":"User superadmin@example.com joined room: offline_access","socketId":"pfke3Fm_GJHvyABaAAAG","timestamp":"2025-04-30T13:54:23.092Z"}
+{"level":"info","message":"User superadmin@example.com joined room: super admin","socketId":"pfke3Fm_GJHvyABaAAAG","timestamp":"2025-04-30T13:54:23.094Z"}
+{"level":"info","message":"User superadmin@example.com joined room: uma_authorization","socketId":"pfke3Fm_GJHvyABaAAAG","timestamp":"2025-04-30T13:54:23.096Z"}
+{"level":"info","message":"User superadmin@example.com joined room: user_b6w054ass","socketId":"pfke3Fm_GJHvyABaAAAG","timestamp":"2025-04-30T13:54:23.098Z"}
+{"level":"info","message":"Client connected","socketId":"pfke3Fm_GJHvyABaAAAG","timestamp":"2025-04-30T13:54:23.099Z"}
+{"level":"info","message":"User superadmin@example.com joined room: default-roles-traceflow","socketId":"pfke3Fm_GJHvyABaAAAG","timestamp":"2025-04-30T13:54:23.126Z"}
+{"level":"info","message":"Client joined room: default-roles-traceflow","socketId":"pfke3Fm_GJHvyABaAAAG","timestamp":"2025-04-30T13:54:23.131Z"}
+{"level":"info","message":"Cleaning up expired OTPs","timestamp":"2025-04-30T14:00:00.820Z"}
+{"level":"info","message":"Cleaned up 0 expired OTPs","timestamp":"2025-04-30T14:00:00.928Z"}
+{"level":"info","message":"Updated 0 visits from pending to validated","timestamp":"2025-04-30T14:00:00.932Z"}
+{"isWebSocket":false,"level":"info","message":"Authentication successful for user: superadmin@example.com","roles":"default-roles-traceflow, offline_access, Super Admin, uma_authorization","timestamp":"2025-04-30T14:00:24.806Z","userID":"user_b6w054ass"}
+{"isWebSocket":false,"level":"info","message":"Authentication successful for user: superadmin@example.com","roles":"default-roles-traceflow, offline_access, Super Admin, uma_authorization","timestamp":"2025-04-30T14:00:24.811Z","userID":"user_b6w054ass"}
+{"isWebSocket":false,"level":"info","message":"Authentication successful for user: superadmin@example.com","roles":"default-roles-traceflow, offline_access, Super Admin, uma_authorization","timestamp":"2025-04-30T14:00:24.818Z","userID":"user_b6w054ass"}
+{"level":"info","message":"Fetched profile for user user_b6w054ass, IP: 192.168.0.117","timestamp":"2025-04-30T14:00:24.826Z"}
+{"level":"info","message":"Fetched notification types for user: user_b6w054ass, IP: 192.168.0.117","timestamp":"2025-04-30T14:00:24.830Z"}
+{"level":"info","message":"Fetched notification preferences for user: user_b6w054ass, IP: 192.168.0.117","timestamp":"2025-04-30T14:00:24.839Z"}
+{"isWebSocket":false,"level":"info","message":"Authentication successful for user: superadmin@example.com","roles":"default-roles-traceflow, offline_access, Super Admin, uma_authorization","timestamp":"2025-04-30T14:00:39.805Z","userID":"user_b6w054ass"}
+{"isWebSocket":false,"level":"info","message":"Authentication successful for user: superadmin@example.com","roles":"default-roles-traceflow, offline_access, Super Admin, uma_authorization","timestamp":"2025-04-30T14:00:39.809Z","userID":"user_b6w054ass"}
+{"isWebSocket":false,"level":"info","message":"Authentication successful for user: superadmin@example.com","roles":"default-roles-traceflow, offline_access, Super Admin, uma_authorization","timestamp":"2025-04-30T14:00:39.812Z","userID":"user_b6w054ass"}
+{"level":"info","message":"Fetched notification types for user: user_b6w054ass, IP: 192.168.0.117","timestamp":"2025-04-30T14:00:39.816Z"}
+{"level":"info","message":"Fetched notification preferences for user: user_b6w054ass, IP: 192.168.0.117","timestamp":"2025-04-30T14:00:39.824Z"}
+{"level":"info","message":"Fetched profile for user user_b6w054ass, IP: 192.168.0.117","timestamp":"2025-04-30T14:00:39.830Z"}
+{"isWebSocket":false,"level":"info","message":"Authentication successful for user: superadmin@example.com","roles":"default-roles-traceflow, offline_access, Super Admin, uma_authorization","timestamp":"2025-04-30T14:00:43.170Z","userID":"user_b6w054ass"}
+{"level":"info","message":"Fetched notifications for user: user_b6w054ass, IP: 192.168.0.117","timestamp":"2025-04-30T14:00:43.179Z"}
+{"isWebSocket":false,"level":"info","message":"Authentication successful for user: superadmin@example.com","roles":"default-roles-traceflow, offline_access, Super Admin, uma_authorization","timestamp":"2025-04-30T14:04:45.558Z","userID":"user_b6w054ass"}
+{"level":"info","message":"Fetched notifications for user: user_b6w054ass, IP: 192.168.0.117","timestamp":"2025-04-30T14:04:45.564Z"}
+{"isWebSocket":false,"level":"info","message":"Authentication successful for user: superadmin@example.com","roles":"default-roles-traceflow, offline_access, Super Admin, uma_authorization","timestamp":"2025-04-30T14:05:13.877Z","userID":"user_b6w054ass"}
+{"level":"info","message":"Fetched notifications for user: user_b6w054ass, IP: 192.168.0.117","timestamp":"2025-04-30T14:05:13.884Z"}
+{"isWebSocket":false,"level":"info","message":"Authentication successful for user: superadmin@example.com","roles":"default-roles-traceflow, offline_access, Super Admin, uma_authorization","timestamp":"2025-04-30T14:06:56.990Z","userID":"user_b6w054ass"}
+{"level":"info","message":"Fetched notifications for user: user_b6w054ass, IP: 192.168.0.117","timestamp":"2025-04-30T14:06:56.999Z"}
+{"isWebSocket":false,"level":"info","message":"Authentication successful for user: superadmin@example.com","roles":"default-roles-traceflow, offline_access, Super Admin, uma_authorization","timestamp":"2025-04-30T14:07:50.924Z","userID":"user_b6w054ass"}
+{"isWebSocket":false,"level":"info","message":"Authentication successful for user: superadmin@example.com","roles":"default-roles-traceflow, offline_access, Super Admin, uma_authorization","timestamp":"2025-04-30T14:07:50.930Z","userID":"user_b6w054ass"}
+{"isWebSocket":false,"level":"info","message":"Authentication successful for user: superadmin@example.com","roles":"default-roles-traceflow, offline_access, Super Admin, uma_authorization","timestamp":"2025-04-30T14:07:50.934Z","userID":"user_b6w054ass"}
+{"level":"info","message":"Fetched profile for user user_b6w054ass, IP: 192.168.0.117","timestamp":"2025-04-30T14:07:50.940Z"}
+{"level":"info","message":"Fetched notification types for user: user_b6w054ass, IP: 192.168.0.117","timestamp":"2025-04-30T14:07:50.953Z"}
+{"level":"info","message":"Fetched notification preferences for user: user_b6w054ass, IP: 192.168.0.117","timestamp":"2025-04-30T14:07:50.973Z"}
+{"isWebSocket":false,"level":"info","message":"Authentication successful for user: superadmin@example.com","roles":"default-roles-traceflow, offline_access, Super Admin, uma_authorization","timestamp":"2025-04-30T14:07:57.574Z","userID":"user_b6w054ass"}
+{"level":"info","message":"Fetched notifications for user: user_b6w054ass, IP: 192.168.0.117","timestamp":"2025-04-30T14:07:57.578Z"}
+{"isWebSocket":false,"level":"info","message":"Authentication successful for user: superadmin@example.com","roles":"default-roles-traceflow, offline_access, Super Admin, uma_authorization","timestamp":"2025-04-30T14:08:23.374Z","userID":"user_b6w054ass"}
+{"level":"info","message":"Fetched notifications for user: user_b6w054ass, IP: 192.168.0.117","timestamp":"2025-04-30T14:08:23.382Z"}
+{"level":"info","message":"Initiating token refresh","timestamp":"2025-04-30T14:08:52.976Z"}
+{"accessTokenExpiresIn":900,"level":"info","message":"Tokens refreshed successfully","refreshTokenRotatedAt":"2025-04-30T14:08:53.057Z","timestamp":"2025-04-30T14:08:53.057Z"}
+{"level":"info","message":"Refresh token successful","timestamp":"2025-04-30T14:08:53.059Z"}
+{"level":"info","message":"User disconnected: superadmin@example.com","reason":"client namespace disconnect","socketId":"pfke3Fm_GJHvyABaAAAG","timestamp":"2025-04-30T14:08:53.068Z"}
+{"level":"info","message":"Client disconnected","socketId":"pfke3Fm_GJHvyABaAAAG","timestamp":"2025-04-30T14:08:53.069Z"}
+{"isWebSocket":true,"level":"info","message":"Authentication successful for user: superadmin@example.com","roles":"default-roles-traceflow, offline_access, Super Admin, uma_authorization","timestamp":"2025-04-30T14:08:53.216Z","userID":"user_b6w054ass"}
+{"email":"superadmin@example.com","level":"info","message":"WebSocket authentication successful","roles":"default-roles-traceflow, offline_access, Super Admin, uma_authorization","socketId":"Zm-CAsvg0kvx7OQpAAAI","timestamp":"2025-04-30T14:08:53.217Z","userID":"user_b6w054ass"}
+{"level":"info","message":"User connected: superadmin@example.com","socketId":"Zm-CAsvg0kvx7OQpAAAI","timestamp":"2025-04-30T14:08:53.219Z","userID":"user_b6w054ass"}
+{"level":"info","message":"User superadmin@example.com joined room: default-roles-traceflow","socketId":"Zm-CAsvg0kvx7OQpAAAI","timestamp":"2025-04-30T14:08:53.219Z"}
+{"level":"info","message":"User superadmin@example.com joined room: offline_access","socketId":"Zm-CAsvg0kvx7OQpAAAI","timestamp":"2025-04-30T14:08:53.220Z"}
+{"level":"info","message":"User superadmin@example.com joined room: super admin","socketId":"Zm-CAsvg0kvx7OQpAAAI","timestamp":"2025-04-30T14:08:53.221Z"}
+{"level":"info","message":"User superadmin@example.com joined room: uma_authorization","socketId":"Zm-CAsvg0kvx7OQpAAAI","timestamp":"2025-04-30T14:08:53.222Z"}
+{"level":"info","message":"User superadmin@example.com joined room: user_b6w054ass","socketId":"Zm-CAsvg0kvx7OQpAAAI","timestamp":"2025-04-30T14:08:53.223Z"}
+{"level":"info","message":"Client connected","socketId":"Zm-CAsvg0kvx7OQpAAAI","timestamp":"2025-04-30T14:08:53.223Z"}
+{"level":"info","message":"User superadmin@example.com joined room: default-roles-traceflow","socketId":"Zm-CAsvg0kvx7OQpAAAI","timestamp":"2025-04-30T14:08:53.226Z"}
+{"level":"info","message":"Client joined room: default-roles-traceflow","socketId":"Zm-CAsvg0kvx7OQpAAAI","timestamp":"2025-04-30T14:08:53.227Z"}
+{"isWebSocket":false,"level":"info","message":"Authentication successful for user: superadmin@example.com","roles":"default-roles-traceflow, offline_access, Super Admin, uma_authorization","timestamp":"2025-04-30T14:10:41.839Z","userID":"user_b6w054ass"}
+{"isWebSocket":false,"level":"info","message":"Authentication successful for user: superadmin@example.com","roles":"default-roles-traceflow, offline_access, Super Admin, uma_authorization","timestamp":"2025-04-30T14:10:41.847Z","userID":"user_b6w054ass"}
+{"isWebSocket":false,"level":"info","message":"Authentication successful for user: superadmin@example.com","roles":"default-roles-traceflow, offline_access, Super Admin, uma_authorization","timestamp":"2025-04-30T14:10:41.852Z","userID":"user_b6w054ass"}
+{"isWebSocket":false,"level":"info","message":"Authentication successful for user: superadmin@example.com","roles":"default-roles-traceflow, offline_access, Super Admin, uma_authorization","timestamp":"2025-04-30T14:10:41.855Z","userID":"user_b6w054ass"}
+{"level":"info","message":"Fetched profile for user user_b6w054ass, IP: 192.168.0.117","timestamp":"2025-04-30T14:10:41.871Z"}
+{"level":"info","message":"Fetched notifications for user: user_b6w054ass, IP: 192.168.0.117","timestamp":"2025-04-30T14:10:41.879Z"}
+{"level":"info","message":"Fetched notification preferences for user: user_b6w054ass, IP: 192.168.0.117","timestamp":"2025-04-30T14:10:41.882Z"}
+{"level":"info","message":"Fetched notification types for user: user_b6w054ass, IP: 192.168.0.117","timestamp":"2025-04-30T14:10:41.887Z"}
+{"isWebSocket":false,"level":"info","message":"Authentication successful for user: superadmin@example.com","roles":"default-roles-traceflow, offline_access, Super Admin, uma_authorization","timestamp":"2025-04-30T14:11:05.519Z","userID":"user_b6w054ass"}
+{"level":"info","message":"Fetched notifications for user: user_b6w054ass, IP: 192.168.0.117","timestamp":"2025-04-30T14:11:05.525Z"}
+{"isWebSocket":false,"level":"info","message":"Authentication successful for user: superadmin@example.com","roles":"default-roles-traceflow, offline_access, Super Admin, uma_authorization","timestamp":"2025-04-30T14:11:44.184Z","userID":"user_b6w054ass"}
+{"level":"info","message":"Super Admin bypass for user user_b6w054ass","timestamp":"2025-04-30T14:11:44.185Z"}
+{"level":"info","message":"Fetched notification rules by user: user_b6w054ass, IP: 192.168.0.117","timestamp":"2025-04-30T14:11:44.193Z"}
+{"isWebSocket":false,"level":"info","message":"Authentication successful for user: superadmin@example.com","roles":"default-roles-traceflow, offline_access, Super Admin, uma_authorization","timestamp":"2025-04-30T14:11:44.255Z","userID":"user_b6w054ass"}
+{"level":"info","message":"Super Admin bypass for user user_b6w054ass","timestamp":"2025-04-30T14:11:44.262Z"}
+{"level":"info","message":"Fetched notification rules by user: user_b6w054ass, IP: 192.168.0.117","timestamp":"2025-04-30T14:11:44.266Z"}
+{"isWebSocket":false,"level":"info","message":"Authentication successful for user: superadmin@example.com","roles":"default-roles-traceflow, offline_access, Super Admin, uma_authorization","timestamp":"2025-04-30T14:11:44.347Z","userID":"user_b6w054ass"}
+{"level":"info","message":"Super Admin bypass for user user_b6w054ass","timestamp":"2025-04-30T14:11:44.349Z"}
+{"level":"info","message":"Fetched notification rules by user: user_b6w054ass, IP: 192.168.0.117","timestamp":"2025-04-30T14:11:44.360Z"}
+{"isWebSocket":false,"level":"info","message":"Authentication successful for user: superadmin@example.com","roles":"default-roles-traceflow, offline_access, Super Admin, uma_authorization","timestamp":"2025-04-30T14:11:51.814Z","userID":"user_b6w054ass"}
+{"isWebSocket":false,"level":"info","message":"Authentication successful for user: superadmin@example.com","roles":"default-roles-traceflow, offline_access, Super Admin, uma_authorization","timestamp":"2025-04-30T14:11:51.820Z","userID":"user_b6w054ass"}
+{"isWebSocket":false,"level":"info","message":"Authentication successful for user: superadmin@example.com","roles":"default-roles-traceflow, offline_access, Super Admin, uma_authorization","timestamp":"2025-04-30T14:11:51.828Z","userID":"user_b6w054ass"}
+{"level":"info","message":"Fetched profile for user user_b6w054ass, IP: 192.168.0.117","timestamp":"2025-04-30T14:11:51.834Z"}
+{"level":"info","message":"Fetched notification types for user: user_b6w054ass, IP: 192.168.0.117","timestamp":"2025-04-30T14:11:51.841Z"}
+{"level":"info","message":"Fetched notification preferences for user: user_b6w054ass, IP: 192.168.0.117","timestamp":"2025-04-30T14:11:51.846Z"}
+{"isWebSocket":false,"level":"info","message":"Authentication successful for user: superadmin@example.com","roles":"default-roles-traceflow, offline_access, Super Admin, uma_authorization","timestamp":"2025-04-30T14:11:53.227Z","userID":"user_b6w054ass"}
+{"level":"info","message":"Fetched notifications for user: user_b6w054ass, IP: 192.168.0.117","timestamp":"2025-04-30T14:11:53.232Z"}
+{"level":"info","message":"User disconnected: superadmin@example.com","reason":"transport close","socketId":"Zm-CAsvg0kvx7OQpAAAI","timestamp":"2025-04-30T14:11:59.932Z"}
+{"level":"info","message":"Client disconnected","socketId":"Zm-CAsvg0kvx7OQpAAAI","timestamp":"2025-04-30T14:11:59.933Z"}
+{"level":"info","message":"Login successful for superadmin@example.com","timestamp":"2025-04-30T14:22:34.716Z"}
+{"level":"info","message":"Login successful for superadmin@example.com","timestamp":"2025-04-30T14:22:51.244Z"}
+{"isWebSocket":false,"level":"info","message":"Authentication successful for user: superadmin@example.com","roles":"default-roles-traceflow, offline_access, Super Admin, uma_authorization","timestamp":"2025-04-30T14:22:52.242Z","userID":"user_b6w054ass"}
+{"level":"info","message":"Fetched effective permissions for user user_b6w054ass by user_b6w054ass, IP: 192.168.0.117","timestamp":"2025-04-30T14:22:53.149Z"}
+{"isWebSocket":false,"level":"info","message":"Authentication successful for user: superadmin@example.com","roles":"default-roles-traceflow, offline_access, Super Admin, uma_authorization","timestamp":"2025-04-30T14:22:53.309Z","userID":"user_b6w054ass"}
+{"level":"info","message":"Fetched roles for user user_b6w054ass by user_b6w054ass, IP: 192.168.0.117","timestamp":"2025-04-30T14:22:53.669Z"}
+{"isWebSocket":true,"level":"info","message":"Authentication successful for user: superadmin@example.com","roles":"default-roles-traceflow, offline_access, Super Admin, uma_authorization","timestamp":"2025-04-30T14:22:53.701Z","userID":"user_b6w054ass"}
+{"email":"superadmin@example.com","level":"info","message":"WebSocket authentication successful","roles":"default-roles-traceflow, offline_access, Super Admin, uma_authorization","socketId":"pUmmZNjmiA-EWixtAAAK","timestamp":"2025-04-30T14:22:53.703Z","userID":"user_b6w054ass"}
+{"level":"info","message":"User connected: superadmin@example.com","socketId":"pUmmZNjmiA-EWixtAAAK","timestamp":"2025-04-30T14:22:53.706Z","userID":"user_b6w054ass"}
+{"level":"info","message":"User superadmin@example.com joined room: default-roles-traceflow","socketId":"pUmmZNjmiA-EWixtAAAK","timestamp":"2025-04-30T14:22:53.707Z"}
+{"level":"info","message":"User superadmin@example.com joined room: offline_access","socketId":"pUmmZNjmiA-EWixtAAAK","timestamp":"2025-04-30T14:22:53.708Z"}
+{"level":"info","message":"User superadmin@example.com joined room: super admin","socketId":"pUmmZNjmiA-EWixtAAAK","timestamp":"2025-04-30T14:22:53.708Z"}
+{"level":"info","message":"User superadmin@example.com joined room: uma_authorization","socketId":"pUmmZNjmiA-EWixtAAAK","timestamp":"2025-04-30T14:22:53.709Z"}
+{"level":"info","message":"User superadmin@example.com joined room: user_b6w054ass","socketId":"pUmmZNjmiA-EWixtAAAK","timestamp":"2025-04-30T14:22:53.709Z"}
+{"level":"info","message":"Client connected","socketId":"pUmmZNjmiA-EWixtAAAK","timestamp":"2025-04-30T14:22:53.710Z"}
+{"isWebSocket":false,"level":"info","message":"Authentication successful for user: superadmin@example.com","roles":"default-roles-traceflow, offline_access, Super Admin, uma_authorization","timestamp":"2025-04-30T14:22:53.716Z","userID":"user_b6w054ass"}
+{"isWebSocket":false,"level":"info","message":"Authentication successful for user: superadmin@example.com","roles":"default-roles-traceflow, offline_access, Super Admin, uma_authorization","timestamp":"2025-04-30T14:22:53.872Z","userID":"user_b6w054ass"}
+{"level":"info","message":"Fetched effective permissions for user user_b6w054ass by user_b6w054ass, IP: 192.168.0.117","timestamp":"2025-04-30T14:22:54.055Z"}
+{"level":"info","message":"Fetched roles for user user_b6w054ass by user_b6w054ass, IP: 192.168.0.117","timestamp":"2025-04-30T14:22:54.352Z"}
+{"level":"info","message":"User superadmin@example.com joined room: default-roles-traceflow","socketId":"pUmmZNjmiA-EWixtAAAK","timestamp":"2025-04-30T14:22:54.707Z"}
+{"level":"info","message":"Client joined room: default-roles-traceflow","socketId":"pUmmZNjmiA-EWixtAAAK","timestamp":"2025-04-30T14:22:54.716Z"}
+{"isWebSocket":false,"level":"info","message":"Authentication successful for user: superadmin@example.com","roles":"default-roles-traceflow, offline_access, Super Admin, uma_authorization","timestamp":"2025-04-30T14:22:57.338Z","userID":"user_b6w054ass"}
+{"level":"info","message":"Super Admin bypass for user user_b6w054ass","timestamp":"2025-04-30T14:22:57.368Z"}
+{"level":"info","message":"Fetched notification rules by user: user_b6w054ass, IP: 192.168.0.117","timestamp":"2025-04-30T14:22:57.375Z"}
+{"isWebSocket":false,"level":"info","message":"Authentication successful for user: superadmin@example.com","roles":"default-roles-traceflow, offline_access, Super Admin, uma_authorization","timestamp":"2025-04-30T14:22:57.655Z","userID":"user_b6w054ass"}
+{"level":"info","message":"Super Admin bypass for user user_b6w054ass","timestamp":"2025-04-30T14:22:57.687Z"}
+{"level":"info","message":"Fetched notification rules by user: user_b6w054ass, IP: 192.168.0.117","timestamp":"2025-04-30T14:22:57.691Z"}
+{"isWebSocket":false,"level":"info","message":"Authentication successful for user: superadmin@example.com","roles":"default-roles-traceflow, offline_access, Super Admin, uma_authorization","timestamp":"2025-04-30T14:22:57.802Z","userID":"user_b6w054ass"}
+{"level":"info","message":"Super Admin bypass for user user_b6w054ass","timestamp":"2025-04-30T14:22:57.808Z"}
+{"level":"info","message":"Fetched notification rules by user: user_b6w054ass, IP: 192.168.0.117","timestamp":"2025-04-30T14:22:57.813Z"}
+{"isWebSocket":false,"level":"info","message":"Authentication successful for user: superadmin@example.com","roles":"default-roles-traceflow, offline_access, Super Admin, uma_authorization","timestamp":"2025-04-30T14:22:57.880Z","userID":"user_b6w054ass"}
+{"level":"info","message":"Super Admin bypass for user user_b6w054ass","timestamp":"2025-04-30T14:22:57.900Z"}
+{"level":"info","message":"Fetched notification rules by user: user_b6w054ass, IP: 192.168.0.117","timestamp":"2025-04-30T14:22:57.916Z"}
+{"isWebSocket":false,"level":"info","message":"Authentication successful for user: superadmin@example.com","roles":"default-roles-traceflow, offline_access, Super Admin, uma_authorization","timestamp":"2025-04-30T14:22:58.205Z","userID":"user_b6w054ass"}
+{"level":"info","message":"Fetched notification types for user: user_b6w054ass, IP: 192.168.0.117","timestamp":"2025-04-30T14:22:58.218Z"}
+{"isWebSocket":false,"level":"info","message":"Authentication successful for user: superadmin@example.com","roles":"default-roles-traceflow, offline_access, Super Admin, uma_authorization","timestamp":"2025-04-30T14:22:58.356Z","userID":"user_b6w054ass"}
+{"isWebSocket":false,"level":"info","message":"Authentication successful for user: superadmin@example.com","roles":"default-roles-traceflow, offline_access, Super Admin, uma_authorization","timestamp":"2025-04-30T14:22:58.384Z","userID":"user_b6w054ass"}
+{"level":"info","message":"Fetched notification preferences for user: user_b6w054ass, IP: 192.168.0.117","timestamp":"2025-04-30T14:22:58.406Z"}
+{"level":"info","message":"Fetched profile for user user_b6w054ass, IP: 192.168.0.117","timestamp":"2025-04-30T14:22:58.421Z"}
+{"isWebSocket":false,"level":"info","message":"Authentication successful for user: superadmin@example.com","roles":"default-roles-traceflow, offline_access, Super Admin, uma_authorization","timestamp":"2025-04-30T14:23:01.454Z","userID":"user_b6w054ass"}
+{"level":"info","message":"Fetched notifications for user: user_b6w054ass, IP: 192.168.0.117","timestamp":"2025-04-30T14:23:01.491Z"}
+{"isWebSocket":false,"level":"info","message":"Authentication successful for user: superadmin@example.com","roles":"default-roles-traceflow, offline_access, Super Admin, uma_authorization","timestamp":"2025-04-30T14:23:19.956Z","userID":"user_b6w054ass"}
+{"level":"info","message":"Fetched notifications for user: user_b6w054ass, IP: 192.168.0.117","timestamp":"2025-04-30T14:23:19.971Z"}
+{"isWebSocket":false,"level":"info","message":"Authentication successful for user: superadmin@example.com","roles":"default-roles-traceflow, offline_access, Super Admin, uma_authorization","timestamp":"2025-04-30T14:23:38.605Z","userID":"user_b6w054ass"}
+{"level":"info","message":"Super Admin bypass for user user_b6w054ass","timestamp":"2025-04-30T14:23:38.608Z"}
+{"level":"info","message":"Notification rule updated: rule_0AuQDi1xY9kuvi918OEm4 by user: user_b6w054ass, IP: 192.168.0.117","timestamp":"2025-04-30T14:23:38.626Z"}
+{"isWebSocket":false,"level":"info","message":"Authentication successful for user: superadmin@example.com","roles":"default-roles-traceflow, offline_access, Super Admin, uma_authorization","timestamp":"2025-04-30T14:23:40.189Z","userID":"user_b6w054ass"}
+{"level":"info","message":"Fetched profile for user user_b6w054ass, IP: 192.168.0.117","timestamp":"2025-04-30T14:23:40.269Z"}
+{"isWebSocket":false,"level":"info","message":"Authentication successful for user: superadmin@example.com","roles":"default-roles-traceflow, offline_access, Super Admin, uma_authorization","timestamp":"2025-04-30T14:23:40.440Z","userID":"user_b6w054ass"}
+{"level":"info","message":"Fetched notification types for user: user_b6w054ass, IP: 192.168.0.117","timestamp":"2025-04-30T14:23:40.458Z"}
+{"isWebSocket":false,"level":"info","message":"Authentication successful for user: superadmin@example.com","roles":"default-roles-traceflow, offline_access, Super Admin, uma_authorization","timestamp":"2025-04-30T14:23:40.481Z","userID":"user_b6w054ass"}
+{"level":"info","message":"Fetched notification preferences for user: user_b6w054ass, IP: 192.168.0.117","timestamp":"2025-04-30T14:23:40.510Z"}
+{"isWebSocket":false,"level":"info","message":"Authentication successful for user: superadmin@example.com","roles":"default-roles-traceflow, offline_access, Super Admin, uma_authorization","timestamp":"2025-04-30T14:23:41.555Z","userID":"user_b6w054ass"}
+{"level":"info","message":"Fetched notifications for user: user_b6w054ass, IP: 192.168.0.117","timestamp":"2025-04-30T14:23:41.603Z"}
+{"level":"info","message":"User disconnected: superadmin@example.com","reason":"transport close","socketId":"pUmmZNjmiA-EWixtAAAK","timestamp":"2025-04-30T14:23:44.534Z"}
+{"level":"info","message":"Client disconnected","socketId":"pUmmZNjmiA-EWixtAAAK","timestamp":"2025-04-30T14:23:44.540Z"}
+{"isWebSocket":false,"level":"info","message":"Authentication successful for user: superadmin@example.com","roles":"default-roles-traceflow, offline_access, Super Admin, uma_authorization","timestamp":"2025-04-30T14:23:46.437Z","userID":"user_b6w054ass"}
+{"level":"info","message":"Fetched effective permissions for user user_b6w054ass by user_b6w054ass, IP: 192.168.0.117","timestamp":"2025-04-30T14:23:46.777Z"}
+{"isWebSocket":false,"level":"info","message":"Authentication successful for user: superadmin@example.com","roles":"default-roles-traceflow, offline_access, Super Admin, uma_authorization","timestamp":"2025-04-30T14:23:46.816Z","userID":"user_b6w054ass"}
+{"isWebSocket":false,"level":"info","message":"Authentication successful for user: superadmin@example.com","roles":"default-roles-traceflow, offline_access, Super Admin, uma_authorization","timestamp":"2025-04-30T14:23:47.093Z","userID":"user_b6w054ass"}
+{"level":"info","message":"Fetched roles for user user_b6w054ass by user_b6w054ass, IP: 192.168.0.117","timestamp":"2025-04-30T14:23:47.433Z"}
+{"level":"info","message":"Fetched effective permissions for user user_b6w054ass by user_b6w054ass, IP: 192.168.0.117","timestamp":"2025-04-30T14:23:47.715Z"}
+{"isWebSocket":false,"level":"info","message":"Authentication successful for user: superadmin@example.com","roles":"default-roles-traceflow, offline_access, Super Admin, uma_authorization","timestamp":"2025-04-30T14:23:47.983Z","userID":"user_b6w054ass"}
+{"isWebSocket":false,"level":"info","message":"Authentication successful for user: superadmin@example.com","roles":"default-roles-traceflow, offline_access, Super Admin, uma_authorization","timestamp":"2025-04-30T14:23:48.001Z","userID":"user_b6w054ass"}
+{"level":"info","message":"Fetched profile for user user_b6w054ass, IP: 192.168.0.117","timestamp":"2025-04-30T14:23:48.069Z"}
+{"isWebSocket":false,"level":"info","message":"Authentication successful for user: superadmin@example.com","roles":"default-roles-traceflow, offline_access, Super Admin, uma_authorization","timestamp":"2025-04-30T14:23:48.222Z","userID":"user_b6w054ass"}
+{"level":"info","message":"Fetched notification types for user: user_b6w054ass, IP: 192.168.0.117","timestamp":"2025-04-30T14:23:48.239Z"}
+{"isWebSocket":false,"level":"info","message":"Authentication successful for user: superadmin@example.com","roles":"default-roles-traceflow, offline_access, Super Admin, uma_authorization","timestamp":"2025-04-30T14:23:48.459Z","userID":"user_b6w054ass"}
+{"level":"info","message":"Fetched roles for user user_b6w054ass by user_b6w054ass, IP: 192.168.0.117","timestamp":"2025-04-30T14:23:48.507Z"}
+{"level":"info","message":"Fetched notification preferences for user: user_b6w054ass, IP: 192.168.0.117","timestamp":"2025-04-30T14:23:48.528Z"}
+{"isWebSocket":true,"level":"info","message":"Authentication successful for user: superadmin@example.com","roles":"default-roles-traceflow, offline_access, Super Admin, uma_authorization","timestamp":"2025-04-30T14:23:48.800Z","userID":"user_b6w054ass"}
+{"email":"superadmin@example.com","level":"info","message":"WebSocket authentication successful","roles":"default-roles-traceflow, offline_access, Super Admin, uma_authorization","socketId":"K8bOXZd7xxk_DiPcAAAM","timestamp":"2025-04-30T14:23:48.805Z","userID":"user_b6w054ass"}
+{"level":"info","message":"User connected: superadmin@example.com","socketId":"K8bOXZd7xxk_DiPcAAAM","timestamp":"2025-04-30T14:23:48.809Z","userID":"user_b6w054ass"}
+{"level":"info","message":"User superadmin@example.com joined room: default-roles-traceflow","socketId":"K8bOXZd7xxk_DiPcAAAM","timestamp":"2025-04-30T14:23:48.810Z"}
+{"level":"info","message":"User superadmin@example.com joined room: offline_access","socketId":"K8bOXZd7xxk_DiPcAAAM","timestamp":"2025-04-30T14:23:48.811Z"}
+{"level":"info","message":"User superadmin@example.com joined room: super admin","socketId":"K8bOXZd7xxk_DiPcAAAM","timestamp":"2025-04-30T14:23:48.815Z"}
+{"level":"info","message":"User superadmin@example.com joined room: uma_authorization","socketId":"K8bOXZd7xxk_DiPcAAAM","timestamp":"2025-04-30T14:23:48.817Z"}
+{"level":"info","message":"User superadmin@example.com joined room: user_b6w054ass","socketId":"K8bOXZd7xxk_DiPcAAAM","timestamp":"2025-04-30T14:23:48.817Z"}
+{"level":"info","message":"Client connected","socketId":"K8bOXZd7xxk_DiPcAAAM","timestamp":"2025-04-30T14:23:48.823Z"}
+{"level":"info","message":"User superadmin@example.com joined room: default-roles-traceflow","socketId":"K8bOXZd7xxk_DiPcAAAM","timestamp":"2025-04-30T14:23:48.836Z"}
+{"level":"info","message":"Client joined room: default-roles-traceflow","socketId":"K8bOXZd7xxk_DiPcAAAM","timestamp":"2025-04-30T14:23:48.837Z"}
+{"isWebSocket":false,"level":"info","message":"Authentication successful for user: superadmin@example.com","roles":"default-roles-traceflow, offline_access, Super Admin, uma_authorization","timestamp":"2025-04-30T14:23:48.934Z","userID":"user_b6w054ass"}
+{"level":"info","message":"Super Admin bypass for user user_b6w054ass","timestamp":"2025-04-30T14:23:48.957Z"}
+{"level":"info","message":"Fetched notification rules by user: user_b6w054ass, IP: 192.168.0.117","timestamp":"2025-04-30T14:23:48.968Z"}
+{"level":"info","message":"User superadmin@example.com joined room: user_b6w054ass","socketId":"K8bOXZd7xxk_DiPcAAAM","timestamp":"2025-04-30T14:23:48.991Z"}
+{"level":"info","message":"Client joined room: user_b6w054ass","socketId":"K8bOXZd7xxk_DiPcAAAM","timestamp":"2025-04-30T14:23:48.992Z"}
+{"level":"info","message":"User superadmin@example.com joined room: default-roles-traceflow","socketId":"K8bOXZd7xxk_DiPcAAAM","timestamp":"2025-04-30T14:23:48.999Z"}
+{"level":"info","message":"Client joined room: default-roles-traceflow","socketId":"K8bOXZd7xxk_DiPcAAAM","timestamp":"2025-04-30T14:23:49.002Z"}
+{"level":"info","message":"User superadmin@example.com joined room: super admin","socketId":"K8bOXZd7xxk_DiPcAAAM","timestamp":"2025-04-30T14:23:49.004Z"}
+{"level":"info","message":"Client joined room: super admin","socketId":"K8bOXZd7xxk_DiPcAAAM","timestamp":"2025-04-30T14:23:49.005Z"}
+{"isWebSocket":false,"level":"info","message":"Authentication successful for user: superadmin@example.com","roles":"default-roles-traceflow, offline_access, Super Admin, uma_authorization","timestamp":"2025-04-30T14:23:49.278Z","userID":"user_b6w054ass"}
+{"level":"info","message":"Fetched notifications for user: user_b6w054ass, IP: 192.168.0.117","timestamp":"2025-04-30T14:23:49.287Z"}
+{"isWebSocket":false,"level":"info","message":"Authentication successful for user: superadmin@example.com","roles":"default-roles-traceflow, offline_access, Super Admin, uma_authorization","timestamp":"2025-04-30T14:23:49.770Z","userID":"user_b6w054ass"}
+{"level":"info","message":"Fetched notifications for user: user_b6w054ass, IP: 192.168.0.117","timestamp":"2025-04-30T14:23:49.781Z"}
+{"isWebSocket":false,"level":"info","message":"Authentication successful for user: superadmin@example.com","roles":"default-roles-traceflow, offline_access, Super Admin, uma_authorization","timestamp":"2025-04-30T14:24:15.031Z","userID":"user_b6w054ass"}
+{"level":"info","message":"Notification stored Notification for user:profile_updated","notificationID":"notif_BkfbGJGIBbkaEnDzzOww8","timestamp":"2025-04-30T14:24:16.030Z","userID":"user_b6w054ass"}
+{"level":"info","message":"Notification status updated","notificationID":"notif_BkfbGJGIBbkaEnDzzOww8","status":"sent","timestamp":"2025-04-30T14:24:16.040Z"}
+{"event":"user:profile_updated","level":"info","message":"Triggered notifications","recipientCount":1,"timestamp":"2025-04-30T14:24:16.042Z"}
+{"level":"info","message":"Updated profile for user user_b6w054ass by user user_b6w054ass, IP: 192.168.0.117","timestamp":"2025-04-30T14:24:16.043Z"}
+{"level":"info","message":"User disconnected: superadmin@example.com","reason":"transport close","socketId":"K8bOXZd7xxk_DiPcAAAM","timestamp":"2025-04-30T14:24:51.516Z"}
+{"level":"info","message":"Client disconnected","socketId":"K8bOXZd7xxk_DiPcAAAM","timestamp":"2025-04-30T14:24:51.519Z"}
+{"isWebSocket":false,"level":"info","message":"Authentication successful for user: superadmin@example.com","roles":"default-roles-traceflow, offline_access, Super Admin, uma_authorization","timestamp":"2025-04-30T14:26:04.823Z","userID":"user_b6w054ass"}
+{"isWebSocket":false,"level":"info","message":"Authentication successful for user: superadmin@example.com","roles":"default-roles-traceflow, offline_access, Super Admin, uma_authorization","timestamp":"2025-04-30T14:26:04.841Z","userID":"user_b6w054ass"}
+{"level":"info","message":"Fetched roles for user user_b6w054ass by user_b6w054ass, IP: 192.168.0.117","timestamp":"2025-04-30T14:26:04.869Z"}
+{"level":"info","message":"Fetched effective permissions for user user_b6w054ass by user_b6w054ass, IP: 192.168.0.117","timestamp":"2025-04-30T14:26:04.893Z"}
+{"isWebSocket":false,"level":"info","message":"Authentication successful for user: superadmin@example.com","roles":"default-roles-traceflow, offline_access, Super Admin, uma_authorization","timestamp":"2025-04-30T14:26:05.510Z","userID":"user_b6w054ass"}
+{"level":"info","message":"Fetched roles for user user_b6w054ass by user_b6w054ass, IP: 192.168.0.117","timestamp":"2025-04-30T14:26:05.560Z"}
+{"isWebSocket":false,"level":"info","message":"Authentication successful for user: superadmin@example.com","roles":"default-roles-traceflow, offline_access, Super Admin, uma_authorization","timestamp":"2025-04-30T14:26:05.858Z","userID":"user_b6w054ass"}
+{"isWebSocket":false,"level":"info","message":"Authentication successful for user: superadmin@example.com","roles":"default-roles-traceflow, offline_access, Super Admin, uma_authorization","timestamp":"2025-04-30T14:26:05.878Z","userID":"user_b6w054ass"}
+{"level":"info","message":"Fetched profile for user user_b6w054ass, IP: 192.168.0.117","timestamp":"2025-04-30T14:26:05.888Z"}
+{"level":"info","message":"Fetched notification preferences for user: user_b6w054ass, IP: 192.168.0.117","timestamp":"2025-04-30T14:26:05.893Z"}
+{"isWebSocket":false,"level":"info","message":"Authentication successful for user: superadmin@example.com","roles":"default-roles-traceflow, offline_access, Super Admin, uma_authorization","timestamp":"2025-04-30T14:26:05.901Z","userID":"user_b6w054ass"}
+{"level":"info","message":"Fetched notification types for user: user_b6w054ass, IP: 192.168.0.117","timestamp":"2025-04-30T14:26:05.911Z"}
+{"isWebSocket":false,"level":"info","message":"Authentication successful for user: superadmin@example.com","roles":"default-roles-traceflow, offline_access, Super Admin, uma_authorization","timestamp":"2025-04-30T14:26:05.959Z","userID":"user_b6w054ass"}
+{"level":"info","message":"Fetched effective permissions for user user_b6w054ass by user_b6w054ass, IP: 192.168.0.117","timestamp":"2025-04-30T14:26:05.995Z"}
+{"isWebSocket":true,"level":"info","message":"Authentication successful for user: superadmin@example.com","roles":"default-roles-traceflow, offline_access, Super Admin, uma_authorization","timestamp":"2025-04-30T14:26:06.163Z","userID":"user_b6w054ass"}
+{"email":"superadmin@example.com","level":"info","message":"WebSocket authentication successful","roles":"default-roles-traceflow, offline_access, Super Admin, uma_authorization","socketId":"Nelklts2xR-rEGFMAAAO","timestamp":"2025-04-30T14:26:06.169Z","userID":"user_b6w054ass"}
+{"level":"info","message":"User connected: superadmin@example.com","socketId":"Nelklts2xR-rEGFMAAAO","timestamp":"2025-04-30T14:26:06.174Z","userID":"user_b6w054ass"}
+{"level":"info","message":"User superadmin@example.com joined room: default-roles-traceflow","socketId":"Nelklts2xR-rEGFMAAAO","timestamp":"2025-04-30T14:26:06.186Z"}
+{"level":"info","message":"User superadmin@example.com joined room: offline_access","socketId":"Nelklts2xR-rEGFMAAAO","timestamp":"2025-04-30T14:26:06.196Z"}
+{"level":"info","message":"User superadmin@example.com joined room: super admin","socketId":"Nelklts2xR-rEGFMAAAO","timestamp":"2025-04-30T14:26:06.200Z"}
+{"level":"info","message":"User superadmin@example.com joined room: uma_authorization","socketId":"Nelklts2xR-rEGFMAAAO","timestamp":"2025-04-30T14:26:06.200Z"}
+{"level":"info","message":"User superadmin@example.com joined room: user_b6w054ass","socketId":"Nelklts2xR-rEGFMAAAO","timestamp":"2025-04-30T14:26:06.201Z"}
+{"level":"info","message":"Client connected","socketId":"Nelklts2xR-rEGFMAAAO","timestamp":"2025-04-30T14:26:06.201Z"}
+{"level":"info","message":"User superadmin@example.com joined room: default-roles-traceflow","socketId":"Nelklts2xR-rEGFMAAAO","timestamp":"2025-04-30T14:26:06.206Z"}
+{"level":"info","message":"Client joined room: default-roles-traceflow","socketId":"Nelklts2xR-rEGFMAAAO","timestamp":"2025-04-30T14:26:06.207Z"}
+{"isWebSocket":false,"level":"info","message":"Authentication successful for user: superadmin@example.com","roles":"default-roles-traceflow, offline_access, Super Admin, uma_authorization","timestamp":"2025-04-30T14:26:06.254Z","userID":"user_b6w054ass"}
+{"level":"info","message":"Super Admin bypass for user user_b6w054ass","timestamp":"2025-04-30T14:26:06.255Z"}
+{"level":"info","message":"Fetched notification rules by user: user_b6w054ass, IP: 192.168.0.117","timestamp":"2025-04-30T14:26:06.259Z"}
+{"level":"info","message":"User superadmin@example.com joined room: user_b6w054ass","socketId":"Nelklts2xR-rEGFMAAAO","timestamp":"2025-04-30T14:26:06.270Z"}
+{"level":"info","message":"Client joined room: user_b6w054ass","socketId":"Nelklts2xR-rEGFMAAAO","timestamp":"2025-04-30T14:26:06.273Z"}
+{"level":"info","message":"User superadmin@example.com joined room: default-roles-traceflow","socketId":"Nelklts2xR-rEGFMAAAO","timestamp":"2025-04-30T14:26:06.275Z"}
+{"level":"info","message":"Client joined room: default-roles-traceflow","socketId":"Nelklts2xR-rEGFMAAAO","timestamp":"2025-04-30T14:26:06.282Z"}
+{"level":"info","message":"User superadmin@example.com joined room: super admin","socketId":"Nelklts2xR-rEGFMAAAO","timestamp":"2025-04-30T14:26:06.284Z"}
+{"level":"info","message":"Client joined room: super admin","socketId":"Nelklts2xR-rEGFMAAAO","timestamp":"2025-04-30T14:26:06.285Z"}
+{"isWebSocket":false,"level":"info","message":"Authentication successful for user: superadmin@example.com","roles":"default-roles-traceflow, offline_access, Super Admin, uma_authorization","timestamp":"2025-04-30T14:26:06.326Z","userID":"user_b6w054ass"}
+{"level":"info","message":"Fetched notifications for user: user_b6w054ass, IP: 192.168.0.117","timestamp":"2025-04-30T14:26:06.332Z"}
+{"level":"info","message":"User disconnected: superadmin@example.com","reason":"transport close","socketId":"Nelklts2xR-rEGFMAAAO","timestamp":"2025-04-30T14:26:09.111Z"}
+{"level":"info","message":"Client disconnected","socketId":"Nelklts2xR-rEGFMAAAO","timestamp":"2025-04-30T14:26:09.140Z"}
+{"isWebSocket":false,"level":"info","message":"Authentication successful for user: superadmin@example.com","roles":"default-roles-traceflow, offline_access, Super Admin, uma_authorization","timestamp":"2025-04-30T14:26:17.581Z","userID":"user_b6w054ass"}
+{"level":"info","message":"Super Admin bypass for user user_b6w054ass","timestamp":"2025-04-30T14:26:17.582Z"}
+{"level":"info","message":"Fetched notification rules by user: user_b6w054ass, IP: 192.168.0.117","timestamp":"2025-04-30T14:26:17.587Z"}
+{"isWebSocket":false,"level":"info","message":"Authentication successful for user: superadmin@example.com","roles":"default-roles-traceflow, offline_access, Super Admin, uma_authorization","timestamp":"2025-04-30T14:26:17.719Z","userID":"user_b6w054ass"}
+{"level":"info","message":"Super Admin bypass for user user_b6w054ass","timestamp":"2025-04-30T14:26:17.758Z"}
+{"level":"info","message":"Fetched notification rules by user: user_b6w054ass, IP: 192.168.0.117","timestamp":"2025-04-30T14:26:17.800Z"}
+{"level":"info","message":"Cleaning up expired OTPs","timestamp":"2025-04-30T15:00:00.467Z"}
+{"level":"info","message":"Cleaned up 0 expired OTPs","timestamp":"2025-04-30T15:00:00.616Z"}
+{"level":"info","message":"Updated 0 visits from pending to validated","timestamp":"2025-04-30T15:00:00.620Z"}
+{"cookies":["adminDashboardView=notifications","refreshToken=eyJhbGciOiJIUzUxMiIsInR5cCIgOiAiSldUIiwia2lkIiA6ICI4ZDM2MmYzMS03MWYzLTQ0MjYtOWU2Yi1jZmJkZTQ3NzVlYzMifQ.eyJleHAiOjE3NDYwMjY1NjgsImlhdCI6MTc0NjAyMjk2OCwianRpIjoiZjFjZDA4YWQtNzE3Zi00ODIyLWI0ODktMDVmOWQ5NTZiYjA4IiwiaXNzIjoiaHR0cDovL2xvY2FsaG9zdDo4MDgwL3JlYWxtcy9UcmFjZUZsb3ciLCJhdWQiOiJodHRwOi8vbG9jYWxob3N0OjgwODAvcmVhbG1zL1RyYWNlRmxvdyIsInN1YiI6ImRmNmRlZjBmLWY3NjYtNDhkOS1iMTFlLTU5ZGIxNjE4MGExZSIsInR5cCI6IlJlZnJlc2giLCJhenAiOiJ0cmFjZWZsb3ctYmFja2VuZCIsInNpZCI6IjVmNWMxNGU0LWNjZWItNDFlNy04ZTAxLTExOTRhOTY3NWFiOCIsInNjb3BlIjoib3BlbmlkIGJhc2ljIGFjciBwcm9maWxlIHdlYi1vcmlnaW5zIGVtYWlsIHJvbGVzIHNlcnZpY2VfYWNjb3VudCJ9.5DANHSV2R2qlw0UHj_F_v-dYcuy6S25yDUh9hpbUNjbDrwIbtC7WPHlzPDfH4bGlIzgKEbn9hLeRSgwq4Lw91Q"],"isWebSocket":false,"level":"warn","message":"No accessToken cookie found","timestamp":"2025-04-30T15:07:10.611Z"}
+{"cookies":["adminDashboardView=notifications","refreshToken=eyJhbGciOiJIUzUxMiIsInR5cCIgOiAiSldUIiwia2lkIiA6ICI4ZDM2MmYzMS03MWYzLTQ0MjYtOWU2Yi1jZmJkZTQ3NzVlYzMifQ.eyJleHAiOjE3NDYwMjY1NjgsImlhdCI6MTc0NjAyMjk2OCwianRpIjoiZjFjZDA4YWQtNzE3Zi00ODIyLWI0ODktMDVmOWQ5NTZiYjA4IiwiaXNzIjoiaHR0cDovL2xvY2FsaG9zdDo4MDgwL3JlYWxtcy9UcmFjZUZsb3ciLCJhdWQiOiJodHRwOi8vbG9jYWxob3N0OjgwODAvcmVhbG1zL1RyYWNlRmxvdyIsInN1YiI6ImRmNmRlZjBmLWY3NjYtNDhkOS1iMTFlLTU5ZGIxNjE4MGExZSIsInR5cCI6IlJlZnJlc2giLCJhenAiOiJ0cmFjZWZsb3ctYmFja2VuZCIsInNpZCI6IjVmNWMxNGU0LWNjZWItNDFlNy04ZTAxLTExOTRhOTY3NWFiOCIsInNjb3BlIjoib3BlbmlkIGJhc2ljIGFjciBwcm9maWxlIHdlYi1vcmlnaW5zIGVtYWlsIHJvbGVzIHNlcnZpY2VfYWNjb3VudCJ9.5DANHSV2R2qlw0UHj_F_v-dYcuy6S25yDUh9hpbUNjbDrwIbtC7WPHlzPDfH4bGlIzgKEbn9hLeRSgwq4Lw91Q"],"isWebSocket":false,"level":"warn","message":"No accessToken cookie found","timestamp":"2025-04-30T15:07:10.626Z"}
+{"level":"info","message":"Initiating token refresh","timestamp":"2025-04-30T15:07:10.735Z"}
+{"level":"info","message":"Initiating token refresh","timestamp":"2025-04-30T15:07:10.751Z"}
+{"accessTokenExpiresIn":900,"level":"info","message":"Tokens refreshed successfully","refreshTokenRotatedAt":"2025-04-30T15:07:11.389Z","timestamp":"2025-04-30T15:07:11.390Z"}
+{"level":"info","message":"Refresh token successful","timestamp":"2025-04-30T15:07:11.395Z"}
+{"accessTokenExpiresIn":900,"level":"info","message":"Tokens refreshed successfully","refreshTokenRotatedAt":"2025-04-30T15:07:11.404Z","timestamp":"2025-04-30T15:07:11.404Z"}
+{"level":"info","message":"Refresh token successful","timestamp":"2025-04-30T15:07:11.415Z"}
+{"isWebSocket":false,"level":"info","message":"Authentication successful for user: superadmin@example.com","roles":"default-roles-traceflow, offline_access, Super Admin, uma_authorization","timestamp":"2025-04-30T15:07:11.509Z","userID":"user_b6w054ass"}
+{"level":"info","message":"Super Admin bypass for user user_b6w054ass","timestamp":"2025-04-30T15:07:11.514Z"}
+{"isWebSocket":false,"level":"info","message":"Authentication successful for user: superadmin@example.com","roles":"default-roles-traceflow, offline_access, Super Admin, uma_authorization","timestamp":"2025-04-30T15:07:11.554Z","userID":"user_b6w054ass"}
+{"level":"info","message":"Super Admin bypass for user user_b6w054ass","timestamp":"2025-04-30T15:07:11.569Z"}
+{"level":"info","message":"Fetched all users by user user_b6w054ass, IP: 192.168.0.117","timestamp":"2025-04-30T15:07:11.617Z"}
+{"level":"info","message":"Fetched all timesheets by user user_b6w054ass, IP: 192.168.0.117","timestamp":"2025-04-30T15:07:11.667Z"}
+{"isWebSocket":true,"level":"info","message":"Authentication successful for user: superadmin@example.com","roles":"default-roles-traceflow, offline_access, Super Admin, uma_authorization","timestamp":"2025-04-30T15:07:11.685Z","userID":"user_b6w054ass"}
+{"email":"superadmin@example.com","level":"info","message":"WebSocket authentication successful","roles":"default-roles-traceflow, offline_access, Super Admin, uma_authorization","socketId":"ZlK3Nc5J8mHUjFtBAAAR","timestamp":"2025-04-30T15:07:11.699Z","userID":"user_b6w054ass"}
+{"level":"info","message":"User connected: superadmin@example.com","socketId":"ZlK3Nc5J8mHUjFtBAAAR","timestamp":"2025-04-30T15:07:11.717Z","userID":"user_b6w054ass"}
+{"level":"info","message":"User superadmin@example.com joined room: default-roles-traceflow","socketId":"ZlK3Nc5J8mHUjFtBAAAR","timestamp":"2025-04-30T15:07:11.720Z"}
+{"level":"info","message":"User superadmin@example.com joined room: offline_access","socketId":"ZlK3Nc5J8mHUjFtBAAAR","timestamp":"2025-04-30T15:07:11.735Z"}
+{"level":"info","message":"User superadmin@example.com joined room: super admin","socketId":"ZlK3Nc5J8mHUjFtBAAAR","timestamp":"2025-04-30T15:07:11.747Z"}
+{"level":"info","message":"User superadmin@example.com joined room: uma_authorization","socketId":"ZlK3Nc5J8mHUjFtBAAAR","timestamp":"2025-04-30T15:07:11.761Z"}
+{"level":"info","message":"User superadmin@example.com joined room: user_b6w054ass","socketId":"ZlK3Nc5J8mHUjFtBAAAR","timestamp":"2025-04-30T15:07:11.785Z"}
+{"level":"info","message":"Client connected","socketId":"ZlK3Nc5J8mHUjFtBAAAR","timestamp":"2025-04-30T15:07:11.801Z"}
+{"level":"info","message":"User superadmin@example.com joined room: default-roles-traceflow","socketId":"ZlK3Nc5J8mHUjFtBAAAR","timestamp":"2025-04-30T15:07:11.823Z"}
+{"level":"info","message":"Client joined room: default-roles-traceflow","socketId":"ZlK3Nc5J8mHUjFtBAAAR","timestamp":"2025-04-30T15:07:11.827Z"}
+{"isWebSocket":false,"level":"info","message":"Authentication successful for user: superadmin@example.com","roles":"default-roles-traceflow, offline_access, Super Admin, uma_authorization","timestamp":"2025-04-30T15:07:11.899Z","userID":"user_b6w054ass"}
+{"level":"info","message":"Super Admin bypass for user user_b6w054ass","timestamp":"2025-04-30T15:07:11.901Z"}
+{"level":"info","message":"Fetched notification rules by user: user_b6w054ass, IP: 192.168.0.117","timestamp":"2025-04-30T15:07:11.913Z"}
+{"level":"info","message":"User superadmin@example.com joined room: user_b6w054ass","socketId":"ZlK3Nc5J8mHUjFtBAAAR","timestamp":"2025-04-30T15:07:11.929Z"}
+{"level":"info","message":"Client joined room: user_b6w054ass","socketId":"ZlK3Nc5J8mHUjFtBAAAR","timestamp":"2025-04-30T15:07:11.932Z"}
+{"level":"info","message":"User superadmin@example.com joined room: default-roles-traceflow","socketId":"ZlK3Nc5J8mHUjFtBAAAR","timestamp":"2025-04-30T15:07:11.940Z"}
+{"level":"info","message":"Client joined room: default-roles-traceflow","socketId":"ZlK3Nc5J8mHUjFtBAAAR","timestamp":"2025-04-30T15:07:11.952Z"}
+{"level":"info","message":"User superadmin@example.com joined room: super admin","socketId":"ZlK3Nc5J8mHUjFtBAAAR","timestamp":"2025-04-30T15:07:11.961Z"}
+{"level":"info","message":"Client joined room: super admin","socketId":"ZlK3Nc5J8mHUjFtBAAAR","timestamp":"2025-04-30T15:07:11.962Z"}
+{"isWebSocket":false,"level":"info","message":"Authentication successful for user: superadmin@example.com","roles":"default-roles-traceflow, offline_access, Super Admin, uma_authorization","timestamp":"2025-04-30T15:07:12.002Z","userID":"user_b6w054ass"}
+{"level":"info","message":"Fetched notifications for user: user_b6w054ass, IP: 192.168.0.117","timestamp":"2025-04-30T15:07:12.016Z"}
+{"isWebSocket":false,"level":"info","message":"Authentication successful for user: superadmin@example.com","roles":"default-roles-traceflow, offline_access, Super Admin, uma_authorization","timestamp":"2025-04-30T15:07:35.069Z","userID":"user_b6w054ass"}
+{"level":"info","message":"Super Admin bypass for user user_b6w054ass","timestamp":"2025-04-30T15:07:35.077Z"}
+{"level":"info","message":"Fetched visit vis_AbK33zRPymbVIs_zv6UIN by user user_b6w054ass, IP: 192.168.0.117","timestamp":"2025-04-30T15:07:35.102Z"}
+{"isWebSocket":false,"level":"info","message":"Authentication successful for user: superadmin@example.com","roles":"default-roles-traceflow, offline_access, Super Admin, uma_authorization","timestamp":"2025-04-30T15:07:35.154Z","userID":"user_b6w054ass"}
+{"level":"info","message":"Super Admin bypass for user user_b6w054ass","timestamp":"2025-04-30T15:07:35.156Z"}
+{"level":"info","message":"Fetched agent agent_001 by user user_b6w054ass, IP: 192.168.0.117","timestamp":"2025-04-30T15:07:35.169Z"}
+{"isWebSocket":false,"level":"info","message":"Authentication successful for user: superadmin@example.com","roles":"default-roles-traceflow, offline_access, Super Admin, uma_authorization","timestamp":"2025-04-30T15:07:35.248Z","userID":"user_b6w054ass"}
+{"level":"info","message":"Super Admin bypass for user user_b6w054ass","timestamp":"2025-04-30T15:07:35.252Z"}
+{"level":"info","message":"Fetched unique locations by user user_b6w054ass, IP: 192.168.0.117","timestamp":"2025-04-30T15:07:35.273Z"}
+{"isWebSocket":false,"level":"info","message":"Authentication successful for user: superadmin@example.com","roles":"default-roles-traceflow, offline_access, Super Admin, uma_authorization","timestamp":"2025-04-30T15:07:35.279Z","userID":"user_b6w054ass"}
+{"level":"info","message":"Super Admin bypass for user user_b6w054ass","timestamp":"2025-04-30T15:07:35.281Z"}
+{"isWebSocket":false,"level":"info","message":"Authentication successful for user: superadmin@example.com","roles":"default-roles-traceflow, offline_access, Super Admin, uma_authorization","timestamp":"2025-04-30T15:07:35.286Z","userID":"user_b6w054ass"}
+{"level":"info","message":"Super Admin bypass for user user_b6w054ass","timestamp":"2025-04-30T15:07:35.289Z"}
+{"isWebSocket":false,"level":"info","message":"Authentication successful for user: superadmin@example.com","roles":"default-roles-traceflow, offline_access, Super Admin, uma_authorization","timestamp":"2025-04-30T15:07:35.302Z","userID":"user_b6w054ass"}
+{"level":"info","message":"Super Admin bypass for user user_b6w054ass","timestamp":"2025-04-30T15:07:35.304Z"}
+{"isWebSocket":false,"level":"info","message":"Authentication successful for user: superadmin@example.com","roles":"default-roles-traceflow, offline_access, Super Admin, uma_authorization","timestamp":"2025-04-30T15:07:35.312Z","userID":"user_b6w054ass"}
+{"level":"info","message":"Super Admin bypass for user user_b6w054ass","timestamp":"2025-04-30T15:07:35.314Z"}
+{"level":"info","message":"Fetched supervisors for user user_b6w054ass by user user_b6w054ass, IP: 192.168.0.117","timestamp":"2025-04-30T15:07:35.321Z"}
+{"level":"info","message":"Fetched all reasons by user user_b6w054ass, IP: 192.168.0.117","timestamp":"2025-04-30T15:07:35.328Z"}
+{"level":"info","message":"Fetched agents by location LocTest by user user_b6w054ass, IP: 192.168.0.117","timestamp":"2025-04-30T15:07:35.335Z"}
+{"level":"info","message":"Fetched all checklists by user user_b6w054ass, IP: 192.168.0.117","timestamp":"2025-04-30T15:07:35.341Z"}
+{"isWebSocket":false,"level":"info","message":"Authentication successful for user: superadmin@example.com","roles":"default-roles-traceflow, offline_access, Super Admin, uma_authorization","timestamp":"2025-04-30T15:10:05.270Z","userID":"user_b6w054ass"}
+{"level":"info","message":"Super Admin bypass for user user_b6w054ass","timestamp":"2025-04-30T15:10:05.272Z"}
+{"isWebSocket":false,"level":"info","message":"Authentication successful for user: superadmin@example.com","roles":"default-roles-traceflow, offline_access, Super Admin, uma_authorization","timestamp":"2025-04-30T15:10:05.285Z","userID":"user_b6w054ass"}
+{"level":"info","message":"Super Admin bypass for user user_b6w054ass","timestamp":"2025-04-30T15:10:05.286Z"}
+{"level":"info","message":"Fetched all users by user user_b6w054ass, IP: 192.168.0.117","timestamp":"2025-04-30T15:10:05.304Z"}
+{"level":"info","message":"Fetched all timesheets by user user_b6w054ass, IP: 192.168.0.117","timestamp":"2025-04-30T15:10:05.339Z"}
+{"isWebSocket":false,"level":"info","message":"Authentication successful for user: superadmin@example.com","roles":"default-roles-traceflow, offline_access, Super Admin, uma_authorization","timestamp":"2025-04-30T15:10:06.661Z","userID":"user_b6w054ass"}
+{"level":"info","message":"Super Admin bypass for user user_b6w054ass","timestamp":"2025-04-30T15:10:06.663Z"}
+{"isWebSocket":false,"level":"info","message":"Authentication successful for user: superadmin@example.com","roles":"default-roles-traceflow, offline_access, Super Admin, uma_authorization","timestamp":"2025-04-30T15:10:06.675Z","userID":"user_b6w054ass"}
+{"level":"info","message":"Super Admin bypass for user user_b6w054ass","timestamp":"2025-04-30T15:10:06.677Z"}
+{"level":"info","message":"Fetched unique locations by user user_b6w054ass, IP: 192.168.0.117","timestamp":"2025-04-30T15:10:06.685Z"}
+{"isWebSocket":false,"level":"info","message":"Authentication successful for user: superadmin@example.com","roles":"default-roles-traceflow, offline_access, Super Admin, uma_authorization","timestamp":"2025-04-30T15:10:06.692Z","userID":"user_b6w054ass"}
+{"level":"info","message":"Super Admin bypass for user user_b6w054ass","timestamp":"2025-04-30T15:10:06.695Z"}
+{"level":"info","message":"Fetched all reasons by user user_b6w054ass, IP: 192.168.0.117","timestamp":"2025-04-30T15:10:06.701Z"}
+{"isWebSocket":false,"level":"info","message":"Authentication successful for user: superadmin@example.com","roles":"default-roles-traceflow, offline_access, Super Admin, uma_authorization","timestamp":"2025-04-30T15:10:06.709Z","userID":"user_b6w054ass"}
+{"level":"info","message":"Super Admin bypass for user user_b6w054ass","timestamp":"2025-04-30T15:10:06.712Z"}
+{"level":"info","message":"Fetched all users by user user_b6w054ass, IP: 192.168.0.117","timestamp":"2025-04-30T15:10:06.727Z"}
+{"level":"info","message":"Fetched all checklists by user user_b6w054ass, IP: 192.168.0.117","timestamp":"2025-04-30T15:10:06.737Z"}
+{"isWebSocket":false,"level":"info","message":"Authentication successful for user: superadmin@example.com","roles":"default-roles-traceflow, offline_access, Super Admin, uma_authorization","timestamp":"2025-04-30T15:10:17.696Z","userID":"user_b6w054ass"}
+{"level":"info","message":"Super Admin bypass for user user_b6w054ass","timestamp":"2025-04-30T15:10:17.698Z"}
+{"level":"info","message":"Fetched agents by location Tunis by user user_b6w054ass, IP: 192.168.0.117","timestamp":"2025-04-30T15:10:17.707Z"}
+{"isWebSocket":false,"level":"info","message":"Authentication successful for user: superadmin@example.com","roles":"default-roles-traceflow, offline_access, Super Admin, uma_authorization","timestamp":"2025-04-30T15:16:07.795Z","userID":"user_b6w054ass"}
+{"level":"info","message":"Super Admin bypass for user user_b6w054ass","timestamp":"2025-04-30T15:16:07.797Z"}
+{"isWebSocket":false,"level":"info","message":"Authentication successful for user: superadmin@example.com","roles":"default-roles-traceflow, offline_access, Super Admin, uma_authorization","timestamp":"2025-04-30T15:16:07.806Z","userID":"user_b6w054ass"}
+{"level":"info","message":"Super Admin bypass for user user_b6w054ass","timestamp":"2025-04-30T15:16:07.811Z"}
+{"level":"info","message":"Fetched all timesheets by user user_b6w054ass, IP: 192.168.0.117","timestamp":"2025-04-30T15:16:07.827Z"}
+{"level":"info","message":"Fetched all users by user user_b6w054ass, IP: 192.168.0.117","timestamp":"2025-04-30T15:16:07.911Z"}
+{"cookies":["adminDashboardView=notifications","refreshToken=eyJhbGciOiJIUzUxMiIsInR5cCIgOiAiSldUIiwia2lkIiA6ICI4ZDM2MmYzMS03MWYzLTQ0MjYtOWU2Yi1jZmJkZTQ3NzVlYzMifQ.eyJleHAiOjE3NDYwMjY1NjgsImlhdCI6MTc0NjAyNTYyOSwianRpIjoiZWYwNDU4ZDctNzhkMi00YjJkLWJkZjQtNDNiYTE1MjdhOGEyIiwiaXNzIjoiaHR0cDovL2xvY2FsaG9zdDo4MDgwL3JlYWxtcy9UcmFjZUZsb3ciLCJhdWQiOiJodHRwOi8vbG9jYWxob3N0OjgwODAvcmVhbG1zL1RyYWNlRmxvdyIsInN1YiI6ImRmNmRlZjBmLWY3NjYtNDhkOS1iMTFlLTU5ZGIxNjE4MGExZSIsInR5cCI6IlJlZnJlc2giLCJhenAiOiJ0cmFjZWZsb3ctYmFja2VuZCIsInNpZCI6IjVmNWMxNGU0LWNjZWItNDFlNy04ZTAxLTExOTRhOTY3NWFiOCIsInNjb3BlIjoib3BlbmlkIGJhc2ljIGFjciBwcm9maWxlIHdlYi1vcmlnaW5zIGVtYWlsIHJvbGVzIHNlcnZpY2VfYWNjb3VudCJ9.SZv-em2rYRjY-cruP3SVUfNaKXBmuwa4EGnjEIhhNo4MZ4lvB40dnMkf_v6xZZvO8ibaRkLCliAuSEWxwcz9qw"],"isWebSocket":false,"level":"warn","message":"No accessToken cookie found","timestamp":"2025-04-30T15:51:53.964Z"}
+{"cookies":["adminDashboardView=notifications","refreshToken=eyJhbGciOiJIUzUxMiIsInR5cCIgOiAiSldUIiwia2lkIiA6ICI4ZDM2MmYzMS03MWYzLTQ0MjYtOWU2Yi1jZmJkZTQ3NzVlYzMifQ.eyJleHAiOjE3NDYwMjY1NjgsImlhdCI6MTc0NjAyNTYyOSwianRpIjoiZWYwNDU4ZDctNzhkMi00YjJkLWJkZjQtNDNiYTE1MjdhOGEyIiwiaXNzIjoiaHR0cDovL2xvY2FsaG9zdDo4MDgwL3JlYWxtcy9UcmFjZUZsb3ciLCJhdWQiOiJodHRwOi8vbG9jYWxob3N0OjgwODAvcmVhbG1zL1RyYWNlRmxvdyIsInN1YiI6ImRmNmRlZjBmLWY3NjYtNDhkOS1iMTFlLTU5ZGIxNjE4MGExZSIsInR5cCI6IlJlZnJlc2giLCJhenAiOiJ0cmFjZWZsb3ctYmFja2VuZCIsInNpZCI6IjVmNWMxNGU0LWNjZWItNDFlNy04ZTAxLTExOTRhOTY3NWFiOCIsInNjb3BlIjoib3BlbmlkIGJhc2ljIGFjciBwcm9maWxlIHdlYi1vcmlnaW5zIGVtYWlsIHJvbGVzIHNlcnZpY2VfYWNjb3VudCJ9.SZv-em2rYRjY-cruP3SVUfNaKXBmuwa4EGnjEIhhNo4MZ4lvB40dnMkf_v6xZZvO8ibaRkLCliAuSEWxwcz9qw"],"isWebSocket":false,"level":"warn","message":"No accessToken cookie found","timestamp":"2025-04-30T15:51:53.988Z"}
+{"level":"info","message":"Initiating token refresh","timestamp":"2025-04-30T15:51:54.007Z"}
+{"level":"info","message":"Initiating token refresh","timestamp":"2025-04-30T15:51:54.074Z"}
+{"data":{"error":"invalid_grant","error_description":"Token is not active"},"level":"error","message":"Token refresh failed: Request failed with status code 400","status":400,"timestamp":"2025-04-30T15:51:54.672Z"}
+{"level":"error","message":"Refresh token error: Can’t refresh session. Log in again.","timestamp":"2025-04-30T15:51:54.675Z"}
+{"data":{"error":"invalid_grant","error_description":"Token is not active"},"level":"error","message":"Token refresh failed: Request failed with status code 400","status":400,"timestamp":"2025-04-30T15:51:54.686Z"}
+{"level":"error","message":"Refresh token error: Can’t refresh session. Log in again.","timestamp":"2025-04-30T15:51:54.693Z"}
+{"level":"info","message":"User disconnected: superadmin@example.com","reason":"transport close","socketId":"ZlK3Nc5J8mHUjFtBAAAR","timestamp":"2025-04-30T15:51:55.880Z"}
+{"level":"info","message":"Client disconnected","socketId":"ZlK3Nc5J8mHUjFtBAAAR","timestamp":"2025-04-30T15:51:55.881Z"}
+{"level":"info","message":"Database Initialization: Starting","step":"database","timestamp":"2025-04-30T16:02:51.258Z"}
+{"duration":"5.05","level":"info","message":"Database Initialization: Completed","status":"success","step":"database","timestamp":"2025-04-30T16:02:56.306Z"}
+{"level":"info","message":"SMTP Initialization: Starting","step":"smtp","timestamp":"2025-04-30T16:02:56.325Z"}
+{"level":"info","message":"SMTP server verified successfully","timestamp":"2025-04-30T16:02:57.299Z"}
+{"duration":"0.99","level":"info","message":"SMTP Initialization: Completed","status":"success","step":"smtp","timestamp":"2025-04-30T16:02:57.311Z"}
+{"level":"info","message":"SMS Initialization: Starting","step":"sms","timestamp":"2025-04-30T16:02:57.394Z"}
+{"level":"info","message":"Initializing SMS gateway with URL: https://wbm.tn/wbmonitor/send/webapi/v5/enquire_credit and headers: {\"X-API-Key\":\"8dc15c888d7489f473766c5717ed0132\",\"Content-Type\":\"application/json\"}","timestamp":"2025-04-30T16:02:57.433Z"}
+{"level":"error","message":"SMS gateway initialization failed: {\"op\":null,\"status\":-400,\"status_desc\":\"unauthorised\",\"apiVersion\":\"5\"}","timestamp":"2025-04-30T16:02:57.731Z"}
+{"level":"error","message":"SMS gateway initialization error: SMS gateway initialization failed with status: -400 - unauthorised","timestamp":"2025-04-30T16:02:57.735Z"}
+{"duration":"0.35","error":"SMS gateway initialization error: SMS gateway initialization failed with status: -400 - unauthorised","level":"error","message":"SMS Initialization: Failed","stack":"Error: SMS gateway initialization error: SMS gateway initialization failed with status: -400 - unauthorised\n    at Object.initializeSMS [as fn] (C:\\Users\\Kayto\\Desktop\\IT\\Projects\\Stage\\Stage PFE\\TraceFlow\\keycloak\\back\\config\\sms.js:105:15)\n    at process.processTicksAndRejections (node:internal/process/task_queues:105:5)\n    at async startApp (C:\\Users\\Kayto\\Desktop\\IT\\Projects\\Stage\\Stage PFE\\TraceFlow\\keycloak\\back\\app.js:199:17)","status":"failed","step":"sms","timestamp":"2025-04-30T16:02:57.740Z"}
+{"level":"info","message":"Model Associations: Starting","step":"associations","timestamp":"2025-04-30T16:03:05.910Z"}
+{"duration":"0.08","level":"info","message":"Model Associations: Completed","status":"success","step":"associations","timestamp":"2025-04-30T16:03:05.987Z"}
+{"level":"info","message":"Database Synchronization: Starting","step":"sync","timestamp":"2025-04-30T16:03:06.026Z"}
+{"duration":"0.50","level":"info","message":"Database Synchronization: Completed","status":"success","step":"sync","timestamp":"2025-04-30T16:03:06.525Z"}
+{"level":"info","message":"Permission Seeding: Starting","step":"permissions","timestamp":"2025-04-30T16:03:06.527Z"}
+{"duration":"9.91","level":"info","message":"Permission Seeding: Completed","status":"success","step":"permissions","timestamp":"2025-04-30T16:03:16.435Z"}
+{"level":"info","message":"Super Admin Seeding: Starting","step":"superadmin","timestamp":"2025-04-30T16:03:16.436Z"}
+{"duration":"1.81","level":"info","message":"Super Admin Seeding: Completed","status":"success","step":"superadmin","timestamp":"2025-04-30T16:03:18.250Z"}
+{"level":"info","message":"Database Initialization: Starting","step":"database","timestamp":"2025-04-30T16:03:30.123Z"}
+{"duration":"1.18","level":"info","message":"Database Initialization: Completed","status":"success","step":"database","timestamp":"2025-04-30T16:03:30.406Z"}
+{"level":"info","message":"SMTP Initialization: Starting","step":"smtp","timestamp":"2025-04-30T16:03:30.775Z"}
+{"level":"info","message":"SMTP server verified successfully","timestamp":"2025-04-30T16:03:31.491Z"}
+{"duration":"1.08","level":"info","message":"SMTP Initialization: Completed","status":"success","step":"smtp","timestamp":"2025-04-30T16:03:31.492Z"}
+{"level":"info","message":"SMS Initialization: Skipped","status":"skipped","step":"sms","timestamp":"2025-04-30T16:03:32.448Z"}
+{"level":"info","message":"Model Associations: Starting","step":"associations","timestamp":"2025-04-30T16:03:35.003Z"}
+{"duration":"2.58","level":"info","message":"Model Associations: Completed","status":"success","step":"associations","timestamp":"2025-04-30T16:03:35.026Z"}
+{"level":"info","message":"Database Synchronization: Starting","step":"sync","timestamp":"2025-04-30T16:03:36.839Z"}
+{"duration":"2.43","level":"info","message":"Database Synchronization: Completed","status":"success","step":"sync","timestamp":"2025-04-30T16:03:37.454Z"}
+{"level":"info","message":"Permission Seeding: Starting","step":"permissions","timestamp":"2025-04-30T16:03:37.772Z"}
+{"duration":"0.33","level":"info","message":"Permission Seeding: Completed","status":"success","step":"permissions","timestamp":"2025-04-30T16:03:37.783Z"}
+{"level":"info","message":"Super Admin Seeding: Starting","step":"superadmin","timestamp":"2025-04-30T16:03:39.053Z"}
+{"duration":"1.97","level":"info","message":"Super Admin Seeding: Completed","status":"success","step":"superadmin","timestamp":"2025-04-30T16:03:39.758Z"}
+{"level":"info","message":"Socket Initialization: Starting","step":"socket","timestamp":"2025-04-30T16:03:41.065Z"}
+{"duration":"1.31","level":"info","message":"Socket Initialization: Completed","status":"success","step":"socket","timestamp":"2025-04-30T16:03:41.066Z"}
+{"level":"info","message":"Server Initialization: Starting","step":"server","timestamp":"2025-04-30T16:03:42.312Z"}
+{"level":"info","message":"mDNS advertisement skipped in development mode","timestamp":"2025-04-30T16:03:42.315Z"}
+{"duration":"1.25","level":"info","message":"Server Initialization: Completed","status":"success","step":"server","timestamp":"2025-04-30T16:03:42.315Z"}
+{"level":"info","message":"\u001b[36m========== TraceFlow Initialization Summary ========\u001b[39m","timestamp":"2025-04-30T16:03:42.317Z"}
+{"level":"info","message":"Date: 2025-04-30T16:03:42.317Z","timestamp":"2025-04-30T16:03:42.317Z"}
+{"level":"info","message":"Steps Completed:","timestamp":"2025-04-30T16:03:42.317Z"}
+{"duration":"1.18","level":"info","message":"  - Database Initialization: \u001b[32mSUCCESS\u001b[39m - (1.18s)","status":"success","step":"Database Initialization","timestamp":"2025-04-30T16:03:42.317Z"}
+{"duration":"1.09","level":"info","message":"  - SMTP Initialization: \u001b[32mSUCCESS\u001b[39m - (1.09s)","status":"success","step":"SMTP Initialization","timestamp":"2025-04-30T16:03:42.317Z"}
+{"duration":"0.95","level":"info","message":"  - SMS Initialization: \u001b[33mSKIPPED\u001b[39m - (0.95s)","status":"skipped","step":"SMS Initialization","timestamp":"2025-04-30T16:03:42.318Z"}
+{"duration":"2.58","level":"info","message":"  - Model Associations: \u001b[32mSUCCESS\u001b[39m - (2.58s)","status":"success","step":"Model Associations","timestamp":"2025-04-30T16:03:42.318Z"}
+{"duration":"2.43","level":"info","message":"  - Database Synchronization: \u001b[32mSUCCESS\u001b[39m - (2.43s)","status":"success","step":"Database Synchronization","timestamp":"2025-04-30T16:03:42.318Z"}
+{"duration":"0.33","level":"info","message":"  - Permission Seeding: \u001b[32mSUCCESS\u001b[39m - (0.33s)","status":"success","step":"Permission Seeding","timestamp":"2025-04-30T16:03:42.318Z"}
+{"duration":"1.98","level":"info","message":"  - Super Admin Seeding: \u001b[32mSUCCESS\u001b[39m - (1.98s)","status":"success","step":"Super Admin Seeding","timestamp":"2025-04-30T16:03:42.318Z"}
+{"duration":"1.31","level":"info","message":"  - Socket Initialization: \u001b[32mSUCCESS\u001b[39m - (1.31s)","status":"success","step":"Socket Initialization","timestamp":"2025-04-30T16:03:42.318Z"}
+{"duration":"1.25","level":"info","message":"  - Server Initialization: \u001b[32mSUCCESS\u001b[39m - (1.25s)","status":"success","step":"Server Initialization","timestamp":"2025-04-30T16:03:42.319Z"}
+{"level":"info","message":"Total Steps: 9","timestamp":"2025-04-30T16:03:42.319Z"}
+{"level":"info","message":"\u001b[32mSuccesses: 8\u001b[39m","timestamp":"2025-04-30T16:03:42.319Z"}
+{"level":"info","message":"\u001b[33mSkipped: 1\u001b[39m","timestamp":"2025-04-30T16:03:42.319Z"}
+{"level":"info","message":"\u001b[31mFailures: 0\u001b[39m","timestamp":"2025-04-30T16:03:42.319Z"}
+{"level":"info","message":"Total Duration: 16.19 seconds","timestamp":"2025-04-30T16:03:42.319Z"}
+{"level":"info","message":"\u001b[36m===================================================\u001b[39m","timestamp":"2025-04-30T16:03:42.320Z"}
+{"level":"info","message":"\u001b[36m===================================================\u001b[39m","timestamp":"2025-04-30T16:03:42.320Z"}
+{"level":"info","message":"\tSuper Admin Credentials:","timestamp":"2025-04-30T16:03:42.320Z"}
+{"level":"info","message":"\tEmail:\t\tsuperadmin@example.com","timestamp":"2025-04-30T16:03:42.320Z"}
+{"level":"info","message":"\tPassword:\tSuperSecurePassword123!","timestamp":"2025-04-30T16:03:42.320Z"}
+{"level":"info","message":"\u001b[36m===================================================\u001b[39m","timestamp":"2025-04-30T16:03:42.321Z"}
+{"level":"info","message":"HTTP Server running on port 5000","timestamp":"2025-04-30T16:03:42.327Z"}
+{"level":"info","message":"No active rules found for event: otp:generated:user","timestamp":"2025-04-30T16:04:01.436Z"}
+{"enabled":true,"event":"otp:generated:user","level":"info","message":"Created default notification rule","ruleID":"rule__0tT6dRWB7hNaJvaVf6or","timestamp":"2025-04-30T16:04:01.454Z"}
+{"level":"info","message":"Notification stored Notification for otp:generated:user","notificationID":"notif_2SVe9Y73D64MrWp64minh","timestamp":"2025-04-30T16:04:01.569Z","userID":"user_6nki0x8pi"}
+{"level":"info","message":"Notification status updated","notificationID":"notif_2SVe9Y73D64MrWp64minh","status":"sent","timestamp":"2025-04-30T16:04:01.638Z"}
+{"event":"otp:generated:user","level":"info","message":"Triggered notifications","recipientCount":1,"timestamp":"2025-04-30T16:04:01.671Z"}
+{"level":"info","message":"Generated OTP for user user_6nki0x8pi via phone: 474633","timestamp":"2025-04-30T16:04:01.687Z"}
+{"level":"info","message":"Sending SMS request to https://wbm.tn/wbmonitor/send/webapi/v5/send_generic with headers: {\"X-API-Key\":\"8dc15c888d7489f473766c5717ed0132\",\"Content-Type\":\"application/json\"} and payload: {\"dest_num\":\"00000000\",\"msg\":\"Your TraceFlow OTP is 474633\",\"type\":0,\"auto_detect\":1,\"dt\":\"30/04/2025\",\"hr\":16,\"mn\":4,\"label\":\"NG Trend\",\"ref\":\"test otp SMS\"}","timestamp":"2025-04-30T16:04:01.904Z"}
+{"level":"error","message":"w-Board SMS Gateway error (otp): {\"op\":null,\"status\":-400,\"status_desc\":\"unauthorised\",\"apiVersion\":\"5\"}","timestamp":"2025-04-30T16:04:02.054Z"}
+{"level":"error","message":"w-Board SMS Gateway error (otp): SMS sending failed with status: -400 - unauthorised","timestamp":"2025-04-30T16:04:02.054Z"}
+{"level":"info","message":"Email lookup result: superadmin@example.com","timestamp":"2025-04-30T16:04:02.079Z"}
+{"level":"info","message":"Fallback email sent to superadmin@example.com (otp)","timestamp":"2025-04-30T16:04:03.745Z"}
+{"level":"info","message":"Login successful for superadmin@example.com","timestamp":"2025-04-30T16:04:03.750Z"}
+{"level":"info","message":"2FA verified for user user_6nki0x8pi","timestamp":"2025-04-30T16:04:15.781Z"}
+{"isWebSocket":false,"level":"info","message":"Authentication successful for user: superadmin@example.com","roles":"default-roles-traceflow, offline_access, Super Admin, uma_authorization","timestamp":"2025-04-30T16:04:15.895Z","userID":"user_6nki0x8pi"}
+{"isWebSocket":true,"level":"info","message":"Authentication successful for user: superadmin@example.com","roles":"default-roles-traceflow, offline_access, Super Admin, uma_authorization","timestamp":"2025-04-30T16:04:15.900Z","userID":"user_6nki0x8pi"}
+{"email":"superadmin@example.com","level":"info","message":"WebSocket authentication successful","roles":"default-roles-traceflow, offline_access, Super Admin, uma_authorization","socketId":"K2kEMPOCmrAjG9YfAAAB","timestamp":"2025-04-30T16:04:15.900Z","userID":"user_6nki0x8pi"}
+{"level":"info","message":"User connected: superadmin@example.com","socketId":"K2kEMPOCmrAjG9YfAAAB","timestamp":"2025-04-30T16:04:15.902Z","userID":"user_6nki0x8pi"}
+{"level":"info","message":"User superadmin@example.com joined room: default-roles-traceflow","socketId":"K2kEMPOCmrAjG9YfAAAB","timestamp":"2025-04-30T16:04:15.903Z"}
+{"level":"info","message":"User superadmin@example.com joined room: offline_access","socketId":"K2kEMPOCmrAjG9YfAAAB","timestamp":"2025-04-30T16:04:15.904Z"}
+{"level":"info","message":"User superadmin@example.com joined room: super admin","socketId":"K2kEMPOCmrAjG9YfAAAB","timestamp":"2025-04-30T16:04:15.906Z"}
+{"level":"info","message":"User superadmin@example.com joined room: uma_authorization","socketId":"K2kEMPOCmrAjG9YfAAAB","timestamp":"2025-04-30T16:04:15.908Z"}
+{"level":"info","message":"User superadmin@example.com joined room: user_6nki0x8pi","socketId":"K2kEMPOCmrAjG9YfAAAB","timestamp":"2025-04-30T16:04:15.910Z"}
+{"level":"info","message":"Client connected","socketId":"K2kEMPOCmrAjG9YfAAAB","timestamp":"2025-04-30T16:04:15.913Z"}
+{"isWebSocket":false,"level":"info","message":"Authentication successful for user: superadmin@example.com","roles":"default-roles-traceflow, offline_access, Super Admin, uma_authorization","timestamp":"2025-04-30T16:04:15.916Z","userID":"user_6nki0x8pi"}
+{"level":"info","message":"Fetched effective permissions for user user_6nki0x8pi by user_6nki0x8pi, IP: 192.168.0.117","timestamp":"2025-04-30T16:04:15.931Z"}
+{"level":"info","message":"User superadmin@example.com joined room: default-roles-traceflow","socketId":"K2kEMPOCmrAjG9YfAAAB","timestamp":"2025-04-30T16:04:15.943Z"}
+{"level":"info","message":"Client joined room: default-roles-traceflow","socketId":"K2kEMPOCmrAjG9YfAAAB","timestamp":"2025-04-30T16:04:15.945Z"}
+{"level":"info","message":"Fetched roles for user user_6nki0x8pi by user_6nki0x8pi, IP: 192.168.0.117","timestamp":"2025-04-30T16:04:15.969Z"}
+{"isWebSocket":false,"level":"info","message":"Authentication successful for user: superadmin@example.com","roles":"default-roles-traceflow, offline_access, Super Admin, uma_authorization","timestamp":"2025-04-30T16:04:15.984Z","userID":"user_6nki0x8pi"}
+{"level":"info","message":"Fetched effective permissions for user user_6nki0x8pi by user_6nki0x8pi, IP: 192.168.0.117","timestamp":"2025-04-30T16:04:16.002Z"}
+{"isWebSocket":false,"level":"info","message":"Authentication successful for user: superadmin@example.com","roles":"default-roles-traceflow, offline_access, Super Admin, uma_authorization","timestamp":"2025-04-30T16:04:16.045Z","userID":"user_6nki0x8pi"}
+{"level":"info","message":"Fetched roles for user user_6nki0x8pi by user_6nki0x8pi, IP: 192.168.0.117","timestamp":"2025-04-30T16:04:16.053Z"}
+{"isWebSocket":false,"level":"info","message":"Authentication successful for user: superadmin@example.com","roles":"default-roles-traceflow, offline_access, Super Admin, uma_authorization","timestamp":"2025-04-30T16:04:17.417Z","userID":"user_6nki0x8pi"}
+{"level":"info","message":"Super Admin bypass for user user_6nki0x8pi","timestamp":"2025-04-30T16:04:17.419Z"}
+{"level":"info","message":"Fetched notification rules by user: user_6nki0x8pi, IP: 192.168.0.117","timestamp":"2025-04-30T16:04:17.422Z"}
+{"isWebSocket":false,"level":"info","message":"Authentication successful for user: superadmin@example.com","roles":"default-roles-traceflow, offline_access, Super Admin, uma_authorization","timestamp":"2025-04-30T16:04:17.442Z","userID":"user_6nki0x8pi"}
+{"level":"info","message":"Super Admin bypass for user user_6nki0x8pi","timestamp":"2025-04-30T16:04:17.443Z"}
+{"level":"info","message":"Fetched notification rules by user: user_6nki0x8pi, IP: 192.168.0.117","timestamp":"2025-04-30T16:04:17.446Z"}
+{"isWebSocket":false,"level":"info","message":"Authentication successful for user: superadmin@example.com","roles":"default-roles-traceflow, offline_access, Super Admin, uma_authorization","timestamp":"2025-04-30T16:04:17.474Z","userID":"user_6nki0x8pi"}
+{"level":"info","message":"Super Admin bypass for user user_6nki0x8pi","timestamp":"2025-04-30T16:04:17.475Z"}
+{"level":"info","message":"Fetched notification rules by user: user_6nki0x8pi, IP: 192.168.0.117","timestamp":"2025-04-30T16:04:17.479Z"}
+{"isWebSocket":false,"level":"info","message":"Authentication successful for user: superadmin@example.com","roles":"default-roles-traceflow, offline_access, Super Admin, uma_authorization","timestamp":"2025-04-30T16:04:17.510Z","userID":"user_6nki0x8pi"}
+{"level":"info","message":"Super Admin bypass for user user_6nki0x8pi","timestamp":"2025-04-30T16:04:17.511Z"}
+{"level":"info","message":"Fetched notification rules by user: user_6nki0x8pi, IP: 192.168.0.117","timestamp":"2025-04-30T16:04:17.514Z"}
+{"isWebSocket":false,"level":"info","message":"Authentication successful for user: superadmin@example.com","roles":"default-roles-traceflow, offline_access, Super Admin, uma_authorization","timestamp":"2025-04-30T16:04:31.060Z","userID":"user_6nki0x8pi"}
+{"level":"info","message":"Super Admin bypass for user user_6nki0x8pi","timestamp":"2025-04-30T16:04:31.061Z"}
+{"level":"info","message":"Fetched all users by user user_6nki0x8pi, IP: 192.168.0.117","timestamp":"2025-04-30T16:04:31.071Z"}
+{"isWebSocket":false,"level":"info","message":"Authentication successful for user: superadmin@example.com","roles":"default-roles-traceflow, offline_access, Super Admin, uma_authorization","timestamp":"2025-04-30T16:04:31.101Z","userID":"user_6nki0x8pi"}
+{"level":"info","message":"Super Admin bypass for user user_6nki0x8pi","timestamp":"2025-04-30T16:04:31.103Z"}
+{"level":"info","message":"Fetched all roles by user user_6nki0x8pi, IP: 192.168.0.117","timestamp":"2025-04-30T16:04:31.137Z"}
+{"isWebSocket":false,"level":"info","message":"Authentication successful for user: superadmin@example.com","roles":"default-roles-traceflow, offline_access, Super Admin, uma_authorization","timestamp":"2025-04-30T16:04:35.111Z","userID":"user_6nki0x8pi"}
+{"level":"info","message":"Super Admin bypass for user user_6nki0x8pi","timestamp":"2025-04-30T16:04:35.112Z"}
+{"isWebSocket":false,"level":"info","message":"Authentication successful for user: superadmin@example.com","roles":"default-roles-traceflow, offline_access, Super Admin, uma_authorization","timestamp":"2025-04-30T16:04:35.116Z","userID":"user_6nki0x8pi"}
+{"level":"info","message":"Super Admin bypass for user user_6nki0x8pi","timestamp":"2025-04-30T16:04:35.117Z"}
+{"level":"info","message":"Fetched supervisors for user user_6nki0x8pi by user user_6nki0x8pi, IP: 192.168.0.117","timestamp":"2025-04-30T16:04:35.122Z"}
+{"level":"info","message":"Fetched managers for user user_6nki0x8pi by user user_6nki0x8pi, IP: 192.168.0.117","timestamp":"2025-04-30T16:04:35.125Z"}
+{"isWebSocket":false,"level":"info","message":"Authentication successful for user: superadmin@example.com","roles":"default-roles-traceflow, offline_access, Super Admin, uma_authorization","timestamp":"2025-04-30T16:04:35.479Z","userID":"user_6nki0x8pi"}
+{"level":"info","message":"Super Admin bypass for user user_6nki0x8pi","timestamp":"2025-04-30T16:04:35.480Z"}
+{"level":"info","message":"Fetched user user_6nki0x8pi by user user_6nki0x8pi, IP: 192.168.0.117","timestamp":"2025-04-30T16:04:35.495Z"}
+{"isWebSocket":false,"level":"info","message":"Authentication successful for user: superadmin@example.com","roles":"default-roles-traceflow, offline_access, Super Admin, uma_authorization","timestamp":"2025-04-30T16:04:38.775Z","userID":"user_6nki0x8pi"}
+{"level":"info","message":"Super Admin bypass for user user_6nki0x8pi","timestamp":"2025-04-30T16:04:38.775Z"}
+{"isWebSocket":false,"level":"info","message":"Authentication successful for user: superadmin@example.com","roles":"default-roles-traceflow, offline_access, Super Admin, uma_authorization","timestamp":"2025-04-30T16:04:38.782Z","userID":"user_6nki0x8pi"}
+{"level":"info","message":"Fetched all roles by user user_6nki0x8pi, IP: 192.168.0.117","timestamp":"2025-04-30T16:04:38.786Z"}
+{"level":"info","message":"Fetched roles for user user_6nki0x8pi by user_6nki0x8pi, IP: 192.168.0.117","timestamp":"2025-04-30T16:04:38.791Z"}
+{"isWebSocket":false,"level":"info","message":"Authentication successful for user: superadmin@example.com","roles":"default-roles-traceflow, offline_access, Super Admin, uma_authorization","timestamp":"2025-04-30T16:04:40.342Z","userID":"user_6nki0x8pi"}
+{"isWebSocket":false,"level":"info","message":"Authentication successful for user: superadmin@example.com","roles":"default-roles-traceflow, offline_access, Super Admin, uma_authorization","timestamp":"2025-04-30T16:04:40.346Z","userID":"user_6nki0x8pi"}
+{"level":"info","message":"Fetched permission overrides for user user_6nki0x8pi by user_6nki0x8pi, IP: 192.168.0.117","timestamp":"2025-04-30T16:04:40.350Z"}
+{"level":"info","message":"Fetched effective permissions for user user_6nki0x8pi by user_6nki0x8pi, IP: 192.168.0.117","timestamp":"2025-04-30T16:04:40.359Z"}
+{"isWebSocket":false,"level":"info","message":"Authentication successful for user: superadmin@example.com","roles":"default-roles-traceflow, offline_access, Super Admin, uma_authorization","timestamp":"2025-04-30T16:04:40.363Z","userID":"user_6nki0x8pi"}
+{"level":"info","message":"Super Admin bypass for user user_6nki0x8pi","timestamp":"2025-04-30T16:04:40.364Z"}
+{"level":"info","message":"Fetched all permissions by user user_6nki0x8pi, IP: 192.168.0.117","timestamp":"2025-04-30T16:04:40.370Z"}
+{"level":"info","message":"User disconnected: superadmin@example.com","reason":"transport close","socketId":"K2kEMPOCmrAjG9YfAAAB","timestamp":"2025-04-30T16:10:26.815Z"}
+{"level":"info","message":"Client disconnected","socketId":"K2kEMPOCmrAjG9YfAAAB","timestamp":"2025-04-30T16:10:26.817Z"}
+{"isWebSocket":false,"level":"info","message":"Authentication successful for user: superadmin@example.com","roles":"default-roles-traceflow, offline_access, Super Admin, uma_authorization","timestamp":"2025-04-30T16:10:27.878Z","userID":"user_6nki0x8pi"}
+{"isWebSocket":false,"level":"info","message":"Authentication successful for user: superadmin@example.com","roles":"default-roles-traceflow, offline_access, Super Admin, uma_authorization","timestamp":"2025-04-30T16:10:27.882Z","userID":"user_6nki0x8pi"}
+{"level":"info","message":"Fetched effective permissions for user user_6nki0x8pi by user_6nki0x8pi, IP: 192.168.0.117","timestamp":"2025-04-30T16:10:27.899Z"}
+{"level":"info","message":"Fetched roles for user user_6nki0x8pi by user_6nki0x8pi, IP: 192.168.0.117","timestamp":"2025-04-30T16:10:27.910Z"}
+{"isWebSocket":false,"level":"info","message":"Authentication successful for user: superadmin@example.com","roles":"default-roles-traceflow, offline_access, Super Admin, uma_authorization","timestamp":"2025-04-30T16:10:27.936Z","userID":"user_6nki0x8pi"}
+{"isWebSocket":false,"level":"info","message":"Authentication successful for user: superadmin@example.com","roles":"default-roles-traceflow, offline_access, Super Admin, uma_authorization","timestamp":"2025-04-30T16:10:27.949Z","userID":"user_6nki0x8pi"}
+{"level":"info","message":"Fetched effective permissions for user user_6nki0x8pi by user_6nki0x8pi, IP: 192.168.0.117","timestamp":"2025-04-30T16:10:27.958Z"}
+{"level":"info","message":"Fetched roles for user user_6nki0x8pi by user_6nki0x8pi, IP: 192.168.0.117","timestamp":"2025-04-30T16:10:27.966Z"}
+{"isWebSocket":true,"level":"info","message":"Authentication successful for user: superadmin@example.com","roles":"default-roles-traceflow, offline_access, Super Admin, uma_authorization","timestamp":"2025-04-30T16:10:28.159Z","userID":"user_6nki0x8pi"}
+{"email":"superadmin@example.com","level":"info","message":"WebSocket authentication successful","roles":"default-roles-traceflow, offline_access, Super Admin, uma_authorization","socketId":"KKpWCdU-WngGJCXWAAAD","timestamp":"2025-04-30T16:10:28.160Z","userID":"user_6nki0x8pi"}
+{"level":"info","message":"User connected: superadmin@example.com","socketId":"KKpWCdU-WngGJCXWAAAD","timestamp":"2025-04-30T16:10:28.162Z","userID":"user_6nki0x8pi"}
+{"level":"info","message":"User superadmin@example.com joined room: default-roles-traceflow","socketId":"KKpWCdU-WngGJCXWAAAD","timestamp":"2025-04-30T16:10:28.163Z"}
+{"level":"info","message":"User superadmin@example.com joined room: offline_access","socketId":"KKpWCdU-WngGJCXWAAAD","timestamp":"2025-04-30T16:10:28.164Z"}
+{"level":"info","message":"User superadmin@example.com joined room: super admin","socketId":"KKpWCdU-WngGJCXWAAAD","timestamp":"2025-04-30T16:10:28.165Z"}
+{"level":"info","message":"User superadmin@example.com joined room: uma_authorization","socketId":"KKpWCdU-WngGJCXWAAAD","timestamp":"2025-04-30T16:10:28.165Z"}
+{"level":"info","message":"User superadmin@example.com joined room: user_6nki0x8pi","socketId":"KKpWCdU-WngGJCXWAAAD","timestamp":"2025-04-30T16:10:28.166Z"}
+{"level":"info","message":"Client connected","socketId":"KKpWCdU-WngGJCXWAAAD","timestamp":"2025-04-30T16:10:28.166Z"}
+{"level":"info","message":"User superadmin@example.com joined room: default-roles-traceflow","socketId":"KKpWCdU-WngGJCXWAAAD","timestamp":"2025-04-30T16:10:28.170Z"}
+{"level":"info","message":"Client joined room: default-roles-traceflow","socketId":"KKpWCdU-WngGJCXWAAAD","timestamp":"2025-04-30T16:10:28.172Z"}
+{"isWebSocket":false,"level":"info","message":"Authentication successful for user: superadmin@example.com","roles":"default-roles-traceflow, offline_access, Super Admin, uma_authorization","timestamp":"2025-04-30T16:10:28.188Z","userID":"user_6nki0x8pi"}
+{"level":"info","message":"Super Admin bypass for user user_6nki0x8pi","timestamp":"2025-04-30T16:10:28.189Z"}
+{"level":"info","message":"Fetched notification rules by user: user_6nki0x8pi, IP: 192.168.0.117","timestamp":"2025-04-30T16:10:28.192Z"}
+{"level":"info","message":"User superadmin@example.com joined room: user_6nki0x8pi","socketId":"KKpWCdU-WngGJCXWAAAD","timestamp":"2025-04-30T16:10:28.213Z"}
+{"level":"info","message":"Client joined room: user_6nki0x8pi","socketId":"KKpWCdU-WngGJCXWAAAD","timestamp":"2025-04-30T16:10:28.213Z"}
+{"level":"info","message":"User superadmin@example.com joined room: default-roles-traceflow","socketId":"KKpWCdU-WngGJCXWAAAD","timestamp":"2025-04-30T16:10:28.215Z"}
+{"level":"info","message":"Client joined room: default-roles-traceflow","socketId":"KKpWCdU-WngGJCXWAAAD","timestamp":"2025-04-30T16:10:28.216Z"}
+{"level":"info","message":"User superadmin@example.com joined room: super admin","socketId":"KKpWCdU-WngGJCXWAAAD","timestamp":"2025-04-30T16:10:28.216Z"}
+{"level":"info","message":"Client joined room: super admin","socketId":"KKpWCdU-WngGJCXWAAAD","timestamp":"2025-04-30T16:10:28.216Z"}
+{"isWebSocket":false,"level":"info","message":"Authentication successful for user: superadmin@example.com","roles":"default-roles-traceflow, offline_access, Super Admin, uma_authorization","timestamp":"2025-04-30T16:10:28.232Z","userID":"user_6nki0x8pi"}
+{"level":"info","message":"Fetched notifications for user: user_6nki0x8pi, IP: 192.168.0.117","timestamp":"2025-04-30T16:10:28.240Z"}
+{"level":"info","message":"User disconnected: superadmin@example.com","reason":"transport close","socketId":"KKpWCdU-WngGJCXWAAAD","timestamp":"2025-04-30T16:10:37.622Z"}
+{"level":"info","message":"Client disconnected","socketId":"KKpWCdU-WngGJCXWAAAD","timestamp":"2025-04-30T16:10:37.623Z"}
+{"isWebSocket":false,"level":"info","message":"Authentication successful for user: superadmin@example.com","roles":"default-roles-traceflow, offline_access, Super Admin, uma_authorization","timestamp":"2025-04-30T16:10:37.881Z","userID":"user_6nki0x8pi"}
+{"isWebSocket":false,"level":"info","message":"Authentication successful for user: superadmin@example.com","roles":"default-roles-traceflow, offline_access, Super Admin, uma_authorization","timestamp":"2025-04-30T16:10:37.890Z","userID":"user_6nki0x8pi"}
+{"level":"info","message":"Fetched effective permissions for user user_6nki0x8pi by user_6nki0x8pi, IP: 192.168.0.117","timestamp":"2025-04-30T16:10:37.898Z"}
+{"level":"info","message":"Fetched roles for user user_6nki0x8pi by user_6nki0x8pi, IP: 192.168.0.117","timestamp":"2025-04-30T16:10:37.908Z"}
+{"isWebSocket":false,"level":"info","message":"Authentication successful for user: superadmin@example.com","roles":"default-roles-traceflow, offline_access, Super Admin, uma_authorization","timestamp":"2025-04-30T16:10:37.928Z","userID":"user_6nki0x8pi"}
+{"isWebSocket":false,"level":"info","message":"Authentication successful for user: superadmin@example.com","roles":"default-roles-traceflow, offline_access, Super Admin, uma_authorization","timestamp":"2025-04-30T16:10:37.935Z","userID":"user_6nki0x8pi"}
+{"level":"info","message":"Fetched effective permissions for user user_6nki0x8pi by user_6nki0x8pi, IP: 192.168.0.117","timestamp":"2025-04-30T16:10:37.946Z"}
+{"level":"info","message":"Fetched roles for user user_6nki0x8pi by user_6nki0x8pi, IP: 192.168.0.117","timestamp":"2025-04-30T16:10:37.955Z"}
+{"isWebSocket":true,"level":"info","message":"Authentication successful for user: superadmin@example.com","roles":"default-roles-traceflow, offline_access, Super Admin, uma_authorization","timestamp":"2025-04-30T16:10:38.025Z","userID":"user_6nki0x8pi"}
+{"email":"superadmin@example.com","level":"info","message":"WebSocket authentication successful","roles":"default-roles-traceflow, offline_access, Super Admin, uma_authorization","socketId":"_RAbJviv1ZsXXlDyAAAF","timestamp":"2025-04-30T16:10:38.026Z","userID":"user_6nki0x8pi"}
+{"level":"info","message":"User connected: superadmin@example.com","socketId":"_RAbJviv1ZsXXlDyAAAF","timestamp":"2025-04-30T16:10:38.028Z","userID":"user_6nki0x8pi"}
+{"level":"info","message":"User superadmin@example.com joined room: default-roles-traceflow","socketId":"_RAbJviv1ZsXXlDyAAAF","timestamp":"2025-04-30T16:10:38.029Z"}
+{"level":"info","message":"User superadmin@example.com joined room: offline_access","socketId":"_RAbJviv1ZsXXlDyAAAF","timestamp":"2025-04-30T16:10:38.030Z"}
+{"level":"info","message":"User superadmin@example.com joined room: super admin","socketId":"_RAbJviv1ZsXXlDyAAAF","timestamp":"2025-04-30T16:10:38.030Z"}
+{"level":"info","message":"User superadmin@example.com joined room: uma_authorization","socketId":"_RAbJviv1ZsXXlDyAAAF","timestamp":"2025-04-30T16:10:38.031Z"}
+{"level":"info","message":"User superadmin@example.com joined room: user_6nki0x8pi","socketId":"_RAbJviv1ZsXXlDyAAAF","timestamp":"2025-04-30T16:10:38.031Z"}
+{"level":"info","message":"Client connected","socketId":"_RAbJviv1ZsXXlDyAAAF","timestamp":"2025-04-30T16:10:38.033Z"}
+{"level":"info","message":"User superadmin@example.com joined room: default-roles-traceflow","socketId":"_RAbJviv1ZsXXlDyAAAF","timestamp":"2025-04-30T16:10:38.038Z"}
+{"level":"info","message":"Client joined room: default-roles-traceflow","socketId":"_RAbJviv1ZsXXlDyAAAF","timestamp":"2025-04-30T16:10:38.038Z"}
+{"isWebSocket":false,"level":"info","message":"Authentication successful for user: superadmin@example.com","roles":"default-roles-traceflow, offline_access, Super Admin, uma_authorization","timestamp":"2025-04-30T16:10:38.062Z","userID":"user_6nki0x8pi"}
+{"level":"info","message":"Super Admin bypass for user user_6nki0x8pi","timestamp":"2025-04-30T16:10:38.063Z"}
+{"level":"info","message":"Fetched notification rules by user: user_6nki0x8pi, IP: 192.168.0.117","timestamp":"2025-04-30T16:10:38.067Z"}
+{"level":"info","message":"User superadmin@example.com joined room: user_6nki0x8pi","socketId":"_RAbJviv1ZsXXlDyAAAF","timestamp":"2025-04-30T16:10:38.091Z"}
+{"level":"info","message":"Client joined room: user_6nki0x8pi","socketId":"_RAbJviv1ZsXXlDyAAAF","timestamp":"2025-04-30T16:10:38.092Z"}
+{"level":"info","message":"User superadmin@example.com joined room: default-roles-traceflow","socketId":"_RAbJviv1ZsXXlDyAAAF","timestamp":"2025-04-30T16:10:38.093Z"}
+{"level":"info","message":"Client joined room: default-roles-traceflow","socketId":"_RAbJviv1ZsXXlDyAAAF","timestamp":"2025-04-30T16:10:38.093Z"}
+{"level":"info","message":"User superadmin@example.com joined room: super admin","socketId":"_RAbJviv1ZsXXlDyAAAF","timestamp":"2025-04-30T16:10:38.093Z"}
+{"level":"info","message":"Client joined room: super admin","socketId":"_RAbJviv1ZsXXlDyAAAF","timestamp":"2025-04-30T16:10:38.094Z"}
+{"isWebSocket":false,"level":"info","message":"Authentication successful for user: superadmin@example.com","roles":"default-roles-traceflow, offline_access, Super Admin, uma_authorization","timestamp":"2025-04-30T16:10:38.108Z","userID":"user_6nki0x8pi"}
+{"level":"info","message":"Fetched notifications for user: user_6nki0x8pi, IP: 192.168.0.117","timestamp":"2025-04-30T16:10:38.111Z"}
+{"isWebSocket":false,"level":"info","message":"Authentication successful for user: superadmin@example.com","roles":"default-roles-traceflow, offline_access, Super Admin, uma_authorization","timestamp":"2025-04-30T16:10:40.773Z","userID":"user_6nki0x8pi"}
+{"level":"info","message":"Super Admin bypass for user user_6nki0x8pi","timestamp":"2025-04-30T16:10:40.774Z"}
+{"level":"info","message":"Fetched all users by user user_6nki0x8pi, IP: 192.168.0.117","timestamp":"2025-04-30T16:10:40.777Z"}
+{"isWebSocket":false,"level":"info","message":"Authentication successful for user: superadmin@example.com","roles":"default-roles-traceflow, offline_access, Super Admin, uma_authorization","timestamp":"2025-04-30T16:10:40.807Z","userID":"user_6nki0x8pi"}
+{"level":"info","message":"Super Admin bypass for user user_6nki0x8pi","timestamp":"2025-04-30T16:10:40.807Z"}
+{"level":"info","message":"Fetched all roles by user user_6nki0x8pi, IP: 192.168.0.117","timestamp":"2025-04-30T16:10:40.810Z"}
+{"isWebSocket":false,"level":"info","message":"Authentication successful for user: superadmin@example.com","roles":"default-roles-traceflow, offline_access, Super Admin, uma_authorization","timestamp":"2025-04-30T16:10:43.111Z","userID":"user_6nki0x8pi"}
+{"level":"info","message":"Super Admin bypass for user user_6nki0x8pi","timestamp":"2025-04-30T16:10:43.112Z"}
+{"level":"info","message":"Fetched supervisors for user user_6nki0x8pi by user user_6nki0x8pi, IP: 192.168.0.117","timestamp":"2025-04-30T16:10:43.116Z"}
+{"isWebSocket":false,"level":"info","message":"Authentication successful for user: superadmin@example.com","roles":"default-roles-traceflow, offline_access, Super Admin, uma_authorization","timestamp":"2025-04-30T16:10:43.118Z","userID":"user_6nki0x8pi"}
+{"level":"info","message":"Super Admin bypass for user user_6nki0x8pi","timestamp":"2025-04-30T16:10:43.119Z"}
+{"level":"info","message":"Fetched managers for user user_6nki0x8pi by user user_6nki0x8pi, IP: 192.168.0.117","timestamp":"2025-04-30T16:10:43.123Z"}
+{"isWebSocket":false,"level":"info","message":"Authentication successful for user: superadmin@example.com","roles":"default-roles-traceflow, offline_access, Super Admin, uma_authorization","timestamp":"2025-04-30T16:10:43.452Z","userID":"user_6nki0x8pi"}
+{"level":"info","message":"Super Admin bypass for user user_6nki0x8pi","timestamp":"2025-04-30T16:10:43.453Z"}
+{"level":"info","message":"Fetched user user_6nki0x8pi by user user_6nki0x8pi, IP: 192.168.0.117","timestamp":"2025-04-30T16:10:43.461Z"}
+{"isWebSocket":false,"level":"info","message":"Authentication successful for user: superadmin@example.com","roles":"default-roles-traceflow, offline_access, Super Admin, uma_authorization","timestamp":"2025-04-30T16:11:18.082Z","userID":"user_6nki0x8pi"}
+{"isWebSocket":false,"level":"info","message":"Authentication successful for user: superadmin@example.com","roles":"default-roles-traceflow, offline_access, Super Admin, uma_authorization","timestamp":"2025-04-30T16:11:18.090Z","userID":"user_6nki0x8pi"}
+{"level":"info","message":"Fetched profile for user user_6nki0x8pi, IP: 192.168.0.117","timestamp":"2025-04-30T16:11:18.097Z"}
+{"isWebSocket":false,"level":"info","message":"Authentication successful for user: superadmin@example.com","roles":"default-roles-traceflow, offline_access, Super Admin, uma_authorization","timestamp":"2025-04-30T16:11:18.102Z","userID":"user_6nki0x8pi"}
+{"level":"info","message":"Fetched notification types for user: user_6nki0x8pi, IP: 192.168.0.117","timestamp":"2025-04-30T16:11:18.112Z"}
+{"level":"info","message":"Fetched notification preferences for user: user_6nki0x8pi, IP: 192.168.0.117","timestamp":"2025-04-30T16:11:18.118Z"}
+{"isWebSocket":false,"level":"info","message":"Authentication successful for user: superadmin@example.com","roles":"default-roles-traceflow, offline_access, Super Admin, uma_authorization","timestamp":"2025-04-30T16:11:24.925Z","userID":"user_6nki0x8pi"}
+{"level":"info","message":"Fetched notifications for user: user_6nki0x8pi, IP: 192.168.0.117","timestamp":"2025-04-30T16:11:24.929Z"}
+{"isWebSocket":false,"level":"info","message":"Authentication successful for user: superadmin@example.com","roles":"default-roles-traceflow, offline_access, Super Admin, uma_authorization","timestamp":"2025-04-30T16:11:32.186Z","userID":"user_6nki0x8pi"}
+{"level":"info","message":"Fetched notifications for user: user_6nki0x8pi, IP: 192.168.0.117","timestamp":"2025-04-30T16:11:32.189Z"}
+{"isWebSocket":false,"level":"info","message":"Authentication successful for user: superadmin@example.com","roles":"default-roles-traceflow, offline_access, Super Admin, uma_authorization","timestamp":"2025-04-30T16:12:09.769Z","userID":"user_6nki0x8pi"}
+{"level":"info","message":"Super Admin bypass for user user_6nki0x8pi","timestamp":"2025-04-30T16:12:09.770Z"}
+{"isWebSocket":false,"level":"info","message":"Authentication successful for user: superadmin@example.com","roles":"default-roles-traceflow, offline_access, Super Admin, uma_authorization","timestamp":"2025-04-30T16:12:09.776Z","userID":"user_6nki0x8pi"}
+{"level":"info","message":"Super Admin bypass for user user_6nki0x8pi","timestamp":"2025-04-30T16:12:09.788Z"}
+{"level":"info","message":"Fetched 0 receipt book types by user user_6nki0x8pi, IP: 192.168.0.117","timestamp":"2025-04-30T16:12:09.796Z"}
+{"level":"info","message":"Fetched 0 receipt books by user user_6nki0x8pi in 52ms, IP: 192.168.0.117","timestamp":"2025-04-30T16:12:09.823Z"}
+{"isWebSocket":false,"level":"info","message":"Authentication successful for user: superadmin@example.com","roles":"default-roles-traceflow, offline_access, Super Admin, uma_authorization","timestamp":"2025-04-30T16:12:10.193Z","userID":"user_6nki0x8pi"}
+{"isWebSocket":false,"level":"info","message":"Authentication successful for user: superadmin@example.com","roles":"default-roles-traceflow, offline_access, Super Admin, uma_authorization","timestamp":"2025-04-30T16:12:10.200Z","userID":"user_6nki0x8pi"}
+{"level":"info","message":"Fetched profile for user user_6nki0x8pi, IP: 192.168.0.117","timestamp":"2025-04-30T16:12:10.208Z"}
+{"isWebSocket":false,"level":"info","message":"Authentication successful for user: superadmin@example.com","roles":"default-roles-traceflow, offline_access, Super Admin, uma_authorization","timestamp":"2025-04-30T16:12:10.211Z","userID":"user_6nki0x8pi"}
+{"level":"info","message":"Fetched notification types for user: user_6nki0x8pi, IP: 192.168.0.117","timestamp":"2025-04-30T16:12:10.219Z"}
+{"level":"info","message":"Fetched notification preferences for user: user_6nki0x8pi, IP: 192.168.0.117","timestamp":"2025-04-30T16:12:10.225Z"}
+{"level":"info","message":"User disconnected: superadmin@example.com","reason":"transport close","socketId":"_RAbJviv1ZsXXlDyAAAF","timestamp":"2025-04-30T16:12:17.329Z"}
+{"level":"info","message":"Client disconnected","socketId":"_RAbJviv1ZsXXlDyAAAF","timestamp":"2025-04-30T16:12:17.330Z"}
+{"isWebSocket":false,"level":"info","message":"Authentication successful for user: superadmin@example.com","roles":"default-roles-traceflow, offline_access, Super Admin, uma_authorization","timestamp":"2025-04-30T16:12:18.140Z","userID":"user_6nki0x8pi"}
+{"isWebSocket":false,"level":"info","message":"Authentication successful for user: superadmin@example.com","roles":"default-roles-traceflow, offline_access, Super Admin, uma_authorization","timestamp":"2025-04-30T16:12:18.159Z","userID":"user_6nki0x8pi"}
+{"level":"info","message":"Fetched roles for user user_6nki0x8pi by user_6nki0x8pi, IP: 192.168.0.117","timestamp":"2025-04-30T16:12:18.235Z"}
+{"level":"info","message":"Fetched effective permissions for user user_6nki0x8pi by user_6nki0x8pi, IP: 192.168.0.117","timestamp":"2025-04-30T16:12:18.263Z"}
+{"isWebSocket":false,"level":"info","message":"Authentication successful for user: superadmin@example.com","roles":"default-roles-traceflow, offline_access, Super Admin, uma_authorization","timestamp":"2025-04-30T16:12:18.335Z","userID":"user_6nki0x8pi"}
+{"level":"info","message":"Fetched roles for user user_6nki0x8pi by user_6nki0x8pi, IP: 192.168.0.117","timestamp":"2025-04-30T16:12:18.387Z"}
+{"isWebSocket":false,"level":"info","message":"Authentication successful for user: superadmin@example.com","roles":"default-roles-traceflow, offline_access, Super Admin, uma_authorization","timestamp":"2025-04-30T16:12:18.427Z","userID":"user_6nki0x8pi"}
+{"isWebSocket":false,"level":"info","message":"Authentication successful for user: superadmin@example.com","roles":"default-roles-traceflow, offline_access, Super Admin, uma_authorization","timestamp":"2025-04-30T16:12:18.450Z","userID":"user_6nki0x8pi"}
+{"level":"info","message":"Fetched notification preferences for user: user_6nki0x8pi, IP: 192.168.0.117","timestamp":"2025-04-30T16:12:18.500Z"}
+{"isWebSocket":false,"level":"info","message":"Authentication successful for user: superadmin@example.com","roles":"default-roles-traceflow, offline_access, Super Admin, uma_authorization","timestamp":"2025-04-30T16:12:18.510Z","userID":"user_6nki0x8pi"}
+{"level":"info","message":"Fetched effective permissions for user user_6nki0x8pi by user_6nki0x8pi, IP: 192.168.0.117","timestamp":"2025-04-30T16:12:18.559Z"}
+{"level":"info","message":"Fetched profile for user user_6nki0x8pi, IP: 192.168.0.117","timestamp":"2025-04-30T16:12:18.588Z"}
+{"isWebSocket":false,"level":"info","message":"Authentication successful for user: superadmin@example.com","roles":"default-roles-traceflow, offline_access, Super Admin, uma_authorization","timestamp":"2025-04-30T16:12:18.630Z","userID":"user_6nki0x8pi"}
+{"level":"info","message":"Fetched notification types for user: user_6nki0x8pi, IP: 192.168.0.117","timestamp":"2025-04-30T16:12:18.652Z"}
+{"isWebSocket":true,"level":"info","message":"Authentication successful for user: superadmin@example.com","roles":"default-roles-traceflow, offline_access, Super Admin, uma_authorization","timestamp":"2025-04-30T16:12:18.719Z","userID":"user_6nki0x8pi"}
+{"email":"superadmin@example.com","level":"info","message":"WebSocket authentication successful","roles":"default-roles-traceflow, offline_access, Super Admin, uma_authorization","socketId":"-SfKtbHJn4oBgskiAAAH","timestamp":"2025-04-30T16:12:18.726Z","userID":"user_6nki0x8pi"}
+{"level":"info","message":"User connected: superadmin@example.com","socketId":"-SfKtbHJn4oBgskiAAAH","timestamp":"2025-04-30T16:12:18.740Z","userID":"user_6nki0x8pi"}
+{"level":"info","message":"User superadmin@example.com joined room: default-roles-traceflow","socketId":"-SfKtbHJn4oBgskiAAAH","timestamp":"2025-04-30T16:12:18.743Z"}
+{"level":"info","message":"User superadmin@example.com joined room: offline_access","socketId":"-SfKtbHJn4oBgskiAAAH","timestamp":"2025-04-30T16:12:18.744Z"}
+{"level":"info","message":"User superadmin@example.com joined room: super admin","socketId":"-SfKtbHJn4oBgskiAAAH","timestamp":"2025-04-30T16:12:18.745Z"}
+{"level":"info","message":"User superadmin@example.com joined room: uma_authorization","socketId":"-SfKtbHJn4oBgskiAAAH","timestamp":"2025-04-30T16:12:18.746Z"}
+{"level":"info","message":"User superadmin@example.com joined room: user_6nki0x8pi","socketId":"-SfKtbHJn4oBgskiAAAH","timestamp":"2025-04-30T16:12:18.747Z"}
+{"level":"info","message":"Client connected","socketId":"-SfKtbHJn4oBgskiAAAH","timestamp":"2025-04-30T16:12:18.754Z"}
+{"level":"info","message":"User superadmin@example.com joined room: default-roles-traceflow","socketId":"-SfKtbHJn4oBgskiAAAH","timestamp":"2025-04-30T16:12:18.764Z"}
+{"level":"info","message":"Client joined room: default-roles-traceflow","socketId":"-SfKtbHJn4oBgskiAAAH","timestamp":"2025-04-30T16:12:18.771Z"}
+{"isWebSocket":false,"level":"info","message":"Authentication successful for user: superadmin@example.com","roles":"default-roles-traceflow, offline_access, Super Admin, uma_authorization","timestamp":"2025-04-30T16:12:18.794Z","userID":"user_6nki0x8pi"}
+{"level":"info","message":"Super Admin bypass for user user_6nki0x8pi","timestamp":"2025-04-30T16:12:18.796Z"}
+{"level":"info","message":"Fetched notification rules by user: user_6nki0x8pi, IP: 192.168.0.117","timestamp":"2025-04-30T16:12:18.805Z"}
+{"level":"info","message":"User superadmin@example.com joined room: user_6nki0x8pi","socketId":"-SfKtbHJn4oBgskiAAAH","timestamp":"2025-04-30T16:12:18.818Z"}
+{"level":"info","message":"Client joined room: user_6nki0x8pi","socketId":"-SfKtbHJn4oBgskiAAAH","timestamp":"2025-04-30T16:12:18.820Z"}
+{"level":"info","message":"User superadmin@example.com joined room: default-roles-traceflow","socketId":"-SfKtbHJn4oBgskiAAAH","timestamp":"2025-04-30T16:12:18.824Z"}
+{"level":"info","message":"Client joined room: default-roles-traceflow","socketId":"-SfKtbHJn4oBgskiAAAH","timestamp":"2025-04-30T16:12:18.825Z"}
+{"level":"info","message":"User superadmin@example.com joined room: super admin","socketId":"-SfKtbHJn4oBgskiAAAH","timestamp":"2025-04-30T16:12:18.826Z"}
+{"level":"info","message":"Client joined room: super admin","socketId":"-SfKtbHJn4oBgskiAAAH","timestamp":"2025-04-30T16:12:18.829Z"}
+{"isWebSocket":false,"level":"info","message":"Authentication successful for user: superadmin@example.com","roles":"default-roles-traceflow, offline_access, Super Admin, uma_authorization","timestamp":"2025-04-30T16:12:18.854Z","userID":"user_6nki0x8pi"}
+{"level":"info","message":"Fetched notifications for user: user_6nki0x8pi, IP: 192.168.0.117","timestamp":"2025-04-30T16:12:18.860Z"}
+{"level":"info","message":"User disconnected: superadmin@example.com","reason":"transport close","socketId":"-SfKtbHJn4oBgskiAAAH","timestamp":"2025-04-30T16:12:22.792Z"}
+{"level":"info","message":"Client disconnected","socketId":"-SfKtbHJn4oBgskiAAAH","timestamp":"2025-04-30T16:12:22.793Z"}
+{"isWebSocket":false,"level":"info","message":"Authentication successful for user: superadmin@example.com","roles":"default-roles-traceflow, offline_access, Super Admin, uma_authorization","timestamp":"2025-04-30T16:12:23.508Z","userID":"user_6nki0x8pi"}
+{"level":"info","message":"Fetched effective permissions for user user_6nki0x8pi by user_6nki0x8pi, IP: 192.168.0.117","timestamp":"2025-04-30T16:12:23.536Z"}
+{"isWebSocket":false,"level":"info","message":"Authentication successful for user: superadmin@example.com","roles":"default-roles-traceflow, offline_access, Super Admin, uma_authorization","timestamp":"2025-04-30T16:12:23.602Z","userID":"user_6nki0x8pi"}
+{"level":"info","message":"Fetched roles for user user_6nki0x8pi by user_6nki0x8pi, IP: 192.168.0.117","timestamp":"2025-04-30T16:12:23.630Z"}
+{"isWebSocket":false,"level":"info","message":"Authentication successful for user: superadmin@example.com","roles":"default-roles-traceflow, offline_access, Super Admin, uma_authorization","timestamp":"2025-04-30T16:12:23.667Z","userID":"user_6nki0x8pi"}
+{"level":"info","message":"Fetched effective permissions for user user_6nki0x8pi by user_6nki0x8pi, IP: 192.168.0.117","timestamp":"2025-04-30T16:12:23.688Z"}
+{"isWebSocket":false,"level":"info","message":"Authentication successful for user: superadmin@example.com","roles":"default-roles-traceflow, offline_access, Super Admin, uma_authorization","timestamp":"2025-04-30T16:12:23.705Z","userID":"user_6nki0x8pi"}
+{"level":"info","message":"Fetched roles for user user_6nki0x8pi by user_6nki0x8pi, IP: 192.168.0.117","timestamp":"2025-04-30T16:12:23.719Z"}
+{"isWebSocket":false,"level":"info","message":"Authentication successful for user: superadmin@example.com","roles":"default-roles-traceflow, offline_access, Super Admin, uma_authorization","timestamp":"2025-04-30T16:12:23.770Z","userID":"user_6nki0x8pi"}
+{"level":"info","message":"Fetched profile for user user_6nki0x8pi, IP: 192.168.0.117","timestamp":"2025-04-30T16:12:23.785Z"}
+{"isWebSocket":false,"level":"info","message":"Authentication successful for user: superadmin@example.com","roles":"default-roles-traceflow, offline_access, Super Admin, uma_authorization","timestamp":"2025-04-30T16:12:23.804Z","userID":"user_6nki0x8pi"}
+{"level":"info","message":"Fetched notification types for user: user_6nki0x8pi, IP: 192.168.0.117","timestamp":"2025-04-30T16:12:23.808Z"}
+{"isWebSocket":false,"level":"info","message":"Authentication successful for user: superadmin@example.com","roles":"default-roles-traceflow, offline_access, Super Admin, uma_authorization","timestamp":"2025-04-30T16:12:23.863Z","userID":"user_6nki0x8pi"}
+{"isWebSocket":true,"level":"info","message":"Authentication successful for user: superadmin@example.com","roles":"default-roles-traceflow, offline_access, Super Admin, uma_authorization","timestamp":"2025-04-30T16:12:23.866Z","userID":"user_6nki0x8pi"}
+{"email":"superadmin@example.com","level":"info","message":"WebSocket authentication successful","roles":"default-roles-traceflow, offline_access, Super Admin, uma_authorization","socketId":"lB8I70LWeQ-dsFTIAAAJ","timestamp":"2025-04-30T16:12:23.874Z","userID":"user_6nki0x8pi"}
+{"level":"info","message":"User connected: superadmin@example.com","socketId":"lB8I70LWeQ-dsFTIAAAJ","timestamp":"2025-04-30T16:12:23.890Z","userID":"user_6nki0x8pi"}
+{"level":"info","message":"User superadmin@example.com joined room: default-roles-traceflow","socketId":"lB8I70LWeQ-dsFTIAAAJ","timestamp":"2025-04-30T16:12:23.892Z"}
+{"level":"info","message":"User superadmin@example.com joined room: offline_access","socketId":"lB8I70LWeQ-dsFTIAAAJ","timestamp":"2025-04-30T16:12:23.894Z"}
+{"level":"info","message":"User superadmin@example.com joined room: super admin","socketId":"lB8I70LWeQ-dsFTIAAAJ","timestamp":"2025-04-30T16:12:23.907Z"}
+{"level":"info","message":"User superadmin@example.com joined room: uma_authorization","socketId":"lB8I70LWeQ-dsFTIAAAJ","timestamp":"2025-04-30T16:12:23.908Z"}
+{"level":"info","message":"User superadmin@example.com joined room: user_6nki0x8pi","socketId":"lB8I70LWeQ-dsFTIAAAJ","timestamp":"2025-04-30T16:12:23.909Z"}
+{"level":"info","message":"Client connected","socketId":"lB8I70LWeQ-dsFTIAAAJ","timestamp":"2025-04-30T16:12:23.909Z"}
+{"level":"info","message":"User superadmin@example.com joined room: default-roles-traceflow","socketId":"lB8I70LWeQ-dsFTIAAAJ","timestamp":"2025-04-30T16:12:23.921Z"}
+{"level":"info","message":"Client joined room: default-roles-traceflow","socketId":"lB8I70LWeQ-dsFTIAAAJ","timestamp":"2025-04-30T16:12:23.922Z"}
+{"level":"info","message":"Fetched notification preferences for user: user_6nki0x8pi, IP: 192.168.0.117","timestamp":"2025-04-30T16:12:23.936Z"}
+{"isWebSocket":false,"level":"info","message":"Authentication successful for user: superadmin@example.com","roles":"default-roles-traceflow, offline_access, Super Admin, uma_authorization","timestamp":"2025-04-30T16:12:23.955Z","userID":"user_6nki0x8pi"}
+{"level":"info","message":"Super Admin bypass for user user_6nki0x8pi","timestamp":"2025-04-30T16:12:23.958Z"}
+{"level":"info","message":"Fetched notification rules by user: user_6nki0x8pi, IP: 192.168.0.117","timestamp":"2025-04-30T16:12:23.969Z"}
+{"level":"info","message":"User superadmin@example.com joined room: user_6nki0x8pi","socketId":"lB8I70LWeQ-dsFTIAAAJ","timestamp":"2025-04-30T16:12:23.993Z"}
+{"level":"info","message":"Client joined room: user_6nki0x8pi","socketId":"lB8I70LWeQ-dsFTIAAAJ","timestamp":"2025-04-30T16:12:23.996Z"}
+{"level":"info","message":"User superadmin@example.com joined room: default-roles-traceflow","socketId":"lB8I70LWeQ-dsFTIAAAJ","timestamp":"2025-04-30T16:12:24.003Z"}
+{"level":"info","message":"Client joined room: default-roles-traceflow","socketId":"lB8I70LWeQ-dsFTIAAAJ","timestamp":"2025-04-30T16:12:24.004Z"}
+{"level":"info","message":"User superadmin@example.com joined room: super admin","socketId":"lB8I70LWeQ-dsFTIAAAJ","timestamp":"2025-04-30T16:12:24.004Z"}
+{"level":"info","message":"Client joined room: super admin","socketId":"lB8I70LWeQ-dsFTIAAAJ","timestamp":"2025-04-30T16:12:24.005Z"}
+{"isWebSocket":false,"level":"info","message":"Authentication successful for user: superadmin@example.com","roles":"default-roles-traceflow, offline_access, Super Admin, uma_authorization","timestamp":"2025-04-30T16:12:24.029Z","userID":"user_6nki0x8pi"}
+{"level":"info","message":"Fetched notifications for user: user_6nki0x8pi, IP: 192.168.0.117","timestamp":"2025-04-30T16:12:24.036Z"}
+{"isWebSocket":false,"level":"info","message":"Authentication successful for user: superadmin@example.com","roles":"default-roles-traceflow, offline_access, Super Admin, uma_authorization","timestamp":"2025-04-30T16:12:37.077Z","userID":"user_6nki0x8pi"}
+{"level":"info","message":"Fetched notifications for user: user_6nki0x8pi, IP: 192.168.0.117","timestamp":"2025-04-30T16:12:37.081Z"}
+{"isWebSocket":false,"level":"info","message":"Authentication successful for user: superadmin@example.com","roles":"default-roles-traceflow, offline_access, Super Admin, uma_authorization","timestamp":"2025-04-30T16:12:39.940Z","userID":"user_6nki0x8pi"}
+{"level":"info","message":"Super Admin bypass for user user_6nki0x8pi","timestamp":"2025-04-30T16:12:39.940Z"}
+{"level":"info","message":"Fetched user user_6nki0x8pi by user user_6nki0x8pi, IP: 192.168.0.117","timestamp":"2025-04-30T16:12:39.952Z"}
+{"isWebSocket":false,"level":"info","message":"Authentication successful for user: superadmin@example.com","roles":"default-roles-traceflow, offline_access, Super Admin, uma_authorization","timestamp":"2025-04-30T16:12:39.999Z","userID":"user_6nki0x8pi"}
+{"level":"info","message":"Super Admin bypass for user user_6nki0x8pi","timestamp":"2025-04-30T16:12:40.000Z"}
+{"level":"info","message":"Fetched user user_6nki0x8pi by user user_6nki0x8pi, IP: 192.168.0.117","timestamp":"2025-04-30T16:12:40.003Z"}
+{"isWebSocket":false,"level":"info","message":"Authentication successful for user: superadmin@example.com","roles":"default-roles-traceflow, offline_access, Super Admin, uma_authorization","timestamp":"2025-04-30T16:12:50.271Z","userID":"user_6nki0x8pi"}
+{"level":"info","message":"Super Admin bypass for user user_6nki0x8pi","timestamp":"2025-04-30T16:12:50.272Z"}
+{"isWebSocket":false,"level":"info","message":"Authentication successful for user: superadmin@example.com","roles":"default-roles-traceflow, offline_access, Super Admin, uma_authorization","timestamp":"2025-04-30T16:12:50.278Z","userID":"user_6nki0x8pi"}
+{"level":"info","message":"Fetched all roles by user user_6nki0x8pi, IP: 192.168.0.117","timestamp":"2025-04-30T16:12:50.289Z"}
+{"level":"info","message":"Fetched roles for user user_6nki0x8pi by user_6nki0x8pi, IP: 192.168.0.117","timestamp":"2025-04-30T16:12:50.300Z"}
+{"isWebSocket":false,"level":"info","message":"Authentication successful for user: superadmin@example.com","roles":"default-roles-traceflow, offline_access, Super Admin, uma_authorization","timestamp":"2025-04-30T16:12:51.399Z","userID":"user_6nki0x8pi"}
+{"level":"info","message":"Super Admin bypass for user user_6nki0x8pi","timestamp":"2025-04-30T16:12:51.400Z"}
+{"isWebSocket":false,"level":"info","message":"Authentication successful for user: superadmin@example.com","roles":"default-roles-traceflow, offline_access, Super Admin, uma_authorization","timestamp":"2025-04-30T16:12:51.404Z","userID":"user_6nki0x8pi"}
+{"isWebSocket":false,"level":"info","message":"Authentication successful for user: superadmin@example.com","roles":"default-roles-traceflow, offline_access, Super Admin, uma_authorization","timestamp":"2025-04-30T16:12:51.409Z","userID":"user_6nki0x8pi"}
+{"level":"info","message":"Fetched all permissions by user user_6nki0x8pi, IP: 192.168.0.117","timestamp":"2025-04-30T16:12:51.412Z"}
+{"level":"info","message":"Fetched permission overrides for user user_6nki0x8pi by user_6nki0x8pi, IP: 192.168.0.117","timestamp":"2025-04-30T16:12:51.419Z"}
+{"level":"info","message":"Fetched effective permissions for user user_6nki0x8pi by user_6nki0x8pi, IP: 192.168.0.117","timestamp":"2025-04-30T16:12:51.428Z"}
+{"isWebSocket":false,"level":"info","message":"Authentication successful for user: superadmin@example.com","roles":"default-roles-traceflow, offline_access, Super Admin, uma_authorization","timestamp":"2025-04-30T16:12:53.586Z","userID":"user_6nki0x8pi"}
+{"level":"info","message":"Super Admin bypass for user user_6nki0x8pi","timestamp":"2025-04-30T16:12:53.586Z"}
+{"level":"info","message":"Fetched all roles by user user_6nki0x8pi, IP: 192.168.0.117","timestamp":"2025-04-30T16:12:53.591Z"}
+{"isWebSocket":false,"level":"info","message":"Authentication successful for user: superadmin@example.com","roles":"default-roles-traceflow, offline_access, Super Admin, uma_authorization","timestamp":"2025-04-30T16:12:55.921Z","userID":"user_6nki0x8pi"}
+{"level":"info","message":"Super Admin bypass for user user_6nki0x8pi","timestamp":"2025-04-30T16:12:55.922Z"}
+{"level":"info","message":"Fetched all roles by user user_6nki0x8pi, IP: 192.168.0.117","timestamp":"2025-04-30T16:12:55.925Z"}
+{"isWebSocket":false,"level":"info","message":"Authentication successful for user: superadmin@example.com","roles":"default-roles-traceflow, offline_access, Super Admin, uma_authorization","timestamp":"2025-04-30T16:13:00.364Z","userID":"user_6nki0x8pi"}
+{"level":"info","message":"Super Admin bypass for user user_6nki0x8pi","timestamp":"2025-04-30T16:13:00.365Z"}
+{"isWebSocket":false,"level":"info","message":"Authentication successful for user: superadmin@example.com","roles":"default-roles-traceflow, offline_access, Super Admin, uma_authorization","timestamp":"2025-04-30T16:13:05.422Z","userID":"user_6nki0x8pi"}
+{"level":"info","message":"Super Admin bypass for user user_6nki0x8pi","timestamp":"2025-04-30T16:13:05.423Z"}
+{"level":"info","message":"No active rules found for event: role:reset","timestamp":"2025-04-30T16:13:08.125Z"}
+{"enabled":true,"event":"role:reset","level":"info","message":"Created default notification rule","ruleID":"rule_sRmQEGjhzkkoNK4vvPv-4","timestamp":"2025-04-30T16:13:08.133Z"}
+{"level":"info","message":"Notification stored Notification for role:reset","notificationID":"notif_oZdYmlfyiV9a4Ny9G39ey","timestamp":"2025-04-30T16:13:08.153Z","userID":"user_6nki0x8pi"}
+{"level":"info","message":"Notification status updated","notificationID":"notif_oZdYmlfyiV9a4Ny9G39ey","status":"sent","timestamp":"2025-04-30T16:13:08.163Z"}
+{"event":"role:reset","level":"info","message":"Triggered notifications","recipientCount":1,"timestamp":"2025-04-30T16:13:08.166Z"}
+{"level":"info","message":"Reset main roles by user user_6nki0x8pi, IP: 192.168.0.117","timestamp":"2025-04-30T16:13:08.174Z"}
+{"isWebSocket":false,"level":"info","message":"Authentication successful for user: superadmin@example.com","roles":"default-roles-traceflow, offline_access, Super Admin, uma_authorization","timestamp":"2025-04-30T16:13:08.228Z","userID":"user_6nki0x8pi"}
+{"level":"info","message":"Super Admin bypass for user user_6nki0x8pi","timestamp":"2025-04-30T16:13:08.229Z"}
+{"level":"info","message":"Fetched all roles by user user_6nki0x8pi, IP: 192.168.0.117","timestamp":"2025-04-30T16:13:08.242Z"}
+{"level":"info","message":"Notification stored Notification for role:reset","notificationID":"notif_rt5jpuJcUzQwQEqbstc8M","timestamp":"2025-04-30T16:13:08.810Z","userID":"user_6nki0x8pi"}
+{"level":"info","message":"Notification status updated","notificationID":"notif_rt5jpuJcUzQwQEqbstc8M","status":"sent","timestamp":"2025-04-30T16:13:08.825Z"}
+{"event":"role:reset","level":"info","message":"Triggered notifications","recipientCount":1,"timestamp":"2025-04-30T16:13:08.827Z"}
+{"level":"info","message":"Reset main roles by user user_6nki0x8pi, IP: 192.168.0.117","timestamp":"2025-04-30T16:13:08.828Z"}
+{"isWebSocket":false,"level":"info","message":"Authentication successful for user: superadmin@example.com","roles":"default-roles-traceflow, offline_access, Super Admin, uma_authorization","timestamp":"2025-04-30T16:13:08.875Z","userID":"user_6nki0x8pi"}
+{"level":"info","message":"Super Admin bypass for user user_6nki0x8pi","timestamp":"2025-04-30T16:13:08.877Z"}
+{"level":"info","message":"Fetched all roles by user user_6nki0x8pi, IP: 192.168.0.117","timestamp":"2025-04-30T16:13:08.898Z"}
+{"isWebSocket":false,"level":"info","message":"Authentication successful for user: superadmin@example.com","roles":"default-roles-traceflow, offline_access, Super Admin, uma_authorization","timestamp":"2025-04-30T16:13:49.116Z","userID":"user_6nki0x8pi"}
+{"isWebSocket":false,"level":"info","message":"Authentication successful for user: superadmin@example.com","roles":"default-roles-traceflow, offline_access, Super Admin, uma_authorization","timestamp":"2025-04-30T16:13:49.120Z","userID":"user_6nki0x8pi"}
+{"isWebSocket":false,"level":"info","message":"Authentication successful for user: superadmin@example.com","roles":"default-roles-traceflow, offline_access, Super Admin, uma_authorization","timestamp":"2025-04-30T16:13:49.125Z","userID":"user_6nki0x8pi"}
+{"level":"info","message":"Fetched notification types for user: user_6nki0x8pi, IP: 192.168.0.117","timestamp":"2025-04-30T16:13:49.128Z"}
+{"level":"info","message":"Fetched notification preferences for user: user_6nki0x8pi, IP: 192.168.0.117","timestamp":"2025-04-30T16:13:49.141Z"}
+{"level":"info","message":"Fetched profile for user user_6nki0x8pi, IP: 192.168.0.117","timestamp":"2025-04-30T16:13:49.158Z"}
+{"isWebSocket":false,"level":"info","message":"Authentication successful for user: superadmin@example.com","roles":"default-roles-traceflow, offline_access, Super Admin, uma_authorization","timestamp":"2025-04-30T16:13:50.293Z","userID":"user_6nki0x8pi"}
+{"level":"info","message":"Fetched notifications for user: user_6nki0x8pi, IP: 192.168.0.117","timestamp":"2025-04-30T16:13:50.311Z"}
+{"isWebSocket":false,"level":"info","message":"Authentication successful for user: superadmin@example.com","roles":"default-roles-traceflow, offline_access, Super Admin, uma_authorization","timestamp":"2025-04-30T16:13:59.103Z","userID":"user_6nki0x8pi"}
+{"level":"info","message":"Notification marked as read: notif_rt5jpuJcUzQwQEqbstc8M by user: user_6nki0x8pi, IP: 192.168.0.117","timestamp":"2025-04-30T16:13:59.109Z"}
+{"isWebSocket":false,"level":"info","message":"Authentication successful for user: superadmin@example.com","roles":"default-roles-traceflow, offline_access, Super Admin, uma_authorization","timestamp":"2025-04-30T16:14:01.426Z","userID":"user_6nki0x8pi"}
+{"level":"info","message":"Fetched notifications for user: user_6nki0x8pi, IP: 192.168.0.117","timestamp":"2025-04-30T16:14:01.428Z"}
+{"isWebSocket":false,"level":"info","message":"Authentication successful for user: superadmin@example.com","roles":"default-roles-traceflow, offline_access, Super Admin, uma_authorization","timestamp":"2025-04-30T16:17:36.921Z","userID":"user_6nki0x8pi"}
+{"level":"info","message":"Notification marked as read: notif_oZdYmlfyiV9a4Ny9G39ey by user: user_6nki0x8pi, IP: 192.168.0.117","timestamp":"2025-04-30T16:17:36.930Z"}
+{"isWebSocket":false,"level":"info","message":"Authentication successful for user: superadmin@example.com","roles":"default-roles-traceflow, offline_access, Super Admin, uma_authorization","timestamp":"2025-04-30T16:17:39.302Z","userID":"user_6nki0x8pi"}
+{"level":"info","message":"All notifications marked as read for user: user_6nki0x8pi, count: 1, IP: 192.168.0.117","timestamp":"2025-04-30T16:17:39.309Z"}
+{"isWebSocket":false,"level":"info","message":"Authentication successful for user: superadmin@example.com","roles":"default-roles-traceflow, offline_access, Super Admin, uma_authorization","timestamp":"2025-04-30T16:17:41.857Z","userID":"user_6nki0x8pi"}
+{"level":"info","message":"Notification marked as read: notif_2SVe9Y73D64MrWp64minh by user: user_6nki0x8pi, IP: 192.168.0.117","timestamp":"2025-04-30T16:17:41.859Z"}
+{"isWebSocket":false,"level":"info","message":"Authentication successful for user: superadmin@example.com","roles":"default-roles-traceflow, offline_access, Super Admin, uma_authorization","timestamp":"2025-04-30T16:17:42.231Z","userID":"user_6nki0x8pi"}
+{"level":"info","message":"Notification marked as read: notif_2SVe9Y73D64MrWp64minh by user: user_6nki0x8pi, IP: 192.168.0.117","timestamp":"2025-04-30T16:17:42.233Z"}
+{"isWebSocket":false,"level":"info","message":"Authentication successful for user: superadmin@example.com","roles":"default-roles-traceflow, offline_access, Super Admin, uma_authorization","timestamp":"2025-04-30T16:17:43.076Z","userID":"user_6nki0x8pi"}
+{"level":"info","message":"Notification marked as read: notif_oZdYmlfyiV9a4Ny9G39ey by user: user_6nki0x8pi, IP: 192.168.0.117","timestamp":"2025-04-30T16:17:43.079Z"}
+{"cookies":["refreshToken=eyJhbGciOiJIUzUxMiIsInR5cCIgOiAiSldUIiwia2lkIiA6ICI4ZDM2MmYzMS03MWYzLTQ0MjYtOWU2Yi1jZmJkZTQ3NzVlYzMifQ.eyJleHAiOjE3NDYwMzI2NDAsImlhdCI6MTc0NjAyOTA0MCwianRpIjoiOWM3ODYxMzktNDI2Ni00M2Y5LTk5YTEtMjM3NGUyZGNjYTQyIiwiaXNzIjoiaHR0cDovL2xvY2FsaG9zdDo4MDgwL3JlYWxtcy9UcmFjZUZsb3ciLCJhdWQiOiJodHRwOi8vbG9jYWxob3N0OjgwODAvcmVhbG1zL1RyYWNlRmxvdyIsInN1YiI6ImRmNmRlZjBmLWY3NjYtNDhkOS1iMTFlLTU5ZGIxNjE4MGExZSIsInR5cCI6IlJlZnJlc2giLCJhenAiOiJ0cmFjZWZsb3ctYmFja2VuZCIsInNpZCI6ImNjN2RhNDViLWI3MTUtNDI0OS05ODlmLWNjZWQzZTgwMTJmNiIsInNjb3BlIjoib3BlbmlkIGJhc2ljIGFjciBwcm9maWxlIHdlYi1vcmlnaW5zIGVtYWlsIHJvbGVzIHNlcnZpY2VfYWNjb3VudCJ9.UO1LkBdYfL1NV8QCJveVH829kUazk8ruvpqZRm0AcRZ_iLBkOcrjOQW0ZFi51AkWA0edF7WVSSDonsDWJRQldQ","adminDashboardView=roles"],"isWebSocket":false,"level":"warn","message":"No accessToken cookie found","timestamp":"2025-04-30T16:20:33.921Z"}
+{"level":"info","message":"Initiating token refresh","timestamp":"2025-04-30T16:20:33.951Z"}
+{"accessTokenExpiresIn":900,"level":"info","message":"Tokens refreshed successfully","refreshTokenRotatedAt":"2025-04-30T16:20:34.022Z","timestamp":"2025-04-30T16:20:34.022Z"}
+{"level":"info","message":"Refresh token successful","timestamp":"2025-04-30T16:20:34.024Z"}
+{"level":"info","message":"User disconnected: superadmin@example.com","reason":"client namespace disconnect","socketId":"lB8I70LWeQ-dsFTIAAAJ","timestamp":"2025-04-30T16:20:34.042Z"}
+{"level":"info","message":"Client disconnected","socketId":"lB8I70LWeQ-dsFTIAAAJ","timestamp":"2025-04-30T16:20:34.054Z"}
+{"isWebSocket":false,"level":"info","message":"Authentication successful for user: superadmin@example.com","roles":"default-roles-traceflow, offline_access, Super Admin, uma_authorization","timestamp":"2025-04-30T16:20:34.135Z","userID":"user_6nki0x8pi"}
+{"level":"info","message":"Fetched notifications for user: user_6nki0x8pi, IP: 192.168.0.117","timestamp":"2025-04-30T16:20:34.151Z"}
+{"isWebSocket":true,"level":"info","message":"Authentication successful for user: superadmin@example.com","roles":"default-roles-traceflow, offline_access, Super Admin, uma_authorization","timestamp":"2025-04-30T16:20:34.156Z","userID":"user_6nki0x8pi"}
+{"email":"superadmin@example.com","level":"info","message":"WebSocket authentication successful","roles":"default-roles-traceflow, offline_access, Super Admin, uma_authorization","socketId":"wwy3-cG6-1B_F2SaAAAL","timestamp":"2025-04-30T16:20:34.159Z","userID":"user_6nki0x8pi"}
+{"level":"info","message":"User connected: superadmin@example.com","socketId":"wwy3-cG6-1B_F2SaAAAL","timestamp":"2025-04-30T16:20:34.163Z","userID":"user_6nki0x8pi"}
+{"level":"info","message":"User superadmin@example.com joined room: default-roles-traceflow","socketId":"wwy3-cG6-1B_F2SaAAAL","timestamp":"2025-04-30T16:20:34.164Z"}
+{"level":"info","message":"User superadmin@example.com joined room: offline_access","socketId":"wwy3-cG6-1B_F2SaAAAL","timestamp":"2025-04-30T16:20:34.164Z"}
+{"level":"info","message":"User superadmin@example.com joined room: super admin","socketId":"wwy3-cG6-1B_F2SaAAAL","timestamp":"2025-04-30T16:20:34.164Z"}
+{"level":"info","message":"User superadmin@example.com joined room: uma_authorization","socketId":"wwy3-cG6-1B_F2SaAAAL","timestamp":"2025-04-30T16:20:34.165Z"}
+{"level":"info","message":"User superadmin@example.com joined room: user_6nki0x8pi","socketId":"wwy3-cG6-1B_F2SaAAAL","timestamp":"2025-04-30T16:20:34.165Z"}
+{"level":"info","message":"Client connected","socketId":"wwy3-cG6-1B_F2SaAAAL","timestamp":"2025-04-30T16:20:34.165Z"}
+{"level":"info","message":"User superadmin@example.com joined room: default-roles-traceflow","socketId":"wwy3-cG6-1B_F2SaAAAL","timestamp":"2025-04-30T16:20:34.189Z"}
+{"level":"info","message":"Client joined room: default-roles-traceflow","socketId":"wwy3-cG6-1B_F2SaAAAL","timestamp":"2025-04-30T16:20:34.199Z"}
+{"isWebSocket":false,"level":"info","message":"Authentication successful for user: superadmin@example.com","roles":"default-roles-traceflow, offline_access, Super Admin, uma_authorization","timestamp":"2025-04-30T16:20:34.223Z","userID":"user_6nki0x8pi"}
+{"level":"info","message":"Super Admin bypass for user user_6nki0x8pi","timestamp":"2025-04-30T16:20:34.225Z"}
+{"level":"info","message":"Fetched notification rules by user: user_6nki0x8pi, IP: 192.168.0.117","timestamp":"2025-04-30T16:20:34.231Z"}
+{"level":"info","message":"User superadmin@example.com joined room: user_6nki0x8pi","socketId":"wwy3-cG6-1B_F2SaAAAL","timestamp":"2025-04-30T16:20:34.238Z"}
+{"level":"info","message":"Client joined room: user_6nki0x8pi","socketId":"wwy3-cG6-1B_F2SaAAAL","timestamp":"2025-04-30T16:20:34.239Z"}
+{"level":"info","message":"User superadmin@example.com joined room: default-roles-traceflow","socketId":"wwy3-cG6-1B_F2SaAAAL","timestamp":"2025-04-30T16:20:34.241Z"}
+{"level":"info","message":"Client joined room: default-roles-traceflow","socketId":"wwy3-cG6-1B_F2SaAAAL","timestamp":"2025-04-30T16:20:34.244Z"}
+{"level":"info","message":"User superadmin@example.com joined room: super admin","socketId":"wwy3-cG6-1B_F2SaAAAL","timestamp":"2025-04-30T16:20:34.248Z"}
+{"level":"info","message":"Client joined room: super admin","socketId":"wwy3-cG6-1B_F2SaAAAL","timestamp":"2025-04-30T16:20:34.249Z"}
+{"isWebSocket":false,"level":"info","message":"Authentication successful for user: superadmin@example.com","roles":"default-roles-traceflow, offline_access, Super Admin, uma_authorization","timestamp":"2025-04-30T16:20:34.267Z","userID":"user_6nki0x8pi"}
+{"level":"info","message":"Fetched notifications for user: user_6nki0x8pi, IP: 192.168.0.117","timestamp":"2025-04-30T16:20:34.272Z"}
+{"cookies":["adminDashboardView=roles","refreshToken=eyJhbGciOiJIUzUxMiIsInR5cCIgOiAiSldUIiwia2lkIiA6ICI4ZDM2MmYzMS03MWYzLTQ0MjYtOWU2Yi1jZmJkZTQ3NzVlYzMifQ.eyJleHAiOjE3NDYwMzI2NDAsImlhdCI6MTc0NjAzMDAzMywianRpIjoiODc2NmJlZmItOWI5My00OGI2LWI4YzAtZGQ1Y2M4NWUwYzdmIiwiaXNzIjoiaHR0cDovL2xvY2FsaG9zdDo4MDgwL3JlYWxtcy9UcmFjZUZsb3ciLCJhdWQiOiJodHRwOi8vbG9jYWxob3N0OjgwODAvcmVhbG1zL1RyYWNlRmxvdyIsInN1YiI6ImRmNmRlZjBmLWY3NjYtNDhkOS1iMTFlLTU5ZGIxNjE4MGExZSIsInR5cCI6IlJlZnJlc2giLCJhenAiOiJ0cmFjZWZsb3ctYmFja2VuZCIsInNpZCI6ImNjN2RhNDViLWI3MTUtNDI0OS05ODlmLWNjZWQzZTgwMTJmNiIsInNjb3BlIjoib3BlbmlkIGJhc2ljIGFjciBwcm9maWxlIHdlYi1vcmlnaW5zIGVtYWlsIHJvbGVzIHNlcnZpY2VfYWNjb3VudCJ9.lZRFXQnAvE9xZJx_iszyGKok3EvyopIdNlbkItW6A_NAbPGH3ckWwR1B9TzI_EY_epJLihOkveFJmcZvDlC5Yw"],"isWebSocket":false,"level":"warn","message":"No accessToken cookie found","timestamp":"2025-04-30T16:49:28.245Z"}
+{"level":"info","message":"Initiating token refresh","timestamp":"2025-04-30T16:49:28.267Z"}
+{"accessTokenExpiresIn":873,"level":"info","message":"Tokens refreshed successfully","refreshTokenRotatedAt":"2025-04-30T16:49:28.478Z","timestamp":"2025-04-30T16:49:28.478Z"}
+{"level":"info","message":"Refresh token successful","timestamp":"2025-04-30T16:49:28.479Z"}
+{"level":"info","message":"User disconnected: superadmin@example.com","reason":"client namespace disconnect","socketId":"wwy3-cG6-1B_F2SaAAAL","timestamp":"2025-04-30T16:49:28.491Z"}
+{"level":"info","message":"Client disconnected","socketId":"wwy3-cG6-1B_F2SaAAAL","timestamp":"2025-04-30T16:49:28.492Z"}
+{"isWebSocket":false,"level":"info","message":"Authentication successful for user: superadmin@example.com","roles":"default-roles-traceflow, offline_access, Super Admin, uma_authorization","timestamp":"2025-04-30T16:49:28.589Z","userID":"user_6nki0x8pi"}
+{"level":"info","message":"Fetched notifications for user: user_6nki0x8pi, IP: 192.168.0.117","timestamp":"2025-04-30T16:49:28.606Z"}
+{"isWebSocket":true,"level":"info","message":"Authentication successful for user: superadmin@example.com","roles":"default-roles-traceflow, offline_access, Super Admin, uma_authorization","timestamp":"2025-04-30T16:49:28.610Z","userID":"user_6nki0x8pi"}
+{"email":"superadmin@example.com","level":"info","message":"WebSocket authentication successful","roles":"default-roles-traceflow, offline_access, Super Admin, uma_authorization","socketId":"-WGRjS3wHgRqEL6MAAAN","timestamp":"2025-04-30T16:49:28.612Z","userID":"user_6nki0x8pi"}
+{"level":"info","message":"User connected: superadmin@example.com","socketId":"-WGRjS3wHgRqEL6MAAAN","timestamp":"2025-04-30T16:49:28.618Z","userID":"user_6nki0x8pi"}
+{"level":"info","message":"User superadmin@example.com joined room: default-roles-traceflow","socketId":"-WGRjS3wHgRqEL6MAAAN","timestamp":"2025-04-30T16:49:28.620Z"}
+{"level":"info","message":"User superadmin@example.com joined room: offline_access","socketId":"-WGRjS3wHgRqEL6MAAAN","timestamp":"2025-04-30T16:49:28.620Z"}
+{"level":"info","message":"User superadmin@example.com joined room: super admin","socketId":"-WGRjS3wHgRqEL6MAAAN","timestamp":"2025-04-30T16:49:28.621Z"}
+{"level":"info","message":"User superadmin@example.com joined room: uma_authorization","socketId":"-WGRjS3wHgRqEL6MAAAN","timestamp":"2025-04-30T16:49:28.621Z"}
+{"level":"info","message":"User superadmin@example.com joined room: user_6nki0x8pi","socketId":"-WGRjS3wHgRqEL6MAAAN","timestamp":"2025-04-30T16:49:28.621Z"}
+{"level":"info","message":"Client connected","socketId":"-WGRjS3wHgRqEL6MAAAN","timestamp":"2025-04-30T16:49:28.622Z"}
+{"level":"info","message":"User superadmin@example.com joined room: default-roles-traceflow","socketId":"-WGRjS3wHgRqEL6MAAAN","timestamp":"2025-04-30T16:49:28.655Z"}
+{"level":"info","message":"Client joined room: default-roles-traceflow","socketId":"-WGRjS3wHgRqEL6MAAAN","timestamp":"2025-04-30T16:49:28.656Z"}
+{"isWebSocket":false,"level":"info","message":"Authentication successful for user: superadmin@example.com","roles":"default-roles-traceflow, offline_access, Super Admin, uma_authorization","timestamp":"2025-04-30T16:49:28.692Z","userID":"user_6nki0x8pi"}
+{"level":"info","message":"Super Admin bypass for user user_6nki0x8pi","timestamp":"2025-04-30T16:49:28.692Z"}
+{"level":"info","message":"Fetched notification rules by user: user_6nki0x8pi, IP: 192.168.0.117","timestamp":"2025-04-30T16:49:28.696Z"}
+{"level":"info","message":"User superadmin@example.com joined room: user_6nki0x8pi","socketId":"-WGRjS3wHgRqEL6MAAAN","timestamp":"2025-04-30T16:49:28.708Z"}
+{"level":"info","message":"Client joined room: user_6nki0x8pi","socketId":"-WGRjS3wHgRqEL6MAAAN","timestamp":"2025-04-30T16:49:28.710Z"}
+{"level":"info","message":"User superadmin@example.com joined room: default-roles-traceflow","socketId":"-WGRjS3wHgRqEL6MAAAN","timestamp":"2025-04-30T16:49:28.712Z"}
+{"level":"info","message":"Client joined room: default-roles-traceflow","socketId":"-WGRjS3wHgRqEL6MAAAN","timestamp":"2025-04-30T16:49:28.713Z"}
+{"level":"info","message":"User superadmin@example.com joined room: super admin","socketId":"-WGRjS3wHgRqEL6MAAAN","timestamp":"2025-04-30T16:49:28.717Z"}
+{"level":"info","message":"Client joined room: super admin","socketId":"-WGRjS3wHgRqEL6MAAAN","timestamp":"2025-04-30T16:49:28.718Z"}
+{"isWebSocket":false,"level":"info","message":"Authentication successful for user: superadmin@example.com","roles":"default-roles-traceflow, offline_access, Super Admin, uma_authorization","timestamp":"2025-04-30T16:49:28.733Z","userID":"user_6nki0x8pi"}
+{"level":"info","message":"Fetched notifications for user: user_6nki0x8pi, IP: 192.168.0.117","timestamp":"2025-04-30T16:49:28.737Z"}
+{"isWebSocket":false,"level":"info","message":"Authentication successful for user: superadmin@example.com","roles":"default-roles-traceflow, offline_access, Super Admin, uma_authorization","timestamp":"2025-04-30T16:49:33.350Z","userID":"user_6nki0x8pi"}
+{"level":"info","message":"Super Admin bypass for user user_6nki0x8pi","timestamp":"2025-04-30T16:49:33.351Z"}
+{"level":"info","message":"Fetched all roles by user user_6nki0x8pi, IP: 192.168.0.117","timestamp":"2025-04-30T16:49:33.378Z"}
+{"isWebSocket":false,"level":"info","message":"Authentication successful for user: superadmin@example.com","roles":"default-roles-traceflow, offline_access, Super Admin, uma_authorization","timestamp":"2025-04-30T16:49:34.476Z","userID":"user_6nki0x8pi"}
+{"level":"info","message":"Super Admin bypass for user user_6nki0x8pi","timestamp":"2025-04-30T16:49:34.477Z"}
+{"level":"info","message":"Fetched notification rules by user: user_6nki0x8pi, IP: 192.168.0.117","timestamp":"2025-04-30T16:49:34.495Z"}
+{"isWebSocket":false,"level":"info","message":"Authentication successful for user: superadmin@example.com","roles":"default-roles-traceflow, offline_access, Super Admin, uma_authorization","timestamp":"2025-04-30T16:49:34.569Z","userID":"user_6nki0x8pi"}
+{"level":"info","message":"Super Admin bypass for user user_6nki0x8pi","timestamp":"2025-04-30T16:49:34.570Z"}
+{"level":"info","message":"Fetched notification rules by user: user_6nki0x8pi, IP: 192.168.0.117","timestamp":"2025-04-30T16:49:34.574Z"}
+{"level":"info","message":"User disconnected: superadmin@example.com","reason":"transport close","socketId":"-WGRjS3wHgRqEL6MAAAN","timestamp":"2025-04-30T16:52:48.749Z"}
+{"level":"info","message":"Client disconnected","socketId":"-WGRjS3wHgRqEL6MAAAN","timestamp":"2025-04-30T16:52:48.758Z"}

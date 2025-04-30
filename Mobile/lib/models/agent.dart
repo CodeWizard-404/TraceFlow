@@ -3,20 +3,16 @@ class Agent {
   final String agentID;
   final String name;
   final String lastname;
-  final String? cin;
   final String? email;
   final String? phone;
-  final String? wallet;
   final String location;
 
   Agent({
     required this.agentID,
     required this.name,
     required this.lastname,
-    this.cin,
     this.email,
     this.phone,
-    this.wallet,
     required this.location,
   });
 
@@ -26,10 +22,8 @@ class Agent {
       agentID: json['agentID'],
       name: json['name'],
       lastname: json['lastname'],
-      cin: json['cin'],
       email: json['email'],
       phone: json['phone'],
-      wallet: json['wallet'],
       location: json['location'],
     );
   }
@@ -40,10 +34,8 @@ class Agent {
       'agentID': agentID,
       'name': name,
       'lastname': lastname,
-      'cin': cin,
       'email': email,
       'phone': phone,
-      'wallet': wallet,
       'location': location,
     };
   }

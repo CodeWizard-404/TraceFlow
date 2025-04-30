@@ -63,7 +63,6 @@ const InfoPopup = lazy(() => import("../InfoPopup"));
 // Constants
 const ITEMS_PER_PAGE = 10;
 const PHONE_REGEX = /^\d{8}$/;
-const WALLET_REGEX = /^[a-zA-Z0-9]{10,50}$/;
 const EMAIL_REGEX = /^[^\s@]+@[^\s@]+\.[^\s@]+$/;
 
 // Interfaces
@@ -88,7 +87,6 @@ interface FormErrors {
   lastname: string;
   email: string;
   phone: string;
-  wallet: string;
   password: string;
   passwordConfirm: string;
 }
@@ -98,7 +96,6 @@ interface TouchedFields {
   lastname: boolean;
   email: boolean;
   phone: boolean;
-  wallet: boolean;
   password: boolean;
   passwordConfirm: boolean;
 }
@@ -346,13 +343,11 @@ const UserView: React.FC<UserViewProps> = ({
   const [loadingAssignments, setLoadingAssignments] = useState(false);
   const [rolePermissions, setRolePermissions] = useState<Permission[]>([]);
   const [rawPhone, setRawPhone] = useState("");
-  const [rawWallet, setRawWallet] = useState("");
   const [formErrors, setFormErrors] = useState<FormErrors>({
     firstname: "",
     lastname: "",
     email: "",
     phone: "",
-    wallet: "",
     password: "",
     passwordConfirm: "",
   });
@@ -361,7 +356,6 @@ const UserView: React.FC<UserViewProps> = ({
     lastname: false,
     email: false,
     phone: false,
-    wallet: false,
     password: false,
     passwordConfirm: false,
   });
@@ -644,12 +638,6 @@ const UserView: React.FC<UserViewProps> = ({
     return "";
   }, []);
 
-  const validateWallet = useCallback((value: string): string => {
-    if (!value) return "";
-    if (!WALLET_REGEX.test(value))
-      return "Wallet must be 10–50 alphanumeric characters.";
-    return "";
-  }, []);
 
   const validatePassword = useCallback((value: string): string => {
     if (!value) return "";
@@ -675,23 +663,11 @@ const UserView: React.FC<UserViewProps> = ({
     return formatted;
   }, []);
 
-  const formatWalletDisplay = useCallback((rawValue: string): string => {
-    const digits = rawValue.replace(/[^\d]/g, "");
-    let formatted = "";
-    if (digits.length > 0) formatted += digits.slice(0, 4);
-    if (digits.length > 4) formatted += "-" + digits.slice(4, 8);
-    if (digits.length > 8) formatted += "-" + digits.slice(8, 12);
-    if (digits.length > 12) formatted += "-" + digits.slice(12, 16);
-    return formatted;
-  }, []);
 
   const stripPhoneForDatabase = useCallback((raw: string): string => {
     return raw.replace(/[^\d]/g, "");
   }, []);
 
-  const stripWalletForDatabase = useCallback((formatted: string): string => {
-    return formatted.replace(/[^\d]/g, "");
-  }, []);
 
   // Handlers
   const handleEditUser = useCallback(() => {
@@ -702,12 +678,10 @@ const UserView: React.FC<UserViewProps> = ({
       lastname: selectedUser.lastname,
       email: selectedUser.email,
       phone: selectedUser.phone,
-      wallet: selectedUser.wallet,
       password: "",
       passwordConfirm: "",
     });
     setRawPhone(selectedUser.phone || "");
-    setRawWallet(selectedUser.wallet || "");
   }, [selectedUser, userPermissions.canUpdateUsers]);
 
   const handlePhoneChange = useCallback(
@@ -720,30 +694,17 @@ const UserView: React.FC<UserViewProps> = ({
     [stripPhoneForDatabase, validatePhone]
   );
 
-  const handleWalletChange = useCallback(
-    (e: React.ChangeEvent<HTMLInputElement>) => {
-      const raw = e.target.value.replace(/[^\d]/g, "").slice(0, 16);
-      setRawWallet(raw);
-      setEditedUser((prev) => ({
-        ...prev,
-        wallet: stripWalletForDatabase(raw),
-      }));
-      setFormErrors((prev) => ({ ...prev, wallet: validateWallet(raw) }));
-    },
-    [stripWalletForDatabase, validateWallet]
-  );
+
 
   const handleSaveUserEdit = useCallback(async () => {
     if (!selectedUser || !userPermissions.canUpdateUsers || !isEditingUser)
       return;
     const phoneValue = rawPhone || selectedUser.phone;
-    const walletValue = rawWallet || editedUser.wallet || selectedUser.wallet;
     const errors: FormErrors = {
       firstname: validateName(editedUser.firstname || "", "First name"),
       lastname: validateName(editedUser.lastname || "", "Last name"),
       email: validateEmail(editedUser.email || ""),
       phone: validatePhone(phoneValue),
-      wallet: validateWallet(walletValue || ""),
       password: validatePassword(editedUser.password || ""),
       passwordConfirm: validatePasswordConfirm(
         editedUser.password || "",
@@ -756,7 +717,6 @@ const UserView: React.FC<UserViewProps> = ({
       lastname: true,
       email: true,
       phone: true,
-      wallet: true,
       password: true,
       passwordConfirm: true,
     });
@@ -770,7 +730,6 @@ const UserView: React.FC<UserViewProps> = ({
         lastname: editedUser.lastname!.trim(),
         email: editedUser.email!.trim(),
         phone: stripPhoneForDatabase(phoneValue),
-        wallet: stripWalletForDatabase(walletValue || ""),
       };
       if (editedUser.password) updatePayload.password = editedUser.password;
       const updatedUser = await updateUser(selectedUser.userID, updatePayload);
@@ -785,7 +744,6 @@ const UserView: React.FC<UserViewProps> = ({
         lastname: "",
         email: "",
         phone: "",
-        wallet: "",
         password: "",
         passwordConfirm: "",
       });
@@ -794,12 +752,10 @@ const UserView: React.FC<UserViewProps> = ({
         lastname: false,
         email: false,
         phone: false,
-        wallet: false,
         password: false,
         passwordConfirm: false,
       });
       setRawPhone("");
-      setRawWallet("");
     } catch (error) {
       let errorMessage =
         error instanceof Error ? error.message : "Failed to update user.";
@@ -820,14 +776,11 @@ const UserView: React.FC<UserViewProps> = ({
     isEditingUser,
     editedUser,
     rawPhone,
-    rawWallet,
     users,
     stripPhoneForDatabase,
-    stripWalletForDatabase,
     validateName,
     validateEmail,
     validatePhone,
-    validateWallet,
     validatePassword,
     validatePasswordConfirm,
     setUsers,
@@ -843,7 +796,6 @@ const UserView: React.FC<UserViewProps> = ({
       lastname: "",
       email: "",
       phone: "",
-      wallet: "",
       password: "",
       passwordConfirm: "",
     });
@@ -852,12 +804,10 @@ const UserView: React.FC<UserViewProps> = ({
       lastname: false,
       email: false,
       phone: false,
-      wallet: false,
       password: false,
       passwordConfirm: false,
     });
     setRawPhone("");
-    setRawWallet("");
   }, []);
 
   const handleDeleteUser = useCallback(async () => {
@@ -1124,10 +1074,10 @@ const UserView: React.FC<UserViewProps> = ({
         toAddOrUpdate.map((o) =>
           o.overrideID.startsWith("temp_")
             ? addPermissionOverride(selectedUser.userID, {
-                roleID: o.roleID,
-                permissionID: o.permissionID,
-                action: o.action,
-              })
+              roleID: o.roleID,
+              permissionID: o.permissionID,
+              action: o.action,
+            })
             : Promise.resolve()
         )
       );
@@ -1214,15 +1164,13 @@ const UserView: React.FC<UserViewProps> = ({
                 >
                   {className} ({perms.length})
                   <FaAngleDown
-                    className={`toggle-icon ${
-                      expandedClasses.has(className) ? "expanded" : ""
-                    }`}
+                    className={`toggle-icon ${expandedClasses.has(className) ? "expanded" : ""
+                      }`}
                   />
                 </button>
                 <ul
-                  className={`permission-list ${
-                    expandedClasses.has(className) ? "expanded" : ""
-                  }`}
+                  className={`permission-list ${expandedClasses.has(className) ? "expanded" : ""
+                    }`}
                 >
                   {perms.map((perm) => (
                     <li key={perm.permissionID}>{perm.name}</li>
@@ -1296,11 +1244,10 @@ const UserView: React.FC<UserViewProps> = ({
                     setTouched((prev) => ({ ...prev, firstname: true }));
                   }}
                   placeholder="Enter first name"
-                  className={`user-edit-input ${
-                    touched.firstname && formErrors.firstname
+                  className={`user-edit-input ${touched.firstname && formErrors.firstname
                       ? "invalid-vibrate"
                       : ""
-                  }`}
+                    }`}
                   required
                 />
                 {formErrors.firstname && touched.firstname && (
@@ -1325,11 +1272,10 @@ const UserView: React.FC<UserViewProps> = ({
                     setTouched((prev) => ({ ...prev, lastname: true }));
                   }}
                   placeholder="Enter last name"
-                  className={`user-edit-input ${
-                    touched.lastname && formErrors.lastname
+                  className={`user-edit-input ${touched.lastname && formErrors.lastname
                       ? "invalid-vibrate"
                       : ""
-                  }`}
+                    }`}
                   required
                 />
                 {formErrors.lastname && touched.lastname && (
@@ -1354,9 +1300,8 @@ const UserView: React.FC<UserViewProps> = ({
                     setTouched((prev) => ({ ...prev, email: true }));
                   }}
                   placeholder="Enter email"
-                  className={`user-edit-input ${
-                    touched.email && formErrors.email ? "invalid-vibrate" : ""
-                  }`}
+                  className={`user-edit-input ${touched.email && formErrors.email ? "invalid-vibrate" : ""
+                    }`}
                   required
                 />
                 {formErrors.email && touched.email && (
@@ -1371,31 +1316,13 @@ const UserView: React.FC<UserViewProps> = ({
                   value={formatPhoneDisplay(rawPhone)}
                   onChange={handlePhoneChange}
                   placeholder="XX XXX XXX"
-                  className={`user-edit-input ${
-                    touched.phone && formErrors.phone ? "invalid-vibrate" : ""
-                  }`}
+                  className={`user-edit-input ${touched.phone && formErrors.phone ? "invalid-vibrate" : ""
+                    }`}
                   required
                   maxLength={10}
                 />
                 {formErrors.phone && touched.phone && (
                   <span className="error-text">{formErrors.phone}</span>
-                )}
-              </div>
-              <div className="form-group">
-                <label htmlFor="wallet">Wallet Address</label>
-                <input
-                  id="wallet"
-                  type="text"
-                  value={formatWalletDisplay(rawWallet)}
-                  onChange={handleWalletChange}
-                  placeholder="XXXX-XXXX-XXXX-XXXX"
-                  className={`user-edit-input ${
-                    touched.wallet && formErrors.wallet ? "invalid-vibrate" : ""
-                  }`}
-                  maxLength={19}
-                />
-                {formErrors.wallet && touched.wallet && (
-                  <span className="error-text">{formErrors.wallet}</span>
                 )}
               </div>
               <div className="form-group">
@@ -1420,11 +1347,10 @@ const UserView: React.FC<UserViewProps> = ({
                     setTouched((prev) => ({ ...prev, password: true }));
                   }}
                   placeholder="Enter new password"
-                  className={`user-edit-input ${
-                    touched.password && formErrors.password
+                  className={`user-edit-input ${touched.password && formErrors.password
                       ? "invalid-vibrate"
                       : ""
-                  }`}
+                    }`}
                 />
                 {formErrors.password && touched.password && (
                   <span className="error-text">{formErrors.password}</span>
@@ -1453,11 +1379,10 @@ const UserView: React.FC<UserViewProps> = ({
                     setTouched((prev) => ({ ...prev, passwordConfirm: true }));
                   }}
                   placeholder="Confirm new password"
-                  className={`user-edit-input ${
-                    touched.passwordConfirm && formErrors.passwordConfirm
+                  className={`user-edit-input ${touched.passwordConfirm && formErrors.passwordConfirm
                       ? "invalid-vibrate"
                       : ""
-                  }`}
+                    }`}
                 />
                 {formErrors.passwordConfirm && touched.passwordConfirm && (
                   <span className="error-text">
@@ -1509,10 +1434,6 @@ const UserView: React.FC<UserViewProps> = ({
               <strong>Phone:</strong>{" "}
               {`+216 ${formatPhoneDisplay(selectedUser.phone || "N/A")}`}
             </p>
-            <p>
-              <strong>Wallet:</strong>{" "}
-              {formatWalletDisplay(selectedUser.wallet || "") || "N/A"}
-            </p>
           </div>
         </div>
       )}
@@ -1525,9 +1446,8 @@ const UserView: React.FC<UserViewProps> = ({
             >
               <h3>Role Management</h3>
               <FaAngleDown
-                className={`dropdown-icon ${
-                  expandedSection === "roles" ? "expanded" : ""
-                }`}
+                className={`dropdown-icon ${expandedSection === "roles" ? "expanded" : ""
+                  }`}
               />
             </div>
             {expandedSection === "roles" &&
@@ -1539,15 +1459,14 @@ const UserView: React.FC<UserViewProps> = ({
                     {roles.map((role) => (
                       <div key={role.roleID} className="role-toggle-container">
                         <button
-                          className={`role-toggle-button ${
-                            tempRoles.some((r) => r.roleID === role.roleID)
+                          className={`role-toggle-button ${tempRoles.some((r) => r.roleID === role.roleID)
                               ? "active"
                               : ""
-                          }`}
+                            }`}
                           onClick={() => handleToggleRole(role)}
                           disabled={
                             role.name ===
-                              import.meta.env.VITE_ROLES_SUPER_ADMIN ||
+                            import.meta.env.VITE_ROLES_SUPER_ADMIN ||
                             (selectedUser.userID === currentUser?.userID &&
                               role.name === import.meta.env.VITE_ROLES_ADMIN &&
                               !isSuperAdmin &&
@@ -1581,9 +1500,8 @@ const UserView: React.FC<UserViewProps> = ({
             >
               <h3>Permission Overrides</h3>
               <FaAngleDown
-                className={`dropdown-icon ${
-                  expandedSection === "permissions" ? "expanded" : ""
-                }`}
+                className={`dropdown-icon ${expandedSection === "permissions" ? "expanded" : ""
+                  }`}
               />
             </div>
             {expandedSection === "permissions" &&
@@ -1658,15 +1576,14 @@ const UserView: React.FC<UserViewProps> = ({
                                     className="permission-item"
                                   >
                                     <button
-                                      className={`permission-button ${
-                                        (
+                                      className={`permission-button ${(
                                           hasOverride
                                             ? overrideAction === "grant"
                                             : isEffective
                                         )
                                           ? "assigned"
                                           : ""
-                                      }`}
+                                        }`}
                                     >
                                       {perm.name}
                                       <FaInfoCircle
@@ -1756,9 +1673,8 @@ const UserView: React.FC<UserViewProps> = ({
               >
                 <h3>Assignments</h3>
                 <FaAngleDown
-                  className={`dropdown-icon ${
-                    expandedSection === "assignments" ? "expanded" : ""
-                  }`}
+                  className={`dropdown-icon ${expandedSection === "assignments" ? "expanded" : ""
+                    }`}
                 />
               </div>
               {expandedSection === "assignments" &&

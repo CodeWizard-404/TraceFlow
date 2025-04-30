@@ -9,7 +9,6 @@ const SUPER_ADMIN_CONFIG = {
     firstname: 'Super',
     lastname: 'Admin',
     phone: '00000000',
-    wallet: '0000-0000-0000-0000',
     roleName: 'Super Admin',
 };
 
@@ -40,7 +39,7 @@ async function getClientUUID(token) {
     return client.id;
 }
 
-async function createOrUpdateKeycloakUser(token, email, password, firstname, lastname, phone, wallet) {
+async function createOrUpdateKeycloakUser(token, email, password, firstname, lastname, phone) {
     const userCheck = await axios.get(
         `${KEYCLOAK_URL}/admin/realms/${REALM}/users?email=${email}`,
         { headers: { Authorization: `Bearer ${token}` } }
@@ -63,7 +62,7 @@ async function createOrUpdateKeycloakUser(token, email, password, firstname, las
                 firstName: firstname,
                 lastName: lastname,
                 enabled: true,
-                attributes: { phone, wallet },
+                attributes: { phone },
                 credentials: [{ type: 'password', value: password, temporary: false }],
             },
             { headers: { Authorization: `Bearer ${token}` } }
@@ -121,7 +120,6 @@ async function seedSuperAdmin() {
             SUPER_ADMIN_CONFIG.firstname,
             SUPER_ADMIN_CONFIG.lastname,
             SUPER_ADMIN_CONFIG.phone,
-            SUPER_ADMIN_CONFIG.wallet
         );
 
         // Seed Super Admin role in local DB
@@ -157,7 +155,6 @@ async function seedSuperAdmin() {
                 firstname: SUPER_ADMIN_CONFIG.firstname,
                 lastname: SUPER_ADMIN_CONFIG.lastname,
                 phone: SUPER_ADMIN_CONFIG.phone,
-                wallet: SUPER_ADMIN_CONFIG.wallet,
                 keycloakId: keycloakId,
             },
         });

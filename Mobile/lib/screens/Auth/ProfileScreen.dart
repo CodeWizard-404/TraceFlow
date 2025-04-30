@@ -30,13 +30,13 @@ class ProfileScreen extends StatefulWidget {
   ProfileScreenState createState() => ProfileScreenState();
 }
 
-class ProfileScreenState extends State<ProfileScreen> with SingleTickerProviderStateMixin {
+class ProfileScreenState extends State<ProfileScreen>
+    with SingleTickerProviderStateMixin {
   late TabController _tabController;
   late TextEditingController _firstnameController;
   late TextEditingController _lastnameController;
   late TextEditingController _emailController;
   late TextEditingController _phoneController;
-  late TextEditingController _walletController;
   late TextEditingController _newPasswordController;
   late TextEditingController _confirmPasswordController;
   String? _profilePicBase64;
@@ -55,7 +55,6 @@ class ProfileScreenState extends State<ProfileScreen> with SingleTickerProviderS
     _lastnameController = TextEditingController();
     _emailController = TextEditingController();
     _phoneController = TextEditingController();
-    _walletController = TextEditingController();
     _newPasswordController = TextEditingController();
     _confirmPasswordController = TextEditingController();
 
@@ -71,7 +70,6 @@ class ProfileScreenState extends State<ProfileScreen> with SingleTickerProviderS
     _lastnameController.dispose();
     _emailController.dispose();
     _phoneController.dispose();
-    _walletController.dispose();
     _newPasswordController.dispose();
     _confirmPasswordController.dispose();
     super.dispose();
@@ -91,7 +89,6 @@ class ProfileScreenState extends State<ProfileScreen> with SingleTickerProviderS
           _lastnameController.text = user.lastName ?? '';
           _emailController.text = user.email ?? '';
           _phoneController.text = user.phone ?? '';
-          _walletController.text = user.wallet ?? '';
           _profilePicBase64 = user.pfp;
           _isLoading = false;
         });
@@ -103,7 +100,8 @@ class ProfileScreenState extends State<ProfileScreen> with SingleTickerProviderS
         _isLoading = false;
       });
       if (kDebugMode) print(_errorMessage);
-      if (_errorMessage!.contains('Invalid or expired token') || _errorMessage!.contains('401')) {
+      if (_errorMessage!.contains('Invalid or expired token') ||
+          _errorMessage!.contains('401')) {
         await authProvider.logout();
         _redirectToLogin();
       }
@@ -115,15 +113,14 @@ class ProfileScreenState extends State<ProfileScreen> with SingleTickerProviderS
     final authProvider = Provider.of<AuthProvider>(context, listen: false);
     if (kDebugMode) print('Updating profile field: $field');
     final updates = {
-      field: field == 'phone'
-          ? _phoneController.text.replaceAll(RegExp(r'[^\d]'), '')
-          : field == 'wallet'
-          ? _walletController.text.replaceAll(RegExp(r'[^\d]'), '')
-          : (field == 'firstname'
-          ? _firstnameController.text
-          : field == 'lastname'
-          ? _lastnameController.text
-          : _emailController.text),
+      field:
+          field == 'phone'
+              ? _phoneController.text.replaceAll(RegExp(r'[^\d]'), '')
+              : (field == 'firstname'
+                  ? _firstnameController.text
+                  : field == 'lastname'
+                  ? _lastnameController.text
+                  : _emailController.text),
     };
 
     setState(() => _isLoading = true);
@@ -144,7 +141,8 @@ class ProfileScreenState extends State<ProfileScreen> with SingleTickerProviderS
         _updateMessage = 'Failed to update profile: $e';
       });
       if (kDebugMode) print(_updateMessage);
-      if (_updateMessage!.contains('Invalid or expired token') || _updateMessage!.contains('401')) {
+      if (_updateMessage!.contains('Invalid or expired token') ||
+          _updateMessage!.contains('401')) {
         await authProvider.logout();
         _redirectToLogin();
       }
@@ -157,7 +155,8 @@ class ProfileScreenState extends State<ProfileScreen> with SingleTickerProviderS
     if (pickedFile != null) {
       final bytes = await pickedFile.readAsBytes();
       String? mimeType = lookupMimeType(pickedFile.path, headerBytes: bytes);
-      if (mimeType == null || !['image/jpeg', 'image/jpg', 'image/png'].contains(mimeType)) {
+      if (mimeType == null ||
+          !['image/jpeg', 'image/jpg', 'image/png'].contains(mimeType)) {
         mimeType = 'image/jpeg';
       }
       final multipartFile = http.MultipartFile.fromBytes(
@@ -187,7 +186,8 @@ class ProfileScreenState extends State<ProfileScreen> with SingleTickerProviderS
           _updateMessage = 'Failed to update profile picture: $e';
         });
         if (kDebugMode) print(_updateMessage);
-        if (_updateMessage!.contains('Invalid or expired token') || _updateMessage!.contains('401')) {
+        if (_updateMessage!.contains('Invalid or expired token') ||
+            _updateMessage!.contains('401')) {
           await authProvider.logout();
           _redirectToLogin();
         }
@@ -225,7 +225,8 @@ class ProfileScreenState extends State<ProfileScreen> with SingleTickerProviderS
         _updateMessage = 'Failed to update password: $e';
       });
       if (kDebugMode) print(_updateMessage);
-      if (_updateMessage!.contains('Invalid or expired token') || _updateMessage!.contains('401')) {
+      if (_updateMessage!.contains('Invalid or expired token') ||
+          _updateMessage!.contains('401')) {
         await authProvider.logout();
         _redirectToLogin();
       }
@@ -238,7 +239,7 @@ class ProfileScreenState extends State<ProfileScreen> with SingleTickerProviderS
         Navigator.pushAndRemoveUntil(
           context,
           MaterialPageRoute(builder: (_) => const LoginScreen()),
-              (route) => false,
+          (route) => false,
         );
       }
     });
@@ -250,7 +251,8 @@ class ProfileScreenState extends State<ProfileScreen> with SingleTickerProviderS
     if (trimmed.isEmpty) return '$field is required';
     if (trimmed.length < 3) return '$field must be at least 3 characters';
     if (trimmed.length > 20) return '$field must be 20 characters or less';
-    if (!RegExp(r"^[a-zA-Z\s'-]+$").hasMatch(trimmed)) return '$field can only contain letters, spaces, hyphens, or apostrophes';
+    if (!RegExp(r"^[a-zA-Z\s'-]+$").hasMatch(trimmed))
+      return '$field can only contain letters, spaces, hyphens, or apostrophes';
     return '';
   }
 
@@ -258,7 +260,8 @@ class ProfileScreenState extends State<ProfileScreen> with SingleTickerProviderS
     final trimmed = value.trim();
     if (trimmed.isEmpty) return 'Email is required';
     if (trimmed.length > 70) return 'Email must be 70 characters or less';
-    if (!RegExp(r'^[^\s@]+@[^\s@]+\.[^\s@]+$').hasMatch(trimmed)) return 'Invalid email format';
+    if (!RegExp(r'^[^\s@]+@[^\s@]+\.[^\s@]+$').hasMatch(trimmed))
+      return 'Invalid email format';
     return '';
   }
 
@@ -269,24 +272,24 @@ class ProfileScreenState extends State<ProfileScreen> with SingleTickerProviderS
     return '';
   }
 
-  String _validateWallet(String value) {
-    final digits = value.replaceAll(RegExp(r'[^\d]'), '');
-    if (digits.isNotEmpty && digits.length != 16) return 'Wallet must be exactly 16 digits';
-    return '';
-  }
-
   String _validatePassword(String value) {
-    if (value.isNotEmpty && value.length < 8) return 'Password must be at least 8 characters';
+    if (value.isNotEmpty && value.length < 8)
+      return 'Password must be at least 8 characters';
     if (value.length > 128) return 'Password must be 128 characters or less';
-    if (value.isNotEmpty && !RegExp(r'^(?=.*[a-z])(?=.*[A-Z])(?=.*\d)(?=.*[!@#$%^&*])[^\s]+$').hasMatch(value)) {
+    if (value.isNotEmpty &&
+        !RegExp(
+          r'^(?=.*[a-z])(?=.*[A-Z])(?=.*\d)(?=.*[!@#$%^&*])[^\s]+$',
+        ).hasMatch(value)) {
       return 'Password must include uppercase, lowercase, digit, and special character, no spaces';
     }
     return '';
   }
 
   String _validatePasswordConfirm(String password, String confirm) {
-    if (password.isNotEmpty && confirm.isEmpty) return 'Password confirmation is required';
-    if (password.isNotEmpty && confirm.isNotEmpty && password != confirm) return 'Passwords do not match';
+    if (password.isNotEmpty && confirm.isEmpty)
+      return 'Password confirmation is required';
+    if (password.isNotEmpty && confirm.isNotEmpty && password != confirm)
+      return 'Passwords do not match';
     return '';
   }
 
@@ -294,19 +297,14 @@ class ProfileScreenState extends State<ProfileScreen> with SingleTickerProviderS
   String _formatPhoneDisplay(String rawValue) {
     final digits = rawValue.replaceAll(RegExp(r'[^\d]'), '');
     String formatted = '';
-    if (digits.isNotEmpty) formatted += digits.substring(0, digits.length > 2 ? 2 : digits.length);
-    if (digits.length > 2) formatted += ' ' + digits.substring(2, digits.length > 5 ? 5 : digits.length);
-    if (digits.length > 5) formatted += ' ' + digits.substring(5, digits.length > 8 ? 8 : digits.length);
-    return formatted;
-  }
-
-  String _formatWalletDisplay(String rawValue) {
-    final digits = rawValue.replaceAll(RegExp(r'[^\d]'), '');
-    String formatted = '';
-    if (digits.isNotEmpty) formatted += digits.substring(0, digits.length > 4 ? 4 : digits.length);
-    if (digits.length > 4) formatted += '-' + digits.substring(4, digits.length > 8 ? 8 : digits.length);
-    if (digits.length > 8) formatted += '-' + digits.substring(8, digits.length > 12 ? 12 : digits.length);
-    if (digits.length > 12) formatted += '-' + digits.substring(12, digits.length > 16 ? 16 : digits.length);
+    if (digits.isNotEmpty)
+      formatted += digits.substring(0, digits.length > 2 ? 2 : digits.length);
+    if (digits.length > 2)
+      formatted +=
+          ' ' + digits.substring(2, digits.length > 5 ? 5 : digits.length);
+    if (digits.length > 5)
+      formatted +=
+          ' ' + digits.substring(5, digits.length > 8 ? 8 : digits.length);
     return formatted;
   }
 
@@ -320,24 +318,29 @@ class ProfileScreenState extends State<ProfileScreen> with SingleTickerProviderS
 
   void _checkForChanges(String field, String value) {
     final userProvider = Provider.of<UserProvider>(context, listen: false);
-    final originalValue = field == 'firstname'
-        ? userProvider.currentUser?.firstName
-        : field == 'lastname'
-        ? userProvider.currentUser?.lastName
-        : field == 'email'
-        ? userProvider.currentUser?.email
-        : field == 'phone'
-        ? userProvider.currentUser?.phone
-        : userProvider.currentUser?.wallet;
+    final originalValue =
+        field == 'firstname'
+            ? userProvider.currentUser?.firstName
+            : field == 'lastname'
+            ? userProvider.currentUser?.lastName
+            : field == 'email'
+            ? userProvider.currentUser?.email
+            : field == 'phone'
+            ? userProvider.currentUser?.phone
+            : null;
     if (value != originalValue) {
       setState(() => _hasChanges = true);
-      _formErrors[field] = field == 'firstname' || field == 'lastname'
-          ? _validateName(value, field == 'firstname' ? 'First Name' : 'Last Name')
-          : field == 'email'
-          ? _validateEmail(value)
-          : field == 'phone'
-          ? _validatePhone(value)
-          : _validateWallet(value);
+      _formErrors[field] =
+          field == 'firstname' || field == 'lastname'
+              ? _validateName(
+                value,
+                field == 'firstname' ? 'First Name' : 'Last Name',
+              )
+              : field == 'email'
+              ? _validateEmail(value)
+              : field == 'phone'
+              ? _validatePhone(value)
+              : '';
     } else {
       setState(() => _hasChanges = false);
     }
@@ -346,11 +349,14 @@ class ProfileScreenState extends State<ProfileScreen> with SingleTickerProviderS
   void _resetField(String field) {
     final userProvider = Provider.of<UserProvider>(context, listen: false);
     setState(() {
-      if (field == 'firstname') _firstnameController.text = userProvider.currentUser?.firstName ?? '';
-      if (field == 'lastname') _lastnameController.text = userProvider.currentUser?.lastName ?? '';
-      if (field == 'email') _emailController.text = userProvider.currentUser?.email ?? '';
-      if (field == 'phone') _phoneController.text = userProvider.currentUser?.phone ?? '';
-      if (field == 'wallet') _walletController.text = userProvider.currentUser?.wallet ?? '';
+      if (field == 'firstname')
+        _firstnameController.text = userProvider.currentUser?.firstName ?? '';
+      if (field == 'lastname')
+        _lastnameController.text = userProvider.currentUser?.lastName ?? '';
+      if (field == 'email')
+        _emailController.text = userProvider.currentUser?.email ?? '';
+      if (field == 'phone')
+        _phoneController.text = userProvider.currentUser?.phone ?? '';
       _editingField = null;
       _hasChanges = false;
       _formErrors.clear();
@@ -369,20 +375,23 @@ class ProfileScreenState extends State<ProfileScreen> with SingleTickerProviderS
       // Changes detected, show confirmation dialog
       final shouldSave = await showDialog<bool>(
         context: context,
-        builder: (context) => AlertDialog(
-          title: const Text('Save Changes?'),
-          content: const Text('You have unsaved changes. Would you like to save them?'),
-          actions: [
-            TextButton(
-              onPressed: () => Navigator.pop(context, false), // Cancel
-              child: const Text('Cancel'),
+        builder:
+            (context) => AlertDialog(
+              title: const Text('Save Changes?'),
+              content: const Text(
+                'You have unsaved changes. Would you like to save them?',
+              ),
+              actions: [
+                TextButton(
+                  onPressed: () => Navigator.pop(context, false), // Cancel
+                  child: const Text('Cancel'),
+                ),
+                TextButton(
+                  onPressed: () => Navigator.pop(context, true), // Save
+                  child: const Text('Save'),
+                ),
+              ],
             ),
-            TextButton(
-              onPressed: () => Navigator.pop(context, true), // Save
-              child: const Text('Save'),
-            ),
-          ],
-        ),
       );
 
       if (shouldSave == true) {
@@ -413,7 +422,10 @@ class ProfileScreenState extends State<ProfileScreen> with SingleTickerProviderS
           CustomSnackBar.show(
             context: context,
             message: _updateMessage!,
-            backgroundColor: _updateMessage!.contains('successfully') ? theme.colorScheme.primary : theme.colorScheme.error,
+            backgroundColor:
+                _updateMessage!.contains('successfully')
+                    ? theme.colorScheme.primary
+                    : theme.colorScheme.error,
           );
           setState(() => _updateMessage = null);
         }
@@ -435,7 +447,9 @@ class ProfileScreenState extends State<ProfileScreen> with SingleTickerProviderS
 
     if (_isLoading) {
       return Scaffold(
-        body: Center(child: CircularProgressIndicator(color: theme.colorScheme.primary)),
+        body: Center(
+          child: CircularProgressIndicator(color: theme.colorScheme.primary),
+        ),
       );
     }
 
@@ -444,7 +458,9 @@ class ProfileScreenState extends State<ProfileScreen> with SingleTickerProviderS
         body: Center(
           child: Text(
             'Failed to load profile.',
-            style: theme.textTheme.bodyMedium?.copyWith(color: theme.colorScheme.error),
+            style: theme.textTheme.bodyMedium?.copyWith(
+              color: theme.colorScheme.error,
+            ),
           ),
         ),
       );
@@ -465,9 +481,7 @@ class ProfileScreenState extends State<ProfileScreen> with SingleTickerProviderS
               SliverToBoxAdapter(
                 child: _buildProfileHeader(theme, userProvider),
               ),
-              SliverToBoxAdapter(
-                child: _buildTabBar(theme),
-              ),
+              SliverToBoxAdapter(child: _buildTabBar(theme)),
               SliverFillRemaining(
                 child: TabBarView(
                   controller: _tabController,
@@ -494,42 +508,55 @@ class ProfileScreenState extends State<ProfileScreen> with SingleTickerProviderS
             alignment: Alignment.center,
             children: [
               GestureDetector(
-                onTap: _profilePicBase64 != null
-                    ? () {
-                  // Show full-screen image preview
-                  showDialog(
-                    context: context,
-                    builder: (context) => Dialog(
-                      backgroundColor: Colors.transparent,
-                      insetPadding: const EdgeInsets.all(0),
-                      child: GestureDetector(
-                        onTap: () => Navigator.pop(context), // Close on tap
-                        child: SizedBox(
-                          width: double.infinity,
-                          height: double.infinity,
-                          child: InteractiveViewer(
-                            panEnabled: true,
-                            scaleEnabled: true,
-                            minScale: 0.5,
-                            maxScale: 4.0,
-                            child: Image.memory(
-                              base64Decode(_profilePicBase64!),
-                              fit: BoxFit.contain,
-                            ),
-                          ),
-                        ),
-                      ),
-                    ),
-                  );
-                }
-                    : null, // Do nothing if no profile picture
+                onTap:
+                    _profilePicBase64 != null
+                        ? () {
+                          // Show full-screen image preview
+                          showDialog(
+                            context: context,
+                            builder:
+                                (context) => Dialog(
+                                  backgroundColor: Colors.transparent,
+                                  insetPadding: const EdgeInsets.all(0),
+                                  child: GestureDetector(
+                                    onTap:
+                                        () => Navigator.pop(
+                                          context,
+                                        ), // Close on tap
+                                    child: SizedBox(
+                                      width: double.infinity,
+                                      height: double.infinity,
+                                      child: InteractiveViewer(
+                                        panEnabled: true,
+                                        scaleEnabled: true,
+                                        minScale: 0.5,
+                                        maxScale: 4.0,
+                                        child: Image.memory(
+                                          base64Decode(_profilePicBase64!),
+                                          fit: BoxFit.contain,
+                                        ),
+                                      ),
+                                    ),
+                                  ),
+                                ),
+                          );
+                        }
+                        : null, // Do nothing if no profile picture
                 child: CircleAvatar(
                   radius: 50,
-                  backgroundImage: _profilePicBase64 != null ? MemoryImage(base64Decode(_profilePicBase64!)) : null,
+                  backgroundImage:
+                      _profilePicBase64 != null
+                          ? MemoryImage(base64Decode(_profilePicBase64!))
+                          : null,
                   backgroundColor: theme.colorScheme.surface,
-                  child: _profilePicBase64 == null
-                      ? Icon(Icons.person, size: 50, color: theme.colorScheme.onSurface.withOpacity(0.6))
-                      : null,
+                  child:
+                      _profilePicBase64 == null
+                          ? Icon(
+                            Icons.person,
+                            size: 50,
+                            color: theme.colorScheme.onSurface.withOpacity(0.6),
+                          )
+                          : null,
                 ),
               ),
               Positioned(
@@ -556,12 +583,16 @@ class ProfileScreenState extends State<ProfileScreen> with SingleTickerProviderS
           const CustomSpacer(height: 12),
           Text(
             '${userProvider.currentUser!.firstName} ${userProvider.currentUser!.lastName}',
-            style: theme.textTheme.headlineSmall?.copyWith(fontWeight: FontWeight.bold),
+            style: theme.textTheme.headlineSmall?.copyWith(
+              fontWeight: FontWeight.bold,
+            ),
           ),
           const CustomSpacer(height: 4),
           Text(
             'User ID: ${userProvider.currentUser!.userID}',
-            style: theme.textTheme.bodyMedium?.copyWith(color: theme.colorScheme.secondary),
+            style: theme.textTheme.bodyMedium?.copyWith(
+              color: theme.colorScheme.secondary,
+            ),
           ),
           const CustomSpacer(height: 8),
           CustomDivider(color: theme.dividerColor.withOpacity(0.5)),
@@ -579,7 +610,9 @@ class ProfileScreenState extends State<ProfileScreen> with SingleTickerProviderS
         indicatorColor: theme.colorScheme.primary,
         labelColor: theme.colorScheme.primary,
         unselectedLabelColor: theme.colorScheme.onSurface.withOpacity(0.6),
-        labelStyle: theme.textTheme.bodyMedium?.copyWith(fontWeight: FontWeight.w600),
+        labelStyle: theme.textTheme.bodyMedium?.copyWith(
+          fontWeight: FontWeight.w600,
+        ),
         tabs: const [
           Tab(icon: Icon(Icons.person), text: 'Info'),
           Tab(icon: Icon(Icons.settings), text: 'Settings'),
@@ -591,7 +624,8 @@ class ProfileScreenState extends State<ProfileScreen> with SingleTickerProviderS
 
   Widget _buildInfoTab(ThemeData theme, UserProvider userProvider) {
     return SingleChildScrollView(
-      physics: const AlwaysScrollableScrollPhysics(), // Ensure scrollable for RefreshIndicator
+      physics:
+          const AlwaysScrollableScrollPhysics(), // Ensure scrollable for RefreshIndicator
       padding: const EdgeInsets.all(16),
       child: CustomCard(
         title: 'Profile Information',
@@ -603,7 +637,10 @@ class ProfileScreenState extends State<ProfileScreen> with SingleTickerProviderS
               label: 'First Name',
               field: 'firstname',
               controller: _firstnameController,
-              displayValue: _firstnameController.text.isEmpty ? 'Not set' : _firstnameController.text,
+              displayValue:
+                  _firstnameController.text.isEmpty
+                      ? 'Not set'
+                      : _firstnameController.text,
               icon: Icons.person_outline,
             ),
             const CustomDivider(thickness: 0.5),
@@ -611,7 +648,10 @@ class ProfileScreenState extends State<ProfileScreen> with SingleTickerProviderS
               label: 'Last Name',
               field: 'lastname',
               controller: _lastnameController,
-              displayValue: _lastnameController.text.isEmpty ? 'Not set' : _lastnameController.text,
+              displayValue:
+                  _lastnameController.text.isEmpty
+                      ? 'Not set'
+                      : _lastnameController.text,
               icon: Icons.person_outline,
             ),
             const CustomDivider(thickness: 0.5),
@@ -619,7 +659,10 @@ class ProfileScreenState extends State<ProfileScreen> with SingleTickerProviderS
               label: 'Email',
               field: 'email',
               controller: _emailController,
-              displayValue: _emailController.text.isEmpty ? 'Not set' : _emailController.text,
+              displayValue:
+                  _emailController.text.isEmpty
+                      ? 'Not set'
+                      : _emailController.text,
               icon: Icons.email_outlined,
               keyboardType: TextInputType.emailAddress,
             ),
@@ -628,24 +671,19 @@ class ProfileScreenState extends State<ProfileScreen> with SingleTickerProviderS
               label: 'Phone',
               field: 'phone',
               controller: _phoneController,
-              displayValue: _phoneController.text.isEmpty ? 'Not set' : '+216 ${_formatPhoneDisplay(_phoneController.text)}',
+              displayValue:
+                  _phoneController.text.isEmpty
+                      ? 'Not set'
+                      : '+216 ${_formatPhoneDisplay(_phoneController.text)}',
               icon: Icons.phone_outlined,
               keyboardType: TextInputType.phone,
               maxLength: 8,
-              onChanged: (value) => _checkForChanges('phone', value.replaceAll(RegExp(r'[^\d]'), '')),
+              onChanged:
+                  (value) => _checkForChanges(
+                    'phone',
+                    value.replaceAll(RegExp(r'[^\d]'), ''),
+                  ),
               inputFormat: (value) => _formatPhoneDisplay(value),
-            ),
-            const CustomDivider(thickness: 0.5),
-            _buildEditableField(
-              label: 'Wallet',
-              field: 'wallet',
-              controller: _walletController,
-              displayValue: _walletController.text.isEmpty ? 'Not linked' : _formatWalletDisplay(_walletController.text),
-              icon: Icons.account_balance_wallet_outlined,
-              keyboardType: TextInputType.number,
-              maxLength: 16,
-              onChanged: (value) => _checkForChanges('wallet', value.replaceAll(RegExp(r'[^\d]'), '')),
-              inputFormat: (value) => _formatWalletDisplay(value),
             ),
             if (_hasChanges) ...[
               const CustomSpacer(height: 24),
@@ -661,7 +699,10 @@ class ProfileScreenState extends State<ProfileScreen> with SingleTickerProviderS
                   CustomButton(
                     label: 'Save',
                     icon: Icons.save,
-                    onPressed: _formErrors[_editingField]?.isEmpty ?? true ? () => _updateProfile(_editingField!) : () {},
+                    onPressed:
+                        _formErrors[_editingField]?.isEmpty ?? true
+                            ? () => _updateProfile(_editingField!)
+                            : () {},
                     isLoading: _isLoading,
                   ),
                 ],
@@ -699,11 +740,7 @@ class ProfileScreenState extends State<ProfileScreen> with SingleTickerProviderS
                 color: theme.colorScheme.primary.withOpacity(0.1),
                 borderRadius: BorderRadius.circular(8),
               ),
-              child: Icon(
-                icon,
-                size: 24,
-                color: theme.colorScheme.primary,
-              ),
+              child: Icon(icon, size: 24, color: theme.colorScheme.primary),
             ),
             const CustomSpacer(width: 12),
             Expanded(
@@ -721,32 +758,36 @@ class ProfileScreenState extends State<ProfileScreen> with SingleTickerProviderS
                   const CustomSpacer(height: 4),
                   _editingField == field
                       ? CustomTextField(
-                    controller: controller,
-                    label: label,
-                    keyboardType: keyboardType,
-                    maxLength: inputFormat == null ? maxLength : null,
-                    onChanged: (value) {
-                      if (onChanged != null) {
-                        onChanged(value);
-                      } else {
-                        _checkForChanges(field, value);
-                      }
-                    },
-                    inputFormatters: inputFormat != null
-                        ? [
-                      FilteringTextInputFormatter.digitsOnly,
-                      CustomFormatter(inputFormat, maxLength: maxLength),
-                    ]
-                        : null,
-                    autofocus: true,
-                  )
+                        controller: controller,
+                        label: label,
+                        keyboardType: keyboardType,
+                        maxLength: inputFormat == null ? maxLength : null,
+                        onChanged: (value) {
+                          if (onChanged != null) {
+                            onChanged(value);
+                          } else {
+                            _checkForChanges(field, value);
+                          }
+                        },
+                        inputFormatters:
+                            inputFormat != null
+                                ? [
+                                  FilteringTextInputFormatter.digitsOnly,
+                                  CustomFormatter(
+                                    inputFormat,
+                                    maxLength: maxLength,
+                                  ),
+                                ]
+                                : null,
+                        autofocus: true,
+                      )
                       : Text(
-                    displayValue,
-                    style: theme.textTheme.bodyMedium?.copyWith(
-                      color: theme.colorScheme.onSurface,
-                      fontSize: 16,
-                    ),
-                  ),
+                        displayValue,
+                        style: theme.textTheme.bodyMedium?.copyWith(
+                          color: theme.colorScheme.onSurface,
+                          fontSize: 16,
+                        ),
+                      ),
                   if (_formErrors[field]?.isNotEmpty ?? false)
                     Padding(
                       padding: const EdgeInsets.only(top: 8),
@@ -784,7 +825,10 @@ class ProfileScreenState extends State<ProfileScreen> with SingleTickerProviderS
               obscureText: true,
               onChanged: (value) {
                 _formErrors['newPassword'] = _validatePassword(value);
-                _formErrors['confirmPassword'] = _validatePasswordConfirm(value, _confirmPasswordController.text);
+                _formErrors['confirmPassword'] = _validatePasswordConfirm(
+                  value,
+                  _confirmPasswordController.text,
+                );
                 setState(() {});
               },
             ),
@@ -793,7 +837,9 @@ class ProfileScreenState extends State<ProfileScreen> with SingleTickerProviderS
                 padding: const EdgeInsets.only(top: 8),
                 child: Text(
                   _formErrors['newPassword']!,
-                  style: theme.textTheme.bodySmall?.copyWith(color: theme.colorScheme.error),
+                  style: theme.textTheme.bodySmall?.copyWith(
+                    color: theme.colorScheme.error,
+                  ),
                 ),
               ),
             const CustomSpacer(height: 16),
@@ -802,7 +848,10 @@ class ProfileScreenState extends State<ProfileScreen> with SingleTickerProviderS
               label: 'Confirm Password',
               obscureText: true,
               onChanged: (value) {
-                _formErrors['confirmPassword'] = _validatePasswordConfirm(_newPasswordController.text, value);
+                _formErrors['confirmPassword'] = _validatePasswordConfirm(
+                  _newPasswordController.text,
+                  value,
+                );
                 setState(() {});
               },
             ),
@@ -811,13 +860,18 @@ class ProfileScreenState extends State<ProfileScreen> with SingleTickerProviderS
                 padding: const EdgeInsets.only(top: 8),
                 child: Text(
                   _formErrors['confirmPassword']!,
-                  style: theme.textTheme.bodySmall?.copyWith(color: theme.colorScheme.error),
+                  style: theme.textTheme.bodySmall?.copyWith(
+                    color: theme.colorScheme.error,
+                  ),
                 ),
               ),
             const CustomSpacer(height: 24),
             CustomButton(
               label: 'Update Password',
-              onPressed: _formErrors.values.every((e) => e.isEmpty) ? _updatePassword : () {},
+              onPressed:
+                  _formErrors.values.every((e) => e.isEmpty)
+                      ? _updatePassword
+                      : () {},
             ),
           ],
         ),
@@ -835,7 +889,8 @@ class ProfileScreenState extends State<ProfileScreen> with SingleTickerProviderS
           children: [
             CustomListTile(
               title: 'Visit Logged',
-              subtitle: 'April 07, 2025 - 10:45\nAgent: John Doe | Location: Tunis',
+              subtitle:
+                  'April 07, 2025 - 10:45\nAgent: John Doe | Location: Tunis',
               leadingIcon: Icons.history,
               onTap: () {},
             ),
@@ -849,14 +904,16 @@ class ProfileScreenState extends State<ProfileScreen> with SingleTickerProviderS
             const CustomDivider(),
             CustomListTile(
               title: 'Carnet Distributed',
-              subtitle: 'April 05, 2025 - 09:15\nCarnet ID: #CRN12345 | Agent: Amina K.',
+              subtitle:
+                  'April 05, 2025 - 09:15\nCarnet ID: #CRN12345 | Agent: Amina K.',
               leadingIcon: Icons.credit_card,
               onTap: () {},
             ),
             const CustomDivider(),
             CustomListTile(
               title: 'Souche Collected',
-              subtitle: 'April 04, 2025 - 14:00\nCarnet ID: #CRN12345 | Status: Validated',
+              subtitle:
+                  'April 04, 2025 - 14:00\nCarnet ID: #CRN12345 | Status: Validated',
               leadingIcon: Icons.check_circle,
               onTap: () {},
             ),

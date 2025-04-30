@@ -70,7 +70,6 @@ class AuthService {
                     firstname: 'Unknown',
                     lastname: 'User',
                     phone: 'N/A',
-                    wallet: `wallet_${nanoid()}`,
                     password: 'KEYCLOAK_MANAGED',
                 });
             } else if (!user.keycloakId) {

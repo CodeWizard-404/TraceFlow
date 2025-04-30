@@ -83,15 +83,7 @@ const UserAddSkeleton: React.FC = () => (
         </div>
       </div>
     </div>
-    {/* Wallet Section */}
-    <div className="form-section">
-      <hr />
-      <div className="custom-skeleton pulsing" style={{ width: "150px", height: "24px", marginBottom: "16px" }} />
-      <div className="form-group">
-        <div className="custom-skeleton pulsing" style={{ width: "80px", height: "16px", marginBottom: "8px" }} />
-        <div className="custom-skeleton pulsing" style={{ width: "100%", height: "32px" }} />
-      </div>
-    </div>
+
     {/* Role Assignment Section */}
     <div className="form-section">
       <hr />
@@ -130,13 +122,11 @@ const UserAdd: React.FC<UserAddProps> = ({
     string[]
   >([]);
   const [rawPhone, setRawPhone] = useState("");
-  const [rawWallet, setRawWallet] = useState("");
   const [userFormErrors, setUserFormErrors] = useState({
     firstname: "",
     lastname: "",
     email: "",
     phone: "",
-    wallet: "",
     password: "",
     passwordConfirm: "",
   });
@@ -145,7 +135,6 @@ const UserAdd: React.FC<UserAddProps> = ({
     lastname: false,
     email: false,
     phone: false,
-    wallet: false,
     password: false,
     passwordConfirm: false,
   });
@@ -193,7 +182,6 @@ const UserAdd: React.FC<UserAddProps> = ({
       lastname: validateName(newUser.lastname || "", "Last Name"),
       email: validateEmail(newUser.email || ""),
       phone: validatePhone(rawPhone),
-      wallet: validateWallet(rawWallet, true),
       password: validatePassword(newUser.password || "", true),
       passwordConfirm: validatePasswordConfirm(
         newUser.password || "",
@@ -216,7 +204,6 @@ const UserAdd: React.FC<UserAddProps> = ({
         firstname: newUser.firstname!.trim(),
         lastname: newUser.lastname!.trim(),
         phone: stripPhoneForDatabase(rawPhone),
-        wallet: stripWalletForDatabase(rawWallet),
       });
 
       if (
@@ -280,13 +267,6 @@ const UserAdd: React.FC<UserAddProps> = ({
     return "";
   };
 
-  const validateWallet = (value: string, isNewUser: boolean): string => {
-    const digits = value.replace(/[^\d]/g, "");
-    if (!digits && isNewUser) return "Wallet is required";
-    if (digits && digits.length !== 16)
-      return "Wallet must be exactly 16 digits";
-    return "";
-  };
 
   const validatePassword = (value: string, isNewUser: boolean): string => {
     if (!value && isNewUser) return "Password is required";
@@ -324,23 +304,12 @@ const UserAdd: React.FC<UserAddProps> = ({
     return formatted;
   };
 
-  const formatWalletDisplay = (rawValue: string): string => {
-    const digits = rawValue.replace(/[^\d]/g, "");
-    let formatted = "";
-    if (digits.length > 0) formatted += digits.slice(0, 4);
-    if (digits.length > 4) formatted += "-" + digits.slice(4, 8);
-    if (digits.length > 8) formatted += "-" + digits.slice(8, 12);
-    if (digits.length > 12) formatted += "-" + digits.slice(12, 16);
-    return formatted;
-  };
+
 
   const stripPhoneForDatabase = (raw: string): string => {
     return raw.replace(/[^\d]/g, "");
   };
 
-  const stripWalletForDatabase = (formatted: string): string => {
-    return formatted.replace(/[^\d]/g, "");
-  };
 
   const handlePhoneChange = (e: React.ChangeEvent<HTMLInputElement>) => {
     const raw = e.target.value.replace(/[^\d]/g, "").slice(0, 8);
@@ -349,25 +318,18 @@ const UserAdd: React.FC<UserAddProps> = ({
     setUserFormErrors({ ...userFormErrors, phone: validatePhone(raw) });
   };
 
-  const handleWalletChange = (e: React.ChangeEvent<HTMLInputElement>) => {
-    const raw = e.target.value.replace(/[^\d]/g, "").slice(0, 16);
-    setRawWallet(raw);
-    setNewUser({ ...newUser, wallet: stripWalletForDatabase(raw) });
-    setUserFormErrors({ ...userFormErrors, wallet: validateWallet(raw, true) });
-  };
+
 
   // Reset Form
   const resetFormStates = () => {
     setNewUser({});
     setRawPhone("");
-    setRawWallet("");
     setPasswordConfirm("");
     setUserFormErrors({
       firstname: "",
       lastname: "",
       email: "",
       phone: "",
-      wallet: "",
       password: "",
       passwordConfirm: "",
     });
@@ -376,7 +338,6 @@ const UserAdd: React.FC<UserAddProps> = ({
       lastname: false,
       email: false,
       phone: false,
-      wallet: false,
       password: false,
       passwordConfirm: false,
     });
@@ -643,28 +604,6 @@ const UserAdd: React.FC<UserAddProps> = ({
         </div>
         <div className="form-section">
           <hr />
-          <h3>Wallet</h3>
-          <div className="form-group">
-            <label>Wallet *</label>
-            <input
-              type="text"
-              value={formatWalletDisplay(rawWallet)}
-              onChange={handleWalletChange}
-              onBlur={() => markUserTouched("wallet")}
-              placeholder="XXXX-XXXX-XXXX-XXXX"
-              className={`user-edit-input ${userTouched.wallet ? "touched" : ""
-                } ${userTouched.wallet && userFormErrors.wallet
-                  ? "invalid-vibrate"
-                  : ""
-                }`}
-              required
-              maxLength={19}
-              disabled={loading}
-            />
-            {userFormErrors.wallet && userTouched.wallet && (
-              <span className="error-text">{userFormErrors.wallet}</span>
-            )}
-          </div>
         </div>
         {userPermissions.canAssignRoles && (
           <div className="form-section">

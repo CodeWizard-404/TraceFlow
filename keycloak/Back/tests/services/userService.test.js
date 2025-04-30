@@ -29,7 +29,6 @@ describe('UserService', () => {
                 firstname: 'John',
                 lastname: 'Doe',
                 phone: '1234567890',
-                wallet: 100
             };
             const hashedPassword = 'hashedPassword123';
 
@@ -48,7 +47,6 @@ describe('UserService', () => {
                 userData.firstname,
                 userData.lastname,
                 userData.phone,
-                userData.wallet
             );
 
             const user = result.get(); // Extract plain data

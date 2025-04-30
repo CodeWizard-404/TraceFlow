@@ -190,7 +190,6 @@ const UsersList: React.FC<UsersListProps> = React.memo(
                     phone: data.phone,
                     Roles: data.Roles || [],
                     password: "",
-                    wallet: data.wallet,
                   };
                   const matchesSearch =
                     !internalSearchQuery ||

@@ -105,10 +105,9 @@ export const createUser = async (data: {
   firstname: string;
   lastname: string;
   phone: string;
-  wallet: string;
 }): Promise<CreateUserResponse> => {
   try {
-    if (!data.email || !data.password || !data.firstname || !data.lastname || !data.phone || !data.wallet) {
+    if (!data.email || !data.password || !data.firstname || !data.lastname || !data.phone) {
       throw new Error("All fields are required.");
     }
     const response = await api.post<CreateUserResponse>("/users", data);

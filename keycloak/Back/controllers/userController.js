@@ -171,12 +171,12 @@ class UserController {
      */
     static async createUser(req, res) {
         try {
-            const { email, password, firstname, lastname, phone, wallet } = req.body;
-            if (!email || !password || !firstname || !lastname || !phone || !wallet) {
+            const { email, password, firstname, lastname, phone } = req.body;
+            if (!email || !password || !firstname || !lastname || !phone) {
                 logger.warn(`Create user failed: Missing fields, user: ${req.user.userID}, IP: ${req.ip}`);
                 return res.status(400).json({ error: 'All fields are required' });
             }
-            const user = await UserService.createUser(email, password, firstname, lastname, phone, wallet, req.user.userID);
+            const user = await UserService.createUser(email, password, firstname, lastname, phone, req.user.userID);
             // Notify managers and supervisors of new user
             await NotificationService.triggerNotification({
                 event: 'user:created',

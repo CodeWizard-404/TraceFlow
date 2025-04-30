@@ -14,13 +14,11 @@ const ERROR_MESSAGES = {
     MISSING_FIELDS: 'Please fill in all required fields.',
     INVALID_EMAIL: 'Please enter a valid email address.',
     INVALID_PHONE: 'Phone number must be 8–12 digits.',
-    INVALID_WALLET: 'Please enter a valid wallet address.',
     INVALID_PASSWORD: 'Password must be at least 6 characters.',
     INVALID_NAME: 'Names must be 2–50 characters and contain only letters.',
     INVALID_ID: 'Invalid user ID',
     DUPLICATE_EMAIL: 'This email is already in use.',
     DUPLICATE_PHONE: 'This phone number is already in use.',
-    DUPLICATE_WALLET: 'This wallet is already in use.',
     USER_NOT_FOUND: 'User not found.',
     ROLE_NOT_FOUND: 'Role not found.',
     NO_USERS_FOUND: 'No users found.',
@@ -64,7 +62,7 @@ class UserService {
         }
     }
 
-    static validateInput({ email, phone, wallet, password, firstname, lastname, userID, role, supervisorIDs }) {
+    static validateInput({ email, phone, password, firstname, lastname, userID, role, supervisorIDs }) {
         const errors = [];
 
         if (email !== undefined) {
@@ -76,12 +74,6 @@ class UserService {
         if (phone !== undefined) {
             if (!phone || !/^\d{8,11}$/.test(phone)) {
                 errors.push(ERROR_MESSAGES.INVALID_PHONE);
-            }
-        }
-
-        if (wallet !== undefined) {
-            if (!wallet || !/^[a-zA-Z0-9]{10,50}$/.test(wallet)) {
-                errors.push(ERROR_MESSAGES.INVALID_WALLET);
             }
         }
 
@@ -126,12 +118,12 @@ class UserService {
         }
     }
 
-    static async createUser(email, password, firstname, lastname, phone, wallet, actorID) {
-        if (!email || !password || !firstname || !lastname || !phone || !wallet) {
+    static async createUser(email, password, firstname, lastname, phone, actorID) {
+        if (!email || !password || !firstname || !lastname || !phone) {
             throw new Error(ERROR_MESSAGES.MISSING_FIELDS);
         }
 
-        this.validateInput({ email, phone, wallet, password, firstname, lastname });
+        this.validateInput({ email, phone, password, firstname, lastname });
 
         const token = await this.getAdminToken();
 
@@ -198,13 +190,12 @@ class UserService {
 
         // Check for duplicates in local DB
         const existingUser = await User.findOne({
-            where: { [Op.or]: [{ email }, { phone }, { wallet }, { googleEmail: email }] },
+            where: { [Op.or]: [{ email }, { phone }, { googleEmail: email }] },
         });
         if (existingUser) {
             const errors = [];
             if (existingUser.email === email) errors.push(ERROR_MESSAGES.DUPLICATE_EMAIL);
             if (existingUser.phone === phone) errors.push(ERROR_MESSAGES.DUPLICATE_PHONE);
-            if (existingUser.wallet === wallet) errors.push(ERROR_MESSAGES.DUPLICATE_WALLET);
             if (existingUser.googleEmail === email) errors.push(ERROR_MESSAGES.GOOGLE_EMAIL_ALREADY_LINKED);
             // Roll back Keycloak user creation if DB check fails
             await axios.delete(`${KEYCLOAK_URL}/admin/realms/${REALM}/users/${keycloakUserId}`, {
@@ -222,7 +213,6 @@ class UserService {
                 firstname,
                 lastname,
                 phone,
-                wallet,
                 password: 'KEYCLOAK_MANAGED',
                 googleEmail: email, // Store the same email as googleEmail
             });
@@ -246,7 +236,6 @@ class UserService {
             userID,
             email: userData.email,
             phone: userData.phone,
-            wallet: userData.wallet,
             password: userData.password,
             firstname: userData.firstname,
             lastname: userData.lastname,
@@ -261,14 +250,13 @@ class UserService {
         }
 
         // Check for duplicates in local DB
-        if (userData.email || userData.phone || userData.wallet) {
+        if (userData.email || userData.phone) {
             const existingUser = await User.findOne({
                 where: {
                     [Op.or]: [
                         userData.email ? { email: userData.email } : null,
                         userData.email ? { googleEmail: userData.email } : null,
                         userData.phone ? { phone: userData.phone } : null,
-                        userData.wallet ? { wallet: userData.wallet } : null,
                     ].filter(Boolean),
                     userID: { [Op.ne]: userID },
                 },
@@ -283,9 +271,6 @@ class UserService {
                 }
                 if (userData.phone && existingUser.phone === userData.phone) {
                     errors.push(ERROR_MESSAGES.DUPLICATE_PHONE);
-                }
-                if (userData.wallet && existingUser.wallet === userData.wallet) {
-                    errors.push(ERROR_MESSAGES.DUPLICATE_WALLET);
                 }
                 throw new Error(errors.join(' '));
             }
@@ -356,7 +341,6 @@ class UserService {
                 firstname: userData.firstname || user.firstname,
                 lastname: userData.lastname || user.lastname,
                 phone: userData.phone || user.phone,
-                wallet: userData.wallet || user.wallet,
                 googleEmail: userData.email || user.googleEmail || user.email,
                 PFP: userData.PFP === null ? null : (userData.PFP !== undefined ? userData.PFP : user.PFP),
             });
@@ -407,7 +391,7 @@ class UserService {
         try {
             const users = await User.findAll({
                 include: [{ model: Role, through: { attributes: [] }, attributes: ['name'] }],
-                attributes: ['userID', 'email', 'firstname', 'lastname', 'phone', 'wallet', 'googleEmail'],
+                attributes: ['userID', 'email', 'firstname', 'lastname', 'phone', 'googleEmail'],
             });
             if (!users.length) {
                 throw new Error(ERROR_MESSAGES.NO_USERS_FOUND);

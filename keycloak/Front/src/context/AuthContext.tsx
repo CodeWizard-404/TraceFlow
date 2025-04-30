@@ -358,7 +358,6 @@ const AuthProvider: React.FC<{ children: ReactNode }> = ({ children }) => {
                 phone: response.user.phone,
                 firstname: '',
                 lastname: '',
-                wallet: '',
                 password: '',
                 keycloakId: '',
                 Roles: (response.user.roles || []).map(role => ({

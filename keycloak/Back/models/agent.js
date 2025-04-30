@@ -8,11 +8,9 @@ module.exports = (sequelize, DataTypes) => {
             defaultValue: () => `agt_${nanoid()}`,
         },
         name: { type: DataTypes.STRING },
-        lastname: { type: DataTypes.STRING},
-        wallet: { type: DataTypes.STRING },
-        cin: { type: DataTypes.STRING, unique: true},
+        lastname: { type: DataTypes.STRING },
         email: { type: DataTypes.STRING, unique: true },
         phone: { type: DataTypes.STRING },
-        location: { type: DataTypes.STRING},
+        location: { type: DataTypes.STRING },
     });
 };

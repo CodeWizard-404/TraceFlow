@@ -43,7 +43,6 @@ async function migrateUser(token, user) {
             enabled: true,
             attributes: {
                 phone: user.phone || '', // Phone moved to attributes
-                wallet: user.wallet || ''
             },
             credentials: [{ type: 'password', value: tempPassword, temporary: true }],
         },

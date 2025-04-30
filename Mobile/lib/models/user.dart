@@ -7,7 +7,6 @@ class User {
   final String? lastName;
   final String? phone;
   final String? email;
-  final String? wallet;
   final String? pfp;
   final List<Role> roles;
   final String? token;
@@ -18,7 +17,6 @@ class User {
     this.lastName,
     this.phone,
     this.email,
-    this.wallet,
     this.pfp,
     this.roles = const [],
     this.token,
@@ -42,7 +40,6 @@ class User {
       lastName: json['lastname'] ?? json['family_name'] ?? '',
       phone: json['phone']?.toString(),
       email: json['email']?.toString(),
-      wallet: json['wallet']?.toString(),
       pfp: pfp,
       roles: roles,
       token: json['token']?.toString(),
@@ -56,7 +53,6 @@ class User {
     'lastname': lastName,
     'phone': phone,
     'email': email,
-    'wallet': wallet,
     'pfp': pfp,
     'roles': roles.map((role) => role.toJson()).toList(),
     'token': token,

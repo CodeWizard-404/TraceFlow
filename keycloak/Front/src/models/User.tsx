@@ -8,7 +8,6 @@ interface User {
     phone: string;
     email: string;
     password: string;
-    wallet: string;
     googleEmail?: string;
     PFP?: string | null;
     tempResetToken?: string;

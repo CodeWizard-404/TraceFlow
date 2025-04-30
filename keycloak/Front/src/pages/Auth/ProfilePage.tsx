@@ -5,6 +5,7 @@
  * Includes skeleton loader and fade-in animation for performance and UX.
  * Uses existing ProfilePage.css for styling.
  * Hardened to handle persistent backend PFP serialization issues.
+ * Updated to include sorting by Type in notification preferences.
  */
 
 import React, {
@@ -34,7 +35,6 @@ import {
   FaUser,
   FaEnvelope,
   FaPhone,
-  FaWallet,
   FaCamera,
   FaCog,
   FaHistory,
@@ -48,7 +48,7 @@ import {
   FaTimes,
   FaFilter,
   FaSort,
-  FaTrash, // Added for remove profile picture icon
+  FaTrash,
 } from "react-icons/fa";
 
 // Skeleton component
@@ -136,7 +136,7 @@ const ProfilePage: React.FC = React.memo(() => {
   const [failedUploadCount, setFailedUploadCount] = useState(0);
   const [isUploadDisabled, setIsUploadDisabled] = useState(false);
   const [loading, setLoading] = useState(true);
-  const [showProfilePicPopup, setShowProfilePicPopup] = useState(false); // New state for popup
+  const [showProfilePicPopup, setShowProfilePicPopup] = useState(false);
 
   // Notification-specific states
   const [notificationView, setNotificationView] = useState<"list" | "preferences">("list");
@@ -149,21 +149,27 @@ const ProfilePage: React.FC = React.memo(() => {
   const [filterTypes, setFilterTypes] = useState<string[]>([]);
   const [filterEvents, setFilterEvents] = useState<string[]>([]);
   const [filterStatuses, setFilterStatuses] = useState<string[]>([]);
+  const [startDate, setStartDate] = useState<string>("");
+  const [endDate, setEndDate] = useState<string>("");
   const [sortBy, setSortBy] = useState<"createdAt" | "type" | "message">("createdAt");
   const [sortOrder, setSortOrder] = useState<"asc" | "desc">("desc");
   const [isLoadingNotifications, setIsLoadingNotifications] = useState(false);
   const [notificationError, setNotificationError] = useState<string | null>(null);
   // Preferences filtering and sorting
   const [prefFilterType, setPrefFilterType] = useState<string>("");
-  const [prefSortBy, setPrefSortBy] = useState<"event" | "none">("none");
+  // Updated prefSortBy to include 'type'
+  const [prefSortBy, setPrefSortBy] = useState<"none" | "event" | "type">("none");
   const [prefSortOrder, setPrefSortOrder] = useState<"asc" | "desc">("asc");
   // Filter panel toggles
   const [showTypeFilter, setShowTypeFilter] = useState(false);
   const [showEventFilter, setShowEventFilter] = useState(false);
   const [showStatusFilter, setShowStatusFilter] = useState(false);
+  const [showDateFilter, setShowDateFilter] = useState(false);
   const [showSortPanel, setShowSortPanel] = useState(false);
+  const [showPrefTypeFilter, setShowPrefTypeFilter] = useState(false);
+  const [showPrefSortPanel, setShowPrefSortPanel] = useState(false);
 
-  // Compute unique event actions (e.g., 'created', 'updated')
+  // Compute unique event actions
   const availableEventActions = useMemo(() => {
     const actions = new Set<string>();
     availableEvents.forEach((event) => {
@@ -214,12 +220,6 @@ const ProfilePage: React.FC = React.memo(() => {
     return "";
   }, []);
 
-  const validateWallet = useCallback((value: string): string => {
-    const digits = value.replace(/[^\d]/g, "");
-    if (digits && digits.length !== 16)
-      return "Wallet must be exactly 16 digits";
-    return "";
-  }, []);
 
   const validatePassword = useCallback((value: string): string => {
     if (value && value.length < 8)
@@ -254,23 +254,12 @@ const ProfilePage: React.FC = React.memo(() => {
     return formatted;
   }, []);
 
-  const formatWalletDisplay = useCallback((rawValue: string): string => {
-    const digits = rawValue.replace(/[^\d]/g, "");
-    let formatted = "";
-    if (digits.length > 0) formatted += digits.slice(0, 4);
-    if (digits.length > 4) formatted += "-" + digits.slice(4, 8);
-    if (digits.length > 8) formatted += "-" + digits.slice(8, 12);
-    if (digits.length > 12) formatted += "-" + digits.slice(12, 16);
-    return formatted;
-  }, []);
+
 
   const stripPhoneForDatabase = useCallback((raw: string): string => {
     return raw.replace(/[^\d]/g, "");
   }, []);
 
-  const stripWalletForDatabase = useCallback((formatted: string): string => {
-    return formatted.replace(/[^\d]/g, "");
-  }, []);
 
   // Memoized formatted values
   const formattedPhone = useMemo(
@@ -278,10 +267,6 @@ const ProfilePage: React.FC = React.memo(() => {
     [profileData?.phone, formatPhoneDisplay]
   );
 
-  const formattedWallet = useMemo(
-    () => (profileData?.wallet ? formatWalletDisplay(profileData.wallet) : ""),
-    [profileData?.wallet, formatWalletDisplay]
-  );
 
   // Load last valid PFP from localStorage
   const loadLastValidPFP = useCallback(() => {
@@ -349,7 +334,6 @@ const ProfilePage: React.FC = React.memo(() => {
           lastname: fullUser.lastname || user.lastname || "",
           phone: fullUser.phone || user.phone || "",
           email: fullUser.email || user.email || "",
-          wallet: fullUser.wallet || user.wallet || "",
           PFP: fullUser.PFP || user.PFP || null,
           password: "",
         };
@@ -411,7 +395,6 @@ const ProfilePage: React.FC = React.memo(() => {
             lastname: user.lastname || "Not set",
             phone: user.phone || "",
             email: user.email || "",
-            wallet: user.wallet || "",
             PFP: null,
             password: "",
           };
@@ -469,7 +452,6 @@ const ProfilePage: React.FC = React.memo(() => {
                 lastname: updatedUser.lastname || user.lastname || "",
                 phone: updatedUser.phone || user.phone || "",
                 email: updatedUser.email || user.email || "",
-                wallet: updatedUser.wallet || user.wallet || "",
                 PFP: updatedUser.PFP || user.PFP || null,
                 password: "",
               };
@@ -555,24 +537,7 @@ const ProfilePage: React.FC = React.memo(() => {
     [debouncedHandlePhoneChange]
   );
 
-  const debouncedHandleWalletChange = useMemo(
-    () =>
-      debounce((value: string) => {
-        const raw = value.replace(/[^\d]/g, "").slice(0, 16);
-        setProfileData((prev) =>
-          prev ? { ...prev, wallet: stripWalletForDatabase(raw) } : prev
-        );
-        setFormErrors((prev) => ({ ...prev, wallet: validateWallet(raw) }));
-      }, 300),
-    [validateWallet, stripWalletForDatabase]
-  );
 
-  const handleWalletChange = useCallback(
-    (e: React.ChangeEvent<HTMLInputElement>) => {
-      debouncedHandleWalletChange(e.target.value);
-    },
-    [debouncedHandleWalletChange]
-  );
 
   const debouncedHandleInputChange = useMemo(
     () =>
@@ -595,13 +560,10 @@ const ProfilePage: React.FC = React.memo(() => {
           case "phone":
             error = validatePhone(value);
             break;
-          case "wallet":
-            error = validateWallet(value);
-            break;
         }
         setFormErrors((prev) => ({ ...prev, [field]: error }));
       }, 300),
-    [validateName, validateEmail, validatePhone, validateWallet]
+    [validateName, validateEmail, validatePhone]
   );
 
   const handleInputChange = useCallback(
@@ -750,14 +712,14 @@ const ProfilePage: React.FC = React.memo(() => {
             };
             setProfileData(updatedUser);
             localStorage.setItem("user", JSON.stringify(updatedUser));
-            setShowProfilePicPopup(false); // Close popup after successful upload
+            setShowProfilePicPopup(false);
           };
           img.onerror = (error) => {
             console.error("New profile picture load error:", {
               error,
               imageSrcLength: imageSrc.length,
               mimeType,
-              pfpLengthxae: response.PFP!.length,
+              pfpLength: response.PFP!.length,
               pfpPreview: response.PFP!.substring(0, 50),
             });
             setFailedUploadCount((prev) => prev + 1);
@@ -787,7 +749,7 @@ const ProfilePage: React.FC = React.memo(() => {
           };
           setProfileData(updatedUser);
           localStorage.setItem("user", JSON.stringify(updatedUser));
-          setShowProfilePicPopup(false); // Close popup
+          setShowProfilePicPopup(false);
         }
       } catch (err) {
         console.error("Profile pic update error:", err);
@@ -816,7 +778,6 @@ const ProfilePage: React.FC = React.memo(() => {
     ]
   );
 
-  // New handler for removing profile picture
   const handleRemoveProfilePic = useCallback(async () => {
     if (isUploadDisabled) {
       setTempError("Profile picture actions are temporarily disabled due to repeated failures. Please contact support.");
@@ -837,7 +798,7 @@ const ProfilePage: React.FC = React.memo(() => {
       };
       setProfileData(updatedUser);
       localStorage.setItem("user", JSON.stringify(updatedUser));
-      setShowProfilePicPopup(false); // Close popup after removal
+      setShowProfilePicPopup(false);
     } catch (err) {
       console.error("Profile pic removal error:", err);
       setTempError(
@@ -938,11 +899,14 @@ const ProfilePage: React.FC = React.memo(() => {
     setFilterTypes([]);
     setFilterEvents([]);
     setFilterStatuses([]);
+    setStartDate("");
+    setEndDate("");
     setSortBy("createdAt");
     setSortOrder("desc");
     setShowTypeFilter(false);
     setShowEventFilter(false);
     setShowStatusFilter(false);
+    setShowDateFilter(false);
     setShowSortPanel(false);
   }, []);
 
@@ -987,7 +951,11 @@ const ProfilePage: React.FC = React.memo(() => {
           });
         const matchesStatus =
           filterStatuses.length === 0 || filterStatuses.includes(n.status);
-        return matchesSearch && matchesRead && matchesType && matchesEvent && matchesStatus;
+        const notificationDate = new Date(n.createdAt);
+        const matchesDate =
+          (!startDate || notificationDate >= new Date(startDate)) &&
+          (!endDate || notificationDate <= new Date(endDate));
+        return matchesSearch && matchesRead && matchesType && matchesEvent && matchesStatus && matchesDate;
       })
       .sort((a, b) => {
         let valueA: string | number;
@@ -1018,11 +986,13 @@ const ProfilePage: React.FC = React.memo(() => {
     filterTypes,
     filterEvents,
     filterStatuses,
+    startDate,
+    endDate,
     sortBy,
     sortOrder,
   ]);
 
-  // Group events by type and apply filters/sorting for preferences
+  // Filter and sort preferences (only enabled notifications)
   const groupedPreferences = useMemo(() => {
     const grouped: { [type: string]: { value: string; label: string }[] } = {};
     availableEvents.forEach((event) => {
@@ -1031,6 +1001,8 @@ const ProfilePage: React.FC = React.memo(() => {
       const type = notificationTypes.find((t) =>
         event.toLowerCase().includes(t.toLowerCase())
       ) || "General";
+      const isEnabled = notificationPrefs[event]?.email || notificationPrefs[event]?.sms || notificationPrefs[event]?.inApp;
+      if (!isEnabled) return;
       if (!grouped[type]) grouped[type] = [];
       grouped[type].push({
         value: event,
@@ -1038,7 +1010,7 @@ const ProfilePage: React.FC = React.memo(() => {
       });
     });
 
-    // Apply sorting within each group
+    // Sort events within each type
     Object.keys(grouped).forEach((type) => {
       if (prefSortBy === "event") {
         grouped[type].sort((a, b) => {
@@ -1051,13 +1023,29 @@ const ProfilePage: React.FC = React.memo(() => {
       }
     });
 
-    // Filter by type if selected
+    // Sort types if prefSortBy is 'type'
+    let sortedGrouped = grouped;
+    if (prefSortBy === "type") {
+      const sortedKeys = Object.keys(grouped).sort((a, b) => {
+        const valueA = a.toLowerCase();
+        const valueB = b.toLowerCase();
+        return prefSortOrder === "asc"
+          ? valueA.localeCompare(valueB)
+          : valueB.localeCompare(valueA);
+      });
+      sortedGrouped = {};
+      sortedKeys.forEach((key) => {
+        sortedGrouped[key] = grouped[key];
+      });
+    }
+
+    // Apply type filter
     const filteredGrouped = prefFilterType
       ? { [prefFilterType]: grouped[prefFilterType] || [] }
-      : grouped;
+      : sortedGrouped;
 
     return filteredGrouped;
-  }, [availableEvents, notificationTypes, prefFilterType, prefSortBy, prefSortOrder]);
+  }, [availableEvents, notificationTypes, notificationPrefs, prefFilterType, prefSortBy, prefSortOrder]);
 
   if (loading) {
     return <ProfilePageSkeleton />;
@@ -1167,7 +1155,6 @@ const ProfilePage: React.FC = React.memo(() => {
           </div>
         </header>
 
-        {/* Profile Picture Popup */}
         {showProfilePicPopup && profilePic && (
           <div className="profile-pic-popup">
             <div className="profile-pic-popup-content">
@@ -1281,33 +1268,6 @@ const ProfilePage: React.FC = React.memo(() => {
                       `+216 ${formattedPhone}`
                     ) : (
                       "Not set"
-                    )}
-                  </span>
-                </div>
-                <div className="info-item">
-                  <FaWallet />
-                  <label>Wallet</label>
-                  <span onDoubleClick={() => handleDoubleClick("wallet")}>
-                    {editingField === "wallet" ? (
-                      <div className="input-container">
-                        <input
-                          type="text"
-                          value={formattedWallet}
-                          onChange={handleWalletChange}
-                          onKeyDown={(e) => handleKeyDown(e, "wallet")}
-                          autoFocus
-                          className="edit-input"
-                          maxLength={19}
-                          placeholder="XXXX-XXXX-XXXX-XXXX"
-                        />
-                        {formErrors.wallet && (
-                          <span className="field-error">{formErrors.wallet}</span>
-                        )}
-                      </div>
-                    ) : formattedWallet ? (
-                      formattedWallet
-                    ) : (
-                      "Not linked"
                     )}
                   </span>
                 </div>
@@ -1508,6 +1468,7 @@ const ProfilePage: React.FC = React.memo(() => {
                           setShowTypeFilter(!showTypeFilter);
                           setShowEventFilter(false);
                           setShowStatusFilter(false);
+                          setShowDateFilter(false);
                           setShowSortPanel(false);
                         }}
                       >
@@ -1544,6 +1505,7 @@ const ProfilePage: React.FC = React.memo(() => {
                           setShowEventFilter(!showEventFilter);
                           setShowTypeFilter(false);
                           setShowStatusFilter(false);
+                          setShowDateFilter(false);
                           setShowSortPanel(false);
                         }}
                       >
@@ -1580,6 +1542,7 @@ const ProfilePage: React.FC = React.memo(() => {
                           setShowStatusFilter(!showStatusFilter);
                           setShowTypeFilter(false);
                           setShowEventFilter(false);
+                          setShowDateFilter(false);
                           setShowSortPanel(false);
                         }}
                       >
@@ -1611,12 +1574,45 @@ const ProfilePage: React.FC = React.memo(() => {
                     </div>
                     <div className="filter-section">
                       <button
+                        className={`filter-toggle ${showDateFilter ? "active" : ""}`}
+                        onClick={() => {
+                          setShowDateFilter(!showDateFilter);
+                          setShowTypeFilter(false);
+                          setShowEventFilter(false);
+                          setShowStatusFilter(false);
+                          setShowSortPanel(false);
+                        }}
+                      >
+                        <FaFilter /> Date Filter
+                      </button>
+                      {showDateFilter && (
+                        <div className="filter-content">
+                          <div className="filter-group">
+                            <label>Start Date</label>
+                            <input
+                              type="date"
+                              value={startDate}
+                              onChange={(e) => setStartDate(e.target.value)}
+                            />
+                            <label>End Date</label>
+                            <input
+                              type="date"
+                              value={endDate}
+                              onChange={(e) => setEndDate(e.target.value)}
+                            />
+                          </div>
+                        </div>
+                      )}
+                    </div>
+                    <div className="filter-section">
+                      <button
                         className={`filter-toggle ${showSortPanel ? "active" : ""}`}
                         onClick={() => {
                           setShowSortPanel(!showSortPanel);
                           setShowTypeFilter(false);
                           setShowEventFilter(false);
                           setShowStatusFilter(false);
+                          setShowDateFilter(false);
                         }}
                       >
                         <FaSort /> Sort
@@ -1695,112 +1691,161 @@ const ProfilePage: React.FC = React.memo(() => {
               )}
 
               {notificationView === "preferences" && (
-                <div className="notification-preferences">
-                  <div className="preferences-controls">
-                    <div className="filter-group">
-                      <label>Filter by Type</label>
-                      <div className="toggle-buttons">
-                        <button
-                          className={`toggle-btn ${prefFilterType === "" ? "active" : ""}`}
-                          onClick={() => setPrefFilterType("")}
-                        >
-                          All Types
-                        </button>
-                        {notificationTypes.map((type) => (
-                          <button
-                            key={type}
-                            className={`toggle-btn ${prefFilterType === type ? "active" : ""}`}
-                            onClick={() => setPrefFilterType(type)}
-                          >
-                            {type}
-                          </button>
-                        ))}
-                      </div>
-                    </div>
-                    <div className="filter-group">
-                      <label>Sort by</label>
-                      <div className="toggle-buttons">
-                        <button
-                          className={`toggle-btn ${prefSortBy === "none" ? "active" : ""}`}
-                          onClick={() => setPrefSortBy("none")}
-                        >
-                          Default
-                        </button>
-                        <button
-                          className={`toggle-btn ${prefSortBy === "event" && prefSortOrder === "asc" ? "active" : ""}`}
-                          onClick={() => {
-                            setPrefSortBy("event");
-                            setPrefSortOrder("asc");
-                          }}
-                        >
-                          Event (A-Z)
-                        </button>
-                        <button
-                          className={`toggle-btn ${prefSortBy === "event" && prefSortOrder === "desc" ? "active" : ""}`}
-                          onClick={() => {
-                            setPrefSortBy("event");
-                            setPrefSortOrder("desc");
-                          }}
-                        >
-                          Event (Z-A)
-                        </button>
-                      </div>
-                    </div>
-                  </div>
-                  {Object.entries(groupedPreferences).length === 0 ? (
-                    <p>No preferences available</p>
-                  ) : (
-                    Object.entries(groupedPreferences).map(([type, events]) => (
-                      <div key={type} className="preference-group">
-                        <h3>{type}</h3>
-                        <table className="preferences-table">
-                          <thead>
-                            <tr>
-                              <th>Event</th>
-                              <th>Email</th>
-                              <th>SMS</th>
-                              <th>In-App</th>
-                            </tr>
-                          </thead>
-                          <tbody>
-                            {events.map(({ value, label }) => (
-                              <tr key={value}>
-                                <td>{label}</td>
-                                <td>
-                                  <input
-                                    type="checkbox"
-                                    checked={notificationPrefs[value]?.email || false}
-                                    onChange={() => handlePreferenceChange(value, "email")}
-                                  />
-                                </td>
-                                <td>
-                                  <input
-                                    type="checkbox"
-                                    checked={notificationPrefs[value]?.sms || false}
-                                    onChange={() => handlePreferenceChange(value, "sms")}
-                                  />
-                                </td>
-                                <td>
-                                  <input
-                                    type="checkbox"
-                                    checked={notificationPrefs[value]?.inApp || false}
-                                    onChange={() => handlePreferenceChange(value, "inApp")}
-                                  />
-                                </td>
+                <div className="notification-preferences-wrapper">
+                  <div className="notification-preferences">
+                    {Object.entries(groupedPreferences).length === 0 ? (
+                      <p>No enabled notification preferences available</p>
+                    ) : (
+                      Object.entries(groupedPreferences).map(([type, events]) => (
+                        <div key={type} className="preference-group">
+                          <h3>{type}</h3>
+                          <table className="preferences-table">
+                            <thead>
+                              <tr>
+                                <th>Event</th>
+                                <th>Email</th>
+                                <th>SMS</th>
+                                <th>In-App</th>
                               </tr>
-                            ))}
-                          </tbody>
-                        </table>
-                      </div>
-                    ))
-                  )}
-                  <button
-                    onClick={handleSavePreferences}
-                    className="update-btn"
-                    disabled={isLoadingNotifications}
-                  >
-                    Save Preferences
-                  </button>
+                            </thead>
+                            <tbody>
+                              {events.map(({ value, label }) => (
+                                <tr key={value}>
+                                  <td>{label}</td>
+                                  <td>
+                                    <input
+                                      type="checkbox"
+                                      checked={notificationPrefs[value]?.email || false}
+                                      onChange={() => handlePreferenceChange(value, "email")}
+                                    />
+                                  </td>
+                                  <td>
+                                    <input
+                                      type="checkbox"
+                                      checked={notificationPrefs[value]?.sms || false}
+                                      onChange={() => handlePreferenceChange(value, "sms")}
+                                    />
+                                  </td>
+                                  <td>
+                                    <input
+                                      type="checkbox"
+                                      checked={notificationPrefs[value]?.inApp || false}
+                                      onChange={() => handlePreferenceChange(value, "inApp")}
+                                    />
+                                  </td>
+                                </tr>
+                              ))}
+                            </tbody>
+                          </table>
+                        </div>
+                      ))
+                    )}
+                    <button
+                      onClick={handleSavePreferences}
+                      className="update-btn"
+                      disabled={isLoadingNotifications}
+                    >
+                      Save Preferences
+                    </button>
+                  </div>
+                  <aside className="filter-sidebar">
+                    <div className="filter-section">
+                      <button
+                        className={`filter-toggle ${showPrefTypeFilter ? "active" : ""}`}
+                        onClick={() => {
+                          setShowPrefTypeFilter(!showPrefTypeFilter);
+                          setShowPrefSortPanel(false);
+                        }}
+                      >
+                        <FaFilter /> Type Filter
+                      </button>
+                      {showPrefTypeFilter && (
+                        <div className="filter-content">
+                          <div className="filter-group">
+                            <div className="filter-options">
+                              <button
+                                className={`filter-option ${prefFilterType === "" ? "active" : ""}`}
+                                onClick={() => setPrefFilterType("")}
+                              >
+                                All Types
+                              </button>
+                              {notificationTypes.map((type) => (
+                                <button
+                                  key={type}
+                                  className={`filter-option ${prefFilterType === type ? "active" : ""}`}
+                                  onClick={() => setPrefFilterType(type)}
+                                >
+                                  {type}
+                                </button>
+                              ))}
+                            </div>
+                          </div>
+                        </div>
+                      )}
+                    </div>
+                    <div className="filter-section">
+                      <button
+                        className={`filter-toggle ${showPrefSortPanel ? "active" : ""}`}
+                        onClick={() => {
+                          setShowPrefSortPanel(!showPrefSortPanel);
+                          setShowPrefTypeFilter(false);
+                        }}
+                      >
+                        <FaSort /> Sort
+                      </button>
+                      {showPrefSortPanel && (
+                        <div className="filter-content">
+                          <div className="filter-group">
+                            <div className="filter-options">
+                              <button
+                                className={`filter-option ${prefSortBy === "none" ? "active" : ""}`}
+                                onClick={() => setPrefSortBy("none")}
+                              >
+                                Default
+                              </button>
+                              <button
+                                className={`filter-option ${prefSortBy === "event" && prefSortOrder === "asc" ? "active" : ""}`}
+                                onClick={() => {
+                                  setPrefSortBy("event");
+                                  setPrefSortOrder("asc");
+                                }}
+                              >
+                                Event (A-Z)
+                              </button>
+                              <button
+                                className={`filter-option ${prefSortBy === "event" && prefSortOrder === "desc" ? "active" : ""}`}
+                                onClick={() => {
+                                  setPrefSortBy("event");
+                                  setPrefSortOrder("desc");
+                                }}
+                              >
+                                Event (Z-A)
+                              </button>
+                              {/* Added Type sorting options */}
+                              <button
+                                className={`filter-option ${prefSortBy === "type" && prefSortOrder === "asc" ? "active" : ""}`}
+                                onClick={() => {
+                                  setPrefSortBy("type");
+                                  setPrefSortOrder("asc");
+                                }}
+                              >
+                                Type (A-Z)
+                              </button>
+                              <button
+                                className={`filter-option ${prefSortBy === "type" && prefSortOrder === "desc" ? "active" : ""}`}
+                                onClick={() => {
+                                  setPrefSortBy("type");
+                                  setPrefSortOrder("desc");
+                                }}
+                              >
+                                Type (Z-A)
+                              </button>
+                            </div>
+                          </div>
+                        </div>
+                      )}
+                    </div>
+                  </aside>
                 </div>
               )}
             </section>
