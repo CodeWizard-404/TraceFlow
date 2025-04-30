@@ -44595,3 +44595,599 @@
 {"level":"info","message":"Fetched profile for user user_2iv20lpt1, IP: 192.168.1.14","timestamp":"2025-04-30T00:33:54.784Z"}
 {"level":"info","message":"Fetched notification types for user: user_2iv20lpt1, IP: 192.168.1.14","timestamp":"2025-04-30T00:33:54.787Z"}
 {"level":"info","message":"Fetched notification preferences for user: user_2iv20lpt1, IP: 192.168.1.14","timestamp":"2025-04-30T00:33:54.804Z"}
+{"level":"info","message":"Database Initialization: Starting","step":"database","timestamp":"2025-04-30T08:20:46.834Z"}
+{"duration":"0.80","level":"info","message":"Database Initialization: Completed","status":"success","step":"database","timestamp":"2025-04-30T08:20:47.636Z"}
+{"level":"info","message":"SMTP Initialization: Starting","step":"smtp","timestamp":"2025-04-30T08:20:47.637Z"}
+{"level":"info","message":"SMTP server verified successfully","timestamp":"2025-04-30T08:20:48.222Z"}
+{"duration":"0.59","level":"info","message":"SMTP Initialization: Completed","status":"success","step":"smtp","timestamp":"2025-04-30T08:20:48.223Z"}
+{"level":"info","message":"SMS Initialization: Starting","step":"sms","timestamp":"2025-04-30T08:20:48.226Z"}
+{"level":"info","message":"SMS gateway initialized","timestamp":"2025-04-30T08:20:48.228Z"}
+{"duration":"0.00","level":"info","message":"SMS Initialization: Completed","status":"success","step":"sms","timestamp":"2025-04-30T08:20:48.229Z"}
+{"level":"info","message":"Model Associations: Starting","step":"associations","timestamp":"2025-04-30T08:20:48.230Z"}
+{"duration":"0.03","level":"info","message":"Model Associations: Completed","status":"success","step":"associations","timestamp":"2025-04-30T08:20:48.258Z"}
+{"level":"info","message":"Database Synchronization: Starting","step":"sync","timestamp":"2025-04-30T08:20:48.259Z"}
+{"duration":"0.40","level":"info","message":"Database Synchronization: Completed","status":"success","step":"sync","timestamp":"2025-04-30T08:20:48.663Z"}
+{"level":"info","message":"Permission Seeding: Starting","step":"permissions","timestamp":"2025-04-30T08:20:48.665Z"}
+{"duration":"3.50","level":"info","message":"Permission Seeding: Completed","status":"success","step":"permissions","timestamp":"2025-04-30T08:20:52.165Z"}
+{"level":"info","message":"Super Admin Seeding: Starting","step":"superadmin","timestamp":"2025-04-30T08:20:52.166Z"}
+{"duration":"1.14","level":"info","message":"Super Admin Seeding: Completed","status":"success","step":"superadmin","timestamp":"2025-04-30T08:20:53.303Z"}
+{"level":"info","message":"Socket Initialization: Starting","step":"socket","timestamp":"2025-04-30T08:20:53.304Z"}
+{"duration":"0.00","level":"info","message":"Socket Initialization: Completed","status":"success","step":"socket","timestamp":"2025-04-30T08:20:53.305Z"}
+{"level":"info","message":"Server Initialization: Starting","step":"server","timestamp":"2025-04-30T08:20:53.305Z"}
+{"level":"info","message":"mDNS advertisement skipped in development mode","timestamp":"2025-04-30T08:20:53.309Z"}
+{"duration":"0.01","level":"info","message":"Server Initialization: Completed","status":"success","step":"server","timestamp":"2025-04-30T08:20:53.310Z"}
+{"level":"info","message":"\u001b[36m========== TraceFlow Initialization Summary ========\u001b[39m","timestamp":"2025-04-30T08:20:53.312Z"}
+{"level":"info","message":"Date: 2025-04-30T08:20:53.312Z","timestamp":"2025-04-30T08:20:53.312Z"}
+{"level":"info","message":"Steps Completed:","timestamp":"2025-04-30T08:20:53.312Z"}
+{"duration":"0.80","level":"info","message":"  - Database Initialization: \u001b[32mSUCCESS\u001b[39m - (0.80s)","status":"success","step":"Database Initialization","timestamp":"2025-04-30T08:20:53.313Z"}
+{"duration":"0.59","level":"info","message":"  - SMTP Initialization: \u001b[32mSUCCESS\u001b[39m - (0.59s)","status":"success","step":"SMTP Initialization","timestamp":"2025-04-30T08:20:53.313Z"}
+{"duration":"0.00","level":"info","message":"  - SMS Initialization: \u001b[32mSUCCESS\u001b[39m - (0.00s)","status":"success","step":"SMS Initialization","timestamp":"2025-04-30T08:20:53.313Z"}
+{"duration":"0.03","level":"info","message":"  - Model Associations: \u001b[32mSUCCESS\u001b[39m - (0.03s)","status":"success","step":"Model Associations","timestamp":"2025-04-30T08:20:53.314Z"}
+{"duration":"0.41","level":"info","message":"  - Database Synchronization: \u001b[32mSUCCESS\u001b[39m - (0.41s)","status":"success","step":"Database Synchronization","timestamp":"2025-04-30T08:20:53.314Z"}
+{"duration":"3.50","level":"info","message":"  - Permission Seeding: \u001b[32mSUCCESS\u001b[39m - (3.50s)","status":"success","step":"Permission Seeding","timestamp":"2025-04-30T08:20:53.314Z"}
+{"duration":"1.14","level":"info","message":"  - Super Admin Seeding: \u001b[32mSUCCESS\u001b[39m - (1.14s)","status":"success","step":"Super Admin Seeding","timestamp":"2025-04-30T08:20:53.314Z"}
+{"duration":"0.00","level":"info","message":"  - Socket Initialization: \u001b[32mSUCCESS\u001b[39m - (0.00s)","status":"success","step":"Socket Initialization","timestamp":"2025-04-30T08:20:53.314Z"}
+{"duration":"0.01","level":"info","message":"  - Server Initialization: \u001b[32mSUCCESS\u001b[39m - (0.01s)","status":"success","step":"Server Initialization","timestamp":"2025-04-30T08:20:53.314Z"}
+{"level":"info","message":"Total Steps: 9","timestamp":"2025-04-30T08:20:53.315Z"}
+{"level":"info","message":"\u001b[32mSuccesses: 9\u001b[39m","timestamp":"2025-04-30T08:20:53.315Z"}
+{"level":"info","message":"\u001b[33mSkipped: 0\u001b[39m","timestamp":"2025-04-30T08:20:53.315Z"}
+{"level":"info","message":"\u001b[31mFailures: 0\u001b[39m","timestamp":"2025-04-30T08:20:53.315Z"}
+{"level":"info","message":"Total Duration: 59.76 seconds","timestamp":"2025-04-30T08:20:53.315Z"}
+{"level":"info","message":"\u001b[36m===================================================\u001b[39m","timestamp":"2025-04-30T08:20:53.315Z"}
+{"level":"info","message":"\u001b[36m===================================================\u001b[39m","timestamp":"2025-04-30T08:20:53.315Z"}
+{"level":"info","message":"\tSuper Admin Credentials:","timestamp":"2025-04-30T08:20:53.316Z"}
+{"level":"info","message":"\tEmail:\t\tsuperadmin@example.com","timestamp":"2025-04-30T08:20:53.316Z"}
+{"level":"info","message":"\tPassword:\tSuperSecurePassword123!","timestamp":"2025-04-30T08:20:53.316Z"}
+{"level":"info","message":"\u001b[36m===================================================\u001b[39m","timestamp":"2025-04-30T08:20:53.316Z"}
+{"level":"info","message":"HTTP Server running on port 5000","timestamp":"2025-04-30T08:20:53.326Z"}
+{"level":"info","message":"Database Initialization: Starting","step":"database","timestamp":"2025-04-30T08:25:56.975Z"}
+{"duration":"0.73","level":"info","message":"Database Initialization: Completed","status":"success","step":"database","timestamp":"2025-04-30T08:25:57.702Z"}
+{"level":"info","message":"SMTP Initialization: Starting","step":"smtp","timestamp":"2025-04-30T08:25:57.704Z"}
+{"level":"info","message":"SMTP server verified successfully","timestamp":"2025-04-30T08:25:58.331Z"}
+{"duration":"0.63","level":"info","message":"SMTP Initialization: Completed","status":"success","step":"smtp","timestamp":"2025-04-30T08:25:58.333Z"}
+{"level":"info","message":"SMS Initialization: Starting","step":"sms","timestamp":"2025-04-30T08:25:58.336Z"}
+{"level":"info","message":"SMS gateway initialized","timestamp":"2025-04-30T08:25:58.338Z"}
+{"duration":"0.00","level":"info","message":"SMS Initialization: Completed","status":"success","step":"sms","timestamp":"2025-04-30T08:25:58.339Z"}
+{"level":"info","message":"Model Associations: Starting","step":"associations","timestamp":"2025-04-30T08:25:58.340Z"}
+{"duration":"0.03","level":"info","message":"Model Associations: Completed","status":"success","step":"associations","timestamp":"2025-04-30T08:25:58.365Z"}
+{"level":"info","message":"Database Synchronization: Starting","step":"sync","timestamp":"2025-04-30T08:25:58.365Z"}
+{"duration":"0.37","level":"info","message":"Database Synchronization: Completed","status":"success","step":"sync","timestamp":"2025-04-30T08:25:58.732Z"}
+{"level":"info","message":"Permission Seeding: Starting","step":"permissions","timestamp":"2025-04-30T08:25:58.733Z"}
+{"duration":"0.33","level":"info","message":"Permission Seeding: Completed","status":"success","step":"permissions","timestamp":"2025-04-30T08:25:59.066Z"}
+{"level":"info","message":"Super Admin Seeding: Starting","step":"superadmin","timestamp":"2025-04-30T08:25:59.067Z"}
+{"duration":"1.03","level":"info","message":"Super Admin Seeding: Completed","status":"success","step":"superadmin","timestamp":"2025-04-30T08:26:00.097Z"}
+{"level":"info","message":"Socket Initialization: Starting","step":"socket","timestamp":"2025-04-30T08:26:00.098Z"}
+{"duration":"0.00","level":"info","message":"Socket Initialization: Completed","status":"success","step":"socket","timestamp":"2025-04-30T08:26:00.099Z"}
+{"level":"info","message":"Server Initialization: Starting","step":"server","timestamp":"2025-04-30T08:26:00.099Z"}
+{"level":"info","message":"mDNS advertisement skipped in development mode","timestamp":"2025-04-30T08:26:00.102Z"}
+{"duration":"0.00","level":"info","message":"Server Initialization: Completed","status":"success","step":"server","timestamp":"2025-04-30T08:26:00.103Z"}
+{"level":"info","message":"\u001b[36m========== TraceFlow Initialization Summary ========\u001b[39m","timestamp":"2025-04-30T08:26:00.105Z"}
+{"level":"info","message":"Date: 2025-04-30T08:26:00.106Z","timestamp":"2025-04-30T08:26:00.106Z"}
+{"level":"info","message":"Steps Completed:","timestamp":"2025-04-30T08:26:00.106Z"}
+{"duration":"0.73","level":"info","message":"  - Database Initialization: \u001b[32mSUCCESS\u001b[39m - (0.73s)","status":"success","step":"Database Initialization","timestamp":"2025-04-30T08:26:00.106Z"}
+{"duration":"0.63","level":"info","message":"  - SMTP Initialization: \u001b[32mSUCCESS\u001b[39m - (0.63s)","status":"success","step":"SMTP Initialization","timestamp":"2025-04-30T08:26:00.108Z"}
+{"duration":"0.00","level":"info","message":"  - SMS Initialization: \u001b[32mSUCCESS\u001b[39m - (0.00s)","status":"success","step":"SMS Initialization","timestamp":"2025-04-30T08:26:00.108Z"}
+{"duration":"0.03","level":"info","message":"  - Model Associations: \u001b[32mSUCCESS\u001b[39m - (0.03s)","status":"success","step":"Model Associations","timestamp":"2025-04-30T08:26:00.109Z"}
+{"duration":"0.37","level":"info","message":"  - Database Synchronization: \u001b[32mSUCCESS\u001b[39m - (0.37s)","status":"success","step":"Database Synchronization","timestamp":"2025-04-30T08:26:00.110Z"}
+{"duration":"0.33","level":"info","message":"  - Permission Seeding: \u001b[32mSUCCESS\u001b[39m - (0.33s)","status":"success","step":"Permission Seeding","timestamp":"2025-04-30T08:26:00.110Z"}
+{"duration":"1.03","level":"info","message":"  - Super Admin Seeding: \u001b[32mSUCCESS\u001b[39m - (1.03s)","status":"success","step":"Super Admin Seeding","timestamp":"2025-04-30T08:26:00.111Z"}
+{"duration":"0.00","level":"info","message":"  - Socket Initialization: \u001b[32mSUCCESS\u001b[39m - (0.00s)","status":"success","step":"Socket Initialization","timestamp":"2025-04-30T08:26:00.111Z"}
+{"duration":"0.00","level":"info","message":"  - Server Initialization: \u001b[32mSUCCESS\u001b[39m - (0.00s)","status":"success","step":"Server Initialization","timestamp":"2025-04-30T08:26:00.112Z"}
+{"level":"info","message":"Total Steps: 9","timestamp":"2025-04-30T08:26:00.112Z"}
+{"level":"info","message":"\u001b[32mSuccesses: 9\u001b[39m","timestamp":"2025-04-30T08:26:00.112Z"}
+{"level":"info","message":"\u001b[33mSkipped: 0\u001b[39m","timestamp":"2025-04-30T08:26:00.112Z"}
+{"level":"info","message":"\u001b[31mFailures: 0\u001b[39m","timestamp":"2025-04-30T08:26:00.112Z"}
+{"level":"info","message":"Total Duration: 8.03 seconds","timestamp":"2025-04-30T08:26:00.113Z"}
+{"level":"info","message":"\u001b[36m===================================================\u001b[39m","timestamp":"2025-04-30T08:26:00.113Z"}
+{"level":"info","message":"\u001b[36m===================================================\u001b[39m","timestamp":"2025-04-30T08:26:00.113Z"}
+{"level":"info","message":"\tSuper Admin Credentials:","timestamp":"2025-04-30T08:26:00.113Z"}
+{"level":"info","message":"\tEmail:\t\tsuperadmin@example.com","timestamp":"2025-04-30T08:26:00.114Z"}
+{"level":"info","message":"\tPassword:\tSuperSecurePassword123!","timestamp":"2025-04-30T08:26:00.114Z"}
+{"level":"info","message":"\u001b[36m===================================================\u001b[39m","timestamp":"2025-04-30T08:26:00.114Z"}
+{"level":"info","message":"HTTP Server running on port 5000","timestamp":"2025-04-30T08:26:00.121Z"}
+{"level":"info","message":"Database Initialization: Starting","step":"database","timestamp":"2025-04-30T08:36:49.879Z"}
+{"duration":"0.26","level":"info","message":"Database Initialization: Completed","status":"success","step":"database","timestamp":"2025-04-30T08:36:50.141Z"}
+{"level":"info","message":"SMTP Initialization: Starting","step":"smtp","timestamp":"2025-04-30T08:36:50.143Z"}
+{"level":"info","message":"SMTP server verified successfully","timestamp":"2025-04-30T08:36:50.752Z"}
+{"duration":"0.61","level":"info","message":"SMTP Initialization: Completed","status":"success","step":"smtp","timestamp":"2025-04-30T08:36:50.753Z"}
+{"level":"info","message":"SMS Initialization: Starting","step":"sms","timestamp":"2025-04-30T08:36:50.755Z"}
+{"level":"info","message":"SMS gateway initialized","timestamp":"2025-04-30T08:36:50.756Z"}
+{"duration":"0.00","level":"info","message":"SMS Initialization: Completed","status":"success","step":"sms","timestamp":"2025-04-30T08:36:50.757Z"}
+{"level":"info","message":"Model Associations: Starting","step":"associations","timestamp":"2025-04-30T08:36:50.757Z"}
+{"duration":"0.02","level":"info","message":"Model Associations: Completed","status":"success","step":"associations","timestamp":"2025-04-30T08:36:50.779Z"}
+{"level":"info","message":"Database Synchronization: Skipped","status":"skipped","step":"sync","timestamp":"2025-04-30T08:36:50.780Z"}
+{"level":"info","message":"Permission Seeding: Skipped","status":"skipped","step":"permissions","timestamp":"2025-04-30T08:36:50.780Z"}
+{"level":"info","message":"Super Admin Seeding: Skipped","status":"skipped","step":"superadmin","timestamp":"2025-04-30T08:36:50.781Z"}
+{"level":"info","message":"Socket Initialization: Starting","step":"socket","timestamp":"2025-04-30T08:36:50.781Z"}
+{"duration":"0.00","level":"info","message":"Socket Initialization: Completed","status":"success","step":"socket","timestamp":"2025-04-30T08:36:50.782Z"}
+{"level":"info","message":"Server Initialization: Starting","step":"server","timestamp":"2025-04-30T08:36:50.782Z"}
+{"level":"info","message":"mDNS advertisement skipped in development mode","timestamp":"2025-04-30T08:36:50.786Z"}
+{"duration":"0.00","level":"info","message":"Server Initialization: Completed","status":"success","step":"server","timestamp":"2025-04-30T08:36:50.786Z"}
+{"level":"info","message":"\u001b[36m========== TraceFlow Initialization Summary ========\u001b[39m","timestamp":"2025-04-30T08:36:50.788Z"}
+{"level":"info","message":"Date: 2025-04-30T08:36:50.788Z","timestamp":"2025-04-30T08:36:50.788Z"}
+{"level":"info","message":"Steps Completed:","timestamp":"2025-04-30T08:36:50.788Z"}
+{"duration":"0.26","level":"info","message":"  - Database Initialization: \u001b[32mSUCCESS\u001b[39m - (0.26s)","status":"success","step":"Database Initialization","timestamp":"2025-04-30T08:36:50.789Z"}
+{"duration":"0.61","level":"info","message":"  - SMTP Initialization: \u001b[32mSUCCESS\u001b[39m - (0.61s)","status":"success","step":"SMTP Initialization","timestamp":"2025-04-30T08:36:50.789Z"}
+{"duration":"0.00","level":"info","message":"  - SMS Initialization: \u001b[32mSUCCESS\u001b[39m - (0.00s)","status":"success","step":"SMS Initialization","timestamp":"2025-04-30T08:36:50.789Z"}
+{"duration":"0.02","level":"info","message":"  - Model Associations: \u001b[32mSUCCESS\u001b[39m - (0.02s)","status":"success","step":"Model Associations","timestamp":"2025-04-30T08:36:50.789Z"}
+{"duration":"0.00","level":"info","message":"  - Database Synchronization: \u001b[33mSKIPPED\u001b[39m - (0.00s)","status":"skipped","step":"Database Synchronization","timestamp":"2025-04-30T08:36:50.790Z"}
+{"duration":"0.00","level":"info","message":"  - Permission Seeding: \u001b[33mSKIPPED\u001b[39m - (0.00s)","status":"skipped","step":"Permission Seeding","timestamp":"2025-04-30T08:36:50.790Z"}
+{"duration":"0.00","level":"info","message":"  - Super Admin Seeding: \u001b[33mSKIPPED\u001b[39m - (0.00s)","status":"skipped","step":"Super Admin Seeding","timestamp":"2025-04-30T08:36:50.791Z"}
+{"duration":"0.00","level":"info","message":"  - Socket Initialization: \u001b[32mSUCCESS\u001b[39m - (0.00s)","status":"success","step":"Socket Initialization","timestamp":"2025-04-30T08:36:50.791Z"}
+{"duration":"0.01","level":"info","message":"  - Server Initialization: \u001b[32mSUCCESS\u001b[39m - (0.01s)","status":"success","step":"Server Initialization","timestamp":"2025-04-30T08:36:50.791Z"}
+{"level":"info","message":"Total Steps: 9","timestamp":"2025-04-30T08:36:50.791Z"}
+{"level":"info","message":"\u001b[32mSuccesses: 6\u001b[39m","timestamp":"2025-04-30T08:36:50.792Z"}
+{"level":"info","message":"\u001b[33mSkipped: 3\u001b[39m","timestamp":"2025-04-30T08:36:50.792Z"}
+{"level":"info","message":"\u001b[31mFailures: 0\u001b[39m","timestamp":"2025-04-30T08:36:50.792Z"}
+{"level":"info","message":"Total Duration: 15.70 seconds","timestamp":"2025-04-30T08:36:50.792Z"}
+{"level":"info","message":"\u001b[36m===================================================\u001b[39m","timestamp":"2025-04-30T08:36:50.793Z"}
+{"level":"info","message":"\u001b[36m===================================================\u001b[39m","timestamp":"2025-04-30T08:36:50.793Z"}
+{"level":"info","message":"\tSuper Admin Credentials:","timestamp":"2025-04-30T08:36:50.793Z"}
+{"level":"info","message":"\tEmail:\t\tsuperadmin@example.com","timestamp":"2025-04-30T08:36:50.793Z"}
+{"level":"info","message":"\tPassword:\tSuperSecurePassword123!","timestamp":"2025-04-30T08:36:50.794Z"}
+{"level":"info","message":"\u001b[36m===================================================\u001b[39m","timestamp":"2025-04-30T08:36:50.794Z"}
+{"level":"info","message":"HTTP Server running on port 5000","timestamp":"2025-04-30T08:36:50.809Z"}
+{"level":"info","message":"No active rules found for event: otp:generated:user","timestamp":"2025-04-30T08:59:24.275Z"}
+{"enabled":false,"event":"otp:generated:user","level":"info","message":"Created default notification rule","ruleID":"rule_fIxAVd4ucOqsHH5ITnZOq","timestamp":"2025-04-30T08:59:24.284Z"}
+{"level":"info","message":"Generated OTP for user user_b6w054ass via phone: 843934","timestamp":"2025-04-30T08:59:24.284Z"}
+{"level":"error","message":"Traccar SMS Gateway error (otp): Invalid URL","timestamp":"2025-04-30T08:59:24.287Z"}
+{"level":"info","message":"Email lookup result: superadmin@example.com","timestamp":"2025-04-30T08:59:24.294Z"}
+{"level":"info","message":"Fallback email sent to superadmin@example.com (otp)","timestamp":"2025-04-30T08:59:26.092Z"}
+{"level":"info","message":"Login successful for superadmin@example.com","timestamp":"2025-04-30T08:59:26.093Z"}
+{"level":"info","message":"Cleaning up expired OTPs","timestamp":"2025-04-30T09:00:00.831Z"}
+{"level":"info","message":"Cleaned up 0 expired OTPs","timestamp":"2025-04-30T09:00:00.920Z"}
+{"level":"info","message":"Updated 0 visits from pending to validated","timestamp":"2025-04-30T09:00:00.921Z"}
+{"level":"info","message":"No active rules found for event: otp:generated:user","timestamp":"2025-04-30T09:01:29.034Z"}
+{"level":"info","message":"Generated OTP for user user_b6w054ass via phone: 344989","timestamp":"2025-04-30T09:01:29.036Z"}
+{"level":"error","message":"Traccar SMS Gateway error (otp): Invalid URL","timestamp":"2025-04-30T09:01:29.038Z"}
+{"level":"info","message":"Email lookup result: superadmin@example.com","timestamp":"2025-04-30T09:01:29.043Z"}
+{"level":"info","message":"Fallback email sent to superadmin@example.com (otp)","timestamp":"2025-04-30T09:01:30.500Z"}
+{"level":"info","message":"Login successful for superadmin@example.com","timestamp":"2025-04-30T09:01:30.501Z"}
+{"code":"344987","entityID":"user_b6w054ass","level":"warn","message":"OTP validation failed","timestamp":"2025-04-30T09:02:07.453Z","type":"user"}
+{"code":"344987","entityID":"user_b6w054ass","error":"Invalid or expired OTP","level":"error","message":"OTP validation error","timestamp":"2025-04-30T09:02:07.455Z","type":"user"}
+{"level":"error","message":"2FA OTP validation failed for user_b6w054ass: Invalid or expired OTP","timestamp":"2025-04-30T09:02:07.456Z"}
+{"level":"error","message":"2FA verification error for user_b6w054ass: Wrong or expired OTP.","timestamp":"2025-04-30T09:02:07.457Z"}
+{"level":"info","message":"2FA verified for user user_b6w054ass","timestamp":"2025-04-30T09:02:26.374Z"}
+{"isWebSocket":false,"level":"info","message":"Authentication successful for user: superadmin@example.com","roles":"default-roles-traceflow, offline_access, Super Admin, uma_authorization","timestamp":"2025-04-30T09:02:26.598Z","userID":"user_b6w054ass"}
+{"level":"info","message":"Fetched roles for user user_b6w054ass by user_b6w054ass, IP: 192.168.0.117","timestamp":"2025-04-30T09:02:26.607Z"}
+{"isWebSocket":true,"level":"info","message":"Authentication successful for user: superadmin@example.com","roles":"default-roles-traceflow, offline_access, Super Admin, uma_authorization","timestamp":"2025-04-30T09:02:26.629Z","userID":"user_b6w054ass"}
+{"email":"superadmin@example.com","level":"info","message":"WebSocket authentication successful","roles":"default-roles-traceflow, offline_access, Super Admin, uma_authorization","socketId":"jCGRzKQcmcTwAjXsAAAB","timestamp":"2025-04-30T09:02:26.648Z","userID":"user_b6w054ass"}
+{"level":"info","message":"User connected: superadmin@example.com","socketId":"jCGRzKQcmcTwAjXsAAAB","timestamp":"2025-04-30T09:02:26.664Z","userID":"user_b6w054ass"}
+{"level":"info","message":"User superadmin@example.com joined room: default-roles-traceflow","socketId":"jCGRzKQcmcTwAjXsAAAB","timestamp":"2025-04-30T09:02:26.670Z"}
+{"level":"info","message":"User superadmin@example.com joined room: offline_access","socketId":"jCGRzKQcmcTwAjXsAAAB","timestamp":"2025-04-30T09:02:26.671Z"}
+{"level":"info","message":"User superadmin@example.com joined room: super admin","socketId":"jCGRzKQcmcTwAjXsAAAB","timestamp":"2025-04-30T09:02:26.675Z"}
+{"level":"info","message":"User superadmin@example.com joined room: uma_authorization","socketId":"jCGRzKQcmcTwAjXsAAAB","timestamp":"2025-04-30T09:02:26.677Z"}
+{"level":"info","message":"User superadmin@example.com joined room: user_b6w054ass","socketId":"jCGRzKQcmcTwAjXsAAAB","timestamp":"2025-04-30T09:02:26.681Z"}
+{"level":"info","message":"Client connected","socketId":"jCGRzKQcmcTwAjXsAAAB","timestamp":"2025-04-30T09:02:26.684Z"}
+{"isWebSocket":false,"level":"info","message":"Authentication successful for user: superadmin@example.com","roles":"default-roles-traceflow, offline_access, Super Admin, uma_authorization","timestamp":"2025-04-30T09:02:26.692Z","userID":"user_b6w054ass"}
+{"level":"info","message":"User superadmin@example.com joined room: default-roles-traceflow","socketId":"jCGRzKQcmcTwAjXsAAAB","timestamp":"2025-04-30T09:02:26.706Z"}
+{"level":"info","message":"Client joined room: default-roles-traceflow","socketId":"jCGRzKQcmcTwAjXsAAAB","timestamp":"2025-04-30T09:02:26.710Z"}
+{"level":"info","message":"Fetched effective permissions for user user_b6w054ass by user_b6w054ass, IP: 192.168.0.117","timestamp":"2025-04-30T09:02:26.773Z"}
+{"isWebSocket":false,"level":"info","message":"Authentication successful for user: superadmin@example.com","roles":"default-roles-traceflow, offline_access, Super Admin, uma_authorization","timestamp":"2025-04-30T09:02:26.792Z","userID":"user_b6w054ass"}
+{"level":"info","message":"Fetched roles for user user_b6w054ass by user_b6w054ass, IP: 192.168.0.117","timestamp":"2025-04-30T09:02:26.826Z"}
+{"isWebSocket":false,"level":"info","message":"Authentication successful for user: superadmin@example.com","roles":"default-roles-traceflow, offline_access, Super Admin, uma_authorization","timestamp":"2025-04-30T09:02:26.835Z","userID":"user_b6w054ass"}
+{"level":"info","message":"Fetched effective permissions for user user_b6w054ass by user_b6w054ass, IP: 192.168.0.117","timestamp":"2025-04-30T09:02:26.918Z"}
+{"isWebSocket":false,"level":"info","message":"Authentication successful for user: superadmin@example.com","roles":"default-roles-traceflow, offline_access, Super Admin, uma_authorization","timestamp":"2025-04-30T09:02:28.851Z","userID":"user_b6w054ass"}
+{"level":"info","message":"Super Admin bypass for user user_b6w054ass","timestamp":"2025-04-30T09:02:28.853Z"}
+{"level":"info","message":"Fetched all users by user user_b6w054ass, IP: 192.168.0.117","timestamp":"2025-04-30T09:02:28.862Z"}
+{"isWebSocket":false,"level":"info","message":"Authentication successful for user: superadmin@example.com","roles":"default-roles-traceflow, offline_access, Super Admin, uma_authorization","timestamp":"2025-04-30T09:02:28.885Z","userID":"user_b6w054ass"}
+{"level":"info","message":"Super Admin bypass for user user_b6w054ass","timestamp":"2025-04-30T09:02:28.886Z"}
+{"level":"info","message":"Fetched all roles by user user_b6w054ass, IP: 192.168.0.117","timestamp":"2025-04-30T09:02:28.899Z"}
+{"isWebSocket":false,"level":"info","message":"Authentication successful for user: superadmin@example.com","roles":"default-roles-traceflow, offline_access, Super Admin, uma_authorization","timestamp":"2025-04-30T09:02:28.925Z","userID":"user_b6w054ass"}
+{"level":"info","message":"Super Admin bypass for user user_b6w054ass","timestamp":"2025-04-30T09:02:28.927Z"}
+{"level":"info","message":"Fetched notification rules by user: user_b6w054ass, IP: 192.168.0.117","timestamp":"2025-04-30T09:02:28.933Z"}
+{"isWebSocket":false,"level":"info","message":"Authentication successful for user: superadmin@example.com","roles":"default-roles-traceflow, offline_access, Super Admin, uma_authorization","timestamp":"2025-04-30T09:02:42.746Z","userID":"user_b6w054ass"}
+{"isWebSocket":false,"level":"info","message":"Authentication successful for user: superadmin@example.com","roles":"default-roles-traceflow, offline_access, Super Admin, uma_authorization","timestamp":"2025-04-30T09:02:42.751Z","userID":"user_b6w054ass"}
+{"isWebSocket":false,"level":"info","message":"Authentication successful for user: superadmin@example.com","roles":"default-roles-traceflow, offline_access, Super Admin, uma_authorization","timestamp":"2025-04-30T09:02:42.755Z","userID":"user_b6w054ass"}
+{"level":"info","message":"Fetched profile for user user_b6w054ass, IP: 192.168.0.117","timestamp":"2025-04-30T09:02:42.761Z"}
+{"level":"info","message":"Fetched notification types for user: user_b6w054ass, IP: 192.168.0.117","timestamp":"2025-04-30T09:02:42.770Z"}
+{"level":"info","message":"Fetched notification preferences for user: user_b6w054ass, IP: 192.168.0.117","timestamp":"2025-04-30T09:02:42.801Z"}
+{"isWebSocket":false,"level":"info","message":"Authentication successful for user: superadmin@example.com","roles":"default-roles-traceflow, offline_access, Super Admin, uma_authorization","timestamp":"2025-04-30T09:02:44.164Z","userID":"user_b6w054ass"}
+{"level":"info","message":"Fetched notifications for user: user_b6w054ass, IP: 192.168.0.117","timestamp":"2025-04-30T09:02:44.175Z"}
+{"isWebSocket":false,"level":"info","message":"Authentication successful for user: superadmin@example.com","roles":"default-roles-traceflow, offline_access, Super Admin, uma_authorization","timestamp":"2025-04-30T09:02:58.677Z","userID":"user_b6w054ass"}
+{"level":"info","message":"Fetched notifications for user: user_b6w054ass, IP: 192.168.0.117","timestamp":"2025-04-30T09:02:58.684Z"}
+{"isWebSocket":false,"level":"info","message":"Authentication successful for user: superadmin@example.com","roles":"default-roles-traceflow, offline_access, Super Admin, uma_authorization","timestamp":"2025-04-30T09:03:16.005Z","userID":"user_b6w054ass"}
+{"level":"info","message":"Fetched notifications for user: user_b6w054ass, IP: 192.168.0.117","timestamp":"2025-04-30T09:03:16.010Z"}
+{"level":"info","message":"User disconnected: superadmin@example.com","reason":"transport close","socketId":"jCGRzKQcmcTwAjXsAAAB","timestamp":"2025-04-30T09:03:46.314Z"}
+{"level":"info","message":"Client disconnected","socketId":"jCGRzKQcmcTwAjXsAAAB","timestamp":"2025-04-30T09:03:46.316Z"}
+{"isWebSocket":false,"level":"info","message":"Authentication successful for user: superadmin@example.com","roles":"default-roles-traceflow, offline_access, Super Admin, uma_authorization","timestamp":"2025-04-30T09:03:46.889Z","userID":"user_b6w054ass"}
+{"isWebSocket":false,"level":"info","message":"Authentication successful for user: superadmin@example.com","roles":"default-roles-traceflow, offline_access, Super Admin, uma_authorization","timestamp":"2025-04-30T09:03:46.899Z","userID":"user_b6w054ass"}
+{"level":"info","message":"Fetched effective permissions for user user_b6w054ass by user_b6w054ass, IP: 192.168.0.117","timestamp":"2025-04-30T09:03:46.934Z"}
+{"level":"info","message":"Fetched roles for user user_b6w054ass by user_b6w054ass, IP: 192.168.0.117","timestamp":"2025-04-30T09:03:46.994Z"}
+{"isWebSocket":false,"level":"info","message":"Authentication successful for user: superadmin@example.com","roles":"default-roles-traceflow, offline_access, Super Admin, uma_authorization","timestamp":"2025-04-30T09:03:47.158Z","userID":"user_b6w054ass"}
+{"level":"info","message":"Fetched effective permissions for user user_b6w054ass by user_b6w054ass, IP: 192.168.0.117","timestamp":"2025-04-30T09:03:47.185Z"}
+{"isWebSocket":false,"level":"info","message":"Authentication successful for user: superadmin@example.com","roles":"default-roles-traceflow, offline_access, Super Admin, uma_authorization","timestamp":"2025-04-30T09:03:47.199Z","userID":"user_b6w054ass"}
+{"level":"info","message":"Fetched roles for user user_b6w054ass by user_b6w054ass, IP: 192.168.0.117","timestamp":"2025-04-30T09:03:47.232Z"}
+{"isWebSocket":false,"level":"info","message":"Authentication successful for user: superadmin@example.com","roles":"default-roles-traceflow, offline_access, Super Admin, uma_authorization","timestamp":"2025-04-30T09:03:47.276Z","userID":"user_b6w054ass"}
+{"isWebSocket":false,"level":"info","message":"Authentication successful for user: superadmin@example.com","roles":"default-roles-traceflow, offline_access, Super Admin, uma_authorization","timestamp":"2025-04-30T09:03:47.301Z","userID":"user_b6w054ass"}
+{"level":"info","message":"Fetched profile for user user_b6w054ass, IP: 192.168.0.117","timestamp":"2025-04-30T09:03:47.306Z"}
+{"level":"info","message":"Fetched notification preferences for user: user_b6w054ass, IP: 192.168.0.117","timestamp":"2025-04-30T09:03:47.323Z"}
+{"isWebSocket":false,"level":"info","message":"Authentication successful for user: superadmin@example.com","roles":"default-roles-traceflow, offline_access, Super Admin, uma_authorization","timestamp":"2025-04-30T09:03:47.328Z","userID":"user_b6w054ass"}
+{"level":"info","message":"Fetched notification types for user: user_b6w054ass, IP: 192.168.0.117","timestamp":"2025-04-30T09:03:47.345Z"}
+{"isWebSocket":true,"level":"info","message":"Authentication successful for user: superadmin@example.com","roles":"default-roles-traceflow, offline_access, Super Admin, uma_authorization","timestamp":"2025-04-30T09:03:47.508Z","userID":"user_b6w054ass"}
+{"email":"superadmin@example.com","level":"info","message":"WebSocket authentication successful","roles":"default-roles-traceflow, offline_access, Super Admin, uma_authorization","socketId":"3woopc7chWIzEMYOAAAD","timestamp":"2025-04-30T09:03:47.509Z","userID":"user_b6w054ass"}
+{"level":"info","message":"User connected: superadmin@example.com","socketId":"3woopc7chWIzEMYOAAAD","timestamp":"2025-04-30T09:03:47.534Z","userID":"user_b6w054ass"}
+{"level":"info","message":"User superadmin@example.com joined room: default-roles-traceflow","socketId":"3woopc7chWIzEMYOAAAD","timestamp":"2025-04-30T09:03:47.542Z"}
+{"level":"info","message":"User superadmin@example.com joined room: offline_access","socketId":"3woopc7chWIzEMYOAAAD","timestamp":"2025-04-30T09:03:47.549Z"}
+{"level":"info","message":"User superadmin@example.com joined room: super admin","socketId":"3woopc7chWIzEMYOAAAD","timestamp":"2025-04-30T09:03:47.551Z"}
+{"level":"info","message":"User superadmin@example.com joined room: uma_authorization","socketId":"3woopc7chWIzEMYOAAAD","timestamp":"2025-04-30T09:03:47.551Z"}
+{"level":"info","message":"User superadmin@example.com joined room: user_b6w054ass","socketId":"3woopc7chWIzEMYOAAAD","timestamp":"2025-04-30T09:03:47.552Z"}
+{"level":"info","message":"Client connected","socketId":"3woopc7chWIzEMYOAAAD","timestamp":"2025-04-30T09:03:47.553Z"}
+{"level":"info","message":"User superadmin@example.com joined room: default-roles-traceflow","socketId":"3woopc7chWIzEMYOAAAD","timestamp":"2025-04-30T09:03:47.563Z"}
+{"level":"info","message":"Client joined room: default-roles-traceflow","socketId":"3woopc7chWIzEMYOAAAD","timestamp":"2025-04-30T09:03:47.566Z"}
+{"isWebSocket":false,"level":"info","message":"Authentication successful for user: superadmin@example.com","roles":"default-roles-traceflow, offline_access, Super Admin, uma_authorization","timestamp":"2025-04-30T09:03:47.589Z","userID":"user_b6w054ass"}
+{"level":"info","message":"Super Admin bypass for user user_b6w054ass","timestamp":"2025-04-30T09:03:47.591Z"}
+{"level":"info","message":"Fetched notification rules by user: user_b6w054ass, IP: 192.168.0.117","timestamp":"2025-04-30T09:03:47.598Z"}
+{"level":"info","message":"User superadmin@example.com joined room: user_b6w054ass","socketId":"3woopc7chWIzEMYOAAAD","timestamp":"2025-04-30T09:03:47.606Z"}
+{"level":"info","message":"Client joined room: user_b6w054ass","socketId":"3woopc7chWIzEMYOAAAD","timestamp":"2025-04-30T09:03:47.607Z"}
+{"level":"info","message":"User superadmin@example.com joined room: default-roles-traceflow","socketId":"3woopc7chWIzEMYOAAAD","timestamp":"2025-04-30T09:03:47.610Z"}
+{"level":"info","message":"Client joined room: default-roles-traceflow","socketId":"3woopc7chWIzEMYOAAAD","timestamp":"2025-04-30T09:03:47.612Z"}
+{"level":"info","message":"User superadmin@example.com joined room: super admin","socketId":"3woopc7chWIzEMYOAAAD","timestamp":"2025-04-30T09:03:47.612Z"}
+{"level":"info","message":"Client joined room: super admin","socketId":"3woopc7chWIzEMYOAAAD","timestamp":"2025-04-30T09:03:47.613Z"}
+{"isWebSocket":false,"level":"info","message":"Authentication successful for user: superadmin@example.com","roles":"default-roles-traceflow, offline_access, Super Admin, uma_authorization","timestamp":"2025-04-30T09:03:47.632Z","userID":"user_b6w054ass"}
+{"level":"info","message":"Fetched notifications for user: user_b6w054ass, IP: 192.168.0.117","timestamp":"2025-04-30T09:03:47.636Z"}
+{"isWebSocket":false,"level":"info","message":"Authentication successful for user: superadmin@example.com","roles":"default-roles-traceflow, offline_access, Super Admin, uma_authorization","timestamp":"2025-04-30T09:03:48.883Z","userID":"user_b6w054ass"}
+{"level":"info","message":"Fetched notifications for user: user_b6w054ass, IP: 192.168.0.117","timestamp":"2025-04-30T09:03:48.886Z"}
+{"isWebSocket":false,"level":"info","message":"Authentication successful for user: superadmin@example.com","roles":"default-roles-traceflow, offline_access, Super Admin, uma_authorization","timestamp":"2025-04-30T09:03:52.997Z","userID":"user_b6w054ass"}
+{"level":"info","message":"Fetched notifications for user: user_b6w054ass, IP: 192.168.0.117","timestamp":"2025-04-30T09:03:53.001Z"}
+{"isWebSocket":false,"level":"info","message":"Authentication successful for user: superadmin@example.com","roles":"default-roles-traceflow, offline_access, Super Admin, uma_authorization","timestamp":"2025-04-30T09:03:58.175Z","userID":"user_b6w054ass"}
+{"level":"info","message":"Super Admin bypass for user user_b6w054ass","timestamp":"2025-04-30T09:03:58.176Z"}
+{"level":"info","message":"Fetched all users by user user_b6w054ass, IP: 192.168.0.117","timestamp":"2025-04-30T09:03:58.185Z"}
+{"isWebSocket":false,"level":"info","message":"Authentication successful for user: superadmin@example.com","roles":"default-roles-traceflow, offline_access, Super Admin, uma_authorization","timestamp":"2025-04-30T09:03:58.208Z","userID":"user_b6w054ass"}
+{"level":"info","message":"Super Admin bypass for user user_b6w054ass","timestamp":"2025-04-30T09:03:58.209Z"}
+{"level":"info","message":"Fetched all roles by user user_b6w054ass, IP: 192.168.0.117","timestamp":"2025-04-30T09:03:58.217Z"}
+{"isWebSocket":false,"level":"info","message":"Authentication successful for user: superadmin@example.com","roles":"default-roles-traceflow, offline_access, Super Admin, uma_authorization","timestamp":"2025-04-30T09:04:06.098Z","userID":"user_b6w054ass"}
+{"level":"info","message":"Super Admin bypass for user user_b6w054ass","timestamp":"2025-04-30T09:04:06.099Z"}
+{"level":"info","message":"Fetched all permissions by user user_b6w054ass, IP: 192.168.0.117","timestamp":"2025-04-30T09:04:06.106Z"}
+{"isWebSocket":false,"level":"info","message":"Authentication successful for user: superadmin@example.com","roles":"default-roles-traceflow, offline_access, Super Admin, uma_authorization","timestamp":"2025-04-30T09:04:07.245Z","userID":"user_b6w054ass"}
+{"level":"info","message":"Super Admin bypass for user user_b6w054ass","timestamp":"2025-04-30T09:04:07.246Z"}
+{"level":"info","message":"Fetched all checklists by user user_b6w054ass, IP: 192.168.0.117","timestamp":"2025-04-30T09:04:07.256Z"}
+{"isWebSocket":false,"level":"info","message":"Authentication successful for user: superadmin@example.com","roles":"default-roles-traceflow, offline_access, Super Admin, uma_authorization","timestamp":"2025-04-30T09:04:10.575Z","userID":"user_b6w054ass"}
+{"level":"info","message":"Super Admin bypass for user user_b6w054ass","timestamp":"2025-04-30T09:04:10.575Z"}
+{"level":"info","message":"Fetched notification rules by user: user_b6w054ass, IP: 192.168.0.117","timestamp":"2025-04-30T09:04:10.582Z"}
+{"isWebSocket":false,"level":"info","message":"Authentication successful for user: superadmin@example.com","roles":"default-roles-traceflow, offline_access, Super Admin, uma_authorization","timestamp":"2025-04-30T09:04:10.658Z","userID":"user_b6w054ass"}
+{"level":"info","message":"Super Admin bypass for user user_b6w054ass","timestamp":"2025-04-30T09:04:10.659Z"}
+{"level":"info","message":"Fetched notification rules by user: user_b6w054ass, IP: 192.168.0.117","timestamp":"2025-04-30T09:04:10.664Z"}
+{"isWebSocket":false,"level":"info","message":"Authentication successful for user: superadmin@example.com","roles":"default-roles-traceflow, offline_access, Super Admin, uma_authorization","timestamp":"2025-04-30T09:04:13.887Z","userID":"user_b6w054ass"}
+{"level":"info","message":"Super Admin bypass for user user_b6w054ass","timestamp":"2025-04-30T09:04:13.888Z"}
+{"level":"info","message":"Fetched supervisors for user user_b6w054ass by user user_b6w054ass, IP: 192.168.0.117","timestamp":"2025-04-30T09:04:13.897Z"}
+{"isWebSocket":false,"level":"info","message":"Authentication successful for user: superadmin@example.com","roles":"default-roles-traceflow, offline_access, Super Admin, uma_authorization","timestamp":"2025-04-30T09:04:13.907Z","userID":"user_b6w054ass"}
+{"level":"info","message":"Super Admin bypass for user user_b6w054ass","timestamp":"2025-04-30T09:04:13.909Z"}
+{"level":"info","message":"Fetched managers for user user_b6w054ass by user user_b6w054ass, IP: 192.168.0.117","timestamp":"2025-04-30T09:04:13.917Z"}
+{"isWebSocket":false,"level":"info","message":"Authentication successful for user: superadmin@example.com","roles":"default-roles-traceflow, offline_access, Super Admin, uma_authorization","timestamp":"2025-04-30T09:04:14.276Z","userID":"user_b6w054ass"}
+{"level":"info","message":"Super Admin bypass for user user_b6w054ass","timestamp":"2025-04-30T09:04:14.277Z"}
+{"level":"info","message":"Fetched user user_b6w054ass by user user_b6w054ass, IP: 192.168.0.117","timestamp":"2025-04-30T09:04:14.285Z"}
+{"isWebSocket":false,"level":"info","message":"Authentication successful for user: superadmin@example.com","roles":"default-roles-traceflow, offline_access, Super Admin, uma_authorization","timestamp":"2025-04-30T09:05:07.471Z","userID":"user_b6w054ass"}
+{"level":"info","message":"Super Admin bypass for user user_b6w054ass","timestamp":"2025-04-30T09:05:07.472Z"}
+{"isWebSocket":false,"level":"info","message":"Authentication successful for user: superadmin@example.com","roles":"default-roles-traceflow, offline_access, Super Admin, uma_authorization","timestamp":"2025-04-30T09:05:08.680Z","userID":"user_b6w054ass"}
+{"level":"info","message":"Super Admin bypass for user user_b6w054ass","timestamp":"2025-04-30T09:05:08.681Z"}
+{"ip":null,"level":"error","message":"Create role error: Role already exists., user: user_b6w054ass","timestamp":"2025-04-30T09:05:12.171Z"}
+{"ip":null,"level":"error","message":"Reset roles error: Role already exists., user: user_b6w054ass","timestamp":"2025-04-30T09:05:12.173Z"}
+{"level":"error","message":"Reset roles error: Role already exists., user: user_b6w054ass, IP: 192.168.0.117","timestamp":"2025-04-30T09:05:12.174Z"}
+{"level":"info","message":"No active rules found for event: role:reset","timestamp":"2025-04-30T09:05:15.354Z"}
+{"enabled":true,"event":"role:reset","level":"info","message":"Created default notification rule","ruleID":"rule_edjHB8L7GwWN0OoEXq04M","timestamp":"2025-04-30T09:05:15.360Z"}
+{"level":"info","message":"Notification stored Notification for role:reset","notificationID":"notif_G6q0VvDEaUT-go5fTKfTb","timestamp":"2025-04-30T09:05:15.379Z","userID":"user_b6w054ass"}
+{"level":"info","message":"Notification status updated","notificationID":"notif_G6q0VvDEaUT-go5fTKfTb","status":"sent","timestamp":"2025-04-30T09:05:15.387Z"}
+{"event":"role:reset","level":"info","message":"Triggered notifications","recipientCount":1,"timestamp":"2025-04-30T09:05:15.390Z"}
+{"level":"info","message":"Reset main roles by user user_b6w054ass, IP: 192.168.0.117","timestamp":"2025-04-30T09:05:15.391Z"}
+{"isWebSocket":false,"level":"info","message":"Authentication successful for user: superadmin@example.com","roles":"default-roles-traceflow, offline_access, Super Admin, uma_authorization","timestamp":"2025-04-30T09:05:15.428Z","userID":"user_b6w054ass"}
+{"level":"info","message":"Super Admin bypass for user user_b6w054ass","timestamp":"2025-04-30T09:05:15.429Z"}
+{"level":"info","message":"Fetched all roles by user user_b6w054ass, IP: 192.168.0.117","timestamp":"2025-04-30T09:05:15.434Z"}
+{"isWebSocket":false,"level":"info","message":"Authentication successful for user: superadmin@example.com","roles":"default-roles-traceflow, offline_access, Super Admin, uma_authorization","timestamp":"2025-04-30T09:06:01.548Z","userID":"user_b6w054ass"}
+{"isWebSocket":false,"level":"info","message":"Authentication successful for user: superadmin@example.com","roles":"default-roles-traceflow, offline_access, Super Admin, uma_authorization","timestamp":"2025-04-30T09:06:01.551Z","userID":"user_b6w054ass"}
+{"isWebSocket":false,"level":"info","message":"Authentication successful for user: superadmin@example.com","roles":"default-roles-traceflow, offline_access, Super Admin, uma_authorization","timestamp":"2025-04-30T09:06:01.555Z","userID":"user_b6w054ass"}
+{"level":"info","message":"Fetched notification types for user: user_b6w054ass, IP: 192.168.0.117","timestamp":"2025-04-30T09:06:01.561Z"}
+{"level":"info","message":"Fetched profile for user user_b6w054ass, IP: 192.168.0.117","timestamp":"2025-04-30T09:06:01.572Z"}
+{"level":"info","message":"Fetched notification preferences for user: user_b6w054ass, IP: 192.168.0.117","timestamp":"2025-04-30T09:06:01.583Z"}
+{"isWebSocket":false,"level":"info","message":"Authentication successful for user: superadmin@example.com","roles":"default-roles-traceflow, offline_access, Super Admin, uma_authorization","timestamp":"2025-04-30T09:06:02.572Z","userID":"user_b6w054ass"}
+{"level":"info","message":"Fetched notifications for user: user_b6w054ass, IP: 192.168.0.117","timestamp":"2025-04-30T09:06:02.582Z"}
+{"isWebSocket":false,"level":"info","message":"Authentication successful for user: superadmin@example.com","roles":"default-roles-traceflow, offline_access, Super Admin, uma_authorization","timestamp":"2025-04-30T09:06:06.606Z","userID":"user_b6w054ass"}
+{"level":"info","message":"Notification marked as read: notif_G6q0VvDEaUT-go5fTKfTb by user: user_b6w054ass, IP: 192.168.0.117","timestamp":"2025-04-30T09:06:06.613Z"}
+{"isWebSocket":false,"level":"info","message":"Authentication successful for user: superadmin@example.com","roles":"default-roles-traceflow, offline_access, Super Admin, uma_authorization","timestamp":"2025-04-30T09:06:16.565Z","userID":"user_b6w054ass"}
+{"level":"info","message":"Notification marked as read: notif_G6q0VvDEaUT-go5fTKfTb by user: user_b6w054ass, IP: 192.168.0.117","timestamp":"2025-04-30T09:06:16.568Z"}
+{"level":"info","message":"User disconnected: superadmin@example.com","reason":"transport close","socketId":"3woopc7chWIzEMYOAAAD","timestamp":"2025-04-30T09:06:46.121Z"}
+{"level":"info","message":"Client disconnected","socketId":"3woopc7chWIzEMYOAAAD","timestamp":"2025-04-30T09:06:46.122Z"}
+{"isWebSocket":false,"level":"info","message":"Authentication successful for user: superadmin@example.com","roles":"default-roles-traceflow, offline_access, Super Admin, uma_authorization","timestamp":"2025-04-30T09:06:46.661Z","userID":"user_b6w054ass"}
+{"isWebSocket":false,"level":"info","message":"Authentication successful for user: superadmin@example.com","roles":"default-roles-traceflow, offline_access, Super Admin, uma_authorization","timestamp":"2025-04-30T09:06:46.673Z","userID":"user_b6w054ass"}
+{"level":"info","message":"Fetched effective permissions for user user_b6w054ass by user_b6w054ass, IP: 192.168.0.117","timestamp":"2025-04-30T09:06:46.697Z"}
+{"level":"info","message":"Fetched roles for user user_b6w054ass by user_b6w054ass, IP: 192.168.0.117","timestamp":"2025-04-30T09:06:46.715Z"}
+{"isWebSocket":false,"level":"info","message":"Authentication successful for user: superadmin@example.com","roles":"default-roles-traceflow, offline_access, Super Admin, uma_authorization","timestamp":"2025-04-30T09:06:46.751Z","userID":"user_b6w054ass"}
+{"level":"info","message":"Fetched effective permissions for user user_b6w054ass by user_b6w054ass, IP: 192.168.0.117","timestamp":"2025-04-30T09:06:46.774Z"}
+{"isWebSocket":false,"level":"info","message":"Authentication successful for user: superadmin@example.com","roles":"default-roles-traceflow, offline_access, Super Admin, uma_authorization","timestamp":"2025-04-30T09:06:46.798Z","userID":"user_b6w054ass"}
+{"level":"info","message":"Fetched roles for user user_b6w054ass by user_b6w054ass, IP: 192.168.0.117","timestamp":"2025-04-30T09:06:46.805Z"}
+{"isWebSocket":false,"level":"info","message":"Authentication successful for user: superadmin@example.com","roles":"default-roles-traceflow, offline_access, Super Admin, uma_authorization","timestamp":"2025-04-30T09:06:46.953Z","userID":"user_b6w054ass"}
+{"isWebSocket":false,"level":"info","message":"Authentication successful for user: superadmin@example.com","roles":"default-roles-traceflow, offline_access, Super Admin, uma_authorization","timestamp":"2025-04-30T09:06:46.960Z","userID":"user_b6w054ass"}
+{"isWebSocket":false,"level":"info","message":"Authentication successful for user: superadmin@example.com","roles":"default-roles-traceflow, offline_access, Super Admin, uma_authorization","timestamp":"2025-04-30T09:06:46.972Z","userID":"user_b6w054ass"}
+{"level":"info","message":"Fetched profile for user user_b6w054ass, IP: 192.168.0.117","timestamp":"2025-04-30T09:06:46.977Z"}
+{"level":"info","message":"Fetched notification types for user: user_b6w054ass, IP: 192.168.0.117","timestamp":"2025-04-30T09:06:46.985Z"}
+{"level":"info","message":"Fetched notification preferences for user: user_b6w054ass, IP: 192.168.0.117","timestamp":"2025-04-30T09:06:46.993Z"}
+{"isWebSocket":true,"level":"info","message":"Authentication successful for user: superadmin@example.com","roles":"default-roles-traceflow, offline_access, Super Admin, uma_authorization","timestamp":"2025-04-30T09:06:47.001Z","userID":"user_b6w054ass"}
+{"email":"superadmin@example.com","level":"info","message":"WebSocket authentication successful","roles":"default-roles-traceflow, offline_access, Super Admin, uma_authorization","socketId":"tzrqXvZQ-a92hRAwAAAF","timestamp":"2025-04-30T09:06:47.002Z","userID":"user_b6w054ass"}
+{"level":"info","message":"User connected: superadmin@example.com","socketId":"tzrqXvZQ-a92hRAwAAAF","timestamp":"2025-04-30T09:06:47.005Z","userID":"user_b6w054ass"}
+{"level":"info","message":"User superadmin@example.com joined room: default-roles-traceflow","socketId":"tzrqXvZQ-a92hRAwAAAF","timestamp":"2025-04-30T09:06:47.015Z"}
+{"level":"info","message":"User superadmin@example.com joined room: offline_access","socketId":"tzrqXvZQ-a92hRAwAAAF","timestamp":"2025-04-30T09:06:47.019Z"}
+{"level":"info","message":"User superadmin@example.com joined room: super admin","socketId":"tzrqXvZQ-a92hRAwAAAF","timestamp":"2025-04-30T09:06:47.020Z"}
+{"level":"info","message":"User superadmin@example.com joined room: uma_authorization","socketId":"tzrqXvZQ-a92hRAwAAAF","timestamp":"2025-04-30T09:06:47.021Z"}
+{"level":"info","message":"User superadmin@example.com joined room: user_b6w054ass","socketId":"tzrqXvZQ-a92hRAwAAAF","timestamp":"2025-04-30T09:06:47.022Z"}
+{"level":"info","message":"Client connected","socketId":"tzrqXvZQ-a92hRAwAAAF","timestamp":"2025-04-30T09:06:47.023Z"}
+{"level":"info","message":"User superadmin@example.com joined room: default-roles-traceflow","socketId":"tzrqXvZQ-a92hRAwAAAF","timestamp":"2025-04-30T09:06:47.049Z"}
+{"level":"info","message":"Client joined room: default-roles-traceflow","socketId":"tzrqXvZQ-a92hRAwAAAF","timestamp":"2025-04-30T09:06:47.050Z"}
+{"isWebSocket":false,"level":"info","message":"Authentication successful for user: superadmin@example.com","roles":"default-roles-traceflow, offline_access, Super Admin, uma_authorization","timestamp":"2025-04-30T09:06:47.127Z","userID":"user_b6w054ass"}
+{"level":"info","message":"Super Admin bypass for user user_b6w054ass","timestamp":"2025-04-30T09:06:47.130Z"}
+{"level":"info","message":"Fetched notification rules by user: user_b6w054ass, IP: 192.168.0.117","timestamp":"2025-04-30T09:06:47.135Z"}
+{"level":"info","message":"User superadmin@example.com joined room: user_b6w054ass","socketId":"tzrqXvZQ-a92hRAwAAAF","timestamp":"2025-04-30T09:06:47.237Z"}
+{"level":"info","message":"Client joined room: user_b6w054ass","socketId":"tzrqXvZQ-a92hRAwAAAF","timestamp":"2025-04-30T09:06:47.244Z"}
+{"level":"info","message":"User superadmin@example.com joined room: default-roles-traceflow","socketId":"tzrqXvZQ-a92hRAwAAAF","timestamp":"2025-04-30T09:06:47.244Z"}
+{"level":"info","message":"Client joined room: default-roles-traceflow","socketId":"tzrqXvZQ-a92hRAwAAAF","timestamp":"2025-04-30T09:06:47.245Z"}
+{"level":"info","message":"User superadmin@example.com joined room: super admin","socketId":"tzrqXvZQ-a92hRAwAAAF","timestamp":"2025-04-30T09:06:47.245Z"}
+{"level":"info","message":"Client joined room: super admin","socketId":"tzrqXvZQ-a92hRAwAAAF","timestamp":"2025-04-30T09:06:47.246Z"}
+{"isWebSocket":false,"level":"info","message":"Authentication successful for user: superadmin@example.com","roles":"default-roles-traceflow, offline_access, Super Admin, uma_authorization","timestamp":"2025-04-30T09:06:47.265Z","userID":"user_b6w054ass"}
+{"level":"info","message":"Fetched notifications for user: user_b6w054ass, IP: 192.168.0.117","timestamp":"2025-04-30T09:06:47.272Z"}
+{"isWebSocket":false,"level":"info","message":"Authentication successful for user: superadmin@example.com","roles":"default-roles-traceflow, offline_access, Super Admin, uma_authorization","timestamp":"2025-04-30T09:06:50.780Z","userID":"user_b6w054ass"}
+{"level":"info","message":"Super Admin bypass for user user_b6w054ass","timestamp":"2025-04-30T09:06:50.781Z"}
+{"level":"info","message":"Fetched all roles by user user_b6w054ass, IP: 192.168.0.117","timestamp":"2025-04-30T09:06:50.798Z"}
+{"isWebSocket":false,"level":"info","message":"Authentication successful for user: superadmin@example.com","roles":"default-roles-traceflow, offline_access, Super Admin, uma_authorization","timestamp":"2025-04-30T09:06:52.725Z","userID":"user_b6w054ass"}
+{"level":"info","message":"Super Admin bypass for user user_b6w054ass","timestamp":"2025-04-30T09:06:52.726Z"}
+{"level":"info","message":"Fetched all permissions by user user_b6w054ass, IP: 192.168.0.117","timestamp":"2025-04-30T09:06:52.733Z"}
+{"isWebSocket":false,"level":"info","message":"Authentication successful for user: superadmin@example.com","roles":"default-roles-traceflow, offline_access, Super Admin, uma_authorization","timestamp":"2025-04-30T09:06:57.487Z","userID":"user_b6w054ass"}
+{"level":"info","message":"Super Admin bypass for user user_b6w054ass","timestamp":"2025-04-30T09:06:57.488Z"}
+{"level":"info","message":"No active rules found for event: role:created","timestamp":"2025-04-30T09:06:57.616Z"}
+{"enabled":true,"event":"role:created","level":"info","message":"Created default notification rule","ruleID":"rule_A_4ygvNUNk-HjLsBNlo5B","timestamp":"2025-04-30T09:06:57.619Z"}
+{"level":"info","message":"Notification stored Notification for role:created","notificationID":"notif_hgbnlkMjPchamOp7gyg-U","timestamp":"2025-04-30T09:06:57.630Z","userID":"user_b6w054ass"}
+{"level":"info","message":"Notification status updated","notificationID":"notif_hgbnlkMjPchamOp7gyg-U","status":"sent","timestamp":"2025-04-30T09:06:57.636Z"}
+{"event":"role:created","level":"info","message":"Triggered notifications","recipientCount":1,"timestamp":"2025-04-30T09:06:57.638Z"}
+{"level":"info","message":"Role created: test by user user_b6w054ass, IP: 192.168.0.117","timestamp":"2025-04-30T09:06:57.639Z"}
+{"isWebSocket":false,"level":"info","message":"Authentication successful for user: superadmin@example.com","roles":"default-roles-traceflow, offline_access, Super Admin, uma_authorization","timestamp":"2025-04-30T09:06:57.752Z","userID":"user_b6w054ass"}
+{"level":"info","message":"Fetched notifications for user: user_b6w054ass, IP: 192.168.0.117","timestamp":"2025-04-30T09:06:57.757Z"}
+{"isWebSocket":false,"level":"info","message":"Authentication successful for user: superadmin@example.com","roles":"default-roles-traceflow, offline_access, Super Admin, uma_authorization","timestamp":"2025-04-30T09:07:07.244Z","userID":"user_b6w054ass"}
+{"level":"info","message":"Notification marked as read: notif_hgbnlkMjPchamOp7gyg-U by user: user_b6w054ass, IP: 192.168.0.117","timestamp":"2025-04-30T09:07:07.253Z"}
+{"isWebSocket":false,"level":"info","message":"Authentication successful for user: superadmin@example.com","roles":"default-roles-traceflow, offline_access, Super Admin, uma_authorization","timestamp":"2025-04-30T09:07:28.983Z","userID":"user_b6w054ass"}
+{"level":"info","message":"Super Admin bypass for user user_b6w054ass","timestamp":"2025-04-30T09:07:28.986Z"}
+{"level":"info","message":"Fetched all permissions by user user_b6w054ass, IP: 192.168.0.117","timestamp":"2025-04-30T09:07:28.994Z"}
+{"isWebSocket":false,"level":"info","message":"Authentication successful for user: superadmin@example.com","roles":"default-roles-traceflow, offline_access, Super Admin, uma_authorization","timestamp":"2025-04-30T09:07:30.699Z","userID":"user_b6w054ass"}
+{"level":"info","message":"Super Admin bypass for user user_b6w054ass","timestamp":"2025-04-30T09:07:30.700Z"}
+{"level":"info","message":"Fetched all checklists by user user_b6w054ass, IP: 192.168.0.117","timestamp":"2025-04-30T09:07:30.708Z"}
+{"level":"info","message":"Database Initialization: Starting","step":"database","timestamp":"2025-04-30T09:08:25.231Z"}
+{"duration":"0.25","level":"info","message":"Database Initialization: Completed","status":"success","step":"database","timestamp":"2025-04-30T09:08:25.478Z"}
+{"level":"info","message":"SMTP Initialization: Starting","step":"smtp","timestamp":"2025-04-30T09:08:25.480Z"}
+{"level":"info","message":"SMTP server verified successfully","timestamp":"2025-04-30T09:08:26.330Z"}
+{"duration":"0.85","level":"info","message":"SMTP Initialization: Completed","status":"success","step":"smtp","timestamp":"2025-04-30T09:08:26.332Z"}
+{"level":"info","message":"SMS Initialization: Starting","step":"sms","timestamp":"2025-04-30T09:08:26.334Z"}
+{"level":"info","message":"SMS gateway initialized","timestamp":"2025-04-30T09:08:26.334Z"}
+{"duration":"0.00","level":"info","message":"SMS Initialization: Completed","status":"success","step":"sms","timestamp":"2025-04-30T09:08:26.335Z"}
+{"level":"info","message":"Model Associations: Starting","step":"associations","timestamp":"2025-04-30T09:08:26.336Z"}
+{"duration":"0.02","level":"info","message":"Model Associations: Completed","status":"success","step":"associations","timestamp":"2025-04-30T09:08:26.354Z"}
+{"level":"info","message":"Database Synchronization: Skipped","status":"skipped","step":"sync","timestamp":"2025-04-30T09:08:26.355Z"}
+{"level":"info","message":"Permission Seeding: Skipped","status":"skipped","step":"permissions","timestamp":"2025-04-30T09:08:26.355Z"}
+{"level":"info","message":"Super Admin Seeding: Skipped","status":"skipped","step":"superadmin","timestamp":"2025-04-30T09:08:26.356Z"}
+{"level":"info","message":"Socket Initialization: Starting","step":"socket","timestamp":"2025-04-30T09:08:26.356Z"}
+{"duration":"0.00","level":"info","message":"Socket Initialization: Completed","status":"success","step":"socket","timestamp":"2025-04-30T09:08:26.357Z"}
+{"level":"info","message":"Server Initialization: Starting","step":"server","timestamp":"2025-04-30T09:08:26.357Z"}
+{"level":"info","message":"mDNS advertisement skipped in development mode","timestamp":"2025-04-30T09:08:26.360Z"}
+{"duration":"0.00","level":"info","message":"Server Initialization: Completed","status":"success","step":"server","timestamp":"2025-04-30T09:08:26.361Z"}
+{"level":"info","message":"\u001b[36m========== TraceFlow Initialization Summary ========\u001b[39m","timestamp":"2025-04-30T09:08:26.363Z"}
+{"level":"info","message":"Date: 2025-04-30T09:08:26.363Z","timestamp":"2025-04-30T09:08:26.363Z"}
+{"level":"info","message":"Steps Completed:","timestamp":"2025-04-30T09:08:26.364Z"}
+{"duration":"0.25","level":"info","message":"  - Database Initialization: \u001b[32mSUCCESS\u001b[39m - (0.25s)","status":"success","step":"Database Initialization","timestamp":"2025-04-30T09:08:26.364Z"}
+{"duration":"0.85","level":"info","message":"  - SMTP Initialization: \u001b[32mSUCCESS\u001b[39m - (0.85s)","status":"success","step":"SMTP Initialization","timestamp":"2025-04-30T09:08:26.365Z"}
+{"duration":"0.00","level":"info","message":"  - SMS Initialization: \u001b[32mSUCCESS\u001b[39m - (0.00s)","status":"success","step":"SMS Initialization","timestamp":"2025-04-30T09:08:26.365Z"}
+{"duration":"0.02","level":"info","message":"  - Model Associations: \u001b[32mSUCCESS\u001b[39m - (0.02s)","status":"success","step":"Model Associations","timestamp":"2025-04-30T09:08:26.365Z"}
+{"duration":"0.00","level":"info","message":"  - Database Synchronization: \u001b[33mSKIPPED\u001b[39m - (0.00s)","status":"skipped","step":"Database Synchronization","timestamp":"2025-04-30T09:08:26.366Z"}
+{"duration":"0.00","level":"info","message":"  - Permission Seeding: \u001b[33mSKIPPED\u001b[39m - (0.00s)","status":"skipped","step":"Permission Seeding","timestamp":"2025-04-30T09:08:26.366Z"}
+{"duration":"0.00","level":"info","message":"  - Super Admin Seeding: \u001b[33mSKIPPED\u001b[39m - (0.00s)","status":"skipped","step":"Super Admin Seeding","timestamp":"2025-04-30T09:08:26.366Z"}
+{"duration":"0.00","level":"info","message":"  - Socket Initialization: \u001b[32mSUCCESS\u001b[39m - (0.00s)","status":"success","step":"Socket Initialization","timestamp":"2025-04-30T09:08:26.367Z"}
+{"duration":"0.00","level":"info","message":"  - Server Initialization: \u001b[32mSUCCESS\u001b[39m - (0.00s)","status":"success","step":"Server Initialization","timestamp":"2025-04-30T09:08:26.367Z"}
+{"level":"info","message":"Total Steps: 9","timestamp":"2025-04-30T09:08:26.367Z"}
+{"level":"info","message":"\u001b[32mSuccesses: 6\u001b[39m","timestamp":"2025-04-30T09:08:26.368Z"}
+{"level":"info","message":"\u001b[33mSkipped: 3\u001b[39m","timestamp":"2025-04-30T09:08:26.368Z"}
+{"level":"info","message":"\u001b[31mFailures: 0\u001b[39m","timestamp":"2025-04-30T09:08:26.368Z"}
+{"level":"info","message":"Total Duration: 5.45 seconds","timestamp":"2025-04-30T09:08:26.369Z"}
+{"level":"info","message":"\u001b[36m===================================================\u001b[39m","timestamp":"2025-04-30T09:08:26.369Z"}
+{"level":"info","message":"\u001b[36m===================================================\u001b[39m","timestamp":"2025-04-30T09:08:26.369Z"}
+{"level":"info","message":"\tSuper Admin Credentials:","timestamp":"2025-04-30T09:08:26.370Z"}
+{"level":"info","message":"\tEmail:\t\tsuperadmin@example.com","timestamp":"2025-04-30T09:08:26.370Z"}
+{"level":"info","message":"\tPassword:\tSuperSecurePassword123!","timestamp":"2025-04-30T09:08:26.371Z"}
+{"level":"info","message":"\u001b[36m===================================================\u001b[39m","timestamp":"2025-04-30T09:08:26.371Z"}
+{"level":"info","message":"HTTP Server running on port 5000","timestamp":"2025-04-30T09:08:26.386Z"}
+{"isWebSocket":false,"level":"info","message":"Authentication successful for user: superadmin@example.com","roles":"default-roles-traceflow, offline_access, Super Admin, uma_authorization","timestamp":"2025-04-30T09:11:04.150Z","userID":"user_b6w054ass"}
+{"isWebSocket":false,"level":"info","message":"Authentication successful for user: superadmin@example.com","roles":"default-roles-traceflow, offline_access, Super Admin, uma_authorization","timestamp":"2025-04-30T09:11:04.167Z","userID":"user_b6w054ass"}
+{"level":"info","message":"Fetched roles for user user_b6w054ass by user_b6w054ass, IP: 192.168.0.117","timestamp":"2025-04-30T09:11:04.191Z"}
+{"level":"info","message":"Fetched effective permissions for user user_b6w054ass by user_b6w054ass, IP: 192.168.0.117","timestamp":"2025-04-30T09:11:04.211Z"}
+{"isWebSocket":false,"level":"info","message":"Authentication successful for user: superadmin@example.com","roles":"default-roles-traceflow, offline_access, Super Admin, uma_authorization","timestamp":"2025-04-30T09:11:04.246Z","userID":"user_b6w054ass"}
+{"level":"info","message":"Fetched roles for user user_b6w054ass by user_b6w054ass, IP: 192.168.0.117","timestamp":"2025-04-30T09:11:04.274Z"}
+{"isWebSocket":false,"level":"info","message":"Authentication successful for user: superadmin@example.com","roles":"default-roles-traceflow, offline_access, Super Admin, uma_authorization","timestamp":"2025-04-30T09:11:04.286Z","userID":"user_b6w054ass"}
+{"level":"info","message":"Fetched effective permissions for user user_b6w054ass by user_b6w054ass, IP: 192.168.0.117","timestamp":"2025-04-30T09:11:04.331Z"}
+{"isWebSocket":true,"level":"info","message":"Authentication successful for user: superadmin@example.com","roles":"default-roles-traceflow, offline_access, Super Admin, uma_authorization","timestamp":"2025-04-30T09:11:04.800Z","userID":"user_b6w054ass"}
+{"email":"superadmin@example.com","level":"info","message":"WebSocket authentication successful","roles":"default-roles-traceflow, offline_access, Super Admin, uma_authorization","socketId":"0XP33fV7AiQ5fCaQAAAB","timestamp":"2025-04-30T09:11:04.801Z","userID":"user_b6w054ass"}
+{"level":"info","message":"User connected: superadmin@example.com","socketId":"0XP33fV7AiQ5fCaQAAAB","timestamp":"2025-04-30T09:11:04.807Z","userID":"user_b6w054ass"}
+{"level":"info","message":"User superadmin@example.com joined room: default-roles-traceflow","socketId":"0XP33fV7AiQ5fCaQAAAB","timestamp":"2025-04-30T09:11:04.845Z"}
+{"level":"info","message":"User superadmin@example.com joined room: offline_access","socketId":"0XP33fV7AiQ5fCaQAAAB","timestamp":"2025-04-30T09:11:04.857Z"}
+{"level":"info","message":"User superadmin@example.com joined room: super admin","socketId":"0XP33fV7AiQ5fCaQAAAB","timestamp":"2025-04-30T09:11:04.860Z"}
+{"level":"info","message":"User superadmin@example.com joined room: uma_authorization","socketId":"0XP33fV7AiQ5fCaQAAAB","timestamp":"2025-04-30T09:11:04.860Z"}
+{"level":"info","message":"User superadmin@example.com joined room: user_b6w054ass","socketId":"0XP33fV7AiQ5fCaQAAAB","timestamp":"2025-04-30T09:11:04.862Z"}
+{"level":"info","message":"Client connected","socketId":"0XP33fV7AiQ5fCaQAAAB","timestamp":"2025-04-30T09:11:04.864Z"}
+{"level":"info","message":"User superadmin@example.com joined room: default-roles-traceflow","socketId":"0XP33fV7AiQ5fCaQAAAB","timestamp":"2025-04-30T09:11:04.884Z"}
+{"level":"info","message":"Client joined room: default-roles-traceflow","socketId":"0XP33fV7AiQ5fCaQAAAB","timestamp":"2025-04-30T09:11:04.923Z"}
+{"isWebSocket":false,"level":"info","message":"Authentication successful for user: superadmin@example.com","roles":"default-roles-traceflow, offline_access, Super Admin, uma_authorization","timestamp":"2025-04-30T09:11:04.957Z","userID":"user_b6w054ass"}
+{"level":"info","message":"Super Admin bypass for user user_b6w054ass","timestamp":"2025-04-30T09:11:04.963Z"}
+{"level":"info","message":"Fetched notification rules by user: user_b6w054ass, IP: 192.168.0.117","timestamp":"2025-04-30T09:11:04.971Z"}
+{"isWebSocket":false,"level":"info","message":"Authentication successful for user: superadmin@example.com","roles":"default-roles-traceflow, offline_access, Super Admin, uma_authorization","timestamp":"2025-04-30T09:11:04.989Z","userID":"user_b6w054ass"}
+{"level":"info","message":"Super Admin bypass for user user_b6w054ass","timestamp":"2025-04-30T09:11:04.995Z"}
+{"level":"info","message":"User superadmin@example.com joined room: user_b6w054ass","socketId":"0XP33fV7AiQ5fCaQAAAB","timestamp":"2025-04-30T09:11:05.007Z"}
+{"level":"info","message":"Client joined room: user_b6w054ass","socketId":"0XP33fV7AiQ5fCaQAAAB","timestamp":"2025-04-30T09:11:05.016Z"}
+{"level":"info","message":"User superadmin@example.com joined room: default-roles-traceflow","socketId":"0XP33fV7AiQ5fCaQAAAB","timestamp":"2025-04-30T09:11:05.018Z"}
+{"level":"info","message":"Client joined room: default-roles-traceflow","socketId":"0XP33fV7AiQ5fCaQAAAB","timestamp":"2025-04-30T09:11:05.021Z"}
+{"level":"info","message":"User superadmin@example.com joined room: super admin","socketId":"0XP33fV7AiQ5fCaQAAAB","timestamp":"2025-04-30T09:11:05.024Z"}
+{"level":"info","message":"Client joined room: super admin","socketId":"0XP33fV7AiQ5fCaQAAAB","timestamp":"2025-04-30T09:11:05.025Z"}
+{"level":"info","message":"Fetched all checklists by user user_b6w054ass, IP: 192.168.0.117","timestamp":"2025-04-30T09:11:05.030Z"}
+{"isWebSocket":false,"level":"info","message":"Authentication successful for user: superadmin@example.com","roles":"default-roles-traceflow, offline_access, Super Admin, uma_authorization","timestamp":"2025-04-30T09:11:05.108Z","userID":"user_b6w054ass"}
+{"level":"info","message":"Fetched notifications for user: user_b6w054ass, IP: 192.168.0.117","timestamp":"2025-04-30T09:11:05.119Z"}
+{"isWebSocket":false,"level":"info","message":"Authentication successful for user: superadmin@example.com","roles":"default-roles-traceflow, offline_access, Super Admin, uma_authorization","timestamp":"2025-04-30T09:12:21.065Z","userID":"user_b6w054ass"}
+{"isWebSocket":false,"level":"info","message":"Authentication successful for user: superadmin@example.com","roles":"default-roles-traceflow, offline_access, Super Admin, uma_authorization","timestamp":"2025-04-30T09:12:21.071Z","userID":"user_b6w054ass"}
+{"isWebSocket":false,"level":"info","message":"Authentication successful for user: superadmin@example.com","roles":"default-roles-traceflow, offline_access, Super Admin, uma_authorization","timestamp":"2025-04-30T09:12:21.077Z","userID":"user_b6w054ass"}
+{"level":"info","message":"Fetched profile for user user_b6w054ass, IP: 192.168.0.117","timestamp":"2025-04-30T09:12:21.087Z"}
+{"level":"info","message":"Fetched notification types for user: user_b6w054ass, IP: 192.168.0.117","timestamp":"2025-04-30T09:12:21.097Z"}
+{"level":"info","message":"Fetched notification preferences for user: user_b6w054ass, IP: 192.168.0.117","timestamp":"2025-04-30T09:12:21.112Z"}
+{"isWebSocket":false,"level":"info","message":"Authentication successful for user: superadmin@example.com","roles":"default-roles-traceflow, offline_access, Super Admin, uma_authorization","timestamp":"2025-04-30T09:12:24.072Z","userID":"user_b6w054ass"}
+{"level":"info","message":"Fetched notifications for user: user_b6w054ass, IP: 192.168.0.117","timestamp":"2025-04-30T09:12:24.078Z"}
+{"isWebSocket":false,"level":"info","message":"Authentication successful for user: superadmin@example.com","roles":"default-roles-traceflow, offline_access, Super Admin, uma_authorization","timestamp":"2025-04-30T09:12:51.406Z","userID":"user_b6w054ass"}
+{"level":"info","message":"Fetched notifications for user: user_b6w054ass, IP: 192.168.0.117","timestamp":"2025-04-30T09:12:51.411Z"}
+{"isWebSocket":false,"level":"info","message":"Authentication successful for user: superadmin@example.com","roles":"default-roles-traceflow, offline_access, Super Admin, uma_authorization","timestamp":"2025-04-30T09:12:55.027Z","userID":"user_b6w054ass"}
+{"level":"info","message":"Notification marked as read: notif_hgbnlkMjPchamOp7gyg-U by user: user_b6w054ass, IP: 192.168.0.117","timestamp":"2025-04-30T09:12:55.032Z"}
+{"isWebSocket":false,"level":"info","message":"Authentication successful for user: superadmin@example.com","roles":"default-roles-traceflow, offline_access, Super Admin, uma_authorization","timestamp":"2025-04-30T09:12:58.434Z","userID":"user_b6w054ass"}
+{"level":"info","message":"Fetched notifications for user: user_b6w054ass, IP: 192.168.0.117","timestamp":"2025-04-30T09:12:58.437Z"}
+{"level":"info","message":"Database Initialization: Starting","step":"database","timestamp":"2025-04-30T10:09:11.708Z"}
+{"duration":"0.26","level":"info","message":"Database Initialization: Completed","status":"success","step":"database","timestamp":"2025-04-30T10:09:11.968Z"}
+{"level":"info","message":"SMTP Initialization: Starting","step":"smtp","timestamp":"2025-04-30T10:09:11.969Z"}
+{"level":"info","message":"SMTP server verified successfully","timestamp":"2025-04-30T10:09:12.872Z"}
+{"duration":"0.91","level":"info","message":"SMTP Initialization: Completed","status":"success","step":"smtp","timestamp":"2025-04-30T10:09:12.874Z"}
+{"level":"info","message":"SMS Initialization: Starting","step":"sms","timestamp":"2025-04-30T10:09:12.876Z"}
+{"level":"info","message":"SMS gateway initialized","timestamp":"2025-04-30T10:09:12.878Z"}
+{"duration":"0.00","level":"info","message":"SMS Initialization: Completed","status":"success","step":"sms","timestamp":"2025-04-30T10:09:12.879Z"}
+{"level":"info","message":"Model Associations: Starting","step":"associations","timestamp":"2025-04-30T10:09:12.879Z"}
+{"duration":"0.02","level":"info","message":"Model Associations: Completed","status":"success","step":"associations","timestamp":"2025-04-30T10:09:12.902Z"}
+{"level":"info","message":"Database Synchronization: Skipped","status":"skipped","step":"sync","timestamp":"2025-04-30T10:09:12.903Z"}
+{"level":"info","message":"Permission Seeding: Skipped","status":"skipped","step":"permissions","timestamp":"2025-04-30T10:09:12.903Z"}
+{"level":"info","message":"Super Admin Seeding: Skipped","status":"skipped","step":"superadmin","timestamp":"2025-04-30T10:09:12.904Z"}
+{"level":"info","message":"Socket Initialization: Starting","step":"socket","timestamp":"2025-04-30T10:09:12.904Z"}
+{"duration":"0.00","level":"info","message":"Socket Initialization: Completed","status":"success","step":"socket","timestamp":"2025-04-30T10:09:12.904Z"}
+{"level":"info","message":"Server Initialization: Starting","step":"server","timestamp":"2025-04-30T10:09:12.905Z"}
+{"level":"info","message":"mDNS advertisement skipped in development mode","timestamp":"2025-04-30T10:09:12.912Z"}
+{"duration":"0.01","level":"info","message":"Server Initialization: Completed","status":"success","step":"server","timestamp":"2025-04-30T10:09:12.914Z"}
+{"level":"info","message":"\u001b[36m========== TraceFlow Initialization Summary ========\u001b[39m","timestamp":"2025-04-30T10:09:12.917Z"}
+{"level":"info","message":"Date: 2025-04-30T10:09:12.918Z","timestamp":"2025-04-30T10:09:12.918Z"}
+{"level":"info","message":"Steps Completed:","timestamp":"2025-04-30T10:09:12.918Z"}
+{"duration":"0.26","level":"info","message":"  - Database Initialization: \u001b[32mSUCCESS\u001b[39m - (0.26s)","status":"success","step":"Database Initialization","timestamp":"2025-04-30T10:09:12.918Z"}
+{"duration":"0.91","level":"info","message":"  - SMTP Initialization: \u001b[32mSUCCESS\u001b[39m - (0.91s)","status":"success","step":"SMTP Initialization","timestamp":"2025-04-30T10:09:12.919Z"}
+{"duration":"0.00","level":"info","message":"  - SMS Initialization: \u001b[32mSUCCESS\u001b[39m - (0.00s)","status":"success","step":"SMS Initialization","timestamp":"2025-04-30T10:09:12.920Z"}
+{"duration":"0.02","level":"info","message":"  - Model Associations: \u001b[32mSUCCESS\u001b[39m - (0.02s)","status":"success","step":"Model Associations","timestamp":"2025-04-30T10:09:12.921Z"}
+{"duration":"0.00","level":"info","message":"  - Database Synchronization: \u001b[33mSKIPPED\u001b[39m - (0.00s)","status":"skipped","step":"Database Synchronization","timestamp":"2025-04-30T10:09:12.922Z"}
+{"duration":"0.00","level":"info","message":"  - Permission Seeding: \u001b[33mSKIPPED\u001b[39m - (0.00s)","status":"skipped","step":"Permission Seeding","timestamp":"2025-04-30T10:09:12.922Z"}
+{"duration":"0.00","level":"info","message":"  - Super Admin Seeding: \u001b[33mSKIPPED\u001b[39m - (0.00s)","status":"skipped","step":"Super Admin Seeding","timestamp":"2025-04-30T10:09:12.923Z"}
+{"duration":"0.00","level":"info","message":"  - Socket Initialization: \u001b[32mSUCCESS\u001b[39m - (0.00s)","status":"success","step":"Socket Initialization","timestamp":"2025-04-30T10:09:12.923Z"}
+{"duration":"0.01","level":"info","message":"  - Server Initialization: \u001b[32mSUCCESS\u001b[39m - (0.01s)","status":"success","step":"Server Initialization","timestamp":"2025-04-30T10:09:12.924Z"}
+{"level":"info","message":"Total Steps: 9","timestamp":"2025-04-30T10:09:12.924Z"}
+{"level":"info","message":"\u001b[32mSuccesses: 6\u001b[39m","timestamp":"2025-04-30T10:09:12.924Z"}
+{"level":"info","message":"\u001b[33mSkipped: 3\u001b[39m","timestamp":"2025-04-30T10:09:12.925Z"}
+{"level":"info","message":"\u001b[31mFailures: 0\u001b[39m","timestamp":"2025-04-30T10:09:12.925Z"}
+{"level":"info","message":"Total Duration: 11.64 seconds","timestamp":"2025-04-30T10:09:12.926Z"}
+{"level":"info","message":"\u001b[36m===================================================\u001b[39m","timestamp":"2025-04-30T10:09:12.927Z"}
+{"level":"info","message":"\u001b[36m===================================================\u001b[39m","timestamp":"2025-04-30T10:09:12.927Z"}
+{"level":"info","message":"\tSuper Admin Credentials:","timestamp":"2025-04-30T10:09:12.927Z"}
+{"level":"info","message":"\tEmail:\t\tsuperadmin@example.com","timestamp":"2025-04-30T10:09:12.928Z"}
+{"level":"info","message":"\tPassword:\tSuperSecurePassword123!","timestamp":"2025-04-30T10:09:12.928Z"}
+{"level":"info","message":"\u001b[36m===================================================\u001b[39m","timestamp":"2025-04-30T10:09:12.928Z"}
+{"level":"info","message":"HTTP Server running on port 5000","timestamp":"2025-04-30T10:09:12.943Z"}
+{"level":"info","message":"Login successful for superadmin@example.com","timestamp":"2025-04-30T10:10:20.710Z"}
+{"level":"info","message":"Login successful for superadmin@example.com","timestamp":"2025-04-30T10:10:21.397Z"}
+{"isWebSocket":false,"level":"info","message":"Authentication successful for user: superadmin@example.com","roles":"default-roles-traceflow, offline_access, Super Admin, uma_authorization","timestamp":"2025-04-30T10:10:21.583Z","userID":"user_b6w054ass"}
+{"level":"info","message":"Fetched effective permissions for user user_b6w054ass by user_b6w054ass, IP: 192.168.0.117","timestamp":"2025-04-30T10:10:21.608Z"}
+{"isWebSocket":true,"level":"info","message":"Authentication successful for user: superadmin@example.com","roles":"default-roles-traceflow, offline_access, Super Admin, uma_authorization","timestamp":"2025-04-30T10:10:21.625Z","userID":"user_b6w054ass"}
+{"email":"superadmin@example.com","level":"info","message":"WebSocket authentication successful","roles":"default-roles-traceflow, offline_access, Super Admin, uma_authorization","socketId":"upjRsgk6iB_xImdFAAAB","timestamp":"2025-04-30T10:10:21.627Z","userID":"user_b6w054ass"}
+{"level":"info","message":"User connected: superadmin@example.com","socketId":"upjRsgk6iB_xImdFAAAB","timestamp":"2025-04-30T10:10:21.637Z","userID":"user_b6w054ass"}
+{"level":"info","message":"User superadmin@example.com joined room: default-roles-traceflow","socketId":"upjRsgk6iB_xImdFAAAB","timestamp":"2025-04-30T10:10:21.640Z"}
+{"level":"info","message":"User superadmin@example.com joined room: offline_access","socketId":"upjRsgk6iB_xImdFAAAB","timestamp":"2025-04-30T10:10:21.644Z"}
+{"level":"info","message":"User superadmin@example.com joined room: super admin","socketId":"upjRsgk6iB_xImdFAAAB","timestamp":"2025-04-30T10:10:21.645Z"}
+{"level":"info","message":"User superadmin@example.com joined room: uma_authorization","socketId":"upjRsgk6iB_xImdFAAAB","timestamp":"2025-04-30T10:10:21.647Z"}
+{"level":"info","message":"User superadmin@example.com joined room: user_b6w054ass","socketId":"upjRsgk6iB_xImdFAAAB","timestamp":"2025-04-30T10:10:21.648Z"}
+{"level":"info","message":"Client connected","socketId":"upjRsgk6iB_xImdFAAAB","timestamp":"2025-04-30T10:10:21.652Z"}
+{"level":"info","message":"User superadmin@example.com joined room: default-roles-traceflow","socketId":"upjRsgk6iB_xImdFAAAB","timestamp":"2025-04-30T10:10:21.662Z"}
+{"level":"info","message":"Client joined room: default-roles-traceflow","socketId":"upjRsgk6iB_xImdFAAAB","timestamp":"2025-04-30T10:10:21.663Z"}
+{"isWebSocket":false,"level":"info","message":"Authentication successful for user: superadmin@example.com","roles":"default-roles-traceflow, offline_access, Super Admin, uma_authorization","timestamp":"2025-04-30T10:10:21.699Z","userID":"user_b6w054ass"}
+{"isWebSocket":false,"level":"info","message":"Authentication successful for user: superadmin@example.com","roles":"default-roles-traceflow, offline_access, Super Admin, uma_authorization","timestamp":"2025-04-30T10:10:21.714Z","userID":"user_b6w054ass"}
+{"level":"info","message":"Fetched roles for user user_b6w054ass by user_b6w054ass, IP: 192.168.0.117","timestamp":"2025-04-30T10:10:21.726Z"}
+{"level":"info","message":"Fetched effective permissions for user user_b6w054ass by user_b6w054ass, IP: 192.168.0.117","timestamp":"2025-04-30T10:10:21.752Z"}
+{"isWebSocket":false,"level":"info","message":"Authentication successful for user: superadmin@example.com","roles":"default-roles-traceflow, offline_access, Super Admin, uma_authorization","timestamp":"2025-04-30T10:10:22.046Z","userID":"user_b6w054ass"}
+{"level":"info","message":"Fetched roles for user user_b6w054ass by user_b6w054ass, IP: 192.168.0.117","timestamp":"2025-04-30T10:10:22.166Z"}
+{"isWebSocket":false,"level":"info","message":"Authentication successful for user: superadmin@example.com","roles":"default-roles-traceflow, offline_access, Super Admin, uma_authorization","timestamp":"2025-04-30T10:10:23.552Z","userID":"user_b6w054ass"}
+{"level":"info","message":"Super Admin bypass for user user_b6w054ass","timestamp":"2025-04-30T10:10:23.555Z"}
+{"level":"info","message":"Fetched all checklists by user user_b6w054ass, IP: 192.168.0.117","timestamp":"2025-04-30T10:10:23.563Z"}
+{"isWebSocket":false,"level":"info","message":"Authentication successful for user: superadmin@example.com","roles":"default-roles-traceflow, offline_access, Super Admin, uma_authorization","timestamp":"2025-04-30T10:10:37.437Z","userID":"user_b6w054ass"}
+{"level":"info","message":"Super Admin bypass for user user_b6w054ass","timestamp":"2025-04-30T10:10:37.438Z"}
+{"level":"info","message":"Fetched all users by user user_b6w054ass, IP: 192.168.0.117","timestamp":"2025-04-30T10:10:37.448Z"}
+{"isWebSocket":false,"level":"info","message":"Authentication successful for user: superadmin@example.com","roles":"default-roles-traceflow, offline_access, Super Admin, uma_authorization","timestamp":"2025-04-30T10:10:37.514Z","userID":"user_b6w054ass"}
+{"level":"info","message":"Super Admin bypass for user user_b6w054ass","timestamp":"2025-04-30T10:10:37.525Z"}
+{"level":"info","message":"Fetched all roles by user user_b6w054ass, IP: 192.168.0.117","timestamp":"2025-04-30T10:10:37.546Z"}
+{"isWebSocket":false,"level":"info","message":"Authentication successful for user: superadmin@example.com","roles":"default-roles-traceflow, offline_access, Super Admin, uma_authorization","timestamp":"2025-04-30T10:10:37.679Z","userID":"user_b6w054ass"}
+{"level":"info","message":"Super Admin bypass for user user_b6w054ass","timestamp":"2025-04-30T10:10:37.680Z"}
+{"level":"info","message":"Fetched notification rules by user: user_b6w054ass, IP: 192.168.0.117","timestamp":"2025-04-30T10:10:37.690Z"}
+{"isWebSocket":false,"level":"info","message":"Authentication successful for user: superadmin@example.com","roles":"default-roles-traceflow, offline_access, Super Admin, uma_authorization","timestamp":"2025-04-30T10:11:18.791Z","userID":"user_b6w054ass"}
+{"level":"info","message":"Super Admin bypass for user user_b6w054ass","timestamp":"2025-04-30T10:11:18.792Z"}
+{"level":"info","message":"No active rules found for event: user:created","timestamp":"2025-04-30T10:11:19.583Z"}
+{"enabled":false,"event":"user:created","level":"info","message":"Created default notification rule","ruleID":"rule_I3eGgzRQqc_zCZy8ZSjqe","timestamp":"2025-04-30T10:11:19.591Z"}
+{"level":"info","message":"User created: sofienlaghouanem@gmail.com by user user_b6w054ass, IP: 192.168.0.117","timestamp":"2025-04-30T10:11:19.592Z"}
+{"isWebSocket":false,"level":"info","message":"Authentication successful for user: superadmin@example.com","roles":"default-roles-traceflow, offline_access, Super Admin, uma_authorization","timestamp":"2025-04-30T10:11:19.701Z","userID":"user_b6w054ass"}
+{"level":"info","message":"Super Admin bypass for user user_b6w054ass","timestamp":"2025-04-30T10:11:19.702Z"}
+{"level":"info","message":"No active rules found for event: role:assigned","timestamp":"2025-04-30T10:11:19.873Z"}
+{"enabled":true,"event":"role:assigned","level":"info","message":"Created default notification rule","ruleID":"rule_QvNFZ3oueTeTKdTMNrSzJ","timestamp":"2025-04-30T10:11:19.876Z"}
+{"level":"info","message":"Notification stored Notification for role:assigned","notificationID":"notif_AW68RMnSmEAXfYTW2cY_s","timestamp":"2025-04-30T10:11:19.895Z","userID":"user_b6w054ass"}
+{"level":"info","message":"Notification status updated","notificationID":"notif_AW68RMnSmEAXfYTW2cY_s","status":"sent","timestamp":"2025-04-30T10:11:19.906Z"}
+{"event":"role:assigned","level":"info","message":"Triggered notifications","recipientCount":1,"timestamp":"2025-04-30T10:11:19.909Z"}
+{"level":"info","message":"Assigned roles to user usr_mGIj9yz0UOley_ra8ZSyP by user_b6w054ass, IP: 192.168.0.117","timestamp":"2025-04-30T10:11:19.911Z"}
+{"isWebSocket":false,"level":"info","message":"Authentication successful for user: superadmin@example.com","roles":"default-roles-traceflow, offline_access, Super Admin, uma_authorization","timestamp":"2025-04-30T10:11:19.950Z","userID":"user_b6w054ass"}
+{"level":"info","message":"Fetched roles for user usr_mGIj9yz0UOley_ra8ZSyP by user_b6w054ass, IP: 192.168.0.117","timestamp":"2025-04-30T10:11:19.964Z"}
+{"level":"info","message":"User logged out, cookies cleared","timestamp":"2025-04-30T10:11:26.041Z"}
+{"level":"info","message":"User disconnected: superadmin@example.com","reason":"client namespace disconnect","socketId":"upjRsgk6iB_xImdFAAAB","timestamp":"2025-04-30T10:11:26.052Z"}
+{"level":"info","message":"Client disconnected","socketId":"upjRsgk6iB_xImdFAAAB","timestamp":"2025-04-30T10:11:26.053Z"}
+{"level":"info","message":"No active rules found for event: otp:generated:user","timestamp":"2025-04-30T10:11:39.616Z"}
+{"level":"info","message":"Generated OTP for user usr_mGIj9yz0UOley_ra8ZSyP via phone: 339405","timestamp":"2025-04-30T10:11:39.629Z"}
+{"level":"info","message":"w-Board SMS Gateway sent (otp): {\"op\":null,\"status\":-400,\"status_desc\":\"unauthorised\",\"apiVersion\":\"5\"}","timestamp":"2025-04-30T10:11:39.815Z"}
+{"level":"info","message":"Login successful for sofienlaghouanem@gmail.com","timestamp":"2025-04-30T10:11:39.823Z"}
+{"level":"info","message":"Database Initialization: Starting","step":"database","timestamp":"2025-04-30T10:17:20.518Z"}
+{"duration":"0.36","level":"info","message":"Database Initialization: Completed","status":"success","step":"database","timestamp":"2025-04-30T10:17:20.876Z"}
+{"level":"info","message":"SMTP Initialization: Starting","step":"smtp","timestamp":"2025-04-30T10:17:20.878Z"}
+{"level":"info","message":"SMTP server verified successfully","timestamp":"2025-04-30T10:17:21.580Z"}
+{"duration":"0.70","level":"info","message":"SMTP Initialization: Completed","status":"success","step":"smtp","timestamp":"2025-04-30T10:17:21.581Z"}
+{"level":"info","message":"SMS Initialization: Starting","step":"sms","timestamp":"2025-04-30T10:17:21.582Z"}
+{"level":"info","message":"SMS gateway initialized","timestamp":"2025-04-30T10:17:21.582Z"}
+{"duration":"0.00","level":"info","message":"SMS Initialization: Completed","status":"success","step":"sms","timestamp":"2025-04-30T10:17:21.583Z"}
+{"level":"info","message":"Model Associations: Starting","step":"associations","timestamp":"2025-04-30T10:17:21.583Z"}
+{"duration":"0.02","level":"info","message":"Model Associations: Completed","status":"success","step":"associations","timestamp":"2025-04-30T10:17:21.606Z"}
+{"level":"info","message":"Database Synchronization: Skipped","status":"skipped","step":"sync","timestamp":"2025-04-30T10:17:21.607Z"}
+{"level":"info","message":"Permission Seeding: Skipped","status":"skipped","step":"permissions","timestamp":"2025-04-30T10:17:21.607Z"}
+{"level":"info","message":"Super Admin Seeding: Skipped","status":"skipped","step":"superadmin","timestamp":"2025-04-30T10:17:21.607Z"}
+{"level":"info","message":"Socket Initialization: Starting","step":"socket","timestamp":"2025-04-30T10:17:21.608Z"}
+{"duration":"0.00","level":"info","message":"Socket Initialization: Completed","status":"success","step":"socket","timestamp":"2025-04-30T10:17:21.608Z"}
+{"level":"info","message":"Server Initialization: Starting","step":"server","timestamp":"2025-04-30T10:17:21.609Z"}
+{"level":"info","message":"mDNS advertisement skipped in development mode","timestamp":"2025-04-30T10:17:21.612Z"}
+{"duration":"0.00","level":"info","message":"Server Initialization: Completed","status":"success","step":"server","timestamp":"2025-04-30T10:17:21.612Z"}
+{"level":"info","message":"\u001b[36m========== TraceFlow Initialization Summary ========\u001b[39m","timestamp":"2025-04-30T10:17:21.613Z"}
+{"level":"info","message":"Date: 2025-04-30T10:17:21.613Z","timestamp":"2025-04-30T10:17:21.613Z"}
+{"level":"info","message":"Steps Completed:","timestamp":"2025-04-30T10:17:21.613Z"}
+{"duration":"0.36","level":"info","message":"  - Database Initialization: \u001b[32mSUCCESS\u001b[39m - (0.36s)","status":"success","step":"Database Initialization","timestamp":"2025-04-30T10:17:21.614Z"}
+{"duration":"0.70","level":"info","message":"  - SMTP Initialization: \u001b[32mSUCCESS\u001b[39m - (0.70s)","status":"success","step":"SMTP Initialization","timestamp":"2025-04-30T10:17:21.614Z"}
+{"duration":"0.00","level":"info","message":"  - SMS Initialization: \u001b[32mSUCCESS\u001b[39m - (0.00s)","status":"success","step":"SMS Initialization","timestamp":"2025-04-30T10:17:21.614Z"}
+{"duration":"0.02","level":"info","message":"  - Model Associations: \u001b[32mSUCCESS\u001b[39m - (0.02s)","status":"success","step":"Model Associations","timestamp":"2025-04-30T10:17:21.614Z"}
+{"duration":"0.00","level":"info","message":"  - Database Synchronization: \u001b[33mSKIPPED\u001b[39m - (0.00s)","status":"skipped","step":"Database Synchronization","timestamp":"2025-04-30T10:17:21.614Z"}
+{"duration":"0.00","level":"info","message":"  - Permission Seeding: \u001b[33mSKIPPED\u001b[39m - (0.00s)","status":"skipped","step":"Permission Seeding","timestamp":"2025-04-30T10:17:21.615Z"}
+{"duration":"0.00","level":"info","message":"  - Super Admin Seeding: \u001b[33mSKIPPED\u001b[39m - (0.00s)","status":"skipped","step":"Super Admin Seeding","timestamp":"2025-04-30T10:17:21.615Z"}
+{"duration":"0.00","level":"info","message":"  - Socket Initialization: \u001b[32mSUCCESS\u001b[39m - (0.00s)","status":"success","step":"Socket Initialization","timestamp":"2025-04-30T10:17:21.615Z"}
+{"duration":"0.00","level":"info","message":"  - Server Initialization: \u001b[32mSUCCESS\u001b[39m - (0.00s)","status":"success","step":"Server Initialization","timestamp":"2025-04-30T10:17:21.615Z"}
+{"level":"info","message":"Total Steps: 9","timestamp":"2025-04-30T10:17:21.615Z"}
+{"level":"info","message":"\u001b[32mSuccesses: 6\u001b[39m","timestamp":"2025-04-30T10:17:21.615Z"}
+{"level":"info","message":"\u001b[33mSkipped: 3\u001b[39m","timestamp":"2025-04-30T10:17:21.615Z"}
+{"level":"info","message":"\u001b[31mFailures: 0\u001b[39m","timestamp":"2025-04-30T10:17:21.616Z"}
+{"level":"info","message":"Total Duration: 8.61 seconds","timestamp":"2025-04-30T10:17:21.616Z"}
+{"level":"info","message":"\u001b[36m===================================================\u001b[39m","timestamp":"2025-04-30T10:17:21.616Z"}
+{"level":"info","message":"\u001b[36m===================================================\u001b[39m","timestamp":"2025-04-30T10:17:21.616Z"}
+{"level":"info","message":"\tSuper Admin Credentials:","timestamp":"2025-04-30T10:17:21.617Z"}
+{"level":"info","message":"\tEmail:\t\tsuperadmin@example.com","timestamp":"2025-04-30T10:17:21.617Z"}
+{"level":"info","message":"\tPassword:\tSuperSecurePassword123!","timestamp":"2025-04-30T10:17:21.618Z"}
+{"level":"info","message":"\u001b[36m===================================================\u001b[39m","timestamp":"2025-04-30T10:17:21.618Z"}
+{"level":"info","message":"HTTP Server running on port 5000","timestamp":"2025-04-30T10:17:21.630Z"}
+{"level":"info","message":"No active rules found for event: otp:generated:user","timestamp":"2025-04-30T10:17:27.605Z"}
+{"level":"info","message":"Sending SMS request to https://wbm.tn/wbmonitor/send/webapi/v5/send_generic with headers: {\"X-API-Key\":\"8dc15c888d7489f473766c5717ed0132\",\"Content-Type\":\"application/json\"} and payload: {\"dest_num\":\"20031474\",\"msg\":\"Your TraceFlow OTP is 613516\",\"type\":0,\"auto_detect\":1,\"dt\":\"30/04/2025\",\"hr\":10,\"mn\":17,\"label\":\"NG Trend\",\"ref\":\"test otp SMS\"}","timestamp":"2025-04-30T10:17:27.654Z"}
+{"level":"info","message":"w-Board SMS Gateway sent (otp): {\"op\":null,\"status\":-400,\"status_desc\":\"unauthorised\",\"apiVersion\":\"5\"}","timestamp":"2025-04-30T10:17:27.813Z"}
+{"level":"info","message":"OTP resent to usr_mGIj9yz0UOley_ra8ZSyP via phone","timestamp":"2025-04-30T10:17:27.839Z"}
+{"level":"info","message":"OTP: 613516","timestamp":"2025-04-30T10:17:27.846Z"}
+{"level":"info","message":"Database Initialization: Starting","step":"database","timestamp":"2025-04-30T10:39:57.794Z"}
+{"duration":"0.27","level":"info","message":"Database Initialization: Completed","status":"success","step":"database","timestamp":"2025-04-30T10:39:58.065Z"}
+{"level":"info","message":"SMTP Initialization: Starting","step":"smtp","timestamp":"2025-04-30T10:39:58.067Z"}
+{"level":"info","message":"SMTP server verified successfully","timestamp":"2025-04-30T10:39:58.718Z"}
+{"duration":"0.65","level":"info","message":"SMTP Initialization: Completed","status":"success","step":"smtp","timestamp":"2025-04-30T10:39:58.720Z"}
+{"level":"info","message":"SMS Initialization: Starting","step":"sms","timestamp":"2025-04-30T10:39:58.723Z"}
+{"level":"info","message":"Initializing SMS gateway with URL: https://wbm.tn/wbmonitor/send/webapi/v5/enquire_credit and headers: {\"X-API-Key\":\"8dc15c888d7489f473766c5717ed0132\",\"Content-Type\":\"application/json\"}","timestamp":"2025-04-30T10:39:58.724Z"}
+{"level":"error","message":"SMS gateway initialization failed: {\"op\":null,\"status\":-400,\"status_desc\":\"unauthorised\",\"apiVersion\":\"5\"}","timestamp":"2025-04-30T10:39:58.815Z"}
+{"level":"error","message":"SMS gateway initialization error: SMS gateway initialization failed with status: -400 - unauthorised","timestamp":"2025-04-30T10:39:58.816Z"}
+{"duration":"0.09","error":"SMS gateway initialization error: SMS gateway initialization failed with status: -400 - unauthorised","level":"error","message":"SMS Initialization: Failed","stack":"Error: SMS gateway initialization error: SMS gateway initialization failed with status: -400 - unauthorised\n    at Object.initializeSMS [as fn] (C:\\Users\\Kayto\\Desktop\\IT\\Projects\\Stage\\Stage PFE\\TraceFlow\\keycloak\\Back\\config\\sms.js:105:15)\n    at process.processTicksAndRejections (node:internal/process/task_queues:105:5)\n    at async startApp (C:\\Users\\Kayto\\Desktop\\IT\\Projects\\Stage\\Stage PFE\\TraceFlow\\keycloak\\Back\\app.js:199:17)","status":"failed","step":"sms","timestamp":"2025-04-30T10:39:58.817Z"}
+{"level":"info","message":"Model Associations: Starting","step":"associations","timestamp":"2025-04-30T10:40:23.963Z"}

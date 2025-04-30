@@ -6,19 +6,42 @@ require('dotenv').config();
 
 async function sendSMS(to, message, context = 'general') {
     try {
-        const response = await axios.post(`${process.env.SMS_GATEWAY_URL}/`, {
-            to,
-            message,
-        }, {
-            headers: {
-                'Authorization': process.env.SMS_GATEWAY_API_KEY_CLOUD,
-                'Content-Type': 'application/json',
-            },
-        });
-        logger.info(`Traccar SMS Gateway sent (${context}): ${JSON.stringify(response.data)}`);
+        const date = new Date().toLocaleDateString('fr-FR', { timeZone: 'UTC' });
+        const hour = new Date().getUTCHours();
+        const minute = new Date().getUTCMinutes();
+        const label = 'NG Trend'; // Replace with your label
+        const reference = `test ${context} SMS`; // Replace with your reference
+
+        const url = `${process.env.SMS_API_URL}send_generic`;
+        const headers = {
+            'X-API-Key': process.env.SMS_API_KEY,
+            'Content-Type': 'application/json',
+        };
+        const payload = {
+            dest_num: to,
+            msg: message,
+            type: 0,
+            auto_detect: 1,
+            dt: date,
+            hr: hour,
+            mn: minute,
+            label,
+            ref: reference,
+        };
+
+        logger.info(`Sending SMS request to ${url} with headers: ${JSON.stringify(headers)} and payload: ${JSON.stringify(payload)}`);
+
+        const response = await axios.post(url, payload, { headers });
+
+        if (response.data && response.data.status && response.data.status !== 0) {
+            logger.error(`w-Board SMS Gateway error (${context}): ${JSON.stringify(response.data)}`);
+            throw new Error(`SMS sending failed with status: ${response.data.status} - ${response.data.status_desc}`);
+        }
+
+        logger.info(`w-Board SMS Gateway sent (${context}): ${JSON.stringify(response.data)}`);
         return { success: true, method: 'SMS' };
     } catch (error) {
-        logger.error(`Traccar SMS Gateway error (${context}): ${error.response?.data || error.message}`);
+        logger.error(`w-Board SMS Gateway error (${context}): ${error.response?.data || error.message}`);
 
         try {
             const email = await findEmailByPhone(to);
@@ -60,12 +83,26 @@ async function findEmailByPhone(phone) {
 
 async function initializeSMS() {
     try {
-        // Optional: Add a health check for SMS gateway if your provider supports it
-        logger.info(`SMS gateway initialized`);
-        return true;
+        const url = `${process.env.SMS_API_URL}enquire_credit`;
+        const headers = {
+            'X-API-Key': process.env.SMS_API_KEY,
+            'Content-Type': 'application/json',
+        };
+
+        logger.info(`Initializing SMS gateway with URL: ${url} and headers: ${JSON.stringify(headers)}`);
+
+        const response = await axios.get(url, { headers });
+
+        if (response.data && response.data.status === 0) {
+            logger.info(`SMS gateway initialized successfully: ${JSON.stringify(response.data)}`);
+            return { success: true, message: 'SMS gateway initialized successfully' };
+        } else {
+            logger.error(`SMS gateway initialization failed: ${JSON.stringify(response.data)}`);
+            throw new Error(`SMS gateway initialization failed with status: ${response.data.status} - ${response.data.status_desc}`);
+        }
     } catch (error) {
-        logger.error(`SMS initialization error: ${error.message}`);
-        throw error;
+        logger.error(`SMS gateway initialization error: ${error.response?.data || error.message}`);
+        throw new Error(`SMS gateway initialization error: ${error.message}`);
     }
 }
 
