@@ -1,11 +1,3 @@
-/**
- * RolesList.tsx
- * Component for displaying a categorized list of roles with toggleable RoleView under each role.
- * Optimized with memoization, debouncing, and caching for performance.
- * Uses role.permissions from getAllRoles for permission counts and InfoPopup, eliminating getPermissionsByRole calls.
- * Removed getAllPermissions fetch, as it's now handled in RoleView.
- */
-
 import React, { useCallback, useEffect, useMemo, useState } from "react";
 import { FaAngleDown, FaInfoCircle } from "react-icons/fa";
 import { AnimatePresence, motion } from "framer-motion";
@@ -36,10 +28,18 @@ interface RolesListProps {
   setSelectedRole: (role: Role | null) => void;
   setError: (error: string | null) => void;
   searchQuery: string;
+  setConfirmation: (confirmation: {
+    isOpen: boolean;
+    message: string;
+    onConfirm: () => void;
+    onCancel: () => void;
+  } | null) => void;
 }
 
 // Constants
 const SKELETON_ROLES_PER_CATEGORY = [2, 5, 0]; // Fixed, Pre-made, Custom role counts
+
+
 
 // Animation variants
 const viewVariants = {
@@ -50,16 +50,12 @@ const viewVariants = {
 
 // RolesList component, memoized
 const RolesList: React.FC<RolesListProps> = React.memo(
-  ({ roles, setRoles, userRoles, view, setSelectedRole, setError, searchQuery }) => {
+  ({ roles, setRoles, userRoles, view, setSelectedRole, setError, searchQuery, setConfirmation }) => {
     // Auth context
     const { effectivePermissions } = useAuth();
 
     // State declarations
     const [activeRolePopup, setActiveRolePopup] = useState<string | null>(null);
-    const [confirmation, setConfirmation] = useState<{
-      message: string;
-      onConfirm: () => void;
-    } | null>(null);
     const [expandedClasses, setExpandedClasses] = useState<Set<string>>(new Set());
     const [internalSearchQuery, setInternalSearchQuery] = useState(searchQuery);
     const [loading, setLoading] = useState(true); // Initialize as true
@@ -135,6 +131,7 @@ const RolesList: React.FC<RolesListProps> = React.memo(
         ];
         if (fixedRoles.includes(role.name)) {
           setConfirmation({
+            isOpen: true,
             message:
               "Warning: Modifying pre-made roles may affect system functionality. Are you sure you want to proceed?",
             onConfirm: () => {
@@ -143,7 +140,9 @@ const RolesList: React.FC<RolesListProps> = React.memo(
                 return newId;
               });
               setSelectedRole(role);
+              setConfirmation(null);
             },
+            onCancel: () => setConfirmation(null),
           });
           return;
         }
@@ -153,7 +152,7 @@ const RolesList: React.FC<RolesListProps> = React.memo(
         });
         setSelectedRole(role);
       },
-      [isSuperAdmin, userPermissions.canUpdateRoles, setError, setSelectedRole]
+      [isSuperAdmin, userPermissions.canUpdateRoles, setError, setSelectedRole, setConfirmation]
     );
 
     // Toggle permission class expansion
@@ -188,43 +187,6 @@ const RolesList: React.FC<RolesListProps> = React.memo(
       },
       [isSuperAdmin]
     );
-
-    // Confirmation modal component
-    const ConfirmationModal: React.FC<{
-      message: string;
-      onConfirm: () => void;
-      onCancel: () => void;
-    }> = ({ message, onConfirm, onCancel }) => {
-      const [isFadingOut, setIsFadingOut] = useState(false);
-
-      const handleConfirm = () => {
-        setIsFadingOut(true);
-        setTimeout(() => onConfirm(), 300);
-      };
-
-      const handleCancel = () => {
-        setIsFadingOut(true);
-        setTimeout(() => onCancel(), 300);
-      };
-
-      return (
-        <div
-          className={`confirmation-modal-overlay ${isFadingOut ? "fade-out" : "fade-in"}`}
-        >
-          <div className="confirmation-modal">
-            <p>{message}</p>
-            <div className="confirmation-actions">
-              <button className="confirm-button" onClick={handleConfirm}>
-                Confirm
-              </button>
-              <button className="cancel-button" onClick={handleCancel}>
-                Cancel
-              </button>
-            </div>
-          </div>
-        </div>
-      );
-    };
 
     // Render skeleton loader
     const renderSkeleton = () => (
@@ -264,16 +226,6 @@ const RolesList: React.FC<RolesListProps> = React.memo(
             animate={{ opacity: 1 }}
             transition={{ duration: 0.3 }}
           >
-            {confirmation && (
-              <ConfirmationModal
-                message={confirmation.message}
-                onConfirm={() => {
-                  confirmation.onConfirm();
-                  setConfirmation(null);
-                }}
-                onCancel={() => setConfirmation(null)}
-              />
-            )}
             <InfoPopup
               isOpen={!!activeRolePopup}
               onClose={() => {

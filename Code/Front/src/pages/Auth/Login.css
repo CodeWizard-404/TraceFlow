@@ -80,7 +80,6 @@ body.dark .bg-icon {
 .map-icon {
     top: 10%;
     left: 15%;
-    animation: pulse 3s infinite ease-in-out;
 }
 
 .time-icon {

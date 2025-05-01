@@ -23,5 +23,21 @@ module.exports = (sequelize, DataTypes) => {
         },
         PFP: { type: DataTypes.BLOB, allowNull: true },
         tempResetToken: { type: DataTypes.STRING, allowNull: true },
+        regionalManagerID: {
+            type: DataTypes.STRING,
+            allowNull: true,
+            references: {
+                model: 'Users',
+                key: 'userID',
+            },
+        },
+        directorID: {
+            type: DataTypes.STRING,
+            allowNull: true,
+            references: {
+                model: 'Users',
+                key: 'userID',
+            },
+        },
     });
 };

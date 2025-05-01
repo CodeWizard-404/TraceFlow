@@ -99,7 +99,16 @@ interface CacheData {
     timestamp: number;
 }
 
+interface ConfirmationState {
+    isOpen: boolean;
+    message: string;
+    onConfirm: () => void;
+    onCancel: () => void;
+}
+
 const cache = new Map<string, CacheData>();
+
+
 
 const AdminDashboard: React.FC = React.memo(() => {
     const { t } = useTranslation();
@@ -115,17 +124,7 @@ const AdminDashboard: React.FC = React.memo(() => {
     const [isTransitioning, setIsTransitioning] = useState(false);
     const [showNotificationPanel, setShowNotificationPanel] = useState(false);
     const [notificationTypes, setNotificationTypes] = useState<string[]>([]);
-
-    const initialView = useMemo(() => {
-        const savedView = Cookies.get(COOKIE_NAME);
-        if (savedView && validViews.includes(savedView as ViewMode)) {
-            return savedView as ViewMode;
-        }
-        return "users";
-    }, []);
-
     const [checklists, setChecklists] = useState<Checklist[]>([]);
-    const [showResetConfirmation, setShowResetConfirmation] = useState(false);
     const [checklistsPage, setChecklistsPage] = useState(1);
     const [error, setLocalError] = useState<string | null>(null);
     const [permissionsList, setPermissionsList] = useState<Permission[]>([]);
@@ -152,6 +151,15 @@ const AdminDashboard: React.FC = React.memo(() => {
     const [notificationStatusFilter, setNotificationStatusFilter] = useState<string>("all");
     const [notificationSortField, setNotificationSortField] = useState<string>("type");
     const [notificationSortOrder, setNotificationSortOrder] = useState<string>("asc");
+    const [confirmation, setConfirmation] = useState<ConfirmationState | null>(null);
+
+    const initialView = useMemo(() => {
+        const savedView = Cookies.get(COOKIE_NAME);
+        if (savedView && validViews.includes(savedView as ViewMode)) {
+            return savedView as ViewMode;
+        }
+        return "users";
+    }, []);
     const [view, setView] = useState<ViewMode>(initialView);
 
     useEffect(() => {
@@ -237,6 +245,7 @@ const AdminDashboard: React.FC = React.memo(() => {
         }),
         [effectivePermissions]
     );
+
 
     const getCachedData = useCallback((key: string): CacheData["data"] | null => {
         const cached = cache.get(key);
@@ -424,53 +433,6 @@ const AdminDashboard: React.FC = React.memo(() => {
         clearError,
     ]);
 
-    // const handleResetMainRoles = useCallback(async () => {
-    //     if (!window.confirm(t("adminDashboard.actions.resetRolesConfirm"))) return;
-    //     setResetLoading(true);
-    //     try {
-    //         const response = await resetMainRoles();
-    //         const updatedRoles = await getAllRoles();
-    //         setCachedData("all_roles", updatedRoles);
-    //         setRoles(updatedRoles);
-    //         setLocalError(null);
-    //         clearError();
-    //         const resetDetails = (
-    //             response.details as Array<{
-    //                 roleName: string;
-    //                 permissionsAssigned: number;
-    //                 permissionsRevoked: number;
-    //                 totalPermissions: number;
-    //             }>
-    //         )
-    //             .map((detail) =>
-    //                 t("adminDashboard.success.resetRolesDetail", {
-    //                     roleName: detail.roleName,
-    //                     permissionsAssigned: detail.permissionsAssigned,
-    //                     permissionsRevoked: detail.permissionsRevoked,
-    //                     totalPermissions: detail.totalPermissions,
-    //                 })
-    //             )
-    //             .join(", ");
-    //         setTimeout(() => {
-    //             const successMessage = t("adminDashboard.success.resetRoles", {
-    //                 details: resetDetails,
-    //             });
-    //             setLocalError(successMessage);
-    //         }, 500);
-    //     } catch (err: unknown) {
-    //         console.error("Failed to reset main roles:", err);
-    //         const errorMessage = t("adminDashboard.error.resetRolesFailed");
-    //         setLocalError(errorMessage);
-    //         setGlobalError(errorMessage);
-    //     } finally {
-    //         setResetLoading(false);
-    //     }
-    // }, [t, setGlobalError, clearError, setCachedData]);
-
-    // Updated handleResetMainRoles function
-
-
-
     // Handle reset confirmation
     const handleResetConfirm = async () => {
         try {
@@ -503,18 +465,30 @@ const AdminDashboard: React.FC = React.memo(() => {
                     details: resetDetails,
                 });
                 setLocalError(successMessage);
-                setShowResetConfirmation(false);
+                setConfirmation(null);
             }, 500);
         } catch (err: unknown) {
             console.error("Failed to reset main roles:", err);
             const errorMessage = t("adminDashboard.error.resetRolesFailed");
             setLocalError(errorMessage);
             setGlobalError(errorMessage);
-            setShowResetConfirmation(false);
+            setConfirmation(null);
         } finally {
             setResetLoading(false);
         }
     };
+
+    const debouncedShowResetConfirmation = useCallback(
+        debounce(() => {
+            setConfirmation({
+                isOpen: true,
+                message: t("adminDashboard.actions.resetRolesConfirm"),
+                onConfirm: handleResetConfirm,
+                onCancel: () => setConfirmation(null),
+            });
+        }, 300),
+        [handleResetConfirm, t]
+    );
 
     const handleViewChange = useCallback((newView: ViewMode) => {
         setView(newView);
@@ -548,9 +522,7 @@ const AdminDashboard: React.FC = React.memo(() => {
             }
 
             try {
-                if (
-                    view === "users" && userPermissions.canViewUsers
-                ) {
+                if (view === "users" && userPermissions.canViewUsers) {
                     setUsersLoading(true);
                     let usersData = getCachedData("all_users");
                     if (!usersData) {
@@ -698,17 +670,26 @@ const AdminDashboard: React.FC = React.memo(() => {
 
         const handleConfirm = () => {
             setIsFadingOut(true);
-            setTimeout(() => onConfirm(), 300);
+            setTimeout(() => {
+                onConfirm();
+                setIsFadingOut(false);
+            }, 300);
         };
 
         const handleCancel = () => {
             setIsFadingOut(true);
-            setTimeout(() => onCancel(), 300);
+            setTimeout(() => {
+                onCancel();
+                setIsFadingOut(false);
+            }, 300);
         };
 
         return (
-            <div
+            <motion.div
                 className={`confirmation-modal-overlay ${isFadingOut ? "fade-out" : "fade-in"}`}
+                initial={{ opacity: 0 }}
+                animate={{ opacity: 1 }}
+                exit={{ opacity: 0 }}
             >
                 <div className="confirmation-modal">
                     <p>{message}</p>
@@ -721,12 +702,20 @@ const AdminDashboard: React.FC = React.memo(() => {
                         </button>
                     </div>
                 </div>
-            </div>
+            </motion.div>
         );
     };
 
     return (
         <div className="admin-dashboard" role="main">
+            {confirmation && (
+                <ConfirmationModal
+                    key="central-confirmation"
+                    message={confirmation.message}
+                    onConfirm={confirmation.onConfirm}
+                    onCancel={confirmation.onCancel}
+                />
+            )}
             {error && (
                 <motion.div
                     initial={{ opacity: 0 }}
@@ -1173,7 +1162,7 @@ const AdminDashboard: React.FC = React.memo(() => {
                             {userPermissions.canResetRoles && (
                                 <motion.button
                                     className="action-button reset-button"
-                                    onClick={() => setShowResetConfirmation(true)}
+                                    onClick={debouncedShowResetConfirmation}
                                     disabled={resetLoading}
                                     whileHover={{ scale: resetLoading ? 1 : 1.05 }}
                                     whileTap={{ scale: resetLoading ? 1 : 0.95 }}
@@ -1187,14 +1176,6 @@ const AdminDashboard: React.FC = React.memo(() => {
                                 </motion.button>
                             )}
                         </>
-                    )}
-
-                    {showResetConfirmation && (
-                        <ConfirmationModal
-                            message={t("adminDashboard.actions.resetRolesConfirm")}
-                            onConfirm={handleResetConfirm}
-                            onCancel={() => setShowResetConfirmation(false)}
-                        />
                     )}
                     {userPermissions.canViewChecklists &&
                         view === "checklists" &&
@@ -1263,7 +1244,7 @@ const AdminDashboard: React.FC = React.memo(() => {
                                 users={users}
                                 setUsers={setUsers}
                                 view={view}
-                                setView={setView}
+                                setView={(view: string) => setView(view as ViewMode)}
                                 setSelectedUser={setSelectedUser}
                                 setError={setLocalError}
                                 searchQuery={searchQuery}
@@ -1290,7 +1271,7 @@ const AdminDashboard: React.FC = React.memo(() => {
                                 view={view}
                                 effectivePermissions={effectivePermissions || []}
                                 userRoles={userRoles || []}
-                                setView={setView}
+                                setView={(view: string) => setView(view as ViewMode)}
                                 setError={setLocalError}
                             />
                         )}
@@ -1314,6 +1295,7 @@ const AdminDashboard: React.FC = React.memo(() => {
                                 setError={setLocalError}
                                 userRoles={userRoles || []}
                                 searchQuery={searchQuery}
+                                setConfirmation={setConfirmation}
                             />
                         )}
                         {view === "add-role" && (

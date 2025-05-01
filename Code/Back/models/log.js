@@ -8,7 +8,7 @@ module.exports = (sequelize, DataTypes) => {
             defaultValue: () => `log_${nanoid()}`,
         },
         level: { type: DataTypes.STRING, allowNull: false },
-        message: { type: DataTypes.STRING, allowNull: false },
+        message: { type: DataTypes.TEXT, allowNull: false },
         ip: { type: DataTypes.STRING, allowNull: true },
         timestamp: { type: DataTypes.DATE, defaultValue: DataTypes.NOW },
     });

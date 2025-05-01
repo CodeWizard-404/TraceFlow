@@ -2,18 +2,9 @@ const UserService = require('../services/userService');
 const NotificationService = require('../services/notificationService');
 const logger = require('../utils/logger');
 
-/**
- * Controller for managing user-related operations.
- */
 class UserController {
     // --- User Retrieval Methods ---
 
-    /**
-     * Get all users.
-     * @param {Object} req - Express request object.
-     * @param {Object} res - Express response object.
-     * @returns {Promise<void>} JSON response with users or error.
-     */
     static async getAllUsers(req, res) {
         try {
             const users = await UserService.getAllUsers();
@@ -25,12 +16,6 @@ class UserController {
         }
     }
 
-    /**
-     * Get a user by phone number.
-     * @param {Object} req - Express request object with phone in params.
-     * @param {Object} res - Express response object.
-     * @returns {Promise<void>} JSON response with user or error.
-     */
     static async getUserByPhoneNumber(req, res) {
         try {
             const { phone } = req.params;
@@ -47,12 +32,6 @@ class UserController {
         }
     }
 
-    /**
-     * Get users by role.
-     * @param {Object} req - Express request object with role in params.
-     * @param {Object} res - Express response object.
-     * @returns {Promise<void>} JSON response with users or error.
-     */
     static async getUsersByRole(req, res) {
         try {
             const { role } = req.params;
@@ -69,12 +48,6 @@ class UserController {
         }
     }
 
-    /**
-     * Get a user by ID.
-     * @param {Object} req - Express request object with userID in params.
-     * @param {Object} res - Express response object.
-     * @returns {Promise<void>} JSON response with user or error.
-     */
     static async getUserById(req, res) {
         try {
             const { userID } = req.params;
@@ -91,12 +64,6 @@ class UserController {
         }
     }
 
-    /**
-     * Get the current user's profile.
-     * @param {Object} req - Express request object with authenticated user.
-     * @param {Object} res - Express response object.
-     * @returns {Promise<void>} JSON response with user profile or error.
-     */
     static async getProfile(req, res) {
         try {
             const userID = req.user?.userID;
@@ -117,12 +84,6 @@ class UserController {
         }
     }
 
-    /**
-     * Get supervisors for a user.
-     * @param {Object} req - Express request object with userID in params.
-     * @param {Object} res - Express response object.
-     * @returns {Promise<void>} JSON response with supervisors or error.
-     */
     static async getSupervisorsByUser(req, res) {
         try {
             const { userID } = req.params;
@@ -139,36 +100,40 @@ class UserController {
         }
     }
 
-    /**
-     * Get managers for a user.
-     * @param {Object} req - Express request object with userID in params.
-     * @param {Object} res - Express response object.
-     * @returns {Promise<void>} JSON response with managers or error.
-     */
-    static async getManagersByUser(req, res) {
+    static async getRegionalManagersByUser(req, res) {
         try {
             const { userID } = req.params;
             if (!userID) {
-                logger.warn(`Get managers failed: Missing userID, user: ${req.user.userID}, IP: ${req.ip}`);
+                logger.warn(`Get regional managers failed: Missing userID, user: ${req.user.userID}, IP: ${req.ip}`);
                 return res.status(400).json({ error: 'User ID is required' });
             }
-            const managers = await UserService.getManagersByUser(userID);
-            logger.info(`Fetched managers for user ${userID} by user ${req.user.userID}, IP: ${req.ip}`);
-            return res.status(200).json(managers);
+            const regionalManagers = await UserService.getRegionalManagersByUser(userID);
+            logger.info(`Fetched regional managers for user ${userID} by user ${req.user.userID}, IP: ${req.ip}`);
+            return res.status(200).json(regionalManagers);
         } catch (error) {
-            logger.error(`Get managers error: ${error.message}, user: ${req.user.userID}, IP: ${req.ip}`);
-            return res.status(404).json({ error: 'Managers not found' });
+            logger.error(`Get regional managers error: ${error.message}, user: ${req.user.userID}, IP: ${req.ip}`);
+            return res.status(404).json({ error: 'Regional Managers not found' });
+        }
+    }
+
+    static async getDirectorByUser(req, res) {
+        try {
+            const { userID } = req.params;
+            if (!userID) {
+                logger.warn(`Get director failed: Missing userID, user: ${req.user.userID}, IP: ${req.ip}`);
+                return res.status(400).json({ error: 'User ID is required' });
+            }
+            const director = await UserService.getDirectorByUser(userID);
+            logger.info(`Fetched director for user ${userID} by user ${req.user.userID}, IP: ${req.ip}`);
+            return res.status(200).json(director);
+        } catch (error) {
+            logger.error(`Get director error: ${error.message}, user: ${req.user.userID}, IP: ${req.ip}`);
+            return res.status(404).json({ error: 'Director not found' });
         }
     }
 
     // --- User Modification Methods ---
 
-    /**
-     * Create a new user.
-     * @param {Object} req - Express request object with user data in body.
-     * @param {Object} res - Express response object.
-     * @returns {Promise<void>} JSON response with created user or error.
-     */
     static async createUser(req, res) {
         try {
             const { email, password, firstname, lastname, phone } = req.body;
@@ -177,7 +142,6 @@ class UserController {
                 return res.status(400).json({ error: 'All fields are required' });
             }
             const user = await UserService.createUser(email, password, firstname, lastname, phone, req.user.userID);
-            // Notify managers and supervisors of new user
             await NotificationService.triggerNotification({
                 event: 'user:created',
                 data: { userID: user.userID, email },
@@ -191,54 +155,6 @@ class UserController {
         }
     }
 
-    /**
-     * Update a user's details.
-     * @param {Object} req - Express request object with userID in params and data in body.
-     * @param {Object} res - Express response object.
-     * @returns {Promise<void>} JSON response with updated user or error.
-     */
-    static async updateUser(req, res) {
-        try {
-            const { userID } = req.params;
-            const userData = req.body;
-            if (!userID) {
-                logger.warn(`Update user failed: Missing userID, user: ${req.user.userID}, IP: ${req.ip}`);
-                return res.status(400).json({ error: 'User ID is required' });
-            }
-            if (req.file) {
-                if (!req.file.mimetype.startsWith('image/')) {
-                    logger.warn(`Update user failed: Invalid image, user: ${req.user.userID}, IP: ${req.ip}`);
-                    return res.status(400).json({ error: 'Please upload a valid image' });
-                }
-                userData.PFP = req.file.buffer;
-            }
-            const updatedUser = await UserService.updateUser(userID, userData, req.user.userID);
-            const responseUser = updatedUser.toJSON();
-            if (responseUser.PFP) {
-                responseUser.PFP = responseUser.PFP.toString('base64');
-            } else {
-                delete responseUser.PFP;
-            }
-            // Notify user and their manager of update
-            await NotificationService.triggerNotification({
-                event: 'user:updated',
-                data: { userID, email: updatedUser.email },
-                metadata: { updatedBy: req.user.email }
-            });
-            logger.info(`Updated user ${userID} by user ${req.user.userID}, IP: ${req.ip}`);
-            return res.status(200).json(responseUser);
-        } catch (error) {
-            logger.error(`Update user error: ${error.message}, user: ${req.user.userID}, IP: ${req.ip}`);
-            return res.status(400).json({ error: error.message });
-        }
-    }
-
-    /**
-     * Update a user's details.
-     * @param {Object} req - Express request object with userID in params and data in body.
-     * @param {Object} res - Express response object.
-     * @returns {Promise<void>} JSON response with updated user or error.
-     */
     static async updateUser(req, res) {
         try {
             const { userID } = req.params;
@@ -254,7 +170,7 @@ class UserController {
                 }
                 userData.PFP = req.file.buffer;
             } else if (userData.removePFP === true) {
-                userData.PFP = null; // Explicitly set PFP to null to remove it
+                userData.PFP = null;
             }
             const updatedUser = await UserService.updateUser(userID, userData, req.user.userID);
             const responseUser = updatedUser.toJSON();
@@ -263,7 +179,6 @@ class UserController {
             } else {
                 delete responseUser.PFP;
             }
-            // Notify user and their manager of update
             await NotificationService.triggerNotification({
                 event: 'user:updated',
                 data: { userID, email: updatedUser.email },
@@ -277,12 +192,6 @@ class UserController {
         }
     }
 
-    /**
-     * Update the current user's profile.
-     * @param {Object} req - Express request object with authenticated user and data in body.
-     * @param {Object} res - Express response object.
-     * @returns {Promise<void>} JSON response with updated profile or error.
-     */
     static async updateProfile(req, res) {
         try {
             const userID = req.user?.userID;
@@ -307,7 +216,6 @@ class UserController {
             } else {
                 delete responseUser.PFP;
             }
-            // Notify user of profile update
             await NotificationService.triggerNotification({
                 event: 'user:profile_updated',
                 data: { userID, email: updatedUser.email },
@@ -321,12 +229,6 @@ class UserController {
         }
     }
 
-    /**
-     * Delete a user.
-     * @param {Object} req - Express request object with userID in params.
-     * @param {Object} res - Express response object.
-     * @returns {Promise<void>} JSON response with result or error.
-     */
     static async deleteUser(req, res) {
         try {
             const { userID } = req.params;
@@ -335,7 +237,6 @@ class UserController {
                 return res.status(400).json({ error: 'User ID is required' });
             }
             const result = await UserService.deleteUser(userID, req.user.userID);
-            // Notify managers and supervisors of deletion
             await NotificationService.triggerNotification({
                 event: 'user:deleted',
                 data: { userID },
@@ -349,68 +250,258 @@ class UserController {
         }
     }
 
-    /**
-     * Assign supervisors to a manager.
-     * @param {Object} req - Express request object with managerID and supervisorIDs in body.
-     * @param {Object} res - Express response object.
-     * @returns {Promise<void>} JSON response with result or error.
-     */
-    static async assignSupervisorsToManager(req, res) {
+    static async assignRegionalManagerToSupervisor(req, res) {
         try {
-            const { managerID, supervisorIDs } = req.body;
-            if (!managerID || !Array.isArray(supervisorIDs) || supervisorIDs.length === 0) {
-                logger.warn(`Assign supervisors failed: Invalid input, user: ${req.user.userID}, IP: ${req.ip}`);
-                return res.status(400).json({ error: 'Manager ID and supervisor IDs are required' });
+            const { supervisorID, regionalManagerID } = req.body;
+            if (!supervisorID || !regionalManagerID) {
+                logger.warn(`Assign regional manager failed: Invalid input, user: ${req.user.userID}, IP: ${req.ip}`);
+                return res.status(400).json({ error: 'Supervisor ID and Regional Manager ID are required' });
             }
-            const result = await UserService.assignSupervisorsToManager(managerID, supervisorIDs, req.user.userID);
-            // Notify manager and supervisors of assignment
+            const result = await UserService.assignRegionalManagerToSupervisor(supervisorID, regionalManagerID, req.user.userID);
             await NotificationService.triggerNotification({
-                event: 'user:supervisors_assigned',
-                data: { managerID, supervisorIDs },
+                event: 'user:regional_manager_assigned',
+                data: { supervisorID, regionalManagerID },
                 metadata: { assignedBy: req.user.email }
             });
-            logger.info(`Assigned supervisors to manager ${managerID} by user ${req.user.userID}, IP: ${req.ip}`);
+            logger.info(`Assigned regional manager ${regionalManagerID} to supervisor ${supervisorID} by user ${req.user.userID}, IP: ${req.ip}`);
             return res.status(200).json(result);
         } catch (error) {
-            logger.error(`Assign supervisors error: ${error.message}, user: ${req.user.userID}, IP: ${req.ip}`);
+            logger.error(`Assign regional manager error: ${error.message}, user: ${req.user.userID}, IP: ${req.ip}`);
             return res.status(400).json({ error: error.message });
         }
     }
 
-    /**
-     * Revoke supervisors from a manager.
-     * @param {Object} req - Express request object with managerID and supervisorIDs in body.
-     * @param {Object} res - Express response object.
-     * @returns {Promise<void>} JSON response with result or error.
-     */
-    static async revokeSupervisorsFromManager(req, res) {
+    static async revokeRegionalManagerFromSupervisor(req, res) {
         try {
-            const { managerID, supervisorIDs } = req.body;
-            if (!managerID || !Array.isArray(supervisorIDs) || supervisorIDs.length === 0) {
-                logger.warn(`Revoke supervisors failed: Invalid input, user: ${req.user.userID}, IP: ${req.ip}`);
-                return res.status(400).json({ error: 'Manager ID and supervisor IDs are required' });
+            const { supervisorID } = req.body;
+            if (!supervisorID) {
+                logger.warn(`Revoke regional manager failed: Invalid input, user: ${req.user.userID}, IP: ${req.ip}`);
+                return res.status(400).json({ error: 'Supervisor ID is required' });
             }
-            const result = await UserService.revokeSupervisorsFromManager(managerID, supervisorIDs, req.user.userID);
-            // Notify manager and supervisors of revocation
+            const result = await UserService.revokeRegionalManagerFromSupervisor(supervisorID, req.user.userID);
             await NotificationService.triggerNotification({
-                event: 'user:supervisors_revoked',
-                data: { managerID, supervisorIDs },
+                event: 'user:regional_manager_revoked',
+                data: { supervisorID, regionalManagerID: result.regionalManagerID },
                 metadata: { revokedBy: req.user.email }
             });
-            logger.info(`Revoked supervisors from manager ${managerID} by user ${req.user.userID}, IP: ${req.ip}`);
+            logger.info(`Revoked regional manager from supervisor ${supervisorID} by user ${req.user.userID}, IP: ${req.ip}`);
             return res.status(200).json(result);
         } catch (error) {
-            logger.error(`Revoke supervisors error: ${error.message}, user: ${req.user.userID}, IP: ${req.ip}`);
+            logger.error(`Revoke regional manager error: ${error.message}, user: ${req.user.userID}, IP: ${req.ip}`);
             return res.status(400).json({ error: error.message });
         }
     }
 
-    /**
-     * Assign a Google account to a user.
-     * @param {Object} req - Express request object with userID in params and googleEmail in body.
-     * @param {Object} res - Express response object.
-     * @returns {Promise<void>} JSON response with updated user or error.
-     */
+    static async assignDirectorToRegionalManager(req, res) {
+        try {
+            const { regionalManagerID, directorID } = req.body;
+            if (!regionalManagerID || !directorID) {
+                logger.warn(`Assign director failed: Invalid input, user: ${req.user.userID}, IP: ${req.ip}`);
+                return res.status(400).json({ error: 'Regional Manager ID and Director ID are required' });
+            }
+            const result = await UserService.assignDirectorToRegionalManager(regionalManagerID, directorID, req.user.userID);
+            await NotificationService.triggerNotification({
+                event: 'user:director_assigned',
+                data: { regionalManagerID, directorID },
+                metadata: { assignedBy: req.user.email }
+            });
+            logger.info(`Assigned director ${directorID} to regional manager ${regionalManagerID} by user ${req.user.userID}, IP: ${req.ip}`);
+            return res.status(200).json(result);
+        } catch (error) {
+            logger.error(`Assign director error: ${error.message}, user: ${req.user.userID}, IP: ${req.ip}`);
+            return res.status(400).json({ error: error.message });
+        }
+    }
+
+    static async revokeDirectorFromRegionalManager(req, res) {
+        try {
+            const { regionalManagerID } = req.body;
+            if (!regionalManagerID) {
+                logger.warn(`Revoke director failed: Invalid input, user: ${req.user.userID}, IP: ${req.ip}`);
+                return res.status(400).json({ error: 'Regional Manager ID is required' });
+            }
+            const result = await UserService.revokeDirectorFromRegionalManager(regionalManagerID, req.user.userID);
+            await NotificationService.triggerNotification({
+                event: 'user:director_revoked',
+                data: { regionalManagerID, directorID: result.directorID },
+                metadata: { revokedBy: req.user.email }
+            });
+            logger.info(`Revoked director from regional manager ${regionalManagerID} by user ${req.user.userID}, IP: ${req.ip}`);
+            return res.status(200).json(result);
+        } catch (error) {
+            logger.error(`Revoke director error: ${error.message}, user: ${req.user.userID}, IP: ${req.ip}`);
+            return res.status(400).json({ error: error.message });
+        }
+    }
+
+    static async assignRegionsToRegionalManager(req, res) {
+        try {
+            const { regionalManagerID, regionIDs } = req.body;
+            if (!regionalManagerID || !Array.isArray(regionIDs) || regionIDs.length === 0) {
+                logger.warn(`Assign regions failed: Invalid input, user: ${req.user.userID}, IP: ${req.ip}`);
+                return res.status(400).json({ error: 'Regional Manager ID and Region IDs are required' });
+            }
+            const result = await UserService.assignRegionsToRegionalManager(regionalManagerID, regionIDs, req.user.userID);
+            await NotificationService.triggerNotification({
+                event: 'user:regions_assigned',
+                data: { regionalManagerID, regionIDs },
+                metadata: { assignedBy: req.user.email }
+            });
+            logger.info(`Assigned regions to regional manager ${regionalManagerID} by user ${req.user.userID}, IP: ${req.ip}`);
+            return res.status(200).json(result);
+        } catch (error) {
+            logger.error(`Assign regions error: ${error.message}, user: ${req.user.userID}, IP: ${req.ip}`);
+            return res.status(400).json({ error: error.message });
+        }
+    }
+
+    static async revokeRegionsFromRegionalManager(req, res) {
+        try {
+            const { regionalManagerID, regionIDs } = req.body;
+            if (!regionalManagerID || !Array.isArray(regionIDs) || regionIDs.length === 0) {
+                logger.warn(`Revoke regions failed: Invalid input, user: ${req.user.userID}, IP: ${req.ip}`);
+                return res.status(400).json({ error: 'Regional Manager ID and Region IDs are required' });
+            }
+            const result = await UserService.revokeRegionsFromRegionalManager(regionalManagerID, regionIDs, req.user.userID);
+            await NotificationService.triggerNotification({
+                event: 'user:regions_revoked',
+                data: { regionalManagerID, regionIDs },
+                metadata: { revokedBy: req.user.email }
+            });
+            logger.info(`Revoked regions from regional manager ${regionalManagerID} by user ${req.user.userID}, IP: ${req.ip}`);
+            return res.status(200).json(result);
+        } catch (error) {
+            logger.error(`Revoke regions error: ${error.message}, user: ${req.user.userID}, IP: ${req.ip}`);
+            return res.status(400).json({ error: error.message });
+        }
+    }
+
+    static async assignGovernoratesToSupervisor(req, res) {
+        try {
+            const { supervisorID, governorateIDs } = req.body;
+            if (!supervisorID || !Array.isArray(governorateIDs) || governorateIDs.length === 0) {
+                logger.warn(`Assign governorates failed: Invalid input, user: ${req.user.userID}, IP: ${req.ip}`);
+                return res.status(400).json({ error: 'Supervisor ID and Governorate IDs are required' });
+            }
+            const result = await UserService.assignGovernoratesToSupervisor(supervisorID, governorateIDs, req.user.userID);
+            await NotificationService.triggerNotification({
+                event: 'user:governorates_assigned',
+                data: { supervisorID, governorateIDs },
+                metadata: { assignedBy: req.user.email }
+            });
+            logger.info(`Assigned governorates to supervisor ${supervisorID} by user ${req.user.userID}, IP: ${req.ip}`);
+            return res.status(200).json(result);
+        } catch (error) {
+            logger.error(`Assign governorates error: ${error.message}, user: ${req.user.userID}, IP: ${req.ip}`);
+            return res.status(400).json({ error: error.message });
+        }
+    }
+
+    static async revokeGovernoratesFromSupervisor(req, res) {
+        try {
+            const { supervisorID, governorateIDs } = req.body;
+            if (!supervisorID || !Array.isArray(governorateIDs) || governorateIDs.length === 0) {
+                logger.warn(`Revoke governorates failed: Invalid input, user: ${req.user.userID}, IP: ${req.ip}`);
+                return res.status(400).json({ error: 'Supervisor ID and Governorate IDs are required' });
+            }
+            const result = await UserService.revokeGovernoratesFromSupervisor(supervisorID, governorateIDs, req.user.userID);
+            await NotificationService.triggerNotification({
+                event: 'user:governorates_revoked',
+                data: { supervisorID, governorateIDs },
+                metadata: { revokedBy: req.user.email }
+            });
+            logger.info(`Revoked governorates from supervisor ${supervisorID} by user ${req.user.userID}, IP: ${req.ip}`);
+            return res.status(200).json(result);
+        } catch (error) {
+            logger.error(`Revoke governorates error: ${error.message}, user: ${req.user.userID}, IP: ${req.ip}`);
+            return res.status(400).json({ error: error.message });
+        }
+    }
+
+    static async assignDelegationsToSupervisor(req, res) {
+        try {
+            const { supervisorID, delegationIDs } = req.body;
+            if (!supervisorID || !Array.isArray(delegationIDs) || delegationIDs.length === 0) {
+                logger.warn(`Assign delegations failed: Invalid input, user: ${req.user.userID}, IP: ${req.ip}`);
+                return res.status(400).json({ error: 'Supervisor ID and Delegation IDs are required' });
+            }
+            const result = await UserService.assignDelegationsToSupervisor(supervisorID, delegationIDs, req.user.userID);
+            await NotificationService.triggerNotification({
+                event: 'user:delegations_assigned',
+                data: { supervisorID, delegationIDs },
+                metadata: { assignedBy: req.user.email }
+            });
+            logger.info(`Assigned delegations to supervisor ${supervisorID} by user ${req.user.userID}, IP: ${req.ip}`);
+            return res.status(200).json(result);
+        } catch (error) {
+            logger.error(`Assign delegations error: ${error.message}, user: ${req.user.userID}, IP: ${req.ip}`);
+            return res.status(400).json({ error: error.message });
+        }
+    }
+
+    static async revokeDelegationsFromSupervisor(req, res) {
+        try {
+            const { supervisorID, delegationIDs } = req.body;
+            if (!supervisorID || !Array.isArray(delegationIDs) || delegationIDs.length === 0) {
+                logger.warn(`Revoke delegations failed: Invalid input, user: ${req.user.userID}, IP: ${req.ip}`);
+                return res.status(400).json({ error: 'Supervisor ID and Delegation IDs are required' });
+            }
+            const result = await UserService.revokeDelegationsFromSupervisor(supervisorID, delegationIDs, req.user.userID);
+            await NotificationService.triggerNotification({
+                event: 'user:delegations_revoked',
+                data: { supervisorID, delegationIDs },
+                metadata: { revokedBy: req.user.email }
+            });
+            logger.info(`Revoked delegations from supervisor ${supervisorID} by user ${req.user.userID}, IP: ${req.ip}`);
+            return res.status(200).json(result);
+        } catch (error) {
+            logger.error(`Revoke delegations error: ${error.message}, user: ${req.user.userID}, IP: ${req.ip}`);
+            return res.status(400).json({ error: error.message });
+        }
+    }
+
+    static async assignSupervisorToAgent(req, res) {
+        try {
+            const { agentID, supervisorID, delegationID } = req.body;
+            if (!agentID || !supervisorID || !delegationID) {
+                logger.warn(`Assign supervisor to agent failed: Invalid input, user: ${req.user.userID}, IP: ${req.ip}`);
+                return res.status(400).json({ error: 'Agent ID, Supervisor ID, and Delegation ID are required' });
+            }
+            const result = await UserService.assignSupervisorToAgent(agentID, supervisorID, delegationID, req.user.userID);
+            await NotificationService.triggerNotification({
+                event: 'user:supervisor_assigned_to_agent',
+                data: { agentID, supervisorID, delegationID },
+                metadata: { assignedBy: req.user.email }
+            });
+            logger.info(`Assigned supervisor ${supervisorID} to agent ${agentID} by user ${req.user.userID}, IP: ${req.ip}`);
+            return res.status(200).json(result);
+        } catch (error) {
+            logger.error(`Assign supervisor to agent error: ${error.message}, user: ${req.user.userID}, IP: ${req.ip}`);
+            return res.status(400).json({ error: error.message });
+        }
+    }
+
+    static async revokeSupervisorFromAgent(req, res) {
+        try {
+            const { agentID } = req.body;
+            if (!agentID) {
+                logger.warn(`Revoke supervisor from agent failed: Invalid input, user: ${req.user.userID}, IP: ${req.ip}`);
+                return res.status(400).json({ error: 'Agent ID is required' });
+            }
+            const result = await UserService.revokeSupervisorFromAgent(agentID, req.user.userID);
+            await NotificationService.triggerNotification({
+                event: 'user:supervisor_revoked_from_agent',
+                data: { agentID, supervisorID: result.supervisorID, delegationID: result.delegationID },
+                metadata: { revokedBy: req.user.email }
+            });
+            logger.info(`Revoked supervisor from agent ${agentID} by user ${req.user.userID}, IP: ${req.ip}`);
+            return res.status(200).json(result);
+        } catch (error) {
+            logger.error(`Revoke supervisor from agent error: ${error.message}, user: ${req.user.userID}, IP: ${req.ip}`);
+            return res.status(400).json({ error: error.message });
+        }
+    }
+
     static async assignGoogleAccount(req, res) {
         try {
             const { userID } = req.params;
@@ -420,7 +511,6 @@ class UserController {
                 return res.status(400).json({ error: 'User ID and Google email are required' });
             }
             const updatedUser = await UserService.assignGoogleAccount(userID, googleEmail, req.user.userID);
-            // Notify user of Google account assignment
             await NotificationService.triggerNotification({
                 event: 'user:google_account_assigned',
                 data: { userID, googleEmail },

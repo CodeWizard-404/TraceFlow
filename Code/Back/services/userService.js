@@ -1,5 +1,5 @@
 const axios = require('axios');
-const { User, Role } = require('../models');
+const { User, Role, Region, Governorate, Delegation, Agent } = require('../models');
 const { Op } = require('sequelize');
 const logger = require('../utils/logger');
 require('dotenv').config();
@@ -16,16 +16,23 @@ const ERROR_MESSAGES = {
     INVALID_PHONE: 'Phone number must be 8–12 digits.',
     INVALID_PASSWORD: 'Password must be at least 6 characters.',
     INVALID_NAME: 'Names must be 2–50 characters and contain only letters.',
-    INVALID_ID: 'Invalid user ID',
+    INVALID_ID: 'Invalid user ID.',
+    INVALID_REGION_ID: 'Invalid region ID.',
+    INVALID_GOVERNORATE_ID: 'Invalid governorate ID.',
+    INVALID_DELEGATION_ID: 'Invalid delegation ID.',
+    INVALID_AGENT_ID: 'Invalid agent ID.',
     DUPLICATE_EMAIL: 'This email is already in use.',
     DUPLICATE_PHONE: 'This phone number is already in use.',
     USER_NOT_FOUND: 'User not found.',
     ROLE_NOT_FOUND: 'Role not found.',
+    REGION_NOT_FOUND: 'Region not found.',
+    GOVERNORATE_NOT_FOUND: 'Governorate not found.',
+    DELEGATION_NOT_FOUND: 'Delegation not found.',
+    AGENT_NOT_FOUND: 'Agent not found.',
     NO_USERS_FOUND: 'No users found.',
     NO_SUPERVISORS_FOUND: 'No supervisors found.',
-    NO_MANAGERS_FOUND: 'No managers found.',
-    MANAGER_NOT_FOUND: 'Manager not found.',
-    SUPERVISOR_NOT_FOUND: 'One or more supervisors not found.',
+    NO_REGIONAL_MANAGERS_FOUND: 'No regional managers found.',
+    NO_DIRECTOR_FOUND: 'No director found.',
     AUTH_SERVICE_DOWN: 'Unable to connect to authentication service.',
     KEYCLOAK_CREATE_FAILED: 'Unable to create user account.',
     KEYCLOAK_UPDATE_FAILED: 'Unable to update user account.',
@@ -38,9 +45,11 @@ const ERROR_MESSAGES = {
     USER_NOT_AUTHENTICATED: 'Please log in to continue.',
     USER_NOT_SYNCED: 'User account is not properly set up.',
     INVALID_ROLE: 'Please provide a valid role.',
-    INVALID_SUPERVISOR_IDS: 'Supervisor IDs must be a valid array.',
+    INVALID_IDS: 'IDs must be a valid array.',
     INVALID_GOOGLE_EMAIL: 'Please enter a valid Google email address.',
     GOOGLE_EMAIL_ALREADY_LINKED: 'This Google email is already linked to another user.',
+    INVALID_ROLE_ASSIGNMENT: 'User does not have the required role.',
+    REGION_NOT_ASSIGNED: 'Governorate or Delegation not in assigned Regions.',
 };
 
 class UserService {
@@ -62,7 +71,7 @@ class UserService {
         }
     }
 
-    static validateInput({ email, phone, password, firstname, lastname, userID, role, supervisorIDs }) {
+    static validateInput({ email, phone, password, firstname, lastname, userID, role, ids, googleEmail, regionID, governorateID, delegationID, agentID }) {
         const errors = [];
 
         if (email !== undefined) {
@@ -107,9 +116,39 @@ class UserService {
             }
         }
 
-        if (supervisorIDs !== undefined) {
-            if (!Array.isArray(supervisorIDs) || supervisorIDs.length === 0) {
-                errors.push(ERROR_MESSAGES.INVALID_SUPERVISOR_IDS);
+        if (ids !== undefined) {
+            if (!Array.isArray(ids) || ids.length === 0) {
+                errors.push(ERROR_MESSAGES.INVALID_IDS);
+            }
+        }
+
+        if (googleEmail !== undefined) {
+            if (!googleEmail || !/^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(googleEmail)) {
+                errors.push(ERROR_MESSAGES.INVALID_GOOGLE_EMAIL);
+            }
+        }
+
+        if (regionID !== undefined) {
+            if (!regionID) {
+                errors.push(ERROR_MESSAGES.INVALID_REGION_ID);
+            }
+        }
+
+        if (governorateID !== undefined) {
+            if (!governorateID) {
+                errors.push(ERROR_MESSAGES.INVALID_GOVERNORATE_ID);
+            }
+        }
+
+        if (delegationID !== undefined) {
+            if (!delegationID) {
+                errors.push(ERROR_MESSAGES.INVALID_DELEGATION_ID);
+            }
+        }
+
+        if (agentID !== undefined) {
+            if (!agentID) {
+                errors.push(ERROR_MESSAGES.INVALID_AGENT_ID);
             }
         }
 
@@ -170,8 +209,8 @@ class UserService {
                 `${KEYCLOAK_URL}/admin/realms/${REALM}/users/${keycloakUserId}/federated-identity/google`,
                 {
                     identityProvider: 'google',
-                    userId: keycloakUserId, // Use Keycloak user ID as Google user ID
-                    userName: email, // Use email as Google username
+                    userId: keycloakUserId,
+                    userName: email,
                 },
                 { headers: { Authorization: `Bearer ${token}` } }
             );
@@ -181,7 +220,6 @@ class UserService {
                 keycloakResponse: error.response?.data,
                 status: error.response?.status,
             });
-            // Roll back Keycloak user creation if Google linking fails
             await axios.delete(`${KEYCLOAK_URL}/admin/realms/${REALM}/users/${keycloakUserId}`, {
                 headers: { Authorization: `Bearer ${token}` },
             });
@@ -197,7 +235,6 @@ class UserService {
             if (existingUser.email === email) errors.push(ERROR_MESSAGES.DUPLICATE_EMAIL);
             if (existingUser.phone === phone) errors.push(ERROR_MESSAGES.DUPLICATE_PHONE);
             if (existingUser.googleEmail === email) errors.push(ERROR_MESSAGES.GOOGLE_EMAIL_ALREADY_LINKED);
-            // Roll back Keycloak user creation if DB check fails
             await axios.delete(`${KEYCLOAK_URL}/admin/realms/${REALM}/users/${keycloakUserId}`, {
                 headers: { Authorization: `Bearer ${token}` },
             });
@@ -214,12 +251,11 @@ class UserService {
                 lastname,
                 phone,
                 password: 'KEYCLOAK_MANAGED',
-                googleEmail: email, // Store the same email as googleEmail
+                googleEmail: email,
             });
             return user;
         } catch (error) {
             logger.error(`DB create user error: ${error.message}, user: ${actorID}`, { ip: null });
-            // Roll back Keycloak user creation if DB save fails
             await axios.delete(`${KEYCLOAK_URL}/admin/realms/${REALM}/users/${keycloakUserId}`, {
                 headers: { Authorization: `Bearer ${token}` },
             });
@@ -293,20 +329,17 @@ class UserService {
                 { headers: { Authorization: `Bearer ${token}` } }
             );
 
-            // Update Google federated identity if email changed
             if (userData.email && userData.email !== user.email) {
-                // Remove existing Google identity
                 await axios.delete(
                     `${KEYCLOAK_URL}/admin/realms/${REALM}/users/${user.keycloakId}/federated-identity/google`,
                     { headers: { Authorization: `Bearer ${token}` } }
                 );
-                // Add new Google identity
                 await axios.post(
                     `${KEYCLOAK_URL}/admin/realms/${REALM}/users/${user.keycloakId}/federated-identity/google`,
                     {
                         identityProvider: 'google',
-                        userId: user.keycloakId, // Keep Keycloak user ID as Google user ID
-                        userName: userData.email, // Use new email
+                        userId: user.keycloakId,
+                        userName: userData.email,
                     },
                     { headers: { Authorization: `Bearer ${token}` } }
                 );
@@ -365,7 +398,6 @@ class UserService {
 
         const token = await this.getAdminToken();
 
-        // Delete from Keycloak
         if (user.keycloakId) {
             try {
                 await axios.delete(`${KEYCLOAK_URL}/admin/realms/${REALM}/users/${user.keycloakId}`, {
@@ -377,7 +409,6 @@ class UserService {
             }
         }
 
-        // Delete from local DB
         try {
             await user.destroy();
             return { message: 'User deleted successfully.' };
@@ -390,8 +421,13 @@ class UserService {
     static async getAllUsers() {
         try {
             const users = await User.findAll({
-                include: [{ model: Role, through: { attributes: [] }, attributes: ['name'] }],
-                attributes: ['userID', 'email', 'firstname', 'lastname', 'phone', 'googleEmail'],
+                include: [
+                    { model: Role, through: { attributes: [] }, attributes: ['name'] },
+                    { model: Region, through: { attributes: [] }, attributes: ['regionID', 'name'] },
+                    { model: Governorate, through: { attributes: [] }, attributes: ['governorateID', 'name'] },
+                    { model: Delegation, through: { attributes: [] }, attributes: ['delegationID', 'name'] },
+                ],
+                attributes: ['userID', 'email', 'firstname', 'lastname', 'phone', 'googleEmail', 'regionalManagerID', 'directorID'],
             });
             if (!users.length) {
                 throw new Error(ERROR_MESSAGES.NO_USERS_FOUND);
@@ -413,7 +449,12 @@ class UserService {
         try {
             const user = await User.findOne({
                 where: { phone },
-                include: [{ model: Role, through: { attributes: [] }, attributes: ['name'] }],
+                include: [
+                    { model: Role, through: { attributes: [] }, attributes: ['name'] },
+                    { model: Region, through: { attributes: [] }, attributes: ['regionID', 'name'] },
+                    { model: Governorate, through: { attributes: [] }, attributes: ['governorateID', 'name'] },
+                    { model: Delegation, through: { attributes: [] }, attributes: ['delegationID', 'name'] },
+                ],
             });
             if (!user) {
                 throw new Error(ERROR_MESSAGES.USER_NOT_FOUND);
@@ -433,16 +474,30 @@ class UserService {
         this.validateInput({ userID });
 
         try {
-            // Fetch user by userID in the local DB
             let user = await User.findByPk(userID, {
-                include: [{ model: Role, through: { attributes: [] }, attributes: ['name'] }],
+                include: [
+                    { model: Role, through: { attributes: [] }, attributes: ['name'] },
+                    { model: Region, through: { attributes: [] }, attributes: ['regionID', 'name'] },
+                    { model: Governorate, through: { attributes: [] }, attributes: ['governorateID', 'name'] },
+                    { model: Delegation, through: { attributes: [] }, attributes: ['delegationID', 'name'] },
+                    { model: User, as: 'RegionalManager', attributes: ['userID', 'firstname', 'lastname', 'email'] },
+                    { model: User, as: 'Director', attributes: ['userID', 'firstname', 'lastname', 'email'] },
+                    { model: Agent, as: 'Agents', attributes: ['agentID', 'name', 'lastname', 'email'] },
+                ],
             });
 
             if (!user) {
-                // If no user is found with userID, fetch by keycloakId in the local DB
                 user = await User.findOne({
                     where: { keycloakId: userID },
-                    include: [{ model: Role, through: { attributes: [] }, attributes: ['name'] }],
+                    include: [
+                        { model: Role, through: { attributes: [] }, attributes: ['name'] },
+                        { model: Region, through: { attributes: [] }, attributes: ['regionID', 'name'] },
+                        { model: Governorate, through: { attributes: [] }, attributes: ['governorateID', 'name'] },
+                        { model: Delegation, through: { attributes: [] }, attributes: ['delegationID', 'name'] },
+                        { model: User, as: 'RegionalManager', attributes: ['userID', 'firstname', 'lastname', 'email'] },
+                        { model: User, as: 'Director', attributes: ['userID', 'firstname', 'lastname', 'email'] },
+                        { model: Agent, as: 'Agents', attributes: ['agentID', 'name', 'lastname', 'email'] },
+                    ],
                 });
             }
 
@@ -456,7 +511,6 @@ class UserService {
             throw new Error(error.message || ERROR_MESSAGES.USER_NOT_FOUND);
         }
     }
-
 
     static async getUsersByRole(roleName) {
         if (!roleName) {
@@ -478,6 +532,9 @@ class UserService {
                         where: { roleID: role.roleID },
                         attributes: [],
                     },
+                    { model: Region, through: { attributes: [] }, attributes: ['regionID', 'name'] },
+                    { model: Governorate, through: { attributes: [] }, attributes: ['governorateID', 'name'] },
+                    { model: Delegation, through: { attributes: [] }, attributes: ['delegationID', 'name'] },
                 ],
             });
             if (!users.length) {
@@ -503,8 +560,8 @@ class UserService {
                     {
                         model: User,
                         as: 'Supervisors',
-                        through: { attributes: [] },
                         attributes: ['userID', 'firstname', 'lastname', 'email', 'phone'],
+                        include: [{ model: Role, through: { attributes: [] }, attributes: ['name'] }],
                     },
                 ],
             });
@@ -514,14 +571,11 @@ class UserService {
             return user.Supervisors || [];
         } catch (error) {
             logger.error(`Get supervisors error: ${error.message}`, { ip: null });
-            if (error.message === ERROR_MESSAGES.USER_NOT_FOUND) {
-                throw new Error(error.message);
-            }
-            return [];
+            throw new Error(error.message || ERROR_MESSAGES.NO_SUPERVISORS_FOUND);
         }
     }
 
-    static async getManagersByUser(userID) {
+    static async getRegionalManagersByUser(userID) {
         if (!userID) {
             throw new Error(ERROR_MESSAGES.MISSING_FIELDS);
         }
@@ -533,103 +587,500 @@ class UserService {
                 include: [
                     {
                         model: User,
-                        as: 'Managers',
-                        through: { attributes: [] },
+                        as: 'RegionalManager',
                         attributes: ['userID', 'firstname', 'lastname', 'email', 'phone'],
+                        include: [{ model: Role, through: { attributes: [] }, attributes: ['name'] }],
                     },
                 ],
             });
             if (!user) {
                 throw new Error(ERROR_MESSAGES.USER_NOT_FOUND);
             }
-            return user.Managers || [];
+            return user.RegionalManager ? [user.RegionalManager] : [];
         } catch (error) {
-            logger.error(`Get managers error: ${error.message}`, { ip: null });
-            if (error.message === ERROR_MESSAGES.USER_NOT_FOUND) {
-                throw new Error(error.message);
-            }
-            return [];
+            logger.error(`Get regional managers error: ${error.message}`, { ip: null });
+            throw new Error(error.message || ERROR_MESSAGES.NO_REGIONAL_MANAGERS_FOUND);
         }
     }
 
-    static async assignSupervisorsToManager(managerID, supervisorIDs, actorID) {
-        if (!managerID || !supervisorIDs) {
+    static async getDirectorByUser(userID) {
+        if (!userID) {
             throw new Error(ERROR_MESSAGES.MISSING_FIELDS);
         }
 
-        this.validateInput({ userID: managerID, supervisorIDs });
+        this.validateInput({ userID });
 
         try {
-            const manager = await User.findByPk(managerID);
-            if (!manager) {
-                throw new Error(ERROR_MESSAGES.MANAGER_NOT_FOUND);
+            const user = await User.findByPk(userID, {
+                include: [
+                    {
+                        model: User,
+                        as: 'Director',
+                        attributes: ['userID', 'firstname', 'lastname', 'email', 'phone'],
+                        include: [{ model: Role, through: { attributes: [] }, attributes: ['name'] }],
+                    },
+                ],
+            });
+            if (!user) {
+                throw new Error(ERROR_MESSAGES.USER_NOT_FOUND);
             }
-            const supervisors = await User.findAll({ where: { userID: supervisorIDs } });
-            if (supervisors.length !== supervisorIDs.length) {
-                throw new Error(ERROR_MESSAGES.SUPERVISOR_NOT_FOUND);
-            }
-            const currentSupervisors = await manager.getSupervisors();
-            const newSupervisors = supervisors.filter(
-                (s) => !currentSupervisors.some((cs) => cs.userID === s.userID)
-            );
-            if (newSupervisors.length > 0) {
-                await manager.addSupervisors(newSupervisors);
-            }
-            return {
-                managerID,
-                assignedSupervisors: newSupervisors.map((s) => s.userID),
-                totalAssigned: (await manager.getSupervisors()).length,
-            };
+            return user.Director ? [user.Director] : [];
         } catch (error) {
-            logger.error(`Assign supervisors error: ${error.message}, user: ${actorID}`, { ip: null });
-            throw new Error(error.message || ERROR_MESSAGES.SUPERVISOR_NOT_FOUND);
+            logger.error(`Get director error: ${error.message}`, { ip: null });
+            throw new Error(error.message || ERROR_MESSAGES.NO_DIRECTOR_FOUND);
         }
     }
 
-    static async revokeSupervisorsFromManager(managerID, supervisorIDs, actorID) {
-        if (!managerID || !supervisorIDs) {
+    static async assignRegionalManagerToSupervisor(supervisorID, regionalManagerID, actorID) {
+        if (!supervisorID || !regionalManagerID) {
             throw new Error(ERROR_MESSAGES.MISSING_FIELDS);
         }
 
-        this.validateInput({ userID: managerID, supervisorIDs });
+        this.validateInput({ userID: supervisorID });
 
         try {
-            const manager = await User.findByPk(managerID);
-            if (!manager) {
-                throw new Error(ERROR_MESSAGES.MANAGER_NOT_FOUND);
+            const supervisor = await User.findByPk(supervisorID, {
+                include: [{ model: Role, through: { attributes: [] }, attributes: ['name'] }],
+            });
+            if (!supervisor) {
+                throw new Error(ERROR_MESSAGES.USER_NOT_FOUND);
             }
-            const supervisors = await User.findAll({ where: { userID: supervisorIDs } });
-            if (supervisors.length !== supervisorIDs.length) {
-                throw new Error(ERROR_MESSAGES.SUPERVISOR_NOT_FOUND);
+            if (!supervisor.Roles.some(role => role.name === process.env.ROLE_SUPERVISOR)) {
+                throw new Error(ERROR_MESSAGES.INVALID_ROLE_ASSIGNMENT);
             }
-            const currentSupervisors = await manager.getSupervisors();
-            const revokedSupervisors = supervisors.filter((s) =>
-                currentSupervisors.some((cs) => cs.userID === s.userID)
-            );
-            if (revokedSupervisors.length > 0) {
-                await manager.removeSupervisors(revokedSupervisors);
+
+            const regionalManager = await User.findByPk(regionalManagerID, {
+                include: [{ model: Role, through: { attributes: [] }, attributes: ['name'] }],
+            });
+            if (!regionalManager) {
+                throw new Error(ERROR_MESSAGES.USER_NOT_FOUND);
             }
+            if (!regionalManager.Roles.some(role => role.name === process.env.ROLE_REGIONAL_MANAGER)) {
+                throw new Error(ERROR_MESSAGES.INVALID_ROLE_ASSIGNMENT);
+            }
+
+            await supervisor.update({ regionalManagerID });
             return {
-                managerID,
-                revokedSupervisors: revokedSupervisors.map((s) => s.userID),
-                totalAssigned: (await manager.getSupervisors()).length,
+                supervisorID,
+                regionalManagerID,
+                message: 'Regional Manager assigned successfully.',
             };
         } catch (error) {
-            logger.error(`Revoke supervisors error: ${error.message}, user: ${actorID}`, { ip: null });
-            throw new Error(error.message || ERROR_MESSAGES.SUPERVISOR_NOT_FOUND);
+            logger.error(`Assign regional manager error: ${error.message}, user: ${actorID}`, { ip: null });
+            throw new Error(error.message || ERROR_MESSAGES.DB_UPDATE_FAILED);
         }
     }
+
+    static async revokeRegionalManagerFromSupervisor(supervisorID, actorID) {
+        if (!supervisorID) {
+            throw new Error(ERROR_MESSAGES.MISSING_FIELDS);
+        }
+
+        this.validateInput({ userID: supervisorID });
+
+        try {
+            const supervisor = await User.findByPk(supervisorID);
+            if (!supervisor) {
+                throw new Error(ERROR_MESSAGES.USER_NOT_FOUND);
+            }
+            if (!supervisor.regionalManagerID) {
+                throw new Error(ERROR_MESSAGES.NO_REGIONAL_MANAGERS_FOUND);
+            }
+
+            const regionalManagerID = supervisor.regionalManagerID;
+            await supervisor.update({ regionalManagerID: null });
+            return {
+                supervisorID,
+                regionalManagerID,
+                message: 'Regional Manager revoked successfully.',
+            };
+        } catch (error) {
+            logger.error(`Revoke regional manager error: ${error.message}, user: ${actorID}`, { ip: null });
+            throw new Error(error.message || ERROR_MESSAGES.DB_UPDATE_FAILED);
+        }
+    }
+
+    static async assignDirectorToRegionalManager(regionalManagerID, directorID, actorID) {
+        if (!regionalManagerID || !directorID) {
+            throw new Error(ERROR_MESSAGES.MISSING_FIELDS);
+        }
+
+        this.validateInput({ userID: regionalManagerID });
+
+        try {
+            const regionalManager = await User.findByPk(regionalManagerID, {
+                include: [{ model: Role, through: { attributes: [] }, attributes: ['name'] }],
+            });
+            if (!regionalManager) {
+                throw new Error(ERROR_MESSAGES.USER_NOT_FOUND);
+            }
+            if (!regionalManager.Roles.some(role => role.name === process.env.ROLE_REGIONAL_MANAGER)) {
+                throw new Error(ERROR_MESSAGES.INVALID_ROLE_ASSIGNMENT);
+            }
+
+            const director = await User.findByPk(directorID, {
+                include: [{ model: Role, through: { attributes: [] }, attributes: ['name'] }],
+            });
+            if (!director) {
+                throw new Error(ERROR_MESSAGES.USER_NOT_FOUND);
+            }
+            if (!director.Roles.some(role => role.name === process.env.ROLE_DIRECTOR)) {
+                throw new Error(ERROR_MESSAGES.INVALID_ROLE_ASSIGNMENT);
+            }
+
+            await regionalManager.update({ directorID });
+            return {
+                regionalManagerID,
+                directorID,
+                message: 'Director assigned successfully.',
+            };
+        } catch (error) {
+            logger.error(`Assign director error: ${error.message}, user: ${actorID}`, { ip: null });
+            throw new Error(error.message || ERROR_MESSAGES.DB_UPDATE_FAILED);
+        }
+    }
+
+    static async revokeDirectorFromRegionalManager(regionalManagerID, actorID) {
+        if (!regionalManagerID) {
+            throw new Error(ERROR_MESSAGES.MISSING_FIELDS);
+        }
+
+        this.validateInput({ userID: regionalManagerID });
+
+        try {
+            const regionalManager = await User.findByPk(regionalManagerID);
+            if (!regionalManager) {
+                throw new Error(ERROR_MESSAGES.USER_NOT_FOUND);
+            }
+            if (!regionalManager.directorID) {
+                throw new Error(ERROR_MESSAGES.NO_DIRECTOR_FOUND);
+            }
+
+            const directorID = regionalManager.directorID;
+            await regionalManager.update({ directorID: null });
+            return {
+                regionalManagerID,
+                directorID,
+                message: 'Director revoked successfully.',
+            };
+        } catch (error) {
+            logger.error(`Revoke director error: ${error.message}, user: ${actorID}`, { ip: null });
+            throw new Error(error.message || ERROR_MESSAGES.DB_UPDATE_FAILED);
+        }
+    }
+
+    static async assignRegionsToRegionalManager(regionalManagerID, regionIDs, actorID) {
+        if (!regionalManagerID || !regionIDs) {
+            throw new Error(ERROR_MESSAGES.MISSING_FIELDS);
+        }
+
+        this.validateInput({ userID: regionalManagerID, ids: regionIDs });
+
+        try {
+            const regionalManager = await User.findByPk(regionalManagerID, {
+                include: [{ model: Role, through: { attributes: [] }, attributes: ['name'] }],
+            });
+            if (!regionalManager) {
+                throw new Error(ERROR_MESSAGES.USER_NOT_FOUND);
+            }
+            if (!regionalManager.Roles.some(role => role.name === process.env.ROLE_REGIONAL_MANAGER)) {
+                throw new Error(ERROR_MESSAGES.INVALID_ROLE_ASSIGNMENT);
+            }
+
+            const regions = await Region.findAll({ where: { regionID: regionIDs } });
+            if (regions.length !== regionIDs.length) {
+                throw new Error(ERROR_MESSAGES.REGION_NOT_FOUND);
+            }
+
+            await regionalManager.setRegions(regions);
+            return {
+                regionalManagerID,
+                regionIDs,
+                message: 'Regions assigned successfully.',
+            };
+        } catch (error) {
+            logger.error(`Assign regions error: ${error.message}, user: ${actorID}`, { ip: null });
+            throw new Error(error.message || ERROR_MESSAGES.DB_UPDATE_FAILED);
+        }
+    }
+
+    static async revokeRegionsFromRegionalManager(regionalManagerID, regionIDs, actorID) {
+        if (!regionalManagerID || !regionIDs) {
+            throw new Error(ERROR_MESSAGES.MISSING_FIELDS);
+        }
+
+        this.validateInput({ userID: regionalManagerID, ids: regionIDs });
+
+        try {
+            const regionalManager = await User.findByPk(regionalManagerID);
+            if (!regionalManager) {
+                throw new Error(ERROR_MESSAGES.USER_NOT_FOUND);
+            }
+
+            const regions = await Region.findAll({ where: { regionID: regionIDs } });
+            if (regions.length !== regionIDs.length) {
+                throw new Error(ERROR_MESSAGES.REGION_NOT_FOUND);
+            }
+
+            await regionalManager.removeRegions(regions);
+            return {
+                regionalManagerID,
+                regionIDs,
+                message: 'Regions revoked successfully.',
+            };
+        } catch (error) {
+            logger.error(`Revoke regions error: ${error.message}, user: ${actorID}`, { ip: null });
+            throw new Error(error.message || ERROR_MESSAGES.DB_UPDATE_FAILED);
+        }
+    }
+
+    static async assignGovernoratesToSupervisor(supervisorID, governorateIDs, actorID) {
+        if (!supervisorID || !governorateIDs) {
+            throw new Error(ERROR_MESSAGES.MISSING_FIELDS);
+        }
+
+        this.validateInput({ userID: supervisorID, ids: governorateIDs });
+
+        try {
+            const supervisor = await User.findByPk(supervisorID, {
+                include: [
+                    { model: Role, through: { attributes: [] }, attributes: ['name'] },
+                    { model: User, as: 'RegionalManager', include: [{ model: Region }] },
+                ],
+            });
+            if (!supervisor) {
+                throw new Error(ERROR_MESSAGES.USER_NOT_FOUND);
+            }
+            if (!supervisor.Roles.some(role => role.name === process.env.ROLE_SUPERVISOR)) {
+                throw new Error(ERROR_MESSAGES.INVALID_ROLE_ASSIGNMENT);
+            }
+
+            const governorates = await Governorate.findAll({
+                where: { governorateID: governorateIDs },
+                include: [{ model: Region }],
+            });
+            if (governorates.length !== governorateIDs.length) {
+                throw new Error(ERROR_MESSAGES.GOVERNORATE_NOT_FOUND);
+            }
+
+            // Validate that Governorates belong to Regional Manager's Regions
+            if (supervisor.RegionalManager) {
+                const regionalManagerRegions = supervisor.RegionalManager.Regions.map(r => r.regionID);
+                const invalidGovernorates = governorates.filter(g => !regionalManagerRegions.includes(g.regionID));
+                if (invalidGovernorates.length > 0) {
+                    throw new Error(ERROR_MESSAGES.REGION_NOT_ASSIGNED);
+                }
+            }
+
+            await supervisor.setGovernorates(governorates);
+            return {
+                supervisorID,
+                governorateIDs,
+                message: 'Governorates assigned successfully.',
+            };
+        } catch (error) {
+            logger.error(`Assign governorates error: ${error.message}, user: ${actorID}`, { ip: null });
+            throw new Error(error.message || ERROR_MESSAGES.DB_UPDATE_FAILED);
+        }
+    }
+
+    static async revokeGovernoratesFromSupervisor(supervisorID, governorateIDs, actorID) {
+        if (!supervisorID || !governorateIDs) {
+            throw new Error(ERROR_MESSAGES.MISSING_FIELDS);
+        }
+
+        this.validateInput({ userID: supervisorID, ids: governorateIDs });
+
+        try {
+            const supervisor = await User.findByPk(supervisorID);
+            if (!supervisor) {
+                throw new Error(ERROR_MESSAGES.USER_NOT_FOUND);
+            }
+
+            const governorates = await Governorate.findAll({ where: { governorateID: governorateIDs } });
+            if (governorates.length !== governorateIDs.length) {
+                throw new Error(ERROR_MESSAGES.GOVERNORATE_NOT_FOUND);
+            }
+
+            await supervisor.removeGovernorates(governorates);
+            return {
+                supervisorID,
+                governorateIDs,
+                message: 'Governorates revoked successfully.',
+            };
+        } catch (error) {
+            logger.error(`Revoke governorates error: ${error.message}, user: ${actorID}`, { ip: null });
+            throw new Error(error.message || ERROR_MESSAGES.DB_UPDATE_FAILED);
+        }
+    }
+
+    static async assignDelegationsToSupervisor(supervisorID, delegationIDs, actorID) {
+        if (!supervisorID || !delegationIDs) {
+            throw new Error(ERROR_MESSAGES.MISSING_FIELDS);
+        }
+
+        this.validateInput({ userID: supervisorID, ids: delegationIDs });
+
+        try {
+            const supervisor = await User.findByPk(supervisorID, {
+                include: [
+                    { model: Role, through: { attributes: [] }, attributes: ['name'] },
+                    { model: User, as: 'RegionalManager', include: [{ model: Region }] },
+                ],
+            });
+            if (!supervisor) {
+                throw new Error(ERROR_MESSAGES.USER_NOT_FOUND);
+            }
+            if (!supervisor.Roles.some(role => role.name === process.env.ROLE_SUPERVISOR)) {
+                throw new Error(ERROR_MESSAGES.INVALID_ROLE_ASSIGNMENT);
+            }
+
+            const delegations = await Delegation.findAll({
+                where: { delegationID: delegationIDs },
+                include: [{ model: Governorate, include: [{ model: Region }] }],
+            });
+            if (delegations.length !== delegationIDs.length) {
+                throw new Error(ERROR_MESSAGES.DELEGATION_NOT_FOUND);
+            }
+
+            // Validate that Delegations belong to Regional Manager's Regions
+            if (supervisor.RegionalManager) {
+                const regionalManagerRegions = supervisor.RegionalManager.Regions.map(r => r.regionID);
+                const invalidDelegations = delegations.filter(d => !regionalManagerRegions.includes(d.Governorate.Region.regionID));
+                if (invalidDelegations.length > 0) {
+                    throw new Error(ERROR_MESSAGES.REGION_NOT_ASSIGNED);
+                }
+            }
+
+            await supervisor.setDelegations(delegations);
+            return {
+                supervisorID,
+                delegationIDs,
+                message: 'Delegations assigned successfully.',
+            };
+        } catch (error) {
+            logger.error(`Assign delegations error: ${error.message}, user: ${actorID}`, { ip: null });
+            throw new Error(error.message || ERROR_MESSAGES.DB_UPDATE_FAILED);
+        }
+    }
+
+    static async revokeDelegationsFromSupervisor(supervisorID, delegationIDs, actorID) {
+        if (!supervisorID || !delegationIDs) {
+            throw new Error(ERROR_MESSAGES.MISSING_FIELDS);
+        }
+
+        this.validateInput({ userID: supervisorID, ids: delegationIDs });
+
+        try {
+            const supervisor = await User.findByPk(supervisorID);
+            if (!supervisor) {
+                throw new Error(ERROR_MESSAGES.USER_NOT_FOUND);
+            }
+
+            const delegations = await Delegation.findAll({ where: { delegationID: delegationIDs } });
+            if (delegations.length !== delegationIDs.length) {
+                throw new Error(ERROR_MESSAGES.DELEGATION_NOT_FOUND);
+            }
+
+            await supervisor.removeDelegations(delegations);
+            return {
+                supervisorID,
+                delegationIDs,
+                message: 'Delegations revoked successfully.',
+            };
+        } catch (error) {
+            logger.error(`Revoke delegations error: ${error.message}, user: ${actorID}`, { ip: null });
+            throw new Error(error.message || ERROR_MESSAGES.DB_UPDATE_FAILED);
+        }
+    }
+
+    static async assignSupervisorToAgent(agentID, supervisorID, delegationID, actorID) {
+        if (!agentID || !supervisorID || !delegationID) {
+            throw new Error(ERROR_MESSAGES.MISSING_FIELDS);
+        }
+
+        this.validateInput({ userID: supervisorID, delegationID, agentID });
+
+        try {
+            const agent = await Agent.findByPk(agentID);
+            if (!agent) {
+                throw new Error(ERROR_MESSAGES.AGENT_NOT_FOUND);
+            }
+
+            const supervisor = await User.findByPk(supervisorID, {
+                include: [
+                    { model: Role, through: { attributes: [] }, attributes: ['name'] },
+                    { model: Delegation, through: { attributes: [] } },
+                ],
+            });
+            if (!supervisor) {
+                throw new Error(ERROR_MESSAGES.USER_NOT_FOUND);
+            }
+            if (!supervisor.Roles.some(role => role.name === process.env.ROLE_SUPERVISOR)) {
+                throw new Error(ERROR_MESSAGES.INVALID_ROLE_ASSIGNMENT);
+            }
+
+            const delegation = await Delegation.findByPk(delegationID);
+            if (!delegation) {
+                throw new Error(ERROR_MESSAGES.DELEGATION_NOT_FOUND);
+            }
+
+            // Validate that the Delegation is assigned to the Supervisor
+            if (!supervisor.Delegations.some(d => d.delegationID === delegationID)) {
+                throw new Error(ERROR_MESSAGES.REGION_NOT_ASSIGNED);
+            }
+
+            await agent.update({ supervisorID, delegationID });
+            return {
+                agentID,
+                supervisorID,
+                delegationID,
+                message: 'Supervisor and Delegation assigned successfully.',
+            };
+        } catch (error) {
+            logger.error(`Assign supervisor to agent error: ${error.message}, user: ${actorID}`, { ip: null });
+            throw new Error(error.message || ERROR_MESSAGES.DB_UPDATE_FAILED);
+        }
+    }
+
+    static async revokeSupervisorFromAgent(agentID, actorID) {
+        if (!agentID) {
+            throw new Error(ERROR_MESSAGES.MISSING_FIELDS);
+        }
+
+        this.validateInput({ agentID });
+
+        try {
+            const agent = await Agent.findByPk(agentID);
+            if (!agent) {
+                throw new Error(ERROR_MESSAGES.AGENT_NOT_FOUND);
+            }
+            if (!agent.supervisorID) {
+                throw new Error(ERROR_MESSAGES.NO_SUPERVISORS_FOUND);
+            }
+
+            const supervisorID = agent.supervisorID;
+            const delegationID = agent.delegationID;
+            await agent.update({ supervisorID: null, delegationID: null });
+            return {
+                agentID,
+                supervisorID,
+                delegationID,
+                message: 'Supervisor and Delegation revoked successfully.',
+            };
+        } catch (error) {
+            logger.error(`Revoke supervisor from agent error: ${error.message}, user: ${actorID}`, { ip: null });
+            throw new Error(error.message || ERROR_MESSAGES.DB_UPDATE_FAILED);
+        }
+    }
+
     static async assignGoogleAccount(userID, googleEmail, actorID) {
         if (!userID || !googleEmail) {
             throw new Error(ERROR_MESSAGES.MISSING_FIELDS);
         }
 
-        // Validate Google email
-        if (!/^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(googleEmail)) {
-            throw new Error(ERROR_MESSAGES.INVALID_GOOGLE_EMAIL);
-        }
+        this.validateInput({ userID, googleEmail });
 
-        // Check if the Google email is already linked to another user in the local DB
         const existingUser = await User.findOne({
             where: { googleEmail, userID: { [Op.ne]: userID } },
         });
@@ -637,7 +1088,6 @@ class UserService {
             throw new Error(ERROR_MESSAGES.GOOGLE_EMAIL_ALREADY_LINKED);
         }
 
-        // Find the user
         const user = await User.findByPk(userID);
         if (!user) {
             throw new Error(ERROR_MESSAGES.USER_NOT_FOUND);
@@ -648,9 +1098,7 @@ class UserService {
 
         const token = await this.getAdminToken();
 
-        // Update Keycloak user to link Google identity
         try {
-            // Check if the Google identity is already linked
             const federatedIdentities = await axios.get(
                 `${KEYCLOAK_URL}/admin/realms/${REALM}/users/${user.keycloakId}/federated-identity`,
                 { headers: { Authorization: `Bearer ${token}` } }
@@ -660,8 +1108,6 @@ class UserService {
                 throw new Error(ERROR_MESSAGES.GOOGLE_EMAIL_ALREADY_LINKED);
             }
 
-            // Link Google identity (Keycloak requires the user to authenticate with Google to complete the linking)
-            // Instead, we'll store the Google email as an attribute and update the local DB
             await axios.put(
                 `${KEYCLOAK_URL}/admin/realms/${REALM}/users/${user.keycloakId}`,
                 {
@@ -677,7 +1123,6 @@ class UserService {
             throw new Error(ERROR_MESSAGES.KEYCLOAK_UPDATE_FAILED);
         }
 
-        // Update local DB
         try {
             await user.update({ googleEmail });
             return user;

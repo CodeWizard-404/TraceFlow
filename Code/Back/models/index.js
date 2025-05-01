@@ -28,9 +28,34 @@ const Delegation = require('./location/delegation')(sequelize, DataTypes);
 
 // Define model associations
 const setupAssociations = () => {
-    // User - User (many-to-many): Managers and Supervisors hierarchy
-    User.belongsToMany(User, { as: 'Supervisors', through: 'ManagerSupervisors', foreignKey: 'managerID', otherKey: 'supervisorID' });
-    User.belongsToMany(User, { as: 'Managers', through: 'ManagerSupervisors', foreignKey: 'supervisorID', otherKey: 'managerID' });
+    // User Hierarchy
+    // Supervisor reports to Regional Manager
+    User.hasMany(User, { as: 'Supervisors', foreignKey: 'regionalManagerID' });
+    User.belongsTo(User, { as: 'RegionalManager', foreignKey: 'regionalManagerID' });
+
+    // Regional Manager reports to Director
+    User.hasMany(User, { as: 'RegionalManagers', foreignKey: 'directorID' });
+    User.belongsTo(User, { as: 'Director', foreignKey: 'directorID' });
+
+    // Region Assignments (Regional Managers assigned to Regions)
+    User.belongsToMany(Region, { through: 'UserRegions', foreignKey: 'userID', otherKey: 'regionID' });
+    Region.belongsToMany(User, { through: 'UserRegions', foreignKey: 'regionID', otherKey: 'userID' });
+
+    // Governorate Assignments (Supervisors assigned to Governorates)
+    User.belongsToMany(Governorate, { through: 'UserGovernorates', foreignKey: 'userID', otherKey: 'governorateID' });
+    Governorate.belongsToMany(User, { through: 'UserGovernorates', foreignKey: 'governorateID', otherKey: 'userID' });
+
+    // Delegation Assignments (Supervisors assigned to Delegations, optional)
+    User.belongsToMany(Delegation, { through: 'UserDelegations', foreignKey: 'userID', otherKey: 'delegationID' });
+    Delegation.belongsToMany(User, { through: 'UserDelegations', foreignKey: 'delegationID', otherKey: 'userID' });
+
+    // Agent - Supervisor (Agent assigned to a single Supervisor)
+    Agent.belongsTo(User, { as: 'Supervisor', foreignKey: 'supervisorID' });
+    User.hasMany(Agent, { as: 'Agents', foreignKey: 'supervisorID' });
+
+    // Agent - Delegation (Agent assigned to a single Delegation)
+    Agent.belongsTo(Delegation, { foreignKey: 'delegationID' });
+    Delegation.hasMany(Agent, { foreignKey: 'delegationID' });
 
     // Agent - Visit (1-to-many): Agent can have multiple Visits
     Agent.hasMany(Visit, { foreignKey: "agentID" });

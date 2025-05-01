@@ -7,6 +7,16 @@
 import React, { useState, useEffect } from "react";
 import { FaAngleDown, FaInfoCircle } from "react-icons/fa";
 import { motion } from "framer-motion"; // Added Framer Motion import
+import {
+  getAllRegions,
+  getAllGovernorates,
+  assignRegionsToRegionalManager,
+  assignRegionalManagerToSupervisor,
+  assignGovernoratesToSupervisor,
+} from "../../../apis/userAPI";
+import Select from "react-select"; // For multi-select dropdowns
+import Region from "../../../models/Region";
+import Governorate from "../../../models/Governorate";
 
 // Context and APIs
 import { useAuth } from "../../../context/AuthContext";
@@ -116,6 +126,12 @@ const UserAdd: React.FC<UserAddProps> = ({
   const { effectivePermissions, userRoles } = useAuth();
 
   // State
+  const [allRegions, setAllRegions] = useState<Region[]>([]);
+  const [allGovernorates, setAllGovernorates] = useState<Governorate[]>([]);
+  const [selectedRegions, setSelectedRegions] = useState<string[]>([]); // For Regional Manager
+  const [selectedRegionalManager, setSelectedRegionalManager] = useState<string | null>(null); // For Supervisor
+  const [selectedGovernorates, setSelectedGovernorates] = useState<string[]>([]); // For Supervisor
+  const [loadingAssignments, setLoadingAssignments] = useState(false);
   const [newUser, setNewUser] = useState<Partial<User>>({});
   const [passwordConfirm, setPasswordConfirm] = useState("");
   const [selectedRolesForNewUser, setSelectedRolesForNewUser] = useState<
@@ -159,6 +175,25 @@ const UserAdd: React.FC<UserAddProps> = ({
     }
   }, [roles]);
 
+  useEffect(() => {
+    const fetchData = async () => {
+      setLoading(true);
+      try {
+        const regions = await getAllRegions();
+        setAllRegions(regions);
+        const governorates = await getAllGovernorates();
+        setAllGovernorates(governorates);
+      } catch (error: unknown) {
+        const errorMessage = error instanceof Error ? error.message : "Failed to fetch regions or governorates.";
+        setError(errorMessage);
+        console.error("UserAdd: Error fetching data:", errorMessage);
+      } finally {
+        setLoading(false);
+      }
+    };
+    fetchData();
+  }, [setError]);
+
   // Permissions
   const userPermissions = {
     canCreateUsers: effectivePermissions?.some(
@@ -183,15 +218,16 @@ const UserAdd: React.FC<UserAddProps> = ({
       email: validateEmail(newUser.email || ""),
       phone: validatePhone(rawPhone),
       password: validatePassword(newUser.password || "", true),
-      passwordConfirm: validatePasswordConfirm(
-        newUser.password || "",
-        passwordConfirm,
-        true
-      ),
+      passwordConfirm: validatePasswordConfirm(newUser.password || "", passwordConfirm, true),
     };
 
+    // Additional validation for Supervisor
+    if (selectedRolesForNewUser.some(roleID => roles.find(r => r.roleID === roleID)?.name === "Supervisor")) {
+      if (selectedGovernorates.length === 0) errors.password = "At least one governorate is required for Supervisor.";
+    }
+
     setUserFormErrors(errors);
-    if (Object.values(errors).some((error) => error)) {
+    if (Object.values(errors).some(error => error)) {
       setError("Please correct the errors before submitting.");
       return;
     }
@@ -206,14 +242,9 @@ const UserAdd: React.FC<UserAddProps> = ({
         phone: stripPhoneForDatabase(rawPhone),
       });
 
-      if (
-        selectedRolesForNewUser.length > 0 &&
-        userPermissions.canAssignRoles
-      ) {
+      if (selectedRolesForNewUser.length > 0 && userPermissions.canAssignRoles) {
         const filteredRoles = selectedRolesForNewUser.filter(
-          (roleID) =>
-            roles.find((r) => r.roleID === roleID)?.name !==
-            import.meta.env.VITE_ROLES_SUPER_ADMIN
+          roleID => roles.find(r => r.roleID === roleID)?.name !== import.meta.env.VITE_ROLES_SUPER_ADMIN
         );
         if (filteredRoles.length > 0) {
           await assignRolesToUser(createdUser.userID, filteredRoles);
@@ -221,18 +252,43 @@ const UserAdd: React.FC<UserAddProps> = ({
         }
       }
 
+      setLoadingAssignments(true);
+      // Assign regions for Regional Manager
+      if (
+        selectedRolesForNewUser.some(roleID => roles.find(r => r.roleID === roleID)?.name === "RegionalManager") &&
+        selectedRegions.length > 0
+      ) {
+        await assignRegionsToRegionalManager(createdUser.userID, selectedRegions);
+        createdUser.Regions = allRegions.filter(region => selectedRegions.includes(region.regionID));
+      }
+
+      // Assign Regional Manager and governorates for Supervisor
+      if (
+        selectedRolesForNewUser.some(roleID => roles.find(r => r.roleID === roleID)?.name === "Supervisor") &&
+        selectedRegionalManager &&
+        selectedGovernorates.length > 0
+      ) {
+        await assignRegionalManagerToSupervisor(createdUser.userID, selectedRegionalManager);
+        await assignGovernoratesToSupervisor(createdUser.userID, selectedGovernorates);
+        createdUser.regionalManagerID = selectedRegionalManager;
+        createdUser.Governorates = allGovernorates.filter(gov => selectedGovernorates.includes(gov.governorateID));
+      }
+
       setUsers([...users, createdUser]);
       resetFormStates();
       setSelectedRolesForNewUser([]);
+      setSelectedRegions([]);
+      setSelectedRegionalManager(null);
+      setSelectedGovernorates([]);
       setView("users");
       setError(null);
     } catch (error: unknown) {
-      const errorMessage =
-        error instanceof Error ? error.message : "Failed to create user.";
+      const errorMessage = error instanceof Error ? error.message : "Failed to create user or assign roles.";
       setError(errorMessage);
-      console.error("UserAdd: Error creating user:", errorMessage);
+      console.error("UserAdd: Error:", errorMessage);
     } finally {
       setLoading(false);
+      setLoadingAssignments(false);
     }
   };
 
@@ -318,6 +374,16 @@ const UserAdd: React.FC<UserAddProps> = ({
     setUserFormErrors({ ...userFormErrors, phone: validatePhone(raw) });
   };
 
+  const regionalManagers = users.filter(user =>
+    user.Roles?.some(role => role.name === "Regional Manager")
+  );
+
+  const selectedRM = users.find(user => user.userID === selectedRegionalManager);
+  const rmRegions = selectedRM?.Regions?.map(region => region.regionID) || [];
+  const availableGovernorates = allGovernorates.filter(gov =>
+    rmRegions.includes(gov.regionID)
+  );
+
 
 
   // Reset Form
@@ -341,6 +407,9 @@ const UserAdd: React.FC<UserAddProps> = ({
       password: false,
       passwordConfirm: false,
     });
+    setSelectedRegions([]);
+    setSelectedRegionalManager(null);
+    setSelectedGovernorates([]);
   };
 
   // Role Popup
@@ -603,33 +672,28 @@ const UserAdd: React.FC<UserAddProps> = ({
           </div>
         </div>
         <div className="form-section">
-          <hr />
         </div>
         {userPermissions.canAssignRoles && (
           <div className="form-section">
             <hr />
             <h3>Role Assignment</h3>
+            {/* Existing role toggle buttons */}
             <div className="form-group">
               <label>Assign Roles</label>
               {roles.length === 0 ? (
-                <p className="error-text">No roles available. Please check role fetching.</p>
+                <p className="error-text">No roles available.</p>
               ) : (
                 <div className="roles-grid">
                   {roles
-                    .filter(
-                      (role) => role.name !== import.meta.env.VITE_ROLES_SUPER_ADMIN
-                    )
-                    .map((role) => (
+                    .filter(role => role.name !== import.meta.env.VITE_ROLES_SUPER_ADMIN)
+                    .map(role => (
                       <div key={role.roleID} className="role-toggle-container">
                         <button
-                          className={`role-toggle-button ${selectedRolesForNewUser.includes(role.roleID)
-                            ? "active"
-                            : ""
-                            }`}
+                          className={`role-toggle-button ${selectedRolesForNewUser.includes(role.roleID) ? "active" : ""}`}
                           onClick={() => {
-                            setSelectedRolesForNewUser((prev) =>
+                            setSelectedRolesForNewUser(prev =>
                               prev.includes(role.roleID)
-                                ? prev.filter((id) => id !== role.roleID)
+                                ? prev.filter(id => id !== role.roleID)
                                 : [...prev, role.roleID]
                             );
                           }}
@@ -638,7 +702,7 @@ const UserAdd: React.FC<UserAddProps> = ({
                           <span>{role.name}</span>
                           <FaInfoCircle
                             className="role-info-icon"
-                            onClick={(e) => {
+                            onClick={e => {
                               e.stopPropagation();
                               toggleRolePopup(role.roleID);
                             }}
@@ -649,6 +713,75 @@ const UserAdd: React.FC<UserAddProps> = ({
                 </div>
               )}
             </div>
+          </div>
+        )}
+
+        {selectedRolesForNewUser.some(roleID => roles.find(r => r.roleID === roleID)?.name === "RegionalManager") && (
+          <div className="form-section">
+            <hr />
+            <h3>Assign Regions</h3>
+            <Select
+              isMulti
+              options={allRegions.map(region => ({
+                value: region.regionID,
+                label: region.name,
+              }))}
+              value={allRegions
+                .filter(region => selectedRegions.includes(region.regionID))
+                .map(region => ({ value: region.regionID, label: region.name }))}
+              onChange={selected => setSelectedRegions(selected.map(option => option.value))}
+              placeholder="Select regions"
+              isDisabled={loading || loadingAssignments}
+              className="react-select-container"
+              classNamePrefix="react-select"
+            />
+          </div>
+        )}
+
+        {selectedRolesForNewUser.some(roleID => roles.find(r => r.roleID === roleID)?.name === "Supervisor") && (
+          <div className="form-section">
+            <hr />
+            <h3>Assign Regional Manager and Governorates</h3>
+            <div className="form-group">
+              <label>Select Regional Manager *</label>
+              <Select
+                options={regionalManagers.map(rm => ({
+                  value: rm.userID,
+                  label: `${rm.firstname} ${rm.lastname}`,
+                }))}
+                value={regionalManagers
+                  .filter(rm => rm.userID === selectedRegionalManager)
+                  .map(rm => ({ value: rm.userID, label: `${rm.firstname} ${rm.lastname}` }))[0]}
+                onChange={selected => {
+                  setSelectedRegionalManager(selected?.value || null);
+                  setSelectedGovernorates([]); // Reset governorates when RM changes
+                }}
+                placeholder="Select Regional Manager"
+                isDisabled={loading || loadingAssignments}
+                className="react-select-container"
+                classNamePrefix="react-select"
+              />
+            </div>
+            {selectedRegionalManager && (
+              <div className="form-group">
+                <label>Select Governorates *</label>
+                <Select
+                  isMulti
+                  options={availableGovernorates.map(gov => ({
+                    value: gov.governorateID,
+                    label: gov.name,
+                  }))}
+                  value={availableGovernorates
+                    .filter(gov => selectedGovernorates.includes(gov.governorateID))
+                    .map(gov => ({ value: gov.governorateID, label: gov.name }))}
+                  onChange={selected => setSelectedGovernorates(selected.map(option => option.value))}
+                  placeholder="Select governorates"
+                  isDisabled={loading || loadingAssignments}
+                  className="react-select-container"
+                  classNamePrefix="react-select"
+                />
+              </div>
+            )}
           </div>
         )}
         <button

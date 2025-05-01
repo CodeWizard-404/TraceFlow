@@ -12,5 +12,21 @@ module.exports = (sequelize, DataTypes) => {
         email: { type: DataTypes.STRING, unique: true },
         phone: { type: DataTypes.STRING },
         location: { type: DataTypes.STRING },
+        supervisorID: {
+            type: DataTypes.STRING,
+            allowNull: false,
+            references: {
+                model: 'Users',
+                key: 'userID',
+            },
+        },
+        delegationID: {
+            type: DataTypes.STRING,
+            allowNull: false,
+            references: {
+                model: 'Delegations',
+                key: 'delegationID',
+            },
+        },
     });
 };

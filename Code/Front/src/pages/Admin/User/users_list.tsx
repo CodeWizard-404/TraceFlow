@@ -1,8 +1,9 @@
+/* eslint-disable react-hooks/exhaustive-deps */
 import React, { useMemo, useEffect, useCallback, useState } from "react";
 import { useAuth } from "../../../context/AuthContext";
 import {
   getSupervisorsByUser,
-  getManagersByUser,
+  getRegionalManagersByUser,
   getAllUsers,
 } from "../../../apis/userAPI";
 import User from "../../../models/User";
@@ -380,7 +381,10 @@ const UsersList: React.FC<UsersListProps> = React.memo(
               `supervisors_${user.userID}`
             ),
             fetchWithRetry(
-              () => getManagersByUser(user.userID),
+              async () => {
+                const response = await getRegionalManagersByUser(user.userID);
+                return response.regionalManagers as User[];
+              },
               `managers_${user.userID}`
             ),
           ]);

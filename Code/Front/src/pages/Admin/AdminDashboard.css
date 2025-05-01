@@ -667,25 +667,25 @@ body.dark .role-info-icon {
     overflow-y: auto;
 }
 
-.permissions-grid::-webkit-scrollbar, .permissions-list::-webkit-scrollbar, .permission-list::-webkit-scrollbar, .role-info-popup::-webkit-scrollbar, .scanned-list ul::-webkit-scrollbar, .react-select__menu-list::-webkit-scrollbar {
+.permissions-grid::-webkit-scrollbar, .permissions-list::-webkit-scrollbar, .permission-list::-webkit-scrollbar, .role-info-popup::-webkit-scrollbar, .scanned-list ul::-webkit-scrollbar, .react-select__menu-list::-webkit-scrollbar, .list-container::-webkit-scrollbar {
     width: 12px;
 }
 
-.permissions-grid::-webkit-scrollbar-track, .permissions-list::-webkit-scrollbar-track, .permission-list::-webkit-scrollbar-track, .role-info-popup::-webkit-scrollbar-track, .scanned-list ul::-webkit-scrollbar-track, .react-select__menu-list::-webkit-scrollbar-track {
+.permissions-grid::-webkit-scrollbar-track, .permissions-list::-webkit-scrollbar-track, .permission-list::-webkit-scrollbar-track, .role-info-popup::-webkit-scrollbar-track, .scanned-list ul::-webkit-scrollbar-track, .react-select__menu-list::-webkit-scrollbar-track, .list-container::-webkit-scrollbar-track {
     background: none;
 }
 
-body.dark .permissions-grid::-webkit-scrollbar-track, body.dark .permissions-list::-webkit-scrollbar-track, body.dark .permission-list::-webkit-scrollbar-track, body.dark .role-info-popup::-webkit-scrollbar-track, body.dark .scanned-list ul::-webkit-scrollbar-track, body.dark .react-select__menu-list::-webkit-scrollbar-track {
+body.dark .permissions-grid::-webkit-scrollbar-track, body.dark .permissions-list::-webkit-scrollbar-track, body.dark .permission-list::-webkit-scrollbar-track, body.dark .role-info-popup::-webkit-scrollbar-track, body.dark .scanned-list ul::-webkit-scrollbar-track, body.dark .react-select__menu-list::-webkit-scrollbar-track, body.dark .list-container::-webkit-scrollbar-track {
     background: none !important;
 }
 
-.permissions-grid::-webkit-scrollbar-thumb, .permissions-list::-webkit-scrollbar-thumb, .permission-list::-webkit-scrollbar-thumb, .role-info-popup::-webkit-scrollbar-thumb, .scanned-list ul::-webkit-scrollbar-thumb, .react-select__menu-list::-webkit-scrollbar-thumb {
+.permissions-grid::-webkit-scrollbar-thumb, .permissions-list::-webkit-scrollbar-thumb, .permission-list::-webkit-scrollbar-thumb, .role-info-popup::-webkit-scrollbar-thumb, .scanned-list ul::-webkit-scrollbar-thumb, .react-select__menu-list::-webkit-scrollbar-thumb, .list-container::-webkit-scrollbar-thumb {
     background-color: #4cb1c7;
     border-radius: 6px;
     border: 3px solid #f8fafc;
 }
 
-body.dark .permissions-grid::-webkit-scrollbar-thumb, body.dark .permissions-list::-webkit-scrollbar-thumb, body.dark .permission-list::-webkit-scrollbar-thumb, body.dark .role-info-popup::-webkit-scrollbar-thumb, body.dark .scanned-list ul::-webkit-scrollbar-thumb, body.dark .react-select__menu-list::-webkit-scrollbar-thumb {
+body.dark .permissions-grid::-webkit-scrollbar-thumb, body.dark .permissions-list::-webkit-scrollbar-thumb, body.dark .permission-list::-webkit-scrollbar-thumb, body.dark .role-info-popup::-webkit-scrollbar-thumb, body.dark .scanned-list ul::-webkit-scrollbar-thumb, body.dark .react-select__menu-list::-webkit-scrollbar-thumb, body.dark .list-container::-webkit-scrollbar-thumb {
     background-color: #63b3ed;
     border: 3px solid #2b2b2b;
 }
@@ -4601,4 +4601,13 @@ body.dark .rule-row:hover {
 
 body.dark .no-items {
     color: #9ca3af;
+}
+
+
+/* Add this to AdminDashboard.css */
+.no-agents-message {
+    padding: 10px;
+    text-align: center;
+    color: #666;
+    font-style: italic;
 }
