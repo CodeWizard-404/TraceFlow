@@ -31,7 +31,7 @@ class AgentController {
             logger.info(`Created agent ${agent.agentID} by user ${req.user.userID}, IP: ${req.ip}`);
             return res.status(201).json(agent);
         } catch (error) {
-            logger.error(`Create agent error: ${error.message}, user: ${req.user.userID}, IP: ${req.ip}`);
+            logger.error(`Create agent error: ${error.message}, user: ${req.user.userID}, IP: ${req.ip}-------------------------------------------------------------------------------------------`);
             return res.status(error.status || 500).json({ error: error.message || 'Failed to create agent' });
         }
     }
@@ -159,7 +159,7 @@ class AgentController {
         try {
             const { delegationID } = req.query;
             if (!delegationID) {
-                logger.warn(`Get agents by delegation failed: Missing delegationID, user: ${req.user.userID}, IP: ${req.ip}`);
+                logger.warn(`Get agents by delegation failed: Missing delegation, user: ${req.user.userID}, IP: ${req.ip}`);
                 return res.status(400).json({ error: 'Delegation ID is required' });
             }
             const agents = await AgentService.getAgentsByDelegation(delegationID);

@@ -83,7 +83,7 @@ class PermissionController {
                 return res.status(400).json({ error: 'User ID is required' });
             }
             const permissions = await PermissionService.getEffectivePermissions(userID);
-            logger.info(`Fetched effective permissions for user ${userID} by ${req.user.userID}, IP: ${req.ip}`);
+            // logger.info(`Fetched effective permissions for user ${userID} by ${req.user.userID}, IP: ${req.ip}`);
             return res.status(200).json(permissions);
         } catch (error) {
             logger.error(`Get effective permissions error: ${error.message}, user: ${req.user.userID}, IP: ${req.ip}`);
@@ -153,12 +153,20 @@ class PermissionController {
     static async assignPermissionsToRole(req, res) {
         try {
             const { roleID } = req.params;
-            const { permissionIDs } = req.body;
-            if (!roleID || !Array.isArray(permissionIDs)) {
-                logger.warn(`Assign permissions failed: Invalid input, user: ${req.user.userID}, IP: ${req.ip}`);
-                return res.status(400).json({ error: 'Role ID and permission IDs are required' });
+            let { permissionIDs } = req.body;
+
+            // Normalize permissionIDs to an array if it's a string
+            if (typeof permissionIDs === 'string') {
+                permissionIDs = permissionIDs.split(',').map(id => id.trim()).filter(id => id);
             }
-            const result = await PermissionService.assignPermissionsToRole(roleID, permissionIDs, req.user.userID);
+
+            // Validate input
+            if (!roleID || !Array.isArray(permissionIDs) || permissionIDs.length === 0) {
+                logger.warn(`Assign permissions failed: Invalid input (roleID: ${roleID}, permissionIDs: ${permissionIDs}), user: ${req.user.userID}, IP: ${req.ip}`);
+                return res.status(400).json({ error: 'Role ID and at least one permission ID are required' });
+            }
+
+            const result = await PermissionService.assignPermissionsToRole(req.user, roleID, permissionIDs, req.user.userID);
             // Notify admins of permission assignment
             await NotificationService.triggerNotification({
                 event: 'permission:assigned',

@@ -23,6 +23,7 @@
   "author": "",
   "license": "ISC",
   "dependencies": {
+    "@faker-js/faker": "^9.7.0",
     "@fingerprintjs/fingerprintjs": "^4.6.1",
     "ajv": "^8.17.1",
     "ajv-formats": "^2.1.1",

@@ -20,6 +20,8 @@ import {
     revokeDelegationsFromSupervisor,
     assignDirectorToRegionalManager,
     revokeDirectorFromRegionalManager,
+    assignSupervisorToAgent,
+    revokeSupervisorFromAgent,
     getAllRegions,
     getAllGovernorates,
     getAllDelegations,
@@ -29,9 +31,6 @@ import {
     getAllAgents,
     getAgentByPhone,
     getAgentsByLocation,
-    createAgent,
-    updateAgent,
-    deleteAgent,
 } from "../../../apis/agentAPI";
 import User from "../../../models/User";
 import Agent from "../../../models/Agent";
@@ -210,24 +209,49 @@ const AssignmentsManagement: React.FC<AssignmentsManagementProps> = ({
                     getAllDelegations(),
                     getAllAgents(),
                 ]);
-                setTempSupervisors(supervisors || []);
-                // Robustly set regional managers
+                setTempSupervisors(
+                    (supervisors || []).sort((a, b) =>
+                        `${a.firstname} ${a.lastname}`.localeCompare(`${b.firstname} ${b.lastname}`)
+                    )
+                );
                 setTempRegionalManagers(
                     regionalManagers?.regionalManagers?.length
-                        ? regionalManagers.regionalManagers
+                        ? regionalManagers.regionalManagers.sort((a, b) =>
+                            `${a.firstname} ${a.lastname}`.localeCompare(`${b.firstname} ${b.lastname}`)
+                        )
                         : selectedUser.regionalManagerID
-                            ? users.filter((u) => u.userID === selectedUser.regionalManagerID)
+                            ? users
+                                .filter((u) => u.userID === selectedUser.regionalManagerID)
+                                .sort((a, b) =>
+                                    `${a.firstname} ${a.lastname}`.localeCompare(`${b.firstname} ${b.lastname}`)
+                                )
                             : []
                 );
-                setTempDirectors(director?.director ? [director.director] : []);
+                setTempDirectors(
+                    director?.director
+                        ? [director.director].sort((a, b) =>
+                            `${a.firstname} ${a.lastname}`.localeCompare(`${b.firstname} ${b.lastname}`)
+                        )
+                        : []
+                );
                 setAllRegions(regions || []);
                 setAllGovernorates(governorates || []);
                 setAllDelegations(delegations || []);
-                setTempRegions(selectedUser.Regions || []);
-                setTempGovernorates(selectedUser.Governorates || []);
-                setTempDelegations(selectedUser.Delegations || []);
+                setTempRegions(
+                    (selectedUser.Regions || []).sort((a, b) => a.name.localeCompare(b.name))
+                );
+                setTempGovernorates(
+                    (selectedUser.Governorates || []).sort((a, b) => a.name.localeCompare(b.name))
+                );
+                setTempDelegations(
+                    (selectedUser.Delegations || []).sort((a, b) => a.name.localeCompare(b.name))
+                );
                 setTempAgents(
-                    agentsResponse.agents.filter((agent) => agent.supervisorID === selectedUser.userID) || []
+                    (agentsResponse.agents.filter(
+                        (agent) => agent.supervisorID === selectedUser.userID
+                    ) || []).sort((a, b) =>
+                        `${a.name} ${a.lastname}`.localeCompare(`${b.name} ${b.lastname}`)
+                    )
                 );
                 setAvailableAgents(agentsResponse.agents || []);
             } catch (error) {
@@ -247,12 +271,6 @@ const AssignmentsManagement: React.FC<AssignmentsManagementProps> = ({
     }, [expandedSection, selectedUser, setGlobalError, users]);
 
     // Debug state updates
-    useEffect(() => {
-        console.log("tempRegionalManagers:", tempRegionalManagers);
-        console.log("tempGovernorates:", tempGovernorates);
-        console.log("tempDelegations:", tempDelegations);
-        console.log("availableAgents:", availableAgents);
-    }, [tempRegionalManagers, tempGovernorates, tempDelegations, availableAgents]);
 
     useEffect(() => {
         if (
@@ -325,7 +343,13 @@ const AssignmentsManagement: React.FC<AssignmentsManagementProps> = ({
                     const agent = response.agent;
                     setTempAgents((prev) => {
                         if (!prev.some((a) => a.agentID === agent.agentID)) {
-                            return [...prev, agent];
+                            // Add agent to the top, sort remaining
+                            return [
+                                agent,
+                                ...prev.sort((a, b) =>
+                                    `${a.name} ${a.lastname}`.localeCompare(`${b.name} ${b.lastname}`)
+                                ),
+                            ];
                         }
                         return prev;
                     });
@@ -339,16 +363,28 @@ const AssignmentsManagement: React.FC<AssignmentsManagementProps> = ({
                     if (type === 'supervisor' && userRoles.some((r: { name: string }) => r.name === ROLES.SUPERVISOR)) {
                         setTempSupervisors((prev) => {
                             if (!prev.some((s) => s.userID === userID)) {
-                                return [...prev, user];
+                                // Add supervisor to the top, sort remaining
+                                return [
+                                    user,
+                                    ...prev.sort((a, b) =>
+                                        `${a.firstname} ${a.lastname}`.localeCompare(`${b.firstname} ${b.lastname}`)
+                                    ),
+                                ];
                             }
                             return prev;
                         });
                         setSupervisorPhoneInput("");
-                    } else if (type === 'regionalManager' && userRoles.some((r: { name: string }) => r.name === ROLES.REGIONAL_MANAGER)) {
-                        setTempRegionalManagers([user]);
+                    } else if (
+                        type === 'regionalManager' &&
+                        userRoles.some((r: { name: string }) => r.name === ROLES.REGIONAL_MANAGER)
+                    ) {
+                        setTempRegionalManagers([user]); // Single selection
                         setRegionalManagerPhoneInput("");
-                    } else if (type === 'director' && userRoles.some((r: { name: string }) => r.name === ROLES.DIRECTOR)) {
-                        setTempDirectors([user]);
+                    } else if (
+                        type === 'director' &&
+                        userRoles.some((r: { name: string }) => r.name === ROLES.DIRECTOR)
+                    ) {
+                        setTempDirectors([user]); // Single selection
                         setDirectorPhoneInput("");
                     } else {
                         setPhoneError("User does not have the required role.");
@@ -373,6 +409,9 @@ const AssignmentsManagement: React.FC<AssignmentsManagementProps> = ({
                         .includes(supervisorSearch.toLowerCase()) ||
                     s.phone.includes(supervisorSearch) ||
                     s.email.toLowerCase().includes(supervisorSearch.toLowerCase())
+            )
+            .sort((a, b) =>
+                `${a.firstname} ${a.lastname}`.localeCompare(`${b.firstname} ${b.lastname}`)
             );
     }, [users, supervisorSearch]);
 
@@ -386,6 +425,9 @@ const AssignmentsManagement: React.FC<AssignmentsManagementProps> = ({
                         .includes(regionalManagerSearch.toLowerCase()) ||
                     m.phone.includes(regionalManagerSearch) ||
                     m.email.toLowerCase().includes(regionalManagerSearch.toLowerCase())
+            )
+            .sort((a, b) =>
+                `${a.firstname} ${a.lastname}`.localeCompare(`${b.firstname} ${b.lastname}`)
             );
     }, [users, regionalManagerSearch]);
 
@@ -399,23 +441,28 @@ const AssignmentsManagement: React.FC<AssignmentsManagementProps> = ({
                         .includes(directorSearch.toLowerCase()) ||
                     d.phone.includes(directorSearch) ||
                     d.email.toLowerCase().includes(directorSearch.toLowerCase())
+            )
+            .sort((a, b) =>
+                `${a.firstname} ${a.lastname}`.localeCompare(`${b.firstname} ${b.lastname}`)
             );
     }, [users, directorSearch]);
 
     const filteredAgents = useMemo(() => {
-        return availableAgents.filter(
-            (a) =>
-                `${a.name} ${a.lastname}`
-                    .toLowerCase()
-                    .includes(agentSearch.toLowerCase()) ||
-                a.phone.includes(agentSearch)
-        );
+        return availableAgents
+            .filter(
+                (a) =>
+                    `${a.name} ${a.lastname}`
+                        .toLowerCase()
+                        .includes(agentSearch.toLowerCase()) ||
+                    a.phone.includes(agentSearch)
+            )
+            .sort((a, b) => `${a.name} ${a.lastname}`.localeCompare(`${b.name} ${b.lastname}`));
     }, [availableAgents, agentSearch]);
 
     const filteredRegions = useMemo(() => {
-        return allRegions.filter((region) =>
-            region.name.toLowerCase().includes(regionSearch.toLowerCase())
-        );
+        return allRegions
+            .filter((region) => region.name.toLowerCase().includes(regionSearch.toLowerCase()))
+            .sort((a, b) => a.name.localeCompare(b.name));
     }, [allRegions, regionSearch]);
 
     const filteredGovernorates = useMemo(() => {
@@ -425,9 +472,8 @@ const AssignmentsManagement: React.FC<AssignmentsManagementProps> = ({
                 .map((region) => region.regionID) || [];
         return allGovernorates
             .filter((gov) => rmRegions.includes(gov.regionID))
-            .filter((gov) =>
-                gov.name.toLowerCase().includes(governorateSearch.toLowerCase())
-            );
+            .filter((gov) => gov.name.toLowerCase().includes(governorateSearch.toLowerCase()))
+            .sort((a, b) => a.name.localeCompare(b.name));
     }, [allGovernorates, governorateSearch, tempRegionalManagers]);
 
     const filteredDelegations = useMemo(() => {
@@ -435,9 +481,8 @@ const AssignmentsManagement: React.FC<AssignmentsManagementProps> = ({
             tempGovernorates.map((gov) => gov.governorateID) || [];
         return allDelegations
             .filter((del) => supervisorGovernorates.includes(del.governorateID))
-            .filter((del) =>
-                del.name.toLowerCase().includes(delegationSearch.toLowerCase())
-            );
+            .filter((del) => del.name.toLowerCase().includes(delegationSearch.toLowerCase()))
+            .sort((a, b) => a.name.localeCompare(b.name));
     }, [allDelegations, delegationSearch, tempGovernorates]);
 
     const paginatedSupervisors = useMemo(() => {
@@ -480,9 +525,22 @@ const AssignmentsManagement: React.FC<AssignmentsManagementProps> = ({
             if (!userPermissions.canAssignSupervisors || !selectedUser) return;
             setTempSupervisors((prev: User[]) => {
                 const hasSupervisor = prev.some((s) => s.userID === supervisor.userID);
-                return hasSupervisor
-                    ? prev.filter((s) => s.userID !== supervisor.userID)
-                    : [...prev, supervisor];
+                if (hasSupervisor) {
+                    // Remove supervisor and sort remaining alphabetically
+                    return prev
+                        .filter((s) => s.userID !== supervisor.userID)
+                        .sort((a, b) =>
+                            `${a.firstname} ${a.lastname}`.localeCompare(`${b.firstname} ${b.lastname}`)
+                        );
+                } else {
+                    // Add supervisor to the top
+                    return [
+                        supervisor,
+                        ...prev.sort((a, b) =>
+                            `${a.firstname} ${a.lastname}`.localeCompare(`${b.firstname} ${b.lastname}`)
+                        ),
+                    ];
+                }
             });
             setHasUnsavedAssignmentChanges(true);
         },
@@ -493,12 +551,18 @@ const AssignmentsManagement: React.FC<AssignmentsManagementProps> = ({
         (regionalManager: User) => {
             if (!userPermissions.canAssignSupervisors || !selectedUser) return;
             setTempRegionalManagers((prev: User[]) => {
-                const hasRegionalManager = prev.some(
-                    (m) => m.userID === regionalManager.userID
-                );
-                return hasRegionalManager
-                    ? prev.filter((m) => m.userID !== regionalManager.userID)
-                    : [regionalManager]; // Ensure only one regional manager is assigned
+                const hasRegionalManager = prev.some((m) => m.userID === regionalManager.userID);
+                if (hasRegionalManager) {
+                    // Remove regional manager and sort remaining alphabetically
+                    return prev
+                        .filter((m) => m.userID !== regionalManager.userID)
+                        .sort((a, b) =>
+                            `${a.firstname} ${a.lastname}`.localeCompare(`${b.firstname} ${b.lastname}`)
+                        );
+                } else {
+                    // Set only the selected regional manager (single selection)
+                    return [regionalManager];
+                }
             });
             setHasUnsavedAssignmentChanges(true);
         },
@@ -509,10 +573,18 @@ const AssignmentsManagement: React.FC<AssignmentsManagementProps> = ({
         (director: User) => {
             if (!userPermissions.canAssignDirectors || !selectedUser) return;
             setTempDirectors((prev: User[]) => {
-                const hasDirector = prev.some((d: User) => d.userID === director.userID);
-                return hasDirector
-                    ? prev.filter((d: User) => d.userID !== director.userID)
-                    : [director]; // Ensure only one director is assigned
+                const hasDirector = prev.some((d) => d.userID === director.userID);
+                if (hasDirector) {
+                    // Remove director and sort remaining alphabetically
+                    return prev
+                        .filter((d) => d.userID !== director.userID)
+                        .sort((a, b) =>
+                            `${a.firstname} ${a.lastname}`.localeCompare(`${b.firstname} ${b.lastname}`)
+                        );
+                } else {
+                    // Set only the selected director (single selection)
+                    return [director];
+                }
             });
             setHasUnsavedAssignmentChanges(true);
         },
@@ -524,9 +596,15 @@ const AssignmentsManagement: React.FC<AssignmentsManagementProps> = ({
             if (!userPermissions.canAssignRegions || !selectedUser) return;
             setTempRegions((prev: Region[]) => {
                 const hasRegion = prev.some((r) => r.regionID === region.regionID);
-                return hasRegion
-                    ? prev.filter((r) => r.regionID !== region.regionID)
-                    : [...prev, region];
+                if (hasRegion) {
+                    // Remove region and sort remaining alphabetically
+                    return prev
+                        .filter((r) => r.regionID !== region.regionID)
+                        .sort((a, b) => a.name.localeCompare(b.name));
+                } else {
+                    // Add region to the top
+                    return [region, ...prev.sort((a, b) => a.name.localeCompare(b.name))];
+                }
             });
             setHasUnsavedAssignmentChanges(true);
         },
@@ -538,11 +616,17 @@ const AssignmentsManagement: React.FC<AssignmentsManagementProps> = ({
             if (!userPermissions.canAssignGovernorates || !selectedUser) return;
             setTempGovernorates((prev: Governorate[]) => {
                 const hasGovernorate = prev.some(
-                    (g: Governorate) => g.governorateID === governorate.governorateID
+                    (g) => g.governorateID === governorate.governorateID
                 );
-                return hasGovernorate
-                    ? prev.filter((g: Governorate) => g.governorateID !== governorate.governorateID)
-                    : [...prev, governorate];
+                if (hasGovernorate) {
+                    // Remove governorate and sort remaining alphabetically
+                    return prev
+                        .filter((g) => g.governorateID !== governorate.governorateID)
+                        .sort((a, b) => a.name.localeCompare(b.name));
+                } else {
+                    // Add governorate to the top
+                    return [governorate, ...prev.sort((a, b) => a.name.localeCompare(b.name))];
+                }
             });
             setHasUnsavedAssignmentChanges(true);
         },
@@ -553,12 +637,16 @@ const AssignmentsManagement: React.FC<AssignmentsManagementProps> = ({
         (delegation: Delegation) => {
             if (!userPermissions.canAssignDelegations || !selectedUser) return;
             setTempDelegations((prev: Delegation[]) => {
-                const hasDelegation = prev.some(
-                    (d: Delegation) => d.delegationID === delegation.delegationID
-                );
-                return hasDelegation
-                    ? prev.filter((d: Delegation) => d.delegationID !== delegation.delegationID)
-                    : [...prev, delegation];
+                const hasDelegation = prev.some((d) => d.delegationID === delegation.delegationID);
+                if (hasDelegation) {
+                    // Remove delegation and sort remaining alphabetically
+                    return prev
+                        .filter((d) => d.delegationID !== delegation.delegationID)
+                        .sort((a, b) => a.name.localeCompare(b.name));
+                } else {
+                    // Add delegation to the top
+                    return [delegation, ...prev.sort((a, b) => a.name.localeCompare(b.name))];
+                }
             });
             setHasUnsavedAssignmentChanges(true);
         },
@@ -569,10 +657,21 @@ const AssignmentsManagement: React.FC<AssignmentsManagementProps> = ({
         (agent: Agent) => {
             if (!userPermissions.canAssignAgents || !selectedUser) return;
             setTempAgents((prev: Agent[]) => {
-                const hasAgent = prev.some((a: Agent) => a.agentID === agent.agentID);
-                return hasAgent
-                    ? prev.filter((a: Agent) => a.agentID !== agent.agentID)
-                    : [...prev, agent];
+                const hasAgent = prev.some((a) => a.agentID === agent.agentID);
+                if (hasAgent) {
+                    // Remove agent and sort remaining alphabetically
+                    return prev
+                        .filter((a) => a.agentID !== agent.agentID)
+                        .sort((a, b) => `${a.name} ${a.lastname}`.localeCompare(`${b.name} ${b.lastname}`));
+                } else {
+                    // Add agent to the top
+                    return [
+                        agent,
+                        ...prev.sort((a, b) =>
+                            `${a.name} ${a.lastname}`.localeCompare(`${b.name} ${b.lastname}`)
+                        ),
+                    ];
+                }
             });
             setHasUnsavedAssignmentChanges(true);
         },
@@ -713,27 +812,18 @@ const AssignmentsManagement: React.FC<AssignmentsManagementProps> = ({
                         throw new Error("At least one delegation must be assigned to the supervisor.");
                     }
 
+                    // Assign supervisors to agents
                     for (const agent of agentsToAssign) {
-                        if (agent.supervisorID && agent.supervisorID !== selectedUser.userID) {
-                            // Update existing agent
-                            await updateAgent(agent.agentID, {
-                                supervisorID: selectedUser.userID,
-                                delegationID: delegation.delegationID,
-                            });
-                        } else {
-                            // Create new agent or update if no supervisor
-                            await createAgent({
-                                name: agent.name || "",
-                                lastname: agent.lastname || "",
-                                email: agent.email || "",
-                                phone: agent.phone || "",
-                                supervisorID: selectedUser.userID,
-                                delegationID: delegation.delegationID,
-                            });
-                        }
+                        await assignSupervisorToAgent(
+                            agent.agentID,
+                            selectedUser.userID,
+                            delegation.delegationID
+                        );
                     }
+
+                    // Revoke supervisors from agents
                     for (const agentId of agentsToRevoke) {
-                        await deleteAgent(agentId);
+                        await revokeSupervisorFromAgent(agentId);
                     }
                 }
             }
@@ -862,50 +952,57 @@ const AssignmentsManagement: React.FC<AssignmentsManagementProps> = ({
                                         />
                                     </div>
                                     <div className="list-container">
-                                        {paginatedRegions.map((region) => (
+                                        {/* Render selected regions first */}
+                                        {tempRegions.map((region) => (
                                             <div key={region.regionID} className="list-item">
                                                 <label>
                                                     <input
                                                         type="checkbox"
-                                                        checked={tempRegions.some(
-                                                            (r) => r.regionID === region.regionID
-                                                        )}
+                                                        checked={true}
                                                         onChange={() => handleToggleRegion(region)}
-                                                        disabled={
-                                                            !userPermissions.canAssignRegions &&
-                                                            !userPermissions.canRevokeRegions
-                                                        }
+                                                        disabled={!userPermissions.canAssignRegions && !userPermissions.canRevokeRegions}
                                                     />
                                                     {region.name}
                                                 </label>
                                             </div>
                                         ))}
+                                        {/* Render remaining available regions */}
+                                        {paginatedRegions
+                                            .filter((region) => !tempRegions.some((r) => r.regionID === region.regionID))
+                                            .map((region) => (
+                                                <div key={region.regionID} className="list-item">
+                                                    <label>
+                                                        <input
+                                                            type="checkbox"
+                                                            checked={false}
+                                                            onChange={() => handleToggleRegion(region)}
+                                                            disabled={!userPermissions.canAssignRegions && !userPermissions.canRevokeRegions}
+                                                        />
+                                                        {region.name}
+                                                    </label>
+                                                </div>
+                                            ))}
                                     </div>
                                     <div className="pagination">
                                         <button
-                                            onClick={() =>
-                                                setRegionPage((p) => Math.max(1, p - 1))
-                                            }
+                                            onClick={() => setRegionPage((p) => Math.max(1, p - 1))}
                                             disabled={regionPage === 1}
                                         >
                                             Previous
                                         </button>
                                         <span>
-                                            Page {regionPage} of{" "}
-                                            {Math.ceil(filteredRegions.length / ITEMS_PER_PAGE)}
+                                            Page {regionPage} of {Math.ceil(filteredRegions.length / ITEMS_PER_PAGE)}
                                         </span>
                                         <button
                                             onClick={() => setRegionPage((p) => p + 1)}
-                                            disabled={
-                                                regionPage >=
-                                                Math.ceil(filteredRegions.length / ITEMS_PER_PAGE)
-                                            }
+                                            disabled={regionPage >= Math.ceil(filteredRegions.length / ITEMS_PER_PAGE)}
                                         >
                                             Next
                                         </button>
                                     </div>
                                 </div>
                             )}
+
                         {selectedUser.Roles?.some((r) => r.name === ROLES.REGIONAL_MANAGER) &&
                             userPermissions.canAssignDirectors && (
                                 <div className="assignment-list">
@@ -915,9 +1012,7 @@ const AssignmentsManagement: React.FC<AssignmentsManagementProps> = ({
                                             type="text"
                                             placeholder="Enter director phone (8 digits)"
                                             value={directorPhoneInput}
-                                            onChange={(e) =>
-                                                handlePhoneInput('director', e.target.value)
-                                            }
+                                            onChange={(e) => handlePhoneInput('director', e.target.value)}
                                             className="search-input"
                                         />
                                         <FaSearch className="search-icon" />
@@ -930,50 +1025,57 @@ const AssignmentsManagement: React.FC<AssignmentsManagementProps> = ({
                                         />
                                     </div>
                                     <div className="list-container">
-                                        {paginatedDirectors.map((director) => (
+                                        {/* Render selected directors first */}
+                                        {tempDirectors.map((director) => (
                                             <div key={director.userID} className="list-item">
                                                 <label>
                                                     <input
                                                         type="checkbox"
-                                                        checked={tempDirectors.some(
-                                                            (d) => d.userID === director.userID
-                                                        )}
+                                                        checked={true}
                                                         onChange={() => handleToggleDirector(director)}
-                                                        disabled={
-                                                            !userPermissions.canAssignDirectors &&
-                                                            !userPermissions.canRevokeDirectors
-                                                        }
+                                                        disabled={!userPermissions.canAssignDirectors && !userPermissions.canRevokeDirectors}
                                                     />
                                                     {`${director.firstname} ${director.lastname} (${director.phone})`}
                                                 </label>
                                             </div>
                                         ))}
+                                        {/* Render remaining available directors */}
+                                        {paginatedDirectors
+                                            .filter((director) => !tempDirectors.some((d) => d.userID === director.userID))
+                                            .map((director) => (
+                                                <div key={director.userID} className="list-item">
+                                                    <label>
+                                                        <input
+                                                            type="checkbox"
+                                                            checked={false}
+                                                            onChange={() => handleToggleDirector(director)}
+                                                            disabled={!userPermissions.canAssignDirectors && !userPermissions.canRevokeDirectors}
+                                                        />
+                                                        {`${director.firstname} ${director.lastname} (${director.phone})`}
+                                                    </label>
+                                                </div>
+                                            ))}
                                     </div>
                                     <div className="pagination">
                                         <button
-                                            onClick={() =>
-                                                setDirectorPage((p) => Math.max(1, p - 1))
-                                            }
+                                            onClick={() => setDirectorPage((p) => Math.max(1, p - 1))}
                                             disabled={directorPage === 1}
                                         >
                                             Previous
                                         </button>
                                         <span>
-                                            Page {directorPage} of{" "}
-                                            {Math.ceil(directorUsers.length / ITEMS_PER_PAGE)}
+                                            Page {directorPage} of {Math.ceil(directorUsers.length / ITEMS_PER_PAGE)}
                                         </span>
                                         <button
                                             onClick={() => setDirectorPage((p) => p + 1)}
-                                            disabled={
-                                                directorPage >=
-                                                Math.ceil(directorUsers.length / ITEMS_PER_PAGE)
-                                            }
+                                            disabled={directorPage >= Math.ceil(directorUsers.length / ITEMS_PER_PAGE)}
                                         >
                                             Next
                                         </button>
                                     </div>
                                 </div>
                             )}
+
                         {selectedUser.Roles?.some((r) => r.name === ROLES.REGIONAL_MANAGER) &&
                             userPermissions.canReadSupervisors && (
                                 <div className="assignment-list">
@@ -983,9 +1085,7 @@ const AssignmentsManagement: React.FC<AssignmentsManagementProps> = ({
                                             type="text"
                                             placeholder="Enter supervisor phone (8 digits)"
                                             value={supervisorPhoneInput}
-                                            onChange={(e) =>
-                                                handlePhoneInput('supervisor', e.target.value)
-                                            }
+                                            onChange={(e) => handlePhoneInput('supervisor', e.target.value)}
                                             className="search-input"
                                         />
                                         <FaSearch className="search-icon" />
@@ -998,14 +1098,13 @@ const AssignmentsManagement: React.FC<AssignmentsManagementProps> = ({
                                         />
                                     </div>
                                     <div className="list-container">
-                                        {paginatedSupervisors.map((supervisor) => (
+                                        {/* Render selected supervisors first */}
+                                        {tempSupervisors.map((supervisor) => (
                                             <div key={supervisor.userID} className="list-item">
                                                 <label>
                                                     <input
                                                         type="checkbox"
-                                                        checked={tempSupervisors.some(
-                                                            (s) => s.userID === supervisor.userID
-                                                        )}
+                                                        checked={true}
                                                         onChange={() => handleToggleSupervisor(supervisor)}
                                                         disabled={!userPermissions.canRevokeSupervisors}
                                                     />
@@ -1013,32 +1112,43 @@ const AssignmentsManagement: React.FC<AssignmentsManagementProps> = ({
                                                 </label>
                                             </div>
                                         ))}
+                                        {/* Render remaining available supervisors */}
+                                        {paginatedSupervisors
+                                            .filter((supervisor) => !tempSupervisors.some((s) => s.userID === supervisor.userID))
+                                            .map((supervisor) => (
+                                                <div key={supervisor.userID} className="list-item">
+                                                    <label>
+                                                        <input
+                                                            type="checkbox"
+                                                            checked={false}
+                                                            onChange={() => handleToggleSupervisor(supervisor)}
+                                                            disabled={!userPermissions.canRevokeSupervisors}
+                                                        />
+                                                        {`${supervisor.firstname} ${supervisor.lastname} (${supervisor.phone})`}
+                                                    </label>
+                                                </div>
+                                            ))}
                                     </div>
                                     <div className="pagination">
                                         <button
-                                            onClick={() =>
-                                                setSupervisorPage((p) => Math.max(1, p - 1))
-                                            }
+                                            onClick={() => setSupervisorPage((p) => Math.max(1, p - 1))}
                                             disabled={supervisorPage === 1}
                                         >
                                             Previous
                                         </button>
                                         <span>
-                                            Page {supervisorPage} of{" "}
-                                            {Math.ceil(supervisorUsers.length / ITEMS_PER_PAGE)}
+                                            Page {supervisorPage} of {Math.ceil(supervisorUsers.length / ITEMS_PER_PAGE)}
                                         </span>
                                         <button
                                             onClick={() => setSupervisorPage((p) => p + 1)}
-                                            disabled={
-                                                supervisorPage >=
-                                                Math.ceil(supervisorUsers.length / ITEMS_PER_PAGE)
-                                            }
+                                            disabled={supervisorPage >= Math.ceil(supervisorUsers.length / ITEMS_PER_PAGE)}
                                         >
                                             Next
                                         </button>
                                     </div>
                                 </div>
                             )}
+
                         {selectedUser.Roles?.some((r) => r.name === ROLES.SUPERVISOR) &&
                             userPermissions.canReadRegionalManagers && (
                                 <div className="assignment-list">
@@ -1048,9 +1158,7 @@ const AssignmentsManagement: React.FC<AssignmentsManagementProps> = ({
                                             type="text"
                                             placeholder="Enter regional manager phone (8 digits)"
                                             value={regionalManagerPhoneInput}
-                                            onChange={(e) =>
-                                                handlePhoneInput('regionalManager', e.target.value)
-                                            }
+                                            onChange={(e) => handlePhoneInput('regionalManager', e.target.value)}
                                             className="search-input"
                                         />
                                         <FaSearch className="search-icon" />
@@ -1063,29 +1171,42 @@ const AssignmentsManagement: React.FC<AssignmentsManagementProps> = ({
                                         />
                                     </div>
                                     <div className="list-container">
-                                        {paginatedRegionalManagers.map((regionalManager) => (
+                                        {/* Render selected regional managers first */}
+                                        {tempRegionalManagers.map((regionalManager) => (
                                             <div key={regionalManager.userID} className="list-item">
                                                 <label>
                                                     <input
                                                         type="checkbox"
-                                                        checked={tempRegionalManagers.some(
-                                                            (m) => m.userID === regionalManager.userID
-                                                        )}
-                                                        onChange={() =>
-                                                            handleToggleRegionalManager(regionalManager)
-                                                        }
+                                                        checked={true}
+                                                        onChange={() => handleToggleRegionalManager(regionalManager)}
                                                         disabled={!userPermissions.canAssignSupervisors}
                                                     />
                                                     {`${regionalManager.firstname} ${regionalManager.lastname} (${regionalManager.phone})`}
                                                 </label>
                                             </div>
                                         ))}
+                                        {/* Render remaining available regional managers */}
+                                        {paginatedRegionalManagers
+                                            .filter((regionalManager) =>
+                                                !tempRegionalManagers.some((m) => m.userID === regionalManager.userID)
+                                            )
+                                            .map((regionalManager) => (
+                                                <div key={regionalManager.userID} className="list-item">
+                                                    <label>
+                                                        <input
+                                                            type="checkbox"
+                                                            checked={false}
+                                                            onChange={() => handleToggleRegionalManager(regionalManager)}
+                                                            disabled={!userPermissions.canAssignSupervisors}
+                                                        />
+                                                        {`${regionalManager.firstname} ${regionalManager.lastname} (${regionalManager.phone})`}
+                                                    </label>
+                                                </div>
+                                            ))}
                                     </div>
                                     <div className="pagination">
                                         <button
-                                            onClick={() =>
-                                                setRegionalManagerPage((p) => Math.max(1, p - 1))
-                                            }
+                                            onClick={() => setRegionalManagerPage((p) => Math.max(1, p - 1))}
                                             disabled={regionalManagerPage === 1}
                                         >
                                             Previous
@@ -1097,8 +1218,7 @@ const AssignmentsManagement: React.FC<AssignmentsManagementProps> = ({
                                         <button
                                             onClick={() => setRegionalManagerPage((p) => p + 1)}
                                             disabled={
-                                                regionalManagerPage >=
-                                                Math.ceil(regionalManagerUsers.length / ITEMS_PER_PAGE)
+                                                regionalManagerPage >= Math.ceil(regionalManagerUsers.length / ITEMS_PER_PAGE)
                                             }
                                         >
                                             Next
@@ -1106,6 +1226,7 @@ const AssignmentsManagement: React.FC<AssignmentsManagementProps> = ({
                                     </div>
                                 </div>
                             )}
+
                         {selectedUser.Roles?.some((r) => r.name === ROLES.SUPERVISOR) &&
                             userPermissions.canAssignGovernorates && (
                                 <div className="assignment-list">
@@ -1121,43 +1242,57 @@ const AssignmentsManagement: React.FC<AssignmentsManagementProps> = ({
                                         />
                                     </div>
                                     <div className="list-container">
-                                        {paginatedGovernorates.map((governorate) => (
+                                        {/* Render selected governorates first */}
+                                        {tempGovernorates.map((governorate) => (
                                             <div key={governorate.governorateID} className="list-item">
                                                 <label>
                                                     <input
                                                         type="checkbox"
-                                                        checked={tempGovernorates.some(
-                                                            (g) => g.governorateID === governorate.governorateID
-                                                        )}
+                                                        checked={true}
                                                         onChange={() => handleToggleGovernorate(governorate)}
                                                         disabled={
-                                                            !userPermissions.canAssignGovernorates &&
-                                                            !userPermissions.canRevokeGovernorates
+                                                            !userPermissions.canAssignGovernorates && !userPermissions.canRevokeGovernorates
                                                         }
                                                     />
                                                     {governorate.name}
                                                 </label>
                                             </div>
                                         ))}
+                                        {/* Render remaining available governorates */}
+                                        {paginatedGovernorates
+                                            .filter((governorate) =>
+                                                !tempGovernorates.some((g) => g.governorateID === governorate.governorateID)
+                                            )
+                                            .map((governorate) => (
+                                                <div key={governorate.governorateID} className="list-item">
+                                                    <label>
+                                                        <input
+                                                            type="checkbox"
+                                                            checked={false}
+                                                            onChange={() => handleToggleGovernorate(governorate)}
+                                                            disabled={
+                                                                !userPermissions.canAssignGovernorates && !userPermissions.canRevokeGovernorates
+                                                            }
+                                                        />
+                                                        {governorate.name}
+                                                    </label>
+                                                </div>
+                                            ))}
                                     </div>
                                     <div className="pagination">
                                         <button
-                                            onClick={() =>
-                                                setGovernoratePage((p) => Math.max(1, p - 1))
-                                            }
+                                            onClick={() => setGovernoratePage((p) => Math.max(1, p - 1))}
                                             disabled={governoratePage === 1}
                                         >
                                             Previous
                                         </button>
                                         <span>
-                                            Page {governoratePage} of{" "}
-                                            {Math.ceil(filteredGovernorates.length / ITEMS_PER_PAGE)}
+                                            Page {governoratePage} of {Math.ceil(filteredGovernorates.length / ITEMS_PER_PAGE)}
                                         </span>
                                         <button
                                             onClick={() => setGovernoratePage((p) => p + 1)}
                                             disabled={
-                                                governoratePage >=
-                                                Math.ceil(filteredGovernorates.length / ITEMS_PER_PAGE)
+                                                governoratePage >= Math.ceil(filteredGovernorates.length / ITEMS_PER_PAGE)
                                             }
                                         >
                                             Next
@@ -1165,6 +1300,7 @@ const AssignmentsManagement: React.FC<AssignmentsManagementProps> = ({
                                     </div>
                                 </div>
                             )}
+
                         {selectedUser.Roles?.some((r) => r.name === ROLES.SUPERVISOR) &&
                             userPermissions.canAssignDelegations && (
                                 <div className="assignment-list">
@@ -1180,50 +1316,63 @@ const AssignmentsManagement: React.FC<AssignmentsManagementProps> = ({
                                         />
                                     </div>
                                     <div className="list-container">
-                                        {paginatedDelegations.map((delegation) => (
+                                        {/* Render selected delegations first */}
+                                        {tempDelegations.map((delegation) => (
                                             <div key={delegation.delegationID} className="list-item">
                                                 <label>
                                                     <input
                                                         type="checkbox"
-                                                        checked={tempDelegations.some(
-                                                            (d) => d.delegationID === delegation.delegationID
-                                                        )}
+                                                        checked={true}
                                                         onChange={() => handleToggleDelegation(delegation)}
                                                         disabled={
-                                                            !userPermissions.canAssignDelegations &&
-                                                            !userPermissions.canRevokeDelegations
+                                                            !userPermissions.canAssignDelegations && !userPermissions.canRevokeDelegations
                                                         }
                                                     />
                                                     {delegation.name}
                                                 </label>
                                             </div>
                                         ))}
+                                        {/* Render remaining available delegations */}
+                                        {paginatedDelegations
+                                            .filter((delegation) =>
+                                                !tempDelegations.some((d) => d.delegationID === delegation.delegationID)
+                                            )
+                                            .map((delegation) => (
+                                                <div key={delegation.delegationID} className="list-item">
+                                                    <label>
+                                                        <input
+                                                            type="checkbox"
+                                                            checked={false}
+                                                            onChange={() => handleToggleDelegation(delegation)}
+                                                            disabled={
+                                                                !userPermissions.canAssignDelegations && !userPermissions.canRevokeDelegations
+                                                            }
+                                                        />
+                                                        {delegation.name}
+                                                    </label>
+                                                </div>
+                                            ))}
                                     </div>
                                     <div className="pagination">
                                         <button
-                                            onClick={() =>
-                                                setDelegationPage((p) => Math.max(1, p - 1))
-                                            }
+                                            onClick={() => setDelegationPage((p) => Math.max(1, p - 1))}
                                             disabled={delegationPage === 1}
                                         >
                                             Previous
                                         </button>
                                         <span>
-                                            Page {delegationPage} of{" "}
-                                            {Math.ceil(filteredDelegations.length / ITEMS_PER_PAGE)}
+                                            Page {delegationPage} of {Math.ceil(filteredDelegations.length / ITEMS_PER_PAGE)}
                                         </span>
                                         <button
                                             onClick={() => setDelegationPage((p) => p + 1)}
-                                            disabled={
-                                                delegationPage >=
-                                                Math.ceil(filteredDelegations.length / ITEMS_PER_PAGE)
-                                            }
+                                            disabled={delegationPage >= Math.ceil(filteredDelegations.length / ITEMS_PER_PAGE)}
                                         >
                                             Next
                                         </button>
                                     </div>
                                 </div>
                             )}
+
                         {selectedUser.Roles?.some((r) => r.name === ROLES.SUPERVISOR) &&
                             userPermissions.canAssignAgents && (
                                 <div className="assignment-list">
@@ -1247,24 +1396,38 @@ const AssignmentsManagement: React.FC<AssignmentsManagementProps> = ({
                                     </div>
                                     <div className="list-container">
                                         {paginatedAgents.length > 0 ? (
-                                            paginatedAgents.map((agent) => (
-                                                <div key={agent.agentID} className="list-item">
-                                                    <label>
-                                                        <input
-                                                            type="checkbox"
-                                                            checked={tempAgents.some(
-                                                                (a) => a.agentID === agent.agentID
-                                                            )}
-                                                            onChange={() => handleToggleAgent(agent)}
-                                                            disabled={
-                                                                !userPermissions.canAssignAgents &&
-                                                                !userPermissions.canRevokeAgents
-                                                            }
-                                                        />
-                                                        {`${agent.name} ${agent.lastname} (${agent.phone})`}
-                                                    </label>
-                                                </div>
-                                            ))
+                                            <>
+                                                {/* Render selected agents first */}
+                                                {tempAgents.map((agent) => (
+                                                    <div key={agent.agentID} className="list-item">
+                                                        <label>
+                                                            <input
+                                                                type="checkbox"
+                                                                checked={true}
+                                                                onChange={() => handleToggleAgent(agent)}
+                                                                disabled={!userPermissions.canAssignAgents && !userPermissions.canRevokeAgents}
+                                                            />
+                                                            {`${agent.name} ${agent.lastname} (${agent.phone})`}
+                                                        </label>
+                                                    </div>
+                                                ))}
+                                                {/* Render remaining available agents */}
+                                                {paginatedAgents
+                                                    .filter((agent) => !tempAgents.some((a) => a.agentID === agent.agentID))
+                                                    .map((agent) => (
+                                                        <div key={agent.agentID} className="list-item">
+                                                            <label>
+                                                                <input
+                                                                    type="checkbox"
+                                                                    checked={false}
+                                                                    onChange={() => handleToggleAgent(agent)}
+                                                                    disabled={!userPermissions.canAssignAgents && !userPermissions.canRevokeAgents}
+                                                                />
+                                                                {`${agent.name} ${agent.lastname} (${agent.phone})`}
+                                                            </label>
+                                                        </div>
+                                                    ))}
+                                            </>
                                         ) : (
                                             <div className="no-agents-message">
                                                 No agents found in the selected delegation(s).
@@ -1280,15 +1443,11 @@ const AssignmentsManagement: React.FC<AssignmentsManagementProps> = ({
                                                 Previous
                                             </button>
                                             <span>
-                                                Page {agentPage} of{" "}
-                                                {Math.ceil(filteredAgents.length / ITEMS_PER_PAGE)}
+                                                Page {agentPage} of {Math.ceil(filteredAgents.length / ITEMS_PER_PAGE)}
                                             </span>
                                             <button
                                                 onClick={() => setAgentPage((p) => p + 1)}
-                                                disabled={
-                                                    agentPage >=
-                                                    Math.ceil(filteredAgents.length / ITEMS_PER_PAGE)
-                                                }
+                                                disabled={agentPage >= Math.ceil(filteredAgents.length / ITEMS_PER_PAGE)}
                                             >
                                                 Next
                                             </button>

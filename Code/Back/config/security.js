@@ -74,12 +74,12 @@ const authenticateCookie = async (req, res, next) => {
                 roles: response.data.realm_access?.roles || [],
                 token: accessToken,
             };
-            logger.info(`Authentication successful for user: ${req.user.email}`, {
-                userID: req.user.userID,
-                roles: req.user.roles.join(', '),
-                isWebSocket,
-                timestamp: new Date().toISOString(),
-            });
+            // logger.info(`Authentication successful for user: ${req.user.email}`, {
+            //     userID: req.user.userID,
+            //     roles: req.user.roles.join(', '),
+            //     isWebSocket,
+            //     timestamp: new Date().toISOString(),
+            // });
             next();
         } catch (error) {
             logger.error(`Keycloak introspection error: ${error.message}`, {
@@ -102,7 +102,7 @@ const requirePermission = (permissionName) => {
             const roles = req.user.roles || [];
 
             if (roles.includes('Super Admin')) {
-                logger.info(`Super Admin bypass for user ${req.user.userID}`, { timestamp: new Date().toISOString() });
+                // logger.info(`Super Admin bypass for user ${req.user.userID}`, { timestamp: new Date().toISOString() });
                 return next();
             }
 

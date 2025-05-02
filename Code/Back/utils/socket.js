@@ -85,33 +85,33 @@ io.on('connection', (socket) => {
     const roles = socket.user.roles || [];
     roles.forEach((role) => {
         socket.join(role.toLowerCase());
-        logger.info(`User ${socket.user.email} joined room: ${role.toLowerCase()}`, {
-            socketId: socket.id,
-            timestamp: new Date().toISOString(),
-        });
+        // logger.info(`User ${socket.user.email} joined room: ${role.toLowerCase()}`, {
+        //     socketId: socket.id,
+        //     timestamp: new Date().toISOString(),
+        // });
     });
     socket.join(socket.user.userID);
-    logger.info(`User ${socket.user.email} joined room: ${socket.user.userID}`, {
-        socketId: socket.id,
-        timestamp: new Date().toISOString(),
-    });
+    // logger.info(`User ${socket.user.email} joined room: ${socket.user.userID}`, {
+    //     socketId: socket.id,
+    //     timestamp: new Date().toISOString(),
+    // });
 
     // Handle join room
     socket.on('join', (room) => {
         socket.join(room);
-        logger.info(`User ${socket.user.email} joined room: ${room}`, {
-            socketId: socket.id,
-            timestamp: new Date().toISOString(),
-        });
+        // logger.info(`User ${socket.user.email} joined room: ${room}`, {
+        //     socketId: socket.id,
+        //     timestamp: new Date().toISOString(),
+        // });
     });
 
     // Handle leave room
     socket.on('leave', (room) => {
         socket.leave(room);
-        logger.info(`User ${socket.user.email} left room: ${room}`, {
-            socketId: socket.id,
-            timestamp: new Date().toISOString(),
-        });
+        // logger.info(`User ${socket.user.email} left room: ${room}`, {
+        //     socketId: socket.id,
+        //     timestamp: new Date().toISOString(),
+        // });
     });
 
     // Handle disconnection

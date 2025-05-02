@@ -1,24 +1,25 @@
 
 
--- Agents Table Sample Data
-INSERT INTO "Agents" ("agentID", "name", "lastname", "wallet", "cin", "email", "phone", "location", "createdAt", "updatedAt")
+-- Agents Table Sample Data (corrected)
+INSERT INTO "Agents" ("agentID", "name", "lastname", "email", "phone", "location", "supervisorID", "delegationID", "createdAt", "updatedAt")
 VALUES
-('agent_001', 'Anonyme', 'Test0', '0xabc123...', 'CIN1001', 'mohamed.benali@example.com', '70717171', 'LocTest', NOW(), NOW()),
-('agent_002', 'Sofien', 'Test1', '0xdef456...', 'CIN1002', 'fatima.trabelsi@example.com', '20031474', 'LocTest', NOW(), NOW()),
-('agent_003', 'Ghaith', 'Test2', '0xghi789...', 'CIN1003', 'ahmed.gharbi@example.com', '56598277', 'LocTest', NOW(), NOW()),
-('agent_004', 'Leila', 'Jlassi', '0xjkl012...', 'CIN1004', 'leila.jlassi@example.com', '+21625123456', 'Tunis', NOW(), NOW()),
-('agent_005', 'Karim', 'Mansour', '0xmno345...', 'CIN1005', 'karim.mansour@example.com', '+21626123456', 'Bizerte', NOW(), NOW()),
-('agent_006', 'Nour', 'Haddad', '0xpqr678...', 'CIN1006', 'nour.haddad@example.com', '+21627123456', 'Sfax', NOW(), NOW()),
-('agent_007', 'Youssef', 'Chaabane', '0xstu901...', 'CIN1007', 'youssef.chaabane@example.com', '+21628123456', 'Gabès', NOW(), NOW()),
-('agent_008', 'Amina', 'Karray', '0xvwx234...', 'CIN1008', 'amina.karray@example.com', '+21629123456', 'Tunis', NOW(), NOW()),
-('agent_009', 'Hassan', 'Saidi', '0xyza567...', 'CIN1009', 'hassan.saidi@example.com', '+21630123456', 'Sousse', NOW(), NOW()),
-('agent_010', 'Sana', 'Bouzid', '0xbcd890...', 'CIN1010', 'sana.bouzid@example.com', '+21631123456', 'Kairouan', NOW(), NOW()),
-('agent_011', 'Omar', 'Dridi', '0xefg123...', 'CIN1011', 'omar.dridi@example.com', '+21632123456', 'Tunis', NOW(), NOW()),
-('agent_012', 'Rania', 'Zouari', '0xhij456...', 'CIN1012', 'rania.zouari@example.com', '+21633123456', 'Sfax', NOW(), NOW()),
-('agent_013', 'Tarek', 'Hachicha', '0xklm789...', 'CIN1013', 'tarek.hachicha@example.com', '+21634123456', 'Bizerte', NOW(), NOW()),
-('agent_014', 'Imen', 'Feki', '0xnop012...', 'CIN1014', 'imen.feki@example.com', '+21635123456', 'Gabès', NOW(), NOW()),
-('agent_015', 'Sami', 'Lajmi', '0xqrs345...', 'CIN1015', 'sami.lajmi@example.com', '+21636123456', 'Sousse', NOW(), NOW()),
-('agent_016', 'Hiba', 'Gueddana', '0xtuv678...', 'CIN1016', 'hiba.gueddana@example.com', '+21637123456', 'Tunis', NOW(), NOW());
+('agt_001abc', 'Anonyme', 'Test0', 'mohamed.benali@example.com', '70717171', 'LocTest', null, ..., NOW(), NOW()),
+('agt_002def', 'Sofien', 'Test1', 'fatima.trabelsi@example.com', '20031474', 'LocTest', null, ...,NOW(), NOW()),
+('agt_003ghi', 'Ghaith', 'Test2', 'ahmed.gharbi@example.com', '56598277', 'LocTest', 'user_001', 'del_001', NOW(), NOW()),
+('agt_004jkl', 'Leila', 'Jlassi', 'leila.jlassi@example.com', '+21625123456', 'Tunis', 'user_001', 'del_001', NOW(), NOW()),
+('agt_005mno', 'Karim', 'Mansour', 'karim.mansour@example.com', '+21626123456', 'Bizerte', 'user_001', 'del_001', NOW(), NOW()),
+('agt_006pqr', 'Nour', 'Haddad', 'nour.haddad@example.com', '+21627123456', 'Sfax', 'user_001', 'del_001', NOW(), NOW()),
+('agt_007stu', 'Youssef', 'Chaabane', 'youssef.chaabane@example.com', '+21628123456', 'Gabès', 'user_001', 'del_001', NOW(), NOW()),
+('agt_008vwx', 'Amina', 'Karray', 'amina.karray@example.com', '+21629123456', 'Tunis', 'user_001', 'del_001', NOW(), NOW()),
+('agt_009yza', 'Hassan', 'Saidi', 'hassan.saidi@example.com', '+21630123456', 'Sousse', 'user_001', 'del_001', NOW(), NOW()),
+('agt_010bcd', 'Sana', 'Bouzid', 'sana.bouzid@example.com', '+21631123456', 'Kairouan', 'user_001', 'del_001', NOW(), NOW()),
+('agt_011efg', 'Omar', 'Dridi', 'omar.dridi@example.com', '+21632123456', 'Tunis', 'user_001', 'del_001', NOW(), NOW()),
+('agt_012hij', 'Rania', 'Zouari', 'rania.zouari@example.com', '+21633123456', 'Sfax', 'user_001', 'del_001', NOW(), NOW()),
+('agt_013klm', 'Tarek', 'Hachicha', 'tarek.hachicha@example.com', '+21634123456', 'Bizerte', 'user_001', 'del_001', NOW(), NOW()),
+('agt_014nop', 'Imen', 'Feki', 'imen.feki@example.com', '+21635123456', 'Gabès', 'user_001', 'del_001', NOW(), NOW()),
+('agt_015qrs', 'Sami', 'Lajmi', 'sami.lajmi@example.com', '+21636123456', 'Sousse', 'user_001', 'del_001', NOW(), NOW()),
+('agt_016tuv', 'Hiba', 'Gueddana', 'hiba.gueddana@example.com', '+21637123456', 'Tunis', 'user_001', 'del_001', NOW(), NOW());
+
 
 
 INSERT INTO "Checklists" ("checklistID", "item", "createdAt", "updatedAt")

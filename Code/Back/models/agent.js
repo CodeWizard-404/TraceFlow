@@ -14,7 +14,7 @@ module.exports = (sequelize, DataTypes) => {
         location: { type: DataTypes.STRING },
         supervisorID: {
             type: DataTypes.STRING,
-            allowNull: false,
+            allowNull: true, // change on production
             references: {
                 model: 'Users',
                 key: 'userID',

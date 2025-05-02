@@ -12,6 +12,7 @@ const {
 } = require('./config');
 const { setupAssociations } = require('./models');
 const populateGeographicData = require('./scripts/seedLocations');
+const seedAgents = require('./scripts/seedAgents');
 const { seedSuperAdmin } = require('./scripts/SeedSuperAdmin');
 const { seedMissingPermissions } = require('./scripts/seedPermissions');
 const { setupCron } = require('./config/scheduler');
@@ -96,6 +97,13 @@ const initSteps = [
             }
         },
         weight: 10,
+    },
+    {
+        name: 'Agent Data Seeding',
+        key: 'agents',
+        default: process.env.INIT_AGENTS === 'true', // Default to false unless explicitly enabled
+        fn: seedAgents,
+        weight: 15,
     },
     {
         name: 'Permission Seeding',

@@ -2,7 +2,7 @@ const { Agent, User, Delegation } = require('../models');
 const logger = require('../utils/logger');
 const { Op } = require('sequelize');
 const Role = require('../models/user/role');
-
+const sequelize = require('../config/db');
 
 class AgentService {
     /**
@@ -305,7 +305,7 @@ class AgentService {
             });
             return agents; // Return empty array if no agents
         } catch (error) {
-            logger.error(`Get agents by delegation error: ${error.message}`);
+            logger.error(`Get agents by delegation error: ${error.message} delegationID: ${delegationID}`);
             throw error;
         }
     }
@@ -316,15 +316,20 @@ class AgentService {
      */
     static async getAllUniqueLocations() {
         try {
-            const locations = await Agent.findAll({
-                attributes: ['location'],
-                group: ['location'],
+            const delegations = await Delegation.findAll({
+                attributes: ['name'],
+                distinct: 'name', // Ensures unique names
+                include: [{
+                    model: Agent,
+                    attributes: [],
+                    required: true // Ensures only delegations with agents are included
+                }],
             });
-            const uniqueLocations = locations.map((loc) => loc.location);
-            return uniqueLocations;
+            const uniqueDelegationNames = delegations.map(delegation => delegation.name);
+            return uniqueDelegationNames;
         } catch (error) {
-            logger.error(`Get unique locations error: ${error.message}`);
-            const err = new Error('Failed to retrieve unique locations: ' + error.message);
+            logger.error(`Get unique delegations error: ${error.message}`);
+            const err = new Error('Failed to retrieve unique delegations: ' + error.message);
             err.status = error.status || 500;
             throw err;
         }

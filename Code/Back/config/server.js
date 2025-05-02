@@ -40,12 +40,10 @@ async function initializeServer(app, io) {
 
             socket.on('join', (room) => {
                 socket.join(room);
-                logger.info(`Client joined room: ${room}`, { socketId: socket.id, timestamp: new Date().toISOString() });
             });
 
             socket.on('leave', (room) => {
                 socket.leave(room);
-                logger.info(`Client left room: ${room}`, { socketId: socket.id, timestamp: new Date().toISOString() });
             });
 
             socket.on('disconnect', () => {

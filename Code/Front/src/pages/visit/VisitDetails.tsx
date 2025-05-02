@@ -1,3 +1,4 @@
+/* eslint-disable react-hooks/exhaustive-deps */
 import React, {
   useState,
   useEffect,
@@ -56,7 +57,7 @@ const PERMISSIONS = {
     .VITE_PERMISSIONS_DELETE_VISIT,
   READ_SUPERVISORS: import.meta.env.VITE_PERMISSIONS_READ_SUPERVISORS,
   READ_AGENTS_BY_LOCATION: import.meta.env
-    .VITE_PERMISSIONS_READ_AGENTS_BY_LOCATION,
+    .VITE_PERMISSIONS_READ_AGENTS_BY_DELEGATION,
   READ_AGENTS_BY_PHONE: import.meta.env.VITE_PERMISSIONS_READ_AGENTS_BY_PHONE,
   READ_REASON_ITEMS: import.meta.env.VITE_PERMISSIONS_READ_REASON_ITEMS,
   READ_CHECKLISTS_ITEMS: import.meta.env.VITE_PERMISSIONS_READ_CHECKLISTS_ITEMS,
@@ -74,13 +75,13 @@ interface EditTracking {
 interface EditFormState {
   date: string;
   time: string;
-  location: string;
+  delegationID: string;
   status: string;
   comment: string;
   agentID: string;
   agentSearch: string;
   agentPhone: string;
-  locationSearch: string;
+  delegationSearch: string;
   reasonSearch: string;
   checklistSearch: string;
   checklists: Array<{ id: string; checked: boolean }>;
@@ -89,7 +90,7 @@ interface EditFormState {
   original: {
     date: string;
     time: string;
-    location: string;
+    delegationID: string;
     status: string;
     comment: string;
     agentID: string;
@@ -111,7 +112,7 @@ const VisitDetails: React.FC = () => {
   const [visit, setVisit] = useState<Visit | null>(null);
   const [agent, setAgent] = useState<Agent | null>(null);
   const [supervisors, setSupervisors] = useState<User[]>([]);
-  const [locations, setLocations] = useState<string[]>([]);
+  const [delegations, setDelegations] = useState<string[]>([]);
   const [agents, setAgents] = useState<Agent[]>([]);
   const [reasons, setReasons] = useState<Reason[]>([]);
   const [checklists, setChecklists] = useState<Checklist[]>([]);
@@ -137,13 +138,13 @@ const VisitDetails: React.FC = () => {
   const [editForm, setEditForm] = useState<EditFormState>({
     date: "",
     time: "",
-    location: "",
+    delegationID: "",
     status: "",
     comment: "",
     agentID: "",
     agentSearch: "",
     agentPhone: "",
-    locationSearch: "",
+    delegationSearch: "",
     reasonSearch: "",
     checklistSearch: "",
     checklists: [],
@@ -152,7 +153,7 @@ const VisitDetails: React.FC = () => {
     original: {
       date: "",
       time: "",
-      location: "",
+      delegationID: "",
       status: "",
       comment: "",
       agentID: "",
@@ -237,20 +238,20 @@ const VisitDetails: React.FC = () => {
       setVisit(visitData);
 
       const agentData = visitData.agentID
-        ? await getAgentById(visitData.agentID)
+        ? (await getAgentById(visitData.agentID)).agent
         : null;
       setAgent(agentData);
 
       setEditForm({
         date: visitData.date,
         time: visitData.time.slice(0, 5),
-        location: visitData.location || "",
+        delegationID: visitData.location || "",
         status: visitData.status,
         comment: visitData.comment || "",
         agentID: visitData.agentID,
         agentSearch: agentData ? `${agentData.name} ${agentData.lastname}` : "",
         agentPhone: "",
-        locationSearch: "",
+        delegationSearch: "",
         reasonSearch: "",
         checklistSearch: "",
         checklists:
@@ -263,7 +264,7 @@ const VisitDetails: React.FC = () => {
         original: {
           date: visitData.date,
           time: visitData.time.slice(0, 5),
-          location: visitData.location || "",
+          delegationID: visitData.location || "",
           status: visitData.status,
           comment: visitData.comment || "",
           agentID: visitData.agentID,
@@ -277,11 +278,11 @@ const VisitDetails: React.FC = () => {
       });
       setSelectedSupervisor("");
 
-      const [locationsData, reasonsData, checklistsData, supervisorsData] =
+      const [delegationsData, reasonsData, checklistsData, supervisorsData] =
         await Promise.all([
           userPermissions.canReadAgentsByLocation
             ? getAgentLocations()
-            : Promise.resolve([]),
+            : Promise.resolve({ locations: [] }),
           userPermissions.canReadReasons
             ? getAllReasons()
             : Promise.resolve([]),
@@ -290,15 +291,21 @@ const VisitDetails: React.FC = () => {
             : Promise.resolve([]),
           userPermissions.canReadSupervisors && user
             ? getSupervisorsByUser(user.userID)
-            : Promise.resolve([]),
+            : Promise.resolve({ users: [] }),
         ]);
 
-      setLocations(locationsData as string[]);
-      setReasons(reasonsData as Reason[]);
-      setChecklists(checklistsData as Checklist[]);
-      setSupervisors(supervisorsData as User[]);
-    } catch (err) {
-      setError(t("visitDetails.error.fetchFailed"));
+      setDelegations(delegationsData.locations);
+      setReasons(reasonsData);
+      setChecklists(checklistsData);
+      if ('users' in supervisorsData) {
+        setSupervisors(supervisorsData.users);
+      } else {
+        setSupervisors([]);
+      }
+    } catch (err: unknown) {
+      const errorMessage =
+        err instanceof Error ? err.message : t("visitDetails.error.fetchFailed");
+      setError(errorMessage);
       console.error(err);
     } finally {
       setLoading(false);
@@ -376,16 +383,18 @@ const VisitDetails: React.FC = () => {
     debounce(async (phone: string) => {
       if (phone.length < 7 || !userPermissions.canReadAgentsByPhone) return;
       try {
-        const agentData = await getAgentByPhone(phone);
+        const { agent: agentData } = await getAgentByPhone(phone);
         setEditForm((prev) => ({
           ...prev,
           agentID: agentData.agentID,
           agentSearch: `${agentData.name || ""} ${agentData.lastname || ""}`,
-          location: agentData.location || "",
+          delegationID: agentData.delegationID || "",
         }));
         setAgents([agentData]);
-      } catch {
-        setError(t("visitDetails.error.agentNotFound"));
+      } catch (err: unknown) {
+        const errorMessage =
+          err instanceof Error ? err.message : t("visitDetails.error.agentNotFound");
+        setError(errorMessage);
         setEditForm((prev) => ({ ...prev, agentID: "", agentSearch: "" }));
         setAgents([]);
       }
@@ -407,8 +416,10 @@ const VisitDetails: React.FC = () => {
         setSupervisorSearch(
           `${supervisor.firstname || ""} ${supervisor.lastname || ""}`
         );
-      } catch {
-        setError(t("visitDetails.error.supervisorNotFound"));
+      } catch (err: unknown) {
+        const errorMessage =
+          err instanceof Error ? err.message : t("visitDetails.error.supervisorNotFound");
+        setError(errorMessage);
         setSelectedSupervisor("");
         setSupervisorSearch("");
       }
@@ -432,29 +443,31 @@ const VisitDetails: React.FC = () => {
 
   useEffect(() => {
     if (
-      editForm.location &&
+      editForm.delegationID &&
       !editForm.agentPhone &&
       userPermissions.canReadAgentsByLocation
     ) {
       const fetchAgents = async () => {
         try {
-          const agentsData = await getAgentsByLocation(editForm.location);
+          const { agents: agentsData } = await getAgentsByLocation(editForm.delegationID);
           setAgents(agentsData);
           if (!editForm.agentPhone) {
             setEditForm((prev) => ({ ...prev, agentID: "", agentSearch: "" }));
           }
-        } catch {
-          setError(
-            t("visitDetails.error.agentsLoadFailed", {
-              location: editForm.location,
-            })
-          );
+        } catch (err: unknown) {
+          const errorMessage =
+            err instanceof Error
+              ? err.message
+              : t("visitDetails.error.agentsLoadFailed", {
+                location: editForm.delegationID,
+              });
+          setError(errorMessage);
         }
       };
       fetchAgents();
     }
   }, [
-    editForm.location,
+    editForm.delegationID,
     editForm.agentPhone,
     userPermissions.canReadAgentsByLocation,
     t,
@@ -477,8 +490,10 @@ const VisitDetails: React.FC = () => {
       setVisit((prev) =>
         prev ? { ...prev, status: VisitStatus.VALIDATED } : null
       );
-    } catch {
-      setError(t("visitDetails.error.validateFailed"));
+    } catch (err: unknown) {
+      const errorMessage =
+        err instanceof Error ? err.message : t("visitDetails.error.validateFailed");
+      setError(errorMessage);
     }
   };
 
@@ -493,8 +508,10 @@ const VisitDetails: React.FC = () => {
       setVisit((prev) =>
         prev ? { ...prev, status: VisitStatus.REJECTED } : null
       );
-    } catch {
-      setError(t("visitDetails.error.rejectFailed"));
+    } catch (err: unknown) {
+      const errorMessage =
+        err instanceof Error ? err.message : t("visitDetails.error.rejectFailed");
+      setError(errorMessage);
     }
   };
 
@@ -511,7 +528,7 @@ const VisitDetails: React.FC = () => {
           ...prevForm,
           date: prevForm.original.date,
           time: prevForm.original.time,
-          location: prevForm.original.location,
+          delegationID: prevForm.original.delegationID,
           status: prevForm.original.status,
           comment: prevForm.original.comment,
           agentID: prevForm.original.agentID,
@@ -564,7 +581,7 @@ const VisitDetails: React.FC = () => {
       const updatedVisit = await updateVisit(visit.visitID, {
         date: editForm.date,
         time: `${editForm.time}:00`,
-        location: editForm.location,
+        location: editForm.delegationID,
         status: newStatus,
         comment: editForm.comment,
         agentID: editForm.agentID,
@@ -587,8 +604,10 @@ const VisitDetails: React.FC = () => {
       setEditTracking({ startTime: null, durationAccumulator: 0 });
 
       setIsEditing(false);
-    } catch (err) {
-      setError(t("visitDetails.error.updateFailed"));
+    } catch (err: unknown) {
+      const errorMessage =
+        err instanceof Error ? err.message : t("visitDetails.error.updateFailed");
+      setError(errorMessage);
       console.error(err);
     }
   };
@@ -603,8 +622,10 @@ const VisitDetails: React.FC = () => {
     try {
       await deleteVisit(visit.visitID);
       navigate("/timesheet");
-    } catch {
-      setError(t("visitDetails.error.deleteFailed"));
+    } catch (err: unknown) {
+      const errorMessage =
+        err instanceof Error ? err.message : t("visitDetails.error.deleteFailed");
+      setError(errorMessage);
     }
   };
 
@@ -676,7 +697,7 @@ const VisitDetails: React.FC = () => {
       case "rejected":
         return [
           "dateTime",
-          "location",
+          "delegationID",
           "agentID",
           "checklists",
           "reasons",
@@ -998,8 +1019,7 @@ const VisitDetails: React.FC = () => {
                     </option>
                     {supervisors
                       .filter((s) =>
-                        `${s.firstname || ""} ${s.lastname || ""} ${s.phone || ""
-                          }`
+                        `${s.firstname || ""} ${s.lastname || ""} ${s.phone || ""}`
                           .toLowerCase()
                           .includes(supervisorSearch.toLowerCase())
                       )
@@ -1049,7 +1069,7 @@ const VisitDetails: React.FC = () => {
               </div>
             )}
 
-            {canEditField("agentID") && (
+            {canEditField("delegationID") && (
               <>
                 <div className="form-group">
                   <label htmlFor="agentPhone">
@@ -1075,23 +1095,23 @@ const VisitDetails: React.FC = () => {
                     aria-label={t("visitDetails.form.agentPhone.ariaLabel")}
                   />
                 </div>
-                {canEditField("location") && (
+                {canEditField("delegationID") && (
                   <div className="form-group">
-                    <label htmlFor="location">
-                      {t("visitDetails.form.location.label")}
+                    <label htmlFor="delegation">
+                      {t("visitDetails.form.delegation.label")}
                     </label>
                     <input
                       type="text"
                       placeholder={
                         userPermissions.canReadAgentsByLocation
-                          ? t("visitDetails.form.location.searchPlaceholder")
+                          ? t("visitDetails.form.delegation.searchPlaceholder")
                           : t("visitDetails.form.permissionDenied")
                       }
-                      value={editForm.locationSearch}
+                      value={editForm.delegationSearch}
                       onChange={(e) =>
                         setEditForm((prev) => ({
                           ...prev,
-                          locationSearch: e.target.value,
+                          delegationSearch: e.target.value,
                         }))
                       }
                       className="search-input"
@@ -1100,16 +1120,16 @@ const VisitDetails: React.FC = () => {
                         editForm.agentPhone.length > 0
                       }
                       aria-label={t(
-                        "visitDetails.form.location.searchPlaceholder"
+                        "visitDetails.form.delegation.searchPlaceholder"
                       )}
                     />
                     <select
-                      id="location"
-                      value={editForm.location}
+                      id="delegation"
+                      value={editForm.delegationID}
                       onChange={(e) =>
                         setEditForm((prev) => ({
                           ...prev,
-                          location: e.target.value,
+                          delegationID: e.target.value,
                         }))
                       }
                       required
@@ -1117,20 +1137,20 @@ const VisitDetails: React.FC = () => {
                         !userPermissions.canReadAgentsByLocation ||
                         editForm.agentPhone.length > 0
                       }
-                      aria-label={t("visitDetails.form.location.ariaLabel")}
+                      aria-label={t("visitDetails.form.delegation.ariaLabel")}
                     >
                       <option value="">
-                        {t("visitDetails.form.location.selectPlaceholder")}
+                        {t("visitDetails.form.delegation.selectPlaceholder")}
                       </option>
-                      {locations
-                        .filter((loc) =>
-                          loc
+                      {delegations
+                        .filter((del) =>
+                          del
                             .toLowerCase()
-                            .includes(editForm.locationSearch.toLowerCase())
+                            .includes(editForm.delegationSearch.toLowerCase())
                         )
-                        .map((loc) => (
-                          <option key={loc} value={loc}>
-                            {loc}
+                        .map((del) => (
+                          <option key={del} value={del}>
+                            {del}
                           </option>
                         ))}
                     </select>
@@ -1158,7 +1178,7 @@ const VisitDetails: React.FC = () => {
                     disabled={
                       !userPermissions.canReadAgentsByLocation ||
                       editForm.agentPhone.length > 0 ||
-                      !editForm.location
+                      !editForm.delegationID
                     }
                     aria-label={t("visitDetails.form.agent.searchPlaceholder")}
                   />
@@ -1175,7 +1195,7 @@ const VisitDetails: React.FC = () => {
                     disabled={
                       !userPermissions.canReadAgentsByLocation ||
                       editForm.agentPhone.length > 0 ||
-                      !editForm.location
+                      !editForm.delegationID
                     }
                     aria-label={t("visitDetails.form.agent.ariaLabel")}
                   >
