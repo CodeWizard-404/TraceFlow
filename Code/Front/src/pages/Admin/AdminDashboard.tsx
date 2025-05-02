@@ -831,92 +831,104 @@ const AdminDashboard: React.FC = React.memo(() => {
             </header>
             <section className="dashboard-content">
                 <aside className="sidebar" role="navigation">
+
+
                     <div className="filter-card">
                         <h3>{t("adminDashboard.sidebar.view")}</h3>
-                        {userPermissions.canViewUsers && (
+                        <div className="view-category">
+                            <h4>{t("adminDashboard.sidebar.management")}</h4>
+                            {userPermissions.canViewUsers && (
+                                <button
+                                    className={
+                                        view === "users" || view === "add-user" || view === "user-details"
+                                            ? "active"
+                                            : ""
+                                    }
+                                    onClick={() => handleViewChange("users")}
+                                    aria-current={view === "users" ? "page" : undefined}
+                                >
+                                    {t("adminDashboard.sidebar.users")}
+                                </button>
+                            )}
+                            {userPermissions.canViewRoles && (
+                                <button
+                                    className={
+                                        view === "roles" || view === "add-role" ? "active" : ""
+                                    }
+                                    onClick={() => handleViewChange("roles")}
+                                    aria-current={view === "roles" ? "page" : undefined}
+                                >
+                                    {t("adminDashboard.sidebar.roles")}
+                                </button>
+                            )}
+                            {userPermissions.canViewPermissions && (
+                                <button
+                                    className={
+                                        view === "permissions" || view === "add-permission" ? "active" : ""
+                                    }
+                                    onClick={() => handleViewChange("permissions")}
+                                    aria-current={view === "permissions" ? "page" : undefined}
+                                >
+                                    {t("adminDashboard.sidebar.permissions")}
+                                </button>
+                            )}
+                        </div>
+                        <div className="view-category">
+                            <h4>{t("adminDashboard.sidebar.data")}</h4>
+                            {userPermissions.canViewChecklists && (
+                                <button
+                                    className={
+                                        view === "checklists" ||
+                                            view === "add-checklist" ||
+                                            view === "checklist-details"
+                                            ? "active"
+                                            : ""
+                                    }
+                                    onClick={() => handleViewChange("checklists")}
+                                    aria-current={view === "checklists" ? "page" : undefined}
+                                >
+                                    {t("adminDashboard.sidebar.checklists")}
+                                </button>
+                            )}
+                            {userPermissions.canViewReasons && (
+                                <button
+                                    className={
+                                        view === "reasons" || view === "add-reason" || view === "reason-details"
+                                            ? "active"
+                                            : ""
+                                    }
+                                    onClick={() => handleViewChange("reasons")}
+                                    aria-current={view === "reasons" ? "page" : undefined}
+                                >
+                                    {t("adminDashboard.sidebar.reasons")}
+                                </button>
+                            )}
                             <button
-                                className={
-                                    view === "users" ||
-                                        view === "add-user" ||
-                                        view === "user-details"
-                                        ? "active"
-                                        : ""
-                                }
-                                onClick={() => handleViewChange("users")}
-                                aria-current={view === "users" ? "page" : undefined}
+                                className="inactive"
+                                disabled
+                                aria-disabled="true"
                             >
-                                {t("adminDashboard.sidebar.users")}
+                                {t("adminDashboard.sidebar.agents")}
                             </button>
-                        )}
-                        {userPermissions.canViewRoles && (
-                            <button
-                                className={
-                                    view === "roles" || view === "add-role" ? "active" : ""
-                                }
-                                onClick={() => handleViewChange("roles")}
-                                aria-current={view === "roles" ? "page" : undefined}
-                            >
-                                {t("adminDashboard.sidebar.roles")}
-                            </button>
-                        )}
-                        {userPermissions.canViewPermissions && (
-                            <button
-                                className={
-                                    view === "permissions" || view === "add-permission"
-                                        ? "active"
-                                        : ""
-                                }
-                                onClick={() => handleViewChange("permissions")}
-                                aria-current={view === "permissions" ? "page" : undefined}
-                            >
-                                {t("adminDashboard.sidebar.permissions")}
-                            </button>
-                        )}
-                        {userPermissions.canViewChecklists && (
-                            <button
-                                className={
-                                    view === "checklists" ||
-                                        view === "add-checklist" ||
-                                        view === "checklist-details"
-                                        ? "active"
-                                        : ""
-                                }
-                                onClick={() => handleViewChange("checklists")}
-                                aria-current={view === "checklists" ? "page" : undefined}
-                            >
-                                {t("adminDashboard.sidebar.checklists")}
-                            </button>
-                        )}
-                        {userPermissions.canViewReasons && (
-                            <button
-                                className={
-                                    view === "reasons" ||
-                                        view === "add-reason" ||
-                                        view === "reason-details"
-                                        ? "active"
-                                        : ""
-                                }
-                                onClick={() => handleViewChange("reasons")}
-                                aria-current={view === "reasons" ? "page" : undefined}
-                            >
-                                {t("adminDashboard.sidebar.reasons")}
-                            </button>
-                        )}
-                        {userPermissions.canViewNotificationRules && (
-                            <button
-                                className={
-                                    view === "notifications" ||
-                                        view === "add-notification-rule" ||
-                                        view === "notification-rule-details"
-                                        ? "active"
-                                        : ""
-                                }
-                                onClick={() => handleViewChange("notifications")}
-                                aria-current={view === "notifications" ? "page" : undefined}
-                            >
-                                {t("adminDashboard.sidebar.notifications")}
-                            </button>
-                        )}
+                        </div>
+                        <div className="view-category">
+                            <h4>{t("adminDashboard.sidebar.system")}</h4>
+                            {userPermissions.canViewNotificationRules && (
+                                <button
+                                    className={
+                                        view === "notifications" ||
+                                            view === "add-notification-rule" ||
+                                            view === "notification-rule-details"
+                                            ? "active"
+                                            : ""
+                                    }
+                                    onClick={() => handleViewChange("notifications")}
+                                    aria-current={view === "notifications" ? "page" : undefined}
+                                >
+                                    {t("adminDashboard.sidebar.notifications")}
+                                </button>
+                            )}
+                        </div>
                     </div>
                     {userPermissions.canViewUsers && view === "users" && (
                         <>

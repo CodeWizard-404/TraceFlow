@@ -1,39 +1,34 @@
 /**
  * UserAdd.tsx
- * Component for adding a new user with form validation and role assignment.
- * Optimized with dynamic loading state and fade-in animation.
+ * Component for adding a new user with form validation, role assignment, and assignments management.
+ * Includes auto-generated password and integrates AssignmentsManagement and RoleManagement components.
  */
 
 import React, { useState, useEffect } from "react";
-import { FaAngleDown, FaInfoCircle } from "react-icons/fa";
-import { motion } from "framer-motion"; // Added Framer Motion import
+import { motion } from "framer-motion";
 import {
   getAllRegions,
   getAllGovernorates,
   assignRegionsToRegionalManager,
   assignRegionalManagerToSupervisor,
   assignGovernoratesToSupervisor,
+  assignDelegationsToSupervisor,
+  assignDirectorToRegionalManager,
+  assignSupervisorToAgent,
 } from "../../../apis/userAPI";
-import Select from "react-select"; // For multi-select dropdowns
-import Region from "../../../models/Region";
-import Governorate from "../../../models/Governorate";
-
-// Context and APIs
-import { useAuth } from "../../../context/AuthContext";
 import { assignRolesToUser, getRolesByUser } from "../../../apis/roleAPI";
 import { createUser } from "../../../apis/userAPI";
-
-// Models and Types
-import Role from "../../../models/Role";
 import User from "../../../models/User";
-import Permission from "../../../models/Permission";
-
+import Role from "../../../models/Role";
+import Region from "../../../models/Region";
+import Governorate from "../../../models/Governorate";
+import Delegation from "../../../models/Delegation";
+import Agent from "../../../models/Agent";
+import { useAuth } from "../../../context/AuthContext";
 import { ViewMode } from "../adminTypes";
-
-// Components
-import InfoPopup from "../InfoPopup";
-
-// Styles
+import RoleManagement from "./RoleManagement";
+import AssignmentsManagement from "./AssignmentsManagement";
+import InfoPopupWrapper from "./InfoPopupWrapper";
 import "../AdminDashboard.css";
 
 // Props Interface
@@ -41,6 +36,7 @@ interface UserAddProps {
   users: User[];
   setUsers: React.Dispatch<React.SetStateAction<User[]>>;
   roles: Role[];
+  setRoles: React.Dispatch<React.SetStateAction<Role[]>>;
   view: string;
   setView: (view: ViewMode) => void;
   setError: (error: string | null) => void;
@@ -49,7 +45,6 @@ interface UserAddProps {
 // Skeleton Component for UserAdd
 const UserAddSkeleton: React.FC = () => (
   <div className="form-card form-card-0 skeleton">
-    {/* Personal Information Section */}
     <div className="form-section">
       <div className="custom-skeleton pulsing" style={{ width: "150px", height: "24px", marginBottom: "16px" }} />
       <div className="form-row">
@@ -63,7 +58,6 @@ const UserAddSkeleton: React.FC = () => (
         </div>
       </div>
     </div>
-    {/* Contact Information Section */}
     <div className="form-section">
       <hr />
       <div className="custom-skeleton pulsing" style={{ width: "150px", height: "24px", marginBottom: "16px" }} />
@@ -78,41 +72,50 @@ const UserAddSkeleton: React.FC = () => (
         </div>
       </div>
     </div>
-    {/* Credentials Section */}
-    <div className="form-section">
-      <hr />
-      <div className="custom-skeleton pulsing" style={{ width: "150px", height: "24px", marginBottom: "16px" }} />
-      <div className="form-row">
-        <div className="form-group">
-          <div className="custom-skeleton pulsing" style={{ width: "80px", height: "16px", marginBottom: "8px" }} />
-          <div className="custom-skeleton pulsing" style={{ width: "100%", height: "32px" }} />
+    <div className="dropdown-stack">
+      {[...Array(2)].map((_, i) => (
+        <div key={i} className="dropdown-unit">
+          <div className="dropdown-bar">
+            <div className="custom-skeleton pulsing" style={{ width: "150px", height: "20px" }} />
+            <div className="custom-skeleton pulsing" style={{ width: "20px", height: "20px" }} />
+          </div>
         </div>
-        <div className="form-group">
-          <div className="custom-skeleton pulsing" style={{ width: "80px", height: "16px", marginBottom: "8px" }} />
-          <div className="custom-skeleton pulsing" style={{ width: "100%", height: "32px" }} />
-        </div>
-      </div>
+      ))}
     </div>
-
-    {/* Role Assignment Section */}
-    <div className="form-section">
-      <hr />
-      <div className="custom-skeleton pulsing" style={{ width: "150px", height: "24px", marginBottom: "16px" }} />
-      <div className="form-group">
-        <div className="custom-skeleton pulsing" style={{ width: "80px", height: "16px", marginBottom: "8px" }} />
-        <div className="roles-grid">
-          {[...Array(6)].map((_, i) => (
-            <div key={i} className="role-toggle-container">
-              <div className="custom-skeleton pulsing" style={{ width: "100%", height: "32px" }} />
-            </div>
-          ))}
-        </div>
-      </div>
-    </div>
-    {/* Create Button */}
     <div className="custom-skeleton pulsing" style={{ width: "120px", height: "40px", marginTop: "16px" }} />
   </div>
 );
+
+// Password Generation Function
+const generatePassword = (): string => {
+  if (import.meta.env.MODE === "development") {
+    return "123456Pp*";
+  }
+
+  const length = 12;
+  const upperCase = "ABCDEFGHIJKLMNOPQRSTUVWXYZ";
+  const lowerCase = "abcdefghijklmnopqrstuvwxyz";
+  const numbers = "0123456789";
+  const symbols = "!@#$%^&*";
+  const allChars = upperCase + lowerCase + numbers + symbols;
+
+  let password = "";
+  password += upperCase[Math.floor(Math.random() * upperCase.length)];
+  password += lowerCase[Math.floor(Math.random() * lowerCase.length)];
+  password += numbers[Math.floor(Math.random() * numbers.length)];
+  password += symbols[Math.floor(Math.random() * symbols.length)];
+
+  for (let i = password.length; i < length; i++) {
+    password += allChars[Math.floor(Math.random() * allChars.length)];
+  }
+
+  password = password
+    .split("")
+    .sort(() => Math.random() - 0.5)
+    .join("");
+
+  return password;
+};
 
 // Main Component
 const UserAdd: React.FC<UserAddProps> = ({
@@ -120,52 +123,99 @@ const UserAdd: React.FC<UserAddProps> = ({
   setUsers,
   roles,
   view,
+  setRoles,
   setView,
   setError,
 }) => {
   const { effectivePermissions, userRoles } = useAuth();
-
-  // State
-  const [allRegions, setAllRegions] = useState<Region[]>([]);
-  const [allGovernorates, setAllGovernorates] = useState<Governorate[]>([]);
-  const [selectedRegions, setSelectedRegions] = useState<string[]>([]); // For Regional Manager
-  const [selectedRegionalManager, setSelectedRegionalManager] = useState<string | null>(null); // For Supervisor
-  const [selectedGovernorates, setSelectedGovernorates] = useState<string[]>([]); // For Supervisor
-  const [loadingAssignments, setLoadingAssignments] = useState(false);
   const [newUser, setNewUser] = useState<Partial<User>>({});
-  const [passwordConfirm, setPasswordConfirm] = useState("");
-  const [selectedRolesForNewUser, setSelectedRolesForNewUser] = useState<
-    string[]
-  >([]);
   const [rawPhone, setRawPhone] = useState("");
   const [userFormErrors, setUserFormErrors] = useState({
     firstname: "",
     lastname: "",
     email: "",
     phone: "",
-    password: "",
-    passwordConfirm: "",
   });
   const [userTouched, setUserTouched] = useState({
     firstname: false,
     lastname: false,
     email: false,
     phone: false,
-    password: false,
-    passwordConfirm: false,
   });
+  const [loading, setLoading] = useState(true);
+  const [tempRoles, setTempRoles] = useState<Role[]>([]);
+  const [tempSupervisors, setTempSupervisors] = useState<User[]>([]);
+  const [tempRegionalManagers, setTempRegionalManagers] = useState<User[]>([]);
+  const [tempRegions, setTempRegions] = useState<Region[]>([]);
+  const [tempGovernorates, setTempGovernorates] = useState<Governorate[]>([]);
+  const [tempDelegations, setTempDelegations] = useState<Delegation[]>([]);
+  const [tempAgents, setTempAgents] = useState<Agent[]>([]);
+  const [tempDirectors, setTempDirectors] = useState<User[]>([]);
+  const [expandedSection, setExpandedSection] = useState<string | null>(null);
   const [activeRolePopup, setActiveRolePopup] = useState<string | null>(null);
-  const [expandedClasses, setExpandedClasses] = useState<Set<string>>(
-    new Set()
-  );
-  const [loading, setLoading] = useState(true); // Modified to be dynamic
+  const [activeOverridePopup, setActiveOverridePopup] = useState<string | null>(null);
 
-  // Debugging Roles
-  useEffect(() => {
-    if (roles.length === 0) {
-      console.warn("UserAdd: No roles available. Check roles prop or API fetch in parent component.");
-    }
-  }, [roles, selectedRolesForNewUser]);
+  // Permissions
+  const userPermissions = {
+    canCreateUsers: effectivePermissions?.some(
+      (p) => p.name === import.meta.env.VITE_PERMISSIONS_CREATE_USERS
+    ),
+    canAssignRoles: effectivePermissions?.some(
+      (p) => p.name === import.meta.env.VITE_PERMISSIONS_ASSIGN_ROLES
+    ),
+    canAssignRegions: effectivePermissions?.some(
+      (p) => p.name === import.meta.env.VITE_PERMISSIONS_ASSIGN_REGIONS
+    ),
+    canRevokeRegions: effectivePermissions?.some(
+      (p) => p.name === import.meta.env.VITE_PERMISSIONS_REVOKE_REGIONS
+    ),
+    canAssignGovernorates: effectivePermissions?.some(
+      (p) => p.name === import.meta.env.VITE_PERMISSIONS_ASSIGN_GOVERNORATES
+    ),
+    canRevokeGovernorates: effectivePermissions?.some(
+      (p) => p.name === import.meta.env.VITE_PERMISSIONS_REVOKE_GOVERNORATES
+    ),
+    canAssignDelegations: effectivePermissions?.some(
+      (p) => p.name === import.meta.env.VITE_PERMISSIONS_ASSIGN_DELEGATIONS
+    ),
+    canRevokeDelegations: effectivePermissions?.some(
+      (p) => p.name === import.meta.env.VITE_PERMISSIONS_REVOKE_DELEGATIONS
+    ),
+    canAssignSupervisors: effectivePermissions?.some(
+      (p) => p.name === import.meta.env.VITE_PERMISSIONS_ASSIGN_REGIONAL_MANAGER
+    ),
+    canRevokeSupervisors: effectivePermissions?.some(
+      (p) => p.name === import.meta.env.VITE_PERMISSIONS_REVOKE_REGIONAL_MANAGER
+    ),
+    canAssignAgents: effectivePermissions?.some(
+      (p) => p.name === import.meta.env.VITE_PERMISSIONS_ASSIGN_SUPERVISOR_TO_AGENT
+    ),
+    canRevokeAgents: effectivePermissions?.some(
+      (p) => p.name === import.meta.env.VITE_PERMISSIONS_REVOKE_SUPERVISOR_FROM_AGENT
+    ),
+    canAssignDirectors: effectivePermissions?.some(
+      (p) => p.name === import.meta.env.VITE_PERMISSIONS_ASSIGN_DIRECTORS
+    ),
+    canRevokeDirectors: effectivePermissions?.some(
+      (p) => p.name === import.meta.env.VITE_PERMISSIONS_REVOKE_DIRECTORS
+    ),
+    canReadSupervisors: effectivePermissions?.some(
+      (p) => p.name === import.meta.env.VITE_PERMISSIONS_READ_SUPERVISORS
+    ),
+    canReadRegionalManagers: effectivePermissions?.some(
+      (p) => p.name === import.meta.env.VITE_PERMISSIONS_READ_REGIONAL_MANAGERS
+    ),
+    canReadAgents: effectivePermissions?.some(
+      (p) => p.name === import.meta.env.VITE_PERMISSIONS_READ_AGENTS
+    ),
+    canReadDirectors: effectivePermissions?.some(
+      (p) => p.name === import.meta.env.VITE_PERMISSIONS_READ_DIRECTORS
+    ),
+  };
+
+  const isSuperAdmin = userRoles?.some(
+    (r) => r.name === import.meta.env.VITE_ROLES_SUPER_ADMIN
+  );
 
   // Dynamic Loading State
   useEffect(() => {
@@ -179,10 +229,7 @@ const UserAdd: React.FC<UserAddProps> = ({
     const fetchData = async () => {
       setLoading(true);
       try {
-        const regions = await getAllRegions();
-        setAllRegions(regions);
-        const governorates = await getAllGovernorates();
-        setAllGovernorates(governorates);
+        await Promise.all([getAllRegions(), getAllGovernorates()]);
       } catch (error: unknown) {
         const errorMessage = error instanceof Error ? error.message : "Failed to fetch regions or governorates.";
         setError(errorMessage);
@@ -194,21 +241,11 @@ const UserAdd: React.FC<UserAddProps> = ({
     fetchData();
   }, [setError]);
 
-  // Permissions
-  const userPermissions = {
-    canCreateUsers: effectivePermissions?.some(
-      (p) => p.name === import.meta.env.VITE_PERMISSIONS_CREATE_USERS
-    ),
-    canAssignRoles: effectivePermissions?.some(
-      (p) => p.name === import.meta.env.VITE_PERMISSIONS_ASSIGN_ROLES
-    ),
+  // Handlers
+  const toggleSection = (section: string) => {
+    setExpandedSection((prev) => (prev === section ? null : section));
   };
 
-  const isSuperAdmin = userRoles?.some(
-    (r) => r.name === import.meta.env.VITE_ROLES_SUPER_ADMIN
-  );
-
-  // Handlers
   const handleCreateUser = async () => {
     if (!userPermissions.canCreateUsers) return;
 
@@ -217,69 +254,94 @@ const UserAdd: React.FC<UserAddProps> = ({
       lastname: validateName(newUser.lastname || "", "Last Name"),
       email: validateEmail(newUser.email || ""),
       phone: validatePhone(rawPhone),
-      password: validatePassword(newUser.password || "", true),
-      passwordConfirm: validatePasswordConfirm(newUser.password || "", passwordConfirm, true),
     };
 
-    // Additional validation for Supervisor
-    if (selectedRolesForNewUser.some(roleID => roles.find(r => r.roleID === roleID)?.name === "Supervisor")) {
-      if (selectedGovernorates.length === 0) errors.password = "At least one governorate is required for Supervisor.";
-    }
-
     setUserFormErrors(errors);
-    if (Object.values(errors).some(error => error)) {
+    if (Object.values(errors).some((error) => error)) {
       setError("Please correct the errors before submitting.");
       return;
     }
 
     setLoading(true);
     try {
+      const password = generatePassword();
       const createdUser = await createUser({
         email: newUser.email!.trim(),
-        password: newUser.password!,
+        password,
         firstname: newUser.firstname!.trim(),
         lastname: newUser.lastname!.trim(),
         phone: stripPhoneForDatabase(rawPhone),
       });
 
-      if (selectedRolesForNewUser.length > 0 && userPermissions.canAssignRoles) {
-        const filteredRoles = selectedRolesForNewUser.filter(
-          roleID => roles.find(r => r.roleID === roleID)?.name !== import.meta.env.VITE_ROLES_SUPER_ADMIN
-        );
+      // Assign Roles
+      if (tempRoles.length > 0 && userPermissions.canAssignRoles) {
+        const filteredRoles = tempRoles
+          .filter((role) => role.name !== import.meta.env.VITE_ROLES_SUPER_ADMIN)
+          .map((role) => role.roleID);
         if (filteredRoles.length > 0) {
           await assignRolesToUser(createdUser.userID, filteredRoles);
           createdUser.Roles = await getRolesByUser(createdUser.userID);
         }
       }
 
-      setLoadingAssignments(true);
-      // Assign regions for Regional Manager
+      // Assign Regions for Regional Manager
       if (
-        selectedRolesForNewUser.some(roleID => roles.find(r => r.roleID === roleID)?.name === "RegionalManager") &&
-        selectedRegions.length > 0
+        tempRoles.some((role) => role.name === "RegionalManager") &&
+        tempRegions.length > 0 &&
+        userPermissions.canAssignRegions
       ) {
-        await assignRegionsToRegionalManager(createdUser.userID, selectedRegions);
-        createdUser.Regions = allRegions.filter(region => selectedRegions.includes(region.regionID));
+        await assignRegionsToRegionalManager(createdUser.userID, tempRegions.map((r) => r.regionID));
+        createdUser.Regions = tempRegions;
       }
 
-      // Assign Regional Manager and governorates for Supervisor
+      // Assign Regional Manager and Governorates for Supervisor
       if (
-        selectedRolesForNewUser.some(roleID => roles.find(r => r.roleID === roleID)?.name === "Supervisor") &&
-        selectedRegionalManager &&
-        selectedGovernorates.length > 0
+        tempRoles.some((role) => role.name === "Supervisor") &&
+        tempRegionalManagers[0]?.userID &&
+        tempGovernorates.length > 0 &&
+        userPermissions.canAssignSupervisors &&
+        userPermissions.canAssignGovernorates
       ) {
-        await assignRegionalManagerToSupervisor(createdUser.userID, selectedRegionalManager);
-        await assignGovernoratesToSupervisor(createdUser.userID, selectedGovernorates);
-        createdUser.regionalManagerID = selectedRegionalManager;
-        createdUser.Governorates = allGovernorates.filter(gov => selectedGovernorates.includes(gov.governorateID));
+        await assignRegionalManagerToSupervisor(createdUser.userID, tempRegionalManagers[0].userID);
+        await assignGovernoratesToSupervisor(createdUser.userID, tempGovernorates.map((g) => g.governorateID));
+        createdUser.regionalManagerID = tempRegionalManagers[0].userID;
+        createdUser.Governorates = tempGovernorates;
+      }
+
+      // Assign Delegations for Supervisor
+      if (
+        tempRoles.some((role) => role.name === "Supervisor") &&
+        tempDelegations.length > 0 &&
+        userPermissions.canAssignDelegations
+      ) {
+        await assignDelegationsToSupervisor(createdUser.userID, tempDelegations.map((d) => d.delegationID));
+        createdUser.Delegations = tempDelegations;
+      }
+
+      // Assign Agents for Supervisor
+      if (
+        tempRoles.some((role) => role.name === "Supervisor") &&
+        tempAgents.length > 0 &&
+        userPermissions.canAssignAgents &&
+        tempDelegations.length > 0
+      ) {
+        for (const agent of tempAgents) {
+          await assignSupervisorToAgent(agent.agentID, createdUser.userID, tempDelegations[0].delegationID);
+        }
+      }
+
+      // Assign Director for Regional Manager
+      if (
+        tempRoles.some((role) => role.name === "RegionalManager") &&
+        tempDirectors[0]?.userID &&
+        userPermissions.canAssignDirectors
+      ) {
+        await assignDirectorToRegionalManager(createdUser.userID, tempDirectors[0].userID);
+        createdUser.directorID = tempDirectors[0].userID;
       }
 
       setUsers([...users, createdUser]);
       resetFormStates();
-      setSelectedRolesForNewUser([]);
-      setSelectedRegions([]);
-      setSelectedRegionalManager(null);
-      setSelectedGovernorates([]);
       setView("users");
       setError(null);
     } catch (error: unknown) {
@@ -288,7 +350,6 @@ const UserAdd: React.FC<UserAddProps> = ({
       console.error("UserAdd: Error:", errorMessage);
     } finally {
       setLoading(false);
-      setLoadingAssignments(false);
     }
   };
 
@@ -323,33 +384,6 @@ const UserAdd: React.FC<UserAddProps> = ({
     return "";
   };
 
-
-  const validatePassword = (value: string, isNewUser: boolean): string => {
-    if (!value && isNewUser) return "Password is required";
-    if (value && value.length < 8)
-      return "Password must be at least 8 characters";
-    if (value.length > 128) return "Password must be 128 characters or less";
-    if (
-      value &&
-      !/^(?=.*[a-z])(?=.*[A-Z])(?=.*\d)(?=.*[!@#$%^&*])[^\s]+$/.test(value)
-    ) {
-      return "Password must include uppercase, lowercase, digit, and special character, no spaces";
-    }
-    return "";
-  };
-
-  const validatePasswordConfirm = (
-    password: string,
-    confirm: string,
-    isNewUser: boolean
-  ): string => {
-    if ((!password && confirm) || (password && !confirm && isNewUser))
-      return "Password confirmation is required";
-    if (password && confirm && password !== confirm)
-      return "Passwords do not match";
-    return "";
-  };
-
   // Formatting
   const formatPhoneDisplay = (rawValue: string): string => {
     const digits = rawValue.replace(/[^\d]/g, "");
@@ -360,12 +394,9 @@ const UserAdd: React.FC<UserAddProps> = ({
     return formatted;
   };
 
-
-
   const stripPhoneForDatabase = (raw: string): string => {
     return raw.replace(/[^\d]/g, "");
   };
-
 
   const handlePhoneChange = (e: React.ChangeEvent<HTMLInputElement>) => {
     const raw = e.target.value.replace(/[^\d]/g, "").slice(0, 8);
@@ -374,117 +405,36 @@ const UserAdd: React.FC<UserAddProps> = ({
     setUserFormErrors({ ...userFormErrors, phone: validatePhone(raw) });
   };
 
-  const regionalManagers = users.filter(user =>
-    user.Roles?.some(role => role.name === "Regional Manager")
-  );
-
-  const selectedRM = users.find(user => user.userID === selectedRegionalManager);
-  const rmRegions = selectedRM?.Regions?.map(region => region.regionID) || [];
-  const availableGovernorates = allGovernorates.filter(gov =>
-    rmRegions.includes(gov.regionID)
-  );
-
-
-
   // Reset Form
   const resetFormStates = () => {
     setNewUser({});
     setRawPhone("");
-    setPasswordConfirm("");
     setUserFormErrors({
       firstname: "",
       lastname: "",
       email: "",
       phone: "",
-      password: "",
-      passwordConfirm: "",
     });
     setUserTouched({
       firstname: false,
       lastname: false,
       email: false,
       phone: false,
-      password: false,
-      passwordConfirm: false,
     });
-    setSelectedRegions([]);
-    setSelectedRegionalManager(null);
-    setSelectedGovernorates([]);
-  };
-
-  // Role Popup
-  const toggleRolePopup = (roleID: string) => {
-    setActiveRolePopup(activeRolePopup === roleID ? null : roleID);
-    setExpandedClasses(new Set());
-  };
-
-  const toggleClassExpansion = (className: string) => {
-    setExpandedClasses((prev) => {
-      const newSet = new Set(prev);
-      if (newSet.has(className)) newSet.delete(className);
-      else newSet.add(className);
-      return newSet;
-    });
-  };
-
-  const getCategorizedPermissionsForRole = (role: Role) => {
-    const byClass: { [key: string]: Permission[] } = {};
-    role.Permissions
-      ?.filter(
-        (perm) => isSuperAdmin || !["Role", "Permission"].includes(perm.class)
-      )
-      .forEach((perm) => {
-        const formattedName = perm.name
-          .replace(/_/g, " ")
-          .replace(/\b\w/g, (char) => char.toUpperCase());
-        if (!byClass[perm.class]) byClass[perm.class] = [];
-        byClass[perm.class].push({ ...perm, name: formattedName });
-      });
-    return byClass;
-  };
-
-  const renderRolePopupContent = (roleID: string) => {
-    const role = roles.find((r) => r.roleID === roleID);
-    if (!role) return <p>Role not found</p>;
-    return (
-      <>
-        <h4>{role.name}</h4>
-        <p>{role.description || "No description available"}</p>
-        <h5>Permissions by Class:</h5>
-        {Object.entries(getCategorizedPermissionsForRole(role)).length > 0 ? (
-          Object.entries(getCategorizedPermissionsForRole(role)).map(
-            ([className, perms]) => (
-              <div key={className} className="permission-class-item">
-                <button
-                  className="class-toggle"
-                  onClick={() => toggleClassExpansion(className)}
-                >
-                  {className} ({perms.length})
-                  <FaAngleDown
-                    className={`toggle-icon ${expandedClasses.has(className) ? "expanded" : ""
-                      }`}
-                  />
-                </button>
-                <ul
-                  className={`permission-list ${expandedClasses.has(className) ? "expanded" : ""
-                    }`}
-                >
-                  {perms.map((perm) => (
-                    <li key={perm.permissionID}>{perm.name}</li>
-                  ))}
-                </ul>
-              </div>
-            )
-          )
-        ) : (
-          <p>No permissions assigned</p>
-        )}
-      </>
-    );
+    setTempRoles([]);
+    setTempSupervisors([]);
+    setTempRegionalManagers([]);
+    setTempRegions([]);
+    setTempGovernorates([]);
+    setTempDelegations([]);
+    setTempAgents([]);
+    setTempDirectors([]);
+    setActiveRolePopup(null);
+    setActiveOverridePopup(null);
   };
 
   // Render
-  if (view !== "add-user" || !userPermissions.canCreateUsers) return null;
+  if (view !== "add-user") return null;
 
   if (loading) {
     return <UserAddSkeleton />;
@@ -492,311 +442,166 @@ const UserAdd: React.FC<UserAddProps> = ({
 
   return (
     <motion.div
-      initial={{ opacity: 0 }}
-      animate={{ opacity: 1 }}
+      className="form-card form-card-0"
+      initial={{ opacity: 0, y: 20 }}
+      animate={{ opacity: 1, y: 0 }}
       transition={{ duration: 0.3 }}
     >
-      <div className="form-card form-card-0">
-        <div className="form-section">
-          <h3>Personal Information</h3>
-          <div className="form-row">
-            <div className="form-group">
-              <label>First Name *</label>
-              <input
-                type="text"
-                value={newUser.firstname || ""}
-                onChange={(e) => {
-                  setNewUser({ ...newUser, firstname: e.target.value });
-                  setUserFormErrors({
-                    ...userFormErrors,
-                    firstname: validateName(e.target.value, "First Name"),
-                  });
-                }}
-                onBlur={() => markUserTouched("firstname")}
-                className={`user-edit-input ${userTouched.firstname ? "touched" : ""
-                  } ${userTouched.firstname && userFormErrors.firstname
-                    ? "invalid-vibrate"
-                    : ""
-                  }`}
-                required
-                disabled={loading}
-              />
-              {userFormErrors.firstname && userTouched.firstname && (
-                <span className="error-text">{userFormErrors.firstname}</span>
-              )}
-            </div>
-            <div className="form-group">
-              <label>Last Name *</label>
-              <input
-                type="text"
-                value={newUser.lastname || ""}
-                onChange={(e) => {
-                  setNewUser({ ...newUser, lastname: e.target.value });
-                  setUserFormErrors({
-                    ...userFormErrors,
-                    lastname: validateName(e.target.value, "Last Name"),
-                  });
-                }}
-                onBlur={() => markUserTouched("lastname")}
-                className={`user-edit-input ${userTouched.lastname ? "touched" : ""
-                  } ${userTouched.lastname && userFormErrors.lastname
-                    ? "invalid-vibrate"
-                    : ""
-                  }`}
-                required
-                disabled={loading}
-              />
-              {userFormErrors.lastname && userTouched.lastname && (
-                <span className="error-text">{userFormErrors.lastname}</span>
-              )}
-            </div>
-          </div>
-        </div>
-        <div className="form-section">
-          <hr />
-          <h3>Contact Information</h3>
-          <div className="form-row">
-            <div className="form-group">
-              <label>Email *</label>
-              <input
-                type="text"
-                value={newUser.email || ""}
-                onChange={(e) => {
-                  setNewUser({ ...newUser, email: e.target.value });
-                  setUserFormErrors({
-                    ...userFormErrors,
-                    email: validateEmail(e.target.value),
-                  });
-                }}
-                onBlur={() => markUserTouched("email")}
-                className={`user-edit-input ${userTouched.email ? "touched" : ""
-                  } ${userTouched.email && userFormErrors.email
-                    ? "invalid-vibrate"
-                    : ""
-                  }`}
-                required
-                disabled={loading}
-              />
-              {userFormErrors.email && userTouched.email && (
-                <span className="error-text">{userFormErrors.email}</span>
-              )}
-            </div>
-            <div className="form-group">
-              <label>Phone *</label>
-              <input
-                type="text"
-                value={formatPhoneDisplay(rawPhone)}
-                onChange={handlePhoneChange}
-                onBlur={() => markUserTouched("phone")}
-                placeholder="XX XXX XXX"
-                className={`user-edit-input ${userTouched.phone ? "touched" : ""
-                  } ${userTouched.phone && userFormErrors.phone
-                    ? "invalid-vibrate"
-                    : ""
-                  }`}
-                required
-                maxLength={10}
-                disabled={loading}
-              />
-              {userFormErrors.phone && userTouched.phone && (
-                <span className="error-text">{userFormErrors.phone}</span>
-              )}
-            </div>
-          </div>
-        </div>
-        <div className="form-section">
-          <hr />
-          <h3>Credentials</h3>
-          <div className="form-row">
-            <div className="form-group">
-              <label>Password *</label>
-              <input
-                type="password"
-                value={newUser.password || ""}
-                onChange={(e) => {
-                  setNewUser({ ...newUser, password: e.target.value });
-                  setUserFormErrors({
-                    ...userFormErrors,
-                    password: validatePassword(e.target.value, true),
-                    passwordConfirm: validatePasswordConfirm(
-                      e.target.value,
-                      passwordConfirm,
-                      true
-                    ),
-                  });
-                }}
-                onBlur={() => markUserTouched("password")}
-                className={`user-edit-input ${userTouched.password ? "touched" : ""
-                  } ${userTouched.password && userFormErrors.password
-                    ? "invalid-vibrate"
-                    : ""
-                  }`}
-                required
-                disabled={loading}
-              />
-              {userFormErrors.password && userTouched.password && (
-                <span className="error-text">{userFormErrors.password}</span>
-              )}
-            </div>
-            <div className="form-group">
-              <label>Confirm Password *</label>
-              <input
-                type="password"
-                value={passwordConfirm}
-                onChange={(e) => {
-                  setPasswordConfirm(e.target.value);
-                  setUserFormErrors({
-                    ...userFormErrors,
-                    passwordConfirm: validatePasswordConfirm(
-                      newUser.password || "",
-                      e.target.value,
-                      true
-                    ),
-                  });
-                }}
-                onBlur={() => markUserTouched("passwordConfirm")}
-                className={`user-edit-input ${userTouched.passwordConfirm ? "touched" : ""
-                  } ${userTouched.passwordConfirm && userFormErrors.passwordConfirm
-                    ? "invalid-vibrate"
-                    : ""
-                  }`}
-                required
-                disabled={loading}
-              />
-              {userFormErrors.passwordConfirm && userTouched.passwordConfirm && (
-                <span className="error-text">
-                  {userFormErrors.passwordConfirm}
-                </span>
-              )}
-            </div>
-          </div>
-        </div>
-        <div className="form-section">
-        </div>
-        {userPermissions.canAssignRoles && (
-          <div className="form-section">
-            <hr />
-            <h3>Role Assignment</h3>
-            {/* Existing role toggle buttons */}
-            <div className="form-group">
-              <label>Assign Roles</label>
-              {roles.length === 0 ? (
-                <p className="error-text">No roles available.</p>
-              ) : (
-                <div className="roles-grid">
-                  {roles
-                    .filter(role => role.name !== import.meta.env.VITE_ROLES_SUPER_ADMIN)
-                    .map(role => (
-                      <div key={role.roleID} className="role-toggle-container">
-                        <button
-                          className={`role-toggle-button ${selectedRolesForNewUser.includes(role.roleID) ? "active" : ""}`}
-                          onClick={() => {
-                            setSelectedRolesForNewUser(prev =>
-                              prev.includes(role.roleID)
-                                ? prev.filter(id => id !== role.roleID)
-                                : [...prev, role.roleID]
-                            );
-                          }}
-                          disabled={loading}
-                        >
-                          <span>{role.name}</span>
-                          <FaInfoCircle
-                            className="role-info-icon"
-                            onClick={e => {
-                              e.stopPropagation();
-                              toggleRolePopup(role.roleID);
-                            }}
-                          />
-                        </button>
-                      </div>
-                    ))}
-                </div>
-              )}
-            </div>
-          </div>
-        )}
-
-        {selectedRolesForNewUser.some(roleID => roles.find(r => r.roleID === roleID)?.name === "RegionalManager") && (
-          <div className="form-section">
-            <hr />
-            <h3>Assign Regions</h3>
-            <Select
-              isMulti
-              options={allRegions.map(region => ({
-                value: region.regionID,
-                label: region.name,
-              }))}
-              value={allRegions
-                .filter(region => selectedRegions.includes(region.regionID))
-                .map(region => ({ value: region.regionID, label: region.name }))}
-              onChange={selected => setSelectedRegions(selected.map(option => option.value))}
-              placeholder="Select regions"
-              isDisabled={loading || loadingAssignments}
-              className="react-select-container"
-              classNamePrefix="react-select"
+      <div className="form-section">
+        <h2>Add New User</h2>
+        <div className="form-row">
+          <div className="form-group">
+            <label htmlFor="firstname">First Name</label>
+            <input
+              type="text"
+              id="firstname"
+              value={newUser.firstname || ""}
+              onChange={(e) =>
+                setNewUser({ ...newUser, firstname: e.target.value })
+              }
+              onBlur={() => markUserTouched("firstname")}
+              placeholder="Enter first name"
+              className={userFormErrors.firstname && userTouched.firstname ? "input-error" : ""}
             />
-          </div>
-        )}
-
-        {selectedRolesForNewUser.some(roleID => roles.find(r => r.roleID === roleID)?.name === "Supervisor") && (
-          <div className="form-section">
-            <hr />
-            <h3>Assign Regional Manager and Governorates</h3>
-            <div className="form-group">
-              <label>Select Regional Manager *</label>
-              <Select
-                options={regionalManagers.map(rm => ({
-                  value: rm.userID,
-                  label: `${rm.firstname} ${rm.lastname}`,
-                }))}
-                value={regionalManagers
-                  .filter(rm => rm.userID === selectedRegionalManager)
-                  .map(rm => ({ value: rm.userID, label: `${rm.firstname} ${rm.lastname}` }))[0]}
-                onChange={selected => {
-                  setSelectedRegionalManager(selected?.value || null);
-                  setSelectedGovernorates([]); // Reset governorates when RM changes
-                }}
-                placeholder="Select Regional Manager"
-                isDisabled={loading || loadingAssignments}
-                className="react-select-container"
-                classNamePrefix="react-select"
-              />
-            </div>
-            {selectedRegionalManager && (
-              <div className="form-group">
-                <label>Select Governorates *</label>
-                <Select
-                  isMulti
-                  options={availableGovernorates.map(gov => ({
-                    value: gov.governorateID,
-                    label: gov.name,
-                  }))}
-                  value={availableGovernorates
-                    .filter(gov => selectedGovernorates.includes(gov.governorateID))
-                    .map(gov => ({ value: gov.governorateID, label: gov.name }))}
-                  onChange={selected => setSelectedGovernorates(selected.map(option => option.value))}
-                  placeholder="Select governorates"
-                  isDisabled={loading || loadingAssignments}
-                  className="react-select-container"
-                  classNamePrefix="react-select"
-                />
-              </div>
+            {userFormErrors.firstname && userTouched.firstname && (
+              <div className="error-message">{userFormErrors.firstname}</div>
             )}
           </div>
-        )}
-        <button
-          className="action-button"
-          onClick={handleCreateUser}
-          disabled={loading}
-        >
-          {loading ? "Creating..." : "Create User"}
-        </button>
-        <InfoPopup
-          isOpen={!!activeRolePopup}
-          onClose={() => setActiveRolePopup(null)}
-          contentRenderer={() => renderRolePopupContent(activeRolePopup!)}
+          <div className="form-group">
+            <label htmlFor="lastname">Last Name</label>
+            <input
+              type="text"
+              id="lastname"
+              value={newUser.lastname || ""}
+              onChange={(e) =>
+                setNewUser({ ...newUser, lastname: e.target.value })
+              }
+              onBlur={() => markUserTouched("lastname")}
+              placeholder="Enter last name"
+              className={userFormErrors.lastname && userTouched.lastname ? "input-error" : ""}
+            />
+            {userFormErrors.lastname && userTouched.lastname && (
+              <div className="error-message">{userFormErrors.lastname}</div>
+            )}
+          </div>
+        </div>
+      </div>
+
+      <div className="form-section">
+        <div className="form-row">
+          <div className="form-group">
+            <label htmlFor="email">Email</label>
+            <input
+              type="email"
+              id="email"
+              value={newUser.email || ""}
+              onChange={(e) => setNewUser({ ...newUser, email: e.target.value })}
+              onBlur={() => markUserTouched("email")}
+              placeholder="Enter email"
+              className={userFormErrors.email && userTouched.email ? "input-error" : ""}
+            />
+            {userFormErrors.email && userTouched.email && (
+              <div className="error-message">{userFormErrors.email}</div>
+            )}
+          </div>
+          <div className="form-group">
+            <label htmlFor="phone">Phone</label>
+            <input
+              type="text"
+              id="phone"
+              value={formatPhoneDisplay(rawPhone)}
+              onChange={handlePhoneChange}
+              onBlur={() => markUserTouched("phone")}
+              placeholder="Enter phone (e.g., 12 345 678)"
+              className={userFormErrors.phone && userTouched.phone ? "input-error" : ""}
+            />
+            {userFormErrors.phone && userTouched.phone && (
+              <div className="error-message">{userFormErrors.phone}</div>
+            )}
+          </div>
+        </div>
+      </div>
+      <hr />
+      <div className="dropdown-stack">
+        <RoleManagement
+          setActiveRolePopup={setActiveRolePopup}
+          selectedUser={null}
+          setRoles={setRoles}
+          users={users}
+          setUsers={setUsers}
+          setSelectedUser={() => { }}
+          roles={roles}
+          tempRoles={tempRoles}
+          setTempRoles={setTempRoles}
+          userPermissions={{
+            ...userPermissions,
+            canAssignRoles: userPermissions.canAssignRoles ?? false,
+          }}
+          expandedSection={expandedSection}
+          toggleSection={toggleSection}
+          isSuperAdmin={isSuperAdmin ?? false}
+          userRoles={userRoles ?? []}
+        />
+        <AssignmentsManagement
+          selectedUser={null}
+          users={users}
+          tempRoles={tempRoles}
+          expandedSection={expandedSection}
+          toggleSection={toggleSection}
+          userPermissions={{
+            canCreateUsers: userPermissions.canCreateUsers ?? false,
+            canAssignRegions: userPermissions.canAssignRegions ?? false,
+            canRevokeRegions: userPermissions.canRevokeRegions ?? false,
+            canAssignGovernorates: userPermissions.canAssignGovernorates ?? false,
+            canRevokeGovernorates: userPermissions.canRevokeGovernorates ?? false,
+            canAssignDelegations: userPermissions.canAssignDelegations ?? false,
+            canRevokeDelegations: userPermissions.canRevokeDelegations ?? false,
+            canAssignSupervisors: userPermissions.canAssignSupervisors ?? false,
+            canRevokeSupervisors: userPermissions.canRevokeSupervisors ?? false,
+            canAssignAgents: userPermissions.canAssignAgents ?? false,
+            canRevokeAgents: userPermissions.canRevokeAgents ?? false,
+            canAssignDirectors: userPermissions.canAssignDirectors ?? false,
+            canRevokeDirectors: userPermissions.canRevokeDirectors ?? false,
+            canReadSupervisors: userPermissions.canReadSupervisors ?? false,
+            canReadRegionalManagers: userPermissions.canReadRegionalManagers ?? false,
+            canReadAgents: userPermissions.canReadAgents ?? false,
+            canReadDirectors: userPermissions.canReadDirectors ?? false,
+          }}
+          tempSupervisors={tempSupervisors}
+          setTempSupervisors={setTempSupervisors}
+          tempRegionalManagers={tempRegionalManagers}
+          setTempRegionalManagers={setTempRegionalManagers}
+          tempRegions={tempRegions}
+          setTempRegions={setTempRegions}
+          tempGovernorates={tempGovernorates}
+          setTempGovernorates={setTempGovernorates}
+          tempDelegations={tempDelegations}
+          setTempDelegations={setTempDelegations}
+          tempAgents={tempAgents}
+          setTempAgents={setTempAgents}
+          tempDirectors={tempDirectors}
+          setTempDirectors={setTempDirectors}
+          setUsers={setUsers}
+          setSelectedUser={() => { }}
         />
       </div>
+      <hr />
+      <button
+        className="action-button"
+        onClick={handleCreateUser}
+        disabled={loading || !userPermissions.canCreateUsers}
+      >
+        {loading ? "Creating..." : "Create User"}
+      </button>
+      <InfoPopupWrapper
+        roles={roles}
+        permissionsList={[]}
+        activeRolePopup={activeRolePopup}
+        activeOverridePopup={activeOverridePopup}
+        setActiveRolePopup={setActiveRolePopup}
+        setActiveOverridePopup={setActiveOverridePopup}
+        isSuperAdmin={isSuperAdmin ?? false}
+      />
     </motion.div>
   );
 };

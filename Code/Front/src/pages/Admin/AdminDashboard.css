@@ -4611,3 +4611,46 @@ body.dark .no-items {
     color: #666;
     font-style: italic;
 }
+
+
+/* AdminDashboard.css (add or update this block) */
+.sidebar .filter-card {
+    padding: 1rem;
+}
+
+.view-category {
+    margin-bottom: 0.5rem;
+}
+
+.view-category h4 {
+    font-size: 0.9rem;
+    font-weight: 600;
+    margin: 0.5rem 0 0.25rem;
+    color: #333;
+    text-transform: uppercase;
+}
+
+body.dark .view-category h4 {
+    color: #ddd;
+}
+
+.view-category button {
+    display: block;
+    width: 100%;
+    padding: 0.4rem 0.8rem;
+    font-size: 0.85rem;
+    text-align: left;
+    background: none;
+    border: none;
+    color: #555;
+    cursor: pointer;
+    transition: background 0.2s, color 0.2s;
+}
+
+
+
+
+.view-category button.inactive {
+    color: #aaa;
+    cursor: not-allowed;
+}

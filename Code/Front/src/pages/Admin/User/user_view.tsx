@@ -137,6 +137,9 @@ const UserView: React.FC<UserViewProps> = ({
       canViewUserDetails: effectivePermissions.some(
         (p) => p.name === import.meta.env.VITE_PERMISSIONS_READ_USER_DETAILS
       ),
+      canCreateUsers: effectivePermissions.some(
+        (p) => p.name === import.meta.env.VITE_PERMISSIONS_CREATE_USERS
+      ),
       canUpdateUsers: effectivePermissions.some(
         (p) => p.name === import.meta.env.VITE_PERMISSIONS_UPDATE_USERS
       ),
@@ -282,6 +285,7 @@ const UserView: React.FC<UserViewProps> = ({
       userPermissions={userPermissions}
       roleManagement={
         <RoleManagement
+          setActiveRolePopup={setActiveRolePopup}
           selectedUser={selectedUser}
           userRoles={userRoles}
           roles={roles}

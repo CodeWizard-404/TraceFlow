@@ -18,9 +18,6 @@ import './Login.css';
 import { debounce } from 'lodash';
 import { determineTargetRoute } from '../../lib/authUtils';
 
-/**
- * Login page component handling authentication flows
- */
 const LoginPage: React.FC = () => {
     const [step, setStep] = useState<'login' | 'verify2FA' | 'forgot' | 'verifyReset' | 'reset'>('login');
     const [identifier, setIdentifier] = useState('');
@@ -50,7 +47,6 @@ const LoginPage: React.FC = () => {
     const navigate = useNavigate();
     const location = useLocation();
 
-    // Debounced navigation with cancellation
     const debouncedNavigate = useCallback(
         debounce(
             (to: string, options: { replace?: boolean; state?: unknown }) => {
@@ -63,7 +59,6 @@ const LoginPage: React.FC = () => {
         [navigate]
     );
 
-    // Clean up debounced navigation on unmount
     useEffect(() => {
         console.debug('Mounting LoginPage, step:', step);
         return () => {
@@ -72,7 +67,6 @@ const LoginPage: React.FC = () => {
         };
     }, [debouncedNavigate, step]);
 
-    // Handle logout state on mount
     useEffect(() => {
         if (location.state?.logout) {
             console.debug('Handling logout state, resetting form');
@@ -84,7 +78,6 @@ const LoginPage: React.FC = () => {
         }
     }, [location.state?.logout, debouncedNavigate, clearError]);
 
-    // Fallback redirect for authenticated users
     useEffect(() => {
         if (user && permissionsLoaded && userRoles?.length && ['/login', '/verify-2fa'].includes(location.pathname)) {
             const targetRoute = determineTargetRoute(userRoles || []);
@@ -93,7 +86,6 @@ const LoginPage: React.FC = () => {
         }
     }, [user, permissionsLoaded, userRoles, location.pathname, debouncedNavigate]);
 
-    // Generate device fingerprint
     useEffect(() => {
         const getFingerprint = async () => {
             const fp = await FingerprintJS.load();
@@ -104,7 +96,6 @@ const LoginPage: React.FC = () => {
         getFingerprint();
     }, []);
 
-    // Clear success/error messages after timeout
     useEffect(() => {
         if (success || apiError) {
             console.debug('Setting timeout for success/apiError:', { success, apiError });
@@ -118,7 +109,6 @@ const LoginPage: React.FC = () => {
         }
     }, [success, apiError, clearError]);
 
-    // Timer for OTP expiration
     useEffect(() => {
         if ((step === 'verify2FA' || step === 'verifyReset') && timer > 0) {
             const interval = setInterval(() => setTimer(t => t - 1), 1000);
@@ -126,7 +116,6 @@ const LoginPage: React.FC = () => {
         }
     }, [step, timer]);
 
-    // Resend cooldown timer
     useEffect(() => {
         if (resendCooldown > 0) {
             const interval = setInterval(() => setResendCooldown(t => t - 1), 1000);
@@ -134,9 +123,6 @@ const LoginPage: React.FC = () => {
         }
     }, [resendCooldown]);
 
-    /**
-     * Validates identifier (email or phone)
-     */
     const validateIdentifier = (value: string): string => {
         if (!value) return 'Please enter your email or phone number.';
         const emailRegex = /^[^\s@]+@[^\s@]+\.[^\s@]+$/;
@@ -147,35 +133,23 @@ const LoginPage: React.FC = () => {
         return '';
     };
 
-    /**
-     * Validates password
-     */
     const validatePassword = (value: string): string => {
         if (!value) return 'Please enter a password.';
         return '';
     };
 
-    /**
-     * Validates password confirmation
-     */
     const validatePasswordConfirm = (password: string, confirm: string): string => {
         if (!confirm) return 'Please confirm your password.';
         if (password && confirm && password !== confirm) return 'Passwords do not match.';
         return '';
     };
 
-    /**
-     * Validates OTP code
-     */
     const validateOtp = (value: string): string => {
         if (!value) return 'Please enter the 6-digit OTP.';
         if (!/^\d{6}$/.test(value)) return 'OTP must be exactly 6 digits.';
         return '';
     };
 
-    /**
-     * Validates the current form based on the step
-     */
     const validateForm = useCallback(() => {
         const newErrors: { [key: string]: string } = {};
         if (step === 'login') {
@@ -196,14 +170,8 @@ const LoginPage: React.FC = () => {
         return Object.values(newErrors).every(err => !err);
     }, [step, identifier, password, otpCode, newPassword, confirmPassword]);
 
-    /**
-     * Handles form validation on blur
-     */
     const handleBlur = () => validateForm();
 
-    /**
-     * Handles login form submission
-     */
     const handleLogin = async (e: React.FormEvent) => {
         e.preventDefault();
         if (!deviceIdentifier || !validateForm() || loading) {
@@ -228,7 +196,8 @@ const LoginPage: React.FC = () => {
                 setTempToken(response.tempToken!);
                 setRefreshToken(response.refreshToken!);
                 setTimer(600);
-                setSuccess('OTP sent to your phone.');
+                setOtpMethod(response.message?.includes('email') ? 'email' : 'phone');
+                setSuccess(response.message || 'OTP sent to your phone.');
                 console.debug('2FA required, transitioning to verify2FA step');
             } else if (response.user) {
                 await loginUser(identifier, password, deviceIdentifier);
@@ -241,16 +210,13 @@ const LoginPage: React.FC = () => {
             console.error('Login error:', errorMessage, { error });
             setApiError(errorMessage);
             setError(errorMessage);
-            clearAuthCookies(); // Clear cookies on error
+            clearAuthCookies();
         } finally {
             setLoading(false);
             console.debug('Login attempt completed, loading:', false);
         }
     };
 
-    /**
-     * Handles 2FA verification
-     */
     const handleVerify2FA = async (e: React.FormEvent) => {
         e.preventDefault();
         if (!deviceIdentifier || !validateForm() || !userID || !tempToken || !refreshToken || loading) {
@@ -282,9 +248,6 @@ const LoginPage: React.FC = () => {
         }
     };
 
-    /**
-     * Initiates password reset
-     */
     const handleInitiateReset = async (e: React.FormEvent) => {
         e.preventDefault();
         if (!validateForm() || loading) {
@@ -315,9 +278,6 @@ const LoginPage: React.FC = () => {
         }
     };
 
-    /**
-     * Verifies password reset OTP
-     */
     const handleVerifyResetOTP = async (e: React.FormEvent) => {
         e.preventDefault();
         if (!validateForm() || !userID || loading) {
@@ -351,9 +311,6 @@ const LoginPage: React.FC = () => {
         }
     };
 
-    /**
-     * Resets the password
-     */
     const handleResetPassword = async (e: React.FormEvent) => {
         e.preventDefault();
         if (!validateForm() || !userID || !tempResetToken || loading) {
@@ -386,9 +343,6 @@ const LoginPage: React.FC = () => {
         }
     };
 
-    /**
-     * Resends OTP for 2FA or password reset
-     */
     const handleResendOTP = async (method: 'phone' | 'email') => {
         if (resendCooldown > 0 || !userID || loading) {
             console.debug('Resend OTP prevented:', { resendCooldown, userID, loading });
@@ -427,18 +381,12 @@ const LoginPage: React.FC = () => {
         }
     };
 
-    /**
-     * Handles resend OTP button click
-     */
     const handleResendClick = (e: React.MouseEvent<HTMLButtonElement>, method: 'phone' | 'email') => {
         e.preventDefault();
         console.debug('Resend OTP clicked:', { method });
         handleResendOTP(method);
     };
 
-    /**
-     * Resets the form state
-     */
     const resetForm = () => {
         setIdentifier('');
         setPassword('');
@@ -462,9 +410,6 @@ const LoginPage: React.FC = () => {
         console.debug('Form reset');
     };
 
-    /**
-     * Handles back to login navigation
-     */
     const handleBackToLogin = () => {
         console.debug('Navigating back to login');
         resetForm();
@@ -474,9 +419,6 @@ const LoginPage: React.FC = () => {
         debouncedNavigate('/login', { replace: true });
     };
 
-    /**
-     * Utility to clear authentication cookies
-     */
     const clearAuthCookies = () => {
         document.cookie = 'accessToken=; path=/; expires=Thu, 01 Jan 1970 00:00:00 GMT';
         document.cookie = 'userData=; path=/; expires=Thu, 01 Jan 1970 00:00:00 GMT';
@@ -602,9 +544,7 @@ const LoginPage: React.FC = () => {
                                 {errors.otpCode && <span className="error-text">{errors.otpCode}</span>}
                             </div>
                             <div className="form-info">
-                                {otpMethod === 'phone'
-                                    ? 'We sent a code to your phone number.'
-                                    : 'We sent a code to your email.'}{' '}
+                                {success || `We sent a code to your ${otpMethod}.`}{' '}
                                 Time remaining: {Math.floor(timer / 60)}:{(timer % 60).toString().padStart(2, '0')}
                             </div>
                             <div className="form-checkbox styled-checkbox">
@@ -713,6 +653,7 @@ const LoginPage: React.FC = () => {
                                 {errors.otpCode && <span className="error-text">{errors.otpCode}</span>}
                             </div>
                             <div className="form-info">
+                                {success || `We sent a code to your ${otpMethod}.`}{' '}
                                 Time remaining: {Math.floor(timer / 60)}:{(timer % 60).toString().padStart(2, '0')}
                             </div>
                             <motion.button

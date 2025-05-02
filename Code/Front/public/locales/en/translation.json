@@ -982,6 +982,10 @@
       "notificationRuleDetails": "Notification Rule: {{event}}"
     },
     "sidebar": {
+      "management": "Management",
+      "data": "Data",
+      "system": "System",
+      "agents": "Agents",
       "sortNotificationsBy": "Sort Notifications By",
       "filterNotifications": "Filter Notifications",
       "filterByNotificationType": "Filter by Notification Type",

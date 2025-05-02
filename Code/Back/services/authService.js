@@ -412,11 +412,11 @@ class AuthService {
         try {
             let otp;
             let selectedMethod = otpMethod;
+            let fallbackReason = null;
 
             if (selectedMethod === 'email' && hasValidEmail) {
                 try {
                     otp = await otpService.generateOTP(user.userID, 'user');
-                    logger.info(`Generated OTP for user ${user.userID} via email: ${otp.code}`); // Log OTP
                     await transporter.sendMail({
                         from: process.env.SMTP_USER,
                         to: user.email,
@@ -432,18 +432,16 @@ class AuthService {
                     }
                 }
             }
-
             if (!otp && selectedMethod === 'phone' && hasValidPhone) {
                 try {
                     otp = await otpService.generateOTP(user.userID, 'user');
-                    logger.info(`Generated OTP for user ${user.userID} via phone: ${otp.code}`); // Log OTP
                     const smsResult = await sendSMS(user.phone, `Your TraceFlow OTP is ${otp.code}`, 'otp');
                     if (!smsResult.success) {
                         logger.error(`SMS OTP send failed for ${user.userID}: ${smsResult.reason}`);
                         if (hasValidEmail) {
                             selectedMethod = 'email';
+                            fallbackReason = smsResult.fallbackReason || 'SMS delivery failed';
                             otp = await otpService.generateOTP(user.userID, 'user');
-                            logger.info(`Generated fallback OTP for user ${user.userID} via email: ${otp.code}`); // Log fallback OTP
                             await transporter.sendMail({
                                 from: process.env.SMTP_USER,
                                 to: user.email,
@@ -455,6 +453,7 @@ class AuthService {
                         }
                     } else {
                         selectedMethod = smsResult.fallback ? 'email' : 'phone';
+                        fallbackReason = smsResult.fallbackReason || null;
                     }
                 } catch (error) {
                     logger.error(`SMS OTP send failed for ${user.userID}: ${error.message}`);
@@ -474,7 +473,7 @@ class AuthService {
                 tempToken: loginResponse.data.access_token,
                 refreshToken: loginResponse.data.refresh_token,
                 expiresIn: loginResponse.data.expires_in * 1000,
-                message: `OTP sent to your ${selectedMethod}`,
+                message: `OTP sent to your ${selectedMethod}${fallbackReason ? ` due to: ${fallbackReason}` : ''}`,
             };
         } catch (error) {
             logger.error(`OTP error for ${identifier}: ${error.message}`);
@@ -686,6 +685,7 @@ class AuthService {
         try {
             let otp;
             let selectedMethod = otpMethod;
+            let fallbackReason = null;
 
             if (selectedMethod === 'email' && hasValidEmail) {
                 otp = await otpService.generateOTP(userID, 'user');
@@ -702,6 +702,7 @@ class AuthService {
                     logger.error(`SMS resend failed for ${userID}: ${smsResult.reason}`);
                     if (hasValidEmail) {
                         selectedMethod = 'email';
+                        fallbackReason = smsResult.fallbackReason || 'SMS delivery failed';
                         otp = await otpService.generateOTP(userID, 'user');
                         await transporter.sendMail({
                             from: process.env.SMTP_USER,
@@ -714,6 +715,7 @@ class AuthService {
                     }
                 } else {
                     selectedMethod = smsResult.fallback ? 'email' : 'phone';
+                    fallbackReason = smsResult.fallbackReason || null;
                 }
             } else {
                 logger.error(`Invalid OTP method for ${userID}: ${otpMethod}`);
@@ -722,7 +724,10 @@ class AuthService {
 
             logger.info(`OTP resent to ${userID} via ${selectedMethod}`);
             logger.info(`OTP: ${otp.code}`);
-            return { userID, message: `OTP resent to your ${selectedMethod}` };
+            return {
+                userID,
+                message: `OTP resent to your ${selectedMethod}${fallbackReason ? ` due to: ${fallbackReason}` : ''}`,
+            };
         } catch (error) {
             logger.error(`Resend OTP error for ${userID}: ${error.message}`);
             throw error.message === ERROR_MESSAGES.NO_OTP_METHOD

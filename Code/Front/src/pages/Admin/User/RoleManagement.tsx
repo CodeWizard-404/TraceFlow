@@ -1,8 +1,3 @@
-/**
- * RoleManagement.tsx
- * Manages role toggling and displays role-related UI, including dropdown and role grid.
- */
-
 import React, { useEffect, useState, useCallback } from "react";
 import { FaAngleDown, FaInfoCircle } from "react-icons/fa";
 import { useAuth } from "../../../context/AuthContext";
@@ -28,6 +23,7 @@ interface RoleManagementProps {
         canAssignRoles: boolean;
     };
     isSuperAdmin: boolean;
+    setActiveRolePopup: React.Dispatch<React.SetStateAction<string | null>>; // Add this prop
 }
 
 const RolesDropdownSkeleton: React.FC = () => (
@@ -58,19 +54,20 @@ const RoleManagement: React.FC<RoleManagementProps> = ({
     setSelectedUser,
     userPermissions,
     isSuperAdmin,
+    setActiveRolePopup, // Destructure the new prop
 }) => {
     const { user: currentUser } = useAuth();
     const { setError: setGlobalError } = useError();
     const [loadingRoles, setLoadingRoles] = useState(false);
 
     useEffect(() => {
-        if (expandedSection !== "roles") return;
+        if (expandedSection !== "roles" || !selectedUser) return;
         const fetchRoles = async () => {
             try {
                 setLoadingRoles(true);
                 const [rolesData, userRolesData] = await Promise.all([
                     getAllRoles(),
-                    getRolesByUser(selectedUser!.userID),
+                    getRolesByUser(selectedUser.userID),
                 ]);
                 setRoles(rolesData);
                 setTempRoles(userRolesData || []);
@@ -87,58 +84,69 @@ const RoleManagement: React.FC<RoleManagementProps> = ({
 
     const handleToggleRole = useCallback(
         async (role: Role) => {
-            if (!userPermissions.canAssignRoles || !selectedUser) return;
+            if (!userPermissions.canAssignRoles) return;
+
             if (role.name === import.meta.env.VITE_ROLES_SUPER_ADMIN) {
                 setGlobalError("The Super Admin role cannot be assigned or revoked.");
                 return;
             }
-            const isCurrentUser = selectedUser.userID === currentUser?.userID;
-            const hasAdminRole = tempRoles.some(
-                (r) => r.name === import.meta.env.VITE_ROLES_ADMIN
-            );
-            if (
-                isCurrentUser &&
-                role.name === import.meta.env.VITE_ROLES_ADMIN &&
-                hasAdminRole &&
-                !isSuperAdmin
-            ) {
-                setGlobalError("You cannot revoke your own Admin role.");
-                return;
-            }
-            try {
+
+            if (selectedUser) {
+                const isCurrentUser = selectedUser.userID === currentUser?.userID;
+                const hasAdminRole = tempRoles.some(
+                    (r) => r.name === import.meta.env.VITE_ROLES_ADMIN
+                );
+                if (
+                    isCurrentUser &&
+                    role.name === import.meta.env.VITE_ROLES_ADMIN &&
+                    hasAdminRole &&
+                    !isSuperAdmin
+                ) {
+                    setGlobalError("You cannot revoke your own Admin role.");
+                    return;
+                }
+                try {
+                    const hasRole = tempRoles.some((r) => r.roleID === role.roleID);
+                    if (hasRole) {
+                        await revokeRolesFromUser(selectedUser.userID, [role.roleID]);
+                        const updatedRoles = tempRoles.filter(
+                            (r) => r.roleID !== role.roleID
+                        );
+                        setTempRoles(updatedRoles);
+                        setUsers(
+                            users.map((u) =>
+                                u.userID === selectedUser.userID
+                                    ? { ...u, Roles: updatedRoles }
+                                    : u
+                            )
+                        );
+                        setSelectedUser({ ...selectedUser, Roles: updatedRoles });
+                    } else {
+                        await assignRolesToUser(selectedUser.userID, [role.roleID]);
+                        const updatedRoles = [...tempRoles, role];
+                        setTempRoles(updatedRoles);
+                        setUsers(
+                            users.map((u) =>
+                                u.userID === selectedUser.userID
+                                    ? { ...u, Roles: updatedRoles }
+                                    : u
+                            )
+                        );
+                        setSelectedUser({ ...selectedUser, Roles: updatedRoles });
+                    }
+                } catch (error) {
+                    setGlobalError(
+                        error instanceof Error ? error.message : "Failed to toggle role."
+                    );
+                    setTempRoles(selectedUser.Roles || []);
+                }
+            } else {
                 const hasRole = tempRoles.some((r) => r.roleID === role.roleID);
                 if (hasRole) {
-                    await revokeRolesFromUser(selectedUser.userID, [role.roleID]);
-                    const updatedRoles = tempRoles.filter(
-                        (r) => r.roleID !== role.roleID
-                    );
-                    setTempRoles(updatedRoles);
-                    setUsers(
-                        users.map((u) =>
-                            u.userID === selectedUser.userID
-                                ? { ...u, Roles: updatedRoles }
-                                : u
-                        )
-                    );
-                    setSelectedUser({ ...selectedUser, Roles: updatedRoles });
+                    setTempRoles(tempRoles.filter((r) => r.roleID !== role.roleID));
                 } else {
-                    await assignRolesToUser(selectedUser.userID, [role.roleID]);
-                    const updatedRoles = [...tempRoles, role];
-                    setTempRoles(updatedRoles);
-                    setUsers(
-                        users.map((u) =>
-                            u.userID === selectedUser.userID
-                                ? { ...u, Roles: updatedRoles }
-                                : u
-                        )
-                    );
-                    setSelectedUser({ ...selectedUser, Roles: updatedRoles });
+                    setTempRoles([...tempRoles, role]);
                 }
-            } catch (error) {
-                setGlobalError(
-                    error instanceof Error ? error.message : "Failed to toggle role."
-                );
-                setTempRoles(selectedUser.Roles || []);
             }
         },
         [
@@ -165,8 +173,7 @@ const RoleManagement: React.FC<RoleManagementProps> = ({
             >
                 <h3>Role Management</h3>
                 <FaAngleDown
-                    className={`dropdown-icon ${expandedSection === "roles" ? "expanded" : ""
-                        }`}
+                    className={`dropdown-icon ${expandedSection === "roles" ? "expanded" : ""}`}
                 />
             </div>
             {expandedSection === "roles" &&
@@ -184,15 +191,7 @@ const RoleManagement: React.FC<RoleManagementProps> = ({
                                             }`}
                                         onClick={() => handleToggleRole(role)}
                                         disabled={
-                                            role.name ===
-                                            import.meta.env.VITE_ROLES_SUPER_ADMIN ||
-                                            (selectedUser?.userID === currentUser?.userID &&
-                                                role.name === import.meta.env.VITE_ROLES_ADMIN &&
-                                                !isSuperAdmin &&
-                                                tempRoles.some(
-                                                    (r) =>
-                                                        r.name === import.meta.env.VITE_ROLES_ADMIN
-                                                ))
+                                            role.name === import.meta.env.VITE_ROLES_SUPER_ADMIN
                                         }
                                     >
                                         <span>{role.name}</span>
@@ -200,8 +199,9 @@ const RoleManagement: React.FC<RoleManagementProps> = ({
                                             className="role-info-icon"
                                             onClick={(e) => {
                                                 e.stopPropagation();
-                                                // Note: toggleRolePopup is handled in InfoPopupWrapper
+                                                setActiveRolePopup(role.roleID); // Update state to open popup
                                             }}
+                                            aria-label={`View details for ${role.name}`}
                                         />
                                     </button>
                                 </div>
