@@ -342,7 +342,7 @@ export const assignRegionsToRegionalManager = async (
     if (!regionalManagerID || !Array.isArray(regionIDs) || regionIDs.length === 0) {
       throw new Error("Regional Manager ID and Region IDs are required");
     }
-    const response = await api.post<AssignRegionsResponse>("//usersassign-regions", {
+    const response = await api.post<AssignRegionsResponse>("/users/assign-regions", {
       regionalManagerID,
       regionIDs,
     });

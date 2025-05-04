@@ -1714,12 +1714,6 @@ class UserService {
                 throw new Error(ERROR_MESSAGES.GOVERNORATE_NOT_FOUND);
             }
 
-            // Validate that the governorate's region is assigned to the user
-            if (!user.Regions.some(r => r.regionID === governorate.regionID)) {
-                logger.warn(`Assign governorate failed: Region not assigned to user ${userID}, user: ${actorID}`);
-                throw new Error(ERROR_MESSAGES.REGION_NOT_ASSIGNED);
-            }
-
             await user.addGovernorate(governorate);
             logger.info(`Assigned governorate ${governorateID} to user ${userID} by user ${actorID}`);
             return {

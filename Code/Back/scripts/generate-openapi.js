@@ -5,7 +5,7 @@ const walk = require('acorn-walk');
 const pluralize = require('pluralize');
 require('dotenv').config();
 
-// Route mappings
+// Route mappings (unchanged)
 const routeMappings = [
     { path: '/api/auth', file: '../routes/authRoutes.js', tag: 'Auth', controller: '../controllers/authController.js', service: '../services/authService.js', model: 'User' },
     { path: '/api/users', file: '../routes/userRoutes.js', tag: 'Users', controller: '../controllers/userController.js', service: '../services/userService.js', model: 'User' },
@@ -22,10 +22,10 @@ const routeMappings = [
     { path: '/api/locations', file: '../routes/locationRoutes.js', tag: 'Locations', controller: '../controllers/locationController.js', service: '../services/locationsService.js', model: null },
 ];
 
-// Load Sequelize models
+// Load Sequelize models (unchanged)
 const models = require('../models');
 
-// Map Sequelize types to OpenAPI
+// Map Sequelize types to OpenAPI (unchanged)
 function mapSequelizeTypeToOpenApi(type, field) {
     if (type.includes('STRING') || type === 'TEXT') return { type: 'string', ...(field.format ? { format: field.format } : {}) };
     if (type.includes('INTEGER') || type === 'BIGINT') return { type: 'integer' };
@@ -35,7 +35,7 @@ function mapSequelizeTypeToOpenApi(type, field) {
     return { type: 'string' };
 }
 
-// Generate model schemas
+// Generate model schemas (unchanged)
 const modelSchemas = {};
 Object.keys(models).forEach((modelName) => {
     const model = models[modelName];
@@ -49,7 +49,7 @@ Object.keys(models).forEach((modelName) => {
     }
 });
 
-// Hard-coded schemas
+// Hard-coded schemas (unchanged)
 modelSchemas.UserResponse = {
     type: 'object',
     properties: {
@@ -146,47 +146,53 @@ modelSchemas.DelegationResponse = {
     required: ['delegationID', 'name', 'governorateID']
 };
 
-// Parse middleware
+// Parse middleware (updated)
 function parseMiddleware(routeLayer, file, routePath) {
     const middleware = [];
     const permissions = [];
     const rateLimiters = [];
 
-    // Log routeLayer for debugging
-    console.log(`Processing middleware for ${file} - ${routePath}:`, {
+    const handleInfo = {
         hasHandle: !!routeLayer.handle,
         handleType: routeLayer.handle ? typeof routeLayer.handle : 'undefined',
         handleName: routeLayer.handle && routeLayer.handle.name ? routeLayer.handle.name : 'unnamed'
-    });
+    };
+    console.log(`Processing middleware for ${file} - ${routePath}:`, handleInfo);
 
-    // Skip if handle is invalid
     if (!routeLayer.handle || typeof routeLayer.handle !== 'function') {
         console.log(`Skipping middleware for ${file} - ${routePath}: Invalid handle`);
         return { middleware, permissions, rateLimiters };
     }
 
-    // Get handler name or use toString as fallback
     const handlerName = routeLayer.handle.name || '';
-    const handlerString = routeLayer.handle.toString();
-
-    // Check for known middleware
-    if (handlerName.includes('authenticateCookie') || handlerString.includes('authenticateCookie')) {
-        middleware.push('authenticateCookie');
-    }
-    if (handlerName.includes('sensitiveLimiter') || handlerString.includes('sensitiveLimiter')) {
-        rateLimiters.push('sensitiveLimiter');
-    }
-    if (handlerName.includes('otpLimiter') || handlerString.includes('otpLimiter')) {
-        rateLimiters.push('otpLimiter');
-    }
-    if (handlerName.includes('refreshLimiter') || handlerString.includes('refreshLimiter')) {
-        rateLimiters.push('refreshLimiter');
-    }
-    if (handlerName.includes('bound single') || handlerString.includes('uploadPFP')) {
-        middleware.push('uploadPFP');
+    let handlerString = '';
+    try {
+        handlerString = routeLayer.handle.toString();
+    } catch (err) {
+        console.log(`Failed to get toString for ${handlerName} in ${file} - ${routePath}: ${err.message}`);
+        return { middleware, permissions, rateLimiters };
     }
 
-    // Parse requirePermission
+    if (!handlerName && handlerString.includes('express-validator')) {
+        middleware.push('express-validator');
+        return { middleware, permissions, rateLimiters };
+    }
+
+    try {
+        if (handlerName.includes('authenticateCookie') || (handlerString && handlerString.includes('authenticateCookie'))) {
+            middleware.push('authenticateCookie');
+        }
+        if (handlerName.toLowerCase().includes('limiter') || (handlerString && handlerString.toLowerCase().includes('limiter'))) {
+            rateLimiters.push(handlerName || 'unnamedLimiter');
+        }
+        if (handlerName.includes('bound single') || (handlerString && handlerString.includes('uploadPFP'))) {
+            middleware.push('uploadPFP');
+        }
+    } catch (err) {
+        console.log(`Error checking middleware for ${handlerName} in ${file} - ${routePath}: ${err.message}`);
+        return { middleware, permissions, rateLimiters };
+    }
+
     try {
         const permissionMatch = handlerString.match(/requirePermission\(['"]([^'"]+)['"]\)/);
         if (permissionMatch) {
@@ -199,7 +205,7 @@ function parseMiddleware(routeLayer, file, routePath) {
     return { middleware, permissions, rateLimiters };
 }
 
-// Parse service
+// Parse service (unchanged)
 function parseService(servicePath) {
     if (!fs.existsSync(path.join(__dirname, servicePath))) {
         console.log(`Service file not found: ${servicePath}`);
@@ -274,7 +280,7 @@ function parseService(servicePath) {
     return { queries, validation, errors };
 }
 
-// Parse controller
+// Parse controller (unchanged)
 function parseController(controllerPath) {
     if (!fs.existsSync(path.join(__dirname, controllerPath))) {
         console.log(`Controller file not found: ${controllerPath}`);
@@ -346,14 +352,13 @@ function parseController(controllerPath) {
     return { mappings, responses, errors, validation, queries };
 }
 
-// Infer validation from express-validator
+// Infer validation from express-validator (unchanged)
 function inferValidationFromValidator(node) {
     const properties = {};
-    // Simplified; extend to parse check() calls if needed
     return properties;
 }
 
-// Infer schema from expression
+// Infer schema from expression (unchanged)
 function inferSchemaFromExpression(expr) {
     if (!expr) return { type: 'object', properties: {} };
     if (expr.type === 'ObjectExpression') {
@@ -377,7 +382,7 @@ function inferSchemaFromExpression(expr) {
     return { type: 'string' };
 }
 
-// Build response schema
+// Build response schema (unchanged)
 function buildResponseSchema(query, modelSchemas, tag, routePath, method, controllerMethod) {
     if (tag === 'Auth') {
         if (method === 'post' && routePath === '/login') {
@@ -480,7 +485,7 @@ function buildResponseSchema(query, modelSchemas, tag, routePath, method, contro
     return type === 'findAll' ? { type: 'array', items: schema } : schema;
 }
 
-// Generate operation ID
+// Generate operation ID (unchanged)
 function generateOperationId(method, routePath, tag) {
     const pathParts = routePath.split('/').filter(p => p && !p.startsWith(':'));
     const paramParts = routePath.split('/').filter(p => p.startsWith(':')).map(p => p.slice(1));
@@ -494,7 +499,7 @@ function generateOperationId(method, routePath, tag) {
     return operation.charAt(0).toLowerCase() + operation.slice(1);
 }
 
-// Generate description
+// Generate description (unchanged)
 function generateDescription(method, routePath, tag) {
     const methodDescriptions = {
         get: 'Retrieves',
@@ -516,7 +521,7 @@ function generateDescription(method, routePath, tag) {
     return description;
 }
 
-// Extract parameters
+// Extract parameters (unchanged)
 function extractParameters(routePath) {
     const params = [];
     const matches = routePath.match(/:([^\/]+)/g);
@@ -528,7 +533,7 @@ function extractParameters(routePath) {
     return params;
 }
 
-// OpenAPI spec
+// OpenAPI spec (unchanged)
 const openApiSpec = {
     openapi: '3.0.3',
     info: {
@@ -560,14 +565,13 @@ const openApiSpec = {
     paths: {}
 };
 
-// Process routes
+// Process routes (updated)
 routeMappings.forEach(({ path: basePath, file, tag, controller, service, model }) => {
     try {
         const routeModule = require(file);
         const { mappings, responses, errors: controllerErrors, validation, queries } = parseController(controller);
         const { queries: serviceQueries, validation: serviceValidation, errors: serviceErrors } = parseService(service);
 
-        // Validate routeModule
         if (!routeModule || !routeModule.stack) {
             console.log(`Invalid route module for ${file}: No stack found`);
             return;
@@ -586,7 +590,6 @@ routeMappings.forEach(({ path: basePath, file, tag, controller, service, model }
             const fullPath = `${basePath}${routePath === '/' ? '' : routePath}`;
             const methods = layer.route.methods;
 
-            // Log stack for debugging
             console.log(`Route stack for ${fullPath}:`, layer.route.stack.map(s => ({
                 handleName: s.handle ? s.handle.name : 'unnamed',
                 handleType: s.handle ? typeof s.handle : 'undefined'
@@ -611,14 +614,17 @@ routeMappings.forEach(({ path: basePath, file, tag, controller, service, model }
             const middlewareStack = layer.route.stack.map((stackLayer) => parseMiddleware(stackLayer, file, fullPath))
                 .filter(m => m.middleware.length || m.permissions.length || m.rateLimiters.length);
 
+            const allMiddleware = [...new Set(middlewareStack.flatMap(m => m.middleware))];
+            const allPermissions = [...new Set(middlewareStack.flatMap(m => m.permissions))];
+            const allRateLimiters = [...new Set(middlewareStack.flatMap(m => m.rateLimiters))];
+
             openApiSpec.paths[fullPath] = openApiSpec.paths[fullPath] || {};
             Object.keys(methods).forEach(method => {
                 const responseSchema = responses[controllerMethod] || buildResponseSchema(query, modelSchemas, tag, routePath, method, controllerMethod);
-                const { middleware, permissions, rateLimiters } = middlewareStack[middlewareStack.length - 1] || {};
                 const operation = {
                     tags: [tag],
                     summary: generateDescription(method, routePath, tag),
-                    description: generateDetailedDescription(method, fullPath, tag, permissions, middleware, rateLimiters),
+                    description: generateDetailedDescription(method, fullPath, tag, allPermissions, allMiddleware, allRateLimiters),
                     operationId: generateOperationId(method, routePath, tag),
                     parameters: [
                         ...extractParameters(routePath),
@@ -636,9 +642,9 @@ routeMappings.forEach(({ path: basePath, file, tag, controller, service, model }
                         }
                     },
                     security: basePath === '/api/auth' ? [] : [{ cookieAuth: [] }],
-                    'x-middleware': middleware || [],
-                    'x-permissions': permissions || [],
-                    'x-rateLimiters': rateLimiters || []
+                    'x-middleware': allMiddleware,
+                    'x-permissions': allPermissions,
+                    'x-rateLimiters': allRateLimiters
                 };
 
                 if (['post', 'put'].includes(method)) {
@@ -646,7 +652,7 @@ routeMappings.forEach(({ path: basePath, file, tag, controller, service, model }
                         properties: { ...validation.properties, ...serviceValidation.properties },
                         required: [...new Set([...validation.required, ...serviceValidation.required])]
                     };
-                    if (middleware.includes('uploadPFP')) {
+                    if (allMiddleware.includes('uploadPFP')) {
                         operation.requestBody = {
                             content: {
                                 'multipart/form-data': {
@@ -676,7 +682,6 @@ routeMappings.forEach(({ path: basePath, file, tag, controller, service, model }
                     }
                 }
 
-                // Add specific error responses
                 [...controllerErrors, ...serviceErrors].forEach(err => {
                     operation.responses[err.status] = {
                         description: err.message,
@@ -684,29 +689,13 @@ routeMappings.forEach(({ path: basePath, file, tag, controller, service, model }
                     };
                 });
 
-                // Rate limit responses
-                if (rateLimiters.includes('sensitiveLimiter')) {
+                if (allRateLimiters.length) {
                     operation.responses[429] = {
-                        description: 'Too many attempts. Please wait 10 minutes and try again.',
-                        content: { 'application/json': { schema: { type: 'object', properties: { error: { type: 'string' }, waitTime: { type: 'integer' } } } } }
+                        description: 'Too many requests. Please try again later.',
+                        content: { 'application/json': { schema: { $ref: '#/components/schemas/ErrorResponse' } } }
                     };
                 }
-                if (rateLimiters.includes('otpLimiter')) {
-                    operation.responses[429] = {
-                        description: 'Too many OTP requests. Please wait 10 minutes and try again.',
-                        content: { 'application/json': { schema: { $ref: '#/components/schemas/ErrorResponse' } } }
-                    }
-                };
 
-                if (rateLimiters.includes('refreshLimiter')) {
-                    operation.responses[429] = {
-                        description: 'Too many refresh attempts. Please wait 1 hour and try again.',
-                        content: { 'application/json': { schema: { $ref: '#/components/schemas/ErrorResponse' } } }
-                    }
-                };
-
-
-                // Default error responses
                 if (!operation.responses[400]) {
                     operation.responses[400] = {
                         description: 'Bad Request',
@@ -746,7 +735,7 @@ routeMappings.forEach(({ path: basePath, file, tag, controller, service, model }
     }
 });
 
-// Generate detailed description
+// Generate detailed description (updated)
 function generateDetailedDescription(method, fullPath, tag, permissions, middleware, rateLimiters) {
     let description = `### ${method.toUpperCase()} ${fullPath}\n\n`;
     description += `**Purpose**: ${generateDescription(method, fullPath.replace('/api/' + tag.toLowerCase(), ''), tag)}.\n\n`;
@@ -767,15 +756,9 @@ function generateDetailedDescription(method, fullPath, tag, permissions, middlew
     }
     if (rateLimiters.length) {
         description += `**Rate Limiting**:\n`;
-        if (rateLimiters.includes('sensitiveLimiter')) {
-            description += `- \`sensitiveLimiter\`: Max ${process.env.SENSITIVE_LIMITER_MAX || 15} requests per ${process.env.SENSITIVE_LIMITER_WINDOW_MS / 60000 || 10} minutes.\n`;
-        }
-        if (rateLimiters.includes('otpLimiter')) {
-            description += `- \`otpLimiter\`: Max ${process.env.OTP_LIMITER_MAX || 5} requests per ${process.env.OTP_LIMITER_WINDOW_MS / 60000 || 10} minutes.\n`;
-        }
-        if (rateLimiters.includes('refreshLimiter')) {
-            description += `- \`refreshLimiter\`: Max ${process.env.REFRESH_LIMITER_MAX || 10} requests per ${process.env.REFRESH_LIMITER_WINDOW_MS / 3600000 || 1} hour.\n`;
-        }
+        rateLimiters.forEach(limiter => {
+            description += `- \`${limiter}\`: Custom rate limiting applied.\n`;
+        });
     }
     if (middleware.includes('uploadPFP')) {
         description += `**File Upload**: Accepts a profile picture (\`PFP\`) via \`multipart/form-data\`.\n`;
@@ -786,6 +769,6 @@ function generateDetailedDescription(method, fullPath, tag, permissions, middlew
     return description;
 }
 
-// Write spec
+// Write spec (unchanged)
 fs.writeFileSync(path.join(__dirname, '../openapi.json'), JSON.stringify(openApiSpec, null, 2));
 console.log('OpenAPI spec generated at: openapi.json');

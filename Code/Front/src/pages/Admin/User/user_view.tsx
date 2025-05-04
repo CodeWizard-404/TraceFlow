@@ -203,16 +203,16 @@ const UserView: React.FC<UserViewProps> = ({
         (p) => p.name === import.meta.env.VITE_PERMISSIONS_REVOKE_SUPERVISOR_FROM_AGENT
       ),
       canReadDirectors: effectivePermissions.some(
-        (p) => p.name === import.meta.env.VITE_PERMISSIONS_READ_DIRECTORS
+        (p) => p.name === import.meta.env.VITE_PERMISSIONS_READ_DIRECTOR
       ),
       canAssignDirectors: effectivePermissions.some(
-        (p) => p.name === import.meta.env.VITE_PERMISSIONS_ASSIGN_DIRECTORS
+        (p) => p.name === import.meta.env.VITE_PERMISSIONS_ASSIGN_DIRECTOR
       ),
       canRevokeDirectors: effectivePermissions.some(
-        (p) => p.name === import.meta.env.VITE_PERMISSIONS_REVOKE_DIRECTORS
+        (p) => p.name === import.meta.env.VITE_PERMISSIONS_REVOKE_DIRECTOR
       ),
       canReadAgents: effectivePermissions.some(
-        (p) => p.name === import.meta.env.VITE_PERMISSIONS_READ_AGENTS
+        (p) => p.name === import.meta.env.VITE_PERMISSIONS_READ_ALL_AGENTS
       ),
       canAssignRegionalManagers: effectivePermissions.some(
         (p) => p.name === import.meta.env.VITE_PERMISSIONS_ASSIGN_REGIONAL_MANAGER

@@ -97,10 +97,12 @@ interface AssignmentListItem {
     governorateID?: string;
     delegationID?: string;
     agentID?: string;
+    userID?: string;
     firstname?: string;
     lastname?: string;
     phone?: string;
     name?: string;
+    email?: string;
 }
 
 const AssignmentList: React.FC<{
@@ -150,9 +152,24 @@ const AssignmentList: React.FC<{
             return filteredItems.slice(start, start + ITEMS_PER_PAGE);
         }, [filteredItems, page]);
 
-        // Determine the unique key for an item
-        const getItemKey = (item: AssignmentListItem) =>
-            item.id || item.regionID || item.governorateID || item.delegationID || item.agentID || "";
+        const getItemKey = (item: AssignmentListItem, index: number) => {
+            if (item.agentID) {
+                // For agents, combine agentID and delegationID to ensure uniqueness
+                return `${item.agentID}-${item.delegationID || "no-delegation"}`;
+            }
+            const key =
+                item.id ||
+                item.userID ||
+                item.regionID ||
+                item.governorateID ||
+                item.delegationID ||
+                item.agentID;
+            if (!key) {
+                console.warn("Item missing valid ID:", item);
+                return `fallback-${index}`;
+            }
+            return key;
+        };
 
         return (
             <div className="assignment-list">
@@ -194,23 +211,23 @@ const AssignmentList: React.FC<{
                             />
                         ))
                     ) : paginatedItems.length > 0 ? (
-                        paginatedItems.map((item) => (
-                            <div
-                                key={getItemKey(item)}
-                                className="list-item"
-                            >
-                                <label>
-                                    <input
-                                        type={singleSelection ? "radio" : "checkbox"}
-                                        name={singleSelection ? title : undefined}
-                                        checked={selectedItems.some((s) => getItemKey(s) === getItemKey(item))}
-                                        onChange={() => onToggle(item)}
-                                        disabled={disabled}
-                                    />
-                                    {renderLabel(item)}
-                                </label>
-                            </div>
-                        ))
+                        paginatedItems.map((item, index) => {
+                            const itemKey = getItemKey(item, index);
+                            return (
+                                <div key={itemKey} className="list-item">
+                                    <label>
+                                        <input
+                                            type={singleSelection ? "radio" : "checkbox"}
+                                            name={singleSelection ? title : undefined}
+                                            checked={selectedItems.some((s) => getItemKey(s, index) === itemKey)}
+                                            onChange={() => onToggle(item)}
+                                            disabled={disabled}
+                                        />
+                                        {renderLabel(item)}
+                                    </label>
+                                </div>
+                            );
+                        })
                     ) : (
                         <div className="no-items-message">No items found.</div>
                     )}
@@ -305,9 +322,6 @@ const AssignmentsManagement: React.FC<AssignmentsManagementProps> = ({
         agentPage: 1,
     });
 
-    // Cache for API responses
-
-    // Cache for API responses
     const cache = useMemo(() => new Map<string, any>(), []);
 
     const role = selectedUser?.Roles?.[0]?.name || tempRoles[0]?.name;
@@ -320,16 +334,18 @@ const AssignmentsManagement: React.FC<AssignmentsManagementProps> = ({
         setLoading((prev) => ({ ...prev, ...updates }));
     }, []);
 
-    // Generic fetch with caching
-    const fetchWithCache = useCallback(async function <T>(key: string, fetchFn: () => Promise<T>): Promise<T> {
-        if (cache.has(key)) {
-            return cache.get(key);
-        }
-        const result = await fetchFn();
-        cache.set(key, result);
-        return result;
-    }, [cache]);
-    // Fetch data based on role when section is expanded
+    const fetchWithCache = useCallback(
+        async function <T>(key: string, fetchFn: () => Promise<T>): Promise<T> {
+            if (cache.has(key)) {
+                return cache.get(key);
+            }
+            const result = await fetchFn();
+            cache.set(key, result);
+            return result;
+        },
+        [cache]
+    );
+
     useEffect(() => {
         if (expandedSection !== "assignments" || !selectedUser) return;
 
@@ -344,8 +360,10 @@ const AssignmentsManagement: React.FC<AssignmentsManagementProps> = ({
                         getRegionalManagersByDirector(selectedUser.userID)
                     ),
                 ]);
-                updateState({ allRegionalManagers: allRMs });
-                setTempRegionalManagers(assignedRMs);
+                const validRMs = allRMs.filter((rm) => rm.userID && typeof rm.userID === "string");
+                const validAssignedRMs = assignedRMs.filter((rm) => rm.userID && typeof rm.userID === "string");
+                updateState({ allRegionalManagers: validRMs });
+                setTempRegionalManagers(validAssignedRMs);
             } catch {
                 setGlobalError("Failed to fetch regional managers.");
             } finally {
@@ -356,28 +374,35 @@ const AssignmentsManagement: React.FC<AssignmentsManagementProps> = ({
         const fetchRegionalManagerData = async () => {
             updateLoading({ directors: true, regions: true, supervisors: true });
             try {
-                const [allDirectors, assignedDirectors, allRegions, assignedRegions, allSupervisors, assignedSupervisors] = await Promise.all([
-                    fetchWithCache(`directors_${ROLES.DIRECTOR}`, () => getUsersByRole(ROLES.DIRECTOR)),
-                    fetchWithCache(`directorByRegionalManager_${selectedUser.userID}`, () =>
-                        getDirectorByRegionalManager(selectedUser.userID)
-                    ),
-                    fetchWithCache("allRegions", () => getAllRegions()),
-                    fetchWithCache(`regionsByUser_${selectedUser.userID}`, () =>
-                        getRegionsByUser(selectedUser.userID)
-                    ),
-                    fetchWithCache(`supervisors_${ROLES.SUPERVISOR}`, () => getUsersByRole(ROLES.SUPERVISOR)),
-                    fetchWithCache(`supervisorsByRegionalManager_${selectedUser.userID}`, () =>
-                        getSupervisorsByRegionalManager(selectedUser.userID)
-                    ),
-                ]);
+                const [allDirectors, assignedDirectors, allRegions, assignedRegions, allSupervisors, assignedSupervisors] =
+                    await Promise.all([
+                        fetchWithCache(`directors_${ROLES.DIRECTOR}`, () => getUsersByRole(ROLES.DIRECTOR)),
+                        fetchWithCache(`directorByRegionalManager_${selectedUser.userID}`, () =>
+                            getDirectorByRegionalManager(selectedUser.userID)
+                        ),
+                        fetchWithCache("allRegions", () => getAllRegions()),
+                        fetchWithCache(`regionsByUser_${selectedUser.userID}`, () => getRegionsByUser(selectedUser.userID)),
+                        fetchWithCache(`supervisors_${ROLES.SUPERVISOR}`, () => getUsersByRole(ROLES.SUPERVISOR)),
+                        fetchWithCache(`supervisorsByRegionalManager_${selectedUser.userID}`, () =>
+                            getSupervisorsByRegionalManager(selectedUser.userID)
+                        ),
+                    ]);
+                const validDirectors = allDirectors.filter((d) => d.userID && typeof d.userID === "string");
+                const validAssignedDirectors = assignedDirectors.filter((d) => d.userID && typeof d.userID === "string");
+                const validRegions = allRegions.filter((r) => r.regionID && typeof r.regionID === "string");
+                const validAssignedRegions = assignedRegions.filter((r) => r.regionID && typeof r.regionID === "string");
+                const validSupervisors = allSupervisors.filter((s) => s.userID && typeof s.userID === "string");
+                const validAssignedSupervisors = assignedSupervisors.filter(
+                    (s) => s.userID && typeof s.userID === "string"
+                );
                 updateState({
-                    allDirectors,
-                    allRegions,
-                    allSupervisors,
+                    allDirectors: validDirectors,
+                    allRegions: validRegions,
+                    allSupervisors: validSupervisors,
                 });
-                setTempDirectors(assignedDirectors);
-                setTempRegions(assignedRegions);
-                setTempSupervisors(assignedSupervisors);
+                setTempDirectors(validAssignedDirectors);
+                setTempRegions(validAssignedRegions);
+                setTempSupervisors(validAssignedSupervisors);
             } catch {
                 setGlobalError("Failed to fetch regional manager data.");
             } finally {
@@ -396,8 +421,10 @@ const AssignmentsManagement: React.FC<AssignmentsManagementProps> = ({
                         getRegionalManagerBySupervisor(selectedUser.userID)
                     ),
                 ]);
-                updateState({ allRegionalManagers: allRMs });
-                setTempRegionalManagers(assignedRMs);
+                const validRMs = allRMs.filter((rm) => rm.userID && typeof rm.userID === "string");
+                const validAssignedRMs = assignedRMs.filter((rm) => rm.userID && typeof rm.userID === "string");
+                updateState({ allRegionalManagers: validRMs });
+                setTempRegionalManagers(validAssignedRMs);
             } catch {
                 setGlobalError("Failed to fetch regional managers for supervisor.");
             } finally {
@@ -412,9 +439,20 @@ const AssignmentsManagement: React.FC<AssignmentsManagementProps> = ({
         } else if (role === ROLES.SUPERVISOR) {
             fetchSupervisorData();
         }
-    }, [expandedSection, selectedUser, role, fetchWithCache, setGlobalError, setTempDirectors, setTempRegionalManagers, setTempRegions, setTempSupervisors, updateLoading, updateState]);
+    }, [
+        expandedSection,
+        selectedUser,
+        role,
+        fetchWithCache,
+        setGlobalError,
+        setTempDirectors,
+        setTempRegionalManagers,
+        setTempRegions,
+        setTempSupervisors,
+        updateLoading,
+        updateState,
+    ]);
 
-    // Fetch governorates when regional managers change (Supervisor role)
     useEffect(() => {
         if (role !== ROLES.SUPERVISOR || tempRegionalManagers.length === 0) {
             updateState({ availableGovernorates: [], availableDelegations: [], availableAgents: [] });
@@ -438,8 +476,23 @@ const AssignmentsManagement: React.FC<AssignmentsManagementProps> = ({
                 const assignedGovs = await fetchWithCache(`governoratesByUser_${selectedUser!.userID}`, () =>
                     getGovernoratesByUser(selectedUser!.userID)
                 );
-                updateState({ availableGovernorates: governorates.flat() });
-                setTempGovernorates(assignedGovs);
+                const validGovernorates = governorates
+                    .flat()
+                    .filter((gov) => gov.governorateID && typeof gov.governorateID === "string")
+                    .map((gov) => ({
+                        governorateID: gov.governorateID,
+                        name: gov.name || "Unnamed Governorate",
+                        regionID: gov.regionID || "",
+                    }));
+                const validAssignedGovs = assignedGovs
+                    .filter((gov) => gov.governorateID && typeof gov.governorateID === "string")
+                    .map((gov) => ({
+                        governorateID: gov.governorateID,
+                        name: gov.name || "Unnamed Governorate",
+                        regionID: gov.regionID || "",
+                    }));
+                updateState({ availableGovernorates: validGovernorates });
+                setTempGovernorates(validAssignedGovs);
             } catch {
                 setGlobalError("Failed to fetch governorates.");
             } finally {
@@ -448,9 +501,19 @@ const AssignmentsManagement: React.FC<AssignmentsManagementProps> = ({
         };
 
         fetchGovernorates();
-    }, [tempRegionalManagers, role, selectedUser, fetchWithCache, setGlobalError, setTempGovernorates, setTempDelegations, setTempAgents, updateLoading, updateState]);
+    }, [
+        tempRegionalManagers,
+        role,
+        selectedUser,
+        fetchWithCache,
+        setGlobalError,
+        setTempGovernorates,
+        setTempDelegations,
+        setTempAgents,
+        updateLoading,
+        updateState,
+    ]);
 
-    // Fetch delegations when governorates change (Supervisor role)
     useEffect(() => {
         if (role !== ROLES.SUPERVISOR || tempGovernorates.length === 0) {
             updateState({ availableDelegations: [], availableAgents: [] });
@@ -472,8 +535,28 @@ const AssignmentsManagement: React.FC<AssignmentsManagementProps> = ({
                 const assignedDels = await fetchWithCache(`delegationsByUser_${selectedUser!.userID}`, () =>
                     getDelegationsByUser(selectedUser!.userID)
                 );
-                updateState({ availableDelegations: delegations.flat() });
-                setTempDelegations(assignedDels);
+                const validDelegations = delegations
+                    .flat()
+                    .filter((del) => del.delegationID && typeof del.delegationID === "string")
+                    .map((del) => ({
+                        delegationID: del.delegationID,
+                        name: del.name || "Unnamed Delegation",
+                        governorateID: del.governorateID || "",
+                    }));
+                // Check for duplicate delegationIDs
+                const delegationIdSet = new Set(validDelegations.map((del) => del.delegationID));
+                if (delegationIdSet.size !== validDelegations.length) {
+                    console.warn("Duplicate delegationIDs detected:", validDelegations);
+                }
+                const validAssignedDels = assignedDels
+                    .filter((del) => del.delegationID && typeof del.delegationID === "string")
+                    .map((del) => ({
+                        delegationID: del.delegationID,
+                        name: del.name || "Unnamed Delegation",
+                        governorateID: del.governorateID || "",
+                    }));
+                updateState({ availableDelegations: validDelegations });
+                setTempDelegations(validAssignedDels);
             } catch {
                 setGlobalError("Failed to fetch delegations.");
             } finally {
@@ -482,9 +565,18 @@ const AssignmentsManagement: React.FC<AssignmentsManagementProps> = ({
         };
 
         fetchDelegations();
-    }, [tempGovernorates, role, selectedUser, fetchWithCache, setGlobalError, setTempDelegations, setTempAgents, updateLoading, updateState]);
+    }, [
+        tempGovernorates,
+        role,
+        selectedUser,
+        fetchWithCache,
+        setGlobalError,
+        setTempDelegations,
+        setTempAgents,
+        updateLoading,
+        updateState,
+    ]);
 
-    // Fetch agents when delegations change (Supervisor role)
     useEffect(() => {
         if (role !== ROLES.SUPERVISOR || tempDelegations.length === 0) {
             updateState({ availableAgents: [] });
@@ -505,8 +597,38 @@ const AssignmentsManagement: React.FC<AssignmentsManagementProps> = ({
                 const assignedAgents = await fetchWithCache(`agentsByUser_${selectedUser!.userID}`, () =>
                     getAgentsByUser(selectedUser!.userID)
                 );
-                updateState({ availableAgents: agents.flat().map((a) => a.agents).flat() });
-                setTempAgents(assignedAgents.agents);
+                const validAgents = agents
+                    .flat()
+                    .map((a) => a.agents)
+                    .flat()
+                    .filter((agent) => agent.agentID && typeof agent.agentID === "string")
+                    .map((agent) => ({
+                        agentID: agent.agentID,
+                        name: agent.name || "Unnamed Agent",
+                        lastname: agent.lastname || "",
+                        phone: agent.phone || "",
+                        email: agent.email || "",
+                        location: agent.location || "",
+                        delegationID: agent.delegationID || "",
+                    }));
+                // Check for duplicate agentIDs
+                const agentIdSet = new Set(validAgents.map((agent) => agent.agentID));
+                if (agentIdSet.size !== validAgents.length) {
+                    console.warn("Duplicate agentIDs detected:", validAgents);
+                }
+                const validAssignedAgents = assignedAgents.agents
+                    .filter((agent) => agent.agentID && typeof agent.agentID === "string")
+                    .map((agent) => ({
+                        agentID: agent.agentID,
+                        name: agent.name || "Unnamed Agent",
+                        lastname: agent.lastname || "",
+                        phone: agent.phone || "",
+                        email: agent.email || "",
+                        location: agent.location || "",
+                        delegationID: agent.delegationID || "",
+                    }));
+                updateState({ availableAgents: validAgents });
+                setTempAgents(validAssignedAgents);
             } catch {
                 setGlobalError("Failed to fetch agents.");
             } finally {
@@ -524,9 +646,22 @@ const AssignmentsManagement: React.FC<AssignmentsManagementProps> = ({
                 setPhoneError(null);
                 if (type === "agent") {
                     const agent = await fetchWithCache(`agentByPhone_${phone}`, () => getAgentByPhone(phone));
-                    if (agent) { // Check if agent is not null
+                    if (agent && agent.agentID) {
                         setTempAgents((prev) =>
-                            prev.some((a) => a.agentID === agent.agentID) ? prev : [...prev, agent]
+                            prev.some((a) => a.agentID === agent.agentID)
+                                ? prev
+                                : [
+                                    ...prev,
+                                    {
+                                        agentID: agent.agentID,
+                                        name: agent.name || "Unnamed Agent",
+                                        lastname: agent.lastname || "",
+                                        phone: agent.phone || "",
+                                        email: agent.email || "",
+                                        location: agent.location || "",
+                                        delegationID: agent.delegationID || "",
+                                    },
+                                ]
                         );
                     } else {
                         setPhoneError("Agent not found.");
@@ -538,8 +673,8 @@ const AssignmentsManagement: React.FC<AssignmentsManagementProps> = ({
                         regionalManager: ROLES.REGIONAL_MANAGER,
                         supervisor: ROLES.SUPERVISOR,
                     }[type];
-                    if (!user.Roles?.some((r) => r.name === roleCheck)) {
-                        setPhoneError("User does not have the required role.");
+                    if (!user.Roles?.some((r) => r.name === roleCheck) || !user.userID) {
+                        setPhoneError("User does not have the required role or missing ID.");
                         return;
                     }
                     const setter = {
@@ -547,12 +682,22 @@ const AssignmentsManagement: React.FC<AssignmentsManagementProps> = ({
                         regionalManager: setTempRegionalManagers,
                         supervisor: setTempSupervisors,
                     }[type];
+                    const userData: User = {
+                        userID: user.userID,
+                        firstname: user.firstname || "Unnamed",
+                        lastname: user.lastname || "",
+                        phone: user.phone || "",
+                        email: user.email || "",
+                        password: user.password || "",
+                        keycloakId: user.keycloakId || "",
+                        Roles: user.Roles || [],
+                    };
                     setter((prev) =>
                         type === "director" || type === "regionalManager"
-                            ? [user]
-                            : prev.some((u) => u.userID === user.userID)
+                            ? [userData]
+                            : prev.some((u) => u.userID === userData.userID)
                                 ? prev
-                                : [...prev, user]
+                                : [...prev, userData]
                     );
                 }
                 updateState({ [`${type}PhoneInput`]: "" });
@@ -565,16 +710,27 @@ const AssignmentsManagement: React.FC<AssignmentsManagementProps> = ({
     );
 
     const handleToggle = useCallback(
-        (setter: React.Dispatch<any>, item: any, key: string, multiple: boolean, revokeMessage: string) => {
+        (setter: React.Dispatch<React.SetStateAction<any[]>>, item: any, key: string, multiple: boolean, revokeMessage: string) => {
             setter((prev: any[]) => {
-                const itemKey = item[key];
-                const exists = prev.some((i: any) => i[key] === itemKey);
+                const itemKey = key === "agentID" ? `${item[key]}-${item.delegationID || "no-delegation"}` : item[key];
+                if (!itemKey) {
+                    console.warn(`Item missing ${key}:`, item);
+                    return prev;
+                }
+                const exists = prev.some((i: any) => {
+                    const iKey = key === "agentID" ? `${i[key]}-${i.delegationID || "no-delegation"}` : i[key];
+                    return iKey === itemKey;
+                });
                 if (exists) {
                     setShowConfirm({
                         message: revokeMessage,
                         onConfirm: async () => {
                             setShowConfirm(null);
-                            setter(prev.filter((i) => i[key] !== itemKey));
+                            const newSelected = prev.filter((i) => {
+                                const iKey = key === "agentID" ? `${i[key]}-${i.delegationID || "no-delegation"}` : i[key];
+                                return iKey !== itemKey;
+                            });
+                            setter(newSelected);
                             setHasUnsavedChanges(true);
                         },
                     });
@@ -655,7 +811,9 @@ const AssignmentsManagement: React.FC<AssignmentsManagementProps> = ({
                         setShowConfirm({
                             message: `Revoking regions will remove all assigned governorates and delegations. Apply cascade?`,
                             onConfirm: async (cascade) => {
-                                await revokeRegionsFromRegionalManager(selectedUser.userID, regionsToRevoke, { cascadeConfirmed: cascade });
+                                await revokeRegionsFromRegionalManager(selectedUser.userID, regionsToRevoke, {
+                                    cascadeConfirmed: cascade,
+                                });
                                 setShowConfirm(null);
                                 resolve();
                             },
@@ -663,7 +821,9 @@ const AssignmentsManagement: React.FC<AssignmentsManagementProps> = ({
                     });
                 }
 
-                const currentSupervisors = (await getSupervisorsByRegionalManager(selectedUser.userID)).map((s) => s.userID);
+                const currentSupervisors = (await getSupervisorsByRegionalManager(selectedUser.userID)).map(
+                    (s) => s.userID
+                );
                 const newSupervisors = tempSupervisors.map((s) => s.userID);
                 const supervisorsToAssign = newSupervisors.filter((id) => !currentSupervisors.includes(id));
                 const supervisorsToRevoke = currentSupervisors.filter((id) => !newSupervisors.includes(id));
@@ -761,7 +921,9 @@ const AssignmentsManagement: React.FC<AssignmentsManagementProps> = ({
                 const agentsToRevoke = currentAgents.filter((id) => !newAgents.includes(id));
 
                 await Promise.all([
-                    ...agentsToAssign.map((a) => assignSupervisorToAgent(a.agentID, selectedUser.userID, a.delegationID!)),
+                    ...agentsToAssign.map((a) =>
+                        assignSupervisorToAgent(a.agentID, selectedUser.userID, a.delegationID!)
+                    ),
                     ...agentsToRevoke.map((id) =>
                         new Promise<void>((resolve) => {
                             setShowConfirm({
@@ -789,7 +951,7 @@ const AssignmentsManagement: React.FC<AssignmentsManagementProps> = ({
             setUsers((prev) => prev.map((u) => (u.userID === selectedUser.userID ? updatedUser : u)));
             setSelectedUser(updatedUser);
             setHasUnsavedChanges(false);
-            cache.clear(); // Clear cache after saving to ensure fresh data
+            cache.clear();
         } catch {
             setGlobalError("Failed to save assignments.");
         } finally {
@@ -829,11 +991,19 @@ const AssignmentsManagement: React.FC<AssignmentsManagementProps> = ({
                 <div className="dropdown-body">
                     <div className="group-header">
                         {hasUnsavedChanges && selectedUser && (
-                            <button className="action-button" onClick={handleSaveAssignments} disabled={Object.values(loading).some((l) => l)}>
+                            <button
+                                className="action-button"
+                                onClick={handleSaveAssignments}
+                                disabled={Object.values(loading).some((l) => l)}
+                            >
                                 {Object.values(loading).some((l) => l) ? "Saving..." : "Save Assignments"}
                             </button>
                         )}
-                        {phoneError && <div className="error-message" style={{ color: "red" }}>{phoneError}</div>}
+                        {phoneError && (
+                            <div className="error-message" style={{ color: "red" }}>
+                                {phoneError}
+                            </div>
+                        )}
                     </div>
                     <>
                         {role === ROLES.DIRECTOR && (

@@ -1139,3 +1139,1221 @@
 {"level":"info","message":"Fetched supervisors for regional manager usr_yxi51_5CrROFSvgJzVea3 by user user_yutki8kak, IP: 192.168.1.11","timestamp":"2025-05-04T20:24:51.420Z"}
 {"level":"info","message":"Fetched users by role Supervisor by user user_yutki8kak, IP: 192.168.1.11","timestamp":"2025-05-04T20:24:51.425Z"}
 {"level":"info","message":"Fetched users by role Manager by user user_yutki8kak, IP: 192.168.1.11","timestamp":"2025-05-04T20:24:51.434Z"}
+{"level":"info","message":"Fetched regions for user usr_yxi51_5CrROFSvgJzVea3, IP: 192.168.1.11","timestamp":"2025-05-04T20:25:28.488Z"}
+{"level":"info","message":"Fetched director for regional manager usr_yxi51_5CrROFSvgJzVea3","timestamp":"2025-05-04T20:25:28.492Z"}
+{"level":"info","message":"Fetched director for regional manager usr_yxi51_5CrROFSvgJzVea3 by user user_yutki8kak, IP: 192.168.1.11","timestamp":"2025-05-04T20:25:28.493Z"}
+{"level":"info","message":"Fetched all regions by user user_yutki8kak, IP: 192.168.1.11","timestamp":"2025-05-04T20:25:28.496Z"}
+{"level":"info","message":"Fetched supervisors for regional manager usr_yxi51_5CrROFSvgJzVea3","timestamp":"2025-05-04T20:25:28.507Z"}
+{"level":"info","message":"Fetched supervisors for regional manager usr_yxi51_5CrROFSvgJzVea3 by user user_yutki8kak, IP: 192.168.1.11","timestamp":"2025-05-04T20:25:28.512Z"}
+{"level":"info","message":"Fetched users by role Manager by user user_yutki8kak, IP: 192.168.1.11","timestamp":"2025-05-04T20:25:28.522Z"}
+{"level":"info","message":"Fetched users by role Supervisor by user user_yutki8kak, IP: 192.168.1.11","timestamp":"2025-05-04T20:25:28.536Z"}
+{"level":"info","message":"Fetched director for regional manager usr_yxi51_5CrROFSvgJzVea3","timestamp":"2025-05-04T20:25:40.425Z"}
+{"level":"info","message":"Fetched director for regional manager usr_yxi51_5CrROFSvgJzVea3 by user user_yutki8kak, IP: 192.168.1.11","timestamp":"2025-05-04T20:25:40.426Z"}
+{"level":"info","message":"Fetched all regions by user user_yutki8kak, IP: 192.168.1.11","timestamp":"2025-05-04T20:25:40.429Z"}
+{"level":"info","message":"Fetched regions for user usr_yxi51_5CrROFSvgJzVea3, IP: 192.168.1.11","timestamp":"2025-05-04T20:25:40.433Z"}
+{"level":"info","message":"Fetched supervisors for regional manager usr_yxi51_5CrROFSvgJzVea3","timestamp":"2025-05-04T20:25:40.436Z"}
+{"level":"info","message":"Fetched supervisors for regional manager usr_yxi51_5CrROFSvgJzVea3 by user user_yutki8kak, IP: 192.168.1.11","timestamp":"2025-05-04T20:25:40.437Z"}
+{"level":"info","message":"Fetched users by role Manager by user user_yutki8kak, IP: 192.168.1.11","timestamp":"2025-05-04T20:25:40.446Z"}
+{"level":"info","message":"Fetched users by role Supervisor by user user_yutki8kak, IP: 192.168.1.11","timestamp":"2025-05-04T20:25:40.471Z"}
+{"level":"info","message":"Fetched notification rules by user: user_yutki8kak, IP: 192.168.1.11","timestamp":"2025-05-04T20:25:56.688Z"}
+{"level":"info","message":"User disconnected: superadmin@example.com","reason":"transport close","socketId":"Fz4Aqqn8ms_-X1VRAAAD","timestamp":"2025-05-04T20:25:57.578Z"}
+{"level":"info","message":"Client disconnected","socketId":"Fz4Aqqn8ms_-X1VRAAAD","timestamp":"2025-05-04T20:25:57.579Z"}
+{"level":"info","message":"Fetched roles for user user_yutki8kak by user_yutki8kak, IP: 192.168.1.11","timestamp":"2025-05-04T20:25:58.388Z"}
+{"level":"info","message":"Fetched roles for user user_yutki8kak by user_yutki8kak, IP: 192.168.1.11","timestamp":"2025-05-04T20:25:58.443Z"}
+{"email":"superadmin@example.com","level":"info","message":"WebSocket authentication successful","roles":"default-roles-traceflow, Super Admin","socketId":"kWOIYqmvucj7dutZAAAF","timestamp":"2025-05-04T20:25:58.621Z","userID":"user_yutki8kak"}
+{"level":"info","message":"User connected: superadmin@example.com","socketId":"kWOIYqmvucj7dutZAAAF","timestamp":"2025-05-04T20:25:58.627Z","userID":"user_yutki8kak"}
+{"level":"info","message":"Client connected","socketId":"kWOIYqmvucj7dutZAAAF","timestamp":"2025-05-04T20:25:58.628Z"}
+{"level":"info","message":"Fetched notification rules by user: user_yutki8kak, IP: 192.168.1.11","timestamp":"2025-05-04T20:25:58.682Z"}
+{"level":"info","message":"Fetched notifications for user: user_yutki8kak, IP: 192.168.1.11","timestamp":"2025-05-04T20:25:58.719Z"}
+{"level":"info","message":"Fetched all users by user user_yutki8kak, IP: 192.168.1.11","timestamp":"2025-05-04T20:25:58.908Z"}
+{"level":"info","message":"Fetched all roles by user user_yutki8kak, IP: 192.168.1.11","timestamp":"2025-05-04T20:25:58.972Z"}
+{"level":"info","message":"Fetched supervisors for user usr_yxi51_5CrROFSvgJzVea3","timestamp":"2025-05-04T20:26:00.874Z"}
+{"level":"info","message":"Fetched supervisors for user usr_yxi51_5CrROFSvgJzVea3 by user user_yutki8kak, IP: 192.168.1.11","timestamp":"2025-05-04T20:26:00.875Z"}
+{"level":"info","message":"Fetched regional managers for user usr_yxi51_5CrROFSvgJzVea3","timestamp":"2025-05-04T20:26:00.877Z"}
+{"level":"info","message":"Fetched regional managers for user usr_yxi51_5CrROFSvgJzVea3 by user user_yutki8kak, IP: 192.168.1.11","timestamp":"2025-05-04T20:26:00.878Z"}
+{"level":"info","message":"Fetched user usr_yxi51_5CrROFSvgJzVea3 by user user_yutki8kak, IP: 192.168.1.11","timestamp":"2025-05-04T20:26:01.232Z"}
+{"level":"info","message":"Fetched director for regional manager usr_yxi51_5CrROFSvgJzVea3","timestamp":"2025-05-04T20:26:01.912Z"}
+{"level":"info","message":"Fetched director for regional manager usr_yxi51_5CrROFSvgJzVea3 by user user_yutki8kak, IP: 192.168.1.11","timestamp":"2025-05-04T20:26:01.913Z"}
+{"level":"info","message":"Fetched regions for user usr_yxi51_5CrROFSvgJzVea3, IP: 192.168.1.11","timestamp":"2025-05-04T20:26:01.927Z"}
+{"level":"info","message":"Fetched supervisors for regional manager usr_yxi51_5CrROFSvgJzVea3","timestamp":"2025-05-04T20:26:01.930Z"}
+{"level":"info","message":"Fetched supervisors for regional manager usr_yxi51_5CrROFSvgJzVea3 by user user_yutki8kak, IP: 192.168.1.11","timestamp":"2025-05-04T20:26:01.932Z"}
+{"level":"info","message":"Fetched all regions by user user_yutki8kak, IP: 192.168.1.11","timestamp":"2025-05-04T20:26:01.941Z"}
+{"level":"info","message":"Fetched users by role Manager by user user_yutki8kak, IP: 192.168.1.11","timestamp":"2025-05-04T20:26:01.946Z"}
+{"level":"info","message":"Fetched users by role Supervisor by user user_yutki8kak, IP: 192.168.1.11","timestamp":"2025-05-04T20:26:01.954Z"}
+{"level":"info","message":"Fetched user usr_yxi51_5CrROFSvgJzVea3 by user user_yutki8kak, IP: 192.168.1.11","timestamp":"2025-05-04T20:30:22.669Z"}
+{"level":"info","message":"Fetched users by role Manager by user user_yutki8kak, IP: 192.168.1.11","timestamp":"2025-05-04T20:30:22.796Z"}
+{"level":"info","message":"Fetched all regions by user user_yutki8kak, IP: 192.168.1.11","timestamp":"2025-05-04T20:30:22.800Z"}
+{"level":"info","message":"Fetched director for regional manager usr_yxi51_5CrROFSvgJzVea3","timestamp":"2025-05-04T20:30:22.805Z"}
+{"level":"info","message":"Fetched director for regional manager usr_yxi51_5CrROFSvgJzVea3 by user user_yutki8kak, IP: 192.168.1.11","timestamp":"2025-05-04T20:30:22.808Z"}
+{"level":"info","message":"Fetched supervisors for regional manager usr_yxi51_5CrROFSvgJzVea3","timestamp":"2025-05-04T20:30:22.842Z"}
+{"level":"info","message":"Fetched supervisors for regional manager usr_yxi51_5CrROFSvgJzVea3 by user user_yutki8kak, IP: 192.168.1.11","timestamp":"2025-05-04T20:30:22.851Z"}
+{"level":"info","message":"Fetched regions for user usr_yxi51_5CrROFSvgJzVea3, IP: 192.168.1.11","timestamp":"2025-05-04T20:30:22.916Z"}
+{"level":"info","message":"Fetched users by role Supervisor by user user_yutki8kak, IP: 192.168.1.11","timestamp":"2025-05-04T20:30:22.934Z"}
+{"level":"info","message":"Fetched regional managers for user usr_U0PUIcVWIbvnRJLkdKyHJ","timestamp":"2025-05-04T20:30:29.910Z"}
+{"level":"info","message":"Fetched regional managers for user usr_U0PUIcVWIbvnRJLkdKyHJ by user user_yutki8kak, IP: 192.168.1.11","timestamp":"2025-05-04T20:30:29.911Z"}
+{"level":"info","message":"Fetched supervisors for user usr_U0PUIcVWIbvnRJLkdKyHJ","timestamp":"2025-05-04T20:30:29.915Z"}
+{"level":"info","message":"Fetched supervisors for user usr_U0PUIcVWIbvnRJLkdKyHJ by user user_yutki8kak, IP: 192.168.1.11","timestamp":"2025-05-04T20:30:29.916Z"}
+{"level":"info","message":"Fetched user usr_U0PUIcVWIbvnRJLkdKyHJ by user user_yutki8kak, IP: 192.168.1.11","timestamp":"2025-05-04T20:30:30.069Z"}
+{"level":"info","message":"Fetched regional manager for supervisor usr_U0PUIcVWIbvnRJLkdKyHJ","timestamp":"2025-05-04T20:30:30.635Z"}
+{"level":"info","message":"Fetched regional manager for supervisor usr_U0PUIcVWIbvnRJLkdKyHJ by user user_yutki8kak, IP: 192.168.1.11","timestamp":"2025-05-04T20:30:30.636Z"}
+{"level":"info","message":"Fetched users by role Regional Manager by user user_yutki8kak, IP: 192.168.1.11","timestamp":"2025-05-04T20:30:30.653Z"}
+{"level":"info","message":"Fetched supervisors for user usr_STFw7LF2yVA-iNBwAEelc","timestamp":"2025-05-04T20:30:38.987Z"}
+{"level":"info","message":"Fetched supervisors for user usr_STFw7LF2yVA-iNBwAEelc by user user_yutki8kak, IP: 192.168.1.11","timestamp":"2025-05-04T20:30:38.988Z"}
+{"level":"info","message":"Fetched regional managers for user usr_STFw7LF2yVA-iNBwAEelc","timestamp":"2025-05-04T20:30:38.996Z"}
+{"level":"info","message":"Fetched regional managers for user usr_STFw7LF2yVA-iNBwAEelc by user user_yutki8kak, IP: 192.168.1.11","timestamp":"2025-05-04T20:30:38.997Z"}
+{"level":"info","message":"Fetched user usr_STFw7LF2yVA-iNBwAEelc by user user_yutki8kak, IP: 192.168.1.11","timestamp":"2025-05-04T20:30:39.076Z"}
+{"level":"info","message":"Fetched regional managers for director usr_STFw7LF2yVA-iNBwAEelc","timestamp":"2025-05-04T20:30:39.912Z"}
+{"level":"info","message":"Fetched regional managers for director usr_STFw7LF2yVA-iNBwAEelc by user user_yutki8kak, IP: 192.168.1.11","timestamp":"2025-05-04T20:30:39.912Z"}
+{"level":"info","message":"Fetched users by role Regional Manager by user user_yutki8kak, IP: 192.168.1.11","timestamp":"2025-05-04T20:30:39.925Z"}
+{"level":"info","message":"Fetched regional managers for user usr_yxi51_5CrROFSvgJzVea3","timestamp":"2025-05-04T20:31:00.178Z"}
+{"level":"info","message":"Fetched regional managers for user usr_yxi51_5CrROFSvgJzVea3 by user user_yutki8kak, IP: 192.168.1.11","timestamp":"2025-05-04T20:31:00.179Z"}
+{"level":"info","message":"Fetched user usr_yxi51_5CrROFSvgJzVea3 by user user_yutki8kak, IP: 192.168.1.11","timestamp":"2025-05-04T20:31:00.272Z"}
+{"level":"info","message":"Fetched users by role Manager by user user_yutki8kak, IP: 192.168.1.11","timestamp":"2025-05-04T20:31:01.578Z"}
+{"level":"info","message":"Fetched director for regional manager usr_yxi51_5CrROFSvgJzVea3","timestamp":"2025-05-04T20:31:01.581Z"}
+{"level":"info","message":"Fetched director for regional manager usr_yxi51_5CrROFSvgJzVea3 by user user_yutki8kak, IP: 192.168.1.11","timestamp":"2025-05-04T20:31:01.582Z"}
+{"level":"info","message":"Fetched all regions by user user_yutki8kak, IP: 192.168.1.11","timestamp":"2025-05-04T20:31:01.609Z"}
+{"level":"info","message":"Fetched supervisors for regional manager usr_yxi51_5CrROFSvgJzVea3","timestamp":"2025-05-04T20:31:01.621Z"}
+{"level":"info","message":"Fetched supervisors for regional manager usr_yxi51_5CrROFSvgJzVea3 by user user_yutki8kak, IP: 192.168.1.11","timestamp":"2025-05-04T20:31:01.622Z"}
+{"level":"info","message":"Fetched users by role Supervisor by user user_yutki8kak, IP: 192.168.1.11","timestamp":"2025-05-04T20:31:01.627Z"}
+{"level":"info","message":"Fetched regions for user usr_yxi51_5CrROFSvgJzVea3, IP: 192.168.1.11","timestamp":"2025-05-04T20:31:01.636Z"}
+{"cookies":["refreshToken=eyJhbGciOiJIUzUxMiIsInR5cCIgOiAiSldUIiwia2lkIiA6ICJmMmYxN2Y4NC1hMGQ0LTRlMTQtOTkzNy1mOTVlYzJjNGVkMjUifQ.eyJleHAiOjE3NDYzOTM0MDgsImlhdCI6MTc0NjM4OTgwOCwianRpIjoiZDY3MjhmM2UtMDQ5ZS00NjdmLWEyNzQtZTQ4ZjVlODEwYWY5IiwiaXNzIjoiaHR0cDovL2xvY2FsaG9zdDo4MDgwL3JlYWxtcy9UcmFjZUZsb3ciLCJhdWQiOiJodHRwOi8vbG9jYWxob3N0OjgwODAvcmVhbG1zL1RyYWNlRmxvdyIsInN1YiI6ImJkMzQ4ZjQxLTEwZDUtNGZjOS1iOWFlLWFjMWYwYzNmMjRiZCIsInR5cCI6IlJlZnJlc2giLCJhenAiOiJ0cmFjZWZsb3ctYmFja2VuZCIsInNpZCI6ImRlMjRmMDQ2LTkxYjYtNDU1ZS1hYjI3LWQ0M2M2ZTcyMjczYyIsInNjb3BlIjoib3BlbmlkIHJvbGVzIGJhc2ljIGFjciB0b2tlbi1leGNoYW5nZSBlbWFpbCBwcm9maWxlIHdlYi1vcmlnaW5zIHNlcnZpY2VfYWNjb3VudCJ9.QMflmoEAqjCgVf1SKuhmCXRY9bKL_yYrXgmlbAjB9HrTkEtcgnw4mE8kT79VLO00DqDy9Od_uKXVaSyKg2e_rQ","adminDashboardView=users"],"isWebSocket":false,"level":"warn","message":"No accessToken cookie found","timestamp":"2025-05-04T20:35:06.982Z"}
+{"level":"info","message":"Initiating token refresh","timestamp":"2025-05-04T20:35:07.035Z"}
+{"accessTokenExpiresIn":900,"level":"info","message":"Tokens refreshed successfully","refreshTokenRotatedAt":"2025-05-04T20:35:07.140Z","timestamp":"2025-05-04T20:35:07.140Z"}
+{"level":"info","message":"Refresh token successful","timestamp":"2025-05-04T20:35:07.142Z"}
+{"level":"info","message":"User disconnected: superadmin@example.com","reason":"client namespace disconnect","socketId":"kWOIYqmvucj7dutZAAAF","timestamp":"2025-05-04T20:35:07.155Z"}
+{"level":"info","message":"Client disconnected","socketId":"kWOIYqmvucj7dutZAAAF","timestamp":"2025-05-04T20:35:07.157Z"}
+{"level":"info","message":"Fetched notification rules by user: user_yutki8kak, IP: 192.168.1.11","timestamp":"2025-05-04T20:35:07.239Z"}
+{"email":"superadmin@example.com","level":"info","message":"WebSocket authentication successful","roles":"default-roles-traceflow, Super Admin","socketId":"EnfXpo25_mmZDuiYAAAH","timestamp":"2025-05-04T20:35:07.266Z","userID":"user_yutki8kak"}
+{"level":"info","message":"User connected: superadmin@example.com","socketId":"EnfXpo25_mmZDuiYAAAH","timestamp":"2025-05-04T20:35:07.270Z","userID":"user_yutki8kak"}
+{"level":"info","message":"Client connected","socketId":"EnfXpo25_mmZDuiYAAAH","timestamp":"2025-05-04T20:35:07.275Z"}
+{"level":"info","message":"Fetched notifications for user: user_yutki8kak, IP: 192.168.1.11","timestamp":"2025-05-04T20:35:07.328Z"}
+{"level":"info","message":"User disconnected: superadmin@example.com","reason":"transport close","socketId":"EnfXpo25_mmZDuiYAAAH","timestamp":"2025-05-04T20:35:10.615Z"}
+{"level":"info","message":"Client disconnected","socketId":"EnfXpo25_mmZDuiYAAAH","timestamp":"2025-05-04T20:35:10.616Z"}
+{"level":"info","message":"Login successful for superadmin@example.com","timestamp":"2025-05-04T20:35:13.070Z"}
+{"level":"info","message":"Login successful for superadmin@example.com","timestamp":"2025-05-04T20:35:13.241Z"}
+{"email":"superadmin@example.com","level":"info","message":"WebSocket authentication successful","roles":"default-roles-traceflow, Super Admin","socketId":"V3dZN6v7vGUwnjgyAAAJ","timestamp":"2025-05-04T20:35:13.319Z","userID":"user_yutki8kak"}
+{"level":"info","message":"User connected: superadmin@example.com","socketId":"V3dZN6v7vGUwnjgyAAAJ","timestamp":"2025-05-04T20:35:13.327Z","userID":"user_yutki8kak"}
+{"level":"info","message":"Client connected","socketId":"V3dZN6v7vGUwnjgyAAAJ","timestamp":"2025-05-04T20:35:13.330Z"}
+{"level":"info","message":"Fetched roles for user user_yutki8kak by user_yutki8kak, IP: 192.168.1.11","timestamp":"2025-05-04T20:35:13.367Z"}
+{"level":"info","message":"Fetched roles for user user_yutki8kak by user_yutki8kak, IP: 192.168.1.11","timestamp":"2025-05-04T20:35:13.443Z"}
+{"level":"info","message":"Fetched all users by user user_yutki8kak, IP: 192.168.1.11","timestamp":"2025-05-04T20:35:14.091Z"}
+{"level":"info","message":"Fetched all roles by user user_yutki8kak, IP: 192.168.1.11","timestamp":"2025-05-04T20:35:14.129Z"}
+{"level":"info","message":"Fetched notification rules by user: user_yutki8kak, IP: 192.168.1.11","timestamp":"2025-05-04T20:35:14.204Z"}
+{"level":"info","message":"Fetched regional managers for user usr_yxi51_5CrROFSvgJzVea3","timestamp":"2025-05-04T20:35:19.263Z"}
+{"level":"info","message":"Fetched regional managers for user usr_yxi51_5CrROFSvgJzVea3 by user user_yutki8kak, IP: 192.168.1.11","timestamp":"2025-05-04T20:35:19.264Z"}
+{"level":"info","message":"Fetched supervisors for user usr_yxi51_5CrROFSvgJzVea3","timestamp":"2025-05-04T20:35:19.266Z"}
+{"level":"info","message":"Fetched supervisors for user usr_yxi51_5CrROFSvgJzVea3 by user user_yutki8kak, IP: 192.168.1.11","timestamp":"2025-05-04T20:35:19.267Z"}
+{"level":"info","message":"Fetched user usr_yxi51_5CrROFSvgJzVea3 by user user_yutki8kak, IP: 192.168.1.11","timestamp":"2025-05-04T20:35:19.606Z"}
+{"level":"info","message":"Fetched director for regional manager usr_yxi51_5CrROFSvgJzVea3","timestamp":"2025-05-04T20:35:20.517Z"}
+{"level":"info","message":"Fetched director for regional manager usr_yxi51_5CrROFSvgJzVea3 by user user_yutki8kak, IP: 192.168.1.11","timestamp":"2025-05-04T20:35:20.518Z"}
+{"level":"info","message":"Fetched users by role Manager by user user_yutki8kak, IP: 192.168.1.11","timestamp":"2025-05-04T20:35:20.523Z"}
+{"level":"info","message":"Fetched all regions by user user_yutki8kak, IP: 192.168.1.11","timestamp":"2025-05-04T20:35:20.529Z"}
+{"level":"info","message":"Fetched regions for user usr_yxi51_5CrROFSvgJzVea3, IP: 192.168.1.11","timestamp":"2025-05-04T20:35:20.542Z"}
+{"level":"info","message":"Fetched supervisors for regional manager usr_yxi51_5CrROFSvgJzVea3","timestamp":"2025-05-04T20:35:20.565Z"}
+{"level":"info","message":"Fetched supervisors for regional manager usr_yxi51_5CrROFSvgJzVea3 by user user_yutki8kak, IP: 192.168.1.11","timestamp":"2025-05-04T20:35:20.566Z"}
+{"level":"info","message":"Fetched users by role Supervisor by user user_yutki8kak, IP: 192.168.1.11","timestamp":"2025-05-04T20:35:20.572Z"}
+{"level":"info","message":"Fetched director for regional manager usr_yxi51_5CrROFSvgJzVea3","timestamp":"2025-05-04T20:36:11.814Z"}
+{"level":"info","message":"Fetched director for regional manager usr_yxi51_5CrROFSvgJzVea3 by user user_yutki8kak, IP: 192.168.1.11","timestamp":"2025-05-04T20:36:11.815Z"}
+{"level":"info","message":"Assigned director usr_1spdDBpY-FD_inP-MsXNV to regional manager usr_yxi51_5CrROFSvgJzVea3 by user user_yutki8kak","timestamp":"2025-05-04T20:36:11.849Z"}
+{"level":"info","message":"No active rules found for event: user:director_assigned","timestamp":"2025-05-04T20:36:11.854Z"}
+{"enabled":true,"event":"user:director_assigned","level":"info","message":"Created default notification rule","ruleID":"rule_7TVDTx_vNdxRuFlNydnA_","timestamp":"2025-05-04T20:36:11.862Z"}
+{"level":"info","message":"Notification stored Notification for user:director_assigned","notificationID":"notif_8iwbE6Txsy6O_RzcHv4_K","timestamp":"2025-05-04T20:36:11.890Z","userID":"user_yutki8kak"}
+{"level":"info","message":"Notification status updated","notificationID":"notif_8iwbE6Txsy6O_RzcHv4_K","status":"sent","timestamp":"2025-05-04T20:36:11.899Z"}
+{"event":"user:director_assigned","level":"info","message":"Triggered notifications","recipientCount":1,"timestamp":"2025-05-04T20:36:11.901Z"}
+{"level":"info","message":"Assigned director usr_1spdDBpY-FD_inP-MsXNV to regional manager usr_yxi51_5CrROFSvgJzVea3 by user user_yutki8kak, IP: 192.168.1.11","timestamp":"2025-05-04T20:36:11.903Z"}
+{"level":"info","message":"Fetched regions for user usr_yxi51_5CrROFSvgJzVea3, IP: 192.168.1.11","timestamp":"2025-05-04T20:36:11.938Z"}
+{"level":"info","message":"Fetched supervisors for regional manager usr_yxi51_5CrROFSvgJzVea3","timestamp":"2025-05-04T20:36:11.983Z"}
+{"level":"info","message":"Fetched supervisors for regional manager usr_yxi51_5CrROFSvgJzVea3 by user user_yutki8kak, IP: 192.168.1.11","timestamp":"2025-05-04T20:36:11.984Z"}
+{"level":"info","message":"Fetched all regions by user user_yutki8kak, IP: 192.168.1.11","timestamp":"2025-05-04T20:36:12.109Z"}
+{"level":"info","message":"Fetched regions for user usr_yxi51_5CrROFSvgJzVea3, IP: 192.168.1.11","timestamp":"2025-05-04T20:36:12.115Z"}
+{"level":"info","message":"Fetched supervisors for regional manager usr_yxi51_5CrROFSvgJzVea3","timestamp":"2025-05-04T20:36:12.121Z"}
+{"level":"info","message":"Fetched supervisors for regional manager usr_yxi51_5CrROFSvgJzVea3 by user user_yutki8kak, IP: 192.168.1.11","timestamp":"2025-05-04T20:36:12.124Z"}
+{"level":"info","message":"Fetched director for regional manager usr_yxi51_5CrROFSvgJzVea3","timestamp":"2025-05-04T20:36:12.134Z"}
+{"level":"info","message":"Fetched director for regional manager usr_yxi51_5CrROFSvgJzVea3 by user user_yutki8kak, IP: 192.168.1.11","timestamp":"2025-05-04T20:36:12.136Z"}
+{"level":"info","message":"Fetched users by role Manager by user user_yutki8kak, IP: 192.168.1.11","timestamp":"2025-05-04T20:36:12.143Z"}
+{"level":"info","message":"Fetched users by role Supervisor by user user_yutki8kak, IP: 192.168.1.11","timestamp":"2025-05-04T20:36:12.152Z"}
+{"level":"info","message":"User disconnected: superadmin@example.com","reason":"transport close","socketId":"V3dZN6v7vGUwnjgyAAAJ","timestamp":"2025-05-04T20:36:16.717Z"}
+{"level":"info","message":"Client disconnected","socketId":"V3dZN6v7vGUwnjgyAAAJ","timestamp":"2025-05-04T20:36:16.718Z"}
+{"level":"info","message":"Fetched roles for user user_yutki8kak by user_yutki8kak, IP: 192.168.1.11","timestamp":"2025-05-04T20:36:17.481Z"}
+{"level":"info","message":"Fetched roles for user user_yutki8kak by user_yutki8kak, IP: 192.168.1.11","timestamp":"2025-05-04T20:36:17.530Z"}
+{"email":"superadmin@example.com","level":"info","message":"WebSocket authentication successful","roles":"default-roles-traceflow, Super Admin","socketId":"dp6krKSiDzpFCcQYAAAL","timestamp":"2025-05-04T20:36:17.676Z","userID":"user_yutki8kak"}
+{"level":"info","message":"User connected: superadmin@example.com","socketId":"dp6krKSiDzpFCcQYAAAL","timestamp":"2025-05-04T20:36:17.679Z","userID":"user_yutki8kak"}
+{"level":"info","message":"Client connected","socketId":"dp6krKSiDzpFCcQYAAAL","timestamp":"2025-05-04T20:36:17.680Z"}
+{"level":"info","message":"Fetched notification rules by user: user_yutki8kak, IP: 192.168.1.11","timestamp":"2025-05-04T20:36:17.723Z"}
+{"level":"info","message":"Fetched notifications for user: user_yutki8kak, IP: 192.168.1.11","timestamp":"2025-05-04T20:36:17.761Z"}
+{"level":"info","message":"Fetched all users by user user_yutki8kak, IP: 192.168.1.11","timestamp":"2025-05-04T20:36:17.940Z"}
+{"level":"info","message":"Fetched all roles by user user_yutki8kak, IP: 192.168.1.11","timestamp":"2025-05-04T20:36:17.998Z"}
+{"level":"info","message":"Fetched supervisors for user usr_MvbNkZAOeXbvFICet8rRn","timestamp":"2025-05-04T20:36:18.860Z"}
+{"level":"info","message":"Fetched supervisors for user usr_MvbNkZAOeXbvFICet8rRn by user user_yutki8kak, IP: 192.168.1.11","timestamp":"2025-05-04T20:36:18.860Z"}
+{"level":"info","message":"Fetched regional managers for user usr_MvbNkZAOeXbvFICet8rRn","timestamp":"2025-05-04T20:36:18.863Z"}
+{"level":"info","message":"Fetched regional managers for user usr_MvbNkZAOeXbvFICet8rRn by user user_yutki8kak, IP: 192.168.1.11","timestamp":"2025-05-04T20:36:18.864Z"}
+{"level":"info","message":"Fetched user usr_MvbNkZAOeXbvFICet8rRn by user user_yutki8kak, IP: 192.168.1.11","timestamp":"2025-05-04T20:36:19.221Z"}
+{"level":"info","message":"Fetched director for regional manager usr_MvbNkZAOeXbvFICet8rRn","timestamp":"2025-05-04T20:36:20.044Z"}
+{"level":"info","message":"Fetched director for regional manager usr_MvbNkZAOeXbvFICet8rRn by user user_yutki8kak, IP: 192.168.1.11","timestamp":"2025-05-04T20:36:20.044Z"}
+{"level":"info","message":"Fetched users by role Manager by user user_yutki8kak, IP: 192.168.1.11","timestamp":"2025-05-04T20:36:20.049Z"}
+{"level":"info","message":"Fetched all regions by user user_yutki8kak, IP: 192.168.1.11","timestamp":"2025-05-04T20:36:20.056Z"}
+{"level":"info","message":"Fetched regions for user usr_MvbNkZAOeXbvFICet8rRn, IP: 192.168.1.11","timestamp":"2025-05-04T20:36:20.062Z"}
+{"level":"info","message":"Fetched users by role Supervisor by user user_yutki8kak, IP: 192.168.1.11","timestamp":"2025-05-04T20:36:20.069Z"}
+{"level":"info","message":"Fetched supervisors for regional manager usr_MvbNkZAOeXbvFICet8rRn","timestamp":"2025-05-04T20:36:20.082Z"}
+{"level":"info","message":"Fetched supervisors for regional manager usr_MvbNkZAOeXbvFICet8rRn by user user_yutki8kak, IP: 192.168.1.11","timestamp":"2025-05-04T20:36:20.083Z"}
+{"level":"info","message":"Fetched regional managers for user usr_1spdDBpY-FD_inP-MsXNV","timestamp":"2025-05-04T20:36:24.205Z"}
+{"level":"info","message":"Fetched regional managers for user usr_1spdDBpY-FD_inP-MsXNV by user user_yutki8kak, IP: 192.168.1.11","timestamp":"2025-05-04T20:36:24.206Z"}
+{"level":"info","message":"Fetched supervisors for user usr_1spdDBpY-FD_inP-MsXNV","timestamp":"2025-05-04T20:36:24.208Z"}
+{"level":"info","message":"Fetched supervisors for user usr_1spdDBpY-FD_inP-MsXNV by user user_yutki8kak, IP: 192.168.1.11","timestamp":"2025-05-04T20:36:24.208Z"}
+{"level":"info","message":"Fetched user usr_1spdDBpY-FD_inP-MsXNV by user user_yutki8kak, IP: 192.168.1.11","timestamp":"2025-05-04T20:36:24.301Z"}
+{"level":"info","message":"Fetched regional managers for director usr_1spdDBpY-FD_inP-MsXNV","timestamp":"2025-05-04T20:36:25.061Z"}
+{"level":"info","message":"Fetched regional managers for director usr_1spdDBpY-FD_inP-MsXNV by user user_yutki8kak, IP: 192.168.1.11","timestamp":"2025-05-04T20:36:25.063Z"}
+{"level":"info","message":"Fetched users by role Regional Manager by user user_yutki8kak, IP: 192.168.1.11","timestamp":"2025-05-04T20:36:25.066Z"}
+{"level":"info","message":"Fetched supervisors for user usr_yxi51_5CrROFSvgJzVea3","timestamp":"2025-05-04T20:36:30.063Z"}
+{"level":"info","message":"Fetched supervisors for user usr_yxi51_5CrROFSvgJzVea3 by user user_yutki8kak, IP: 192.168.1.11","timestamp":"2025-05-04T20:36:30.064Z"}
+{"level":"info","message":"Fetched regional managers for user usr_yxi51_5CrROFSvgJzVea3","timestamp":"2025-05-04T20:36:30.067Z"}
+{"level":"info","message":"Fetched regional managers for user usr_yxi51_5CrROFSvgJzVea3 by user user_yutki8kak, IP: 192.168.1.11","timestamp":"2025-05-04T20:36:30.067Z"}
+{"level":"info","message":"Fetched user usr_yxi51_5CrROFSvgJzVea3 by user user_yutki8kak, IP: 192.168.1.11","timestamp":"2025-05-04T20:36:30.139Z"}
+{"level":"info","message":"Fetched director for regional manager usr_yxi51_5CrROFSvgJzVea3","timestamp":"2025-05-04T20:36:30.756Z"}
+{"level":"info","message":"Fetched director for regional manager usr_yxi51_5CrROFSvgJzVea3 by user user_yutki8kak, IP: 192.168.1.11","timestamp":"2025-05-04T20:36:30.757Z"}
+{"level":"info","message":"Fetched all regions by user user_yutki8kak, IP: 192.168.1.11","timestamp":"2025-05-04T20:36:30.762Z"}
+{"level":"info","message":"Fetched users by role Manager by user user_yutki8kak, IP: 192.168.1.11","timestamp":"2025-05-04T20:36:30.765Z"}
+{"level":"info","message":"Fetched regions for user usr_yxi51_5CrROFSvgJzVea3, IP: 192.168.1.11","timestamp":"2025-05-04T20:36:30.770Z"}
+{"level":"info","message":"Fetched supervisors for regional manager usr_yxi51_5CrROFSvgJzVea3","timestamp":"2025-05-04T20:36:30.777Z"}
+{"level":"info","message":"Fetched supervisors for regional manager usr_yxi51_5CrROFSvgJzVea3 by user user_yutki8kak, IP: 192.168.1.11","timestamp":"2025-05-04T20:36:30.778Z"}
+{"level":"info","message":"Fetched users by role Supervisor by user user_yutki8kak, IP: 192.168.1.11","timestamp":"2025-05-04T20:36:30.785Z"}
+{"level":"info","message":"Fetched regional managers for user usr_MvbNkZAOeXbvFICet8rRn","timestamp":"2025-05-04T20:36:36.871Z"}
+{"level":"info","message":"Fetched regional managers for user usr_MvbNkZAOeXbvFICet8rRn by user user_yutki8kak, IP: 192.168.1.11","timestamp":"2025-05-04T20:36:36.872Z"}
+{"level":"info","message":"Fetched user usr_MvbNkZAOeXbvFICet8rRn by user user_yutki8kak, IP: 192.168.1.11","timestamp":"2025-05-04T20:36:36.945Z"}
+{"level":"info","message":"Fetched users by role Manager by user user_yutki8kak, IP: 192.168.1.11","timestamp":"2025-05-04T20:36:37.558Z"}
+{"level":"info","message":"Fetched director for regional manager usr_MvbNkZAOeXbvFICet8rRn","timestamp":"2025-05-04T20:36:37.561Z"}
+{"level":"info","message":"Fetched director for regional manager usr_MvbNkZAOeXbvFICet8rRn by user user_yutki8kak, IP: 192.168.1.11","timestamp":"2025-05-04T20:36:37.562Z"}
+{"level":"info","message":"Fetched all regions by user user_yutki8kak, IP: 192.168.1.11","timestamp":"2025-05-04T20:36:37.570Z"}
+{"level":"info","message":"Fetched supervisors for regional manager usr_MvbNkZAOeXbvFICet8rRn","timestamp":"2025-05-04T20:36:37.577Z"}
+{"level":"info","message":"Fetched supervisors for regional manager usr_MvbNkZAOeXbvFICet8rRn by user user_yutki8kak, IP: 192.168.1.11","timestamp":"2025-05-04T20:36:37.578Z"}
+{"level":"info","message":"Fetched regions for user usr_MvbNkZAOeXbvFICet8rRn, IP: 192.168.1.11","timestamp":"2025-05-04T20:36:37.581Z"}
+{"level":"info","message":"Fetched users by role Supervisor by user user_yutki8kak, IP: 192.168.1.11","timestamp":"2025-05-04T20:36:37.583Z"}
+{"level":"info","message":"Fetched regional managers for user usr_1spdDBpY-FD_inP-MsXNV","timestamp":"2025-05-04T20:36:40.342Z"}
+{"level":"info","message":"Fetched regional managers for user usr_1spdDBpY-FD_inP-MsXNV by user user_yutki8kak, IP: 192.168.1.11","timestamp":"2025-05-04T20:36:40.343Z"}
+{"level":"info","message":"Fetched user usr_1spdDBpY-FD_inP-MsXNV by user user_yutki8kak, IP: 192.168.1.11","timestamp":"2025-05-04T20:36:40.438Z"}
+{"level":"info","message":"Fetched regional managers for director usr_1spdDBpY-FD_inP-MsXNV","timestamp":"2025-05-04T20:36:41.138Z"}
+{"level":"info","message":"Fetched regional managers for director usr_1spdDBpY-FD_inP-MsXNV by user user_yutki8kak, IP: 192.168.1.11","timestamp":"2025-05-04T20:36:41.138Z"}
+{"level":"info","message":"Fetched users by role Regional Manager by user user_yutki8kak, IP: 192.168.1.11","timestamp":"2025-05-04T20:36:41.144Z"}
+{"level":"info","message":"Fetched regional managers for user usr_yxi51_5CrROFSvgJzVea3","timestamp":"2025-05-04T20:36:44.599Z"}
+{"level":"info","message":"Fetched regional managers for user usr_yxi51_5CrROFSvgJzVea3 by user user_yutki8kak, IP: 192.168.1.11","timestamp":"2025-05-04T20:36:44.600Z"}
+{"level":"info","message":"Fetched user usr_yxi51_5CrROFSvgJzVea3 by user user_yutki8kak, IP: 192.168.1.11","timestamp":"2025-05-04T20:36:44.692Z"}
+{"level":"info","message":"Fetched users by role Manager by user user_yutki8kak, IP: 192.168.1.11","timestamp":"2025-05-04T20:36:46.046Z"}
+{"level":"info","message":"Fetched director for regional manager usr_yxi51_5CrROFSvgJzVea3","timestamp":"2025-05-04T20:36:46.052Z"}
+{"level":"info","message":"Fetched director for regional manager usr_yxi51_5CrROFSvgJzVea3 by user user_yutki8kak, IP: 192.168.1.11","timestamp":"2025-05-04T20:36:46.061Z"}
+{"level":"info","message":"Fetched regions for user usr_yxi51_5CrROFSvgJzVea3, IP: 192.168.1.11","timestamp":"2025-05-04T20:36:46.079Z"}
+{"level":"info","message":"Fetched all regions by user user_yutki8kak, IP: 192.168.1.11","timestamp":"2025-05-04T20:36:46.105Z"}
+{"level":"info","message":"Fetched supervisors for regional manager usr_yxi51_5CrROFSvgJzVea3","timestamp":"2025-05-04T20:36:46.140Z"}
+{"level":"info","message":"Fetched supervisors for regional manager usr_yxi51_5CrROFSvgJzVea3 by user user_yutki8kak, IP: 192.168.1.11","timestamp":"2025-05-04T20:36:46.188Z"}
+{"level":"info","message":"Fetched users by role Supervisor by user user_yutki8kak, IP: 192.168.1.11","timestamp":"2025-05-04T20:36:46.217Z"}
+{"level":"info","message":"Fetched regional managers for user usr_MvbNkZAOeXbvFICet8rRn","timestamp":"2025-05-04T20:36:49.081Z"}
+{"level":"info","message":"Fetched regional managers for user usr_MvbNkZAOeXbvFICet8rRn by user user_yutki8kak, IP: 192.168.1.11","timestamp":"2025-05-04T20:36:49.081Z"}
+{"level":"info","message":"Fetched user usr_MvbNkZAOeXbvFICet8rRn by user user_yutki8kak, IP: 192.168.1.11","timestamp":"2025-05-04T20:36:49.174Z"}
+{"level":"info","message":"Fetched director for regional manager usr_MvbNkZAOeXbvFICet8rRn","timestamp":"2025-05-04T20:36:49.911Z"}
+{"level":"info","message":"Fetched director for regional manager usr_MvbNkZAOeXbvFICet8rRn by user user_yutki8kak, IP: 192.168.1.11","timestamp":"2025-05-04T20:36:49.912Z"}
+{"level":"info","message":"Fetched users by role Manager by user user_yutki8kak, IP: 192.168.1.11","timestamp":"2025-05-04T20:36:49.916Z"}
+{"level":"info","message":"Fetched all regions by user user_yutki8kak, IP: 192.168.1.11","timestamp":"2025-05-04T20:36:49.918Z"}
+{"level":"info","message":"Fetched regions for user usr_MvbNkZAOeXbvFICet8rRn, IP: 192.168.1.11","timestamp":"2025-05-04T20:36:49.923Z"}
+{"level":"info","message":"Fetched supervisors for regional manager usr_MvbNkZAOeXbvFICet8rRn","timestamp":"2025-05-04T20:36:49.939Z"}
+{"level":"info","message":"Fetched supervisors for regional manager usr_MvbNkZAOeXbvFICet8rRn by user user_yutki8kak, IP: 192.168.1.11","timestamp":"2025-05-04T20:36:49.940Z"}
+{"level":"info","message":"Fetched users by role Supervisor by user user_yutki8kak, IP: 192.168.1.11","timestamp":"2025-05-04T20:36:49.953Z"}
+{"level":"info","message":"Fetched regional managers for user usr_yxi51_5CrROFSvgJzVea3","timestamp":"2025-05-04T20:37:04.391Z"}
+{"level":"info","message":"Fetched regional managers for user usr_yxi51_5CrROFSvgJzVea3 by user user_yutki8kak, IP: 192.168.1.11","timestamp":"2025-05-04T20:37:04.391Z"}
+{"level":"info","message":"Fetched user usr_yxi51_5CrROFSvgJzVea3 by user user_yutki8kak, IP: 192.168.1.11","timestamp":"2025-05-04T20:37:04.523Z"}
+{"level":"info","message":"Fetched users by role Manager by user user_yutki8kak, IP: 192.168.1.11","timestamp":"2025-05-04T20:37:05.180Z"}
+{"level":"info","message":"Fetched all regions by user user_yutki8kak, IP: 192.168.1.11","timestamp":"2025-05-04T20:37:05.185Z"}
+{"level":"info","message":"Fetched director for regional manager usr_yxi51_5CrROFSvgJzVea3","timestamp":"2025-05-04T20:37:05.189Z"}
+{"level":"info","message":"Fetched director for regional manager usr_yxi51_5CrROFSvgJzVea3 by user user_yutki8kak, IP: 192.168.1.11","timestamp":"2025-05-04T20:37:05.193Z"}
+{"level":"info","message":"Fetched regions for user usr_yxi51_5CrROFSvgJzVea3, IP: 192.168.1.11","timestamp":"2025-05-04T20:37:05.202Z"}
+{"level":"info","message":"Fetched supervisors for regional manager usr_yxi51_5CrROFSvgJzVea3","timestamp":"2025-05-04T20:37:05.215Z"}
+{"level":"info","message":"Fetched supervisors for regional manager usr_yxi51_5CrROFSvgJzVea3 by user user_yutki8kak, IP: 192.168.1.11","timestamp":"2025-05-04T20:37:05.218Z"}
+{"level":"info","message":"Fetched users by role Supervisor by user user_yutki8kak, IP: 192.168.1.11","timestamp":"2025-05-04T20:37:05.227Z"}
+{"level":"info","message":"Fetched director for regional manager usr_yxi51_5CrROFSvgJzVea3","timestamp":"2025-05-04T20:37:16.950Z"}
+{"level":"info","message":"Fetched director for regional manager usr_yxi51_5CrROFSvgJzVea3 by user user_yutki8kak, IP: 192.168.1.11","timestamp":"2025-05-04T20:37:16.950Z"}
+{"level":"info","message":"Fetched regions for user usr_yxi51_5CrROFSvgJzVea3, IP: 192.168.1.11","timestamp":"2025-05-04T20:37:16.968Z"}
+{"level":"info","message":"Fetched user usr_yxi51_5CrROFSvgJzVea3 by user user_yutki8kak, IP: 192.168.1.11","timestamp":"2025-05-04T20:37:18.283Z"}
+{"level":"info","message":"Fetched user usr_yxi51_5CrROFSvgJzVea3 by user user_yutki8kak, IP: 192.168.1.11","timestamp":"2025-05-04T20:37:18.329Z"}
+{"level":"info","message":"Fetched director for regional manager usr_yxi51_5CrROFSvgJzVea3","timestamp":"2025-05-04T20:37:18.393Z"}
+{"level":"info","message":"Fetched director for regional manager usr_yxi51_5CrROFSvgJzVea3 by user user_yutki8kak, IP: 192.168.1.11","timestamp":"2025-05-04T20:37:18.395Z"}
+{"level":"info","message":"Fetched supervisors for regional manager usr_yxi51_5CrROFSvgJzVea3","timestamp":"2025-05-04T20:37:18.401Z"}
+{"level":"info","message":"Fetched supervisors for regional manager usr_yxi51_5CrROFSvgJzVea3 by user user_yutki8kak, IP: 192.168.1.11","timestamp":"2025-05-04T20:37:18.409Z"}
+{"level":"info","message":"Fetched users by role Manager by user user_yutki8kak, IP: 192.168.1.11","timestamp":"2025-05-04T20:37:18.421Z"}
+{"level":"info","message":"Fetched all regions by user user_yutki8kak, IP: 192.168.1.11","timestamp":"2025-05-04T20:37:18.437Z"}
+{"level":"info","message":"Fetched regions for user usr_yxi51_5CrROFSvgJzVea3, IP: 192.168.1.11","timestamp":"2025-05-04T20:37:18.447Z"}
+{"level":"info","message":"Fetched users by role Supervisor by user user_yutki8kak, IP: 192.168.1.11","timestamp":"2025-05-04T20:37:18.471Z"}
+{"level":"info","message":"User disconnected: superadmin@example.com","reason":"transport close","socketId":"dp6krKSiDzpFCcQYAAAL","timestamp":"2025-05-04T20:37:26.591Z"}
+{"level":"info","message":"Client disconnected","socketId":"dp6krKSiDzpFCcQYAAAL","timestamp":"2025-05-04T20:37:26.592Z"}
+{"level":"info","message":"Fetched roles for user user_yutki8kak by user_yutki8kak, IP: 192.168.1.11","timestamp":"2025-05-04T20:37:27.424Z"}
+{"level":"info","message":"Fetched roles for user user_yutki8kak by user_yutki8kak, IP: 192.168.1.11","timestamp":"2025-05-04T20:37:27.496Z"}
+{"email":"superadmin@example.com","level":"info","message":"WebSocket authentication successful","roles":"default-roles-traceflow, Super Admin","socketId":"SsBQyU0aIc8KMvYKAAAN","timestamp":"2025-05-04T20:37:27.786Z","userID":"user_yutki8kak"}
+{"level":"info","message":"User connected: superadmin@example.com","socketId":"SsBQyU0aIc8KMvYKAAAN","timestamp":"2025-05-04T20:37:27.790Z","userID":"user_yutki8kak"}
+{"level":"info","message":"Client connected","socketId":"SsBQyU0aIc8KMvYKAAAN","timestamp":"2025-05-04T20:37:27.791Z"}
+{"level":"info","message":"Fetched notification rules by user: user_yutki8kak, IP: 192.168.1.11","timestamp":"2025-05-04T20:37:27.915Z"}
+{"level":"info","message":"Fetched all users by user user_yutki8kak, IP: 192.168.1.11","timestamp":"2025-05-04T20:37:27.978Z"}
+{"level":"info","message":"Fetched notifications for user: user_yutki8kak, IP: 192.168.1.11","timestamp":"2025-05-04T20:37:27.991Z"}
+{"level":"info","message":"Fetched all roles by user user_yutki8kak, IP: 192.168.1.11","timestamp":"2025-05-04T20:37:28.061Z"}
+{"level":"info","message":"Fetched supervisors for user usr_yxi51_5CrROFSvgJzVea3","timestamp":"2025-05-04T20:37:31.452Z"}
+{"level":"info","message":"Fetched supervisors for user usr_yxi51_5CrROFSvgJzVea3 by user user_yutki8kak, IP: 192.168.1.11","timestamp":"2025-05-04T20:37:31.453Z"}
+{"level":"info","message":"Fetched regional managers for user usr_yxi51_5CrROFSvgJzVea3","timestamp":"2025-05-04T20:37:31.454Z"}
+{"level":"info","message":"Fetched regional managers for user usr_yxi51_5CrROFSvgJzVea3 by user user_yutki8kak, IP: 192.168.1.11","timestamp":"2025-05-04T20:37:31.455Z"}
+{"level":"info","message":"Fetched user usr_yxi51_5CrROFSvgJzVea3 by user user_yutki8kak, IP: 192.168.1.11","timestamp":"2025-05-04T20:37:31.798Z"}
+{"level":"info","message":"Fetched director for regional manager usr_yxi51_5CrROFSvgJzVea3","timestamp":"2025-05-04T20:37:32.428Z"}
+{"level":"info","message":"Fetched director for regional manager usr_yxi51_5CrROFSvgJzVea3 by user user_yutki8kak, IP: 192.168.1.11","timestamp":"2025-05-04T20:37:32.429Z"}
+{"level":"info","message":"Fetched supervisors for regional manager usr_yxi51_5CrROFSvgJzVea3","timestamp":"2025-05-04T20:37:32.442Z"}
+{"level":"info","message":"Fetched supervisors for regional manager usr_yxi51_5CrROFSvgJzVea3 by user user_yutki8kak, IP: 192.168.1.11","timestamp":"2025-05-04T20:37:32.443Z"}
+{"level":"info","message":"Fetched regions for user usr_yxi51_5CrROFSvgJzVea3, IP: 192.168.1.11","timestamp":"2025-05-04T20:37:32.449Z"}
+{"level":"info","message":"Fetched all regions by user user_yutki8kak, IP: 192.168.1.11","timestamp":"2025-05-04T20:37:32.455Z"}
+{"level":"info","message":"Fetched users by role Manager by user user_yutki8kak, IP: 192.168.1.11","timestamp":"2025-05-04T20:37:32.460Z"}
+{"level":"info","message":"Fetched users by role Supervisor by user user_yutki8kak, IP: 192.168.1.11","timestamp":"2025-05-04T20:37:32.470Z"}
+{"level":"info","message":"Fetched director for regional manager usr_yxi51_5CrROFSvgJzVea3","timestamp":"2025-05-04T20:37:39.418Z"}
+{"level":"info","message":"Fetched director for regional manager usr_yxi51_5CrROFSvgJzVea3 by user user_yutki8kak, IP: 192.168.1.11","timestamp":"2025-05-04T20:37:39.419Z"}
+{"level":"info","message":"Fetched regions for user usr_yxi51_5CrROFSvgJzVea3, IP: 192.168.1.11","timestamp":"2025-05-04T20:37:39.436Z"}
+{"level":"info","message":"Fetched user usr_yxi51_5CrROFSvgJzVea3 by user user_yutki8kak, IP: 192.168.1.11","timestamp":"2025-05-04T20:37:40.749Z"}
+{"level":"info","message":"Fetched user usr_yxi51_5CrROFSvgJzVea3 by user user_yutki8kak, IP: 192.168.1.11","timestamp":"2025-05-04T20:37:40.771Z"}
+{"level":"info","message":"Fetched users by role Manager by user user_yutki8kak, IP: 192.168.1.11","timestamp":"2025-05-04T20:37:40.843Z"}
+{"level":"info","message":"Fetched director for regional manager usr_yxi51_5CrROFSvgJzVea3","timestamp":"2025-05-04T20:37:40.876Z"}
+{"level":"info","message":"Fetched director for regional manager usr_yxi51_5CrROFSvgJzVea3 by user user_yutki8kak, IP: 192.168.1.11","timestamp":"2025-05-04T20:37:40.878Z"}
+{"level":"info","message":"Fetched regions for user usr_yxi51_5CrROFSvgJzVea3, IP: 192.168.1.11","timestamp":"2025-05-04T20:37:40.883Z"}
+{"level":"info","message":"Fetched users by role Supervisor by user user_yutki8kak, IP: 192.168.1.11","timestamp":"2025-05-04T20:37:40.891Z"}
+{"level":"info","message":"Fetched supervisors for regional manager usr_yxi51_5CrROFSvgJzVea3","timestamp":"2025-05-04T20:37:40.901Z"}
+{"level":"info","message":"Fetched supervisors for regional manager usr_yxi51_5CrROFSvgJzVea3 by user user_yutki8kak, IP: 192.168.1.11","timestamp":"2025-05-04T20:37:40.918Z"}
+{"level":"info","message":"Fetched all regions by user user_yutki8kak, IP: 192.168.1.11","timestamp":"2025-05-04T20:37:40.934Z"}
+{"level":"info","message":"Fetched director for regional manager usr_yxi51_5CrROFSvgJzVea3","timestamp":"2025-05-04T20:46:19.470Z"}
+{"level":"info","message":"Fetched director for regional manager usr_yxi51_5CrROFSvgJzVea3 by user user_yutki8kak, IP: 192.168.1.11","timestamp":"2025-05-04T20:46:19.471Z"}
+{"level":"info","message":"Fetched supervisors for regional manager usr_yxi51_5CrROFSvgJzVea3","timestamp":"2025-05-04T20:46:19.475Z"}
+{"level":"info","message":"Fetched supervisors for regional manager usr_yxi51_5CrROFSvgJzVea3 by user user_yutki8kak, IP: 192.168.1.11","timestamp":"2025-05-04T20:46:19.476Z"}
+{"level":"info","message":"Fetched regions for user usr_yxi51_5CrROFSvgJzVea3, IP: 192.168.1.11","timestamp":"2025-05-04T20:46:19.480Z"}
+{"level":"info","message":"Fetched all regions by user user_yutki8kak, IP: 192.168.1.11","timestamp":"2025-05-04T20:46:19.486Z"}
+{"level":"info","message":"Fetched users by role Manager by user user_yutki8kak, IP: 192.168.1.11","timestamp":"2025-05-04T20:46:19.493Z"}
+{"level":"info","message":"Fetched users by role Supervisor by user user_yutki8kak, IP: 192.168.1.11","timestamp":"2025-05-04T20:46:19.512Z"}
+{"level":"info","message":"Fetched regions for user usr_yxi51_5CrROFSvgJzVea3, IP: 192.168.1.11","timestamp":"2025-05-04T20:49:19.649Z"}
+{"level":"info","message":"Fetched director for regional manager usr_yxi51_5CrROFSvgJzVea3","timestamp":"2025-05-04T20:49:19.657Z"}
+{"level":"info","message":"Fetched director for regional manager usr_yxi51_5CrROFSvgJzVea3 by user user_yutki8kak, IP: 192.168.1.11","timestamp":"2025-05-04T20:49:19.659Z"}
+{"level":"info","message":"Fetched supervisors for regional manager usr_yxi51_5CrROFSvgJzVea3","timestamp":"2025-05-04T20:49:19.663Z"}
+{"level":"info","message":"Fetched supervisors for regional manager usr_yxi51_5CrROFSvgJzVea3 by user user_yutki8kak, IP: 192.168.1.11","timestamp":"2025-05-04T20:49:19.664Z"}
+{"level":"info","message":"Fetched all regions by user user_yutki8kak, IP: 192.168.1.11","timestamp":"2025-05-04T20:49:19.671Z"}
+{"level":"info","message":"Fetched users by role Manager by user user_yutki8kak, IP: 192.168.1.11","timestamp":"2025-05-04T20:49:19.681Z"}
+{"level":"info","message":"Fetched users by role Supervisor by user user_yutki8kak, IP: 192.168.1.11","timestamp":"2025-05-04T20:49:19.702Z"}
+{"level":"info","message":"Fetched notification rules by user: user_yutki8kak, IP: 192.168.1.11","timestamp":"2025-05-04T20:49:52.150Z"}
+{"level":"info","message":"User disconnected: superadmin@example.com","reason":"transport close","socketId":"SsBQyU0aIc8KMvYKAAAN","timestamp":"2025-05-04T20:49:52.885Z"}
+{"level":"info","message":"Client disconnected","socketId":"SsBQyU0aIc8KMvYKAAAN","timestamp":"2025-05-04T20:49:52.885Z"}
+{"level":"info","message":"Fetched roles for user user_yutki8kak by user_yutki8kak, IP: 192.168.1.11","timestamp":"2025-05-04T20:49:53.551Z"}
+{"level":"info","message":"Fetched roles for user user_yutki8kak by user_yutki8kak, IP: 192.168.1.11","timestamp":"2025-05-04T20:49:53.636Z"}
+{"email":"superadmin@example.com","level":"info","message":"WebSocket authentication successful","roles":"default-roles-traceflow, Super Admin","socketId":"2hecNcQ-mO_p2D3LAAAP","timestamp":"2025-05-04T20:49:53.798Z","userID":"user_yutki8kak"}
+{"level":"info","message":"User connected: superadmin@example.com","socketId":"2hecNcQ-mO_p2D3LAAAP","timestamp":"2025-05-04T20:49:53.800Z","userID":"user_yutki8kak"}
+{"level":"info","message":"Client connected","socketId":"2hecNcQ-mO_p2D3LAAAP","timestamp":"2025-05-04T20:49:53.801Z"}
+{"level":"info","message":"Fetched notification rules by user: user_yutki8kak, IP: 192.168.1.11","timestamp":"2025-05-04T20:49:53.872Z"}
+{"level":"info","message":"Fetched notifications for user: user_yutki8kak, IP: 192.168.1.11","timestamp":"2025-05-04T20:49:53.909Z"}
+{"level":"info","message":"Fetched all users by user user_yutki8kak, IP: 192.168.1.11","timestamp":"2025-05-04T20:49:54.093Z"}
+{"level":"info","message":"Fetched all roles by user user_yutki8kak, IP: 192.168.1.11","timestamp":"2025-05-04T20:49:54.190Z"}
+{"level":"info","message":"Fetched supervisors for user usr_yxi51_5CrROFSvgJzVea3","timestamp":"2025-05-04T20:49:57.656Z"}
+{"level":"info","message":"Fetched supervisors for user usr_yxi51_5CrROFSvgJzVea3 by user user_yutki8kak, IP: 192.168.1.11","timestamp":"2025-05-04T20:49:57.657Z"}
+{"level":"info","message":"Fetched regional managers for user usr_yxi51_5CrROFSvgJzVea3","timestamp":"2025-05-04T20:49:57.659Z"}
+{"level":"info","message":"Fetched regional managers for user usr_yxi51_5CrROFSvgJzVea3 by user user_yutki8kak, IP: 192.168.1.11","timestamp":"2025-05-04T20:49:57.660Z"}
+{"level":"info","message":"Fetched user usr_yxi51_5CrROFSvgJzVea3 by user user_yutki8kak, IP: 192.168.1.11","timestamp":"2025-05-04T20:49:58.035Z"}
+{"level":"info","message":"Fetched director for regional manager usr_yxi51_5CrROFSvgJzVea3","timestamp":"2025-05-04T20:49:58.599Z"}
+{"level":"info","message":"Fetched director for regional manager usr_yxi51_5CrROFSvgJzVea3 by user user_yutki8kak, IP: 192.168.1.11","timestamp":"2025-05-04T20:49:58.600Z"}
+{"level":"info","message":"Fetched users by role Manager by user user_yutki8kak, IP: 192.168.1.11","timestamp":"2025-05-04T20:49:58.608Z"}
+{"level":"info","message":"Fetched regions for user usr_yxi51_5CrROFSvgJzVea3, IP: 192.168.1.11","timestamp":"2025-05-04T20:49:58.616Z"}
+{"level":"info","message":"Fetched all regions by user user_yutki8kak, IP: 192.168.1.11","timestamp":"2025-05-04T20:49:58.622Z"}
+{"level":"info","message":"Fetched users by role Supervisor by user user_yutki8kak, IP: 192.168.1.11","timestamp":"2025-05-04T20:49:58.648Z"}
+{"level":"info","message":"Fetched supervisors for regional manager usr_yxi51_5CrROFSvgJzVea3","timestamp":"2025-05-04T20:49:58.655Z"}
+{"level":"info","message":"Fetched supervisors for regional manager usr_yxi51_5CrROFSvgJzVea3 by user user_yutki8kak, IP: 192.168.1.11","timestamp":"2025-05-04T20:49:58.656Z"}
+{"level":"info","message":"Fetched director for regional manager usr_yxi51_5CrROFSvgJzVea3","timestamp":"2025-05-04T20:50:07.932Z"}
+{"level":"info","message":"Fetched director for regional manager usr_yxi51_5CrROFSvgJzVea3 by user user_yutki8kak, IP: 192.168.1.11","timestamp":"2025-05-04T20:50:07.933Z"}
+{"level":"info","message":"Assigned director usr_STFw7LF2yVA-iNBwAEelc to regional manager usr_yxi51_5CrROFSvgJzVea3 by user user_yutki8kak","timestamp":"2025-05-04T20:50:07.960Z"}
+{"level":"info","message":"Notification stored Notification for user:director_assigned","notificationID":"notif_Fe05QkxutJikecUSFQFDT","timestamp":"2025-05-04T20:50:07.971Z","userID":"user_yutki8kak"}
+{"level":"info","message":"Notification status updated","notificationID":"notif_Fe05QkxutJikecUSFQFDT","status":"sent","timestamp":"2025-05-04T20:50:07.976Z"}
+{"event":"user:director_assigned","level":"info","message":"Triggered notifications","recipientCount":1,"timestamp":"2025-05-04T20:50:07.978Z"}
+{"level":"info","message":"Assigned director usr_STFw7LF2yVA-iNBwAEelc to regional manager usr_yxi51_5CrROFSvgJzVea3 by user user_yutki8kak, IP: 192.168.1.11","timestamp":"2025-05-04T20:50:07.980Z"}
+{"level":"info","message":"Fetched regions for user usr_yxi51_5CrROFSvgJzVea3, IP: 192.168.1.11","timestamp":"2025-05-04T20:50:08.005Z"}
+{"level":"info","message":"Fetched user usr_yxi51_5CrROFSvgJzVea3 by user user_yutki8kak, IP: 192.168.1.11","timestamp":"2025-05-04T20:50:09.296Z"}
+{"level":"info","message":"Fetched user usr_yxi51_5CrROFSvgJzVea3 by user user_yutki8kak, IP: 192.168.1.11","timestamp":"2025-05-04T20:50:09.312Z"}
+{"level":"info","message":"Fetched users by role Manager by user user_yutki8kak, IP: 192.168.1.11","timestamp":"2025-05-04T20:50:09.359Z"}
+{"level":"info","message":"Fetched regions for user usr_yxi51_5CrROFSvgJzVea3, IP: 192.168.1.11","timestamp":"2025-05-04T20:50:09.373Z"}
+{"level":"info","message":"Fetched director for regional manager usr_yxi51_5CrROFSvgJzVea3","timestamp":"2025-05-04T20:50:09.382Z"}
+{"level":"info","message":"Fetched director for regional manager usr_yxi51_5CrROFSvgJzVea3 by user user_yutki8kak, IP: 192.168.1.11","timestamp":"2025-05-04T20:50:09.383Z"}
+{"level":"info","message":"Fetched all regions by user user_yutki8kak, IP: 192.168.1.11","timestamp":"2025-05-04T20:50:09.389Z"}
+{"level":"info","message":"Fetched supervisors for regional manager usr_yxi51_5CrROFSvgJzVea3","timestamp":"2025-05-04T20:50:09.413Z"}
+{"level":"info","message":"Fetched supervisors for regional manager usr_yxi51_5CrROFSvgJzVea3 by user user_yutki8kak, IP: 192.168.1.11","timestamp":"2025-05-04T20:50:09.422Z"}
+{"level":"info","message":"Fetched users by role Supervisor by user user_yutki8kak, IP: 192.168.1.11","timestamp":"2025-05-04T20:50:09.452Z"}
+{"level":"info","message":"Fetched regions for user usr_yxi51_5CrROFSvgJzVea3, IP: 192.168.1.11","timestamp":"2025-05-04T20:50:09.476Z"}
+{"level":"info","message":"Fetched director for regional manager usr_yxi51_5CrROFSvgJzVea3","timestamp":"2025-05-04T20:50:09.479Z"}
+{"level":"info","message":"Fetched director for regional manager usr_yxi51_5CrROFSvgJzVea3 by user user_yutki8kak, IP: 192.168.1.11","timestamp":"2025-05-04T20:50:09.481Z"}
+{"level":"info","message":"Fetched users by role Manager by user user_yutki8kak, IP: 192.168.1.11","timestamp":"2025-05-04T20:50:09.500Z"}
+{"level":"info","message":"Fetched all regions by user user_yutki8kak, IP: 192.168.1.11","timestamp":"2025-05-04T20:50:09.506Z"}
+{"level":"info","message":"Fetched supervisors for regional manager usr_yxi51_5CrROFSvgJzVea3","timestamp":"2025-05-04T20:50:09.514Z"}
+{"level":"info","message":"Fetched supervisors for regional manager usr_yxi51_5CrROFSvgJzVea3 by user user_yutki8kak, IP: 192.168.1.11","timestamp":"2025-05-04T20:50:09.515Z"}
+{"level":"info","message":"Fetched users by role Supervisor by user user_yutki8kak, IP: 192.168.1.11","timestamp":"2025-05-04T20:50:09.526Z"}
+{"cookies":["adminDashboardView=users","refreshToken=eyJhbGciOiJIUzUxMiIsInR5cCIgOiAiSldUIiwia2lkIiA6ICJmMmYxN2Y4NC1hMGQ0LTRlMTQtOTkzNy1mOTVlYzJjNGVkMjUifQ.eyJleHAiOjE3NDYzOTQ1MTMsImlhdCI6MTc0NjM5MDkxMywianRpIjoiOWM5NDNiZjEtYjJmZi00N2JjLTk5YzgtNTRkYjQyZTliNWMyIiwiaXNzIjoiaHR0cDovL2xvY2FsaG9zdDo4MDgwL3JlYWxtcy9UcmFjZUZsb3ciLCJhdWQiOiJodHRwOi8vbG9jYWxob3N0OjgwODAvcmVhbG1zL1RyYWNlRmxvdyIsInN1YiI6ImJkMzQ4ZjQxLTEwZDUtNGZjOS1iOWFlLWFjMWYwYzNmMjRiZCIsInR5cCI6IlJlZnJlc2giLCJhenAiOiJ0cmFjZWZsb3ctYmFja2VuZCIsInNpZCI6ImVhY2FkZTJkLTQ2ZjktNDY0NS04OWFmLWViNTlhMjFiMTQ3MSIsInNjb3BlIjoib3BlbmlkIHJvbGVzIGJhc2ljIGFjciB0b2tlbi1leGNoYW5nZSBlbWFpbCBwcm9maWxlIHdlYi1vcmlnaW5zIHNlcnZpY2VfYWNjb3VudCJ9.diCWpWQTMKDc0SLYFCRVUCOtnKwGISmAcJQSqh9eXq5znjv0t-ZuMKozIcFnYYcAH30wSv6l8pVwZ0ZgwYdI1w"],"isWebSocket":false,"level":"warn","message":"No accessToken cookie found","timestamp":"2025-05-04T20:50:47.679Z"}
+{"cookies":["adminDashboardView=users","refreshToken=eyJhbGciOiJIUzUxMiIsInR5cCIgOiAiSldUIiwia2lkIiA6ICJmMmYxN2Y4NC1hMGQ0LTRlMTQtOTkzNy1mOTVlYzJjNGVkMjUifQ.eyJleHAiOjE3NDYzOTQ1MTMsImlhdCI6MTc0NjM5MDkxMywianRpIjoiOWM5NDNiZjEtYjJmZi00N2JjLTk5YzgtNTRkYjQyZTliNWMyIiwiaXNzIjoiaHR0cDovL2xvY2FsaG9zdDo4MDgwL3JlYWxtcy9UcmFjZUZsb3ciLCJhdWQiOiJodHRwOi8vbG9jYWxob3N0OjgwODAvcmVhbG1zL1RyYWNlRmxvdyIsInN1YiI6ImJkMzQ4ZjQxLTEwZDUtNGZjOS1iOWFlLWFjMWYwYzNmMjRiZCIsInR5cCI6IlJlZnJlc2giLCJhenAiOiJ0cmFjZWZsb3ctYmFja2VuZCIsInNpZCI6ImVhY2FkZTJkLTQ2ZjktNDY0NS04OWFmLWViNTlhMjFiMTQ3MSIsInNjb3BlIjoib3BlbmlkIHJvbGVzIGJhc2ljIGFjciB0b2tlbi1leGNoYW5nZSBlbWFpbCBwcm9maWxlIHdlYi1vcmlnaW5zIHNlcnZpY2VfYWNjb3VudCJ9.diCWpWQTMKDc0SLYFCRVUCOtnKwGISmAcJQSqh9eXq5znjv0t-ZuMKozIcFnYYcAH30wSv6l8pVwZ0ZgwYdI1w"],"isWebSocket":false,"level":"warn","message":"No accessToken cookie found","timestamp":"2025-05-04T20:50:47.685Z"}
+{"cookies":["adminDashboardView=users","refreshToken=eyJhbGciOiJIUzUxMiIsInR5cCIgOiAiSldUIiwia2lkIiA6ICJmMmYxN2Y4NC1hMGQ0LTRlMTQtOTkzNy1mOTVlYzJjNGVkMjUifQ.eyJleHAiOjE3NDYzOTQ1MTMsImlhdCI6MTc0NjM5MDkxMywianRpIjoiOWM5NDNiZjEtYjJmZi00N2JjLTk5YzgtNTRkYjQyZTliNWMyIiwiaXNzIjoiaHR0cDovL2xvY2FsaG9zdDo4MDgwL3JlYWxtcy9UcmFjZUZsb3ciLCJhdWQiOiJodHRwOi8vbG9jYWxob3N0OjgwODAvcmVhbG1zL1RyYWNlRmxvdyIsInN1YiI6ImJkMzQ4ZjQxLTEwZDUtNGZjOS1iOWFlLWFjMWYwYzNmMjRiZCIsInR5cCI6IlJlZnJlc2giLCJhenAiOiJ0cmFjZWZsb3ctYmFja2VuZCIsInNpZCI6ImVhY2FkZTJkLTQ2ZjktNDY0NS04OWFmLWViNTlhMjFiMTQ3MSIsInNjb3BlIjoib3BlbmlkIHJvbGVzIGJhc2ljIGFjciB0b2tlbi1leGNoYW5nZSBlbWFpbCBwcm9maWxlIHdlYi1vcmlnaW5zIHNlcnZpY2VfYWNjb3VudCJ9.diCWpWQTMKDc0SLYFCRVUCOtnKwGISmAcJQSqh9eXq5znjv0t-ZuMKozIcFnYYcAH30wSv6l8pVwZ0ZgwYdI1w"],"isWebSocket":false,"level":"warn","message":"No accessToken cookie found","timestamp":"2025-05-04T20:50:47.691Z"}
+{"cookies":["adminDashboardView=users","refreshToken=eyJhbGciOiJIUzUxMiIsInR5cCIgOiAiSldUIiwia2lkIiA6ICJmMmYxN2Y4NC1hMGQ0LTRlMTQtOTkzNy1mOTVlYzJjNGVkMjUifQ.eyJleHAiOjE3NDYzOTQ1MTMsImlhdCI6MTc0NjM5MDkxMywianRpIjoiOWM5NDNiZjEtYjJmZi00N2JjLTk5YzgtNTRkYjQyZTliNWMyIiwiaXNzIjoiaHR0cDovL2xvY2FsaG9zdDo4MDgwL3JlYWxtcy9UcmFjZUZsb3ciLCJhdWQiOiJodHRwOi8vbG9jYWxob3N0OjgwODAvcmVhbG1zL1RyYWNlRmxvdyIsInN1YiI6ImJkMzQ4ZjQxLTEwZDUtNGZjOS1iOWFlLWFjMWYwYzNmMjRiZCIsInR5cCI6IlJlZnJlc2giLCJhenAiOiJ0cmFjZWZsb3ctYmFja2VuZCIsInNpZCI6ImVhY2FkZTJkLTQ2ZjktNDY0NS04OWFmLWViNTlhMjFiMTQ3MSIsInNjb3BlIjoib3BlbmlkIHJvbGVzIGJhc2ljIGFjciB0b2tlbi1leGNoYW5nZSBlbWFpbCBwcm9maWxlIHdlYi1vcmlnaW5zIHNlcnZpY2VfYWNjb3VudCJ9.diCWpWQTMKDc0SLYFCRVUCOtnKwGISmAcJQSqh9eXq5znjv0t-ZuMKozIcFnYYcAH30wSv6l8pVwZ0ZgwYdI1w"],"isWebSocket":false,"level":"warn","message":"No accessToken cookie found","timestamp":"2025-05-04T20:50:47.728Z"}
+{"cookies":["adminDashboardView=users","refreshToken=eyJhbGciOiJIUzUxMiIsInR5cCIgOiAiSldUIiwia2lkIiA6ICJmMmYxN2Y4NC1hMGQ0LTRlMTQtOTkzNy1mOTVlYzJjNGVkMjUifQ.eyJleHAiOjE3NDYzOTQ1MTMsImlhdCI6MTc0NjM5MDkxMywianRpIjoiOWM5NDNiZjEtYjJmZi00N2JjLTk5YzgtNTRkYjQyZTliNWMyIiwiaXNzIjoiaHR0cDovL2xvY2FsaG9zdDo4MDgwL3JlYWxtcy9UcmFjZUZsb3ciLCJhdWQiOiJodHRwOi8vbG9jYWxob3N0OjgwODAvcmVhbG1zL1RyYWNlRmxvdyIsInN1YiI6ImJkMzQ4ZjQxLTEwZDUtNGZjOS1iOWFlLWFjMWYwYzNmMjRiZCIsInR5cCI6IlJlZnJlc2giLCJhenAiOiJ0cmFjZWZsb3ctYmFja2VuZCIsInNpZCI6ImVhY2FkZTJkLTQ2ZjktNDY0NS04OWFmLWViNTlhMjFiMTQ3MSIsInNjb3BlIjoib3BlbmlkIHJvbGVzIGJhc2ljIGFjciB0b2tlbi1leGNoYW5nZSBlbWFpbCBwcm9maWxlIHdlYi1vcmlnaW5zIHNlcnZpY2VfYWNjb3VudCJ9.diCWpWQTMKDc0SLYFCRVUCOtnKwGISmAcJQSqh9eXq5znjv0t-ZuMKozIcFnYYcAH30wSv6l8pVwZ0ZgwYdI1w"],"isWebSocket":false,"level":"warn","message":"No accessToken cookie found","timestamp":"2025-05-04T20:50:47.738Z"}
+{"cookies":["adminDashboardView=users","refreshToken=eyJhbGciOiJIUzUxMiIsInR5cCIgOiAiSldUIiwia2lkIiA6ICJmMmYxN2Y4NC1hMGQ0LTRlMTQtOTkzNy1mOTVlYzJjNGVkMjUifQ.eyJleHAiOjE3NDYzOTQ1MTMsImlhdCI6MTc0NjM5MDkxMywianRpIjoiOWM5NDNiZjEtYjJmZi00N2JjLTk5YzgtNTRkYjQyZTliNWMyIiwiaXNzIjoiaHR0cDovL2xvY2FsaG9zdDo4MDgwL3JlYWxtcy9UcmFjZUZsb3ciLCJhdWQiOiJodHRwOi8vbG9jYWxob3N0OjgwODAvcmVhbG1zL1RyYWNlRmxvdyIsInN1YiI6ImJkMzQ4ZjQxLTEwZDUtNGZjOS1iOWFlLWFjMWYwYzNmMjRiZCIsInR5cCI6IlJlZnJlc2giLCJhenAiOiJ0cmFjZWZsb3ctYmFja2VuZCIsInNpZCI6ImVhY2FkZTJkLTQ2ZjktNDY0NS04OWFmLWViNTlhMjFiMTQ3MSIsInNjb3BlIjoib3BlbmlkIHJvbGVzIGJhc2ljIGFjciB0b2tlbi1leGNoYW5nZSBlbWFpbCBwcm9maWxlIHdlYi1vcmlnaW5zIHNlcnZpY2VfYWNjb3VudCJ9.diCWpWQTMKDc0SLYFCRVUCOtnKwGISmAcJQSqh9eXq5znjv0t-ZuMKozIcFnYYcAH30wSv6l8pVwZ0ZgwYdI1w"],"isWebSocket":false,"level":"warn","message":"No accessToken cookie found","timestamp":"2025-05-04T20:50:47.743Z"}
+{"cookies":["adminDashboardView=users","refreshToken=eyJhbGciOiJIUzUxMiIsInR5cCIgOiAiSldUIiwia2lkIiA6ICJmMmYxN2Y4NC1hMGQ0LTRlMTQtOTkzNy1mOTVlYzJjNGVkMjUifQ.eyJleHAiOjE3NDYzOTQ1MTMsImlhdCI6MTc0NjM5MDkxMywianRpIjoiOWM5NDNiZjEtYjJmZi00N2JjLTk5YzgtNTRkYjQyZTliNWMyIiwiaXNzIjoiaHR0cDovL2xvY2FsaG9zdDo4MDgwL3JlYWxtcy9UcmFjZUZsb3ciLCJhdWQiOiJodHRwOi8vbG9jYWxob3N0OjgwODAvcmVhbG1zL1RyYWNlRmxvdyIsInN1YiI6ImJkMzQ4ZjQxLTEwZDUtNGZjOS1iOWFlLWFjMWYwYzNmMjRiZCIsInR5cCI6IlJlZnJlc2giLCJhenAiOiJ0cmFjZWZsb3ctYmFja2VuZCIsInNpZCI6ImVhY2FkZTJkLTQ2ZjktNDY0NS04OWFmLWViNTlhMjFiMTQ3MSIsInNjb3BlIjoib3BlbmlkIHJvbGVzIGJhc2ljIGFjciB0b2tlbi1leGNoYW5nZSBlbWFpbCBwcm9maWxlIHdlYi1vcmlnaW5zIHNlcnZpY2VfYWNjb3VudCJ9.diCWpWQTMKDc0SLYFCRVUCOtnKwGISmAcJQSqh9eXq5znjv0t-ZuMKozIcFnYYcAH30wSv6l8pVwZ0ZgwYdI1w"],"isWebSocket":false,"level":"warn","message":"No accessToken cookie found","timestamp":"2025-05-04T20:50:47.747Z"}
+{"level":"info","message":"Initiating token refresh","timestamp":"2025-05-04T20:50:47.752Z"}
+{"level":"info","message":"Initiating token refresh","timestamp":"2025-05-04T20:50:47.759Z"}
+{"level":"info","message":"Initiating token refresh","timestamp":"2025-05-04T20:50:47.768Z"}
+{"level":"info","message":"Initiating token refresh","timestamp":"2025-05-04T20:50:47.775Z"}
+{"level":"info","message":"Initiating token refresh","timestamp":"2025-05-04T20:50:47.784Z"}
+{"level":"info","message":"Initiating token refresh","timestamp":"2025-05-04T20:50:47.791Z"}
+{"accessTokenExpiresIn":900,"level":"info","message":"Tokens refreshed successfully","refreshTokenRotatedAt":"2025-05-04T20:50:47.842Z","timestamp":"2025-05-04T20:50:47.842Z"}
+{"level":"info","message":"Refresh token successful","timestamp":"2025-05-04T20:50:47.845Z"}
+{"accessTokenExpiresIn":900,"level":"info","message":"Tokens refreshed successfully","refreshTokenRotatedAt":"2025-05-04T20:50:47.849Z","timestamp":"2025-05-04T20:50:47.849Z"}
+{"level":"info","message":"Refresh token successful","timestamp":"2025-05-04T20:50:47.853Z"}
+{"level":"info","message":"Initiating token refresh","timestamp":"2025-05-04T20:50:47.864Z"}
+{"level":"info","message":"User disconnected: superadmin@example.com","reason":"client namespace disconnect","socketId":"2hecNcQ-mO_p2D3LAAAP","timestamp":"2025-05-04T20:50:47.869Z"}
+{"level":"info","message":"Client disconnected","socketId":"2hecNcQ-mO_p2D3LAAAP","timestamp":"2025-05-04T20:50:47.875Z"}
+{"accessTokenExpiresIn":900,"level":"info","message":"Tokens refreshed successfully","refreshTokenRotatedAt":"2025-05-04T20:50:47.879Z","timestamp":"2025-05-04T20:50:47.879Z"}
+{"level":"info","message":"Refresh token successful","timestamp":"2025-05-04T20:50:47.881Z"}
+{"accessTokenExpiresIn":900,"level":"info","message":"Tokens refreshed successfully","refreshTokenRotatedAt":"2025-05-04T20:50:47.887Z","timestamp":"2025-05-04T20:50:47.887Z"}
+{"level":"info","message":"Refresh token successful","timestamp":"2025-05-04T20:50:47.890Z"}
+{"accessTokenExpiresIn":900,"level":"info","message":"Tokens refreshed successfully","refreshTokenRotatedAt":"2025-05-04T20:50:47.895Z","timestamp":"2025-05-04T20:50:47.895Z"}
+{"level":"info","message":"Refresh token successful","timestamp":"2025-05-04T20:50:47.897Z"}
+{"accessTokenExpiresIn":900,"level":"info","message":"Tokens refreshed successfully","refreshTokenRotatedAt":"2025-05-04T20:50:47.910Z","timestamp":"2025-05-04T20:50:47.910Z"}
+{"level":"info","message":"Refresh token successful","timestamp":"2025-05-04T20:50:47.912Z"}
+{"accessTokenExpiresIn":900,"level":"info","message":"Tokens refreshed successfully","refreshTokenRotatedAt":"2025-05-04T20:50:47.939Z","timestamp":"2025-05-04T20:50:47.939Z"}
+{"level":"info","message":"Refresh token successful","timestamp":"2025-05-04T20:50:47.941Z"}
+{"email":"superadmin@example.com","level":"info","message":"WebSocket authentication successful","roles":"default-roles-traceflow, Super Admin","socketId":"e68UVFv8e7shuTX2AAAU","timestamp":"2025-05-04T20:50:48.036Z","userID":"user_yutki8kak"}
+{"email":"superadmin@example.com","level":"info","message":"WebSocket authentication successful","roles":"default-roles-traceflow, Super Admin","socketId":"BsDrzMUHzQppjolIAAAW","timestamp":"2025-05-04T20:50:48.042Z","userID":"user_yutki8kak"}
+{"level":"info","message":"User connected: superadmin@example.com","socketId":"BsDrzMUHzQppjolIAAAW","timestamp":"2025-05-04T20:50:48.044Z","userID":"user_yutki8kak"}
+{"level":"info","message":"Client connected","socketId":"BsDrzMUHzQppjolIAAAW","timestamp":"2025-05-04T20:50:48.046Z"}
+{"level":"info","message":"Fetched regions for user usr_yxi51_5CrROFSvgJzVea3, IP: 192.168.1.11","timestamp":"2025-05-04T20:50:48.056Z"}
+{"level":"info","message":"Fetched director for regional manager usr_yxi51_5CrROFSvgJzVea3","timestamp":"2025-05-04T20:50:48.061Z"}
+{"level":"info","message":"Fetched director for regional manager usr_yxi51_5CrROFSvgJzVea3 by user user_yutki8kak, IP: 192.168.1.11","timestamp":"2025-05-04T20:50:48.064Z"}
+{"level":"info","message":"Fetched supervisors for regional manager usr_yxi51_5CrROFSvgJzVea3","timestamp":"2025-05-04T20:50:48.068Z"}
+{"level":"info","message":"Fetched supervisors for regional manager usr_yxi51_5CrROFSvgJzVea3 by user user_yutki8kak, IP: 192.168.1.11","timestamp":"2025-05-04T20:50:48.076Z"}
+{"level":"info","message":"Fetched users by role Supervisor by user user_yutki8kak, IP: 192.168.1.11","timestamp":"2025-05-04T20:50:48.096Z"}
+{"level":"info","message":"Fetched users by role Manager by user user_yutki8kak, IP: 192.168.1.11","timestamp":"2025-05-04T20:50:48.112Z"}
+{"level":"info","message":"Fetched user usr_yxi51_5CrROFSvgJzVea3 by user user_yutki8kak, IP: 192.168.1.11","timestamp":"2025-05-04T20:50:48.139Z"}
+{"level":"info","message":"Fetched all regions by user user_yutki8kak, IP: 192.168.1.11","timestamp":"2025-05-04T20:50:48.153Z"}
+{"level":"info","message":"Fetched notifications for user: user_yutki8kak, IP: 192.168.1.11","timestamp":"2025-05-04T20:50:48.176Z"}
+{"level":"info","message":"Fetched all regions by user user_yutki8kak, IP: 192.168.1.11","timestamp":"2025-05-04T20:50:48.246Z"}
+{"level":"info","message":"Fetched director for regional manager usr_yxi51_5CrROFSvgJzVea3","timestamp":"2025-05-04T20:50:48.254Z"}
+{"level":"info","message":"Fetched director for regional manager usr_yxi51_5CrROFSvgJzVea3 by user user_yutki8kak, IP: 192.168.1.11","timestamp":"2025-05-04T20:50:48.256Z"}
+{"level":"info","message":"Fetched regions for user usr_yxi51_5CrROFSvgJzVea3, IP: 192.168.1.11","timestamp":"2025-05-04T20:50:48.264Z"}
+{"level":"info","message":"Fetched supervisors for regional manager usr_yxi51_5CrROFSvgJzVea3","timestamp":"2025-05-04T20:50:48.293Z"}
+{"level":"info","message":"Fetched supervisors for regional manager usr_yxi51_5CrROFSvgJzVea3 by user user_yutki8kak, IP: 192.168.1.11","timestamp":"2025-05-04T20:50:48.295Z"}
+{"level":"info","message":"Fetched users by role Supervisor by user user_yutki8kak, IP: 192.168.1.11","timestamp":"2025-05-04T20:50:48.307Z"}
+{"level":"info","message":"Fetched users by role Manager by user user_yutki8kak, IP: 192.168.1.11","timestamp":"2025-05-04T20:50:48.327Z"}
+{"level":"info","message":"Fetched director for regional manager usr_yxi51_5CrROFSvgJzVea3","timestamp":"2025-05-04T20:50:51.016Z"}
+{"level":"info","message":"Fetched director for regional manager usr_yxi51_5CrROFSvgJzVea3 by user user_yutki8kak, IP: 192.168.1.11","timestamp":"2025-05-04T20:50:51.017Z"}
+{"level":"info","message":"Fetched regions for user usr_yxi51_5CrROFSvgJzVea3, IP: 192.168.1.11","timestamp":"2025-05-04T20:50:51.037Z"}
+{"level":"info","message":"Fetched user usr_yxi51_5CrROFSvgJzVea3 by user user_yutki8kak, IP: 192.168.1.11","timestamp":"2025-05-04T20:50:51.120Z"}
+{"level":"info","message":"Fetched user usr_yxi51_5CrROFSvgJzVea3 by user user_yutki8kak, IP: 192.168.1.11","timestamp":"2025-05-04T20:50:51.140Z"}
+{"level":"info","message":"Fetched director for regional manager usr_yxi51_5CrROFSvgJzVea3","timestamp":"2025-05-04T20:50:51.189Z"}
+{"level":"info","message":"Fetched director for regional manager usr_yxi51_5CrROFSvgJzVea3 by user user_yutki8kak, IP: 192.168.1.11","timestamp":"2025-05-04T20:50:51.192Z"}
+{"level":"info","message":"Fetched all regions by user user_yutki8kak, IP: 192.168.1.11","timestamp":"2025-05-04T20:50:51.199Z"}
+{"level":"info","message":"Fetched supervisors for regional manager usr_yxi51_5CrROFSvgJzVea3","timestamp":"2025-05-04T20:50:51.203Z"}
+{"level":"info","message":"Fetched supervisors for regional manager usr_yxi51_5CrROFSvgJzVea3 by user user_yutki8kak, IP: 192.168.1.11","timestamp":"2025-05-04T20:50:51.204Z"}
+{"level":"info","message":"Fetched users by role Manager by user user_yutki8kak, IP: 192.168.1.11","timestamp":"2025-05-04T20:50:51.208Z"}
+{"level":"info","message":"Fetched regions for user usr_yxi51_5CrROFSvgJzVea3, IP: 192.168.1.11","timestamp":"2025-05-04T20:50:51.217Z"}
+{"level":"info","message":"Fetched users by role Supervisor by user user_yutki8kak, IP: 192.168.1.11","timestamp":"2025-05-04T20:50:51.234Z"}
+{"level":"info","message":"Fetched director for regional manager usr_yxi51_5CrROFSvgJzVea3","timestamp":"2025-05-04T20:51:09.000Z"}
+{"level":"info","message":"Fetched director for regional manager usr_yxi51_5CrROFSvgJzVea3 by user user_yutki8kak, IP: 192.168.1.11","timestamp":"2025-05-04T20:51:09.002Z"}
+{"level":"info","message":"Fetched supervisors for regional manager usr_yxi51_5CrROFSvgJzVea3","timestamp":"2025-05-04T20:51:09.013Z"}
+{"level":"info","message":"Fetched supervisors for regional manager usr_yxi51_5CrROFSvgJzVea3 by user user_yutki8kak, IP: 192.168.1.11","timestamp":"2025-05-04T20:51:09.016Z"}
+{"level":"info","message":"Fetched all regions by user user_yutki8kak, IP: 192.168.1.11","timestamp":"2025-05-04T20:51:09.024Z"}
+{"level":"info","message":"Fetched regions for user usr_yxi51_5CrROFSvgJzVea3, IP: 192.168.1.11","timestamp":"2025-05-04T20:51:09.034Z"}
+{"level":"info","message":"Fetched users by role Manager by user user_yutki8kak, IP: 192.168.1.11","timestamp":"2025-05-04T20:51:09.043Z"}
+{"level":"info","message":"Fetched users by role Supervisor by user user_yutki8kak, IP: 192.168.1.11","timestamp":"2025-05-04T20:51:09.083Z"}
+{"level":"info","message":"Fetched user usr_yxi51_5CrROFSvgJzVea3 by user user_yutki8kak, IP: 192.168.1.11","timestamp":"2025-05-04T20:51:09.091Z"}
+{"level":"info","message":"Fetched director for regional manager usr_yxi51_5CrROFSvgJzVea3","timestamp":"2025-05-04T20:51:09.211Z"}
+{"level":"info","message":"Fetched director for regional manager usr_yxi51_5CrROFSvgJzVea3 by user user_yutki8kak, IP: 192.168.1.11","timestamp":"2025-05-04T20:51:09.213Z"}
+{"level":"info","message":"Fetched users by role Manager by user user_yutki8kak, IP: 192.168.1.11","timestamp":"2025-05-04T20:51:09.224Z"}
+{"level":"info","message":"Fetched all regions by user user_yutki8kak, IP: 192.168.1.11","timestamp":"2025-05-04T20:51:09.228Z"}
+{"level":"info","message":"Fetched users by role Supervisor by user user_yutki8kak, IP: 192.168.1.11","timestamp":"2025-05-04T20:51:09.244Z"}
+{"level":"info","message":"Fetched supervisors for regional manager usr_yxi51_5CrROFSvgJzVea3","timestamp":"2025-05-04T20:51:09.249Z"}
+{"level":"info","message":"Fetched supervisors for regional manager usr_yxi51_5CrROFSvgJzVea3 by user user_yutki8kak, IP: 192.168.1.11","timestamp":"2025-05-04T20:51:09.253Z"}
+{"level":"info","message":"Fetched regions for user usr_yxi51_5CrROFSvgJzVea3, IP: 192.168.1.11","timestamp":"2025-05-04T20:51:09.259Z"}
+{"level":"info","message":"Fetched director for regional manager usr_yxi51_5CrROFSvgJzVea3","timestamp":"2025-05-04T20:51:11.609Z"}
+{"level":"info","message":"Fetched director for regional manager usr_yxi51_5CrROFSvgJzVea3 by user user_yutki8kak, IP: 192.168.1.11","timestamp":"2025-05-04T20:51:11.610Z"}
+{"level":"info","message":"Fetched regions for user usr_yxi51_5CrROFSvgJzVea3, IP: 192.168.1.11","timestamp":"2025-05-04T20:51:11.631Z"}
+{"level":"info","message":"Fetched user usr_yxi51_5CrROFSvgJzVea3 by user user_yutki8kak, IP: 192.168.1.11","timestamp":"2025-05-04T20:51:11.732Z"}
+{"level":"info","message":"Fetched user usr_yxi51_5CrROFSvgJzVea3 by user user_yutki8kak, IP: 192.168.1.11","timestamp":"2025-05-04T20:51:11.754Z"}
+{"level":"info","message":"Fetched director for regional manager usr_yxi51_5CrROFSvgJzVea3","timestamp":"2025-05-04T20:51:11.817Z"}
+{"level":"info","message":"Fetched director for regional manager usr_yxi51_5CrROFSvgJzVea3 by user user_yutki8kak, IP: 192.168.1.11","timestamp":"2025-05-04T20:51:11.849Z"}
+{"level":"info","message":"Fetched all regions by user user_yutki8kak, IP: 192.168.1.11","timestamp":"2025-05-04T20:51:11.889Z"}
+{"level":"info","message":"Fetched regions for user usr_yxi51_5CrROFSvgJzVea3, IP: 192.168.1.11","timestamp":"2025-05-04T20:51:11.895Z"}
+{"level":"info","message":"Fetched users by role Manager by user user_yutki8kak, IP: 192.168.1.11","timestamp":"2025-05-04T20:51:11.904Z"}
+{"level":"info","message":"Fetched users by role Supervisor by user user_yutki8kak, IP: 192.168.1.11","timestamp":"2025-05-04T20:51:11.917Z"}
+{"level":"info","message":"Fetched supervisors for regional manager usr_yxi51_5CrROFSvgJzVea3","timestamp":"2025-05-04T20:51:11.926Z"}
+{"level":"info","message":"Fetched supervisors for regional manager usr_yxi51_5CrROFSvgJzVea3 by user user_yutki8kak, IP: 192.168.1.11","timestamp":"2025-05-04T20:51:11.928Z"}
+{"level":"info","message":"Fetched regions for user usr_yxi51_5CrROFSvgJzVea3, IP: 192.168.1.11","timestamp":"2025-05-04T20:51:42.555Z"}
+{"level":"info","message":"Fetched supervisors for regional manager usr_yxi51_5CrROFSvgJzVea3","timestamp":"2025-05-04T20:51:42.561Z"}
+{"level":"info","message":"Fetched supervisors for regional manager usr_yxi51_5CrROFSvgJzVea3 by user user_yutki8kak, IP: 192.168.1.11","timestamp":"2025-05-04T20:51:42.563Z"}
+{"level":"info","message":"Fetched director for regional manager usr_yxi51_5CrROFSvgJzVea3","timestamp":"2025-05-04T20:51:42.567Z"}
+{"level":"info","message":"Fetched director for regional manager usr_yxi51_5CrROFSvgJzVea3 by user user_yutki8kak, IP: 192.168.1.11","timestamp":"2025-05-04T20:51:42.568Z"}
+{"level":"info","message":"Fetched all regions by user user_yutki8kak, IP: 192.168.1.11","timestamp":"2025-05-04T20:51:42.574Z"}
+{"level":"info","message":"Fetched users by role Manager by user user_yutki8kak, IP: 192.168.1.11","timestamp":"2025-05-04T20:51:42.582Z"}
+{"level":"info","message":"Fetched users by role Supervisor by user user_yutki8kak, IP: 192.168.1.11","timestamp":"2025-05-04T20:51:42.589Z"}
+{"level":"info","message":"Fetched user usr_yxi51_5CrROFSvgJzVea3 by user user_yutki8kak, IP: 192.168.1.11","timestamp":"2025-05-04T20:51:42.614Z"}
+{"level":"info","message":"Fetched director for regional manager usr_yxi51_5CrROFSvgJzVea3","timestamp":"2025-05-04T20:51:42.718Z"}
+{"level":"info","message":"Fetched director for regional manager usr_yxi51_5CrROFSvgJzVea3 by user user_yutki8kak, IP: 192.168.1.11","timestamp":"2025-05-04T20:51:42.728Z"}
+{"level":"info","message":"Fetched supervisors for regional manager usr_yxi51_5CrROFSvgJzVea3","timestamp":"2025-05-04T20:51:42.757Z"}
+{"level":"info","message":"Fetched supervisors for regional manager usr_yxi51_5CrROFSvgJzVea3 by user user_yutki8kak, IP: 192.168.1.11","timestamp":"2025-05-04T20:51:42.760Z"}
+{"level":"info","message":"Fetched all regions by user user_yutki8kak, IP: 192.168.1.11","timestamp":"2025-05-04T20:51:42.768Z"}
+{"level":"info","message":"Fetched users by role Supervisor by user user_yutki8kak, IP: 192.168.1.11","timestamp":"2025-05-04T20:51:42.781Z"}
+{"level":"info","message":"Fetched regions for user usr_yxi51_5CrROFSvgJzVea3, IP: 192.168.1.11","timestamp":"2025-05-04T20:51:42.794Z"}
+{"level":"info","message":"Fetched users by role Manager by user user_yutki8kak, IP: 192.168.1.11","timestamp":"2025-05-04T20:51:42.804Z"}
+{"level":"info","message":"Fetched director for regional manager usr_yxi51_5CrROFSvgJzVea3","timestamp":"2025-05-04T20:51:44.656Z"}
+{"level":"info","message":"Fetched director for regional manager usr_yxi51_5CrROFSvgJzVea3 by user user_yutki8kak, IP: 192.168.1.11","timestamp":"2025-05-04T20:51:44.657Z"}
+{"level":"info","message":"Fetched regions for user usr_yxi51_5CrROFSvgJzVea3, IP: 192.168.1.11","timestamp":"2025-05-04T20:51:44.673Z"}
+{"level":"info","message":"Assigned region reg_83f4M8 to user usr_yxi51_5CrROFSvgJzVea3 by user user_yutki8kak","timestamp":"2025-05-04T20:51:44.694Z"}
+{"level":"info","message":"No active rules found for event: user:regions_assigned","timestamp":"2025-05-04T20:51:44.696Z"}
+{"enabled":true,"event":"user:regions_assigned","level":"info","message":"Created default notification rule","ruleID":"rule_2OmsF8BMmPdQgEJe8FYML","timestamp":"2025-05-04T20:51:44.700Z"}
+{"level":"info","message":"Notification stored Notification for user:regions_assigned","notificationID":"notif_2FctSpk_0jjE_MQuMWmvm","timestamp":"2025-05-04T20:51:44.709Z","userID":"user_yutki8kak"}
+{"level":"info","message":"Notification status updated","notificationID":"notif_2FctSpk_0jjE_MQuMWmvm","status":"sent","timestamp":"2025-05-04T20:51:44.714Z"}
+{"event":"user:regions_assigned","level":"info","message":"Triggered notifications","recipientCount":1,"timestamp":"2025-05-04T20:51:44.716Z"}
+{"level":"info","message":"Assigned regions to regional manager usr_yxi51_5CrROFSvgJzVea3 by user user_yutki8kak, IP: 192.168.1.11","timestamp":"2025-05-04T20:51:44.716Z"}
+{"level":"info","message":"Fetched supervisors for regional manager usr_yxi51_5CrROFSvgJzVea3","timestamp":"2025-05-04T20:51:44.743Z"}
+{"level":"info","message":"Fetched supervisors for regional manager usr_yxi51_5CrROFSvgJzVea3 by user user_yutki8kak, IP: 192.168.1.11","timestamp":"2025-05-04T20:51:44.744Z"}
+{"level":"info","message":"Fetched users by role Manager by user user_yutki8kak, IP: 192.168.1.11","timestamp":"2025-05-04T20:51:44.826Z"}
+{"level":"info","message":"Fetched all regions by user user_yutki8kak, IP: 192.168.1.11","timestamp":"2025-05-04T20:51:44.834Z"}
+{"level":"info","message":"Fetched director for regional manager usr_yxi51_5CrROFSvgJzVea3","timestamp":"2025-05-04T20:51:44.840Z"}
+{"level":"info","message":"Fetched director for regional manager usr_yxi51_5CrROFSvgJzVea3 by user user_yutki8kak, IP: 192.168.1.11","timestamp":"2025-05-04T20:51:44.841Z"}
+{"level":"info","message":"Fetched supervisors for regional manager usr_yxi51_5CrROFSvgJzVea3","timestamp":"2025-05-04T20:51:44.846Z"}
+{"level":"info","message":"Fetched supervisors for regional manager usr_yxi51_5CrROFSvgJzVea3 by user user_yutki8kak, IP: 192.168.1.11","timestamp":"2025-05-04T20:51:44.848Z"}
+{"level":"info","message":"Fetched regions for user usr_yxi51_5CrROFSvgJzVea3, IP: 192.168.1.11","timestamp":"2025-05-04T20:51:44.854Z"}
+{"level":"info","message":"Fetched users by role Supervisor by user user_yutki8kak, IP: 192.168.1.11","timestamp":"2025-05-04T20:51:44.871Z"}
+{"level":"info","message":"Fetched director for regional manager usr_yxi51_5CrROFSvgJzVea3","timestamp":"2025-05-04T20:51:48.641Z"}
+{"level":"info","message":"Fetched director for regional manager usr_yxi51_5CrROFSvgJzVea3 by user user_yutki8kak, IP: 192.168.1.11","timestamp":"2025-05-04T20:51:48.641Z"}
+{"level":"info","message":"Fetched regions for user usr_yxi51_5CrROFSvgJzVea3, IP: 192.168.1.11","timestamp":"2025-05-04T20:51:48.654Z"}
+{"level":"info","message":"Fetched supervisors for regional manager usr_yxi51_5CrROFSvgJzVea3","timestamp":"2025-05-04T20:51:48.669Z"}
+{"level":"info","message":"Fetched supervisors for regional manager usr_yxi51_5CrROFSvgJzVea3 by user user_yutki8kak, IP: 192.168.1.11","timestamp":"2025-05-04T20:51:48.670Z"}
+{"level":"info","message":"Assigned regional manager usr_yxi51_5CrROFSvgJzVea3 to supervisor usr_U0PUIcVWIbvnRJLkdKyHJ by user user_yutki8kak","timestamp":"2025-05-04T20:51:48.695Z"}
+{"level":"info","message":"Assigned regional manager usr_yxi51_5CrROFSvgJzVea3 to supervisor usr_dD8W7OtuirljS1Kr27Me9 by user user_yutki8kak","timestamp":"2025-05-04T20:51:48.697Z"}
+{"level":"info","message":"No active rules found for event: user:regional_manager_assigned","timestamp":"2025-05-04T20:51:48.700Z"}
+{"level":"info","message":"No active rules found for event: user:regional_manager_assigned","timestamp":"2025-05-04T20:51:48.703Z"}
+{"enabled":true,"event":"user:regional_manager_assigned","level":"info","message":"Created default notification rule","ruleID":"rule_ELhZPjrxEZpqG4-4skwIJ","timestamp":"2025-05-04T20:51:48.706Z"}
+{"level":"info","message":"Notification stored Notification for user:regional_manager_assigned","notificationID":"notif_PiklxcfGhcr140WfgiGVK","timestamp":"2025-05-04T20:51:48.713Z","userID":"user_yutki8kak"}
+{"level":"info","message":"Notification stored Notification for user:regional_manager_assigned","notificationID":"notif_53ikI7P3cc3eYl3v9117O","timestamp":"2025-05-04T20:51:48.716Z","userID":"user_yutki8kak"}
+{"level":"info","message":"Notification status updated","notificationID":"notif_PiklxcfGhcr140WfgiGVK","status":"sent","timestamp":"2025-05-04T20:51:48.718Z"}
+{"event":"user:regional_manager_assigned","level":"info","message":"Triggered notifications","recipientCount":1,"timestamp":"2025-05-04T20:51:48.719Z"}
+{"level":"info","message":"Assigned regional manager usr_yxi51_5CrROFSvgJzVea3 to supervisor usr_dD8W7OtuirljS1Kr27Me9 by user user_yutki8kak, IP: 192.168.1.11","timestamp":"2025-05-04T20:51:48.720Z"}
+{"level":"info","message":"Notification status updated","notificationID":"notif_53ikI7P3cc3eYl3v9117O","status":"sent","timestamp":"2025-05-04T20:51:48.725Z"}
+{"event":"user:regional_manager_assigned","level":"info","message":"Triggered notifications","recipientCount":1,"timestamp":"2025-05-04T20:51:48.726Z"}
+{"level":"info","message":"Assigned regional manager usr_yxi51_5CrROFSvgJzVea3 to supervisor usr_U0PUIcVWIbvnRJLkdKyHJ by user user_yutki8kak, IP: 192.168.1.11","timestamp":"2025-05-04T20:51:48.726Z"}
+{"level":"info","message":"Fetched director for regional manager usr_yxi51_5CrROFSvgJzVea3","timestamp":"2025-05-04T20:51:48.855Z"}
+{"level":"info","message":"Fetched director for regional manager usr_yxi51_5CrROFSvgJzVea3 by user user_yutki8kak, IP: 192.168.1.11","timestamp":"2025-05-04T20:51:48.856Z"}
+{"level":"info","message":"Fetched all regions by user user_yutki8kak, IP: 192.168.1.11","timestamp":"2025-05-04T20:51:48.861Z"}
+{"level":"info","message":"Fetched regions for user usr_yxi51_5CrROFSvgJzVea3, IP: 192.168.1.11","timestamp":"2025-05-04T20:51:48.865Z"}
+{"level":"info","message":"Fetched users by role Manager by user user_yutki8kak, IP: 192.168.1.11","timestamp":"2025-05-04T20:51:48.872Z"}
+{"level":"info","message":"Fetched supervisors for regional manager usr_yxi51_5CrROFSvgJzVea3","timestamp":"2025-05-04T20:51:48.888Z"}
+{"level":"info","message":"Fetched supervisors for regional manager usr_yxi51_5CrROFSvgJzVea3 by user user_yutki8kak, IP: 192.168.1.11","timestamp":"2025-05-04T20:51:48.889Z"}
+{"level":"info","message":"Fetched users by role Supervisor by user user_yutki8kak, IP: 192.168.1.11","timestamp":"2025-05-04T20:51:48.894Z"}
+{"level":"info","message":"Fetched all users by user user_yutki8kak, IP: 192.168.1.11","timestamp":"2025-05-04T20:51:52.088Z"}
+{"level":"info","message":"Fetched all roles by user user_yutki8kak, IP: 192.168.1.11","timestamp":"2025-05-04T20:51:52.127Z"}
+{"level":"info","message":"Fetched supervisors for user usr_Q9Nc-tEWGXSnADqeHkxSZ","timestamp":"2025-05-04T20:51:54.381Z"}
+{"level":"info","message":"Fetched supervisors for user usr_Q9Nc-tEWGXSnADqeHkxSZ by user user_yutki8kak, IP: 192.168.1.11","timestamp":"2025-05-04T20:51:54.382Z"}
+{"level":"info","message":"Fetched regional managers for user usr_Q9Nc-tEWGXSnADqeHkxSZ","timestamp":"2025-05-04T20:51:54.387Z"}
+{"level":"info","message":"Fetched regional managers for user usr_Q9Nc-tEWGXSnADqeHkxSZ by user user_yutki8kak, IP: 192.168.1.11","timestamp":"2025-05-04T20:51:54.388Z"}
+{"level":"info","message":"Fetched user usr_Q9Nc-tEWGXSnADqeHkxSZ by user user_yutki8kak, IP: 192.168.1.11","timestamp":"2025-05-04T20:51:54.716Z"}
+{"level":"info","message":"Fetched regional manager for supervisor usr_Q9Nc-tEWGXSnADqeHkxSZ","timestamp":"2025-05-04T20:51:55.400Z"}
+{"level":"info","message":"Fetched regional manager for supervisor usr_Q9Nc-tEWGXSnADqeHkxSZ by user user_yutki8kak, IP: 192.168.1.11","timestamp":"2025-05-04T20:51:55.401Z"}
+{"level":"info","message":"Fetched users by role Regional Manager by user user_yutki8kak, IP: 192.168.1.11","timestamp":"2025-05-04T20:51:55.406Z"}
+{"level":"info","message":"Fetched supervisors for user usr_U0PUIcVWIbvnRJLkdKyHJ","timestamp":"2025-05-04T20:51:59.486Z"}
+{"level":"info","message":"Fetched supervisors for user usr_U0PUIcVWIbvnRJLkdKyHJ by user user_yutki8kak, IP: 192.168.1.11","timestamp":"2025-05-04T20:51:59.487Z"}
+{"level":"info","message":"Fetched regional managers for user usr_U0PUIcVWIbvnRJLkdKyHJ","timestamp":"2025-05-04T20:51:59.491Z"}
+{"level":"info","message":"Fetched regional managers for user usr_U0PUIcVWIbvnRJLkdKyHJ by user user_yutki8kak, IP: 192.168.1.11","timestamp":"2025-05-04T20:51:59.492Z"}
+{"level":"info","message":"Fetched user usr_U0PUIcVWIbvnRJLkdKyHJ by user user_yutki8kak, IP: 192.168.1.11","timestamp":"2025-05-04T20:51:59.589Z"}
+{"level":"info","message":"Fetched users by role Regional Manager by user user_yutki8kak, IP: 192.168.1.11","timestamp":"2025-05-04T20:52:00.277Z"}
+{"level":"info","message":"Fetched regional manager for supervisor usr_U0PUIcVWIbvnRJLkdKyHJ","timestamp":"2025-05-04T20:52:00.280Z"}
+{"level":"info","message":"Fetched regional manager for supervisor usr_U0PUIcVWIbvnRJLkdKyHJ by user user_yutki8kak, IP: 192.168.1.11","timestamp":"2025-05-04T20:52:00.281Z"}
+{"level":"info","message":"Fetched regions for user usr_yxi51_5CrROFSvgJzVea3, IP: 192.168.1.11","timestamp":"2025-05-04T20:52:00.320Z"}
+{"level":"info","message":"Fetched governorates for region reg_83f4M8 by user user_yutki8kak, IP: 192.168.1.11","timestamp":"2025-05-04T20:52:00.341Z"}
+{"level":"info","message":"Fetched governorates for user usr_U0PUIcVWIbvnRJLkdKyHJ, IP: 192.168.1.11","timestamp":"2025-05-04T20:52:00.358Z"}
+{"level":"info","message":"Fetched delegations for governorate gov_GdtCeZ by user user_yutki8kak, IP: 192.168.1.11","timestamp":"2025-05-04T20:52:06.242Z"}
+{"level":"info","message":"Fetched delegations for user usr_U0PUIcVWIbvnRJLkdKyHJ, IP: 192.168.1.11","timestamp":"2025-05-04T20:52:06.258Z"}
+{"level":"info","message":"Fetched agents by delegation del_e7OZ7m by user user_yutki8kak, IP: 192.168.1.11","timestamp":"2025-05-04T20:52:16.027Z"}
+{"level":"warn","message":"Get agents by user failed: Missing user ID, user: user_yutki8kak, IP: 192.168.1.11","timestamp":"2025-05-04T20:52:16.042Z"}
+{"level":"info","message":"Fetched regions for user usr_MvbNkZAOeXbvFICet8rRn, IP: 192.168.1.11","timestamp":"2025-05-04T20:52:30.265Z"}
+{"level":"info","message":"Fetched regional manager for supervisor usr_U0PUIcVWIbvnRJLkdKyHJ","timestamp":"2025-05-04T20:53:31.659Z"}
+{"level":"info","message":"Fetched regional manager for supervisor usr_U0PUIcVWIbvnRJLkdKyHJ by user user_yutki8kak, IP: 192.168.1.11","timestamp":"2025-05-04T20:53:31.660Z"}
+{"level":"info","message":"Fetched governorates for user usr_U0PUIcVWIbvnRJLkdKyHJ, IP: 192.168.1.11","timestamp":"2025-05-04T20:53:31.904Z"}
+{"level":"warn","message":"Assign governorate failed: Region not assigned to user usr_U0PUIcVWIbvnRJLkdKyHJ, user: user_yutki8kak","timestamp":"2025-05-04T20:53:31.931Z"}
+{"level":"error","message":"Assign governorate error: Governorate or Delegation not in assigned Regions., user: user_yutki8kak","timestamp":"2025-05-04T20:53:31.931Z"}
+{"level":"error","message":"Assign governorates error: Governorate or Delegation not in assigned Regions., user: user_yutki8kak, IP: 192.168.1.11","timestamp":"2025-05-04T20:53:31.932Z"}
+{"level":"info","message":"Fetched user usr_U0PUIcVWIbvnRJLkdKyHJ by user user_yutki8kak, IP: 192.168.1.11","timestamp":"2025-05-04T20:53:32.018Z"}
+{"level":"info","message":"Fetched user usr_U0PUIcVWIbvnRJLkdKyHJ by user user_yutki8kak, IP: 192.168.1.11","timestamp":"2025-05-04T20:53:32.126Z"}
+{"level":"info","message":"Fetched users by role Regional Manager by user user_yutki8kak, IP: 192.168.1.11","timestamp":"2025-05-04T20:53:32.148Z"}
+{"level":"info","message":"Fetched regions for user usr_yxi51_5CrROFSvgJzVea3, IP: 192.168.1.11","timestamp":"2025-05-04T20:53:32.154Z"}
+{"level":"info","message":"Fetched regional manager for supervisor usr_U0PUIcVWIbvnRJLkdKyHJ","timestamp":"2025-05-04T20:53:32.161Z"}
+{"level":"info","message":"Fetched regional manager for supervisor usr_U0PUIcVWIbvnRJLkdKyHJ by user user_yutki8kak, IP: 192.168.1.11","timestamp":"2025-05-04T20:53:32.165Z"}
+{"level":"info","message":"Fetched governorates for region reg_83f4M8 by user user_yutki8kak, IP: 192.168.1.11","timestamp":"2025-05-04T20:53:32.245Z"}
+{"level":"info","message":"Fetched governorates for region reg_83f4M8 by user user_yutki8kak, IP: 192.168.1.11","timestamp":"2025-05-04T20:53:32.295Z"}
+{"level":"info","message":"Fetched governorates for user usr_U0PUIcVWIbvnRJLkdKyHJ, IP: 192.168.1.11","timestamp":"2025-05-04T20:53:32.303Z"}
+{"level":"info","message":"Fetched governorates for user usr_U0PUIcVWIbvnRJLkdKyHJ, IP: 192.168.1.11","timestamp":"2025-05-04T20:53:32.324Z"}
+{"level":"info","message":"Fetched delegations for governorate gov_GdtCeZ by user user_yutki8kak, IP: 192.168.1.11","timestamp":"2025-05-04T20:53:43.430Z"}
+{"level":"info","message":"Fetched delegations for user usr_U0PUIcVWIbvnRJLkdKyHJ, IP: 192.168.1.11","timestamp":"2025-05-04T20:53:43.448Z"}
+{"level":"info","message":"Fetched regional manager for supervisor usr_U0PUIcVWIbvnRJLkdKyHJ","timestamp":"2025-05-04T20:53:44.877Z"}
+{"level":"info","message":"Fetched regional manager for supervisor usr_U0PUIcVWIbvnRJLkdKyHJ by user user_yutki8kak, IP: 192.168.1.11","timestamp":"2025-05-04T20:53:44.878Z"}
+{"level":"info","message":"Fetched governorates for user usr_U0PUIcVWIbvnRJLkdKyHJ, IP: 192.168.1.11","timestamp":"2025-05-04T20:53:44.903Z"}
+{"level":"warn","message":"Assign governorate failed: Region not assigned to user usr_U0PUIcVWIbvnRJLkdKyHJ, user: user_yutki8kak","timestamp":"2025-05-04T20:53:44.933Z"}
+{"level":"error","message":"Assign governorate error: Governorate or Delegation not in assigned Regions., user: user_yutki8kak","timestamp":"2025-05-04T20:53:44.934Z"}
+{"level":"error","message":"Assign governorates error: Governorate or Delegation not in assigned Regions., user: user_yutki8kak, IP: 192.168.1.11","timestamp":"2025-05-04T20:53:44.936Z"}
+{"level":"info","message":"Fetched user usr_U0PUIcVWIbvnRJLkdKyHJ by user user_yutki8kak, IP: 192.168.1.11","timestamp":"2025-05-04T20:53:45.050Z"}
+{"level":"info","message":"Fetched user usr_U0PUIcVWIbvnRJLkdKyHJ by user user_yutki8kak, IP: 192.168.1.11","timestamp":"2025-05-04T20:53:45.072Z"}
+{"level":"info","message":"Fetched users by role Regional Manager by user user_yutki8kak, IP: 192.168.1.11","timestamp":"2025-05-04T20:53:45.162Z"}
+{"level":"info","message":"Fetched regional manager for supervisor usr_U0PUIcVWIbvnRJLkdKyHJ","timestamp":"2025-05-04T20:53:45.194Z"}
+{"level":"info","message":"Fetched regional manager for supervisor usr_U0PUIcVWIbvnRJLkdKyHJ by user user_yutki8kak, IP: 192.168.1.11","timestamp":"2025-05-04T20:53:45.197Z"}
+{"level":"info","message":"Fetched regions for user usr_yxi51_5CrROFSvgJzVea3, IP: 192.168.1.11","timestamp":"2025-05-04T20:53:45.213Z"}
+{"level":"info","message":"Fetched governorates for region reg_83f4M8 by user user_yutki8kak, IP: 192.168.1.11","timestamp":"2025-05-04T20:53:45.254Z"}
+{"level":"info","message":"Fetched governorates for region reg_83f4M8 by user user_yutki8kak, IP: 192.168.1.11","timestamp":"2025-05-04T20:53:45.279Z"}
+{"level":"info","message":"Fetched governorates for user usr_U0PUIcVWIbvnRJLkdKyHJ, IP: 192.168.1.11","timestamp":"2025-05-04T20:53:45.293Z"}
+{"level":"info","message":"Fetched governorates for user usr_U0PUIcVWIbvnRJLkdKyHJ, IP: 192.168.1.11","timestamp":"2025-05-04T20:53:45.315Z"}
+{"level":"info","message":"Fetched delegations for governorate gov_GdtCeZ by user user_yutki8kak, IP: 192.168.1.11","timestamp":"2025-05-04T20:53:48.919Z"}
+{"level":"info","message":"Fetched delegations for user usr_U0PUIcVWIbvnRJLkdKyHJ, IP: 192.168.1.11","timestamp":"2025-05-04T20:53:48.940Z"}
+{"level":"info","message":"Fetched regional manager for supervisor usr_U0PUIcVWIbvnRJLkdKyHJ","timestamp":"2025-05-04T20:53:50.514Z"}
+{"level":"info","message":"Fetched regional manager for supervisor usr_U0PUIcVWIbvnRJLkdKyHJ by user user_yutki8kak, IP: 192.168.1.11","timestamp":"2025-05-04T20:53:50.515Z"}
+{"level":"info","message":"Fetched governorates for user usr_U0PUIcVWIbvnRJLkdKyHJ, IP: 192.168.1.11","timestamp":"2025-05-04T20:53:50.536Z"}
+{"level":"warn","message":"Assign governorate failed: Region not assigned to user usr_U0PUIcVWIbvnRJLkdKyHJ, user: user_yutki8kak","timestamp":"2025-05-04T20:53:50.558Z"}
+{"level":"error","message":"Assign governorate error: Governorate or Delegation not in assigned Regions., user: user_yutki8kak","timestamp":"2025-05-04T20:53:50.559Z"}
+{"level":"error","message":"Assign governorates error: Governorate or Delegation not in assigned Regions., user: user_yutki8kak, IP: 192.168.1.11","timestamp":"2025-05-04T20:53:50.560Z"}
+{"level":"info","message":"Fetched user usr_U0PUIcVWIbvnRJLkdKyHJ by user user_yutki8kak, IP: 192.168.1.11","timestamp":"2025-05-04T20:53:50.628Z"}
+{"level":"info","message":"Fetched user usr_U0PUIcVWIbvnRJLkdKyHJ by user user_yutki8kak, IP: 192.168.1.11","timestamp":"2025-05-04T20:53:50.652Z"}
+{"level":"info","message":"Fetched regional manager for supervisor usr_U0PUIcVWIbvnRJLkdKyHJ","timestamp":"2025-05-04T20:53:50.739Z"}
+{"level":"info","message":"Fetched regional manager for supervisor usr_U0PUIcVWIbvnRJLkdKyHJ by user user_yutki8kak, IP: 192.168.1.11","timestamp":"2025-05-04T20:53:50.740Z"}
+{"level":"info","message":"Fetched regions for user usr_yxi51_5CrROFSvgJzVea3, IP: 192.168.1.11","timestamp":"2025-05-04T20:53:50.745Z"}
+{"level":"info","message":"Fetched users by role Regional Manager by user user_yutki8kak, IP: 192.168.1.11","timestamp":"2025-05-04T20:53:50.755Z"}
+{"level":"info","message":"Fetched governorates for region reg_83f4M8 by user user_yutki8kak, IP: 192.168.1.11","timestamp":"2025-05-04T20:53:50.789Z"}
+{"level":"info","message":"Fetched governorates for region reg_83f4M8 by user user_yutki8kak, IP: 192.168.1.11","timestamp":"2025-05-04T20:53:50.808Z"}
+{"level":"info","message":"Fetched governorates for user usr_U0PUIcVWIbvnRJLkdKyHJ, IP: 192.168.1.11","timestamp":"2025-05-04T20:53:50.823Z"}
+{"level":"info","message":"Fetched governorates for user usr_U0PUIcVWIbvnRJLkdKyHJ, IP: 192.168.1.11","timestamp":"2025-05-04T20:53:50.842Z"}
+{"level":"info","message":"Fetched regional managers for user usr_Q9Nc-tEWGXSnADqeHkxSZ","timestamp":"2025-05-04T20:53:54.633Z"}
+{"level":"info","message":"Fetched regional managers for user usr_Q9Nc-tEWGXSnADqeHkxSZ by user user_yutki8kak, IP: 192.168.1.11","timestamp":"2025-05-04T20:53:54.633Z"}
+{"level":"info","message":"Fetched user usr_Q9Nc-tEWGXSnADqeHkxSZ by user user_yutki8kak, IP: 192.168.1.11","timestamp":"2025-05-04T20:53:54.730Z"}
+{"level":"info","message":"Fetched regional manager for supervisor usr_Q9Nc-tEWGXSnADqeHkxSZ","timestamp":"2025-05-04T20:53:55.480Z"}
+{"level":"info","message":"Fetched regional manager for supervisor usr_Q9Nc-tEWGXSnADqeHkxSZ by user user_yutki8kak, IP: 192.168.1.11","timestamp":"2025-05-04T20:53:55.481Z"}
+{"level":"info","message":"Fetched users by role Regional Manager by user user_yutki8kak, IP: 192.168.1.11","timestamp":"2025-05-04T20:53:55.483Z"}
+{"level":"info","message":"Fetched regional managers for user usr_U0PUIcVWIbvnRJLkdKyHJ","timestamp":"2025-05-04T20:53:58.282Z"}
+{"level":"info","message":"Fetched regional managers for user usr_U0PUIcVWIbvnRJLkdKyHJ by user user_yutki8kak, IP: 192.168.1.11","timestamp":"2025-05-04T20:53:58.283Z"}
+{"level":"info","message":"Fetched user usr_U0PUIcVWIbvnRJLkdKyHJ by user user_yutki8kak, IP: 192.168.1.11","timestamp":"2025-05-04T20:53:58.379Z"}
+{"level":"info","message":"Fetched regional manager for supervisor usr_U0PUIcVWIbvnRJLkdKyHJ","timestamp":"2025-05-04T20:53:59.305Z"}
+{"level":"info","message":"Fetched regional manager for supervisor usr_U0PUIcVWIbvnRJLkdKyHJ by user user_yutki8kak, IP: 192.168.1.11","timestamp":"2025-05-04T20:53:59.306Z"}
+{"level":"info","message":"Fetched users by role Regional Manager by user user_yutki8kak, IP: 192.168.1.11","timestamp":"2025-05-04T20:53:59.309Z"}
+{"level":"info","message":"Fetched regions for user usr_yxi51_5CrROFSvgJzVea3, IP: 192.168.1.11","timestamp":"2025-05-04T20:53:59.356Z"}
+{"level":"info","message":"Fetched governorates for region reg_83f4M8 by user user_yutki8kak, IP: 192.168.1.11","timestamp":"2025-05-04T20:53:59.381Z"}
+{"level":"info","message":"Fetched governorates for user usr_U0PUIcVWIbvnRJLkdKyHJ, IP: 192.168.1.11","timestamp":"2025-05-04T20:53:59.411Z"}
+{"level":"info","message":"Fetched delegations for governorate gov_GdtCeZ by user user_yutki8kak, IP: 192.168.1.11","timestamp":"2025-05-04T20:54:00.925Z"}
+{"level":"info","message":"Fetched delegations for user usr_U0PUIcVWIbvnRJLkdKyHJ, IP: 192.168.1.11","timestamp":"2025-05-04T20:54:00.944Z"}
+{"level":"info","message":"Fetched regional manager for supervisor usr_U0PUIcVWIbvnRJLkdKyHJ","timestamp":"2025-05-04T20:54:02.066Z"}
+{"level":"info","message":"Fetched regional manager for supervisor usr_U0PUIcVWIbvnRJLkdKyHJ by user user_yutki8kak, IP: 192.168.1.11","timestamp":"2025-05-04T20:54:02.067Z"}
+{"level":"info","message":"Fetched governorates for user usr_U0PUIcVWIbvnRJLkdKyHJ, IP: 192.168.1.11","timestamp":"2025-05-04T20:54:02.084Z"}
+{"level":"warn","message":"Assign governorate failed: Region not assigned to user usr_U0PUIcVWIbvnRJLkdKyHJ, user: user_yutki8kak","timestamp":"2025-05-04T20:54:02.111Z"}
+{"level":"error","message":"Assign governorate error: Governorate or Delegation not in assigned Regions., user: user_yutki8kak","timestamp":"2025-05-04T20:54:02.112Z"}
+{"level":"error","message":"Assign governorates error: Governorate or Delegation not in assigned Regions., user: user_yutki8kak, IP: 192.168.1.11","timestamp":"2025-05-04T20:54:02.113Z"}
+{"level":"info","message":"Fetched user usr_U0PUIcVWIbvnRJLkdKyHJ by user user_yutki8kak, IP: 192.168.1.11","timestamp":"2025-05-04T20:54:02.178Z"}
+{"level":"info","message":"Fetched user usr_U0PUIcVWIbvnRJLkdKyHJ by user user_yutki8kak, IP: 192.168.1.11","timestamp":"2025-05-04T20:54:02.199Z"}
+{"level":"info","message":"Fetched users by role Regional Manager by user user_yutki8kak, IP: 192.168.1.11","timestamp":"2025-05-04T20:54:02.230Z"}
+{"level":"info","message":"Fetched regional manager for supervisor usr_U0PUIcVWIbvnRJLkdKyHJ","timestamp":"2025-05-04T20:54:02.234Z"}
+{"level":"info","message":"Fetched regional manager for supervisor usr_U0PUIcVWIbvnRJLkdKyHJ by user user_yutki8kak, IP: 192.168.1.11","timestamp":"2025-05-04T20:54:02.235Z"}
+{"level":"info","message":"Fetched regions for user usr_yxi51_5CrROFSvgJzVea3, IP: 192.168.1.11","timestamp":"2025-05-04T20:54:02.243Z"}
+{"level":"info","message":"Fetched governorates for region reg_83f4M8 by user user_yutki8kak, IP: 192.168.1.11","timestamp":"2025-05-04T20:54:02.331Z"}
+{"level":"info","message":"Fetched governorates for region reg_83f4M8 by user user_yutki8kak, IP: 192.168.1.11","timestamp":"2025-05-04T20:54:02.372Z"}
+{"level":"info","message":"Fetched governorates for user usr_U0PUIcVWIbvnRJLkdKyHJ, IP: 192.168.1.11","timestamp":"2025-05-04T20:54:02.381Z"}
+{"level":"info","message":"Fetched governorates for user usr_U0PUIcVWIbvnRJLkdKyHJ, IP: 192.168.1.11","timestamp":"2025-05-04T20:54:02.402Z"}
+{"level":"info","message":"Fetched delegations for governorate gov_ATKiSs by user user_yutki8kak, IP: 192.168.1.11","timestamp":"2025-05-04T20:54:40.394Z"}
+{"level":"info","message":"Fetched delegations for user usr_U0PUIcVWIbvnRJLkdKyHJ, IP: 192.168.1.11","timestamp":"2025-05-04T20:54:40.410Z"}
+{"level":"info","message":"Fetched regional manager for supervisor usr_U0PUIcVWIbvnRJLkdKyHJ","timestamp":"2025-05-04T20:54:42.101Z"}
+{"level":"info","message":"Fetched regional manager for supervisor usr_U0PUIcVWIbvnRJLkdKyHJ by user user_yutki8kak, IP: 192.168.1.11","timestamp":"2025-05-04T20:54:42.102Z"}
+{"level":"info","message":"Fetched governorates for user usr_U0PUIcVWIbvnRJLkdKyHJ, IP: 192.168.1.11","timestamp":"2025-05-04T20:54:42.126Z"}
+{"level":"warn","message":"Assign governorate failed: Region not assigned to user usr_U0PUIcVWIbvnRJLkdKyHJ, user: user_yutki8kak","timestamp":"2025-05-04T20:54:42.156Z"}
+{"level":"error","message":"Assign governorate error: Governorate or Delegation not in assigned Regions., user: user_yutki8kak","timestamp":"2025-05-04T20:54:42.156Z"}
+{"level":"error","message":"Assign governorates error: Governorate or Delegation not in assigned Regions., user: user_yutki8kak, IP: 192.168.1.11","timestamp":"2025-05-04T20:54:42.157Z"}
+{"level":"info","message":"Fetched user usr_U0PUIcVWIbvnRJLkdKyHJ by user user_yutki8kak, IP: 192.168.1.11","timestamp":"2025-05-04T20:54:42.250Z"}
+{"level":"info","message":"Fetched user usr_U0PUIcVWIbvnRJLkdKyHJ by user user_yutki8kak, IP: 192.168.1.11","timestamp":"2025-05-04T20:54:42.321Z"}
+{"level":"info","message":"Fetched regions for user usr_yxi51_5CrROFSvgJzVea3, IP: 192.168.1.11","timestamp":"2025-05-04T20:54:42.354Z"}
+{"level":"info","message":"Fetched users by role Regional Manager by user user_yutki8kak, IP: 192.168.1.11","timestamp":"2025-05-04T20:54:42.364Z"}
+{"level":"info","message":"Fetched regional manager for supervisor usr_U0PUIcVWIbvnRJLkdKyHJ","timestamp":"2025-05-04T20:54:42.397Z"}
+{"level":"info","message":"Fetched regional manager for supervisor usr_U0PUIcVWIbvnRJLkdKyHJ by user user_yutki8kak, IP: 192.168.1.11","timestamp":"2025-05-04T20:54:42.399Z"}
+{"level":"info","message":"Fetched governorates for region reg_83f4M8 by user user_yutki8kak, IP: 192.168.1.11","timestamp":"2025-05-04T20:54:42.422Z"}
+{"level":"info","message":"Fetched governorates for region reg_83f4M8 by user user_yutki8kak, IP: 192.168.1.11","timestamp":"2025-05-04T20:54:42.450Z"}
+{"level":"info","message":"Fetched governorates for user usr_U0PUIcVWIbvnRJLkdKyHJ, IP: 192.168.1.11","timestamp":"2025-05-04T20:54:42.471Z"}
+{"level":"info","message":"Fetched governorates for user usr_U0PUIcVWIbvnRJLkdKyHJ, IP: 192.168.1.11","timestamp":"2025-05-04T20:54:42.495Z"}
+{"level":"info","message":"Fetched regions for user usr_MvbNkZAOeXbvFICet8rRn, IP: 192.168.1.11","timestamp":"2025-05-04T20:54:44.695Z"}
+{"level":"info","message":"Fetched regional manager for supervisor usr_U0PUIcVWIbvnRJLkdKyHJ","timestamp":"2025-05-04T20:54:46.582Z"}
+{"level":"info","message":"Fetched regional manager for supervisor usr_U0PUIcVWIbvnRJLkdKyHJ by user user_yutki8kak, IP: 192.168.1.11","timestamp":"2025-05-04T20:54:46.583Z"}
+{"level":"info","message":"Assigned regional manager usr_MvbNkZAOeXbvFICet8rRn to supervisor usr_U0PUIcVWIbvnRJLkdKyHJ by user user_yutki8kak","timestamp":"2025-05-04T20:54:46.613Z"}
+{"level":"info","message":"Notification stored Notification for user:regional_manager_assigned","notificationID":"notif_2FG8dmSXeOp_ZuffEV8dn","timestamp":"2025-05-04T20:54:46.640Z","userID":"user_yutki8kak"}
+{"level":"info","message":"Notification status updated","notificationID":"notif_2FG8dmSXeOp_ZuffEV8dn","status":"sent","timestamp":"2025-05-04T20:54:46.646Z"}
+{"event":"user:regional_manager_assigned","level":"info","message":"Triggered notifications","recipientCount":1,"timestamp":"2025-05-04T20:54:46.648Z"}
+{"level":"info","message":"Assigned regional manager usr_MvbNkZAOeXbvFICet8rRn to supervisor usr_U0PUIcVWIbvnRJLkdKyHJ by user user_yutki8kak, IP: 192.168.1.11","timestamp":"2025-05-04T20:54:46.649Z"}
+{"level":"info","message":"Fetched governorates for user usr_U0PUIcVWIbvnRJLkdKyHJ, IP: 192.168.1.11","timestamp":"2025-05-04T20:54:46.692Z"}
+{"level":"info","message":"Fetched delegations for user usr_U0PUIcVWIbvnRJLkdKyHJ, IP: 192.168.1.11","timestamp":"2025-05-04T20:54:46.740Z"}
+{"level":"warn","message":"Get agents by user failed: Missing user ID, user: user_yutki8kak, IP: 192.168.1.11","timestamp":"2025-05-04T20:54:46.779Z"}
+{"level":"info","message":"Fetched regional manager for supervisor usr_U0PUIcVWIbvnRJLkdKyHJ","timestamp":"2025-05-04T20:54:46.870Z"}
+{"level":"info","message":"Fetched regional manager for supervisor usr_U0PUIcVWIbvnRJLkdKyHJ by user user_yutki8kak, IP: 192.168.1.11","timestamp":"2025-05-04T20:54:46.871Z"}
+{"level":"info","message":"Fetched users by role Regional Manager by user user_yutki8kak, IP: 192.168.1.11","timestamp":"2025-05-04T20:54:46.879Z"}
+{"level":"info","message":"Fetched regions for user usr_MvbNkZAOeXbvFICet8rRn, IP: 192.168.1.11","timestamp":"2025-05-04T20:54:46.887Z"}
+{"level":"info","message":"Fetched governorates for user usr_U0PUIcVWIbvnRJLkdKyHJ, IP: 192.168.1.11","timestamp":"2025-05-04T20:54:46.950Z"}
+{"level":"info","message":"Fetched governorates for user usr_U0PUIcVWIbvnRJLkdKyHJ, IP: 192.168.1.11","timestamp":"2025-05-04T20:54:46.975Z"}
+{"level":"info","message":"Fetched supervisors for user usr_yxi51_5CrROFSvgJzVea3","timestamp":"2025-05-04T20:54:49.804Z"}
+{"level":"info","message":"Fetched supervisors for user usr_yxi51_5CrROFSvgJzVea3 by user user_yutki8kak, IP: 192.168.1.11","timestamp":"2025-05-04T20:54:49.805Z"}
+{"level":"info","message":"Fetched regional managers for user usr_yxi51_5CrROFSvgJzVea3","timestamp":"2025-05-04T20:54:49.807Z"}
+{"level":"info","message":"Fetched regional managers for user usr_yxi51_5CrROFSvgJzVea3 by user user_yutki8kak, IP: 192.168.1.11","timestamp":"2025-05-04T20:54:49.808Z"}
+{"level":"info","message":"Fetched user usr_yxi51_5CrROFSvgJzVea3 by user user_yutki8kak, IP: 192.168.1.11","timestamp":"2025-05-04T20:54:49.925Z"}
+{"level":"info","message":"Fetched all regions by user user_yutki8kak, IP: 192.168.1.11","timestamp":"2025-05-04T20:54:51.227Z"}
+{"level":"info","message":"Fetched director for regional manager usr_yxi51_5CrROFSvgJzVea3","timestamp":"2025-05-04T20:54:51.232Z"}
+{"level":"info","message":"Fetched director for regional manager usr_yxi51_5CrROFSvgJzVea3 by user user_yutki8kak, IP: 192.168.1.11","timestamp":"2025-05-04T20:54:51.233Z"}
+{"level":"info","message":"Fetched users by role Manager by user user_yutki8kak, IP: 192.168.1.11","timestamp":"2025-05-04T20:54:51.240Z"}
+{"level":"info","message":"Fetched regions for user usr_yxi51_5CrROFSvgJzVea3, IP: 192.168.1.11","timestamp":"2025-05-04T20:54:51.252Z"}
+{"level":"info","message":"Fetched supervisors for regional manager usr_yxi51_5CrROFSvgJzVea3","timestamp":"2025-05-04T20:54:51.256Z"}
+{"level":"info","message":"Fetched supervisors for regional manager usr_yxi51_5CrROFSvgJzVea3 by user user_yutki8kak, IP: 192.168.1.11","timestamp":"2025-05-04T20:54:51.259Z"}
+{"level":"info","message":"Fetched users by role Supervisor by user user_yutki8kak, IP: 192.168.1.11","timestamp":"2025-05-04T20:54:51.270Z"}
+{"level":"info","message":"Fetched regional managers for user usr_MvbNkZAOeXbvFICet8rRn","timestamp":"2025-05-04T20:54:54.885Z"}
+{"level":"info","message":"Fetched regional managers for user usr_MvbNkZAOeXbvFICet8rRn by user user_yutki8kak, IP: 192.168.1.11","timestamp":"2025-05-04T20:54:54.886Z"}
+{"level":"info","message":"Fetched supervisors for user usr_MvbNkZAOeXbvFICet8rRn","timestamp":"2025-05-04T20:54:54.896Z"}
+{"level":"info","message":"Fetched supervisors for user usr_MvbNkZAOeXbvFICet8rRn by user user_yutki8kak, IP: 192.168.1.11","timestamp":"2025-05-04T20:54:54.897Z"}
+{"level":"info","message":"Fetched user usr_MvbNkZAOeXbvFICet8rRn by user user_yutki8kak, IP: 192.168.1.11","timestamp":"2025-05-04T20:54:54.973Z"}
+{"level":"info","message":"Fetched users by role Manager by user user_yutki8kak, IP: 192.168.1.11","timestamp":"2025-05-04T20:54:55.653Z"}
+{"level":"info","message":"Fetched director for regional manager usr_MvbNkZAOeXbvFICet8rRn","timestamp":"2025-05-04T20:54:55.656Z"}
+{"level":"info","message":"Fetched director for regional manager usr_MvbNkZAOeXbvFICet8rRn by user user_yutki8kak, IP: 192.168.1.11","timestamp":"2025-05-04T20:54:55.657Z"}
+{"level":"info","message":"Fetched all regions by user user_yutki8kak, IP: 192.168.1.11","timestamp":"2025-05-04T20:54:55.659Z"}
+{"level":"info","message":"Fetched supervisors for regional manager usr_MvbNkZAOeXbvFICet8rRn","timestamp":"2025-05-04T20:54:55.668Z"}
+{"level":"info","message":"Fetched supervisors for regional manager usr_MvbNkZAOeXbvFICet8rRn by user user_yutki8kak, IP: 192.168.1.11","timestamp":"2025-05-04T20:54:55.669Z"}
+{"level":"info","message":"Fetched regions for user usr_MvbNkZAOeXbvFICet8rRn, IP: 192.168.1.11","timestamp":"2025-05-04T20:54:55.673Z"}
+{"level":"info","message":"Fetched users by role Supervisor by user user_yutki8kak, IP: 192.168.1.11","timestamp":"2025-05-04T20:54:55.679Z"}
+{"level":"info","message":"Fetched director for regional manager usr_MvbNkZAOeXbvFICet8rRn","timestamp":"2025-05-04T20:55:04.801Z"}
+{"level":"info","message":"Fetched director for regional manager usr_MvbNkZAOeXbvFICet8rRn by user user_yutki8kak, IP: 192.168.1.11","timestamp":"2025-05-04T20:55:04.802Z"}
+{"level":"info","message":"Fetched regions for user usr_MvbNkZAOeXbvFICet8rRn, IP: 192.168.1.11","timestamp":"2025-05-04T20:55:04.822Z"}
+{"level":"info","message":"Assigned region reg_tY69F0 to user usr_MvbNkZAOeXbvFICet8rRn by user user_yutki8kak","timestamp":"2025-05-04T20:55:04.848Z"}
+{"level":"info","message":"Notification stored Notification for user:regions_assigned","notificationID":"notif_ACCijKLAi_Y3AjIVVdZYx","timestamp":"2025-05-04T20:55:04.863Z","userID":"user_yutki8kak"}
+{"level":"info","message":"Notification status updated","notificationID":"notif_ACCijKLAi_Y3AjIVVdZYx","status":"sent","timestamp":"2025-05-04T20:55:04.868Z"}
+{"event":"user:regions_assigned","level":"info","message":"Triggered notifications","recipientCount":1,"timestamp":"2025-05-04T20:55:04.871Z"}
+{"level":"info","message":"Assigned regions to regional manager usr_MvbNkZAOeXbvFICet8rRn by user user_yutki8kak, IP: 192.168.1.11","timestamp":"2025-05-04T20:55:04.872Z"}
+{"level":"info","message":"Fetched supervisors for regional manager usr_MvbNkZAOeXbvFICet8rRn","timestamp":"2025-05-04T20:55:04.905Z"}
+{"level":"info","message":"Fetched supervisors for regional manager usr_MvbNkZAOeXbvFICet8rRn by user user_yutki8kak, IP: 192.168.1.11","timestamp":"2025-05-04T20:55:04.906Z"}
+{"level":"info","message":"Fetched users by role Manager by user user_yutki8kak, IP: 192.168.1.11","timestamp":"2025-05-04T20:55:05.000Z"}
+{"level":"info","message":"Fetched director for regional manager usr_MvbNkZAOeXbvFICet8rRn","timestamp":"2025-05-04T20:55:05.005Z"}
+{"level":"info","message":"Fetched director for regional manager usr_MvbNkZAOeXbvFICet8rRn by user user_yutki8kak, IP: 192.168.1.11","timestamp":"2025-05-04T20:55:05.008Z"}
+{"level":"info","message":"Fetched all regions by user user_yutki8kak, IP: 192.168.1.11","timestamp":"2025-05-04T20:55:05.016Z"}
+{"level":"info","message":"Fetched supervisors for regional manager usr_MvbNkZAOeXbvFICet8rRn","timestamp":"2025-05-04T20:55:05.020Z"}
+{"level":"info","message":"Fetched supervisors for regional manager usr_MvbNkZAOeXbvFICet8rRn by user user_yutki8kak, IP: 192.168.1.11","timestamp":"2025-05-04T20:55:05.021Z"}
+{"level":"info","message":"Fetched regions for user usr_MvbNkZAOeXbvFICet8rRn, IP: 192.168.1.11","timestamp":"2025-05-04T20:55:05.031Z"}
+{"level":"info","message":"Fetched users by role Supervisor by user user_yutki8kak, IP: 192.168.1.11","timestamp":"2025-05-04T20:55:05.039Z"}
+{"level":"info","message":"Fetched notification rules by user: user_yutki8kak, IP: 192.168.1.11","timestamp":"2025-05-04T20:55:09.850Z"}
+{"level":"info","message":"Fetched regional managers for user usr_U0PUIcVWIbvnRJLkdKyHJ","timestamp":"2025-05-04T20:55:12.585Z"}
+{"level":"info","message":"Fetched regional managers for user usr_U0PUIcVWIbvnRJLkdKyHJ by user user_yutki8kak, IP: 192.168.1.11","timestamp":"2025-05-04T20:55:12.585Z"}
+{"level":"info","message":"Fetched user usr_U0PUIcVWIbvnRJLkdKyHJ by user user_yutki8kak, IP: 192.168.1.11","timestamp":"2025-05-04T20:55:12.656Z"}
+{"level":"info","message":"Fetched users by role Regional Manager by user user_yutki8kak, IP: 192.168.1.11","timestamp":"2025-05-04T20:55:13.354Z"}
+{"level":"info","message":"Fetched regional manager for supervisor usr_U0PUIcVWIbvnRJLkdKyHJ","timestamp":"2025-05-04T20:55:13.357Z"}
+{"level":"info","message":"Fetched regional manager for supervisor usr_U0PUIcVWIbvnRJLkdKyHJ by user user_yutki8kak, IP: 192.168.1.11","timestamp":"2025-05-04T20:55:13.358Z"}
+{"level":"info","message":"Fetched regions for user usr_MvbNkZAOeXbvFICet8rRn, IP: 192.168.1.11","timestamp":"2025-05-04T20:55:13.393Z"}
+{"level":"info","message":"Fetched governorates for region reg_tY69F0 by user user_yutki8kak, IP: 192.168.1.11","timestamp":"2025-05-04T20:55:13.410Z"}
+{"level":"info","message":"Fetched governorates for user usr_U0PUIcVWIbvnRJLkdKyHJ, IP: 192.168.1.11","timestamp":"2025-05-04T20:55:13.437Z"}
+{"level":"info","message":"Fetched supervisors for user usr_dD8W7OtuirljS1Kr27Me9","timestamp":"2025-05-04T20:55:17.441Z"}
+{"level":"info","message":"Fetched supervisors for user usr_dD8W7OtuirljS1Kr27Me9 by user user_yutki8kak, IP: 192.168.1.11","timestamp":"2025-05-04T20:55:17.442Z"}
+{"level":"info","message":"Fetched regional managers for user usr_dD8W7OtuirljS1Kr27Me9","timestamp":"2025-05-04T20:55:17.444Z"}
+{"level":"info","message":"Fetched regional managers for user usr_dD8W7OtuirljS1Kr27Me9 by user user_yutki8kak, IP: 192.168.1.11","timestamp":"2025-05-04T20:55:17.445Z"}
+{"level":"info","message":"Fetched user usr_dD8W7OtuirljS1Kr27Me9 by user user_yutki8kak, IP: 192.168.1.11","timestamp":"2025-05-04T20:55:17.553Z"}
+{"level":"info","message":"Fetched regional manager for supervisor usr_dD8W7OtuirljS1Kr27Me9","timestamp":"2025-05-04T20:55:18.305Z"}
+{"level":"info","message":"Fetched regional manager for supervisor usr_dD8W7OtuirljS1Kr27Me9 by user user_yutki8kak, IP: 192.168.1.11","timestamp":"2025-05-04T20:55:18.306Z"}
+{"level":"info","message":"Fetched users by role Regional Manager by user user_yutki8kak, IP: 192.168.1.11","timestamp":"2025-05-04T20:55:18.309Z"}
+{"level":"info","message":"Fetched regions for user usr_yxi51_5CrROFSvgJzVea3, IP: 192.168.1.11","timestamp":"2025-05-04T20:55:18.347Z"}
+{"level":"info","message":"Fetched governorates for region reg_83f4M8 by user user_yutki8kak, IP: 192.168.1.11","timestamp":"2025-05-04T20:55:18.366Z"}
+{"level":"info","message":"Fetched governorates for user usr_dD8W7OtuirljS1Kr27Me9, IP: 192.168.1.11","timestamp":"2025-05-04T20:55:18.382Z"}
+{"level":"info","message":"Fetched regional managers for user usr_Q9Nc-tEWGXSnADqeHkxSZ","timestamp":"2025-05-04T20:55:23.562Z"}
+{"level":"info","message":"Fetched regional managers for user usr_Q9Nc-tEWGXSnADqeHkxSZ by user user_yutki8kak, IP: 192.168.1.11","timestamp":"2025-05-04T20:55:23.563Z"}
+{"level":"info","message":"Fetched user usr_Q9Nc-tEWGXSnADqeHkxSZ by user user_yutki8kak, IP: 192.168.1.11","timestamp":"2025-05-04T20:55:23.679Z"}
+{"level":"info","message":"Fetched users by role Regional Manager by user user_yutki8kak, IP: 192.168.1.11","timestamp":"2025-05-04T20:55:24.500Z"}
+{"level":"info","message":"Fetched regional manager for supervisor usr_Q9Nc-tEWGXSnADqeHkxSZ","timestamp":"2025-05-04T20:55:24.502Z"}
+{"level":"info","message":"Fetched regional manager for supervisor usr_Q9Nc-tEWGXSnADqeHkxSZ by user user_yutki8kak, IP: 192.168.1.11","timestamp":"2025-05-04T20:55:24.503Z"}
+{"level":"info","message":"Fetched regions for user usr_MvbNkZAOeXbvFICet8rRn, IP: 192.168.1.11","timestamp":"2025-05-04T20:55:25.423Z"}
+{"level":"info","message":"Fetched governorates for region reg_tY69F0 by user user_yutki8kak, IP: 192.168.1.11","timestamp":"2025-05-04T20:55:25.437Z"}
+{"level":"info","message":"Fetched governorates for user usr_Q9Nc-tEWGXSnADqeHkxSZ, IP: 192.168.1.11","timestamp":"2025-05-04T20:55:25.455Z"}
+{"level":"info","message":"Fetched regional manager for supervisor usr_Q9Nc-tEWGXSnADqeHkxSZ","timestamp":"2025-05-04T20:55:27.278Z"}
+{"level":"info","message":"Fetched regional manager for supervisor usr_Q9Nc-tEWGXSnADqeHkxSZ by user user_yutki8kak, IP: 192.168.1.11","timestamp":"2025-05-04T20:55:27.279Z"}
+{"level":"info","message":"Assigned regional manager usr_MvbNkZAOeXbvFICet8rRn to supervisor usr_Q9Nc-tEWGXSnADqeHkxSZ by user user_yutki8kak","timestamp":"2025-05-04T20:55:27.298Z"}
+{"level":"info","message":"Notification stored Notification for user:regional_manager_assigned","notificationID":"notif_J6CSPzc-ZQTN5qS9f4B9P","timestamp":"2025-05-04T20:55:27.307Z","userID":"user_yutki8kak"}
+{"level":"info","message":"Notification status updated","notificationID":"notif_J6CSPzc-ZQTN5qS9f4B9P","status":"sent","timestamp":"2025-05-04T20:55:27.309Z"}
+{"event":"user:regional_manager_assigned","level":"info","message":"Triggered notifications","recipientCount":1,"timestamp":"2025-05-04T20:55:27.310Z"}
+{"level":"info","message":"Assigned regional manager usr_MvbNkZAOeXbvFICet8rRn to supervisor usr_Q9Nc-tEWGXSnADqeHkxSZ by user user_yutki8kak, IP: 192.168.1.11","timestamp":"2025-05-04T20:55:27.311Z"}
+{"level":"info","message":"Fetched governorates for user usr_Q9Nc-tEWGXSnADqeHkxSZ, IP: 192.168.1.11","timestamp":"2025-05-04T20:55:27.334Z"}
+{"level":"info","message":"Fetched delegations for user usr_Q9Nc-tEWGXSnADqeHkxSZ, IP: 192.168.1.11","timestamp":"2025-05-04T20:55:27.403Z"}
+{"level":"warn","message":"Get agents by user failed: Missing user ID, user: user_yutki8kak, IP: 192.168.1.11","timestamp":"2025-05-04T20:55:27.416Z"}
+{"level":"info","message":"Fetched users by role Regional Manager by user user_yutki8kak, IP: 192.168.1.11","timestamp":"2025-05-04T20:55:27.471Z"}
+{"level":"info","message":"Fetched regional manager for supervisor usr_Q9Nc-tEWGXSnADqeHkxSZ","timestamp":"2025-05-04T20:55:27.478Z"}
+{"level":"info","message":"Fetched regional manager for supervisor usr_Q9Nc-tEWGXSnADqeHkxSZ by user user_yutki8kak, IP: 192.168.1.11","timestamp":"2025-05-04T20:55:27.478Z"}
+{"level":"info","message":"Fetched regions for user usr_MvbNkZAOeXbvFICet8rRn, IP: 192.168.1.11","timestamp":"2025-05-04T20:55:27.480Z"}
+{"level":"info","message":"Fetched governorates for region reg_tY69F0 by user user_yutki8kak, IP: 192.168.1.11","timestamp":"2025-05-04T20:55:27.511Z"}
+{"level":"info","message":"Fetched governorates for region reg_tY69F0 by user user_yutki8kak, IP: 192.168.1.11","timestamp":"2025-05-04T20:55:27.529Z"}
+{"level":"info","message":"Fetched governorates for user usr_Q9Nc-tEWGXSnADqeHkxSZ, IP: 192.168.1.11","timestamp":"2025-05-04T20:55:27.538Z"}
+{"level":"info","message":"Fetched governorates for user usr_Q9Nc-tEWGXSnADqeHkxSZ, IP: 192.168.1.11","timestamp":"2025-05-04T20:55:27.558Z"}
+{"level":"info","message":"Fetched regional managers for user usr_MvbNkZAOeXbvFICet8rRn","timestamp":"2025-05-04T20:55:31.880Z"}
+{"level":"info","message":"Fetched regional managers for user usr_MvbNkZAOeXbvFICet8rRn by user user_yutki8kak, IP: 192.168.1.11","timestamp":"2025-05-04T20:55:31.881Z"}
+{"level":"info","message":"Fetched user usr_MvbNkZAOeXbvFICet8rRn by user user_yutki8kak, IP: 192.168.1.11","timestamp":"2025-05-04T20:55:31.964Z"}
+{"level":"info","message":"Fetched all regions by user user_yutki8kak, IP: 192.168.1.11","timestamp":"2025-05-04T20:55:32.874Z"}
+{"level":"info","message":"Fetched users by role Manager by user user_yutki8kak, IP: 192.168.1.11","timestamp":"2025-05-04T20:55:32.879Z"}
+{"level":"info","message":"Fetched director for regional manager usr_MvbNkZAOeXbvFICet8rRn","timestamp":"2025-05-04T20:55:32.889Z"}
+{"level":"info","message":"Fetched director for regional manager usr_MvbNkZAOeXbvFICet8rRn by user user_yutki8kak, IP: 192.168.1.11","timestamp":"2025-05-04T20:55:32.890Z"}
+{"level":"info","message":"Fetched users by role Supervisor by user user_yutki8kak, IP: 192.168.1.11","timestamp":"2025-05-04T20:55:32.896Z"}
+{"level":"info","message":"Fetched regions for user usr_MvbNkZAOeXbvFICet8rRn, IP: 192.168.1.11","timestamp":"2025-05-04T20:55:32.910Z"}
+{"level":"info","message":"Fetched supervisors for regional manager usr_MvbNkZAOeXbvFICet8rRn","timestamp":"2025-05-04T20:55:32.933Z"}
+{"level":"info","message":"Fetched supervisors for regional manager usr_MvbNkZAOeXbvFICet8rRn by user user_yutki8kak, IP: 192.168.1.11","timestamp":"2025-05-04T20:55:32.934Z"}
+{"level":"info","message":"Fetched regional managers for user usr_1spdDBpY-FD_inP-MsXNV","timestamp":"2025-05-04T20:55:43.270Z"}
+{"level":"info","message":"Fetched regional managers for user usr_1spdDBpY-FD_inP-MsXNV by user user_yutki8kak, IP: 192.168.1.11","timestamp":"2025-05-04T20:55:43.271Z"}
+{"level":"info","message":"Fetched supervisors for user usr_1spdDBpY-FD_inP-MsXNV","timestamp":"2025-05-04T20:55:43.273Z"}
+{"level":"info","message":"Fetched supervisors for user usr_1spdDBpY-FD_inP-MsXNV by user user_yutki8kak, IP: 192.168.1.11","timestamp":"2025-05-04T20:55:43.274Z"}
+{"level":"info","message":"Fetched user usr_1spdDBpY-FD_inP-MsXNV by user user_yutki8kak, IP: 192.168.1.11","timestamp":"2025-05-04T20:55:43.388Z"}
+{"level":"info","message":"Fetched regional managers for director usr_1spdDBpY-FD_inP-MsXNV","timestamp":"2025-05-04T20:55:44.751Z"}
+{"level":"info","message":"Fetched regional managers for director usr_1spdDBpY-FD_inP-MsXNV by user user_yutki8kak, IP: 192.168.1.11","timestamp":"2025-05-04T20:55:44.752Z"}
+{"level":"info","message":"Fetched users by role Regional Manager by user user_yutki8kak, IP: 192.168.1.11","timestamp":"2025-05-04T20:55:44.755Z"}
+{"level":"info","message":"Fetched regional managers for director usr_1spdDBpY-FD_inP-MsXNV","timestamp":"2025-05-04T20:55:47.820Z"}
+{"level":"info","message":"Fetched regional managers for director usr_1spdDBpY-FD_inP-MsXNV by user user_yutki8kak, IP: 192.168.1.11","timestamp":"2025-05-04T20:55:47.822Z"}
+{"level":"info","message":"Assigned director usr_1spdDBpY-FD_inP-MsXNV to regional manager usr_MvbNkZAOeXbvFICet8rRn by user user_yutki8kak","timestamp":"2025-05-04T20:55:47.848Z"}
+{"level":"info","message":"Assigned director usr_1spdDBpY-FD_inP-MsXNV to regional manager usr_yxi51_5CrROFSvgJzVea3 by user user_yutki8kak","timestamp":"2025-05-04T20:55:47.849Z"}
+{"level":"info","message":"Notification stored Notification for user:director_assigned","notificationID":"notif_aSKCgBQsvt_IBAFiftnrj","timestamp":"2025-05-04T20:55:47.865Z","userID":"user_yutki8kak"}
+{"level":"info","message":"Notification stored Notification for user:director_assigned","notificationID":"notif_Z80SYrMahIU2cwNBhyAQK","timestamp":"2025-05-04T20:55:47.868Z","userID":"user_yutki8kak"}
+{"level":"info","message":"Notification status updated","notificationID":"notif_aSKCgBQsvt_IBAFiftnrj","status":"sent","timestamp":"2025-05-04T20:55:47.872Z"}
+{"event":"user:director_assigned","level":"info","message":"Triggered notifications","recipientCount":1,"timestamp":"2025-05-04T20:55:47.873Z"}
+{"level":"info","message":"Assigned director usr_1spdDBpY-FD_inP-MsXNV to regional manager usr_MvbNkZAOeXbvFICet8rRn by user user_yutki8kak, IP: 192.168.1.11","timestamp":"2025-05-04T20:55:47.874Z"}
+{"level":"info","message":"Notification status updated","notificationID":"notif_Z80SYrMahIU2cwNBhyAQK","status":"sent","timestamp":"2025-05-04T20:55:47.880Z"}
+{"event":"user:director_assigned","level":"info","message":"Triggered notifications","recipientCount":1,"timestamp":"2025-05-04T20:55:47.883Z"}
+{"level":"info","message":"Assigned director usr_1spdDBpY-FD_inP-MsXNV to regional manager usr_yxi51_5CrROFSvgJzVea3 by user user_yutki8kak, IP: 192.168.1.11","timestamp":"2025-05-04T20:55:47.884Z"}
+{"level":"info","message":"Fetched users by role Regional Manager by user user_yutki8kak, IP: 192.168.1.11","timestamp":"2025-05-04T20:55:48.117Z"}
+{"level":"info","message":"Fetched regional managers for director usr_1spdDBpY-FD_inP-MsXNV","timestamp":"2025-05-04T20:55:48.127Z"}
+{"level":"info","message":"Fetched regional managers for director usr_1spdDBpY-FD_inP-MsXNV by user user_yutki8kak, IP: 192.168.1.11","timestamp":"2025-05-04T20:55:48.127Z"}
+{"level":"info","message":"Fetched regional managers for user usr_MvbNkZAOeXbvFICet8rRn","timestamp":"2025-05-04T20:55:52.439Z"}
+{"level":"info","message":"Fetched regional managers for user usr_MvbNkZAOeXbvFICet8rRn by user user_yutki8kak, IP: 192.168.1.11","timestamp":"2025-05-04T20:55:52.440Z"}
+{"level":"info","message":"Fetched user usr_MvbNkZAOeXbvFICet8rRn by user user_yutki8kak, IP: 192.168.1.11","timestamp":"2025-05-04T20:55:52.532Z"}
+{"level":"info","message":"Fetched users by role Manager by user user_yutki8kak, IP: 192.168.1.11","timestamp":"2025-05-04T20:55:53.356Z"}
+{"level":"info","message":"Fetched director for regional manager usr_MvbNkZAOeXbvFICet8rRn","timestamp":"2025-05-04T20:55:53.360Z"}
+{"level":"info","message":"Fetched director for regional manager usr_MvbNkZAOeXbvFICet8rRn by user user_yutki8kak, IP: 192.168.1.11","timestamp":"2025-05-04T20:55:53.363Z"}
+{"level":"info","message":"Fetched regions for user usr_MvbNkZAOeXbvFICet8rRn, IP: 192.168.1.11","timestamp":"2025-05-04T20:55:53.367Z"}
+{"level":"info","message":"Fetched all regions by user user_yutki8kak, IP: 192.168.1.11","timestamp":"2025-05-04T20:55:53.369Z"}
+{"level":"info","message":"Fetched supervisors for regional manager usr_MvbNkZAOeXbvFICet8rRn","timestamp":"2025-05-04T20:55:53.382Z"}
+{"level":"info","message":"Fetched supervisors for regional manager usr_MvbNkZAOeXbvFICet8rRn by user user_yutki8kak, IP: 192.168.1.11","timestamp":"2025-05-04T20:55:53.386Z"}
+{"level":"info","message":"Fetched users by role Supervisor by user user_yutki8kak, IP: 192.168.1.11","timestamp":"2025-05-04T20:55:53.390Z"}
+{"level":"info","message":"Fetched regional managers for user usr_MvbNkZAOeXbvFICet8rRn","timestamp":"2025-05-04T20:55:56.508Z"}
+{"level":"info","message":"Fetched regional managers for user usr_MvbNkZAOeXbvFICet8rRn by user user_yutki8kak, IP: 192.168.1.11","timestamp":"2025-05-04T20:55:56.509Z"}
+{"level":"info","message":"Fetched user usr_MvbNkZAOeXbvFICet8rRn by user user_yutki8kak, IP: 192.168.1.11","timestamp":"2025-05-04T20:55:56.619Z"}
+{"level":"info","message":"Fetched director for regional manager usr_MvbNkZAOeXbvFICet8rRn","timestamp":"2025-05-04T20:55:57.557Z"}
+{"level":"info","message":"Fetched director for regional manager usr_MvbNkZAOeXbvFICet8rRn by user user_yutki8kak, IP: 192.168.1.11","timestamp":"2025-05-04T20:55:57.558Z"}
+{"level":"info","message":"Fetched all regions by user user_yutki8kak, IP: 192.168.1.11","timestamp":"2025-05-04T20:55:57.573Z"}
+{"level":"info","message":"Fetched users by role Manager by user user_yutki8kak, IP: 192.168.1.11","timestamp":"2025-05-04T20:55:57.576Z"}
+{"level":"info","message":"Fetched regions for user usr_MvbNkZAOeXbvFICet8rRn, IP: 192.168.1.11","timestamp":"2025-05-04T20:55:57.579Z"}
+{"level":"info","message":"Fetched supervisors for regional manager usr_MvbNkZAOeXbvFICet8rRn","timestamp":"2025-05-04T20:55:57.583Z"}
+{"level":"info","message":"Fetched supervisors for regional manager usr_MvbNkZAOeXbvFICet8rRn by user user_yutki8kak, IP: 192.168.1.11","timestamp":"2025-05-04T20:55:57.584Z"}
+{"level":"info","message":"Fetched users by role Supervisor by user user_yutki8kak, IP: 192.168.1.11","timestamp":"2025-05-04T20:55:57.588Z"}
+{"level":"info","message":"Fetched regional managers for user usr_1spdDBpY-FD_inP-MsXNV","timestamp":"2025-05-04T20:56:01.212Z"}
+{"level":"info","message":"Fetched regional managers for user usr_1spdDBpY-FD_inP-MsXNV by user user_yutki8kak, IP: 192.168.1.11","timestamp":"2025-05-04T20:56:01.213Z"}
+{"level":"info","message":"Fetched user usr_1spdDBpY-FD_inP-MsXNV by user user_yutki8kak, IP: 192.168.1.11","timestamp":"2025-05-04T20:56:01.295Z"}
+{"level":"info","message":"Fetched regional managers for director usr_1spdDBpY-FD_inP-MsXNV","timestamp":"2025-05-04T20:56:01.970Z"}
+{"level":"info","message":"Fetched regional managers for director usr_1spdDBpY-FD_inP-MsXNV by user user_yutki8kak, IP: 192.168.1.11","timestamp":"2025-05-04T20:56:01.971Z"}
+{"level":"info","message":"Fetched users by role Regional Manager by user user_yutki8kak, IP: 192.168.1.11","timestamp":"2025-05-04T20:56:01.973Z"}
+{"level":"info","message":"Fetched supervisors for user usr_STFw7LF2yVA-iNBwAEelc","timestamp":"2025-05-04T20:56:04.403Z"}
+{"level":"info","message":"Fetched supervisors for user usr_STFw7LF2yVA-iNBwAEelc by user user_yutki8kak, IP: 192.168.1.11","timestamp":"2025-05-04T20:56:04.403Z"}
+{"level":"info","message":"Fetched regional managers for user usr_STFw7LF2yVA-iNBwAEelc","timestamp":"2025-05-04T20:56:04.405Z"}
+{"level":"info","message":"Fetched regional managers for user usr_STFw7LF2yVA-iNBwAEelc by user user_yutki8kak, IP: 192.168.1.11","timestamp":"2025-05-04T20:56:04.406Z"}
+{"level":"info","message":"Fetched user usr_STFw7LF2yVA-iNBwAEelc by user user_yutki8kak, IP: 192.168.1.11","timestamp":"2025-05-04T20:56:04.487Z"}
+{"level":"info","message":"Fetched regional managers for director usr_STFw7LF2yVA-iNBwAEelc","timestamp":"2025-05-04T20:56:05.532Z"}
+{"level":"info","message":"Fetched regional managers for director usr_STFw7LF2yVA-iNBwAEelc by user user_yutki8kak, IP: 192.168.1.11","timestamp":"2025-05-04T20:56:05.533Z"}
+{"level":"info","message":"Fetched users by role Regional Manager by user user_yutki8kak, IP: 192.168.1.11","timestamp":"2025-05-04T20:56:05.535Z"}
+{"level":"info","message":"Fetched regional managers for director usr_STFw7LF2yVA-iNBwAEelc","timestamp":"2025-05-04T20:56:08.620Z"}
+{"level":"info","message":"Fetched regional managers for director usr_STFw7LF2yVA-iNBwAEelc by user user_yutki8kak, IP: 192.168.1.11","timestamp":"2025-05-04T20:56:08.621Z"}
+{"level":"info","message":"Assigned director usr_STFw7LF2yVA-iNBwAEelc to regional manager usr_MvbNkZAOeXbvFICet8rRn by user user_yutki8kak","timestamp":"2025-05-04T20:56:08.648Z"}
+{"level":"info","message":"Assigned director usr_STFw7LF2yVA-iNBwAEelc to regional manager usr_yxi51_5CrROFSvgJzVea3 by user user_yutki8kak","timestamp":"2025-05-04T20:56:08.651Z"}
+{"level":"info","message":"Notification stored Notification for user:director_assigned","notificationID":"notif_ihMVlfFHhwyPqyQ7WOQ7j","timestamp":"2025-05-04T20:56:08.665Z","userID":"user_yutki8kak"}
+{"level":"info","message":"Notification stored Notification for user:director_assigned","notificationID":"notif_GvIwtVDpqWjJXNqwLs6Zf","timestamp":"2025-05-04T20:56:08.668Z","userID":"user_yutki8kak"}
+{"level":"info","message":"Notification status updated","notificationID":"notif_ihMVlfFHhwyPqyQ7WOQ7j","status":"sent","timestamp":"2025-05-04T20:56:08.670Z"}
+{"event":"user:director_assigned","level":"info","message":"Triggered notifications","recipientCount":1,"timestamp":"2025-05-04T20:56:08.672Z"}
+{"level":"info","message":"Assigned director usr_STFw7LF2yVA-iNBwAEelc to regional manager usr_yxi51_5CrROFSvgJzVea3 by user user_yutki8kak, IP: 192.168.1.11","timestamp":"2025-05-04T20:56:08.672Z"}
+{"level":"info","message":"Notification status updated","notificationID":"notif_GvIwtVDpqWjJXNqwLs6Zf","status":"sent","timestamp":"2025-05-04T20:56:08.680Z"}
+{"event":"user:director_assigned","level":"info","message":"Triggered notifications","recipientCount":1,"timestamp":"2025-05-04T20:56:08.682Z"}
+{"level":"info","message":"Assigned director usr_STFw7LF2yVA-iNBwAEelc to regional manager usr_MvbNkZAOeXbvFICet8rRn by user user_yutki8kak, IP: 192.168.1.11","timestamp":"2025-05-04T20:56:08.683Z"}
+{"level":"info","message":"Fetched regional managers for director usr_STFw7LF2yVA-iNBwAEelc","timestamp":"2025-05-04T20:56:08.970Z"}
+{"level":"info","message":"Fetched regional managers for director usr_STFw7LF2yVA-iNBwAEelc by user user_yutki8kak, IP: 192.168.1.11","timestamp":"2025-05-04T20:56:08.971Z"}
+{"level":"info","message":"Fetched users by role Regional Manager by user user_yutki8kak, IP: 192.168.1.11","timestamp":"2025-05-04T20:56:09.005Z"}
+{"level":"info","message":"Fetched regional managers for user usr_MvbNkZAOeXbvFICet8rRn","timestamp":"2025-05-04T20:56:12.806Z"}
+{"level":"info","message":"Fetched regional managers for user usr_MvbNkZAOeXbvFICet8rRn by user user_yutki8kak, IP: 192.168.1.11","timestamp":"2025-05-04T20:56:12.807Z"}
+{"level":"info","message":"Fetched user usr_MvbNkZAOeXbvFICet8rRn by user user_yutki8kak, IP: 192.168.1.11","timestamp":"2025-05-04T20:56:12.912Z"}
+{"level":"info","message":"Fetched director for regional manager usr_MvbNkZAOeXbvFICet8rRn","timestamp":"2025-05-04T20:56:13.573Z"}
+{"level":"info","message":"Fetched director for regional manager usr_MvbNkZAOeXbvFICet8rRn by user user_yutki8kak, IP: 192.168.1.11","timestamp":"2025-05-04T20:56:13.575Z"}
+{"level":"info","message":"Fetched all regions by user user_yutki8kak, IP: 192.168.1.11","timestamp":"2025-05-04T20:56:13.578Z"}
+{"level":"info","message":"Fetched users by role Manager by user user_yutki8kak, IP: 192.168.1.11","timestamp":"2025-05-04T20:56:13.585Z"}
+{"level":"info","message":"Fetched regions for user usr_MvbNkZAOeXbvFICet8rRn, IP: 192.168.1.11","timestamp":"2025-05-04T20:56:13.597Z"}
+{"level":"info","message":"Fetched supervisors for regional manager usr_MvbNkZAOeXbvFICet8rRn","timestamp":"2025-05-04T20:56:13.602Z"}
+{"level":"info","message":"Fetched supervisors for regional manager usr_MvbNkZAOeXbvFICet8rRn by user user_yutki8kak, IP: 192.168.1.11","timestamp":"2025-05-04T20:56:13.603Z"}
+{"level":"info","message":"Fetched users by role Supervisor by user user_yutki8kak, IP: 192.168.1.11","timestamp":"2025-05-04T20:56:13.606Z"}
+{"level":"info","message":"Fetched regional managers for user usr_Q9Nc-tEWGXSnADqeHkxSZ","timestamp":"2025-05-04T20:56:27.851Z"}
+{"level":"info","message":"Fetched regional managers for user usr_Q9Nc-tEWGXSnADqeHkxSZ by user user_yutki8kak, IP: 192.168.1.11","timestamp":"2025-05-04T20:56:27.851Z"}
+{"level":"info","message":"Fetched user usr_Q9Nc-tEWGXSnADqeHkxSZ by user user_yutki8kak, IP: 192.168.1.11","timestamp":"2025-05-04T20:56:27.952Z"}
+{"level":"info","message":"Fetched users by role Regional Manager by user user_yutki8kak, IP: 192.168.1.11","timestamp":"2025-05-04T20:56:28.546Z"}
+{"level":"info","message":"Fetched regional manager for supervisor usr_Q9Nc-tEWGXSnADqeHkxSZ","timestamp":"2025-05-04T20:56:28.549Z"}
+{"level":"info","message":"Fetched regional manager for supervisor usr_Q9Nc-tEWGXSnADqeHkxSZ by user user_yutki8kak, IP: 192.168.1.11","timestamp":"2025-05-04T20:56:28.550Z"}
+{"level":"info","message":"Fetched regions for user usr_MvbNkZAOeXbvFICet8rRn, IP: 192.168.1.11","timestamp":"2025-05-04T20:56:28.591Z"}
+{"level":"info","message":"Fetched governorates for region reg_tY69F0 by user user_yutki8kak, IP: 192.168.1.11","timestamp":"2025-05-04T20:56:28.617Z"}
+{"level":"info","message":"Fetched governorates for user usr_Q9Nc-tEWGXSnADqeHkxSZ, IP: 192.168.1.11","timestamp":"2025-05-04T20:56:28.653Z"}
+{"level":"info","message":"Fetched delegations for governorate gov_Ld-n43 by user user_yutki8kak, IP: 192.168.1.11","timestamp":"2025-05-04T20:56:30.907Z"}
+{"level":"info","message":"Fetched delegations for user usr_Q9Nc-tEWGXSnADqeHkxSZ, IP: 192.168.1.11","timestamp":"2025-05-04T20:56:30.927Z"}
+{"level":"info","message":"Fetched regional manager for supervisor usr_Q9Nc-tEWGXSnADqeHkxSZ","timestamp":"2025-05-04T20:56:33.085Z"}
+{"level":"info","message":"Fetched regional manager for supervisor usr_Q9Nc-tEWGXSnADqeHkxSZ by user user_yutki8kak, IP: 192.168.1.11","timestamp":"2025-05-04T20:56:33.086Z"}
+{"level":"info","message":"Fetched governorates for user usr_Q9Nc-tEWGXSnADqeHkxSZ, IP: 192.168.1.11","timestamp":"2025-05-04T20:56:33.121Z"}
+{"level":"warn","message":"Assign governorate failed: Region not assigned to user usr_Q9Nc-tEWGXSnADqeHkxSZ, user: user_yutki8kak","timestamp":"2025-05-04T20:56:33.162Z"}
+{"level":"error","message":"Assign governorate error: Governorate or Delegation not in assigned Regions., user: user_yutki8kak","timestamp":"2025-05-04T20:56:33.163Z"}
+{"level":"error","message":"Assign governorates error: Governorate or Delegation not in assigned Regions., user: user_yutki8kak, IP: 192.168.1.11","timestamp":"2025-05-04T20:56:33.164Z"}
+{"level":"info","message":"Fetched user usr_Q9Nc-tEWGXSnADqeHkxSZ by user user_yutki8kak, IP: 192.168.1.11","timestamp":"2025-05-04T20:56:33.262Z"}
+{"level":"info","message":"Fetched user usr_Q9Nc-tEWGXSnADqeHkxSZ by user user_yutki8kak, IP: 192.168.1.11","timestamp":"2025-05-04T20:56:33.348Z"}
+{"level":"info","message":"Fetched regional manager for supervisor usr_Q9Nc-tEWGXSnADqeHkxSZ","timestamp":"2025-05-04T20:56:33.406Z"}
+{"level":"info","message":"Fetched regional manager for supervisor usr_Q9Nc-tEWGXSnADqeHkxSZ by user user_yutki8kak, IP: 192.168.1.11","timestamp":"2025-05-04T20:56:33.414Z"}
+{"level":"info","message":"Fetched users by role Regional Manager by user user_yutki8kak, IP: 192.168.1.11","timestamp":"2025-05-04T20:56:33.429Z"}
+{"level":"info","message":"Fetched regions for user usr_MvbNkZAOeXbvFICet8rRn, IP: 192.168.1.11","timestamp":"2025-05-04T20:56:33.441Z"}
+{"level":"info","message":"Fetched governorates for region reg_tY69F0 by user user_yutki8kak, IP: 192.168.1.11","timestamp":"2025-05-04T20:56:33.482Z"}
+{"level":"info","message":"Fetched governorates for user usr_Q9Nc-tEWGXSnADqeHkxSZ, IP: 192.168.1.11","timestamp":"2025-05-04T20:56:33.523Z"}
+{"level":"info","message":"Fetched governorates for region reg_tY69F0 by user user_yutki8kak, IP: 192.168.1.11","timestamp":"2025-05-04T20:56:33.529Z"}
+{"level":"info","message":"Cleaning up expired OTPs","timestamp":"2025-05-04T21:00:00.811Z"}
+{"level":"info","message":"Cleaned up 0 expired OTPs","timestamp":"2025-05-04T21:00:00.885Z"}
+{"level":"info","message":"Updated 0 visits from pending to validated","timestamp":"2025-05-04T21:00:00.890Z"}
+{"level":"info","message":"Database Initialization: Starting","step":"database","timestamp":"2025-05-04T21:00:23.358Z"}
+{"duration":"0.30","level":"info","message":"Database Initialization: Completed","status":"success","step":"database","timestamp":"2025-05-04T21:00:23.662Z"}
+{"level":"info","message":"SMTP Initialization: Starting","step":"smtp","timestamp":"2025-05-04T21:00:23.666Z"}
+{"level":"info","message":"SMTP server verified successfully","timestamp":"2025-05-04T21:00:24.242Z"}
+{"duration":"0.58","level":"info","message":"SMTP Initialization: Completed","status":"success","step":"smtp","timestamp":"2025-05-04T21:00:24.243Z"}
+{"level":"info","message":"SMS Initialization: Starting","step":"sms","timestamp":"2025-05-04T21:00:24.245Z"}
+{"level":"info","message":"Initializing SMS gateway with URL: https://wbm.tn/wbmonitor/send/webapi/v5/enquire_credit and headers: {\"X-API-Key\":\"9c5362a406e609d0ecc6f9a0e129c0a6\",\"Content-Type\":\"application/json\"}","timestamp":"2025-05-04T21:00:24.247Z"}
+{"level":"info","message":"SMS gateway initialized successfully: {\"op\":3,\"status\":0,\"status_desc\":\"success\",\"apiVersion\":\"5\",\"credit\":{\"national\":{\"available\":\"950021\",\"reserved\":\"0\"},\"international\":{\"available\":\"1\",\"reserved\":\"0\"}}}","timestamp":"2025-05-04T21:00:24.360Z"}
+{"duration":"0.12","level":"info","message":"SMS Initialization: Completed","status":"success","step":"sms","timestamp":"2025-05-04T21:00:24.361Z"}
+{"level":"info","message":"Model Associations: Starting","step":"associations","timestamp":"2025-05-04T21:00:24.362Z"}
+{"duration":"0.04","level":"info","message":"Model Associations: Completed","status":"success","step":"associations","timestamp":"2025-05-04T21:00:24.400Z"}
+{"level":"info","message":"Database Synchronization: Skipped","status":"skipped","step":"sync","timestamp":"2025-05-04T21:00:24.401Z"}
+{"level":"info","message":"Geographic Data Initialization: Skipped","status":"skipped","step":"geoData","timestamp":"2025-05-04T21:00:24.402Z"}
+{"level":"info","message":"Agent Data Seeding: Skipped","status":"skipped","step":"agents","timestamp":"2025-05-04T21:00:24.402Z"}
+{"level":"info","message":"Permission Seeding: Skipped","status":"skipped","step":"permissions","timestamp":"2025-05-04T21:00:24.403Z"}
+{"level":"info","message":"Super Admin Seeding: Skipped","status":"skipped","step":"superadmin","timestamp":"2025-05-04T21:00:24.403Z"}
+{"level":"info","message":"Socket Initialization: Starting","step":"socket","timestamp":"2025-05-04T21:00:24.404Z"}
+{"duration":"0.00","level":"info","message":"Socket Initialization: Completed","status":"success","step":"socket","timestamp":"2025-05-04T21:00:24.405Z"}
+{"level":"info","message":"Server Initialization: Starting","step":"server","timestamp":"2025-05-04T21:00:24.405Z"}
+{"level":"info","message":"mDNS advertisement skipped in development mode","timestamp":"2025-05-04T21:00:24.409Z"}
+{"duration":"0.01","level":"info","message":"Server Initialization: Completed","status":"success","step":"server","timestamp":"2025-05-04T21:00:24.411Z"}
+{"level":"info","message":"\u001b[36m========== TraceFlow Initialization Summary ========\u001b[39m","timestamp":"2025-05-04T21:00:24.413Z"}
+{"level":"info","message":"Date: 2025-05-04T21:00:24.414Z","timestamp":"2025-05-04T21:00:24.414Z"}
+{"level":"info","message":"Steps Completed:","timestamp":"2025-05-04T21:00:24.414Z"}
+{"duration":"0.31","level":"info","message":"  - Database Initialization: \u001b[32mSUCCESS\u001b[39m - (0.31s)","status":"success","step":"Database Initialization","timestamp":"2025-05-04T21:00:24.415Z"}
+{"duration":"0.58","level":"info","message":"  - SMTP Initialization: \u001b[32mSUCCESS\u001b[39m - (0.58s)","status":"success","step":"SMTP Initialization","timestamp":"2025-05-04T21:00:24.415Z"}
+{"duration":"0.12","level":"info","message":"  - SMS Initialization: \u001b[32mSUCCESS\u001b[39m - (0.12s)","status":"success","step":"SMS Initialization","timestamp":"2025-05-04T21:00:24.416Z"}
+{"duration":"0.04","level":"info","message":"  - Model Associations: \u001b[32mSUCCESS\u001b[39m - (0.04s)","status":"success","step":"Model Associations","timestamp":"2025-05-04T21:00:24.416Z"}
+{"duration":"0.00","level":"info","message":"  - Database Synchronization: \u001b[33mSKIPPED\u001b[39m - (0.00s)","status":"skipped","step":"Database Synchronization","timestamp":"2025-05-04T21:00:24.417Z"}
+{"duration":"0.00","level":"info","message":"  - Geographic Data Initialization: \u001b[33mSKIPPED\u001b[39m - (0.00s)","status":"skipped","step":"Geographic Data Initialization","timestamp":"2025-05-04T21:00:24.417Z"}
+{"duration":"0.00","level":"info","message":"  - Agent Data Seeding: \u001b[33mSKIPPED\u001b[39m - (0.00s)","status":"skipped","step":"Agent Data Seeding","timestamp":"2025-05-04T21:00:24.417Z"}
+{"duration":"0.00","level":"info","message":"  - Permission Seeding: \u001b[33mSKIPPED\u001b[39m - (0.00s)","status":"skipped","step":"Permission Seeding","timestamp":"2025-05-04T21:00:24.419Z"}
+{"duration":"0.00","level":"info","message":"  - Super Admin Seeding: \u001b[33mSKIPPED\u001b[39m - (0.00s)","status":"skipped","step":"Super Admin Seeding","timestamp":"2025-05-04T21:00:24.420Z"}
+{"duration":"0.00","level":"info","message":"  - Socket Initialization: \u001b[32mSUCCESS\u001b[39m - (0.00s)","status":"success","step":"Socket Initialization","timestamp":"2025-05-04T21:00:24.421Z"}
+{"duration":"0.01","level":"info","message":"  - Server Initialization: \u001b[32mSUCCESS\u001b[39m - (0.01s)","status":"success","step":"Server Initialization","timestamp":"2025-05-04T21:00:24.422Z"}
+{"level":"info","message":"Total Steps: 11","timestamp":"2025-05-04T21:00:24.423Z"}
+{"level":"info","message":"\u001b[32mSuccesses: 6\u001b[39m","timestamp":"2025-05-04T21:00:24.423Z"}
+{"level":"info","message":"\u001b[33mSkipped: 5\u001b[39m","timestamp":"2025-05-04T21:00:24.423Z"}
+{"level":"info","message":"\u001b[31mFailures: 0\u001b[39m","timestamp":"2025-05-04T21:00:24.424Z"}
+{"level":"info","message":"Total Duration: 1.09 seconds","timestamp":"2025-05-04T21:00:24.424Z"}
+{"level":"info","message":"\u001b[36m===================================================\u001b[39m","timestamp":"2025-05-04T21:00:24.424Z"}
+{"level":"info","message":"\u001b[36m===================================================\u001b[39m","timestamp":"2025-05-04T21:00:24.425Z"}
+{"level":"info","message":"\tSuper Admin Credentials:","timestamp":"2025-05-04T21:00:24.425Z"}
+{"level":"info","message":"\tEmail:\t\tsuperadmin@example.com","timestamp":"2025-05-04T21:00:24.426Z"}
+{"level":"info","message":"\tPassword:\tSuperSecurePassword123!","timestamp":"2025-05-04T21:00:24.426Z"}
+{"level":"info","message":"\u001b[36m===================================================\u001b[39m","timestamp":"2025-05-04T21:00:24.427Z"}
+{"level":"info","message":"HTTP Server running on port 5000","timestamp":"2025-05-04T21:00:24.442Z"}
+{"level":"info","message":"Login successful for superadmin@example.com","timestamp":"2025-05-04T21:01:18.189Z"}
+{"level":"info","message":"Login successful for superadmin@example.com","timestamp":"2025-05-04T21:01:18.371Z"}
+{"email":"superadmin@example.com","level":"info","message":"WebSocket authentication successful","roles":"default-roles-traceflow, Super Admin","socketId":"4UTcrzSGQASain4SAAAB","timestamp":"2025-05-04T21:01:18.459Z","userID":"user_yutki8kak"}
+{"level":"info","message":"User connected: superadmin@example.com","socketId":"4UTcrzSGQASain4SAAAB","timestamp":"2025-05-04T21:01:18.464Z","userID":"user_yutki8kak"}
+{"level":"info","message":"Client connected","socketId":"4UTcrzSGQASain4SAAAB","timestamp":"2025-05-04T21:01:18.465Z"}
+{"level":"info","message":"Fetched roles for user user_yutki8kak by user_yutki8kak, IP: 192.168.1.11","timestamp":"2025-05-04T21:01:18.514Z"}
+{"level":"info","message":"Fetched roles for user user_yutki8kak by user_yutki8kak, IP: 192.168.1.11","timestamp":"2025-05-04T21:01:18.598Z"}
+{"level":"info","message":"Fetched all users by user user_yutki8kak, IP: 192.168.1.11","timestamp":"2025-05-04T21:01:19.136Z"}
+{"level":"info","message":"Fetched all roles by user user_yutki8kak, IP: 192.168.1.11","timestamp":"2025-05-04T21:01:19.189Z"}
+{"level":"info","message":"Fetched notification rules by user: user_yutki8kak, IP: 192.168.1.11","timestamp":"2025-05-04T21:01:19.226Z"}
+{"level":"info","message":"Fetched supervisors for user usr_MvbNkZAOeXbvFICet8rRn","timestamp":"2025-05-04T21:01:25.171Z"}
+{"level":"info","message":"Fetched supervisors for user usr_MvbNkZAOeXbvFICet8rRn by user user_yutki8kak, IP: 192.168.1.11","timestamp":"2025-05-04T21:01:25.172Z"}
+{"level":"info","message":"Fetched regional managers for user usr_MvbNkZAOeXbvFICet8rRn","timestamp":"2025-05-04T21:01:25.183Z"}
+{"level":"info","message":"Fetched regional managers for user usr_MvbNkZAOeXbvFICet8rRn by user user_yutki8kak, IP: 192.168.1.11","timestamp":"2025-05-04T21:01:25.184Z"}
+{"level":"info","message":"Fetched user usr_MvbNkZAOeXbvFICet8rRn by user user_yutki8kak, IP: 192.168.1.11","timestamp":"2025-05-04T21:01:25.519Z"}
+{"level":"info","message":"Fetched users by role Manager by user user_yutki8kak, IP: 192.168.1.11","timestamp":"2025-05-04T21:01:26.435Z"}
+{"level":"info","message":"Fetched users by role Supervisor by user user_yutki8kak, IP: 192.168.1.11","timestamp":"2025-05-04T21:01:26.471Z"}
+{"level":"info","message":"Fetched director for regional manager usr_MvbNkZAOeXbvFICet8rRn","timestamp":"2025-05-04T21:01:26.507Z"}
+{"level":"info","message":"Fetched director for regional manager usr_MvbNkZAOeXbvFICet8rRn by user user_yutki8kak, IP: 192.168.1.11","timestamp":"2025-05-04T21:01:26.508Z"}
+{"level":"info","message":"Fetched all regions by user user_yutki8kak, IP: 192.168.1.11","timestamp":"2025-05-04T21:01:26.524Z"}
+{"level":"info","message":"Fetched supervisors for regional manager usr_MvbNkZAOeXbvFICet8rRn","timestamp":"2025-05-04T21:01:26.538Z"}
+{"level":"info","message":"Fetched supervisors for regional manager usr_MvbNkZAOeXbvFICet8rRn by user user_yutki8kak, IP: 192.168.1.11","timestamp":"2025-05-04T21:01:26.543Z"}
+{"level":"info","message":"Fetched regions for user usr_MvbNkZAOeXbvFICet8rRn, IP: 192.168.1.11","timestamp":"2025-05-04T21:01:26.561Z"}
+{"level":"info","message":"Fetched supervisors for user usr_dD8W7OtuirljS1Kr27Me9","timestamp":"2025-05-04T21:01:31.823Z"}
+{"level":"info","message":"Fetched supervisors for user usr_dD8W7OtuirljS1Kr27Me9 by user user_yutki8kak, IP: 192.168.1.11","timestamp":"2025-05-04T21:01:31.824Z"}
+{"level":"info","message":"Fetched regional managers for user usr_dD8W7OtuirljS1Kr27Me9","timestamp":"2025-05-04T21:01:31.828Z"}
+{"level":"info","message":"Fetched regional managers for user usr_dD8W7OtuirljS1Kr27Me9 by user user_yutki8kak, IP: 192.168.1.11","timestamp":"2025-05-04T21:01:31.828Z"}
+{"level":"info","message":"Fetched user usr_dD8W7OtuirljS1Kr27Me9 by user user_yutki8kak, IP: 192.168.1.11","timestamp":"2025-05-04T21:01:31.936Z"}
+{"level":"info","message":"Fetched regional manager for supervisor usr_dD8W7OtuirljS1Kr27Me9","timestamp":"2025-05-04T21:01:32.608Z"}
+{"level":"info","message":"Fetched regional manager for supervisor usr_dD8W7OtuirljS1Kr27Me9 by user user_yutki8kak, IP: 192.168.1.11","timestamp":"2025-05-04T21:01:32.609Z"}
+{"level":"info","message":"Fetched users by role Regional Manager by user user_yutki8kak, IP: 192.168.1.11","timestamp":"2025-05-04T21:01:32.613Z"}
+{"level":"info","message":"Fetched regions for user usr_yxi51_5CrROFSvgJzVea3, IP: 192.168.1.11","timestamp":"2025-05-04T21:01:32.654Z"}
+{"level":"info","message":"Fetched governorates for region reg_83f4M8 by user user_yutki8kak, IP: 192.168.1.11","timestamp":"2025-05-04T21:01:32.677Z"}
+{"level":"info","message":"Fetched governorates for user usr_dD8W7OtuirljS1Kr27Me9, IP: 192.168.1.11","timestamp":"2025-05-04T21:01:32.704Z"}
+{"level":"info","message":"Fetched delegations for governorate gov_GdtCeZ by user user_yutki8kak, IP: 192.168.1.11","timestamp":"2025-05-04T21:01:34.640Z"}
+{"level":"info","message":"Fetched delegations for user usr_dD8W7OtuirljS1Kr27Me9, IP: 192.168.1.11","timestamp":"2025-05-04T21:01:34.662Z"}
+{"level":"info","message":"Fetched regional manager for supervisor usr_dD8W7OtuirljS1Kr27Me9","timestamp":"2025-05-04T21:01:36.073Z"}
+{"level":"info","message":"Fetched regional manager for supervisor usr_dD8W7OtuirljS1Kr27Me9 by user user_yutki8kak, IP: 192.168.1.11","timestamp":"2025-05-04T21:01:36.074Z"}
+{"level":"info","message":"Fetched governorates for user usr_dD8W7OtuirljS1Kr27Me9, IP: 192.168.1.11","timestamp":"2025-05-04T21:01:36.091Z"}
+{"level":"info","message":"Assigned governorate gov_GdtCeZ to user usr_dD8W7OtuirljS1Kr27Me9 by user user_yutki8kak","timestamp":"2025-05-04T21:01:36.118Z"}
+{"level":"info","message":"No active rules found for event: user:governorates_assigned","timestamp":"2025-05-04T21:01:36.123Z"}
+{"enabled":true,"event":"user:governorates_assigned","level":"info","message":"Created default notification rule","ruleID":"rule_fkNy2Lp3TeIkAtHF1uUgO","timestamp":"2025-05-04T21:01:36.129Z"}
+{"level":"info","message":"Notification stored Notification for user:governorates_assigned","notificationID":"notif_qJncXXLBFpIrmurMwSC0C","timestamp":"2025-05-04T21:01:36.166Z","userID":"user_yutki8kak"}
+{"level":"info","message":"Notification status updated","notificationID":"notif_qJncXXLBFpIrmurMwSC0C","status":"sent","timestamp":"2025-05-04T21:01:36.172Z"}
+{"event":"user:governorates_assigned","level":"info","message":"Triggered notifications","recipientCount":1,"timestamp":"2025-05-04T21:01:36.174Z"}
+{"level":"info","message":"Assigned governorates to supervisor usr_dD8W7OtuirljS1Kr27Me9 by user user_yutki8kak, IP: 192.168.1.11","timestamp":"2025-05-04T21:01:36.175Z"}
+{"level":"info","message":"Fetched delegations for user usr_dD8W7OtuirljS1Kr27Me9, IP: 192.168.1.11","timestamp":"2025-05-04T21:01:36.199Z"}
+{"level":"warn","message":"Get agents by user failed: Missing user ID, user: user_yutki8kak, IP: 192.168.1.11","timestamp":"2025-05-04T21:01:36.219Z"}
+{"level":"info","message":"Fetched regional manager for supervisor usr_dD8W7OtuirljS1Kr27Me9","timestamp":"2025-05-04T21:01:36.292Z"}
+{"level":"info","message":"Fetched regional manager for supervisor usr_dD8W7OtuirljS1Kr27Me9 by user user_yutki8kak, IP: 192.168.1.11","timestamp":"2025-05-04T21:01:36.293Z"}
+{"level":"info","message":"Fetched users by role Regional Manager by user user_yutki8kak, IP: 192.168.1.11","timestamp":"2025-05-04T21:01:36.301Z"}
+{"level":"info","message":"Fetched regions for user usr_yxi51_5CrROFSvgJzVea3, IP: 192.168.1.11","timestamp":"2025-05-04T21:01:36.310Z"}
+{"level":"info","message":"Fetched delegations for governorate gov_GdtCeZ by user user_yutki8kak, IP: 192.168.1.11","timestamp":"2025-05-04T21:01:36.317Z"}
+{"level":"info","message":"Fetched governorates for region reg_83f4M8 by user user_yutki8kak, IP: 192.168.1.11","timestamp":"2025-05-04T21:01:36.357Z"}
+{"level":"info","message":"Fetched delegations for user usr_dD8W7OtuirljS1Kr27Me9, IP: 192.168.1.11","timestamp":"2025-05-04T21:01:36.363Z"}
+{"level":"info","message":"Fetched governorates for user usr_dD8W7OtuirljS1Kr27Me9, IP: 192.168.1.11","timestamp":"2025-05-04T21:01:36.387Z"}
+{"level":"info","message":"Fetched governorates for region reg_83f4M8 by user user_yutki8kak, IP: 192.168.1.11","timestamp":"2025-05-04T21:01:36.392Z"}
+{"level":"info","message":"User disconnected: superadmin@example.com","reason":"transport close","socketId":"4UTcrzSGQASain4SAAAB","timestamp":"2025-05-04T21:01:46.926Z"}
+{"level":"info","message":"Client disconnected","socketId":"4UTcrzSGQASain4SAAAB","timestamp":"2025-05-04T21:01:46.927Z"}
+{"level":"info","message":"Fetched roles for user user_yutki8kak by user_yutki8kak, IP: 192.168.1.11","timestamp":"2025-05-04T21:01:48.005Z"}
+{"level":"info","message":"Fetched roles for user user_yutki8kak by user_yutki8kak, IP: 192.168.1.11","timestamp":"2025-05-04T21:01:48.282Z"}
+{"email":"superadmin@example.com","level":"info","message":"WebSocket authentication successful","roles":"default-roles-traceflow, Super Admin","socketId":"wA4aV0-lvWePaaP6AAAD","timestamp":"2025-05-04T21:01:48.575Z","userID":"user_yutki8kak"}
+{"level":"info","message":"User connected: superadmin@example.com","socketId":"wA4aV0-lvWePaaP6AAAD","timestamp":"2025-05-04T21:01:48.581Z","userID":"user_yutki8kak"}
+{"level":"info","message":"Client connected","socketId":"wA4aV0-lvWePaaP6AAAD","timestamp":"2025-05-04T21:01:48.585Z"}
+{"level":"info","message":"Fetched notification rules by user: user_yutki8kak, IP: 192.168.1.11","timestamp":"2025-05-04T21:01:48.660Z"}
+{"level":"info","message":"Fetched all users by user user_yutki8kak, IP: 192.168.1.11","timestamp":"2025-05-04T21:01:48.749Z"}
+{"level":"info","message":"Fetched notification rules by user: user_yutki8kak, IP: 192.168.1.11","timestamp":"2025-05-04T21:01:48.755Z"}
+{"level":"info","message":"Fetched all roles by user user_yutki8kak, IP: 192.168.1.11","timestamp":"2025-05-04T21:01:48.813Z"}
+{"level":"info","message":"Fetched notifications for user: user_yutki8kak, IP: 192.168.1.11","timestamp":"2025-05-04T21:01:48.889Z"}
+{"level":"info","message":"Fetched regional managers for user usr_dD8W7OtuirljS1Kr27Me9","timestamp":"2025-05-04T21:01:50.274Z"}
+{"level":"info","message":"Fetched regional managers for user usr_dD8W7OtuirljS1Kr27Me9 by user user_yutki8kak, IP: 192.168.1.11","timestamp":"2025-05-04T21:01:50.275Z"}
+{"level":"info","message":"Fetched supervisors for user usr_dD8W7OtuirljS1Kr27Me9","timestamp":"2025-05-04T21:01:50.285Z"}
+{"level":"info","message":"Fetched supervisors for user usr_dD8W7OtuirljS1Kr27Me9 by user user_yutki8kak, IP: 192.168.1.11","timestamp":"2025-05-04T21:01:50.286Z"}
+{"level":"info","message":"Fetched user usr_dD8W7OtuirljS1Kr27Me9 by user user_yutki8kak, IP: 192.168.1.11","timestamp":"2025-05-04T21:01:50.621Z"}
+{"level":"info","message":"Fetched regional manager for supervisor usr_dD8W7OtuirljS1Kr27Me9","timestamp":"2025-05-04T21:01:51.351Z"}
+{"level":"info","message":"Fetched regional manager for supervisor usr_dD8W7OtuirljS1Kr27Me9 by user user_yutki8kak, IP: 192.168.1.11","timestamp":"2025-05-04T21:01:51.352Z"}
+{"level":"info","message":"Fetched users by role Regional Manager by user user_yutki8kak, IP: 192.168.1.11","timestamp":"2025-05-04T21:01:51.360Z"}
+{"level":"info","message":"Fetched regions for user usr_yxi51_5CrROFSvgJzVea3, IP: 192.168.1.11","timestamp":"2025-05-04T21:01:51.399Z"}
+{"level":"info","message":"Fetched governorates for region reg_83f4M8 by user user_yutki8kak, IP: 192.168.1.11","timestamp":"2025-05-04T21:01:51.437Z"}
+{"level":"info","message":"Fetched governorates for user usr_dD8W7OtuirljS1Kr27Me9, IP: 192.168.1.11","timestamp":"2025-05-04T21:01:51.467Z"}
+{"level":"info","message":"Fetched delegations for governorate gov_GdtCeZ by user user_yutki8kak, IP: 192.168.1.11","timestamp":"2025-05-04T21:01:51.513Z"}
+{"level":"info","message":"Fetched delegations for user usr_dD8W7OtuirljS1Kr27Me9, IP: 192.168.1.11","timestamp":"2025-05-04T21:01:51.535Z"}
+{"level":"info","message":"User disconnected: superadmin@example.com","reason":"transport close","socketId":"wA4aV0-lvWePaaP6AAAD","timestamp":"2025-05-04T21:02:04.258Z"}
+{"level":"info","message":"Client disconnected","socketId":"wA4aV0-lvWePaaP6AAAD","timestamp":"2025-05-04T21:02:04.258Z"}
+{"level":"info","message":"Fetched roles for user user_yutki8kak by user_yutki8kak, IP: 192.168.1.11","timestamp":"2025-05-04T21:02:04.948Z"}
+{"level":"info","message":"Fetched roles for user user_yutki8kak by user_yutki8kak, IP: 192.168.1.11","timestamp":"2025-05-04T21:02:04.983Z"}
+{"email":"superadmin@example.com","level":"info","message":"WebSocket authentication successful","roles":"default-roles-traceflow, Super Admin","socketId":"JVGXrh-RSel4gKy1AAAF","timestamp":"2025-05-04T21:02:05.103Z","userID":"user_yutki8kak"}
+{"level":"info","message":"User connected: superadmin@example.com","socketId":"JVGXrh-RSel4gKy1AAAF","timestamp":"2025-05-04T21:02:05.106Z","userID":"user_yutki8kak"}
+{"level":"info","message":"Client connected","socketId":"JVGXrh-RSel4gKy1AAAF","timestamp":"2025-05-04T21:02:05.107Z"}
+{"level":"info","message":"Fetched notification rules by user: user_yutki8kak, IP: 192.168.1.11","timestamp":"2025-05-04T21:02:05.156Z"}
+{"level":"info","message":"Fetched notifications for user: user_yutki8kak, IP: 192.168.1.11","timestamp":"2025-05-04T21:02:05.201Z"}
+{"level":"info","message":"Fetched all users by user user_yutki8kak, IP: 192.168.1.11","timestamp":"2025-05-04T21:02:05.362Z"}
+{"level":"info","message":"Fetched all roles by user user_yutki8kak, IP: 192.168.1.11","timestamp":"2025-05-04T21:02:05.430Z"}
+{"level":"info","message":"Fetched supervisors for user usr_dD8W7OtuirljS1Kr27Me9","timestamp":"2025-05-04T21:02:09.454Z"}
+{"level":"info","message":"Fetched supervisors for user usr_dD8W7OtuirljS1Kr27Me9 by user user_yutki8kak, IP: 192.168.1.11","timestamp":"2025-05-04T21:02:09.455Z"}
+{"level":"info","message":"Fetched regional managers for user usr_dD8W7OtuirljS1Kr27Me9","timestamp":"2025-05-04T21:02:09.458Z"}
+{"level":"info","message":"Fetched regional managers for user usr_dD8W7OtuirljS1Kr27Me9 by user user_yutki8kak, IP: 192.168.1.11","timestamp":"2025-05-04T21:02:09.458Z"}
+{"level":"info","message":"Fetched user usr_dD8W7OtuirljS1Kr27Me9 by user user_yutki8kak, IP: 192.168.1.11","timestamp":"2025-05-04T21:02:09.803Z"}
+{"level":"info","message":"Fetched regional manager for supervisor usr_dD8W7OtuirljS1Kr27Me9","timestamp":"2025-05-04T21:02:10.953Z"}
+{"level":"info","message":"Fetched regional manager for supervisor usr_dD8W7OtuirljS1Kr27Me9 by user user_yutki8kak, IP: 192.168.1.11","timestamp":"2025-05-04T21:02:10.954Z"}
+{"level":"info","message":"Fetched users by role Regional Manager by user user_yutki8kak, IP: 192.168.1.11","timestamp":"2025-05-04T21:02:10.957Z"}
+{"level":"info","message":"Fetched regions for user usr_yxi51_5CrROFSvgJzVea3, IP: 192.168.1.11","timestamp":"2025-05-04T21:02:10.985Z"}
+{"level":"info","message":"Fetched governorates for region reg_83f4M8 by user user_yutki8kak, IP: 192.168.1.11","timestamp":"2025-05-04T21:02:11.003Z"}
+{"level":"info","message":"Fetched governorates for user usr_dD8W7OtuirljS1Kr27Me9, IP: 192.168.1.11","timestamp":"2025-05-04T21:02:11.020Z"}
+{"level":"info","message":"Fetched delegations for governorate gov_GdtCeZ by user user_yutki8kak, IP: 192.168.1.11","timestamp":"2025-05-04T21:02:11.050Z"}
+{"level":"info","message":"Fetched delegations for user usr_dD8W7OtuirljS1Kr27Me9, IP: 192.168.1.11","timestamp":"2025-05-04T21:02:11.070Z"}
+{"level":"info","message":"Fetched regional manager for supervisor usr_dD8W7OtuirljS1Kr27Me9","timestamp":"2025-05-04T21:02:38.029Z"}
+{"level":"info","message":"Fetched regional manager for supervisor usr_dD8W7OtuirljS1Kr27Me9 by user user_yutki8kak, IP: 192.168.1.11","timestamp":"2025-05-04T21:02:38.030Z"}
+{"level":"info","message":"Fetched governorates for user usr_dD8W7OtuirljS1Kr27Me9, IP: 192.168.1.11","timestamp":"2025-05-04T21:02:38.077Z"}
+{"level":"info","message":"Fetched delegations for user usr_dD8W7OtuirljS1Kr27Me9, IP: 192.168.1.11","timestamp":"2025-05-04T21:02:38.096Z"}
+{"level":"warn","message":"Get agents by user failed: Missing user ID, user: user_yutki8kak, IP: 192.168.1.11","timestamp":"2025-05-04T21:02:38.114Z"}
+{"level":"info","message":"Fetched regional manager for supervisor usr_dD8W7OtuirljS1Kr27Me9","timestamp":"2025-05-04T21:02:38.180Z"}
+{"level":"info","message":"Fetched regional manager for supervisor usr_dD8W7OtuirljS1Kr27Me9 by user user_yutki8kak, IP: 192.168.1.11","timestamp":"2025-05-04T21:02:38.189Z"}
+{"level":"info","message":"Fetched regions for user usr_yxi51_5CrROFSvgJzVea3, IP: 192.168.1.11","timestamp":"2025-05-04T21:02:38.207Z"}
+{"level":"info","message":"Fetched users by role Regional Manager by user user_yutki8kak, IP: 192.168.1.11","timestamp":"2025-05-04T21:02:38.216Z"}
+{"level":"info","message":"Fetched delegations for governorate gov_GdtCeZ by user user_yutki8kak, IP: 192.168.1.11","timestamp":"2025-05-04T21:02:38.226Z"}
+{"level":"info","message":"Fetched governorates for region reg_83f4M8 by user user_yutki8kak, IP: 192.168.1.11","timestamp":"2025-05-04T21:02:38.252Z"}
+{"level":"info","message":"Fetched delegations for user usr_dD8W7OtuirljS1Kr27Me9, IP: 192.168.1.11","timestamp":"2025-05-04T21:02:38.274Z"}
+{"level":"info","message":"Fetched governorates for region reg_83f4M8 by user user_yutki8kak, IP: 192.168.1.11","timestamp":"2025-05-04T21:02:38.283Z"}
+{"level":"info","message":"Fetched governorates for user usr_dD8W7OtuirljS1Kr27Me9, IP: 192.168.1.11","timestamp":"2025-05-04T21:02:38.296Z"}
+{"level":"info","message":"Fetched governorates for user usr_dD8W7OtuirljS1Kr27Me9, IP: 192.168.1.11","timestamp":"2025-05-04T21:02:38.323Z"}
+{"level":"info","message":"Fetched delegations for governorate gov_UY3Gjy by user user_yutki8kak, IP: 192.168.1.11","timestamp":"2025-05-04T21:02:40.345Z"}
+{"level":"info","message":"Fetched agents by delegation del_OhtLP1 by user user_yutki8kak, IP: 192.168.1.11","timestamp":"2025-05-04T21:02:58.990Z"}
+{"level":"warn","message":"Get agents by user failed: Missing user ID, user: user_yutki8kak, IP: 192.168.1.11","timestamp":"2025-05-04T21:02:59.003Z"}
+{"level":"info","message":"Fetched agents by delegation del_5HkD8m by user user_yutki8kak, IP: 192.168.1.11","timestamp":"2025-05-04T21:03:05.233Z"}
+{"level":"info","message":"Fetched agents by delegation del_e7OZ7m by user user_yutki8kak, IP: 192.168.1.11","timestamp":"2025-05-04T21:03:24.522Z"}
+{"level":"info","message":"Fetched regional manager for supervisor usr_dD8W7OtuirljS1Kr27Me9","timestamp":"2025-05-04T21:03:50.379Z"}
+{"level":"info","message":"Fetched regional manager for supervisor usr_dD8W7OtuirljS1Kr27Me9 by user user_yutki8kak, IP: 192.168.1.11","timestamp":"2025-05-04T21:03:50.379Z"}
+{"level":"info","message":"Fetched governorates for user usr_dD8W7OtuirljS1Kr27Me9, IP: 192.168.1.11","timestamp":"2025-05-04T21:03:50.402Z"}
+{"level":"info","message":"Fetched delegations for user usr_dD8W7OtuirljS1Kr27Me9, IP: 192.168.1.11","timestamp":"2025-05-04T21:03:50.424Z"}
+{"level":"info","message":"Assigned delegation del_e7OZ7m to user usr_dD8W7OtuirljS1Kr27Me9 by user user_yutki8kak","timestamp":"2025-05-04T21:03:50.469Z"}
+{"level":"info","message":"No active rules found for event: user:delegations_assigned","timestamp":"2025-05-04T21:03:50.472Z"}
+{"enabled":true,"event":"user:delegations_assigned","level":"info","message":"Created default notification rule","ruleID":"rule_L8yntxfxKwmx2v1PreDMH","timestamp":"2025-05-04T21:03:50.476Z"}
+{"level":"info","message":"Notification stored Notification for user:delegations_assigned","notificationID":"notif_MrGD11fWANJhSoBZb-3Q6","timestamp":"2025-05-04T21:03:50.487Z","userID":"user_yutki8kak"}
+{"level":"info","message":"Notification status updated","notificationID":"notif_MrGD11fWANJhSoBZb-3Q6","status":"sent","timestamp":"2025-05-04T21:03:50.492Z"}
+{"event":"user:delegations_assigned","level":"info","message":"Triggered notifications","recipientCount":1,"timestamp":"2025-05-04T21:03:50.494Z"}
+{"level":"info","message":"Assigned delegations to supervisor usr_dD8W7OtuirljS1Kr27Me9 by user user_yutki8kak, IP: 192.168.1.11","timestamp":"2025-05-04T21:03:50.496Z"}
+{"level":"warn","message":"Get agents by user failed: Missing user ID, user: user_yutki8kak, IP: 192.168.1.11","timestamp":"2025-05-04T21:03:50.520Z"}
+{"level":"info","message":"Assigned supervisor usr_dD8W7OtuirljS1Kr27Me9 to agent agt_001abc by user user_yutki8kak","timestamp":"2025-05-04T21:03:50.557Z"}
+{"level":"info","message":"No active rules found for event: user:supervisor_assigned_to_agent","timestamp":"2025-05-04T21:03:50.560Z"}
+{"enabled":true,"event":"user:supervisor_assigned_to_agent","level":"info","message":"Created default notification rule","ruleID":"rule_y9Xum4pGkd6taCk__ZSJB","timestamp":"2025-05-04T21:03:50.567Z"}
+{"level":"info","message":"Notification stored Notification for user:supervisor_assigned_to_agent","notificationID":"notif_b6Hsia-0KwujpsDGhY0Gi","timestamp":"2025-05-04T21:03:50.578Z","userID":"user_yutki8kak"}
+{"level":"info","message":"Notification status updated","notificationID":"notif_b6Hsia-0KwujpsDGhY0Gi","status":"sent","timestamp":"2025-05-04T21:03:50.585Z"}
+{"event":"user:supervisor_assigned_to_agent","level":"info","message":"Triggered notifications","recipientCount":1,"timestamp":"2025-05-04T21:03:50.588Z"}
+{"level":"info","message":"Assigned supervisor usr_dD8W7OtuirljS1Kr27Me9 to agent agt_001abc by user user_yutki8kak, IP: 192.168.1.11","timestamp":"2025-05-04T21:03:50.590Z"}
+{"level":"info","message":"Fetched delegations for governorate gov_GdtCeZ by user user_yutki8kak, IP: 192.168.1.11","timestamp":"2025-05-04T21:03:50.698Z"}
+{"level":"info","message":"Fetched regional manager for supervisor usr_dD8W7OtuirljS1Kr27Me9","timestamp":"2025-05-04T21:03:50.703Z"}
+{"level":"info","message":"Fetched regional manager for supervisor usr_dD8W7OtuirljS1Kr27Me9 by user user_yutki8kak, IP: 192.168.1.11","timestamp":"2025-05-04T21:03:50.705Z"}
+{"level":"info","message":"Fetched regions for user usr_yxi51_5CrROFSvgJzVea3, IP: 192.168.1.11","timestamp":"2025-05-04T21:03:50.711Z"}
+{"level":"info","message":"Fetched agents by delegation del_e7OZ7m by user user_yutki8kak, IP: 192.168.1.11","timestamp":"2025-05-04T21:03:50.715Z"}
+{"level":"info","message":"Fetched users by role Regional Manager by user user_yutki8kak, IP: 192.168.1.11","timestamp":"2025-05-04T21:03:50.720Z"}
+{"level":"info","message":"Fetched delegations for user usr_dD8W7OtuirljS1Kr27Me9, IP: 192.168.1.11","timestamp":"2025-05-04T21:03:50.739Z"}
+{"level":"warn","message":"Get agents by user failed: Missing user ID, user: user_yutki8kak, IP: 192.168.1.11","timestamp":"2025-05-04T21:03:50.746Z"}
+{"level":"info","message":"Fetched governorates for region reg_83f4M8 by user user_yutki8kak, IP: 192.168.1.11","timestamp":"2025-05-04T21:03:50.757Z"}
+{"level":"info","message":"Fetched governorates for region reg_83f4M8 by user user_yutki8kak, IP: 192.168.1.11","timestamp":"2025-05-04T21:03:50.779Z"}
+{"level":"info","message":"Fetched governorates for user usr_dD8W7OtuirljS1Kr27Me9, IP: 192.168.1.11","timestamp":"2025-05-04T21:03:50.803Z"}
+{"level":"info","message":"Fetched governorates for user usr_dD8W7OtuirljS1Kr27Me9, IP: 192.168.1.11","timestamp":"2025-05-04T21:03:50.822Z"}
+{"level":"info","message":"User disconnected: superadmin@example.com","reason":"transport close","socketId":"JVGXrh-RSel4gKy1AAAF","timestamp":"2025-05-04T21:04:24.743Z"}
+{"level":"info","message":"Client disconnected","socketId":"JVGXrh-RSel4gKy1AAAF","timestamp":"2025-05-04T21:04:24.743Z"}
+{"level":"info","message":"Fetched roles for user user_yutki8kak by user_yutki8kak, IP: 192.168.1.11","timestamp":"2025-05-04T21:04:25.503Z"}
+{"level":"info","message":"Fetched roles for user user_yutki8kak by user_yutki8kak, IP: 192.168.1.11","timestamp":"2025-05-04T21:04:25.583Z"}
+{"email":"superadmin@example.com","level":"info","message":"WebSocket authentication successful","roles":"default-roles-traceflow, Super Admin","socketId":"1Ao09uD9u1iHvlR6AAAH","timestamp":"2025-05-04T21:04:25.785Z","userID":"user_yutki8kak"}
+{"level":"info","message":"User connected: superadmin@example.com","socketId":"1Ao09uD9u1iHvlR6AAAH","timestamp":"2025-05-04T21:04:25.789Z","userID":"user_yutki8kak"}
+{"level":"info","message":"Client connected","socketId":"1Ao09uD9u1iHvlR6AAAH","timestamp":"2025-05-04T21:04:25.790Z"}
+{"level":"info","message":"Fetched notification rules by user: user_yutki8kak, IP: 192.168.1.11","timestamp":"2025-05-04T21:04:25.826Z"}
+{"level":"info","message":"Fetched notifications for user: user_yutki8kak, IP: 192.168.1.11","timestamp":"2025-05-04T21:04:25.879Z"}
+{"level":"info","message":"Fetched all users by user user_yutki8kak, IP: 192.168.1.11","timestamp":"2025-05-04T21:04:26.022Z"}
+{"level":"info","message":"Fetched all roles by user user_yutki8kak, IP: 192.168.1.11","timestamp":"2025-05-04T21:04:26.079Z"}
+{"level":"info","message":"Fetched supervisors for user usr_U0PUIcVWIbvnRJLkdKyHJ","timestamp":"2025-05-04T21:04:29.012Z"}
+{"level":"info","message":"Fetched supervisors for user usr_U0PUIcVWIbvnRJLkdKyHJ by user user_yutki8kak, IP: 192.168.1.11","timestamp":"2025-05-04T21:04:29.013Z"}
+{"level":"info","message":"Fetched regional managers for user usr_U0PUIcVWIbvnRJLkdKyHJ","timestamp":"2025-05-04T21:04:29.026Z"}
+{"level":"info","message":"Fetched regional managers for user usr_U0PUIcVWIbvnRJLkdKyHJ by user user_yutki8kak, IP: 192.168.1.11","timestamp":"2025-05-04T21:04:29.026Z"}
+{"level":"info","message":"Fetched user usr_U0PUIcVWIbvnRJLkdKyHJ by user user_yutki8kak, IP: 192.168.1.11","timestamp":"2025-05-04T21:04:29.364Z"}
+{"level":"info","message":"Fetched regional manager for supervisor usr_U0PUIcVWIbvnRJLkdKyHJ","timestamp":"2025-05-04T21:04:30.186Z"}
+{"level":"info","message":"Fetched regional manager for supervisor usr_U0PUIcVWIbvnRJLkdKyHJ by user user_yutki8kak, IP: 192.168.1.11","timestamp":"2025-05-04T21:04:30.187Z"}
+{"level":"info","message":"Fetched users by role Regional Manager by user user_yutki8kak, IP: 192.168.1.11","timestamp":"2025-05-04T21:04:30.209Z"}
+{"level":"info","message":"Fetched regions for user usr_MvbNkZAOeXbvFICet8rRn, IP: 192.168.1.11","timestamp":"2025-05-04T21:04:30.251Z"}
+{"level":"info","message":"Fetched governorates for region reg_tY69F0 by user user_yutki8kak, IP: 192.168.1.11","timestamp":"2025-05-04T21:04:30.274Z"}
+{"level":"info","message":"Fetched governorates for user usr_U0PUIcVWIbvnRJLkdKyHJ, IP: 192.168.1.11","timestamp":"2025-05-04T21:04:30.299Z"}
+{"level":"info","message":"Fetched delegations for governorate gov_Ld-n43 by user user_yutki8kak, IP: 192.168.1.11","timestamp":"2025-05-04T21:04:32.060Z"}
+{"level":"info","message":"Fetched delegations for user usr_U0PUIcVWIbvnRJLkdKyHJ, IP: 192.168.1.11","timestamp":"2025-05-04T21:04:32.075Z"}
+{"level":"info","message":"Fetched agents by delegation del_ISpyh_ by user user_yutki8kak, IP: 192.168.1.11","timestamp":"2025-05-04T21:04:33.939Z"}
+{"level":"warn","message":"Get agents by user failed: Missing user ID, user: user_yutki8kak, IP: 192.168.1.11","timestamp":"2025-05-04T21:04:33.953Z"}
+{"level":"info","message":"Fetched supervisors for user usr_dD8W7OtuirljS1Kr27Me9","timestamp":"2025-05-04T21:05:04.999Z"}
+{"level":"info","message":"Fetched supervisors for user usr_dD8W7OtuirljS1Kr27Me9 by user user_yutki8kak, IP: 192.168.1.11","timestamp":"2025-05-04T21:05:05.000Z"}
+{"level":"info","message":"Fetched regional managers for user usr_dD8W7OtuirljS1Kr27Me9","timestamp":"2025-05-04T21:05:05.007Z"}
+{"level":"info","message":"Fetched regional managers for user usr_dD8W7OtuirljS1Kr27Me9 by user user_yutki8kak, IP: 192.168.1.11","timestamp":"2025-05-04T21:05:05.008Z"}
+{"level":"info","message":"Fetched user usr_dD8W7OtuirljS1Kr27Me9 by user user_yutki8kak, IP: 192.168.1.11","timestamp":"2025-05-04T21:05:05.165Z"}
+{"level":"info","message":"Fetched users by role Regional Manager by user user_yutki8kak, IP: 192.168.1.11","timestamp":"2025-05-04T21:05:05.748Z"}
+{"level":"info","message":"Fetched regional manager for supervisor usr_dD8W7OtuirljS1Kr27Me9","timestamp":"2025-05-04T21:05:05.762Z"}
+{"level":"info","message":"Fetched regional manager for supervisor usr_dD8W7OtuirljS1Kr27Me9 by user user_yutki8kak, IP: 192.168.1.11","timestamp":"2025-05-04T21:05:05.765Z"}
+{"level":"info","message":"Fetched regions for user usr_yxi51_5CrROFSvgJzVea3, IP: 192.168.1.11","timestamp":"2025-05-04T21:05:05.823Z"}
+{"level":"info","message":"Fetched governorates for region reg_83f4M8 by user user_yutki8kak, IP: 192.168.1.11","timestamp":"2025-05-04T21:05:05.858Z"}
+{"level":"info","message":"Fetched governorates for user usr_dD8W7OtuirljS1Kr27Me9, IP: 192.168.1.11","timestamp":"2025-05-04T21:05:05.888Z"}
+{"level":"info","message":"Fetched delegations for governorate gov_GdtCeZ by user user_yutki8kak, IP: 192.168.1.11","timestamp":"2025-05-04T21:05:05.939Z"}
+{"level":"info","message":"Fetched delegations for user usr_dD8W7OtuirljS1Kr27Me9, IP: 192.168.1.11","timestamp":"2025-05-04T21:05:05.978Z"}
+{"level":"info","message":"Fetched agents by delegation del_e7OZ7m by user user_yutki8kak, IP: 192.168.1.11","timestamp":"2025-05-04T21:05:06.051Z"}
+{"level":"warn","message":"Get agents by user failed: Missing user ID, user: user_yutki8kak, IP: 192.168.1.11","timestamp":"2025-05-04T21:05:06.114Z"}
+{"level":"info","message":"Fetched regional manager for supervisor usr_dD8W7OtuirljS1Kr27Me9","timestamp":"2025-05-04T21:05:20.134Z"}
+{"level":"info","message":"Fetched regional manager for supervisor usr_dD8W7OtuirljS1Kr27Me9 by user user_yutki8kak, IP: 192.168.1.11","timestamp":"2025-05-04T21:05:20.137Z"}
+{"level":"info","message":"Fetched governorates for user usr_dD8W7OtuirljS1Kr27Me9, IP: 192.168.1.11","timestamp":"2025-05-04T21:05:20.184Z"}
+{"level":"info","message":"Fetched delegations for user usr_dD8W7OtuirljS1Kr27Me9, IP: 192.168.1.11","timestamp":"2025-05-04T21:05:20.237Z"}
+{"level":"warn","message":"Get agents by user failed: Missing user ID, user: user_yutki8kak, IP: 192.168.1.11","timestamp":"2025-05-04T21:05:20.278Z"}
+{"level":"info","message":"Assigned supervisor usr_dD8W7OtuirljS1Kr27Me9 to agent agt_002def by user user_yutki8kak","timestamp":"2025-05-04T21:05:20.337Z"}
+{"level":"info","message":"Notification stored Notification for user:supervisor_assigned_to_agent","notificationID":"notif_VBGiXTZdKw_sL2dWTHSi2","timestamp":"2025-05-04T21:05:20.392Z","userID":"user_yutki8kak"}
+{"level":"info","message":"Notification status updated","notificationID":"notif_VBGiXTZdKw_sL2dWTHSi2","status":"sent","timestamp":"2025-05-04T21:05:20.415Z"}
+{"event":"user:supervisor_assigned_to_agent","level":"info","message":"Triggered notifications","recipientCount":1,"timestamp":"2025-05-04T21:05:20.428Z"}
+{"level":"info","message":"Assigned supervisor usr_dD8W7OtuirljS1Kr27Me9 to agent agt_002def by user user_yutki8kak, IP: 192.168.1.11","timestamp":"2025-05-04T21:05:20.434Z"}
+{"level":"info","message":"Fetched users by role Regional Manager by user user_yutki8kak, IP: 192.168.1.11","timestamp":"2025-05-04T21:05:20.596Z"}
+{"level":"info","message":"Fetched delegations for governorate gov_GdtCeZ by user user_yutki8kak, IP: 192.168.1.11","timestamp":"2025-05-04T21:05:20.620Z"}
+{"level":"info","message":"Fetched regions for user usr_yxi51_5CrROFSvgJzVea3, IP: 192.168.1.11","timestamp":"2025-05-04T21:05:20.633Z"}
+{"level":"info","message":"Fetched regional manager for supervisor usr_dD8W7OtuirljS1Kr27Me9","timestamp":"2025-05-04T21:05:20.639Z"}
+{"level":"info","message":"Fetched regional manager for supervisor usr_dD8W7OtuirljS1Kr27Me9 by user user_yutki8kak, IP: 192.168.1.11","timestamp":"2025-05-04T21:05:20.641Z"}
+{"level":"info","message":"Fetched agents by delegation del_e7OZ7m by user user_yutki8kak, IP: 192.168.1.11","timestamp":"2025-05-04T21:05:20.691Z"}
+{"level":"info","message":"Fetched delegations for user usr_dD8W7OtuirljS1Kr27Me9, IP: 192.168.1.11","timestamp":"2025-05-04T21:05:20.720Z"}
+{"level":"warn","message":"Get agents by user failed: Missing user ID, user: user_yutki8kak, IP: 192.168.1.11","timestamp":"2025-05-04T21:05:20.725Z"}
+{"level":"info","message":"Fetched governorates for region reg_83f4M8 by user user_yutki8kak, IP: 192.168.1.11","timestamp":"2025-05-04T21:05:20.747Z"}
+{"level":"info","message":"Fetched governorates for user usr_dD8W7OtuirljS1Kr27Me9, IP: 192.168.1.11","timestamp":"2025-05-04T21:05:20.800Z"}
+{"level":"info","message":"Fetched governorates for region reg_83f4M8 by user user_yutki8kak, IP: 192.168.1.11","timestamp":"2025-05-04T21:05:20.811Z"}
+{"level":"info","message":"User disconnected: superadmin@example.com","reason":"transport close","socketId":"1Ao09uD9u1iHvlR6AAAH","timestamp":"2025-05-04T21:05:27.352Z"}
+{"level":"info","message":"Client disconnected","socketId":"1Ao09uD9u1iHvlR6AAAH","timestamp":"2025-05-04T21:05:27.353Z"}
+{"level":"info","message":"Fetched roles for user user_yutki8kak by user_yutki8kak, IP: 192.168.1.11","timestamp":"2025-05-04T21:05:28.100Z"}
+{"level":"info","message":"Fetched roles for user user_yutki8kak by user_yutki8kak, IP: 192.168.1.11","timestamp":"2025-05-04T21:05:28.128Z"}
+{"email":"superadmin@example.com","level":"info","message":"WebSocket authentication successful","roles":"default-roles-traceflow, Super Admin","socketId":"toYilffqoLGPWHEjAAAJ","timestamp":"2025-05-04T21:05:28.280Z","userID":"user_yutki8kak"}
+{"level":"info","message":"User connected: superadmin@example.com","socketId":"toYilffqoLGPWHEjAAAJ","timestamp":"2025-05-04T21:05:28.282Z","userID":"user_yutki8kak"}
+{"level":"info","message":"Client connected","socketId":"toYilffqoLGPWHEjAAAJ","timestamp":"2025-05-04T21:05:28.284Z"}
+{"level":"info","message":"Fetched notification rules by user: user_yutki8kak, IP: 192.168.1.11","timestamp":"2025-05-04T21:05:28.331Z"}
+{"level":"info","message":"Fetched notifications for user: user_yutki8kak, IP: 192.168.1.11","timestamp":"2025-05-04T21:05:28.372Z"}
+{"level":"info","message":"Fetched all users by user user_yutki8kak, IP: 192.168.1.11","timestamp":"2025-05-04T21:05:28.550Z"}
+{"level":"info","message":"Fetched all roles by user user_yutki8kak, IP: 192.168.1.11","timestamp":"2025-05-04T21:05:28.589Z"}
+{"level":"info","message":"Fetched supervisors for user usr_dD8W7OtuirljS1Kr27Me9","timestamp":"2025-05-04T21:05:30.389Z"}
+{"level":"info","message":"Fetched supervisors for user usr_dD8W7OtuirljS1Kr27Me9 by user user_yutki8kak, IP: 192.168.1.11","timestamp":"2025-05-04T21:05:30.390Z"}
+{"level":"info","message":"Fetched regional managers for user usr_dD8W7OtuirljS1Kr27Me9","timestamp":"2025-05-04T21:05:30.393Z"}
+{"level":"info","message":"Fetched regional managers for user usr_dD8W7OtuirljS1Kr27Me9 by user user_yutki8kak, IP: 192.168.1.11","timestamp":"2025-05-04T21:05:30.395Z"}
+{"level":"info","message":"Fetched user usr_dD8W7OtuirljS1Kr27Me9 by user user_yutki8kak, IP: 192.168.1.11","timestamp":"2025-05-04T21:05:30.725Z"}
+{"level":"info","message":"Fetched regional manager for supervisor usr_dD8W7OtuirljS1Kr27Me9","timestamp":"2025-05-04T21:05:31.720Z"}
+{"level":"info","message":"Fetched regional manager for supervisor usr_dD8W7OtuirljS1Kr27Me9 by user user_yutki8kak, IP: 192.168.1.11","timestamp":"2025-05-04T21:05:31.721Z"}
+{"level":"info","message":"Fetched users by role Regional Manager by user user_yutki8kak, IP: 192.168.1.11","timestamp":"2025-05-04T21:05:31.726Z"}
+{"level":"info","message":"Fetched regions for user usr_yxi51_5CrROFSvgJzVea3, IP: 192.168.1.11","timestamp":"2025-05-04T21:05:31.772Z"}
+{"level":"info","message":"Fetched governorates for region reg_83f4M8 by user user_yutki8kak, IP: 192.168.1.11","timestamp":"2025-05-04T21:05:31.801Z"}
+{"level":"info","message":"Fetched governorates for user usr_dD8W7OtuirljS1Kr27Me9, IP: 192.168.1.11","timestamp":"2025-05-04T21:05:31.827Z"}
+{"level":"info","message":"Fetched delegations for governorate gov_GdtCeZ by user user_yutki8kak, IP: 192.168.1.11","timestamp":"2025-05-04T21:05:31.865Z"}
+{"level":"info","message":"Fetched delegations for user usr_dD8W7OtuirljS1Kr27Me9, IP: 192.168.1.11","timestamp":"2025-05-04T21:05:31.891Z"}
+{"level":"info","message":"Fetched agents by delegation del_e7OZ7m by user user_yutki8kak, IP: 192.168.1.11","timestamp":"2025-05-04T21:05:31.951Z"}
+{"level":"warn","message":"Get agents by user failed: Missing user ID, user: user_yutki8kak, IP: 192.168.1.11","timestamp":"2025-05-04T21:05:31.976Z"}
+{"level":"info","message":"Fetched supervisors for user usr_MvbNkZAOeXbvFICet8rRn","timestamp":"2025-05-04T21:05:49.116Z"}
+{"level":"info","message":"Fetched supervisors for user usr_MvbNkZAOeXbvFICet8rRn by user user_yutki8kak, IP: 192.168.1.11","timestamp":"2025-05-04T21:05:49.117Z"}
+{"level":"info","message":"Fetched regional managers for user usr_MvbNkZAOeXbvFICet8rRn","timestamp":"2025-05-04T21:05:49.120Z"}
+{"level":"info","message":"Fetched regional managers for user usr_MvbNkZAOeXbvFICet8rRn by user user_yutki8kak, IP: 192.168.1.11","timestamp":"2025-05-04T21:05:49.121Z"}
+{"level":"info","message":"Fetched user usr_MvbNkZAOeXbvFICet8rRn by user user_yutki8kak, IP: 192.168.1.11","timestamp":"2025-05-04T21:05:49.291Z"}
+{"level":"info","message":"Fetched users by role Manager by user user_yutki8kak, IP: 192.168.1.11","timestamp":"2025-05-04T21:05:49.818Z"}
+{"level":"info","message":"Fetched director for regional manager usr_MvbNkZAOeXbvFICet8rRn","timestamp":"2025-05-04T21:05:49.832Z"}
+{"level":"info","message":"Fetched director for regional manager usr_MvbNkZAOeXbvFICet8rRn by user user_yutki8kak, IP: 192.168.1.11","timestamp":"2025-05-04T21:05:49.833Z"}
+{"level":"info","message":"Fetched regions for user usr_MvbNkZAOeXbvFICet8rRn, IP: 192.168.1.11","timestamp":"2025-05-04T21:05:49.837Z"}
+{"level":"info","message":"Fetched all regions by user user_yutki8kak, IP: 192.168.1.11","timestamp":"2025-05-04T21:05:49.840Z"}
+{"level":"info","message":"Fetched supervisors for regional manager usr_MvbNkZAOeXbvFICet8rRn","timestamp":"2025-05-04T21:05:49.846Z"}
+{"level":"info","message":"Fetched supervisors for regional manager usr_MvbNkZAOeXbvFICet8rRn by user user_yutki8kak, IP: 192.168.1.11","timestamp":"2025-05-04T21:05:49.847Z"}
+{"level":"info","message":"Fetched users by role Supervisor by user user_yutki8kak, IP: 192.168.1.11","timestamp":"2025-05-04T21:05:49.853Z"}
+{"level":"info","message":"Database Initialization: Starting","step":"database","timestamp":"2025-05-04T21:09:28.141Z"}
+{"duration":"0.32","level":"info","message":"Database Initialization: Completed","status":"success","step":"database","timestamp":"2025-05-04T21:09:28.465Z"}
+{"level":"info","message":"SMTP Initialization: Starting","step":"smtp","timestamp":"2025-05-04T21:09:28.470Z"}
+{"level":"info","message":"SMTP server verified successfully","timestamp":"2025-05-04T21:09:29.034Z"}
+{"duration":"0.57","level":"info","message":"SMTP Initialization: Completed","status":"success","step":"smtp","timestamp":"2025-05-04T21:09:29.036Z"}
+{"level":"info","message":"SMS Initialization: Starting","step":"sms","timestamp":"2025-05-04T21:09:29.037Z"}
+{"level":"info","message":"Initializing SMS gateway with URL: https://wbm.tn/wbmonitor/send/webapi/v5/enquire_credit and headers: {\"X-API-Key\":\"9c5362a406e609d0ecc6f9a0e129c0a6\",\"Content-Type\":\"application/json\"}","timestamp":"2025-05-04T21:09:29.038Z"}
+{"level":"info","message":"SMS gateway initialized successfully: {\"op\":3,\"status\":0,\"status_desc\":\"success\",\"apiVersion\":\"5\",\"credit\":{\"national\":{\"available\":\"950005\",\"reserved\":\"0\"},\"international\":{\"available\":\"1\",\"reserved\":\"0\"}}}","timestamp":"2025-05-04T21:09:29.147Z"}
+{"duration":"0.11","level":"info","message":"SMS Initialization: Completed","status":"success","step":"sms","timestamp":"2025-05-04T21:09:29.148Z"}
+{"level":"info","message":"Model Associations: Starting","step":"associations","timestamp":"2025-05-04T21:09:29.149Z"}
+{"duration":"0.05","level":"info","message":"Model Associations: Completed","status":"success","step":"associations","timestamp":"2025-05-04T21:09:29.203Z"}
+{"level":"info","message":"Database Synchronization: Skipped","status":"skipped","step":"sync","timestamp":"2025-05-04T21:09:29.204Z"}
+{"level":"info","message":"Geographic Data Initialization: Skipped","status":"skipped","step":"geoData","timestamp":"2025-05-04T21:09:29.206Z"}
+{"level":"info","message":"Agent Data Seeding: Skipped","status":"skipped","step":"agents","timestamp":"2025-05-04T21:09:29.208Z"}
+{"level":"info","message":"Permission Seeding: Skipped","status":"skipped","step":"permissions","timestamp":"2025-05-04T21:09:29.209Z"}
+{"level":"info","message":"Super Admin Seeding: Skipped","status":"skipped","step":"superadmin","timestamp":"2025-05-04T21:09:29.209Z"}
+{"level":"info","message":"Socket Initialization: Starting","step":"socket","timestamp":"2025-05-04T21:09:29.210Z"}
+{"duration":"0.00","level":"info","message":"Socket Initialization: Completed","status":"success","step":"socket","timestamp":"2025-05-04T21:09:29.210Z"}
+{"level":"info","message":"Server Initialization: Starting","step":"server","timestamp":"2025-05-04T21:09:29.212Z"}
+{"level":"info","message":"mDNS advertisement skipped in development mode","timestamp":"2025-05-04T21:09:29.216Z"}
+{"duration":"0.00","level":"info","message":"Server Initialization: Completed","status":"success","step":"server","timestamp":"2025-05-04T21:09:29.216Z"}
+{"level":"info","message":"\u001b[36m========== TraceFlow Initialization Summary ========\u001b[39m","timestamp":"2025-05-04T21:09:29.219Z"}
+{"level":"info","message":"Date: 2025-05-04T21:09:29.220Z","timestamp":"2025-05-04T21:09:29.220Z"}
+{"level":"info","message":"Steps Completed:","timestamp":"2025-05-04T21:09:29.221Z"}
+{"duration":"0.33","level":"info","message":"  - Database Initialization: \u001b[32mSUCCESS\u001b[39m - (0.33s)","status":"success","step":"Database Initialization","timestamp":"2025-05-04T21:09:29.223Z"}
+{"duration":"0.57","level":"info","message":"  - SMTP Initialization: \u001b[32mSUCCESS\u001b[39m - (0.57s)","status":"success","step":"SMTP Initialization","timestamp":"2025-05-04T21:09:29.224Z"}
+{"duration":"0.11","level":"info","message":"  - SMS Initialization: \u001b[32mSUCCESS\u001b[39m - (0.11s)","status":"success","step":"SMS Initialization","timestamp":"2025-05-04T21:09:29.225Z"}
+{"duration":"0.06","level":"info","message":"  - Model Associations: \u001b[32mSUCCESS\u001b[39m - (0.06s)","status":"success","step":"Model Associations","timestamp":"2025-05-04T21:09:29.226Z"}
+{"duration":"0.00","level":"info","message":"  - Database Synchronization: \u001b[33mSKIPPED\u001b[39m - (0.00s)","status":"skipped","step":"Database Synchronization","timestamp":"2025-05-04T21:09:29.227Z"}
+{"duration":"0.00","level":"info","message":"  - Geographic Data Initialization: \u001b[33mSKIPPED\u001b[39m - (0.00s)","status":"skipped","step":"Geographic Data Initialization","timestamp":"2025-05-04T21:09:29.227Z"}
+{"duration":"0.00","level":"info","message":"  - Agent Data Seeding: \u001b[33mSKIPPED\u001b[39m - (0.00s)","status":"skipped","step":"Agent Data Seeding","timestamp":"2025-05-04T21:09:29.228Z"}
+{"duration":"0.00","level":"info","message":"  - Permission Seeding: \u001b[33mSKIPPED\u001b[39m - (0.00s)","status":"skipped","step":"Permission Seeding","timestamp":"2025-05-04T21:09:29.228Z"}
+{"duration":"0.00","level":"info","message":"  - Super Admin Seeding: \u001b[33mSKIPPED\u001b[39m - (0.00s)","status":"skipped","step":"Super Admin Seeding","timestamp":"2025-05-04T21:09:29.229Z"}
+{"duration":"0.00","level":"info","message":"  - Socket Initialization: \u001b[32mSUCCESS\u001b[39m - (0.00s)","status":"success","step":"Socket Initialization","timestamp":"2025-05-04T21:09:29.230Z"}
+{"duration":"0.01","level":"info","message":"  - Server Initialization: \u001b[32mSUCCESS\u001b[39m - (0.01s)","status":"success","step":"Server Initialization","timestamp":"2025-05-04T21:09:29.231Z"}
+{"level":"info","message":"Total Steps: 11","timestamp":"2025-05-04T21:09:29.232Z"}
+{"level":"info","message":"\u001b[32mSuccesses: 6\u001b[39m","timestamp":"2025-05-04T21:09:29.233Z"}
+{"level":"info","message":"\u001b[33mSkipped: 5\u001b[39m","timestamp":"2025-05-04T21:09:29.233Z"}
+{"level":"info","message":"\u001b[31mFailures: 0\u001b[39m","timestamp":"2025-05-04T21:09:29.234Z"}
+{"level":"info","message":"Total Duration: 1.11 seconds","timestamp":"2025-05-04T21:09:29.234Z"}
+{"level":"info","message":"\u001b[36m===================================================\u001b[39m","timestamp":"2025-05-04T21:09:29.235Z"}
+{"level":"info","message":"\u001b[36m===================================================\u001b[39m","timestamp":"2025-05-04T21:09:29.236Z"}
+{"level":"info","message":"\tSuper Admin Credentials:","timestamp":"2025-05-04T21:09:29.237Z"}
+{"level":"info","message":"\tEmail:\t\tsuperadmin@example.com","timestamp":"2025-05-04T21:09:29.238Z"}
+{"level":"info","message":"\tPassword:\tSuperSecurePassword123!","timestamp":"2025-05-04T21:09:29.239Z"}
+{"level":"info","message":"\u001b[36m===================================================\u001b[39m","timestamp":"2025-05-04T21:09:29.240Z"}
+{"level":"info","message":"HTTP Server running on port 5000","timestamp":"2025-05-04T21:09:29.264Z"}
