@@ -46,6 +46,17 @@ const handleApiError = (error: unknown, defaultMessage: string): string => {
   }
 };
 
+
+
+
+
+
+
+
+
+
+
+
 // User Hierarchy Retrieval Functions
 export const getSupervisorsByUser = async (userID: string): Promise<User[]> => {
   try {
@@ -83,6 +94,14 @@ export const getDirectorByUser = async (userID: string): Promise<User[]> => {
   }
 };
 
+
+
+
+
+
+
+
+
 export const getRegionsByUser = async (userID: string): Promise<Region[]> => {
   try {
     if (!userID) {
@@ -119,6 +138,12 @@ export const getDelegationsByUser = async (userID: string): Promise<Delegation[]
   }
 };
 
+
+
+
+
+
+
 export const getUsersByRegion = async (regionID: string): Promise<GetUsersByRegionResponse> => {
   try {
     if (!regionID) {
@@ -154,6 +179,14 @@ export const getUsersByDelegation = async (delegationID: string): Promise<GetUse
     throw new Error(handleApiError(error, "Users not found"));
   }
 };
+
+
+
+
+
+
+
+
 
 export const getSupervisorsByRegionalManager = async (regionalManagerID: string): Promise<User[]> => {
   try {
@@ -202,6 +235,16 @@ export const getRegionalManagerBySupervisor = async (supervisorID: string): Prom
     throw new Error(handleApiError(error, "Regional Manager not found"));
   }
 };
+
+
+
+
+
+
+
+
+
+
 
 // Assignment and Revocation Functions for Regional Managers and Directors
 export const assignRegionalManagerToSupervisor = async (
@@ -277,6 +320,18 @@ export const revokeDirectorFromRegionalManager = async (
     throw new Error(handleApiError(error, "Unable to revoke director"));
   }
 };
+
+
+
+
+
+
+
+
+
+
+
+
 
 // Assignment and Revocation Functions for Regions, Governorates, and Delegations
 export const assignRegionsToRegionalManager = async (
@@ -429,6 +484,34 @@ export const revokeSupervisorFromAgent = async (
     throw new Error(handleApiError(error, "Unable to revoke supervisor from agent"));
   }
 };
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
 
 // Google Account Functions
 export const assignGoogleAccount = async (

@@ -22,6 +22,7 @@ const io = require('./utils/socket');
 const inquirer = require('inquirer');
 const cliProgress = require('cli-progress');
 const colors = require('ansi-colors');
+const expressJSDocSwagger = require('express-jsdoc-swagger');
 const redoc = require('redoc-express');
 require('dotenv').config();
 
@@ -30,6 +31,34 @@ const app = express();
 
 // Middleware setup
 setupMiddleware(app);
+
+// Initialize express-jsdoc-swagger
+expressJSDocSwagger(app)({
+    info: {
+        title: 'TraceFlow API',
+        version: '1.0.0',
+        description: 'API documentation for the TraceFlow backend, automatically generated.',
+    },
+    servers: [
+        {
+            url: process.env.NODE_ENV === 'production' ? process.env.PROD_URL : `${process.env.DEV_URL}:${process.env.PORT}`,
+        },
+    ],
+    baseDir: __dirname,
+    filesPattern: ['./routes/*.js', './models/**/*.js'],
+    security: {
+        BearerAuth: {
+            type: 'http',
+            scheme: 'bearer',
+            bearerFormat: 'JWT',
+        },
+        CookieAuth: {
+            type: 'apiKey',
+            in: 'cookie',
+            name: 'accessToken',
+        },
+    },
+});
 
 // Route setup
 setupRoutes(app);
@@ -43,12 +72,8 @@ app.get('/openapi.json', (req, res) => {
 app.use('/api/docs', redoc({
     title: 'TraceFlow API Documentation',
     specUrl: '/openapi.json',
-    redocOptions: {
-        theme: {
-            colors: { primary: { main: '#2c3e50' } },
-            typography: { fontFamily: 'Arial, sans-serif' },
-        },
-    },
+
+
 }));
 
 // Test endpoint
