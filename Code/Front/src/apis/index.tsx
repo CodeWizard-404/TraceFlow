@@ -10,9 +10,13 @@ import ReceiptBook from '../models/ReceiptBook';
 import ReceiptStub from '../models/ReceiptStub';
 import ReceiptBookTransfer from '../models/ReceiptBookTransfer';
 import UserPermissionOverride from '../models/UserPermissionOverride';
+import Delegation from '../models/Delegation';
+import Governorate from '../models/Governorate';
+import Region from '../models/Region';
+
+export type AxiosErrorResponse = { response?: { data?: { error?: string }; status?: number } };
 
 // Auth Routes
-export type AxiosErrorResponse = { response?: { data?: { error?: string }; status?: number } };
 export type LoginResponse = { requires2FA: boolean; accessToken?: string; user?: { userID: string; email: string; phone: string; roles: Role[] }; userID?: string; deviceIdentifier?: string; tempToken?: string; refreshToken?: string; expiresIn?: number; message?: string };
 export type Verify2FAResponse = { requires2FA: boolean; accessToken?: string; user?: { userID: string; email: string; phone: string; roles: Role[] }; expiresIn?: number };
 export type InitiatePasswordResetResponse = { userID: string; message: string };
@@ -22,10 +26,15 @@ export type ResetPasswordResponse = { message: string };
 export type GoogleCallbackResponse = { requires2FA: boolean; user: User; userID: string; tempToken: string; refreshToken: string; expiresIn: number; deviceIdentifier: string };
 
 // Agent Routes
-export type AgentByIdResponse = Agent;
-export type AgentByPhoneResponse = Agent;
+export type AgentByIdResponse = Agent | null;
+export type AgentByPhoneResponse = Agent | null;
 export type AgentLocationsResponse = string[];
-export type AgentsByLocationResponse = Agent[];
+export type AgentsByDelegationResponse = { agents: Agent[] };
+export type AllAgentsResponse = { agents: Agent[] };
+export type CreateAgentResponse = Agent;
+export type UpdateAgentResponse = Agent;
+export type DeleteAgentResponse = { message: string };
+export type SupervisorResponse = User | null;
 
 // Checklist Routes
 export type ChecklistByIdResponse = Checklist;
@@ -93,34 +102,39 @@ export type UpdateTimesheetResponse = Timesheet;
 export type ValidateTimesheetResponse = Timesheet;
 
 // User Routes
-export type AssignGoogleAccountResponse = { user: User; message: string };
-export type AssignSupervisorsResponse = { managerID: string; assignedSupervisors: string[]; message: string };
-export type CreateUserResponse = User;
+export type AssignGoogleAccountResponse = { userID: string; keycloakId: string; firstname: string; lastname: string; phone: string; email: string; password: string; googleEmail: string };
+export type CreateUserResponse = { userID: string; keycloakId: string; email: string; firstname: string; lastname: string; phone: string; password: string; googleEmail: string };
 export type DeleteUserResponse = { message: string };
-export type ListUsersResponse = User[];
-export type ManagersByUserResponse = User[];
-export type RevokeSupervisorsResponse = { managerID: string; revokedSupervisors: string[]; message: string };
-export type SupervisorsByUserResponse = User[];
-export type UpdateUserResponse = User;
-export type UserByIdResponse = User;
-export type UserByPhoneResponse = User;
-export type GetUsersByRoleResponse = { users: User[] };
-export type RegionalManagersByUserResponse = { regionalManagers: User[] };
-export type DirectorByUserResponse = { director: User | null };
-
-// Region and Delegation Routes
-export type AssignRegionsResponse = { regionalManagerID: string; regionIDs: string[]; message: string };
-export type RevokeRegionsResponse = { regionalManagerID: string; regionIDs: string[]; message: string };
-export type AssignGovernoratesResponse = { supervisorID: string; governorateIDs: string[]; message: string };
-export type RevokeGovernoratesResponse = { supervisorID: string; governorateIDs: string[]; message: string };
-export type AssignDelegationsResponse = { supervisorID: string; delegationIDs: string[]; message: string };
-export type RevokeDelegationsResponse = { supervisorID: string; delegationIDs: string[]; message: string };
 export type AssignRegionalManagerResponse = { supervisorID: string; regionalManagerID: string; message: string };
-export type RevokeRegionalManagerResponse = { supervisorID: string; regionalManagerID: string; message: string };
+export type RevokeRegionalManagerResponse = { supervisorID: string; regionalManagerID: string | null; message: string; cascadeApplied: { governorates: boolean; delegations: boolean; agents: boolean }; affectedCounts?: { governorates: number; delegations: number; agents: number } };
 export type AssignDirectorResponse = { regionalManagerID: string; directorID: string; message: string };
-export type RevokeDirectorResponse = { regionalManagerID: string; directorID: string; message: string };
+export type RevokeDirectorResponse = { regionalManagerID: string; directorID: string | null; message: string };
 export type AssignSupervisorToAgentResponse = { agentID: string; supervisorID: string; delegationID: string; message: string };
-export type RevokeSupervisorFromAgentResponse = { agentID: string; supervisorID: string; delegationID: string; message: string };
+export type RevokeSupervisorFromAgentResponse = { agentID: string; supervisorID: string | null; delegationID: string | null; message: string };
+export type AssignRegionsResponse = Array<{ userID: string; regionID: string; message: string }>;
+export type RevokeRegionsResponse = Array<{ userID: string; regionID: string; message: string; cascadeApplied: boolean }>;
+export type AssignGovernoratesResponse = Array<{ userID: string; governorateID: string; message: string }>;
+export type RevokeGovernoratesResponse = Array<{ userID: string; governorateID: string; message: string; cascadeApplied: { delegations: boolean; agents: boolean }; affectedCounts: { delegations: number; agents: number } }>;
+export type AssignDelegationsResponse = Array<{ userID: string; delegationID: string; message: string }>;
+export type RevokeDelegationsResponse = Array<{ userID: string; delegationID: string; message: string; cascadeApplied: { agents: boolean }; affectedAgents: number }>;
+
+export type GetUsersByRegionResponse = User[];
+export type GetUsersByGovernorateResponse = User[];
+export type GetUsersByDelegationResponse = User[];
+
+
+
+// Location Routes
+export type AllRegionsResponse = Region[];
+export type AllGovernoratesResponse = Governorate[];
+export type AllDelegationsResponse = Delegation[];
+export type DelegationsByGovernorateResponse = Delegation[];
+export type GovernoratesByRegionResponse = Governorate[];
+export type RegionsByGovernorateResponse = Region[];
+export type GovernoratesByDelegationResponse = Governorate[];
+export type RegionsByUserResponse = Region[];
+export type GovernoratesByUserResponse = Governorate[];
+export type DelegationsByUserResponse = Delegation[];
 
 // Visit Routes
 export type DeleteVisitResponse = { message: string };

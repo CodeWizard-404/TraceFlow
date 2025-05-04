@@ -1,62 +1,23 @@
 import { AxiosError } from "axios";
 import api from "./axiosConfig";
-import Agent from "../models/Agent";
-
-// Error response type for Axios errors
-interface AxiosErrorResponse {
-  response?: {
-    data?: { error?: string };
-    status?: number;
-  };
-}
-
-// Response types
-interface AgentsByDelegationResponse {
-  agents: Agent[];
-}
-
-interface AgentLocationsResponse {
-  locations: string[];
-}
-
-interface AgentByPhoneResponse {
-  agent: Agent;
-}
-
-interface AgentByIdResponse {
-  agent: Agent;
-}
-
-interface AllAgentsResponse {
-  agents: Agent[];
-}
-
-interface CreateAgentResponse {
-  agent: Agent;
-}
-
-interface UpdateAgentResponse {
-  agent: Agent;
-}
-
-interface DeleteAgentResponse {
-  message: string;
-}
-
-interface SupervisorResponse {
-  userID: string;
-  firstname: string;
-  lastname: string;
-  email: string;
-  phone: string;
-  Roles: { name: string }[];
-}
+import {
+  AgentByIdResponse,
+  AgentByPhoneResponse,
+  AgentLocationsResponse,
+  AgentsByDelegationResponse,
+  AllAgentsResponse,
+  CreateAgentResponse,
+  UpdateAgentResponse,
+  DeleteAgentResponse,
+  SupervisorResponse,
+  AxiosErrorResponse,
+} from "./index";
 
 // Generic error handler
 const handleApiError = (error: unknown, defaultMessage: string): string => {
   const axiosError = error as AxiosError<AxiosErrorResponse>;
   if (axiosError.response) {
-    return axiosError.message; // Use backend's user-friendly error
+    return axiosError.message;
   }
   switch (axiosError.status) {
     case 400:
@@ -74,13 +35,67 @@ const handleApiError = (error: unknown, defaultMessage: string): string => {
   }
 };
 
-// Get all agents
-export const getAllAgents = async (): Promise<AllAgentsResponse> => {
+// Get agents by delegation
+export const getAgentsByDelegation = async (delegationID: string): Promise<AgentsByDelegationResponse> => {
   try {
-    const response = await api.get<AllAgentsResponse>("/agents");
+    if (!delegationID) {
+      throw new Error("Delegation ID is required.");
+    }
+    const response = await api.get<AgentsByDelegationResponse>("/agents/delegation", {
+      params: { delegationID },
+    });
     return response.data;
   } catch (error) {
-    throw new Error(handleApiError(error, "Unable to fetch all agents."));
+    throw new Error(handleApiError(error, "Unable to fetch agents by delegation."));
+  }
+};
+
+// Get all unique agent locations
+export const getAgentLocations = async (): Promise<AgentLocationsResponse> => {
+  try {
+    const response = await api.get<AgentLocationsResponse>("/agents/locations");
+    return response.data;
+  } catch (error) {
+    throw new Error(handleApiError(error, "Unable to fetch agent locations."));
+  }
+};
+
+// Get agent by phone number
+export const getAgentByPhone = async (phone: string): Promise<AgentByPhoneResponse> => {
+  try {
+    if (!phone) {
+      throw new Error("Phone number is required.");
+    }
+    const response = await api.get<AgentByPhoneResponse>(`/agents/phone/${phone}`);
+    return response.data;
+  } catch (error) {
+    throw new Error(handleApiError(error, "Agent not found."));
+  }
+};
+
+// Get agent's supervisor
+export const getAgentSupervisor = async (id: string): Promise<SupervisorResponse> => {
+  try {
+    if (!id) {
+      throw new Error("Agent ID is required.");
+    }
+    const response = await api.get<SupervisorResponse>(`/agents/${id}/supervisor`);
+    return response.data;
+  } catch (error) {
+    throw new Error(handleApiError(error, "Supervisor not found."));
+  }
+};
+
+// Get agents by user (supervisor)
+export const getAgentsByUser = async (userID: string): Promise<AgentsByDelegationResponse> => {
+  try {
+    if (!userID) {
+      throw new Error("User ID is required.");
+    }
+    const response = await api.get<AgentsByDelegationResponse>(`/agents/user/${userID}`);
+    return response.data;
+  } catch (error) {
+    throw new Error(handleApiError(error, "Unable to fetch agents by user."));
   }
 };
 
@@ -101,6 +116,29 @@ export const createAgent = async (agentData: {
     return response.data;
   } catch (error) {
     throw new Error(handleApiError(error, "Unable to create agent."));
+  }
+};
+
+// Get all agents
+export const getAllAgents = async (): Promise<AllAgentsResponse> => {
+  try {
+    const response = await api.get<AllAgentsResponse>("/agents");
+    return response.data;
+  } catch (error) {
+    throw new Error(handleApiError(error, "Unable to fetch all agents."));
+  }
+};
+
+// Get agent by ID
+export const getAgentById = async (id: string): Promise<AgentByIdResponse> => {
+  try {
+    if (!id) {
+      throw new Error("Agent ID is required.");
+    }
+    const response = await api.get<AgentByIdResponse>(`/agents/${id}`);
+    return response.data;
+  } catch (error) {
+    throw new Error(handleApiError(error, "Agent not found."));
   }
 };
 
@@ -137,67 +175,5 @@ export const deleteAgent = async (id: string): Promise<DeleteAgentResponse> => {
     return response.data;
   } catch (error) {
     throw new Error(handleApiError(error, "Unable to delete agent."));
-  }
-};
-
-// Get agents by location (updated to delegation)
-export const getAgentsByLocation = async (delegationID: string): Promise<AgentsByDelegationResponse> => {
-  try {
-    if (!delegationID) {
-      throw new Error("Delegation ID is required.");
-    }
-    const response = await api.get<AgentsByDelegationResponse>(`/agents/delegation?delegationID=${delegationID}`);
-    return response.data;
-  } catch (error) {
-    throw new Error(handleApiError(error, "Unable to fetch agents by delegation."));
-  }
-};
-
-// Get all unique agent locations
-export const getAgentLocations = async (): Promise<AgentLocationsResponse> => {
-  try {
-    const response = await api.get<AgentLocationsResponse>("/agents/locations");
-    return response.data;
-  } catch (error) {
-    throw new Error(handleApiError(error, "Unable to fetch agent locations."));
-  }
-};
-
-// Get agent by phone number
-export const getAgentByPhone = async (phone: string): Promise<AgentByPhoneResponse> => {
-  try {
-    if (!phone) {
-      throw new Error("Phone number is required.");
-    }
-    const response = await api.get<AgentByPhoneResponse>(`/agents/phone/${phone}`);
-    return response.data;
-  } catch (error) {
-    throw new Error(handleApiError(error, "Agent not found."));
-  }
-};
-
-// Get agent by ID
-export const getAgentById = async (id: string): Promise<AgentByIdResponse> => {
-  try {
-    if (!id) {
-      throw new Error("Agent ID is required.");
-    }
-    const response = await api.get<AgentByIdResponse>(`/agents/${id}`);
-    return response.data;
-  } catch (error) {
-    throw new Error(handleApiError(error, "Agent not found."));
-  }
-};
-
-// Get agent's supervisor
-export const getAgentSupervisor = async (id: string): Promise<SupervisorResponse> => {
-  try {
-    if (!id) {
-      throw new Error("Agent ID is required.");
-    }
-    const response = await api.get<SupervisorResponse>(`/agents/${id}/supervisor`);
-    return response.data;
-  } catch (error) {
-    throw new Error(handleApiError(error, "Supervisor not found."));
   }
 };

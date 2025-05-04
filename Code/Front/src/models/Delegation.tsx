@@ -7,3 +7,4 @@ export interface Delegation {
 }
 
 export default Delegation;
+

@@ -20,7 +20,7 @@ async function initializeServer(app, io) {
         server = http.createServer(app);
     }
 
-    if (io && process.env.INIT_SOCKET === 'true') { // Check environment variable
+    if (io && process.env.INIT_SOCKET === 'true') {
         const allowedOrigins = [
             process.env.FRONTEND_URL,
             process.env.FRONTEND_URL1,

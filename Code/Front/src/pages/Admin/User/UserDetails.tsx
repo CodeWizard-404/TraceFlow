@@ -192,11 +192,12 @@ const UserDetails: React.FC<UserDetailsProps> = ({
             return;
         }
         try {
-            const updatePayload: Partial<User> = {
+            const updatePayload: Partial<User> & { PFP?: File | null } = {
                 firstname: editedUser.firstname!.trim(),
                 lastname: editedUser.lastname!.trim(),
                 email: editedUser.email!.trim(),
                 phone: stripPhoneForDatabase(phoneValue),
+                PFP: null,
             };
             if (editedUser.password) updatePayload.password = editedUser.password;
             const updatedUser = await updateUser(selectedUser.userID, updatePayload);

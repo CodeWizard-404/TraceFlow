@@ -11,7 +11,7 @@ const timesheetRoutes = require('../routes/timesheetRoutes');
 const userRoutes = require('../routes/userRoutes');
 const visitRoutes = require('../routes/visitRoutes');
 const notificationRoutes = require('../routes/notificationRoutes');
-const configurationRoutes = require('../routes/configurationRoutes');
+const locationRoutes = require('../routes/locationRoutes');
 const logger = require('../utils/logger');
 
 function setupRoutes(app) {
@@ -27,7 +27,7 @@ function setupRoutes(app) {
     app.use('/api/receipt-books', authenticateCookie, receiptBookRoutes);
     app.use('/api/receipt-stubs', authenticateCookie, receiptstubRoutes);
     app.use('/api/notifications', authenticateCookie, notificationRoutes);
-    app.use('/api/configurations', authenticateCookie, configurationRoutes);
+    app.use('/api/locations', authenticateCookie, locationRoutes);
 
     // Test endpoint
     app.get('/api/test', authenticateCookie, (req, res) => {

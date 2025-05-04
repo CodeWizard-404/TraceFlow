@@ -17,10 +17,10 @@ import {
 // Generic error handler
 const handleApiError = (error: unknown, defaultMessage: string): string => {
     const axiosError = error as AxiosError<AxiosErrorResponse>;
-    if (axiosError.response?.data) {
-        return axiosError.message; // Use backend's user-friendly error
-    }
-    switch (axiosError.response?.status) {
+    if (axiosError.response) {
+        return axiosError.message;
+      }
+      switch (axiosError.status) {
         case 400:
             return "Invalid request. Please check your input and try again.";
         case 401:

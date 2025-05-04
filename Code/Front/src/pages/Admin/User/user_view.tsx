@@ -214,6 +214,9 @@ const UserView: React.FC<UserViewProps> = ({
       canReadAgents: effectivePermissions.some(
         (p) => p.name === import.meta.env.VITE_PERMISSIONS_READ_AGENTS
       ),
+      canAssignRegionalManagers: effectivePermissions.some(
+        (p) => p.name === import.meta.env.VITE_PERMISSIONS_ASSIGN_REGIONAL_MANAGER
+      )
     }),
     [effectivePermissions]
   );
@@ -223,14 +226,6 @@ const UserView: React.FC<UserViewProps> = ({
       userRoles.some((r) => r.name === import.meta.env.VITE_ROLES_SUPER_ADMIN),
     [userRoles]
   );
-
-  // Persist view state on refresh
-  useEffect(() => {
-    if (selectedUser) {
-      localStorage.setItem("adminView", "user-details");
-      localStorage.setItem("selectedUserId", selectedUser.userID);
-    }
-  }, [selectedUser]);
 
   // Load initial user data
   useEffect(() => {

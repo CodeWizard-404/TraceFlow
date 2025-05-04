@@ -22,6 +22,7 @@ const io = require('./utils/socket');
 const inquirer = require('inquirer');
 const cliProgress = require('cli-progress');
 const colors = require('ansi-colors');
+const redoc = require('redoc-express');
 require('dotenv').config();
 
 // Create Express app
@@ -33,6 +34,23 @@ setupMiddleware(app);
 // Route setup
 setupRoutes(app);
 
+// Serve OpenAPI spec
+app.get('/openapi.json', (req, res) => {
+    res.sendFile(path.join(__dirname, 'openapi.json'));
+});
+
+// ReDoc setup
+app.use('/api/docs', redoc({
+    title: 'TraceFlow API Documentation',
+    specUrl: '/openapi.json',
+    redocOptions: {
+        theme: {
+            colors: { primary: { main: '#2c3e50' } },
+            typography: { fontFamily: 'Arial, sans-serif' },
+        },
+    },
+}));
+
 // Test endpoint
 app.get('/api/test', authenticateCookie, (req, res) => {
     res.json({ message: 'Secure endpoint accessed', user: req.user });
@@ -41,7 +59,9 @@ app.get('/api/test', authenticateCookie, (req, res) => {
 // Error handling
 app.use((err, req, res, next) => {
     logger.error(`Server error: ${err.message}`, { ip: req.ip, stack: err.stack });
-    res.status(500).json({ error: 'Something went wrong!' });
+    res.status(err.status || 500).json({
+        error: err.message || 'Something went wrong!',
+    });
 });
 
 // Schedule tasks
@@ -85,7 +105,6 @@ const initSteps = [
         weight: 20,
     },
     {
-
         name: 'Geographic Data Initialization',
         key: 'geoData',
         default: process.env.INIT_GEO_DATA !== 'false',
@@ -101,7 +120,7 @@ const initSteps = [
     {
         name: 'Agent Data Seeding',
         key: 'agents',
-        default: process.env.INIT_AGENTS === 'true', // Default to false unless explicitly enabled
+        default: process.env.INIT_AGENTS === 'true',
         fn: seedAgents,
         weight: 15,
     },
@@ -148,7 +167,6 @@ async function startApp() {
         duration: 0,
     };
 
-    // Create progress bar
     const progressBar = new cliProgress.SingleBar({
         format: `${colors.cyan('Overall Progress')} |${colors.green('{bar}')}| {percentage}% | {value}/{total} Steps`,
         barCompleteChar: '\u2588',
@@ -156,13 +174,11 @@ async function startApp() {
         hideCursor: true,
     }, cliProgress.Presets.shades_classic);
 
-    // Calculate total weight for overall progress
     const totalWeight = initSteps.reduce((sum, step) => sum + step.weight, 0);
     let currentWeight = 0;
 
     progressBar.start(initSteps.length, 0);
 
-    // Ask for initialization mode on first launch
     const { mode } = process.env.FIRST_LAUNCH !== 'false' ? await inquirer.prompt([
         {
             type: 'list',
@@ -218,7 +234,6 @@ async function startApp() {
                     timestamp: new Date().toISOString(),
                 });
 
-                // Execute step function
                 await step.fn();
 
                 stepProgress = 100;
@@ -234,7 +249,6 @@ async function startApp() {
                 });
             }
 
-            // Update overall progress
             currentWeight += step.weight;
             const overallProgress = Math.round((currentWeight / totalWeight) * initSteps.length);
             progressBar.update(overallProgress);
@@ -252,7 +266,6 @@ async function startApp() {
                 timestamp: new Date().toISOString(),
             });
 
-            // Prompt to continue or exit on failure
             const { continueOnError } = await inquirer.prompt([
                 {
                     type: 'confirm',
@@ -277,11 +290,9 @@ async function startApp() {
         });
     }
 
-    // Rest of the function remains unchanged
     progressBar.stop();
     console.clear();
 
-    // Log summary
     const endTime = new Date();
     summary.duration = ((endTime - startTime) / 1000).toFixed(2);
 
@@ -305,7 +316,6 @@ async function startApp() {
     logger.info(`Total Duration: ${summary.duration} seconds`);
     logger.info(`${colors.cyan('===================================================')}`);
 
-    // Show credentials in development
     if (process.env.NODE_ENV === 'development') {
         logger.info(`${colors.cyan('===================================================')}`);
         logger.info(`\tSuper Admin Credentials:`);

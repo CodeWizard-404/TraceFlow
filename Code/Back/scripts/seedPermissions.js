@@ -30,6 +30,7 @@ const getRouteClass = (routePath) => {
         roles: 'Role',
         permissions: 'Permission',
         users: 'User',
+        locations: 'Location'
     };
 
     return Object.entries(routeClassMap)
@@ -146,6 +147,7 @@ const extractRoutePermissions = async () => {
             User: '/api/users',
             Role: '/api/roles',
             Permission: '/api/permissions',
+            Location: '/api/locations',
             Other: '/api/other',
         };
 

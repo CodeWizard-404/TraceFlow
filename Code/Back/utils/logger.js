@@ -1,5 +1,4 @@
 const winston = require('winston');
-const { Log } = require('../models');
 
 // Custom transport for database logging
 class DatabaseTransport extends winston.Transport {
@@ -12,6 +11,9 @@ class DatabaseTransport extends winston.Transport {
         setImmediate(() => {
             this.emit('logged', info);
         });
+
+        // Lazy-load the Log model to avoid circular dependency
+        const { Log } = require('../models');
 
         // Write to database
         Log.create({
@@ -50,7 +52,8 @@ const logger = winston.createLogger({
                     return `${timestamp} [${level}]: ${message}`;
                 })
             ),
-        }), new DatabaseTransport(), // Custom transport for database
+        }),
+        new DatabaseTransport(), // Custom transport for database
     ],
 });
 

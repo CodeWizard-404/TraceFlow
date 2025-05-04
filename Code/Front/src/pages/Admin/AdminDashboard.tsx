@@ -162,6 +162,7 @@ const AdminDashboard: React.FC = React.memo(() => {
     }, []);
     const [view, setView] = useState<ViewMode>(initialView);
 
+    // Remove this useEffect entirely
     useEffect(() => {
         const savedView = localStorage.getItem("adminView");
         const savedUserId = localStorage.getItem("selectedUserId");
@@ -186,7 +187,7 @@ const AdminDashboard: React.FC = React.memo(() => {
     }, [setSelectedUser, setView, setGlobalError, t]);
 
     useEffect(() => {
-        if (validViews.includes(view)) {
+        if (validViews.includes(view) && view !== "user-details") {
             Cookies.set(COOKIE_NAME, view, { expires: COOKIE_EXPIRES });
         }
     }, [view]);
@@ -1289,6 +1290,7 @@ const AdminDashboard: React.FC = React.memo(() => {
                         )}
                         {view === "add-user" && (
                             <UserAdd
+                                setRoles={setRoles}
                                 users={users}
                                 setUsers={setUsers}
                                 roles={roles}

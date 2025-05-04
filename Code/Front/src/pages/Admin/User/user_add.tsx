@@ -7,8 +7,6 @@
 import React, { useState, useEffect } from "react";
 import { motion } from "framer-motion";
 import {
-  getAllRegions,
-  getAllGovernorates,
   assignRegionsToRegionalManager,
   assignRegionalManagerToSupervisor,
   assignGovernoratesToSupervisor,
@@ -16,6 +14,7 @@ import {
   assignDirectorToRegionalManager,
   assignSupervisorToAgent,
 } from "../../../apis/userAPI";
+import { getAllRegions, getAllGovernorates } from "../../../apis/locationApi";
 import { assignRolesToUser, getRolesByUser } from "../../../apis/roleAPI";
 import { createUser } from "../../../apis/userAPI";
 import User from "../../../models/User";
@@ -549,7 +548,6 @@ const UserAdd: React.FC<UserAddProps> = ({
           expandedSection={expandedSection}
           toggleSection={toggleSection}
           userPermissions={{
-            canCreateUsers: userPermissions.canCreateUsers ?? false,
             canAssignRegions: userPermissions.canAssignRegions ?? false,
             canRevokeRegions: userPermissions.canRevokeRegions ?? false,
             canAssignGovernorates: userPermissions.canAssignGovernorates ?? false,

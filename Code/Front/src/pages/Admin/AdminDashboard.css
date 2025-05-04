@@ -663,7 +663,7 @@ body.dark .role-info-icon {
     display: grid;
     gap: 1.5rem;
     border-radius: 0.75rem;
-    max-height: 20rem;
+    max-height: 100vh;
     overflow-y: auto;
 }
 
