@@ -6,6 +6,7 @@
  * Uses existing ProfilePage.css for styling.
  * Hardened to handle persistent backend PFP serialization issues.
  * Updated to include sorting by Type in notification preferences.
+ * Fixed PFP update issue by correctly handling FormData in updateProfile calls and aligning types.
  */
 
 import React, {
@@ -17,7 +18,7 @@ import React, {
 import { debounce } from "lodash";
 import { motion } from "framer-motion";
 import { useAuth } from "../../context/AuthContext";
-import { updateProfile, fetchUserProfile } from "../../apis/userAPI";
+import { updateProfile, fetchUserProfile, UpdateProfileInput } from "../../apis/userAPI";
 import {
   getNotifications,
   getNotificationPreferences,
@@ -157,7 +158,6 @@ const ProfilePage: React.FC = React.memo(() => {
   const [notificationError, setNotificationError] = useState<string | null>(null);
   // Preferences filtering and sorting
   const [prefFilterType, setPrefFilterType] = useState<string>("");
-  // Updated prefSortBy to include 'type'
   const [prefSortBy, setPrefSortBy] = useState<"none" | "event" | "type">("none");
   const [prefSortOrder, setPrefSortOrder] = useState<"asc" | "desc">("asc");
   // Filter panel toggles
@@ -220,7 +220,6 @@ const ProfilePage: React.FC = React.memo(() => {
     return "";
   }, []);
 
-
   const validatePassword = useCallback((value: string): string => {
     if (value && value.length < 8)
       return "Password must be at least 8 characters";
@@ -254,19 +253,15 @@ const ProfilePage: React.FC = React.memo(() => {
     return formatted;
   }, []);
 
-
-
   const stripPhoneForDatabase = useCallback((raw: string): string => {
     return raw.replace(/[^\d]/g, "");
   }, []);
-
 
   // Memoized formatted values
   const formattedPhone = useMemo(
     () => (profileData?.phone ? formatPhoneDisplay(profileData.phone) : ""),
     [profileData?.phone, formatPhoneDisplay]
   );
-
 
   // Load last valid PFP from localStorage
   const loadLastValidPFP = useCallback(() => {
@@ -328,14 +323,24 @@ const ProfilePage: React.FC = React.memo(() => {
           getNotificationTypes(),
         ]);
         const completeUser: User = {
-          keycloakId: user.keycloakId || "",
           userID: fullUser.userID || user.userID || "",
+          keycloakId: user.keycloakId || "",
           firstname: fullUser.firstname || user.firstname || "",
           lastname: fullUser.lastname || user.lastname || "",
           phone: fullUser.phone || user.phone || "",
           email: fullUser.email || user.email || "",
           PFP: fullUser.PFP || user.PFP || null,
           password: "",
+          googleEmail: fullUser.googleEmail || user.googleEmail,
+          tempResetToken: fullUser.tempResetToken,
+          regionalManagerID: fullUser.regionalManagerID,
+          directorID: fullUser.directorID,
+          Roles: fullUser.Roles || user.Roles,
+          supervisors: fullUser.supervisors || user.supervisors,
+          managers: fullUser.managers || user.managers,
+          Regions: fullUser.Regions || user.Regions,
+          Governorates: fullUser.Governorates || user.Governorates,
+          Delegations: fullUser.Delegations || user.Delegations,
         };
 
         setProfileData(completeUser);
@@ -389,14 +394,24 @@ const ProfilePage: React.FC = React.memo(() => {
         );
         if (user) {
           const fallbackUser: User = {
-            keycloakId: user.keycloakId || "",
             userID: user.userID || "",
+            keycloakId: user.keycloakId || "",
             firstname: user.firstname || "Not set",
             lastname: user.lastname || "Not set",
             phone: user.phone || "",
             email: user.email || "",
             PFP: null,
             password: "",
+            googleEmail: user.googleEmail,
+            tempResetToken: undefined,
+            regionalManagerID: user.regionalManagerID,
+            directorID: user.directorID,
+            Roles: user.Roles,
+            supervisors: user.supervisors,
+            managers: user.managers,
+            Regions: user.Regions,
+            Governorates: user.Governorates,
+            Delegations: user.Delegations,
           };
           setProfileData(fallbackUser);
           setProfilePic(loadLastValidPFP());
@@ -446,14 +461,24 @@ const ProfilePage: React.FC = React.memo(() => {
           fetchProfileWithRetry()
             .then((updatedUser) => {
               const completeUser: User = {
-                keycloakId: user.keycloakId || "",
                 userID: updatedUser.userID || user.userID || "",
+                keycloakId: user.keycloakId || "",
                 firstname: updatedUser.firstname || user.firstname || "",
                 lastname: updatedUser.lastname || user.lastname || "",
                 phone: updatedUser.phone || user.phone || "",
                 email: updatedUser.email || user.email || "",
                 PFP: updatedUser.PFP || user.PFP || null,
                 password: "",
+                googleEmail: updatedUser.googleEmail || user.googleEmail,
+                tempResetToken: updatedUser.tempResetToken,
+                regionalManagerID: updatedUser.regionalManagerID,
+                directorID: updatedUser.directorID,
+                Roles: updatedUser.Roles || user.Roles,
+                supervisors: updatedUser.supervisors || user.supervisors,
+                managers: updatedUser.managers || user.managers,
+                Regions: updatedUser.Regions || user.Regions,
+                Governorates: updatedUser.Governorates || user.Governorates,
+                Delegations: updatedUser.Delegations || user.Delegations,
               };
               setProfileData(completeUser);
               if (completeUser.PFP && completeUser.PFP.trim()) {
@@ -537,8 +562,6 @@ const ProfilePage: React.FC = React.memo(() => {
     [debouncedHandlePhoneChange]
   );
 
-
-
   const debouncedHandleInputChange = useMemo(
     () =>
       debounce((field: keyof User, value: string) => {
@@ -606,7 +629,8 @@ const ProfilePage: React.FC = React.memo(() => {
           return;
         }
         try {
-          const updatedData: Partial<User> = { [field]: profileData[field] };
+          // Explicitly type the updatedData to satisfy Partial<User> & UpdateProfileInput
+          const updatedData: Partial<User> & UpdateProfileInput = { [field]: profileData[field] };
           const response = await updateProfile(updatedData);
           const updatedUser: User = {
             ...profileData,
@@ -656,9 +680,9 @@ const ProfilePage: React.FC = React.memo(() => {
       }
 
       try {
-        const formData = new FormData();
-        formData.append("PFP", file);
-        const response = await updateProfile(formData);
+        // Explicitly type the update data to satisfy Partial<User> & UpdateProfileInput
+        const updateData: Partial<User> & UpdateProfileInput = { PFP: file } as Partial<User> & UpdateProfileInput;
+        const response = await updateProfile(updateData);
 
         if (response.PFP && response.PFP.trim()) {
           if (!isValidBase64(response.PFP)) {
@@ -785,7 +809,9 @@ const ProfilePage: React.FC = React.memo(() => {
     }
 
     try {
-      const response = await updateProfile({ removePFP: true });
+      // Explicitly type the update data to satisfy Partial<User> & UpdateProfileInput
+      const updateData: Partial<User> & UpdateProfileInput = { removePFP: true };
+      const response = await updateProfile(updateData);
       setProfilePic(null);
       setTempSuccess("Profile picture removed successfully");
       setFailedUploadCount(0);
@@ -817,7 +843,9 @@ const ProfilePage: React.FC = React.memo(() => {
       return;
     }
     try {
-      const response = await updateProfile({ password: newPassword });
+      // Explicitly type the update data to satisfy Partial<User> & UpdateProfileInput
+      const updateData: Partial<User> & UpdateProfileInput = { password: newPassword };
+      const response = await updateProfile(updateData);
       const updatedUser: User = { ...profileData!, ...response };
       setProfileData(updatedUser);
       setTempSuccess("Password updated successfully");
@@ -1821,7 +1849,6 @@ const ProfilePage: React.FC = React.memo(() => {
                               >
                                 Event (Z-A)
                               </button>
-                              {/* Added Type sorting options */}
                               <button
                                 className={`filter-option ${prefSortBy === "type" && prefSortOrder === "asc" ? "active" : ""}`}
                                 onClick={() => {

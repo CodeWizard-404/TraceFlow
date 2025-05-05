@@ -78,8 +78,9 @@ interface AssignmentsManagementProps {
     tempDirectors: User[];
     setTempDirectors: React.Dispatch<React.SetStateAction<User[]>>;
     setUsers: React.Dispatch<React.SetStateAction<User[]>>;
-    setSelectedUser: React.Dispatch<React.SetStateAction<User | null>>;
+    onUserUpdate: (user: User) => void;
     tempRoles?: Role[];
+    setSelectedUser: React.Dispatch<React.SetStateAction<User | null>>;
 }
 
 const ITEMS_PER_PAGE = 10;
@@ -121,31 +122,71 @@ const AssignmentList: React.FC<{
     disabled: boolean;
     singleSelection?: boolean;
     isLoading: boolean;
-}> = ({
-    title,
-    items,
-    selectedItems,
-    onToggle,
-    renderLabel,
-    search,
-    setSearch,
-    phoneInput,
-    setPhoneInput,
-    handlePhoneInput,
-    page,
-    setPage,
-    disabled,
-    singleSelection = false,
-    isLoading,
-}) => {
+}> = React.memo(
+    ({
+        title,
+        items,
+        selectedItems,
+        onToggle,
+        renderLabel,
+        search,
+        setSearch,
+        phoneInput,
+        setPhoneInput,
+        handlePhoneInput,
+        page,
+        setPage,
+        disabled,
+        singleSelection = false,
+        isLoading,
+    }) => {
         const filteredItems = useMemo(() => {
             const searchLower = search.toLowerCase();
-            return items.filter(
+            const filtered = items.filter(
                 (item) =>
                     renderLabel(item).toLowerCase().includes(searchLower) ||
                     (item.phone && item.phone.includes(search))
             );
-        }, [items, search, renderLabel]);
+
+            // Sort items alphabetically and prioritize selected items
+            const selected = filtered
+                .filter((item) =>
+                    selectedItems.some((s) => {
+                        if (item.governorateID) {
+                            return item.governorateID === s.governorateID;
+                        } else if (item.delegationID) {
+                            return item.delegationID === s.delegationID;
+                        } else if (item.agentID) {
+                            return (
+                                item.agentID === s.agentID &&
+                                (item.delegationID || "no-delegation") === (s.delegationID || "no-delegation")
+                            );
+                        }
+                        return (item.userID || item.regionID) === (s.userID || s.regionID);
+                    })
+                )
+                .sort((a, b) => renderLabel(a).localeCompare(renderLabel(b)));
+            const unselected = filtered
+                .filter(
+                    (item) =>
+                        !selectedItems.some((s) => {
+                            if (item.governorateID) {
+                                return item.governorateID === s.governorateID;
+                            } else if (item.delegationID) {
+                                return item.delegationID === s.delegationID;
+                            } else if (item.agentID) {
+                                return (
+                                    item.agentID === s.agentID &&
+                                    (item.delegationID || "no-delegation") === (s.delegationID || "no-delegation")
+                                );
+                            }
+                            return (item.userID || item.regionID) === (s.userID || s.regionID);
+                        })
+                )
+                .sort((a, b) => renderLabel(a).localeCompare(renderLabel(b)));
+
+            return [...selected, ...unselected];
+        }, [items, search, selectedItems, renderLabel]);
 
         const paginatedItems = useMemo(() => {
             const start = (page - 1) * ITEMS_PER_PAGE;
@@ -153,23 +194,26 @@ const AssignmentList: React.FC<{
         }, [filteredItems, page]);
 
         const getItemKey = (item: AssignmentListItem, index: number) => {
-            if (item.agentID) {
-                // For agents, combine agentID and delegationID to ensure uniqueness
-                return `${item.agentID}-${item.delegationID || "no-delegation"}`;
+            if (item.governorateID) {
+                return `gov_${item.governorateID}`;
+            } else if (item.delegationID) {
+                const cleanDelegationID = item.delegationID.replace(/^del_/, "");
+                return `del_${cleanDelegationID}_${index}`;
+            } else if (item.agentID) {
+                const delegationID = item.delegationID || "no-delegation";
+                return `agent_${item.agentID}_${delegationID}`;
             }
-            const key =
-                item.id ||
-                item.userID ||
-                item.regionID ||
-                item.governorateID ||
-                item.delegationID ||
-                item.agentID;
+            const key = item.id || item.userID || item.regionID || item.governorateID || item.delegationID;
             if (!key) {
                 console.warn("Item missing valid ID:", item);
-                return `fallback-${index}`;
+                return `fallback_${index}`;
             }
             return key;
         };
+
+        if (title === "Agents Assigned to This Supervisor") {
+            console.debug("Rendering Agents List - tempAgents:", selectedItems);
+        }
 
         return (
             <div className="assignment-list">
@@ -213,14 +257,40 @@ const AssignmentList: React.FC<{
                     ) : paginatedItems.length > 0 ? (
                         paginatedItems.map((item, index) => {
                             const itemKey = getItemKey(item, index);
+                            const isChecked = selectedItems.some((s) => {
+                                if (item.governorateID) {
+                                    return s.governorateID === item.governorateID;
+                                } else if (item.delegationID) {
+                                    return s.delegationID === item.delegationID;
+                                } else if (item.agentID) {
+                                    if (!item.delegationID || !s.delegationID) {
+                                        console.warn(
+                                            `Missing delegationID for agent: item=${item.agentID}, selected=${s.agentID}`
+                                        );
+                                        return false;
+                                    }
+                                    const match = s.agentID === item.agentID && s.delegationID === item.delegationID;
+                                    console.debug(
+                                        `Checking agent: ${item.agentID}_${item.delegationID}, selected: ${s.agentID}_${s.delegationID}, isChecked: ${match}`
+                                    );
+                                    return match;
+                                }
+                                return (s.userID || s.regionID) === (item.userID || item.regionID);
+                            });
+                            console.debug(
+                                `Rendering agent checkbox: ${item.agentID || item.userID || item.regionID}, isChecked: ${isChecked}`
+                            );
                             return (
                                 <div key={itemKey} className="list-item">
                                     <label>
                                         <input
                                             type={singleSelection ? "radio" : "checkbox"}
                                             name={singleSelection ? title : undefined}
-                                            checked={selectedItems.some((s) => getItemKey(s, index) === itemKey)}
-                                            onChange={() => onToggle(item)}
+                                            checked={isChecked}
+                                            onChange={() => {
+                                                console.debug(`Toggling item:`, item);
+                                                onToggle(item);
+                                            }}
                                             disabled={disabled}
                                         />
                                         {renderLabel(item)}
@@ -253,7 +323,8 @@ const AssignmentList: React.FC<{
                 )}
             </div>
         );
-    };
+    }
+);
 
 const AssignmentsManagement: React.FC<AssignmentsManagementProps> = ({
     selectedUser,
@@ -275,7 +346,7 @@ const AssignmentsManagement: React.FC<AssignmentsManagementProps> = ({
     tempDirectors,
     setTempDirectors,
     setUsers,
-    setSelectedUser,
+    onUserUpdate,
     tempRoles = [],
 }) => {
     const { setError: setGlobalError } = useError();
@@ -321,6 +392,13 @@ const AssignmentsManagement: React.FC<AssignmentsManagementProps> = ({
         delegationPage: 1,
         agentPage: 1,
     });
+    const [pendingToggles, setPendingToggles] = useState<{
+        setter: React.Dispatch<React.SetStateAction<any[]>>;
+        item: any;
+        key: string;
+        multiple: boolean;
+        revokeMessage: string;
+    } | null>(null);
 
     const cache = useMemo(() => new Map<string, any>(), []);
 
@@ -347,6 +425,44 @@ const AssignmentsManagement: React.FC<AssignmentsManagementProps> = ({
     );
 
     useEffect(() => {
+        if (!pendingToggles) return;
+
+        const { setter, item, key, multiple, revokeMessage } = pendingToggles;
+        setter((prev: any[]) => {
+            const itemKey = key === "agentID" ? `${item[key]}_${item.delegationID || "no-delegation"}` : item[key];
+            if (!itemKey) {
+                console.warn(`Item missing ${key}:`, item);
+                return prev;
+            }
+            const exists = prev.some((i: any) => {
+                const iKey = key === "agentID" ? `${i[key]}_${i.delegationID || "no-delegation"}` : i[key];
+                return iKey === itemKey;
+            });
+            if (exists) {
+                setShowConfirm({
+                    message: revokeMessage,
+                    onConfirm: async () => {
+                        setShowConfirm(null);
+                        const newSelected = prev.filter((i) => {
+                            const iKey = key === "agentID" ? `${i[key]}_${i.delegationID || "no-delegation"}` : i[key];
+                            return iKey !== itemKey;
+                        });
+                        console.debug(`Revoking item: ${itemKey}`, newSelected);
+                        setter(newSelected);
+                        setHasUnsavedChanges(true);
+                    },
+                });
+                return prev;
+            }
+            const updated = multiple ? [...prev, item] : [item];
+            console.debug(`Adding item: ${itemKey}`, updated);
+            setHasUnsavedChanges(true);
+            return updated;
+        });
+        setPendingToggles(null);
+    }, [pendingToggles]);
+
+    useEffect(() => {
         if (expandedSection !== "assignments" || !selectedUser) return;
 
         const fetchDirectorData = async () => {
@@ -360,8 +476,26 @@ const AssignmentsManagement: React.FC<AssignmentsManagementProps> = ({
                         getRegionalManagersByDirector(selectedUser.userID)
                     ),
                 ]);
-                const validRMs = allRMs.filter((rm) => rm.userID && typeof rm.userID === "string");
-                const validAssignedRMs = assignedRMs.filter((rm) => rm.userID && typeof rm.userID === "string");
+                const validRMs = allRMs.filter((rm) => rm.userID && typeof rm.userID === "string").map((rm) => ({
+                    userID: rm.userID,
+                    firstname: rm.firstname || "Unnamed",
+                    lastname: rm.lastname || "",
+                    phone: rm.phone || "",
+                    email: rm.email || "",
+                    password: "",
+                    keycloakId: "",
+                    Roles: [],
+                }));
+                const validAssignedRMs = assignedRMs.filter((rm) => rm.userID && typeof rm.userID === "string").map((rm) => ({
+                    userID: rm.userID,
+                    firstname: rm.firstname || "Unnamed",
+                    lastname: rm.lastname || "",
+                    phone: rm.phone || "",
+                    email: rm.email || "",
+                    password: "",
+                    keycloakId: "",
+                    Roles: [],
+                }));
                 updateState({ allRegionalManagers: validRMs });
                 setTempRegionalManagers(validAssignedRMs);
             } catch {
@@ -387,14 +521,54 @@ const AssignmentsManagement: React.FC<AssignmentsManagementProps> = ({
                             getSupervisorsByRegionalManager(selectedUser.userID)
                         ),
                     ]);
-                const validDirectors = allDirectors.filter((d) => d.userID && typeof d.userID === "string");
-                const validAssignedDirectors = assignedDirectors.filter((d) => d.userID && typeof d.userID === "string");
-                const validRegions = allRegions.filter((r) => r.regionID && typeof r.regionID === "string");
-                const validAssignedRegions = assignedRegions.filter((r) => r.regionID && typeof r.regionID === "string");
-                const validSupervisors = allSupervisors.filter((s) => s.userID && typeof s.userID === "string");
-                const validAssignedSupervisors = assignedSupervisors.filter(
-                    (s) => s.userID && typeof s.userID === "string"
-                );
+                const validDirectors = allDirectors.filter((d) => d.userID && typeof d.userID === "string").map((d) => ({
+                    userID: d.userID,
+                    firstname: d.firstname || "Unnamed",
+                    lastname: d.lastname || "",
+                    phone: d.phone || "",
+                    email: d.email || "",
+                    password: "",
+                    keycloakId: "",
+                    Roles: [],
+                }));
+                const validAssignedDirectors = assignedDirectors.filter((d) => d.userID && typeof d.userID === "string").map((d) => ({
+                    userID: d.userID,
+                    firstname: d.firstname || "Unnamed",
+                    lastname: d.lastname || "",
+                    phone: d.phone || "",
+                    email: d.email || "",
+                    password: "",
+                    keycloakId: "",
+                    Roles: [],
+                }));
+                const validRegions = allRegions.filter((r) => r.regionID && typeof r.regionID === "string").map((r) => ({
+                    regionID: r.regionID,
+                    name: r.name || "Unnamed Region",
+                }));
+                const validAssignedRegions = assignedRegions.filter((r) => r.regionID && typeof r.regionID === "string").map((r) => ({
+                    regionID: r.regionID,
+                    name: r.name || "Unnamed Region",
+                }));
+                const validSupervisors = allSupervisors.filter((s) => s.userID && typeof s.userID === "string").map((s) => ({
+                    userID: s.userID,
+                    firstname: s.firstname || "Unnamed",
+                    lastname: s.lastname || "",
+                    phone: s.phone || "",
+                    email: s.email || "",
+                    password: "",
+                    keycloakId: "",
+                    Roles: [],
+                }));
+                const validAssignedSupervisors = assignedSupervisors.filter((s) => s.userID && typeof s.userID === "string").map((s) => ({
+                    userID: s.userID,
+                    firstname: s.firstname || "Unnamed",
+                    lastname: s.lastname || "",
+                    phone: s.phone || "",
+                    email: s.email || "",
+                    password: "",
+                    keycloakId: "",
+                    Roles: [],
+                }));
                 updateState({
                     allDirectors: validDirectors,
                     allRegions: validRegions,
@@ -421,8 +595,26 @@ const AssignmentsManagement: React.FC<AssignmentsManagementProps> = ({
                         getRegionalManagerBySupervisor(selectedUser.userID)
                     ),
                 ]);
-                const validRMs = allRMs.filter((rm) => rm.userID && typeof rm.userID === "string");
-                const validAssignedRMs = assignedRMs.filter((rm) => rm.userID && typeof rm.userID === "string");
+                const validRMs = allRMs.filter((rm) => rm.userID && typeof rm.userID === "string").map((rm) => ({
+                    userID: rm.userID,
+                    firstname: rm.firstname || "Unnamed",
+                    lastname: rm.lastname || "",
+                    phone: rm.phone || "",
+                    email: rm.email || "",
+                    password: "",
+                    keycloakId: "",
+                    Roles: [],
+                }));
+                const validAssignedRMs = assignedRMs.filter((rm) => rm.userID && typeof rm.userID === "string").map((rm) => ({
+                    userID: rm.userID,
+                    firstname: rm.firstname || "Unnamed",
+                    lastname: rm.lastname || "",
+                    phone: rm.phone || "",
+                    email: rm.email || "",
+                    password: "",
+                    keycloakId: "",
+                    Roles: [],
+                }));
                 updateState({ allRegionalManagers: validRMs });
                 setTempRegionalManagers(validAssignedRMs);
             } catch {
@@ -491,10 +683,45 @@ const AssignmentsManagement: React.FC<AssignmentsManagementProps> = ({
                         name: gov.name || "Unnamed Governorate",
                         regionID: gov.regionID || "",
                     }));
-                updateState({ availableGovernorates: validGovernorates });
-                setTempGovernorates(validAssignedGovs);
-            } catch {
+
+                // Normalize regionID in validGovernorates using validAssignedGovs
+                const normalizedGovernorates = validGovernorates.map((gov) => {
+                    const assignedGov = validAssignedGovs.find((ag) => ag.governorateID === gov.governorateID);
+                    return {
+                        ...gov,
+                        regionID: assignedGov?.regionID || gov.regionID,
+                    };
+                });
+
+                // Deduplicate governorates by governorateID
+                const govIdSet = new Set<string>();
+                const deduplicatedGovernorates: Governorate[] = [];
+                for (const gov of normalizedGovernorates) {
+                    if (!govIdSet.has(gov.governorateID)) {
+                        govIdSet.add(gov.governorateID);
+                        deduplicatedGovernorates.push(gov);
+                    } else {
+                        console.warn(`Duplicate governorateID detected: ${gov.governorateID}`, gov);
+                    }
+                }
+
+                // Filter tempGovernorates to only include valid governorates
+                const filteredAssignedGovs = validAssignedGovs.filter((ag) =>
+                    deduplicatedGovernorates.some((g) => g.governorateID === ag.governorateID)
+                );
+
+                if (govIdSet.size !== normalizedGovernorates.length) {
+                    console.warn("Duplicate governorateIDs detected, clearing cache");
+                    cache.clear();
+                }
+
+                updateState({ availableGovernorates: deduplicatedGovernorates });
+                setTempGovernorates(filteredAssignedGovs.length > 0 ? filteredAssignedGovs : []);
+            } catch (error) {
+                console.error("Error fetching governorates:", error);
                 setGlobalError("Failed to fetch governorates.");
+                cache.delete(`governoratesByUser_${selectedUser!.userID}`);
+                setTempGovernorates([]);
             } finally {
                 updateLoading({ governorates: false });
             }
@@ -512,6 +739,7 @@ const AssignmentsManagement: React.FC<AssignmentsManagementProps> = ({
         setTempAgents,
         updateLoading,
         updateState,
+        cache,
     ]);
 
     useEffect(() => {
@@ -535,7 +763,7 @@ const AssignmentsManagement: React.FC<AssignmentsManagementProps> = ({
                 const assignedDels = await fetchWithCache(`delegationsByUser_${selectedUser!.userID}`, () =>
                     getDelegationsByUser(selectedUser!.userID)
                 );
-                const validDelegations = delegations
+                const validDelegationsRaw = delegations
                     .flat()
                     .filter((del) => del.delegationID && typeof del.delegationID === "string")
                     .map((del) => ({
@@ -543,11 +771,22 @@ const AssignmentsManagement: React.FC<AssignmentsManagementProps> = ({
                         name: del.name || "Unnamed Delegation",
                         governorateID: del.governorateID || "",
                     }));
-                // Check for duplicate delegationIDs
-                const delegationIdSet = new Set(validDelegations.map((del) => del.delegationID));
-                if (delegationIdSet.size !== validDelegations.length) {
-                    console.warn("Duplicate delegationIDs detected:", validDelegations);
+
+                // Deduplicate validDelegations by delegationID
+                const delegationIdSet = new Set<string>();
+                const validDelegations: Delegation[] = [];
+                for (const del of validDelegationsRaw) {
+                    if (!delegationIdSet.has(del.delegationID)) {
+                        delegationIdSet.add(del.delegationID);
+                        validDelegations.push(del);
+                    } else {
+                        console.warn(
+                            `Duplicate delegationID detected: ${del.delegationID} for governorate ${del.governorateID}`,
+                            del
+                        );
+                    }
                 }
+
                 const validAssignedDels = assignedDels
                     .filter((del) => del.delegationID && typeof del.delegationID === "string")
                     .map((del) => ({
@@ -555,10 +794,34 @@ const AssignmentsManagement: React.FC<AssignmentsManagementProps> = ({
                         name: del.name || "Unnamed Delegation",
                         governorateID: del.governorateID || "",
                     }));
-                updateState({ availableDelegations: validDelegations });
-                setTempDelegations(validAssignedDels);
-            } catch {
+
+                // Normalize governorateID in validDelegations using validAssignedDels
+                const normalizedDelegations = validDelegations.map((del) => {
+                    const assignedDel = validAssignedDels.find((ad) => ad.delegationID === del.delegationID);
+                    return {
+                        ...del,
+                        governorateID: assignedDel?.governorateID || del.governorateID,
+                    };
+                });
+
+                // Filter tempDelegations to only include valid delegations
+                const filteredAssignedDels = validAssignedDels.filter((ad) =>
+                    normalizedDelegations.some((d) => d.delegationID === ad.delegationID)
+                );
+
+                // Check for duplicate delegationIDs
+                if (delegationIdSet.size !== validDelegations.length) {
+                    console.warn("Duplicate delegationIDs detected, clearing cache");
+                    cache.clear();
+                }
+
+                updateState({ availableDelegations: normalizedDelegations });
+                setTempDelegations(filteredAssignedDels.length > 0 ? filteredAssignedDels : []);
+            } catch (error) {
+                console.error("Error fetching delegations:", error);
                 setGlobalError("Failed to fetch delegations.");
+                cache.delete(`delegationsByUser_${selectedUser!.userID}`);
+                setTempDelegations([]);
             } finally {
                 updateLoading({ delegations: false });
             }
@@ -575,6 +838,7 @@ const AssignmentsManagement: React.FC<AssignmentsManagementProps> = ({
         setTempAgents,
         updateLoading,
         updateState,
+        cache,
     ]);
 
     useEffect(() => {
@@ -597,47 +861,104 @@ const AssignmentsManagement: React.FC<AssignmentsManagementProps> = ({
                 const assignedAgents = await fetchWithCache(`agentsByUser_${selectedUser!.userID}`, () =>
                     getAgentsByUser(selectedUser!.userID)
                 );
-                const validAgents = agents
+                const validAgentsRaw = agents
                     .flat()
                     .map((a) => a.agents)
                     .flat()
-                    .filter((agent) => agent.agentID && typeof agent.agentID === "string")
+                    .filter((agent) => {
+                        if (!agent.agentID || !agent.delegationID) {
+                            console.warn("Invalid agent data:", agent);
+                            return false;
+                        }
+                        return true;
+                    })
                     .map((agent) => ({
                         agentID: agent.agentID,
                         name: agent.name || "Unnamed Agent",
                         lastname: agent.lastname || "",
                         phone: agent.phone || "",
                         email: agent.email || "",
-                        location: agent.location || "",
-                        delegationID: agent.delegationID || "",
+                        location: "",
+                        delegationID: agent.delegationID,
                     }));
-                // Check for duplicate agentIDs
-                const agentIdSet = new Set(validAgents.map((agent) => agent.agentID));
-                if (agentIdSet.size !== validAgents.length) {
-                    console.warn("Duplicate agentIDs detected:", validAgents);
+
+                // Log raw agents for debugging
+                console.debug("Raw agents response:", validAgentsRaw);
+
+                // Deduplicate validAgentsRaw by agentID and delegationID
+                const agentKeySet = new Set<string>();
+                const validAgentsDeduplicated: Agent[] = [];
+                for (const agent of validAgentsRaw) {
+                    const agentKey = `${agent.agentID}_${agent.delegationID}`;
+                    if (!agentKeySet.has(agentKey)) {
+                        agentKeySet.add(agentKey);
+                        validAgentsDeduplicated.push(agent);
+                    } else {
+                        console.warn(
+                            `Duplicate agentID-delegationID pair detected: ${agent.agentID}_${agent.delegationID}`,
+                            agent
+                        );
+                    }
                 }
+
                 const validAssignedAgents = assignedAgents.agents
-                    .filter((agent) => agent.agentID && typeof agent.agentID === "string")
+                    .filter((agent) => {
+                        if (!agent.agentID || !agent.delegationID) {
+                            console.warn("Invalid assigned agent data:", agent);
+                            return false;
+                        }
+                        return true;
+                    })
                     .map((agent) => ({
                         agentID: agent.agentID,
                         name: agent.name || "Unnamed Agent",
                         lastname: agent.lastname || "",
                         phone: agent.phone || "",
                         email: agent.email || "",
-                        location: agent.location || "",
-                        delegationID: agent.delegationID || "",
+                        location: "",
+                        delegationID: agent.delegationID,
                     }));
+
+                // Normalize delegationID in validAgents using validAssignedAgents
+                const validAgents = validAgentsDeduplicated.map((agent) => {
+                    const assignedAgent = validAssignedAgents.find(
+                        (aa) => aa.agentID === agent.agentID && aa.delegationID === agent.delegationID
+                    );
+                    return {
+                        ...agent,
+                        delegationID: assignedAgent?.delegationID || agent.delegationID,
+                    };
+                });
+
+                // Filter tempAgents to only include valid agents
+                const filteredAssignedAgents = validAssignedAgents.filter((aa) =>
+                    validAgents.some((a) => a.agentID === aa.agentID && a.delegationID === aa.delegationID)
+                );
+
+                // Check for duplicate agent keys
+                const agentIdSet = new Set(validAgents.map((a) => `${a.agentID}_${a.delegationID}`));
+                if (agentIdSet.size !== validAgents.length) {
+                    console.warn("Duplicate agent keys detected after normalization:", validAgents);
+                    cache.clear();
+                }
+
+                console.debug("Valid agents:", validAgents);
+                console.debug("Assigned agents:", filteredAssignedAgents);
+
                 updateState({ availableAgents: validAgents });
-                setTempAgents(validAssignedAgents);
-            } catch {
+                setTempAgents(filteredAssignedAgents.length > 0 ? filteredAssignedAgents : []);
+            } catch (error) {
+                console.error("Error fetching agents:", error);
                 setGlobalError("Failed to fetch agents.");
+                cache.delete(`agentsByUser_${selectedUser!.userID}`);
+                setTempAgents([]);
             } finally {
                 updateLoading({ agents: false });
             }
         };
 
         fetchAgents();
-    }, [tempDelegations, role, selectedUser, fetchWithCache, setGlobalError, setTempAgents, updateLoading, updateState]);
+    }, [tempDelegations, role, selectedUser, fetchWithCache, setGlobalError, setTempAgents, updateLoading, updateState, cache]);
 
     const handlePhoneInput = useCallback(
         async (type: "director" | "regionalManager" | "supervisor" | "agent", phone: string) => {
@@ -646,25 +967,30 @@ const AssignmentsManagement: React.FC<AssignmentsManagementProps> = ({
                 setPhoneError(null);
                 if (type === "agent") {
                     const agent = await fetchWithCache(`agentByPhone_${phone}`, () => getAgentByPhone(phone));
-                    if (agent && agent.agentID) {
-                        setTempAgents((prev) =>
-                            prev.some((a) => a.agentID === agent.agentID)
-                                ? prev
-                                : [
-                                    ...prev,
-                                    {
-                                        agentID: agent.agentID,
-                                        name: agent.name || "Unnamed Agent",
-                                        lastname: agent.lastname || "",
-                                        phone: agent.phone || "",
-                                        email: agent.email || "",
-                                        location: agent.location || "",
-                                        delegationID: agent.delegationID || "",
-                                    },
-                                ]
-                        );
+                    if (agent && agent.agentID && agent.delegationID) {
+                        setTempAgents((prev) => {
+                            const agentKey = `${agent.agentID}_${agent.delegationID}`;
+                            const exists = prev.some((a) => `${a.agentID}_${a.delegationID}` === agentKey);
+                            if (exists) {
+                                console.debug(`Agent already exists: ${agentKey}`);
+                                return prev;
+                            }
+                            console.debug(`Adding agent: ${agentKey}`);
+                            return [
+                                ...prev,
+                                {
+                                    agentID: agent.agentID,
+                                    name: agent.name || "Unnamed Agent",
+                                    lastname: agent.lastname || "",
+                                    phone: agent.phone || "",
+                                    email: agent.email || "",
+                                    location: "",
+                                    delegationID: agent.delegationID,
+                                },
+                            ];
+                        });
                     } else {
-                        setPhoneError("Agent not found.");
+                        setPhoneError("Agent not found or missing delegationID.");
                     }
                 } else {
                     const user = await fetchWithCache(`userByPhone_${phone}`, () => getUserByPhone(phone));
@@ -688,8 +1014,8 @@ const AssignmentsManagement: React.FC<AssignmentsManagementProps> = ({
                         lastname: user.lastname || "",
                         phone: user.phone || "",
                         email: user.email || "",
-                        password: user.password || "",
-                        keycloakId: user.keycloakId || "",
+                        password: "",
+                        keycloakId: "",
                         Roles: user.Roles || [],
                     };
                     setter((prev) =>
@@ -711,35 +1037,8 @@ const AssignmentsManagement: React.FC<AssignmentsManagementProps> = ({
 
     const handleToggle = useCallback(
         (setter: React.Dispatch<React.SetStateAction<any[]>>, item: any, key: string, multiple: boolean, revokeMessage: string) => {
-            setter((prev: any[]) => {
-                const itemKey = key === "agentID" ? `${item[key]}-${item.delegationID || "no-delegation"}` : item[key];
-                if (!itemKey) {
-                    console.warn(`Item missing ${key}:`, item);
-                    return prev;
-                }
-                const exists = prev.some((i: any) => {
-                    const iKey = key === "agentID" ? `${i[key]}-${i.delegationID || "no-delegation"}` : i[key];
-                    return iKey === itemKey;
-                });
-                if (exists) {
-                    setShowConfirm({
-                        message: revokeMessage,
-                        onConfirm: async () => {
-                            setShowConfirm(null);
-                            const newSelected = prev.filter((i) => {
-                                const iKey = key === "agentID" ? `${i[key]}-${i.delegationID || "no-delegation"}` : i[key];
-                                return iKey !== itemKey;
-                            });
-                            setter(newSelected);
-                            setHasUnsavedChanges(true);
-                        },
-                    });
-                    return prev;
-                }
-                const updated = multiple ? [...prev, item] : [item];
-                setHasUnsavedChanges(true);
-                return updated;
-            });
+            console.debug(`Scheduling toggle for item:`, item);
+            setPendingToggles({ setter, item, key, multiple, revokeMessage });
         },
         []
     );
@@ -915,10 +1214,20 @@ const AssignmentsManagement: React.FC<AssignmentsManagementProps> = ({
                     });
                 }
 
-                const currentAgents = (await getAgentsByUser(selectedUser.userID)).agents.map((a) => a.agentID);
-                const newAgents = tempAgents.map((a) => a.agentID);
-                const agentsToAssign = tempAgents.filter((a) => !currentAgents.includes(a.agentID));
-                const agentsToRevoke = currentAgents.filter((id) => !newAgents.includes(id));
+                const currentAgents = (await getAgentsByUser(selectedUser.userID)).agents.map((a) => ({
+                    agentID: a.agentID,
+                    delegationID: a.delegationID,
+                }));
+                const newAgents = tempAgents.map((a) => ({
+                    agentID: a.agentID,
+                    delegationID: a.delegationID,
+                }));
+                const agentsToAssign = tempAgents.filter((a) =>
+                    !currentAgents.some((ca) => ca.agentID === a.agentID && ca.delegationID === a.delegationID)
+                );
+                const agentsToRevoke = currentAgents
+                    .filter((ca) => !newAgents.some((na) => na.agentID === ca.agentID && na.delegationID === ca.delegationID))
+                    .map((ca) => ca.agentID);
 
                 await Promise.all([
                     ...agentsToAssign.map((a) =>
@@ -939,7 +1248,7 @@ const AssignmentsManagement: React.FC<AssignmentsManagementProps> = ({
                 ]);
             }
 
-            const updatedUser = {
+            const newUser = {
                 ...selectedUser,
                 directorID: tempDirectors[0]?.userID || "",
                 regionalManagerID: tempRegionalManagers[0]?.userID || "",
@@ -948,11 +1257,12 @@ const AssignmentsManagement: React.FC<AssignmentsManagementProps> = ({
                 Delegations: tempDelegations,
                 supervisors: tempSupervisors,
             };
-            setUsers((prev) => prev.map((u) => (u.userID === selectedUser.userID ? updatedUser : u)));
-            setSelectedUser(updatedUser);
-            setHasUnsavedChanges(false);
+
+            setUsers((prev) => prev.map((u) => (u.userID === selectedUser.userID ? newUser : u)));
+            onUserUpdate(newUser);
             cache.clear();
-        } catch {
+        } catch (error) {
+            console.error("Error saving assignments:", error);
             setGlobalError("Failed to save assignments.");
         } finally {
             setLoading({
@@ -977,7 +1287,7 @@ const AssignmentsManagement: React.FC<AssignmentsManagementProps> = ({
         tempAgents,
         setGlobalError,
         setUsers,
-        setSelectedUser,
+        onUserUpdate,
         cache,
     ]);
 

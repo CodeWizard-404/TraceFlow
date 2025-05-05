@@ -11,22 +11,37 @@ import Governorate from "../../models/Governorate";
 import Delegation from "../../models/Delegation";
 import {
   getAgentByPhone,
-  getAgentsByLocation,
+  getAgentsByUser,
+  getAgentById,
+  getAgentsByDelegation,
 } from "../../apis/agentAPI";
 import {
-  getAllRegions,
-  getAllGovernorates,
-  getAllDelegations,
+  getGovernoratesByUser,
+  getDelegationsByUser,
+  getUserByPhone,
+  getSupervisorsByRegionalManager,
+  getRegionalManagerBySupervisor,
+  getAllUsers,
+  getRegionsByUser,
+  getUsersByRegion,
+  getUsersByGovernorate,
+  getUsersByDelegation,
+  getUserById,
 } from "../../apis/userAPI";
+import {
+  getAllRegions,
+  getGovernoratesByRegion,
+  getDelegationsByGovernorate,
+} from "../../apis/locationApi";
 import { getAllChecklists } from "../../apis/checklistAPI";
 import { getAllReasons } from "../../apis/reasonAPI";
 import { createTimesheet } from "../../apis/timesheetAPI";
-import { getUserByPhone, getSupervisorsByUser, getAllUsers } from "../../apis/userAPI";
 import { Checklist } from "../../models/Checklist";
 import { Reason } from "../../models/Reason";
 import { useAuth } from "../../context/AuthContext";
 import { useError } from "../../context/ErrorContext";
 import { useTranslation } from "react-i18next";
+import { AgentsByDelegationResponse } from "../../apis/index";
 
 const PERMISSIONS = {
   CREATE_TIMESHEETS: import.meta.env.VITE_PERMISSIONS_CREATE_TIMESHEETS,
@@ -42,6 +57,7 @@ const ROLES = {
   SUPER_ADMIN: import.meta.env.VITE_ROLES_SUPER_ADMIN,
   SUPERVISOR: import.meta.env.VITE_ROLES_SUPERVISOR,
   REGIONAL_MANAGER: import.meta.env.VITE_ROLES_REGIONAL_MANAGER,
+  DIRECTOR: import.meta.env.VITE_ROLES_DIRECTOR,
 };
 
 const TimesheetForm: React.FC = () => {
@@ -55,9 +71,9 @@ const TimesheetForm: React.FC = () => {
   const [time, setTime] = useState<string>("");
   const [regions, setRegions] = useState<Region[]>([]);
   const [selectedRegion, setSelectedRegion] = useState<string>("");
-  const [allGovernorates, setAllGovernorates] = useState<Governorate[]>([]);
+  const [governorates, setGovernorates] = useState<Governorate[]>([]);
   const [selectedGovernorate, setSelectedGovernorate] = useState<string>("");
-  const [allDelegations, setAllDelegations] = useState<Delegation[]>([]);
+  const [delegations, setDelegations] = useState<Delegation[]>([]);
   const [selectedDelegation, setSelectedDelegation] = useState<string>("");
   const [agents, setAgents] = useState<Agent[]>([]);
   const [selectedAgent, setSelectedAgent] = useState<string>("");
@@ -86,6 +102,7 @@ const TimesheetForm: React.FC = () => {
   const isSuperAdmin = useMemo(() => userRoles?.some((role) => role.name === ROLES.SUPER_ADMIN), [userRoles]);
   const isRegionalManager = useMemo(() => userRoles?.some((role) => role.name === ROLES.REGIONAL_MANAGER), [userRoles]);
   const isSupervisor = useMemo(() => userRoles?.some((role) => role.name === ROLES.SUPERVISOR), [userRoles]);
+  const isDirector = useMemo(() => userRoles?.some((role) => role.name === ROLES.DIRECTOR), [userRoles]);
 
   // Permission Checks
   const userPermissions = useMemo(() => ({
@@ -101,7 +118,11 @@ const TimesheetForm: React.FC = () => {
   if (!permissionsLoaded) return <div className="page-loading"><div className="spinner"></div><p>{t("timesheetForm.loading")}</p></div>;
   if (!user) return null;
 
-  const supervisorID = userPermissions.canReadSupervisors && selectedSupervisor ? selectedSupervisor : user.userID;
+  // Determine Supervisor ID
+  const supervisorID = isSupervisor ? user.userID : userPermissions.canReadSupervisors && selectedSupervisor ? selectedSupervisor : "";
+
+  // Determine Regional Manager ID
+  const regionalManagerID = isRegionalManager ? user.userID : (isSuperAdmin || isDirector) && selectedRegionalManager ? selectedRegionalManager : "";
 
   // Fetch Initial Data
   useEffect(() => {
@@ -111,42 +132,28 @@ const TimesheetForm: React.FC = () => {
         const promises = [
           userPermissions.canReadAgentsByLocation
             ? isSupervisor
-              ? Promise.resolve(user.Regions || [])
+              ? getRegionalManagerBySupervisor(user.userID).then((rms) => rms.length > 0 ? getRegionsByUser(rms[0].userID) : [])
               : isRegionalManager
-                ? Promise.resolve(user.Regions || [])
+                ? getRegionsByUser(user.userID)
                 : getAllRegions()
-            : Promise.resolve([]),
-          userPermissions.canReadAgentsByLocation
-            ? getAllGovernorates()
-            : Promise.resolve([]),
-          userPermissions.canReadAgentsByLocation
-            ? getAllDelegations()
             : Promise.resolve([]),
           userPermissions.canReadReasons ? getAllReasons() : Promise.resolve([]),
           userPermissions.canReadChecklists ? getAllChecklists() : Promise.resolve([]),
-          userPermissions.canReadSupervisors
-            ? isSuperAdmin
-              ? getAllUsers().then((users) => users.filter((u) => u.Roles?.some((role) => role.name.toLowerCase() === ROLES.SUPERVISOR.toLowerCase())))
-              : isRegionalManager
-                ? getSupervisorsByUser(user.userID)
-                : Promise.resolve(user.supervisors || [])
+          userPermissions.canReadSupervisors && (isSuperAdmin || isDirector || isRegionalManager)
+            ? isRegionalManager
+              ? getSupervisorsByRegionalManager(user.userID)
+              : getAllUsers().then((users) => users.filter((u) => u.Roles?.some((role) => role.name.toLowerCase() === ROLES.SUPERVISOR.toLowerCase())))
             : Promise.resolve([]),
-          isSuperAdmin
+          (isSuperAdmin || isDirector)
             ? getAllUsers().then((users) => users.filter((u) => u.Roles?.some((role) => role.name.toLowerCase() === ROLES.REGIONAL_MANAGER.toLowerCase())))
             : Promise.resolve([]),
         ];
-        const [regionsData, governoratesData, delegationsData, reasonsData, checklistsData, supervisorsData, regionalManagersData] = await Promise.all(promises);
+        const [regionsData, reasonsData, checklistsData, supervisorsData, regionalManagersData] = await Promise.all(promises);
         setRegions(regionsData as Region[]);
-        setAllGovernorates(governoratesData as Governorate[]);
-        setAllDelegations(delegationsData as Delegation[]);
         setReasons(reasonsData as Reason[]);
         setChecklists(checklistsData as Checklist[]);
-        if (userPermissions.canCreateTimesheetsForSupervisors && userPermissions.canReadSupervisors) {
-          setSupervisors(supervisorsData as User[]);
-        }
-        if (isSuperAdmin) {
-          setRegionalManagers(regionalManagersData as User[]);
-        }
+        setSupervisors(supervisorsData as User[]);
+        setRegionalManagers(regionalManagersData as User[]);
       } catch (err) {
         setError(t("timesheetForm.errors.loadInitialData"));
         console.error("Fetch initial data error:", err);
@@ -155,294 +162,257 @@ const TimesheetForm: React.FC = () => {
       }
     };
     fetchData();
-  }, [userPermissions, user.userID, setError, t, isSuperAdmin, isRegionalManager, isSupervisor, user.Regions, user.supervisors]);
+  }, [userPermissions, user.userID, setError, t, isSuperAdmin, isRegionalManager, isSupervisor, isDirector]);
 
-  // Memoized Supervisors and Regional Managers
-  const memoizedSupervisors = useMemo(() => supervisors, [supervisors]);
-  const memoizedRegionalManagers = useMemo(() => regionalManagers, [regionalManagers]);
-
-  // Filtered Regions
-  const filteredRegions = useMemo(() => {
-    let availableRegions = isSupervisor
-      ? user.Regions || []
-      : isRegionalManager
-        ? user.Regions || []
-        : regions;
-
-    if (selectedRegionalManager && isSuperAdmin) {
-      const regionalManager = memoizedRegionalManagers.find((rm) => rm.userID === selectedRegionalManager);
-      if (regionalManager?.Regions) {
-        availableRegions = availableRegions.filter((r) =>
-          regionalManager.Regions?.some((rmr) => rmr.regionID === r.regionID)
-        );
-      } else {
-        availableRegions = [];
-      }
-    } else if (selectedSupervisor && !isSupervisor) {
-      const supervisor = memoizedSupervisors.find((s) => s.userID === selectedSupervisor);
-      if (supervisor?.regionalManagerID) {
-        const regionalManager = memoizedRegionalManagers.find((rm) => rm.userID === supervisor.regionalManagerID);
-        if (regionalManager?.Regions) {
-          availableRegions = availableRegions.filter((r) =>
-            regionalManager.Regions?.some((rmr) => rmr.regionID === r.regionID)
-          );
-        } else {
-          availableRegions = [];
-        }
-      } else {
-        // If supervisor has no regional manager, show all regions (or user's regions)
-        availableRegions = isSuperAdmin ? regions : user.Regions || [];
-      }
-    }
-
-    return availableRegions.sort((a, b) => a.name.localeCompare(b.name));
-  }, [
-    regions,
-    selectedSupervisor,
-    selectedRegionalManager,
-    isSupervisor,
-    isRegionalManager,
-    isSuperAdmin,
-    memoizedSupervisors,
-    memoizedRegionalManagers,
-    user.Regions,
-  ]);
-
-  // Filtered Governorates
-  const filteredGovernorates = useMemo(() => {
-    if (!selectedRegion || !userPermissions.canReadAgentsByLocation || agentPhone) {
-      return [];
-    }
-
-    let availableGovernorates = isSupervisor
-      ? user.Governorates || []
-      : allGovernorates.filter((gov) => gov.regionID === selectedRegion);
-
-    if (selectedRegionalManager && isSuperAdmin) {
-      const regionalManager = memoizedRegionalManagers.find((rm) => rm.userID === selectedRegionalManager);
-      if (regionalManager?.Regions) {
-        availableGovernorates = availableGovernorates.filter((gov) =>
-          regionalManager.Regions?.some((rmr) => rmr.regionID === gov.regionID)
-        );
-      } else {
-        availableGovernorates = [];
-      }
-    }
-
-    if (selectedSupervisor && !isSupervisor) {
-      const supervisor = memoizedSupervisors.find((s) => s.userID === selectedSupervisor);
-      if (supervisor?.Governorates) {
-        availableGovernorates = availableGovernorates.filter((gov) =>
-          supervisor.Governorates?.some((sg) => sg.governorateID === gov.governorateID)
-        );
-      } else {
-        availableGovernorates = [];
-      }
-    }
-
-    return availableGovernorates.sort((a, b) => a.name.localeCompare(b.name));
-  }, [
-    selectedRegion,
-    selectedSupervisor,
-    selectedRegionalManager,
-    userPermissions.canReadAgentsByLocation,
-    agentPhone,
-    isSupervisor,
-    isSuperAdmin,
-    memoizedSupervisors,
-    memoizedRegionalManagers,
-    allGovernorates,
-    user.Governorates,
-  ]);
-
-  // Filtered Delegations
-  const filteredDelegations = useMemo(() => {
-    if (!selectedGovernorate || !userPermissions.canReadAgentsByLocation || agentPhone) {
-      return [];
-    }
-
-    let availableDelegations = isSupervisor
-      ? user.Delegations || []
-      : allDelegations.filter((del) => del.governorateID === selectedGovernorate);
-
-    if (selectedSupervisor && !isSupervisor) {
-      const supervisor = memoizedSupervisors.find((s) => s.userID === selectedSupervisor);
-      if (supervisor?.Delegations) {
-        availableDelegations = availableDelegations.filter((del) =>
-          supervisor.Delegations?.some((sd) => sd.delegationID === del.delegationID)
-        );
-      } else {
-        availableDelegations = [];
-      }
-    }
-
-    if (selectedRegionalManager && isSuperAdmin) {
-      const regionalManager = memoizedRegionalManagers.find((rm) => rm.userID === selectedRegionalManager);
-      if (regionalManager?.Regions) {
-        const managerGovernorates = allGovernorates.filter((gov) =>
-          regionalManager.Regions?.some((rmr) => rmr.regionID === gov.regionID)
-        );
-        availableDelegations = availableDelegations.filter((del) =>
-          managerGovernorates.some((mg) => mg.governorateID === del.governorateID)
-        );
-      } else {
-        availableDelegations = [];
-      }
-    }
-
-    return availableDelegations.sort((a, b) => a.name.localeCompare(b.name));
-  }, [
-    selectedGovernorate,
-    selectedSupervisor,
-    selectedRegionalManager,
-    userPermissions.canReadAgentsByLocation,
-    agentPhone,
-    isSupervisor,
-    isSuperAdmin,
-    memoizedSupervisors,
-    memoizedRegionalManagers,
-    allDelegations,
-    allGovernorates,
-    user.Delegations,
-  ]);
-
-  // Update Regions when Supervisor or Regional Manager Changes
+  // Fetch Regions when Regional Manager or Supervisor Changes
   useEffect(() => {
-    const currentRegionIDs = regions.map((r) => r.regionID).sort();
-    const newRegionIDs = filteredRegions.map((r) => r.regionID).sort();
-    if (JSON.stringify(currentRegionIDs) !== JSON.stringify(newRegionIDs)) {
-      setRegions(filteredRegions);
-      if (!filteredRegions.some((r) => r.regionID === selectedRegion)) {
+    const fetchRegions = async () => {
+      if (!userPermissions.canReadAgentsByLocation || agentPhone) {
+        setRegions([]);
         setSelectedRegion("");
+        return;
       }
-    }
-  }, [filteredRegions, regions, selectedRegion]);
-
-  // Update Governorates when Region, Supervisor, or Regional Manager Changes
-  useEffect(() => {
-    if (filteredGovernorates.length === 0) {
-      setSelectedGovernorate("");
-    } else if (!filteredGovernorates.some((g) => g.governorateID === selectedGovernorate)) {
-      setSelectedGovernorate("");
-    }
-  }, [filteredGovernorates, selectedGovernorate]);
-
-  // Update Delegations when Governorate, Supervisor, or Regional Manager Changes
-  useEffect(() => {
-    if (filteredDelegations.length === 0) {
-      setSelectedDelegation("");
-      setAgents([]);
-      setSelectedAgent("");
-    } else if (!filteredDelegations.some((d) => d.delegationID === selectedDelegation)) {
-      setSelectedDelegation("");
-      setAgents([]);
-      setSelectedAgent("");
-    }
-  }, [filteredDelegations, selectedDelegation]);
-
-  // Fetch and Filter Agents by Delegation
-  useEffect(() => {
-    if (selectedDelegation && !agentPhone && userPermissions.canReadAgentsByLocation) {
-      const fetchAgents = async () => {
-        setAgentLoading(true);
-        try {
-          const agentsData = await getAgentsByLocation(selectedDelegation);
-          let filteredAgents = isSupervisor
-            ? agentsData.agents.filter((agent: Agent) => agent.supervisorID === user.userID)
-            : agentsData.agents;
-
-          if (selectedSupervisor && !isSupervisor) {
-            filteredAgents = filteredAgents.filter(
-              (agent: Agent) => agent.supervisorID === selectedSupervisor
-            );
+      try {
+        let regionsData: Region[] = [];
+        if (isSupervisor) {
+          const regionalManagers = await getRegionalManagerBySupervisor(user.userID);
+          if (regionalManagers.length > 0) {
+            regionsData = await getRegionsByUser(regionalManagers[0].userID);
           }
-
-          if (selectedRegionalManager && isSuperAdmin) {
-            const regionalManager = memoizedRegionalManagers.find((rm) => rm.userID === selectedRegionalManager);
-            if (regionalManager?.Regions) {
-              const managerGovernorates = allGovernorates.filter((g) =>
-                regionalManager.Regions?.some((rmr) => rmr.regionID === g.regionID)
-              );
-              const managerDelegations = allDelegations.filter((d) =>
-                managerGovernorates.some((mg) => mg.governorateID === d.governorateID)
-              );
-              filteredAgents = filteredAgents.filter((agent: Agent) =>
-                managerDelegations.some((md) => md.delegationID === agent.delegationID)
-              );
-            }
+        } else if (isRegionalManager) {
+          regionsData = await getRegionsByUser(user.userID);
+        } else if (regionalManagerID) {
+          regionsData = await getRegionsByUser(regionalManagerID);
+        } else if (supervisorID) {
+          const regionalManagers = await getRegionalManagerBySupervisor(supervisorID);
+          if (regionalManagers.length > 0) {
+            regionsData = await getRegionsByUser(regionalManagers[0].userID);
           }
-
-          setAgents(filteredAgents);
-        } catch (err) {
-          setError(t("timesheetForm.errors.loadAgents", { location: selectedDelegation }));
-          console.error("Fetch agents by delegation error:", err);
-        } finally {
-          setAgentLoading(false);
+        } else {
+          regionsData = await getAllRegions();
         }
-      };
-      fetchAgents();
-    } else {
-      setAgents([]);
-      setSelectedAgent("");
-    }
-  }, [
-    selectedDelegation,
-    selectedSupervisor,
-    selectedRegionalManager,
-    agentPhone,
-    userPermissions.canReadAgentsByLocation,
-    isSupervisor,
-    isSuperAdmin,
-    user.userID,
-    memoizedRegionalManagers,
-    allGovernorates,
-    allDelegations,
-    setError,
-    t,
-  ]);
+        setRegions(regionsData);
+        if (!regionsData.some((r) => r.regionID === selectedRegion)) {
+          setSelectedRegion("");
+        }
+      } catch (err) {
+        setError(t("timesheetForm.errors.loadRegions"));
+        console.error("Fetch regions error:", err);
+      }
+    };
+    fetchRegions();
+  }, [regionalManagerID, supervisorID, userPermissions.canReadAgentsByLocation, agentPhone, isSupervisor, isRegionalManager, user.userID, setError, t]);
 
-  // Filter Supervisors by Regional Manager (Super Admin only)
+  // Fetch Governorates when Region or Supervisor Changes
   useEffect(() => {
-    if (!isSuperAdmin || !userPermissions.canReadSupervisors || !selectedRegionalManager) {
-      return;
-    }
-    const filterSupervisors = async () => {
+    const fetchGovernorates = async () => {
+      if (!selectedRegion || !userPermissions.canReadAgentsByLocation || agentPhone) {
+        setGovernorates([]);
+        setSelectedGovernorate("");
+        return;
+      }
+      try {
+        let governoratesData: Governorate[] = [];
+        if (supervisorID) {
+          governoratesData = await getGovernoratesByUser(supervisorID);
+          governoratesData = governoratesData.filter((gov) => gov.regionID === selectedRegion);
+        } else {
+          governoratesData = await getGovernoratesByRegion(selectedRegion);
+        }
+        setGovernorates(governoratesData);
+        if (!governoratesData.some((g) => g.governorateID === selectedGovernorate)) {
+          setSelectedGovernorate("");
+        }
+      } catch (err) {
+        setError(t("timesheetForm.errors.loadGovernorates"));
+        console.error("Fetch governorates error:", err);
+      }
+    };
+    fetchGovernorates();
+  }, [selectedRegion, supervisorID, userPermissions.canReadAgentsByLocation, agentPhone, setError, t]);
+
+  // Fetch Delegations when Governorate or Supervisor Changes
+  useEffect(() => {
+    const fetchDelegations = async () => {
+      if (!selectedGovernorate || !userPermissions.canReadAgentsByLocation || agentPhone) {
+        setDelegations([]);
+        setSelectedDelegation("");
+        return;
+      }
+      try {
+        let delegationsData: Delegation[] = [];
+        if (supervisorID) {
+          delegationsData = await getDelegationsByUser(supervisorID);
+          delegationsData = delegationsData.filter((del) => del.governorateID === selectedGovernorate);
+        } else {
+          delegationsData = await getDelegationsByGovernorate(selectedGovernorate);
+        }
+        setDelegations(delegationsData);
+        if (!delegationsData.some((d) => d.delegationID === selectedDelegation)) {
+          setSelectedDelegation("");
+        }
+      } catch (err) {
+        setError(t("timesheetForm.errors.loadDelegations"));
+        console.error("Fetch delegations error:", err);
+      }
+    };
+    fetchDelegations();
+  }, [selectedGovernorate, supervisorID, userPermissions.canReadAgentsByLocation, agentPhone, setError, t]);
+
+  // Fetch Agents when Delegation or Supervisor Changes
+  useEffect(() => {
+    const fetchAgents = async () => {
+      if (!selectedDelegation || !userPermissions.canReadAgentsByLocation || agentPhone) {
+        setAgents([]);
+        setSelectedAgent("");
+        return;
+      }
+      setAgentLoading(true);
+      try {
+        let agentsData: AgentsByDelegationResponse = { agents: [] };
+        if (supervisorID) {
+          agentsData = await getAgentsByUser(supervisorID);
+        } else {
+          agentsData = await getAgentsByDelegation(selectedDelegation);
+        }
+        const filteredAgents = agentsData.agents.filter((agent: Agent) => agent.delegationID === selectedDelegation);
+        setAgents(filteredAgents);
+        if (!filteredAgents.some((a) => a.agentID === selectedAgent)) {
+          setSelectedAgent("");
+        }
+      } catch (err) {
+        setError(t("timesheetForm.errors.loadAgents", { location: selectedDelegation }));
+        console.error("Fetch agents error:", err);
+      } finally {
+        setAgentLoading(false);
+      }
+    };
+    fetchAgents();
+  }, [selectedDelegation, supervisorID, userPermissions.canReadAgentsByLocation, agentPhone, setError, t]);
+
+  // Fetch Regional Managers when Region Changes (if no Regional Manager selected)
+  useEffect(() => {
+    const fetchRegionalManagers = async () => {
+      if (!(isSuperAdmin || isDirector) || regionalManagerID || !selectedRegion) {
+        return;
+      }
+      try {
+        const regionalManagersData = await getUsersByRegion(selectedRegion);
+        const filteredRegionalManagers = regionalManagersData.filter((u) =>
+          u.Roles?.some((role) => role.name.toLowerCase() === ROLES.REGIONAL_MANAGER.toLowerCase())
+        );
+        setRegionalManagers(filteredRegionalManagers);
+        if (!filteredRegionalManagers.some((rm) => rm.userID === selectedRegionalManager)) {
+          setSelectedRegionalManager("");
+        }
+      } catch (err) {
+        setError(t("timesheetForm.errors.loadRegionalManagers"));
+        console.error("Fetch regional managers error:", err);
+      }
+    };
+    fetchRegionalManagers();
+  }, [isSuperAdmin, isDirector, selectedRegion, regionalManagerID, setError, t]);
+
+  // Fetch Supervisors when Regional Manager, Governorate, Delegation, or Agent Changes
+  useEffect(() => {
+    const fetchSupervisors = async () => {
+      if (!(isSuperAdmin || isDirector || isRegionalManager) || !userPermissions.canReadSupervisors || isSupervisor) {
+        setSupervisors([]);
+        setSelectedSupervisor("");
+        return;
+      }
       setSupervisorLoading(true);
       try {
-        const regionalManager = memoizedRegionalManagers.find((rm) => rm.userID === selectedRegionalManager);
-        let filteredSupervisors: User[] = [];
-        if (regionalManager) {
-          const supervisorsData = await getSupervisorsByUser(regionalManager.userID);
-          filteredSupervisors = supervisorsData || [];
+        let supervisorsData: User[] = [];
+        if (regionalManagerID) {
+          supervisorsData = await getSupervisorsByRegionalManager(regionalManagerID);
+        } else {
+          let filteredSupervisors: User[] = [];
+          if (selectedAgent) {
+            const agent = await getAgentById(selectedAgent);
+            if (agent!.supervisorID) {
+              const supervisor = await getUserById(agent!.supervisorID);
+              filteredSupervisors = [supervisor];
+            }
+          } else if (selectedDelegation) {
+            filteredSupervisors = await getUsersByDelegation(selectedDelegation);
+            filteredSupervisors = filteredSupervisors.filter((u) =>
+              u.Roles?.some((role) => role.name.toLowerCase() === ROLES.SUPERVISOR.toLowerCase())
+            );
+          } else if (selectedGovernorate) {
+            filteredSupervisors = await getUsersByGovernorate(selectedGovernorate);
+            filteredSupervisors = filteredSupervisors.filter((u) =>
+              u.Roles?.some((role) => role.name.toLowerCase() === ROLES.SUPERVISOR.toLowerCase())
+            );
+          } else {
+            filteredSupervisors = await getAllUsers();
+            filteredSupervisors = filteredSupervisors.filter((u) =>
+              u.Roles?.some((role) => role.name.toLowerCase() === ROLES.SUPERVISOR.toLowerCase())
+            );
+          }
+          supervisorsData = filteredSupervisors;
         }
-        setSupervisors(filteredSupervisors);
-        if (!filteredSupervisors.some((s) => s.userID === selectedSupervisor)) {
+        setSupervisors(supervisorsData);
+        if (!supervisorsData.some((s) => s.userID === selectedSupervisor)) {
           setSelectedSupervisor("");
         }
       } catch (err) {
         setError(t("timesheetForm.errors.loadSupervisors"));
-        console.error("Filter supervisors error:", err);
+        console.error("Fetch supervisors error:", err);
       } finally {
         setSupervisorLoading(false);
       }
     };
-    filterSupervisors();
-  }, [isSuperAdmin, userPermissions.canReadSupervisors, selectedRegionalManager, memoizedRegionalManagers, setError, t]);
+    fetchSupervisors();
+  }, [
+    isSuperAdmin,
+    isDirector,
+    isRegionalManager,
+    isSupervisor,
+    userPermissions.canReadSupervisors,
+    regionalManagerID,
+    selectedGovernorate,
+    selectedDelegation,
+    selectedAgent,
+    setError,
+    t,
+  ]);
 
-  // Reset Supervisors when Regional Manager is deselected (Super Admin only)
+  // Reset Supervisors when Regional Manager is Deselected
   useEffect(() => {
-    if (!isSuperAdmin || !userPermissions.canReadSupervisors || selectedRegionalManager) {
-      return;
-    }
     const resetSupervisors = async () => {
+      if (!(isSuperAdmin || isDirector) || !userPermissions.canReadSupervisors || regionalManagerID || isSupervisor) {
+        return;
+      }
       setSupervisorLoading(true);
       try {
-        const supervisorsData = await getAllUsers();
-        const filteredSupervisors = supervisorsData.filter((u) =>
-          u.Roles?.some((role) => role.name.toLowerCase() === ROLES.SUPERVISOR.toLowerCase())
-        );
-        setSupervisors(filteredSupervisors);
-        setSelectedSupervisor("");
+        let supervisorsData: User[] = [];
+        if (selectedAgent) {
+          const agent = await getAgentById(selectedAgent);
+          if (agent!.supervisorID) {
+            const supervisor = await getUserById(agent!.supervisorID);
+            supervisorsData = [supervisor];
+          }
+        } else if (selectedDelegation) {
+          supervisorsData = await getUsersByDelegation(selectedDelegation);
+          supervisorsData = supervisorsData.filter((u) =>
+            u.Roles?.some((role) => role.name.toLowerCase() === ROLES.SUPERVISOR.toLowerCase())
+          );
+        } else if (selectedGovernorate) {
+          supervisorsData = await getUsersByGovernorate(selectedGovernorate);
+          supervisorsData = supervisorsData.filter((u) =>
+            u.Roles?.some((role) => role.name.toLowerCase() === ROLES.SUPERVISOR.toLowerCase())
+          );
+        } else {
+          supervisorsData = await getAllUsers();
+          supervisorsData = supervisorsData.filter((u) =>
+            u.Roles?.some((role) => role.name.toLowerCase() === ROLES.SUPERVISOR.toLowerCase())
+          );
+        }
+        setSupervisors(supervisorsData);
+        if (!supervisorsData.some((s) => s.userID === selectedSupervisor)) {
+          setSelectedSupervisor("");
+        }
       } catch (err) {
         setError(t("timesheetForm.errors.loadSupervisors"));
         console.error("Reset supervisors error:", err);
@@ -451,7 +421,18 @@ const TimesheetForm: React.FC = () => {
       }
     };
     resetSupervisors();
-  }, [isSuperAdmin, userPermissions.canReadSupervisors, selectedRegionalManager, setError, t]);
+  }, [
+    isSuperAdmin,
+    isDirector,
+    isSupervisor,
+    userPermissions.canReadSupervisors,
+    regionalManagerID,
+    selectedGovernorate,
+    selectedDelegation,
+    selectedAgent,
+    setError,
+    t,
+  ]);
 
   // Debounced Fetch Agent by Phone
   const fetchAgentByPhone = useCallback(
@@ -460,20 +441,25 @@ const TimesheetForm: React.FC = () => {
       setAgentLoading(true);
       try {
         const agentData = await getAgentByPhone(phone);
-        setSelectedAgent(agentData.agent.agentID);
-        setSelectedDelegation(agentData.agent.delegationID || "");
-        const delegation = allDelegations.find((d) => d.delegationID === agentData.agent.delegationID);
-        if (delegation) {
-          setSelectedGovernorate(delegation.governorateID);
-          const governorate = allGovernorates.find((g) => g.governorateID === delegation.governorateID);
-          if (governorate) {
-            setSelectedRegion(governorate.regionID);
+        if (!agentData) throw new Error("Agent not found");
+        setSelectedAgent(agentData.agentID);
+        setSelectedDelegation(agentData.delegationID || "");
+        const delegation = await getDelegationsByUser(agentData.supervisorID || "");
+        if (delegation.length > 0) {
+          setSelectedGovernorate(delegation[0].governorateID);
+          const governorate = await getGovernoratesByUser(agentData.supervisorID || "");
+          if (governorate.length > 0) {
+            setSelectedRegion(governorate[0].regionID);
           }
         }
-        setAgents([agentData.agent]);
-        setAgentSearch(`${agentData.agent.name || ""} ${agentData.agent.lastname || ""}`);
-        if (agentData.agent.supervisorID) {
-          setSelectedSupervisor(agentData.agent.supervisorID);
+        setAgents([agentData]);
+        setAgentSearch(`${agentData.name || ""} ${agentData.lastname || ""}`);
+        if (agentData.supervisorID) {
+          setSelectedSupervisor(agentData.supervisorID);
+          const regionalManager = await getRegionalManagerBySupervisor(agentData.supervisorID);
+          if (regionalManager.length > 0) {
+            setSelectedRegionalManager(regionalManager[0].userID);
+          }
         }
       } catch (err) {
         setError(t("timesheetForm.errors.agentNotFound"));
@@ -483,12 +469,13 @@ const TimesheetForm: React.FC = () => {
         setSelectedGovernorate("");
         setSelectedRegion("");
         setSelectedSupervisor("");
+        setSelectedRegionalManager("");
         console.error("Fetch agent by phone error:", err);
       } finally {
         setAgentLoading(false);
       }
     }, 500),
-    [userPermissions.canReadAgentsByPhone, setError, t, allDelegations, allGovernorates]
+    [userPermissions.canReadAgentsByPhone, setError, t]
   );
 
   useEffect(() => {
@@ -511,12 +498,15 @@ const TimesheetForm: React.FC = () => {
       setSupervisorLoading(true);
       try {
         const supervisor = await getUserByPhone(phone);
-        if (isSuperAdmin && !supervisor.Roles?.some((role) => role.name.toLowerCase() === ROLES.SUPERVISOR.toLowerCase())) {
+        if ((isSuperAdmin || isDirector || isRegionalManager) && !supervisor.Roles?.some((role) => role.name.toLowerCase() === ROLES.SUPERVISOR.toLowerCase())) {
           throw new Error("User is not a supervisor");
         }
         setSelectedSupervisor(supervisor.userID);
         setSupervisors((prev) => prev.some((s) => s.userID === supervisor.userID) ? prev : [...prev, supervisor]);
         setSupervisorSearch(`${supervisor.firstname || ""} ${supervisor.lastname || ""}`);
+        if (supervisor.regionalManagerID) {
+          setSelectedRegionalManager(supervisor.regionalManagerID);
+        }
       } catch (err) {
         setError(t("timesheetForm.errors.supervisorNotFound"));
         setSelectedSupervisor("");
@@ -525,18 +515,18 @@ const TimesheetForm: React.FC = () => {
         setSupervisorLoading(false);
       }
     }, 500),
-    [userPermissions.canReadSupervisors, userPermissions.canCreateTimesheetsForSupervisors, setError, t, isSuperAdmin]
+    [userPermissions.canReadSupervisors, userPermissions.canCreateTimesheetsForSupervisors, isSuperAdmin, isDirector, isRegionalManager, setError, t]
   );
 
   useEffect(() => {
-    if (supervisorPhone && userPermissions.canCreateTimesheetsForSupervisors && userPermissions.canReadSupervisors) {
+    if (supervisorPhone && userPermissions.canCreateTimesheetsForSupervisors && userPermissions.canReadSupervisors && !isSupervisor) {
       fetchSupervisorByPhone(supervisorPhone);
     } else if (userPermissions.canCreateTimesheetsForSupervisors) {
       setSelectedSupervisor("");
       setSupervisorSearch("");
     }
     return () => fetchSupervisorByPhone.cancel();
-  }, [supervisorPhone, userPermissions.canCreateTimesheetsForSupervisors, userPermissions.canReadSupervisors, fetchSupervisorByPhone]);
+  }, [supervisorPhone, userPermissions.canCreateTimesheetsForSupervisors, userPermissions.canReadSupervisors, isSupervisor, fetchSupervisorByPhone]);
 
   // Utility Functions
   const getWeekNumber = (dateStr: string): number => {
@@ -619,8 +609,8 @@ const TimesheetForm: React.FC = () => {
       selectedAgent &&
       selectedReasons.length > 0 &&
       selectedChecklists.length > 0 &&
-      (!userPermissions.canCreateTimesheetsForSupervisors || selectedSupervisor) &&
-      (isSupervisor || selectedRegion) &&
+      (isSupervisor || supervisorID) &&
+      selectedRegion &&
       selectedGovernorate &&
       selectedDelegation,
     [
@@ -629,9 +619,8 @@ const TimesheetForm: React.FC = () => {
       selectedAgent,
       selectedReasons,
       selectedChecklists,
-      userPermissions.canCreateTimesheetsForSupervisors,
-      selectedSupervisor,
       isSupervisor,
+      supervisorID,
       selectedRegion,
       selectedGovernorate,
       selectedDelegation,
@@ -659,7 +648,7 @@ const TimesheetForm: React.FC = () => {
           </div>
         )}
         <form onSubmit={handleSubmit}>
-          {isSuperAdmin && userPermissions.canCreateTimesheetsForSupervisors && userPermissions.canReadSupervisors && (
+          {(isSuperAdmin || isDirector) && !isRegionalManager && !isSupervisor && (
             <div className="form-group">
               <label htmlFor="regionalManager">{t("timesheetForm.form.regionalManager")} <span aria-hidden>*</span></label>
               <input
@@ -689,7 +678,7 @@ const TimesheetForm: React.FC = () => {
             </div>
           )}
 
-          {userPermissions.canCreateTimesheetsForSupervisors && userPermissions.canReadSupervisors && (
+          {(isSuperAdmin || isDirector || isRegionalManager) && !isSupervisor && userPermissions.canCreateTimesheetsForSupervisors && userPermissions.canReadSupervisors && (
             <div className="form-group">
               <label htmlFor="supervisor">{t("timesheetForm.form.supervisor")} <span aria-hidden>*</span></label>
               <input
@@ -773,26 +762,24 @@ const TimesheetForm: React.FC = () => {
             />
           </div>
 
-          {!isSupervisor && (
-            <div className="form-group">
-              <label htmlFor="region">{t("timesheetForm.form.region")} <span aria-hidden>*</span></label>
-              <select
-                id="region"
-                value={selectedRegion}
-                onChange={(e) => setSelectedRegion(e.target.value)}
-                required
-                aria-label={t("timesheetForm.form.placeholders.regionSelect")}
-                disabled={!!agentPhone || !userPermissions.canReadAgentsByLocation}
-              >
-                <option value="">{t("timesheetForm.form.placeholders.regionSelect")}</option>
-                {filteredRegions.map((region) => (
-                  <option key={region.regionID} value={region.regionID}>
-                    {region.name}
-                  </option>
-                ))}
-              </select>
-            </div>
-          )}
+          <div className="form-group">
+            <label htmlFor="region">{t("timesheetForm.form.region")} <span aria-hidden>*</span></label>
+            <select
+              id="region"
+              value={selectedRegion}
+              onChange={(e) => setSelectedRegion(e.target.value)}
+              required
+              aria-label={t("timesheetForm.form.placeholders.regionSelect")}
+              disabled={!!agentPhone || !userPermissions.canReadAgentsByLocation}
+            >
+              <option value="">{t("timesheetForm.form.placeholders.regionSelect")}</option>
+              {regions.map((region) => (
+                <option key={region.regionID} value={region.regionID}>
+                  {region.name}
+                </option>
+              ))}
+            </select>
+          </div>
 
           <div className="form-group">
             <label htmlFor="governorate">{t("timesheetForm.form.governorate")} <span aria-hidden>*</span></label>
@@ -805,7 +792,7 @@ const TimesheetForm: React.FC = () => {
               disabled={!!agentPhone || !selectedRegion || !userPermissions.canReadAgentsByLocation}
             >
               <option value="">{t("timesheetForm.form.placeholders.governorateSelect")}</option>
-              {filteredGovernorates.map((gov) => (
+              {governorates.map((gov) => (
                 <option key={gov.governorateID} value={gov.governorateID}>
                   {gov.name}
                 </option>
@@ -824,7 +811,7 @@ const TimesheetForm: React.FC = () => {
               disabled={!!agentPhone || !selectedGovernorate || !userPermissions.canReadAgentsByLocation}
             >
               <option value="">{t("timesheetForm.form.placeholders.delegationSelect")}</option>
-              {filteredDelegations.map((del) => (
+              {delegations.map((del) => (
                 <option key={del.delegationID} value={del.delegationID}>
                   {del.name}
                 </option>

@@ -92,9 +92,14 @@ class UserController {
                 return res.status(400).json({ error: 'User ID is required' });
             }
             const user = await UserService.getUserById(userID);
+            const responseUser = user.toJSON();
+            if (responseUser.PFP) {
+                responseUser.PFP = responseUser.PFP.toString('base64');
+
+            }
             const actorID = req.user?.userID || 'unknown';
             logger.info(`Fetched user ${userID} by user ${actorID}, IP: ${req.ip}`);
-            return res.status(200).json(user);
+            return res.status(200).json(responseUser);
         } catch (error) {
             const actorID = req.user?.userID || 'unknown';
             logger.error(`Get user by ID error: ${error.message}, user: ${actorID}, IP: ${req.ip}`);
@@ -154,22 +159,8 @@ class UserController {
                 logger.warn(`Update user failed: Not authenticated, IP: ${req.ip}`);
                 return res.status(401).json({ error: 'Please log in to update a user' });
             }
-            if (req.file) {
-                if (!req.file.mimetype.startsWith('image/')) {
-                    logger.warn(`Update user failed: Invalid image, user: ${req.user.userID}, IP: ${req.ip}`);
-                    return res.status(400).json({ error: 'Please upload a valid image' });
-                }
-                userData.PFP = req.file.buffer;
-            } else if (userData.removePFP === true) {
-                userData.PFP = null;
-            }
             const updatedUser = await UserService.updateUser(userID, userData, req.user.userID);
             const responseUser = updatedUser.toJSON();
-            if (responseUser.PFP) {
-                responseUser.PFP = responseUser.PFP.toString('base64');
-            } else {
-                delete responseUser.PFP;
-            }
             await NotificationService.triggerNotification({
                 event: 'user:updated',
                 data: { userID, email: updatedUser.email },

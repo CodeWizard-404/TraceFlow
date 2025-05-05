@@ -27,7 +27,6 @@ interface UserDetailsProps {
     permissionOverrides: React.ReactNode;
     assignmentsManagement: React.ReactNode;
     infoPopupWrapper: React.ReactNode;
-
 }
 
 interface FormErrors {
@@ -50,6 +49,36 @@ interface TouchedFields {
 
 const PHONE_REGEX = /^\d{8}$/;
 const EMAIL_REGEX = /^[^\s@]+@[^\s@]+\.[^\s@]+$/;
+
+const generatePassword = (): string => {
+    if (import.meta.env.MODE === "development") {
+        return "123456Pp*";
+    }
+
+    const length = 12;
+    const upperCase = "ABCDEFGHIJKLMNOPQRSTUVWXYZ";
+    const lowerCase = "abcdefghijklmnopqrstuvwxyz";
+    const numbers = "0123456789";
+    const symbols = "!@#$%^&*";
+    const allChars = upperCase + lowerCase + numbers + symbols;
+
+    let password = "";
+    password += upperCase[Math.floor(Math.random() * upperCase.length)];
+    password += lowerCase[Math.floor(Math.random() * lowerCase.length)];
+    password += numbers[Math.floor(Math.random() * numbers.length)];
+    password += symbols[Math.floor(Math.random() * symbols.length)];
+
+    for (let i = password.length; i < length; i++) {
+        password += allChars[Math.floor(Math.random() * allChars.length)];
+    }
+
+    password = password
+        .split("")
+        .sort(() => Math.random() - 0.5)
+        .join("");
+
+    return password;
+};
 
 const UserDetails: React.FC<UserDetailsProps> = ({
     selectedUser,
@@ -86,6 +115,8 @@ const UserDetails: React.FC<UserDetailsProps> = ({
         password: false,
         passwordConfirm: false,
     });
+    const [showResetConfirm, setShowResetConfirm] = useState(false);
+    const [generatedPassword, setGeneratedPassword] = useState("");
 
     // Validation Helpers
     const validateName = useCallback((value: string, field: string): string => {
@@ -162,6 +193,46 @@ const UserDetails: React.FC<UserDetailsProps> = ({
         },
         [stripPhoneForDatabase, validatePhone]
     );
+
+    const handleResetPassword = useCallback(() => {
+        const newPassword = generatePassword();
+        setGeneratedPassword(newPassword);
+        setShowResetConfirm(true);
+    }, []);
+
+    const handleConfirmReset = useCallback(async () => {
+        if (!selectedUser || !userPermissions.canUpdateUsers) return;
+        try {
+            const updatePayload: Partial<User> & { PFP?: File | null } = {
+                password: generatedPassword,
+                PFP: null,
+            };
+            const updatedUser = await updateUser(selectedUser.userID, updatePayload);
+            setUsers(
+                users.map((u) => (u.userID === selectedUser.userID ? updatedUser : u))
+            );
+            setSelectedUser(updatedUser);
+            setShowResetConfirm(false);
+            setGeneratedPassword("");
+        } catch (error) {
+            setGlobalError(
+                error instanceof Error ? error.message : "Failed to reset password."
+            );
+        }
+    }, [
+        selectedUser,
+        userPermissions.canUpdateUsers,
+        generatedPassword,
+        users,
+        setUsers,
+        setSelectedUser,
+        setGlobalError,
+    ]);
+
+    const handleCancelReset = useCallback(() => {
+        setShowResetConfirm(false);
+        setGeneratedPassword("");
+    }, []);
 
     const handleSaveUserEdit = useCallback(async () => {
         if (!selectedUser || !userPermissions.canUpdateUsers || !isEditingUser)
@@ -302,6 +373,39 @@ const UserDetails: React.FC<UserDetailsProps> = ({
         setGlobalError,
     ]);
 
+    const isValidBase64 = (str: string): boolean => {
+        try {
+            if (!str || str === "[object Object]" || str === "W29iamVjdCBPYmplY3Rd") {
+                console.warn("Invalid base64: Invalid or object detected");
+                return false;
+            }
+            if (!/^[A-Za-z0-9+/=]+$/.test(str)) {
+                console.warn("Base64 string contains invalid characters");
+                return false;
+            }
+            const decoded = atob(str);
+            return btoa(decoded) === str;
+        } catch (error) {
+            console.warn("Base64 validation failed:", error);
+            return false;
+        }
+    };
+
+    const getImageSrc = (base64: string): string => {
+        if (!base64) {
+            console.warn("Empty base64 string provided");
+            return "";
+        }
+        const prefix = base64.substring(0, Math.min(20, base64.length));
+        let mimeType = "image/jpeg";
+        if (prefix.includes("iVBORw0KGgo")) {
+            mimeType = "image/png";
+        } else if (prefix.includes("/9j/")) {
+            mimeType = "image/jpeg";
+        }
+        return `data:${mimeType};base64,${base64}`;
+    };
+
     if (
         view !== "user-details" ||
         !selectedUser ||
@@ -314,182 +418,211 @@ const UserDetails: React.FC<UserDetailsProps> = ({
         <div className="details-card">
             <div className="card-header">
                 {isEditingUser ? (
-                    <div className="user-edit-form form-section">
+                    <div className="u-profile-panel">
                         <h2>Edit User</h2>
-                        <div className="form-grid">
-                            <div className="form-group">
-                                <label htmlFor="firstname">First Name *</label>
-                                <input
-                                    id="firstname"
-                                    type="text"
-                                    value={editedUser.firstname || ""}
-                                    onChange={(e) => {
-                                        setEditedUser((prev) => ({
-                                            ...prev,
-                                            firstname: e.target.value,
-                                        }));
-                                        setFormErrors((prev) => ({
-                                            ...prev,
-                                            firstname: validateName(e.target.value, "First name"),
-                                        }));
-                                        setTouched((prev) => ({ ...prev, firstname: true }));
-                                    }}
-                                    placeholder="Enter first name"
-                                    className={`user-edit-input ${touched.firstname && formErrors.firstname
-                                        ? "invalid-vibrate"
-                                        : ""
-                                        }`}
-                                    required
-                                />
-                                {formErrors.firstname && touched.firstname && (
-                                    <span className="error-text">{formErrors.firstname}</span>
+                        <div className="u-profile-body">
+                            <div className="u-profile-header">
+                                {selectedUser.PFP &&
+                                    typeof selectedUser.PFP === "string" &&
+                                    isValidBase64(selectedUser.PFP) ? (
+                                    <img
+                                        src={getImageSrc(selectedUser.PFP)}
+                                        alt={`${selectedUser.firstname} ${selectedUser.lastname}'s profile picture`}
+                                        className="u-profile-image"
+                                        onError={(e) => {
+                                            console.warn(
+                                                "Failed to load profile picture:",
+                                                selectedUser.PFP!.substring(0, 50)
+                                            );
+                                            e.currentTarget.style.display = "none";
+                                        }}
+                                    />
+                                ) : (
+                                    <div className="u-profile-image-placeholder">
+                                        {(editedUser.firstname || selectedUser.firstname)[0]}
+                                        {(editedUser.lastname || selectedUser.lastname)[0]}
+                                    </div>
                                 )}
-                            </div>
-                            <div className="form-group">
-                                <label htmlFor="lastname">Last Name *</label>
-                                <input
-                                    id="lastname"
-                                    type="text"
-                                    value={editedUser.lastname || ""}
-                                    onChange={(e) => {
-                                        setEditedUser((prev) => ({
-                                            ...prev,
-                                            lastname: e.target.value,
-                                        }));
-                                        setFormErrors((prev) => ({
-                                            ...prev,
-                                            lastname: validateName(e.target.value, "Last name"),
-                                        }));
-                                        setTouched((prev) => ({ ...prev, lastname: true }));
-                                    }}
-                                    placeholder="Enter last name"
-                                    className={`user-edit-input ${touched.lastname && formErrors.lastname
-                                        ? "invalid-vibrate"
-                                        : ""
-                                        }`}
-                                    required
-                                />
-                                {formErrors.lastname && touched.lastname && (
-                                    <span className="error-text">{formErrors.lastname}</span>
-                                )}
-                            </div>
-                            <div className="form-group">
-                                <label htmlFor="email">Email *</label>
-                                <input
-                                    id="email"
-                                    type="email"
-                                    value={editedUser.email || ""}
-                                    onChange={(e) => {
-                                        setEditedUser((prev) => ({
-                                            ...prev,
-                                            email: e.target.value,
-                                        }));
-                                        setFormErrors((prev) => ({
-                                            ...prev,
-                                            email: validateEmail(e.target.value),
-                                        }));
-                                        setTouched((prev) => ({ ...prev, email: true }));
-                                    }}
-                                    placeholder="Enter email"
-                                    className={`user-edit-input ${touched.email && formErrors.email ? "invalid-vibrate" : ""
-                                        }`}
-                                    required
-                                />
-                                {formErrors.email && touched.email && (
-                                    <span className="error-text">{formErrors.email}</span>
-                                )}
-                            </div>
-                            <div className="form-group">
-                                <label htmlFor="phone">Phone Number *</label>
-                                <input
-                                    id="phone"
-                                    type="text"
-                                    value={formatPhoneDisplay(rawPhone)}
-                                    onChange={handlePhoneChange}
-                                    placeholder="XX XXX XXX"
-                                    className={`user-edit-input ${touched.phone && formErrors.phone ? "invalid-vibrate" : ""
-                                        }`}
-                                    required
-                                    maxLength={10}
-                                />
-                                {formErrors.phone && touched.phone && (
-                                    <span className="error-text">{formErrors.phone}</span>
-                                )}
-                            </div>
-                            <div className="form-group">
-                                <label htmlFor="password">Password (Optional)</label>
-                                <input
-                                    id="password"
-                                    type="password"
-                                    value={editedUser.password || ""}
-                                    onChange={(e) => {
-                                        setEditedUser((prev) => ({
-                                            ...prev,
-                                            password: e.target.value,
-                                        }));
-                                        setFormErrors((prev) => ({
-                                            ...prev,
-                                            password: validatePassword(e.target.value),
-                                            passwordConfirm: validatePasswordConfirm(
-                                                e.target.value,
-                                                editedUser.passwordConfirm || ""
-                                            ),
-                                        }));
-                                        setTouched((prev) => ({ ...prev, password: true }));
-                                    }}
-                                    placeholder="Enter new password"
-                                    className={`user-edit-input ${touched.password && formErrors.password
-                                        ? "invalid-vibrate"
-                                        : ""
-                                        }`}
-                                />
-                                {formErrors.password && touched.password && (
-                                    <span className="error-text">{formErrors.password}</span>
-                                )}
-                            </div>
-                            <div className="form-group">
-                                <label htmlFor="passwordConfirm">
-                                    Confirm Password (Optional)
-                                </label>
-                                <input
-                                    id="passwordConfirm"
-                                    type="password"
-                                    value={editedUser.passwordConfirm || ""}
-                                    onChange={(e) => {
-                                        setEditedUser((prev) => ({
-                                            ...prev,
-                                            passwordConfirm: e.target.value,
-                                        }));
-                                        setFormErrors((prev) => ({
-                                            ...prev,
-                                            passwordConfirm: validatePasswordConfirm(
-                                                editedUser.password || "",
-                                                e.target.value
-                                            ),
-                                        }));
-                                        setTouched((prev) => ({ ...prev, passwordConfirm: true }));
-                                    }}
-                                    placeholder="Confirm new password"
-                                    className={`user-edit-input ${touched.passwordConfirm && formErrors.passwordConfirm
-                                        ? "invalid-vibrate"
-                                        : ""
-                                        }`}
-                                />
-                                {formErrors.passwordConfirm && touched.passwordConfirm && (
-                                    <span className="error-text">
-                                        {formErrors.passwordConfirm}
+                                <div className="u-profile-identity">
+                                    <input
+                                        id="firstname"
+                                        type="text"
+                                        value={editedUser.firstname || ""}
+                                        onChange={(e) => {
+                                            setEditedUser((prev) => ({
+                                                ...prev,
+                                                firstname: e.target.value,
+                                            }));
+                                            setFormErrors((prev) => ({
+                                                ...prev,
+                                                firstname: validateName(
+                                                    e.target.value,
+                                                    "First name"
+                                                ),
+                                            }));
+                                            setTouched((prev) => ({
+                                                ...prev,
+                                                firstname: true,
+                                            }));
+                                        }}
+                                        placeholder="Enter first name"
+                                        className={`u-profile-name user-edit-input ${touched.firstname && formErrors.firstname
+                                            ? "invalid-vibrate"
+                                            : ""
+                                            }`}
+                                        required
+                                    />
+                                    {formErrors.firstname && touched.firstname && (
+                                        <span className="error-text">
+                                            {formErrors.firstname}
+                                        </span>
+                                    )}
+                                    <input
+                                        id="lastname"
+                                        type="text"
+                                        value={editedUser.lastname || ""}
+                                        onChange={(e) => {
+                                            setEditedUser((prev) => ({
+                                                ...prev,
+                                                lastname: e.target.value,
+                                            }));
+                                            setFormErrors((prev) => ({
+                                                ...prev,
+                                                lastname: validateName(
+                                                    e.target.value,
+                                                    "Last name"
+                                                ),
+                                            }));
+                                            setTouched((prev) => ({
+                                                ...prev,
+                                                lastname: true,
+                                            }));
+                                        }}
+                                        placeholder="Enter last name"
+                                        className={`u-profile-name user-edit-input ${touched.lastname && formErrors.lastname
+                                            ? "invalid-vibrate"
+                                            : ""
+                                            }`}
+                                        required
+                                    />
+                                    {formErrors.lastname && touched.lastname && (
+                                        <span className="error-text">
+                                            {formErrors.lastname}
+                                        </span>
+                                    )}
+                                    <span className="u-profile-id">
+                                        ID: {selectedUser.userID}
                                     </span>
-                                )}
+                                </div>
+                            </div>
+                            <div className="u-profile-info">
+                                <div className="u-info-row">
+                                    <span className="u-info-label">Email</span>
+                                    <div className="u-info-value">
+                                        <input
+                                            id="email"
+                                            type="email"
+                                            value={editedUser.email || ""}
+                                            onChange={(e) => {
+                                                setEditedUser((prev) => ({
+                                                    ...prev,
+                                                    email: e.target.value,
+                                                }));
+                                                setFormErrors((prev) => ({
+                                                    ...prev,
+                                                    email: validateEmail(e.target.value),
+                                                }));
+                                                setTouched((prev) => ({
+                                                    ...prev,
+                                                    email: true,
+                                                }));
+                                            }}
+                                            placeholder="Enter email"
+                                            className={`user-edit-input ${touched.email && formErrors.email
+                                                ? "invalid-vibrate"
+                                                : ""
+                                                }`}
+                                            required
+                                        />
+                                        {formErrors.email && touched.email && (
+                                            <span className="error-text">
+                                                {formErrors.email}
+                                            </span>
+                                        )}
+                                    </div>
+                                </div>
+                                <div className="u-info-row">
+                                    <span className="u-info-label">Phone</span>
+                                    <div className="u-info-value">
+                                        <input
+                                            id="phone"
+                                            type="text"
+                                            value={formatPhoneDisplay(rawPhone)}
+                                            onChange={handlePhoneChange}
+                                            placeholder="XX XXX XXX"
+                                            className={`user-edit-input ${touched.phone && formErrors.phone
+                                                ? "invalid-vibrate"
+                                                : ""
+                                                }`}
+                                            required
+                                            maxLength={10}
+                                        />
+                                        {formErrors.phone && touched.phone && (
+                                            <span className="error-text">
+                                                {formErrors.phone}
+                                            </span>
+                                        )}
+                                    </div>
+                                </div>
+                                <div className="u-info-row">
+                                    <span className="u-info-label">Password</span>
+                                    <div className="u-info-value">
+                                        <button
+                                            className="action-button reset-button"
+                                            onClick={handleResetPassword}
+                                        >
+                                            Reset Password
+                                        </button>
+                                    </div>
+                                </div>
                             </div>
                         </div>
                         <div className="user-edit-actions">
-                            <button className="action-button" onClick={handleSaveUserEdit}>
+                            <button
+                                className="action-button"
+                                onClick={handleSaveUserEdit}
+                            >
                                 Save
                             </button>
-                            <button className="cancel-button" onClick={handleCancelEdit}>
+                            <button
+                                className="cancel-button"
+                                onClick={handleCancelEdit}
+                            >
                                 Cancel
                             </button>
                         </div>
+                        {showResetConfirm && (
+                            <div className="reset-confirm-popup">
+                                <p>
+                                    Are you sure you want to reset the password? The new
+                                    password will be sent to the user's Email
+                                </p>
+                                <div className="reset-confirm-actions">
+                                    <button
+                                        className="action-button"
+                                        onClick={handleConfirmReset}
+                                    >
+                                        Confirm
+                                    </button>
+                                    <button
+                                        className="cancel-button"
+                                        onClick={handleCancelReset}
+                                    >
+                                        Cancel
+                                    </button>
+                                </div>
+                            </div>
+                        )}
                     </div>
                 ) : (
                     <>
@@ -500,7 +633,10 @@ const UserDetails: React.FC<UserDetailsProps> = ({
                                     <FaEdit /> Edit
                                 </button>
                                 {userPermissions.canDeleteUsers && (
-                                    <button className="delete-button" onClick={handleDeleteUser}>
+                                    <button
+                                        className="delete-button"
+                                        onClick={handleDeleteUser}
+                                    >
                                         <FaTrash /> Delete
                                     </button>
                                 )}
@@ -512,23 +648,56 @@ const UserDetails: React.FC<UserDetailsProps> = ({
             <hr />
             {!isEditingUser && (
                 <div>
-                    <div className="form-section">
-                        <h3>Basic Information</h3>
-                        <div className="info-grid">
-                            <p>
-                                <strong>Name:</strong> {selectedUser.firstname}{" "}
-                                {selectedUser.lastname}
-                            </p>
-                            <p>
-                                <strong>Email:</strong> {selectedUser.email}
-                            </p>
-                            <p>
-                                <strong>Phone:</strong>{" "}
-                                {`+216 ${formatPhoneDisplay(selectedUser.phone || "N/A")}`}
-                            </p>
+                    <div className="u-profile-panel">
+                        <div className="u-profile-body">
+                            <div className="u-profile-header">
+                                {selectedUser.PFP &&
+                                    typeof selectedUser.PFP === "string" &&
+                                    isValidBase64(selectedUser.PFP) ? (
+                                    <img
+                                        src={getImageSrc(selectedUser.PFP)}
+                                        alt={`${selectedUser.firstname} ${selectedUser.lastname}'s profile picture`}
+                                        className="u-profile-image"
+                                        onError={(e) => {
+                                            console.warn(
+                                                "Failed to load profile picture:",
+                                                selectedUser.PFP!.substring(0, 50)
+                                            );
+                                            e.currentTarget.style.display = "none";
+                                        }}
+                                    />
+                                ) : (
+                                    <div className="u-profile-image-placeholder">
+                                        {selectedUser.firstname[0]}
+                                        {selectedUser.lastname[0]}
+                                    </div>
+                                )}
+                                <div className="u-profile-identity">
+                                    <span className="u-profile-name">
+                                        {selectedUser.firstname} {selectedUser.lastname}
+                                    </span>
+                                    <span className="u-profile-id">
+                                        ID: {selectedUser.userID}
+                                    </span>
+                                </div>
+                            </div>
+                            <div className="u-profile-info">
+                                <div className="u-info-row">
+                                    <span className="u-info-label">Email</span>
+                                    <span className="u-info-value">
+                                        {selectedUser.email}
+                                    </span>
+                                </div>
+                                <div className="u-info-row">
+                                    <span className="u-info-label">Phone</span>
+                                    <span className="u-info-value">{`+216 ${formatPhoneDisplay(
+                                        selectedUser.phone || "N/A"
+                                    )}`}</span>
+                                </div>
+                            </div>
                         </div>
                     </div>
-                    <div className="dropdown-stack">
+                    <div className="u-admin-settings">
                         {roleManagement}
                         {permissionOverrides}
                         {assignmentsManagement}

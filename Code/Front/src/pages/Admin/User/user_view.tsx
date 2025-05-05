@@ -336,6 +336,14 @@ const UserView: React.FC<UserViewProps> = ({
           setTempDirectors={setTempDirectors}
           setUsers={setUsers}
           setSelectedUser={setSelectedUser}
+          onUserUpdate={(updatedUser) => {
+            setSelectedUser(updatedUser);
+            setUsers((prevUsers) =>
+              prevUsers.map((user) =>
+                user.userID === updatedUser.userID ? updatedUser : user
+              )
+            );
+          }}
         />
       }
       infoPopupWrapper={

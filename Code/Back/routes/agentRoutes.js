@@ -10,7 +10,7 @@ router.get('/phone/:phone', requirePermission('access_agents_by_phone'), AgentCo
 router.get('/:id/supervisor', requirePermission('access_agent_supervisor'), AgentController.getAgentSupervisor);
 
 // get agents by user
-router.get('/user/:userId', requirePermission('access_agents_by_user'), AgentController.getAgentsByUser);
+router.get('/user/:id', requirePermission('access_agents_by_user'), AgentController.getAgentsByUser);
 
 // CRUD routes for agents
 router.post('/', requirePermission('create_agents'), AgentController.createAgent);

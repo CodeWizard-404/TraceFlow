@@ -9,7 +9,7 @@ import React, { useMemo, useState, useEffect, useCallback, lazy, Suspense } from
 import { FaTrash, FaEdit, FaSave } from "react-icons/fa";
 import { Virtuoso } from "react-virtuoso";
 import { debounce } from "lodash";
-import { motion } from "framer-motion"; // Import Framer Motion
+import { motion } from "framer-motion";
 import "../../AdminDashboard.css";
 import { useAuth } from "../../../../context/AuthContext";
 import { Checklist } from "../../../../models/Checklist";
@@ -90,8 +90,9 @@ const ChecklistsList: React.FC<ChecklistsListProps> = React.memo(
 
         // Dynamic loading state based on checklists prop
         useEffect(() => {
-            if (checklists.length > 0) {
-                setLoading(false); // Set loading to false when checklists are available
+            // Set loading to false when checklists is defined, even if empty
+            if (checklists !== undefined) {
+                setLoading(false);
             }
         }, [checklists]);
 

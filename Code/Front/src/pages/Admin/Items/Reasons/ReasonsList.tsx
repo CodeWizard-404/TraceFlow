@@ -9,7 +9,7 @@ import React, { useMemo, useState, useEffect, useCallback, lazy, Suspense } from
 import { FaTrash, FaEdit, FaSave } from "react-icons/fa";
 import { Virtuoso } from "react-virtuoso";
 import { debounce } from "lodash";
-import { motion } from "framer-motion"; // Import Framer Motion
+import { motion } from "framer-motion";
 import "../../AdminDashboard.css";
 import { useAuth } from "../../../../context/AuthContext";
 import { Reason } from "../../../../models/Reason";
@@ -84,8 +84,9 @@ const ReasonsList: React.FC<ReasonsListProps> = React.memo(
 
         // Dynamic loading state based on reasons prop
         useEffect(() => {
-            if (reasons.length > 0) {
-                setLoading(false); // Set loading to false when reasons are available
+            // Set loading to false when reasons is defined, even if empty
+            if (reasons !== undefined) {
+                setLoading(false);
             }
         }, [reasons]);
 

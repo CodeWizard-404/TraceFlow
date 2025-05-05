@@ -541,9 +541,18 @@ export const fetchUserProfile = async (): Promise<User> => {
   }
 };
 
-export const updateProfile = async (
-  data: Partial<User> & { PFP?: File | null; removePFP?: boolean }
-): Promise<User> => {
+export interface UpdateProfileInput {
+  firstname?: string;
+  lastname?: string;
+  email?: string;
+  phone?: string;
+  password?: string;
+  PFP?: File | null;
+  removePFP?: boolean;
+}
+
+export const updateProfile = async (data: Partial<User> & UpdateProfileInput): Promise<User> => {
+
   try {
     const formData = new FormData();
     Object.entries(data).forEach(([key, value]) => {
@@ -631,7 +640,7 @@ export const createUser = async (data: {
 
 export const updateUser = async (
   userID: string,
-  data: Partial<User> & { PFP?: File | null; removePFP?: boolean }
+  data: Partial<User> & { PFP?: String | null; removePFP?: boolean }
 ): Promise<User> => {
   try {
     if (!userID) {

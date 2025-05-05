@@ -210,6 +210,9 @@ const UserAdd: React.FC<UserAddProps> = ({
     canReadDirectors: effectivePermissions?.some(
       (p) => p.name === import.meta.env.VITE_PERMISSIONS_READ_DIRECTORS
     ),
+    canAssignRegionalManagers: effectivePermissions?.some(
+      (p) => p.name === import.meta.env.VITE_PERMISSIONS_ASSIGN_REGIONAL_MANAGER
+    )
   };
 
   const isSuperAdmin = userRoles?.some(
@@ -564,6 +567,7 @@ const UserAdd: React.FC<UserAddProps> = ({
             canReadRegionalManagers: userPermissions.canReadRegionalManagers ?? false,
             canReadAgents: userPermissions.canReadAgents ?? false,
             canReadDirectors: userPermissions.canReadDirectors ?? false,
+            canAssignRegionalManagers: userPermissions.canAssignRegionalManagers ?? false,
           }}
           tempSupervisors={tempSupervisors}
           setTempSupervisors={setTempSupervisors}
@@ -581,6 +585,13 @@ const UserAdd: React.FC<UserAddProps> = ({
           setTempDirectors={setTempDirectors}
           setUsers={setUsers}
           setSelectedUser={() => { }}
+          onUserUpdate={(updatedUser) => {
+            setUsers((prevUsers) =>
+              prevUsers.map((user) =>
+                user.userID === updatedUser.userID ? updatedUser : user
+              )
+            );
+          }}
         />
       </div>
       <hr />
