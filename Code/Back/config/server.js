@@ -61,6 +61,9 @@ async function initializeServer(app, io) {
 
     server.listen(PORT, '0.0.0.0', () => {
         logger.info(`${process.env.NODE_ENV === 'production' ? 'HTTPS' : 'HTTP'} Server running on port ${PORT}`);
+        if (process.env.INIT_GOOGLE_SERVICES === 'true') {
+            logger.info('Google Services configuration initialized, awaiting API keys');
+        }
     });
 
     // mDNS advertisement (disabled in development to avoid conflicts)

@@ -1,0 +1,26 @@
+export type SortField = "name" | "email" | "role" | "event" | "type" | "enabled" | "supervisor" | "location" | "lastname" | "phone" | "date";
+export type SortOrder = "asc" | "desc";
+export type ViewMode =
+    | "users"
+    | "roles"
+    | "permissions"
+    | "agents"
+    | "add-user"
+    | "add-agent"
+    | "edit-agent"
+    | "agent-details"
+    | "add-role"
+    | "add-permission"
+    | "user-details"
+    | "role-details"
+    | "permission-details"
+    | "checklists"
+    | "add-checklist"
+    | "checklist-details"
+    | "reasons"
+    | "add-reason"
+    | "reason-details"
+    | "notification-rules"
+    | "notification-rule-details"
+    | "add-notification-rule"
+    | "notifications";

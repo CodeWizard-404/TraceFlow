@@ -1,5 +1,4 @@
 const express = require('express');
-const cookieParser = require('cookie-parser');
 const path = require('path');
 const logger = require('./utils/logger');
 const { sequelize } = require('./config/db');
@@ -9,6 +8,8 @@ const {
     initializeSMTP,
     initializeSMS,
     initializeServer,
+    initializeRedis,
+    initializeGoogleServices,
 } = require('./config');
 const { setupAssociations } = require('./models');
 const populateGeographicData = require('./scripts/seedLocations');
@@ -37,7 +38,7 @@ expressJSDocSwagger(app)({
     info: {
         title: 'TraceFlow API',
         version: '1.0.0',
-        description: 'API documentation for the TraceFlow backend, automatically generated.',
+        description: 'API documentation for the TraceFlow backend, including Google Services integration.',
     },
     servers: [
         {
@@ -72,8 +73,6 @@ app.get('/openapi.json', (req, res) => {
 app.use('/api/docs', redoc({
     title: 'TraceFlow API Documentation',
     specUrl: '/openapi.json',
-
-
 }));
 
 // Test endpoint
@@ -113,6 +112,20 @@ const initSteps = [
         key: 'sms',
         default: process.env.INIT_SMS !== 'false',
         fn: initializeSMS,
+        weight: 10,
+    },
+    {
+        name: 'Redis Initialization',
+        key: 'redis',
+        default: process.env.INIT_REDIS !== 'false',
+        fn: initializeRedis,
+        weight: 10,
+    },
+    {
+        name: 'Google Services Configuration',
+        key: 'googleServices',
+        default: process.env.INIT_GOOGLE_SERVICES !== 'false',
+        fn: initializeGoogleServices,
         weight: 10,
     },
     {

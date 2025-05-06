@@ -15,6 +15,7 @@ import {
     FaSort,
     FaTimes,
     FaUserPlus,
+    FaUpload,
 } from "react-icons/fa";
 import { motion } from "framer-motion";
 import { useTranslation } from "react-i18next";
@@ -26,7 +27,8 @@ import { getAllChecklists } from "../../apis/checklistAPI";
 import { getAllPermissions } from "../../apis/permissionAPI";
 import { getAllReasons } from "../../apis/reasonAPI";
 import { getAllRoles, resetMainRoles } from "../../apis/roleAPI";
-import { getAllUsers, getUserById } from "../../apis/userAPI";
+import { getAllUsers } from "../../apis/userAPI";
+import { getAllAgents } from "../../apis/agentAPI";
 import { getNotificationRules } from "../../apis/notificationAPI";
 import { getNotificationTypes } from "../../lib/notifEvents";
 import { Checklist } from "../../models/Checklist";
@@ -34,11 +36,15 @@ import Permission from "../../models/Permission";
 import { Reason } from "../../models/Reason";
 import Role from "../../models/Role";
 import User from "../../models/User";
+import Agent from "../../models/Agent";
 import NotificationRule from "../../models/NotificationRule";
 import { SortField, SortOrder, ViewMode } from "./adminTypes";
 import NotificationPanel from "../../components/ui/notificationPanel";
 import Select from "react-select";
 import "./AdminDashboard.css";
+import AddAgent from "./Agents/AddAgent";
+import EditAgent from "./Agents/EditAgent";
+import AgentView from "./Agents/AgentView";
 
 const ChecklistAdd = lazy(() => import("./Items/Checklists/ChecklistAdd"));
 const ChecklistView = lazy(() => import("./Items/Checklists/ChecklistView"));
@@ -52,6 +58,8 @@ const RolesList = lazy(() => import("./Role/roles_list"));
 const UserAdd = lazy(() => import("./User/user_add"));
 const UserView = lazy(() => import("./User/user_view"));
 const UsersList = lazy(() => import("./User/users_list"));
+const AgentsList = lazy(() => import("./Agents/Agents_List"));
+const AgentBulkUploadModal = lazy(() => import("./Agents/AgentBulkUploadModal"));
 const NotificationRulesList = lazy(
     () => import("./Notification/NotificationRulesList")
 );
@@ -74,6 +82,7 @@ const validViews: ViewMode[] = [
     "permissions",
     "checklists",
     "reasons",
+    "agents",
     "add-user",
     "add-role",
     "add-permission",
@@ -85,6 +94,9 @@ const validViews: ViewMode[] = [
     "notifications",
     "add-notification-rule",
     "notification-rule-details",
+    "add-agent",
+    "agent-details",
+    "edit-agent",
 ];
 
 interface CacheData {
@@ -94,6 +106,7 @@ interface CacheData {
     | Permission[]
     | Checklist[]
     | Reason[]
+    | Agent[]
     | NotificationRule[]
     | string[];
     timestamp: number;
@@ -119,6 +132,7 @@ const AdminDashboard: React.FC = React.memo(() => {
     const [permissionsLoading, setPermissionsLoading] = useState(false);
     const [checklistsLoading, setChecklistsLoading] = useState(false);
     const [reasonsLoading, setReasonsLoading] = useState(false);
+    const [agentsLoading, setAgentsLoading] = useState(false);
     const [notificationsLoading, setNotificationsLoading] = useState(false);
     const [roleLoading, setRoleLoading] = useState(false);
     const [isTransitioning, setIsTransitioning] = useState(false);
@@ -140,10 +154,13 @@ const AdminDashboard: React.FC = React.memo(() => {
     const [selectedReason, setSelectedReason] = useState<Reason | null>(null);
     const [, setSelectedRole] = useState<Role | null>(null);
     const [selectedUser, setSelectedUser] = useState<User | null>(null);
+    const [selectedAgent, setSelectedAgent] = useState<Agent | null>(null);
     const [selectedNotificationRule, setSelectedNotificationRule] = useState<NotificationRule | null>(null);
-    const [sortField, setSortField] = useState<SortField>("role");
+    const [sortField, setSortField] = useState<SortField>("name");
     const [sortOrder, setSortOrder] = useState<SortOrder>("asc");
     const [users, setUsers] = useState<User[]>([]);
+    const [agents, setAgents] = useState<Agent[]>([]);
+    const [agentsPage, setAgentsPage] = useState(1);
     const [usersPage, setUsersPage] = useState(1);
     const [notificationRules, setNotificationRules] = useState<NotificationRule[]>([]);
     const [notificationTypeFilter, setNotificationTypeFilter] = useState<string>("all");
@@ -152,6 +169,9 @@ const AdminDashboard: React.FC = React.memo(() => {
     const [notificationSortField, setNotificationSortField] = useState<string>("type");
     const [notificationSortOrder, setNotificationSortOrder] = useState<string>("asc");
     const [confirmation, setConfirmation] = useState<ConfirmationState | null>(null);
+    const [isBulkUploadModalOpen, setIsBulkUploadModalOpen] = useState(false);
+    const [governorateFilter, setGovernorateFilter] = useState<string>("all");
+    const [delegationFilter, setDelegationFilter] = useState<string>("all");
 
     const initialView = useMemo(() => {
         const savedView = Cookies.get(COOKIE_NAME);
@@ -162,32 +182,8 @@ const AdminDashboard: React.FC = React.memo(() => {
     }, []);
     const [view, setView] = useState<ViewMode>(initialView);
 
-    // Remove this useEffect entirely
     useEffect(() => {
-        const savedView = localStorage.getItem("adminView");
-        const savedUserId = localStorage.getItem("selectedUserId");
-        if (savedView === "user-details" && savedUserId) {
-            const loadUser = async () => {
-                try {
-                    setUsersLoading(true);
-                    const user = await getUserById(savedUserId);
-                    setSelectedUser(user);
-                    setView("user-details");
-                } catch {
-                    setGlobalError(t("adminDashboard.error.fetchFailed"));
-                    setView("users");
-                    localStorage.removeItem("adminView");
-                    localStorage.removeItem("selectedUserId");
-                } finally {
-                    setUsersLoading(false);
-                }
-            };
-            loadUser();
-        }
-    }, [setSelectedUser, setView, setGlobalError, t]);
-
-    useEffect(() => {
-        if (validViews.includes(view) && view !== "user-details") {
+        if (validViews.includes(view) && view !== "user-details" && view !== "agent-details") {
             Cookies.set(COOKIE_NAME, view, { expires: COOKIE_EXPIRES });
         }
     }, [view]);
@@ -238,15 +234,20 @@ const AdminDashboard: React.FC = React.memo(() => {
                 (p) => p.name === import.meta.env.VITE_PERMISSIONS_READ_USERS
             ),
             canManageNotificationRules: effectivePermissions?.some(
-                (p) => p.name === "manage_notification_rules"
+                (p) => p.name === import.meta.env.VITE_PERMISSIONS_MANAGE_NOTIFICATION_RULES
             ),
             canViewNotificationRules: effectivePermissions?.some(
-                (p) => p.name === "view_notification_rules"
+                (p) => p.name === import.meta.env.VITE_PERMISSIONS_VIEW_NOTIFICATION_RULES
+            ),
+            canViewAgents: effectivePermissions?.some(
+                (p) => p.name === import.meta.env.VITE_PERMISSIONS_READ_ALL_AGENTS
+            ),
+            canCreateAgents: effectivePermissions?.some(
+                (p) => p.name === import.meta.env.VITE_PERMISSIONS_CREATE_AGENTS
             ),
         }),
         [effectivePermissions]
     );
-
 
     const getCachedData = useCallback((key: string): CacheData["data"] | null => {
         const cached = cache.get(key);
@@ -260,7 +261,6 @@ const AdminDashboard: React.FC = React.memo(() => {
         cache.set(key, { data, timestamp: Date.now() });
     }, []);
 
-    // Refresh handler for Users
     const handleRefreshUsers = useCallback(async () => {
         if (!userPermissions.canViewUsers) return;
         cache.delete("all_users");
@@ -287,7 +287,6 @@ const AdminDashboard: React.FC = React.memo(() => {
         clearError,
     ]);
 
-    // Refresh handler for Roles
     const handleRefreshRoles = useCallback(async () => {
         if (!userPermissions.canViewRoles) return;
         cache.delete("all_roles");
@@ -314,7 +313,6 @@ const AdminDashboard: React.FC = React.memo(() => {
         clearError,
     ]);
 
-    // Refresh handler for Permissions
     const handleRefreshPermissions = useCallback(async () => {
         if (!userPermissions.canViewPermissions) return;
         cache.delete("all_permissions");
@@ -341,7 +339,6 @@ const AdminDashboard: React.FC = React.memo(() => {
         clearError,
     ]);
 
-    // Refresh handler for Checklists
     const handleRefreshChecklists = useCallback(async () => {
         if (!userPermissions.canViewChecklists) return;
         cache.delete("all_checklists");
@@ -372,7 +369,6 @@ const AdminDashboard: React.FC = React.memo(() => {
         clearError,
     ]);
 
-    // Refresh handler for Reasons
     const handleRefreshReasons = useCallback(async () => {
         if (!userPermissions.canViewReasons) return;
         cache.delete("all_reasons");
@@ -403,7 +399,32 @@ const AdminDashboard: React.FC = React.memo(() => {
         clearError,
     ]);
 
-    // Refresh handler for Notification Rules
+    const handleRefreshAgents = useCallback(async () => {
+        if (!userPermissions.canViewAgents) return;
+        cache.delete("all_agents");
+        try {
+            setAgentsLoading(true);
+            const agentsResponse = await getAllAgents();
+            setAgents(agentsResponse.agents);
+            setCachedData("all_agents", agentsResponse.agents);
+            setLocalError(null);
+            clearError();
+        } catch (err: unknown) {
+            console.error("Failed to refresh agents:", err);
+            const errorMessage = t("adminDashboard.error.fetchFailed");
+            setLocalError(errorMessage);
+            setGlobalError(errorMessage);
+        } finally {
+            setAgentsLoading(false);
+        }
+    }, [
+        userPermissions.canViewAgents,
+        setCachedData,
+        t,
+        setGlobalError,
+        clearError,
+    ]);
+
     const handleRefreshNotifications = useCallback(async () => {
         if (!userPermissions.canViewNotificationRules) return;
         cache.delete("all_notification_rules");
@@ -434,7 +455,6 @@ const AdminDashboard: React.FC = React.memo(() => {
         clearError,
     ]);
 
-    // Handle reset confirmation
     const handleResetConfirm = async () => {
         try {
             setResetLoading(true);
@@ -491,19 +511,62 @@ const AdminDashboard: React.FC = React.memo(() => {
         [handleResetConfirm, t]
     );
 
+    const defaultSortConfig: Partial<Record<ViewMode, { sortField: SortField; sortOrder: SortOrder }>> = {
+        users: { sortField: "role", sortOrder: "asc" },
+        agents: { sortField: "date", sortOrder: "desc" },
+        checklists: { sortField: "name", sortOrder: "asc" },
+        reasons: { sortField: "name", sortOrder: "asc" },
+        roles: { sortField: "name", sortOrder: "asc" },
+        permissions: { sortField: "name", sortOrder: "asc" },
+    };
+
     const handleViewChange = useCallback((newView: ViewMode) => {
+        console.log("Changing view to:", newView);
         setView(newView);
         setSelectedUser(null);
         setSelectedRole(null);
         setSelectedPermission(null);
         setSelectedChecklist(null);
         setSelectedReason(null);
+        setSelectedAgent(null);
         setSelectedNotificationRule(null);
+
+        // Reset pagination based on view
         if (newView === "users") setUsersPage(1);
         else if (newView === "checklists") setChecklistsPage(1);
         else if (newView === "reasons") setReasonsPage(1);
+        else if (newView === "agents") setAgentsPage(1);
+
+        // Apply default sorting for the new view
+        const sortConfig = defaultSortConfig[newView];
+        if (sortConfig) {
+            setSortField(sortConfig.sortField);
+            setSortOrder(sortConfig.sortOrder);
+        } else {
+            // Fallback for views without sorting (e.g., "notifications" or detail views)
+            setSortField("name");
+            setSortOrder("asc");
+        }
+
+        // Handle notifications sorting separately if needed
+        if (newView === "notifications") {
+            setNotificationSortField("type");
+            setNotificationSortOrder("asc");
+        }
+
         localStorage.setItem("adminView", newView);
-        if (newView !== "user-details") localStorage.removeItem("selectedUserId");
+        if (newView !== "user-details" && newView !== "agent-details") {
+            localStorage.removeItem("selectedUserId");
+            localStorage.removeItem("selectedAgentId");
+        }
+    }, []);
+
+    const handleSetSelectedAgent = useCallback((agent: Agent | null) => {
+        setSelectedAgent(agent);
+        if (agent) {
+            setView("agent-details");
+            localStorage.setItem("selectedAgentId", agent.agentID);
+        }
     }, []);
 
     useEffect(() => {
@@ -514,6 +577,7 @@ const AdminDashboard: React.FC = React.memo(() => {
                 !userPermissions.canViewPermissions &&
                 !userPermissions.canViewChecklists &&
                 !userPermissions.canViewReasons &&
+                !userPermissions.canViewAgents &&
                 !userPermissions.canViewNotificationRules
             ) {
                 const errorMessage = t("adminDashboard.error.noToken");
@@ -590,6 +654,15 @@ const AdminDashboard: React.FC = React.memo(() => {
                         endIndex
                     );
                     setReasons(paginatedReasons);
+                } else if (view === "agents" && userPermissions.canViewAgents) {
+                    setAgentsLoading(true);
+                    let agentsData = getCachedData("all_agents");
+                    if (!agentsData) {
+                        const agentsResponse = await getAllAgents();
+                        agentsData = agentsResponse.agents;
+                        setCachedData("all_agents", agentsData);
+                    }
+                    setAgents(agentsData as Agent[]);
                 } else if (
                     view === "notifications" &&
                     userPermissions.canViewNotificationRules
@@ -620,6 +693,7 @@ const AdminDashboard: React.FC = React.memo(() => {
                 setPermissionsLoading(false);
                 setChecklistsLoading(false);
                 setReasonsLoading(false);
+                setAgentsLoading(false);
                 setNotificationsLoading(false);
                 setRoleLoading(false);
             }
@@ -631,6 +705,7 @@ const AdminDashboard: React.FC = React.memo(() => {
         usersPage,
         checklistsPage,
         reasonsPage,
+        agentsPage,
         userPermissions,
         t,
         setGlobalError,
@@ -649,7 +724,6 @@ const AdminDashboard: React.FC = React.memo(() => {
         }
     }, [error, clearError]);
 
-    // Options for react-select
     const roleOptions = useMemo(
         () => [
             { value: "No Roles", label: t("adminDashboard.sidebar.noRoles") },
@@ -661,7 +735,36 @@ const AdminDashboard: React.FC = React.memo(() => {
         [roles, t]
     );
 
-    // ConfirmationModal component
+    const governorateOptions = useMemo(() => {
+        const governorates = Array.from(
+            new Set(agents.map((agent) => agent.Delegation?.Governorate?.name).filter(Boolean))
+        ).sort();
+        return [
+            { value: "all", label: t("adminDashboard.sidebar.allGovernorates") },
+            ...governorates.map((gov) => ({ value: gov, label: gov })),
+        ];
+    }, [agents, t]);
+
+    const delegationOptions = useMemo(() => {
+        const delegations = Array.from(
+            new Set(
+                agents
+                    .filter(
+                        (agent) =>
+                            !governorateFilter ||
+                            governorateFilter === "all" ||
+                            agent.Delegation?.Governorate?.name === governorateFilter
+                    )
+                    .map((agent) => agent.Delegation?.name)
+                    .filter(Boolean)
+            )
+        ).sort();
+        return [
+            { value: "all", label: t("adminDashboard.sidebar.allDelegations") },
+            ...delegations.map((del) => ({ value: del, label: del })),
+        ];
+    }, [agents, governorateFilter, t]);
+
     const ConfirmationModal: React.FC<{
         message: string;
         onConfirm: () => void;
@@ -766,6 +869,13 @@ const AdminDashboard: React.FC = React.memo(() => {
                         t("adminDashboard.header.reasonDetails", {
                             item: selectedReason.item,
                         })}
+                    {view === "agents" && t("adminDashboard.header.agents")}
+                    {view === "add-agent" && t("adminDashboard.header.addAgent")}
+                    {view === "agent-details" &&
+                        selectedAgent &&
+                        t("adminDashboard.header.agentDetails", {
+                            name: `${selectedAgent.name} ${selectedAgent.lastname}`,
+                        })}
                     {view === "notifications" && t("adminDashboard.header.notifications")}
                     {view === "add-notification-rule" && t("adminDashboard.header.addNotificationRule")}
                     {view === "notification-rule-details" &&
@@ -779,6 +889,7 @@ const AdminDashboard: React.FC = React.memo(() => {
                     view === "permissions" ||
                     view === "checklists" ||
                     view === "reasons" ||
+                    view === "agents" ||
                     view === "notifications") && (
                         <div className="search-container">
                             <FaSearch className="search-icon" aria-hidden="true" />
@@ -803,6 +914,8 @@ const AdminDashboard: React.FC = React.memo(() => {
                     view === "checklist-details" ||
                     view === "add-reason" ||
                     view === "reason-details" ||
+                    view === "add-agent" ||
+                    view === "agent-details" ||
                     view === "add-notification-rule" ||
                     view === "notification-rule-details") && (
                         <motion.button
@@ -819,7 +932,9 @@ const AdminDashboard: React.FC = React.memo(() => {
                                                     ? "checklists"
                                                     : view.includes("reason")
                                                         ? "reasons"
-                                                        : "notifications"
+                                                        : view.includes("agent")
+                                                            ? "agents"
+                                                            : "notifications"
                                 )
                             }
                             whileHover={{ scale: 1.05 }}
@@ -832,8 +947,6 @@ const AdminDashboard: React.FC = React.memo(() => {
             </header>
             <section className="dashboard-content">
                 <aside className="sidebar" role="navigation">
-
-
                     <div className="filter-card">
                         <h3>{t("adminDashboard.sidebar.view")}</h3>
                         <div className="view-category">
@@ -904,13 +1017,19 @@ const AdminDashboard: React.FC = React.memo(() => {
                                     {t("adminDashboard.sidebar.reasons")}
                                 </button>
                             )}
-                            <button
-                                className="inactive"
-                                disabled
-                                aria-disabled="true"
-                            >
-                                {t("adminDashboard.sidebar.agents")}
-                            </button>
+                            {userPermissions.canViewAgents && (
+                                <button
+                                    className={
+                                        view === "agents" || view === "add-agent" || view === "agent-details"
+                                            ? "active"
+                                            : ""
+                                    }
+                                    onClick={() => handleViewChange("agents")}
+                                    aria-current={view === "agents" ? "page" : undefined}
+                                >
+                                    {t("adminDashboard.sidebar.agents")}
+                                </button>
+                            )}
                         </div>
                         <div className="view-category">
                             <h4>{t("adminDashboard.sidebar.system")}</h4>
@@ -1059,6 +1178,120 @@ const AdminDashboard: React.FC = React.memo(() => {
                             </motion.button>
                         </>
                     )}
+                    {userPermissions.canViewAgents && (view === "agents" || view === "agent-details") && (
+                        <>
+                            <div className="sort-card">
+                                <h3>{t("adminDashboard.sidebar.sortAgentsBy")}</h3>
+                                <select
+                                    value={sortField}
+                                    onChange={(e) => setSortField(e.target.value as SortField)}
+                                    aria-label={t("adminDashboard.sidebar.sortAgentsBy")}
+                                >
+                                    <option value="name">
+                                        {t("adminDashboard.sidebar.sortOptions.name")}
+                                    </option>
+                                    <option value="lastname">
+                                        {t("adminDashboard.sidebar.sortOptions.lastname")}
+                                    </option>
+                                    <option value="email">
+                                        {t("adminDashboard.sidebar.sortOptions.email")}
+                                    </option>
+                                    <option value="phone">
+                                        {t("adminDashboard.sidebar.sortOptions.phone")}
+                                    </option>
+                                    <option value="supervisor">
+                                        {t("adminDashboard.sidebar.sortOptions.supervisor")}
+                                    </option>
+                                    <option value="location">
+                                        {t("adminDashboard.sidebar.sortOptions.location")}
+                                    </option>
+                                    <option value="date">
+                                        {t("adminDashboard.sidebar.sortOptions.date")}
+                                    </option>
+                                </select>
+                                <motion.button
+                                    onClick={() =>
+                                        setSortOrder(sortOrder === "asc" ? "desc" : "asc")
+                                    }
+                                    whileHover={{ scale: 1.05 }}
+                                    whileTap={{ scale: 0.95 }}
+                                    aria-label={t("adminDashboard.sidebar.sortOrder", {
+                                        order:
+                                            sortOrder === "asc"
+                                                ? t("adminDashboard.sidebar.sortOrder.asc")
+                                                : t("adminDashboard.sidebar.sortOrder.desc"),
+                                    })}
+                                >
+                                    <FaSort aria-hidden="true" />{" "}{sortOrder === "asc"
+                                        ?
+                                        t("adminDashboard.sidebar.sortOrder.asc")
+                                        : t("adminDashboard.sidebar.sortOrder.desc")}
+                                </motion.button>
+                            </div>
+                            <div className="filter-card">
+                                <h3>{t("adminDashboard.sidebar.filterAgents")}</h3>
+                                <select
+                                    value={governorateFilter}
+                                    onChange={(e) => {
+                                        setGovernorateFilter(e.target.value);
+                                        setDelegationFilter("all");
+                                    }}
+                                    aria-label={t("adminDashboard.sidebar.filterByGovernorate")}
+                                >
+                                    {governorateOptions.map((option) => (
+                                        <option key={option.value} value={option.value}>
+                                            {option.label}
+                                        </option>
+                                    ))}
+                                </select>
+                                <select
+                                    style={{ marginTop: "0.5rem" }}
+                                    value={delegationFilter}
+                                    onChange={(e) => setDelegationFilter(e.target.value)}
+                                    disabled={governorateFilter === "all"}
+                                    aria-label={t("adminDashboard.sidebar.filterByDelegation")}
+                                >
+                                    {delegationOptions.map((option) => (
+                                        <option key={option.value} value={option.value}>
+                                            {option.label}
+                                        </option>
+                                    ))}
+                                </select>
+                            </div>
+                            <motion.button
+                                className="action-button"
+                                onClick={handleRefreshAgents}
+                                disabled={agentsLoading}
+                                whileHover={{ scale: agentsLoading ? 1 : 1.05 }}
+                                whileTap={{ scale: agentsLoading ? 1 : 0.95 }}
+                                aria-label={agentsLoading ? t("adminDashboard.actions.loading") : t("adminDashboard.actions.refreshAgents")}
+                            >
+                                <FaRedo aria-hidden="true" /> {agentsLoading ? t("adminDashboard.actions.loading") : t("adminDashboard.actions.refreshAgents")}
+                            </motion.button>
+                            {userPermissions.canCreateAgents && (
+                                <>
+                                    <motion.button
+                                        className="action-button"
+                                        onClick={() => handleViewChange("add-agent")}
+                                        whileHover={{ scale: 1.05 }}
+                                        whileTap={{ scale: 0.95 }}
+                                        aria-label={t("adminDashboard.sidebar.addAgent")}
+                                    >
+                                        <FaPlus aria-hidden="true" />{" "}{t("adminDashboard.sidebar.addAgent")}
+                                    </motion.button>
+                                    <motion.button
+                                        className="action-button"
+                                        onClick={() => setIsBulkUploadModalOpen(true)}
+                                        whileHover={{ scale: 1.05 }}
+                                        whileTap={{ scale: 0.95 }}
+                                        aria-label={t("adminDashboard.sidebar.importAgents")}
+                                    >
+                                        <FaUpload aria-hidden="true" />{" "}{t("adminDashboard.sidebar.importAgents")}
+                                    </motion.button>
+                                </>
+                            )}
+                        </>
+                    )}
                     {userPermissions.canViewNotificationRules &&
                         view === "notifications" && (
                             <>
@@ -1152,7 +1385,6 @@ const AdminDashboard: React.FC = React.memo(() => {
                             <motion.button
                                 className="action-button"
                                 onClick={() => handleViewChange("add-user")}
-                                whileHover={{ scale: 1.05 }}
                                 whileTap={{ scale: 0.95 }}
                                 aria-label={t("adminDashboard.sidebar.addUser")}
                             >
@@ -1249,6 +1481,13 @@ const AdminDashboard: React.FC = React.memo(() => {
                         </motion.div>
                     )}
                     <Suspense>
+                        {isBulkUploadModalOpen && (
+                            <AgentBulkUploadModal
+                                isOpen={isBulkUploadModalOpen}
+                                onClose={() => setIsBulkUploadModalOpen(false)}
+                                setError={setLocalError}
+                            />
+                        )}
                         {isTransitioning && view === "user-details" && (
                             <div>{t("adminDashboard.loading.userDetails")}</div>
                         )}
@@ -1257,7 +1496,7 @@ const AdminDashboard: React.FC = React.memo(() => {
                                 users={users}
                                 setUsers={setUsers}
                                 view={view}
-                                setView={(view: string) => setView(view as ViewMode)}
+                                setView={setView}
                                 setSelectedUser={setSelectedUser}
                                 setError={setLocalError}
                                 searchQuery={searchQuery}
@@ -1394,6 +1633,52 @@ const AdminDashboard: React.FC = React.memo(() => {
                                 view={view}
                                 setView={setView}
                                 setError={setLocalError}
+                            />
+                        )}
+                        {view === "agents" && (
+                            <AgentsList
+                                agents={agents}
+                                setAgents={setAgents}
+                                view={view}
+                                setView={(view: string) => setView(view as ViewMode)}
+                                setSelectedAgent={handleSetSelectedAgent}
+                                setError={setLocalError}
+                                searchQuery={searchQuery}
+                                sortField={sortField}
+                                setSortField={setSortField}
+                                sortOrder={sortOrder}
+                                setSortOrder={setSortOrder}
+                                currentPage={agentsPage}
+                                setCurrentPage={setAgentsPage}
+                                itemsPerPage={ITEMS_PER_PAGE}
+                                governorateFilter={governorateFilter}
+                                delegationFilter={delegationFilter}
+                            />
+                        )}
+                        {view === "add-agent" && (
+                            <AddAgent
+                                setAgents={setAgents}
+                                setError={setLocalError}
+                                setView={(view: string) => setView(view as ViewMode)}
+                            />
+                        )}
+                        {view === "edit-agent" && (
+                            <EditAgent
+                                selectedAgent={selectedAgent}
+                                setAgents={setAgents}
+                                setError={setLocalError}
+                                setSelectedAgent={setSelectedAgent}
+                                setView={(view: string) => setView(view as ViewMode)}
+                            />
+                        )}
+                        {view === "agent-details" && selectedAgent && (
+                            <AgentView
+                                selectedAgent={selectedAgent}
+                                setSelectedAgent={setSelectedAgent}
+                                agents={agents}
+                                setAgents={setAgents}
+                                view={view}
+                                setView={setView}
                             />
                         )}
                         {view === "notifications" && (

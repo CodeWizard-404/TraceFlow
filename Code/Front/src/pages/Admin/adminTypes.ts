@@ -1,10 +1,14 @@
-export type SortField = "name" | "email" | "role" | "event" | "type" | "enabled";
+export type SortField = "name" | "email" | "role" | "event" | "type" | "enabled" | "supervisor" | "location" | "lastname" | "phone" | "date";
 export type SortOrder = "asc" | "desc";
 export type ViewMode =
     | "users"
     | "roles"
     | "permissions"
     | "add-user"
+    | "agents"
+    | "add-agent"
+    | "edit-agent"
+    | "agent-details"
     | "add-role"
     | "add-permission"
     | "user-details"
