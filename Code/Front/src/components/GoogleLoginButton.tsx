@@ -1,7 +1,6 @@
 import React, { useState } from 'react';
 import { motion } from 'framer-motion';
 import { FcGoogle } from 'react-icons/fc';
-import { getGoogleAuthUrl } from '../apis/authAPI';
 
 const GoogleLoginButton: React.FC = () => {
     const [error, setError] = useState<string | null>(null);
@@ -11,8 +10,14 @@ const GoogleLoginButton: React.FC = () => {
         setLoading(true);
         setError(null);
         try {
-            const url = await getGoogleAuthUrl();
-            window.location.href = url;
+            // Construct Keycloak OAuth URL for Google Identity Provider
+            const keycloakUrl = import.meta.env.VITE_KEYCLOAK_URL || 'http://localhost:8080';
+            const realm = import.meta.env.VITE_REALM || 'TraceFlow';
+            const clientId = import.meta.env.VITE_CLIENT_ID || 'traceflow-backend';
+            const redirectUri = encodeURIComponent('http://localhost:5173/api/auth/callback');
+            const authUrl = `${keycloakUrl}/realms/${realm}/protocol/openid-connect/auth?client_id=${clientId}&redirect_uri=${redirectUri}&response_type=code&scope=openid%20email%20profile&kc_idp_hint=google`;
+
+            window.location.href = authUrl;
         } catch (err) {
             const errorMessage = err instanceof Error ? err.message : 'Failed to initiate Google login.';
             setError(errorMessage);
@@ -56,7 +61,6 @@ const GoogleLoginButton: React.FC = () => {
                             backgroundColor: 'rgba(255, 255, 255, 0.7)',
                             borderRadius: '50%',
                             padding: '0.3rem',
-
                         }}>
                             <FcGoogle size={20} />
                         </div>

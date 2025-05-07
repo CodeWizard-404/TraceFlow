@@ -1,4 +1,3 @@
-// backend/services/authService.js
 const axios = require('axios');
 const { nanoid } = require('nanoid');
 const { User, Role, Permission, TrustedDevice } = require('../models');
@@ -26,8 +25,6 @@ const ERROR_MESSAGES = {
     INVALID_KEYCLOAK_RESPONSE: 'Authentication failed. Please try again.',
     ACCOUNT_LOCKED: 'Account temporarily locked due to too many failed attempts.',
     TOO_MANY_ATTEMPTS: 'Too many login attempts. Please wait before trying again.',
-    GOOGLE_LOGIN_FAILED: 'Google login failed. Ensure your account is registered.',
-    INVALID_GOOGLE_CODE: 'Invalid Google authorization code.',
 };
 
 const verificationCache = new Map();
@@ -37,8 +34,8 @@ const KEYCLOAK_URL = process.env.KEYCLOAK_URL || 'http://localhost:8080';
 const REALM = process.env.REALM || 'TraceFlow';
 const CLIENT_ID = process.env.KEYCLOAK_CLIENT_ID || 'traceflow-backend';
 const CLIENT_SECRET = process.env.KEYCLOAK_CLIENT_SECRET || '';
-const ACCESS_TOKEN_MAX_AGE = parseInt(process.env.ACCESS_TOKEN_MAX_AGE) || 900000; // 15 minutes
-const REFRESH_TOKEN_MAX_AGE = parseInt(process.env.REFRESH_TOKEN_MAX_AGE) || 86400000; // 1 day
+const ACCESS_TOKEN_MAX_AGE = parseInt(process.env.ACCESS_TOKEN_MAX_AGE) || 900000;
+const REFRESH_TOKEN_MAX_AGE = parseInt(process.env.REFRESH_TOKEN_MAX_AGE) || 86400000;
 
 class AuthService {
     static async getKeycloakAdminToken() {
@@ -49,7 +46,7 @@ class AuthService {
                     grant_type: 'password',
                     client_id: 'admin-cli',
                     username: process.env.KEYCLOAK_KEYCLOAK_ADMIN_USER || 'admin',
-                    password: process.env.KEYCLOAK_KEYCLOAK_ADMIN_PASSWORDWORD || 'admin',
+                    password: process.env.KEYCLOAK_KEYCLOAK_ADMIN_PASSWORD || 'admin',
                 })
             );
             return response.data.access_token;
@@ -72,6 +69,17 @@ class AuthService {
                     phone: 'N/A',
                     password: 'KEYCLOAK_MANAGED',
                 });
+                // Assign default Supervisor role
+                let supervisorRole = await Role.findOne({ where: { name: 'Supervisor' } });
+                if (!supervisorRole) {
+                    supervisorRole = await Role.create({
+                        roleID: `role_${nanoid()}`,
+                        name: 'Supervisor',
+                        description: 'Default role for new users',
+                    });
+                }
+                await user.addRole(supervisorRole);
+                logger.info(`Assigned Supervisor role to new user ${user.userID}`);
             } else if (!user.keycloakId) {
                 await user.update({ keycloakId });
             } else if (user.keycloakId !== keycloakId) {
@@ -85,205 +93,6 @@ class AuthService {
                 : Object.assign(new Error(ERROR_MESSAGES.DATABASE_ERROR), { status: 500 });
         }
     }
-
-    static async googleLogin(code, deviceIdentifier, res) {
-        try {
-            logger.info('Initiating Google login', { code, deviceIdentifier });
-
-            // Exchange Google code for Keycloak tokens
-            const tokenResponse = await axios.post(
-                `${KEYCLOAK_URL}/realms/${REALM}/protocol/openid-connect/token`,
-                new URLSearchParams({
-                    grant_type: 'authorization_code',
-                    client_id: CLIENT_ID,
-                    client_secret: CLIENT_SECRET,
-                    code,
-                    redirect_uri: 'http://localhost:8080/realms/TraceFlow/broker/google/endpoint',
-                }),
-                { headers: { 'Content-Type': 'application/x-www-form-urlencoded' } }
-            ).catch(error => {
-                logger.error('Keycloak token exchange failed', {
-                    status: error.response?.status,
-                    data: error.response?.data,
-                    message: error.message,
-                });
-                throw error;
-            });
-
-            const { access_token, refresh_token, expires_in } = tokenResponse.data;
-            if (!access_token || !refresh_token || !expires_in) {
-                logger.error('Invalid Keycloak token response', { response: tokenResponse.data });
-                throw Object.assign(new Error(ERROR_MESSAGES.INVALID_GOOGLE_CODE), { status: 400 });
-            }
-            logger.info('Keycloak tokens obtained', { expires_in });
-
-            // Introspect token to get user info
-            const introspectResponse = await axios.post(
-                `${KEYCLOAK_URL}/realms/${REALM}/protocol/openid-connect/token/introspect`,
-                new URLSearchParams({
-                    token: access_token,
-                    client_id: CLIENT_ID,
-                    client_secret: CLIENT_SECRET,
-                }),
-                { headers: { 'Content-Type': 'application/x-www-form-urlencoded' } }
-            ).catch(error => {
-                logger.error('Token introspection failed', {
-                    status: error.response?.status,
-                    data: error.response?.data,
-                    message: error.message,
-                });
-                throw error;
-            });
-
-            if (!introspectResponse.data.active) {
-                logger.error('Token is not active', { response: introspectResponse.data });
-                throw Object.assign(new Error(ERROR_MESSAGES.INVALID_GOOGLE_CODE), { status: 400 });
-            }
-
-            const { email, sub: keycloakId, username } = introspectResponse.data;
-            if (!email || !username) {
-                logger.error('Missing email or username in token introspection', { response: introspectResponse.data });
-                throw Object.assign(new Error(ERROR_MESSAGES.GOOGLE_LOGIN_FAILED), { status: 400 });
-            }
-            logger.info('User info retrieved from token', { email, username, keycloakId });
-
-            // Find user by googleEmail (which matches email and username)
-            const user = await User.findOne({
-                where: { googleEmail: email },
-                include: [
-                    {
-                        model: Role,
-                        through: { attributes: [] },
-                        include: [
-                            {
-                                model: Permission,
-                                through: { attributes: [] },
-                                attributes: ['name', 'class', 'permissionID', 'description'],
-                            },
-                        ],
-                    },
-                ],
-            });
-
-            if (!user) {
-                logger.warn(`Google login failed: No user found with googleEmail ${email}`);
-                throw Object.assign(new Error(ERROR_MESSAGES.GOOGLE_LOGIN_FAILED), { status: 404 });
-            }
-            logger.info('User found in database', { userID: user.userID, keycloakId: user.keycloakId });
-
-            // Verify keycloakId matches
-            if (user.keycloakId !== keycloakId) {
-                logger.warn(`Keycloak ID mismatch for user ${email}`, {
-                    databaseKeycloakId: user.keycloakId,
-                    tokenKeycloakId: keycloakId,
-                });
-                throw Object.assign(new Error(ERROR_MESSAGES.KEYCLOAK_MISMATCH), { status: 400 });
-            }
-
-            // Check if the device is trusted
-            const trustedDevice = await TrustedDevice.findOne({
-                where: { userID: user.userID, deviceIdentifier, status: 'active' },
-            });
-
-            if (trustedDevice) {
-                await trustedDevice.update({ lastUsed: new Date() });
-                logger.info('Trusted device found, completing login', { deviceIdentifier });
-                return this.generateLoginResponse(user, access_token, refresh_token, expires_in, res);
-            }
-
-            // Generate and send OTP for 2FA
-            const emailRegex = /^[^\s@]+@[^\s@]+\.[^\s@]+$/;
-            const phoneRegex = /^\+?\d{8,11}$/;
-            const hasValidEmail = user.email && emailRegex.test(user.email);
-            const hasValidPhone = user.phone && user.phone !== 'N/A' && phoneRegex.test(user.phone);
-
-            if (!hasValidEmail && !hasValidPhone) {
-                logger.error(`No valid OTP method for ${user.userID}`);
-                throw Object.assign(new Error(ERROR_MESSAGES.NO_OTP_METHOD), { status: 400 });
-            }
-
-            let otp;
-            let selectedMethod = 'email';
-
-            if (hasValidEmail) {
-                try {
-                    otp = await otpService.generateOTP(user.userID, 'user');
-                    await transporter.sendMail({
-                        from: process.env.SMTP_USER,
-                        to: user.email,
-                        subject: 'TraceFlow 2FA OTP',
-                        text: `Your OTP is ${otp.code}. It expires in 10 minutes.`,
-                    });
-                    logger.info(`OTP sent to email for ${user.userID}`);
-                } catch (error) {
-                    logger.error(`Email OTP send failed for ${user.userID}: ${error.message}`);
-                    if (hasValidPhone) {
-                        selectedMethod = 'phone';
-                    } else {
-                        throw Object.assign(new Error(ERROR_MESSAGES.OTP_SEND_FAILED), { status: 500 });
-                    }
-                }
-            }
-
-            if (!otp && hasValidPhone) {
-                try {
-                    otp = await otpService.generateOTP(user.userID, 'user');
-                    const smsResult = await sendSMS(user.phone, `Your TraceFlow OTP is ${otp.code}`, 'otp');
-                    if (!smsResult.success) {
-                        logger.error(`SMS OTP send failed for ${user.userID}: ${smsResult.reason}`);
-                        if (hasValidEmail) {
-                            selectedMethod = 'email';
-                            otp = await otpService.generateOTP(user.userID, 'user');
-                            await transporter.sendMail({
-                                from: process.env.SMTP_USER,
-                                to: user.email,
-                                subject: 'TraceFlow 2FA OTP',
-                                text: `Your OTP is ${otp.code}. It expires in 10 minutes.`,
-                            });
-                            logger.info(`Fallback OTP sent to email for ${user.userID}`);
-                        } else {
-                            throw Object.assign(new Error(ERROR_MESSAGES.OTP_SEND_FAILED), { status: 500 });
-                        }
-                    } else {
-                        selectedMethod = smsResult.fallback ? 'email' : 'phone';
-                        logger.info(`OTP sent to phone for ${user.userID}`);
-                    }
-                } catch (error) {
-                    logger.error(`SMS OTP send failed for ${user.userID}: ${error.message}`);
-                    throw Object.assign(new Error(ERROR_MESSAGES.OTP_SEND_FAILED), { status: 500 });
-                }
-            }
-
-            if (!otp) {
-                logger.error(`OTP delivery failed for ${user.userID}`);
-                throw Object.assign(new Error(ERROR_MESSAGES.OTP_SEND_FAILED), { status: 500 });
-            }
-
-            logger.info(`Google login requires 2FA for ${user.userID}`, { selectedMethod });
-            return {
-                requires2FA: true,
-                userID: user.userID,
-                deviceIdentifier,
-                tempToken: access_token,
-                refreshToken: refresh_token,
-                expiresIn: expires_in * 1000,
-                message: `OTP sent to your ${selectedMethod}`,
-            };
-        } catch (error) {
-            logger.error(`Google login error: ${error.message}`, {
-                status: error.response?.status,
-                data: error.response?.data,
-                stack: error.stack,
-            });
-            if (error.response?.data?.error === 'invalid_request' && error.response?.data?.error_description?.includes('Missing parameter: username')) {
-                throw Object.assign(new Error('Google login failed: Missing username parameter'), { status: 400 });
-            }
-            throw error.status
-                ? error
-                : Object.assign(new Error(ERROR_MESSAGES.GOOGLE_LOGIN_FAILED), { status: 400 });
-        }
-    }
-
 
     static async login(identifier, password, deviceIdentifier, otpMethod = 'email', res) {
         let loginResponse;
@@ -651,6 +460,20 @@ class AuthService {
             maxAge: REFRESH_TOKEN_MAX_AGE,
         });
 
+        const userData = {
+            userID: user.userID,
+            email: user.email,
+            phone: user.phone,
+            firstname: user.firstname,
+            lastname: user.lastname,
+            keycloakId: user.keycloakId || '',
+            Roles: roles,
+        };
+
+        res.cookie('userData', encodeURIComponent(JSON.stringify(userData)), {
+            ...cookieOptions,
+            httpOnly: false, // Allow frontend to read userData
+        });
 
         return {
             requires2FA: false,

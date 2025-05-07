@@ -26654,3 +26654,394 @@
 {"data":{"error":"HTTP 404 Not Found"},"level":"error","message":"Keycloak token exchange failed Request failed with status code 404","request_body":{"client_id":"traceflow-backend","grant_type":"urn:ietf:params:oauth:grant-type:token-exchange","subject_issuer":"google","subject_token_type":"urn:ietf:params:oauth:token-type:access_token"},"request_url":"http://localhost:8080/realms/TraceFlow/broker/google/token","status":404,"timestamp":"2025-05-07T01:34:04.043Z"}
 {"level":"error","message":"Google login error: Failed to exchange Google token with Keycloak.","stack":"Error: Failed to exchange Google token with Keycloak.\n    at C:\\Users\\Kayto\\Desktop\\IT\\Projects\\Stage\\Stage PFE\\TraceFlow\\Code\\Back\\services\\googleAuthService.js:146:23\n    at process.processTicksAndRejections (node:internal/process/task_queues:105:5)\n    at async GoogleAuthService.googleLogin (C:\\Users\\Kayto\\Desktop\\IT\\Projects\\Stage\\Stage PFE\\TraceFlow\\Code\\Back\\services\\googleAuthService.js:120:38)\n    at async googleCallback (C:\\Users\\Kayto\\Desktop\\IT\\Projects\\Stage\\Stage PFE\\TraceFlow\\Code\\Back\\controllers\\authController.js:59:28)","timestamp":"2025-05-07T01:34:04.044Z"}
 {"IP":"127.0.0.1","level":"error","message":"Google callback error: Failed to exchange Google token with Keycloak.","query":{"authuser":"0","code":"4/0Ab_5qlnqlhy_IjpZjDi8dGU0Q2sb9u92K4C8eTLY-ULmp8AjiWQAHJ_dvDkXdOB7CiEVyg","prompt":"consent","scope":"email profile https://www.googleapis.com/auth/calendar https://www.googleapis.com/auth/userinfo.profile https://www.googleapis.com/auth/userinfo.email openid"},"stack":"Error: Failed to exchange Google token with Keycloak.\n    at GoogleAuthService.googleLogin (C:\\Users\\Kayto\\Desktop\\IT\\Projects\\Stage\\Stage PFE\\TraceFlow\\Code\\Back\\services\\googleAuthService.js:209:25)\n    at process.processTicksAndRejections (node:internal/process/task_queues:105:5)\n    at async googleCallback (C:\\Users\\Kayto\\Desktop\\IT\\Projects\\Stage\\Stage PFE\\TraceFlow\\Code\\Back\\controllers\\authController.js:59:28)","status":401,"timestamp":"2025-05-07T01:34:04.046Z"}
+{"level":"info","message":"Generated Google OAuth authorization URL","timestamp":"2025-05-07T01:37:14.883Z"}
+{"code":"4/0Ab_5qlm...","level":"info","message":"Exchanging Google OAuth code","timestamp":"2025-05-07T01:37:24.255Z"}
+{"access_token":"present","expiry_date":1746585443453,"level":"info","message":"Google tokens received","refresh_token":"present","scope":"https://www.googleapis.com/auth/userinfo.profile https://www.googleapis.com/auth/calendar https://www.googleapis.com/auth/userinfo.email openid","timestamp":"2025-05-07T01:37:24.453Z"}
+{"email":"sofienlaghouanem@gmail.com","id":"114520579260270597095","level":"info","message":"Google user info retrieved","name":"Sofyen Laghouanem","timestamp":"2025-05-07T01:37:24.623Z"}
+{"client_id":"traceflow-backend","endpoint":"http://localhost:8080/realms/TraceFlow/broker/google/token","keycloak_url":"http://localhost:8080","level":"info","message":"Attempting Keycloak token exchange","realm":"TraceFlow","timestamp":"2025-05-07T01:37:24.673Z"}
+{"data":{"error":"HTTP 404 Not Found"},"level":"error","message":"Keycloak token exchange failed Request failed with status code 404","request_body":{"client_id":"traceflow-backend","grant_type":"urn:ietf:params:oauth:grant-type:token-exchange","subject_issuer":"google","subject_token_type":"urn:ietf:params:oauth:token-type:access_token"},"request_url":"http://localhost:8080/realms/TraceFlow/broker/google/token","status":404,"timestamp":"2025-05-07T01:37:24.709Z"}
+{"level":"error","message":"Google login error: Failed to exchange Google token with Keycloak.","stack":"Error: Failed to exchange Google token with Keycloak.\n    at C:\\Users\\Kayto\\Desktop\\IT\\Projects\\Stage\\Stage PFE\\TraceFlow\\Code\\Back\\services\\googleAuthService.js:146:23\n    at process.processTicksAndRejections (node:internal/process/task_queues:105:5)\n    at async GoogleAuthService.googleLogin (C:\\Users\\Kayto\\Desktop\\IT\\Projects\\Stage\\Stage PFE\\TraceFlow\\Code\\Back\\services\\googleAuthService.js:120:38)\n    at async googleCallback (C:\\Users\\Kayto\\Desktop\\IT\\Projects\\Stage\\Stage PFE\\TraceFlow\\Code\\Back\\controllers\\authController.js:59:28)","timestamp":"2025-05-07T01:37:24.719Z"}
+{"IP":"127.0.0.1","level":"error","message":"Google callback error: Failed to exchange Google token with Keycloak.","query":{"authuser":"0","code":"4/0Ab_5qlmQ0Pwdu60ksNgLopqXKseCTwCVtHrvnBJVFmoWwpaZ2CXOe2fXYjH-4g21lda0Ug","prompt":"consent","scope":"email profile https://www.googleapis.com/auth/calendar https://www.googleapis.com/auth/userinfo.profile https://www.googleapis.com/auth/userinfo.email openid"},"stack":"Error: Failed to exchange Google token with Keycloak.\n    at GoogleAuthService.googleLogin (C:\\Users\\Kayto\\Desktop\\IT\\Projects\\Stage\\Stage PFE\\TraceFlow\\Code\\Back\\services\\googleAuthService.js:209:25)\n    at process.processTicksAndRejections (node:internal/process/task_queues:105:5)\n    at async googleCallback (C:\\Users\\Kayto\\Desktop\\IT\\Projects\\Stage\\Stage PFE\\TraceFlow\\Code\\Back\\controllers\\authController.js:59:28)","status":401,"timestamp":"2025-05-07T01:37:24.726Z"}
+{"level":"info","message":"Generated Google OAuth authorization URL","timestamp":"2025-05-07T01:37:26.877Z"}
+{"level":"info","message":"Database Initialization: Starting","step":"database","timestamp":"2025-05-07T01:50:43.459Z"}
+{"level":"info","message":"Connected to Redis successfully","timestamp":"2025-05-07T01:50:43.509Z"}
+{"level":"info","message":"Redis server info: # Server","timestamp":"2025-05-07T01:50:43.576Z"}
+{"level":"info","message":"Redis ping successful","timestamp":"2025-05-07T01:50:43.586Z"}
+{"level":"info","message":"GoogleMapsService initialized with Redis","timestamp":"2025-05-07T01:50:43.591Z"}
+{"duration":"0.50","level":"info","message":"Database Initialization: Completed","status":"success","step":"database","timestamp":"2025-05-07T01:50:43.957Z"}
+{"level":"info","message":"SMTP Initialization: Starting","step":"smtp","timestamp":"2025-05-07T01:50:43.964Z"}
+{"level":"info","message":"SMTP server verified successfully","timestamp":"2025-05-07T01:50:44.593Z"}
+{"duration":"0.63","level":"info","message":"SMTP Initialization: Completed","status":"success","step":"smtp","timestamp":"2025-05-07T01:50:44.595Z"}
+{"level":"info","message":"SMS Initialization: Starting","step":"sms","timestamp":"2025-05-07T01:50:44.599Z"}
+{"level":"info","message":"Initializing SMS gateway with URL: https://wbm.tn/wbmonitor/send/webapi/v5/enquire_credit and headers: {\"X-API-Key\":\"9c5362a406e609d0ecc6f9a0e129c0a6\",\"Content-Type\":\"application/json\"}","timestamp":"2025-05-07T01:50:44.602Z"}
+{"level":"info","message":"SMS gateway initialized successfully: {\"op\":3,\"status\":0,\"status_desc\":\"success\",\"apiVersion\":\"5\",\"credit\":{\"national\":{\"available\":\"860403\",\"reserved\":\"0\"},\"international\":{\"available\":\"1\",\"reserved\":\"0\"}}}","timestamp":"2025-05-07T01:50:44.735Z"}
+{"duration":"0.14","level":"info","message":"SMS Initialization: Completed","status":"success","step":"sms","timestamp":"2025-05-07T01:50:44.738Z"}
+{"level":"info","message":"Redis Initialization: Starting","step":"redis","timestamp":"2025-05-07T01:50:44.739Z"}
+{"duration":"0.00","level":"info","message":"Redis Initialization: Completed","status":"success","step":"redis","timestamp":"2025-05-07T01:50:44.739Z"}
+{"level":"info","message":"Google Services Configuration: Starting","step":"googleServices","timestamp":"2025-05-07T01:50:44.740Z"}
+{"level":"info","message":"Google Services configuration validated","timestamp":"2025-05-07T01:50:44.742Z"}
+{"level":"info","message":"Google Services ready for activation pending API keys","timestamp":"2025-05-07T01:50:44.743Z"}
+{"duration":"0.00","level":"info","message":"Google Services Configuration: Completed","status":"success","step":"googleServices","timestamp":"2025-05-07T01:50:44.744Z"}
+{"level":"info","message":"Model Associations: Starting","step":"associations","timestamp":"2025-05-07T01:50:44.746Z"}
+{"duration":"0.09","level":"info","message":"Model Associations: Completed","status":"success","step":"associations","timestamp":"2025-05-07T01:50:44.831Z"}
+{"level":"info","message":"Database Synchronization: Skipped","status":"skipped","step":"sync","timestamp":"2025-05-07T01:50:44.835Z"}
+{"level":"info","message":"Geographic Data Initialization: Skipped","status":"skipped","step":"geoData","timestamp":"2025-05-07T01:50:44.836Z"}
+{"level":"info","message":"Agent Data Seeding: Skipped","status":"skipped","step":"agents","timestamp":"2025-05-07T01:50:44.837Z"}
+{"level":"info","message":"Permission Seeding: Skipped","status":"skipped","step":"permissions","timestamp":"2025-05-07T01:50:44.838Z"}
+{"level":"info","message":"Super Admin Seeding: Skipped","status":"skipped","step":"superadmin","timestamp":"2025-05-07T01:50:44.840Z"}
+{"level":"info","message":"Socket Initialization: Starting","step":"socket","timestamp":"2025-05-07T01:50:44.842Z"}
+{"duration":"0.00","level":"info","message":"Socket Initialization: Completed","status":"success","step":"socket","timestamp":"2025-05-07T01:50:44.843Z"}
+{"level":"info","message":"Server Initialization: Starting","step":"server","timestamp":"2025-05-07T01:50:44.847Z"}
+{"level":"info","message":"mDNS advertisement skipped in development mode","timestamp":"2025-05-07T01:50:44.854Z"}
+{"duration":"0.01","level":"info","message":"Server Initialization: Completed","status":"success","step":"server","timestamp":"2025-05-07T01:50:44.855Z"}
+{"level":"info","message":"\u001b[36m========== TraceFlow Initialization Summary ========\u001b[39m","timestamp":"2025-05-07T01:50:44.859Z"}
+{"level":"info","message":"Date: 2025-05-07T01:50:44.860Z","timestamp":"2025-05-07T01:50:44.860Z"}
+{"level":"info","message":"Steps Completed:","timestamp":"2025-05-07T01:50:44.861Z"}
+{"duration":"0.50","level":"info","message":"  - Database Initialization: \u001b[32mSUCCESS\u001b[39m - (0.50s)","status":"success","step":"Database Initialization","timestamp":"2025-05-07T01:50:44.862Z"}
+{"duration":"0.64","level":"info","message":"  - SMTP Initialization: \u001b[32mSUCCESS\u001b[39m - (0.64s)","status":"success","step":"SMTP Initialization","timestamp":"2025-05-07T01:50:44.862Z"}
+{"duration":"0.14","level":"info","message":"  - SMS Initialization: \u001b[32mSUCCESS\u001b[39m - (0.14s)","status":"success","step":"SMS Initialization","timestamp":"2025-05-07T01:50:44.864Z"}
+{"duration":"0.00","level":"info","message":"  - Redis Initialization: \u001b[32mSUCCESS\u001b[39m - (0.00s)","status":"success","step":"Redis Initialization","timestamp":"2025-05-07T01:50:44.865Z"}
+{"duration":"0.01","level":"info","message":"  - Google Services Configuration: \u001b[32mSUCCESS\u001b[39m - (0.01s)","status":"success","step":"Google Services Configuration","timestamp":"2025-05-07T01:50:44.866Z"}
+{"duration":"0.09","level":"info","message":"  - Model Associations: \u001b[32mSUCCESS\u001b[39m - (0.09s)","status":"success","step":"Model Associations","timestamp":"2025-05-07T01:50:44.866Z"}
+{"duration":"0.00","level":"info","message":"  - Database Synchronization: \u001b[33mSKIPPED\u001b[39m - (0.00s)","status":"skipped","step":"Database Synchronization","timestamp":"2025-05-07T01:50:44.867Z"}
+{"duration":"0.00","level":"info","message":"  - Geographic Data Initialization: \u001b[33mSKIPPED\u001b[39m - (0.00s)","status":"skipped","step":"Geographic Data Initialization","timestamp":"2025-05-07T01:50:44.869Z"}
+{"duration":"0.00","level":"info","message":"  - Agent Data Seeding: \u001b[33mSKIPPED\u001b[39m - (0.00s)","status":"skipped","step":"Agent Data Seeding","timestamp":"2025-05-07T01:50:44.870Z"}
+{"duration":"0.00","level":"info","message":"  - Permission Seeding: \u001b[33mSKIPPED\u001b[39m - (0.00s)","status":"skipped","step":"Permission Seeding","timestamp":"2025-05-07T01:50:44.871Z"}
+{"duration":"0.00","level":"info","message":"  - Super Admin Seeding: \u001b[33mSKIPPED\u001b[39m - (0.00s)","status":"skipped","step":"Super Admin Seeding","timestamp":"2025-05-07T01:50:44.872Z"}
+{"duration":"0.01","level":"info","message":"  - Socket Initialization: \u001b[32mSUCCESS\u001b[39m - (0.01s)","status":"success","step":"Socket Initialization","timestamp":"2025-05-07T01:50:44.873Z"}
+{"duration":"0.01","level":"info","message":"  - Server Initialization: \u001b[32mSUCCESS\u001b[39m - (0.01s)","status":"success","step":"Server Initialization","timestamp":"2025-05-07T01:50:44.873Z"}
+{"level":"info","message":"Total Steps: 13","timestamp":"2025-05-07T01:50:44.874Z"}
+{"level":"info","message":"\u001b[32mSuccesses: 8\u001b[39m","timestamp":"2025-05-07T01:50:44.876Z"}
+{"level":"info","message":"\u001b[33mSkipped: 5\u001b[39m","timestamp":"2025-05-07T01:50:44.877Z"}
+{"level":"info","message":"\u001b[31mFailures: 0\u001b[39m","timestamp":"2025-05-07T01:50:44.879Z"}
+{"level":"info","message":"Total Duration: 1.50 seconds","timestamp":"2025-05-07T01:50:44.880Z"}
+{"level":"info","message":"\u001b[36m===================================================\u001b[39m","timestamp":"2025-05-07T01:50:44.880Z"}
+{"level":"info","message":"\u001b[36m===================================================\u001b[39m","timestamp":"2025-05-07T01:50:44.882Z"}
+{"level":"info","message":"\tSuper Admin Credentials:","timestamp":"2025-05-07T01:50:44.883Z"}
+{"level":"info","message":"\tEmail:\t\tsuperadmin@example.com","timestamp":"2025-05-07T01:50:44.884Z"}
+{"level":"info","message":"\tPassword:\tSuperSecurePassword123!","timestamp":"2025-05-07T01:50:44.885Z"}
+{"level":"info","message":"\u001b[36m===================================================\u001b[39m","timestamp":"2025-05-07T01:50:44.886Z"}
+{"level":"info","message":"HTTP Server running on port 5000","timestamp":"2025-05-07T01:50:44.916Z"}
+{"level":"info","message":"Google Services configuration initialized, awaiting API keys","timestamp":"2025-05-07T01:50:44.919Z"}
+{"level":"info","message":"Generated Google OAuth authorization URL","timestamp":"2025-05-07T01:50:53.628Z"}
+{"code":"4/0Ab_5qln...","level":"info","message":"Exchanging Google OAuth code","timestamp":"2025-05-07T01:51:04.974Z"}
+{"access_token":"present","expiry_date":1746586264225,"level":"info","message":"Google tokens received","refresh_token":"present","scope":"https://www.googleapis.com/auth/calendar https://www.googleapis.com/auth/userinfo.email openid https://www.googleapis.com/auth/userinfo.profile","timestamp":"2025-05-07T01:51:05.226Z"}
+{"email":"sofienlaghouanem@gmail.com","id":"114520579260270597095","level":"info","message":"Google user info retrieved","name":"Sofyen Laghouanem","timestamp":"2025-05-07T01:51:05.379Z"}
+{"client_id":"traceflow-backend","endpoint":"http://localhost:8080/realms/TraceFlow/broker/google/token","keycloak_url":"http://localhost:8080","level":"info","message":"Attempting Keycloak token exchange with /broker/google/token","realm":"TraceFlow","timestamp":"2025-05-07T01:51:05.439Z"}
+{"data":{"error":"HTTP 404 Not Found"},"level":"warn","message":"Keycloak /broker/google/token failed, falling back to /protocol/openid-connect/token Request failed with status code 404","status":404,"timestamp":"2025-05-07T01:51:05.782Z"}
+{"endpoint":"http://localhost:8080/realms/TraceFlow/protocol/openid-connect/token","level":"info","message":"Attempting Keycloak token exchange with /protocol/openid-connect/token","timestamp":"2025-05-07T01:51:05.783Z"}
+{"data":{"error":"unsupported_grant_type","error_description":"Unsupported grant_type"},"level":"error","message":"Keycloak token exchange failed Request failed with status code 400","request_body":{"client_id":"traceflow-backend","grant_type":"urn:ietf:params:oauth:grant-type:token-exchange","subject_issuer":"google","subject_token_type":"urn:ietf:params:oauth:token-type:access_token"},"request_url":"http://localhost:8080/realms/TraceFlow/protocol/openid-connect/token","status":400,"timestamp":"2025-05-07T01:51:05.815Z"}
+{"level":"error","message":"Google login error: Failed to exchange Google token with Keycloak.","stack":"Error: Failed to exchange Google token with Keycloak.\n    at GoogleAuthService.googleLogin (C:\\Users\\Kayto\\Desktop\\IT\\Projects\\Stage\\Stage PFE\\TraceFlow\\Code\\Back\\services\\googleAuthService.js:169:27)\n    at process.processTicksAndRejections (node:internal/process/task_queues:105:5)\n    at async googleCallback (C:\\Users\\Kayto\\Desktop\\IT\\Projects\\Stage\\Stage PFE\\TraceFlow\\Code\\Back\\controllers\\authController.js:59:28)","timestamp":"2025-05-07T01:51:05.816Z"}
+{"IP":"127.0.0.1","level":"error","message":"Google callback error: Failed to exchange Google token with Keycloak.","query":{"authuser":"0","code":"4/0Ab_5qlnajlXPnn5qCaGOGG4w1LePmDQoHwVRHg8blv3dxB4OuZ4ozN5DgwprWknWeBk7FQ","prompt":"consent","scope":"email profile https://www.googleapis.com/auth/calendar https://www.googleapis.com/auth/userinfo.profile https://www.googleapis.com/auth/userinfo.email openid"},"stack":"Error: Failed to exchange Google token with Keycloak.\n    at GoogleAuthService.googleLogin (C:\\Users\\Kayto\\Desktop\\IT\\Projects\\Stage\\Stage PFE\\TraceFlow\\Code\\Back\\services\\googleAuthService.js:233:25)\n    at process.processTicksAndRejections (node:internal/process/task_queues:105:5)\n    at async googleCallback (C:\\Users\\Kayto\\Desktop\\IT\\Projects\\Stage\\Stage PFE\\TraceFlow\\Code\\Back\\controllers\\authController.js:59:28)","status":401,"timestamp":"2025-05-07T01:51:05.818Z"}
+{"level":"info","message":"Database Initialization: Starting","step":"database","timestamp":"2025-05-07T01:57:53.318Z"}
+{"level":"info","message":"Connected to Redis successfully","timestamp":"2025-05-07T01:57:53.361Z"}
+{"level":"info","message":"Redis server info: # Server","timestamp":"2025-05-07T01:57:53.382Z"}
+{"level":"info","message":"Redis ping successful","timestamp":"2025-05-07T01:57:53.387Z"}
+{"level":"info","message":"GoogleMapsService initialized with Redis","timestamp":"2025-05-07T01:57:53.396Z"}
+{"duration":"0.46","level":"info","message":"Database Initialization: Completed","status":"success","step":"database","timestamp":"2025-05-07T01:57:53.777Z"}
+{"level":"info","message":"SMTP Initialization: Starting","step":"smtp","timestamp":"2025-05-07T01:57:53.785Z"}
+{"level":"info","message":"SMTP server verified successfully","timestamp":"2025-05-07T01:57:54.423Z"}
+{"duration":"0.64","level":"info","message":"SMTP Initialization: Completed","status":"success","step":"smtp","timestamp":"2025-05-07T01:57:54.424Z"}
+{"level":"info","message":"SMS Initialization: Starting","step":"sms","timestamp":"2025-05-07T01:57:54.425Z"}
+{"level":"info","message":"Initializing SMS gateway with URL: https://wbm.tn/wbmonitor/send/webapi/v5/enquire_credit and headers: {\"X-API-Key\":\"9c5362a406e609d0ecc6f9a0e129c0a6\",\"Content-Type\":\"application/json\"}","timestamp":"2025-05-07T01:57:54.426Z"}
+{"level":"info","message":"SMS gateway initialized successfully: {\"op\":3,\"status\":0,\"status_desc\":\"success\",\"apiVersion\":\"5\",\"credit\":{\"national\":{\"available\":\"860403\",\"reserved\":\"0\"},\"international\":{\"available\":\"1\",\"reserved\":\"0\"}}}","timestamp":"2025-05-07T01:57:54.545Z"}
+{"duration":"0.12","level":"info","message":"SMS Initialization: Completed","status":"success","step":"sms","timestamp":"2025-05-07T01:57:54.547Z"}
+{"level":"info","message":"Redis Initialization: Starting","step":"redis","timestamp":"2025-05-07T01:57:54.548Z"}
+{"duration":"0.00","level":"info","message":"Redis Initialization: Completed","status":"success","step":"redis","timestamp":"2025-05-07T01:57:54.551Z"}
+{"level":"info","message":"Google Services Configuration: Starting","step":"googleServices","timestamp":"2025-05-07T01:57:54.552Z"}
+{"level":"info","message":"Google Services configuration validated","timestamp":"2025-05-07T01:57:54.554Z"}
+{"level":"info","message":"Google Services ready for activation pending API keys","timestamp":"2025-05-07T01:57:54.557Z"}
+{"duration":"0.01","level":"info","message":"Google Services Configuration: Completed","status":"success","step":"googleServices","timestamp":"2025-05-07T01:57:54.559Z"}
+{"level":"info","message":"Model Associations: Starting","step":"associations","timestamp":"2025-05-07T01:57:54.560Z"}
+{"duration":"0.08","level":"info","message":"Model Associations: Completed","status":"success","step":"associations","timestamp":"2025-05-07T01:57:54.643Z"}
+{"level":"info","message":"Database Synchronization: Skipped","status":"skipped","step":"sync","timestamp":"2025-05-07T01:57:54.651Z"}
+{"level":"info","message":"Geographic Data Initialization: Skipped","status":"skipped","step":"geoData","timestamp":"2025-05-07T01:57:54.652Z"}
+{"level":"info","message":"Agent Data Seeding: Skipped","status":"skipped","step":"agents","timestamp":"2025-05-07T01:57:54.654Z"}
+{"level":"info","message":"Permission Seeding: Skipped","status":"skipped","step":"permissions","timestamp":"2025-05-07T01:57:54.655Z"}
+{"level":"info","message":"Super Admin Seeding: Skipped","status":"skipped","step":"superadmin","timestamp":"2025-05-07T01:57:54.657Z"}
+{"level":"info","message":"Socket Initialization: Starting","step":"socket","timestamp":"2025-05-07T01:57:54.659Z"}
+{"duration":"0.01","level":"info","message":"Socket Initialization: Completed","status":"success","step":"socket","timestamp":"2025-05-07T01:57:54.664Z"}
+{"level":"info","message":"Server Initialization: Starting","step":"server","timestamp":"2025-05-07T01:57:54.666Z"}
+{"level":"info","message":"mDNS advertisement skipped in development mode","timestamp":"2025-05-07T01:57:54.672Z"}
+{"duration":"0.01","level":"info","message":"Server Initialization: Completed","status":"success","step":"server","timestamp":"2025-05-07T01:57:54.674Z"}
+{"level":"info","message":"\u001b[36m========== TraceFlow Initialization Summary ========\u001b[39m","timestamp":"2025-05-07T01:57:54.681Z"}
+{"level":"info","message":"Date: 2025-05-07T01:57:54.682Z","timestamp":"2025-05-07T01:57:54.682Z"}
+{"level":"info","message":"Steps Completed:","timestamp":"2025-05-07T01:57:54.685Z"}
+{"duration":"0.47","level":"info","message":"  - Database Initialization: \u001b[32mSUCCESS\u001b[39m - (0.47s)","status":"success","step":"Database Initialization","timestamp":"2025-05-07T01:57:54.688Z"}
+{"duration":"0.64","level":"info","message":"  - SMTP Initialization: \u001b[32mSUCCESS\u001b[39m - (0.64s)","status":"success","step":"SMTP Initialization","timestamp":"2025-05-07T01:57:54.689Z"}
+{"duration":"0.12","level":"info","message":"  - SMS Initialization: \u001b[32mSUCCESS\u001b[39m - (0.12s)","status":"success","step":"SMS Initialization","timestamp":"2025-05-07T01:57:54.693Z"}
+{"duration":"0.00","level":"info","message":"  - Redis Initialization: \u001b[32mSUCCESS\u001b[39m - (0.00s)","status":"success","step":"Redis Initialization","timestamp":"2025-05-07T01:57:54.694Z"}
+{"duration":"0.01","level":"info","message":"  - Google Services Configuration: \u001b[32mSUCCESS\u001b[39m - (0.01s)","status":"success","step":"Google Services Configuration","timestamp":"2025-05-07T01:57:54.695Z"}
+{"duration":"0.09","level":"info","message":"  - Model Associations: \u001b[32mSUCCESS\u001b[39m - (0.09s)","status":"success","step":"Model Associations","timestamp":"2025-05-07T01:57:54.697Z"}
+{"duration":"0.00","level":"info","message":"  - Database Synchronization: \u001b[33mSKIPPED\u001b[39m - (0.00s)","status":"skipped","step":"Database Synchronization","timestamp":"2025-05-07T01:57:54.698Z"}
+{"duration":"0.00","level":"info","message":"  - Geographic Data Initialization: \u001b[33mSKIPPED\u001b[39m - (0.00s)","status":"skipped","step":"Geographic Data Initialization","timestamp":"2025-05-07T01:57:54.700Z"}
+{"duration":"0.00","level":"info","message":"  - Agent Data Seeding: \u001b[33mSKIPPED\u001b[39m - (0.00s)","status":"skipped","step":"Agent Data Seeding","timestamp":"2025-05-07T01:57:54.701Z"}
+{"duration":"0.00","level":"info","message":"  - Permission Seeding: \u001b[33mSKIPPED\u001b[39m - (0.00s)","status":"skipped","step":"Permission Seeding","timestamp":"2025-05-07T01:57:54.701Z"}
+{"duration":"0.00","level":"info","message":"  - Super Admin Seeding: \u001b[33mSKIPPED\u001b[39m - (0.00s)","status":"skipped","step":"Super Admin Seeding","timestamp":"2025-05-07T01:57:54.703Z"}
+{"duration":"0.01","level":"info","message":"  - Socket Initialization: \u001b[32mSUCCESS\u001b[39m - (0.01s)","status":"success","step":"Socket Initialization","timestamp":"2025-05-07T01:57:54.704Z"}
+{"duration":"0.01","level":"info","message":"  - Server Initialization: \u001b[32mSUCCESS\u001b[39m - (0.01s)","status":"success","step":"Server Initialization","timestamp":"2025-05-07T01:57:54.706Z"}
+{"level":"info","message":"Total Steps: 13","timestamp":"2025-05-07T01:57:54.707Z"}
+{"level":"info","message":"\u001b[32mSuccesses: 8\u001b[39m","timestamp":"2025-05-07T01:57:54.708Z"}
+{"level":"info","message":"\u001b[33mSkipped: 5\u001b[39m","timestamp":"2025-05-07T01:57:54.708Z"}
+{"level":"info","message":"\u001b[31mFailures: 0\u001b[39m","timestamp":"2025-05-07T01:57:54.709Z"}
+{"level":"info","message":"Total Duration: 1.42 seconds","timestamp":"2025-05-07T01:57:54.711Z"}
+{"level":"info","message":"\u001b[36m===================================================\u001b[39m","timestamp":"2025-05-07T01:57:54.712Z"}
+{"level":"info","message":"\u001b[36m===================================================\u001b[39m","timestamp":"2025-05-07T01:57:54.712Z"}
+{"level":"info","message":"\tSuper Admin Credentials:","timestamp":"2025-05-07T01:57:54.714Z"}
+{"level":"info","message":"\tEmail:\t\tsuperadmin@example.com","timestamp":"2025-05-07T01:57:54.715Z"}
+{"level":"info","message":"\tPassword:\tSuperSecurePassword123!","timestamp":"2025-05-07T01:57:54.717Z"}
+{"level":"info","message":"\u001b[36m===================================================\u001b[39m","timestamp":"2025-05-07T01:57:54.719Z"}
+{"level":"info","message":"HTTP Server running on port 5000","timestamp":"2025-05-07T01:57:54.745Z"}
+{"level":"info","message":"Google Services configuration initialized, awaiting API keys","timestamp":"2025-05-07T01:57:54.748Z"}
+{"level":"info","message":"Generated Google OAuth authorization URL","timestamp":"2025-05-07T01:58:56.794Z"}
+{"code":"4/0Ab_5qll...","level":"info","message":"Exchanging Google OAuth code","timestamp":"2025-05-07T01:59:09.450Z"}
+{"access_token":"present","expiry_date":1746586748691,"level":"info","message":"Google tokens received","refresh_token":"present","scope":"https://www.googleapis.com/auth/userinfo.email openid https://www.googleapis.com/auth/userinfo.profile https://www.googleapis.com/auth/calendar","timestamp":"2025-05-07T01:59:09.691Z"}
+{"email":"sofienlaghouanem@gmail.com","id":"114520579260270597095","level":"info","message":"Google user info retrieved","name":"Sofyen Laghouanem","timestamp":"2025-05-07T01:59:09.872Z"}
+{"client_id":"traceflow-backend","endpoint":"http://localhost:8080/realms/TraceFlow/broker/google/token","keycloak_url":"http://localhost:8080","level":"info","message":"Attempting Keycloak token exchange with /broker/google/token","realm":"TraceFlow","timestamp":"2025-05-07T01:59:09.944Z"}
+{"data":{"error":"HTTP 404 Not Found"},"level":"warn","message":"Keycloak /broker/google/token failed, falling back to /protocol/openid-connect/token Request failed with status code 404","status":404,"timestamp":"2025-05-07T01:59:09.965Z"}
+{"endpoint":"http://localhost:8080/realms/TraceFlow/protocol/openid-connect/token","level":"info","message":"Attempting Keycloak token exchange with /protocol/openid-connect/token","timestamp":"2025-05-07T01:59:09.968Z"}
+{"data":{"error":"unsupported_grant_type","error_description":"Unsupported grant_type"},"level":"error","message":"Keycloak token exchange failed Request failed with status code 400","request_body":{"client_id":"traceflow-backend","grant_type":"urn:ietf:params:oauth:grant-type:token-exchange","requested_token_type":"urn:ietf:params:oauth:token-type:access_token","subject_issuer":"google","subject_token_type":"urn:ietf:params:oauth:token-type:access_token"},"request_url":"http://localhost:8080/realms/TraceFlow/protocol/openid-connect/token","status":400,"timestamp":"2025-05-07T01:59:09.981Z"}
+{"level":"error","message":"Google login error: Failed to exchange Google token with Keycloak.","stack":"Error: Failed to exchange Google token with Keycloak.\n    at GoogleAuthService.googleLogin (C:\\Users\\Kayto\\Desktop\\IT\\Projects\\Stage\\Stage PFE\\TraceFlow\\Code\\Back\\services\\googleAuthService.js:171:27)\n    at process.processTicksAndRejections (node:internal/process/task_queues:105:5)\n    at async googleCallback (C:\\Users\\Kayto\\Desktop\\IT\\Projects\\Stage\\Stage PFE\\TraceFlow\\Code\\Back\\controllers\\authController.js:59:28)","timestamp":"2025-05-07T01:59:09.982Z"}
+{"IP":"127.0.0.1","level":"error","message":"Google callback error: Failed to exchange Google token with Keycloak.","query":{"authuser":"0","code":"4/0Ab_5qlljAfV3VNQLRUWa9aZ43Rl_ZauzUH45zW_C-g3XJtt-9jHhtPhySe-ejVRnIwgF1Q","prompt":"consent","scope":"email profile https://www.googleapis.com/auth/calendar https://www.googleapis.com/auth/userinfo.profile https://www.googleapis.com/auth/userinfo.email openid"},"stack":"Error: Failed to exchange Google token with Keycloak.\n    at GoogleAuthService.googleLogin (C:\\Users\\Kayto\\Desktop\\IT\\Projects\\Stage\\Stage PFE\\TraceFlow\\Code\\Back\\services\\googleAuthService.js:236:25)\n    at process.processTicksAndRejections (node:internal/process/task_queues:105:5)\n    at async googleCallback (C:\\Users\\Kayto\\Desktop\\IT\\Projects\\Stage\\Stage PFE\\TraceFlow\\Code\\Back\\controllers\\authController.js:59:28)","status":401,"timestamp":"2025-05-07T01:59:09.984Z"}
+{"level":"info","message":"Cleaning up expired OTPs","timestamp":"2025-05-07T02:00:00.331Z"}
+{"level":"info","message":"Cleaned up 3 expired OTPs","timestamp":"2025-05-07T02:00:00.562Z"}
+{"level":"info","message":"Updated 0 visits from pending to validated","timestamp":"2025-05-07T02:00:00.569Z"}
+{"level":"info","message":"Database Initialization: Starting","step":"database","timestamp":"2025-05-07T02:12:25.092Z"}
+{"level":"info","message":"Connected to Redis successfully","timestamp":"2025-05-07T02:12:25.141Z"}
+{"level":"info","message":"Redis server info: # Server","timestamp":"2025-05-07T02:12:25.186Z"}
+{"level":"info","message":"Redis ping successful","timestamp":"2025-05-07T02:12:25.197Z"}
+{"level":"info","message":"GoogleMapsService initialized with Redis","timestamp":"2025-05-07T02:12:25.200Z"}
+{"duration":"0.41","level":"info","message":"Database Initialization: Completed","status":"success","step":"database","timestamp":"2025-05-07T02:12:25.500Z"}
+{"level":"info","message":"SMTP Initialization: Starting","step":"smtp","timestamp":"2025-05-07T02:12:25.503Z"}
+{"level":"info","message":"SMTP server verified successfully","timestamp":"2025-05-07T02:12:26.119Z"}
+{"duration":"0.62","level":"info","message":"SMTP Initialization: Completed","status":"success","step":"smtp","timestamp":"2025-05-07T02:12:26.121Z"}
+{"level":"info","message":"SMS Initialization: Starting","step":"sms","timestamp":"2025-05-07T02:12:26.124Z"}
+{"level":"info","message":"Initializing SMS gateway with URL: https://wbm.tn/wbmonitor/send/webapi/v5/enquire_credit and headers: {\"X-API-Key\":\"9c5362a406e609d0ecc6f9a0e129c0a6\",\"Content-Type\":\"application/json\"}","timestamp":"2025-05-07T02:12:26.126Z"}
+{"level":"info","message":"SMS gateway initialized successfully: {\"op\":3,\"status\":0,\"status_desc\":\"success\",\"apiVersion\":\"5\",\"credit\":{\"national\":{\"available\":\"860403\",\"reserved\":\"0\"},\"international\":{\"available\":\"1\",\"reserved\":\"0\"}}}","timestamp":"2025-05-07T02:12:26.242Z"}
+{"duration":"0.12","level":"info","message":"SMS Initialization: Completed","status":"success","step":"sms","timestamp":"2025-05-07T02:12:26.243Z"}
+{"level":"info","message":"Redis Initialization: Starting","step":"redis","timestamp":"2025-05-07T02:12:26.244Z"}
+{"duration":"0.00","level":"info","message":"Redis Initialization: Completed","status":"success","step":"redis","timestamp":"2025-05-07T02:12:26.245Z"}
+{"level":"info","message":"Google Services Configuration: Starting","step":"googleServices","timestamp":"2025-05-07T02:12:26.246Z"}
+{"level":"info","message":"Google Services configuration validated","timestamp":"2025-05-07T02:12:26.246Z"}
+{"level":"info","message":"Google Services ready for activation pending API keys","timestamp":"2025-05-07T02:12:26.247Z"}
+{"duration":"0.00","level":"info","message":"Google Services Configuration: Completed","status":"success","step":"googleServices","timestamp":"2025-05-07T02:12:26.248Z"}
+{"level":"info","message":"Model Associations: Starting","step":"associations","timestamp":"2025-05-07T02:12:26.249Z"}
+{"duration":"0.06","level":"info","message":"Model Associations: Completed","status":"success","step":"associations","timestamp":"2025-05-07T02:12:26.312Z"}
+{"level":"info","message":"Database Synchronization: Skipped","status":"skipped","step":"sync","timestamp":"2025-05-07T02:12:26.318Z"}
+{"level":"info","message":"Geographic Data Initialization: Skipped","status":"skipped","step":"geoData","timestamp":"2025-05-07T02:12:26.321Z"}
+{"level":"info","message":"Agent Data Seeding: Skipped","status":"skipped","step":"agents","timestamp":"2025-05-07T02:12:26.323Z"}
+{"level":"info","message":"Permission Seeding: Skipped","status":"skipped","step":"permissions","timestamp":"2025-05-07T02:12:26.324Z"}
+{"level":"info","message":"Super Admin Seeding: Skipped","status":"skipped","step":"superadmin","timestamp":"2025-05-07T02:12:26.326Z"}
+{"level":"info","message":"Socket Initialization: Starting","step":"socket","timestamp":"2025-05-07T02:12:26.328Z"}
+{"duration":"0.00","level":"info","message":"Socket Initialization: Completed","status":"success","step":"socket","timestamp":"2025-05-07T02:12:26.331Z"}
+{"level":"info","message":"Server Initialization: Starting","step":"server","timestamp":"2025-05-07T02:12:26.335Z"}
+{"level":"info","message":"mDNS advertisement skipped in development mode","timestamp":"2025-05-07T02:12:26.361Z"}
+{"duration":"0.03","level":"info","message":"Server Initialization: Completed","status":"success","step":"server","timestamp":"2025-05-07T02:12:26.363Z"}
+{"level":"info","message":"\u001b[36m========== TraceFlow Initialization Summary ========\u001b[39m","timestamp":"2025-05-07T02:12:26.367Z"}
+{"level":"info","message":"Date: 2025-05-07T02:12:26.368Z","timestamp":"2025-05-07T02:12:26.368Z"}
+{"level":"info","message":"Steps Completed:","timestamp":"2025-05-07T02:12:26.370Z"}
+{"duration":"0.41","level":"info","message":"  - Database Initialization: \u001b[32mSUCCESS\u001b[39m - (0.41s)","status":"success","step":"Database Initialization","timestamp":"2025-05-07T02:12:26.371Z"}
+{"duration":"0.62","level":"info","message":"  - SMTP Initialization: \u001b[32mSUCCESS\u001b[39m - (0.62s)","status":"success","step":"SMTP Initialization","timestamp":"2025-05-07T02:12:26.372Z"}
+{"duration":"0.12","level":"info","message":"  - SMS Initialization: \u001b[32mSUCCESS\u001b[39m - (0.12s)","status":"success","step":"SMS Initialization","timestamp":"2025-05-07T02:12:26.374Z"}
+{"duration":"0.00","level":"info","message":"  - Redis Initialization: \u001b[32mSUCCESS\u001b[39m - (0.00s)","status":"success","step":"Redis Initialization","timestamp":"2025-05-07T02:12:26.377Z"}
+{"duration":"0.00","level":"info","message":"  - Google Services Configuration: \u001b[32mSUCCESS\u001b[39m - (0.00s)","status":"success","step":"Google Services Configuration","timestamp":"2025-05-07T02:12:26.378Z"}
+{"duration":"0.07","level":"info","message":"  - Model Associations: \u001b[32mSUCCESS\u001b[39m - (0.07s)","status":"success","step":"Model Associations","timestamp":"2025-05-07T02:12:26.380Z"}
+{"duration":"0.00","level":"info","message":"  - Database Synchronization: \u001b[33mSKIPPED\u001b[39m - (0.00s)","status":"skipped","step":"Database Synchronization","timestamp":"2025-05-07T02:12:26.381Z"}
+{"duration":"0.00","level":"info","message":"  - Geographic Data Initialization: \u001b[33mSKIPPED\u001b[39m - (0.00s)","status":"skipped","step":"Geographic Data Initialization","timestamp":"2025-05-07T02:12:26.382Z"}
+{"duration":"0.00","level":"info","message":"  - Agent Data Seeding: \u001b[33mSKIPPED\u001b[39m - (0.00s)","status":"skipped","step":"Agent Data Seeding","timestamp":"2025-05-07T02:12:26.383Z"}
+{"duration":"0.00","level":"info","message":"  - Permission Seeding: \u001b[33mSKIPPED\u001b[39m - (0.00s)","status":"skipped","step":"Permission Seeding","timestamp":"2025-05-07T02:12:26.384Z"}
+{"duration":"0.00","level":"info","message":"  - Super Admin Seeding: \u001b[33mSKIPPED\u001b[39m - (0.00s)","status":"skipped","step":"Super Admin Seeding","timestamp":"2025-05-07T02:12:26.385Z"}
+{"duration":"0.01","level":"info","message":"  - Socket Initialization: \u001b[32mSUCCESS\u001b[39m - (0.01s)","status":"success","step":"Socket Initialization","timestamp":"2025-05-07T02:12:26.386Z"}
+{"duration":"0.03","level":"info","message":"  - Server Initialization: \u001b[32mSUCCESS\u001b[39m - (0.03s)","status":"success","step":"Server Initialization","timestamp":"2025-05-07T02:12:26.387Z"}
+{"level":"info","message":"Total Steps: 13","timestamp":"2025-05-07T02:12:26.390Z"}
+{"level":"info","message":"\u001b[32mSuccesses: 8\u001b[39m","timestamp":"2025-05-07T02:12:26.391Z"}
+{"level":"info","message":"\u001b[33mSkipped: 5\u001b[39m","timestamp":"2025-05-07T02:12:26.392Z"}
+{"level":"info","message":"\u001b[31mFailures: 0\u001b[39m","timestamp":"2025-05-07T02:12:26.392Z"}
+{"level":"info","message":"Total Duration: 1.32 seconds","timestamp":"2025-05-07T02:12:26.394Z"}
+{"level":"info","message":"\u001b[36m===================================================\u001b[39m","timestamp":"2025-05-07T02:12:26.395Z"}
+{"level":"info","message":"\u001b[36m===================================================\u001b[39m","timestamp":"2025-05-07T02:12:26.397Z"}
+{"level":"info","message":"\tSuper Admin Credentials:","timestamp":"2025-05-07T02:12:26.398Z"}
+{"level":"info","message":"\tEmail:\t\tsuperadmin@example.com","timestamp":"2025-05-07T02:12:26.399Z"}
+{"level":"info","message":"\tPassword:\tSuperSecurePassword123!","timestamp":"2025-05-07T02:12:26.401Z"}
+{"level":"info","message":"\u001b[36m===================================================\u001b[39m","timestamp":"2025-05-07T02:12:26.403Z"}
+{"level":"info","message":"HTTP Server running on port 5000","timestamp":"2025-05-07T02:12:26.440Z"}
+{"level":"info","message":"Google Services configuration initialized, awaiting API keys","timestamp":"2025-05-07T02:12:26.445Z"}
+{"level":"info","message":"Login successful for a@gmail.com, IP: 192.168.1.11","timestamp":"2025-05-07T02:13:16.313Z"}
+{"level":"info","message":"Login successful for a@gmail.com, IP: 192.168.1.11","timestamp":"2025-05-07T02:13:28.458Z"}
+{"level":"info","message":"Login successful for a@gmail.com, IP: 192.168.1.11","timestamp":"2025-05-07T02:14:42.008Z"}
+{"level":"info","message":"Login successful for superadmin@example.com, IP: 192.168.1.11","timestamp":"2025-05-07T02:15:02.368Z"}
+{"level":"info","message":"Login successful for superadmin@example.com, IP: 192.168.1.11","timestamp":"2025-05-07T02:18:21.196Z"}
+{"level":"info","message":"Notification stored Notification for otp:generated:user","notificationID":"notif_pcJ_zVHED2RgTsVuCeYQs","timestamp":"2025-05-07T02:18:41.261Z","userID":"usr_6sGRldZHzBfoaPtABpUDK"}
+{"level":"info","message":"Notification status updated","notificationID":"notif_pcJ_zVHED2RgTsVuCeYQs","status":"sent","timestamp":"2025-05-07T02:18:41.269Z"}
+{"level":"info","message":"Notification stored Notification for otp:generated:user","notificationID":"notif_WT0rQIBmNwOs2R_77RL4L","timestamp":"2025-05-07T02:18:41.284Z","userID":"user_yutki8kak"}
+{"level":"info","message":"Notification status updated","notificationID":"notif_WT0rQIBmNwOs2R_77RL4L","status":"sent","timestamp":"2025-05-07T02:18:41.312Z"}
+{"event":"otp:generated:user","level":"info","message":"Triggered notifications","recipientCount":2,"timestamp":"2025-05-07T02:18:41.322Z"}
+{"level":"info","message":"Sending SMS request to: \"00000000\"","timestamp":"2025-05-07T02:18:41.353Z"}
+{"level":"info","message":"Sending SMS message: \"Your TraceFlow OTP is 809833\"","timestamp":"2025-05-07T02:18:41.356Z"}
+{"level":"error","message":"w-Board SMS Gateway error (otp): {\"op\":1,\"status\":-7,\"status_desc\":\"sms count failure\",\"apiVersion\":\"5\",\"msg_type\":null,\"nat_count\":0,\"int_count\":0,\"tot_scheduled\":0,\"request_id\":null}","timestamp":"2025-05-07T02:18:41.455Z"}
+{"level":"error","message":"w-Board SMS Gateway error (otp): SMS sending failed with status: -7 - sms count failure","timestamp":"2025-05-07T02:18:41.456Z"}
+{"level":"info","message":"Email lookup result: superadmin@example.com","timestamp":"2025-05-07T02:18:41.477Z"}
+{"level":"info","message":"Fallback email sent to superadmin@example.com (otp)","timestamp":"2025-05-07T02:18:43.029Z"}
+{"level":"info","message":"Login successful for superadmin@example.com, IP: 192.168.1.11","timestamp":"2025-05-07T02:18:43.031Z"}
+{"level":"info","message":"Connected to Redis successfully","timestamp":"2025-05-07T02:19:38.284Z"}
+{"level":"info","message":"Redis server info: # Server","timestamp":"2025-05-07T02:19:38.332Z"}
+{"level":"info","message":"Redis ping successful","timestamp":"2025-05-07T02:19:38.338Z"}
+{"level":"info","message":"GoogleMapsService initialized with Redis","timestamp":"2025-05-07T02:19:38.341Z"}
+{"level":"info","message":"Connected to Redis successfully","timestamp":"2025-05-07T02:20:03.233Z"}
+{"level":"info","message":"Redis server info: # Server","timestamp":"2025-05-07T02:20:03.269Z"}
+{"level":"info","message":"Redis ping successful","timestamp":"2025-05-07T02:20:03.274Z"}
+{"level":"info","message":"GoogleMapsService initialized with Redis","timestamp":"2025-05-07T02:20:03.275Z"}
+{"level":"info","message":"Database Initialization: Starting","step":"database","timestamp":"2025-05-07T02:20:04.057Z"}
+{"duration":"0.21","level":"info","message":"Database Initialization: Completed","status":"success","step":"database","timestamp":"2025-05-07T02:20:04.264Z"}
+{"level":"info","message":"SMTP Initialization: Starting","step":"smtp","timestamp":"2025-05-07T02:20:04.267Z"}
+{"level":"info","message":"SMTP server verified successfully","timestamp":"2025-05-07T02:20:04.835Z"}
+{"duration":"0.57","level":"info","message":"SMTP Initialization: Completed","status":"success","step":"smtp","timestamp":"2025-05-07T02:20:04.836Z"}
+{"level":"info","message":"SMS Initialization: Starting","step":"sms","timestamp":"2025-05-07T02:20:04.837Z"}
+{"level":"info","message":"Initializing SMS gateway with URL: https://wbm.tn/wbmonitor/send/webapi/v5/enquire_credit and headers: {\"X-API-Key\":\"9c5362a406e609d0ecc6f9a0e129c0a6\",\"Content-Type\":\"application/json\"}","timestamp":"2025-05-07T02:20:04.838Z"}
+{"level":"info","message":"SMS gateway initialized successfully: {\"op\":3,\"status\":0,\"status_desc\":\"success\",\"apiVersion\":\"5\",\"credit\":{\"national\":{\"available\":\"860403\",\"reserved\":\"0\"},\"international\":{\"available\":\"1\",\"reserved\":\"0\"}}}","timestamp":"2025-05-07T02:20:04.938Z"}
+{"duration":"0.10","level":"info","message":"SMS Initialization: Completed","status":"success","step":"sms","timestamp":"2025-05-07T02:20:04.939Z"}
+{"level":"info","message":"Redis Initialization: Starting","step":"redis","timestamp":"2025-05-07T02:20:04.940Z"}
+{"duration":"0.00","level":"info","message":"Redis Initialization: Completed","status":"success","step":"redis","timestamp":"2025-05-07T02:20:04.940Z"}
+{"level":"info","message":"Google Services Configuration: Starting","step":"googleServices","timestamp":"2025-05-07T02:20:04.941Z"}
+{"level":"info","message":"Google Services configuration validated","timestamp":"2025-05-07T02:20:04.941Z"}
+{"level":"info","message":"Google Services ready for activation pending API keys","timestamp":"2025-05-07T02:20:04.941Z"}
+{"duration":"0.00","level":"info","message":"Google Services Configuration: Completed","status":"success","step":"googleServices","timestamp":"2025-05-07T02:20:04.942Z"}
+{"level":"info","message":"Model Associations: Starting","step":"associations","timestamp":"2025-05-07T02:20:04.942Z"}
+{"duration":"0.04","level":"info","message":"Model Associations: Completed","status":"success","step":"associations","timestamp":"2025-05-07T02:20:04.978Z"}
+{"level":"info","message":"Database Synchronization: Skipped","status":"skipped","step":"sync","timestamp":"2025-05-07T02:20:04.979Z"}
+{"level":"info","message":"Geographic Data Initialization: Skipped","status":"skipped","step":"geoData","timestamp":"2025-05-07T02:20:04.980Z"}
+{"level":"info","message":"Agent Data Seeding: Skipped","status":"skipped","step":"agents","timestamp":"2025-05-07T02:20:04.981Z"}
+{"level":"info","message":"Permission Seeding: Skipped","status":"skipped","step":"permissions","timestamp":"2025-05-07T02:20:04.982Z"}
+{"level":"info","message":"Super Admin Seeding: Skipped","status":"skipped","step":"superadmin","timestamp":"2025-05-07T02:20:04.983Z"}
+{"level":"info","message":"Socket Initialization: Starting","step":"socket","timestamp":"2025-05-07T02:20:04.984Z"}
+{"duration":"0.00","level":"info","message":"Socket Initialization: Completed","status":"success","step":"socket","timestamp":"2025-05-07T02:20:04.984Z"}
+{"level":"info","message":"Server Initialization: Starting","step":"server","timestamp":"2025-05-07T02:20:04.985Z"}
+{"level":"info","message":"mDNS advertisement skipped in development mode","timestamp":"2025-05-07T02:20:04.990Z"}
+{"duration":"0.01","level":"info","message":"Server Initialization: Completed","status":"success","step":"server","timestamp":"2025-05-07T02:20:04.991Z"}
+{"level":"info","message":"\u001b[36m========== TraceFlow Initialization Summary ========\u001b[39m","timestamp":"2025-05-07T02:20:04.994Z"}
+{"level":"info","message":"Date: 2025-05-07T02:20:04.995Z","timestamp":"2025-05-07T02:20:04.995Z"}
+{"level":"info","message":"Steps Completed:","timestamp":"2025-05-07T02:20:04.996Z"}
+{"duration":"0.21","level":"info","message":"  - Database Initialization: \u001b[32mSUCCESS\u001b[39m - (0.21s)","status":"success","step":"Database Initialization","timestamp":"2025-05-07T02:20:04.997Z"}
+{"duration":"0.57","level":"info","message":"  - SMTP Initialization: \u001b[32mSUCCESS\u001b[39m - (0.57s)","status":"success","step":"SMTP Initialization","timestamp":"2025-05-07T02:20:04.998Z"}
+{"duration":"0.10","level":"info","message":"  - SMS Initialization: \u001b[32mSUCCESS\u001b[39m - (0.10s)","status":"success","step":"SMS Initialization","timestamp":"2025-05-07T02:20:04.999Z"}
+{"duration":"0.00","level":"info","message":"  - Redis Initialization: \u001b[32mSUCCESS\u001b[39m - (0.00s)","status":"success","step":"Redis Initialization","timestamp":"2025-05-07T02:20:05.000Z"}
+{"duration":"0.00","level":"info","message":"  - Google Services Configuration: \u001b[32mSUCCESS\u001b[39m - (0.00s)","status":"success","step":"Google Services Configuration","timestamp":"2025-05-07T02:20:05.001Z"}
+{"duration":"0.04","level":"info","message":"  - Model Associations: \u001b[32mSUCCESS\u001b[39m - (0.04s)","status":"success","step":"Model Associations","timestamp":"2025-05-07T02:20:05.002Z"}
+{"duration":"0.00","level":"info","message":"  - Database Synchronization: \u001b[33mSKIPPED\u001b[39m - (0.00s)","status":"skipped","step":"Database Synchronization","timestamp":"2025-05-07T02:20:05.002Z"}
+{"duration":"0.00","level":"info","message":"  - Geographic Data Initialization: \u001b[33mSKIPPED\u001b[39m - (0.00s)","status":"skipped","step":"Geographic Data Initialization","timestamp":"2025-05-07T02:20:05.003Z"}
+{"duration":"0.00","level":"info","message":"  - Agent Data Seeding: \u001b[33mSKIPPED\u001b[39m - (0.00s)","status":"skipped","step":"Agent Data Seeding","timestamp":"2025-05-07T02:20:05.004Z"}
+{"duration":"0.00","level":"info","message":"  - Permission Seeding: \u001b[33mSKIPPED\u001b[39m - (0.00s)","status":"skipped","step":"Permission Seeding","timestamp":"2025-05-07T02:20:05.005Z"}
+{"duration":"0.00","level":"info","message":"  - Super Admin Seeding: \u001b[33mSKIPPED\u001b[39m - (0.00s)","status":"skipped","step":"Super Admin Seeding","timestamp":"2025-05-07T02:20:05.006Z"}
+{"duration":"0.00","level":"info","message":"  - Socket Initialization: \u001b[32mSUCCESS\u001b[39m - (0.00s)","status":"success","step":"Socket Initialization","timestamp":"2025-05-07T02:20:05.006Z"}
+{"duration":"0.01","level":"info","message":"  - Server Initialization: \u001b[32mSUCCESS\u001b[39m - (0.01s)","status":"success","step":"Server Initialization","timestamp":"2025-05-07T02:20:05.007Z"}
+{"level":"info","message":"Total Steps: 13","timestamp":"2025-05-07T02:20:05.009Z"}
+{"level":"info","message":"\u001b[32mSuccesses: 8\u001b[39m","timestamp":"2025-05-07T02:20:05.009Z"}
+{"level":"info","message":"\u001b[33mSkipped: 5\u001b[39m","timestamp":"2025-05-07T02:20:05.010Z"}
+{"level":"info","message":"\u001b[31mFailures: 0\u001b[39m","timestamp":"2025-05-07T02:20:05.011Z"}
+{"level":"info","message":"Total Duration: 1.82 seconds","timestamp":"2025-05-07T02:20:05.012Z"}
+{"level":"info","message":"\u001b[36m===================================================\u001b[39m","timestamp":"2025-05-07T02:20:05.012Z"}
+{"level":"info","message":"\u001b[36m===================================================\u001b[39m","timestamp":"2025-05-07T02:20:05.013Z"}
+{"level":"info","message":"\tSuper Admin Credentials:","timestamp":"2025-05-07T02:20:05.015Z"}
+{"level":"info","message":"\tEmail:\t\tsuperadmin@example.com","timestamp":"2025-05-07T02:20:05.016Z"}
+{"level":"info","message":"\tPassword:\tSuperSecurePassword123!","timestamp":"2025-05-07T02:20:05.018Z"}
+{"level":"info","message":"\u001b[36m===================================================\u001b[39m","timestamp":"2025-05-07T02:20:05.019Z"}
+{"level":"info","message":"HTTP Server running on port 5000","timestamp":"2025-05-07T02:20:05.040Z"}
+{"level":"info","message":"Google Services configuration initialized, awaiting API keys","timestamp":"2025-05-07T02:20:05.042Z"}
+{"level":"info","message":"Notification stored Notification for otp:generated:user","notificationID":"notif_Z5RIlZ-MK-cYywluvKQoI","timestamp":"2025-05-07T02:20:07.722Z","userID":"usr_6sGRldZHzBfoaPtABpUDK"}
+{"level":"info","message":"Notification status updated","notificationID":"notif_Z5RIlZ-MK-cYywluvKQoI","status":"sent","timestamp":"2025-05-07T02:20:07.733Z"}
+{"level":"info","message":"Notification stored Notification for otp:generated:user","notificationID":"notif_N87oBgxXzSTgAdVVaD-Ht","timestamp":"2025-05-07T02:20:07.744Z","userID":"user_yutki8kak"}
+{"level":"info","message":"Notification status updated","notificationID":"notif_N87oBgxXzSTgAdVVaD-Ht","status":"sent","timestamp":"2025-05-07T02:20:07.750Z"}
+{"event":"otp:generated:user","level":"info","message":"Triggered notifications","recipientCount":2,"timestamp":"2025-05-07T02:20:07.753Z"}
+{"level":"info","message":"Sending SMS request to: \"00000000\"","timestamp":"2025-05-07T02:20:07.768Z"}
+{"level":"info","message":"Sending SMS message: \"Your TraceFlow OTP is 414497\"","timestamp":"2025-05-07T02:20:07.770Z"}
+{"level":"error","message":"w-Board SMS Gateway error (otp): {\"op\":1,\"status\":-7,\"status_desc\":\"sms count failure\",\"apiVersion\":\"5\",\"msg_type\":null,\"nat_count\":0,\"int_count\":0,\"tot_scheduled\":0,\"request_id\":null}","timestamp":"2025-05-07T02:20:07.817Z"}
+{"level":"error","message":"w-Board SMS Gateway error (otp): SMS sending failed with status: -7 - sms count failure","timestamp":"2025-05-07T02:20:07.819Z"}
+{"level":"info","message":"Email lookup result: superadmin@example.com","timestamp":"2025-05-07T02:20:07.843Z"}
+{"level":"info","message":"Fallback email sent to superadmin@example.com (otp)","timestamp":"2025-05-07T02:20:09.104Z"}
+{"level":"info","message":"Login successful for superadmin@example.com, IP: 192.168.1.11","timestamp":"2025-05-07T02:20:09.105Z"}
+{"level":"info","message":"Database Initialization: Starting","step":"database","timestamp":"2025-05-07T02:21:04.084Z"}
+{"level":"info","message":"Connected to Redis successfully","timestamp":"2025-05-07T02:21:04.111Z"}
+{"level":"info","message":"Redis server info: # Server","timestamp":"2025-05-07T02:21:04.129Z"}
+{"level":"info","message":"Redis ping successful","timestamp":"2025-05-07T02:21:04.137Z"}
+{"level":"info","message":"GoogleMapsService initialized with Redis","timestamp":"2025-05-07T02:21:04.138Z"}
+{"duration":"0.40","level":"info","message":"Database Initialization: Completed","status":"success","step":"database","timestamp":"2025-05-07T02:21:04.484Z"}
+{"level":"info","message":"SMTP Initialization: Starting","step":"smtp","timestamp":"2025-05-07T02:21:04.486Z"}
+{"level":"info","message":"SMTP server verified successfully","timestamp":"2025-05-07T02:21:05.043Z"}
+{"duration":"0.56","level":"info","message":"SMTP Initialization: Completed","status":"success","step":"smtp","timestamp":"2025-05-07T02:21:05.044Z"}
+{"level":"info","message":"SMS Initialization: Starting","step":"sms","timestamp":"2025-05-07T02:21:05.047Z"}
+{"level":"info","message":"Initializing SMS gateway with URL: https://wbm.tn/wbmonitor/send/webapi/v5/enquire_credit and headers: {\"X-API-Key\":\"9c5362a406e609d0ecc6f9a0e129c0a6\",\"Content-Type\":\"application/json\"}","timestamp":"2025-05-07T02:21:05.048Z"}
+{"level":"info","message":"SMS gateway initialized successfully: {\"op\":3,\"status\":0,\"status_desc\":\"success\",\"apiVersion\":\"5\",\"credit\":{\"national\":{\"available\":\"860403\",\"reserved\":\"0\"},\"international\":{\"available\":\"1\",\"reserved\":\"0\"}}}","timestamp":"2025-05-07T02:21:05.157Z"}
+{"duration":"0.11","level":"info","message":"SMS Initialization: Completed","status":"success","step":"sms","timestamp":"2025-05-07T02:21:05.158Z"}
+{"level":"info","message":"Redis Initialization: Starting","step":"redis","timestamp":"2025-05-07T02:21:05.159Z"}
+{"duration":"0.00","level":"info","message":"Redis Initialization: Completed","status":"success","step":"redis","timestamp":"2025-05-07T02:21:05.159Z"}
+{"level":"info","message":"Google Services Configuration: Starting","step":"googleServices","timestamp":"2025-05-07T02:21:05.160Z"}
+{"level":"info","message":"Google Services configuration validated","timestamp":"2025-05-07T02:21:05.161Z"}
+{"level":"info","message":"Google Services ready for activation pending API keys","timestamp":"2025-05-07T02:21:05.162Z"}
+{"duration":"0.00","level":"info","message":"Google Services Configuration: Completed","status":"success","step":"googleServices","timestamp":"2025-05-07T02:21:05.163Z"}
+{"level":"info","message":"Model Associations: Starting","step":"associations","timestamp":"2025-05-07T02:21:05.164Z"}
+{"duration":"0.06","level":"info","message":"Model Associations: Completed","status":"success","step":"associations","timestamp":"2025-05-07T02:21:05.223Z"}
+{"level":"info","message":"Database Synchronization: Skipped","status":"skipped","step":"sync","timestamp":"2025-05-07T02:21:05.224Z"}
+{"level":"info","message":"Geographic Data Initialization: Skipped","status":"skipped","step":"geoData","timestamp":"2025-05-07T02:21:05.225Z"}
+{"level":"info","message":"Agent Data Seeding: Skipped","status":"skipped","step":"agents","timestamp":"2025-05-07T02:21:05.226Z"}
+{"level":"info","message":"Permission Seeding: Skipped","status":"skipped","step":"permissions","timestamp":"2025-05-07T02:21:05.227Z"}
+{"level":"info","message":"Super Admin Seeding: Skipped","status":"skipped","step":"superadmin","timestamp":"2025-05-07T02:21:05.228Z"}
+{"level":"info","message":"Socket Initialization: Starting","step":"socket","timestamp":"2025-05-07T02:21:05.229Z"}
+{"duration":"0.00","level":"info","message":"Socket Initialization: Completed","status":"success","step":"socket","timestamp":"2025-05-07T02:21:05.230Z"}
+{"level":"info","message":"Server Initialization: Starting","step":"server","timestamp":"2025-05-07T02:21:05.231Z"}
+{"level":"info","message":"mDNS advertisement skipped in development mode","timestamp":"2025-05-07T02:21:05.235Z"}
+{"duration":"0.01","level":"info","message":"Server Initialization: Completed","status":"success","step":"server","timestamp":"2025-05-07T02:21:05.236Z"}
+{"level":"info","message":"\u001b[36m========== TraceFlow Initialization Summary ========\u001b[39m","timestamp":"2025-05-07T02:21:05.239Z"}
+{"level":"info","message":"Date: 2025-05-07T02:21:05.240Z","timestamp":"2025-05-07T02:21:05.240Z"}
+{"level":"info","message":"Steps Completed:","timestamp":"2025-05-07T02:21:05.241Z"}
+{"duration":"0.40","level":"info","message":"  - Database Initialization: \u001b[32mSUCCESS\u001b[39m - (0.40s)","status":"success","step":"Database Initialization","timestamp":"2025-05-07T02:21:05.242Z"}
+{"duration":"0.56","level":"info","message":"  - SMTP Initialization: \u001b[32mSUCCESS\u001b[39m - (0.56s)","status":"success","step":"SMTP Initialization","timestamp":"2025-05-07T02:21:05.243Z"}
+{"duration":"0.11","level":"info","message":"  - SMS Initialization: \u001b[32mSUCCESS\u001b[39m - (0.11s)","status":"success","step":"SMS Initialization","timestamp":"2025-05-07T02:21:05.244Z"}
+{"duration":"0.00","level":"info","message":"  - Redis Initialization: \u001b[32mSUCCESS\u001b[39m - (0.00s)","status":"success","step":"Redis Initialization","timestamp":"2025-05-07T02:21:05.245Z"}
+{"duration":"0.00","level":"info","message":"  - Google Services Configuration: \u001b[32mSUCCESS\u001b[39m - (0.00s)","status":"success","step":"Google Services Configuration","timestamp":"2025-05-07T02:21:05.246Z"}
+{"duration":"0.06","level":"info","message":"  - Model Associations: \u001b[32mSUCCESS\u001b[39m - (0.06s)","status":"success","step":"Model Associations","timestamp":"2025-05-07T02:21:05.247Z"}
+{"duration":"0.00","level":"info","message":"  - Database Synchronization: \u001b[33mSKIPPED\u001b[39m - (0.00s)","status":"skipped","step":"Database Synchronization","timestamp":"2025-05-07T02:21:05.248Z"}
+{"duration":"0.00","level":"info","message":"  - Geographic Data Initialization: \u001b[33mSKIPPED\u001b[39m - (0.00s)","status":"skipped","step":"Geographic Data Initialization","timestamp":"2025-05-07T02:21:05.249Z"}
+{"duration":"0.00","level":"info","message":"  - Agent Data Seeding: \u001b[33mSKIPPED\u001b[39m - (0.00s)","status":"skipped","step":"Agent Data Seeding","timestamp":"2025-05-07T02:21:05.250Z"}
+{"duration":"0.00","level":"info","message":"  - Permission Seeding: \u001b[33mSKIPPED\u001b[39m - (0.00s)","status":"skipped","step":"Permission Seeding","timestamp":"2025-05-07T02:21:05.252Z"}
+{"duration":"0.00","level":"info","message":"  - Super Admin Seeding: \u001b[33mSKIPPED\u001b[39m - (0.00s)","status":"skipped","step":"Super Admin Seeding","timestamp":"2025-05-07T02:21:05.253Z"}
+{"duration":"0.00","level":"info","message":"  - Socket Initialization: \u001b[32mSUCCESS\u001b[39m - (0.00s)","status":"success","step":"Socket Initialization","timestamp":"2025-05-07T02:21:05.255Z"}
+{"duration":"0.01","level":"info","message":"  - Server Initialization: \u001b[32mSUCCESS\u001b[39m - (0.01s)","status":"success","step":"Server Initialization","timestamp":"2025-05-07T02:21:05.255Z"}
+{"level":"info","message":"Total Steps: 13","timestamp":"2025-05-07T02:21:05.256Z"}
+{"level":"info","message":"\u001b[32mSuccesses: 8\u001b[39m","timestamp":"2025-05-07T02:21:05.256Z"}
+{"level":"info","message":"\u001b[33mSkipped: 5\u001b[39m","timestamp":"2025-05-07T02:21:05.257Z"}
+{"level":"info","message":"\u001b[31mFailures: 0\u001b[39m","timestamp":"2025-05-07T02:21:05.257Z"}
+{"level":"info","message":"Total Duration: 1.19 seconds","timestamp":"2025-05-07T02:21:05.258Z"}
+{"level":"info","message":"\u001b[36m===================================================\u001b[39m","timestamp":"2025-05-07T02:21:05.260Z"}
+{"level":"info","message":"\u001b[36m===================================================\u001b[39m","timestamp":"2025-05-07T02:21:05.261Z"}
+{"level":"info","message":"\tSuper Admin Credentials:","timestamp":"2025-05-07T02:21:05.263Z"}
+{"level":"info","message":"\tEmail:\t\tsuperadmin@example.com","timestamp":"2025-05-07T02:21:05.264Z"}
+{"level":"info","message":"\tPassword:\tSuperSecurePassword123!","timestamp":"2025-05-07T02:21:05.265Z"}
+{"level":"info","message":"\u001b[36m===================================================\u001b[39m","timestamp":"2025-05-07T02:21:05.266Z"}
+{"level":"info","message":"HTTP Server running on port 5000","timestamp":"2025-05-07T02:21:05.295Z"}
+{"level":"info","message":"Google Services configuration initialized, awaiting API keys","timestamp":"2025-05-07T02:21:05.296Z"}
+{"level":"info","message":"2FA verified for user user_yutki8kak","timestamp":"2025-05-07T02:21:08.758Z"}
+{"email":"superadmin@example.com","level":"info","message":"WebSocket authentication successful","roles":"default-roles-traceflow, Super Admin","socketId":"C4s-gF-plVV8ySYnAAAB","timestamp":"2025-05-07T02:21:08.864Z","userID":"user_yutki8kak"}
+{"level":"info","message":"User connected: superadmin@example.com","socketId":"C4s-gF-plVV8ySYnAAAB","timestamp":"2025-05-07T02:21:08.870Z","userID":"user_yutki8kak"}
+{"level":"info","message":"Client connected","socketId":"C4s-gF-plVV8ySYnAAAB","timestamp":"2025-05-07T02:21:08.873Z"}
+{"level":"info","message":"Fetched roles for user user_yutki8kak by user_yutki8kak, IP: 192.168.1.11","timestamp":"2025-05-07T02:21:08.976Z"}
+{"level":"info","message":"Fetched roles for user user_yutki8kak by user_yutki8kak, IP: 192.168.1.11","timestamp":"2025-05-07T02:21:09.063Z"}
+{"level":"info","message":"Super Admin bypass for user user_yutki8kak","timestamp":"2025-05-07T02:21:10.461Z"}
+{"level":"info","message":"Fetched all users by user user_yutki8kak, IP: 192.168.1.11","timestamp":"2025-05-07T02:21:10.488Z"}
+{"level":"info","message":"Super Admin bypass for user user_yutki8kak","timestamp":"2025-05-07T02:21:10.520Z"}
+{"level":"info","message":"Fetched all roles by user user_yutki8kak, IP: 192.168.1.11","timestamp":"2025-05-07T02:21:10.533Z"}
+{"level":"info","message":"Super Admin bypass for user user_yutki8kak","timestamp":"2025-05-07T02:21:10.601Z"}
+{"level":"info","message":"Fetched notification rules by user: user_yutki8kak, IP: 192.168.1.11","timestamp":"2025-05-07T02:21:10.615Z"}
+{"level":"info","message":"User disconnected: superadmin@example.com","reason":"transport close","socketId":"C4s-gF-plVV8ySYnAAAB","timestamp":"2025-05-07T02:22:30.327Z"}
+{"level":"info","message":"Client disconnected","socketId":"C4s-gF-plVV8ySYnAAAB","timestamp":"2025-05-07T02:22:30.339Z"}
+{"level":"info","message":"Fetched roles for user user_yutki8kak by user_yutki8kak, IP: 192.168.1.11","timestamp":"2025-05-07T02:22:32.136Z"}
+{"level":"info","message":"Fetched roles for user user_yutki8kak by user_yutki8kak, IP: 192.168.1.11","timestamp":"2025-05-07T02:22:32.367Z"}
+{"email":"superadmin@example.com","level":"info","message":"WebSocket authentication successful","roles":"default-roles-traceflow, Super Admin","socketId":"K3KEPHmtQt-x7mXOAAAD","timestamp":"2025-05-07T02:22:32.900Z","userID":"user_yutki8kak"}
+{"level":"info","message":"User connected: superadmin@example.com","socketId":"K3KEPHmtQt-x7mXOAAAD","timestamp":"2025-05-07T02:22:32.934Z","userID":"user_yutki8kak"}
+{"level":"info","message":"Client connected","socketId":"K3KEPHmtQt-x7mXOAAAD","timestamp":"2025-05-07T02:22:32.936Z"}
+{"level":"info","message":"Super Admin bypass for user user_yutki8kak","timestamp":"2025-05-07T02:22:33.122Z"}
+{"level":"info","message":"Fetched notification rules by user: user_yutki8kak, IP: 192.168.1.11","timestamp":"2025-05-07T02:22:33.129Z"}
+{"level":"info","message":"Fetched notifications for user: user_yutki8kak, IP: 192.168.1.11","timestamp":"2025-05-07T02:22:33.287Z"}
+{"level":"info","message":"Super Admin bypass for user user_yutki8kak","timestamp":"2025-05-07T02:22:33.788Z"}
+{"level":"info","message":"Fetched all users by user user_yutki8kak, IP: 192.168.1.11","timestamp":"2025-05-07T02:22:33.829Z"}
+{"level":"info","message":"Super Admin bypass for user user_yutki8kak","timestamp":"2025-05-07T02:22:33.861Z"}
+{"level":"info","message":"Fetched all roles by user user_yutki8kak, IP: 192.168.1.11","timestamp":"2025-05-07T02:22:33.885Z"}
