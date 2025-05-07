@@ -13,6 +13,7 @@ const visitRoutes = require('../routes/visitRoutes');
 const notificationRoutes = require('../routes/notificationRoutes');
 const locationRoutes = require('../routes/locationRoutes');
 const csvHeaderRoutes = require('../routes/csvHeaderRoutes');
+const { initializeRedis } = require('./redis');
 const logger = require('../utils/logger');
 
 function setupRoutes(app) {
@@ -23,7 +24,7 @@ function setupRoutes(app) {
     app.use('/api/visits', authenticateCookie, visitRoutes);
     app.use('/api/checklists', authenticateCookie, checklistRoutes);
     app.use('/api/reasons', authenticateCookie, reasonRoutes);
-    app.use('/api/timesheets', authenticateCookie, timesheetRoutes);
+    app.use('/api/timesheet', authenticateCookie, timesheetRoutes);
     app.use('/api/agents', authenticateCookie, agentRoutes);
     app.use('/api/receipt-books', authenticateCookie, receiptBookRoutes);
     app.use('/api/receipt-stubs', authenticateCookie, receiptstubRoutes);
@@ -34,6 +35,20 @@ function setupRoutes(app) {
     // Test endpoint
     app.get('/api/test', authenticateCookie, (req, res) => {
         res.json({ message: 'Secure endpoint accessed', user: req.user });
+    });
+
+    // Redis test endpoint
+    app.get('/api/test/redis', authenticateCookie, async (req, res) => {
+        try {
+            const redisClient = await initializeRedis();
+            await redisClient.set('test', 'Redis is working', 'EX', 60);
+            const result = await redisClient.get('test');
+            logger.info('Redis test endpoint successful');
+            res.json({ message: 'Redis test successful', result });
+        } catch (error) {
+            logger.error(`Redis test error: ${error.message}`);
+            res.status(500).json({ error: 'Redis test failed', details: error.message });
+        }
     });
 
     // Error handling

@@ -999,7 +999,9 @@
       "reasonDetails": "Reason: {{item}}",
       "notifications": "Notifications Management",
       "addNotificationRule": "Add New Notification Rule",
-      "notificationRuleDetails": "Notification Rule: {{event}}"
+      "notificationRuleDetails": "Notification Rule: {{event}}",
+      "addAgent": "Add New Agent",
+      "agentDetails": "Agent: {{item}}"
     },
     "sidebar": {
       "management": "Management",
@@ -1083,6 +1085,8 @@
       "resetRolesConfirm": "Are you sure you want to reset roles?",
       "confirm": "Confirm",
       "cancel": "Cancel",
+      "edit": "Edit",
+      "delete": "Delete",
       "refreshUsers": "Refresh Users",
       "refreshRoles": "Refresh Roles",
       "refreshPermissions": "Refresh Permissions",
@@ -1107,8 +1111,22 @@
       "invalidResponse": "Invalid response from server."
     },
     "agents": {
+      "viewAgent": "View Agent",
+      "editAgent": "Edit Agent",
       "date": "Date",
+      "region": "Region",
+      "selectRegion": "Select Region",
+      "governorate": "Governorate",
+      "selectGovernorate": "Select Governorate",
+      "delegation": "Delegation",
+      "selectDelegation": "Select Delegation",
       "supervisor": "Supervisor",
+      "selectSupervisor": "Select Supervisor",
+      "addAgent": "Add Agent",
+      "enterName": "Enter agent's name",
+      "enterLastname": "Enter agent's lastname",
+      "enterEmail": "Enter agent's email",
+      "createAgent": "Create Agent",
       "location": "Location",
       "failed": "Failed",
       "uploading": "Uploading...",

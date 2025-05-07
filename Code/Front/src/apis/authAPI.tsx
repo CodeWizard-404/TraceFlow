@@ -178,3 +178,18 @@ export const resetPassword = async (userID: string, newPassword: string, tempTok
         throw new Error(errorMessage);
     }
 };
+
+// Google OAuth method
+export const getGoogleAuthUrl = async (): Promise<string> => {
+    try {
+        const response = await api.get<{ url: string }>('/auth/google');
+        if (!response.data.url) {
+            throw new Error('No OAuth URL returned from server');
+        }
+        return response.data.url;
+    } catch (error) {
+        const errorMessage = handleApiError(error, 'Unable to get Google auth URL');
+        console.error('Google auth URL API error:', errorMessage, { error });
+        throw new Error(errorMessage);
+    }
+};

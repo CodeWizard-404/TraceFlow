@@ -1573,6 +1573,8 @@ body.dark .permissions-category select:focus {
     display: flex;
     flex-direction: column;
     gap: 1rem;
+    margin: 1rem 0;
+
 }
 
 /* Individual Dropdown */
@@ -2002,6 +2004,7 @@ body.dark .permission-edit-input:focus, body.dark .permission-edit-textarea:focu
     background: #f8fafc;
     color: #1f2937;
     transition: border-color 0.3s ease;
+    width: 150%;
 }
 
 body.dark .user-edit-input {
@@ -2353,10 +2356,20 @@ body.dark .permissions-filter-header label {
     gap: 1rem;
 }
 
+@media (max-width: 980px) {
+    .user-edit-input {
+        width: 100% !important;
+    }
+
+}
+
+
 @media (max-width: 640px) {
     .permissions-filter-controls {
         grid-template-columns: 1fr;
     }
+
+
 }
 
 .permissions-search {
@@ -5922,192 +5935,135 @@ body.dark .permission-button.assigned .permission-info-icon {
 
 
 
-.add-agent-form,
-.edit-agent-form {
-    max-width: 600px;
-    margin: 2rem auto;
-    padding: 2rem;
-    background: white;
-    border-radius: 8px;
-    box-shadow: 0 2px 4px rgba(0, 0, 0, 0.1);
-}
 
-.add-agent-form h2,
-.edit-agent-form h2 {
-    margin-bottom: 1.5rem;
-}
-
-.add-agent-form form,
-.edit-agent-form form {
-    display: flex;
-    flex-direction: column;
-    gap: 1rem;
-}
-
-.form-actions {
-    display: flex;
-    gap: 1rem;
-    justify-content: flex-end;
+.agent-form-container {
+    font-family: 'Inter', sans-serif;
 }
 
 
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-/* AddAgent.tsx and EditAgent.tsx Specific Styles */
-.add-agent-form, .edit-agent-form {
-    background: #fff;
-    border-radius: 0.75rem;
-    padding: 1.5rem;
-    box-shadow: 0 0.375rem 1.25rem rgba(0, 0, 0, 0.05);
-    max-width: 800px;
-    margin: 0 auto;
-    transition: transform 0.3s ease;
-}
-
-body.dark .add-agent-form, body.dark .edit-agent-form {
-    background: #222222;
-    box-shadow: 0 0.375rem 1.25rem rgba(0, 0, 0, 0.3);
-    border: 1px solid #4b5563;
-}
-
-.add-agent-form h2, .edit-agent-form h2 {
-    font-size: 1.25rem;
-    font-weight: 600;
-    color: #4cb1c7;
-    margin-bottom: 1.5rem;
-}
-
-body.dark .add-agent-form h2, body.dark .edit-agent-form h2 {
-    color: #60a0dc;
-}
-
-.form-grid {
-    display: grid;
-    grid-template-columns: 1fr 1fr;
-    gap: 1.5rem;
-    margin-bottom: 1.5rem;
-}
-
-@media (max-width: 768px) {
-    .form-grid {
-        grid-template-columns: 1fr;
-    }
-}
-
-.form-actions {
-    display: flex;
-    justify-content: flex-end;
-    gap: 0.75rem;
-    flex-wrap: wrap;
-    margin-top: 1rem;
-}
-
-/* AgentView.tsx Specific Styles */
-.agent-profile-panel {
-    background: #f8fafc;
-    border-radius: 0.75rem;
-    padding: 1.5rem;
-    box-shadow: 0 0.125rem 0.5rem rgba(0, 0, 0, 0.05);
-}
-
-body.dark .agent-profile-panel {
-    background: #333333;
-    box-shadow: 0 0.125rem 0.5rem rgba(0, 0, 0, 0.3);
-}
-
-.agent-profile-body {
-    display: flex;
-    flex-direction: column;
-    gap: 1rem;
-}
-
-.agent-profile-header {
-    display: flex;
-    justify-content: space-between;
-    align-items: center;
-    margin-bottom: 1rem;
-}
-
-.agent-profile-identity {
-    display: flex;
-    flex-direction: column;
-    gap: 0.25rem;
-}
-
-.agent-profile-name {
-    font-size: 1.25rem;
-    font-weight: 600;
-    color: #1f2937;
-}
-
-body.dark .agent-profile-name {
-    color: #e5e7eb;
-}
-
-.agent-profile-id {
+/* Styles for select dropdowns */
+.dropdown-bar select {
+    width: 100%;
+    padding: 0.625rem;
     font-size: 0.875rem;
-    color: #6b7280;
+    border: 1px solid #ddd;
+    border-radius: 0.75rem;
+    background: #f8fafc;
+    color: #1f2937;
+    transition: border-color 0.3s ease;
+    appearance: none;
+    background-repeat: no-repeat;
+    background-position: right 0.625rem center;
+    background-size: 1rem;
+    margin-left: 1rem;
 }
 
-body.dark .agent-profile-id {
+
+select::-webkit-scrollbar {
+    width: 8px;
+    height: 8px;
+}
+
+select::-webkit-scrollbar-thumb {
+    background-color: #4cb1c7;
+    border-radius: 4px;
+}
+
+body.dark select::-webkit-scrollbar-thumb {
+    background-color: #60a0dc;
+}
+
+select::-webkit-scrollbar-track {
+    background-color: #f8fafc;
+}
+
+body.dark select::-webkit-scrollbar-track {
+    background-color: #363636;
+}
+
+.dropdown-bar select {
+    background: #f8fafc;
+    color: #1f2937;
+    border-color: #ddd;
+}
+
+
+
+body.dark .dropdown-bar select {
+    background: #363636;
+    color: #e5e7eb;
+    border-color: #4b5563;
+}
+
+select:focus {
+    border-color: #4cb1c7;
+    outline: none;
+}
+
+body.dark select:focus {
+    border-color: #60a0dc;
+}
+
+select:disabled {
+    background: #e5e7eb;
+    color: #6b7280;
+    cursor: not-allowed;
+}
+
+body.dark select:disabled {
+    background: #4b5563;
     color: #9ca3af;
 }
 
-.agent-profile-info {
-    display: grid;
-    gap: 0.75rem;
-}
-
-.agent-info-row {
-    display: flex;
-    justify-content: space-between;
-    padding: 0.5rem;
-    background: #fff;
-    border-radius: 0.5rem;
-    box-shadow: 0 0.125rem 0.25rem rgba(0, 0, 0, 0.05);
-}
-
-body.dark .agent-info-row {
-    background: #2b2b2b;
-    color: #e5e7eb;
-}
-
-.agent-info-label {
+/* Styles for labels */
+label {
+    display: block;
     font-size: 0.875rem;
     font-weight: 600;
     color: #4cb1c7;
+    margin-bottom: 0.5rem;
 }
 
-body.dark .agent-info-label {
+body.dark label {
     color: #60a0dc;
 }
 
-.agent-info-value {
-    font-size: 0.875rem;
-    color: #1f2937;
-    text-align: right;
+/* Error text styling */
+.error-text,
+.error-message {
+    color: #e81f76;
+    font-size: 0.75rem;
+    margin-top: 0.25rem;
+    display: block;
 }
 
-body.dark .agent-info-value {
-    color: #e5e7eb;
+body.dark .error-text,
+body.dark .error-message {
+    color: #e81f76;
+}
+
+/* Responsive Design */
+@media (max-width: 768px) {
+
+    input[type="text"],
+    input[type="email"],
+    input[type="tel"],
+    select {
+        font-size: 0.875rem;
+        padding: 0.75rem;
+    }
+
+    label {
+        font-size: 0.875rem;
+    }
+}
+
+@media (max-width: 480px) {
+
+    input[type="text"],
+    input[type="email"],
+    input[type="tel"],
+    select {
+        font-size: 0.75rem;
+    }
 }

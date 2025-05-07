@@ -1,8 +1,9 @@
+const GoogleMapsService = require('../services/googleMapsService');
 const LocationService = require('../services/locationsService');
 const logger = require('../utils/logger');
 
 /**
- * Controller for managing location-related operations.
+ * Controller for managing location-related operations, including Google Maps APIs.
  */
 class LocationController {
     /**
@@ -145,7 +146,7 @@ class LocationController {
     }
 
     /**
-     * Get Regions by user.
+     * Get regions by user.
      * @param {Object} req - Express request object.
      * @param {Object} res - Express response object.
      * @returns {Promise<void>} JSON response with regions.
@@ -167,7 +168,7 @@ class LocationController {
     }
 
     /**
-     * Get Governorates by user.
+     * Get governorates by user.
      * @param {Object} req - Express request object.
      * @param {Object} res - Express response object.
      * @returns {Promise<void>} JSON response with governorates.
@@ -189,7 +190,7 @@ class LocationController {
     }
 
     /**
-     * Get Delegations by user.
+     * Get delegations by user.
      * @param {Object} req - Express request object.
      * @param {Object} res - Express response object.
      * @returns {Promise<void>} JSON response with delegations.
@@ -207,6 +208,94 @@ class LocationController {
         } catch (error) {
             logger.error(`Get delegations by user error: ${error.message}, IP: ${req.ip}`);
             return res.status(500).json({ error: 'Internal server error' });
+        }
+    }
+
+    /**
+     * Geocode an address using Google Maps API.
+     * @param {Object} req - Express request object with address in body.
+     * @param {Object} res - Express response object.
+     * @returns {Promise<void>} JSON response with geocoded location.
+     */
+    static async geocodeAddress(req, res) {
+        try {
+            const { address } = req.body;
+            if (!address) {
+                logger.warn(`Missing address for geocoding, user: ${req.user.userID}, IP: ${req.ip}`);
+                return res.status(400).json({ error: 'Address is required' });
+            }
+            const result = await GoogleMapsService.geocodeAddress(address);
+            logger.info(`Geocoded address ${address} by user ${req.user.userID}, IP: ${req.ip}`);
+            return res.status(200).json(result);
+        } catch (error) {
+            logger.error(`Geocode address error: ${error.message}, user: ${req.user.userID}, IP: ${req.ip}`);
+            return res.status(error.status || 500).json({ error: error.message || 'Failed to geocode address' });
+        }
+    }
+
+    /**
+     * Get directions between two points using Google Maps API.
+     * @param {Object} req - Express request object with origin and destination in body.
+     * @param {Object} res - Express response object.
+     * @returns {Promise<void>} JSON response with directions.
+     */
+    static async getDirections(req, res) {
+        try {
+            const { origin, destination, mode } = req.body;
+            if (!origin || !destination) {
+                logger.warn(`Missing origin or destination for directions, user: ${req.user.userID}, IP: ${req.ip}`);
+                return res.status(400).json({ error: 'Origin and destination are required' });
+            }
+            const result = await GoogleMapsService.getDirections(origin, destination, mode);
+            logger.info(`Fetched directions from ${origin} to ${destination} by user ${req.user.userID}, IP: ${req.ip}`);
+            return res.status(200).json(result);
+        } catch (error) {
+            logger.error(`Get directions error: ${error.message}, user: ${req.user.userID}, IP: ${req.ip}`);
+            return res.status(error.status || 500).json({ error: error.message || 'Failed to get directions' });
+        }
+    }
+
+    /**
+     * Search for places using Google Maps Places API.
+     * @param {Object} req - Express request object with query and location in body.
+     * @param {Object} res - Express response object.
+     * @returns {Promise<void>} JSON response with place results.
+     */
+    static async searchPlaces(req, res) {
+        try {
+            const { query, location, radius } = req.body;
+            if (!query) {
+                logger.warn(`Missing query for place search, user: ${req.user.userID}, IP: ${req.ip}`);
+                return res.status(400).json({ error: 'Query is required' });
+            }
+            const result = await GoogleMapsService.searchPlaces(query, location, radius);
+            logger.info(`Searched places for query ${query} by user ${req.user.userID}, IP: ${req.ip}`);
+            return res.status(200).json(result);
+        } catch (error) {
+            logger.error(`Search places error: ${error.message}, user: ${req.user.userID}, IP: ${req.ip}`);
+            return res.status(error.status || 500).json({ error: error.message || 'Failed to search places' });
+        }
+    }
+
+    /**
+     * Get distance matrix using Google Maps Distance Matrix API.
+     * @param {Object} req - Express request object with origins and destinations in body.
+     * @param {Object} res - Express response object.
+     * @returns {Promise<void>} JSON response with distance matrix.
+     */
+    static async getDistanceMatrix(req, res) {
+        try {
+            const { origins, destinations, mode } = req.body;
+            if (!origins || !destinations) {
+                logger.warn(`Missing origins or destinations for distance matrix, user: ${req.user.userID}, IP: ${req.ip}`);
+                return res.status(400).json({ error: 'Origins and destinations are required' });
+            }
+            const result = await GoogleMapsService.getDistanceMatrix(origins, destinations, mode);
+            logger.info(`Fetched distance matrix by user ${req.user.userID}, IP: ${req.ip}`);
+            return res.status(200).json(result);
+        } catch (error) {
+            logger.error(`Get distance matrix error: ${error.message}, user: ${req.user.userID}, IP: ${req.ip}`);
+            return res.status(error.status || 500).json({ error: error.message || 'Failed to get distance matrix' });
         }
     }
 }

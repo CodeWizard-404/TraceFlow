@@ -21,6 +21,18 @@ module.exports = (sequelize, DataTypes) => {
             unique: true,
             allowNull: true,
         },
+        googleAccessToken: {
+            type: DataTypes.TEXT,
+            allowNull: true,
+        },
+        googleRefreshToken: {
+            type: DataTypes.TEXT,
+            allowNull: true,
+        },
+        googleCalendarId: {
+            type: DataTypes.STRING,
+            allowNull: true,
+        },
         PFP: { type: DataTypes.BLOB, allowNull: true },
         tempResetToken: { type: DataTypes.STRING, allowNull: true },
         regionalManagerID: {

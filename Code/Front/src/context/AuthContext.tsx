@@ -16,6 +16,7 @@ interface AuthContextType {
     userRoles: Role[] | null;
     effectivePermissions: Permission[] | null;
     permissionsLoaded: boolean;
+    isGoogleAuthenticated: boolean;
     loginUser: (
         identifier: string,
         password: string,
@@ -39,14 +40,17 @@ export const useAuth = (): AuthContextType => {
 
 const getUserFromCookie = (): User | null => {
     const cookies = document.cookie.split(';').map(cookie => cookie.trim());
+    console.debug('Cookies available:', { cookies, timestamp: new Date().toISOString() });
     const userCookie = cookies.find(cookie => cookie.startsWith('userData='));
     if (!userCookie) {
         console.debug('No userData cookie found', { timestamp: new Date().toISOString() });
         return null;
     }
     try {
-        const user = JSON.parse(decodeURIComponent(userCookie.split('=')[1])) as User;
-        console.debug('User loaded from cookie:', { userID: user.userID, email: user.email, timestamp: new Date().toISOString() });
+        const rawUserData = decodeURIComponent(userCookie.split('=')[1]);
+        console.debug('Raw userData cookie:', { rawUserData, timestamp: new Date().toISOString() });
+        const user = JSON.parse(rawUserData) as User;
+        console.debug('User loaded from cookie:', { userID: user.userID, email: user.email, roles: user.Roles?.map(r => r.name), timestamp: new Date().toISOString() });
         return user;
     } catch (error) {
         console.error('Failed to parse userData cookie:', error);
@@ -62,15 +66,17 @@ const setUserCookie = (user: User, maxAge: number) => {
 
 const clearAuthCookies = () => {
     document.cookie = 'accessToken=; path=/; expires=Thu, 01 Jan 1970 00:00:00 GMT';
+    document.cookie = 'refreshToken=; path=/; expires=Thu, 01 Jan 1970 00:00:00 GMT';
     document.cookie = 'userData=; path=/; expires=Thu, 01 Jan 1970 00:00:00 GMT';
     console.debug('Auth cookies cleared', { timestamp: new Date().toISOString() });
 };
 
 const AuthProvider: React.FC<{ children: ReactNode }> = ({ children }) => {
-    const [user, setUser] = useState<User | null>(getUserFromCookie());
+    const [user, setUser] = useState<User | null>(null);
     const [userRoles, setUserRoles] = useState<Role[] | null>(null);
     const [effectivePermissions, setEffectivePermissions] = useState<Permission[] | null>(null);
     const [permissionsLoaded, setPermissionsLoaded] = useState(false);
+    const [isGoogleAuthenticated, setIsGoogleAuthenticated] = useState(false);
     const [noAccess, setNoAccess] = useState(false);
     const [tokenExpiry, setTokenExpiry] = useState<number | null>(null);
     const isNavigating = useRef(false);
@@ -81,6 +87,42 @@ const AuthProvider: React.FC<{ children: ReactNode }> = ({ children }) => {
     useEffect(() => {
         setupAxiosInterceptors();
     }, []);
+
+    useEffect(() => {
+        const checkAuth = async () => {
+            const cookies = document.cookie.split(';').map(cookie => cookie.trim());
+            const accessTokenCookie = cookies.find(cookie => cookie.startsWith('accessToken='));
+            const userDataCookie = cookies.find(cookie => cookie.startsWith('userData='));
+
+            console.debug('Checking auth state:', {
+                accessTokenPresent: !!accessTokenCookie,
+                userDataPresent: !!userDataCookie,
+                currentPath: location.pathname,
+                timestamp: new Date().toISOString(),
+            });
+
+            if (accessTokenCookie && userDataCookie && !user) {
+                const newUser = getUserFromCookie();
+                if (newUser) {
+                    console.debug('Detected auth cookies, setting user state:', { userID: newUser.userID, email: newUser.email, roles: newUser.Roles?.map(r => r.name) });
+                    setUser(newUser);
+                    setIsGoogleAuthenticated(newUser.email.includes('@gmail.com'));
+                    setTokenExpiry(Date.now() + (parseInt(import.meta.env.VITE_ACCESS_TOKEN_MAX_AGE) || 900000));
+                    initSocket();
+                    setPermissionsLoaded(false);
+                } else {
+                    console.warn('Failed to parse user from cookies, clearing auth state');
+                    clearAuthCookies();
+                    debouncedNavigate('/login', { replace: true, state: { error: 'Invalid session data' } });
+                }
+            } else if (!user && !['/login', '/verify-2fa', '/reset-password'].includes(location.pathname)) {
+                console.debug('No user or auth cookies, redirecting to login', { currentPath: location.pathname });
+                debouncedNavigate('/login', { replace: true, state: { from: location.pathname } });
+            }
+        };
+
+        checkAuth();
+    }, [location.pathname]);
 
     const loadPermissionsWithRetry = async (userID: string, retries = 3, delay = 2000): Promise<boolean> => {
         for (let attempt = 1; attempt <= retries; attempt++) {
@@ -106,7 +148,11 @@ const AuthProvider: React.FC<{ children: ReactNode }> = ({ children }) => {
                 }
             }
         }
-        console.error('Failed to load permissions after retries');
+        console.warn('Failed to load permissions after retries, setting empty permissions');
+        setPermissionsLoaded(true);
+        setEffectivePermissions([]);
+        setUserRoles([]);
+        setNoAccess(true);
         return false;
     };
 
@@ -124,11 +170,7 @@ const AuthProvider: React.FC<{ children: ReactNode }> = ({ children }) => {
             setPermissionsLoaded(false);
             const success = await loadPermissionsWithRetry(user.userID);
             if (!success) {
-                await handleLogout();
-                debouncedNavigate('/login', {
-                    replace: true,
-                    state: { error: 'Session expired. Please log in again.' },
-                });
+                console.warn('Permissions loading failed, but keeping user logged in');
             }
         };
 
@@ -139,12 +181,11 @@ const AuthProvider: React.FC<{ children: ReactNode }> = ({ children }) => {
         if (user && !permissionsLoaded) {
             const timeout = setTimeout(() => {
                 if (!permissionsLoaded) {
-                    console.error('Permission loading timed out', { timestamp: new Date().toISOString() });
-                    handleLogout();
-                    debouncedNavigate('/login', {
-                        replace: true,
-                        state: { error: 'Failed to load permissions. Please log in again.' },
-                    });
+                    console.warn('Permission loading timed out, marking as loaded with empty permissions');
+                    setPermissionsLoaded(true);
+                    setEffectivePermissions([]);
+                    setUserRoles([]);
+                    setNoAccess(true);
                 }
             }, 15000);
             return () => clearTimeout(timeout);
@@ -242,10 +283,10 @@ const AuthProvider: React.FC<{ children: ReactNode }> = ({ children }) => {
     );
 
     useEffect(() => {
-        if (isNavigating.current || !permissionsLoaded) {
-            console.debug('Skipping navigation: isNavigating or permissions not loaded', {
+        if (isNavigating.current || !user) {
+            console.debug('Skipping navigation: isNavigating or no user', {
                 isNavigating: isNavigating.current,
-                permissionsLoaded,
+                user: !!user,
                 timestamp: new Date().toISOString(),
             });
             return;
@@ -253,14 +294,16 @@ const AuthProvider: React.FC<{ children: ReactNode }> = ({ children }) => {
 
         const currentPath = location.pathname;
 
-        if (!user) {
-            if (!['/login', '/reset-password', '/verify-2fa'].includes(currentPath)) {
-                console.debug('Redirecting to /login: user not authenticated', {
-                    currentPath,
-                    timestamp: new Date().toISOString(),
-                });
-                debouncedNavigate('/login', { replace: true, state: { from: currentPath } });
-            }
+        console.debug('Navigation check:', {
+            currentPath,
+            permissionsLoaded,
+            userRoles: userRoles?.map(r => r.name),
+            effectivePermissions: effectivePermissions?.map(p => p.name),
+            timestamp: new Date().toISOString(),
+        });
+
+        if (!permissionsLoaded) {
+            console.debug('Waiting for permissions to load', { currentPath });
             return;
         }
 
@@ -390,18 +433,25 @@ const AuthProvider: React.FC<{ children: ReactNode }> = ({ children }) => {
             setUser(newUser);
             setTokenExpiry(Date.now() + expiresIn);
             setPermissionsLoaded(false);
+            setIsGoogleAuthenticated(response.user.email.includes('@gmail.com'));
 
-            // Initialize WebSocket immediately after setting user
             initSocket();
 
             try {
                 const success = await loadPermissionsWithRetry(newUser.userID);
                 if (!success) {
-                    throw new Error('Failed to load permissions');
+                    console.warn('Permissions loading failed, setting empty permissions');
+                    setPermissionsLoaded(true);
+                    setEffectivePermissions([]);
+                    setUserRoles([]);
+                    setNoAccess(true);
                 }
             } catch (error) {
                 console.error('Failed to load permissions after login:', error);
-                throw new Error('Failed to load permissions');
+                setPermissionsLoaded(true);
+                setEffectivePermissions([]);
+                setUserRoles([]);
+                setNoAccess(true);
             }
         } catch (error) {
             console.error('Login failed:', error);
@@ -423,6 +473,7 @@ const AuthProvider: React.FC<{ children: ReactNode }> = ({ children }) => {
             setUserRoles(null);
             setEffectivePermissions(null);
             setPermissionsLoaded(false);
+            setIsGoogleAuthenticated(false);
             setNoAccess(false);
             setTokenExpiry(null);
             clearAuthCookies();
@@ -440,6 +491,7 @@ const AuthProvider: React.FC<{ children: ReactNode }> = ({ children }) => {
         userRoles,
         effectivePermissions,
         permissionsLoaded,
+        isGoogleAuthenticated,
         loginUser,
         logout: handleLogout,
     };

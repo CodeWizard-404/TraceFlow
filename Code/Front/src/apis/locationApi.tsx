@@ -14,6 +14,13 @@ import {
     DelegationsByUserResponse,
 } from "./index";
 
+// Types for Google Maps API responses
+export type GeocodeResponse = {
+    lat: number;
+    lng: number;
+    formattedAddress: string;
+};
+
 // Generic error handler
 const handleApiError = (error: unknown, defaultMessage: string): string => {
     if (error instanceof AxiosError) {
@@ -118,7 +125,7 @@ export const getRegionsByGovernorate = async (governorateID: string): Promise<Re
     }
 };
 
-// get regions by user
+// Get regions by user
 export const getRegionsByUser = async (userID: string): Promise<RegionsByUserResponse> => {
     try {
         const response = await api.get<RegionsByUserResponse>(`/locations/regions/user/${userID}`);
@@ -128,7 +135,7 @@ export const getRegionsByUser = async (userID: string): Promise<RegionsByUserRes
     }
 };
 
-// get delegations by user
+// Get delegations by user
 export const getDelegationsByUser = async (userID: string): Promise<DelegationsByUserResponse> => {
     try {
         const response = await api.get<DelegationsByUserResponse>(`/locations/delegations/user/${userID}`);
@@ -138,12 +145,25 @@ export const getDelegationsByUser = async (userID: string): Promise<DelegationsB
     }
 };
 
-// get governorates by user
+// Get governorates by user
 export const getGovernoratesByUser = async (userID: string): Promise<GovernoratesByUserResponse> => {
     try {
         const response = await api.get<GovernoratesByUserResponse>(`/locations/governorates/user/${userID}`);
         return response.data;
     } catch (error) {
         throw new Error(handleApiError(error, "Unable to fetch governorates by user."));
+    }
+};
+
+// Google Maps API method
+export const geocodeAddress = async (address: string): Promise<GeocodeResponse> => {
+    try {
+        if (!address) {
+            throw new Error("Address is required.");
+        }
+        const response = await api.post<GeocodeResponse>("/locations/geocode", { address });
+        return response.data;
+    } catch (error) {
+        throw new Error(handleApiError(error, "Unable to geocode address."));
     }
 };

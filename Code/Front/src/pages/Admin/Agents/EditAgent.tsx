@@ -9,18 +9,14 @@ import Region from "../../../models/Region";
 import Governorate from "../../../models/Governorate";
 import Delegation from "../../../models/Delegation";
 import User from "../../../models/User";
-import { Input } from "../../../components/ui/input";
-import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "../../../components/ui/select";
-import { Button } from "../../../components/ui/button";
-import { Label } from "../../../components/ui/label";
 import { useError } from "../../../context/ErrorContext";
-import { ViewMode } from "../adminTypes";
+import "../AdminDashboard.css";
 
 interface EditAgentProps {
     selectedAgent: Agent | null;
     setAgents: React.Dispatch<React.SetStateAction<Agent[]>>;
     setSelectedAgent: (agent: Agent | null) => void;
-    setView: (view: ViewMode) => void;
+    setView: (view: string) => void;
 }
 
 interface FormErrors {
@@ -36,10 +32,6 @@ interface TouchedFields {
     email: boolean;
     phone: boolean;
 }
-
-const NAME_REGEX = /^[a-zA-Z]{2,50}$/;
-const EMAIL_REGEX = /^[^\s@]+@[^\s@]+\.[^\s@]+$/;
-const PHONE_REGEX = /^\d{8}$/;
 
 const EditAgent: React.FC<EditAgentProps> = ({
     selectedAgent,
@@ -57,6 +49,7 @@ const EditAgent: React.FC<EditAgentProps> = ({
         supervisorID: selectedAgent?.supervisorID || "",
         delegationID: selectedAgent?.delegationID || "",
     });
+    const [rawPhone, setRawPhone] = useState(selectedAgent?.phone || "");
     const [formErrors, setFormErrors] = useState<FormErrors>({
         name: "",
         lastname: "",
@@ -79,23 +72,37 @@ const EditAgent: React.FC<EditAgentProps> = ({
 
     const validateName = useCallback((value: string, field: string): string => {
         const trimmed = value.trim();
-        if (!trimmed) return `${field} is required.`;
-        if (!NAME_REGEX.test(trimmed)) return `${field} must be 2–50 letters only.`;
+        if (!trimmed) return `${field} is required`;
+        if (trimmed.length < 3) return `${field} must be at least 3 characters`;
+        if (trimmed.length > 20) return `${field} must be 20 characters or less`;
+        if (!/^[a-zA-Z\s'-]+$/.test(trimmed))
+            return `${field} can only contain letters, spaces, hyphens, or apostrophes`;
         return "";
     }, []);
 
     const validateEmail = useCallback((value: string): string => {
         const trimmed = value.trim();
-        if (!trimmed) return "Email is required.";
-        if (!EMAIL_REGEX.test(trimmed)) return "Please enter a valid email.";
+        if (!trimmed) return "Email is required";
+        if (trimmed.length > 70) return "Email must be 70 characters or less";
+        if (!/^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(trimmed))
+            return "Invalid email format";
         return "";
     }, []);
 
     const validatePhone = useCallback((value: string): string => {
         const digits = value.replace(/[^\d]/g, "");
-        if (!digits) return "Phone number is required.";
-        if (!PHONE_REGEX.test(digits)) return "Phone number must be exactly 8 digits.";
+        if (!digits) return "Phone is required";
+        if (digits.length !== 8) return "Phone must be 8 digits";
         return "";
+    }, []);
+
+    const formatPhoneDisplay = useCallback((rawValue: string): string => {
+        const digits = rawValue.replace(/[^\d]/g, "");
+        let formatted = "";
+        if (digits.length > 0) formatted += digits.slice(0, 2);
+        if (digits.length > 2) formatted += " " + digits.slice(2, 5);
+        if (digits.length > 5) formatted += " " + digits.slice(5, 8);
+        return formatted;
     }, []);
 
     useEffect(() => {
@@ -209,6 +216,7 @@ const EditAgent: React.FC<EditAgentProps> = ({
                 }));
             } else if (name === "phone") {
                 const digits = value.replace(/[^\d]/g, "").slice(0, 8);
+                setRawPhone(digits);
                 setFormData((prev) => ({ ...prev, phone: digits }));
                 setFormErrors((prev) => ({
                     ...prev,
@@ -226,15 +234,14 @@ const EditAgent: React.FC<EditAgentProps> = ({
         []
     );
 
-    const handleSubmit = async (e: React.FormEvent) => {
-        e.preventDefault();
-        if (!selectedAgent?.agentID) return;
+    const handleSaveAgentEdit = async () => {
+        if (!selectedAgent) return;
 
         const errors: FormErrors = {
             name: validateName(formData.name, "Name"),
             lastname: validateName(formData.lastname, "Lastname"),
             email: validateEmail(formData.email),
-            phone: validatePhone(formData.phone),
+            phone: validatePhone(rawPhone || formData.phone),
         };
         setFormErrors(errors);
         setTouched({
@@ -272,7 +279,7 @@ const EditAgent: React.FC<EditAgentProps> = ({
         }
     };
 
-    const handleCancel = useCallback(() => {
+    const handleCancelEdit = useCallback(() => {
         setSelectedAgent(null);
         setView("agents");
     }, [setSelectedAgent, setView]);
@@ -281,182 +288,178 @@ const EditAgent: React.FC<EditAgentProps> = ({
 
     return (
         <motion.div
+            className="details-card agent-form-container"
             initial={{ opacity: 0, y: 20 }}
             animate={{ opacity: 1, y: 0 }}
             transition={{ duration: 0.3 }}
-            className="bg-white dark:bg-gray-800 rounded-lg shadow-lg p-6 max-w-3xl mx-auto"
         >
-            <h2 className="text-xl font-semibold text-gray-900 dark:text-gray-100 mb-6">
-                {t("adminDashboard.agents.editAgent")}
-            </h2>
-            <form onSubmit={handleSubmit} className="grid grid-cols-1 md:grid-cols-2 gap-6">
-                <div className="space-y-2">
-                    <Label htmlFor="name" className="text-gray-700 dark:text-gray-300">
-                        {t("adminDashboard.agents.name")}
-                    </Label>
-                    <Input
-                        id="name"
-                        name="name"
-                        value={formData.name}
-                        onChange={handleInputChange}
-                        required
-                        className={`border-gray-300 dark:border-gray-600 dark:bg-gray-700 dark:text-gray-100 ${touched.name && formErrors.name ? "border-red-500" : ""}`}
-                    />
-                    {touched.name && formErrors.name && (
-                        <span className="text-red-500 text-sm">{formErrors.name}</span>
-                    )}
+            <div className="card-header">
+                <h2>{t("adminDashboard.agents.editAgent")}</h2>
+            </div>
+            <div className="u-profile-panel">
+                <div className="u-profile-body">
+                    <div className="u-profile-header">
+                        <div className="u-profile-image-placeholder">
+                            {formData.name[0] || selectedAgent.name[0]}
+                            {formData.lastname[0] || selectedAgent.lastname[0]}
+                        </div>
+                        <div className="u-profile-identity">
+                            <input
+                                id="name"
+                                name="name"
+                                type="text"
+                                value={formData.name}
+                                onChange={handleInputChange}
+                                onBlur={() => setTouched((prev) => ({ ...prev, name: true }))}
+                                placeholder={t("adminDashboard.agents.enterName")}
+                                className={`u-profile-name user-edit-input ${touched.name && formErrors.name ? "invalid-vibrate" : ""}`}
+                            />
+                            {touched.name && formErrors.name && (
+                                <span className="error-text">{formErrors.name}</span>
+                            )}
+                            <input
+                                id="lastname"
+                                name="lastname"
+                                type="text"
+                                value={formData.lastname}
+                                onChange={handleInputChange}
+                                onBlur={() => setTouched((prev) => ({ ...prev, lastname: true }))}
+                                placeholder={t("adminDashboard.agents.enterLastname")}
+                                className={`u-profile-name user-edit-input ${touched.lastname && formErrors.lastname ? "invalid-vibrate" : ""}`}
+                            />
+                            {touched.lastname && formErrors.lastname && (
+                                <span className="error-text">{formErrors.lastname}</span>
+                            )}
+                            <span className="u-profile-id">ID: {selectedAgent.agentID}</span>
+                        </div>
+                    </div>
+                    <div className="u-profile-info">
+                        <div className="u-info-row">
+                            <span className="u-info-label">{t("adminDashboard.agents.email")}</span>
+                            <div className="u-info-value">
+                                <input
+                                    id="email"
+                                    name="email"
+                                    type="email"
+                                    value={formData.email}
+                                    onChange={handleInputChange}
+                                    onBlur={() => setTouched((prev) => ({ ...prev, email: true }))}
+                                    placeholder={t("adminDashboard.agents.enterEmail")}
+                                    className={`user-edit-input ${touched.email && formErrors.email ? "invalid-vibrate" : ""}`}
+                                />
+                                {touched.email && formErrors.email && (
+                                    <span className="error-text">{formErrors.email}</span>
+                                )}
+                            </div>
+                        </div>
+                        <div className="u-info-row">
+                            <span className="u-info-label">{t("adminDashboard.agents.phone")}</span>
+                            <div className="u-info-value">
+                                <input
+                                    id="phone"
+                                    name="phone"
+                                    type="tel"
+                                    value={formatPhoneDisplay(rawPhone)}
+                                    onChange={handleInputChange}
+                                    onBlur={() => setTouched((prev) => ({ ...prev, phone: true }))}
+                                    placeholder="XX XXX XXX"
+                                    maxLength={10}
+                                    className={`user-edit-input ${touched.phone && formErrors.phone ? "invalid-vibrate" : ""}`}
+                                />
+                                {touched.phone && formErrors.phone && (
+                                    <span className="error-text">{formErrors.phone}</span>
+                                )}
+                            </div>
+                        </div>
+                    </div>
                 </div>
-                <div className="space-y-2">
-                    <Label htmlFor="lastname" className="text-gray-700 dark:text-gray-300">
-                        {t("adminDashboard.agents.lastname")}
-                    </Label>
-                    <Input
-                        id="lastname"
-                        name="lastname"
-                        value={formData.lastname}
-                        onChange={handleInputChange}
-                        required
-                        className={`border-gray-300 dark:border-gray-600 dark:bg-gray-700 dark:text-gray-100 ${touched.lastname && formErrors.lastname ? "border-red-500" : ""}`}
-                    />
-                    {touched.lastname && formErrors.lastname && (
-                        <span className="text-red-500 text-sm">{formErrors.lastname}</span>
-                    )}
-                </div>
-                <div className="space-y-2">
-                    <Label htmlFor="email" className="text-gray-700 dark:text-gray-300">
-                        {t("adminDashboard.agents.email")}
-                    </Label>
-                    <Input
-                        id="email"
-                        name="email"
-                        type="email"
-                        value={formData.email}
-                        onChange={handleInputChange}
-                        required
-                        className={`border-gray-300 dark:border-gray-600 dark:bg-gray-700 dark:text-gray-100 ${touched.email && formErrors.email ? "border-red-500" : ""}`}
-                    />
-                    {touched.email && formErrors.email && (
-                        <span className="text-red-500 text-sm">{formErrors.email}</span>
-                    )}
-                </div>
-                <div className="space-y-2">
-                    <Label htmlFor="phone" className="text-gray-700 dark:text-gray-300">
-                        {t("adminDashboard.agents.phone")}
-                    </Label>
-                    <Input
-                        id="phone"
-                        name="phone"
-                        value={formData.phone}
-                        onChange={handleInputChange}
-                        required
-                        maxLength={8}
-                        className={`border-gray-300 dark:border-gray-600 dark:bg-gray-700 dark:text-gray-100 ${touched.phone && formErrors.phone ? "border-red-500" : ""}`}
-                    />
-                    {touched.phone && formErrors.phone && (
-                        <span className="text-red-500 text-sm">{formErrors.phone}</span>
-                    )}
-                </div>
-                <div className="space-y-2">
-                    <Label htmlFor="region" className="text-gray-700 dark:text-gray-300">
-                        {t("adminDashboard.agents.region")}
-                    </Label>
-                    <Select onValueChange={(value) => setSelectedRegion(value)} value={selectedRegion}>
-                        <SelectTrigger className="border-gray-300 dark:border-gray-600 dark:bg-gray-700 dark:text-gray-100">
-                            <SelectValue placeholder={t("adminDashboard.agents.selectRegion")} />
-                        </SelectTrigger>
-                        <SelectContent>
+            </div>
+            <div className="dropdown-stack">
+                <div className="dropdown-unit">
+                    <div className="dropdown-bar">
+                        <label htmlFor="region">{t("adminDashboard.agents.region")}</label>
+                        <select
+                            id="region"
+                            value={selectedRegion}
+                            onChange={(e) => setSelectedRegion(e.target.value)}
+                            className={selectedRegion ? "" : "input-error"}
+                        >
+                            <option value="">{t("adminDashboard.agents.selectRegion")}</option>
                             {regions.map((region) => (
-                                <SelectItem key={region.regionID} value={region.regionID}>
+                                <option key={region.regionID} value={region.regionID}>
                                     {region.name}
-                                </SelectItem>
+                                </option>
                             ))}
-                        </SelectContent>
-                    </Select>
-                </div>
-                <div className="space-y-2">
-                    <Label htmlFor="governorate" className="text-gray-700 dark:text-gray-300">
-                        {t("adminDashboard.agents.governorate")}
-                    </Label>
-                    <Select
-                        onValueChange={(value) => setSelectedGovernorate(value)}
-                        value={selectedGovernorate}
-                        disabled={!selectedRegion}
-
-                    >
-                        <SelectTrigger className="border-gray-300 dark:border-gray-600 dark:bg-gray-700 dark:text-gray-100">
-                            <SelectValue placeholder={t("adminDashboard.agents.selectGovernorate")} />
-                        </SelectTrigger>
-                        <SelectContent>
+                        </select>
+                    </div>
+                    <div className="dropdown-bar">
+                        <label htmlFor="governorate">{t("adminDashboard.agents.governorate")}</label>
+                        <select
+                            id="governorate"
+                            value={selectedGovernorate}
+                            onChange={(e) => setSelectedGovernorate(e.target.value)}
+                            disabled={!selectedRegion}
+                            className={selectedGovernorate ? "" : "input-error"}
+                        >
+                            <option value="">{t("adminDashboard.agents.selectGovernorate")}</option>
                             {governorates.map((gov) => (
-                                <SelectItem key={gov.governorateID} value={gov.governorateID}>
+                                <option key={gov.governorateID} value={gov.governorateID}>
                                     {gov.name}
-                                </SelectItem>
+                                </option>
                             ))}
-                        </SelectContent>
-                    </Select>
-                </div>
-                <div className="space-y-2">
-                    <Label htmlFor="delegationID" className="text-gray-700 dark:text-gray-300">
-                        {t("adminDashboard.agents.delegation")}
-                    </Label>
-                    <Select
-                        onValueChange={(value) => handleSelectChange("delegationID", value)}
-                        value={formData.delegationID}
-                        disabled={!selectedGovernorate}
-
-                    >
-                        <SelectTrigger className="border-gray-300 dark:border-gray-600 dark:bg-gray-700 dark:text-gray-100">
-                            <SelectValue placeholder={t("adminDashboard.agents.selectDelegation")} />
-                        </SelectTrigger>
-                        <SelectContent>
+                        </select>
+                    </div>
+                    <div className="dropdown-bar">
+                        <label htmlFor="delegationID">{t("adminDashboard.agents.delegation")}</label>
+                        <select
+                            id="delegationID"
+                            value={formData.delegationID}
+                            onChange={(e) => handleSelectChange("delegationID", e.target.value)}
+                            disabled={!selectedGovernorate}
+                            className={formData.delegationID ? "" : "input-error"}
+                        >
+                            <option value="">{t("adminDashboard.agents.selectDelegation")}</option>
                             {delegations.map((del) => (
-                                <SelectItem key={del.delegationID} value={del.delegationID}>
+                                <option key={del.delegationID} value={del.delegationID}>
                                     {del.name}
-                                </SelectItem>
+                                </option>
                             ))}
-                        </SelectContent>
-                    </Select>
-                </div>
-                <div className="space-y-2">
-                    <Label htmlFor="supervisorID" className="text-gray-700 dark:text-gray-300">
-                        {t("adminDashboard.agents.supervisor")}
-                    </Label>
-                    <Select
-                        onValueChange={(value) => handleSelectChange("supervisorID", value)}
-                        value={formData.supervisorID}
-                        disabled={!formData.delegationID}
-
-                    >
-                        <SelectTrigger className="border-gray-300 dark:border-gray-600 dark:bg-gray-700 dark:text-gray-100">
-                            <SelectValue placeholder={t("adminDashboard.agents.selectSupervisor")} />
-                        </SelectTrigger>
-                        <SelectContent>
+                        </select>
+                    </div>
+                    <div className="dropdown-bar">
+                        <label htmlFor="supervisorID">{t("adminDashboard.agents.supervisor")}</label>
+                        <select
+                            id="supervisorID"
+                            value={formData.supervisorID}
+                            onChange={(e) => handleSelectChange("supervisorID", e.target.value)}
+                            disabled={!formData.delegationID}
+                            className={formData.supervisorID ? "" : "input-error"}
+                        >
+                            <option value="">{t("adminDashboard.agents.selectSupervisor")}</option>
                             {supervisors.map((sup) => (
-                                <SelectItem key={sup.userID} value={sup.userID}>
+                                <option key={sup.userID} value={sup.userID}>
                                     {sup.firstname} {sup.lastname}
-                                </SelectItem>
+                                </option>
                             ))}
-                        </SelectContent>
-                    </Select>
+                        </select>
+                    </div>
                 </div>
-                <div className="col-span-1 md:col-span-2 flex justify-end gap-4 mt-4">
-                    <Button
-                        type="submit"
-                        disabled={loading}
-                        className="bg-blue-600 hover:bg-blue-700 text-white dark:bg-blue-500 dark:hover:bg-blue-600"
-                    >
-                        {loading ? t("adminDashboard.loading") : t("adminDashboard.actions.submit")}
-                    </Button>
-                    <Button
-                        type="button"
-                        variant="outline"
-                        onClick={handleCancel}
-                        className="border-gray-300 dark:border-gray-600 dark:text-gray-100"
-                    >
-                        {t("adminDashboard.actions.cancel")}
-                    </Button>
-                </div>
-            </form>
+            </div>
+            <div className="user-edit-actions">
+                <button
+                    className="action-button"
+                    onClick={handleSaveAgentEdit}
+                    disabled={loading}
+                >
+                    {loading ? t("adminDashboard.loading") : t("adminDashboard.actions.save")}
+                </button>
+                <button
+                    className="cancel-button"
+                    onClick={handleCancelEdit}
+                >
+                    {t("adminDashboard.actions.cancel")}
+                </button>
+            </div>
         </motion.div>
     );
 };

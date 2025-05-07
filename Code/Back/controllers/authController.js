@@ -1,8 +1,7 @@
-// backend/controllers/authController.js
-
 const { validationResult } = require('express-validator');
 const logger = require('../utils/logger');
 const AuthService = require('../services/authService');
+const GoogleAuthService = require('../services/googleAuthService');
 const NodeCache = require('node-cache');
 
 const cache = new NodeCache({ stdTTL: 60, checkperiod: 120 });
@@ -26,64 +25,100 @@ class AuthController {
         return response;
     }
 
+    /**
+     * Initiate Google OAuth login.
+     * @param {Object} req - Express request object.
+     * @param {Object} res - Express response object.
+     * @returns {Promise<void>} JSON response with Google OAuth URL.
+     */
+    static async initiateGoogleLogin(req, res) {
+        try {
+            const url = await GoogleAuthService.getAuthUrl();
+            res.json({ url });
+        } catch (error) {
+            logger.error(`Initiate Google login error: ${error.message}`);
+            res.status(500).json({ error: 'Failed to initiate Google login' });
+        }
+    }
+
+    /**
+     * Handle Google OAuth callback.
+     * @param {Object} req - Express request object with code and state in query.
+     * @param {Object} res - Express response object.
+     * @returns {Promise<void>} JSON response with login result or error.
+     */
     static async googleCallback(req, res) {
         try {
             const { code, state } = req.query;
             if (!code) {
-                logger.warn('Google callback: Missing code parameter', { query: req.query });
-                return res.status(400).json({ error: ERROR_MESSAGES.MISSING_FIELDS });
+                logger.warn('Google callback: Missing code parameter', { query: req.query, IP: req.ip });
+                return res.status(400).json({ error: 'Missing authorization code' });
             }
 
             const deviceIdentifier = req.headers['x-device-id'] || 'unknown-device';
-            const result = await AuthService.googleLogin(code, deviceIdentifier, res);
-            logger.info(`Google login successful for user ${result.user?.userID || 'unknown'}`, { userID: result.user?.userID });
-            return res.status(200).json(result);
+            const result = await GoogleAuthService.googleLogin(code, deviceIdentifier, res);
+
+            // Redirect to frontend dashboard after successful login
+            res.redirect('http://localhost:5173/dashboard');
         } catch (error) {
             logger.error(`Google callback error: ${error.message}`, {
                 status: error.status,
                 stack: error.stack,
                 query: req.query,
+                IP: req.ip,
             });
-            return res.status(error.status || 400).json(AuthController.formatError(error));
+            // Redirect to login page with error on failure
+            res.redirect('http://localhost:5173/login?error=auth_failed');
         }
     }
 
-
+    /**
+     * Handle user login.
+     * @param {Object} req - Express request object with login credentials.
+     * @param {Object} res - Express response object.
+     * @returns {Promise<void>} JSON response with login result or error.
+     */
     static async login(req, res) {
         try {
             const errors = validationResult(req);
             if (!errors.isEmpty()) {
-                logger.warn(`Login validation failed: ${JSON.stringify(errors.array())}`);
+                logger.warn(`Login validation failed: ${JSON.stringify(errors.array())}, IP: ${req.ip}`);
                 return res.status(400).json({ error: ERROR_MESSAGES.MISSING_FIELDS, details: errors.array() });
             }
 
             const { identifier, password, deviceIdentifier, otpMethod } = req.body;
             if (!identifier || !password || !deviceIdentifier) {
-                logger.warn('Missing login fields');
+                logger.warn('Missing login fields, IP: ${req.ip}');
                 return res.status(400).json(AuthController.formatError(new Error(ERROR_MESSAGES.MISSING_FIELDS)));
             }
 
             const result = await AuthService.login(identifier, password, deviceIdentifier, otpMethod, res);
-            logger.info(`Login successful for ${identifier}`);
+            logger.info(`Login successful for ${identifier}, IP: ${req.ip}`);
             return res.status(200).json(result);
         } catch (error) {
-            logger.error(`Login error for ${req.body.identifier || 'unknown'}: ${error.message}`);
+            logger.error(`Login error for ${req.body.identifier || 'unknown'}: ${error.message}, IP: ${req.ip}`);
             const status = error.message === ERROR_MESSAGES.INVALID_CREDENTIALS ? 401 : 400;
             return res.status(status).json(AuthController.formatError(error));
         }
     }
 
+    /**
+     * Verify 2FA code.
+     * @param {Object} req - Express request object with 2FA details.
+     * @param {Object} res - Express response object.
+     * @returns {Promise<void>} JSON response with verification result or error.
+     */
     static async verify2FA(req, res) {
         try {
             const errors = validationResult(req);
             if (!errors.isEmpty()) {
-                logger.warn(`2FA validation failed: ${JSON.stringify(errors.array())}`);
+                logger.warn(`2FA validation failed: ${JSON.stringify(errors.array())}, IP: ${req.ip}`);
                 return res.status(400).json({ error: ERROR_MESSAGES.MISSING_FIELDS, details: errors.array() });
             }
 
             const { userID, otpCode, deviceIdentifier, trustDevice, tempToken, refreshToken } = req.body;
             if (!userID || !otpCode || !deviceIdentifier || trustDevice === undefined || !tempToken || !refreshToken) {
-                logger.warn('Missing 2FA fields');
+                logger.warn('Missing 2FA fields, IP: ${req.ip}');
                 return res.status(400).json(AuthController.formatError(new Error(ERROR_MESSAGES.MISSING_FIELDS)));
             }
 
@@ -95,30 +130,42 @@ class AuthController {
 
             const result = await AuthService.verify2FA(userID, otpCode, deviceIdentifier, trustDevice, tempToken, refreshToken, res);
             cache.set(cacheKey, result, 60);
-            logger.info(`2FA verified for user ${userID}`);
+            logger.info(`2FA verified for user ${userID}, IP: ${req.ip}`);
             return res.status(200).json(result);
         } catch (error) {
-            logger.error(`2FA verification error for ${req.body.userID || 'unknown'}: ${error.message}`);
+            logger.error(`2FA verification error for ${req.body.userID || 'unknown'}: ${error.message}, IP: ${req.ip}`);
             return res.status(400).json(AuthController.formatError(error));
         }
     }
 
+    /**
+     * Refresh access token.
+     * @param {Object} req - Express request object with refresh token in cookies.
+     * @param {Object} res - Express response object.
+     * @returns {Promise<void>} JSON response with new tokens or error.
+     */
     static async refreshToken(req, res) {
         try {
             const refreshToken = req.cookies.refreshToken;
             if (!refreshToken) {
-                logger.warn('No refresh token provided');
+                logger.warn('No refresh token provided, IP: ${req.ip}');
                 return res.status(400).json(AuthController.formatError(new Error(ERROR_MESSAGES.MISSING_FIELDS)));
             }
             const result = await AuthService.refreshToken(refreshToken, res);
-            logger.info('Refresh token successful');
+            logger.info('Refresh token successful, IP: ${req.ip}');
             return res.status(200).json(result);
         } catch (error) {
-            logger.error(`Refresh token error: ${error.message}`);
+            logger.error(`Refresh token error: ${error.message}, IP: ${req.ip}`);
             return res.status(400).json(AuthController.formatError(error));
         }
     }
 
+    /**
+     * Log out user.
+     * @param {Object} req - Express request object.
+     * @param {Object} res - Express response object.
+     * @returns {Promise<void>} JSON response with logout confirmation or error.
+     */
     static async logout(req, res) {
         try {
             const cookieOptions = {
@@ -128,97 +175,121 @@ class AuthController {
             };
             res.clearCookie('accessToken', cookieOptions);
             res.clearCookie('refreshToken', cookieOptions);
-            logger.info('User logged out, cookies cleared');
+            logger.info('User logged out, cookies cleared, IP: ${req.ip}');
             return res.status(200).json({ message: 'Logged out successfully' });
         } catch (error) {
-            logger.error(`Logout error: ${error.message}`);
+            logger.error(`Logout error: ${error.message}, IP: ${req.ip}`);
             return res.status(500).json(AuthController.formatError(error));
         }
     }
 
+    /**
+     * Resend 2FA code.
+     * @param {Object} req - Express request object with userID and otpMethod.
+     * @param {Object} res - Express response object.
+     * @returns {Promise<void>} JSON response with resend result or error.
+     */
     static async resend2FA(req, res) {
         try {
             const errors = validationResult(req);
             if (!errors.isEmpty()) {
-                logger.warn(`Resend 2FA validation failed: ${JSON.stringify(errors.array())}`);
+                logger.warn(`Resend 2FA validation failed: ${JSON.stringify(errors.array())}, IP: ${req.ip}`);
                 return res.status(400).json({ error: ERROR_MESSAGES.MISSING_FIELDS, details: errors.array() });
             }
 
             const { userID, otpMethod } = req.body;
             if (!userID) {
-                logger.warn('Missing userID for resend 2FA');
+                logger.warn('Missing userID for resend 2FA, IP: ${req.ip}');
                 return res.status(400).json(AuthController.formatError(new Error(ERROR_MESSAGES.MISSING_FIELDS)));
             }
             const result = await AuthService.resend2FA(userID, otpMethod);
             return res.status(200).json(result);
         } catch (error) {
-            logger.error(`Resend 2FA error for ${req.body.userID || 'unknown'}: ${error.message}`);
+            logger.error(`Resend 2FA error for ${req.body.userID || 'unknown'}: ${error.message}, IP: ${req.ip}`);
             return res.status(400).json(AuthController.formatError(error));
         }
     }
 
+    /**
+     * Initiate password reset.
+     * @param {Object} req - Express request object with identifier.
+     * @param {Object} res - Express response object.
+     * @returns {Promise<void>} JSON response with initiation result or error.
+     */
     static async initiatePasswordReset(req, res) {
         try {
             const errors = validationResult(req);
             if (!errors.isEmpty()) {
-                logger.warn(`Password reset init validation failed: ${JSON.stringify(errors.array())}`);
+                logger.warn(`Password reset init validation failed: ${JSON.stringify(errors.array())}, IP: ${req.ip}`);
                 return res.status(400).json({ error: ERROR_MESSAGES.MISSING_FIELDS, details: errors.array() });
             }
 
             const { identifier } = req.body;
             if (!identifier) {
-                logger.warn('Missing identifier for password reset');
+                logger.warn('Missing identifier for password reset, IP: ${req.ip}');
                 return res.status(400).json(AuthController.formatError(new Error(ERROR_MESSAGES.MISSING_FIELDS)));
             }
             const result = await AuthService.initiatePasswordReset(identifier);
-            logger.info(`Password reset initiated for ${identifier}`);
+            logger.info(`Password reset initiated for ${identifier}, IP: ${req.ip}`);
             return res.status(200).json(result);
         } catch (error) {
-            logger.error(`Password reset init error for ${req.body.identifier || 'unknown'}: ${error.message}`);
+            logger.error(`Password reset init error for ${req.body.identifier || 'unknown'}: ${error.message}, IP: ${req.ip}`);
             return res.status(400).json(AuthController.formatError(error));
         }
     }
 
+    /**
+     * Verify password reset OTP.
+     * @param {Object} req - Express request object with userID and otpCode.
+     * @param {Object} res - Express response object.
+     * @returns {Promise<void>} JSON response with verification result or error.
+     */
     static async verifyPasswordResetOTP(req, res) {
         try {
             const errors = validationResult(req);
             if (!errors.isEmpty()) {
-                logger.warn(`Password reset OTP validation failed: ${JSON.stringify(errors.array())}`);
+                logger.warn(`Password reset OTP validation failed: ${JSON.stringify(errors.array())}, IP: ${req.ip}`);
                 return res.status(400).json({ error: ERROR_MESSAGES.MISSING_FIELDS, details: errors.array() });
             }
 
             const { userID, otpCode } = req.body;
             if (!userID || !otpCode) {
-                logger.warn('Missing fields for password reset OTP');
+                logger.warn('Missing fields for password reset OTP, IP: ${req.ip}');
                 return res.status(400).json(AuthController.formatError(new Error(ERROR_MESSAGES.MISSING_FIELDS)));
             }
             const result = await AuthService.verifyPasswordResetOTP(userID, otpCode);
-            logger.info(`Password reset OTP verified for ${userID}`);
+            logger.info(`Password reset OTP verified for ${userID}, IP: ${req.ip}`);
             return res.status(200).json(result);
         } catch (error) {
-            logger.error(`Password reset OTP error for ${req.body.userID || 'unknown'}: ${error.message}`);
+            logger.error(`Password reset OTP error for ${req.body.userID || 'unknown'}: ${error.message}, IP: ${req.ip}`);
             return res.status(400).json(AuthController.formatError(error));
         }
     }
 
+    /**
+     * Reset password.
+     * @param {Object} req - Express request object with userID, newPassword, and tempToken.
+     * @param {Object} res - Express response object.
+     * @returns {Promise<void>} JSON response with reset result or error.
+     */
     static async resetPassword(req, res) {
         try {
             const errors = validationResult(req);
             if (!errors.isEmpty()) {
-                logger.warn(`Password reset validation failed: ${JSON.stringify(errors.array())}`);
+                logger.warn(`Password reset validation failed: ${JSON.stringify(errors.array())}, IP: ${req.ip}`);
                 return res.status(400).json({ error: ERROR_MESSAGES.MISSING_FIELDS, details: errors.array() });
             }
 
             const { userID, newPassword, tempToken } = req.body;
             if (!userID || !newPassword || !tempToken) {
-                logger.warn('Missing fields for password reset');
+                logger.warn('Missing fields for password reset, IP: ${req.ip}');
                 return res.status(400).json(AuthController.formatError(new Error(ERROR_MESSAGES.MISSING_FIELDS)));
             }
             const result = await AuthService.resetPassword(userID, newPassword, tempToken);
-            logger.info(`Password reset completed for ${userID}`);
+            logger.info(`Password reset completed for ${userID}, IP: ${req.ip}`);
             return res.status(200).json(result);
         } catch (error) {
-            logger.error(`Password reset error for ${req.body.userID || 'unknown'}: ${error.message}`);
+            logger.error(`Password reset error for ${req.body.userID || 'unknown'}: ${error.message}, IP: ${req.ip}`);
             return res.status(400).json(AuthController.formatError(error));
         }
     }

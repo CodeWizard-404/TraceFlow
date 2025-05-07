@@ -17,6 +17,7 @@ import { AiOutlineQrcode } from 'react-icons/ai';
 import './Login.css';
 import { debounce } from 'lodash';
 import { determineTargetRoute } from '../../lib/authUtils';
+import GoogleLoginButton from '../../components/GoogleLoginButton';
 
 const LoginPage: React.FC = () => {
     const [step, setStep] = useState<'login' | 'verify2FA' | 'forgot' | 'verifyReset' | 'reset'>('login');
@@ -520,6 +521,8 @@ const LoginPage: React.FC = () => {
                             >
                                 {loading ? <span className="spinner" /> : 'Sign In'}
                             </motion.button>
+                            <hr />
+                            <GoogleLoginButton />
                             <button type="button" className="form-link" onClick={() => setStep('forgot')}>
                                 Forgot Password?
                             </button>

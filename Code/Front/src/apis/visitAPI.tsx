@@ -2,6 +2,12 @@ import { AxiosError } from "axios";
 import api from "./axiosConfig";
 import { VerifyQrResponse, LogVisitResponse, VisitByIdResponse, UpdateVisitResponse, DeleteVisitResponse } from ".";
 
+// Type for Google Calendar sync response
+export type SyncCalendarResponse = {
+    eventId: string;
+    message: string;
+};
+
 interface AxiosErrorResponse {
     response?: {
         data?: { error?: string };
@@ -157,4 +163,17 @@ export const deleteVisit = async (id: string): Promise<DeleteVisitResponse> => {
     } catch (error) {
         throw new Error(handleApiError(error, "Unable to delete visit."));
     }
-};  
+};
+
+// Google Calendar API method
+export const syncVisitToCalendar = async (visitId: string): Promise<SyncCalendarResponse> => {
+    try {
+        if (!visitId) {
+            throw new Error("Visit ID is required.");
+        }
+        const response = await api.post<SyncCalendarResponse>(`/visits/${visitId}/calendar/sync`);
+        return response.data;
+    } catch (error) {
+        throw new Error(handleApiError(error, "Unable to sync visit to calendar."));
+    }
+};

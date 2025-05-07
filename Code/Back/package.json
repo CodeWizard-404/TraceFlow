@@ -69,7 +69,6 @@
     "progress": "^2.0.3",
     "prompts": "^2.4.2",
     "qrcode": "^1.5.4",
-    "redis": "^5.0.1",
     "redoc-express": "^2.1.0",
     "sequelize": "^6.37.7",
     "sequelize-to-json": "^0.10.4",

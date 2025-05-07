@@ -11,12 +11,14 @@ router.get('/delegations/governorate', requirePermission('access_delegations_by_
 router.get('/governorates/region', requirePermission('access_governorates_by_region'), LocationController.getGovernorateByRegion);
 router.get('/regions/governorate', requirePermission('access_regions_by_governorate'), LocationController.getRegionsByGovernorate);
 router.get('/governorates/delegation', requirePermission('access_governorates_by_delegation'), LocationController.getGovernoratesByDelegation);
-
-// get regions by user
 router.get('/regions/user/:userID', requirePermission('access_regions_by_user'), LocationController.getRegionsByUser);
-// get governorates by user
 router.get('/governorates/user/:userID', requirePermission('access_governorates_by_user'), LocationController.getGovernoratesByUser);
-// get delegations by user
 router.get('/delegations/user/:userID', requirePermission('access_delegations_by_user'), LocationController.getDelegationsByUser);
+
+// Google Maps API routes
+router.post('/geocode', requirePermission('access_google_maps'), LocationController.geocodeAddress);
+router.post('/directions', requirePermission('access_google_maps'), LocationController.getDirections);
+router.post('/places', requirePermission('access_google_maps'), LocationController.searchPlaces);
+router.post('/distance-matrix', requirePermission('access_google_maps'), LocationController.getDistanceMatrix);
 
 module.exports = router;

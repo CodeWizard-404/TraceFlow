@@ -29,3 +29,8 @@ export const determineTargetRoute = (roles: Role[]): string => {
     if (roles.some((r) => [ROLES.PURCHASE_TEAM, ROLES.REGIONAL_MANAGER, ROLES.STOCK_MANAGER].includes(r.name))) return "/receipt-books";
     return "/login";
 };
+
+// Utility to check if Google OAuth is configured (assumes backend manages tokens)
+export const isGoogleOAuthConfigured = (): boolean => {
+    return !!import.meta.env.VITE_GOOGLE_CLIENT_ID && !!import.meta.env.VITE_REDIRECT_URI;
+};

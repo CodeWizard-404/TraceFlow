@@ -1,4 +1,3 @@
-// backend/services/authService.js
 const axios = require('axios');
 const { nanoid } = require('nanoid');
 const { User, Role, Permission, TrustedDevice } = require('../models');
@@ -37,8 +36,8 @@ const KEYCLOAK_URL = process.env.KEYCLOAK_URL || 'http://localhost:8080';
 const REALM = process.env.REALM || 'TraceFlow';
 const CLIENT_ID = process.env.KEYCLOAK_CLIENT_ID || 'traceflow-backend';
 const CLIENT_SECRET = process.env.KEYCLOAK_CLIENT_SECRET || '';
-const ACCESS_TOKEN_MAX_AGE = parseInt(process.env.ACCESS_TOKEN_MAX_AGE) || 900000; // 15 minutes
-const REFRESH_TOKEN_MAX_AGE = parseInt(process.env.REFRESH_TOKEN_MAX_AGE) || 86400000; // 1 day
+const ACCESS_TOKEN_MAX_AGE = parseInt(process.env.ACCESS_TOKEN_MAX_AGE) || 900000;
+const REFRESH_TOKEN_MAX_AGE = parseInt(process.env.REFRESH_TOKEN_MAX_AGE) || 86400000;
 
 class AuthService {
     static async getKeycloakAdminToken() {
@@ -49,7 +48,7 @@ class AuthService {
                     grant_type: 'password',
                     client_id: 'admin-cli',
                     username: process.env.KEYCLOAK_KEYCLOAK_ADMIN_USER || 'admin',
-                    password: process.env.KEYCLOAK_KEYCLOAK_ADMIN_PASSWORDWORD || 'admin',
+                    password: process.env.KEYCLOAK_KEYCLOAK_ADMIN_PASSWORD || 'admin',
                 })
             );
             return response.data.access_token;
@@ -72,6 +71,17 @@ class AuthService {
                     phone: 'N/A',
                     password: 'KEYCLOAK_MANAGED',
                 });
+                // Assign default Supervisor role
+                let supervisorRole = await Role.findOne({ where: { name: 'Supervisor' } });
+                if (!supervisorRole) {
+                    supervisorRole = await Role.create({
+                        roleID: `role_${nanoid()}`,
+                        name: 'Supervisor',
+                        description: 'Default role for new users',
+                    });
+                }
+                await user.addRole(supervisorRole);
+                logger.info(`Assigned Supervisor role to new user ${user.userID}`);
             } else if (!user.keycloakId) {
                 await user.update({ keycloakId });
             } else if (user.keycloakId !== keycloakId) {
@@ -92,13 +102,14 @@ class AuthService {
 
             // Exchange Google code for Keycloak tokens
             const tokenResponse = await axios.post(
-                `${KEYCLOAK_URL}/realms/${REALM}/protocol/openid-connect/token`,
+                `${KEYCLOAK_URL}/realms/${REALM}/broker/google/token`,
                 new URLSearchParams({
-                    grant_type: 'authorization_code',
                     client_id: CLIENT_ID,
                     client_secret: CLIENT_SECRET,
-                    code,
-                    redirect_uri: 'http://localhost:8080/realms/TraceFlow/broker/google/endpoint',
+                    grant_type: 'urn:ietf:params:oauth:grant-type:token-exchange',
+                    subject_token: code,
+                    subject_issuer: 'google',
+                    subject_token_type: 'urn:ietf:params:oauth:token-type:access_token',
                 }),
                 { headers: { 'Content-Type': 'application/x-www-form-urlencoded' } }
             ).catch(error => {
@@ -147,9 +158,12 @@ class AuthService {
             }
             logger.info('User info retrieved from token', { email, username, keycloakId });
 
-            // Find user by googleEmail (which matches email and username)
-            const user = await User.findOne({
-                where: { googleEmail: email },
+            // Sync user with Keycloak
+            const user = await this.syncKeycloakUser(email, keycloakId);
+
+            // Fetch user with roles and permissions
+            const userWithDetails = await User.findOne({
+                where: { userID: user.userID },
                 include: [
                     {
                         model: Role,
@@ -165,19 +179,9 @@ class AuthService {
                 ],
             });
 
-            if (!user) {
-                logger.warn(`Google login failed: No user found with googleEmail ${email}`);
-                throw Object.assign(new Error(ERROR_MESSAGES.GOOGLE_LOGIN_FAILED), { status: 404 });
-            }
-            logger.info('User found in database', { userID: user.userID, keycloakId: user.keycloakId });
-
-            // Verify keycloakId matches
-            if (user.keycloakId !== keycloakId) {
-                logger.warn(`Keycloak ID mismatch for user ${email}`, {
-                    databaseKeycloakId: user.keycloakId,
-                    tokenKeycloakId: keycloakId,
-                });
-                throw Object.assign(new Error(ERROR_MESSAGES.KEYCLOAK_MISMATCH), { status: 400 });
+            if (!userWithDetails) {
+                logger.error(`User details fetch failed for ${email}`);
+                throw Object.assign(new Error(ERROR_MESSAGES.USER_NOT_FOUND), { status: 404 });
             }
 
             // Check if the device is trusted
@@ -188,7 +192,7 @@ class AuthService {
             if (trustedDevice) {
                 await trustedDevice.update({ lastUsed: new Date() });
                 logger.info('Trusted device found, completing login', { deviceIdentifier });
-                return this.generateLoginResponse(user, access_token, refresh_token, expires_in, res);
+                return this.generateLoginResponse(userWithDetails, access_token, refresh_token, expires_in, res);
             }
 
             // Generate and send OTP for 2FA
@@ -275,15 +279,11 @@ class AuthService {
                 data: error.response?.data,
                 stack: error.stack,
             });
-            if (error.response?.data?.error === 'invalid_request' && error.response?.data?.error_description?.includes('Missing parameter: username')) {
-                throw Object.assign(new Error('Google login failed: Missing username parameter'), { status: 400 });
-            }
             throw error.status
                 ? error
                 : Object.assign(new Error(ERROR_MESSAGES.GOOGLE_LOGIN_FAILED), { status: 400 });
         }
     }
-
 
     static async login(identifier, password, deviceIdentifier, otpMethod = 'email', res) {
         let loginResponse;
@@ -651,6 +651,20 @@ class AuthService {
             maxAge: REFRESH_TOKEN_MAX_AGE,
         });
 
+        const userData = {
+            userID: user.userID,
+            email: user.email,
+            phone: user.phone,
+            firstname: user.firstname,
+            lastname: user.lastname,
+            keycloakId: user.keycloakId || '',
+            Roles: roles,
+        };
+
+        res.cookie('userData', encodeURIComponent(JSON.stringify(userData)), {
+            ...cookieOptions,
+            httpOnly: false, // Allow frontend to read userData
+        });
 
         return {
             requires2FA: false,
