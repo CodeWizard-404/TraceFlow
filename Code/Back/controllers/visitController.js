@@ -3,16 +3,7 @@ const GoogleCalendarService = require('../services/googleCalendarService');
 const NotificationService = require('../services/notificationService');
 const logger = require('../utils/logger');
 
-/**
- * Controller for managing visit-related operations, including Google Calendar synchronization.
- */
 class VisitController {
-    /**
-     * Get a visit by ID.
-     * @param {Object} req - Express request object with visit ID in params.
-     * @param {Object} res - Express response object.
-     * @returns {Promise<void>} JSON response with visit or error.
-     */
     static async getVisitByID(req, res) {
         try {
             const { id } = req.params;
@@ -29,12 +20,6 @@ class VisitController {
         }
     }
 
-    /**
-     * Verify a QR code for a visit.
-     * @param {Object} req - Express request object with qrData and visitId in body.
-     * @param {Object} res - Express response object.
-     * @returns {Promise<void>} JSON response with verification result or error.
-     */
     static async verifyQRCode(req, res) {
         try {
             const { qrData, visitId } = req.body;
@@ -58,12 +43,6 @@ class VisitController {
         }
     }
 
-    /**
-     * Log a visit with details.
-     * @param {Object} req - Express request object with visit ID in params and data in body.
-     * @param {Object} res - Express response object.
-     * @returns {Promise<void>} JSON response with logged visit or error.
-     */
     static async logVisit(req, res) {
         try {
             const { id } = req.params;
@@ -91,12 +70,6 @@ class VisitController {
         }
     }
 
-    /**
-     * Update a visit's details.
-     * @param {Object} req - Express request object with visit ID in params and data in body.
-     * @param {Object} res - Express response object.
-     * @returns {Promise<void>} JSON response with updated visit or error.
-     */
     static async updateVisit(req, res) {
         try {
             const { id } = req.params;
@@ -107,6 +80,11 @@ class VisitController {
                 return res.status(400).json({ error: 'Visit ID is required' });
             }
             const visit = await VisitService.updateVisit(id, data, files, req.user.userID);
+            try {
+                await GoogleCalendarService.updateCalendarEvent(req.user.userID, id);
+            } catch (error) {
+                logger.warn(`Failed to update calendar event for visit ${id}: ${error.message}`);
+            }
             await NotificationService.triggerNotification({
                 event: 'visit:updated',
                 data: { visitId: id, updates: Object.keys(data) },
@@ -120,12 +98,6 @@ class VisitController {
         }
     }
 
-    /**
-     * Delete a visit.
-     * @param {Object} req - Express request object with visit ID in params.
-     * @param {Object} res - Express response object.
-     * @returns {Promise<void>} JSON response with result or error.
-     */
     static async deleteVisit(req, res) {
         try {
             const { id } = req.params;
@@ -134,6 +106,11 @@ class VisitController {
                 return res.status(400).json({ error: 'Visit ID is required' });
             }
             const result = await VisitService.deleteVisit(id, req.user.userID);
+            try {
+                await GoogleCalendarService.deleteCalendarEvent(req.user.userID, id);
+            } catch (error) {
+                logger.warn(`Failed to delete calendar event for visit ${id}: ${error.message}`);
+            }
             await NotificationService.triggerNotification({
                 event: 'visit:deleted',
                 data: { visitId: id },
@@ -147,12 +124,6 @@ class VisitController {
         }
     }
 
-    /**
-     * Sync a visit with Google Calendar.
-     * @param {Object} req - Express request object with visit ID in params.
-     * @param {Object} res - Express response object.
-     * @returns {Promise<void>} JSON response with calendar event or error.
-     */
     static async syncVisitToCalendar(req, res) {
         try {
             const { id } = req.params;
@@ -174,12 +145,25 @@ class VisitController {
         }
     }
 
-    /**
-     * Update a visit's Google Calendar event.
-     * @param {Object} req - Express request object with visit ID in params.
-     * @param {Object} res - Express response object.
-     * @returns {Promise<void>} JSON response with updated calendar event or error.
-     */
+    // sync all
+    static async syncAllVisitsToCalendar(req, res) {
+        try {
+            const { id } = req.user;
+            const visits = await VisitService.getVisitsByUser(id);
+            const events = await Promise.all(visits.map(visit => GoogleCalendarService.createCalendarEvent(id, visit._id)));
+            await NotificationService.triggerNotification({
+                event: 'visit:calendar_synced',
+                data: { visitIds: visits.map(visit => visit._id), calendarEventIds: events.map(event => event.id) },
+                metadata: { syncedBy: req.user.email },
+            });
+            logger.info(`Synced all visits to Google Calendar by user ${id}, IP: ${req.ip}`);
+            return res.status(200).json(events);
+        } catch (error) {
+            logger.error(`Sync all visits to calendar error: ${error.message}, user: ${req.user.userID}, IP: ${req.ip}`);
+            return res.status(error.status || 500).json({ error: error.message || 'Failed to sync all visits to calendar' });
+        }
+    }
+
     static async updateCalendarEvent(req, res) {
         try {
             const { id } = req.params;
@@ -201,12 +185,6 @@ class VisitController {
         }
     }
 
-    /**
-     * Delete a visit's Google Calendar event.
-     * @param {Object} req - Express request object with visit ID in params.
-     * @param {Object} res - Express response object.
-     * @returns {Promise<void>} JSON response with result or error.
-     */
     static async deleteCalendarEvent(req, res) {
         try {
             const { id } = req.params;

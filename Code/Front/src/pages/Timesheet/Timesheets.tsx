@@ -17,7 +17,7 @@ import { getAllUsers, getSupervisorsByUser } from "../../apis/userAPI";
 import { FaClock, FaMapMarkerAlt, FaRegUser, FaFilter } from "react-icons/fa";
 import TimesheetStatus from "../../models/Enum/TimesheetStatus";
 import { useTranslation } from "react-i18next";
-import Role from "models/Role";
+import CalendarSyncButton from "../../components/Google/CalendarSyncButton";
 
 const PERMISSIONS = {
   ACCESS_TIMESHEETS: import.meta.env.VITE_PERMISSIONS_ACCESS_TIMESHEETS,
@@ -703,6 +703,7 @@ const Timesheets: React.FC = React.memo(() => {
                 view: t(`timesheets.viewModes.${viewMode}`),
               })}
             </button>
+            <CalendarSyncButton supervisorId={supervisorID || ''} isSupervisor={!!isSupervisor} />
           </div>
         </header>
 

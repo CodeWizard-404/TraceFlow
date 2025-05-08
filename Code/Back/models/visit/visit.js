@@ -16,5 +16,6 @@ module.exports = (sequelize, DataTypes) => {
         comment: { type: DataTypes.TEXT },
         agentID: { type: DataTypes.STRING, allowNull: false },
         timesheetID: { type: DataTypes.STRING, allowNull: false },
+        calendarEventId: { type: DataTypes.STRING },
     });
 };

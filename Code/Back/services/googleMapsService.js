@@ -5,24 +5,30 @@ require('dotenv').config();
 
 class GoogleMapsService {
     static async initialize() {
+        if (!process.env.GOOGLE_MAPS_API_KEY) {
+            logger.warn('Google Maps API key is missing. Maps features are disabled.');
+            this.client = null;
+            return;
+        }
+
         try {
             this.client = new Client({});
             this.redisClient = await initializeRedis();
             logger.info('GoogleMapsService initialized with Redis');
         } catch (error) {
             logger.error(`Failed to initialize Redis: ${error.message}`);
-            this.redisClient = null; // Fallback to no caching
+            this.redisClient = null;
             this.client = new Client({});
             logger.warn('GoogleMapsService initialized without Redis caching');
         }
     }
 
-    /**
-     * Geocode an address using Google Maps Geocoding API.
-     * @param {string} address - The address to geocode.
-     * @returns {Promise<Object>} Geocoded location data.
-     */
     static async geocodeAddress(address) {
+        if (!this.client) {
+            logger.warn('Google Maps client not initialized. Returning mock geocoding data.');
+            return { mock: true, address };
+        }
+
         try {
             const cacheKey = `geocode:${address}`;
             let cachedResult;
@@ -59,14 +65,12 @@ class GoogleMapsService {
         }
     }
 
-    /**
-     * Get directions between two points using Google Maps Directions API.
-     * @param {string} origin - Starting point.
-     * @param {string} destination - Ending point.
-     * @param {string} [mode='driving'] - Travel mode.
-     * @returns {Promise<Object>} Directions data.
-     */
     static async getDirections(origin, destination, mode = 'driving') {
+        if (!this.client) {
+            logger.warn('Google Maps client not initialized. Returning mock directions data.');
+            return { mock: true, origin, destination };
+        }
+
         try {
             const cacheKey = `directions:${origin}:${destination}:${mode}`;
             let cachedResult;
@@ -105,14 +109,12 @@ class GoogleMapsService {
         }
     }
 
-    /**
-     * Search for places using Google Maps Places API.
-     * @param {string} query - Search query.
-     * @param {Object} [location] - Optional location coordinates.
-     * @param {number} [radius=5000] - Search radius in meters.
-     * @returns {Promise<Object>} Place search results.
-     */
     static async searchPlaces(query, location, radius = 5000) {
+        if (!this.client) {
+            logger.warn('Google Maps client not initialized. Returning mock places data.');
+            return { mock: true, query };
+        }
+
         try {
             const cacheKey = `places:${query}:${location?.lat || ''}:${location?.lng || ''}:${radius}`;
             let cachedResult;
@@ -151,14 +153,12 @@ class GoogleMapsService {
         }
     }
 
-    /**
-     * Get distance matrix using Google Maps Distance Matrix API.
-     * @param {string[]} origins - Array of origin points.
-     * @param {string[]} destinations - Array of destination points.
-     * @param {string} [mode='driving'] - Travel mode.
-     * @returns {Promise<Object>} Distance matrix data.
-     */
     static async getDistanceMatrix(origins, destinations, mode = 'driving') {
+        if (!this.client) {
+            logger.warn('Google Maps client not initialized. Returning mock distance matrix data.');
+            return { mock: true, origins, destinations };
+        }
+
         try {
             const cacheKey = `distanceMatrix:${origins.join('|')}:${destinations.join('|')}:${mode}`;
             let cachedResult;
@@ -198,7 +198,6 @@ class GoogleMapsService {
     }
 }
 
-// Initialize the service
 GoogleMapsService.initialize().catch((error) => {
     logger.error(`Google Maps Service initialization failed: ${error.message}`);
 });

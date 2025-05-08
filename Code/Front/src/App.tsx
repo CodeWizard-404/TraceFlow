@@ -11,13 +11,15 @@ import "./App.css";
 import LoginPage from "./pages/Auth/Login";
 import ProfilePage from "./pages/Auth/ProfilePage";
 import Entry from "./pages/Dashboard/Entry";
+import AgentManagement from "./pages/Dashboard/AgentManagement";
 
 // Lazy load route components
 const Timesheets = React.lazy(() => import("./pages/Timesheet/Timesheets"));
 const TimesheetForm = React.lazy(() => import("./pages/Timesheet/TimesheetForm"));
 const QRScan = React.lazy(() => import("./pages/visit/QRScan"));
-const VisitDetails = React.lazy(() => import("./pages/visit/VisitDetails"));
+const VisitDetailsView = React.lazy(() => import("./pages/visit/VisitDetailsView"));
 const VisitValidation = React.lazy(() => import("./pages/visit/VisitValidation"));
+const VisitEdit = React.lazy(() => import("./pages/visit/VisitEdit"));
 const PageNotFound = React.lazy(() => import("./pages/Error/PageNotFound"));
 const AdminDashboard = React.lazy(() => import("./pages/Admin/AdminDashboard"));
 const ReceiptBooks = React.lazy(() => import("./pages/Receipt/ReceiptBooks"));
@@ -35,7 +37,8 @@ const PERMISSIONS = {
   ACCESS_RECEIPT_BOOKS: import.meta.env.VITE_PERMISSIONS_ACCESS_RECEIPT_BOOKS,
   ACCESS_RECEIPT_BOOK_HISTORY: import.meta.env.VITE_PERMISSIONS_ACCESS_RECEIPT_BOOK_HISTORY,
   TRANSFER_RECEIPT_BOOKS: import.meta.env.VITE_PERMISSIONS_TRANSFER_RECEIPT_BOOKS,
-  ACCESS_RECEIPT_BOOKS_BY_HOLDER: import.meta.env.VITE_PERMISSIONS_ACCESS_RECEIPT_BOOKS_BY_HOLDER
+  ACCESS_RECEIPT_BOOKS_BY_HOLDER: import.meta.env.VITE_PERMISSIONS_ACCESS_RECEIPT_BOOKS_BY_HOLDER,
+  EDIT_VISIT_DETAILS: import.meta.env.VITE_PERMISSIONS_EDIT_VISIT
 };
 
 const ROLES = {
@@ -152,6 +155,7 @@ const AppContent: React.FC = React.memo(() => {
             <Route path="/login" element={<LoginPage />} />
             <Route path="/access-denied" element={<AccessDenied />} />
             <Route path="/" element={<Navigate to="/login" replace />} />
+            <Route path="/agents" element={<AgentManagement />} />
             <Route
               path="/dashboard"
               element={
@@ -204,7 +208,15 @@ const AppContent: React.FC = React.memo(() => {
               path="/visit/:idVisit"
               element={
                 <ProtectedRoute requiredPermissions={[PERMISSIONS.ACCESS_VISIT_DETAILS]}>
-                  <VisitDetails />
+                  <VisitDetailsView />
+                </ProtectedRoute>
+              }
+            />
+            <Route
+              path="/visit/edit/:idVisit"
+              element={
+                <ProtectedRoute requiredPermissions={[PERMISSIONS.EDIT_VISIT_DETAILS]}>
+                  <VisitEdit />
                 </ProtectedRoute>
               }
             />

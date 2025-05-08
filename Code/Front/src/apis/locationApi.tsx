@@ -16,9 +16,14 @@ import {
 
 // Types for Google Maps API responses
 export type GeocodeResponse = {
-    lat: number;
-    lng: number;
-    formattedAddress: string;
+    geometry: {
+        location: {
+            lat: number;
+            lng: number;
+        };
+    };
+    formatted_address: string;
+    mock?: boolean;
 };
 
 export type DirectionsResponse = {
@@ -28,9 +33,33 @@ export type DirectionsResponse = {
             duration: { text: string; value: number };
             start_address: string;
             end_address: string;
+            steps: Array<{
+                polyline: { points: string };
+            }>;
         }>;
     }>;
+    mock?: boolean;
 };
+
+export type PlacesResponse = Array<{
+    place_id: string;
+    name: string;
+    formatted_address: string;
+    geometry: {
+        location: {
+            lat: number;
+            lng: number;
+        };
+    };
+}>;
+
+export type DistanceMatrixResponse = Array<{
+    elements: Array<{
+        distance: { text: string; value: number };
+        duration: { text: string; value: number };
+        status: string;
+    }>;
+}>;
 
 // Generic error handler
 const handleApiError = (error: unknown, defaultMessage: string): string => {
@@ -48,6 +77,8 @@ const handleApiError = (error: unknown, defaultMessage: string): string => {
                 return "You don’t have permission to perform this action.";
             case 404:
                 return "Resource not found.";
+            case 429:
+                return "API quota exceeded. Please try again later.";
             case 500:
                 return "Something went wrong on our end. Please try again later.";
             default:
@@ -188,5 +219,29 @@ export const getDirections = async (origin: string, destination: string, mode: s
         return response.data;
     } catch (error) {
         throw new Error(handleApiError(error, "Unable to get directions."));
+    }
+};
+
+export const searchPlaces = async (query: string, location?: { lat: number; lng: number }, radius: number = 5000): Promise<PlacesResponse> => {
+    try {
+        if (!query) {
+            throw new Error("Query is required.");
+        }
+        const response = await api.post<PlacesResponse>("/locations/places", { query, location, radius });
+        return response.data;
+    } catch (error) {
+        throw new Error(handleApiError(error, "Unable to search places."));
+    }
+};
+
+export const getDistanceMatrix = async (origins: string[], destinations: string[], mode: string = 'driving'): Promise<DistanceMatrixResponse> => {
+    try {
+        if (!origins.length || !destinations.length) {
+            throw new Error("Origins and destinations are required.");
+        }
+        const response = await api.post<DistanceMatrixResponse>("/locations/distance-matrix", { origins, destinations, mode });
+        return response.data;
+    } catch (error) {
+        throw new Error(handleApiError(error, "Unable to get distance matrix."));
     }
 };

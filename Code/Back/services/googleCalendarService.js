@@ -5,6 +5,11 @@ require('dotenv').config();
 
 class GoogleCalendarService {
     static async getOAuth2Client(userId) {
+        if (!process.env.GOOGLE_CALENDAR_CLIENT_ID || !process.env.GOOGLE_CALENDAR_CLIENT_SECRET || !process.env.GOOGLE_CALENDAR_REDIRECT_URI) {
+            logger.warn('Google Calendar API credentials are missing. Calendar features are disabled.');
+            throw new Error('Google Calendar API credentials are not configured');
+        }
+
         const user = await User.findByPk(userId);
         if (!user || !user.googleAccessToken || !user.googleRefreshToken) {
             const error = new Error('Google OAuth tokens not found for user');
@@ -23,7 +28,6 @@ class GoogleCalendarService {
             refresh_token: user.googleRefreshToken,
         });
 
-        // Handle token refresh
         oauth2Client.on('tokens', async (tokens) => {
             if (tokens.access_token) {
                 user.googleAccessToken = tokens.access_token;
@@ -38,13 +42,12 @@ class GoogleCalendarService {
         return oauth2Client;
     }
 
-    /**
-     * Create a Google Calendar event for a visit.
-     * @param {string} userId - User ID.
-     * @param {string} visitId - Visit ID.
-     * @returns {Promise<Object>} Created calendar event.
-     */
     static async createCalendarEvent(userId, visitId) {
+        if (!process.env.GOOGLE_MAPS_API_KEY) {
+            logger.warn('Google Maps API key is missing. Skipping calendar event creation.');
+            return { message: 'Calendar event creation skipped due to missing API key' };
+        }
+
         try {
             const visit = await Visit.findByPk(visitId);
             if (!visit) {
@@ -86,13 +89,12 @@ class GoogleCalendarService {
         }
     }
 
-    /**
-     * Update a Google Calendar event for a visit.
-     * @param {string} userId - User ID.
-     * @param {string} visitId - Visit ID.
-     * @returns {Promise<Object>} Updated calendar event.
-     */
     static async updateCalendarEvent(userId, visitId) {
+        if (!process.env.GOOGLE_MAPS_API_KEY) {
+            logger.warn('Google Maps API key is missing. Skipping calendar event update.');
+            return { message: 'Calendar event update skipped due to missing API key' };
+        }
+
         try {
             const visit = await Visit.findByPk(visitId);
             const user = await User.findByPk(userId);
@@ -137,13 +139,12 @@ class GoogleCalendarService {
         }
     }
 
-    /**
-     * Delete a Google Calendar event for a visit.
-     * @param {string} userId - User ID.
-     * @param {string} visitId - Visit ID.
-     * @returns {Promise<Object>} Deletion confirmation.
-     */
     static async deleteCalendarEvent(userId, visitId) {
+        if (!process.env.GOOGLE_MAPS_API_KEY) {
+            logger.warn('Google Maps API key is missing. Skipping calendar event deletion.');
+            return { message: 'Calendar event deletion skipped due to missing API key' };
+        }
+
         try {
             const user = await User.findByPk(userId);
             if (!user.googleCalendarId) {

@@ -54,6 +54,8 @@ const authenticateCookie = async (req, res, next) => {
                     token: accessToken,
                     client_id: CLIENT_ID,
                     client_secret: CLIENT_SECRET,
+                    //scope: 'https://www.googleapis.com/auth/calendar.events',
+
                 })
             );
 
@@ -118,6 +120,7 @@ const requirePermission = (permissionName) => {
                     grant_type: 'urn:ietf:params:oauth:grant-type:uma-ticket',
                     audience: CLIENT_ID,
                     permission: permissionName,
+                    //scope: 'https://www.googleapis.com/auth/calendar.events',
                 }),
                 {
                     headers: {

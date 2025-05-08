@@ -17,6 +17,7 @@ import { AiOutlineQrcode } from 'react-icons/ai';
 import './Login.css';
 import { debounce } from 'lodash';
 import { determineTargetRoute } from '../../lib/authUtils';
+import GoogleLoginButton from '../../components/Google/GoogleLoginButton';
 
 const LoginPage: React.FC = () => {
     const [step, setStep] = useState<'login' | 'verify2FA' | 'forgot' | 'verifyReset' | 'reset'>('login');
@@ -27,7 +28,6 @@ const LoginPage: React.FC = () => {
     const [confirmPassword, setConfirmPassword] = useState('');
     const [trustDevice, setTrustDevice] = useState(false);
     const [loading, setLoading] = useState(false);
-    const [googleLoading, setGoogleLoading] = useState(false);
     const [userID, setUserID] = useState<string | null>(null);
     const [deviceIdentifier, setDeviceIdentifier] = useState<string | null>(null);
     const [tempToken, setTempToken] = useState<string | null>(null);
@@ -409,27 +409,6 @@ const LoginPage: React.FC = () => {
         handleResendOTP(method);
     };
 
-    const handleGoogleLogin = async () => {
-        setGoogleLoading(true);
-        setApiError(null);
-        clearError();
-        try {
-            const keycloakUrl = import.meta.env.VITE_KEYCLOAK_URL || 'http://localhost:8080';
-            const realm = import.meta.env.VITE_REALM || 'TraceFlow';
-            const clientId = import.meta.env.VITE_CLIENT_ID || 'traceflow-backend';
-            const redirectUri = encodeURIComponent('http://localhost:5000/api/auth/callback');
-            const authUrl = `${keycloakUrl}/realms/${realm}/protocol/openid-connect/auth?client_id=${clientId}&redirect_uri=${redirectUri}&response_type=code&scope=openid%20email%20profile&kc_idp_hint=google&prompt=select_account`;
-            console.debug('Initiating Google OAuth redirect', { authUrl });
-            window.location.href = authUrl;
-        } catch (error: unknown) {
-            const errorMessage = error instanceof Error ? error.message : 'Failed to initiate Google login.';
-            console.error('Google login error:', errorMessage, { error });
-            setApiError(errorMessage);
-            setError(errorMessage);
-            setGoogleLoading(false);
-        }
-    };
-
     const resetForm = () => {
         setIdentifier('');
         setPassword('');
@@ -621,14 +600,7 @@ const LoginPage: React.FC = () => {
                                 {loading ? <span className="spinner" /> : 'Sign In'}
                             </motion.button>
                             <hr />
-                            <button
-                                type="button"
-                                className="action-button-0 google"
-                                onClick={handleGoogleLogin}
-                                disabled={googleLoading}
-                            >
-                                {googleLoading ? <span className="spinner" /> : 'Sign in with Google'}
-                            </button>
+                            <GoogleLoginButton />
                             <button type="button" className="form-link" onClick={() => setStep('forgot')}>
                                 Forgot Password?
                             </button>

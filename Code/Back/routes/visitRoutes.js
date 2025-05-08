@@ -13,7 +13,9 @@ router.delete('/:id', requirePermission('delete_visit'), VisitController.deleteV
 
 // Google Calendar API routes
 router.post('/:id/calendar/sync', requirePermission('access_google_calendar'), VisitController.syncVisitToCalendar);
+router.post('/:id/calendar/sync/all', requirePermission('access_google_calendar'), VisitController.syncAllVisitsToCalendar);
 router.put('/:id/calendar', requirePermission('access_google_calendar'), VisitController.updateCalendarEvent);
 router.delete('/:id/calendar', requirePermission('access_google_calendar'), VisitController.deleteCalendarEvent);
+
 
 module.exports = router;

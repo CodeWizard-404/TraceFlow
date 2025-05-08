@@ -29,12 +29,6 @@ class AuthController {
         return response;
     }
 
-    /**
-     * Initiate Google OAuth login.
-     * @param {Object} req - Express request object.
-     * @param {Object} res - Express response object.
-     * @returns {Promise<void>} Redirects to Google OAuth URL.
-     */
     static async initiateGoogleLogin(req, res) {
         try {
             const authUrl = await GoogleAuthService.getAuthUrl();
@@ -46,29 +40,21 @@ class AuthController {
         }
     }
 
-    /**
-     * Handle Google OAuth callback.
-     * @param {Object} req - Express request object with code and state in query.
-     * @param {Object} res - Express response object.
-     * @returns {Promise<void>} JSON response with login result or error.
-     */
     static async googleCallback(req, res) {
         try {
-            // Set CORS headers to allow credentials
-            res.setHeader('Access-Control-Allow-Origin', 'http://localhost:5173');
+            res.setHeader('Access-Control-Allow-Origin', process.env.FRONTEND_URL);
             res.setHeader('Access-Control-Allow-Credentials', 'true');
 
             const { code, state } = req.query;
             if (!code) {
                 logger.warn('Google callback: Missing code parameter', { query: req.query, IP: req.ip });
-                return res.redirect('http://localhost:5173/login?error=Missing+code+parameter');
+                return res.redirect(`${process.env.FRONTEND_URL}/login?error=Missing+code+parameter`);
             }
 
             const deviceIdentifier = req.headers['x-device-id'] || 'unknown-device';
             const result = await GoogleAuthService.googleLogin(code, deviceIdentifier, res);
             logger.info(`Google login successful for user ${result.user?.userID || 'unknown'}, IP: ${req.ip}`);
 
-            // Log raw Set-Cookie headers
             const cookieHeaders = res.getHeader('Set-Cookie') || [];
             const userDataCookie = cookieHeaders.find(header => header.startsWith('userData='));
             logger.info('Cookies set in response', {
@@ -76,9 +62,8 @@ class AuthController {
                 userDataCookiePreview: userDataCookie ? userDataCookie.substring(0, 100) + '...' : 'Not found',
             });
 
-            // Delay redirect to ensure cookies are sent
             setTimeout(() => {
-                res.redirect('http://localhost:5173/?login=success');
+                res.redirect(`${process.env.FRONTEND_URL}/?login=success`);
             }, 100);
         } catch (error) {
             logger.error(`Google callback error: ${error.message}`, {
@@ -88,11 +73,10 @@ class AuthController {
                 IP: req.ip,
             });
             const errorMessage = encodeURIComponent(error.message || 'Google login failed');
-            res.redirect(`http://localhost:5173/login?error=${errorMessage}`);
+            res.redirect(`${process.env.FRONTEND_URL}/login?error=${errorMessage}`);
         }
     }
 
-    // backend/controllers/authController.js
     static async reauthenticate(req, res) {
         try {
             const errors = validationResult(req);
@@ -103,7 +87,6 @@ class AuthController {
 
             const { username, password, client_id, tab_id, client_data } = req.body;
 
-            // Submit credentials to Keycloak's login endpoint
             const keycloakResponse = await axios.post(
                 `${KEYCLOAK_URL}/realms/${REALM}/login-actions/authenticate`,
                 new URLSearchParams({
@@ -115,11 +98,10 @@ class AuthController {
                 }),
                 {
                     headers: { 'Content-Type': 'application/x-www-form-urlencoded' },
-                    maxRedirects: 0, // Prevent automatic redirect handling
+                    maxRedirects: 0,
                 }
             ).catch(async (error) => {
                 if (error.response && error.response.status === 302) {
-                    // Keycloak redirects on success, capture the redirect URL
                     const redirectUrl = error.response.headers.location;
                     logger.info(`Reauthentication successful, redirecting to: ${redirectUrl}`);
                     return { data: { redirectUrl } };
@@ -129,24 +111,17 @@ class AuthController {
             });
 
             if (keycloakResponse.data.redirectUrl) {
-                // Redirect to Keycloak's redirect URL to continue the flow
                 return res.redirect(keycloakResponse.data.redirectUrl);
             }
 
             logger.error('Unexpected Keycloak response', { response: keycloakResponse.data });
-            return res.redirect('http://localhost:5173/login?error=reauth_failed');
+            return res.redirect(`${process.env.FRONTEND_URL}/login?error=reauth_failed`);
         } catch (error) {
             logger.error(`Reauthentication error: ${error.message}`, { IP: req.ip });
-            return res.redirect('http://localhost:5173/login?error=reauth_failed');
+            return res.redirect(`${process.env.FRONTEND_URL}/login?error=reauth_failed`);
         }
     }
 
-    /**
-     * Handle user login.
-     * @param {Object} req - Express request object with login credentials.
-     * @param {Object} res - Express response object.
-     * @returns {Promise<void>} JSON response with login result or error.
-     */
     static async login(req, res) {
         try {
             const errors = validationResult(req);
@@ -171,12 +146,6 @@ class AuthController {
         }
     }
 
-    /**
-     * Verify 2FA code.
-     * @param {Object} req - Express request object with 2FA details.
-     * @param {Object} res - Express response object.
-     * @returns {Promise<void>} JSON response with verification result or error.
-     */
     static async verify2FA(req, res) {
         try {
             const errors = validationResult(req);
@@ -207,12 +176,6 @@ class AuthController {
         }
     }
 
-    /**
-     * Refresh access token.
-     * @param {Object} req - Express request object with refresh token in cookies.
-     * @param {Object} res - Express response object.
-     * @returns {Promise<void>} JSON response with new tokens or error.
-     */
     static async refreshToken(req, res) {
         try {
             const refreshToken = req.cookies.refreshToken;
@@ -229,59 +192,26 @@ class AuthController {
         }
     }
 
-    /**
-     * Log out user and invalidate Keycloak session.
-     * @param {Object} req - Express request object.
-     * @param {Object} res - Express response object.
-     * @returns {Promise<void>} JSON response with logout confirmation or error.
-     */
     static async logout(req, res) {
         try {
             const refreshToken = req.cookies?.refreshToken;
+            const result = await AuthService.logout(refreshToken);
+
             const cookieOptions = {
                 path: '/',
                 sameSite: process.env.NODE_ENV === 'development' ? 'Lax' : 'Strict',
                 secure: process.env.NODE_ENV === 'production',
             };
 
-            // Clear all cookies
-            res.clearCookie('accessToken', cookieOptions);
-            res.clearCookie('refreshToken', cookieOptions);
-            res.clearCookie('userData', cookieOptions);
-            logger.info('Cookies cleared on logout', { cookies: ['accessToken', 'refreshToken', 'userData'], IP: req.ip });
-
-            // Invalidate Keycloak session using refresh token
-            if (refreshToken) {
-                const keycloakBaseUrl = `${process.env.KEYCLOAK_URL}/realms/${process.env.REALM}`;
-                try {
-                    await axios.post(
-                        `${keycloakBaseUrl}/protocol/openid-connect/logout`,
-                        new URLSearchParams({
-                            client_id: process.env.KEYCLOAK_CLIENT_ID,
-                            client_secret: process.env.KEYCLOAK_CLIENT_SECRET,
-                            refresh_token: refreshToken,
-                        }),
-                        { headers: { 'Content-Type': 'application/x-www-form-urlencoded' } }
-                    );
-                    logger.info('Keycloak session invalidated', { IP: req.ip });
-                } catch (keycloakError) {
-                    logger.warn('Failed to invalidate Keycloak session', {
-                        error: keycloakError.message,
-                        IP: req.ip,
-                    });
-                    // Continue with logout even if Keycloak session invalidation fails
-                }
-            } else {
-                logger.warn('No refreshToken found for Keycloak logout', { IP: req.ip });
-            }
-
-            // Construct Keycloak logout URL for frontend redirect
-            const keycloakLogoutUrl = `${process.env.KEYCLOAK_URL}/realms/${process.env.REALM}/protocol/openid-connect/logout?client_id=${process.env.KEYCLOAK_CLIENT_ID}&post_logout_redirect_uri=${encodeURIComponent('http://localhost:5173/login')}`;
+            result.cookiesToClear.forEach(cookie => {
+                res.clearCookie(cookie, cookieOptions);
+            });
+            logger.info('Cookies cleared on logout', { cookies: result.cookiesToClear, IP: req.ip });
 
             logger.info('User logged out successfully', { IP: req.ip });
             return res.status(200).json({
-                message: 'Logged out successfully',
-                keycloakLogoutUrl,
+                message: result.message,
+                keycloakLogoutUrl: result.keycloakLogoutUrl,
             });
         } catch (error) {
             logger.error(`Logout error: ${error.message}`, { IP: req.ip, stack: error.stack });
@@ -289,12 +219,6 @@ class AuthController {
         }
     }
 
-    /**
-     * Resend 2FA code.
-     * @param {Object} req - Express request object with userID and otpMethod.
-     * @param {Object} res - Express response object.
-     * @returns {Promise<void>} JSON response with resend result or error.
-     */
     static async resend2FA(req, res) {
         try {
             const errors = validationResult(req);
@@ -316,12 +240,6 @@ class AuthController {
         }
     }
 
-    /**
-     * Initiate password reset.
-     * @param {Object} req - Express request object with identifier.
-     * @param {Object} res - Express response object.
-     * @returns {Promise<void>} JSON response with initiation result or error.
-     */
     static async initiatePasswordReset(req, res) {
         try {
             const errors = validationResult(req);
@@ -344,12 +262,6 @@ class AuthController {
         }
     }
 
-    /**
-     * Verify password reset OTP.
-     * @param {Object} req - Express request object with userID and otpCode.
-     * @param {Object} res - Express response object.
-     * @returns {Promise<void>} JSON response with verification result or error.
-     */
     static async verifyPasswordResetOTP(req, res) {
         try {
             const errors = validationResult(req);
@@ -372,12 +284,6 @@ class AuthController {
         }
     }
 
-    /**
-     * Reset password.
-     * @param {Object} req - Express request object with userID, newPassword, and tempToken.
-     * @param {Object} res - Express response object.
-     * @returns {Promise<void>} JSON response with reset result or error.
-     */
     static async resetPassword(req, res) {
         try {
             const errors = validationResult(req);

@@ -19,7 +19,6 @@ class GoogleAuthService {
             const keycloakBaseUrl = `${process.env.KEYCLOAK_URL}/realms/${process.env.REALM}`;
             logger.info('Exchanging Keycloak authorization code', { code: code.substring(0, 10) + '...' });
 
-            // Exchange code for Keycloak tokens
             const tokenResponse = await axios.post(
                 `${keycloakBaseUrl}/protocol/openid-connect/token`,
                 new URLSearchParams({
@@ -27,7 +26,7 @@ class GoogleAuthService {
                     client_secret: process.env.KEYCLOAK_CLIENT_SECRET,
                     grant_type: 'authorization_code',
                     code,
-                    redirect_uri: 'http://localhost:5000/api/auth/callback',
+                    redirect_uri: process.env.BACKEND_REDIRECT_URI,
                 }),
                 { headers: { 'Content-Type': 'application/x-www-form-urlencoded' } }
             );
@@ -39,7 +38,6 @@ class GoogleAuthService {
                 expires_in,
             });
 
-            // Get user info from Keycloak
             const userInfoResponse = await axios.get(
                 `${keycloakBaseUrl}/protocol/openid-connect/userinfo`,
                 { headers: { Authorization: `Bearer ${access_token}` } }
@@ -51,7 +49,6 @@ class GoogleAuthService {
                 sub: userInfo.sub,
             });
 
-            // Find user by Email
             const user = await User.findOne({
                 where: { email: userInfo.email },
                 include: [
@@ -75,13 +72,11 @@ class GoogleAuthService {
             }
             logger.info('User found in database', { userID: user.userID, keycloakId: user.keycloakId });
 
-            // Update keycloakId if missing or mismatched
             if (!user.keycloakId || user.keycloakId !== userInfo.sub) {
                 await user.update({ keycloakId: userInfo.sub });
                 logger.info(`Updated keycloakId for user ${user.userID} to ${userInfo.sub}`);
             }
 
-            // Simplified userData to reduce cookie size (exclude permissions)
             const userData = {
                 userID: user.userID,
                 email: user.email,
@@ -112,7 +107,6 @@ class GoogleAuthService {
                 cookieOptions,
             });
 
-            // Set cookies
             res.cookie('accessToken', access_token, { ...cookieOptions, httpOnly: true });
             res.cookie('refreshToken', refresh_token, {
                 ...cookieOptions,

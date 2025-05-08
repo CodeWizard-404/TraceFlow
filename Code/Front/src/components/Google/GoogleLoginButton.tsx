@@ -29,8 +29,9 @@ const GoogleLoginButton: React.FC = () => {
         <div className="form-group">
             {error && (
                 <motion.div
-                    initial={{ opacity: 0 }}
-                    animate={{ opacity: 1 }}
+                    initial={{ opacity: 0, y: -10 }}
+                    animate={{ opacity: 1, y: 0 }}
+                    transition={{ duration: 0.3 }}
                     className="error-message"
                 >
                     {error}
@@ -49,17 +50,24 @@ const GoogleLoginButton: React.FC = () => {
                     justifyContent: 'center',
                     gap: '8px',
                     padding: '0.5rem 1rem',
+                    boxShadow: '0 2px 4px rgba(0, 0, 0, 0.1)',
+                    transition: 'all 0.2s ease-in-out',
                 }}
             >
                 {loading ? (
                     <span className="spinner" />
                 ) : (
                     <>
-                        <div style={{
-                            backgroundColor: 'rgba(255, 255, 255, 0.7)',
-                            borderRadius: '50%',
-                            padding: '0.3rem',
-                        }}>
+                        <div
+                            style={{
+                                backgroundColor: '#ffffff',
+                                borderRadius: '50%',
+                                padding: '0.3rem',
+                                display: 'flex',
+                                alignItems: 'center',
+                                justifyContent: 'center',
+                            }}
+                        >
                             <FcGoogle size={20} />
                         </div>
                         Sign in with Google

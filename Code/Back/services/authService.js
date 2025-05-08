@@ -1,4 +1,3 @@
-// backend/services/authService.js
 const axios = require('axios');
 const { nanoid } = require('nanoid');
 const { User, Role, Permission, TrustedDevice } = require('../models');
@@ -98,7 +97,7 @@ class AuthService {
                     client_id: CLIENT_ID,
                     client_secret: CLIENT_SECRET,
                     code,
-                    redirect_uri: 'http://localhost:5000/api/auth/callback'
+                    redirect_uri: process.env.BACKEND_REDIRECT_URI
                 }),
                 { headers: { 'Content-Type': 'application/x-www-form-urlencoded' } }
             ).catch(error => {
@@ -172,7 +171,6 @@ class AuthService {
             logger.info('User found in database', { userID: user.userID, keycloakId: user.keycloakId });
 
             // Verify keycloakId matches
-
             if (!user.keycloakId) {
                 await user.update({ keycloakId });
                 logger.info(`Updated keycloakId for user ${user.userID} to ${keycloakId}`);
@@ -287,7 +285,6 @@ class AuthService {
                 : Object.assign(new Error(ERROR_MESSAGES.GOOGLE_LOGIN_FAILED), { status: 400 });
         }
     }
-
 
     static async login(identifier, password, deviceIdentifier, otpMethod = 'email', res) {
         let loginResponse;
@@ -655,7 +652,6 @@ class AuthService {
             maxAge: REFRESH_TOKEN_MAX_AGE,
         });
 
-
         return {
             requires2FA: false,
             accessToken: token,
@@ -847,7 +843,38 @@ class AuthService {
         return { message: 'Password reset successfully' };
     }
 
+    static async logout(refreshToken) {
+        if (refreshToken) {
+            const keycloakBaseUrl = `${process.env.KEYCLOAK_URL}/realms/${process.env.REALM}`;
+            try {
+                await axios.post(
+                    `${keycloakBaseUrl}/protocol/openid-connect/logout`,
+                    new URLSearchParams({
+                        client_id: process.env.KEYCLOAK_CLIENT_ID,
+                        client_secret: process.env.KEYCLOAK_CLIENT_SECRET,
+                        refresh_token: refreshToken,
+                    }),
+                    { headers: { 'Content-Type': 'application/x-www-form-urlencoded' } }
+                );
+                logger.info('Keycloak session invalidated');
+            } catch (keycloakError) {
+                logger.warn('Failed to invalidate Keycloak session', {
+                    error: keycloakError.message,
+                });
+                // Continue with logout even if Keycloak session invalidation fails
+            }
+        } else {
+            logger.warn('No refreshToken found for Keycloak logout');
+        }
 
+        const keycloakLogoutUrl = `${process.env.KEYCLOAK_URL}/realms/${process.env.REALM}/protocol/openid-connect/logout?client_id=${process.env.KEYCLOAK_CLIENT_ID}&post_logout_redirect_uri=${encodeURIComponent(process.env.FRONTEND_LOGIN_URL)}`;
+
+        return {
+            message: 'Logged out successfully',
+            keycloakLogoutUrl,
+            cookiesToClear: ['accessToken', 'refreshToken', 'userData'],
+        };
+    }
 }
 
 module.exports = AuthService;

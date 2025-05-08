@@ -2,9 +2,20 @@ import { AxiosError } from "axios";
 import api from "./axiosConfig";
 import { VerifyQrResponse, LogVisitResponse, VisitByIdResponse, UpdateVisitResponse, DeleteVisitResponse } from ".";
 
-// Type for Google Calendar sync response
+// Type for Google Calendar API responses
 export type SyncCalendarResponse = {
-    eventId: string;
+    id: string;
+    summary: string;
+    start: { dateTime: string; timeZone: string };
+    end: { dateTime: string; timeZone: string };
+};
+
+export type BulkSyncCalendarResponse = {
+    syncedEvents: SyncCalendarResponse[];
+    failedEvents: { visitId: string; error: string }[];
+};
+
+export type DeleteCalendarResponse = {
     message: string;
 };
 
@@ -16,24 +27,29 @@ interface AxiosErrorResponse {
 }
 
 const handleApiError = (error: unknown, defaultMessage: string): string => {
-    const axiosError = error as AxiosError<AxiosErrorResponse>;
-    if (axiosError.response) {
-        return axiosError.message;
+    if (error instanceof AxiosError) {
+        const axiosError = error as AxiosError<AxiosErrorResponse>;
+        if (axiosError.response) {
+            return axiosError.message;
+        }
+        switch (axiosError.status) {
+            case 400:
+                return "Invalid request. Please check your input and try again.";
+            case 401:
+                return "Authentication failed. Please log in again.";
+            case 403:
+                return "You don’t have permission to perform this action.";
+            case 404:
+                return "Visit or calendar event not found.";
+            case 429:
+                return "API quota exceeded. Please try again later.";
+            case 500:
+                return "Something went wrong on our end. Please try again later.";
+            default:
+                return defaultMessage;
+        }
     }
-    switch (axiosError.status) {
-        case 400:
-            return "Invalid request. Please check your input and try again.";
-        case 401:
-            return "Authentication failed. Please log in again.";
-        case 403:
-            return "You don’t have permission to perform this action.";
-        case 404:
-            return "Visit not found.";
-        case 500:
-            return "Something went wrong on our end. Please try again later.";
-        default:
-            return defaultMessage;
-    }
+    return defaultMessage;
 };
 
 export const verifyQrCode = async (data: { qrData: string; visitId: string }): Promise<VerifyQrResponse> => {
@@ -165,7 +181,7 @@ export const deleteVisit = async (id: string): Promise<DeleteVisitResponse> => {
     }
 };
 
-// Google Calendar API method
+// Google Calendar API methods
 export const syncVisitToCalendar = async (visitId: string): Promise<SyncCalendarResponse> => {
     try {
         if (!visitId) {
@@ -175,5 +191,41 @@ export const syncVisitToCalendar = async (visitId: string): Promise<SyncCalendar
         return response.data;
     } catch (error) {
         throw new Error(handleApiError(error, "Unable to sync visit to calendar."));
+    }
+};
+
+export const syncAllVisitsToCalendar = async (supervisorId: string): Promise<BulkSyncCalendarResponse> => {
+    try {
+        if (!supervisorId) {
+            throw new Error("Supervisor ID is required.");
+        }
+        const response = await api.post<BulkSyncCalendarResponse>(`/visits/calendar/sync-all`, { supervisorId });
+        return response.data;
+    } catch (error) {
+        throw new Error(handleApiError(error, "Unable to sync all visits to calendar."));
+    }
+};
+
+export const updateCalendarEvent = async (visitId: string): Promise<SyncCalendarResponse> => {
+    try {
+        if (!visitId) {
+            throw new Error("Visit ID is required.");
+        }
+        const response = await api.put<SyncCalendarResponse>(`/visits/${visitId}/calendar`);
+        return response.data;
+    } catch (error) {
+        throw new Error(handleApiError(error, "Unable to update calendar event."));
+    }
+};
+
+export const deleteCalendarEvent = async (visitId: string): Promise<DeleteCalendarResponse> => {
+    try {
+        if (!visitId) {
+            throw new Error("Visit ID is required.");
+        }
+        const response = await api.delete<DeleteCalendarResponse>(`/visits/${visitId}/calendar`);
+        return response.data;
+    } catch (error) {
+        throw new Error(handleApiError(error, "Unable to delete calendar event."));
     }
 };

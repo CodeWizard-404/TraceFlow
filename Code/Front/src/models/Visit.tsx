@@ -5,16 +5,17 @@ import { VisitReason } from "./Reason";
 interface Visit {
   visitID: string;
   date: string;
-  time: string; 
-  duration?: number | null; 
+  time: string;
+  duration?: number | null;
   location?: string;
   status: VisitStatus;
   photos?: string[];
   comment?: string | null;
   agentID: string;
   timesheetID: string;
-  Checklists?: VisitChecklist[]; 
-  Reasons?: VisitReason[]; 
+  Checklists?: VisitChecklist[];
+  Reasons?: VisitReason[];
+  calendarEventId?: string;
 }
 
 export default Visit;
