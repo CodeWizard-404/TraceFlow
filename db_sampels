@@ -1,27 +1,3 @@
-
-
--- Agents Table Sample Data (corrected)
-INSERT INTO "Agents" ("agentID", "name", "lastname", "email", "phone", "location", "supervisorID", "delegationID", "createdAt", "updatedAt")
-VALUES
-('agt_001abc', 'Anonyme', 'Test0', 'mohamed.benali@example.com', '70717171', 'LocTest', null, ..., NOW(), NOW()),
-('agt_002def', 'Sofien', 'Test1', 'fatima.trabelsi@example.com', '20031474', 'LocTest', null, ...,NOW(), NOW()),
-('agt_003ghi', 'Ghaith', 'Test2', 'ahmed.gharbi@example.com', '56598277', 'LocTest', 'user_001', 'del_001', NOW(), NOW()),
-('agt_004jkl', 'Leila', 'Jlassi', 'leila.jlassi@example.com', '+21625123456', 'Tunis', 'user_001', 'del_001', NOW(), NOW()),
-('agt_005mno', 'Karim', 'Mansour', 'karim.mansour@example.com', '+21626123456', 'Bizerte', 'user_001', 'del_001', NOW(), NOW()),
-('agt_006pqr', 'Nour', 'Haddad', 'nour.haddad@example.com', '+21627123456', 'Sfax', 'user_001', 'del_001', NOW(), NOW()),
-('agt_007stu', 'Youssef', 'Chaabane', 'youssef.chaabane@example.com', '+21628123456', 'Gabès', 'user_001', 'del_001', NOW(), NOW()),
-('agt_008vwx', 'Amina', 'Karray', 'amina.karray@example.com', '+21629123456', 'Tunis', 'user_001', 'del_001', NOW(), NOW()),
-('agt_009yza', 'Hassan', 'Saidi', 'hassan.saidi@example.com', '+21630123456', 'Sousse', 'user_001', 'del_001', NOW(), NOW()),
-('agt_010bcd', 'Sana', 'Bouzid', 'sana.bouzid@example.com', '+21631123456', 'Kairouan', 'user_001', 'del_001', NOW(), NOW()),
-('agt_011efg', 'Omar', 'Dridi', 'omar.dridi@example.com', '+21632123456', 'Tunis', 'user_001', 'del_001', NOW(), NOW()),
-('agt_012hij', 'Rania', 'Zouari', 'rania.zouari@example.com', '+21633123456', 'Sfax', 'user_001', 'del_001', NOW(), NOW()),
-('agt_013klm', 'Tarek', 'Hachicha', 'tarek.hachicha@example.com', '+21634123456', 'Bizerte', 'user_001', 'del_001', NOW(), NOW()),
-('agt_014nop', 'Imen', 'Feki', 'imen.feki@example.com', '+21635123456', 'Gabès', 'user_001', 'del_001', NOW(), NOW()),
-('agt_015qrs', 'Sami', 'Lajmi', 'sami.lajmi@example.com', '+21636123456', 'Sousse', 'user_001', 'del_001', NOW(), NOW()),
-('agt_016tuv', 'Hiba', 'Gueddana', 'hiba.gueddana@example.com', '+21637123456', 'Tunis', 'user_001', 'del_001', NOW(), NOW());
-
-
-
 INSERT INTO "Checklists" ("checklistID", "item", "createdAt", "updatedAt")
 VALUES
 ('chk_001', 'Verify store inventory', NOW(), NOW()),

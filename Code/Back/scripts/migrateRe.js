@@ -1,5 +1,3 @@
-const fs = require('fs').promises;
-const path = require('path');
 const axios = require('axios');
 const { extractRoutePermissions } = require('./seedPermissions');
 require('dotenv').config();

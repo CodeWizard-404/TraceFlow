@@ -98,7 +98,7 @@ class AuthService {
                     client_id: CLIENT_ID,
                     client_secret: CLIENT_SECRET,
                     code,
-                    redirect_uri: 'http://localhost:8080/realms/TraceFlow/broker/google/endpoint',
+                    redirect_uri: 'http://localhost:5000/api/auth/callback'
                 }),
                 { headers: { 'Content-Type': 'application/x-www-form-urlencoded' } }
             ).catch(error => {
@@ -149,7 +149,7 @@ class AuthService {
 
             // Find user by googleEmail (which matches email and username)
             const user = await User.findOne({
-                where: { googleEmail: email },
+                where: { email },
                 include: [
                     {
                         model: Role,
@@ -172,7 +172,11 @@ class AuthService {
             logger.info('User found in database', { userID: user.userID, keycloakId: user.keycloakId });
 
             // Verify keycloakId matches
-            if (user.keycloakId !== keycloakId) {
+
+            if (!user.keycloakId) {
+                await user.update({ keycloakId });
+                logger.info(`Updated keycloakId for user ${user.userID} to ${keycloakId}`);
+            } else if (user.keycloakId !== keycloakId) {
                 logger.warn(`Keycloak ID mismatch for user ${email}`, {
                     databaseKeycloakId: user.keycloakId,
                     tokenKeycloakId: keycloakId,
@@ -842,6 +846,8 @@ class AuthService {
 
         return { message: 'Password reset successfully' };
     }
+
+
 }
 
 module.exports = AuthService;

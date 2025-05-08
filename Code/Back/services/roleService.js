@@ -2,6 +2,9 @@ const axios = require('axios');
 const { Role, Permission, User } = require('../models');
 const PermissionService = require('./permissionService');
 const logger = require('../utils/logger');
+const { migratePoliciesToKeycloak } = require('../scripts/migratePo');
+const { migratePermissionsToKeycloak: migrateResourcesToKeycloak } = require('../scripts/migrateRe');
+const { migratePermissionsToKeycloak } = require('../scripts/migratePe');
 require('dotenv').config();
 
 // Keycloak configuration
@@ -365,6 +368,20 @@ class RoleService {
             const token = await getAdminToken();
             const clientUUID = await getClientUUID(token);
 
+            // Step 1: Run migration scripts to reset resources, policies, and permissions in Keycloak
+            logger.info('Starting Keycloak migrations for resources, policies, and permissions...');
+            try {
+                await migrateResourcesToKeycloak();
+                logger.info('Keycloak resources migration completed.');
+                await migratePoliciesToKeycloak();
+                logger.info('Keycloak policies migration completed.');
+                await migratePermissionsToKeycloak();
+                logger.info('Keycloak permissions migration completed.');
+            } catch (migrationError) {
+                logger.error(`Keycloak migration failed: ${migrationError.message}`);
+                throw new Error(`Could not complete Keycloak migrations: ${migrationError.message}`);
+            }
+
             // Default roles configuration
             const defaultRoles = [
                 {
@@ -395,7 +412,7 @@ class RoleService {
                         'access_delegations',
                         'access_delegations_by_governorate',
                         'access_governorates_by_region',
-                        'access gions_by_governorate',
+                        'access_regions_by_governorate',
                         'access_governorates_by_delegation',
                         // Class: User
                         'access_regions_by_user',
@@ -889,57 +906,7 @@ class RoleService {
                 }
             }
 
-            // Create or update resources in Keycloak for each permission
-            const resourceMap = new Map();
-            for (const permission of allPermissions) {
-                try {
-                    // Check if resource exists
-                    const resourceResponse = await axios.get(
-                        `${KEYCLOAK_URL}/admin/realms/${REALM}/clients/${clientUUID}/authz/resource-server/resource?search=${permission.name}`,
-                        { headers: { Authorization: `Bearer ${token}` } }
-                    );
-                    let resourceId = resourceResponse.data.find((r) => r.name === permission.name)?._id;
-
-                    if (!resourceId) {
-                        // Create resource
-                        const resourceData = await axios.post(
-                            `${KEYCLOAK_URL}/admin/realms/${REALM}/clients/${clientUUID}/authz/resource-server/resource`,
-                            {
-                                name: permission.name,
-                                displayName: permission.description || `Resource for ${permission.name}`,
-                                type: 'urn:traceflow:resources:permission',
-                                scopes: [{ name: 'access' }],
-                            },
-                            { headers: { Authorization: `Bearer ${token}` } }
-                        );
-                        resourceId = resourceData.data._id;
-                    } else {
-                        // Update resource if needed
-                        await axios.put(
-                            `${KEYCLOAK_URL}/admin/realms/${REALM}/clients/${clientUUID}/authz/resource-server/resource/${resourceId}`,
-                            {
-                                name: permission.name,
-                                displayName: permission.description || `Resource for ${permission.name}`,
-                                type: 'urn:traceflow:resources:permission',
-                                scopes: [{ name: 'access' }],
-                            },
-                            { headers: { Authorization: `Bearer ${token}` } }
-                        );
-                    }
-                    resourceMap.set(permission.name, resourceId);
-                    logger.debug(`Synced resource for permission ${permission.name} with ID ${resourceId}`);
-                } catch (error) {
-                    logger.error(`Failed to create/update resource for permission ${permission.name}: ${error.message}`);
-                    throw new Error(`Could not sync resource for permission ${permission.name}`);
-                }
-            }
-
-            // Map permissions to their associated role policies
-            const permissionToPolicies = new Map();
-            allPermissionNames.forEach((permName) => permissionToPolicies.set(permName, []));
-
-            // Process roles and policies
-            const rolePolicyMap = new Map();
+            // Process roles and assign permissions in local DB
             for (const defaultRole of defaultRoles) {
                 // Find or create role in local DB and Keycloak
                 let role = await Role.findOne({ where: { name: defaultRole.name } });
@@ -970,60 +937,6 @@ class RoleService {
                     keycloakRoleId = keycloakRole.data.id;
                 }
                 logger.debug(`Processing role ${defaultRole.name} with Keycloak ID ${keycloakRoleId}`);
-
-                // Create or update role-based policy
-                let policyId;
-                try {
-                    const policyResponse = await axios.get(
-                        `${KEYCLOAK_URL}/admin/realms/${REALM}/clients/${clientUUID}/authz/resource-server/policy/role?name=${role.name}-policy`,
-                        { headers: { Authorization: `Bearer ${token}` } }
-                    );
-                    policyId = policyResponse.data[0]?.id;
-                    if (policyId) {
-                        await axios.put(
-                            `${KEYCLOAK_URL}/admin/realms/${REALM}/clients/${clientUUID}/authz/resource-server/policy/role/${policyId}`,
-                            {
-                                name: `${role.name}-policy`,
-                                description: `Policy for ${role.name} role`,
-                                logic: 'POSITIVE',
-                                type: 'role',
-                                roles: [{ id: keycloakRoleId, required: true }],
-                            },
-                            { headers: { Authorization: `Bearer ${token}` } }
-                        );
-                    }
-                } catch (error) {
-                    if (error.response?.status === 404) {
-                        const policyData = await axios.post(
-                            `${KEYCLOAK_URL}/admin/realms/${REALM}/clients/${clientUUID}/authz/resource-server/policy/role`,
-                            {
-                                name: `${role.name}-policy`,
-                                description: `Policy for ${role.name} role`,
-                                logic: 'POSITIVE',
-                                type: 'role',
-                                roles: [{ id: keycloakRoleId, required: true }],
-                            },
-                            { headers: { Authorization: `Bearer ${token}` } }
-                        );
-                        policyId = policyData.data.id;
-                    } else {
-                        throw error;
-                    }
-                }
-                rolePolicyMap.set(defaultRole.name, policyId);
-                logger.debug(`Synced policy for role ${role.name} with ID ${policyId}`);
-
-                // Assign permissions to policies
-                const permissionNamesToAssign =
-                    defaultRole.name === 'Super Admin'
-                        ? allPermissionNames
-                        : defaultRole.permissions.filter((p) => allPermissionNames.includes(p));
-
-                permissionNamesToAssign.forEach((permName) => {
-                    if (permissionToPolicies.has(permName)) {
-                        permissionToPolicies.get(permName).push(policyId);
-                    }
-                });
 
                 // Update local DB permissions
                 let permissionIDsToAssign =
@@ -1082,95 +995,14 @@ class RoleService {
                     roleName: defaultRole.name,
                     permissionsAssigned: permissionsToAssign.length,
                     permissionsRevoked: permissionsToRevoke.length,
-                    keycloakPermissionsSynced: permissionNamesToAssign.length,
-                    keycloakPermissionsRemoved: 0, // Will update later
+                    keycloakPermissionsSynced: permissionIDsToAssign.length,
+                    keycloakPermissionsRemoved: 0, // Updated by migrations
                     totalPermissions:
                         defaultRole.name === 'Super Admin'
                             ? allPermissions.length
                             : permissionIDsToAssign.length,
                 });
             }
-
-            // Create or update permissions in Keycloak (one per resource)
-            let keycloakPermissionsRemoved = 0;
-            for (const permName of allPermissionNames) {
-                try {
-                    const resourceId = resourceMap.get(permName);
-                    if (!resourceId) throw new Error(`Resource not found for permission ${permName}`);
-
-                    const policyIds = permissionToPolicies.get(permName);
-                    if (!policyIds || policyIds.length === 0) {
-                        logger.debug(`No policies for permission ${permName}, skipping permission creation`);
-                        continue;
-                    }
-
-                    // Check if permission exists
-                    const permissionResponse = await axios.get(
-                        `${KEYCLOAK_URL}/admin/realms/${REALM}/clients/${clientUUID}/authz/resource-server/permission/resource?name=${permName}-permission`,
-                        { headers: { Authorization: `Bearer ${token}` } }
-                    );
-                    let permissionId = permissionResponse.data.find((p) => p.name === `${permName}-permission`)?.id;
-
-                    const permissionData = {
-                        name: `${permName}-permission`,
-                        description: `Permission for ${permName}`,
-                        type: 'resource',
-                        policies: policyIds,
-                        resources: [resourceId],
-                        logic: 'POSITIVE',
-                        decisionStrategy: 'AFFIRMATIVE',
-                    };
-
-                    if (permissionId) {
-                        // Update existing permission
-                        await axios.put(
-                            `${KEYCLOAK_URL}/admin/realms/${REALM}/clients/${clientUUID}/authz/resource-server/permission/resource/${permissionId}`,
-                            permissionData,
-                            { headers: { Authorization: `Bearer ${token}` } }
-                        );
-                    } else {
-                        // Create new permission
-                        await axios.post(
-                            `${KEYCLOAK_URL}/admin/realms/${REALM}/clients/${clientUUID}/authz/resource-server/permission/resource`,
-                            permissionData,
-                            { headers: { Authorization: `Bearer ${token}` } }
-                        );
-                    }
-                    logger.debug(`Synced permission ${permName}-permission with policies: ${policyIds.join(', ')}`);
-                } catch (error) {
-                    logger.error(`Failed to create/update permission ${permName}: ${error.message}`);
-                    throw new Error(`Could not sync permission ${permName}`);
-                }
-            }
-
-            // Clean up unused permissions in Keycloak
-            const allKeycloakPermissions = await axios.get(
-                `${KEYCLOAK_URL}/admin/realms/${REALM}/clients/${clientUUID}/authz/resource-server/permission`,
-                { headers: { Authorization: `Bearer ${token}` } }
-            );
-            const permissionsToRemove = allKeycloakPermissions.data.filter((p) => {
-                if (!p.name || !p.name.endsWith('-permission')) return false;
-                const permName = p.name.replace('-permission', '');
-                return !allPermissionNames.includes(permName);
-            });
-
-            for (const perm of permissionsToRemove) {
-                try {
-                    await axios.delete(
-                        `${KEYCLOAK_URL}/admin/realms/${REALM}/clients/${clientUUID}/authz/resource-server/permission/${perm.id}`,
-                        { headers: { Authorization: `Bearer ${token}` } }
-                    );
-                    logger.debug(`Removed unused permission ${perm.name}`);
-                    keycloakPermissionsRemoved++;
-                } catch (error) {
-                    logger.error(`Failed to delete permission ${perm.name}: ${error.message}`);
-                }
-            }
-
-            // Update results with total permissions removed
-            results.forEach((result) => {
-                result.keycloakPermissionsRemoved = keycloakPermissionsRemoved;
-            });
 
             return results;
         } catch (error) {

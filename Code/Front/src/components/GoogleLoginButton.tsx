@@ -10,19 +10,17 @@ const GoogleLoginButton: React.FC = () => {
         setLoading(true);
         setError(null);
         try {
-            // Construct Keycloak OAuth URL for Google Identity Provider
             const keycloakUrl = import.meta.env.VITE_KEYCLOAK_URL || 'http://localhost:8080';
             const realm = import.meta.env.VITE_REALM || 'TraceFlow';
             const clientId = import.meta.env.VITE_CLIENT_ID || 'traceflow-backend';
-            const redirectUri = encodeURIComponent('http://localhost:5173/api/auth/callback');
+            const redirectUri = encodeURIComponent('http://localhost:5000/api/auth/callback');
             const authUrl = `${keycloakUrl}/realms/${realm}/protocol/openid-connect/auth?client_id=${clientId}&redirect_uri=${redirectUri}&response_type=code&scope=openid%20email%20profile&kc_idp_hint=google`;
-
+            console.debug('Initiating Google OAuth redirect', { authUrl });
             window.location.href = authUrl;
         } catch (err) {
             const errorMessage = err instanceof Error ? err.message : 'Failed to initiate Google login.';
             setError(errorMessage);
-            console.error('Google login error:', errorMessage);
-        } finally {
+            console.error('Google login error:', errorMessage, { error: err });
             setLoading(false);
         }
     };

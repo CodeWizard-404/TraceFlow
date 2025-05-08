@@ -6,11 +6,11 @@ require('dotenv').config();
 const ERROR_MESSAGES = {
     GOOGLE_LOGIN_FAILED: 'Google login failed. Ensure your account is registered.',
     KEYCLOAK_TOKEN_EXCHANGE_FAILED: 'Failed to exchange Keycloak authorization code.',
+    USER_NOT_FOUND: 'No account found with this Google email. Please use an existing account.',
 };
 
 class GoogleAuthService {
     static async getAuthUrl() {
-        // No longer needed as frontend constructs Keycloak OAuth URL
         throw new Error('Method deprecated. Use Keycloak OAuth URL directly.');
     }
 
@@ -27,7 +27,7 @@ class GoogleAuthService {
                     client_secret: process.env.KEYCLOAK_CLIENT_SECRET,
                     grant_type: 'authorization_code',
                     code,
-                    redirect_uri: 'http://localhost:5173/api/auth/callback',
+                    redirect_uri: 'http://localhost:5000/api/auth/callback',
                 }),
                 { headers: { 'Content-Type': 'application/x-www-form-urlencoded' } }
             );
@@ -51,8 +51,9 @@ class GoogleAuthService {
                 sub: userInfo.sub,
             });
 
-            let user = await User.findOne({
-                where: { googleEmail: userInfo.email },
+            // Find user by Email
+            const user = await User.findOne({
+                where: { email: userInfo.email },
                 include: [
                     {
                         model: Role,
@@ -69,52 +70,29 @@ class GoogleAuthService {
             });
 
             if (!user) {
-                user = await User.create({
-                    userID: `usr_${require('nanoid')()}`,
-                    firstname: userInfo.given_name || 'Unknown',
-                    lastname: userInfo.family_name || 'Unknown',
-                    phone: 'N/A',
-                    email: userInfo.email,
-                    password: 'N/A',
-                    googleEmail: userInfo.email,
-                    keycloakId: userInfo.sub,
-                });
+                logger.warn(`Google login failed: No user found with email ${userInfo.email}`);
+                throw Object.assign(new Error(ERROR_MESSAGES.USER_NOT_FOUND), { status: 404 });
+            }
+            logger.info('User found in database', { userID: user.userID, keycloakId: user.keycloakId });
 
-                // Assign default Supervisor role
-                let supervisorRole = await Role.findOne({ where: { name: 'Supervisor' } });
-                if (!supervisorRole) {
-                    supervisorRole = await Role.create({
-                        roleID: `role_${require('nanoid')()}`,
-                        name: 'Supervisor',
-                        description: 'Default role for new users',
-                    });
-                }
-                await user.addRole(supervisorRole);
-                logger.info(`Assigned Supervisor role to new user ${user.userID}`);
-            } else {
-                if (!user.keycloakId) {
-                    user.keycloakId = userInfo.sub;
-                    await user.save();
-                }
+            // Update keycloakId if missing or mismatched
+            if (!user.keycloakId || user.keycloakId !== userInfo.sub) {
+                await user.update({ keycloakId: userInfo.sub });
+                logger.info(`Updated keycloakId for user ${user.userID} to ${userInfo.sub}`);
             }
 
+            // Simplified userData to reduce cookie size (exclude permissions)
             const userData = {
                 userID: user.userID,
                 email: user.email,
-                phone: user.phone,
-                firstname: user.firstname,
-                lastname: user.lastname,
+                phone: user.phone || '',
+                firstname: user.firstname || '',
+                lastname: user.lastname || '',
                 keycloakId: user.keycloakId || '',
                 Roles: user.Roles?.map((role) => ({
                     roleID: role.roleID,
                     name: role.name,
-                    description: role.description,
-                    permissions: role.Permissions?.map((perm) => ({
-                        permissionID: perm.permissionID,
-                        name: perm.name,
-                        class: perm.class,
-                        description: perm.description,
-                    })) || [],
+                    description: role.description || '',
                 })) || [],
             };
 
@@ -125,13 +103,23 @@ class GoogleAuthService {
                 maxAge: parseInt(process.env.ACCESS_TOKEN_MAX_AGE) || 900000,
             };
 
+            const jsonUserData = JSON.stringify(userData);
+            logger.info('Setting userData cookie', {
+                userID: user.userID,
+                cookieLength: jsonUserData.length,
+                cookiePreview: jsonUserData.substring(0, 50) + '...',
+                rawJson: jsonUserData.substring(0, 50) + '...',
+                cookieOptions,
+            });
+
+            // Set cookies
             res.cookie('accessToken', access_token, { ...cookieOptions, httpOnly: true });
             res.cookie('refreshToken', refresh_token, {
                 ...cookieOptions,
                 maxAge: parseInt(process.env.REFRESH_TOKEN_MAX_AGE) || 86400000,
                 httpOnly: true,
             });
-            res.cookie('userData', encodeURIComponent(JSON.stringify(userData)), cookieOptions);
+            res.cookie('userData', jsonUserData, cookieOptions);
 
             logger.info(`Google login successful for user ${user.userID}`, {
                 cookiesSet: ['accessToken', 'refreshToken', 'userData'],
@@ -149,10 +137,13 @@ class GoogleAuthService {
                 data: error.response?.data,
                 stack: error.stack,
             });
-            const err = new Error(error.message === ERROR_MESSAGES.KEYCLOAK_TOKEN_EXCHANGE_FAILED
-                ? error.message
-                : ERROR_MESSAGES.GOOGLE_LOGIN_FAILED);
-            err.status = error.response?.status || 401;
+            const err = new Error(
+                error.message === ERROR_MESSAGES.KEYCLOAK_TOKEN_EXCHANGE_FAILED ||
+                    error.message === ERROR_MESSAGES.USER_NOT_FOUND
+                    ? error.message
+                    : ERROR_MESSAGES.GOOGLE_LOGIN_FAILED
+            );
+            err.status = error.response?.status || error.status || 401;
             throw err;
         }
     }

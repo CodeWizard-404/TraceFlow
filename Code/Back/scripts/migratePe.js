@@ -128,7 +128,6 @@ async function deletePermission(token, clientUUID, permissionId) {
             `${KEYCLOAK_URL}/admin/realms/${REALM}/clients/${clientUUID}/authz/resource-server/permission/${permissionId}`,
             { headers: { Authorization: `Bearer ${token}` } }
         );
-        console.log(`${new Date().toISOString()} - Deleted permission: ${permissionId}`);
     } catch (err) {
         console.error(`Failed to delete permission ${permissionId}: ${err.response?.data?.error_description || err.message}`);
     }
@@ -138,7 +137,6 @@ const migratePermissionsToKeycloak = async () => {
     try {
         // Verify database connection
         await sequelize.authenticate();
-        console.log(`${new Date().toISOString()} - Database connection successful`);
 
         // Get Keycloak token and client
         const token = await getAdminToken();
@@ -151,15 +149,11 @@ const migratePermissionsToKeycloak = async () => {
         // Delete existing permissions
         const existingPermissions = await getExistingPermissions(token, clientUUID);
         if (existingPermissions.length > 0) {
-            console.log(`${new Date().toISOString()} - Deleting ${existingPermissions.length} existing permissions`);
             await Promise.all(existingPermissions.map(perm => deletePermission(token, clientUUID, perm.id)));
-            console.log(`${new Date().toISOString()} - All permissions deleted`);
         } else {
-            console.log(`${new Date().toISOString()} - No existing permissions found`);
         }
 
         // Fetch permissions with roles using raw query
-        console.log(`${new Date().toISOString()} - Fetching permissions with roles...`);
         const [dbPermissions] = await sequelize.query(`
       SELECT p."permissionID", p.name AS permission_name, array_agg(r.name) AS role_names
       FROM "Permissions" p
@@ -168,8 +162,6 @@ const migratePermissionsToKeycloak = async () => {
       GROUP BY p."permissionID", p.name
     `);
 
-        console.log(`${new Date().toISOString()} - Found ${dbPermissions.length} permissions`);
-        console.log(`${new Date().toISOString()} - Matched ${keycloakResources.filter(r => dbPermissions.some(p => p.permission_name === r.name)).length} resources for permissions`);
 
         if (dbPermissions.length === 0) {
             console.warn(`${new Date().toISOString()} - No permissions found, exiting`);
@@ -179,7 +171,6 @@ const migratePermissionsToKeycloak = async () => {
         // Process permissions
         for (const dbPerm of dbPermissions) {
             const permName = dbPerm.permission_name;
-            console.log(`${new Date().toISOString()} - Processing permission: ${permName}`);
 
             // Find matching resource
             const resource = keycloakResources.find(r => r.name === permName);
@@ -190,7 +181,6 @@ const migratePermissionsToKeycloak = async () => {
 
             // Get role names
             const roleNames = dbPerm.role_names ? dbPerm.role_names.filter(name => name) : [];
-            console.log(`${new Date().toISOString()} - Roles for ${permName}: ${roleNames.join(', ') || 'none'}`);
 
             if (roleNames.length === 0) {
                 console.warn(`${new Date().toISOString()} - No roles for ${permName}, skipping`);
@@ -226,7 +216,6 @@ const migratePermissionsToKeycloak = async () => {
                     },
                     { headers: { Authorization: `Bearer ${token}` } }
                 );
-                console.log(`${new Date().toISOString()} - Created permission: ${permissionName} with ${policyIds.length} policies`);
             } catch (err) {
                 console.error(`${new Date().toISOString()} - Failed to create permission ${permissionName}: ${err.response?.data?.error_description || err.message}`);
             }

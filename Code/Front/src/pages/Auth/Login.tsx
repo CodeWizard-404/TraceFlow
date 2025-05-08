@@ -17,7 +17,6 @@ import { AiOutlineQrcode } from 'react-icons/ai';
 import './Login.css';
 import { debounce } from 'lodash';
 import { determineTargetRoute } from '../../lib/authUtils';
-import GoogleLoginButton from '../../components/GoogleLoginButton';
 
 const LoginPage: React.FC = () => {
     const [step, setStep] = useState<'login' | 'verify2FA' | 'forgot' | 'verifyReset' | 'reset'>('login');
@@ -28,6 +27,7 @@ const LoginPage: React.FC = () => {
     const [confirmPassword, setConfirmPassword] = useState('');
     const [trustDevice, setTrustDevice] = useState(false);
     const [loading, setLoading] = useState(false);
+    const [googleLoading, setGoogleLoading] = useState(false);
     const [userID, setUserID] = useState<string | null>(null);
     const [deviceIdentifier, setDeviceIdentifier] = useState<string | null>(null);
     const [tempToken, setTempToken] = useState<string | null>(null);
@@ -43,7 +43,7 @@ const LoginPage: React.FC = () => {
     const [showConfirmPassword, setShowConfirmPassword] = useState(false);
     const [success, setSuccess] = useState<string | null>(null);
 
-    const { loginUser, user, permissionsLoaded, userRoles } = useAuth();
+    const { loginUser, user, permissionsLoaded, userRoles, redirectLoading } = useAuth();
     const { setError, clearError } = useError();
     const navigate = useNavigate();
     const location = useLocation();
@@ -59,6 +59,26 @@ const LoginPage: React.FC = () => {
         ),
         [navigate]
     );
+
+    useEffect(() => {
+        const query = new URLSearchParams(location.search);
+        const loginStatus = query.get('login');
+        const error = query.get('error');
+        if (loginStatus === 'success') {
+            setSuccess('Login successful! Redirecting...');
+            console.debug('Google login redirect success', { timestamp: new Date().toISOString() });
+            if (user && permissionsLoaded && userRoles?.length) {
+                const targetRoute = determineTargetRoute(userRoles);
+                console.debug('Redirecting to target route after Google login:', { targetRoute, timestamp: new Date().toISOString() });
+                debouncedNavigate(targetRoute, { replace: true });
+            }
+        } else if (error) {
+            setApiError(decodeURIComponent(error));
+            setError(decodeURIComponent(error));
+            console.debug('Google login redirect error:', { error, timestamp: new Date().toISOString() });
+            debouncedNavigate('/login', { replace: true, state: { error: decodeURIComponent(error) } });
+        }
+    }, [location.search, user, permissionsLoaded, userRoles, setError, debouncedNavigate]);
 
     useEffect(() => {
         console.debug('Mounting LoginPage, step:', step);
@@ -136,6 +156,7 @@ const LoginPage: React.FC = () => {
 
     const validatePassword = (value: string): string => {
         if (!value) return 'Please enter a password.';
+        if (value.length < 8) return 'Password must be at least 8 characters long.';
         return '';
     };
 
@@ -388,6 +409,27 @@ const LoginPage: React.FC = () => {
         handleResendOTP(method);
     };
 
+    const handleGoogleLogin = async () => {
+        setGoogleLoading(true);
+        setApiError(null);
+        clearError();
+        try {
+            const keycloakUrl = import.meta.env.VITE_KEYCLOAK_URL || 'http://localhost:8080';
+            const realm = import.meta.env.VITE_REALM || 'TraceFlow';
+            const clientId = import.meta.env.VITE_CLIENT_ID || 'traceflow-backend';
+            const redirectUri = encodeURIComponent('http://localhost:5000/api/auth/callback');
+            const authUrl = `${keycloakUrl}/realms/${realm}/protocol/openid-connect/auth?client_id=${clientId}&redirect_uri=${redirectUri}&response_type=code&scope=openid%20email%20profile&kc_idp_hint=google&prompt=select_account`;
+            console.debug('Initiating Google OAuth redirect', { authUrl });
+            window.location.href = authUrl;
+        } catch (error: unknown) {
+            const errorMessage = error instanceof Error ? error.message : 'Failed to initiate Google login.';
+            console.error('Google login error:', errorMessage, { error });
+            setApiError(errorMessage);
+            setError(errorMessage);
+            setGoogleLoading(false);
+        }
+    };
+
     const resetForm = () => {
         setIdentifier('');
         setPassword('');
@@ -425,6 +467,54 @@ const LoginPage: React.FC = () => {
         document.cookie = 'userData=; path=/; expires=Thu, 01 Jan 1970 00:00:00 GMT';
         console.debug('Auth cookies cleared');
     };
+
+    // Handle Google OAuth callback errors
+    useEffect(() => {
+        const query = new URLSearchParams(location.search);
+        const error = query.get('error');
+        const errorDescription = query.get('error_description');
+        if (error || errorDescription) {
+            const errorMessage = errorDescription || 'Google login failed. Please try again or use email/password login.';
+            setApiError(errorMessage);
+            setError(errorMessage);
+            debouncedNavigate('/login', { replace: true, state: { error: errorMessage } });
+        }
+    }, [location.search, setError, debouncedNavigate]);
+
+    if (redirectLoading) {
+        return (
+            <div
+                style={{
+                    display: 'flex',
+                    justifyContent: 'center',
+                    alignItems: 'center',
+                    height: '100vh',
+                    flexDirection: 'column',
+                    textAlign: 'center',
+                    backgroundColor: '#f5f5f5',
+                }}
+            >
+                <div
+                    className="spinner"
+                    style={{
+                        border: '4px solid #f3f3f3',
+                        borderTop: '4px solid #3498db',
+                        borderRadius: '50%',
+                        width: '40px',
+                        height: '40px',
+                        animation: 'spin 1s linear infinite',
+                    }}
+                />
+                <p style={{ marginTop: '20px', fontSize: '16px', color: '#333' }}>Redirecting...</p>
+                <style>{`
+                    @keyframes spin {
+                        0% { transform: rotate(0deg); }
+                        100% { transform: rotate(360deg); }
+                    }
+                `}</style>
+            </div>
+        );
+    }
 
     return (
         <div className="login-wrapper">
@@ -484,8 +574,12 @@ const LoginPage: React.FC = () => {
                                     placeholder="Enter your email or phone"
                                     className={errors.identifier ? 'input-error' : ''}
                                     autoComplete="username"
+                                    aria-invalid={!!errors.identifier}
+                                    aria-describedby={errors.identifier ? 'identifier-error' : undefined}
                                 />
-                                {errors.identifier && <span className="error-text">{errors.identifier}</span>}
+                                {errors.identifier && (
+                                    <span id="identifier-error" className="error-text">{errors.identifier}</span>
+                                )}
                             </div>
                             <div className="form-group">
                                 <label htmlFor="password">Password</label>
@@ -500,17 +594,22 @@ const LoginPage: React.FC = () => {
                                         placeholder="Enter your password"
                                         className={errors.password ? 'input-error' : ''}
                                         autoComplete="current-password"
+                                        aria-invalid={!!errors.password}
+                                        aria-describedby={errors.password ? 'password-error' : undefined}
                                     />
                                     <button
                                         type="button"
                                         onClick={() => setShowPassword(!showPassword)}
                                         disabled={loading}
                                         className="password-toggle"
+                                        aria-label={showPassword ? 'Hide password' : 'Show password'}
                                     >
                                         {showPassword ? <FaEyeSlash /> : <FaEye />}
                                     </button>
                                 </div>
-                                {errors.password && <span className="error-text">{errors.password}</span>}
+                                {errors.password && (
+                                    <span id="password-error" className="error-text">{errors.password}</span>
+                                )}
                             </div>
                             <motion.button
                                 type="submit"
@@ -522,7 +621,14 @@ const LoginPage: React.FC = () => {
                                 {loading ? <span className="spinner" /> : 'Sign In'}
                             </motion.button>
                             <hr />
-                            <GoogleLoginButton />
+                            <button
+                                type="button"
+                                className="action-button-0 google"
+                                onClick={handleGoogleLogin}
+                                disabled={googleLoading}
+                            >
+                                {googleLoading ? <span className="spinner" /> : 'Sign in with Google'}
+                            </button>
                             <button type="button" className="form-link" onClick={() => setStep('forgot')}>
                                 Forgot Password?
                             </button>
@@ -543,8 +649,12 @@ const LoginPage: React.FC = () => {
                                     maxLength={6}
                                     className={errors.otpCode ? 'input-error' : ''}
                                     autoComplete="one-time-code"
+                                    aria-invalid={!!errors.otpCode}
+                                    aria-describedby={errors.otpCode ? 'otpCode-error' : undefined}
                                 />
-                                {errors.otpCode && <span className="error-text">{errors.otpCode}</span>}
+                                {errors.otpCode && (
+                                    <span id="otpCode-error" className="error-text">{errors.otpCode}</span>
+                                )}
                             </div>
                             <div className="form-info">
                                 {success || `We sent a code to your ${otpMethod}.`}{' '}
@@ -620,8 +730,12 @@ const LoginPage: React.FC = () => {
                                     placeholder="Enter your email or phone"
                                     className={errors.identifier ? 'input-error' : ''}
                                     autoComplete="username"
+                                    aria-invalid={!!errors.identifier}
+                                    aria-describedby={errors.identifier ? 'identifier-error' : undefined}
                                 />
-                                {errors.identifier && <span className="error-text">{errors.identifier}</span>}
+                                {errors.identifier && (
+                                    <span id="identifier-error" className="error-text">{errors.identifier}</span>
+                                )}
                             </div>
                             <motion.button
                                 type="submit"
@@ -652,8 +766,12 @@ const LoginPage: React.FC = () => {
                                     maxLength={6}
                                     className={errors.otpCode ? 'input-error' : ''}
                                     autoComplete="one-time-code"
+                                    aria-invalid={!!errors.otpCode}
+                                    aria-describedby={errors.otpCode ? 'otpCode-error' : undefined}
                                 />
-                                {errors.otpCode && <span className="error-text">{errors.otpCode}</span>}
+                                {errors.otpCode && (
+                                    <span id="otpCode-error" className="error-text">{errors.otpCode}</span>
+                                )}
                             </div>
                             <div className="form-info">
                                 {success || `We sent a code to your ${otpMethod}.`}{' '}
@@ -698,17 +816,22 @@ const LoginPage: React.FC = () => {
                                         placeholder="Enter new password"
                                         className={errors.newPassword ? 'input-error' : ''}
                                         autoComplete="new-password"
+                                        aria-invalid={!!errors.newPassword}
+                                        aria-describedby={errors.newPassword ? 'newPassword-error' : undefined}
                                     />
                                     <button
                                         type="button"
                                         onClick={() => setShowNewPassword(!showNewPassword)}
                                         disabled={loading}
                                         className="password-toggle"
+                                        aria-label={showNewPassword ? 'Hide password' : 'Show password'}
                                     >
                                         {showNewPassword ? <FaEyeSlash /> : <FaEye />}
                                     </button>
                                 </div>
-                                {errors.newPassword && <span className="error-text">{errors.newPassword}</span>}
+                                {errors.newPassword && (
+                                    <span id="newPassword-error" className="error-text">{errors.newPassword}</span>
+                                )}
                             </div>
                             <div className="form-group">
                                 <label htmlFor="confirmPassword">Confirm Password</label>
@@ -723,17 +846,22 @@ const LoginPage: React.FC = () => {
                                         placeholder="Confirm new password"
                                         className={errors.confirmPassword ? 'input-error' : ''}
                                         autoComplete="new-password"
+                                        aria-invalid={!!errors.confirmPassword}
+                                        aria-describedby={errors.confirmPassword ? 'confirmPassword-error' : undefined}
                                     />
                                     <button
                                         type="button"
                                         onClick={() => setShowConfirmPassword(!showConfirmPassword)}
                                         disabled={loading}
                                         className="password-toggle"
+                                        aria-label={showConfirmPassword ? 'Hide password' : 'Show password'}
                                     >
                                         {showConfirmPassword ? <FaEyeSlash /> : <FaEye />}
                                     </button>
                                 </div>
-                                {errors.confirmPassword && <span className="error-text">{errors.confirmPassword}</span>}
+                                {errors.confirmPassword && (
+                                    <span id="confirmPassword-error" className="error-text">{errors.confirmPassword}</span>
+                                )}
                             </div>
                             <motion.button
                                 type="submit"

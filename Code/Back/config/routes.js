@@ -24,7 +24,7 @@ function setupRoutes(app) {
     app.use('/api/visits', authenticateCookie, visitRoutes);
     app.use('/api/checklists', authenticateCookie, checklistRoutes);
     app.use('/api/reasons', authenticateCookie, reasonRoutes);
-    app.use('/api/timesheet', authenticateCookie, timesheetRoutes);
+    app.use('/api/timesheets', authenticateCookie, timesheetRoutes);
     app.use('/api/agents', authenticateCookie, agentRoutes);
     app.use('/api/receipt-books', authenticateCookie, receiptBookRoutes);
     app.use('/api/receipt-stubs', authenticateCookie, receiptstubRoutes);

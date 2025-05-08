@@ -21,6 +21,17 @@ export type GeocodeResponse = {
     formattedAddress: string;
 };
 
+export type DirectionsResponse = {
+    routes: Array<{
+        legs: Array<{
+            distance: { text: string; value: number };
+            duration: { text: string; value: number };
+            start_address: string;
+            end_address: string;
+        }>;
+    }>;
+};
+
 // Generic error handler
 const handleApiError = (error: unknown, defaultMessage: string): string => {
     if (error instanceof AxiosError) {
@@ -155,8 +166,8 @@ export const getGovernoratesByUser = async (userID: string): Promise<Governorate
     }
 };
 
-// Google Maps API method
-export const geocodeAddress = async (address: string): Promise<GeocodeResponse> => {
+// Google Maps API methods
+export const getGeocode = async (address: string): Promise<GeocodeResponse> => {
     try {
         if (!address) {
             throw new Error("Address is required.");
@@ -165,5 +176,17 @@ export const geocodeAddress = async (address: string): Promise<GeocodeResponse> 
         return response.data;
     } catch (error) {
         throw new Error(handleApiError(error, "Unable to geocode address."));
+    }
+};
+
+export const getDirections = async (origin: string, destination: string, mode: string = 'driving'): Promise<DirectionsResponse> => {
+    try {
+        if (!origin || !destination) {
+            throw new Error("Origin and destination are required.");
+        }
+        const response = await api.post<DirectionsResponse>("/locations/directions", { origin, destination, mode });
+        return response.data;
+    } catch (error) {
+        throw new Error(handleApiError(error, "Unable to get directions."));
     }
 };

@@ -5,7 +5,10 @@ const path = require('path');
 const { corsOptions } = require('./cors');
 
 function setupMiddleware(app) {
-    app.use(cors(corsOptions));
+    app.use(cors({
+        ...corsOptions,
+        allowedHeaders: ['Content-Type', 'Authorization', 'X-Google-API-Key'],
+    }));
     app.use(cookieParser());
     app.use(express.json());
     app.use('/api/uploads', express.static(path.join(__dirname, '../Uploads')));

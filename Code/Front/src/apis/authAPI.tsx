@@ -25,7 +25,6 @@ const handleApiError = (error: unknown, defaultMessage: string): string => {
     const axiosError = error as AxiosErrorResponse;
     console.debug('handleApiError:', { error, axiosError });
 
-    // Check for backend error messages in multiple possible fields
     const errorMessage =
         axiosError.response?.data?.error ||
         axiosError.response?.data?.message ||
@@ -33,10 +32,9 @@ const handleApiError = (error: unknown, defaultMessage: string): string => {
 
     if (errorMessage) {
         console.debug('Extracted error message:', errorMessage);
-        return errorMessage; // e.g., "Wrong email or password"
+        return errorMessage;
     }
 
-    // Fallback to status-based messages
     switch (axiosError.response?.status) {
         case 400:
             return 'Invalid request. Please check your input.';
@@ -87,7 +85,7 @@ export const verify2FA = async (
     refreshToken: string
 ): Promise<Verify2FAResponse> => {
     try {
-        const response = await api.post('/auth/verify-2fa', {
+        const response = await api.post('/auth/2fa/verify', {
             userID,
             otpCode,
             deviceIdentifier,
@@ -133,7 +131,7 @@ export const logout = async (): Promise<void> => {
 
 export const resend2FA = async (userID: string, otpMethod: string): Promise<Resend2FAResponse> => {
     try {
-        const response = await api.post('/auth/resend-2fa', { userID, otpMethod });
+        const response = await api.post('/auth/2fa/resend', { userID, otpMethod });
         console.debug('Resend2FA response:', response.data);
         return response.data;
     } catch (error) {
@@ -145,7 +143,7 @@ export const resend2FA = async (userID: string, otpMethod: string): Promise<Rese
 
 export const initiatePasswordReset = async (identifier: string): Promise<InitiatePasswordResetResponse> => {
     try {
-        const response = await api.post('/auth/reset-password/init', { identifier });
+        const response = await api.post('/auth/password/reset/initiate', { identifier });
         console.debug('Initiate password reset response:', response.data);
         return response.data;
     } catch (error) {
@@ -157,7 +155,7 @@ export const initiatePasswordReset = async (identifier: string): Promise<Initiat
 
 export const verifyPasswordResetOTP = async (userID: string, otpCode: string): Promise<VerifyPasswordResetOTPResponse> => {
     try {
-        const response = await api.post('/auth/reset-password/verify', { userID, otpCode });
+        const response = await api.post('/auth/password/reset/verify', { userID, otpCode });
         console.debug('Verify password reset OTP response:', response.data);
         return response.data;
     } catch (error) {
@@ -169,27 +167,12 @@ export const verifyPasswordResetOTP = async (userID: string, otpCode: string): P
 
 export const resetPassword = async (userID: string, newPassword: string, tempToken: string): Promise<ResetPasswordResponse> => {
     try {
-        const response = await api.post('/auth/reset-password', { userID, newPassword, tempToken });
+        const response = await api.post('/auth/password/reset', { userID, newPassword, tempToken });
         console.debug('Reset password response:', response.data);
         return response.data;
     } catch (error) {
         const errorMessage = handleApiError(error, 'Password reset failed');
         console.error('Reset password API error:', errorMessage, { error });
-        throw new Error(errorMessage);
-    }
-};
-
-// Google OAuth method
-export const getGoogleAuthUrl = async (): Promise<string> => {
-    try {
-        const response = await api.get<{ url: string }>('/auth/google');
-        if (!response.data.url) {
-            throw new Error('No OAuth URL returned from server');
-        }
-        return response.data.url;
-    } catch (error) {
-        const errorMessage = handleApiError(error, 'Unable to get Google auth URL');
-        console.error('Google auth URL API error:', errorMessage, { error });
         throw new Error(errorMessage);
     }
 };

@@ -101,12 +101,6 @@ const extractPermissionsFromFiles = async () => {
         }));
     }
 
-    // Debug: Log extracted permissions
-    console.log('Extracted Permissions:');
-    for (const [name, data] of permissionsMap) {
-        console.log(`Permission: ${name}, Class: ${data.class}, Route: ${data.route}`);
-    }
-
     return Array.from(permissionsMap, ([name, data]) => ({
         name,
         class: data.class,

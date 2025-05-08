@@ -30,7 +30,7 @@ export const determineTargetRoute = (roles: Role[]): string => {
     return "/login";
 };
 
-// Utility to check if Google OAuth is configured (assumes backend manages tokens)
+// Utility to check if Google OAuth is configured
 export const isGoogleOAuthConfigured = (): boolean => {
     return !!import.meta.env.VITE_GOOGLE_CLIENT_ID && !!import.meta.env.VITE_REDIRECT_URI;
 };

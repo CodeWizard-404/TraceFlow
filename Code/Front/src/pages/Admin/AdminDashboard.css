@@ -5228,7 +5228,7 @@ body.dark .react-tooltip {
 
 .agent-row {
     display: grid;
-    grid-template-columns: 1fr 1.5fr 0.75fr 1fr 1fr 1fr 0.5fr;
+    grid-template-columns: 1fr 1.5fr 0.75fr 1fr 1fr 1fr;
     padding: 0 1rem;
     align-items: center;
     cursor: pointer;

@@ -62,7 +62,6 @@ async function deletePolicy(token, clientUUID, policyId) {
             `${KEYCLOAK_URL}/admin/realms/${REALM}/clients/${clientUUID}/authz/resource-server/policy/${policyId}`,
             { headers: { Authorization: `Bearer ${token}` } }
         );
-        console.log(`${new Date().toISOString()} - Deleted Keycloak policy with ID: ${policyId}`);
     } catch (err) {
         console.error(`Failed to delete policy ${policyId}: ${err.response?.data?.error_description || err.message}`);
     }
@@ -91,11 +90,9 @@ const migratePoliciesToKeycloak = async () => {
         // Step 2: Delete all existing role-based policies
         const existingPolicies = await getExistingPolicies(token, clientUUID);
         if (existingPolicies.length > 0) {
-            console.log(`${new Date().toISOString()} - Found ${existingPolicies.length} existing role-based policies, deleting...`);
             await Promise.all(
                 existingPolicies.map(policy => deletePolicy(token, clientUUID, policy.id))
             );
-            console.log(`${new Date().toISOString()} - All existing role-based policies deleted`);
         } else {
             console.log(`${new Date().toISOString()} - No existing role-based policies found`);
         }
@@ -107,7 +104,6 @@ const migratePoliciesToKeycloak = async () => {
             return;
         }
 
-        console.log(`${new Date().toISOString()} - Found ${keycloakRoles.length} roles in Keycloak`);
 
         // Step 4: Create policies for each Keycloak role
         for (const role of keycloakRoles) {
@@ -123,7 +119,6 @@ const migratePoliciesToKeycloak = async () => {
                     },
                     { headers: { Authorization: `Bearer ${token}` } }
                 );
-                console.log(`${new Date().toISOString()} - Created Keycloak policy for role: ${role.name}`);
             } catch (err) {
                 console.error(`${new Date().toISOString()} - Failed to create policy for ${role.name}: ${err.response?.data?.error_description || err.message}`);
             }
