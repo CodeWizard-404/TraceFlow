@@ -57,7 +57,7 @@ router.post(
 );
 
 // Google OAuth routes
-router.get('/google', AuthController.initiateGoogleLogin); // Deprecated
-router.get('/callback', AuthController.googleCallback); // Updated to handle Keycloak callback
+router.get('/google', AuthController.initiateGoogleLogin);
+router.get('/callback', AuthController.googleCallback);
 
 module.exports = router;

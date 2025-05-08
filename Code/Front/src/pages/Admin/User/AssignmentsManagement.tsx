@@ -83,7 +83,7 @@ interface AssignmentsManagementProps {
     setSelectedUser: React.Dispatch<React.SetStateAction<User | null>>;
 }
 
-const ITEMS_PER_PAGE = 10;
+const ITEMS_PER_PAGE = 7;
 const ROLES = {
     SUPER_ADMIN: import.meta.env.VITE_ROLES_SUPER_ADMIN,
     SUPERVISOR: import.meta.env.VITE_ROLES_SUPERVISOR,

@@ -274,34 +274,16 @@ class UserService {
             throw new Error(ERROR_MESSAGES.KEYCLOAK_CREATE_FAILED);
         }
 
-        // Link Google account in Keycloak
-        try {
-            await axios.post(
-                `${KEYCLOAK_URL}/admin/realms/${REALM}/users/${keycloakUserId}/federated-identity/google`,
-                {
-                    identityProvider: 'google',
-                    userId: keycloakUserId,
-                    userName: email,
-                },
-                { headers: { Authorization: `Bearer ${token}` } }
-            );
-        } catch (error) {
-            logger.error(`Keycloak link Google account error: ${error.message}, user: ${actorID}`);
-            await axios.delete(`${KEYCLOAK_URL}/admin/realms/${REALM}/users/${keycloakUserId}`, {
-                headers: { Authorization: `Bearer ${token}` },
-            });
-            throw new Error(ERROR_MESSAGES.KEYCLOAK_UPDATE_FAILED);
-        }
+
 
         // Check for duplicates in local DB
         const existingUser = await User.findOne({
-            where: { [Op.or]: [{ email }, { phone }, { googleEmail: email }] },
+            where: { [Op.or]: [{ email }, { phone }] },
         });
         if (existingUser) {
             const errors = [];
             if (existingUser.email === email) errors.push(ERROR_MESSAGES.DUPLICATE_EMAIL);
             if (existingUser.phone === phone) errors.push(ERROR_MESSAGES.DUPLICATE_PHONE);
-            if (existingUser.googleEmail === email) errors.push(ERROR_MESSAGES.GOOGLE_EMAIL_ALREADY_LINKED);
             await axios.delete(`${KEYCLOAK_URL}/admin/realms/${REALM}/users/${keycloakUserId}`, {
                 headers: { Authorization: `Bearer ${token}` },
             });
@@ -319,7 +301,7 @@ class UserService {
                 lastname,
                 phone,
                 password: 'KEYCLOAK_MANAGED',
-                googleEmail: email,
+                googleEmail: null,
             });
             logger.info(`Created user ${email} by user ${actorID}`);
             return user;

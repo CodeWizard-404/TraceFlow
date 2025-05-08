@@ -1359,7 +1359,6 @@ body.dark .list-container {
     color: #1f2937;
     display: flex;
     align-items: center;
-    gap: 0.5rem;
 }
 
 body.dark .list-item {
@@ -2675,6 +2674,11 @@ body.dark .list-item {
     /* Reduced from 0.5rem */
     background: #4cb1c7;
     /* Flat color, no gradient */
+    color: #fff !important;
+}
+
+.list-item:hover label {
+    color: #fff !important;
 }
 
 body.dark .list-item:hover {
@@ -6021,7 +6025,6 @@ label {
     font-size: 0.875rem;
     font-weight: 600;
     color: #4cb1c7;
-    margin-bottom: 0.5rem;
 }
 
 body.dark label {

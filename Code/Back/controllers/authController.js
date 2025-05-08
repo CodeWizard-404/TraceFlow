@@ -16,6 +16,9 @@ const ERROR_MESSAGES = {
     GOOGLE_LOGIN_FAILED: 'Google login failed. Ensure your account is registered.',
 };
 
+const KEYCLOAK_URL = process.env.KEYCLOAK_URL || 'http://localhost:8080';
+const REALM = process.env.REALM || 'TraceFlow';
+
 class AuthController {
     static formatError(error) {
         const response = {
@@ -86,6 +89,55 @@ class AuthController {
             });
             const errorMessage = encodeURIComponent(error.message || 'Google login failed');
             res.redirect(`http://localhost:5173/login?error=${errorMessage}`);
+        }
+    }
+
+    // backend/controllers/authController.js
+    static async reauthenticate(req, res) {
+        try {
+            const errors = validationResult(req);
+            if (!errors.isEmpty()) {
+                logger.warn(`Reauthentication validation failed: ${JSON.stringify(errors.array())}`, { IP: req.ip });
+                return res.status(400).json({ error: 'Missing required fields', details: errors.array() });
+            }
+
+            const { username, password, client_id, tab_id, client_data } = req.body;
+
+            // Submit credentials to Keycloak's login endpoint
+            const keycloakResponse = await axios.post(
+                `${KEYCLOAK_URL}/realms/${REALM}/login-actions/authenticate`,
+                new URLSearchParams({
+                    client_id,
+                    tab_id,
+                    username,
+                    password,
+                    client_data,
+                }),
+                {
+                    headers: { 'Content-Type': 'application/x-www-form-urlencoded' },
+                    maxRedirects: 0, // Prevent automatic redirect handling
+                }
+            ).catch(async (error) => {
+                if (error.response && error.response.status === 302) {
+                    // Keycloak redirects on success, capture the redirect URL
+                    const redirectUrl = error.response.headers.location;
+                    logger.info(`Reauthentication successful, redirecting to: ${redirectUrl}`);
+                    return { data: { redirectUrl } };
+                }
+                logger.error(`Reauthentication failed: ${error.message}`, { status: error.response?.status });
+                throw new Error('Invalid credentials');
+            });
+
+            if (keycloakResponse.data.redirectUrl) {
+                // Redirect to Keycloak's redirect URL to continue the flow
+                return res.redirect(keycloakResponse.data.redirectUrl);
+            }
+
+            logger.error('Unexpected Keycloak response', { response: keycloakResponse.data });
+            return res.redirect('http://localhost:5173/login?error=reauth_failed');
+        } catch (error) {
+            logger.error(`Reauthentication error: ${error.message}`, { IP: req.ip });
+            return res.redirect('http://localhost:5173/login?error=reauth_failed');
         }
     }
 
