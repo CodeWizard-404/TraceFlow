@@ -1,5 +1,7 @@
+import { useAuth } from '../context/AuthContext';
 import { getNotificationRules } from '../apis/notificationAPI';
 import NotificationRule from '../models/NotificationRule';
+import { useMemo } from 'react';
 
 // Default notification events for all entities and actions
 const DEFAULT_EVENTS: string[] = [
@@ -89,16 +91,24 @@ let cachedEvents: string[] | null = null;
 let cachedTypes: string[] | null = null;
 const CACHE_DURATION = 5 * 60 * 1000; // 5 minutes
 let lastCacheTime: number = 0;
+const { effectivePermissions } = useAuth();
+
+
+const userPermissions = useMemo(
+    () => ({
+        canReadNotificationRules: effectivePermissions?.some(
+            (p) =>
+                p.name === import.meta.env.VITE_PERMISSIONS_VIEW_NOTIFICATION_RULES
+        ),
+    }),
+    [effectivePermissions]
+);
 
 // Fetch notification events and types from backend
-const fetchNotificationData = async (effectivePermissions: string[] = []): Promise<{ events: string[]; types: string[] }> => {
+const fetchNotificationData = async (): Promise<{ events: string[]; types: string[] }> => {
     try {
-        const canReadNotificationRules = effectivePermissions.some(
-            (p) => p === import.meta.env.VITE_PERMISSIONS_VIEW_NOTIFICATION_RULES
-        );
-
         let rules: NotificationRule[];
-        if (canReadNotificationRules) {
+        if (userPermissions.canReadNotificationRules) {
             rules = await getNotificationRules();
         } else {
             rules = [];
@@ -107,7 +117,6 @@ const fetchNotificationData = async (effectivePermissions: string[] = []): Promi
             rules: rules.map(r => ({ event: r.event, type: r.type })),
             timestamp: new Date().toISOString(),
         });
-
         // Extract unique event strings from notification rules
         const dynamicEvents = [...new Set(rules.map((rule) => rule.event))].filter(
             (event): event is string => !!event
@@ -139,7 +148,7 @@ const fetchNotificationData = async (effectivePermissions: string[] = []): Promi
 };
 
 // Get all valid notification events, using cache if available
-export const getNotificationEvents = async (effectivePermissions: string[] = []): Promise<string[]> => {
+export const getNotificationEvents = async (): Promise<string[]> => {
     if (cachedEvents && cachedTypes && Date.now() - lastCacheTime < CACHE_DURATION) {
         console.log('Returning cached notification events:', {
             events: cachedEvents,
@@ -148,7 +157,7 @@ export const getNotificationEvents = async (effectivePermissions: string[] = [])
         return cachedEvents;
     }
 
-    const { events, types } = await fetchNotificationData(effectivePermissions);
+    const { events, types } = await fetchNotificationData();
     cachedEvents = events;
     cachedTypes = types;
     lastCacheTime = Date.now();
@@ -160,12 +169,12 @@ export const getNotificationEvents = async (effectivePermissions: string[] = [])
 };
 
 // Get all valid notification types, using cache if available
-export const getNotificationTypes = async (effectivePermissions: string[] = []): Promise<string[]> => {
+export const getNotificationTypes = async (): Promise<string[]> => {
     if (cachedEvents && cachedTypes && Date.now() - lastCacheTime < CACHE_DURATION) {
         return cachedTypes;
     }
 
-    const { events, types } = await fetchNotificationData(effectivePermissions);
+    const { events, types } = await fetchNotificationData();
     cachedEvents = events;
     cachedTypes = types;
     lastCacheTime = Date.now();
@@ -176,26 +185,27 @@ export const getNotificationTypes = async (effectivePermissions: string[] = []):
 export type NotificationEvent = string;
 
 // Utility to get events for a specific entity (based on event prefix)
-export const getEntityEvents = async (entity: string, effectivePermissions: string[] = []): Promise<NotificationEvent[]> => {
-    const events = await getNotificationEvents(effectivePermissions);
+export const getEntityEvents = async (entity: string): Promise<NotificationEvent[]> => {
+    const events = await getNotificationEvents();
     return events.filter((event) => event.startsWith(`${entity}:`));
 };
 
 // Utility to check if an event is valid
-export const isValidNotificationEvent = async (event: string, effectivePermissions: string[] = []): Promise<boolean> => {
-    const events = await getNotificationEvents(effectivePermissions);
+export const isValidNotificationEvent = async (event: string): Promise<boolean> => {
+    const events = await getNotificationEvents();
     return events.includes(event);
 };
 
 // Utility to get all entities
-export const getNotificationEntities = async (effectivePermissions: string[] = []): Promise<string[]> => {
-    const events = await getNotificationEvents(effectivePermissions);
+export const getNotificationEntities = async (): Promise<string[]> => {
+    const events = await getNotificationEvents();
     const entities = [...new Set(events.map((event) => event.split(':')[0]))];
     return entities;
 };
 
 // Utility to get actions for a specific entity
-export const getEntityActions = async (entity: string, effectivePermissions: string[] = []): Promise<string[]> => {
-    const events = await getEntityEvents(entity, effectivePermissions);
+export const getEntityActions = async (entity: string): Promise<string[]> => {
+    const events = await getEntityEvents(entity);
     return events.map((event) => event.split(':')[1]);
 };
+

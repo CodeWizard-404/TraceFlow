@@ -34613,3 +34613,263 @@
 {"level":"info","message":"Fetched supervisors for user usr_lLqHAwO7lKJhLTfs2rVlb","timestamp":"2025-05-08T16:44:30.677Z"}
 {"level":"info","message":"Fetched supervisors for user usr_lLqHAwO7lKJhLTfs2rVlb by user usr_lLqHAwO7lKJhLTfs2rVlb, IP: 192.168.1.18","timestamp":"2025-05-08T16:44:30.678Z"}
 {"level":"info","message":"Fetched timesheets for supervisor usr_lLqHAwO7lKJhLTfs2rVlb by user usr_lLqHAwO7lKJhLTfs2rVlb, IP: 192.168.1.18","timestamp":"2025-05-08T16:44:30.683Z"}
+{"level":"info","message":"Cleaning up expired OTPs","timestamp":"2025-05-08T17:00:00.976Z"}
+{"level":"info","message":"Cleaned up 0 expired OTPs","timestamp":"2025-05-08T17:00:01.089Z"}
+{"level":"info","message":"Updated 0 visits from pending to validated","timestamp":"2025-05-08T17:00:01.092Z"}
+{"level":"info","message":"User disconnected: sofienlaghouanem@gmail.com","reason":"transport close","socketId":"3uMHWaZP-0qWxo65AAAF","timestamp":"2025-05-08T17:23:56.667Z"}
+{"level":"info","message":"Client disconnected","socketId":"3uMHWaZP-0qWxo65AAAF","timestamp":"2025-05-08T17:23:56.671Z"}
+{"code":"2502bb3c-3...","level":"info","message":"Exchanging Keycloak authorization code","timestamp":"2025-05-08T17:31:03.976Z"}
+{"access_token":"present","expires_in":778,"level":"info","message":"Keycloak tokens received","refresh_token":"present","timestamp":"2025-05-08T17:31:04.422Z"}
+{"email":"sofienlaghouanem@gmail.com","level":"info","message":"Keycloak user info retrieved","name":"Sofyen Laghouanem","sub":"184b42a1-3e20-482d-92e6-3233f653d5b3","timestamp":"2025-05-08T17:31:04.493Z"}
+{"keycloakId":"184b42a1-3e20-482d-92e6-3233f653d5b3","level":"info","message":"User found in database","timestamp":"2025-05-08T17:31:04.738Z","userID":"usr_lLqHAwO7lKJhLTfs2rVlb"}
+{"cookieLength":277,"cookieOptions":{"maxAge":900000,"path":"/","sameSite":"Lax","secure":false},"cookiePreview":"{\"userID\":\"usr_lLqHAwO7lKJhLTfs2rVlb\",\"email\":\"sof...","level":"info","message":"Setting userData cookie","rawJson":"{\"userID\":\"usr_lLqHAwO7lKJhLTfs2rVlb\",\"email\":\"sof...","timestamp":"2025-05-08T17:31:04.743Z","userID":"usr_lLqHAwO7lKJhLTfs2rVlb"}
+{"cookiesSet":["accessToken","refreshToken","userData"],"level":"info","message":"Google login successful for user usr_lLqHAwO7lKJhLTfs2rVlb","timestamp":"2025-05-08T17:31:04.753Z","userData":{"email":"sofienlaghouanem@gmail.com","roles":["Supervisor"],"userID":"usr_lLqHAwO7lKJhLTfs2rVlb"}}
+{"level":"info","message":"Google login successful for user usr_lLqHAwO7lKJhLTfs2rVlb, IP: 127.0.0.1","timestamp":"2025-05-08T17:31:04.754Z"}
+{"cookies":["accessToken=eyJhbGciOiJSUzI1NiIsInR5cCIgOiAiSldUIiwia2lkIiA6ICJlcTRlODBqY2NkZ0lTSmxMTzAyeW92a3BJcF9DQnlGMVYtUnBvdDdRb2dnIn0.eyJleHAiOjE3NDY3MjYyNDIsImlhdCI6MTc0NjcyNTQ2NCwiYXV0aF90aW1lIjoxNzQ2NzIyNjQyLCJqdGkiOiI5NGY0NzVmYy0yODhhLTRjOWYtODBhYi1kMTlmZWI0YTVhMjMiLCJpc3MiOiJodHRwOi8vbG9jYWxob3N0OjgwODAvcmVhbG1zL1RyYWNlRmxvdyIsImF1ZCI6ImFjY291bnQiLCJzdWIiOiIxODRiNDJhMS0zZTIwLTQ4MmQtOTJlNi0zMjMzZjY1M2Q1YjMiLCJ0eXAiOiJCZWFyZXIiLCJhenAiOiJ0cmFjZWZsb3ctYmFja2VuZCIsInNpZCI6ImE4ZTllZTE2LTg0N2YtNGY3NS1iMDA4LTk0YTRlYTIwMjc3NSIsImFjciI6IjAiLCJhbGxvd2VkLW9yaWdpbnMiOlsiaHR0cDovL2xvY2FsaG9zdDo1MDAwIiwiaHR0cDovL2xvY2FsaG9zdDo1MTczIl0sInJlYWxtX2FjY2VzcyI6eyJyb2xlcyI6WyJTdXBlcnZpc29yIiwiZGVmYXVsdC1yb2xlcy10cmFjZWZsb3ciLCJ1bWFfYXV0aG9yaXphdGlvbiJdfSwicmVzb3VyY2VfYWNjZXNzIjp7ImFjY291bnQiOnsicm9sZXMiOlsibWFuYWdlLWFjY291bnQiLCJtYW5hZ2UtYWNjb3VudC1saW5rcyIsInZpZXctcHJvZmlsZSJdfX0sInNjb3BlIjoib3BlbmlkIHByb2ZpbGUgZW1haWwiLCJlbWFpbF92ZXJpZmllZCI6dHJ1ZSwibmFtZSI6IlNvZnllbiBMYWdob3VhbmVtIiwicHJlZmVycmVkX3VzZXJuYW1lIjoic29maWVubGFnaG91YW5lbUBnbWFpbC5jb20iLCJnaXZlbl9uYW1lIjoiU29meWVuIiwiZmFtaWx5X25hbWUiOiJMYWdob3VhbmVtIiwiZW1haWwiOiJzb2ZpZW5sYWdob3VhbmVtQGdtYWlsLmNvbSJ9.Va_bAeukzHR1V3EF53nVL86bh8k4oc4d7rU0UZSaZUURdnQ6uh-3owhuv6pGZ63VSyF4QBsmg378UsfK59aAcGpUG2ss_sUnnV8KPfPXG-Sj25H_o6UDo4Oa0fNaQx20lTUVZRZXZrXAeCVQk5sMQKOYhza-HSdsMVdLCzDiO99_W6ZvIS61P8Iyf-wbUqxbEaMI0BN4lvCBxsBYvaKUrujvo3ZT6dZUttwcIqpjXPAdBBqA12EOYPE_EDeyTyZeatYzfW2iM5rm0S56sbP0HboL1UYMBHGFbDfwZTAwJLxjoWkfQ7svfCADvp4cOGGDQ564-BRWM1FDhO6Vqiduyw; Max-Age=900; Path=/; Expires=Thu, 08 May 2025 17:46:04 GMT; HttpOnly; SameSite=Lax","refreshToken=eyJhbGciOiJIUzUxMiIsInR5cCIgOiAiSldUIiwia2lkIiA6ICI4ZDM2MmYzMS03MWYzLTQ0MjYtOWU2Yi1jZmJkZTQ3NzVlYzMifQ.eyJleHAiOjE3NDY3MjYyNDIsImlhdCI6MTc0NjcyNTQ2NCwianRpIjoiNzI5NDQ3NjAtNDk2YS00YWU4LWE1YjctZjIwMmE1ODA3ODE3IiwiaXNzIjoiaHR0cDovL2xvY2FsaG9zdDo4MDgwL3JlYWxtcy9UcmFjZUZsb3ciLCJhdWQiOiJodHRwOi8vbG9jYWxob3N0OjgwODAvcmVhbG1zL1RyYWNlRmxvdyIsInN1YiI6IjE4NGI0MmExLTNlMjAtNDgyZC05MmU2LTMyMzNmNjUzZDViMyIsInR5cCI6IlJlZnJlc2giLCJhenAiOiJ0cmFjZWZsb3ctYmFja2VuZCIsInNpZCI6ImE4ZTllZTE2LTg0N2YtNGY3NS1iMDA4LTk0YTRlYTIwMjc3NSIsInNjb3BlIjoib3BlbmlkIGJhc2ljIGFjciBwcm9maWxlIHdlYi1vcmlnaW5zIGVtYWlsIHJvbGVzIHNlcnZpY2VfYWNjb3VudCJ9.7Cw4EeZxKGnj-WxmG5DrSr_GIaIlRNhH-Ao-fdlSqY5yTtJ-cevfxgYdn0X0vlbbEeGGgPbuCzfRpE5tkMz4jg; Max-Age=86400; Path=/; Expires=Fri, 09 May 2025 17:31:04 GMT; HttpOnly; SameSite=Lax","userData=%7B%22userID%22%3A%22usr_lLqHAwO7lKJhLTfs2rVlb%22%2C%22email%22%3A%22sofienlaghouanem%40gmail.com%22%2C%22phone%22%3A%2220031474%22%2C%22firstname%22%3A%22Sofien%22%2C%22lastname%22%3A%22Laghouanem%22%2C%22keycloakId%22%3A%22184b42a1-3e20-482d-92e6-3233f653d5b3%22%2C%22Roles%22%3A%5B%7B%22roleID%22%3A%22rol_qNsZue6WPK8Fu_HcWcLaC%22%2C%22name%22%3A%22Supervisor%22%2C%22description%22%3A%22%22%7D%5D%7D; Max-Age=900; Path=/; Expires=Thu, 08 May 2025 17:46:04 GMT; SameSite=Lax"],"level":"info","message":"Cookies set in response","timestamp":"2025-05-08T17:31:04.755Z","userDataCookiePreview":"userData=%7B%22userID%22%3A%22usr_lLqHAwO7lKJhLTfs2rVlb%22%2C%22email%22%3A%22sofienlaghouanem%40gma..."}
+{"level":"info","message":"Fetched roles for user usr_lLqHAwO7lKJhLTfs2rVlb by usr_lLqHAwO7lKJhLTfs2rVlb, IP: 192.168.1.18","timestamp":"2025-05-08T17:31:06.085Z"}
+{"level":"info","message":"Fetched roles for user usr_lLqHAwO7lKJhLTfs2rVlb by usr_lLqHAwO7lKJhLTfs2rVlb, IP: 192.168.1.18","timestamp":"2025-05-08T17:31:06.218Z"}
+{"email":"sofienlaghouanem@gmail.com","level":"info","message":"WebSocket authentication successful","roles":"Supervisor, default-roles-traceflow, uma_authorization","socketId":"RCAmcOMyjQJZvAZqAAAH","timestamp":"2025-05-08T17:31:06.789Z","userID":"usr_lLqHAwO7lKJhLTfs2rVlb"}
+{"level":"info","message":"User connected: sofienlaghouanem@gmail.com","socketId":"RCAmcOMyjQJZvAZqAAAH","timestamp":"2025-05-08T17:31:06.803Z","userID":"usr_lLqHAwO7lKJhLTfs2rVlb"}
+{"level":"info","message":"Client connected","socketId":"RCAmcOMyjQJZvAZqAAAH","timestamp":"2025-05-08T17:31:06.827Z"}
+{"level":"info","message":"Fetched notifications for user: usr_lLqHAwO7lKJhLTfs2rVlb, IP: 192.168.1.18","timestamp":"2025-05-08T17:31:06.995Z"}
+{"level":"info","message":"Permission granted for access_supervisor_timesheets to user usr_lLqHAwO7lKJhLTfs2rVlb","timestamp":"2025-05-08T17:31:07.648Z"}
+{"level":"info","message":"Fetched timesheets for supervisor usr_lLqHAwO7lKJhLTfs2rVlb by user usr_lLqHAwO7lKJhLTfs2rVlb, IP: 192.168.1.18","timestamp":"2025-05-08T17:31:07.694Z"}
+{"level":"info","message":"Permission granted for access_supervisors to user usr_lLqHAwO7lKJhLTfs2rVlb","timestamp":"2025-05-08T17:31:07.702Z"}
+{"level":"info","message":"Fetched supervisors for user usr_lLqHAwO7lKJhLTfs2rVlb","timestamp":"2025-05-08T17:31:07.729Z"}
+{"level":"info","message":"Fetched supervisors for user usr_lLqHAwO7lKJhLTfs2rVlb by user usr_lLqHAwO7lKJhLTfs2rVlb, IP: 192.168.1.18","timestamp":"2025-05-08T17:31:07.731Z"}
+{"level":"info","message":"User disconnected: sofienlaghouanem@gmail.com","reason":"transport close","socketId":"RCAmcOMyjQJZvAZqAAAH","timestamp":"2025-05-08T17:31:22.044Z"}
+{"level":"info","message":"Client disconnected","socketId":"RCAmcOMyjQJZvAZqAAAH","timestamp":"2025-05-08T17:31:22.045Z"}
+{"level":"info","message":"Fetched roles for user usr_lLqHAwO7lKJhLTfs2rVlb by usr_lLqHAwO7lKJhLTfs2rVlb, IP: 192.168.1.18","timestamp":"2025-05-08T17:31:23.333Z"}
+{"level":"info","message":"Fetched roles for user usr_lLqHAwO7lKJhLTfs2rVlb by usr_lLqHAwO7lKJhLTfs2rVlb, IP: 192.168.1.18","timestamp":"2025-05-08T17:31:23.614Z"}
+{"email":"sofienlaghouanem@gmail.com","level":"info","message":"WebSocket authentication successful","roles":"Supervisor, default-roles-traceflow, uma_authorization","socketId":"0pGhjYS3SWu4_IG-AAAJ","timestamp":"2025-05-08T17:31:23.717Z","userID":"usr_lLqHAwO7lKJhLTfs2rVlb"}
+{"level":"info","message":"User connected: sofienlaghouanem@gmail.com","socketId":"0pGhjYS3SWu4_IG-AAAJ","timestamp":"2025-05-08T17:31:23.721Z","userID":"usr_lLqHAwO7lKJhLTfs2rVlb"}
+{"level":"info","message":"Client connected","socketId":"0pGhjYS3SWu4_IG-AAAJ","timestamp":"2025-05-08T17:31:23.738Z"}
+{"level":"info","message":"Fetched notifications for user: usr_lLqHAwO7lKJhLTfs2rVlb, IP: 192.168.1.18","timestamp":"2025-05-08T17:31:23.866Z"}
+{"level":"info","message":"Permission granted for access_supervisors to user usr_lLqHAwO7lKJhLTfs2rVlb","timestamp":"2025-05-08T17:31:24.296Z"}
+{"level":"info","message":"Fetched supervisors for user usr_lLqHAwO7lKJhLTfs2rVlb","timestamp":"2025-05-08T17:31:24.325Z"}
+{"level":"info","message":"Fetched supervisors for user usr_lLqHAwO7lKJhLTfs2rVlb by user usr_lLqHAwO7lKJhLTfs2rVlb, IP: 192.168.1.18","timestamp":"2025-05-08T17:31:24.332Z"}
+{"level":"info","message":"Permission granted for access_supervisor_timesheets to user usr_lLqHAwO7lKJhLTfs2rVlb","timestamp":"2025-05-08T17:31:24.369Z"}
+{"level":"info","message":"Fetched timesheets for supervisor usr_lLqHAwO7lKJhLTfs2rVlb by user usr_lLqHAwO7lKJhLTfs2rVlb, IP: 192.168.1.18","timestamp":"2025-05-08T17:31:24.403Z"}
+{"level":"info","message":"Permission granted for access_regional_manager_by_supervisor to user usr_lLqHAwO7lKJhLTfs2rVlb","timestamp":"2025-05-08T17:31:27.285Z"}
+{"level":"info","message":"Fetched regional manager for supervisor usr_lLqHAwO7lKJhLTfs2rVlb","timestamp":"2025-05-08T17:31:27.291Z"}
+{"level":"info","message":"Fetched regional manager for supervisor usr_lLqHAwO7lKJhLTfs2rVlb by user usr_lLqHAwO7lKJhLTfs2rVlb, IP: 192.168.1.18","timestamp":"2025-05-08T17:31:27.294Z"}
+{"level":"info","message":"Permission granted for access_visit_details to user usr_lLqHAwO7lKJhLTfs2rVlb","timestamp":"2025-05-08T17:31:27.298Z"}
+{"level":"info","message":"Fetched visit vis_3u_N-mOr4iKivAJQBuT9O by user usr_lLqHAwO7lKJhLTfs2rVlb, IP: 192.168.1.18","timestamp":"2025-05-08T17:31:27.319Z"}
+{"level":"info","message":"Permission granted for access_regional_manager_by_supervisor to user usr_lLqHAwO7lKJhLTfs2rVlb","timestamp":"2025-05-08T17:31:27.360Z"}
+{"level":"info","message":"Permission granted for access_regions_by_user to user usr_lLqHAwO7lKJhLTfs2rVlb","timestamp":"2025-05-08T17:31:27.364Z"}
+{"level":"info","message":"Fetched regional manager for supervisor usr_lLqHAwO7lKJhLTfs2rVlb","timestamp":"2025-05-08T17:31:27.375Z"}
+{"level":"info","message":"Fetched regional manager for supervisor usr_lLqHAwO7lKJhLTfs2rVlb by user usr_lLqHAwO7lKJhLTfs2rVlb, IP: 192.168.1.18","timestamp":"2025-05-08T17:31:27.376Z"}
+{"level":"info","message":"Permission granted for access_supervisors_by_regional_manager to user usr_lLqHAwO7lKJhLTfs2rVlb","timestamp":"2025-05-08T17:31:27.379Z"}
+{"level":"info","message":"Permission granted for access_agents_by_id to user usr_lLqHAwO7lKJhLTfs2rVlb","timestamp":"2025-05-08T17:31:27.389Z"}
+{"level":"info","message":"Fetched regions for user usr_XxJ9ChTd9Sy7cmiIdxeSK","timestamp":"2025-05-08T17:31:27.400Z"}
+{"level":"info","message":"Fetched regions for user usr_XxJ9ChTd9Sy7cmiIdxeSK by user usr_lLqHAwO7lKJhLTfs2rVlb, IP: 192.168.1.18","timestamp":"2025-05-08T17:31:27.403Z"}
+{"level":"info","message":"Fetched supervisors for regional manager usr_XxJ9ChTd9Sy7cmiIdxeSK","timestamp":"2025-05-08T17:31:27.430Z"}
+{"level":"info","message":"Fetched supervisors for regional manager usr_XxJ9ChTd9Sy7cmiIdxeSK by user usr_lLqHAwO7lKJhLTfs2rVlb, IP: 192.168.1.18","timestamp":"2025-05-08T17:31:27.432Z"}
+{"level":"info","message":"Fetched agent agt_001abc by user usr_lLqHAwO7lKJhLTfs2rVlb, IP: 192.168.1.18","timestamp":"2025-05-08T17:31:27.444Z"}
+{"level":"info","message":"Permission granted for access_regions_by_user to user usr_lLqHAwO7lKJhLTfs2rVlb","timestamp":"2025-05-08T17:31:27.513Z"}
+{"level":"info","message":"Permission granted for access_governorates_by_region to user usr_lLqHAwO7lKJhLTfs2rVlb","timestamp":"2025-05-08T17:31:27.523Z"}
+{"level":"info","message":"Permission granted for access_regional_manager_by_supervisor to user usr_lLqHAwO7lKJhLTfs2rVlb","timestamp":"2025-05-08T17:31:27.528Z"}
+{"level":"info","message":"Fetched regions for user usr_XxJ9ChTd9Sy7cmiIdxeSK","timestamp":"2025-05-08T17:31:27.532Z"}
+{"level":"info","message":"Fetched regions for user usr_XxJ9ChTd9Sy7cmiIdxeSK by user usr_lLqHAwO7lKJhLTfs2rVlb, IP: 192.168.1.18","timestamp":"2025-05-08T17:31:27.535Z"}
+{"level":"info","message":"Permission granted for access_governorates to user usr_lLqHAwO7lKJhLTfs2rVlb","timestamp":"2025-05-08T17:31:27.539Z"}
+{"level":"info","message":"Permission granted for access_delegations to user usr_lLqHAwO7lKJhLTfs2rVlb","timestamp":"2025-05-08T17:31:27.546Z"}
+{"level":"info","message":"Permission granted for access_reason_items to user usr_lLqHAwO7lKJhLTfs2rVlb","timestamp":"2025-05-08T17:31:27.549Z"}
+{"level":"info","message":"Fetched regional manager for supervisor usr_lLqHAwO7lKJhLTfs2rVlb","timestamp":"2025-05-08T17:31:27.559Z"}
+{"level":"info","message":"Fetched regional manager for supervisor usr_lLqHAwO7lKJhLTfs2rVlb by user usr_lLqHAwO7lKJhLTfs2rVlb, IP: 192.168.1.18","timestamp":"2025-05-08T17:31:27.560Z"}
+{"level":"info","message":"Fetched governorates for region reg_-JBpL4 by user usr_lLqHAwO7lKJhLTfs2rVlb, IP: 192.168.1.18","timestamp":"2025-05-08T17:31:27.574Z"}
+{"level":"info","message":"Fetched all delegations by user usr_lLqHAwO7lKJhLTfs2rVlb, IP: 192.168.1.18","timestamp":"2025-05-08T17:31:27.595Z"}
+{"level":"info","message":"Fetched all governorates by user usr_lLqHAwO7lKJhLTfs2rVlb, IP: 192.168.1.18","timestamp":"2025-05-08T17:31:27.604Z"}
+{"level":"info","message":"Fetched all reasons by user usr_lLqHAwO7lKJhLTfs2rVlb, IP: 192.168.1.18","timestamp":"2025-05-08T17:31:27.677Z"}
+{"level":"info","message":"Permission granted for access_regions_by_user to user usr_lLqHAwO7lKJhLTfs2rVlb","timestamp":"2025-05-08T17:31:27.719Z"}
+{"level":"info","message":"Permission granted for access_checklists_items to user usr_lLqHAwO7lKJhLTfs2rVlb","timestamp":"2025-05-08T17:31:27.732Z"}
+{"level":"info","message":"Permission granted for access_governorates_by_region to user usr_lLqHAwO7lKJhLTfs2rVlb","timestamp":"2025-05-08T17:31:27.737Z"}
+{"level":"info","message":"Fetched regions for user usr_XxJ9ChTd9Sy7cmiIdxeSK","timestamp":"2025-05-08T17:31:27.744Z"}
+{"level":"info","message":"Fetched regions for user usr_XxJ9ChTd9Sy7cmiIdxeSK by user usr_lLqHAwO7lKJhLTfs2rVlb, IP: 192.168.1.18","timestamp":"2025-05-08T17:31:27.746Z"}
+{"level":"info","message":"Permission granted for access_regional_manager_by_supervisor to user usr_lLqHAwO7lKJhLTfs2rVlb","timestamp":"2025-05-08T17:31:27.750Z"}
+{"level":"info","message":"Fetched all checklists by user usr_lLqHAwO7lKJhLTfs2rVlb, IP: 192.168.1.18","timestamp":"2025-05-08T17:31:27.763Z"}
+{"level":"info","message":"Permission granted for access_governorates_by_user to user usr_lLqHAwO7lKJhLTfs2rVlb","timestamp":"2025-05-08T17:31:27.770Z"}
+{"level":"info","message":"Fetched regional manager for supervisor usr_lLqHAwO7lKJhLTfs2rVlb","timestamp":"2025-05-08T17:31:27.796Z"}
+{"level":"info","message":"Fetched regional manager for supervisor usr_lLqHAwO7lKJhLTfs2rVlb by user usr_lLqHAwO7lKJhLTfs2rVlb, IP: 192.168.1.18","timestamp":"2025-05-08T17:31:27.799Z"}
+{"level":"info","message":"Fetched governorates for region reg_-JBpL4 by user usr_lLqHAwO7lKJhLTfs2rVlb, IP: 192.168.1.18","timestamp":"2025-05-08T17:31:27.810Z"}
+{"level":"info","message":"Fetched governorates for user usr_lLqHAwO7lKJhLTfs2rVlb","timestamp":"2025-05-08T17:31:27.818Z"}
+{"level":"info","message":"Fetched governorates for user usr_lLqHAwO7lKJhLTfs2rVlb by user usr_lLqHAwO7lKJhLTfs2rVlb, IP: 192.168.1.18","timestamp":"2025-05-08T17:31:27.820Z"}
+{"level":"info","message":"Permission granted for access_regions_by_user to user usr_lLqHAwO7lKJhLTfs2rVlb","timestamp":"2025-05-08T17:31:27.848Z"}
+{"level":"info","message":"Fetched regions for user usr_XxJ9ChTd9Sy7cmiIdxeSK","timestamp":"2025-05-08T17:31:27.854Z"}
+{"level":"info","message":"Fetched regions for user usr_XxJ9ChTd9Sy7cmiIdxeSK by user usr_lLqHAwO7lKJhLTfs2rVlb, IP: 192.168.1.18","timestamp":"2025-05-08T17:31:27.856Z"}
+{"level":"info","message":"Permission granted for access_regional_manager_by_supervisor to user usr_lLqHAwO7lKJhLTfs2rVlb","timestamp":"2025-05-08T17:31:27.865Z"}
+{"level":"info","message":"Permission granted for access_delegations_by_governorate to user usr_lLqHAwO7lKJhLTfs2rVlb","timestamp":"2025-05-08T17:31:27.877Z"}
+{"level":"info","message":"Fetched regional manager for supervisor usr_lLqHAwO7lKJhLTfs2rVlb","timestamp":"2025-05-08T17:31:27.882Z"}
+{"level":"info","message":"Fetched regional manager for supervisor usr_lLqHAwO7lKJhLTfs2rVlb by user usr_lLqHAwO7lKJhLTfs2rVlb, IP: 192.168.1.18","timestamp":"2025-05-08T17:31:27.883Z"}
+{"level":"info","message":"Fetched delegations for governorate gov_PAyfRH by user usr_lLqHAwO7lKJhLTfs2rVlb, IP: 192.168.1.18","timestamp":"2025-05-08T17:31:27.892Z"}
+{"level":"info","message":"Permission granted for access_regions_by_user to user usr_lLqHAwO7lKJhLTfs2rVlb","timestamp":"2025-05-08T17:31:27.909Z"}
+{"level":"info","message":"Fetched regions for user usr_XxJ9ChTd9Sy7cmiIdxeSK","timestamp":"2025-05-08T17:31:27.919Z"}
+{"level":"info","message":"Fetched regions for user usr_XxJ9ChTd9Sy7cmiIdxeSK by user usr_lLqHAwO7lKJhLTfs2rVlb, IP: 192.168.1.18","timestamp":"2025-05-08T17:31:27.920Z"}
+{"level":"info","message":"Permission granted for access_regions_by_governorate to user usr_lLqHAwO7lKJhLTfs2rVlb","timestamp":"2025-05-08T17:31:27.967Z"}
+{"level":"info","message":"Permission granted for access_regional_manager_by_supervisor to user usr_lLqHAwO7lKJhLTfs2rVlb","timestamp":"2025-05-08T17:31:27.972Z"}
+{"level":"info","message":"Permission granted for access_governorates_by_region to user usr_lLqHAwO7lKJhLTfs2rVlb","timestamp":"2025-05-08T17:31:27.977Z"}
+{"level":"info","message":"Permission granted for access_regions_by_user to user usr_lLqHAwO7lKJhLTfs2rVlb","timestamp":"2025-05-08T17:31:27.980Z"}
+{"level":"info","message":"Fetched regions for governorate gov_PAyfRH by user usr_lLqHAwO7lKJhLTfs2rVlb, IP: 192.168.1.18","timestamp":"2025-05-08T17:31:27.983Z"}
+{"level":"info","message":"Fetched regional manager for supervisor usr_lLqHAwO7lKJhLTfs2rVlb","timestamp":"2025-05-08T17:31:27.991Z"}
+{"level":"info","message":"Fetched regional manager for supervisor usr_lLqHAwO7lKJhLTfs2rVlb by user usr_lLqHAwO7lKJhLTfs2rVlb, IP: 192.168.1.18","timestamp":"2025-05-08T17:31:27.994Z"}
+{"level":"info","message":"Fetched regions for user usr_XxJ9ChTd9Sy7cmiIdxeSK","timestamp":"2025-05-08T17:31:28.005Z"}
+{"level":"info","message":"Fetched regions for user usr_XxJ9ChTd9Sy7cmiIdxeSK by user usr_lLqHAwO7lKJhLTfs2rVlb, IP: 192.168.1.18","timestamp":"2025-05-08T17:31:28.006Z"}
+{"level":"info","message":"Fetched governorates for region reg_-JBpL4 by user usr_lLqHAwO7lKJhLTfs2rVlb, IP: 192.168.1.18","timestamp":"2025-05-08T17:31:28.013Z"}
+{"level":"info","message":"Permission granted for access_delegations_by_governorate to user usr_lLqHAwO7lKJhLTfs2rVlb","timestamp":"2025-05-08T17:31:28.099Z"}
+{"level":"info","message":"Permission granted for access_regions_by_user to user usr_lLqHAwO7lKJhLTfs2rVlb","timestamp":"2025-05-08T17:31:28.107Z"}
+{"level":"info","message":"Permission granted for access_governorates_by_user to user usr_lLqHAwO7lKJhLTfs2rVlb","timestamp":"2025-05-08T17:31:28.112Z"}
+{"level":"info","message":"Fetched regions for user usr_XxJ9ChTd9Sy7cmiIdxeSK","timestamp":"2025-05-08T17:31:28.115Z"}
+{"level":"info","message":"Fetched regions for user usr_XxJ9ChTd9Sy7cmiIdxeSK by user usr_lLqHAwO7lKJhLTfs2rVlb, IP: 192.168.1.18","timestamp":"2025-05-08T17:31:28.116Z"}
+{"level":"info","message":"Fetched governorates for user usr_lLqHAwO7lKJhLTfs2rVlb","timestamp":"2025-05-08T17:31:28.120Z"}
+{"level":"info","message":"Fetched governorates for user usr_lLqHAwO7lKJhLTfs2rVlb by user usr_lLqHAwO7lKJhLTfs2rVlb, IP: 192.168.1.18","timestamp":"2025-05-08T17:31:28.121Z"}
+{"level":"info","message":"Fetched delegations for governorate gov_PAyfRH by user usr_lLqHAwO7lKJhLTfs2rVlb, IP: 192.168.1.18","timestamp":"2025-05-08T17:31:28.124Z"}
+{"level":"info","message":"Permission granted for access_agents_by_user to user usr_lLqHAwO7lKJhLTfs2rVlb","timestamp":"2025-05-08T17:31:28.130Z"}
+{"level":"info","message":"Fetched agents for user usr_lLqHAwO7lKJhLTfs2rVlb by user usr_lLqHAwO7lKJhLTfs2rVlb, IP: 192.168.1.18","timestamp":"2025-05-08T17:31:28.152Z"}
+{"level":"info","message":"Permission granted for access_delegations_by_user to user usr_lLqHAwO7lKJhLTfs2rVlb","timestamp":"2025-05-08T17:31:28.176Z"}
+{"level":"info","message":"Fetched delegations for user usr_lLqHAwO7lKJhLTfs2rVlb","timestamp":"2025-05-08T17:31:28.184Z"}
+{"level":"info","message":"Fetched delegations for user usr_lLqHAwO7lKJhLTfs2rVlb by user usr_lLqHAwO7lKJhLTfs2rVlb, IP: 192.168.1.18","timestamp":"2025-05-08T17:31:28.185Z"}
+{"level":"info","message":"Permission granted for access_delegations_by_governorate to user usr_lLqHAwO7lKJhLTfs2rVlb","timestamp":"2025-05-08T17:31:28.189Z"}
+{"level":"info","message":"Fetched delegations for governorate gov_PAyfRH by user usr_lLqHAwO7lKJhLTfs2rVlb, IP: 192.168.1.18","timestamp":"2025-05-08T17:31:28.198Z"}
+{"level":"info","message":"Permission granted for access_agents_by_user to user usr_lLqHAwO7lKJhLTfs2rVlb","timestamp":"2025-05-08T17:31:28.247Z"}
+{"level":"info","message":"Permission granted for access_delegations_by_user to user usr_lLqHAwO7lKJhLTfs2rVlb","timestamp":"2025-05-08T17:31:28.250Z"}
+{"level":"info","message":"Fetched delegations for user usr_lLqHAwO7lKJhLTfs2rVlb","timestamp":"2025-05-08T17:31:28.256Z"}
+{"level":"info","message":"Fetched delegations for user usr_lLqHAwO7lKJhLTfs2rVlb by user usr_lLqHAwO7lKJhLTfs2rVlb, IP: 192.168.1.18","timestamp":"2025-05-08T17:31:28.257Z"}
+{"level":"info","message":"Fetched agents for user usr_lLqHAwO7lKJhLTfs2rVlb by user usr_lLqHAwO7lKJhLTfs2rVlb, IP: 192.168.1.18","timestamp":"2025-05-08T17:31:28.268Z"}
+{"level":"info","message":"Permission granted for scan_visits to user usr_lLqHAwO7lKJhLTfs2rVlb","timestamp":"2025-05-08T17:31:58.845Z"}
+{"ip":null,"level":"error","message":"Verify QR code error: Invalid QR code - missing agent phone number, user: usr_lLqHAwO7lKJhLTfs2rVlb","timestamp":"2025-05-08T17:31:58.849Z"}
+{"level":"error","message":"QR verification error: Invalid QR code - missing agent phone number, user: usr_lLqHAwO7lKJhLTfs2rVlb, IP: 192.168.1.18","timestamp":"2025-05-08T17:31:58.850Z"}
+{"level":"info","message":"Permission granted for scan_visits to user usr_lLqHAwO7lKJhLTfs2rVlb","timestamp":"2025-05-08T17:31:58.865Z"}
+{"ip":null,"level":"error","message":"Verify QR code error: Invalid QR code - missing agent phone number, user: usr_lLqHAwO7lKJhLTfs2rVlb","timestamp":"2025-05-08T17:31:58.896Z"}
+{"level":"error","message":"QR verification error: Invalid QR code - missing agent phone number, user: usr_lLqHAwO7lKJhLTfs2rVlb, IP: 192.168.1.18","timestamp":"2025-05-08T17:31:58.899Z"}
+{"level":"info","message":"Permission granted for scan_visits to user usr_lLqHAwO7lKJhLTfs2rVlb","timestamp":"2025-05-08T17:32:23.321Z"}
+{"level":"info","message":"No active rules found for event: visit:qr_verified","timestamp":"2025-05-08T17:32:23.338Z"}
+{"level":"info","message":"Permission granted for scan_visits to user usr_lLqHAwO7lKJhLTfs2rVlb","timestamp":"2025-05-08T17:32:23.346Z"}
+{"enabled":true,"event":"visit:qr_verified","level":"info","message":"Created default notification rule","ruleID":"rule_Bfi0VXxK6tgI6fGR8X7O6","timestamp":"2025-05-08T17:32:23.360Z"}
+{"level":"info","message":"Notification stored Notification for visit:qr_verified","notificationID":"notif_Jdg668LDzUrl-gBnIwpjQ","timestamp":"2025-05-08T17:32:23.402Z","userID":"user_rzfcn4707"}
+{"level":"info","message":"Notification status updated","notificationID":"notif_Jdg668LDzUrl-gBnIwpjQ","status":"sent","timestamp":"2025-05-08T17:32:23.435Z"}
+{"event":"visit:qr_verified","level":"info","message":"Triggered notifications","recipientCount":1,"timestamp":"2025-05-08T17:32:23.442Z"}
+{"level":"info","message":"QR code verified for visit vis_3u_N-mOr4iKivAJQBuT9O by user usr_lLqHAwO7lKJhLTfs2rVlb, IP: 192.168.1.18","timestamp":"2025-05-08T17:32:23.449Z"}
+{"level":"info","message":"Notification stored Notification for visit:qr_verified","notificationID":"notif_CWEoqlLeOWgClVeHNNYc2","timestamp":"2025-05-08T17:32:23.461Z","userID":"user_rzfcn4707"}
+{"level":"info","message":"Notification status updated","notificationID":"notif_CWEoqlLeOWgClVeHNNYc2","status":"sent","timestamp":"2025-05-08T17:32:23.479Z"}
+{"event":"visit:qr_verified","level":"info","message":"Triggered notifications","recipientCount":1,"timestamp":"2025-05-08T17:32:23.482Z"}
+{"level":"info","message":"QR code verified for visit vis_3u_N-mOr4iKivAJQBuT9O by user usr_lLqHAwO7lKJhLTfs2rVlb, IP: 192.168.1.18","timestamp":"2025-05-08T17:32:23.487Z"}
+{"level":"info","message":"Permission granted for scan_visits to user usr_lLqHAwO7lKJhLTfs2rVlb","timestamp":"2025-05-08T17:32:23.624Z"}
+{"ip":null,"level":"error","message":"Verify QR code error: Invalid QR code - missing agent phone number, user: usr_lLqHAwO7lKJhLTfs2rVlb","timestamp":"2025-05-08T17:32:23.625Z"}
+{"level":"error","message":"QR verification error: Invalid QR code - missing agent phone number, user: usr_lLqHAwO7lKJhLTfs2rVlb, IP: 192.168.1.18","timestamp":"2025-05-08T17:32:23.626Z"}
+{"level":"info","message":"Permission granted for access_visit_details to user usr_lLqHAwO7lKJhLTfs2rVlb","timestamp":"2025-05-08T17:32:24.313Z"}
+{"level":"info","message":"Fetched visit vis_3u_N-mOr4iKivAJQBuT9O by user usr_lLqHAwO7lKJhLTfs2rVlb, IP: 192.168.1.18","timestamp":"2025-05-08T17:32:24.330Z"}
+{"level":"info","message":"Permission granted for access_agents_by_id to user usr_lLqHAwO7lKJhLTfs2rVlb","timestamp":"2025-05-08T17:32:24.376Z"}
+{"level":"info","message":"Fetched agent agt_001abc by user usr_lLqHAwO7lKJhLTfs2rVlb, IP: 192.168.1.18","timestamp":"2025-05-08T17:32:24.395Z"}
+{"level":"info","message":"Permission granted for log_visits to user usr_lLqHAwO7lKJhLTfs2rVlb","timestamp":"2025-05-08T17:32:49.100Z"}
+{"level":"info","message":"No active rules found for event: visit:logged","timestamp":"2025-05-08T17:32:49.329Z"}
+{"enabled":true,"event":"visit:logged","level":"info","message":"Created default notification rule","ruleID":"rule_rnnI_bIbaPSKFZK3A11cz","timestamp":"2025-05-08T17:32:49.335Z"}
+{"level":"info","message":"Notification stored Notification for visit:logged","notificationID":"notif_YWl_zfJhPjjyaf0ghOR24","timestamp":"2025-05-08T17:32:49.352Z","userID":"user_rzfcn4707"}
+{"level":"info","message":"Notification status updated","notificationID":"notif_YWl_zfJhPjjyaf0ghOR24","status":"sent","timestamp":"2025-05-08T17:32:49.362Z"}
+{"event":"visit:logged","level":"info","message":"Triggered notifications","recipientCount":1,"timestamp":"2025-05-08T17:32:49.364Z"}
+{"level":"info","message":"Visit vis_3u_N-mOr4iKivAJQBuT9O logged by user usr_lLqHAwO7lKJhLTfs2rVlb, IP: 192.168.1.18","timestamp":"2025-05-08T17:32:49.365Z"}
+{"level":"info","message":"Permission granted for access_supervisor_timesheets to user usr_lLqHAwO7lKJhLTfs2rVlb","timestamp":"2025-05-08T17:32:49.684Z"}
+{"level":"info","message":"Permission granted for access_supervisors to user usr_lLqHAwO7lKJhLTfs2rVlb","timestamp":"2025-05-08T17:32:49.689Z"}
+{"level":"info","message":"Fetched timesheets for supervisor usr_lLqHAwO7lKJhLTfs2rVlb by user usr_lLqHAwO7lKJhLTfs2rVlb, IP: 192.168.1.18","timestamp":"2025-05-08T17:32:49.700Z"}
+{"level":"info","message":"Fetched supervisors for user usr_lLqHAwO7lKJhLTfs2rVlb","timestamp":"2025-05-08T17:32:49.702Z"}
+{"level":"info","message":"Fetched supervisors for user usr_lLqHAwO7lKJhLTfs2rVlb by user usr_lLqHAwO7lKJhLTfs2rVlb, IP: 192.168.1.18","timestamp":"2025-05-08T17:32:49.703Z"}
+{"level":"info","message":"Permission granted for access_regional_manager_by_supervisor to user usr_lLqHAwO7lKJhLTfs2rVlb","timestamp":"2025-05-08T17:32:52.000Z"}
+{"level":"info","message":"Fetched regional manager for supervisor usr_lLqHAwO7lKJhLTfs2rVlb","timestamp":"2025-05-08T17:32:52.012Z"}
+{"level":"info","message":"Fetched regional manager for supervisor usr_lLqHAwO7lKJhLTfs2rVlb by user usr_lLqHAwO7lKJhLTfs2rVlb, IP: 192.168.1.18","timestamp":"2025-05-08T17:32:52.013Z"}
+{"level":"info","message":"Permission granted for access_visit_details to user usr_lLqHAwO7lKJhLTfs2rVlb","timestamp":"2025-05-08T17:32:52.019Z"}
+{"level":"info","message":"Fetched visit vis_3u_N-mOr4iKivAJQBuT9O by user usr_lLqHAwO7lKJhLTfs2rVlb, IP: 192.168.1.18","timestamp":"2025-05-08T17:32:52.033Z"}
+{"level":"info","message":"Permission granted for access_regions_by_user to user usr_lLqHAwO7lKJhLTfs2rVlb","timestamp":"2025-05-08T17:32:52.077Z"}
+{"level":"info","message":"Permission granted for access_regional_manager_by_supervisor to user usr_lLqHAwO7lKJhLTfs2rVlb","timestamp":"2025-05-08T17:32:52.081Z"}
+{"level":"info","message":"Permission granted for access_supervisors_by_regional_manager to user usr_lLqHAwO7lKJhLTfs2rVlb","timestamp":"2025-05-08T17:32:52.086Z"}
+{"level":"info","message":"Fetched regions for user usr_XxJ9ChTd9Sy7cmiIdxeSK","timestamp":"2025-05-08T17:32:52.092Z"}
+{"level":"info","message":"Fetched regions for user usr_XxJ9ChTd9Sy7cmiIdxeSK by user usr_lLqHAwO7lKJhLTfs2rVlb, IP: 192.168.1.18","timestamp":"2025-05-08T17:32:52.093Z"}
+{"level":"info","message":"Fetched supervisors for regional manager usr_XxJ9ChTd9Sy7cmiIdxeSK","timestamp":"2025-05-08T17:32:52.099Z"}
+{"level":"info","message":"Fetched supervisors for regional manager usr_XxJ9ChTd9Sy7cmiIdxeSK by user usr_lLqHAwO7lKJhLTfs2rVlb, IP: 192.168.1.18","timestamp":"2025-05-08T17:32:52.100Z"}
+{"level":"info","message":"Permission granted for access_agents_by_id to user usr_lLqHAwO7lKJhLTfs2rVlb","timestamp":"2025-05-08T17:32:52.110Z"}
+{"level":"info","message":"Fetched regional manager for supervisor usr_lLqHAwO7lKJhLTfs2rVlb","timestamp":"2025-05-08T17:32:52.119Z"}
+{"level":"info","message":"Fetched regional manager for supervisor usr_lLqHAwO7lKJhLTfs2rVlb by user usr_lLqHAwO7lKJhLTfs2rVlb, IP: 192.168.1.18","timestamp":"2025-05-08T17:32:52.120Z"}
+{"level":"info","message":"Fetched agent agt_001abc by user usr_lLqHAwO7lKJhLTfs2rVlb, IP: 192.168.1.18","timestamp":"2025-05-08T17:32:52.143Z"}
+{"level":"info","message":"Permission granted for access_regions_by_user to user usr_lLqHAwO7lKJhLTfs2rVlb","timestamp":"2025-05-08T17:32:52.171Z"}
+{"level":"info","message":"Permission granted for access_governorates_by_region to user usr_lLqHAwO7lKJhLTfs2rVlb","timestamp":"2025-05-08T17:32:52.177Z"}
+{"level":"info","message":"Permission granted for access_regional_manager_by_supervisor to user usr_lLqHAwO7lKJhLTfs2rVlb","timestamp":"2025-05-08T17:32:52.181Z"}
+{"level":"info","message":"Fetched regions for user usr_XxJ9ChTd9Sy7cmiIdxeSK","timestamp":"2025-05-08T17:32:52.186Z"}
+{"level":"info","message":"Fetched regions for user usr_XxJ9ChTd9Sy7cmiIdxeSK by user usr_lLqHAwO7lKJhLTfs2rVlb, IP: 192.168.1.18","timestamp":"2025-05-08T17:32:52.189Z"}
+{"level":"info","message":"Fetched regional manager for supervisor usr_lLqHAwO7lKJhLTfs2rVlb","timestamp":"2025-05-08T17:32:52.196Z"}
+{"level":"info","message":"Fetched regional manager for supervisor usr_lLqHAwO7lKJhLTfs2rVlb by user usr_lLqHAwO7lKJhLTfs2rVlb, IP: 192.168.1.18","timestamp":"2025-05-08T17:32:52.197Z"}
+{"level":"info","message":"Fetched governorates for region reg_-JBpL4 by user usr_lLqHAwO7lKJhLTfs2rVlb, IP: 192.168.1.18","timestamp":"2025-05-08T17:32:52.211Z"}
+{"level":"info","message":"Permission granted for access_governorates to user usr_lLqHAwO7lKJhLTfs2rVlb","timestamp":"2025-05-08T17:32:52.225Z"}
+{"level":"info","message":"Fetched all governorates by user usr_lLqHAwO7lKJhLTfs2rVlb, IP: 192.168.1.18","timestamp":"2025-05-08T17:32:52.235Z"}
+{"level":"info","message":"Permission granted for access_reason_items to user usr_lLqHAwO7lKJhLTfs2rVlb","timestamp":"2025-05-08T17:32:52.245Z"}
+{"level":"info","message":"Fetched all reasons by user usr_lLqHAwO7lKJhLTfs2rVlb, IP: 192.168.1.18","timestamp":"2025-05-08T17:32:52.256Z"}
+{"level":"info","message":"Permission granted for access_checklists_items to user usr_lLqHAwO7lKJhLTfs2rVlb","timestamp":"2025-05-08T17:32:52.263Z"}
+{"level":"info","message":"Fetched all checklists by user usr_lLqHAwO7lKJhLTfs2rVlb, IP: 192.168.1.18","timestamp":"2025-05-08T17:32:52.268Z"}
+{"level":"info","message":"Permission granted for access_regional_manager_by_supervisor to user usr_lLqHAwO7lKJhLTfs2rVlb","timestamp":"2025-05-08T17:32:52.278Z"}
+{"level":"info","message":"Permission granted for access_delegations to user usr_lLqHAwO7lKJhLTfs2rVlb","timestamp":"2025-05-08T17:32:52.281Z"}
+{"level":"info","message":"Fetched regional manager for supervisor usr_lLqHAwO7lKJhLTfs2rVlb","timestamp":"2025-05-08T17:32:52.290Z"}
+{"level":"info","message":"Fetched regional manager for supervisor usr_lLqHAwO7lKJhLTfs2rVlb by user usr_lLqHAwO7lKJhLTfs2rVlb, IP: 192.168.1.18","timestamp":"2025-05-08T17:32:52.291Z"}
+{"level":"info","message":"Fetched all delegations by user usr_lLqHAwO7lKJhLTfs2rVlb, IP: 192.168.1.18","timestamp":"2025-05-08T17:32:52.304Z"}
+{"level":"info","message":"Permission granted for access_governorates_by_region to user usr_lLqHAwO7lKJhLTfs2rVlb","timestamp":"2025-05-08T17:32:52.317Z"}
+{"level":"info","message":"Permission granted for access_regions_by_user to user usr_lLqHAwO7lKJhLTfs2rVlb","timestamp":"2025-05-08T17:32:52.320Z"}
+{"level":"info","message":"Permission granted for access_governorates_by_user to user usr_lLqHAwO7lKJhLTfs2rVlb","timestamp":"2025-05-08T17:32:52.328Z"}
+{"level":"info","message":"Fetched regions for user usr_XxJ9ChTd9Sy7cmiIdxeSK","timestamp":"2025-05-08T17:32:52.330Z"}
+{"level":"info","message":"Fetched regions for user usr_XxJ9ChTd9Sy7cmiIdxeSK by user usr_lLqHAwO7lKJhLTfs2rVlb, IP: 192.168.1.18","timestamp":"2025-05-08T17:32:52.331Z"}
+{"level":"info","message":"Fetched governorates for region reg_-JBpL4 by user usr_lLqHAwO7lKJhLTfs2rVlb, IP: 192.168.1.18","timestamp":"2025-05-08T17:32:52.335Z"}
+{"level":"info","message":"Fetched governorates for user usr_lLqHAwO7lKJhLTfs2rVlb","timestamp":"2025-05-08T17:32:52.341Z"}
+{"level":"info","message":"Fetched governorates for user usr_lLqHAwO7lKJhLTfs2rVlb by user usr_lLqHAwO7lKJhLTfs2rVlb, IP: 192.168.1.18","timestamp":"2025-05-08T17:32:52.342Z"}
+{"level":"info","message":"Permission granted for access_regional_manager_by_supervisor to user usr_lLqHAwO7lKJhLTfs2rVlb","timestamp":"2025-05-08T17:32:52.350Z"}
+{"level":"info","message":"Fetched regional manager for supervisor usr_lLqHAwO7lKJhLTfs2rVlb","timestamp":"2025-05-08T17:32:52.354Z"}
+{"level":"info","message":"Fetched regional manager for supervisor usr_lLqHAwO7lKJhLTfs2rVlb by user usr_lLqHAwO7lKJhLTfs2rVlb, IP: 192.168.1.18","timestamp":"2025-05-08T17:32:52.356Z"}
+{"level":"info","message":"Permission granted for access_regions_by_user to user usr_lLqHAwO7lKJhLTfs2rVlb","timestamp":"2025-05-08T17:32:52.376Z"}
+{"level":"info","message":"Fetched regions for user usr_XxJ9ChTd9Sy7cmiIdxeSK","timestamp":"2025-05-08T17:32:52.378Z"}
+{"level":"info","message":"Fetched regions for user usr_XxJ9ChTd9Sy7cmiIdxeSK by user usr_lLqHAwO7lKJhLTfs2rVlb, IP: 192.168.1.18","timestamp":"2025-05-08T17:32:52.379Z"}
+{"level":"info","message":"Permission granted for access_delegations_by_governorate to user usr_lLqHAwO7lKJhLTfs2rVlb","timestamp":"2025-05-08T17:32:52.385Z"}
+{"level":"info","message":"Fetched delegations for governorate gov_PAyfRH by user usr_lLqHAwO7lKJhLTfs2rVlb, IP: 192.168.1.18","timestamp":"2025-05-08T17:32:52.393Z"}
+{"level":"info","message":"Permission granted for access_regions_by_user to user usr_lLqHAwO7lKJhLTfs2rVlb","timestamp":"2025-05-08T17:32:52.416Z"}
+{"level":"info","message":"Fetched regions for user usr_XxJ9ChTd9Sy7cmiIdxeSK","timestamp":"2025-05-08T17:32:52.421Z"}
+{"level":"info","message":"Fetched regions for user usr_XxJ9ChTd9Sy7cmiIdxeSK by user usr_lLqHAwO7lKJhLTfs2rVlb, IP: 192.168.1.18","timestamp":"2025-05-08T17:32:52.422Z"}
+{"level":"info","message":"Permission granted for access_regional_manager_by_supervisor to user usr_lLqHAwO7lKJhLTfs2rVlb","timestamp":"2025-05-08T17:32:52.426Z"}
+{"level":"info","message":"Permission granted for access_governorates_by_region to user usr_lLqHAwO7lKJhLTfs2rVlb","timestamp":"2025-05-08T17:32:52.430Z"}
+{"level":"info","message":"Fetched regional manager for supervisor usr_lLqHAwO7lKJhLTfs2rVlb","timestamp":"2025-05-08T17:32:52.434Z"}
+{"level":"info","message":"Fetched regional manager for supervisor usr_lLqHAwO7lKJhLTfs2rVlb by user usr_lLqHAwO7lKJhLTfs2rVlb, IP: 192.168.1.18","timestamp":"2025-05-08T17:32:52.435Z"}
+{"level":"info","message":"Fetched governorates for region reg_-JBpL4 by user usr_lLqHAwO7lKJhLTfs2rVlb, IP: 192.168.1.18","timestamp":"2025-05-08T17:32:52.445Z"}
+{"level":"info","message":"Permission granted for access_regions_by_user to user usr_lLqHAwO7lKJhLTfs2rVlb","timestamp":"2025-05-08T17:32:52.473Z"}
+{"level":"info","message":"Fetched regions for user usr_XxJ9ChTd9Sy7cmiIdxeSK","timestamp":"2025-05-08T17:32:52.479Z"}
+{"level":"info","message":"Fetched regions for user usr_XxJ9ChTd9Sy7cmiIdxeSK by user usr_lLqHAwO7lKJhLTfs2rVlb, IP: 192.168.1.18","timestamp":"2025-05-08T17:32:52.481Z"}
+{"level":"info","message":"Permission granted for access_governorates_by_user to user usr_lLqHAwO7lKJhLTfs2rVlb","timestamp":"2025-05-08T17:32:52.582Z"}
+{"level":"info","message":"Permission granted for access_regions_by_governorate to user usr_lLqHAwO7lKJhLTfs2rVlb","timestamp":"2025-05-08T17:32:52.587Z"}
+{"level":"info","message":"Fetched governorates for user usr_lLqHAwO7lKJhLTfs2rVlb","timestamp":"2025-05-08T17:32:52.590Z"}
+{"level":"info","message":"Fetched governorates for user usr_lLqHAwO7lKJhLTfs2rVlb by user usr_lLqHAwO7lKJhLTfs2rVlb, IP: 192.168.1.18","timestamp":"2025-05-08T17:32:52.590Z"}
+{"level":"info","message":"Fetched regions for governorate gov_PAyfRH by user usr_lLqHAwO7lKJhLTfs2rVlb, IP: 192.168.1.18","timestamp":"2025-05-08T17:32:52.593Z"}
+{"level":"info","message":"Permission granted for access_regions_by_user to user usr_lLqHAwO7lKJhLTfs2rVlb","timestamp":"2025-05-08T17:32:52.596Z"}
+{"level":"info","message":"Fetched regions for user usr_XxJ9ChTd9Sy7cmiIdxeSK","timestamp":"2025-05-08T17:32:52.604Z"}
+{"level":"info","message":"Fetched regions for user usr_XxJ9ChTd9Sy7cmiIdxeSK by user usr_lLqHAwO7lKJhLTfs2rVlb, IP: 192.168.1.18","timestamp":"2025-05-08T17:32:52.605Z"}
+{"level":"info","message":"Permission granted for access_delegations_by_governorate to user usr_lLqHAwO7lKJhLTfs2rVlb","timestamp":"2025-05-08T17:32:52.667Z"}
+{"level":"info","message":"Fetched delegations for governorate gov_PAyfRH by user usr_lLqHAwO7lKJhLTfs2rVlb, IP: 192.168.1.18","timestamp":"2025-05-08T17:32:52.687Z"}
+{"level":"info","message":"Permission granted for access_agents_by_user to user usr_lLqHAwO7lKJhLTfs2rVlb","timestamp":"2025-05-08T17:32:52.736Z"}
+{"level":"info","message":"Permission granted for access_delegations_by_user to user usr_lLqHAwO7lKJhLTfs2rVlb","timestamp":"2025-05-08T17:32:52.748Z"}
+{"level":"info","message":"Fetched agents for user usr_lLqHAwO7lKJhLTfs2rVlb by user usr_lLqHAwO7lKJhLTfs2rVlb, IP: 192.168.1.18","timestamp":"2025-05-08T17:32:52.751Z"}
+{"level":"info","message":"Fetched delegations for user usr_lLqHAwO7lKJhLTfs2rVlb","timestamp":"2025-05-08T17:32:52.754Z"}
+{"level":"info","message":"Fetched delegations for user usr_lLqHAwO7lKJhLTfs2rVlb by user usr_lLqHAwO7lKJhLTfs2rVlb, IP: 192.168.1.18","timestamp":"2025-05-08T17:32:52.756Z"}
+{"level":"info","message":"Permission granted for access_agents_by_user to user usr_lLqHAwO7lKJhLTfs2rVlb","timestamp":"2025-05-08T17:32:52.814Z"}
+{"level":"info","message":"Fetched agents for user usr_lLqHAwO7lKJhLTfs2rVlb by user usr_lLqHAwO7lKJhLTfs2rVlb, IP: 192.168.1.18","timestamp":"2025-05-08T17:32:52.823Z"}
+{"level":"info","message":"Permission granted for access_supervisor_timesheets to user usr_lLqHAwO7lKJhLTfs2rVlb","timestamp":"2025-05-08T17:33:14.885Z"}
+{"level":"info","message":"Permission granted for access_supervisors to user usr_lLqHAwO7lKJhLTfs2rVlb","timestamp":"2025-05-08T17:33:14.892Z"}
+{"level":"info","message":"Fetched timesheets for supervisor usr_lLqHAwO7lKJhLTfs2rVlb by user usr_lLqHAwO7lKJhLTfs2rVlb, IP: 192.168.1.18","timestamp":"2025-05-08T17:33:14.911Z"}
+{"level":"info","message":"Fetched supervisors for user usr_lLqHAwO7lKJhLTfs2rVlb","timestamp":"2025-05-08T17:33:14.918Z"}
+{"level":"info","message":"Fetched supervisors for user usr_lLqHAwO7lKJhLTfs2rVlb by user usr_lLqHAwO7lKJhLTfs2rVlb, IP: 192.168.1.18","timestamp":"2025-05-08T17:33:14.927Z"}
+{"level":"info","message":"Fetched notification types for user: usr_lLqHAwO7lKJhLTfs2rVlb, IP: 192.168.1.18","timestamp":"2025-05-08T17:33:41.794Z"}
+{"level":"info","message":"Fetched notification preferences for user: usr_lLqHAwO7lKJhLTfs2rVlb, IP: 192.168.1.18","timestamp":"2025-05-08T17:33:41.811Z"}
+{"level":"info","message":"Fetched profile for user usr_lLqHAwO7lKJhLTfs2rVlb, IP: 192.168.1.18","timestamp":"2025-05-08T17:33:41.822Z"}
+{"level":"info","message":"Fetched notifications for user: usr_lLqHAwO7lKJhLTfs2rVlb, IP: 192.168.1.18","timestamp":"2025-05-08T17:33:43.504Z"}
+{"level":"info","message":"Fetched notifications for user: usr_lLqHAwO7lKJhLTfs2rVlb, IP: 192.168.1.18","timestamp":"2025-05-08T17:33:49.115Z"}
+{"level":"info","message":"Permission granted for access_supervisors to user usr_lLqHAwO7lKJhLTfs2rVlb","timestamp":"2025-05-08T17:34:04.374Z"}
+{"level":"info","message":"Fetched supervisors for user usr_lLqHAwO7lKJhLTfs2rVlb","timestamp":"2025-05-08T17:34:04.383Z"}
+{"level":"info","message":"Fetched supervisors for user usr_lLqHAwO7lKJhLTfs2rVlb by user usr_lLqHAwO7lKJhLTfs2rVlb, IP: 192.168.1.18","timestamp":"2025-05-08T17:34:04.384Z"}
+{"level":"info","message":"Permission granted for access_supervisor_timesheets to user usr_lLqHAwO7lKJhLTfs2rVlb","timestamp":"2025-05-08T17:34:04.389Z"}
+{"level":"info","message":"Fetched timesheets for supervisor usr_lLqHAwO7lKJhLTfs2rVlb by user usr_lLqHAwO7lKJhLTfs2rVlb, IP: 192.168.1.18","timestamp":"2025-05-08T17:34:04.408Z"}
+{"level":"info","message":"Fetched notification types for user: usr_lLqHAwO7lKJhLTfs2rVlb, IP: 192.168.1.18","timestamp":"2025-05-08T17:34:07.602Z"}
+{"level":"info","message":"Fetched notification preferences for user: usr_lLqHAwO7lKJhLTfs2rVlb, IP: 192.168.1.18","timestamp":"2025-05-08T17:34:07.608Z"}
+{"level":"info","message":"Fetched profile for user usr_lLqHAwO7lKJhLTfs2rVlb, IP: 192.168.1.18","timestamp":"2025-05-08T17:34:07.626Z"}
+{"IP":"192.168.1.18","cookies":["accessToken","refreshToken","userData"],"level":"info","message":"Cookies cleared on logout","timestamp":"2025-05-08T17:34:11.488Z"}
+{"IP":"192.168.1.18","level":"info","message":"Keycloak session invalidated","timestamp":"2025-05-08T17:34:11.562Z"}
+{"IP":"192.168.1.18","level":"info","message":"User logged out successfully","timestamp":"2025-05-08T17:34:11.562Z"}
+{"level":"info","message":"User disconnected: sofienlaghouanem@gmail.com","reason":"client namespace disconnect","socketId":"0pGhjYS3SWu4_IG-AAAJ","timestamp":"2025-05-08T17:34:11.569Z"}
+{"level":"info","message":"Client disconnected","socketId":"0pGhjYS3SWu4_IG-AAAJ","timestamp":"2025-05-08T17:34:11.571Z"}
