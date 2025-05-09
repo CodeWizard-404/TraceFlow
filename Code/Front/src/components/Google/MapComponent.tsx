@@ -100,7 +100,9 @@ const MapComponent: React.FC = () => {
         height: '500px',
     };
 
-    const center = markers.length > 0 ? { lat: markers[0].lat, lng: markers[0].lng } : { lat: 0, lng: 0 };
+    // Default center to Tunisia
+    const defaultCenter = { lat: 36.8065, lng: 10.1815 };
+    const center = markers.length > 0 ? { lat: markers[0].lat, lng: markers[0].lng } : defaultCenter;
 
     return (
         <div className="space-y-4">
@@ -160,7 +162,11 @@ const MapComponent: React.FC = () => {
                 </button>
             </div>
             <LoadScript googleMapsApiKey={import.meta.env.VITE_GOOGLE_MAPS_API_KEY}>
-                <GoogleMap mapContainerStyle={mapContainerStyle} center={center} zoom={10}>
+                <GoogleMap
+                    mapContainerStyle={mapContainerStyle}
+                    center={center}
+                    zoom={markers.length > 0 ? 10 : 7} // Zoom to 10 if markers exist, 7 for full Tunisia view
+                >
                     {markers.map(marker => (
                         <Marker key={marker.id} position={{ lat: marker.lat, lng: marker.lng }} title={marker.name} />
                     ))}

@@ -95,6 +95,9 @@ const VisitMapView: React.FC<VisitMapViewProps> = ({ visitId }) => {
         height: '400px',
     };
 
+    // Default center to Tunisia
+    const defaultCenter = { lat: 36.8065, lng: 10.1815 };
+
     return (
         <div className="space-y-4">
             {!coordinates && (
@@ -131,24 +134,24 @@ const VisitMapView: React.FC<VisitMapViewProps> = ({ visitId }) => {
                     Get Directions
                 </button>
             </div>
-            {coordinates ? (
-                <LoadScript googleMapsApiKey={import.meta.env.VITE_GOOGLE_MAPS_API_KEY}>
-                    <GoogleMap mapContainerStyle={mapContainerStyle} center={coordinates} zoom={12}>
-                        <Marker position={coordinates} title="Visit Location" />
-                        {directions && directions.routes[0]?.legs[0]?.steps && (
-                            <Polyline
-                                path={directions.routes[0].legs[0].steps
-                                    .map((step: DirectionStep) => step.polyline.points)
-                                    .flat()
-                                }
-                                options={{ strokeColor: '#FF0000', strokeOpacity: 0.8, strokeWeight: 2 }}
-                            />
-                        )}
-                    </GoogleMap>
-                </LoadScript>
-            ) : (
-                <div className="text-center py-4">Please set a location to view the map</div>
-            )}
+            <LoadScript googleMapsApiKey={import.meta.env.VITE_GOOGLE_MAPS_API_KEY}>
+                <GoogleMap
+                    mapContainerStyle={mapContainerStyle}
+                    center={coordinates || defaultCenter}
+                    zoom={coordinates ? 12 : 7} // Zoom to 12 if coordinates are set, 7 for full Tunisia view
+                >
+                    {coordinates && <Marker position={coordinates} title="Visit Location" />}
+                    {directions && directions.routes[0]?.legs[0]?.steps && (
+                        <Polyline
+                            path={directions.routes[0].legs[0].steps
+                                .map((step: DirectionStep) => step.polyline.points)
+                                .flat()
+                            }
+                            options={{ strokeColor: '#FF0000', strokeOpacity: 0.8, strokeWeight: 2 }}
+                        />
+                    )}
+                </GoogleMap>
+            </LoadScript>
         </div>
     );
 };

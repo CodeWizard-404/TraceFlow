@@ -42862,3 +42862,1249 @@
 {"level":"info","message":"Permission granted for access_google_calendar to user usr_oEFIKRz272zaIRK00Zcr4","timestamp":"2025-05-08T22:01:07.533Z"}
 {"level":"error","message":"Create calendar event error: unauthorized_client","timestamp":"2025-05-08T22:01:07.967Z"}
 {"level":"error","message":"Sync visit to calendar error: Failed to create calendar event: unauthorized_client, user: usr_oEFIKRz272zaIRK00Zcr4, IP: 192.168.1.11","timestamp":"2025-05-08T22:01:07.968Z"}
+{"level":"info","message":"Connected to Redis successfully","timestamp":"2025-05-09T10:11:03.124Z"}
+{"level":"info","message":"Redis server info: # Server","timestamp":"2025-05-09T10:11:03.156Z"}
+{"level":"info","message":"Redis ping successful","timestamp":"2025-05-09T10:11:03.169Z"}
+{"level":"info","message":"GoogleMapsService initialized with Redis","timestamp":"2025-05-09T10:11:03.172Z"}
+{"level":"info","message":"Database Initialization: Starting","step":"database","timestamp":"2025-05-09T10:11:15.000Z"}
+{"duration":"1.40","level":"info","message":"Database Initialization: Completed","status":"success","step":"database","timestamp":"2025-05-09T10:11:16.401Z"}
+{"level":"info","message":"SMTP Initialization: Starting","step":"smtp","timestamp":"2025-05-09T10:11:16.404Z"}
+{"level":"info","message":"SMTP server verified successfully","timestamp":"2025-05-09T10:11:22.655Z"}
+{"duration":"6.25","level":"info","message":"SMTP Initialization: Completed","status":"success","step":"smtp","timestamp":"2025-05-09T10:11:22.656Z"}
+{"level":"info","message":"SMS Initialization: Starting","step":"sms","timestamp":"2025-05-09T10:11:22.658Z"}
+{"level":"info","message":"Initializing SMS gateway with URL: https://wbm.tn/wbmonitor/send/webapi/v5/enquire_credit and headers: {\"X-API-Key\":\"9c5362a406e609d0ecc6f9a0e129c0a6\",\"Content-Type\":\"application/json\"}","timestamp":"2025-05-09T10:11:22.660Z"}
+{"level":"info","message":"SMS gateway initialized successfully: {\"op\":3,\"status\":0,\"status_desc\":\"success\",\"apiVersion\":\"5\",\"credit\":{\"national\":{\"available\":\"790877\",\"reserved\":\"0\"},\"international\":{\"available\":\"1\",\"reserved\":\"0\"}}}","timestamp":"2025-05-09T10:11:23.078Z"}
+{"duration":"0.42","level":"info","message":"SMS Initialization: Completed","status":"success","step":"sms","timestamp":"2025-05-09T10:11:23.080Z"}
+{"level":"info","message":"Redis Initialization: Starting","step":"redis","timestamp":"2025-05-09T10:11:23.081Z"}
+{"duration":"0.00","level":"info","message":"Redis Initialization: Completed","status":"success","step":"redis","timestamp":"2025-05-09T10:11:23.082Z"}
+{"level":"info","message":"Google Services Configuration: Starting","step":"googleServices","timestamp":"2025-05-09T10:11:23.082Z"}
+{"level":"info","message":"Google Services configuration validated","timestamp":"2025-05-09T10:11:23.083Z"}
+{"level":"info","message":"Google Services ready for activation pending API keys","timestamp":"2025-05-09T10:11:23.084Z"}
+{"duration":"0.00","level":"info","message":"Google Services Configuration: Completed","status":"success","step":"googleServices","timestamp":"2025-05-09T10:11:23.085Z"}
+{"level":"info","message":"Model Associations: Starting","step":"associations","timestamp":"2025-05-09T10:11:23.086Z"}
+{"duration":"0.05","level":"info","message":"Model Associations: Completed","status":"success","step":"associations","timestamp":"2025-05-09T10:11:23.140Z"}
+{"level":"info","message":"Database Synchronization: Starting","step":"sync","timestamp":"2025-05-09T10:11:23.141Z"}
+{"duration":"0.54","level":"info","message":"Database Synchronization: Completed","status":"success","step":"sync","timestamp":"2025-05-09T10:11:23.679Z"}
+{"level":"info","message":"Geographic Data Initialization: Starting","step":"geoData","timestamp":"2025-05-09T10:11:23.681Z"}
+{"duration":"0.85","level":"info","message":"Geographic Data Initialization: Completed","status":"success","step":"geoData","timestamp":"2025-05-09T10:11:24.533Z"}
+{"level":"info","message":"Agent Data Seeding: Starting","step":"agents","timestamp":"2025-05-09T10:11:24.535Z"}
+{"duration":"0.26","level":"info","message":"Agent Data Seeding: Completed","status":"success","step":"agents","timestamp":"2025-05-09T10:11:24.796Z"}
+{"level":"info","message":"Permission Seeding: Starting","step":"permissions","timestamp":"2025-05-09T10:11:24.797Z"}
+{"duration":"6.88","level":"info","message":"Permission Seeding: Completed","status":"success","step":"permissions","timestamp":"2025-05-09T10:11:31.679Z"}
+{"level":"info","message":"Super Admin Seeding: Starting","step":"superadmin","timestamp":"2025-05-09T10:11:31.680Z"}
+{"duration":"1.25","level":"info","message":"Super Admin Seeding: Completed","status":"success","step":"superadmin","timestamp":"2025-05-09T10:11:32.929Z"}
+{"level":"info","message":"Socket Initialization: Starting","step":"socket","timestamp":"2025-05-09T10:11:32.931Z"}
+{"duration":"0.00","level":"info","message":"Socket Initialization: Completed","status":"success","step":"socket","timestamp":"2025-05-09T10:11:32.932Z"}
+{"level":"info","message":"Server Initialization: Starting","step":"server","timestamp":"2025-05-09T10:11:32.933Z"}
+{"level":"info","message":"mDNS advertisement skipped in development mode","timestamp":"2025-05-09T10:11:32.935Z"}
+{"duration":"0.00","level":"info","message":"Server Initialization: Completed","status":"success","step":"server","timestamp":"2025-05-09T10:11:32.936Z"}
+{"level":"info","message":"\u001b[36m========== TraceFlow Initialization Summary ========\u001b[39m","timestamp":"2025-05-09T10:11:32.939Z"}
+{"level":"info","message":"Date: 2025-05-09T10:11:32.940Z","timestamp":"2025-05-09T10:11:32.940Z"}
+{"level":"info","message":"Steps Completed:","timestamp":"2025-05-09T10:11:32.940Z"}
+{"duration":"1.40","level":"info","message":"  - Database Initialization: \u001b[32mSUCCESS\u001b[39m - (1.40s)","status":"success","step":"Database Initialization","timestamp":"2025-05-09T10:11:32.941Z"}
+{"duration":"6.25","level":"info","message":"  - SMTP Initialization: \u001b[32mSUCCESS\u001b[39m - (6.25s)","status":"success","step":"SMTP Initialization","timestamp":"2025-05-09T10:11:32.941Z"}
+{"duration":"0.42","level":"info","message":"  - SMS Initialization: \u001b[32mSUCCESS\u001b[39m - (0.42s)","status":"success","step":"SMS Initialization","timestamp":"2025-05-09T10:11:32.942Z"}
+{"duration":"0.00","level":"info","message":"  - Redis Initialization: \u001b[32mSUCCESS\u001b[39m - (0.00s)","status":"success","step":"Redis Initialization","timestamp":"2025-05-09T10:11:32.942Z"}
+{"duration":"0.00","level":"info","message":"  - Google Services Configuration: \u001b[32mSUCCESS\u001b[39m - (0.00s)","status":"success","step":"Google Services Configuration","timestamp":"2025-05-09T10:11:32.942Z"}
+{"duration":"0.06","level":"info","message":"  - Model Associations: \u001b[32mSUCCESS\u001b[39m - (0.06s)","status":"success","step":"Model Associations","timestamp":"2025-05-09T10:11:32.943Z"}
+{"duration":"0.54","level":"info","message":"  - Database Synchronization: \u001b[32mSUCCESS\u001b[39m - (0.54s)","status":"success","step":"Database Synchronization","timestamp":"2025-05-09T10:11:32.943Z"}
+{"duration":"0.85","level":"info","message":"  - Geographic Data Initialization: \u001b[32mSUCCESS\u001b[39m - (0.85s)","status":"success","step":"Geographic Data Initialization","timestamp":"2025-05-09T10:11:32.943Z"}
+{"duration":"0.26","level":"info","message":"  - Agent Data Seeding: \u001b[32mSUCCESS\u001b[39m - (0.26s)","status":"success","step":"Agent Data Seeding","timestamp":"2025-05-09T10:11:32.943Z"}
+{"duration":"6.88","level":"info","message":"  - Permission Seeding: \u001b[32mSUCCESS\u001b[39m - (6.88s)","status":"success","step":"Permission Seeding","timestamp":"2025-05-09T10:11:32.944Z"}
+{"duration":"1.25","level":"info","message":"  - Super Admin Seeding: \u001b[32mSUCCESS\u001b[39m - (1.25s)","status":"success","step":"Super Admin Seeding","timestamp":"2025-05-09T10:11:32.944Z"}
+{"duration":"0.00","level":"info","message":"  - Socket Initialization: \u001b[32mSUCCESS\u001b[39m - (0.00s)","status":"success","step":"Socket Initialization","timestamp":"2025-05-09T10:11:32.944Z"}
+{"duration":"0.01","level":"info","message":"  - Server Initialization: \u001b[32mSUCCESS\u001b[39m - (0.01s)","status":"success","step":"Server Initialization","timestamp":"2025-05-09T10:11:32.944Z"}
+{"level":"info","message":"Total Steps: 13","timestamp":"2025-05-09T10:11:32.945Z"}
+{"level":"info","message":"\u001b[32mSuccesses: 13\u001b[39m","timestamp":"2025-05-09T10:11:32.945Z"}
+{"level":"info","message":"\u001b[33mSkipped: 0\u001b[39m","timestamp":"2025-05-09T10:11:32.945Z"}
+{"level":"info","message":"\u001b[31mFailures: 0\u001b[39m","timestamp":"2025-05-09T10:11:32.946Z"}
+{"level":"info","message":"Total Duration: 29.85 seconds","timestamp":"2025-05-09T10:11:32.946Z"}
+{"level":"info","message":"\u001b[36m===================================================\u001b[39m","timestamp":"2025-05-09T10:11:32.946Z"}
+{"level":"info","message":"\u001b[36m===================================================\u001b[39m","timestamp":"2025-05-09T10:11:32.946Z"}
+{"level":"info","message":"\tSuper Admin Credentials:","timestamp":"2025-05-09T10:11:32.947Z"}
+{"level":"info","message":"\tEmail:\t\tsuperadmin@example.com","timestamp":"2025-05-09T10:11:32.947Z"}
+{"level":"info","message":"\tPassword:\tSuperSecurePassword123!","timestamp":"2025-05-09T10:11:32.947Z"}
+{"level":"info","message":"\u001b[36m===================================================\u001b[39m","timestamp":"2025-05-09T10:11:32.948Z"}
+{"level":"info","message":"HTTP Server running on port 5000","timestamp":"2025-05-09T10:11:32.953Z"}
+{"level":"info","message":"Google Services configuration initialized, awaiting API keys","timestamp":"2025-05-09T10:11:32.954Z"}
+{"level":"info","message":"Database Initialization: Starting","step":"database","timestamp":"2025-05-09T10:15:43.038Z"}
+{"level":"info","message":"Connected to Redis successfully","timestamp":"2025-05-09T10:15:43.075Z"}
+{"level":"info","message":"Redis server info: # Server","timestamp":"2025-05-09T10:15:43.116Z"}
+{"level":"info","message":"Redis ping successful","timestamp":"2025-05-09T10:15:43.133Z"}
+{"level":"info","message":"GoogleMapsService initialized with Redis","timestamp":"2025-05-09T10:15:43.134Z"}
+{"duration":"0.45","level":"info","message":"Database Initialization: Completed","status":"success","step":"database","timestamp":"2025-05-09T10:15:43.485Z"}
+{"level":"info","message":"SMTP Initialization: Starting","step":"smtp","timestamp":"2025-05-09T10:15:43.495Z"}
+{"level":"info","message":"SMTP server verified successfully","timestamp":"2025-05-09T10:15:44.295Z"}
+{"duration":"0.80","level":"info","message":"SMTP Initialization: Completed","status":"success","step":"smtp","timestamp":"2025-05-09T10:15:44.297Z"}
+{"level":"info","message":"SMS Initialization: Starting","step":"sms","timestamp":"2025-05-09T10:15:44.299Z"}
+{"level":"info","message":"Initializing SMS gateway with URL: https://wbm.tn/wbmonitor/send/webapi/v5/enquire_credit and headers: {\"X-API-Key\":\"9c5362a406e609d0ecc6f9a0e129c0a6\",\"Content-Type\":\"application/json\"}","timestamp":"2025-05-09T10:15:44.300Z"}
+{"level":"info","message":"SMS gateway initialized successfully: {\"op\":3,\"status\":0,\"status_desc\":\"success\",\"apiVersion\":\"5\",\"credit\":{\"national\":{\"available\":\"790706\",\"reserved\":\"0\"},\"international\":{\"available\":\"1\",\"reserved\":\"0\"}}}","timestamp":"2025-05-09T10:15:44.557Z"}
+{"duration":"0.26","level":"info","message":"SMS Initialization: Completed","status":"success","step":"sms","timestamp":"2025-05-09T10:15:44.559Z"}
+{"level":"info","message":"Redis Initialization: Starting","step":"redis","timestamp":"2025-05-09T10:15:44.560Z"}
+{"duration":"0.00","level":"info","message":"Redis Initialization: Completed","status":"success","step":"redis","timestamp":"2025-05-09T10:15:44.561Z"}
+{"level":"info","message":"Google Services Configuration: Starting","step":"googleServices","timestamp":"2025-05-09T10:15:44.562Z"}
+{"level":"info","message":"Google Services configuration validated","timestamp":"2025-05-09T10:15:44.563Z"}
+{"level":"info","message":"Google Services ready for activation pending API keys","timestamp":"2025-05-09T10:15:44.563Z"}
+{"duration":"0.00","level":"info","message":"Google Services Configuration: Completed","status":"success","step":"googleServices","timestamp":"2025-05-09T10:15:44.564Z"}
+{"level":"info","message":"Model Associations: Starting","step":"associations","timestamp":"2025-05-09T10:15:44.565Z"}
+{"duration":"0.04","level":"info","message":"Model Associations: Completed","status":"success","step":"associations","timestamp":"2025-05-09T10:15:44.604Z"}
+{"level":"info","message":"Database Synchronization: Skipped","status":"skipped","step":"sync","timestamp":"2025-05-09T10:15:44.605Z"}
+{"level":"info","message":"Geographic Data Initialization: Skipped","status":"skipped","step":"geoData","timestamp":"2025-05-09T10:15:44.606Z"}
+{"level":"info","message":"Agent Data Seeding: Skipped","status":"skipped","step":"agents","timestamp":"2025-05-09T10:15:44.607Z"}
+{"level":"info","message":"Permission Seeding: Skipped","status":"skipped","step":"permissions","timestamp":"2025-05-09T10:15:44.607Z"}
+{"level":"info","message":"Super Admin Seeding: Skipped","status":"skipped","step":"superadmin","timestamp":"2025-05-09T10:15:44.608Z"}
+{"level":"info","message":"Socket Initialization: Starting","step":"socket","timestamp":"2025-05-09T10:15:44.608Z"}
+{"duration":"0.00","level":"info","message":"Socket Initialization: Completed","status":"success","step":"socket","timestamp":"2025-05-09T10:15:44.609Z"}
+{"level":"info","message":"Server Initialization: Starting","step":"server","timestamp":"2025-05-09T10:15:44.610Z"}
+{"level":"info","message":"mDNS advertisement skipped in development mode","timestamp":"2025-05-09T10:15:44.617Z"}
+{"duration":"0.01","level":"info","message":"Server Initialization: Completed","status":"success","step":"server","timestamp":"2025-05-09T10:15:44.618Z"}
+{"level":"info","message":"\u001b[36m========== TraceFlow Initialization Summary ========\u001b[39m","timestamp":"2025-05-09T10:15:44.620Z"}
+{"level":"info","message":"Date: 2025-05-09T10:15:44.620Z","timestamp":"2025-05-09T10:15:44.620Z"}
+{"level":"info","message":"Steps Completed:","timestamp":"2025-05-09T10:15:44.621Z"}
+{"duration":"0.46","level":"info","message":"  - Database Initialization: \u001b[32mSUCCESS\u001b[39m - (0.46s)","status":"success","step":"Database Initialization","timestamp":"2025-05-09T10:15:44.621Z"}
+{"duration":"0.80","level":"info","message":"  - SMTP Initialization: \u001b[32mSUCCESS\u001b[39m - (0.80s)","status":"success","step":"SMTP Initialization","timestamp":"2025-05-09T10:15:44.622Z"}
+{"duration":"0.26","level":"info","message":"  - SMS Initialization: \u001b[32mSUCCESS\u001b[39m - (0.26s)","status":"success","step":"SMS Initialization","timestamp":"2025-05-09T10:15:44.623Z"}
+{"duration":"0.00","level":"info","message":"  - Redis Initialization: \u001b[32mSUCCESS\u001b[39m - (0.00s)","status":"success","step":"Redis Initialization","timestamp":"2025-05-09T10:15:44.623Z"}
+{"duration":"0.00","level":"info","message":"  - Google Services Configuration: \u001b[32mSUCCESS\u001b[39m - (0.00s)","status":"success","step":"Google Services Configuration","timestamp":"2025-05-09T10:15:44.624Z"}
+{"duration":"0.04","level":"info","message":"  - Model Associations: \u001b[32mSUCCESS\u001b[39m - (0.04s)","status":"success","step":"Model Associations","timestamp":"2025-05-09T10:15:44.624Z"}
+{"duration":"0.00","level":"info","message":"  - Database Synchronization: \u001b[33mSKIPPED\u001b[39m - (0.00s)","status":"skipped","step":"Database Synchronization","timestamp":"2025-05-09T10:15:44.624Z"}
+{"duration":"0.00","level":"info","message":"  - Geographic Data Initialization: \u001b[33mSKIPPED\u001b[39m - (0.00s)","status":"skipped","step":"Geographic Data Initialization","timestamp":"2025-05-09T10:15:44.625Z"}
+{"duration":"0.00","level":"info","message":"  - Agent Data Seeding: \u001b[33mSKIPPED\u001b[39m - (0.00s)","status":"skipped","step":"Agent Data Seeding","timestamp":"2025-05-09T10:15:44.625Z"}
+{"duration":"0.00","level":"info","message":"  - Permission Seeding: \u001b[33mSKIPPED\u001b[39m - (0.00s)","status":"skipped","step":"Permission Seeding","timestamp":"2025-05-09T10:15:44.625Z"}
+{"duration":"0.00","level":"info","message":"  - Super Admin Seeding: \u001b[33mSKIPPED\u001b[39m - (0.00s)","status":"skipped","step":"Super Admin Seeding","timestamp":"2025-05-09T10:15:44.626Z"}
+{"duration":"0.00","level":"info","message":"  - Socket Initialization: \u001b[32mSUCCESS\u001b[39m - (0.00s)","status":"success","step":"Socket Initialization","timestamp":"2025-05-09T10:15:44.626Z"}
+{"duration":"0.01","level":"info","message":"  - Server Initialization: \u001b[32mSUCCESS\u001b[39m - (0.01s)","status":"success","step":"Server Initialization","timestamp":"2025-05-09T10:15:44.627Z"}
+{"level":"info","message":"Total Steps: 13","timestamp":"2025-05-09T10:15:44.630Z"}
+{"level":"info","message":"\u001b[32mSuccesses: 8\u001b[39m","timestamp":"2025-05-09T10:15:44.631Z"}
+{"level":"info","message":"\u001b[33mSkipped: 5\u001b[39m","timestamp":"2025-05-09T10:15:44.631Z"}
+{"level":"info","message":"\u001b[31mFailures: 0\u001b[39m","timestamp":"2025-05-09T10:15:44.632Z"}
+{"level":"info","message":"Total Duration: 1.63 seconds","timestamp":"2025-05-09T10:15:44.632Z"}
+{"level":"info","message":"\u001b[36m===================================================\u001b[39m","timestamp":"2025-05-09T10:15:44.633Z"}
+{"level":"info","message":"\u001b[36m===================================================\u001b[39m","timestamp":"2025-05-09T10:15:44.634Z"}
+{"level":"info","message":"\tSuper Admin Credentials:","timestamp":"2025-05-09T10:15:44.634Z"}
+{"level":"info","message":"\tEmail:\t\tsuperadmin@example.com","timestamp":"2025-05-09T10:15:44.635Z"}
+{"level":"info","message":"\tPassword:\tSuperSecurePassword123!","timestamp":"2025-05-09T10:15:44.636Z"}
+{"level":"info","message":"\u001b[36m===================================================\u001b[39m","timestamp":"2025-05-09T10:15:44.637Z"}
+{"level":"info","message":"HTTP Server running on port 5000","timestamp":"2025-05-09T10:15:44.655Z"}
+{"level":"info","message":"Google Services configuration initialized, awaiting API keys","timestamp":"2025-05-09T10:15:44.656Z"}
+{"level":"info","message":"Database Initialization: Starting","step":"database","timestamp":"2025-05-09T10:16:26.161Z"}
+{"level":"info","message":"Connected to Redis successfully","timestamp":"2025-05-09T10:16:26.185Z"}
+{"level":"info","message":"Redis server info: # Server","timestamp":"2025-05-09T10:16:26.201Z"}
+{"level":"info","message":"Redis ping successful","timestamp":"2025-05-09T10:16:26.207Z"}
+{"level":"info","message":"GoogleMapsService initialized with Redis","timestamp":"2025-05-09T10:16:26.208Z"}
+{"duration":"0.22","level":"info","message":"Database Initialization: Completed","status":"success","step":"database","timestamp":"2025-05-09T10:16:26.384Z"}
+{"level":"info","message":"SMTP Initialization: Starting","step":"smtp","timestamp":"2025-05-09T10:16:26.388Z"}
+{"level":"info","message":"SMTP server verified successfully","timestamp":"2025-05-09T10:16:27.137Z"}
+{"duration":"0.75","level":"info","message":"SMTP Initialization: Completed","status":"success","step":"smtp","timestamp":"2025-05-09T10:16:27.138Z"}
+{"level":"info","message":"SMS Initialization: Starting","step":"sms","timestamp":"2025-05-09T10:16:27.139Z"}
+{"level":"info","message":"Initializing SMS gateway with URL: https://wbm.tn/wbmonitor/send/webapi/v5/enquire_credit and headers: {\"X-API-Key\":\"9c5362a406e609d0ecc6f9a0e129c0a6\",\"Content-Type\":\"application/json\"}","timestamp":"2025-05-09T10:16:27.141Z"}
+{"level":"info","message":"SMS gateway initialized successfully: {\"op\":3,\"status\":0,\"status_desc\":\"success\",\"apiVersion\":\"5\",\"credit\":{\"national\":{\"available\":\"790668\",\"reserved\":\"0\"},\"international\":{\"available\":\"1\",\"reserved\":\"0\"}}}","timestamp":"2025-05-09T10:16:27.344Z"}
+{"duration":"0.21","level":"info","message":"SMS Initialization: Completed","status":"success","step":"sms","timestamp":"2025-05-09T10:16:27.346Z"}
+{"level":"info","message":"Redis Initialization: Starting","step":"redis","timestamp":"2025-05-09T10:16:27.347Z"}
+{"duration":"0.00","level":"info","message":"Redis Initialization: Completed","status":"success","step":"redis","timestamp":"2025-05-09T10:16:27.348Z"}
+{"level":"info","message":"Google Services Configuration: Starting","step":"googleServices","timestamp":"2025-05-09T10:16:27.348Z"}
+{"level":"info","message":"Google Services configuration validated","timestamp":"2025-05-09T10:16:27.349Z"}
+{"level":"info","message":"Google Services ready for activation pending API keys","timestamp":"2025-05-09T10:16:27.350Z"}
+{"duration":"0.00","level":"info","message":"Google Services Configuration: Completed","status":"success","step":"googleServices","timestamp":"2025-05-09T10:16:27.351Z"}
+{"level":"info","message":"Model Associations: Starting","step":"associations","timestamp":"2025-05-09T10:16:27.351Z"}
+{"duration":"0.05","level":"info","message":"Model Associations: Completed","status":"success","step":"associations","timestamp":"2025-05-09T10:16:27.397Z"}
+{"level":"info","message":"Database Synchronization: Skipped","status":"skipped","step":"sync","timestamp":"2025-05-09T10:16:27.398Z"}
+{"level":"info","message":"Geographic Data Initialization: Skipped","status":"skipped","step":"geoData","timestamp":"2025-05-09T10:16:27.399Z"}
+{"level":"info","message":"Agent Data Seeding: Skipped","status":"skipped","step":"agents","timestamp":"2025-05-09T10:16:27.400Z"}
+{"level":"info","message":"Permission Seeding: Skipped","status":"skipped","step":"permissions","timestamp":"2025-05-09T10:16:27.401Z"}
+{"level":"info","message":"Super Admin Seeding: Skipped","status":"skipped","step":"superadmin","timestamp":"2025-05-09T10:16:27.402Z"}
+{"level":"info","message":"Socket Initialization: Starting","step":"socket","timestamp":"2025-05-09T10:16:27.403Z"}
+{"duration":"0.00","level":"info","message":"Socket Initialization: Completed","status":"success","step":"socket","timestamp":"2025-05-09T10:16:27.404Z"}
+{"level":"info","message":"Server Initialization: Starting","step":"server","timestamp":"2025-05-09T10:16:27.405Z"}
+{"level":"info","message":"mDNS advertisement skipped in development mode","timestamp":"2025-05-09T10:16:27.409Z"}
+{"duration":"0.01","level":"info","message":"Server Initialization: Completed","status":"success","step":"server","timestamp":"2025-05-09T10:16:27.410Z"}
+{"level":"info","message":"\u001b[36m========== TraceFlow Initialization Summary ========\u001b[39m","timestamp":"2025-05-09T10:16:27.413Z"}
+{"level":"info","message":"Date: 2025-05-09T10:16:27.414Z","timestamp":"2025-05-09T10:16:27.415Z"}
+{"level":"info","message":"Steps Completed:","timestamp":"2025-05-09T10:16:27.415Z"}
+{"duration":"0.23","level":"info","message":"  - Database Initialization: \u001b[32mSUCCESS\u001b[39m - (0.23s)","status":"success","step":"Database Initialization","timestamp":"2025-05-09T10:16:27.416Z"}
+{"duration":"0.75","level":"info","message":"  - SMTP Initialization: \u001b[32mSUCCESS\u001b[39m - (0.75s)","status":"success","step":"SMTP Initialization","timestamp":"2025-05-09T10:16:27.417Z"}
+{"duration":"0.21","level":"info","message":"  - SMS Initialization: \u001b[32mSUCCESS\u001b[39m - (0.21s)","status":"success","step":"SMS Initialization","timestamp":"2025-05-09T10:16:27.419Z"}
+{"duration":"0.00","level":"info","message":"  - Redis Initialization: \u001b[32mSUCCESS\u001b[39m - (0.00s)","status":"success","step":"Redis Initialization","timestamp":"2025-05-09T10:16:27.420Z"}
+{"duration":"0.00","level":"info","message":"  - Google Services Configuration: \u001b[32mSUCCESS\u001b[39m - (0.00s)","status":"success","step":"Google Services Configuration","timestamp":"2025-05-09T10:16:27.421Z"}
+{"duration":"0.05","level":"info","message":"  - Model Associations: \u001b[32mSUCCESS\u001b[39m - (0.05s)","status":"success","step":"Model Associations","timestamp":"2025-05-09T10:16:27.421Z"}
+{"duration":"0.00","level":"info","message":"  - Database Synchronization: \u001b[33mSKIPPED\u001b[39m - (0.00s)","status":"skipped","step":"Database Synchronization","timestamp":"2025-05-09T10:16:27.422Z"}
+{"duration":"0.00","level":"info","message":"  - Geographic Data Initialization: \u001b[33mSKIPPED\u001b[39m - (0.00s)","status":"skipped","step":"Geographic Data Initialization","timestamp":"2025-05-09T10:16:27.423Z"}
+{"duration":"0.00","level":"info","message":"  - Agent Data Seeding: \u001b[33mSKIPPED\u001b[39m - (0.00s)","status":"skipped","step":"Agent Data Seeding","timestamp":"2025-05-09T10:16:27.424Z"}
+{"duration":"0.00","level":"info","message":"  - Permission Seeding: \u001b[33mSKIPPED\u001b[39m - (0.00s)","status":"skipped","step":"Permission Seeding","timestamp":"2025-05-09T10:16:27.425Z"}
+{"duration":"0.00","level":"info","message":"  - Super Admin Seeding: \u001b[33mSKIPPED\u001b[39m - (0.00s)","status":"skipped","step":"Super Admin Seeding","timestamp":"2025-05-09T10:16:27.425Z"}
+{"duration":"0.00","level":"info","message":"  - Socket Initialization: \u001b[32mSUCCESS\u001b[39m - (0.00s)","status":"success","step":"Socket Initialization","timestamp":"2025-05-09T10:16:27.426Z"}
+{"duration":"0.01","level":"info","message":"  - Server Initialization: \u001b[32mSUCCESS\u001b[39m - (0.01s)","status":"success","step":"Server Initialization","timestamp":"2025-05-09T10:16:27.427Z"}
+{"level":"info","message":"Total Steps: 13","timestamp":"2025-05-09T10:16:27.428Z"}
+{"level":"info","message":"\u001b[32mSuccesses: 8\u001b[39m","timestamp":"2025-05-09T10:16:27.430Z"}
+{"level":"info","message":"\u001b[33mSkipped: 5\u001b[39m","timestamp":"2025-05-09T10:16:27.431Z"}
+{"level":"info","message":"\u001b[31mFailures: 0\u001b[39m","timestamp":"2025-05-09T10:16:27.432Z"}
+{"level":"info","message":"Total Duration: 1.28 seconds","timestamp":"2025-05-09T10:16:27.433Z"}
+{"level":"info","message":"\u001b[36m===================================================\u001b[39m","timestamp":"2025-05-09T10:16:27.436Z"}
+{"level":"info","message":"\u001b[36m===================================================\u001b[39m","timestamp":"2025-05-09T10:16:27.437Z"}
+{"level":"info","message":"\tSuper Admin Credentials:","timestamp":"2025-05-09T10:16:27.438Z"}
+{"level":"info","message":"\tEmail:\t\tsuperadmin@example.com","timestamp":"2025-05-09T10:16:27.438Z"}
+{"level":"info","message":"\tPassword:\tSuperSecurePassword123!","timestamp":"2025-05-09T10:16:27.439Z"}
+{"level":"info","message":"\u001b[36m===================================================\u001b[39m","timestamp":"2025-05-09T10:16:27.440Z"}
+{"level":"info","message":"HTTP Server running on port 5000","timestamp":"2025-05-09T10:16:27.457Z"}
+{"level":"info","message":"Google Services configuration initialized, awaiting API keys","timestamp":"2025-05-09T10:16:27.458Z"}
+{"level":"info","message":"No active rules found for event: otp:generated:user","timestamp":"2025-05-09T10:17:38.056Z"}
+{"enabled":true,"event":"otp:generated:user","level":"info","message":"Created default notification rule","ruleID":"rule_qBAL4Slc8JxwdzJYMysZS","timestamp":"2025-05-09T10:17:38.212Z"}
+{"level":"info","message":"Notification stored Notification for otp:generated:user","notificationID":"notif_jVvUok6Ak-Py1kkljeYov","timestamp":"2025-05-09T10:17:38.677Z","userID":"user_4wnd9m7jl"}
+{"level":"info","message":"Notification status updated","notificationID":"notif_jVvUok6Ak-Py1kkljeYov","status":"sent","timestamp":"2025-05-09T10:17:38.985Z"}
+{"event":"otp:generated:user","level":"info","message":"Triggered notifications","recipientCount":1,"timestamp":"2025-05-09T10:17:39.034Z"}
+{"level":"info","message":"Sending SMS request to: \"00000000\"","timestamp":"2025-05-09T10:17:39.511Z"}
+{"level":"info","message":"Sending SMS message: \"Your TraceFlow OTP is 783646\"","timestamp":"2025-05-09T10:17:39.625Z"}
+{"level":"error","message":"w-Board SMS Gateway error (otp): {\"op\":1,\"status\":-7,\"status_desc\":\"sms count failure\",\"apiVersion\":\"5\",\"msg_type\":null,\"nat_count\":0,\"int_count\":0,\"tot_scheduled\":0,\"request_id\":null}","timestamp":"2025-05-09T10:17:40.521Z"}
+{"level":"error","message":"w-Board SMS Gateway error (otp): SMS sending failed with status: -7 - sms count failure","timestamp":"2025-05-09T10:17:40.523Z"}
+{"level":"info","message":"Email lookup result: superadmin@example.com","timestamp":"2025-05-09T10:17:40.707Z"}
+{"level":"info","message":"Fallback email sent to superadmin@example.com (otp)","timestamp":"2025-05-09T10:17:43.063Z"}
+{"level":"info","message":"Login successful for superadmin@example.com, IP: 192.168.5.253","timestamp":"2025-05-09T10:17:43.078Z"}
+{"level":"info","message":"2FA verified for user user_4wnd9m7jl, IP: 192.168.5.253","timestamp":"2025-05-09T10:18:25.726Z"}
+{"email":"superadmin@example.com","level":"info","message":"WebSocket authentication successful","roles":"default-roles-traceflow, Super Admin, uma_authorization","socketId":"OH23aXsBwtwHN7DSAAAB","timestamp":"2025-05-09T10:18:25.782Z","userID":"user_4wnd9m7jl"}
+{"level":"info","message":"User connected: superadmin@example.com","socketId":"OH23aXsBwtwHN7DSAAAB","timestamp":"2025-05-09T10:18:25.785Z","userID":"user_4wnd9m7jl"}
+{"level":"info","message":"Client connected","socketId":"OH23aXsBwtwHN7DSAAAB","timestamp":"2025-05-09T10:18:25.786Z"}
+{"level":"info","message":"Fetched roles for user user_4wnd9m7jl by user_4wnd9m7jl, IP: 192.168.5.253","timestamp":"2025-05-09T10:18:25.834Z"}
+{"level":"info","message":"Fetched roles for user user_4wnd9m7jl by user_4wnd9m7jl, IP: 192.168.5.253","timestamp":"2025-05-09T10:18:25.917Z"}
+{"level":"info","message":"Super Admin bypass for user user_4wnd9m7jl","timestamp":"2025-05-09T10:18:29.307Z"}
+{"level":"info","message":"Fetched all users by user user_4wnd9m7jl, IP: 192.168.5.253","timestamp":"2025-05-09T10:18:29.337Z"}
+{"level":"info","message":"Super Admin bypass for user user_4wnd9m7jl","timestamp":"2025-05-09T10:18:29.373Z"}
+{"level":"info","message":"Fetched all roles by user user_4wnd9m7jl, IP: 192.168.5.253","timestamp":"2025-05-09T10:18:29.389Z"}
+{"level":"info","message":"Super Admin bypass for user user_4wnd9m7jl","timestamp":"2025-05-09T10:18:36.070Z"}
+{"level":"info","message":"Starting Keycloak migrations for resources, policies, and permissions...","timestamp":"2025-05-09T10:18:36.160Z"}
+{"level":"info","message":"Keycloak resources migration completed.","timestamp":"2025-05-09T10:18:38.532Z"}
+{"level":"info","message":"Keycloak policies migration completed.","timestamp":"2025-05-09T10:18:38.699Z"}
+{"level":"info","message":"Keycloak permissions migration completed.","timestamp":"2025-05-09T10:18:39.963Z"}
+{"level":"info","message":"No active rules found for event: role:reset","timestamp":"2025-05-09T10:18:40.832Z"}
+{"enabled":true,"event":"role:reset","level":"info","message":"Created default notification rule","ruleID":"rule_PqOqEu5WRd0i3Xbppaj5R","timestamp":"2025-05-09T10:18:40.836Z"}
+{"level":"info","message":"Notification stored Notification for role:reset","notificationID":"notif_HvEE0GTgXzOuKjGBqn6s5","timestamp":"2025-05-09T10:18:40.848Z","userID":"user_4wnd9m7jl"}
+{"level":"info","message":"Notification status updated","notificationID":"notif_HvEE0GTgXzOuKjGBqn6s5","status":"sent","timestamp":"2025-05-09T10:18:40.854Z"}
+{"event":"role:reset","level":"info","message":"Triggered notifications","recipientCount":1,"timestamp":"2025-05-09T10:18:40.856Z"}
+{"level":"info","message":"Reset main roles by user user_4wnd9m7jl, IP: 192.168.5.253","timestamp":"2025-05-09T10:18:40.857Z"}
+{"level":"info","message":"Super Admin bypass for user user_4wnd9m7jl","timestamp":"2025-05-09T10:18:40.881Z"}
+{"level":"info","message":"Fetched all roles by user user_4wnd9m7jl, IP: 192.168.5.253","timestamp":"2025-05-09T10:18:40.893Z"}
+{"level":"info","message":"Super Admin bypass for user user_4wnd9m7jl","timestamp":"2025-05-09T10:19:02.199Z"}
+{"level":"info","message":"Fetched all agents by user user_4wnd9m7jl, IP: 192.168.5.253","timestamp":"2025-05-09T10:19:02.295Z"}
+{"level":"info","message":"Super Admin bypass for user user_4wnd9m7jl","timestamp":"2025-05-09T10:19:05.652Z"}
+{"level":"info","message":"Fetched all reasons by user user_4wnd9m7jl, IP: 192.168.5.253","timestamp":"2025-05-09T10:19:05.658Z"}
+{"level":"info","message":"Super Admin bypass for user user_4wnd9m7jl","timestamp":"2025-05-09T10:19:06.836Z"}
+{"level":"info","message":"Fetched all checklists by user user_4wnd9m7jl, IP: 192.168.5.253","timestamp":"2025-05-09T10:19:06.844Z"}
+{"level":"info","message":"Super Admin bypass for user user_4wnd9m7jl","timestamp":"2025-05-09T10:20:04.455Z"}
+{"level":"info","message":"Fetched all reasons by user user_4wnd9m7jl, IP: 192.168.5.253","timestamp":"2025-05-09T10:20:04.463Z"}
+{"level":"info","message":"Super Admin bypass for user user_4wnd9m7jl","timestamp":"2025-05-09T10:20:06.868Z"}
+{"level":"info","message":"Fetched all checklists by user user_4wnd9m7jl, IP: 192.168.5.253","timestamp":"2025-05-09T10:20:06.875Z"}
+{"level":"info","message":"Super Admin bypass for user user_4wnd9m7jl","timestamp":"2025-05-09T10:20:30.916Z"}
+{"level":"info","message":"Fetched all permissions by user user_4wnd9m7jl, IP: 192.168.5.253","timestamp":"2025-05-09T10:20:30.922Z"}
+{"level":"info","message":"Super Admin bypass for user user_4wnd9m7jl","timestamp":"2025-05-09T10:20:34.534Z"}
+{"level":"info","message":"Super Admin bypass for user user_4wnd9m7jl","timestamp":"2025-05-09T10:20:34.538Z"}
+{"level":"info","message":"Fetched all governorates by user user_4wnd9m7jl, IP: 192.168.5.253","timestamp":"2025-05-09T10:20:34.545Z"}
+{"level":"info","message":"Fetched all regions by user user_4wnd9m7jl, IP: 192.168.5.253","timestamp":"2025-05-09T10:20:34.559Z"}
+{"level":"info","message":"Super Admin bypass for user user_4wnd9m7jl","timestamp":"2025-05-09T10:20:41.843Z"}
+{"level":"info","message":"Created user sofienlaghouanem@gmail.com by user user_4wnd9m7jl","timestamp":"2025-05-09T10:20:41.994Z"}
+{"level":"info","message":"No active rules found for event: user:created","timestamp":"2025-05-09T10:20:41.998Z"}
+{"enabled":true,"event":"user:created","level":"info","message":"Created default notification rule","ruleID":"rule_EAlMBYzaCY1Ee4VZNot8Q","timestamp":"2025-05-09T10:20:42.006Z"}
+{"level":"info","message":"Notification stored Notification for user:created","notificationID":"notif_kDSbMnMBJ8DTgigKKehDl","timestamp":"2025-05-09T10:20:42.024Z","userID":"user_4wnd9m7jl"}
+{"level":"info","message":"Notification status updated","notificationID":"notif_kDSbMnMBJ8DTgigKKehDl","status":"sent","timestamp":"2025-05-09T10:20:42.029Z"}
+{"event":"user:created","level":"info","message":"Triggered notifications","recipientCount":1,"timestamp":"2025-05-09T10:20:42.030Z"}
+{"level":"info","message":"User created: sofienlaghouanem@gmail.com by user user_4wnd9m7jl, IP: 192.168.5.253","timestamp":"2025-05-09T10:20:42.031Z"}
+{"level":"info","message":"Super Admin bypass for user user_4wnd9m7jl","timestamp":"2025-05-09T10:20:42.092Z"}
+{"level":"info","message":"No active rules found for event: role:assigned","timestamp":"2025-05-09T10:20:42.179Z"}
+{"enabled":true,"event":"role:assigned","level":"info","message":"Created default notification rule","ruleID":"rule_BdObR6pw1xgTi1dot4h0t","timestamp":"2025-05-09T10:20:42.183Z"}
+{"level":"info","message":"Notification stored Notification for role:assigned","notificationID":"notif_kxS5zzcLUqY-jLtHQLzGD","timestamp":"2025-05-09T10:20:42.196Z","userID":"user_4wnd9m7jl"}
+{"level":"info","message":"Notification status updated","notificationID":"notif_kxS5zzcLUqY-jLtHQLzGD","status":"sent","timestamp":"2025-05-09T10:20:42.205Z"}
+{"event":"role:assigned","level":"info","message":"Triggered notifications","recipientCount":1,"timestamp":"2025-05-09T10:20:42.208Z"}
+{"level":"info","message":"Assigned roles to user usr_uZdeCcSQJ6h1ZsGpOeRJC by user_4wnd9m7jl, IP: 192.168.5.253","timestamp":"2025-05-09T10:20:42.209Z"}
+{"level":"info","message":"Fetched roles for user usr_uZdeCcSQJ6h1ZsGpOeRJC by user_4wnd9m7jl, IP: 192.168.5.253","timestamp":"2025-05-09T10:20:42.245Z"}
+{"level":"info","message":"Super Admin bypass for user user_4wnd9m7jl","timestamp":"2025-05-09T10:20:44.166Z"}
+{"level":"info","message":"Fetched all regions by user user_4wnd9m7jl, IP: 192.168.5.253","timestamp":"2025-05-09T10:20:44.177Z"}
+{"level":"info","message":"Super Admin bypass for user user_4wnd9m7jl","timestamp":"2025-05-09T10:20:44.181Z"}
+{"level":"info","message":"Fetched all governorates by user user_4wnd9m7jl, IP: 192.168.5.253","timestamp":"2025-05-09T10:20:44.186Z"}
+{"level":"info","message":"Super Admin bypass for user user_4wnd9m7jl","timestamp":"2025-05-09T10:21:10.018Z"}
+{"level":"info","message":"No users found for role Regional Manager","timestamp":"2025-05-09T10:21:10.061Z"}
+{"level":"info","message":"Fetched users by role Regional Manager by user user_4wnd9m7jl, IP: 192.168.5.253","timestamp":"2025-05-09T10:21:10.065Z"}
+{"level":"info","message":"Super Admin bypass for user user_4wnd9m7jl","timestamp":"2025-05-09T10:21:12.364Z"}
+{"level":"info","message":"Created user m@gmail.com by user user_4wnd9m7jl","timestamp":"2025-05-09T10:21:12.486Z"}
+{"level":"info","message":"Notification stored Notification for user:created","notificationID":"notif_eNmvcwau8btr24RekXZyu","timestamp":"2025-05-09T10:21:12.504Z","userID":"user_4wnd9m7jl"}
+{"level":"info","message":"Notification status updated","notificationID":"notif_eNmvcwau8btr24RekXZyu","status":"sent","timestamp":"2025-05-09T10:21:12.512Z"}
+{"event":"user:created","level":"info","message":"Triggered notifications","recipientCount":1,"timestamp":"2025-05-09T10:21:12.513Z"}
+{"level":"info","message":"User created: m@gmail.com by user user_4wnd9m7jl, IP: 192.168.5.253","timestamp":"2025-05-09T10:21:12.514Z"}
+{"level":"info","message":"Super Admin bypass for user user_4wnd9m7jl","timestamp":"2025-05-09T10:21:12.540Z"}
+{"level":"info","message":"Notification stored Notification for role:assigned","notificationID":"notif_AoXb9JSp679d_vaUH6Kgo","timestamp":"2025-05-09T10:21:12.633Z","userID":"user_4wnd9m7jl"}
+{"level":"info","message":"Notification status updated","notificationID":"notif_AoXb9JSp679d_vaUH6Kgo","status":"sent","timestamp":"2025-05-09T10:21:12.638Z"}
+{"event":"role:assigned","level":"info","message":"Triggered notifications","recipientCount":1,"timestamp":"2025-05-09T10:21:12.640Z"}
+{"level":"info","message":"Assigned roles to user usr_wd9D0cWoZTZhatef1MjAg by user_4wnd9m7jl, IP: 192.168.5.253","timestamp":"2025-05-09T10:21:12.641Z"}
+{"level":"info","message":"Fetched roles for user usr_wd9D0cWoZTZhatef1MjAg by user_4wnd9m7jl, IP: 192.168.5.253","timestamp":"2025-05-09T10:21:12.664Z"}
+{"level":"info","message":"Super Admin bypass for user user_4wnd9m7jl","timestamp":"2025-05-09T10:21:14.147Z"}
+{"level":"info","message":"Fetched all regions by user user_4wnd9m7jl, IP: 192.168.5.253","timestamp":"2025-05-09T10:21:14.157Z"}
+{"level":"info","message":"Super Admin bypass for user user_4wnd9m7jl","timestamp":"2025-05-09T10:21:14.165Z"}
+{"level":"info","message":"Fetched all governorates by user user_4wnd9m7jl, IP: 192.168.5.253","timestamp":"2025-05-09T10:21:14.174Z"}
+{"level":"info","message":"Super Admin bypass for user user_4wnd9m7jl","timestamp":"2025-05-09T10:21:34.764Z"}
+{"level":"info","message":"No users found for role Regional Manager","timestamp":"2025-05-09T10:21:34.794Z"}
+{"level":"info","message":"Fetched users by role Regional Manager by user user_4wnd9m7jl, IP: 192.168.5.253","timestamp":"2025-05-09T10:21:34.796Z"}
+{"level":"info","message":"Super Admin bypass for user user_4wnd9m7jl","timestamp":"2025-05-09T10:21:40.143Z"}
+{"level":"info","message":"Super Admin bypass for user user_4wnd9m7jl","timestamp":"2025-05-09T10:21:40.146Z"}
+{"level":"info","message":"Super Admin bypass for user user_4wnd9m7jl","timestamp":"2025-05-09T10:21:40.159Z"}
+{"level":"info","message":"Fetched all regions by user user_4wnd9m7jl, IP: 192.168.5.253","timestamp":"2025-05-09T10:21:40.165Z"}
+{"level":"info","message":"Fetched users by role Manager by user user_4wnd9m7jl, IP: 192.168.5.253","timestamp":"2025-05-09T10:21:40.213Z"}
+{"level":"info","message":"Fetched users by role Supervisor by user user_4wnd9m7jl, IP: 192.168.5.253","timestamp":"2025-05-09T10:21:40.234Z"}
+{"level":"info","message":"Super Admin bypass for user user_4wnd9m7jl","timestamp":"2025-05-09T10:21:53.172Z"}
+{"level":"info","message":"Created user rm@gmail.com by user user_4wnd9m7jl","timestamp":"2025-05-09T10:21:53.281Z"}
+{"level":"info","message":"Notification stored Notification for user:created","notificationID":"notif_Y3Gj8SGHkdT_mSxkPUQz8","timestamp":"2025-05-09T10:21:53.307Z","userID":"user_4wnd9m7jl"}
+{"level":"info","message":"Notification status updated","notificationID":"notif_Y3Gj8SGHkdT_mSxkPUQz8","status":"sent","timestamp":"2025-05-09T10:21:53.316Z"}
+{"event":"user:created","level":"info","message":"Triggered notifications","recipientCount":1,"timestamp":"2025-05-09T10:21:53.317Z"}
+{"level":"info","message":"User created: rm@gmail.com by user user_4wnd9m7jl, IP: 192.168.5.253","timestamp":"2025-05-09T10:21:53.319Z"}
+{"level":"info","message":"Super Admin bypass for user user_4wnd9m7jl","timestamp":"2025-05-09T10:21:53.347Z"}
+{"level":"info","message":"Notification stored Notification for role:assigned","notificationID":"notif_mqeugyvshpHSvy4l6MXLb","timestamp":"2025-05-09T10:21:53.461Z","userID":"user_4wnd9m7jl"}
+{"level":"info","message":"Notification status updated","notificationID":"notif_mqeugyvshpHSvy4l6MXLb","status":"sent","timestamp":"2025-05-09T10:21:53.466Z"}
+{"event":"role:assigned","level":"info","message":"Triggered notifications","recipientCount":1,"timestamp":"2025-05-09T10:21:53.467Z"}
+{"level":"info","message":"Assigned roles to user usr_wEjc-IGwHRk5pDfxgINyy by user_4wnd9m7jl, IP: 192.168.5.253","timestamp":"2025-05-09T10:21:53.468Z"}
+{"level":"info","message":"Fetched roles for user usr_wEjc-IGwHRk5pDfxgINyy by user_4wnd9m7jl, IP: 192.168.5.253","timestamp":"2025-05-09T10:21:53.502Z"}
+{"level":"info","message":"Super Admin bypass for user user_4wnd9m7jl","timestamp":"2025-05-09T10:21:55.633Z"}
+{"level":"info","message":"Fetched all users by user user_4wnd9m7jl, IP: 192.168.5.253","timestamp":"2025-05-09T10:21:55.646Z"}
+{"level":"info","message":"Super Admin bypass for user user_4wnd9m7jl","timestamp":"2025-05-09T10:22:12.763Z"}
+{"level":"info","message":"Super Admin bypass for user user_4wnd9m7jl","timestamp":"2025-05-09T10:22:12.768Z"}
+{"level":"info","message":"Fetched regional managers for user usr_uZdeCcSQJ6h1ZsGpOeRJC","timestamp":"2025-05-09T10:22:12.776Z"}
+{"level":"info","message":"Fetched regional managers for user usr_uZdeCcSQJ6h1ZsGpOeRJC by user user_4wnd9m7jl, IP: 192.168.5.253","timestamp":"2025-05-09T10:22:12.776Z"}
+{"level":"info","message":"Fetched supervisors for user usr_uZdeCcSQJ6h1ZsGpOeRJC","timestamp":"2025-05-09T10:22:12.783Z"}
+{"level":"info","message":"Fetched supervisors for user usr_uZdeCcSQJ6h1ZsGpOeRJC by user user_4wnd9m7jl, IP: 192.168.5.253","timestamp":"2025-05-09T10:22:12.786Z"}
+{"level":"info","message":"Super Admin bypass for user user_4wnd9m7jl","timestamp":"2025-05-09T10:22:13.145Z"}
+{"level":"info","message":"Fetched user usr_uZdeCcSQJ6h1ZsGpOeRJC by user user_4wnd9m7jl, IP: 192.168.5.253","timestamp":"2025-05-09T10:22:13.163Z"}
+{"level":"info","message":"Super Admin bypass for user user_4wnd9m7jl","timestamp":"2025-05-09T10:22:15.123Z"}
+{"level":"info","message":"Fetched regional manager for supervisor usr_uZdeCcSQJ6h1ZsGpOeRJC","timestamp":"2025-05-09T10:22:15.128Z"}
+{"level":"info","message":"Fetched regional manager for supervisor usr_uZdeCcSQJ6h1ZsGpOeRJC by user user_4wnd9m7jl, IP: 192.168.5.253","timestamp":"2025-05-09T10:22:15.129Z"}
+{"level":"info","message":"Super Admin bypass for user user_4wnd9m7jl","timestamp":"2025-05-09T10:22:15.133Z"}
+{"level":"info","message":"Fetched users by role Regional Manager by user user_4wnd9m7jl, IP: 192.168.5.253","timestamp":"2025-05-09T10:22:15.155Z"}
+{"level":"info","message":"Super Admin bypass for user user_4wnd9m7jl","timestamp":"2025-05-09T10:22:17.952Z"}
+{"level":"info","message":"Fetched regions for user usr_wEjc-IGwHRk5pDfxgINyy, IP: 192.168.5.253","timestamp":"2025-05-09T10:22:17.956Z"}
+{"level":"info","message":"Super Admin bypass for user user_4wnd9m7jl","timestamp":"2025-05-09T10:22:17.985Z"}
+{"level":"info","message":"Fetched governorates for user usr_uZdeCcSQJ6h1ZsGpOeRJC, IP: 192.168.5.253","timestamp":"2025-05-09T10:22:17.993Z"}
+{"level":"info","message":"Super Admin bypass for user user_4wnd9m7jl","timestamp":"2025-05-09T10:22:33.947Z"}
+{"level":"info","message":"Super Admin bypass for user user_4wnd9m7jl","timestamp":"2025-05-09T10:22:33.950Z"}
+{"level":"info","message":"Fetched supervisors for user usr_wEjc-IGwHRk5pDfxgINyy","timestamp":"2025-05-09T10:22:33.956Z"}
+{"level":"info","message":"Fetched supervisors for user usr_wEjc-IGwHRk5pDfxgINyy by user user_4wnd9m7jl, IP: 192.168.5.253","timestamp":"2025-05-09T10:22:33.957Z"}
+{"level":"info","message":"Fetched regional managers for user usr_wEjc-IGwHRk5pDfxgINyy","timestamp":"2025-05-09T10:22:33.967Z"}
+{"level":"info","message":"Fetched regional managers for user usr_wEjc-IGwHRk5pDfxgINyy by user user_4wnd9m7jl, IP: 192.168.5.253","timestamp":"2025-05-09T10:22:33.974Z"}
+{"level":"info","message":"Super Admin bypass for user user_4wnd9m7jl","timestamp":"2025-05-09T10:22:34.104Z"}
+{"level":"info","message":"Fetched user usr_wEjc-IGwHRk5pDfxgINyy by user user_4wnd9m7jl, IP: 192.168.5.253","timestamp":"2025-05-09T10:22:34.127Z"}
+{"level":"info","message":"Super Admin bypass for user user_4wnd9m7jl","timestamp":"2025-05-09T10:22:35.225Z"}
+{"level":"info","message":"Fetched director for regional manager usr_wEjc-IGwHRk5pDfxgINyy","timestamp":"2025-05-09T10:22:35.234Z"}
+{"level":"info","message":"Fetched director for regional manager usr_wEjc-IGwHRk5pDfxgINyy by user user_4wnd9m7jl, IP: 192.168.5.253","timestamp":"2025-05-09T10:22:35.236Z"}
+{"level":"info","message":"Super Admin bypass for user user_4wnd9m7jl","timestamp":"2025-05-09T10:22:35.255Z"}
+{"level":"info","message":"Super Admin bypass for user user_4wnd9m7jl","timestamp":"2025-05-09T10:22:35.269Z"}
+{"level":"info","message":"Fetched supervisors for regional manager usr_wEjc-IGwHRk5pDfxgINyy","timestamp":"2025-05-09T10:22:35.298Z"}
+{"level":"info","message":"Fetched supervisors for regional manager usr_wEjc-IGwHRk5pDfxgINyy by user user_4wnd9m7jl, IP: 192.168.5.253","timestamp":"2025-05-09T10:22:35.307Z"}
+{"level":"info","message":"Super Admin bypass for user user_4wnd9m7jl","timestamp":"2025-05-09T10:22:35.332Z"}
+{"level":"info","message":"Super Admin bypass for user user_4wnd9m7jl","timestamp":"2025-05-09T10:22:35.336Z"}
+{"level":"info","message":"Super Admin bypass for user user_4wnd9m7jl","timestamp":"2025-05-09T10:22:35.348Z"}
+{"level":"info","message":"Fetched users by role Manager by user user_4wnd9m7jl, IP: 192.168.5.253","timestamp":"2025-05-09T10:22:35.353Z"}
+{"level":"info","message":"Fetched all regions by user user_4wnd9m7jl, IP: 192.168.5.253","timestamp":"2025-05-09T10:22:35.368Z"}
+{"level":"info","message":"Fetched regions for user usr_wEjc-IGwHRk5pDfxgINyy, IP: 192.168.5.253","timestamp":"2025-05-09T10:22:35.388Z"}
+{"level":"info","message":"Fetched users by role Supervisor by user user_4wnd9m7jl, IP: 192.168.5.253","timestamp":"2025-05-09T10:22:35.461Z"}
+{"level":"info","message":"Super Admin bypass for user user_4wnd9m7jl","timestamp":"2025-05-09T10:22:42.996Z"}
+{"level":"info","message":"Fetched director for regional manager usr_wEjc-IGwHRk5pDfxgINyy","timestamp":"2025-05-09T10:22:43.005Z"}
+{"level":"info","message":"Fetched director for regional manager usr_wEjc-IGwHRk5pDfxgINyy by user user_4wnd9m7jl, IP: 192.168.5.253","timestamp":"2025-05-09T10:22:43.006Z"}
+{"level":"info","message":"Super Admin bypass for user user_4wnd9m7jl","timestamp":"2025-05-09T10:22:43.025Z"}
+{"level":"info","message":"Assigned director usr_wd9D0cWoZTZhatef1MjAg to regional manager usr_wEjc-IGwHRk5pDfxgINyy by user user_4wnd9m7jl","timestamp":"2025-05-09T10:22:43.036Z"}
+{"level":"info","message":"No active rules found for event: user:director_assigned","timestamp":"2025-05-09T10:22:43.042Z"}
+{"enabled":true,"event":"user:director_assigned","level":"info","message":"Created default notification rule","ruleID":"rule_dns8vyKA69etEop8rq_g4","timestamp":"2025-05-09T10:22:43.051Z"}
+{"level":"info","message":"Notification stored Notification for user:director_assigned","notificationID":"notif_xQjcNbCcKW7Hr6pM3ykJp","timestamp":"2025-05-09T10:22:43.069Z","userID":"user_4wnd9m7jl"}
+{"level":"info","message":"Notification status updated","notificationID":"notif_xQjcNbCcKW7Hr6pM3ykJp","status":"sent","timestamp":"2025-05-09T10:22:43.075Z"}
+{"event":"user:director_assigned","level":"info","message":"Triggered notifications","recipientCount":1,"timestamp":"2025-05-09T10:22:43.078Z"}
+{"level":"info","message":"Assigned director usr_wd9D0cWoZTZhatef1MjAg to regional manager usr_wEjc-IGwHRk5pDfxgINyy by user user_4wnd9m7jl, IP: 192.168.5.253","timestamp":"2025-05-09T10:22:43.080Z"}
+{"level":"info","message":"Super Admin bypass for user user_4wnd9m7jl","timestamp":"2025-05-09T10:22:43.103Z"}
+{"level":"info","message":"Fetched regions for user usr_wEjc-IGwHRk5pDfxgINyy, IP: 192.168.5.253","timestamp":"2025-05-09T10:22:43.106Z"}
+{"level":"info","message":"Super Admin bypass for user user_4wnd9m7jl","timestamp":"2025-05-09T10:22:43.125Z"}
+{"level":"info","message":"Assigned region reg_gCQY70 to user usr_wEjc-IGwHRk5pDfxgINyy by user user_4wnd9m7jl","timestamp":"2025-05-09T10:22:43.138Z"}
+{"level":"info","message":"No active rules found for event: user:regions_assigned","timestamp":"2025-05-09T10:22:43.142Z"}
+{"enabled":true,"event":"user:regions_assigned","level":"info","message":"Created default notification rule","ruleID":"rule_ZTiu9qS0otg3LtcbC5V-A","timestamp":"2025-05-09T10:22:43.152Z"}
+{"level":"info","message":"Notification stored Notification for user:regions_assigned","notificationID":"notif_ZBA9ctu4lPLkrAxq7ffEv","timestamp":"2025-05-09T10:22:43.171Z","userID":"user_4wnd9m7jl"}
+{"level":"info","message":"Notification status updated","notificationID":"notif_ZBA9ctu4lPLkrAxq7ffEv","status":"sent","timestamp":"2025-05-09T10:22:43.178Z"}
+{"event":"user:regions_assigned","level":"info","message":"Triggered notifications","recipientCount":1,"timestamp":"2025-05-09T10:22:43.181Z"}
+{"level":"info","message":"Assigned regions to regional manager usr_wEjc-IGwHRk5pDfxgINyy by user user_4wnd9m7jl, IP: 192.168.5.253","timestamp":"2025-05-09T10:22:43.182Z"}
+{"level":"info","message":"Super Admin bypass for user user_4wnd9m7jl","timestamp":"2025-05-09T10:22:43.199Z"}
+{"level":"info","message":"Fetched supervisors for regional manager usr_wEjc-IGwHRk5pDfxgINyy","timestamp":"2025-05-09T10:22:43.202Z"}
+{"level":"info","message":"Fetched supervisors for regional manager usr_wEjc-IGwHRk5pDfxgINyy by user user_4wnd9m7jl, IP: 192.168.5.253","timestamp":"2025-05-09T10:22:43.203Z"}
+{"level":"info","message":"Super Admin bypass for user user_4wnd9m7jl","timestamp":"2025-05-09T10:22:43.223Z"}
+{"level":"info","message":"Assigned regional manager usr_wEjc-IGwHRk5pDfxgINyy to supervisor usr_uZdeCcSQJ6h1ZsGpOeRJC by user user_4wnd9m7jl","timestamp":"2025-05-09T10:22:43.234Z"}
+{"level":"info","message":"No active rules found for event: user:regional_manager_assigned","timestamp":"2025-05-09T10:22:43.237Z"}
+{"enabled":true,"event":"user:regional_manager_assigned","level":"info","message":"Created default notification rule","ruleID":"rule_wLuB39pIyJY8AqKK0GKtG","timestamp":"2025-05-09T10:22:43.241Z"}
+{"level":"info","message":"Notification stored Notification for user:regional_manager_assigned","notificationID":"notif_TZqEnxZNTNeEfWv93I_lM","timestamp":"2025-05-09T10:22:43.252Z","userID":"user_4wnd9m7jl"}
+{"level":"info","message":"Notification status updated","notificationID":"notif_TZqEnxZNTNeEfWv93I_lM","status":"sent","timestamp":"2025-05-09T10:22:43.258Z"}
+{"event":"user:regional_manager_assigned","level":"info","message":"Triggered notifications","recipientCount":1,"timestamp":"2025-05-09T10:22:43.260Z"}
+{"level":"info","message":"Assigned regional manager usr_wEjc-IGwHRk5pDfxgINyy to supervisor usr_uZdeCcSQJ6h1ZsGpOeRJC by user user_4wnd9m7jl, IP: 192.168.5.253","timestamp":"2025-05-09T10:22:43.263Z"}
+{"level":"info","message":"Super Admin bypass for user user_4wnd9m7jl","timestamp":"2025-05-09T10:22:43.305Z"}
+{"level":"info","message":"Fetched users by role Manager by user user_4wnd9m7jl, IP: 192.168.5.253","timestamp":"2025-05-09T10:22:43.351Z"}
+{"level":"info","message":"Super Admin bypass for user user_4wnd9m7jl","timestamp":"2025-05-09T10:22:43.360Z"}
+{"level":"info","message":"Fetched director for regional manager usr_wEjc-IGwHRk5pDfxgINyy","timestamp":"2025-05-09T10:22:43.370Z"}
+{"level":"info","message":"Fetched director for regional manager usr_wEjc-IGwHRk5pDfxgINyy by user user_4wnd9m7jl, IP: 192.168.5.253","timestamp":"2025-05-09T10:22:43.371Z"}
+{"level":"info","message":"Super Admin bypass for user user_4wnd9m7jl","timestamp":"2025-05-09T10:22:43.383Z"}
+{"level":"info","message":"Fetched supervisors for regional manager usr_wEjc-IGwHRk5pDfxgINyy","timestamp":"2025-05-09T10:22:43.389Z"}
+{"level":"info","message":"Fetched supervisors for regional manager usr_wEjc-IGwHRk5pDfxgINyy by user user_4wnd9m7jl, IP: 192.168.5.253","timestamp":"2025-05-09T10:22:43.390Z"}
+{"level":"info","message":"Super Admin bypass for user user_4wnd9m7jl","timestamp":"2025-05-09T10:22:43.394Z"}
+{"level":"info","message":"Super Admin bypass for user user_4wnd9m7jl","timestamp":"2025-05-09T10:22:43.401Z"}
+{"level":"info","message":"Super Admin bypass for user user_4wnd9m7jl","timestamp":"2025-05-09T10:22:43.403Z"}
+{"level":"info","message":"Fetched users by role Supervisor by user user_4wnd9m7jl, IP: 192.168.5.253","timestamp":"2025-05-09T10:22:43.405Z"}
+{"level":"info","message":"Fetched regions for user usr_wEjc-IGwHRk5pDfxgINyy, IP: 192.168.5.253","timestamp":"2025-05-09T10:22:43.409Z"}
+{"level":"info","message":"Fetched all regions by user user_4wnd9m7jl, IP: 192.168.5.253","timestamp":"2025-05-09T10:22:43.412Z"}
+{"level":"info","message":"Super Admin bypass for user user_4wnd9m7jl","timestamp":"2025-05-09T10:22:49.396Z"}
+{"level":"info","message":"Fetched user usr_uZdeCcSQJ6h1ZsGpOeRJC by user user_4wnd9m7jl, IP: 192.168.5.253","timestamp":"2025-05-09T10:22:49.410Z"}
+{"level":"info","message":"Super Admin bypass for user user_4wnd9m7jl","timestamp":"2025-05-09T10:22:51.037Z"}
+{"level":"info","message":"Fetched users by role Regional Manager by user user_4wnd9m7jl, IP: 192.168.5.253","timestamp":"2025-05-09T10:22:51.050Z"}
+{"level":"info","message":"Super Admin bypass for user user_4wnd9m7jl","timestamp":"2025-05-09T10:22:51.055Z"}
+{"level":"info","message":"Fetched regional manager for supervisor usr_uZdeCcSQJ6h1ZsGpOeRJC","timestamp":"2025-05-09T10:22:51.065Z"}
+{"level":"info","message":"Fetched regional manager for supervisor usr_uZdeCcSQJ6h1ZsGpOeRJC by user user_4wnd9m7jl, IP: 192.168.5.253","timestamp":"2025-05-09T10:22:51.066Z"}
+{"level":"info","message":"Super Admin bypass for user user_4wnd9m7jl","timestamp":"2025-05-09T10:22:51.109Z"}
+{"level":"info","message":"Fetched regions for user usr_wEjc-IGwHRk5pDfxgINyy, IP: 192.168.5.253","timestamp":"2025-05-09T10:22:51.133Z"}
+{"level":"info","message":"Super Admin bypass for user user_4wnd9m7jl","timestamp":"2025-05-09T10:22:51.167Z"}
+{"level":"info","message":"Fetched governorates for region reg_gCQY70 by user user_4wnd9m7jl, IP: 192.168.5.253","timestamp":"2025-05-09T10:22:51.186Z"}
+{"level":"info","message":"Super Admin bypass for user user_4wnd9m7jl","timestamp":"2025-05-09T10:22:51.227Z"}
+{"level":"info","message":"Fetched governorates for user usr_uZdeCcSQJ6h1ZsGpOeRJC, IP: 192.168.5.253","timestamp":"2025-05-09T10:22:51.241Z"}
+{"level":"info","message":"Super Admin bypass for user user_4wnd9m7jl","timestamp":"2025-05-09T10:22:53.407Z"}
+{"level":"info","message":"Fetched delegations for governorate gov_GSj42L by user user_4wnd9m7jl, IP: 192.168.5.253","timestamp":"2025-05-09T10:22:53.413Z"}
+{"level":"info","message":"Super Admin bypass for user user_4wnd9m7jl","timestamp":"2025-05-09T10:22:53.433Z"}
+{"level":"info","message":"Fetched delegations for user usr_uZdeCcSQJ6h1ZsGpOeRJC, IP: 192.168.5.253","timestamp":"2025-05-09T10:22:53.438Z"}
+{"level":"info","message":"Super Admin bypass for user user_4wnd9m7jl","timestamp":"2025-05-09T10:23:02.493Z"}
+{"level":"info","message":"Fetched agents by delegation del_ZN1SjY by user user_4wnd9m7jl, IP: 192.168.5.253","timestamp":"2025-05-09T10:23:02.505Z"}
+{"level":"info","message":"Super Admin bypass for user user_4wnd9m7jl","timestamp":"2025-05-09T10:23:02.539Z"}
+{"level":"info","message":"Fetched agents for user usr_uZdeCcSQJ6h1ZsGpOeRJC by user user_4wnd9m7jl, IP: 192.168.5.253","timestamp":"2025-05-09T10:23:02.548Z"}
+{"level":"info","message":"Super Admin bypass for user user_4wnd9m7jl","timestamp":"2025-05-09T10:23:10.176Z"}
+{"level":"info","message":"Fetched regional manager for supervisor usr_uZdeCcSQJ6h1ZsGpOeRJC","timestamp":"2025-05-09T10:23:10.180Z"}
+{"level":"info","message":"Fetched regional manager for supervisor usr_uZdeCcSQJ6h1ZsGpOeRJC by user user_4wnd9m7jl, IP: 192.168.5.253","timestamp":"2025-05-09T10:23:10.182Z"}
+{"level":"info","message":"Super Admin bypass for user user_4wnd9m7jl","timestamp":"2025-05-09T10:23:10.204Z"}
+{"level":"info","message":"Fetched governorates for user usr_uZdeCcSQJ6h1ZsGpOeRJC, IP: 192.168.5.253","timestamp":"2025-05-09T10:23:10.210Z"}
+{"level":"info","message":"Super Admin bypass for user user_4wnd9m7jl","timestamp":"2025-05-09T10:23:10.235Z"}
+{"level":"info","message":"Assigned governorate gov_GSj42L to user usr_uZdeCcSQJ6h1ZsGpOeRJC by user user_4wnd9m7jl","timestamp":"2025-05-09T10:23:10.246Z"}
+{"level":"info","message":"No active rules found for event: user:governorates_assigned","timestamp":"2025-05-09T10:23:10.251Z"}
+{"enabled":true,"event":"user:governorates_assigned","level":"info","message":"Created default notification rule","ruleID":"rule_n3d4MhfOJxVcqQLenwy6a","timestamp":"2025-05-09T10:23:10.255Z"}
+{"level":"info","message":"Notification stored Notification for user:governorates_assigned","notificationID":"notif_rUVg2dwPd8bDJWDzkPgY9","timestamp":"2025-05-09T10:23:10.268Z","userID":"user_4wnd9m7jl"}
+{"level":"info","message":"Notification status updated","notificationID":"notif_rUVg2dwPd8bDJWDzkPgY9","status":"sent","timestamp":"2025-05-09T10:23:10.273Z"}
+{"event":"user:governorates_assigned","level":"info","message":"Triggered notifications","recipientCount":1,"timestamp":"2025-05-09T10:23:10.274Z"}
+{"level":"info","message":"Assigned governorates to supervisor usr_uZdeCcSQJ6h1ZsGpOeRJC by user user_4wnd9m7jl, IP: 192.168.5.253","timestamp":"2025-05-09T10:23:10.275Z"}
+{"level":"info","message":"Super Admin bypass for user user_4wnd9m7jl","timestamp":"2025-05-09T10:23:10.295Z"}
+{"level":"info","message":"Fetched delegations for user usr_uZdeCcSQJ6h1ZsGpOeRJC, IP: 192.168.5.253","timestamp":"2025-05-09T10:23:10.301Z"}
+{"level":"info","message":"Super Admin bypass for user user_4wnd9m7jl","timestamp":"2025-05-09T10:23:10.323Z"}
+{"level":"info","message":"Assigned delegation del_ZN1SjY to user usr_uZdeCcSQJ6h1ZsGpOeRJC by user user_4wnd9m7jl","timestamp":"2025-05-09T10:23:10.337Z"}
+{"level":"info","message":"No active rules found for event: user:delegations_assigned","timestamp":"2025-05-09T10:23:10.340Z"}
+{"enabled":true,"event":"user:delegations_assigned","level":"info","message":"Created default notification rule","ruleID":"rule_E57jJZc1dWCoroI8fVtgN","timestamp":"2025-05-09T10:23:10.345Z"}
+{"level":"info","message":"Notification stored Notification for user:delegations_assigned","notificationID":"notif_4I1tiqqKRu3Je5VQIMlxX","timestamp":"2025-05-09T10:23:10.355Z","userID":"user_4wnd9m7jl"}
+{"level":"info","message":"Notification status updated","notificationID":"notif_4I1tiqqKRu3Je5VQIMlxX","status":"sent","timestamp":"2025-05-09T10:23:10.360Z"}
+{"event":"user:delegations_assigned","level":"info","message":"Triggered notifications","recipientCount":1,"timestamp":"2025-05-09T10:23:10.363Z"}
+{"level":"info","message":"Assigned delegations to supervisor usr_uZdeCcSQJ6h1ZsGpOeRJC by user user_4wnd9m7jl, IP: 192.168.5.253","timestamp":"2025-05-09T10:23:10.364Z"}
+{"level":"info","message":"Super Admin bypass for user user_4wnd9m7jl","timestamp":"2025-05-09T10:23:10.387Z"}
+{"level":"info","message":"Fetched agents for user usr_uZdeCcSQJ6h1ZsGpOeRJC by user user_4wnd9m7jl, IP: 192.168.5.253","timestamp":"2025-05-09T10:23:10.405Z"}
+{"level":"info","message":"Super Admin bypass for user user_4wnd9m7jl","timestamp":"2025-05-09T10:23:10.433Z"}
+{"level":"info","message":"Super Admin bypass for user user_4wnd9m7jl","timestamp":"2025-05-09T10:23:10.452Z"}
+{"level":"info","message":"Assigned supervisor usr_uZdeCcSQJ6h1ZsGpOeRJC to agent agt_002def by user user_4wnd9m7jl","timestamp":"2025-05-09T10:23:10.455Z"}
+{"level":"info","message":"No active rules found for event: user:supervisor_assigned_to_agent","timestamp":"2025-05-09T10:23:10.461Z"}
+{"enabled":true,"event":"user:supervisor_assigned_to_agent","level":"info","message":"Created default notification rule","ruleID":"rule_38XIwxlaZnV6hOTiebs36","timestamp":"2025-05-09T10:23:10.471Z"}
+{"level":"info","message":"Assigned supervisor usr_uZdeCcSQJ6h1ZsGpOeRJC to agent agt_001abc by user user_4wnd9m7jl","timestamp":"2025-05-09T10:23:10.490Z"}
+{"level":"info","message":"Notification stored Notification for user:supervisor_assigned_to_agent","notificationID":"notif_HGDO8o5vD7eo6vC_CiVwk","timestamp":"2025-05-09T10:23:10.510Z","userID":"user_4wnd9m7jl"}
+{"level":"info","message":"Notification status updated","notificationID":"notif_HGDO8o5vD7eo6vC_CiVwk","status":"sent","timestamp":"2025-05-09T10:23:10.530Z"}
+{"event":"user:supervisor_assigned_to_agent","level":"info","message":"Triggered notifications","recipientCount":1,"timestamp":"2025-05-09T10:23:10.538Z"}
+{"level":"info","message":"Assigned supervisor usr_uZdeCcSQJ6h1ZsGpOeRJC to agent agt_002def by user user_4wnd9m7jl, IP: 192.168.5.253","timestamp":"2025-05-09T10:23:10.541Z"}
+{"level":"info","message":"Notification stored Notification for user:supervisor_assigned_to_agent","notificationID":"notif_nyCFfZyVgATr5LY-3z4v6","timestamp":"2025-05-09T10:23:10.569Z","userID":"user_4wnd9m7jl"}
+{"level":"info","message":"Notification status updated","notificationID":"notif_nyCFfZyVgATr5LY-3z4v6","status":"sent","timestamp":"2025-05-09T10:23:10.576Z"}
+{"event":"user:supervisor_assigned_to_agent","level":"info","message":"Triggered notifications","recipientCount":1,"timestamp":"2025-05-09T10:23:10.578Z"}
+{"level":"info","message":"Assigned supervisor usr_uZdeCcSQJ6h1ZsGpOeRJC to agent agt_001abc by user user_4wnd9m7jl, IP: 192.168.5.253","timestamp":"2025-05-09T10:23:10.581Z"}
+{"level":"info","message":"Super Admin bypass for user user_4wnd9m7jl","timestamp":"2025-05-09T10:23:10.668Z"}
+{"level":"info","message":"Super Admin bypass for user user_4wnd9m7jl","timestamp":"2025-05-09T10:23:10.672Z"}
+{"level":"info","message":"Super Admin bypass for user user_4wnd9m7jl","timestamp":"2025-05-09T10:23:10.678Z"}
+{"level":"info","message":"Fetched regional manager for supervisor usr_uZdeCcSQJ6h1ZsGpOeRJC","timestamp":"2025-05-09T10:23:10.688Z"}
+{"level":"info","message":"Fetched regional manager for supervisor usr_uZdeCcSQJ6h1ZsGpOeRJC by user user_4wnd9m7jl, IP: 192.168.5.253","timestamp":"2025-05-09T10:23:10.689Z"}
+{"level":"info","message":"Fetched regions for user usr_wEjc-IGwHRk5pDfxgINyy, IP: 192.168.5.253","timestamp":"2025-05-09T10:23:10.701Z"}
+{"level":"info","message":"Super Admin bypass for user user_4wnd9m7jl","timestamp":"2025-05-09T10:23:10.706Z"}
+{"level":"info","message":"Super Admin bypass for user user_4wnd9m7jl","timestamp":"2025-05-09T10:23:10.714Z"}
+{"level":"info","message":"Fetched users by role Regional Manager by user user_4wnd9m7jl, IP: 192.168.5.253","timestamp":"2025-05-09T10:23:10.717Z"}
+{"level":"info","message":"Fetched delegations for governorate gov_GSj42L by user user_4wnd9m7jl, IP: 192.168.5.253","timestamp":"2025-05-09T10:23:10.723Z"}
+{"level":"info","message":"Fetched agents by delegation del_ZN1SjY by user user_4wnd9m7jl, IP: 192.168.5.253","timestamp":"2025-05-09T10:23:10.736Z"}
+{"level":"info","message":"Super Admin bypass for user user_4wnd9m7jl","timestamp":"2025-05-09T10:23:10.751Z"}
+{"level":"info","message":"Fetched governorates for region reg_gCQY70 by user user_4wnd9m7jl, IP: 192.168.5.253","timestamp":"2025-05-09T10:23:10.770Z"}
+{"level":"info","message":"Super Admin bypass for user user_4wnd9m7jl","timestamp":"2025-05-09T10:23:10.774Z"}
+{"level":"info","message":"Fetched delegations for user usr_uZdeCcSQJ6h1ZsGpOeRJC, IP: 192.168.5.253","timestamp":"2025-05-09T10:23:10.782Z"}
+{"level":"info","message":"Super Admin bypass for user user_4wnd9m7jl","timestamp":"2025-05-09T10:23:10.796Z"}
+{"level":"info","message":"Super Admin bypass for user user_4wnd9m7jl","timestamp":"2025-05-09T10:23:10.808Z"}
+{"level":"info","message":"Fetched agents for user usr_uZdeCcSQJ6h1ZsGpOeRJC by user user_4wnd9m7jl, IP: 192.168.5.253","timestamp":"2025-05-09T10:23:10.813Z"}
+{"level":"info","message":"Super Admin bypass for user user_4wnd9m7jl","timestamp":"2025-05-09T10:23:10.820Z"}
+{"level":"info","message":"Fetched governorates for user usr_uZdeCcSQJ6h1ZsGpOeRJC, IP: 192.168.5.253","timestamp":"2025-05-09T10:23:10.836Z"}
+{"level":"info","message":"Fetched governorates for region reg_gCQY70 by user user_4wnd9m7jl, IP: 192.168.5.253","timestamp":"2025-05-09T10:23:10.839Z"}
+{"level":"info","message":"Super Admin bypass for user user_4wnd9m7jl","timestamp":"2025-05-09T10:23:10.868Z"}
+{"level":"info","message":"Fetched agents for user usr_uZdeCcSQJ6h1ZsGpOeRJC by user user_4wnd9m7jl, IP: 192.168.5.253","timestamp":"2025-05-09T10:23:10.876Z"}
+{"level":"info","message":"Super Admin bypass for user user_4wnd9m7jl","timestamp":"2025-05-09T10:24:13.072Z"}
+{"level":"info","message":"Super Admin bypass for user user_4wnd9m7jl","timestamp":"2025-05-09T10:24:13.078Z"}
+{"level":"info","message":"Fetched all governorates by user user_4wnd9m7jl, IP: 192.168.5.253","timestamp":"2025-05-09T10:24:13.087Z"}
+{"level":"info","message":"Fetched all regions by user user_4wnd9m7jl, IP: 192.168.5.253","timestamp":"2025-05-09T10:24:13.093Z"}
+{"level":"info","message":"Super Admin bypass for user user_4wnd9m7jl","timestamp":"2025-05-09T10:25:44.470Z"}
+{"level":"info","message":"Created user sm@gmail.com by user user_4wnd9m7jl","timestamp":"2025-05-09T10:25:44.598Z"}
+{"level":"info","message":"Notification stored Notification for user:created","notificationID":"notif_yw8oL16le_hNQre7oZjfE","timestamp":"2025-05-09T10:25:44.624Z","userID":"user_4wnd9m7jl"}
+{"level":"info","message":"Notification status updated","notificationID":"notif_yw8oL16le_hNQre7oZjfE","status":"sent","timestamp":"2025-05-09T10:25:44.635Z"}
+{"event":"user:created","level":"info","message":"Triggered notifications","recipientCount":1,"timestamp":"2025-05-09T10:25:44.637Z"}
+{"level":"info","message":"User created: sm@gmail.com by user user_4wnd9m7jl, IP: 192.168.5.253","timestamp":"2025-05-09T10:25:44.640Z"}
+{"level":"info","message":"Super Admin bypass for user user_4wnd9m7jl","timestamp":"2025-05-09T10:25:44.832Z"}
+{"level":"info","message":"Notification stored Notification for role:assigned","notificationID":"notif_JdgzNo1AWBxiSZFaPq3vM","timestamp":"2025-05-09T10:25:44.937Z","userID":"user_4wnd9m7jl"}
+{"level":"info","message":"Notification status updated","notificationID":"notif_JdgzNo1AWBxiSZFaPq3vM","status":"sent","timestamp":"2025-05-09T10:25:44.943Z"}
+{"event":"role:assigned","level":"info","message":"Triggered notifications","recipientCount":1,"timestamp":"2025-05-09T10:25:44.945Z"}
+{"level":"info","message":"Assigned roles to user usr_j0cHbqC0td3qtwjlQ6MUp by user_4wnd9m7jl, IP: 192.168.5.253","timestamp":"2025-05-09T10:25:44.947Z"}
+{"level":"info","message":"Fetched roles for user usr_j0cHbqC0td3qtwjlQ6MUp by user_4wnd9m7jl, IP: 192.168.5.253","timestamp":"2025-05-09T10:25:44.988Z"}
+{"level":"info","message":"Super Admin bypass for user user_4wnd9m7jl","timestamp":"2025-05-09T10:25:46.433Z"}
+{"level":"info","message":"Super Admin bypass for user user_4wnd9m7jl","timestamp":"2025-05-09T10:25:46.441Z"}
+{"level":"info","message":"Fetched all regions by user user_4wnd9m7jl, IP: 192.168.5.253","timestamp":"2025-05-09T10:25:46.446Z"}
+{"level":"info","message":"Fetched all governorates by user user_4wnd9m7jl, IP: 192.168.5.253","timestamp":"2025-05-09T10:25:46.453Z"}
+{"level":"info","message":"Super Admin bypass for user user_4wnd9m7jl","timestamp":"2025-05-09T10:26:05.708Z"}
+{"level":"info","message":"Created user pt@gmail.com by user user_4wnd9m7jl","timestamp":"2025-05-09T10:26:05.822Z"}
+{"level":"info","message":"Notification stored Notification for user:created","notificationID":"notif_Yg9z7CIuVwZ0QVY8YwAmv","timestamp":"2025-05-09T10:26:05.848Z","userID":"user_4wnd9m7jl"}
+{"level":"info","message":"Notification status updated","notificationID":"notif_Yg9z7CIuVwZ0QVY8YwAmv","status":"sent","timestamp":"2025-05-09T10:26:05.856Z"}
+{"event":"user:created","level":"info","message":"Triggered notifications","recipientCount":1,"timestamp":"2025-05-09T10:26:05.857Z"}
+{"level":"info","message":"User created: pt@gmail.com by user user_4wnd9m7jl, IP: 192.168.5.253","timestamp":"2025-05-09T10:26:05.860Z"}
+{"level":"info","message":"Super Admin bypass for user user_4wnd9m7jl","timestamp":"2025-05-09T10:26:06.031Z"}
+{"level":"info","message":"Notification stored Notification for role:assigned","notificationID":"notif_B9oZq2ewQzBVzT0Jrk6ir","timestamp":"2025-05-09T10:26:06.126Z","userID":"user_4wnd9m7jl"}
+{"level":"info","message":"Notification status updated","notificationID":"notif_B9oZq2ewQzBVzT0Jrk6ir","status":"sent","timestamp":"2025-05-09T10:26:06.133Z"}
+{"event":"role:assigned","level":"info","message":"Triggered notifications","recipientCount":1,"timestamp":"2025-05-09T10:26:06.134Z"}
+{"level":"info","message":"Assigned roles to user usr_4RnDWDZFNv_mVxDNZJBGi by user_4wnd9m7jl, IP: 192.168.5.253","timestamp":"2025-05-09T10:26:06.134Z"}
+{"level":"info","message":"Fetched roles for user usr_4RnDWDZFNv_mVxDNZJBGi by user_4wnd9m7jl, IP: 192.168.5.253","timestamp":"2025-05-09T10:26:06.167Z"}
+{"level":"info","message":"Super Admin bypass for user user_4wnd9m7jl","timestamp":"2025-05-09T10:26:09.032Z"}
+{"level":"info","message":"Fetched all users by user user_4wnd9m7jl, IP: 192.168.5.253","timestamp":"2025-05-09T10:26:09.045Z"}
+{"level":"info","message":"Fetched notification types for user: user_4wnd9m7jl, IP: 192.168.5.253","timestamp":"2025-05-09T10:26:21.654Z"}
+{"level":"info","message":"Fetched notification preferences for user: user_4wnd9m7jl, IP: 192.168.5.253","timestamp":"2025-05-09T10:26:21.673Z"}
+{"level":"info","message":"Fetched profile for user user_4wnd9m7jl, IP: 192.168.5.253","timestamp":"2025-05-09T10:26:21.688Z"}
+{"level":"info","message":"Fetched notifications for user: user_4wnd9m7jl, IP: 192.168.5.253","timestamp":"2025-05-09T10:26:25.851Z"}
+{"level":"info","message":"Fetched notifications for user: user_4wnd9m7jl, IP: 192.168.5.253","timestamp":"2025-05-09T10:26:33.946Z"}
+{"level":"info","message":"Fetched notifications for user: user_4wnd9m7jl, IP: 192.168.5.253","timestamp":"2025-05-09T10:26:41.363Z"}
+{"level":"info","message":"Super Admin bypass for user user_4wnd9m7jl","timestamp":"2025-05-09T10:30:38.865Z"}
+{"level":"info","message":"Fetched notification rules by user: user_4wnd9m7jl, IP: 192.168.5.253","timestamp":"2025-05-09T10:30:38.872Z"}
+{"level":"info","message":"Super Admin bypass for user user_4wnd9m7jl","timestamp":"2025-05-09T10:30:38.898Z"}
+{"level":"info","message":"Fetched notification rules by user: user_4wnd9m7jl, IP: 192.168.5.253","timestamp":"2025-05-09T10:30:38.919Z"}
+{"level":"info","message":"Super Admin bypass for user user_4wnd9m7jl","timestamp":"2025-05-09T10:32:25.742Z"}
+{"level":"info","message":"Super Admin bypass for user user_4wnd9m7jl","timestamp":"2025-05-09T10:32:25.750Z"}
+{"level":"info","message":"Fetched permissions for role rol_oBKg0UD7ONjaXU48n8UEq by user user_4wnd9m7jl, IP: 192.168.5.253","timestamp":"2025-05-09T10:32:25.762Z"}
+{"level":"info","message":"Fetched all permissions by user user_4wnd9m7jl, IP: 192.168.5.253","timestamp":"2025-05-09T10:32:25.802Z"}
+{"level":"info","message":"Initiating token refresh","timestamp":"2025-05-09T10:32:55.748Z"}
+{"accessTokenExpiresIn":900,"level":"info","message":"Tokens refreshed successfully","refreshTokenRotatedAt":"2025-05-09T10:32:55.813Z","timestamp":"2025-05-09T10:32:55.814Z"}
+{"level":"info","message":"Refresh token successful, IP: ${req.ip}","timestamp":"2025-05-09T10:32:55.815Z"}
+{"level":"info","message":"User disconnected: superadmin@example.com","reason":"client namespace disconnect","socketId":"OH23aXsBwtwHN7DSAAAB","timestamp":"2025-05-09T10:32:55.861Z"}
+{"level":"info","message":"Client disconnected","socketId":"OH23aXsBwtwHN7DSAAAB","timestamp":"2025-05-09T10:32:55.871Z"}
+{"email":"superadmin@example.com","level":"info","message":"WebSocket authentication successful","roles":"default-roles-traceflow, Super Admin, uma_authorization","socketId":"XIeD2Ay_sPUp5p37AAAD","timestamp":"2025-05-09T10:32:56.064Z","userID":"user_4wnd9m7jl"}
+{"level":"info","message":"User connected: superadmin@example.com","socketId":"XIeD2Ay_sPUp5p37AAAD","timestamp":"2025-05-09T10:32:56.074Z","userID":"user_4wnd9m7jl"}
+{"level":"info","message":"Client connected","socketId":"XIeD2Ay_sPUp5p37AAAD","timestamp":"2025-05-09T10:32:56.088Z"}
+{"level":"info","message":"Super Admin bypass for user user_4wnd9m7jl","timestamp":"2025-05-09T10:33:04.823Z"}
+{"level":"info","message":"Geocoded address: Tunis","timestamp":"2025-05-09T10:33:05.316Z"}
+{"level":"info","message":"Geocoded address Tunis by user user_4wnd9m7jl, IP: 192.168.5.253","timestamp":"2025-05-09T10:33:05.317Z"}
+{"level":"info","message":"User disconnected: superadmin@example.com","reason":"transport close","socketId":"XIeD2Ay_sPUp5p37AAAD","timestamp":"2025-05-09T10:33:55.761Z"}
+{"level":"info","message":"Client disconnected","socketId":"XIeD2Ay_sPUp5p37AAAD","timestamp":"2025-05-09T10:33:55.765Z"}
+{"level":"info","message":"Login successful for superadmin@example.com, IP: 192.168.5.253","timestamp":"2025-05-09T10:34:39.573Z"}
+{"level":"info","message":"Login successful for superadmin@example.com, IP: 192.168.5.253","timestamp":"2025-05-09T10:34:39.833Z"}
+{"email":"superadmin@example.com","level":"info","message":"WebSocket authentication successful","roles":"default-roles-traceflow, Super Admin, uma_authorization","socketId":"rxOhK9pOrb-yly4BAAAF","timestamp":"2025-05-09T10:34:39.900Z","userID":"user_4wnd9m7jl"}
+{"level":"info","message":"User connected: superadmin@example.com","socketId":"rxOhK9pOrb-yly4BAAAF","timestamp":"2025-05-09T10:34:39.903Z","userID":"user_4wnd9m7jl"}
+{"level":"info","message":"Client connected","socketId":"rxOhK9pOrb-yly4BAAAF","timestamp":"2025-05-09T10:34:39.904Z"}
+{"level":"info","message":"Fetched roles for user user_4wnd9m7jl by user_4wnd9m7jl, IP: 192.168.5.253","timestamp":"2025-05-09T10:34:39.929Z"}
+{"level":"info","message":"Fetched roles for user user_4wnd9m7jl by user_4wnd9m7jl, IP: 192.168.5.253","timestamp":"2025-05-09T10:34:39.971Z"}
+{"level":"info","message":"Super Admin bypass for user user_4wnd9m7jl","timestamp":"2025-05-09T10:34:41.196Z"}
+{"level":"info","message":"Fetched all roles by user user_4wnd9m7jl, IP: 192.168.5.253","timestamp":"2025-05-09T10:34:41.242Z"}
+{"level":"info","message":"Super Admin bypass for user user_4wnd9m7jl","timestamp":"2025-05-09T10:34:44.119Z"}
+{"level":"info","message":"Fetched all users by user user_4wnd9m7jl, IP: 192.168.5.253","timestamp":"2025-05-09T10:34:44.140Z"}
+{"level":"info","message":"Super Admin bypass for user user_4wnd9m7jl","timestamp":"2025-05-09T10:34:46.500Z"}
+{"level":"info","message":"Fetched supervisors for user usr_uZdeCcSQJ6h1ZsGpOeRJC","timestamp":"2025-05-09T10:34:46.506Z"}
+{"level":"info","message":"Fetched supervisors for user usr_uZdeCcSQJ6h1ZsGpOeRJC by user user_4wnd9m7jl, IP: 192.168.5.253","timestamp":"2025-05-09T10:34:46.507Z"}
+{"level":"info","message":"Super Admin bypass for user user_4wnd9m7jl","timestamp":"2025-05-09T10:34:46.521Z"}
+{"level":"info","message":"Fetched regional managers for user usr_uZdeCcSQJ6h1ZsGpOeRJC","timestamp":"2025-05-09T10:34:46.534Z"}
+{"level":"info","message":"Fetched regional managers for user usr_uZdeCcSQJ6h1ZsGpOeRJC by user user_4wnd9m7jl, IP: 192.168.5.253","timestamp":"2025-05-09T10:34:46.535Z"}
+{"level":"info","message":"Super Admin bypass for user user_4wnd9m7jl","timestamp":"2025-05-09T10:34:46.888Z"}
+{"level":"info","message":"Fetched user usr_uZdeCcSQJ6h1ZsGpOeRJC by user user_4wnd9m7jl, IP: 192.168.5.253","timestamp":"2025-05-09T10:34:46.908Z"}
+{"level":"info","message":"Keycloak session invalidated","timestamp":"2025-05-09T10:35:36.904Z"}
+{"IP":"192.168.5.253","cookies":["accessToken","refreshToken","userData"],"level":"info","message":"Cookies cleared on logout","timestamp":"2025-05-09T10:35:36.906Z"}
+{"IP":"192.168.5.253","level":"info","message":"User logged out successfully","timestamp":"2025-05-09T10:35:36.906Z"}
+{"level":"info","message":"User disconnected: superadmin@example.com","reason":"client namespace disconnect","socketId":"rxOhK9pOrb-yly4BAAAF","timestamp":"2025-05-09T10:35:36.913Z"}
+{"level":"info","message":"Client disconnected","socketId":"rxOhK9pOrb-yly4BAAAF","timestamp":"2025-05-09T10:35:36.914Z"}
+{"level":"info","message":"Database Initialization: Starting","step":"database","timestamp":"2025-05-09T10:37:23.325Z"}
+{"level":"info","message":"Connected to Redis successfully","timestamp":"2025-05-09T10:37:23.341Z"}
+{"level":"info","message":"Redis server info: # Server","timestamp":"2025-05-09T10:37:23.358Z"}
+{"level":"info","message":"Redis ping successful","timestamp":"2025-05-09T10:37:23.366Z"}
+{"level":"info","message":"GoogleMapsService initialized with Redis","timestamp":"2025-05-09T10:37:23.367Z"}
+{"duration":"0.23","level":"info","message":"Database Initialization: Completed","status":"success","step":"database","timestamp":"2025-05-09T10:37:23.557Z"}
+{"level":"info","message":"SMTP Initialization: Starting","step":"smtp","timestamp":"2025-05-09T10:37:23.558Z"}
+{"level":"info","message":"SMTP server verified successfully","timestamp":"2025-05-09T10:37:24.690Z"}
+{"duration":"1.13","level":"info","message":"SMTP Initialization: Completed","status":"success","step":"smtp","timestamp":"2025-05-09T10:37:24.691Z"}
+{"level":"info","message":"SMS Initialization: Starting","step":"sms","timestamp":"2025-05-09T10:37:24.693Z"}
+{"level":"info","message":"Initializing SMS gateway with URL: https://wbm.tn/wbmonitor/send/webapi/v5/enquire_credit and headers: {\"X-API-Key\":\"9c5362a406e609d0ecc6f9a0e129c0a6\",\"Content-Type\":\"application/json\"}","timestamp":"2025-05-09T10:37:24.694Z"}
+{"level":"info","message":"SMS gateway initialized successfully: {\"op\":3,\"status\":0,\"status_desc\":\"success\",\"apiVersion\":\"5\",\"credit\":{\"national\":{\"available\":\"789688\",\"reserved\":\"1\"},\"international\":{\"available\":\"1\",\"reserved\":\"0\"}}}","timestamp":"2025-05-09T10:37:25.536Z"}
+{"duration":"0.84","level":"info","message":"SMS Initialization: Completed","status":"success","step":"sms","timestamp":"2025-05-09T10:37:25.537Z"}
+{"level":"info","message":"Redis Initialization: Starting","step":"redis","timestamp":"2025-05-09T10:37:25.539Z"}
+{"duration":"0.00","level":"info","message":"Redis Initialization: Completed","status":"success","step":"redis","timestamp":"2025-05-09T10:37:25.539Z"}
+{"level":"info","message":"Google Services Configuration: Starting","step":"googleServices","timestamp":"2025-05-09T10:37:25.540Z"}
+{"level":"info","message":"Google Services configuration validated","timestamp":"2025-05-09T10:37:25.541Z"}
+{"level":"info","message":"Google Services ready for activation pending API keys","timestamp":"2025-05-09T10:37:25.541Z"}
+{"duration":"0.00","level":"info","message":"Google Services Configuration: Completed","status":"success","step":"googleServices","timestamp":"2025-05-09T10:37:25.542Z"}
+{"level":"info","message":"Model Associations: Starting","step":"associations","timestamp":"2025-05-09T10:37:25.543Z"}
+{"duration":"0.02","level":"info","message":"Model Associations: Completed","status":"success","step":"associations","timestamp":"2025-05-09T10:37:25.568Z"}
+{"level":"info","message":"Database Synchronization: Skipped","status":"skipped","step":"sync","timestamp":"2025-05-09T10:37:25.569Z"}
+{"level":"info","message":"Geographic Data Initialization: Skipped","status":"skipped","step":"geoData","timestamp":"2025-05-09T10:37:25.569Z"}
+{"level":"info","message":"Agent Data Seeding: Skipped","status":"skipped","step":"agents","timestamp":"2025-05-09T10:37:25.570Z"}
+{"level":"info","message":"Permission Seeding: Skipped","status":"skipped","step":"permissions","timestamp":"2025-05-09T10:37:25.570Z"}
+{"level":"info","message":"Super Admin Seeding: Skipped","status":"skipped","step":"superadmin","timestamp":"2025-05-09T10:37:25.571Z"}
+{"level":"info","message":"Socket Initialization: Starting","step":"socket","timestamp":"2025-05-09T10:37:25.571Z"}
+{"duration":"0.00","level":"info","message":"Socket Initialization: Completed","status":"success","step":"socket","timestamp":"2025-05-09T10:37:25.572Z"}
+{"level":"info","message":"Server Initialization: Starting","step":"server","timestamp":"2025-05-09T10:37:25.572Z"}
+{"level":"info","message":"mDNS advertisement skipped in development mode","timestamp":"2025-05-09T10:37:25.575Z"}
+{"duration":"0.00","level":"info","message":"Server Initialization: Completed","status":"success","step":"server","timestamp":"2025-05-09T10:37:25.576Z"}
+{"level":"info","message":"\u001b[36m========== TraceFlow Initialization Summary ========\u001b[39m","timestamp":"2025-05-09T10:37:25.578Z"}
+{"level":"info","message":"Date: 2025-05-09T10:37:25.578Z","timestamp":"2025-05-09T10:37:25.578Z"}
+{"level":"info","message":"Steps Completed:","timestamp":"2025-05-09T10:37:25.579Z"}
+{"duration":"0.23","level":"info","message":"  - Database Initialization: \u001b[32mSUCCESS\u001b[39m - (0.23s)","status":"success","step":"Database Initialization","timestamp":"2025-05-09T10:37:25.579Z"}
+{"duration":"1.14","level":"info","message":"  - SMTP Initialization: \u001b[32mSUCCESS\u001b[39m - (1.14s)","status":"success","step":"SMTP Initialization","timestamp":"2025-05-09T10:37:25.580Z"}
+{"duration":"0.85","level":"info","message":"  - SMS Initialization: \u001b[32mSUCCESS\u001b[39m - (0.85s)","status":"success","step":"SMS Initialization","timestamp":"2025-05-09T10:37:25.580Z"}
+{"duration":"0.00","level":"info","message":"  - Redis Initialization: \u001b[32mSUCCESS\u001b[39m - (0.00s)","status":"success","step":"Redis Initialization","timestamp":"2025-05-09T10:37:25.581Z"}
+{"duration":"0.00","level":"info","message":"  - Google Services Configuration: \u001b[32mSUCCESS\u001b[39m - (0.00s)","status":"success","step":"Google Services Configuration","timestamp":"2025-05-09T10:37:25.581Z"}
+{"duration":"0.03","level":"info","message":"  - Model Associations: \u001b[32mSUCCESS\u001b[39m - (0.03s)","status":"success","step":"Model Associations","timestamp":"2025-05-09T10:37:25.582Z"}
+{"duration":"0.00","level":"info","message":"  - Database Synchronization: \u001b[33mSKIPPED\u001b[39m - (0.00s)","status":"skipped","step":"Database Synchronization","timestamp":"2025-05-09T10:37:25.582Z"}
+{"duration":"0.00","level":"info","message":"  - Geographic Data Initialization: \u001b[33mSKIPPED\u001b[39m - (0.00s)","status":"skipped","step":"Geographic Data Initialization","timestamp":"2025-05-09T10:37:25.583Z"}
+{"duration":"0.00","level":"info","message":"  - Agent Data Seeding: \u001b[33mSKIPPED\u001b[39m - (0.00s)","status":"skipped","step":"Agent Data Seeding","timestamp":"2025-05-09T10:37:25.584Z"}
+{"duration":"0.00","level":"info","message":"  - Permission Seeding: \u001b[33mSKIPPED\u001b[39m - (0.00s)","status":"skipped","step":"Permission Seeding","timestamp":"2025-05-09T10:37:25.585Z"}
+{"duration":"0.00","level":"info","message":"  - Super Admin Seeding: \u001b[33mSKIPPED\u001b[39m - (0.00s)","status":"skipped","step":"Super Admin Seeding","timestamp":"2025-05-09T10:37:25.585Z"}
+{"duration":"0.00","level":"info","message":"  - Socket Initialization: \u001b[32mSUCCESS\u001b[39m - (0.00s)","status":"success","step":"Socket Initialization","timestamp":"2025-05-09T10:37:25.586Z"}
+{"duration":"0.01","level":"info","message":"  - Server Initialization: \u001b[32mSUCCESS\u001b[39m - (0.01s)","status":"success","step":"Server Initialization","timestamp":"2025-05-09T10:37:25.586Z"}
+{"level":"info","message":"Total Steps: 13","timestamp":"2025-05-09T10:37:25.587Z"}
+{"level":"info","message":"\u001b[32mSuccesses: 8\u001b[39m","timestamp":"2025-05-09T10:37:25.587Z"}
+{"level":"info","message":"\u001b[33mSkipped: 5\u001b[39m","timestamp":"2025-05-09T10:37:25.587Z"}
+{"level":"info","message":"\u001b[31mFailures: 0\u001b[39m","timestamp":"2025-05-09T10:37:25.587Z"}
+{"level":"info","message":"Total Duration: 2.28 seconds","timestamp":"2025-05-09T10:37:25.588Z"}
+{"level":"info","message":"\u001b[36m===================================================\u001b[39m","timestamp":"2025-05-09T10:37:25.588Z"}
+{"level":"info","message":"\u001b[36m===================================================\u001b[39m","timestamp":"2025-05-09T10:37:25.588Z"}
+{"level":"info","message":"\tSuper Admin Credentials:","timestamp":"2025-05-09T10:37:25.589Z"}
+{"level":"info","message":"\tEmail:\t\tsuperadmin@example.com","timestamp":"2025-05-09T10:37:25.589Z"}
+{"level":"info","message":"\tPassword:\tSuperSecurePassword123!","timestamp":"2025-05-09T10:37:25.589Z"}
+{"level":"info","message":"\u001b[36m===================================================\u001b[39m","timestamp":"2025-05-09T10:37:25.590Z"}
+{"level":"info","message":"HTTP Server running on port 5000","timestamp":"2025-05-09T10:37:25.603Z"}
+{"level":"info","message":"Google Services configuration initialized, awaiting API keys","timestamp":"2025-05-09T10:37:25.604Z"}
+{"level":"info","message":"Login successful for superadmin@example.com, IP: 192.168.5.253","timestamp":"2025-05-09T10:37:44.247Z"}
+{"level":"info","message":"Login successful for superadmin@example.com, IP: 192.168.5.253","timestamp":"2025-05-09T10:37:44.562Z"}
+{"email":"superadmin@example.com","level":"info","message":"WebSocket authentication successful","roles":"default-roles-traceflow, Super Admin, uma_authorization","socketId":"WZr_ztXy52LRbsM8AAAB","timestamp":"2025-05-09T10:37:44.668Z","userID":"user_4wnd9m7jl"}
+{"level":"info","message":"User connected: superadmin@example.com","socketId":"WZr_ztXy52LRbsM8AAAB","timestamp":"2025-05-09T10:37:44.685Z","userID":"user_4wnd9m7jl"}
+{"level":"info","message":"Client connected","socketId":"WZr_ztXy52LRbsM8AAAB","timestamp":"2025-05-09T10:37:44.696Z"}
+{"level":"info","message":"Fetched roles for user user_4wnd9m7jl by user_4wnd9m7jl, IP: 192.168.5.253","timestamp":"2025-05-09T10:37:44.712Z"}
+{"level":"info","message":"Fetched roles for user user_4wnd9m7jl by user_4wnd9m7jl, IP: 192.168.5.253","timestamp":"2025-05-09T10:37:44.795Z"}
+{"level":"info","message":"Super Admin bypass for user user_4wnd9m7jl","timestamp":"2025-05-09T10:37:46.139Z"}
+{"level":"info","message":"Fetched all users by user user_4wnd9m7jl, IP: 192.168.5.253","timestamp":"2025-05-09T10:37:46.160Z"}
+{"level":"info","message":"Super Admin bypass for user user_4wnd9m7jl","timestamp":"2025-05-09T10:37:46.192Z"}
+{"level":"info","message":"Fetched all roles by user user_4wnd9m7jl, IP: 192.168.5.253","timestamp":"2025-05-09T10:37:46.206Z"}
+{"level":"info","message":"Keycloak session invalidated","timestamp":"2025-05-09T10:38:52.301Z"}
+{"IP":"192.168.5.253","cookies":["accessToken","refreshToken","userData"],"level":"info","message":"Cookies cleared on logout","timestamp":"2025-05-09T10:38:52.302Z"}
+{"IP":"192.168.5.253","level":"info","message":"User logged out successfully","timestamp":"2025-05-09T10:38:52.303Z"}
+{"level":"info","message":"User disconnected: superadmin@example.com","reason":"client namespace disconnect","socketId":"WZr_ztXy52LRbsM8AAAB","timestamp":"2025-05-09T10:38:52.311Z"}
+{"level":"info","message":"Client disconnected","socketId":"WZr_ztXy52LRbsM8AAAB","timestamp":"2025-05-09T10:38:52.313Z"}
+{"level":"info","message":"Login successful for superadmin@example.com, IP: 192.168.5.253","timestamp":"2025-05-09T10:40:59.328Z"}
+{"level":"info","message":"Login successful for superadmin@example.com, IP: 192.168.5.253","timestamp":"2025-05-09T10:40:59.686Z"}
+{"email":"superadmin@example.com","level":"info","message":"WebSocket authentication successful","roles":"default-roles-traceflow, Super Admin, uma_authorization","socketId":"O1wCCcXJ81PL7O4kAAAD","timestamp":"2025-05-09T10:40:59.794Z","userID":"user_4wnd9m7jl"}
+{"level":"info","message":"User connected: superadmin@example.com","socketId":"O1wCCcXJ81PL7O4kAAAD","timestamp":"2025-05-09T10:40:59.797Z","userID":"user_4wnd9m7jl"}
+{"level":"info","message":"Client connected","socketId":"O1wCCcXJ81PL7O4kAAAD","timestamp":"2025-05-09T10:40:59.802Z"}
+{"level":"info","message":"Fetched roles for user user_4wnd9m7jl by user_4wnd9m7jl, IP: 192.168.5.253","timestamp":"2025-05-09T10:40:59.816Z"}
+{"level":"info","message":"Fetched roles for user user_4wnd9m7jl by user_4wnd9m7jl, IP: 192.168.5.253","timestamp":"2025-05-09T10:41:00.086Z"}
+{"level":"info","message":"Super Admin bypass for user user_4wnd9m7jl","timestamp":"2025-05-09T10:41:01.098Z"}
+{"level":"info","message":"Fetched all users by user user_4wnd9m7jl, IP: 192.168.5.253","timestamp":"2025-05-09T10:41:01.125Z"}
+{"level":"info","message":"Super Admin bypass for user user_4wnd9m7jl","timestamp":"2025-05-09T10:41:01.151Z"}
+{"level":"info","message":"Fetched all roles by user user_4wnd9m7jl, IP: 192.168.5.253","timestamp":"2025-05-09T10:41:01.172Z"}
+{"level":"info","message":"Super Admin bypass for user user_4wnd9m7jl","timestamp":"2025-05-09T10:41:03.591Z"}
+{"level":"info","message":"Super Admin bypass for user user_4wnd9m7jl","timestamp":"2025-05-09T10:41:03.606Z"}
+{"level":"info","message":"Fetched 0 receipt book types by user user_4wnd9m7jl, IP: 192.168.5.253","timestamp":"2025-05-09T10:41:03.621Z"}
+{"level":"info","message":"Fetched 0 receipt books by user user_4wnd9m7jl in 38ms, IP: 192.168.5.253","timestamp":"2025-05-09T10:41:03.631Z"}
+{"level":"info","message":"Super Admin bypass for user user_4wnd9m7jl","timestamp":"2025-05-09T10:41:21.578Z"}
+{"level":"info","message":"Receipt book type Transfer created by user user_4wnd9m7jl, IP: 192.168.5.253","timestamp":"2025-05-09T10:41:21.595Z"}
+{"level":"info","message":"Super Admin bypass for user user_4wnd9m7jl","timestamp":"2025-05-09T10:41:27.323Z"}
+{"level":"info","message":"Receipt book type Refund created by user user_4wnd9m7jl, IP: 192.168.5.253","timestamp":"2025-05-09T10:41:27.341Z"}
+{"level":"info","message":"Super Admin bypass for user user_4wnd9m7jl","timestamp":"2025-05-09T10:41:44.157Z"}
+{"level":"info","message":"No active rules found for event: receipt_book:created","timestamp":"2025-05-09T10:41:47.281Z"}
+{"enabled":true,"event":"receipt_book:created","level":"info","message":"Created default notification rule","ruleID":"rule_OWqcPRA9mta4FljIgX079","timestamp":"2025-05-09T10:41:47.289Z"}
+{"level":"info","message":"Notification stored Notification for receipt_book:created","notificationID":"notif_c4mW7ERTuG6F8CSOeZUHF","timestamp":"2025-05-09T10:41:47.313Z","userID":"user_4wnd9m7jl"}
+{"level":"info","message":"Notification status updated","notificationID":"notif_c4mW7ERTuG6F8CSOeZUHF","status":"sent","timestamp":"2025-05-09T10:41:47.324Z"}
+{"event":"receipt_book:created","level":"info","message":"Triggered notifications","recipientCount":1,"timestamp":"2025-05-09T10:41:47.329Z"}
+{"level":"info","message":"Receipt book 000001 created by user user_4wnd9m7jl, IP: 192.168.5.253","timestamp":"2025-05-09T10:41:47.330Z"}
+{"level":"info","message":"Super Admin bypass for user user_4wnd9m7jl","timestamp":"2025-05-09T10:41:47.492Z"}
+{"level":"info","message":"Fetched user user_4wnd9m7jl by user user_4wnd9m7jl, IP: 192.168.5.253","timestamp":"2025-05-09T10:41:47.517Z"}
+{"level":"info","message":"Super Admin bypass for user user_4wnd9m7jl","timestamp":"2025-05-09T10:41:54.729Z"}
+{"level":"info","message":"Notification stored Notification for receipt_book:created","notificationID":"notif_RG-NQktJ9RqIbny3Ho3YX","timestamp":"2025-05-09T10:41:54.781Z","userID":"user_4wnd9m7jl"}
+{"level":"info","message":"Notification status updated","notificationID":"notif_RG-NQktJ9RqIbny3Ho3YX","status":"sent","timestamp":"2025-05-09T10:41:54.789Z"}
+{"event":"receipt_book:created","level":"info","message":"Triggered notifications","recipientCount":1,"timestamp":"2025-05-09T10:41:54.793Z"}
+{"level":"info","message":"Receipt book 000002 created by user user_4wnd9m7jl, IP: 192.168.5.253","timestamp":"2025-05-09T10:41:54.795Z"}
+{"level":"info","message":"Super Admin bypass for user user_4wnd9m7jl","timestamp":"2025-05-09T10:42:02.375Z"}
+{"level":"info","message":"Super Admin bypass for user user_4wnd9m7jl","timestamp":"2025-05-09T10:42:02.393Z"}
+{"level":"info","message":"Super Admin bypass for user user_4wnd9m7jl","timestamp":"2025-05-09T10:42:02.398Z"}
+{"level":"info","message":"Super Admin bypass for user user_4wnd9m7jl","timestamp":"2025-05-09T10:42:02.402Z"}
+{"level":"info","message":"Fetched all users by user user_4wnd9m7jl, IP: 192.168.5.253","timestamp":"2025-05-09T10:42:02.413Z"}
+{"level":"info","message":"Fetched unique locations by user user_4wnd9m7jl, IP: 192.168.5.253","timestamp":"2025-05-09T10:42:02.430Z"}
+{"level":"info","message":"Fetched all regions by user user_4wnd9m7jl, IP: 192.168.5.253","timestamp":"2025-05-09T10:42:02.437Z"}
+{"level":"info","message":"Super Admin bypass for user user_4wnd9m7jl","timestamp":"2025-05-09T10:42:02.452Z"}
+{"level":"info","message":"Fetched 2 receipt books by user user_4wnd9m7jl in 62ms, IP: 192.168.5.253","timestamp":"2025-05-09T10:42:02.457Z"}
+{"level":"info","message":"Fetched 2 receipt book types by user user_4wnd9m7jl, IP: 192.168.5.253","timestamp":"2025-05-09T10:42:02.463Z"}
+{"level":"info","message":"Super Admin bypass for user user_4wnd9m7jl","timestamp":"2025-05-09T10:42:13.828Z"}
+{"level":"info","message":"No active rules found for event: receipt_book:sent_to_supplier","timestamp":"2025-05-09T10:42:24.157Z"}
+{"enabled":true,"event":"receipt_book:sent_to_supplier","level":"info","message":"Created default notification rule","ruleID":"rule_QXVsN70JOtCueBXputoYa","timestamp":"2025-05-09T10:42:24.165Z"}
+{"level":"info","message":"Notification stored Notification for receipt_book:sent_to_supplier","notificationID":"notif_qowFU_KmErRXOXHd1tOxo","timestamp":"2025-05-09T10:42:24.183Z","userID":"user_4wnd9m7jl"}
+{"level":"info","message":"Notification status updated","notificationID":"notif_qowFU_KmErRXOXHd1tOxo","status":"sent","timestamp":"2025-05-09T10:42:24.190Z"}
+{"event":"receipt_book:sent_to_supplier","level":"info","message":"Triggered notifications","recipientCount":1,"timestamp":"2025-05-09T10:42:24.192Z"}
+{"level":"info","message":"Sent 1 books to supplier by user user_4wnd9m7jl, IP: 192.168.5.253","timestamp":"2025-05-09T10:42:24.193Z"}
+{"level":"info","message":"Super Admin bypass for user user_4wnd9m7jl","timestamp":"2025-05-09T10:42:24.380Z"}
+{"level":"info","message":"Fetched 2 receipt book types by user user_4wnd9m7jl, IP: 192.168.5.253","timestamp":"2025-05-09T10:42:24.386Z"}
+{"level":"info","message":"Super Admin bypass for user user_4wnd9m7jl","timestamp":"2025-05-09T10:42:24.390Z"}
+{"level":"info","message":"Fetched 2 receipt books by user user_4wnd9m7jl in 17ms, IP: 192.168.5.253","timestamp":"2025-05-09T10:42:24.408Z"}
+{"level":"info","message":"Super Admin bypass for user user_4wnd9m7jl","timestamp":"2025-05-09T10:42:24.531Z"}
+{"level":"info","message":"Fetched user user_4wnd9m7jl by user user_4wnd9m7jl, IP: 192.168.5.253","timestamp":"2025-05-09T10:42:24.557Z"}
+{"level":"info","message":"Keycloak session invalidated","timestamp":"2025-05-09T10:42:58.939Z"}
+{"IP":"192.168.5.253","cookies":["accessToken","refreshToken","userData"],"level":"info","message":"Cookies cleared on logout","timestamp":"2025-05-09T10:42:58.940Z"}
+{"IP":"192.168.5.253","level":"info","message":"User logged out successfully","timestamp":"2025-05-09T10:42:58.941Z"}
+{"level":"info","message":"User disconnected: superadmin@example.com","reason":"client namespace disconnect","socketId":"O1wCCcXJ81PL7O4kAAAD","timestamp":"2025-05-09T10:42:58.948Z"}
+{"level":"info","message":"Client disconnected","socketId":"O1wCCcXJ81PL7O4kAAAD","timestamp":"2025-05-09T10:42:58.951Z"}
+{"level":"info","message":"Notification stored Notification for otp:generated:user","notificationID":"notif__-3Pa-mThTqP1A7DxjXJJ","timestamp":"2025-05-09T10:43:08.556Z","userID":"user_4wnd9m7jl"}
+{"level":"info","message":"Notification status updated","notificationID":"notif__-3Pa-mThTqP1A7DxjXJJ","status":"sent","timestamp":"2025-05-09T10:43:08.561Z"}
+{"event":"otp:generated:user","level":"info","message":"Triggered notifications","recipientCount":1,"timestamp":"2025-05-09T10:43:08.564Z"}
+{"level":"info","message":"Sending SMS request to: \"12345611\"","timestamp":"2025-05-09T10:43:08.577Z"}
+{"level":"info","message":"Sending SMS message: \"Your TraceFlow OTP is 701557\"","timestamp":"2025-05-09T10:43:08.580Z"}
+{"level":"error","message":"w-Board SMS Gateway error (otp): {\"op\":1,\"status\":-6,\"status_desc\":\"insufficient credit\",\"apiVersion\":\"5\",\"msg_type\":null,\"nat_count\":0,\"int_count\":3,\"tot_scheduled\":0,\"request_id\":null}","timestamp":"2025-05-09T10:43:09.107Z"}
+{"level":"error","message":"w-Board SMS Gateway error (otp): SMS sending failed with status: -6 - insufficient credit","timestamp":"2025-05-09T10:43:09.108Z"}
+{"level":"info","message":"Email lookup result: pt@gmail.com","timestamp":"2025-05-09T10:43:09.128Z"}
+{"level":"info","message":"Fallback email sent to pt@gmail.com (otp)","timestamp":"2025-05-09T10:43:12.309Z"}
+{"level":"info","message":"Login successful for pt@gmail.com, IP: 192.168.5.253","timestamp":"2025-05-09T10:43:12.310Z"}
+{"level":"info","message":"2FA verified for user usr_4RnDWDZFNv_mVxDNZJBGi, IP: 192.168.5.253","timestamp":"2025-05-09T10:43:25.598Z"}
+{"email":"pt@gmail.com","level":"info","message":"WebSocket authentication successful","roles":"default-roles-traceflow, uma_authorization, Purchase Team","socketId":"PkHB1Fc67WGBIGDMAAAF","timestamp":"2025-05-09T10:43:25.657Z","userID":"usr_4RnDWDZFNv_mVxDNZJBGi"}
+{"level":"info","message":"User connected: pt@gmail.com","socketId":"PkHB1Fc67WGBIGDMAAAF","timestamp":"2025-05-09T10:43:25.662Z","userID":"usr_4RnDWDZFNv_mVxDNZJBGi"}
+{"level":"info","message":"Client connected","socketId":"PkHB1Fc67WGBIGDMAAAF","timestamp":"2025-05-09T10:43:25.663Z"}
+{"level":"info","message":"Fetched roles for user usr_4RnDWDZFNv_mVxDNZJBGi by usr_4RnDWDZFNv_mVxDNZJBGi, IP: 192.168.5.253","timestamp":"2025-05-09T10:43:25.671Z"}
+{"level":"info","message":"Fetched roles for user usr_4RnDWDZFNv_mVxDNZJBGi by usr_4RnDWDZFNv_mVxDNZJBGi, IP: 192.168.5.253","timestamp":"2025-05-09T10:43:25.743Z"}
+{"data":{"error":"access_denied","error_description":"not_authorized"},"level":"error","message":"Permission check failed for access_all_receipt_books: Request failed with status code 403","status":403,"timestamp":"2025-05-09T10:43:26.668Z"}
+{"data":{"error":"access_denied","error_description":"not_authorized"},"level":"error","message":"Permission check failed for access_receipt_book_types: Request failed with status code 403","status":403,"timestamp":"2025-05-09T10:43:26.673Z"}
+{"level":"info","message":"Database Initialization: Starting","step":"database","timestamp":"2025-05-09T10:44:36.823Z"}
+{"level":"info","message":"Connected to Redis successfully","timestamp":"2025-05-09T10:44:36.873Z"}
+{"level":"info","message":"Redis server info: # Server","timestamp":"2025-05-09T10:44:36.897Z"}
+{"level":"info","message":"Redis ping successful","timestamp":"2025-05-09T10:44:36.902Z"}
+{"level":"info","message":"GoogleMapsService initialized with Redis","timestamp":"2025-05-09T10:44:36.905Z"}
+{"duration":"0.31","level":"info","message":"Database Initialization: Completed","status":"success","step":"database","timestamp":"2025-05-09T10:44:37.137Z"}
+{"level":"info","message":"SMTP Initialization: Starting","step":"smtp","timestamp":"2025-05-09T10:44:37.140Z"}
+{"level":"info","message":"SMTP server verified successfully","timestamp":"2025-05-09T10:44:38.563Z"}
+{"duration":"1.43","level":"info","message":"SMTP Initialization: Completed","status":"success","step":"smtp","timestamp":"2025-05-09T10:44:38.565Z"}
+{"level":"info","message":"SMS Initialization: Starting","step":"sms","timestamp":"2025-05-09T10:44:38.569Z"}
+{"level":"info","message":"Initializing SMS gateway with URL: https://wbm.tn/wbmonitor/send/webapi/v5/enquire_credit and headers: {\"X-API-Key\":\"9c5362a406e609d0ecc6f9a0e129c0a6\",\"Content-Type\":\"application/json\"}","timestamp":"2025-05-09T10:44:38.570Z"}
+{"level":"info","message":"SMS gateway initialized successfully: {\"op\":3,\"status\":0,\"status_desc\":\"success\",\"apiVersion\":\"5\",\"credit\":{\"national\":{\"available\":\"789314\",\"reserved\":\"0\"},\"international\":{\"available\":\"1\",\"reserved\":\"0\"}}}","timestamp":"2025-05-09T10:44:38.775Z"}
+{"duration":"0.21","level":"info","message":"SMS Initialization: Completed","status":"success","step":"sms","timestamp":"2025-05-09T10:44:38.776Z"}
+{"level":"info","message":"Redis Initialization: Starting","step":"redis","timestamp":"2025-05-09T10:44:38.777Z"}
+{"duration":"0.00","level":"info","message":"Redis Initialization: Completed","status":"success","step":"redis","timestamp":"2025-05-09T10:44:38.778Z"}
+{"level":"info","message":"Google Services Configuration: Starting","step":"googleServices","timestamp":"2025-05-09T10:44:38.778Z"}
+{"level":"info","message":"Google Services configuration validated","timestamp":"2025-05-09T10:44:38.779Z"}
+{"level":"info","message":"Google Services ready for activation pending API keys","timestamp":"2025-05-09T10:44:38.780Z"}
+{"duration":"0.00","level":"info","message":"Google Services Configuration: Completed","status":"success","step":"googleServices","timestamp":"2025-05-09T10:44:38.781Z"}
+{"level":"info","message":"Model Associations: Starting","step":"associations","timestamp":"2025-05-09T10:44:38.781Z"}
+{"duration":"0.03","level":"info","message":"Model Associations: Completed","status":"success","step":"associations","timestamp":"2025-05-09T10:44:38.810Z"}
+{"level":"info","message":"Database Synchronization: Skipped","status":"skipped","step":"sync","timestamp":"2025-05-09T10:44:38.811Z"}
+{"level":"info","message":"Geographic Data Initialization: Skipped","status":"skipped","step":"geoData","timestamp":"2025-05-09T10:44:38.812Z"}
+{"level":"info","message":"Agent Data Seeding: Skipped","status":"skipped","step":"agents","timestamp":"2025-05-09T10:44:38.813Z"}
+{"level":"info","message":"Permission Seeding: Skipped","status":"skipped","step":"permissions","timestamp":"2025-05-09T10:44:38.813Z"}
+{"level":"info","message":"Super Admin Seeding: Skipped","status":"skipped","step":"superadmin","timestamp":"2025-05-09T10:44:38.814Z"}
+{"level":"info","message":"Socket Initialization: Starting","step":"socket","timestamp":"2025-05-09T10:44:38.815Z"}
+{"duration":"0.00","level":"info","message":"Socket Initialization: Completed","status":"success","step":"socket","timestamp":"2025-05-09T10:44:38.815Z"}
+{"level":"info","message":"Server Initialization: Starting","step":"server","timestamp":"2025-05-09T10:44:38.816Z"}
+{"level":"info","message":"mDNS advertisement skipped in development mode","timestamp":"2025-05-09T10:44:38.818Z"}
+{"duration":"0.00","level":"info","message":"Server Initialization: Completed","status":"success","step":"server","timestamp":"2025-05-09T10:44:38.819Z"}
+{"level":"info","message":"\u001b[36m========== TraceFlow Initialization Summary ========\u001b[39m","timestamp":"2025-05-09T10:44:38.822Z"}
+{"level":"info","message":"Date: 2025-05-09T10:44:38.823Z","timestamp":"2025-05-09T10:44:38.823Z"}
+{"level":"info","message":"Steps Completed:","timestamp":"2025-05-09T10:44:38.824Z"}
+{"duration":"0.32","level":"info","message":"  - Database Initialization: \u001b[32mSUCCESS\u001b[39m - (0.32s)","status":"success","step":"Database Initialization","timestamp":"2025-05-09T10:44:38.825Z"}
+{"duration":"1.43","level":"info","message":"  - SMTP Initialization: \u001b[32mSUCCESS\u001b[39m - (1.43s)","status":"success","step":"SMTP Initialization","timestamp":"2025-05-09T10:44:38.825Z"}
+{"duration":"0.21","level":"info","message":"  - SMS Initialization: \u001b[32mSUCCESS\u001b[39m - (0.21s)","status":"success","step":"SMS Initialization","timestamp":"2025-05-09T10:44:38.826Z"}
+{"duration":"0.00","level":"info","message":"  - Redis Initialization: \u001b[32mSUCCESS\u001b[39m - (0.00s)","status":"success","step":"Redis Initialization","timestamp":"2025-05-09T10:44:38.828Z"}
+{"duration":"0.00","level":"info","message":"  - Google Services Configuration: \u001b[32mSUCCESS\u001b[39m - (0.00s)","status":"success","step":"Google Services Configuration","timestamp":"2025-05-09T10:44:38.829Z"}
+{"duration":"0.03","level":"info","message":"  - Model Associations: \u001b[32mSUCCESS\u001b[39m - (0.03s)","status":"success","step":"Model Associations","timestamp":"2025-05-09T10:44:38.830Z"}
+{"duration":"0.00","level":"info","message":"  - Database Synchronization: \u001b[33mSKIPPED\u001b[39m - (0.00s)","status":"skipped","step":"Database Synchronization","timestamp":"2025-05-09T10:44:38.831Z"}
+{"duration":"0.00","level":"info","message":"  - Geographic Data Initialization: \u001b[33mSKIPPED\u001b[39m - (0.00s)","status":"skipped","step":"Geographic Data Initialization","timestamp":"2025-05-09T10:44:38.832Z"}
+{"duration":"0.00","level":"info","message":"  - Agent Data Seeding: \u001b[33mSKIPPED\u001b[39m - (0.00s)","status":"skipped","step":"Agent Data Seeding","timestamp":"2025-05-09T10:44:38.832Z"}
+{"duration":"0.00","level":"info","message":"  - Permission Seeding: \u001b[33mSKIPPED\u001b[39m - (0.00s)","status":"skipped","step":"Permission Seeding","timestamp":"2025-05-09T10:44:38.833Z"}
+{"duration":"0.00","level":"info","message":"  - Super Admin Seeding: \u001b[33mSKIPPED\u001b[39m - (0.00s)","status":"skipped","step":"Super Admin Seeding","timestamp":"2025-05-09T10:44:38.833Z"}
+{"duration":"0.00","level":"info","message":"  - Socket Initialization: \u001b[32mSUCCESS\u001b[39m - (0.00s)","status":"success","step":"Socket Initialization","timestamp":"2025-05-09T10:44:38.833Z"}
+{"duration":"0.00","level":"info","message":"  - Server Initialization: \u001b[32mSUCCESS\u001b[39m - (0.00s)","status":"success","step":"Server Initialization","timestamp":"2025-05-09T10:44:38.834Z"}
+{"level":"info","message":"Total Steps: 13","timestamp":"2025-05-09T10:44:38.834Z"}
+{"level":"info","message":"\u001b[32mSuccesses: 8\u001b[39m","timestamp":"2025-05-09T10:44:38.834Z"}
+{"level":"info","message":"\u001b[33mSkipped: 5\u001b[39m","timestamp":"2025-05-09T10:44:38.835Z"}
+{"level":"info","message":"\u001b[31mFailures: 0\u001b[39m","timestamp":"2025-05-09T10:44:38.836Z"}
+{"level":"info","message":"Total Duration: 2.04 seconds","timestamp":"2025-05-09T10:44:38.836Z"}
+{"level":"info","message":"\u001b[36m===================================================\u001b[39m","timestamp":"2025-05-09T10:44:38.837Z"}
+{"level":"info","message":"\u001b[36m===================================================\u001b[39m","timestamp":"2025-05-09T10:44:38.838Z"}
+{"level":"info","message":"\tSuper Admin Credentials:","timestamp":"2025-05-09T10:44:38.839Z"}
+{"level":"info","message":"\tEmail:\t\tsuperadmin@example.com","timestamp":"2025-05-09T10:44:38.840Z"}
+{"level":"info","message":"\tPassword:\tSuperSecurePassword123!","timestamp":"2025-05-09T10:44:38.840Z"}
+{"level":"info","message":"\u001b[36m===================================================\u001b[39m","timestamp":"2025-05-09T10:44:38.841Z"}
+{"level":"info","message":"HTTP Server running on port 5000","timestamp":"2025-05-09T10:44:38.850Z"}
+{"level":"info","message":"Google Services configuration initialized, awaiting API keys","timestamp":"2025-05-09T10:44:38.851Z"}
+{"level":"info","message":"Fetched roles for user usr_4RnDWDZFNv_mVxDNZJBGi by usr_4RnDWDZFNv_mVxDNZJBGi, IP: 192.168.5.253","timestamp":"2025-05-09T10:44:54.537Z"}
+{"level":"info","message":"Fetched roles for user usr_4RnDWDZFNv_mVxDNZJBGi by usr_4RnDWDZFNv_mVxDNZJBGi, IP: 192.168.5.253","timestamp":"2025-05-09T10:44:54.585Z"}
+{"email":"pt@gmail.com","level":"info","message":"WebSocket authentication successful","roles":"default-roles-traceflow, uma_authorization, Purchase Team","socketId":"0J5E5a__3_1tao3_AAAB","timestamp":"2025-05-09T10:44:54.693Z","userID":"usr_4RnDWDZFNv_mVxDNZJBGi"}
+{"level":"info","message":"User connected: pt@gmail.com","socketId":"0J5E5a__3_1tao3_AAAB","timestamp":"2025-05-09T10:44:54.698Z","userID":"usr_4RnDWDZFNv_mVxDNZJBGi"}
+{"level":"info","message":"Client connected","socketId":"0J5E5a__3_1tao3_AAAB","timestamp":"2025-05-09T10:44:54.700Z"}
+{"level":"info","message":"Fetched notifications for user: usr_4RnDWDZFNv_mVxDNZJBGi, IP: 192.168.5.253","timestamp":"2025-05-09T10:44:54.771Z"}
+{"level":"info","message":"Permission granted for access_receipt_book_types to user usr_4RnDWDZFNv_mVxDNZJBGi","timestamp":"2025-05-09T10:44:54.997Z"}
+{"level":"info","message":"Permission granted for access_all_receipt_books to user usr_4RnDWDZFNv_mVxDNZJBGi","timestamp":"2025-05-09T10:44:55.022Z"}
+{"level":"info","message":"Fetched 2 receipt book types by user usr_4RnDWDZFNv_mVxDNZJBGi, IP: 192.168.5.253","timestamp":"2025-05-09T10:44:55.033Z"}
+{"level":"info","message":"Fetched 2 receipt books by user usr_4RnDWDZFNv_mVxDNZJBGi in 39ms, IP: 192.168.5.253","timestamp":"2025-05-09T10:44:55.063Z"}
+{"level":"info","message":"Permission granted for access_user_details to user usr_4RnDWDZFNv_mVxDNZJBGi","timestamp":"2025-05-09T10:44:55.191Z"}
+{"level":"info","message":"Fetched user user_4wnd9m7jl by user usr_4RnDWDZFNv_mVxDNZJBGi, IP: 192.168.5.253","timestamp":"2025-05-09T10:44:55.267Z"}
+{"level":"info","message":"Permission granted for access_all_receipt_books to user usr_4RnDWDZFNv_mVxDNZJBGi","timestamp":"2025-05-09T10:44:58.849Z"}
+{"data":{"error":"access_denied","error_description":"not_authorized"},"level":"error","message":"Permission check failed for access_agents_locations: Request failed with status code 403","status":403,"timestamp":"2025-05-09T10:44:58.858Z"}
+{"level":"info","message":"Permission granted for access_receipt_book_types to user usr_4RnDWDZFNv_mVxDNZJBGi","timestamp":"2025-05-09T10:44:58.880Z"}
+{"level":"info","message":"Permission granted for access_all_users to user usr_4RnDWDZFNv_mVxDNZJBGi","timestamp":"2025-05-09T10:44:58.893Z"}
+{"level":"info","message":"Fetched 2 receipt book types by user usr_4RnDWDZFNv_mVxDNZJBGi, IP: 192.168.5.253","timestamp":"2025-05-09T10:44:58.902Z"}
+{"level":"info","message":"Fetched 2 receipt books by user usr_4RnDWDZFNv_mVxDNZJBGi in 61ms, IP: 192.168.5.253","timestamp":"2025-05-09T10:44:58.911Z"}
+{"level":"info","message":"Fetched all users by user usr_4RnDWDZFNv_mVxDNZJBGi, IP: 192.168.5.253","timestamp":"2025-05-09T10:44:58.924Z"}
+{"level":"info","message":"Permission granted for access_receipt_book_types to user usr_4RnDWDZFNv_mVxDNZJBGi","timestamp":"2025-05-09T10:45:50.929Z"}
+{"level":"info","message":"Permission granted for access_all_receipt_books to user usr_4RnDWDZFNv_mVxDNZJBGi","timestamp":"2025-05-09T10:45:50.934Z"}
+{"level":"info","message":"Fetched 2 receipt book types by user usr_4RnDWDZFNv_mVxDNZJBGi, IP: 192.168.5.253","timestamp":"2025-05-09T10:45:50.940Z"}
+{"level":"info","message":"Fetched 2 receipt books by user usr_4RnDWDZFNv_mVxDNZJBGi in 27ms, IP: 192.168.5.253","timestamp":"2025-05-09T10:45:50.963Z"}
+{"level":"info","message":"Permission granted for access_user_details to user usr_4RnDWDZFNv_mVxDNZJBGi","timestamp":"2025-05-09T10:45:51.087Z"}
+{"level":"info","message":"Fetched user user_4wnd9m7jl by user usr_4RnDWDZFNv_mVxDNZJBGi, IP: 192.168.5.253","timestamp":"2025-05-09T10:45:51.106Z"}
+{"level":"info","message":"Permission granted for access_all_users to user usr_4RnDWDZFNv_mVxDNZJBGi","timestamp":"2025-05-09T10:46:07.290Z"}
+{"data":{"error":"access_denied","error_description":"not_authorized"},"level":"error","message":"Permission check failed for access_agents_locations: Request failed with status code 403","status":403,"timestamp":"2025-05-09T10:46:07.296Z"}
+{"level":"info","message":"Permission granted for access_all_receipt_books to user usr_4RnDWDZFNv_mVxDNZJBGi","timestamp":"2025-05-09T10:46:07.301Z"}
+{"level":"info","message":"Permission granted for access_receipt_book_types to user usr_4RnDWDZFNv_mVxDNZJBGi","timestamp":"2025-05-09T10:46:07.312Z"}
+{"level":"info","message":"Fetched all users by user usr_4RnDWDZFNv_mVxDNZJBGi, IP: 192.168.5.253","timestamp":"2025-05-09T10:46:07.320Z"}
+{"level":"info","message":"Fetched 2 receipt book types by user usr_4RnDWDZFNv_mVxDNZJBGi, IP: 192.168.5.253","timestamp":"2025-05-09T10:46:07.337Z"}
+{"level":"info","message":"Fetched 2 receipt books by user usr_4RnDWDZFNv_mVxDNZJBGi in 40ms, IP: 192.168.5.253","timestamp":"2025-05-09T10:46:07.348Z"}
+{"level":"info","message":"Permission granted for access_all_receipt_books to user usr_4RnDWDZFNv_mVxDNZJBGi","timestamp":"2025-05-09T10:48:45.845Z"}
+{"level":"info","message":"Permission granted for access_receipt_book_types to user usr_4RnDWDZFNv_mVxDNZJBGi","timestamp":"2025-05-09T10:48:45.849Z"}
+{"level":"info","message":"Fetched 2 receipt book types by user usr_4RnDWDZFNv_mVxDNZJBGi, IP: 192.168.5.253","timestamp":"2025-05-09T10:48:45.860Z"}
+{"level":"info","message":"Fetched 2 receipt books by user usr_4RnDWDZFNv_mVxDNZJBGi in 23ms, IP: 192.168.5.253","timestamp":"2025-05-09T10:48:45.869Z"}
+{"level":"info","message":"Permission granted for access_user_details to user usr_4RnDWDZFNv_mVxDNZJBGi","timestamp":"2025-05-09T10:48:46.049Z"}
+{"level":"info","message":"Fetched user user_4wnd9m7jl by user usr_4RnDWDZFNv_mVxDNZJBGi, IP: 192.168.5.253","timestamp":"2025-05-09T10:48:46.072Z"}
+{"level":"info","message":"User disconnected: pt@gmail.com","reason":"transport close","socketId":"0J5E5a__3_1tao3_AAAB","timestamp":"2025-05-09T10:48:47.376Z"}
+{"level":"info","message":"Client disconnected","socketId":"0J5E5a__3_1tao3_AAAB","timestamp":"2025-05-09T10:48:47.377Z"}
+{"level":"info","message":"Fetched roles for user usr_4RnDWDZFNv_mVxDNZJBGi by usr_4RnDWDZFNv_mVxDNZJBGi, IP: 192.168.5.253","timestamp":"2025-05-09T10:48:48.018Z"}
+{"level":"info","message":"Fetched roles for user usr_4RnDWDZFNv_mVxDNZJBGi by usr_4RnDWDZFNv_mVxDNZJBGi, IP: 192.168.5.253","timestamp":"2025-05-09T10:48:48.087Z"}
+{"email":"pt@gmail.com","level":"info","message":"WebSocket authentication successful","roles":"default-roles-traceflow, uma_authorization, Purchase Team","socketId":"_7_veMY8MKnBw7QvAAAD","timestamp":"2025-05-09T10:48:48.292Z","userID":"usr_4RnDWDZFNv_mVxDNZJBGi"}
+{"level":"info","message":"User connected: pt@gmail.com","socketId":"_7_veMY8MKnBw7QvAAAD","timestamp":"2025-05-09T10:48:48.295Z","userID":"usr_4RnDWDZFNv_mVxDNZJBGi"}
+{"level":"info","message":"Client connected","socketId":"_7_veMY8MKnBw7QvAAAD","timestamp":"2025-05-09T10:48:48.296Z"}
+{"level":"info","message":"Fetched notifications for user: usr_4RnDWDZFNv_mVxDNZJBGi, IP: 192.168.5.253","timestamp":"2025-05-09T10:48:48.349Z"}
+{"level":"info","message":"Permission granted for access_receipt_book_types to user usr_4RnDWDZFNv_mVxDNZJBGi","timestamp":"2025-05-09T10:48:48.468Z"}
+{"level":"info","message":"Permission granted for access_all_receipt_books to user usr_4RnDWDZFNv_mVxDNZJBGi","timestamp":"2025-05-09T10:48:48.474Z"}
+{"level":"info","message":"Fetched 2 receipt book types by user usr_4RnDWDZFNv_mVxDNZJBGi, IP: 192.168.5.253","timestamp":"2025-05-09T10:48:48.477Z"}
+{"level":"info","message":"Fetched 2 receipt books by user usr_4RnDWDZFNv_mVxDNZJBGi in 18ms, IP: 192.168.5.253","timestamp":"2025-05-09T10:48:48.493Z"}
+{"level":"info","message":"Permission granted for access_user_details to user usr_4RnDWDZFNv_mVxDNZJBGi","timestamp":"2025-05-09T10:48:48.617Z"}
+{"level":"info","message":"Fetched user user_4wnd9m7jl by user usr_4RnDWDZFNv_mVxDNZJBGi, IP: 192.168.5.253","timestamp":"2025-05-09T10:48:48.641Z"}
+{"level":"info","message":"Permission granted for access_all_users to user usr_4RnDWDZFNv_mVxDNZJBGi","timestamp":"2025-05-09T10:48:50.586Z"}
+{"data":{"error":"access_denied","error_description":"not_authorized"},"level":"error","message":"Permission check failed for access_agents_locations: Request failed with status code 403","status":403,"timestamp":"2025-05-09T10:48:50.595Z"}
+{"level":"info","message":"Permission granted for access_receipt_book_types to user usr_4RnDWDZFNv_mVxDNZJBGi","timestamp":"2025-05-09T10:48:50.598Z"}
+{"level":"info","message":"Permission granted for access_all_receipt_books to user usr_4RnDWDZFNv_mVxDNZJBGi","timestamp":"2025-05-09T10:48:50.605Z"}
+{"level":"info","message":"Fetched all users by user usr_4RnDWDZFNv_mVxDNZJBGi, IP: 192.168.5.253","timestamp":"2025-05-09T10:48:50.610Z"}
+{"level":"info","message":"Fetched 2 receipt book types by user usr_4RnDWDZFNv_mVxDNZJBGi, IP: 192.168.5.253","timestamp":"2025-05-09T10:48:50.619Z"}
+{"level":"info","message":"Fetched 2 receipt books by user usr_4RnDWDZFNv_mVxDNZJBGi in 26ms, IP: 192.168.5.253","timestamp":"2025-05-09T10:48:50.634Z"}
+{"level":"info","message":"Keycloak session invalidated","timestamp":"2025-05-09T10:48:57.484Z"}
+{"IP":"192.168.5.253","cookies":["accessToken","refreshToken","userData"],"level":"info","message":"Cookies cleared on logout","timestamp":"2025-05-09T10:48:57.487Z"}
+{"IP":"192.168.5.253","level":"info","message":"User logged out successfully","timestamp":"2025-05-09T10:48:57.488Z"}
+{"level":"info","message":"User disconnected: pt@gmail.com","reason":"client namespace disconnect","socketId":"_7_veMY8MKnBw7QvAAAD","timestamp":"2025-05-09T10:48:57.496Z"}
+{"level":"info","message":"Client disconnected","socketId":"_7_veMY8MKnBw7QvAAAD","timestamp":"2025-05-09T10:48:57.497Z"}
+{"level":"info","message":"Login successful for superadmin@example.com, IP: 192.168.5.253","timestamp":"2025-05-09T10:49:03.267Z"}
+{"level":"info","message":"Login successful for superadmin@example.com, IP: 192.168.5.253","timestamp":"2025-05-09T10:49:03.452Z"}
+{"email":"superadmin@example.com","level":"info","message":"WebSocket authentication successful","roles":"default-roles-traceflow, Super Admin, uma_authorization","socketId":"2Hc5cskzYjly3DFLAAAF","timestamp":"2025-05-09T10:49:03.507Z","userID":"user_4wnd9m7jl"}
+{"level":"info","message":"User connected: superadmin@example.com","socketId":"2Hc5cskzYjly3DFLAAAF","timestamp":"2025-05-09T10:49:03.510Z","userID":"user_4wnd9m7jl"}
+{"level":"info","message":"Client connected","socketId":"2Hc5cskzYjly3DFLAAAF","timestamp":"2025-05-09T10:49:03.511Z"}
+{"level":"info","message":"Fetched roles for user user_4wnd9m7jl by user_4wnd9m7jl, IP: 192.168.5.253","timestamp":"2025-05-09T10:49:03.522Z"}
+{"level":"info","message":"Fetched roles for user user_4wnd9m7jl by user_4wnd9m7jl, IP: 192.168.5.253","timestamp":"2025-05-09T10:49:03.604Z"}
+{"level":"info","message":"Super Admin bypass for user user_4wnd9m7jl","timestamp":"2025-05-09T10:49:04.979Z"}
+{"level":"info","message":"Fetched all users by user user_4wnd9m7jl, IP: 192.168.5.253","timestamp":"2025-05-09T10:49:04.996Z"}
+{"level":"info","message":"Super Admin bypass for user user_4wnd9m7jl","timestamp":"2025-05-09T10:49:05.023Z"}
+{"level":"info","message":"Fetched all roles by user user_4wnd9m7jl, IP: 192.168.5.253","timestamp":"2025-05-09T10:49:05.039Z"}
+{"level":"info","message":"Super Admin bypass for user user_4wnd9m7jl","timestamp":"2025-05-09T10:52:47.540Z"}
+{"level":"info","message":"Super Admin bypass for user user_4wnd9m7jl","timestamp":"2025-05-09T10:52:47.547Z"}
+{"level":"info","message":"Fetched all timesheets by user user_4wnd9m7jl, IP: 192.168.5.253","timestamp":"2025-05-09T10:52:47.575Z"}
+{"level":"info","message":"Fetched all users by user user_4wnd9m7jl, IP: 192.168.5.253","timestamp":"2025-05-09T10:52:47.606Z"}
+{"level":"info","message":"Super Admin bypass for user user_4wnd9m7jl","timestamp":"2025-05-09T10:52:47.615Z"}
+{"level":"info","message":"Super Admin bypass for user user_4wnd9m7jl","timestamp":"2025-05-09T10:52:47.624Z"}
+{"level":"info","message":"Fetched 2 receipt book types by user user_4wnd9m7jl, IP: 192.168.5.253","timestamp":"2025-05-09T10:52:47.631Z"}
+{"level":"info","message":"Fetched 2 receipt books by user user_4wnd9m7jl in 20ms, IP: 192.168.5.253","timestamp":"2025-05-09T10:52:47.648Z"}
+{"level":"info","message":"Super Admin bypass for user user_4wnd9m7jl","timestamp":"2025-05-09T10:52:47.801Z"}
+{"level":"info","message":"Fetched user user_4wnd9m7jl by user user_4wnd9m7jl, IP: 192.168.5.253","timestamp":"2025-05-09T10:52:47.826Z"}
+{"level":"info","message":"Super Admin bypass for user user_4wnd9m7jl","timestamp":"2025-05-09T10:52:49.690Z"}
+{"level":"info","message":"Super Admin bypass for user user_4wnd9m7jl","timestamp":"2025-05-09T10:52:49.699Z"}
+{"level":"info","message":"Fetched all timesheets by user user_4wnd9m7jl, IP: 192.168.5.253","timestamp":"2025-05-09T10:52:49.712Z"}
+{"level":"info","message":"Fetched all users by user user_4wnd9m7jl, IP: 192.168.5.253","timestamp":"2025-05-09T10:52:49.737Z"}
+{"level":"info","message":"Super Admin bypass for user user_4wnd9m7jl","timestamp":"2025-05-09T10:52:57.514Z"}
+{"level":"info","message":"Super Admin bypass for user user_4wnd9m7jl","timestamp":"2025-05-09T10:52:57.518Z"}
+{"level":"info","message":"Fetched all users by user user_4wnd9m7jl, IP: 192.168.5.253","timestamp":"2025-05-09T10:52:57.522Z"}
+{"level":"info","message":"Fetched all regions by user user_4wnd9m7jl, IP: 192.168.5.253","timestamp":"2025-05-09T10:52:57.525Z"}
+{"level":"info","message":"Super Admin bypass for user user_4wnd9m7jl","timestamp":"2025-05-09T10:52:57.536Z"}
+{"level":"info","message":"Super Admin bypass for user user_4wnd9m7jl","timestamp":"2025-05-09T10:52:57.541Z"}
+{"level":"info","message":"Fetched all reasons by user user_4wnd9m7jl, IP: 192.168.5.253","timestamp":"2025-05-09T10:52:57.544Z"}
+{"level":"info","message":"Fetched all checklists by user user_4wnd9m7jl, IP: 192.168.5.253","timestamp":"2025-05-09T10:52:57.554Z"}
+{"level":"info","message":"Super Admin bypass for user user_4wnd9m7jl","timestamp":"2025-05-09T10:52:57.561Z"}
+{"level":"info","message":"Super Admin bypass for user user_4wnd9m7jl","timestamp":"2025-05-09T10:52:57.564Z"}
+{"level":"info","message":"Fetched all regions by user user_4wnd9m7jl, IP: 192.168.5.253","timestamp":"2025-05-09T10:52:57.567Z"}
+{"level":"info","message":"Fetched all users by user user_4wnd9m7jl, IP: 192.168.5.253","timestamp":"2025-05-09T10:52:57.575Z"}
+{"level":"info","message":"Super Admin bypass for user user_4wnd9m7jl","timestamp":"2025-05-09T10:52:57.587Z"}
+{"level":"info","message":"Fetched all users by user user_4wnd9m7jl, IP: 192.168.5.253","timestamp":"2025-05-09T10:52:57.592Z"}
+{"level":"info","message":"Super Admin bypass for user user_4wnd9m7jl","timestamp":"2025-05-09T10:52:57.606Z"}
+{"level":"info","message":"Fetched all users by user user_4wnd9m7jl, IP: 192.168.5.253","timestamp":"2025-05-09T10:52:57.612Z"}
+{"level":"info","message":"Super Admin bypass for user user_4wnd9m7jl","timestamp":"2025-05-09T10:52:59.438Z"}
+{"level":"info","message":"Fetched all timesheets by user user_4wnd9m7jl, IP: 192.168.5.253","timestamp":"2025-05-09T10:52:59.443Z"}
+{"level":"info","message":"Super Admin bypass for user user_4wnd9m7jl","timestamp":"2025-05-09T10:52:59.446Z"}
+{"level":"info","message":"Fetched all users by user user_4wnd9m7jl, IP: 192.168.5.253","timestamp":"2025-05-09T10:52:59.454Z"}
+{"level":"info","message":"Super Admin bypass for user user_4wnd9m7jl","timestamp":"2025-05-09T10:53:20.785Z"}
+{"level":"info","message":"Super Admin bypass for user user_4wnd9m7jl","timestamp":"2025-05-09T10:53:20.791Z"}
+{"level":"info","message":"Super Admin bypass for user user_4wnd9m7jl","timestamp":"2025-05-09T10:53:20.794Z"}
+{"level":"info","message":"Super Admin bypass for user user_4wnd9m7jl","timestamp":"2025-05-09T10:53:20.798Z"}
+{"level":"info","message":"Fetched all reasons by user user_4wnd9m7jl, IP: 192.168.5.253","timestamp":"2025-05-09T10:53:20.808Z"}
+{"level":"info","message":"Fetched all users by user user_4wnd9m7jl, IP: 192.168.5.253","timestamp":"2025-05-09T10:53:20.823Z"}
+{"level":"info","message":"Fetched all checklists by user user_4wnd9m7jl, IP: 192.168.5.253","timestamp":"2025-05-09T10:53:20.828Z"}
+{"level":"info","message":"Fetched all regions by user user_4wnd9m7jl, IP: 192.168.5.253","timestamp":"2025-05-09T10:53:20.833Z"}
+{"level":"info","message":"Super Admin bypass for user user_4wnd9m7jl","timestamp":"2025-05-09T10:53:20.847Z"}
+{"level":"info","message":"Super Admin bypass for user user_4wnd9m7jl","timestamp":"2025-05-09T10:53:20.854Z"}
+{"level":"info","message":"Fetched all regions by user user_4wnd9m7jl, IP: 192.168.5.253","timestamp":"2025-05-09T10:53:20.858Z"}
+{"level":"info","message":"Fetched all users by user user_4wnd9m7jl, IP: 192.168.5.253","timestamp":"2025-05-09T10:53:20.863Z"}
+{"level":"info","message":"Super Admin bypass for user user_4wnd9m7jl","timestamp":"2025-05-09T10:53:20.878Z"}
+{"level":"info","message":"Fetched all users by user user_4wnd9m7jl, IP: 192.168.5.253","timestamp":"2025-05-09T10:53:20.882Z"}
+{"level":"info","message":"Super Admin bypass for user user_4wnd9m7jl","timestamp":"2025-05-09T10:53:20.898Z"}
+{"level":"info","message":"Fetched all users by user user_4wnd9m7jl, IP: 192.168.5.253","timestamp":"2025-05-09T10:53:20.903Z"}
+{"level":"info","message":"Super Admin bypass for user user_4wnd9m7jl","timestamp":"2025-05-09T10:53:24.262Z"}
+{"level":"info","message":"Fetched supervisors for regional manager usr_wEjc-IGwHRk5pDfxgINyy","timestamp":"2025-05-09T10:53:24.267Z"}
+{"level":"info","message":"Fetched supervisors for regional manager usr_wEjc-IGwHRk5pDfxgINyy by user user_4wnd9m7jl, IP: 192.168.5.253","timestamp":"2025-05-09T10:53:24.268Z"}
+{"level":"info","message":"Super Admin bypass for user user_4wnd9m7jl","timestamp":"2025-05-09T10:53:24.271Z"}
+{"level":"info","message":"Fetched regions for user usr_wEjc-IGwHRk5pDfxgINyy","timestamp":"2025-05-09T10:53:24.280Z"}
+{"level":"info","message":"Fetched regions for user usr_wEjc-IGwHRk5pDfxgINyy by user user_4wnd9m7jl, IP: 192.168.5.253","timestamp":"2025-05-09T10:53:24.282Z"}
+{"level":"info","message":"Super Admin bypass for user user_4wnd9m7jl","timestamp":"2025-05-09T10:53:24.325Z"}
+{"level":"info","message":"Fetched governorates for region reg_gCQY70 by user user_4wnd9m7jl, IP: 192.168.5.253","timestamp":"2025-05-09T10:53:24.335Z"}
+{"level":"info","message":"Super Admin bypass for user user_4wnd9m7jl","timestamp":"2025-05-09T10:53:26.639Z"}
+{"level":"info","message":"Fetched regional manager for supervisor usr_uZdeCcSQJ6h1ZsGpOeRJC","timestamp":"2025-05-09T10:53:26.649Z"}
+{"level":"info","message":"Fetched regional manager for supervisor usr_uZdeCcSQJ6h1ZsGpOeRJC by user user_4wnd9m7jl, IP: 192.168.5.253","timestamp":"2025-05-09T10:53:26.651Z"}
+{"level":"info","message":"Super Admin bypass for user user_4wnd9m7jl","timestamp":"2025-05-09T10:53:26.670Z"}
+{"level":"info","message":"Fetched regions for user usr_wEjc-IGwHRk5pDfxgINyy","timestamp":"2025-05-09T10:53:26.674Z"}
+{"level":"info","message":"Fetched regions for user usr_wEjc-IGwHRk5pDfxgINyy by user user_4wnd9m7jl, IP: 192.168.5.253","timestamp":"2025-05-09T10:53:26.674Z"}
+{"level":"info","message":"Super Admin bypass for user user_4wnd9m7jl","timestamp":"2025-05-09T10:53:26.712Z"}
+{"level":"info","message":"Fetched governorates for region reg_gCQY70 by user user_4wnd9m7jl, IP: 192.168.5.253","timestamp":"2025-05-09T10:53:26.716Z"}
+{"level":"info","message":"Super Admin bypass for user user_4wnd9m7jl","timestamp":"2025-05-09T10:53:26.735Z"}
+{"level":"info","message":"Fetched governorates for user usr_uZdeCcSQJ6h1ZsGpOeRJC","timestamp":"2025-05-09T10:53:26.739Z"}
+{"level":"info","message":"Fetched governorates for user usr_uZdeCcSQJ6h1ZsGpOeRJC by user user_4wnd9m7jl, IP: 192.168.5.253","timestamp":"2025-05-09T10:53:26.740Z"}
+{"level":"info","message":"Super Admin bypass for user user_4wnd9m7jl","timestamp":"2025-05-09T10:53:26.772Z"}
+{"level":"info","message":"Fetched delegations for governorate gov_GSj42L by user user_4wnd9m7jl, IP: 192.168.5.253","timestamp":"2025-05-09T10:53:26.779Z"}
+{"level":"info","message":"Super Admin bypass for user user_4wnd9m7jl","timestamp":"2025-05-09T10:53:26.797Z"}
+{"level":"info","message":"Fetched delegations for user usr_uZdeCcSQJ6h1ZsGpOeRJC","timestamp":"2025-05-09T10:53:26.803Z"}
+{"level":"info","message":"Fetched delegations for user usr_uZdeCcSQJ6h1ZsGpOeRJC by user user_4wnd9m7jl, IP: 192.168.5.253","timestamp":"2025-05-09T10:53:26.804Z"}
+{"level":"info","message":"Super Admin bypass for user user_4wnd9m7jl","timestamp":"2025-05-09T10:53:26.842Z"}
+{"level":"info","message":"Fetched agents for user usr_uZdeCcSQJ6h1ZsGpOeRJC by user user_4wnd9m7jl, IP: 192.168.5.253","timestamp":"2025-05-09T10:53:26.866Z"}
+{"level":"info","message":"Super Admin bypass for user user_4wnd9m7jl","timestamp":"2025-05-09T10:53:51.051Z"}
+{"level":"info","message":"Super Admin bypass for user user_4wnd9m7jl","timestamp":"2025-05-09T10:53:51.054Z"}
+{"level":"info","message":"Fetched regions for user usr_wEjc-IGwHRk5pDfxgINyy","timestamp":"2025-05-09T10:53:51.060Z"}
+{"level":"info","message":"Fetched regions for user usr_wEjc-IGwHRk5pDfxgINyy by user user_4wnd9m7jl, IP: 192.168.5.253","timestamp":"2025-05-09T10:53:51.061Z"}
+{"level":"info","message":"Fetched supervisors for regional manager usr_wEjc-IGwHRk5pDfxgINyy","timestamp":"2025-05-09T10:53:51.073Z"}
+{"level":"info","message":"Fetched supervisors for regional manager usr_wEjc-IGwHRk5pDfxgINyy by user user_4wnd9m7jl, IP: 192.168.5.253","timestamp":"2025-05-09T10:53:51.075Z"}
+{"level":"info","message":"Super Admin bypass for user user_4wnd9m7jl","timestamp":"2025-05-09T10:53:51.117Z"}
+{"level":"info","message":"Fetched governorates for region reg_gCQY70 by user user_4wnd9m7jl, IP: 192.168.5.253","timestamp":"2025-05-09T10:53:51.125Z"}
+{"level":"info","message":"Super Admin bypass for user user_4wnd9m7jl","timestamp":"2025-05-09T10:54:03.130Z"}
+{"level":"info","message":"Super Admin bypass for user user_4wnd9m7jl","timestamp":"2025-05-09T10:54:03.135Z"}
+{"level":"info","message":"Fetched delegations for governorate gov_Quqbko by user user_4wnd9m7jl, IP: 192.168.5.253","timestamp":"2025-05-09T10:54:03.150Z"}
+{"level":"info","message":"No users found for governorate gov_Quqbko","timestamp":"2025-05-09T10:54:03.156Z"}
+{"level":"info","message":"Fetched users for governorate gov_Quqbko by user user_4wnd9m7jl, IP: 192.168.5.253","timestamp":"2025-05-09T10:54:03.165Z"}
+{"level":"info","message":"Super Admin bypass for user user_4wnd9m7jl","timestamp":"2025-05-09T10:54:10.638Z"}
+{"level":"info","message":"Super Admin bypass for user user_4wnd9m7jl","timestamp":"2025-05-09T10:54:10.641Z"}
+{"level":"info","message":"Fetched delegations for governorate gov_GSj42L by user user_4wnd9m7jl, IP: 192.168.5.253","timestamp":"2025-05-09T10:54:10.655Z"}
+{"level":"info","message":"Fetched users for governorate gov_GSj42L by user user_4wnd9m7jl, IP: 192.168.5.253","timestamp":"2025-05-09T10:54:10.661Z"}
+{"level":"info","message":"Super Admin bypass for user user_4wnd9m7jl","timestamp":"2025-05-09T10:54:10.740Z"}
+{"level":"info","message":"Fetched regional manager for supervisor usr_uZdeCcSQJ6h1ZsGpOeRJC","timestamp":"2025-05-09T10:54:10.749Z"}
+{"level":"info","message":"Fetched regional manager for supervisor usr_uZdeCcSQJ6h1ZsGpOeRJC by user user_4wnd9m7jl, IP: 192.168.5.253","timestamp":"2025-05-09T10:54:10.751Z"}
+{"level":"info","message":"Super Admin bypass for user user_4wnd9m7jl","timestamp":"2025-05-09T10:54:10.757Z"}
+{"level":"info","message":"Super Admin bypass for user user_4wnd9m7jl","timestamp":"2025-05-09T10:54:10.772Z"}
+{"level":"info","message":"Fetched governorates for region reg_gCQY70 by user user_4wnd9m7jl, IP: 192.168.5.253","timestamp":"2025-05-09T10:54:10.785Z"}
+{"level":"info","message":"Fetched delegations for governorate gov_GSj42L by user user_4wnd9m7jl, IP: 192.168.5.253","timestamp":"2025-05-09T10:54:10.792Z"}
+{"level":"info","message":"Super Admin bypass for user user_4wnd9m7jl","timestamp":"2025-05-09T10:54:10.799Z"}
+{"level":"info","message":"Fetched regions for user usr_wEjc-IGwHRk5pDfxgINyy","timestamp":"2025-05-09T10:54:10.807Z"}
+{"level":"info","message":"Fetched regions for user usr_wEjc-IGwHRk5pDfxgINyy by user user_4wnd9m7jl, IP: 192.168.5.253","timestamp":"2025-05-09T10:54:10.809Z"}
+{"level":"info","message":"Super Admin bypass for user user_4wnd9m7jl","timestamp":"2025-05-09T10:54:10.860Z"}
+{"level":"info","message":"Super Admin bypass for user user_4wnd9m7jl","timestamp":"2025-05-09T10:54:10.866Z"}
+{"level":"info","message":"Fetched regional manager for supervisor usr_uZdeCcSQJ6h1ZsGpOeRJC","timestamp":"2025-05-09T10:54:10.871Z"}
+{"level":"info","message":"Fetched regional manager for supervisor usr_uZdeCcSQJ6h1ZsGpOeRJC by user user_4wnd9m7jl, IP: 192.168.5.253","timestamp":"2025-05-09T10:54:10.872Z"}
+{"level":"info","message":"Fetched governorates for region reg_gCQY70 by user user_4wnd9m7jl, IP: 192.168.5.253","timestamp":"2025-05-09T10:54:10.877Z"}
+{"level":"info","message":"Super Admin bypass for user user_4wnd9m7jl","timestamp":"2025-05-09T10:54:10.892Z"}
+{"level":"info","message":"Fetched regions for user usr_wEjc-IGwHRk5pDfxgINyy","timestamp":"2025-05-09T10:54:10.895Z"}
+{"level":"info","message":"Fetched regions for user usr_wEjc-IGwHRk5pDfxgINyy by user user_4wnd9m7jl, IP: 192.168.5.253","timestamp":"2025-05-09T10:54:10.897Z"}
+{"level":"info","message":"Super Admin bypass for user user_4wnd9m7jl","timestamp":"2025-05-09T10:54:10.911Z"}
+{"level":"info","message":"Fetched governorates for user usr_uZdeCcSQJ6h1ZsGpOeRJC","timestamp":"2025-05-09T10:54:10.915Z"}
+{"level":"info","message":"Fetched governorates for user usr_uZdeCcSQJ6h1ZsGpOeRJC by user user_4wnd9m7jl, IP: 192.168.5.253","timestamp":"2025-05-09T10:54:10.916Z"}
+{"level":"info","message":"Super Admin bypass for user user_4wnd9m7jl","timestamp":"2025-05-09T10:54:10.949Z"}
+{"level":"info","message":"Fetched delegations for governorate gov_GSj42L by user user_4wnd9m7jl, IP: 192.168.5.253","timestamp":"2025-05-09T10:54:10.954Z"}
+{"level":"info","message":"Super Admin bypass for user user_4wnd9m7jl","timestamp":"2025-05-09T10:54:10.974Z"}
+{"level":"info","message":"Fetched delegations for user usr_uZdeCcSQJ6h1ZsGpOeRJC","timestamp":"2025-05-09T10:54:10.981Z"}
+{"level":"info","message":"Fetched delegations for user usr_uZdeCcSQJ6h1ZsGpOeRJC by user user_4wnd9m7jl, IP: 192.168.5.253","timestamp":"2025-05-09T10:54:10.982Z"}
+{"level":"info","message":"Super Admin bypass for user user_4wnd9m7jl","timestamp":"2025-05-09T10:54:11.031Z"}
+{"level":"info","message":"Fetched agents for user usr_uZdeCcSQJ6h1ZsGpOeRJC by user user_4wnd9m7jl, IP: 192.168.5.253","timestamp":"2025-05-09T10:54:11.048Z"}
+{"level":"info","message":"Super Admin bypass for user user_4wnd9m7jl","timestamp":"2025-05-09T10:54:36.146Z"}
+{"ip":null,"level":"info","message":"Visit created for agent agt_002def by user user_4wnd9m7jl","timestamp":"2025-05-09T10:54:36.208Z"}
+{"level":"info","message":"No active rules found for event: timesheet:created","timestamp":"2025-05-09T10:54:36.228Z"}
+{"enabled":true,"event":"timesheet:created","level":"info","message":"Created default notification rule","ruleID":"rule_A3fhoZJkC9W0CiKA3hsW-","timestamp":"2025-05-09T10:54:36.251Z"}
+{"level":"info","message":"Notification stored Notification for timesheet:created","notificationID":"notif_lpN1R3aZSkJ4kfuV32Ma1","timestamp":"2025-05-09T10:54:36.283Z","userID":"user_4wnd9m7jl"}
+{"level":"info","message":"Notification status updated","notificationID":"notif_lpN1R3aZSkJ4kfuV32Ma1","status":"sent","timestamp":"2025-05-09T10:54:36.321Z"}
+{"event":"timesheet:created","level":"info","message":"Triggered notifications","recipientCount":1,"timestamp":"2025-05-09T10:54:36.328Z"}
+{"level":"info","message":"Timesheet created for supervisor usr_uZdeCcSQJ6h1ZsGpOeRJC by user user_4wnd9m7jl, IP: 192.168.5.253","timestamp":"2025-05-09T10:54:36.333Z"}
+{"level":"info","message":"Super Admin bypass for user user_4wnd9m7jl","timestamp":"2025-05-09T10:54:36.524Z"}
+{"level":"info","message":"Super Admin bypass for user user_4wnd9m7jl","timestamp":"2025-05-09T10:54:36.536Z"}
+{"level":"info","message":"Fetched all timesheets by user user_4wnd9m7jl, IP: 192.168.5.253","timestamp":"2025-05-09T10:54:36.554Z"}
+{"level":"info","message":"Fetched all users by user user_4wnd9m7jl, IP: 192.168.5.253","timestamp":"2025-05-09T10:54:36.578Z"}
+{"level":"info","message":"Super Admin bypass for user user_4wnd9m7jl","timestamp":"2025-05-09T10:55:06.738Z"}
+{"level":"info","message":"Super Admin bypass for user user_4wnd9m7jl","timestamp":"2025-05-09T10:55:06.742Z"}
+{"level":"info","message":"Fetched 2 receipt book types by user user_4wnd9m7jl, IP: 192.168.5.253","timestamp":"2025-05-09T10:55:06.747Z"}
+{"level":"info","message":"Fetched 2 receipt books by user user_4wnd9m7jl in 26ms, IP: 192.168.5.253","timestamp":"2025-05-09T10:55:06.769Z"}
+{"level":"info","message":"Super Admin bypass for user user_4wnd9m7jl","timestamp":"2025-05-09T10:55:06.864Z"}
+{"level":"info","message":"Fetched user user_4wnd9m7jl by user user_4wnd9m7jl, IP: 192.168.5.253","timestamp":"2025-05-09T10:55:06.884Z"}
+{"level":"info","message":"Fetched profile for user user_4wnd9m7jl, IP: 192.168.5.253","timestamp":"2025-05-09T10:55:10.482Z"}
+{"level":"info","message":"Fetched notification preferences for user: user_4wnd9m7jl, IP: 192.168.5.253","timestamp":"2025-05-09T10:55:10.497Z"}
+{"level":"info","message":"Fetched notification types for user: user_4wnd9m7jl, IP: 192.168.5.253","timestamp":"2025-05-09T10:55:10.501Z"}
+{"level":"info","message":"Super Admin bypass for user user_4wnd9m7jl","timestamp":"2025-05-09T10:55:11.757Z"}
+{"level":"info","message":"Super Admin bypass for user user_4wnd9m7jl","timestamp":"2025-05-09T10:55:11.766Z"}
+{"level":"info","message":"Fetched all timesheets by user user_4wnd9m7jl, IP: 192.168.5.253","timestamp":"2025-05-09T10:55:11.780Z"}
+{"level":"info","message":"Fetched all users by user user_4wnd9m7jl, IP: 192.168.5.253","timestamp":"2025-05-09T10:55:11.792Z"}
+{"level":"info","message":"Super Admin bypass for user user_4wnd9m7jl","timestamp":"2025-05-09T10:55:11.900Z"}
+{"level":"info","message":"Super Admin bypass for user user_4wnd9m7jl","timestamp":"2025-05-09T10:55:11.920Z"}
+{"level":"info","message":"Fetched 2 receipt book types by user user_4wnd9m7jl, IP: 192.168.5.253","timestamp":"2025-05-09T10:55:11.929Z"}
+{"level":"info","message":"Fetched 2 receipt books by user user_4wnd9m7jl in 39ms, IP: 192.168.5.253","timestamp":"2025-05-09T10:55:11.940Z"}
+{"level":"info","message":"Super Admin bypass for user user_4wnd9m7jl","timestamp":"2025-05-09T10:55:12.025Z"}
+{"level":"info","message":"Fetched user user_4wnd9m7jl by user user_4wnd9m7jl, IP: 192.168.5.253","timestamp":"2025-05-09T10:55:12.041Z"}
+{"level":"info","message":"User disconnected: superadmin@example.com","reason":"transport close","socketId":"2Hc5cskzYjly3DFLAAAF","timestamp":"2025-05-09T10:59:30.732Z"}
+{"level":"info","message":"Client disconnected","socketId":"2Hc5cskzYjly3DFLAAAF","timestamp":"2025-05-09T10:59:30.738Z"}
+{"level":"info","message":"Fetched roles for user user_4wnd9m7jl by user_4wnd9m7jl, IP: 192.168.5.253","timestamp":"2025-05-09T11:03:30.368Z"}
+{"level":"info","message":"Fetched roles for user user_4wnd9m7jl by user_4wnd9m7jl, IP: 192.168.5.253","timestamp":"2025-05-09T11:03:30.837Z"}
+{"email":"superadmin@example.com","level":"info","message":"WebSocket authentication successful","roles":"default-roles-traceflow, Super Admin, uma_authorization","socketId":"pfMBKhLzJ_JvR5m-AAAH","timestamp":"2025-05-09T11:03:31.302Z","userID":"user_4wnd9m7jl"}
+{"level":"info","message":"User connected: superadmin@example.com","socketId":"pfMBKhLzJ_JvR5m-AAAH","timestamp":"2025-05-09T11:03:31.322Z","userID":"user_4wnd9m7jl"}
+{"level":"info","message":"Client connected","socketId":"pfMBKhLzJ_JvR5m-AAAH","timestamp":"2025-05-09T11:03:31.344Z"}
+{"level":"info","message":"Fetched notifications for user: user_4wnd9m7jl, IP: 192.168.5.253","timestamp":"2025-05-09T11:03:31.427Z"}
+{"level":"info","message":"Super Admin bypass for user user_4wnd9m7jl","timestamp":"2025-05-09T11:04:00.493Z"}
+{"level":"info","message":"Super Admin bypass for user user_4wnd9m7jl","timestamp":"2025-05-09T11:04:00.508Z"}
+{"level":"info","message":"Fetched all timesheets by user user_4wnd9m7jl, IP: 192.168.5.253","timestamp":"2025-05-09T11:04:00.552Z"}
+{"level":"info","message":"Fetched all users by user user_4wnd9m7jl, IP: 192.168.5.253","timestamp":"2025-05-09T11:04:00.598Z"}
+{"level":"info","message":"Super Admin bypass for user user_4wnd9m7jl","timestamp":"2025-05-09T11:04:02.308Z"}
+{"level":"info","message":"Fetched visit vis_C0hUMij_qOxU7IFdP6VkH by user user_4wnd9m7jl, IP: 192.168.5.253","timestamp":"2025-05-09T11:04:02.333Z"}
+{"level":"info","message":"Super Admin bypass for user user_4wnd9m7jl","timestamp":"2025-05-09T11:04:02.361Z"}
+{"level":"info","message":"Fetched agent agt_002def by user user_4wnd9m7jl, IP: 192.168.5.253","timestamp":"2025-05-09T11:04:02.384Z"}
+{"level":"info","message":"Super Admin bypass for user user_4wnd9m7jl","timestamp":"2025-05-09T11:04:02.491Z"}
+{"level":"info","message":"Fetched all delegations by user user_4wnd9m7jl, IP: 192.168.5.253","timestamp":"2025-05-09T11:04:02.522Z"}
+{"level":"info","message":"Super Admin bypass for user user_4wnd9m7jl","timestamp":"2025-05-09T11:04:02.537Z"}
+{"level":"info","message":"Super Admin bypass for user user_4wnd9m7jl","timestamp":"2025-05-09T11:04:02.549Z"}
+{"level":"info","message":"Fetched all reasons by user user_4wnd9m7jl, IP: 192.168.5.253","timestamp":"2025-05-09T11:04:02.554Z"}
+{"level":"info","message":"Super Admin bypass for user user_4wnd9m7jl","timestamp":"2025-05-09T11:04:02.562Z"}
+{"level":"info","message":"Super Admin bypass for user user_4wnd9m7jl","timestamp":"2025-05-09T11:04:02.584Z"}
+{"level":"info","message":"Fetched all governorates by user user_4wnd9m7jl, IP: 192.168.5.253","timestamp":"2025-05-09T11:04:02.599Z"}
+{"level":"info","message":"Super Admin bypass for user user_4wnd9m7jl","timestamp":"2025-05-09T11:04:02.611Z"}
+{"level":"info","message":"Fetched all regions by user user_4wnd9m7jl, IP: 192.168.5.253","timestamp":"2025-05-09T11:04:02.623Z"}
+{"level":"info","message":"Fetched all users by user user_4wnd9m7jl, IP: 192.168.5.253","timestamp":"2025-05-09T11:04:02.641Z"}
+{"level":"info","message":"Fetched all checklists by user user_4wnd9m7jl, IP: 192.168.5.253","timestamp":"2025-05-09T11:04:02.655Z"}
+{"level":"info","message":"Super Admin bypass for user user_4wnd9m7jl","timestamp":"2025-05-09T11:04:02.683Z"}
+{"level":"info","message":"Fetched all users by user user_4wnd9m7jl, IP: 192.168.5.253","timestamp":"2025-05-09T11:04:02.691Z"}
+{"level":"info","message":"Keycloak session invalidated","timestamp":"2025-05-09T11:04:06.957Z"}
+{"IP":"192.168.5.253","cookies":["accessToken","refreshToken","userData"],"level":"info","message":"Cookies cleared on logout","timestamp":"2025-05-09T11:04:06.961Z"}
+{"IP":"192.168.5.253","level":"info","message":"User logged out successfully","timestamp":"2025-05-09T11:04:06.963Z"}
+{"level":"info","message":"User disconnected: superadmin@example.com","reason":"client namespace disconnect","socketId":"pfMBKhLzJ_JvR5m-AAAH","timestamp":"2025-05-09T11:04:06.974Z"}
+{"level":"info","message":"Client disconnected","socketId":"pfMBKhLzJ_JvR5m-AAAH","timestamp":"2025-05-09T11:04:06.976Z"}
+{"code":"fa619250-a...","level":"info","message":"Exchanging Keycloak authorization code","timestamp":"2025-05-09T11:11:17.832Z"}
+{"access_token":"present","expires_in":900,"level":"info","message":"Keycloak tokens received","refresh_token":"present","timestamp":"2025-05-09T11:11:17.904Z"}
+{"email":"sofienlaghouanem@gmail.com","level":"info","message":"Keycloak user info retrieved","name":"Sofyen Laghouanem","sub":"801bb9d4-661d-4b1c-aaaa-3fe936b747c3","timestamp":"2025-05-09T11:11:17.932Z"}
+{"keycloakId":"801bb9d4-661d-4b1c-aaaa-3fe936b747c3","level":"info","message":"User found in database","timestamp":"2025-05-09T11:11:18.020Z","userID":"usr_uZdeCcSQJ6h1ZsGpOeRJC"}
+{"cookieLength":277,"cookieOptions":{"maxAge":900000,"path":"/","sameSite":"Lax","secure":false},"cookiePreview":"{\"userID\":\"usr_uZdeCcSQJ6h1ZsGpOeRJC\",\"email\":\"sof...","level":"info","message":"Setting userData cookie","rawJson":"{\"userID\":\"usr_uZdeCcSQJ6h1ZsGpOeRJC\",\"email\":\"sof...","timestamp":"2025-05-09T11:11:18.023Z","userID":"usr_uZdeCcSQJ6h1ZsGpOeRJC"}
+{"cookiesSet":["accessToken","refreshToken","userData"],"level":"info","message":"Google login successful for user usr_uZdeCcSQJ6h1ZsGpOeRJC","timestamp":"2025-05-09T11:11:18.026Z","userData":{"email":"sofienlaghouanem@gmail.com","roles":["Supervisor"],"userID":"usr_uZdeCcSQJ6h1ZsGpOeRJC"}}
+{"level":"info","message":"Google login successful for user usr_uZdeCcSQJ6h1ZsGpOeRJC, IP: 127.0.0.1","timestamp":"2025-05-09T11:11:18.028Z"}
+{"cookies":["accessToken=eyJhbGciOiJSUzI1NiIsInR5cCIgOiAiSldUIiwia2lkIiA6ICJlcTRlODBqY2NkZ0lTSmxMTzAyeW92a3BJcF9DQnlGMVYtUnBvdDdRb2dnIn0.eyJleHAiOjE3NDY3ODk5NzcsImlhdCI6MTc0Njc4OTA3NywiYXV0aF90aW1lIjoxNzQ2Nzg5MDc3LCJqdGkiOiJjNjQ5NWQxZi02ZTRkLTQwNGItYTMwYi1mNmU2MzQyZDA0YzQiLCJpc3MiOiJodHRwOi8vbG9jYWxob3N0OjgwODAvcmVhbG1zL1RyYWNlRmxvdyIsImF1ZCI6ImFjY291bnQiLCJzdWIiOiI4MDFiYjlkNC02NjFkLTRiMWMtYWFhYS0zZmU5MzZiNzQ3YzMiLCJ0eXAiOiJCZWFyZXIiLCJhenAiOiJ0cmFjZWZsb3ctYmFja2VuZCIsInNpZCI6IjQ5OGI2ZGMyLWU3YTItNGJkYi1iMmFmLWRmZGNiYWNjMzBmYSIsImFjciI6IjEiLCJhbGxvd2VkLW9yaWdpbnMiOlsiaHR0cDovL2xvY2FsaG9zdDo1MDAwIiwiaHR0cDovL2xvY2FsaG9zdDo1MTczIl0sInJlYWxtX2FjY2VzcyI6eyJyb2xlcyI6WyJTdXBlcnZpc29yIiwiZGVmYXVsdC1yb2xlcy10cmFjZWZsb3ciLCJ1bWFfYXV0aG9yaXphdGlvbiJdfSwicmVzb3VyY2VfYWNjZXNzIjp7ImFjY291bnQiOnsicm9sZXMiOlsibWFuYWdlLWFjY291bnQiLCJtYW5hZ2UtYWNjb3VudC1saW5rcyIsInZpZXctcHJvZmlsZSJdfX0sInNjb3BlIjoib3BlbmlkIHByb2ZpbGUgZW1haWwiLCJlbWFpbF92ZXJpZmllZCI6ZmFsc2UsIm5hbWUiOiJTb2Z5ZW4gTGFnaG91YW5lbSIsInByZWZlcnJlZF91c2VybmFtZSI6InNvZmllbmxhZ2hvdWFuZW1AZ21haWwuY29tIiwiZ2l2ZW5fbmFtZSI6IlNvZnllbiIsImZhbWlseV9uYW1lIjoiTGFnaG91YW5lbSIsImVtYWlsIjoic29maWVubGFnaG91YW5lbUBnbWFpbC5jb20ifQ.Z9abx1S8CrC6YSe5AjQdzc0UqrXPuLAgdNiRIpBewxaA9iMoAw77gNqW-Ol-PBoNjQrIkjEXMMhDMaLWCRM4MN0zLOrQ4TGdzYUncR9jwYsKzq5w_PrOkDfWlcJMIi9n87OXEK7BhvUDJdj2L4WSPZWdWMq73md44lTooMcwDEgZXpejc5WDAj9fpUSoSJq-HiMIDjYLkTJqspYhZgE_DOqLzbNjwONJDQ4LADV07h8wi1w3vMceAt5X1Q0jXAgw0S3qpTqj4dYvSYxfRBo2iHVODdLedxFIesLnr0w4m6A1c2JCsIx_2WTcdD-YtpJ8vxIs5v5o1D16Ez-Ax-WX3A; Max-Age=900; Path=/; Expires=Fri, 09 May 2025 11:26:18 GMT; HttpOnly; SameSite=Lax","refreshToken=eyJhbGciOiJIUzUxMiIsInR5cCIgOiAiSldUIiwia2lkIiA6ICI4ZDM2MmYzMS03MWYzLTQ0MjYtOWU2Yi1jZmJkZTQ3NzVlYzMifQ.eyJleHAiOjE3NDY3OTI2NzcsImlhdCI6MTc0Njc4OTA3NywianRpIjoiNTNlNDBjZWUtOWUxYi00MGEwLWJkNGUtOWZjYWQ0NGJiMWVhIiwiaXNzIjoiaHR0cDovL2xvY2FsaG9zdDo4MDgwL3JlYWxtcy9UcmFjZUZsb3ciLCJhdWQiOiJodHRwOi8vbG9jYWxob3N0OjgwODAvcmVhbG1zL1RyYWNlRmxvdyIsInN1YiI6IjgwMWJiOWQ0LTY2MWQtNGIxYy1hYWFhLTNmZTkzNmI3NDdjMyIsInR5cCI6IlJlZnJlc2giLCJhenAiOiJ0cmFjZWZsb3ctYmFja2VuZCIsInNpZCI6IjQ5OGI2ZGMyLWU3YTItNGJkYi1iMmFmLWRmZGNiYWNjMzBmYSIsInNjb3BlIjoib3BlbmlkIGJhc2ljIGFjciBwcm9maWxlIHdlYi1vcmlnaW5zIGVtYWlsIHJvbGVzIHNlcnZpY2VfYWNjb3VudCJ9.2p3TU5w-hVxEsUT48Wz96B7UzvVqll13DsHWAZWob-zUsHz_GGA5gzNt--j4M73msScE2F0m6Ww8hBEN1wX-4Q; Max-Age=86400; Path=/; Expires=Sat, 10 May 2025 11:11:18 GMT; HttpOnly; SameSite=Lax","userData=%7B%22userID%22%3A%22usr_uZdeCcSQJ6h1ZsGpOeRJC%22%2C%22email%22%3A%22sofienlaghouanem%40gmail.com%22%2C%22phone%22%3A%2220031474%22%2C%22firstname%22%3A%22laghouanem%22%2C%22lastname%22%3A%22sofyen%22%2C%22keycloakId%22%3A%22801bb9d4-661d-4b1c-aaaa-3fe936b747c3%22%2C%22Roles%22%3A%5B%7B%22roleID%22%3A%22rol_oBKg0UD7ONjaXU48n8UEq%22%2C%22name%22%3A%22Supervisor%22%2C%22description%22%3A%22%22%7D%5D%7D; Max-Age=900; Path=/; Expires=Fri, 09 May 2025 11:26:18 GMT; SameSite=Lax"],"level":"info","message":"Cookies set in response","timestamp":"2025-05-09T11:11:18.030Z","userDataCookiePreview":"userData=%7B%22userID%22%3A%22usr_uZdeCcSQJ6h1ZsGpOeRJC%22%2C%22email%22%3A%22sofienlaghouanem%40gma..."}
+{"level":"info","message":"Fetched roles for user usr_uZdeCcSQJ6h1ZsGpOeRJC by usr_uZdeCcSQJ6h1ZsGpOeRJC, IP: 192.168.5.253","timestamp":"2025-05-09T11:11:19.077Z"}
+{"level":"info","message":"Fetched roles for user usr_uZdeCcSQJ6h1ZsGpOeRJC by usr_uZdeCcSQJ6h1ZsGpOeRJC, IP: 192.168.5.253","timestamp":"2025-05-09T11:11:19.228Z"}
+{"email":"sofienlaghouanem@gmail.com","level":"info","message":"WebSocket authentication successful","roles":"Supervisor, default-roles-traceflow, uma_authorization","socketId":"g0z7r6-9POAY4oyRAAAJ","timestamp":"2025-05-09T11:11:19.954Z","userID":"usr_uZdeCcSQJ6h1ZsGpOeRJC"}
+{"level":"info","message":"User connected: sofienlaghouanem@gmail.com","socketId":"g0z7r6-9POAY4oyRAAAJ","timestamp":"2025-05-09T11:11:19.965Z","userID":"usr_uZdeCcSQJ6h1ZsGpOeRJC"}
+{"level":"info","message":"Client connected","socketId":"g0z7r6-9POAY4oyRAAAJ","timestamp":"2025-05-09T11:11:19.986Z"}
+{"level":"info","message":"Fetched notifications for user: usr_uZdeCcSQJ6h1ZsGpOeRJC, IP: 192.168.5.253","timestamp":"2025-05-09T11:11:20.233Z"}
+{"level":"info","message":"Permission granted for access_supervisor_timesheets to user usr_uZdeCcSQJ6h1ZsGpOeRJC","timestamp":"2025-05-09T11:11:21.119Z"}
+{"level":"info","message":"Permission granted for access_supervisors to user usr_uZdeCcSQJ6h1ZsGpOeRJC","timestamp":"2025-05-09T11:11:21.161Z"}
+{"level":"info","message":"Fetched timesheets for supervisor usr_uZdeCcSQJ6h1ZsGpOeRJC by user usr_uZdeCcSQJ6h1ZsGpOeRJC, IP: 192.168.5.253","timestamp":"2025-05-09T11:11:21.182Z"}
+{"level":"info","message":"Fetched supervisors for user usr_uZdeCcSQJ6h1ZsGpOeRJC","timestamp":"2025-05-09T11:11:21.192Z"}
+{"level":"info","message":"Fetched supervisors for user usr_uZdeCcSQJ6h1ZsGpOeRJC by user usr_uZdeCcSQJ6h1ZsGpOeRJC, IP: 192.168.5.253","timestamp":"2025-05-09T11:11:21.201Z"}
+{"level":"info","message":"Keycloak session invalidated","timestamp":"2025-05-09T11:11:25.488Z"}
+{"IP":"192.168.5.253","cookies":["accessToken","refreshToken","userData"],"level":"info","message":"Cookies cleared on logout","timestamp":"2025-05-09T11:11:25.491Z"}
+{"IP":"192.168.5.253","level":"info","message":"User logged out successfully","timestamp":"2025-05-09T11:11:25.492Z"}
+{"level":"info","message":"User disconnected: sofienlaghouanem@gmail.com","reason":"client namespace disconnect","socketId":"g0z7r6-9POAY4oyRAAAJ","timestamp":"2025-05-09T11:11:25.504Z"}
+{"level":"info","message":"Client disconnected","socketId":"g0z7r6-9POAY4oyRAAAJ","timestamp":"2025-05-09T11:11:25.507Z"}
+{"code":"498f6626-9...","level":"info","message":"Exchanging Keycloak authorization code","timestamp":"2025-05-09T11:11:43.433Z"}
+{"access_token":"present","expires_in":900,"level":"info","message":"Keycloak tokens received","refresh_token":"present","timestamp":"2025-05-09T11:11:43.490Z"}
+{"email":"sofienlaghouanem@gmail.com","level":"info","message":"Keycloak user info retrieved","name":"Sofyen Laghouanem","sub":"801bb9d4-661d-4b1c-aaaa-3fe936b747c3","timestamp":"2025-05-09T11:11:43.511Z"}
+{"keycloakId":"801bb9d4-661d-4b1c-aaaa-3fe936b747c3","level":"info","message":"User found in database","timestamp":"2025-05-09T11:11:43.618Z","userID":"usr_uZdeCcSQJ6h1ZsGpOeRJC"}
+{"cookieLength":277,"cookieOptions":{"maxAge":900000,"path":"/","sameSite":"Lax","secure":false},"cookiePreview":"{\"userID\":\"usr_uZdeCcSQJ6h1ZsGpOeRJC\",\"email\":\"sof...","level":"info","message":"Setting userData cookie","rawJson":"{\"userID\":\"usr_uZdeCcSQJ6h1ZsGpOeRJC\",\"email\":\"sof...","timestamp":"2025-05-09T11:11:43.619Z","userID":"usr_uZdeCcSQJ6h1ZsGpOeRJC"}
+{"cookiesSet":["accessToken","refreshToken","userData"],"level":"info","message":"Google login successful for user usr_uZdeCcSQJ6h1ZsGpOeRJC","timestamp":"2025-05-09T11:11:43.621Z","userData":{"email":"sofienlaghouanem@gmail.com","roles":["Supervisor"],"userID":"usr_uZdeCcSQJ6h1ZsGpOeRJC"}}
+{"level":"info","message":"Google login successful for user usr_uZdeCcSQJ6h1ZsGpOeRJC, IP: 127.0.0.1","timestamp":"2025-05-09T11:11:43.627Z"}
+{"cookies":["accessToken=eyJhbGciOiJSUzI1NiIsInR5cCIgOiAiSldUIiwia2lkIiA6ICJlcTRlODBqY2NkZ0lTSmxMTzAyeW92a3BJcF9DQnlGMVYtUnBvdDdRb2dnIn0.eyJleHAiOjE3NDY3OTAwMDMsImlhdCI6MTc0Njc4OTEwMywiYXV0aF90aW1lIjoxNzQ2Nzg5MTAzLCJqdGkiOiI1NWM0MWFlMi0xOGE1LTQ5OGEtOWI2Ny05ZTEzYWI3N2M5N2YiLCJpc3MiOiJodHRwOi8vbG9jYWxob3N0OjgwODAvcmVhbG1zL1RyYWNlRmxvdyIsImF1ZCI6ImFjY291bnQiLCJzdWIiOiI4MDFiYjlkNC02NjFkLTRiMWMtYWFhYS0zZmU5MzZiNzQ3YzMiLCJ0eXAiOiJCZWFyZXIiLCJhenAiOiJ0cmFjZWZsb3ctYmFja2VuZCIsInNpZCI6IjNhZmU3YmE1LWZjNDMtNDQ2YS04ZDIwLWZlMDYxZjQyODEzMiIsImFjciI6IjEiLCJhbGxvd2VkLW9yaWdpbnMiOlsiaHR0cDovL2xvY2FsaG9zdDo1MDAwIiwiaHR0cDovL2xvY2FsaG9zdDo1MTczIl0sInJlYWxtX2FjY2VzcyI6eyJyb2xlcyI6WyJTdXBlcnZpc29yIiwiZGVmYXVsdC1yb2xlcy10cmFjZWZsb3ciLCJ1bWFfYXV0aG9yaXphdGlvbiJdfSwicmVzb3VyY2VfYWNjZXNzIjp7ImFjY291bnQiOnsicm9sZXMiOlsibWFuYWdlLWFjY291bnQiLCJtYW5hZ2UtYWNjb3VudC1saW5rcyIsInZpZXctcHJvZmlsZSJdfX0sInNjb3BlIjoib3BlbmlkIHByb2ZpbGUgZW1haWwiLCJlbWFpbF92ZXJpZmllZCI6ZmFsc2UsIm5hbWUiOiJTb2Z5ZW4gTGFnaG91YW5lbSIsInByZWZlcnJlZF91c2VybmFtZSI6InNvZmllbmxhZ2hvdWFuZW1AZ21haWwuY29tIiwiZ2l2ZW5fbmFtZSI6IlNvZnllbiIsImZhbWlseV9uYW1lIjoiTGFnaG91YW5lbSIsImVtYWlsIjoic29maWVubGFnaG91YW5lbUBnbWFpbC5jb20ifQ.Wq5Q9tWAck1ZkdoCWoziJTXFG2HaOZC_YO0kjpUd4KpOSQR9-dsXl7-QBjXRzznQfUkQA7CZxH9XNC-3gYCSNRM_PU9UQtAWCpSvn2l8RxiF-vMGZtCluKkImy9m9iJFSUNewIXFBC0yazVjBMQQjhy8Akc8mgZ1I1JR87iwGtgeW6Ebrh2YyUypX7QYR_mvOtZaprHQOSYLP83XZCaqAS9zAwd8pAMKUzWkOI2b4UZZQ3xJnm_Mcbr0m654LiVnj83IPvhWtleTR5ZBEIj47kWClq4QHpYPiajRtdOQHhM32lCDx14dejHFDja7G3Ac_4SYfR4FyLIB-ui59Uh_YQ; Max-Age=900; Path=/; Expires=Fri, 09 May 2025 11:26:43 GMT; HttpOnly; SameSite=Lax","refreshToken=eyJhbGciOiJIUzUxMiIsInR5cCIgOiAiSldUIiwia2lkIiA6ICI4ZDM2MmYzMS03MWYzLTQ0MjYtOWU2Yi1jZmJkZTQ3NzVlYzMifQ.eyJleHAiOjE3NDY3OTI3MDMsImlhdCI6MTc0Njc4OTEwMywianRpIjoiMDgwY2M3OGYtNzQzZC00YWY5LWI2Y2MtZmJlOTYwNDIyNGU4IiwiaXNzIjoiaHR0cDovL2xvY2FsaG9zdDo4MDgwL3JlYWxtcy9UcmFjZUZsb3ciLCJhdWQiOiJodHRwOi8vbG9jYWxob3N0OjgwODAvcmVhbG1zL1RyYWNlRmxvdyIsInN1YiI6IjgwMWJiOWQ0LTY2MWQtNGIxYy1hYWFhLTNmZTkzNmI3NDdjMyIsInR5cCI6IlJlZnJlc2giLCJhenAiOiJ0cmFjZWZsb3ctYmFja2VuZCIsInNpZCI6IjNhZmU3YmE1LWZjNDMtNDQ2YS04ZDIwLWZlMDYxZjQyODEzMiIsInNjb3BlIjoib3BlbmlkIGJhc2ljIGFjciBwcm9maWxlIHdlYi1vcmlnaW5zIGVtYWlsIHJvbGVzIHNlcnZpY2VfYWNjb3VudCJ9.vz4t1LEeM8AdtEq4HjIMCCV9nrsS-NCy38BnB9WnX16tfn_jtzh209JDSClq-obYbf8sfKs51aNle4s91IDlMg; Max-Age=86400; Path=/; Expires=Sat, 10 May 2025 11:11:43 GMT; HttpOnly; SameSite=Lax","userData=%7B%22userID%22%3A%22usr_uZdeCcSQJ6h1ZsGpOeRJC%22%2C%22email%22%3A%22sofienlaghouanem%40gmail.com%22%2C%22phone%22%3A%2220031474%22%2C%22firstname%22%3A%22laghouanem%22%2C%22lastname%22%3A%22sofyen%22%2C%22keycloakId%22%3A%22801bb9d4-661d-4b1c-aaaa-3fe936b747c3%22%2C%22Roles%22%3A%5B%7B%22roleID%22%3A%22rol_oBKg0UD7ONjaXU48n8UEq%22%2C%22name%22%3A%22Supervisor%22%2C%22description%22%3A%22%22%7D%5D%7D; Max-Age=900; Path=/; Expires=Fri, 09 May 2025 11:26:43 GMT; SameSite=Lax"],"level":"info","message":"Cookies set in response","timestamp":"2025-05-09T11:11:43.632Z","userDataCookiePreview":"userData=%7B%22userID%22%3A%22usr_uZdeCcSQJ6h1ZsGpOeRJC%22%2C%22email%22%3A%22sofienlaghouanem%40gma..."}
+{"level":"info","message":"Fetched roles for user usr_uZdeCcSQJ6h1ZsGpOeRJC by usr_uZdeCcSQJ6h1ZsGpOeRJC, IP: 192.168.5.253","timestamp":"2025-05-09T11:11:44.867Z"}
+{"level":"info","message":"Fetched roles for user usr_uZdeCcSQJ6h1ZsGpOeRJC by usr_uZdeCcSQJ6h1ZsGpOeRJC, IP: 192.168.5.253","timestamp":"2025-05-09T11:11:45.012Z"}
+{"email":"sofienlaghouanem@gmail.com","level":"info","message":"WebSocket authentication successful","roles":"Supervisor, default-roles-traceflow, uma_authorization","socketId":"jmMoZzloq0XpqynnAAAL","timestamp":"2025-05-09T11:11:45.889Z","userID":"usr_uZdeCcSQJ6h1ZsGpOeRJC"}
+{"level":"info","message":"User connected: sofienlaghouanem@gmail.com","socketId":"jmMoZzloq0XpqynnAAAL","timestamp":"2025-05-09T11:11:45.905Z","userID":"usr_uZdeCcSQJ6h1ZsGpOeRJC"}
+{"level":"info","message":"Client connected","socketId":"jmMoZzloq0XpqynnAAAL","timestamp":"2025-05-09T11:11:45.929Z"}
+{"level":"info","message":"Fetched notifications for user: usr_uZdeCcSQJ6h1ZsGpOeRJC, IP: 192.168.5.253","timestamp":"2025-05-09T11:11:46.083Z"}
+{"level":"info","message":"Permission granted for access_supervisors to user usr_uZdeCcSQJ6h1ZsGpOeRJC","timestamp":"2025-05-09T11:11:46.867Z"}
+{"level":"info","message":"Permission granted for access_supervisor_timesheets to user usr_uZdeCcSQJ6h1ZsGpOeRJC","timestamp":"2025-05-09T11:11:46.884Z"}
+{"level":"info","message":"Fetched supervisors for user usr_uZdeCcSQJ6h1ZsGpOeRJC","timestamp":"2025-05-09T11:11:46.898Z"}
+{"level":"info","message":"Fetched supervisors for user usr_uZdeCcSQJ6h1ZsGpOeRJC by user usr_uZdeCcSQJ6h1ZsGpOeRJC, IP: 192.168.5.253","timestamp":"2025-05-09T11:11:46.906Z"}
+{"level":"info","message":"Fetched timesheets for supervisor usr_uZdeCcSQJ6h1ZsGpOeRJC by user usr_uZdeCcSQJ6h1ZsGpOeRJC, IP: 192.168.5.253","timestamp":"2025-05-09T11:11:46.926Z"}
+{"level":"info","message":"Permission granted for access_visit_details to user usr_uZdeCcSQJ6h1ZsGpOeRJC","timestamp":"2025-05-09T11:11:57.970Z"}
+{"level":"info","message":"Fetched visit vis_C0hUMij_qOxU7IFdP6VkH by user usr_uZdeCcSQJ6h1ZsGpOeRJC, IP: 192.168.5.253","timestamp":"2025-05-09T11:11:57.990Z"}
+{"level":"info","message":"Permission granted for access_agents_by_id to user usr_uZdeCcSQJ6h1ZsGpOeRJC","timestamp":"2025-05-09T11:11:58.050Z"}
+{"level":"info","message":"Fetched agent agt_002def by user usr_uZdeCcSQJ6h1ZsGpOeRJC, IP: 192.168.5.253","timestamp":"2025-05-09T11:11:58.069Z"}
+{"level":"info","message":"Permission granted for access_regional_manager_by_supervisor to user usr_uZdeCcSQJ6h1ZsGpOeRJC","timestamp":"2025-05-09T11:11:58.178Z"}
+{"level":"info","message":"Permission granted for access_reason_items to user usr_uZdeCcSQJ6h1ZsGpOeRJC","timestamp":"2025-05-09T11:11:58.188Z"}
+{"level":"info","message":"Permission granted for access_delegations to user usr_uZdeCcSQJ6h1ZsGpOeRJC","timestamp":"2025-05-09T11:11:58.195Z"}
+{"level":"info","message":"Permission granted for access_checklists_items to user usr_uZdeCcSQJ6h1ZsGpOeRJC","timestamp":"2025-05-09T11:11:58.202Z"}
+{"level":"info","message":"Permission granted for access_governorates to user usr_uZdeCcSQJ6h1ZsGpOeRJC","timestamp":"2025-05-09T11:11:58.207Z"}
+{"level":"info","message":"Fetched regional manager for supervisor usr_uZdeCcSQJ6h1ZsGpOeRJC","timestamp":"2025-05-09T11:11:58.215Z"}
+{"level":"info","message":"Fetched regional manager for supervisor usr_uZdeCcSQJ6h1ZsGpOeRJC by user usr_uZdeCcSQJ6h1ZsGpOeRJC, IP: 192.168.5.253","timestamp":"2025-05-09T11:11:58.216Z"}
+{"level":"info","message":"Fetched all reasons by user usr_uZdeCcSQJ6h1ZsGpOeRJC, IP: 192.168.5.253","timestamp":"2025-05-09T11:11:58.223Z"}
+{"level":"info","message":"Fetched all delegations by user usr_uZdeCcSQJ6h1ZsGpOeRJC, IP: 192.168.5.253","timestamp":"2025-05-09T11:11:58.248Z"}
+{"level":"info","message":"Fetched all checklists by user usr_uZdeCcSQJ6h1ZsGpOeRJC, IP: 192.168.5.253","timestamp":"2025-05-09T11:11:58.265Z"}
+{"level":"info","message":"Fetched all governorates by user usr_uZdeCcSQJ6h1ZsGpOeRJC, IP: 192.168.5.253","timestamp":"2025-05-09T11:11:58.280Z"}
+{"level":"info","message":"Permission granted for access_regions_by_user to user usr_uZdeCcSQJ6h1ZsGpOeRJC","timestamp":"2025-05-09T11:11:58.319Z"}
+{"level":"info","message":"Fetched regions for user usr_wEjc-IGwHRk5pDfxgINyy","timestamp":"2025-05-09T11:11:58.343Z"}
+{"level":"info","message":"Fetched regions for user usr_wEjc-IGwHRk5pDfxgINyy by user usr_uZdeCcSQJ6h1ZsGpOeRJC, IP: 192.168.5.253","timestamp":"2025-05-09T11:11:58.345Z"}
+{"data":{"error":"access_denied","error_description":"not_authorized"},"level":"error","message":"Permission check failed for access_google_calendar: Request failed with status code 403","status":403,"timestamp":"2025-05-09T11:12:25.338Z"}
+{"level":"info","message":"Keycloak session invalidated","timestamp":"2025-05-09T11:13:28.800Z"}
+{"IP":"192.168.5.253","cookies":["accessToken","refreshToken","userData"],"level":"info","message":"Cookies cleared on logout","timestamp":"2025-05-09T11:13:28.804Z"}
+{"IP":"192.168.5.253","level":"info","message":"User logged out successfully","timestamp":"2025-05-09T11:13:28.806Z"}
+{"level":"info","message":"User disconnected: sofienlaghouanem@gmail.com","reason":"client namespace disconnect","socketId":"jmMoZzloq0XpqynnAAAL","timestamp":"2025-05-09T11:13:28.818Z"}
+{"level":"info","message":"Client disconnected","socketId":"jmMoZzloq0XpqynnAAAL","timestamp":"2025-05-09T11:13:28.822Z"}
+{"level":"info","message":"Login successful for superadmin@example.com, IP: 192.168.5.253","timestamp":"2025-05-09T11:13:34.124Z"}
+{"level":"info","message":"Login successful for superadmin@example.com, IP: 192.168.5.253","timestamp":"2025-05-09T11:13:34.596Z"}
+{"level":"info","message":"Fetched roles for user user_4wnd9m7jl by user_4wnd9m7jl, IP: 192.168.5.253","timestamp":"2025-05-09T11:13:34.685Z"}
+{"email":"superadmin@example.com","level":"info","message":"WebSocket authentication successful","roles":"default-roles-traceflow, Super Admin, uma_authorization","socketId":"vpWyLlOGN1iNwkxYAAAN","timestamp":"2025-05-09T11:13:34.731Z","userID":"user_4wnd9m7jl"}
+{"level":"info","message":"User connected: superadmin@example.com","socketId":"vpWyLlOGN1iNwkxYAAAN","timestamp":"2025-05-09T11:13:34.736Z","userID":"user_4wnd9m7jl"}
+{"level":"info","message":"Client connected","socketId":"vpWyLlOGN1iNwkxYAAAN","timestamp":"2025-05-09T11:13:34.743Z"}
+{"level":"info","message":"Fetched roles for user user_4wnd9m7jl by user_4wnd9m7jl, IP: 192.168.5.253","timestamp":"2025-05-09T11:13:34.801Z"}
+{"level":"info","message":"Super Admin bypass for user user_4wnd9m7jl","timestamp":"2025-05-09T11:13:36.274Z"}
+{"level":"info","message":"Fetched all users by user user_4wnd9m7jl, IP: 192.168.5.253","timestamp":"2025-05-09T11:13:36.318Z"}
+{"level":"info","message":"Super Admin bypass for user user_4wnd9m7jl","timestamp":"2025-05-09T11:13:36.355Z"}
+{"level":"info","message":"Fetched all roles by user user_4wnd9m7jl, IP: 192.168.5.253","timestamp":"2025-05-09T11:13:36.389Z"}
+{"level":"info","message":"Super Admin bypass for user user_4wnd9m7jl","timestamp":"2025-05-09T11:13:39.307Z"}
+{"level":"info","message":"Fetched regional managers for user usr_uZdeCcSQJ6h1ZsGpOeRJC","timestamp":"2025-05-09T11:13:39.323Z"}
+{"level":"info","message":"Fetched regional managers for user usr_uZdeCcSQJ6h1ZsGpOeRJC by user user_4wnd9m7jl, IP: 192.168.5.253","timestamp":"2025-05-09T11:13:39.329Z"}
+{"level":"info","message":"Super Admin bypass for user user_4wnd9m7jl","timestamp":"2025-05-09T11:13:39.342Z"}
+{"level":"info","message":"Fetched supervisors for user usr_uZdeCcSQJ6h1ZsGpOeRJC","timestamp":"2025-05-09T11:13:39.364Z"}
+{"level":"info","message":"Fetched supervisors for user usr_uZdeCcSQJ6h1ZsGpOeRJC by user user_4wnd9m7jl, IP: 192.168.5.253","timestamp":"2025-05-09T11:13:39.367Z"}
+{"level":"info","message":"Super Admin bypass for user user_4wnd9m7jl","timestamp":"2025-05-09T11:13:40.730Z"}
+{"level":"info","message":"Fetched user usr_uZdeCcSQJ6h1ZsGpOeRJC by user user_4wnd9m7jl, IP: 192.168.5.253","timestamp":"2025-05-09T11:13:40.753Z"}
+{"level":"info","message":"Super Admin bypass for user user_4wnd9m7jl","timestamp":"2025-05-09T11:13:48.045Z"}
+{"level":"info","message":"Super Admin bypass for user user_4wnd9m7jl","timestamp":"2025-05-09T11:13:48.055Z"}
+{"level":"info","message":"Fetched permissions for role rol_oBKg0UD7ONjaXU48n8UEq by user user_4wnd9m7jl, IP: 192.168.5.253","timestamp":"2025-05-09T11:13:48.064Z"}
+{"level":"info","message":"Fetched all permissions by user user_4wnd9m7jl, IP: 192.168.5.253","timestamp":"2025-05-09T11:13:48.084Z"}
+{"level":"info","message":"Super Admin bypass for user user_4wnd9m7jl","timestamp":"2025-05-09T11:21:31.302Z"}
+{"level":"info","message":"Super Admin bypass for user user_4wnd9m7jl","timestamp":"2025-05-09T11:21:31.312Z"}
+{"level":"info","message":"Fetched 2 receipt book types by user user_4wnd9m7jl, IP: 192.168.5.253","timestamp":"2025-05-09T11:21:31.359Z"}
+{"level":"info","message":"Fetched 2 receipt books by user user_4wnd9m7jl in 97ms, IP: 192.168.5.253","timestamp":"2025-05-09T11:21:31.401Z"}
+{"level":"info","message":"Super Admin bypass for user user_4wnd9m7jl","timestamp":"2025-05-09T11:21:31.520Z"}
+{"level":"info","message":"Fetched user user_4wnd9m7jl by user user_4wnd9m7jl, IP: 192.168.5.253","timestamp":"2025-05-09T11:21:31.577Z"}
+{"level":"info","message":"Super Admin bypass for user user_4wnd9m7jl","timestamp":"2025-05-09T11:21:59.614Z"}
+{"level":"info","message":"Super Admin bypass for user user_4wnd9m7jl","timestamp":"2025-05-09T11:21:59.622Z"}
+{"level":"info","message":"Fetched receipt book book_ctFnRnv2tJN7LB1088x-u by user user_4wnd9m7jl, IP: 192.168.5.253","timestamp":"2025-05-09T11:21:59.640Z"}
+{"level":"info","message":"Fetched transfer history for book book_ctFnRnv2tJN7LB1088x-u by user user_4wnd9m7jl, IP: 192.168.5.253","timestamp":"2025-05-09T11:21:59.655Z"}
+{"level":"info","message":"Super Admin bypass for user user_4wnd9m7jl","timestamp":"2025-05-09T11:21:59.706Z"}
+{"level":"info","message":"Fetched user user_4wnd9m7jl by user user_4wnd9m7jl, IP: 192.168.5.253","timestamp":"2025-05-09T11:21:59.740Z"}
+{"level":"info","message":"Super Admin bypass for user user_4wnd9m7jl","timestamp":"2025-05-09T11:22:20.991Z"}
+{"level":"info","message":"Super Admin bypass for user user_4wnd9m7jl","timestamp":"2025-05-09T11:22:20.999Z"}
+{"level":"info","message":"Fetched 2 receipt book types by user user_4wnd9m7jl, IP: 192.168.5.253","timestamp":"2025-05-09T11:22:21.022Z"}
+{"level":"info","message":"Fetched 2 receipt books by user user_4wnd9m7jl in 67ms, IP: 192.168.5.253","timestamp":"2025-05-09T11:22:21.059Z"}
+{"level":"info","message":"Super Admin bypass for user user_4wnd9m7jl","timestamp":"2025-05-09T11:22:21.154Z"}
+{"level":"info","message":"Fetched user user_4wnd9m7jl by user user_4wnd9m7jl, IP: 192.168.5.253","timestamp":"2025-05-09T11:22:21.183Z"}
+{"level":"info","message":"Super Admin bypass for user user_4wnd9m7jl","timestamp":"2025-05-09T11:22:39.921Z"}
+{"level":"info","message":"Super Admin bypass for user user_4wnd9m7jl","timestamp":"2025-05-09T11:22:39.938Z"}
+{"level":"info","message":"Fetched receipt book book_ctFnRnv2tJN7LB1088x-u by user user_4wnd9m7jl, IP: 192.168.5.253","timestamp":"2025-05-09T11:22:39.955Z"}
+{"level":"info","message":"Fetched transfer history for book book_ctFnRnv2tJN7LB1088x-u by user user_4wnd9m7jl, IP: 192.168.5.253","timestamp":"2025-05-09T11:22:39.973Z"}
+{"level":"info","message":"Super Admin bypass for user user_4wnd9m7jl","timestamp":"2025-05-09T11:22:40.011Z"}
+{"level":"info","message":"Fetched user user_4wnd9m7jl by user user_4wnd9m7jl, IP: 192.168.5.253","timestamp":"2025-05-09T11:22:40.036Z"}
+{"level":"info","message":"Super Admin bypass for user user_4wnd9m7jl","timestamp":"2025-05-09T11:22:56.055Z"}
+{"level":"info","message":"Super Admin bypass for user user_4wnd9m7jl","timestamp":"2025-05-09T11:22:56.063Z"}
+{"level":"info","message":"Fetched 2 receipt book types by user user_4wnd9m7jl, IP: 192.168.5.253","timestamp":"2025-05-09T11:22:56.071Z"}
+{"level":"info","message":"Fetched 2 receipt books by user user_4wnd9m7jl in 40ms, IP: 192.168.5.253","timestamp":"2025-05-09T11:22:56.105Z"}
+{"level":"info","message":"Super Admin bypass for user user_4wnd9m7jl","timestamp":"2025-05-09T11:22:56.186Z"}
+{"level":"info","message":"Fetched user user_4wnd9m7jl by user user_4wnd9m7jl, IP: 192.168.5.253","timestamp":"2025-05-09T11:22:56.214Z"}
+{"level":"info","message":"Super Admin bypass for user user_4wnd9m7jl","timestamp":"2025-05-09T11:23:10.261Z"}
+{"level":"info","message":"Fetched all agents by user user_4wnd9m7jl, IP: 192.168.5.253","timestamp":"2025-05-09T11:23:10.415Z"}
+{"level":"info","message":"Super Admin bypass for user user_4wnd9m7jl","timestamp":"2025-05-09T11:23:29.037Z"}
+{"level":"info","message":"Fetched CSV headers for csvType agent by user user_4wnd9m7jl, IP: 192.168.5.253","timestamp":"2025-05-09T11:23:29.045Z"}
+{"level":"info","message":"Super Admin bypass for user user_4wnd9m7jl","timestamp":"2025-05-09T11:25:26.169Z"}
+{"level":"info","message":"Fetched user usr_uZdeCcSQJ6h1ZsGpOeRJC by user user_4wnd9m7jl, IP: 192.168.5.253","timestamp":"2025-05-09T11:25:26.216Z"}
+{"level":"info","message":"Super Admin bypass for user user_4wnd9m7jl","timestamp":"2025-05-09T11:25:27.399Z"}
+{"level":"info","message":"Super Admin bypass for user user_4wnd9m7jl","timestamp":"2025-05-09T11:25:27.404Z"}
+{"level":"info","message":"Fetched regional manager for supervisor usr_uZdeCcSQJ6h1ZsGpOeRJC","timestamp":"2025-05-09T11:25:27.426Z"}
+{"level":"info","message":"Fetched regional manager for supervisor usr_uZdeCcSQJ6h1ZsGpOeRJC by user user_4wnd9m7jl, IP: 192.168.5.253","timestamp":"2025-05-09T11:25:27.428Z"}
+{"level":"info","message":"Fetched users by role Regional Manager by user user_4wnd9m7jl, IP: 192.168.5.253","timestamp":"2025-05-09T11:25:27.460Z"}
+{"level":"info","message":"Super Admin bypass for user user_4wnd9m7jl","timestamp":"2025-05-09T11:25:27.554Z"}
+{"level":"info","message":"Fetched regions for user usr_wEjc-IGwHRk5pDfxgINyy, IP: 192.168.5.253","timestamp":"2025-05-09T11:25:27.570Z"}
+{"level":"info","message":"Super Admin bypass for user user_4wnd9m7jl","timestamp":"2025-05-09T11:25:27.679Z"}
+{"level":"info","message":"Fetched governorates for region reg_gCQY70 by user user_4wnd9m7jl, IP: 192.168.5.253","timestamp":"2025-05-09T11:25:27.697Z"}
+{"level":"info","message":"Super Admin bypass for user user_4wnd9m7jl","timestamp":"2025-05-09T11:25:27.730Z"}
+{"level":"info","message":"Fetched governorates for user usr_uZdeCcSQJ6h1ZsGpOeRJC, IP: 192.168.5.253","timestamp":"2025-05-09T11:25:27.738Z"}
+{"level":"info","message":"Super Admin bypass for user user_4wnd9m7jl","timestamp":"2025-05-09T11:25:27.789Z"}
+{"level":"info","message":"Fetched delegations for governorate gov_GSj42L by user user_4wnd9m7jl, IP: 192.168.5.253","timestamp":"2025-05-09T11:25:27.800Z"}
+{"level":"info","message":"Super Admin bypass for user user_4wnd9m7jl","timestamp":"2025-05-09T11:25:27.850Z"}
+{"level":"info","message":"Fetched delegations for user usr_uZdeCcSQJ6h1ZsGpOeRJC, IP: 192.168.5.253","timestamp":"2025-05-09T11:25:27.864Z"}
+{"level":"info","message":"Super Admin bypass for user user_4wnd9m7jl","timestamp":"2025-05-09T11:25:27.927Z"}
+{"level":"info","message":"Fetched agents by delegation del_ZN1SjY by user user_4wnd9m7jl, IP: 192.168.5.253","timestamp":"2025-05-09T11:25:27.943Z"}
+{"level":"info","message":"Super Admin bypass for user user_4wnd9m7jl","timestamp":"2025-05-09T11:25:27.984Z"}
+{"level":"info","message":"Fetched agents for user usr_uZdeCcSQJ6h1ZsGpOeRJC by user user_4wnd9m7jl, IP: 192.168.5.253","timestamp":"2025-05-09T11:25:28.003Z"}
+{"level":"info","message":"Initiating token refresh","timestamp":"2025-05-09T11:28:04.638Z"}
+{"accessTokenExpiresIn":900,"level":"info","message":"Tokens refreshed successfully","refreshTokenRotatedAt":"2025-05-09T11:28:04.692Z","timestamp":"2025-05-09T11:28:04.692Z"}
+{"level":"info","message":"Refresh token successful, IP: ${req.ip}","timestamp":"2025-05-09T11:28:04.694Z"}
+{"level":"info","message":"User disconnected: superadmin@example.com","reason":"client namespace disconnect","socketId":"vpWyLlOGN1iNwkxYAAAN","timestamp":"2025-05-09T11:28:04.729Z"}
+{"level":"info","message":"Client disconnected","socketId":"vpWyLlOGN1iNwkxYAAAN","timestamp":"2025-05-09T11:28:04.737Z"}
+{"email":"superadmin@example.com","level":"info","message":"WebSocket authentication successful","roles":"default-roles-traceflow, Super Admin, uma_authorization","socketId":"Gu89ct67EJGZVWhsAAAQ","timestamp":"2025-05-09T11:28:04.872Z","userID":"user_4wnd9m7jl"}
+{"level":"info","message":"User connected: superadmin@example.com","socketId":"Gu89ct67EJGZVWhsAAAQ","timestamp":"2025-05-09T11:28:04.874Z","userID":"user_4wnd9m7jl"}
+{"level":"info","message":"Client connected","socketId":"Gu89ct67EJGZVWhsAAAQ","timestamp":"2025-05-09T11:28:04.877Z"}
+{"level":"info","message":"Super Admin bypass for user user_4wnd9m7jl","timestamp":"2025-05-09T11:34:10.910Z"}
+{"level":"info","message":"Fetched all roles by user user_4wnd9m7jl, IP: 192.168.5.253","timestamp":"2025-05-09T11:34:10.951Z"}
+{"level":"info","message":"Keycloak session invalidated","timestamp":"2025-05-09T11:36:03.323Z"}
+{"IP":"192.168.5.253","cookies":["accessToken","refreshToken","userData"],"level":"info","message":"Cookies cleared on logout","timestamp":"2025-05-09T11:36:03.325Z"}
+{"IP":"192.168.5.253","level":"info","message":"User logged out successfully","timestamp":"2025-05-09T11:36:03.327Z"}
+{"level":"info","message":"User disconnected: superadmin@example.com","reason":"client namespace disconnect","socketId":"Gu89ct67EJGZVWhsAAAQ","timestamp":"2025-05-09T11:36:03.342Z"}
+{"level":"info","message":"Client disconnected","socketId":"Gu89ct67EJGZVWhsAAAQ","timestamp":"2025-05-09T11:36:03.391Z"}
+{"level":"info","message":"Login successful for superadmin@example.com, IP: 192.168.5.253","timestamp":"2025-05-09T11:53:53.860Z"}
+{"level":"info","message":"Login successful for superadmin@example.com, IP: 192.168.5.253","timestamp":"2025-05-09T11:53:54.301Z"}
+{"level":"info","message":"Fetched roles for user user_4wnd9m7jl by user_4wnd9m7jl, IP: 192.168.5.253","timestamp":"2025-05-09T11:53:54.366Z"}
+{"email":"superadmin@example.com","level":"info","message":"WebSocket authentication successful","roles":"default-roles-traceflow, Super Admin, uma_authorization","socketId":"2p1zKFTmDtuBEoIRAAAS","timestamp":"2025-05-09T11:53:54.383Z","userID":"user_4wnd9m7jl"}
+{"level":"info","message":"User connected: superadmin@example.com","socketId":"2p1zKFTmDtuBEoIRAAAS","timestamp":"2025-05-09T11:53:54.387Z","userID":"user_4wnd9m7jl"}
+{"level":"info","message":"Client connected","socketId":"2p1zKFTmDtuBEoIRAAAS","timestamp":"2025-05-09T11:53:54.389Z"}
+{"level":"info","message":"Fetched roles for user user_4wnd9m7jl by user_4wnd9m7jl, IP: 192.168.5.253","timestamp":"2025-05-09T11:53:54.520Z"}
+{"level":"info","message":"Super Admin bypass for user user_4wnd9m7jl","timestamp":"2025-05-09T11:53:56.108Z"}
+{"level":"info","message":"Fetched all roles by user user_4wnd9m7jl, IP: 192.168.5.253","timestamp":"2025-05-09T11:53:56.151Z"}
+{"level":"info","message":"Keycloak session invalidated","timestamp":"2025-05-09T11:54:17.195Z"}
+{"IP":"192.168.5.253","cookies":["accessToken","refreshToken","userData"],"level":"info","message":"Cookies cleared on logout","timestamp":"2025-05-09T11:54:17.197Z"}
+{"IP":"192.168.5.253","level":"info","message":"User logged out successfully","timestamp":"2025-05-09T11:54:17.199Z"}
+{"level":"info","message":"User disconnected: superadmin@example.com","reason":"client namespace disconnect","socketId":"2p1zKFTmDtuBEoIRAAAS","timestamp":"2025-05-09T11:54:17.221Z"}
+{"level":"info","message":"Client disconnected","socketId":"2p1zKFTmDtuBEoIRAAAS","timestamp":"2025-05-09T11:54:17.259Z"}
+{"level":"info","message":"Login successful for superadmin@example.com, IP: 192.168.5.253","timestamp":"2025-05-09T11:56:49.335Z"}
+{"level":"info","message":"Login successful for superadmin@example.com, IP: 192.168.5.253","timestamp":"2025-05-09T11:56:49.781Z"}
+{"email":"superadmin@example.com","level":"info","message":"WebSocket authentication successful","roles":"default-roles-traceflow, Super Admin, uma_authorization","socketId":"XxtxAb3c3lk39RlDAAAU","timestamp":"2025-05-09T11:56:49.878Z","userID":"user_4wnd9m7jl"}
+{"level":"info","message":"User connected: superadmin@example.com","socketId":"XxtxAb3c3lk39RlDAAAU","timestamp":"2025-05-09T11:56:49.885Z","userID":"user_4wnd9m7jl"}
+{"level":"info","message":"Client connected","socketId":"XxtxAb3c3lk39RlDAAAU","timestamp":"2025-05-09T11:56:49.891Z"}
+{"level":"info","message":"Fetched roles for user user_4wnd9m7jl by user_4wnd9m7jl, IP: 192.168.5.253","timestamp":"2025-05-09T11:56:49.909Z"}
+{"level":"info","message":"Fetched roles for user user_4wnd9m7jl by user_4wnd9m7jl, IP: 192.168.5.253","timestamp":"2025-05-09T11:56:50.122Z"}
+{"level":"info","message":"Fetched notifications for user: user_4wnd9m7jl, IP: 192.168.5.253","timestamp":"2025-05-09T11:56:53.140Z"}
+{"level":"info","message":"Super Admin bypass for user user_4wnd9m7jl","timestamp":"2025-05-09T11:59:09.799Z"}
+{"level":"info","message":"Fetched all users by user user_4wnd9m7jl, IP: 192.168.5.253","timestamp":"2025-05-09T11:59:09.952Z"}
+{"level":"info","message":"Super Admin bypass for user user_4wnd9m7jl","timestamp":"2025-05-09T11:59:13.266Z"}
+{"level":"info","message":"Super Admin bypass for user user_4wnd9m7jl","timestamp":"2025-05-09T11:59:13.272Z"}
+{"level":"info","message":"Fetched supervisors for user usr_wd9D0cWoZTZhatef1MjAg","timestamp":"2025-05-09T11:59:13.281Z"}
+{"level":"info","message":"Fetched supervisors for user usr_wd9D0cWoZTZhatef1MjAg by user user_4wnd9m7jl, IP: 192.168.5.253","timestamp":"2025-05-09T11:59:13.283Z"}
+{"level":"info","message":"Fetched regional managers for user usr_wd9D0cWoZTZhatef1MjAg","timestamp":"2025-05-09T11:59:13.294Z"}
+{"level":"info","message":"Fetched regional managers for user usr_wd9D0cWoZTZhatef1MjAg by user user_4wnd9m7jl, IP: 192.168.5.253","timestamp":"2025-05-09T11:59:13.304Z"}
+{"level":"info","message":"Super Admin bypass for user user_4wnd9m7jl","timestamp":"2025-05-09T11:59:13.695Z"}
+{"level":"info","message":"Fetched user usr_wd9D0cWoZTZhatef1MjAg by user user_4wnd9m7jl, IP: 192.168.5.253","timestamp":"2025-05-09T11:59:13.732Z"}
+{"level":"info","message":"Fetched permission overrides for user usr_wd9D0cWoZTZhatef1MjAg by user_4wnd9m7jl, IP: 192.168.5.253","timestamp":"2025-05-09T11:59:15.197Z"}
+{"level":"info","message":"Super Admin bypass for user user_4wnd9m7jl","timestamp":"2025-05-09T11:59:15.209Z"}
+{"level":"info","message":"Fetched all permissions by user user_4wnd9m7jl, IP: 192.168.5.253","timestamp":"2025-05-09T11:59:15.219Z"}
+{"level":"info","message":"Cleaning up expired OTPs","timestamp":"2025-05-09T12:00:00.044Z"}
+{"level":"info","message":"Cleaned up 0 expired OTPs","timestamp":"2025-05-09T12:00:00.223Z"}
+{"level":"info","message":"Updated 0 visits from pending to validated","timestamp":"2025-05-09T12:00:00.236Z"}
+{"level":"info","message":"Super Admin bypass for user user_4wnd9m7jl","timestamp":"2025-05-09T12:01:26.425Z"}
+{"level":"info","message":"Fetched all permissions by user user_4wnd9m7jl, IP: 192.168.5.253","timestamp":"2025-05-09T12:01:26.458Z"}
+{"level":"info","message":"Fetched permission overrides for user usr_wd9D0cWoZTZhatef1MjAg by user_4wnd9m7jl, IP: 192.168.5.253","timestamp":"2025-05-09T12:01:26.491Z"}
+{"level":"info","message":"Super Admin bypass for user user_4wnd9m7jl","timestamp":"2025-05-09T12:01:43.148Z"}
+{"level":"info","message":"Fetched notification rules by user: user_4wnd9m7jl, IP: 192.168.5.253","timestamp":"2025-05-09T12:01:43.162Z"}
+{"level":"info","message":"Super Admin bypass for user user_4wnd9m7jl","timestamp":"2025-05-09T12:01:43.191Z"}
+{"level":"info","message":"Fetched notification rules by user: user_4wnd9m7jl, IP: 192.168.5.253","timestamp":"2025-05-09T12:01:43.207Z"}
+{"level":"info","message":"Super Admin bypass for user user_4wnd9m7jl","timestamp":"2025-05-09T12:02:15.779Z"}
+{"level":"info","message":"Super Admin bypass for user user_4wnd9m7jl","timestamp":"2025-05-09T12:02:15.788Z"}
+{"level":"info","message":"Fetched all roles by user user_4wnd9m7jl, IP: 192.168.5.253","timestamp":"2025-05-09T12:02:15.827Z"}
+{"level":"info","message":"Fetched all users by user user_4wnd9m7jl, IP: 192.168.5.253","timestamp":"2025-05-09T12:02:15.864Z"}
+{"level":"info","message":"Fetched notification types for user: user_4wnd9m7jl, IP: 192.168.5.253","timestamp":"2025-05-09T12:04:07.435Z"}
+{"level":"info","message":"Fetched notification preferences for user: user_4wnd9m7jl, IP: 192.168.5.253","timestamp":"2025-05-09T12:04:07.444Z"}
+{"level":"info","message":"Fetched profile for user user_4wnd9m7jl, IP: 192.168.5.253","timestamp":"2025-05-09T12:04:07.467Z"}
+{"level":"info","message":"Fetched notifications for user: user_4wnd9m7jl, IP: 192.168.5.253","timestamp":"2025-05-09T12:04:10.453Z"}
+{"level":"info","message":"User disconnected: superadmin@example.com","reason":"transport close","socketId":"XxtxAb3c3lk39RlDAAAU","timestamp":"2025-05-09T12:08:27.131Z"}
+{"level":"info","message":"Client disconnected","socketId":"XxtxAb3c3lk39RlDAAAU","timestamp":"2025-05-09T12:19:46.813Z"}
+{"level":"info","message":"Cleaning up expired OTPs","timestamp":"2025-05-09T16:00:00.893Z"}
+{"level":"info","message":"Cleaned up 0 expired OTPs","timestamp":"2025-05-09T16:00:01.016Z"}
+{"level":"info","message":"Updated 0 visits from pending to validated","timestamp":"2025-05-09T16:00:01.025Z"}
