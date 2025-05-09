@@ -1,6 +1,5 @@
 const axios = require('axios');
 const { Permission, Role, User, UserPermissionOverride } = require('../models');
-const logger = require('../utils/logger');
 require('dotenv').config();
 
 // Keycloak configuration
@@ -49,7 +48,6 @@ class PermissionService {
             });
             return permissions;
         } catch (error) {
-            logger.error(`Fetch permissions error: ${error.message}`, { ip: null });
             throw new Error('Could not fetch permissions.');
         }
     }
@@ -62,7 +60,6 @@ class PermissionService {
             if (!permission) throw new Error('Permission not found.');
             return permission;
         } catch (error) {
-            logger.error(`Get permission error: ${error.message}`, { ip: null });
             throw new Error(error.message || 'Could not fetch permission.');
         }
     }
@@ -101,7 +98,6 @@ class PermissionService {
 
             return permission;
         } catch (error) {
-            logger.error(`Update permission error: ${error.message}, user: ${actorID}`, { ip: null });
             throw new Error(error.message || 'Could not update permission.');
         }
     }
@@ -124,7 +120,6 @@ class PermissionService {
 
             // Validate that normalizedPermissionIDs is not empty
             if (!normalizedPermissionIDs.length) {
-                logger.warn(`No valid permission IDs provided for role ${roleID}, user: ${actorID}`);
                 throw new Error('No valid permission IDs provided.');
             }
 
@@ -133,7 +128,6 @@ class PermissionService {
                 where: { permissionID: normalizedPermissionIDs },
             });
             if (permissions.length !== normalizedPermissionIDs.length) {
-                logger.warn(`One or more permissions not found: Expected ${normalizedPermissionIDs.length}, found ${permissions.length}, user: ${actorID}`);
                 throw new Error('One or more permissions not found.');
             }
 
@@ -149,11 +143,43 @@ class PermissionService {
             }
 
             // Get or create role policy in Keycloak
-            // ... (rest of the Keycloak policy and resource fetching logic remains unchanged)
+            const rolePolicyResponse = await axios.get(
+                `${KEYCLOAK_URL}/admin/realms/${REALM}/clients/${clientUUID}/authz/resource-server/policy/role?name=${role.name}-policy`,
+                { headers: { Authorization: `Bearer ${token}` } }
+            );
+            const rolePolicyID = rolePolicyResponse.data[0]?.id;
+            if (!rolePolicyID) {
+                const rolePolicy = await axios.post(
+                    `${KEYCLOAK_URL}/admin/realms/${REALM}/clients/${clientUUID}/authz/resource-server/policy/role`,
+                    { name: `${role.name}-policy`, description: `Policy for ${role.name} role` },
+                    { headers: { Authorization: `Bearer ${token}` } }
+                );
+                await axios.post(
+                    `${KEYCLOAK_URL}/admin/realms/${REALM}/clients/${clientUUID}/authz/resource-server/policy/role/${rolePolicy.data.id}/permission`,
+                    { permissions: normalizedPermissionIDs },
+                    { headers: { Authorization: `Bearer ${token}` } }
+                );
+            }
 
             // Process each permission
             for (const perm of permissions) {
-                // ... (rest of the loop for Keycloak updates)
+                const permissionPolicyResponse = await axios.get(
+                    `${KEYCLOAK_URL}/admin/realms/${REALM}/clients/${clientUUID}/authz/resource-server/policy/permission?name=${perm.name}-policy`,
+                    { headers: { Authorization: `Bearer ${token}` } }
+                );
+                const permissionPolicyID = permissionPolicyResponse.data[0]?.id;
+                if (!permissionPolicyID) {
+                    const permissionPolicy = await axios.post(
+                        `${KEYCLOAK_URL}/admin/realms/${REALM}/clients/${clientUUID}/authz/resource-server/policy/permission`,
+                        { name: `${perm.name}-policy`, description: `Policy for ${perm.name} permission` },
+                        { headers: { Authorization: `Bearer ${token}` } }
+                    );
+                    await axios.post(
+                        `${KEYCLOAK_URL}/admin/realms/${REALM}/clients/${clientUUID}/authz/resource-server/policy/permission/${permissionPolicy.data.id}/role`,
+                        { roles: [role.name] },
+                        { headers: { Authorization: `Bearer ${token}` } }
+                    );
+                }
             }
 
             // Update local DB
@@ -170,7 +196,6 @@ class PermissionService {
                 totalAssigned: (await role.getPermissions()).length,
             };
         } catch (error) {
-            logger.error(`Assign permissions error: ${error.message}, user: ${actorID}`, { ip: null });
             throw new Error(error.message || 'Could not assign permissions.');
         }
     }
@@ -187,7 +212,6 @@ class PermissionService {
             for (const permissionID of permissionIDs) {
                 const permission = await Permission.findByPk(permissionID);
                 if (!permission) {
-                    logger.warn(`Permission with ID ${permissionID} not found, skipping revocation for role ${role.name}`);
                     continue;
                 }
 
@@ -249,7 +273,6 @@ class PermissionService {
 
             return results.length === 1 ? results[0] : results;
         } catch (error) {
-            logger.error(`Revoke permissions error: ${error.message}, user: ${actorID}`, { ip: null });
             throw new Error(error.message || 'Could not revoke permissions.');
         }
     }
@@ -268,7 +291,6 @@ class PermissionService {
             if (!role) throw new Error('Role not found.');
             return role.Permissions;
         } catch (error) {
-            logger.error(`Get role permissions error: ${error.message}`, { ip: null });
             throw new Error(error.message || 'Could not fetch role permissions.');
         }
     }
@@ -339,7 +361,6 @@ class PermissionService {
             return override;
         } catch (error) {
             await transaction.rollback();
-            logger.error(`Add permission override error: ${error.message}, user: ${actorID}`, { ip: null });
             throw new Error(error.message || 'Could not add permission override.');
         }
     }
@@ -398,7 +419,6 @@ class PermissionService {
             return { message: 'Override removed successfully.' };
         } catch (error) {
             await transaction.rollback();
-            logger.error(`Remove permission override error: ${error.message}, user: ${actorID}`, { ip: null });
             throw new Error(error.message || 'Could not remove override.');
         }
     }
@@ -441,7 +461,6 @@ class PermissionService {
             }
             return effectivePermissions;
         } catch (error) {
-            logger.error(`Get effective permissions error: ${error.message}`, { ip: null });
             throw new Error(error.message || 'Could not fetch effective permissions.');
         }
     }
@@ -454,7 +473,6 @@ class PermissionService {
             if (!user) throw new Error('User not found.');
             return user.UserPermissionOverrides;
         } catch (error) {
-            logger.error(`Get permission overrides error: ${error.message}`, { ip: null });
             throw new Error(error.message || 'Could not fetch permission overrides.');
         }
     }

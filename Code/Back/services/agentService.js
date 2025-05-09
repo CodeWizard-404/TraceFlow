@@ -8,9 +8,7 @@ const Role = require('../models').Role;
 const Delegation = require('../models').Delegation;
 const Governorate = require('../models').Governorate;
 const CsvHeader = require('../models').CsvHeader;
-const LocationService = require('./locationsService');
 const UserService = require('./userService');
-const logger = require('../utils/logger');
 
 class AgentService {
     /**
@@ -103,7 +101,6 @@ class AgentService {
             });
             return { success: true, agent };
         } catch (error) {
-            logger.error(`Create agent error: ${error.message}, user: ${actorID}`);
             return { success: false, message: 'Unable to create agent' };
         }
     }
@@ -135,7 +132,6 @@ class AgentService {
             });
             return agents || [];
         } catch (error) {
-            logger.error(`Get all agents error: ${error.message}`);
             return [];
         }
     }
@@ -148,7 +144,6 @@ class AgentService {
     static async getAgentById(id) {
         const validation = this.validateInput({ agentID: id });
         if (!validation.isValid) {
-            logger.warn(`Invalid agentID: ${id}`);
             return null;
         }
 
@@ -174,7 +169,6 @@ class AgentService {
             });
             return agent || null;
         } catch (error) {
-            logger.error(`Get agent by ID error: ${error.message}`);
             return null;
         }
     }
@@ -250,7 +244,6 @@ class AgentService {
             });
             return { success: true, agent };
         } catch (error) {
-            logger.error(`Update agent error: ${error.message}, user: ${actorID}`);
             return { success: false, message: 'Unable to update agent' };
         }
     }
@@ -276,7 +269,6 @@ class AgentService {
             await agent.destroy();
             return { success: true, message: 'Agent deleted successfully' };
         } catch (error) {
-            logger.error(`Delete agent error: ${error.message}, user: ${actorID}`);
             return { success: false, message: 'Unable to delete agent' };
         }
     }
@@ -289,7 +281,6 @@ class AgentService {
     static async getAgentByPhone(phone) {
         const validation = this.validateInput({ phone });
         if (!validation.isValid) {
-            logger.warn(`Invalid phone: ${phone}`);
             return null;
         }
 
@@ -316,7 +307,6 @@ class AgentService {
             });
             return agent || null;
         } catch (error) {
-            logger.error(`Get agent by phone error: ${error.message}`);
             return null;
         }
     }
@@ -329,7 +319,6 @@ class AgentService {
     static async getAgentsByDelegation(delegationID) {
         const validation = this.validateInput({ delegationID });
         if (!validation.isValid) {
-            logger.warn(`Invalid delegationID: ${delegationID}`);
             return [];
         }
 
@@ -361,7 +350,6 @@ class AgentService {
             });
             return agents || [];
         } catch (error) {
-            logger.error(`Get agents by delegation error: ${error.message}, delegationID: ${delegationID}`);
             return [];
         }
     }
@@ -383,7 +371,6 @@ class AgentService {
             });
             return [...new Set(delegations.map(delegation => delegation.name))] || [];
         } catch (error) {
-            logger.error(`Get unique locations error: ${error.message}`);
             return [];
         }
     }
@@ -396,7 +383,6 @@ class AgentService {
     static async getAgentSupervisor(agentID) {
         const validation = this.validateInput({ agentID });
         if (!validation.isValid) {
-            logger.warn(`Invalid agentID: ${agentID}`);
             return null;
         }
 
@@ -413,7 +399,6 @@ class AgentService {
             });
             return agent?.Supervisor || null;
         } catch (error) {
-            logger.error(`Get agent supervisor error: ${error.message}`);
             return null;
         }
     }
@@ -426,7 +411,6 @@ class AgentService {
     static async getAgentsBySupervisor(supervisorID) {
         const validation = this.validateInput({ supervisorID });
         if (!validation.isValid) {
-            logger.warn(`Invalid supervisorID: ${supervisorID}`);
             return [];
         }
 
@@ -460,7 +444,6 @@ class AgentService {
             });
             return agents || [];
         } catch (error) {
-            logger.error(`Get agents by supervisor error: ${error.message}`);
             return [];
         }
     }
@@ -473,7 +456,6 @@ class AgentService {
     static async getAgentsByUser(userID) {
         const validation = this.validateInput({ userID });
         if (!validation.isValid) {
-            logger.warn(`Invalid userID: ${userID}`);
             return [];
         }
 
@@ -507,7 +489,6 @@ class AgentService {
             });
             return agents || [];
         } catch (error) {
-            logger.error(`Get agents by user error: ${error.message}, userID: ${userID}`);
             return [];
         }
     }
@@ -520,7 +501,6 @@ class AgentService {
     static async getUserByAgent(agentID) {
         const validation = this.validateInput({ agentID });
         if (!validation.isValid) {
-            logger.warn(`Invalid agentID: ${agentID}`);
             return null;
         }
 
@@ -537,7 +517,6 @@ class AgentService {
             });
             return agent?.Supervisor || null;
         } catch (error) {
-            logger.error(`Get user by agent error: ${error.message}, agentID: ${agentID}`);
             return null;
         }
     }
@@ -566,23 +545,18 @@ class AgentService {
             },
         };
 
-        // Log buffer details
-        logger.info(`Received file buffer length: ${fileBuffer.length} bytes`);
 
         // Attempt to decode buffer
         let bufferString;
         try {
             bufferString = fileBuffer.toString(process.env.CSV_ENCODING || 'utf8');
             if (bufferString.includes('\uFFFD')) {
-                logger.warn(`Detected replacement character (�) in ${process.env.CSV_ENCODING || 'utf8'} decode, attempting fallback encoding`);
                 bufferString = iconv.decode(fileBuffer, process.env.CSV_FALLBACK_ENCODING || 'win1252');
             }
         } catch (error) {
-            logger.warn(`Conversion with ${process.env.CSV_ENCODING || 'utf8'} failed: ${error.message}, attempting fallback encoding`);
             try {
                 bufferString = iconv.decode(fileBuffer, process.env.CSV_FALLBACK_ENCODING || 'win1252');
             } catch (fallbackError) {
-                logger.error(`Fallback encoding conversion error: ${fallbackError.message}`);
                 results.detailedLog.errors.push({
                     agentPhone: 'N/A',
                     agentName: 'N/A',
@@ -858,7 +832,6 @@ class AgentService {
                 await transaction.commit();
             } catch (error) {
                 await transaction.rollback();
-                logger.error(`Processing error for agent with phone ${phone}: ${error.message}`);
                 results.detailedLog.errors.push({
                     agentPhone: phone || 'N/A',
                     agentName: `${firstname || ''} ${lastname || ''}`.trim() || 'Unnamed',
@@ -877,8 +850,6 @@ class AgentService {
                 ? 'completed_with_issues'
                 : 'failed');
 
-        // Log summary
-        logger.info(`CSV processing completed: ${JSON.stringify(results.summary)}`);
 
         return results;
     }

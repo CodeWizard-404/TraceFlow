@@ -1,7 +1,6 @@
 const axios = require('axios');
 const { Role, Permission, User } = require('../models');
 const PermissionService = require('./permissionService');
-const logger = require('../utils/logger');
 const { migratePoliciesToKeycloak } = require('../scripts/migratePo');
 const { migratePermissionsToKeycloak: migrateResourcesToKeycloak } = require('../scripts/migrateRe');
 const { migratePermissionsToKeycloak } = require('../scripts/migratePe');
@@ -26,7 +25,6 @@ const RESTRICTED_ROLES = [
 // Get admin token for Keycloak
 async function getAdminToken() {
     try {
-        logger.debug(`Attempting Keycloak authentication with user: ${process.env.KEYCLOAK_ADMIN_USER}`);
         const response = await axios.post(
             `${KEYCLOAK_URL}/realms/master/protocol/openid-connect/token`,
             new URLSearchParams({
@@ -40,7 +38,6 @@ async function getAdminToken() {
         return response.data.access_token;
     } catch (error) {
         const errorDetails = error.response?.data?.error_description || error.message;
-        logger.error(`Keycloak authentication failed: ${errorDetails}`);
         throw new Error(`Could not authenticate with Keycloak: ${errorDetails}`);
     }
 }
@@ -56,7 +53,6 @@ async function getClientUUID(token) {
         if (!client) throw new Error('Client not found.');
         return client.id;
     } catch (error) {
-        logger.error(`Failed to fetch client UUID: ${error.message}`);
         throw new Error('Could not find client in Keycloak.');
     }
 }
@@ -115,7 +111,6 @@ class RoleService {
 
             return role;
         } catch (error) {
-            logger.error(`Create role error: ${error.message}, user: ${actorID}`, { ip: null });
             throw new Error(error.message || 'Could not create role.');
         }
     }
@@ -135,7 +130,6 @@ class RoleService {
             });
             return roles;
         } catch (error) {
-            logger.error(`Fetch roles error: ${error.message}`, { ip: null });
             throw new Error('Could not fetch roles.');
         }
     }
@@ -155,7 +149,6 @@ class RoleService {
             if (!role) throw new Error('Role not found.');
             return role;
         } catch (error) {
-            logger.error(`Get role error: ${error.message}`, { ip: null });
             throw new Error(error.message || 'Could not fetch role.');
         }
     }
@@ -191,7 +184,6 @@ class RoleService {
 
             return role;
         } catch (error) {
-            logger.error(`Update role error: ${error.message}, user: ${actorID}`, { ip: null });
             throw new Error(error.message || 'Could not update role.');
         }
     }
@@ -237,7 +229,6 @@ class RoleService {
 
             return { message: 'Role deleted successfully.' };
         } catch (error) {
-            logger.error(`Delete role error: ${error.message}, user: ${actorID}`, { ip: null });
             throw new Error(error.message || 'Could not delete role.');
         }
     }
@@ -284,7 +275,6 @@ class RoleService {
                 totalAssigned: (await user.getRoles()).length,
             };
         } catch (error) {
-            logger.error(`Assign roles error: ${error.message}, user: ${actorID}`, { ip: null });
             throw new Error(error.message || 'Could not assign roles.');
         }
     }
@@ -330,7 +320,6 @@ class RoleService {
 
             return results.length === 1 ? results[0] : results;
         } catch (error) {
-            logger.error(`Revoke roles error: ${error.message}, user: ${actorID}`, { ip: null });
             throw new Error(error.message || 'Could not revoke roles.');
         }
     }
@@ -357,7 +346,6 @@ class RoleService {
             if (!user) throw new Error('User not found.');
             return user.Roles;
         } catch (error) {
-            logger.error(`Get user roles error: ${error.message}`, { ip: null });
             throw new Error(error.message || 'Could not fetch user roles.');
         }
     }
@@ -369,16 +357,11 @@ class RoleService {
             const clientUUID = await getClientUUID(token);
 
             // Step 1: Run migration scripts to reset resources, policies, and permissions in Keycloak
-            logger.info('Starting Keycloak migrations for resources, policies, and permissions...');
             try {
                 await migrateResourcesToKeycloak();
-                logger.info('Keycloak resources migration completed.');
                 await migratePoliciesToKeycloak();
-                logger.info('Keycloak policies migration completed.');
                 await migratePermissionsToKeycloak();
-                logger.info('Keycloak permissions migration completed.');
             } catch (migrationError) {
-                logger.error(`Keycloak migration failed: ${migrationError.message}`);
                 throw new Error(`Could not complete Keycloak migrations: ${migrationError.message}`);
             }
 
@@ -899,9 +882,7 @@ class RoleService {
                         (p) => !allPermissionNames.includes(p)
                     );
                     if (invalidPermissions.length > 0) {
-                        logger.warn(
-                            `Invalid permissions for role ${defaultRole.name}: ${invalidPermissions.join(', ')}`
-                        );
+                        throw new Error(`Invalid permission name(s) in role '${defaultRole.name}': ${invalidPermissions.join(', ')}`);
                     }
                 }
             }
@@ -936,7 +917,6 @@ class RoleService {
                     );
                     keycloakRoleId = keycloakRole.data.id;
                 }
-                logger.debug(`Processing role ${defaultRole.name} with Keycloak ID ${keycloakRoleId}`);
 
                 // Update local DB permissions
                 let permissionIDsToAssign =
@@ -957,9 +937,6 @@ class RoleService {
                     .map((p) => p.permissionID)
                     .filter((id) => {
                         const isValid = allPermissions.some((perm) => perm.permissionID === id);
-                        if (!isValid) {
-                            logger.warn(`Invalid permission ID ${id} detected during revocation for role ${defaultRole.name}`);
-                        }
                         return isValid;
                     });
 
@@ -967,7 +944,6 @@ class RoleService {
                     try {
                         await PermissionService.revokePermissionsFromRole(role.roleID, permissionsToRevoke, actorID);
                     } catch (error) {
-                        logger.error(`Failed to revoke permissions for role ${defaultRole.name}: ${error.message}, permissions: ${JSON.stringify(permissionsToRevoke)}`);
                     }
                 }
 
@@ -975,9 +951,6 @@ class RoleService {
                     .filter((id) => !currentPermissionIDs.includes(id))
                     .filter((id) => {
                         const isValid = allPermissions.some((perm) => perm.permissionID === id);
-                        if (!isValid) {
-                            logger.warn(`Invalid permission ID ${id} detected during assignment for role ${defaultRole.name}`);
-                        }
                         return isValid;
                     });
 
@@ -987,7 +960,7 @@ class RoleService {
                         const dummyUser = { roles: ['Super Admin'] };
                         await PermissionService.assignPermissionsToRole(dummyUser, role.roleID, permissionsToAssign, actorID);
                     } catch (error) {
-                        logger.error(`Failed to assign permissions for role ${defaultRole.name}: ${error.message}, permissions: ${JSON.stringify(permissionsToAssign)}`);
+                        throw new Error(error.message);
                     }
                 }
 
@@ -996,7 +969,7 @@ class RoleService {
                     permissionsAssigned: permissionsToAssign.length,
                     permissionsRevoked: permissionsToRevoke.length,
                     keycloakPermissionsSynced: permissionIDsToAssign.length,
-                    keycloakPermissionsRemoved: 0, // Updated by migrations
+                    keycloakPermissionsRemoved: 0,
                     totalPermissions:
                         defaultRole.name === 'Super Admin'
                             ? allPermissions.length
@@ -1006,7 +979,6 @@ class RoleService {
 
             return results;
         } catch (error) {
-            logger.error(`Reset roles error: ${error.message}, user: ${actorID}`, { ip: null });
             throw new Error(error.message || 'Could not reset roles.');
         }
     }

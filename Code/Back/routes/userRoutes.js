@@ -43,10 +43,6 @@ router.post('/revoke-delegations', requirePermission('revoke_delegations'), User
 
 
 // Users fetching routes
-router.get('/:userID/regions', requirePermission('access_regions_by_user'), UserController.getRegionsByUser);
-router.get('/:userID/governorates', requirePermission('access_governorates_by_user'), UserController.getGovernoratesByUser);
-router.get('/:userID/delegations', requirePermission('access_delegations_by_user'), UserController.getDelegationsByUser);
-
 router.get('/region/:regionID/users', requirePermission('access_users_by_region'), UserController.getUsersByRegion);
 router.get('/governorate/:governorateID/users', requirePermission('access_users_by_governorate'), UserController.getUsersByGovernorate);
 router.get('/delegation/:delegationID/users', requirePermission('access_users_by_delegation'), UserController.getUsersByDelegation);
@@ -57,9 +53,6 @@ router.get('/regional-manager/:regionalManagerID/director', requirePermission('a
 router.get('/supervisor/:supervisorID/regional-manager', requirePermission('access_regional_manager_by_supervisor'), UserController.getRegionalManagerBySupervisor);
 
 
-
-// Google account assignment
-router.post('/:userID/google-account', requirePermission('assign_google_account'), UserController.assignGoogleAccount);
 
 // Profile management routes
 router.get('/profile', UserController.getProfile);

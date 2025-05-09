@@ -1,5 +1,4 @@
 const { Reason, Visit } = require('../models');
-const logger = require('../utils/logger');
 
 class ReasonService {
     static async createItem(text, actorID) {
@@ -7,7 +6,6 @@ class ReasonService {
             const reason = await Reason.create({ item: text });
             return reason;
         } catch (error) {
-            logger.error(`Create reason error: ${error.message}, user: ${actorID}`, { ip: null });
             throw new Error('Failed to create reason: ' + error.message);
         }
     }
@@ -24,7 +22,6 @@ class ReasonService {
             await item.save();
             return item;
         } catch (error) {
-            logger.error(`Update reason error: ${error.message}, user: ${actorID}`, { ip: null });
             throw error;
         }
     }
@@ -40,7 +37,6 @@ class ReasonService {
             await item.destroy();
             return item;
         } catch (error) {
-            logger.error(`Delete reason error: ${error.message}, user: ${actorID}`, { ip: null });
             throw error;
         }
     }
@@ -55,7 +51,6 @@ class ReasonService {
             }
             return item;
         } catch (error) {
-            logger.error(`Get reason error: ${error.message}`, { ip: null });
             throw error;
         }
     }
@@ -70,7 +65,6 @@ class ReasonService {
             }
             return items;
         } catch (error) {
-            logger.error(`Get reasons by IDs error: ${error.message}`, { ip: null });
             throw error;
         }
     }
@@ -85,7 +79,6 @@ class ReasonService {
             }
             return visit.Reasons;
         } catch (error) {
-            logger.error(`Get reasons by visit error: ${error.message}`, { ip: null });
             throw error;
         }
     }
@@ -94,7 +87,6 @@ class ReasonService {
         try {
             return await Reason.findAll();
         } catch (error) {
-            logger.error(`Get all reasons error: ${error.message}`, { ip: null });
             throw new Error('Failed to retrieve reasons: ' + error.message);
         }
     }

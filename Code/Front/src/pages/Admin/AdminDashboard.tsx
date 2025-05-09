@@ -1666,7 +1666,6 @@ const AdminDashboard: React.FC = React.memo(() => {
                             <EditAgent
                                 selectedAgent={selectedAgent}
                                 setAgents={setAgents}
-                                setError={setLocalError}
                                 setSelectedAgent={setSelectedAgent}
                                 setView={(view: string) => setView(view as ViewMode)}
                             />
@@ -1678,7 +1677,7 @@ const AdminDashboard: React.FC = React.memo(() => {
                                 agents={agents}
                                 setAgents={setAgents}
                                 view={view}
-                                setView={setView}
+                                setView={(view: string) => setView(view as ViewMode)}
                             />
                         )}
                         {view === "notifications" && (

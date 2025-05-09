@@ -1,6 +1,5 @@
 const axios = require('axios');
 const { User, Role, Permission } = require('../models');
-const logger = require('../utils/logger');
 require('dotenv').config();
 
 const ERROR_MESSAGES = {
@@ -10,14 +9,10 @@ const ERROR_MESSAGES = {
 };
 
 class GoogleAuthService {
-    static async getAuthUrl() {
-        throw new Error('Method deprecated. Use Keycloak OAuth URL directly.');
-    }
 
-    static async googleLogin(code, deviceIdentifier, res) {
+    static async googleLogin(code, res) {
         try {
             const keycloakBaseUrl = `${process.env.KEYCLOAK_URL}/realms/${process.env.REALM}`;
-            logger.info('Exchanging Keycloak authorization code', { code: code.substring(0, 10) + '...' });
 
             const tokenResponse = await axios.post(
                 `${keycloakBaseUrl}/protocol/openid-connect/token`,
@@ -32,22 +27,12 @@ class GoogleAuthService {
             );
 
             const { access_token, refresh_token, expires_in } = tokenResponse.data;
-            logger.info('Keycloak tokens received', {
-                access_token: access_token ? 'present' : 'missing',
-                refresh_token: refresh_token ? 'present' : 'missing',
-                expires_in,
-            });
 
             const userInfoResponse = await axios.get(
                 `${keycloakBaseUrl}/protocol/openid-connect/userinfo`,
                 { headers: { Authorization: `Bearer ${access_token}` } }
             );
             const userInfo = userInfoResponse.data;
-            logger.info('Keycloak user info retrieved', {
-                email: userInfo.email,
-                name: userInfo.name,
-                sub: userInfo.sub,
-            });
 
             const user = await User.findOne({
                 where: { email: userInfo.email },
@@ -67,14 +52,11 @@ class GoogleAuthService {
             });
 
             if (!user) {
-                logger.warn(`Google login failed: No user found with email ${userInfo.email}`);
                 throw Object.assign(new Error(ERROR_MESSAGES.USER_NOT_FOUND), { status: 404 });
             }
-            logger.info('User found in database', { userID: user.userID, keycloakId: user.keycloakId });
 
             if (!user.keycloakId || user.keycloakId !== userInfo.sub) {
                 await user.update({ keycloakId: userInfo.sub });
-                logger.info(`Updated keycloakId for user ${user.userID} to ${userInfo.sub}`);
             }
 
             const userData = {
@@ -99,13 +81,7 @@ class GoogleAuthService {
             };
 
             const jsonUserData = JSON.stringify(userData);
-            logger.info('Setting userData cookie', {
-                userID: user.userID,
-                cookieLength: jsonUserData.length,
-                cookiePreview: jsonUserData.substring(0, 50) + '...',
-                rawJson: jsonUserData.substring(0, 50) + '...',
-                cookieOptions,
-            });
+
 
             res.cookie('accessToken', access_token, { ...cookieOptions, httpOnly: true });
             res.cookie('refreshToken', refresh_token, {
@@ -115,10 +91,7 @@ class GoogleAuthService {
             });
             res.cookie('userData', jsonUserData, cookieOptions);
 
-            logger.info(`Google login successful for user ${user.userID}`, {
-                cookiesSet: ['accessToken', 'refreshToken', 'userData'],
-                userData: { userID: user.userID, email: user.email, roles: userData.Roles.map(r => r.name) },
-            });
+
 
             return {
                 user: userData,
@@ -126,11 +99,6 @@ class GoogleAuthService {
                 expiresIn: expires_in * 1000,
             };
         } catch (error) {
-            logger.error(`Google login error: ${error.message}`, {
-                status: error.response?.status,
-                data: error.response?.data,
-                stack: error.stack,
-            });
             const err = new Error(
                 error.message === ERROR_MESSAGES.KEYCLOAK_TOKEN_EXCHANGE_FAILED ||
                     error.message === ERROR_MESSAGES.USER_NOT_FOUND

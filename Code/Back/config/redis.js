@@ -1,61 +1,65 @@
 const Redis = require('ioredis');
-const logger = require('../utils/logger');
 require('dotenv').config();
+const logger = require('../utils/logger');
 
 let redisClient;
 
 async function initializeRedis() {
-    if (redisClient) {
+    if (redisClient && redisClient.status === 'ready') {
         return redisClient;
     }
 
     const redisConfig = {
         host: process.env.REDIS_HOST || '127.0.0.1',
-        port: process.env.REDIS_PORT || 6379,
+        port: parseInt(process.env.REDIS_PORT, 10) || 6379,
         password: process.env.REDIS_PASSWORD || undefined,
-        db: process.env.REDIS_DB || 0,
+        db: parseInt(process.env.REDIS_DB, 10) || 0,
         retryStrategy(times) {
             const delay = Math.min(times * 50, 2000); // Exponential backoff, max 2s
-            logger.warn(`Retrying Redis connection attempt ${times}, delay: ${delay}ms`);
+            logger.warn(`Redis connection attempt ${times}, retrying in ${delay}ms`);
             return delay;
         },
+        maxRetriesPerRequest: 20,
+        enableOfflineQueue: true,
     };
 
     redisClient = new Redis(redisConfig);
 
     redisClient.on('connect', () => {
-        logger.info('Connected to Redis successfully');
+        logger.info('Redis connected successfully', { service: 'redis' });
     });
 
     redisClient.on('error', (error) => {
-        logger.error(`Redis connection error: ${error.message}`);
+        logger.error('Redis connection error', { error: error.message, service: 'redis' });
     });
 
     redisClient.on('close', () => {
-        logger.warn('Redis connection closed');
+        logger.warn('Redis connection closed', { service: 'redis' });
     });
 
-    // Verify Redis client version
-    try {
-        const info = await redisClient.info();
-        logger.info(`Redis server info: ${info.split('\r\n')[0]}`);
-    } catch (error) {
-        logger.error(`Failed to fetch Redis server info: ${error.message}`);
-    }
+    redisClient.on('reconnecting', () => {
+        logger.info('Redis reconnecting', { service: 'redis' });
+    });
 
-    // Ensure the client is ready
     try {
         const pingResponse = await redisClient.ping();
         if (pingResponse !== 'PONG') {
             throw new Error('Redis ping failed: Invalid response');
         }
-        logger.info('Redis ping successful');
+        logger.info('Redis ping successful', { service: 'redis' });
     } catch (error) {
-        logger.error(`Redis ping failed: ${error.message}`);
-        throw new Error('Failed to initialize Redis');
+        logger.error('Failed to initialize Redis', { error: error.message, service: 'redis' });
+        throw error;
     }
 
     return redisClient;
 }
 
-module.exports = { initializeRedis };
+function getRedisClient() {
+    if (!redisClient) {
+        throw new Error('Redis client not initialized');
+    }
+    return redisClient;
+}
+
+module.exports = { initializeRedis, getRedisClient };

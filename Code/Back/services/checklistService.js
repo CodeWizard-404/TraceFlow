@@ -1,5 +1,4 @@
 const { Checklist, Visit, VisitChecklist } = require('../models');
-const logger = require('../utils/logger');
 
 class ChecklistService {
     static async createItem(text, actorID) {
@@ -7,7 +6,6 @@ class ChecklistService {
             const checklist = await Checklist.create({ item: text });
             return checklist;
         } catch (error) {
-            logger.error(`Create checklist error: ${error.message}, user: ${actorID}`, { ip: null });
             throw new Error('Failed to create checklist: ' + error.message);
         }
     }
@@ -24,7 +22,6 @@ class ChecklistService {
             await item.save();
             return item;
         } catch (error) {
-            logger.error(`Update checklist error: ${error.message}, user: ${actorID}`, { ip: null });
             throw error;
         }
     }
@@ -40,7 +37,6 @@ class ChecklistService {
             await item.destroy();
             return item;
         } catch (error) {
-            logger.error(`Delete checklist error: ${error.message}, user: ${actorID}`, { ip: null });
             throw error;
         }
     }
@@ -55,7 +51,6 @@ class ChecklistService {
             }
             return item;
         } catch (error) {
-            logger.error(`Get checklist error: ${error.message}`, { ip: null });
             throw error;
         }
     }
@@ -70,7 +65,6 @@ class ChecklistService {
             }
             return items;
         } catch (error) {
-            logger.error(`Get checklists by IDs error: ${error.message}`, { ip: null });
             throw error;
         }
     }
@@ -87,7 +81,6 @@ class ChecklistService {
             }
             return visit.Checklists;
         } catch (error) {
-            logger.error(`Get checklists by visit error: ${error.message}`, { ip: null });
             throw error;
         }
     }
@@ -106,7 +99,6 @@ class ChecklistService {
             await visitChecklist.save();
             return visitChecklist;
         } catch (error) {
-            logger.error(`Update checklist status error: ${error.message}`, { ip: null });
             throw new Error('Failed to update checklist: ' + error.message);
         }
     }
@@ -115,7 +107,6 @@ class ChecklistService {
         try {
             return await Checklist.findAll();
         } catch (error) {
-            logger.error(`Get all checklists error: ${error.message}`, { ip: null });
             throw new Error('Failed to retrieve checklists: ' + error.message);
         }
     }

@@ -4,7 +4,6 @@ const ChecklistService = require('./checklistService');
 const ReasonService = require('./reasonService');
 const path = require('path');
 const fs = require('fs');
-const logger = require('../utils/logger');
 const { sequelize } = require('../config/db');
 
 class VisitService {
@@ -40,10 +39,8 @@ class VisitService {
                 const createdChecklists = await ChecklistService.getItemsByIds(checklistIds);
                 await visit.setChecklists(createdChecklists);
             }
-            logger.info(`Visit created for agent ${agentID} by user ${actorID}`, { ip: null });
             return visit.reload({ include: [Reason, Checklist] });
         } catch (error) {
-            logger.error(`Create visit error: ${error.message}, user: ${actorID}`, { ip: null });
             const err = new Error('Failed to create visit: ' + error.message);
             err.status = error.status || 500;
             throw err;
@@ -83,7 +80,6 @@ class VisitService {
             }
             return { valid: true, message: 'Verification successful' };
         } catch (error) {
-            logger.error(`Verify QR code error: ${error.message}, user: ${actorID}`, { ip: null });
             const err = new Error(error.message);
             err.status = error.status || 500;
             throw err;
@@ -199,7 +195,6 @@ class VisitService {
                 try {
                     parsedChecklistUpdates = JSON.parse(checklistUpdates);
                 } catch (e) {
-                    logger.error(`Parse checklistUpdates error: ${e.message}, user: ${actorID}`, { ip: null });
                     const error = new Error('Invalid checklistUpdates format');
                     error.status = 400;
                     throw error;
@@ -231,7 +226,6 @@ class VisitService {
             return reloadedVisit;
         } catch (error) {
             await transaction.rollback();
-            logger.error(`Log visit error: ${error.message}, user: ${actorID}`, { ip: null });
             throw error;
         }
     }
@@ -263,7 +257,6 @@ class VisitService {
                 try {
                     photosArray = JSON.parse(photosToRemove);
                 } catch (e) {
-                    logger.error(`Parse photosToRemove error: ${e.message}, user: ${actorID}`, { ip: null });
                     photosArray = [];
                 }
             }
@@ -354,7 +347,6 @@ class VisitService {
                 try {
                     parsedChecklists = JSON.parse(checklists);
                 } catch (e) {
-                    logger.error(`Parse checklists error: ${e.message}, user: ${actorID}`, { ip: null });
                     parsedChecklists = [];
                 }
             }
@@ -363,7 +355,6 @@ class VisitService {
                 try {
                     parsedReasons = JSON.parse(reasons);
                 } catch (e) {
-                    logger.error(`Parse reasons error: ${e.message}, user: ${actorID}`, { ip: null });
                     parsedReasons = [];
                 }
             }
@@ -399,7 +390,6 @@ class VisitService {
             await visit.save();
             return visit.reload({ include: [Checklist, Reason] });
         } catch (error) {
-            logger.error(`Update visit error: ${error.message}, user: ${actorID}`, { ip: null });
             const err = new Error('Failed to update visit: ' + error.message);
             err.status = error.status || 500;
             throw err;
@@ -436,7 +426,6 @@ class VisitService {
             await visit.destroy();
             return { message: 'Visit and associated photos deleted successfully' };
         } catch (error) {
-            logger.error(`Delete visit error: ${error.message}, user: ${actorID}`, { ip: null });
             const err = new Error('Failed to delete visit: ' + error.message);
             err.status = error.status || 500;
             throw err;
@@ -453,7 +442,6 @@ class VisitService {
             }
             return visit;
         } catch (error) {
-            logger.error(`Get visit error: ${error.message}`, { ip: null });
             const err = new Error('Failed to fetch visit: ' + error.message);
             err.status = error.status || 500;
             throw err;

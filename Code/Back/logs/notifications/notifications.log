@@ -1,0 +1,2 @@
+{"timestamp":"2025-05-09 19:43:31.983","level":"info","message":"Request started: GET /api/notifications","isEncrypted":false,"traceId":"QGZ4nGzVr-mENmNChhHri","route":"notifications","service":"api","metadata":{"traceId":"sw5aaQEZKdbDrglXVlI1N","method":"GET","url":"/api/notifications"},"ip":"192.168.1.11"}
+{"timestamp":"2025-05-09 19:43:32.091","level":"info","message":"Request completed: GET /api/notifications","isEncrypted":false,"traceId":"SKbMvuUVHXVWsaagPEblW","route":"notifications","service":"api","metadata":{"traceId":"sw5aaQEZKdbDrglXVlI1N","status":200}}

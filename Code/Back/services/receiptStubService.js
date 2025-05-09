@@ -2,7 +2,6 @@ const { ReceiptBook, Agent, User, ReceiptStub, ReceiptBookTransfer } = require('
 const OTPService = require('./otpService');
 const { sendSMS } = require('../config/sms');
 const { transporter } = require('../config/smtp');
-const logger = require('../utils/logger');
 
 class ReceiptStubService {
     static async collectStub(bookIDs, userID) {
@@ -40,13 +39,9 @@ class ReceiptStubService {
                 agent.phone,
                 `Your OTP for stub collection of ${bookIDs.length} receipt books is ${otp.code}`
             );
-            if (!smsResult.success) {
-                logger.warn(`SMS notification failed for agent ${agentID}: ${smsResult.reason}`, { ip: null });
-            }
 
             return { message: `OTP sent to agent for ${bookIDs.length} books` };
         } catch (error) {
-            logger.error(`Collect stub error: ${error.message}, user: ${userID}`, { ip: null });
             throw error;
         }
     }
@@ -109,7 +104,6 @@ class ReceiptStubService {
 
             return { message: `${bookIDs.length} stubs collected` };
         } catch (error) {
-            logger.error(`Validate stub collection error: ${error.message}, user: ${supervisorID}`, { ip: null });
             throw error;
         }
     }
@@ -159,7 +153,6 @@ class ReceiptStubService {
 
             return { message: 'Stub archived' };
         } catch (error) {
-            logger.error(`Archive stub error: ${error.message}, user: ${stockManagerID}`, { ip: null });
             throw error;
         }
     }

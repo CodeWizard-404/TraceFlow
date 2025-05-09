@@ -1,6 +1,5 @@
 const { Visit, Reason, Checklist, Timesheet } = require('../models');
 const VisitService = require('./visitService');
-const logger = require('../utils/logger');
 
 class TimesheetService {
     static async createTimesheet(data, actorID) {
@@ -68,7 +67,6 @@ class TimesheetService {
                 ],
             });
         } catch (error) {
-            logger.error(`Create timesheet error: ${error.message}, user: ${actorID}`, { ip: null });
             const err = new Error('Failed to create timesheet: ' + error.message);
             err.status = error.status || 500;
             throw err;
@@ -120,7 +118,6 @@ class TimesheetService {
 
             return timesheet;
         } catch (error) {
-            logger.error(`Validate timesheet error: ${error.message}, user: ${actorID}`, { ip: null });
             const err = new Error(`Validation failed: ${error.message}`);
             err.status = error.status || 500;
             throw err;
@@ -142,7 +139,6 @@ class TimesheetService {
             });
             return timesheets;
         } catch (error) {
-            logger.error(`List timesheets error: ${error.message}`, { ip: null });
             const err = new Error('Failed to get timesheets: ' + error.message);
             err.status = 500;
             throw err;
@@ -169,7 +165,6 @@ class TimesheetService {
             }
             return timesheet;
         } catch (error) {
-            logger.error(`View timesheet error: ${error.message}`, { ip: null });
             const err = new Error('Failed to get timesheet: ' + error.message);
             err.status = error.status || 500;
             throw err;
@@ -197,7 +192,6 @@ class TimesheetService {
             });
             return timesheets;
         } catch (error) {
-            logger.error(`Get timesheets by supervisor error: ${error.message}`, { ip: null });
             const err = new Error('Failed to get timesheets by supervisorID: ' + error.message);
             err.status = 500;
             throw err;

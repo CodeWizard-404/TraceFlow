@@ -3,8 +3,6 @@ const { transporter } = require('../config/smtp');
 const { ReceiptBook, User, Agent, OTP, ReceiptBookTransfer, ReceiptStub, Role, ReceiptBookType } = require('../models');
 const OTPService = require('../services/otpService');
 const QRGenerator = require('../utils/qrGenerator');
-const logger = require('../utils/logger');
-const { Sequelize } = require('sequelize');
 
 class ReceiptBookService {
     // --- Type Management Methods ---
@@ -13,7 +11,6 @@ class ReceiptBookService {
             const type = await ReceiptBookType.create({ name });
             return type;
         } catch (error) {
-            logger.error(`Create receipt book type error: ${error.message}`);
             const err = new Error('Failed to create receipt book type: ' + error.message);
             err.status = 400;
             throw err;
@@ -28,7 +25,6 @@ class ReceiptBookService {
             });
             return await Promise.all(types.map(type => type.toJSON()));
         } catch (error) {
-            logger.error(`Get all receipt book types error: ${error.message}`);
             const err = new Error('Failed to retrieve receipt book types: ' + error.message);
             err.status = 500;
             throw err;
@@ -45,7 +41,6 @@ class ReceiptBookService {
             }
             return type;
         } catch (error) {
-            logger.error(`Get receipt book type error: ${error.message}`);
             throw error;
         }
     }
@@ -56,7 +51,6 @@ class ReceiptBookService {
             await type.update({ name });
             return type;
         } catch (error) {
-            logger.error(`Update receipt book type error: ${error.message}`);
             throw error;
         }
     }
@@ -73,7 +67,6 @@ class ReceiptBookService {
             await type.destroy();
             return { message: `Receipt book type ${type.name} deleted successfully` };
         } catch (error) {
-            logger.error(`Delete receipt book type error: ${error.message}`);
             throw error;
         }
     }
@@ -101,7 +94,6 @@ class ReceiptBookService {
 
             return book;
         } catch (error) {
-            logger.error(`Create receipt book error: ${error.message}, user: ${purchaseUserID}`, { ip: null });
             const err = new Error('Failed to create receipt book: ' + error.message);
             err.status = 400;
             throw err;
@@ -146,7 +138,6 @@ class ReceiptBookService {
 
             return book;
         } catch (error) {
-            logger.error(`Get receipt book error: ${error.message}`, { ip: null });
             throw error;
         }
     }
@@ -207,7 +198,6 @@ class ReceiptBookService {
 
             return enrichedBooks;
         } catch (error) {
-            logger.error(`Get all receipt books error: ${error.message}`, { ip: null });
             const err = new Error('Failed to retrieve receipt books: ' + error.message);
             err.status = 500;
             throw err;
@@ -238,7 +228,6 @@ class ReceiptBookService {
             delete bookData.ReceiptBookType;
             return bookData;
         } catch (error) {
-            logger.error(`Get receipt book by number error: ${error.message}`, { ip: null });
             throw error;
         }
     }
@@ -279,7 +268,6 @@ class ReceiptBookService {
             await book.update(updateData);
             return book;
         } catch (error) {
-            logger.error(`Update receipt book error: ${error.message}, user: ${userID}`, { ip: null });
             throw error;
         }
     }
@@ -304,7 +292,6 @@ class ReceiptBookService {
             ]);
             return { message: `Receipt Book #${book.number} deleted successfully` };
         } catch (error) {
-            logger.error(`Delete receipt book error: ${error.message}, user: ${userID}`, { ip: null });
             throw error;
         }
     }
@@ -336,7 +323,6 @@ class ReceiptBookService {
                 return bookData;
             });
         } catch (error) {
-            logger.error(`Get receipt books by holder error: ${error.message}`, { ip: null });
             throw error;
         }
     }
@@ -386,7 +372,6 @@ class ReceiptBookService {
 
             return { message: `${books.length} books sent to supplier` };
         } catch (error) {
-            logger.error(`Send to supplier error: ${error.message}, user: ${userID}`, { ip: null });
             throw error;
         }
     }
@@ -418,7 +403,6 @@ class ReceiptBookService {
 
             return { message: `${books.length} books collected from supplier` };
         } catch (error) {
-            logger.error(`Collect from supplier error: ${error.message}, user: ${userID}`, { ip: null });
             throw error;
         }
     }
@@ -460,11 +444,7 @@ class ReceiptBookService {
 
             const otp = await OTPService.generateOTP(recipientID, recipientType);
             const recipientPhone = recipient.phone || recipient.Agent?.phone;
-            const smsResult = await sendSMS(recipientPhone, `Your OTP for receiving ${bookIDs.length} receipt books is ${otp.code}`);
-
-            if (!smsResult.success) {
-                logger.warn(`Notification failed for ${recipientType} ${recipientID}: ${smsResult.reason}`, { ip: null });
-            }
+            await sendSMS(recipientPhone, `Your OTP for receiving ${bookIDs.length} receipt books is ${otp.code}`);
 
             await Promise.all(
                 books.map(book =>
@@ -474,7 +454,6 @@ class ReceiptBookService {
 
             return { message: `Transfer initiated for ${bookIDs.length} books to ${recipientType} ${recipientID}`, otpID: otp.otpID };
         } catch (error) {
-            logger.error(`Transfer error: ${error.message}, user: ${senderID}`, { ip: null });
             throw error;
         }
     }
@@ -533,7 +512,6 @@ class ReceiptBookService {
 
             return { message: `${bookIDs.length} receipt books transferred and validated` };
         } catch (error) {
-            logger.error(`Validate transfer error: ${error.message}`, { ip: null });
             throw error;
         }
     }
@@ -552,7 +530,6 @@ class ReceiptBookService {
             });
             return history;
         } catch (error) {
-            logger.error(`Get transfer history error: ${error.message}`, { ip: null });
             const err = new Error('Failed to retrieve transfer history: ' + error.message);
             err.status = 404;
             throw err;
@@ -566,7 +543,6 @@ class ReceiptBookService {
             if (toID) transferData[toField] = toID;
             return await ReceiptBookTransfer.create(transferData);
         } catch (error) {
-            logger.error(`Log transfer error: ${error.message}`, { ip: null });
             throw new Error('Failed to log transfer: ' + error.message);
         }
     }
@@ -587,21 +563,18 @@ class ReceiptBookService {
                 (['With Regional Manager', 'With Supervisor', 'Stub Collected'].includes(book.status) && book.currentHolderID === senderID)
             );
         } catch (error) {
-            logger.error(`Can transfer check error: ${error.message}, user: ${senderID}`, { ip: null });
             throw error;
         }
     }
 
     static determineTransferDetails(currentStatus, recipientType, recipient) {
         try {
-            logger.debug(`Determine transfer details: status=${currentStatus}, recipientType=${recipientType}`, { ip: null });
 
             if (recipientType === 'agent') {
                 return { status: 'Assigned to Agent', transferType: 'ToAgent' };
             }
 
             const role = recipient.Roles?.length ? recipient.Roles[0].name : 'Unknown';
-            logger.debug(`Determined role: ${role} for recipientID: ${recipient.userID || recipient.agentID}`, { ip: null });
 
             const statusMap = {
                 'In Stock': 'Sent to Supplier',
@@ -657,14 +630,11 @@ class ReceiptBookService {
                     'FromSupplier',
                 ].includes(transferType)
             ) {
-                logger.error(`Invalid transferType: ${transferType} for role: ${role}`, { ip: null });
                 throw new Error(`Invalid transferType: ${transferType}`);
             }
 
-            logger.debug(`Determined: status=${newStatus}, transferType=${transferType}`, { ip: null });
             return { status: newStatus, transferType };
         } catch (error) {
-            logger.error(`Determine transfer details error: ${error.message}`, { ip: null });
             throw new Error('Failed to determine transfer details: ' + error.message);
         }
     }

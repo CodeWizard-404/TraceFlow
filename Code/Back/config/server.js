@@ -2,8 +2,8 @@ const fs = require('fs');
 const https = require('https');
 const http = require('http');
 const mdns = require('mdns-js');
-const logger = require('../utils/logger');
 require('dotenv').config();
+const logger = require('../utils/logger');
 
 // Sets up the HTTP/HTTPS server, attaches Socket.IO (if enabled), and advertises via mDNS
 async function initializeServer(app, io) {
@@ -36,8 +36,6 @@ async function initializeServer(app, io) {
         });
 
         io.on('connection', (socket) => {
-            logger.info('Client connected', { socketId: socket.id, timestamp: new Date().toISOString() });
-
             socket.on('join', (room) => {
                 socket.join(room);
             });
@@ -45,25 +43,23 @@ async function initializeServer(app, io) {
             socket.on('leave', (room) => {
                 socket.leave(room);
             });
-
-            socket.on('disconnect', () => {
-                logger.info('Client disconnected', { socketId: socket.id, timestamp: new Date().toISOString() });
-            });
         });
 
         io.on('connect_error', (error) => {
-            logger.error(`WebSocket server connection error: ${error.message}`, {
+            logger.error('WebSocket server connection error', {
+                message: error.message,
                 stack: error.stack,
-                timestamp: new Date().toISOString(),
+                route: 'websocket',
+                service: 'socket.io',
             });
         });
     }
 
     server.listen(PORT, '0.0.0.0', () => {
-        logger.info(`${process.env.NODE_ENV === 'production' ? 'HTTPS' : 'HTTP'} Server running on port ${PORT}`);
-        if (process.env.INIT_GOOGLE_SERVICES === 'true') {
-            logger.info('Google Services configuration initialized, awaiting API keys');
-        }
+        logger.info(`Server started: ${process.env.NODE_ENV === 'production' ? 'HTTPS' : 'HTTP'} on port ${PORT}`, {
+            route: 'server',
+            service: 'express',
+        });
     });
 
     // mDNS advertisement (disabled in development to avoid conflicts)
@@ -73,9 +69,9 @@ async function initializeServer(app, io) {
             txt: { path: '/api' },
         });
         service.start();
-        logger.info(`mDNS service advertised as TraceFlow-backend`);
+        logger.info('mDNS advertisement started', { route: 'mdns', service: 'discovery' });
     } else {
-        logger.info(`mDNS advertisement skipped in development mode`);
+        logger.info('mDNS advertisement skipped in development mode', { route: 'mdns', service: 'discovery' });
     }
 
     return server;

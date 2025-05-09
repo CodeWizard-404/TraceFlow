@@ -57,6 +57,19 @@ class LocationController {
         }
     }
 
+
+
+
+
+
+
+
+
+
+
+
+
+
     /**
      * Get delegations by governorate.
      * @param {Object} req - Express request object with governorateID in query.
@@ -145,71 +158,108 @@ class LocationController {
         }
     }
 
+
+
+
+
+
+
+
+
+
+
+
+
     /**
-     * Get regions by user.
-     * @param {Object} req - Express request object.
+     * Get regions assigned to a user.
+     * @param {Object} req - Express request object with userID in params.
      * @param {Object} res - Express response object.
-     * @returns {Promise<void>} JSON response with regions.
+     * @returns {Promise<void>} JSON response with regions or error.
      */
     static async getRegionsByUser(req, res) {
         try {
             const { userID } = req.params;
             if (!userID) {
-                logger.warn(`Missing userID, IP: ${req.ip}`);
-                return res.status(200).json([]);
+                const actorID = req.user?.userID || 'unknown';
+                logger.warn(`Get regions by user failed: Missing userID, user: ${actorID}, IP: ${req.ip}`);
+                return res.status(400).json({ error: 'User ID is required' });
             }
             const regions = await LocationService.getRegionsByUser(userID);
-            logger.info(`Fetched regions for user ${userID}, IP: ${req.ip}`);
+            const actorID = req.user?.userID || 'unknown';
+            logger.info(`Fetched regions for user ${userID} by user ${actorID}, IP: ${req.ip}`);
             return res.status(200).json(regions);
         } catch (error) {
-            logger.error(`Get regions by user error: ${error.message}, IP: ${req.ip}`);
-            return res.status(500).json({ error: 'Internal server error' });
+            const actorID = req.user?.userID || 'unknown';
+            logger.error(`Get regions by user error: ${error.message}, user: ${actorID}, IP: ${req.ip}`);
+            return res.status(404).json({ error: error.message || 'Regions not found' });
         }
     }
 
     /**
-     * Get governorates by user.
-     * @param {Object} req - Express request object.
+     * Get governorates assigned to a user.
+     * @param {Object} req - Express request object with userID in params.
      * @param {Object} res - Express response object.
-     * @returns {Promise<void>} JSON response with governorates.
+     * @returns {Promise<void>} JSON response with governorates or error.
      */
     static async getGovernoratesByUser(req, res) {
         try {
             const { userID } = req.params;
             if (!userID) {
-                logger.warn(`Missing userID, IP: ${req.ip}`);
-                return res.status(200).json([]);
+                const actorID = req.user?.userID || 'unknown';
+                logger.warn(`Get governorates by user failed: Missing userID, user: ${actorID}, IP: ${req.ip}`);
+                return res.status(400).json({ error: 'User ID is required' });
             }
             const governorates = await LocationService.getGovernoratesByUser(userID);
-            logger.info(`Fetched governorates for user ${userID}, IP: ${req.ip}`);
+            const actorID = req.user?.userID || 'unknown';
+            logger.info(`Fetched governorates for user ${userID} by user ${actorID}, IP: ${req.ip}`);
             return res.status(200).json(governorates);
         } catch (error) {
-            logger.error(`Get governorates by user error: ${error.message}, IP: ${req.ip}`);
-            return res.status(500).json({ error: 'Internal server error' });
+            const actorID = req.user?.userID || 'unknown';
+            logger.error(`Get governorates by user error: ${error.message}, user: ${actorID}, IP: ${req.ip}`);
+            return res.status(404).json({ error: error.message || 'Governorates not found' });
         }
     }
 
     /**
-     * Get delegations by user.
-     * @param {Object} req - Express request object.
+     * Get delegations assigned to a user.
+     * @param {Object} req - Express request object with userID in params.
      * @param {Object} res - Express response object.
-     * @returns {Promise<void>} JSON response with delegations.
+     * @returns {Promise<void>} JSON response with delegations or error.
      */
     static async getDelegationsByUser(req, res) {
         try {
             const { userID } = req.params;
             if (!userID) {
-                logger.warn(`Missing userID, IP: ${req.ip}`);
-                return res.status(200).json([]);
+                const actorID = req.user?.userID || 'unknown';
+                logger.warn(`Get delegations by user failed: Missing userID, user: ${actorID}, IP: ${req.ip}`);
+                return res.status(400).json({ error: 'User ID is required' });
             }
             const delegations = await LocationService.getDelegationsByUser(userID);
-            logger.info(`Fetched delegations for user ${userID}, IP: ${req.ip}`);
+            const actorID = req.user?.userID || 'unknown';
+            logger.info(`Fetched delegations for user ${userID} by user ${actorID}, IP: ${req.ip}`);
             return res.status(200).json(delegations);
         } catch (error) {
-            logger.error(`Get delegations by user error: ${error.message}, IP: ${req.ip}`);
-            return res.status(500).json({ error: 'Internal server error' });
+            const actorID = req.user?.userID || 'unknown';
+            logger.error(`Get delegations by user error: ${error.message}, user: ${actorID}, IP: ${req.ip}`);
+            return res.status(404).json({ error: error.message || 'Delegations not found' });
         }
     }
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
 
     /**
      * Geocode an address using Google Maps API.

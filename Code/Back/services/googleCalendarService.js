@@ -1,12 +1,10 @@
 const { google } = require('googleapis');
 const { User, Visit } = require('../models');
-const logger = require('../utils/logger');
 require('dotenv').config();
 
 class GoogleCalendarService {
     static async getOAuth2Client(userId) {
         if (!process.env.GOOGLE_CALENDAR_CLIENT_ID || !process.env.GOOGLE_CALENDAR_CLIENT_SECRET || !process.env.GOOGLE_CALENDAR_REDIRECT_URI) {
-            logger.warn('Google Calendar API credentials are missing. Calendar features are disabled.');
             throw new Error('Google Calendar API credentials are not configured');
         }
 
@@ -36,7 +34,6 @@ class GoogleCalendarService {
                 user.googleRefreshToken = tokens.refresh_token;
             }
             await user.save();
-            logger.info(`Refreshed Google OAuth tokens for user ${userId}`);
         });
 
         return oauth2Client;
@@ -44,7 +41,6 @@ class GoogleCalendarService {
 
     static async createCalendarEvent(userId, visitId) {
         if (!process.env.GOOGLE_MAPS_API_KEY) {
-            logger.warn('Google Maps API key is missing. Skipping calendar event creation.');
             return { message: 'Calendar event creation skipped due to missing API key' };
         }
 
@@ -81,17 +77,14 @@ class GoogleCalendarService {
             user.googleCalendarId = response.data.id;
             await user.save();
 
-            logger.info(`Created Google Calendar event for visit ${visitId} by user ${userId}`);
             return response.data;
         } catch (error) {
-            logger.error(`Create calendar event error: ${error.message}`);
             throw new Error(`Failed to create calendar event: ${error.message}`);
         }
     }
 
     static async updateCalendarEvent(userId, visitId) {
         if (!process.env.GOOGLE_MAPS_API_KEY) {
-            logger.warn('Google Maps API key is missing. Skipping calendar event update.');
             return { message: 'Calendar event update skipped due to missing API key' };
         }
 
@@ -131,17 +124,14 @@ class GoogleCalendarService {
                 resource: event,
             });
 
-            logger.info(`Updated Google Calendar event for visit ${visitId} by user ${userId}`);
             return response.data;
         } catch (error) {
-            logger.error(`Update calendar event error: ${error.message}`);
             throw new Error(`Failed to update calendar event: ${error.message}`);
         }
     }
 
     static async deleteCalendarEvent(userId, visitId) {
         if (!process.env.GOOGLE_MAPS_API_KEY) {
-            logger.warn('Google Maps API key is missing. Skipping calendar event deletion.');
             return { message: 'Calendar event deletion skipped due to missing API key' };
         }
 
@@ -164,10 +154,8 @@ class GoogleCalendarService {
             user.googleCalendarId = null;
             await user.save();
 
-            logger.info(`Deleted Google Calendar event for visit ${visitId} by user ${userId}`);
             return { message: 'Calendar event deleted successfully' };
         } catch (error) {
-            logger.error(`Delete calendar event error: ${error.message}`);
             throw new Error(`Failed to delete calendar event: ${error.message}`);
         }
     }

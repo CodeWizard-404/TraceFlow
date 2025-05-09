@@ -23,12 +23,19 @@ class OTPService {
                 metadata: { expiresAt: expiresAt.toISOString() },
             });
 
+            logger.info('OTP generated', {
+                route: 'otp',
+                service: 'authentication',
+                entityID,
+                type,
+            });
+
             return otp;
         } catch (error) {
-            logger.error('OTP generation error', {
-                error: error.message,
-                entityID,
-                type
+            logger.error('Failed to generate OTP', {
+                route: 'otp',
+                service: 'authentication',
+                message: error.message,
             });
             throw new Error('Failed to generate OTP');
         }
@@ -47,10 +54,11 @@ class OTPService {
             // Check local database
             const otp = await OTP.findOne({ where });
             if (!otp) {
-                logger.warn('OTP validation failed', {
+                logger.warn('Invalid or expired OTP', {
+                    route: 'otp',
+                    service: 'authentication',
                     entityID,
-                    code,
-                    type
+                    type,
                 });
                 throw new Error('Invalid or expired OTP');
             }
@@ -59,13 +67,19 @@ class OTPService {
             await otp.update({ used: true });
             await otp.destroy();
 
+            logger.info('OTP validated successfully', {
+                route: 'otp',
+                service: 'authentication',
+                entityID,
+                type,
+            });
+
             return true;
         } catch (error) {
-            logger.error('OTP validation error', {
-                error: error.message,
-                entityID,
-                code,
-                type
+            logger.error('Failed to validate OTP', {
+                route: 'otp',
+                service: 'authentication',
+                message: error.message,
             });
             throw new Error(error.message || 'Failed to validate OTP');
         }
@@ -79,10 +93,15 @@ class OTPService {
                     expiresAt: { [Op.lt]: new Date() },
                 },
             });
-            logger.info(`Cleaned up ${count} expired OTPs`);
+            logger.info(`Cleaned up ${count} expired OTPs`, {
+                route: 'otp',
+                service: 'authentication',
+            });
         } catch (error) {
             logger.error('Expired OTP cleanup error', {
-                error: error.message
+                route: 'otp',
+                service: 'authentication',
+                message: error.message,
             });
         }
     }

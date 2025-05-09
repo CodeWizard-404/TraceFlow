@@ -57,7 +57,6 @@ router.post(
 );
 
 // Google OAuth routes
-router.get('/google', AuthController.initiateGoogleLogin);
 router.get('/callback', AuthController.googleCallback);
 
 

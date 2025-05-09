@@ -14,7 +14,11 @@ if (process.env.NODE_ENV === 'production') {
             waitTime: 600, // 10 minutes in seconds
         },
         handler: (req, res) => {
-            logger.warn(`Sensitive rate limit hit: ${req.ip}`);
+            logger.warn('Sensitive rate limit hit', {
+                route: 'rate-limit',
+                service: 'security',
+                ip: req.ip,
+            });
             res.status(429).json({
                 error: 'Too many attempts. Please wait 10 minutes and try again.',
                 waitTime: 600,
@@ -29,7 +33,11 @@ if (process.env.NODE_ENV === 'production') {
             error: 'Too many OTP requests. Please wait 10 minutes and try again.',
         },
         handler: (req, res) => {
-            logger.warn(`OTP rate limit hit: ${req.ip}`);
+            logger.warn('OTP rate limit hit', {
+                route: 'rate-limit',
+                service: 'security',
+                ip: req.ip,
+            });
             res.status(429).json({
                 error: 'Too many OTP requests. Please wait 10 minutes and try again.',
             });
@@ -43,7 +51,11 @@ if (process.env.NODE_ENV === 'production') {
             error: 'Too many refresh attempts. Please wait 1 hour and try again.',
         },
         handler: (req, res) => {
-            logger.warn(`Refresh rate limit hit: ${req.ip}`);
+            logger.warn('Refresh rate limit hit', {
+                route: 'rate-limit',
+                service: 'security',
+                ip: req.ip,
+            });
             res.status(429).json({
                 error: 'Too many refresh attempts. Please wait 1 hour and try again.',
             });

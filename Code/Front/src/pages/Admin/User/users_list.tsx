@@ -19,7 +19,6 @@ import {
 import { getEntityEvents, NotificationEvent } from "../../../lib/notifEvents";
 import "../AdminDashboard.css";
 import { motion } from "framer-motion";
-import { format } from "date-fns";
 
 interface UsersListProps {
   users: User[];

@@ -1,5 +1,4 @@
 const CsvHeader = require('../models').CsvHeader;
-const logger = require('../utils/logger');
 
 class CsvHeaderService {
     /**
@@ -15,7 +14,6 @@ class CsvHeaderService {
             });
             return headers || [];
         } catch (error) {
-            logger.error(`Get CSV headers error: ${error.message}, csvType: ${csvType}`);
             return [];
         }
     }
@@ -72,11 +70,9 @@ class CsvHeaderService {
             }
 
             await transaction.commit();
-            logger.info(`Updated CSV headers for csvType ${csvType} by user ${actorID}`);
             return { success: true, message: 'Headers updated successfully' };
         } catch (error) {
             await transaction.rollback();
-            logger.error(`Update CSV headers error: ${error.message}, user: ${actorID}, csvType: ${csvType}`);
             return { success: false, message: 'Unable to update headers' };
         }
     }

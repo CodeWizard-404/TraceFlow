@@ -1,48 +1,56 @@
 const io = require('../utils/socket');
 const { sendSMS } = require('../config/sms');
 const { transporter } = require('../config/smtp');
-const logger = require('../utils/logger');
 const { Notification, NotificationPreference, NotificationRule, User, Role } = require('../models');
 const { Op } = require('sequelize');
+const { getRedisClient } = require('../config/redis');
 
 class NotificationService {
-    static async sendWebSocketNotification(event, data, roles = [], userIDs = []) {
+    constructor() {
+        this.redis = getRedisClient();
+        // Optional: Set up Redis Pub/Sub subscription
+        if (process.env.ENABLE_REDIS_PUBSUB === 'true') {
+            this.redis.subscribe('notifications', (err) => {
+                if (err) {
+                    console.error('Failed to subscribe to notifications', { error: err.message });
+                }
+            });
+
+            this.redis.on('message', (channel, message) => {
+                if (channel === 'notifications') {
+                    const { room, data } = JSON.parse(message);
+                    io.to(room).emit('notification', data);
+                }
+            });
+        }
+    }
+
+    async sendWebSocketNotification(event, data, roles = [], userIDs = []) {
         try {
             if (!io || !io.sockets) {
-                logger.error('WebSocket server not initialized', { event, timestamp: new Date().toISOString() });
                 return { success: false, method: 'WebSocket', reason: 'Server not initialized' };
             }
 
             const payload = { event, data, timestamp: new Date().toISOString() };
 
-            // Emit to role-based rooms
             roles.forEach((role) => {
                 const room = role.toLowerCase();
                 io.to(room).emit(event, payload);
             });
 
-            // Emit to user-specific rooms
             userIDs.forEach((userID) => {
                 io.to(userID).emit(event, payload);
             });
 
-            // Emit to default room for traceability
             io.to('default-roles-traceflow').emit(event, payload);
 
             return { success: true, method: 'WebSocket' };
         } catch (error) {
-            logger.error(`WebSocket notification error: ${error.message}`, {
-                event,
-                roles,
-                userIDs,
-                stack: error.stack,
-                timestamp: new Date().toISOString(),
-            });
             return { success: false, method: 'WebSocket', reason: error.message };
         }
     }
 
-    static async sendEmailNotification(to, subject, text) {
+    async sendEmailNotification(to, subject, text) {
         try {
             await transporter.sendMail({
                 from: process.env.SMTP_USER,
@@ -50,39 +58,22 @@ class NotificationService {
                 subject,
                 text,
             });
-            logger.info(`Email sent`, { to, subject, timestamp: new Date().toISOString() });
             return { success: true, method: 'Email' };
         } catch (error) {
-            logger.error(`Email notification error: ${error.message}`, {
-                to,
-                subject,
-                stack: error.stack,
-                timestamp: new Date().toISOString(),
-            });
             return { success: false, method: 'Email', reason: error.message };
         }
     }
 
-    static async sendSMSNotification(to, message) {
+    async sendSMSNotification(to, message) {
         try {
             const result = await sendSMS(to, message, 'notification');
-            if (result.success) {
-                logger.info(`SMS sent`, { to, message, timestamp: new Date().toISOString() });
-            } else {
-                logger.error(`SMS failed: ${result.reason}`, { to, message, timestamp: new Date().toISOString() });
-            }
             return result;
         } catch (error) {
-            logger.error(`SMS notification error: ${error.message}`, {
-                to,
-                stack: error.stack,
-                timestamp: new Date().toISOString(),
-            });
             return { success: false, method: 'SMS', reason: error.message };
         }
     }
 
-    static async getUserPreferences(userID, event = null) {
+    async getUserPreferences(userID, event = null) {
         try {
             const preferences = await NotificationPreference.findOne({ where: { userID } });
             if (!preferences || !preferences.preferences) {
@@ -91,34 +82,22 @@ class NotificationService {
             if (event) {
                 return preferences.preferences[event] || { email: true, sms: true, inApp: true };
             }
-            // For backward compatibility with existing code
             return {
                 emailEnabled: true,
                 smsEnabled: true,
                 inAppEnabled: true,
             };
         } catch (error) {
-            logger.error(`Error fetching user preferences: ${error.message}`, {
-                userID,
-                stack: error.stack,
-                timestamp: new Date().toISOString(),
-            });
             return event ? { email: true, sms: true, inApp: true } : { emailEnabled: true, smsEnabled: true, inAppEnabled: true };
         }
     }
 
-    static async storeNotification({ userID, type, message, channel, event }) {
+    async storeNotification({ userID, type, message, channel, event }) {
         try {
             const preferences = await this.getUserPreferences(userID, event);
-            if (channel === 'in-app' && !preferences.inApp) {
-                return null; // Skip storing if inApp is disabled for this event
-            }
-            if (channel === 'email' && !preferences.email) {
-                return null; // Skip storing if email is disabled for this event
-            }
-            if (channel === 'sms' && !preferences.sms) {
-                return null; // Skip storing if sms is disabled for this event
-            }
+            if (channel === 'in-app' && !preferences.inApp) return null;
+            if (channel === 'email' && !preferences.email) return null;
+            if (channel === 'sms' && !preferences.sms) return null;
 
             const notification = await Notification.create({
                 userID,
@@ -127,14 +106,7 @@ class NotificationService {
                 channel,
                 status: 'pending',
             });
-            logger.info(`Notification stored`, {
-                userID,
-                notificationID: notification.notificationID,
-                message,
-                timestamp: new Date().toISOString(),
-            });
 
-            // Emit WebSocket event for in-app notifications
             if (channel === 'in-app' && preferences.inApp) {
                 const eventName = 'notification:created';
                 const data = {
@@ -155,24 +127,17 @@ class NotificationService {
 
             return notification;
         } catch (error) {
-            logger.error(`Error storing notification: ${error.message}`, {
-                userID,
-                stack: error.stack,
-                timestamp: new Date().toISOString(),
-            });
-            return null; // Return null instead of throwing to prevent crashes
+            return null;
         }
     }
 
-    static async updateNotificationStatus(notificationID, status) {
+    async updateNotificationStatus(notificationID, status) {
         try {
             const notification = await Notification.findByPk(notificationID);
             if (notification) {
                 notification.status = status;
                 await notification.save();
-                logger.info(`Notification status updated`, { notificationID, status, timestamp: new Date().toISOString() });
 
-                // Emit WebSocket event for status updates
                 const event = 'notification:updated';
                 const data = {
                     notificationID,
@@ -182,29 +147,18 @@ class NotificationService {
                 await this.sendWebSocketNotification(event, data, [], [notification.userID]);
             }
         } catch (error) {
-            logger.error(`Error updating notification status: ${error.message}`, {
-                notificationID,
-                stack: error.stack,
-                timestamp: new Date().toISOString(),
-            });
+            console.error('Error updating notification status:', error.message);
         }
     }
 
-    static async createDefaultDisabledRule({ event, data, metadata = {} }) {
+    async createDefaultDisabledRule({ event, data, metadata = {} }) {
         try {
-            if (!event || !data) {
-                logger.error(`Cannot create default rule: Missing event or data`, { timestamp: new Date().toISOString() });
-                return null;
-            }
+            if (!event || !data) return null;
 
             const existingRule = await NotificationRule.findOne({ where: { event } });
-            if (existingRule) {
-                return existingRule;
-            }
+            if (existingRule) return existingRule;
 
-            // Derive notification type from event (e.g., 'timesheet:updated' -> 'timesheet')
             const notificationType = event.split(':')[0];
-
             const defaultRule = {
                 event,
                 type: notificationType,
@@ -223,36 +177,26 @@ class NotificationService {
                 enabled: true,
             };
 
-            const rule = await NotificationRule.create(defaultRule);
-            logger.info(`Created default notification rule`, {
-                event,
-                ruleID: rule.ruleID,
-                enabled: defaultRule.enabled,
-                timestamp: new Date().toISOString(),
-            });
-            return rule;
+            return await NotificationRule.create(defaultRule);
         } catch (error) {
-            logger.error(`Error creating default rule: ${error.message}`, {
-                event,
-                stack: error.stack,
-                timestamp: new Date().toISOString(),
-            });
             return null;
         }
     }
 
-    static async triggerNotification({ event, data, metadata = {} }) {
+    async publishNotification(room, data) {
+        if (process.env.ENABLE_REDIS_PUBSUB === 'true') {
+            await this.redis.publish('notifications', JSON.stringify({ room, data }));
+        }
+    }
+
+    async triggerNotification({ event, data, metadata = {} }) {
         try {
             let rules = await NotificationRule.findAll({ where: { event, enabled: true } });
 
             if (!rules.length) {
-                logger.info(`No active rules found for event: ${event}`, { timestamp: new Date().toISOString() });
                 const defaultRule = await this.createDefaultDisabledRule({ event, data, metadata });
-                if (defaultRule && defaultRule.enabled) {
-                    rules = [defaultRule];
-                } else {
-                    return [];
-                }
+                if (defaultRule && defaultRule.enabled) rules = [defaultRule];
+                else return [];
             }
 
             const results = [];
@@ -273,29 +217,24 @@ class NotificationService {
                             sms: rule.channels.sms && preferences.sms ? user.phone : null,
                         });
                         results.push({ userID: user.userID, ruleID: rule.ruleID, result });
+
+                        // Optionally publish to Redis Pub/Sub
+                        if (process.env.ENABLE_REDIS_PUBSUB === 'true') {
+                            await this.publishNotification(user.userID, { event: rule.event, data });
+                        }
                     }
-                    // Emit the triggering event to role-based rooms and default room
                     const triggerEventPayload = { event, data, timestamp: new Date().toISOString() };
                     await this.sendWebSocketNotification(event, triggerEventPayload, rule.recipients.roles || [], []);
                 }
             }
-            logger.info(`Triggered notifications`, {
-                event,
-                recipientCount: results.length,
-                timestamp: new Date().toISOString(),
-            });
+
             return results;
         } catch (error) {
-            logger.error(`Trigger notification error: ${error.message}`, {
-                event,
-                stack: error.stack,
-                timestamp: new Date().toISOString(),
-            });
             return [{ success: false, reason: error.message }];
         }
     }
 
-    static async resolveRecipients(recipients) {
+    async resolveRecipients(recipients) {
         try {
             const users = new Set();
             if (recipients.roles?.length) {
@@ -316,24 +255,20 @@ class NotificationService {
             }
             return Array.from(users);
         } catch (error) {
-            logger.error(`Error resolving recipients: ${error.message}`, {
-                stack: error.stack,
-                timestamp: new Date().toISOString(),
-            });
             return [];
         }
     }
 
-    static matchConditions(data, conditions) {
+    matchConditions(data, conditions) {
         if (!conditions) return true;
         return Object.entries(conditions).every(([key, value]) => data[key] === value);
     }
 
-    static formatMessage(template, data) {
+    formatMessage(template, data) {
         return template.replace(/{(\w+)}/g, (_, key) => data[key] || '');
     }
 
-    static async sendNotification({ event, data, roles, userIDs, type, message, email, sms }) {
+    async sendNotification({ event, data, roles, userIDs, type, message, email, sms }) {
         const results = [];
         let notification;
 
@@ -407,4 +342,4 @@ class NotificationService {
     }
 }
 
-module.exports = NotificationService;
+module.exports = new NotificationService();

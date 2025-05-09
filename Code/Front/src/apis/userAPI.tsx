@@ -83,41 +83,16 @@ export const getDirectorByUser = async (userID: string): Promise<User[]> => {
   }
 };
 
-export const getRegionsByUser = async (userID: string): Promise<Region[]> => {
-  try {
-    if (!userID) {
-      throw new Error("User ID is required");
-    }
-    const response = await api.get<Region[]>(`/users/${userID}/regions`);
-    return response.data;
-  } catch (error) {
-    throw new Error(handleApiError(error, "Regions not found"));
-  }
-};
 
-export const getGovernoratesByUser = async (userID: string): Promise<Governorate[]> => {
-  try {
-    if (!userID) {
-      throw new Error("User ID is required");
-    }
-    const response = await api.get<Governorate[]>(`/users/${userID}/governorates`);
-    return response.data;
-  } catch (error) {
-    throw new Error(handleApiError(error, "Governorates not found"));
-  }
-};
 
-export const getDelegationsByUser = async (userID: string): Promise<Delegation[]> => {
-  try {
-    if (!userID) {
-      throw new Error("Delegation ID is required");
-    }
-    const response = await api.get<Delegation[]>(`/users/${userID}/delegations`);
-    return response.data;
-  } catch (error) {
-    throw new Error(handleApiError(error, "Delegations not found"));
-  }
-};
+
+
+
+
+
+
+
+
 
 export const getUsersByRegion = async (regionID: string): Promise<GetUsersByRegionResponse> => {
   try {
@@ -154,6 +129,16 @@ export const getUsersByDelegation = async (delegationID: string): Promise<GetUse
     throw new Error(handleApiError(error, "Users not found"));
   }
 };
+
+
+
+
+
+
+
+
+
+
 
 export const getSupervisorsByRegionalManager = async (regionalManagerID: string): Promise<User[]> => {
   try {
@@ -202,6 +187,16 @@ export const getRegionalManagerBySupervisor = async (supervisorID: string): Prom
     throw new Error(handleApiError(error, "Regional Manager not found"));
   }
 };
+
+
+
+
+
+
+
+
+
+
 
 // Assignment and Revocation Functions for Regional Managers and Directors
 export const assignRegionalManagerToSupervisor = async (
@@ -277,6 +272,50 @@ export const revokeDirectorFromRegionalManager = async (
     throw new Error(handleApiError(error, "Unable to revoke director"));
   }
 };
+
+// Supervisor Assignment to Agents
+export const assignSupervisorToAgent = async (
+  agentID: string,
+  supervisorID: string,
+  delegationID: string
+): Promise<AssignSupervisorToAgentResponse> => {
+  try {
+    if (!agentID || !supervisorID || !delegationID) {
+      throw new Error("Agent ID, Supervisor ID, and Delegation ID are required");
+    }
+    const response = await api.post<AssignSupervisorToAgentResponse>("/users/assign-supervisor-to-agent", {
+      agentID,
+      supervisorID,
+      delegationID,
+    });
+    return response.data;
+  } catch (error) {
+    throw new Error(handleApiError(error, "Unable to assign supervisor to agent"));
+  }
+};
+
+export const revokeSupervisorFromAgent = async (
+  agentID: string
+): Promise<RevokeSupervisorFromAgentResponse> => {
+  try {
+    if (!agentID) {
+      throw new Error("Agent ID is required");
+    }
+    const response = await api.post<RevokeSupervisorFromAgentResponse>("/users/revoke-supervisor-from-agent", {
+      agentID,
+    });
+    return response.data;
+  } catch (error) {
+    throw new Error(handleApiError(error, "Unable to revoke supervisor from agent"));
+  }
+};
+
+
+
+
+
+
+
 
 // Assignment and Revocation Functions for Regions, Governorates, and Delegations
 export const assignRegionsToRegionalManager = async (
@@ -393,60 +432,31 @@ export const revokeDelegationsFromSupervisor = async (
   }
 };
 
-// Supervisor Assignment to Agents
-export const assignSupervisorToAgent = async (
-  agentID: string,
-  supervisorID: string,
-  delegationID: string
-): Promise<AssignSupervisorToAgentResponse> => {
-  try {
-    if (!agentID || !supervisorID || !delegationID) {
-      throw new Error("Agent ID, Supervisor ID, and Delegation ID are required");
-    }
-    const response = await api.post<AssignSupervisorToAgentResponse>("/users/assign-supervisor-to-agent", {
-      agentID,
-      supervisorID,
-      delegationID,
-    });
-    return response.data;
-  } catch (error) {
-    throw new Error(handleApiError(error, "Unable to assign supervisor to agent"));
-  }
-};
 
-export const revokeSupervisorFromAgent = async (
-  agentID: string
-): Promise<RevokeSupervisorFromAgentResponse> => {
-  try {
-    if (!agentID) {
-      throw new Error("Agent ID is required");
-    }
-    const response = await api.post<RevokeSupervisorFromAgentResponse>("/users/revoke-supervisor-from-agent", {
-      agentID,
-    });
-    return response.data;
-  } catch (error) {
-    throw new Error(handleApiError(error, "Unable to revoke supervisor from agent"));
-  }
-};
 
-// Google Account Functions
-export const assignGoogleAccount = async (
-  userID: string,
-  googleEmail: string
-): Promise<AssignGoogleAccountResponse> => {
-  try {
-    if (!userID || !googleEmail) {
-      throw new Error("User ID and Google email are required");
-    }
-    const response = await api.post<AssignGoogleAccountResponse>(`/users/${userID}/google-account`, {
-      googleEmail,
-    });
-    return response.data;
-  } catch (error) {
-    throw new Error(handleApiError(error, "Failed to assign Google account"));
-  }
-};
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
 
 // Profile Management Functions
 export const fetchUserProfile = async (): Promise<User> => {

@@ -15,11 +15,18 @@ const transporter = nodemailer.createTransport({
 async function initializeSMTP() {
     try {
         await transporter.verify();
-        logger.info(`SMTP server verified successfully`);
+        logger.info('SMTP server verified successfully', {
+            route: 'smtp',
+            service: 'email',
+        });
         return true;
     } catch (error) {
-        logger.error(`SMTP verification error: ${error.message}`);
-        throw error; // Re-throw to be caught by the caller
+        logger.error('SMTP verification error', {
+            route: 'smtp',
+            service: 'email',
+            message: error.message,
+        });
+        throw error;
     }
 }
 

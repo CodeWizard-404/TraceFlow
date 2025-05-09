@@ -6,7 +6,6 @@ require('dotenv').config();
 class GoogleMapsService {
     static async initialize() {
         if (!process.env.GOOGLE_MAPS_API_KEY) {
-            logger.warn('Google Maps API key is missing. Maps features are disabled.');
             this.client = null;
             return;
         }
@@ -14,18 +13,14 @@ class GoogleMapsService {
         try {
             this.client = new Client({});
             this.redisClient = await initializeRedis();
-            logger.info('GoogleMapsService initialized with Redis');
         } catch (error) {
-            logger.error(`Failed to initialize Redis: ${error.message}`);
             this.redisClient = null;
             this.client = new Client({});
-            logger.warn('GoogleMapsService initialized without Redis caching');
         }
     }
 
     static async geocodeAddress(address) {
         if (!this.client) {
-            logger.warn('Google Maps client not initialized. Returning mock geocoding data.');
             return { mock: true, address };
         }
 
@@ -35,7 +30,6 @@ class GoogleMapsService {
             if (this.redisClient) {
                 cachedResult = await this.redisClient.get(cacheKey);
                 if (cachedResult) {
-                    logger.info(`Geocode cache hit for address: ${address}`);
                     return JSON.parse(cachedResult);
                 }
             }
@@ -57,17 +51,14 @@ class GoogleMapsService {
             if (this.redisClient) {
                 await this.redisClient.set(cacheKey, JSON.stringify(result), 'EX', 3600);
             }
-            logger.info(`Geocoded address: ${address}`);
             return result;
         } catch (error) {
-            logger.error(`Geocode error: ${error.message}`);
             throw new Error(`Failed to geocode address: ${error.message}`);
         }
     }
 
     static async getDirections(origin, destination, mode = 'driving') {
         if (!this.client) {
-            logger.warn('Google Maps client not initialized. Returning mock directions data.');
             return { mock: true, origin, destination };
         }
 
@@ -77,7 +68,6 @@ class GoogleMapsService {
             if (this.redisClient) {
                 cachedResult = await this.redisClient.get(cacheKey);
                 if (cachedResult) {
-                    logger.info(`Directions cache hit for ${origin} to ${destination}`);
                     return JSON.parse(cachedResult);
                 }
             }
@@ -101,17 +91,14 @@ class GoogleMapsService {
             if (this.redisClient) {
                 await this.redisClient.set(cacheKey, JSON.stringify(result), 'EX', 3600);
             }
-            logger.info(`Fetched directions from ${origin} to ${destination}`);
             return result;
         } catch (error) {
-            logger.error(`Directions error: ${error.message}`);
             throw new Error(`Failed to get directions: ${error.message}`);
         }
     }
 
     static async searchPlaces(query, location, radius = 5000) {
         if (!this.client) {
-            logger.warn('Google Maps client not initialized. Returning mock places data.');
             return { mock: true, query };
         }
 
@@ -121,7 +108,6 @@ class GoogleMapsService {
             if (this.redisClient) {
                 cachedResult = await this.redisClient.get(cacheKey);
                 if (cachedResult) {
-                    logger.info(`Places cache hit for query: ${query}`);
                     return JSON.parse(cachedResult);
                 }
             }
@@ -145,17 +131,14 @@ class GoogleMapsService {
             if (this.redisClient) {
                 await this.redisClient.set(cacheKey, JSON.stringify(result), 'EX', 3600);
             }
-            logger.info(`Searched places for query: ${query}`);
             return result;
         } catch (error) {
-            logger.error(`Places search error: ${error.message}`);
             throw new Error(`Failed to search places: ${error.message}`);
         }
     }
 
     static async getDistanceMatrix(origins, destinations, mode = 'driving') {
         if (!this.client) {
-            logger.warn('Google Maps client not initialized. Returning mock distance matrix data.');
             return { mock: true, origins, destinations };
         }
 
@@ -165,7 +148,6 @@ class GoogleMapsService {
             if (this.redisClient) {
                 cachedResult = await this.redisClient.get(cacheKey);
                 if (cachedResult) {
-                    logger.info(`Distance matrix cache hit for origins: ${origins.join(', ')}`);
                     return JSON.parse(cachedResult);
                 }
             }
@@ -189,10 +171,8 @@ class GoogleMapsService {
             if (this.redisClient) {
                 await this.redisClient.set(cacheKey, JSON.stringify(result), 'EX', 3600);
             }
-            logger.info(`Fetched distance matrix for origins: ${origins.join(', ')}`);
             return result;
         } catch (error) {
-            logger.error(`Distance matrix error: ${error.message}`);
             throw new Error(`Failed to get distance matrix: ${error.message}`);
         }
     }

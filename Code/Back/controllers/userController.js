@@ -280,45 +280,6 @@ class UserController {
     }
 
 
-    /**
-     * Assign a Google account to a user.
-     * @param {Object} req - Express request object with userID in params and googleEmail in body.
-     * @param {Object} res - Express response object.
-     * @returns {Promise<void>} JSON response with updated user or error.
-     */
-    static async assignGoogleAccount(req, res) {
-        try {
-            const { userID } = req.params;
-            const { googleEmail } = req.body;
-            if (!userID || !googleEmail) {
-                const actorID = req.user?.userID || 'unknown';
-                logger.warn(`Assign Google account failed: Missing fields, user: ${actorID}, IP: ${req.ip}`);
-                return res.status(400).json({ error: 'User ID and Google email are required' });
-            }
-            if (!req.user?.userID) {
-                logger.warn(`Assign Google account failed: Not authenticated, IP: ${req.ip}`);
-                return res.status(401).json({ error: 'Please log in to assign a Google account' });
-            }
-            const updatedUser = await UserService.assignGoogleAccount(userID, googleEmail, req.user.userID);
-            await NotificationService.triggerNotification({
-                event: 'user:google_account_assigned',
-                data: { userID, googleEmail },
-                metadata: { assignedBy: req.user.email || 'unknown' }
-            });
-            logger.info(`Assigned Google account to user ${userID} by user ${req.user.userID}, IP: ${req.ip}`);
-            return res.status(200).json(updatedUser);
-        } catch (error) {
-            const actorID = req.user?.userID || 'unknown';
-            logger.error(`Assign Google account error: ${error.message}, user: ${actorID}, IP: ${req.ip}`);
-            return res.status(400).json({ error: error.message || 'Failed to assign Google account' });
-        }
-    }
-
-
-
-
-
-
 
 
 
@@ -409,83 +370,6 @@ class UserController {
 
 
 
-
-
-
-    /**
-     * Get regions assigned to a user.
-     * @param {Object} req - Express request object with userID in params.
-     * @param {Object} res - Express response object.
-     * @returns {Promise<void>} JSON response with regions or error.
-     */
-    static async getRegionsByUser(req, res) {
-        try {
-            const { userID } = req.params;
-            if (!userID) {
-                const actorID = req.user?.userID || 'unknown';
-                logger.warn(`Get regions by user failed: Missing userID, user: ${actorID}, IP: ${req.ip}`);
-                return res.status(400).json({ error: 'User ID is required' });
-            }
-            const regions = await UserService.getRegionsByUser(userID);
-            const actorID = req.user?.userID || 'unknown';
-            logger.info(`Fetched regions for user ${userID} by user ${actorID}, IP: ${req.ip}`);
-            return res.status(200).json(regions);
-        } catch (error) {
-            const actorID = req.user?.userID || 'unknown';
-            logger.error(`Get regions by user error: ${error.message}, user: ${actorID}, IP: ${req.ip}`);
-            return res.status(404).json({ error: error.message || 'Regions not found' });
-        }
-    }
-
-    /**
-     * Get governorates assigned to a user.
-     * @param {Object} req - Express request object with userID in params.
-     * @param {Object} res - Express response object.
-     * @returns {Promise<void>} JSON response with governorates or error.
-     */
-    static async getGovernoratesByUser(req, res) {
-        try {
-            const { userID } = req.params;
-            if (!userID) {
-                const actorID = req.user?.userID || 'unknown';
-                logger.warn(`Get governorates by user failed: Missing userID, user: ${actorID}, IP: ${req.ip}`);
-                return res.status(400).json({ error: 'User ID is required' });
-            }
-            const governorates = await UserService.getGovernoratesByUser(userID);
-            const actorID = req.user?.userID || 'unknown';
-            logger.info(`Fetched governorates for user ${userID} by user ${actorID}, IP: ${req.ip}`);
-            return res.status(200).json(governorates);
-        } catch (error) {
-            const actorID = req.user?.userID || 'unknown';
-            logger.error(`Get governorates by user error: ${error.message}, user: ${actorID}, IP: ${req.ip}`);
-            return res.status(404).json({ error: error.message || 'Governorates not found' });
-        }
-    }
-
-    /**
-     * Get delegations assigned to a user.
-     * @param {Object} req - Express request object with userID in params.
-     * @param {Object} res - Express response object.
-     * @returns {Promise<void>} JSON response with delegations or error.
-     */
-    static async getDelegationsByUser(req, res) {
-        try {
-            const { userID } = req.params;
-            if (!userID) {
-                const actorID = req.user?.userID || 'unknown';
-                logger.warn(`Get delegations by user failed: Missing userID, user: ${actorID}, IP: ${req.ip}`);
-                return res.status(400).json({ error: 'User ID is required' });
-            }
-            const delegations = await UserService.getDelegationsByUser(userID);
-            const actorID = req.user?.userID || 'unknown';
-            logger.info(`Fetched delegations for user ${userID} by user ${actorID}, IP: ${req.ip}`);
-            return res.status(200).json(delegations);
-        } catch (error) {
-            const actorID = req.user?.userID || 'unknown';
-            logger.error(`Get delegations by user error: ${error.message}, user: ${actorID}, IP: ${req.ip}`);
-            return res.status(404).json({ error: error.message || 'Delegations not found' });
-        }
-    }
 
 
 

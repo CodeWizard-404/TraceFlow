@@ -61,6 +61,15 @@ export type DistanceMatrixResponse = Array<{
     }>;
 }>;
 
+
+
+
+
+
+
+
+
+
 // Generic error handler
 const handleApiError = (error: unknown, defaultMessage: string): string => {
     if (error instanceof AxiosError) {
@@ -116,6 +125,18 @@ export const getAllDelegations = async (): Promise<AllDelegationsResponse> => {
     }
 };
 
+
+
+
+
+
+
+
+
+
+
+
+
 // Filtered retrieval routes for delegations
 export const getDelegationsByGovernorate = async (governorateID: string): Promise<DelegationsByGovernorateResponse> => {
     try {
@@ -167,6 +188,20 @@ export const getRegionsByGovernorate = async (governorateID: string): Promise<Re
     }
 };
 
+
+
+
+
+
+
+
+
+
+
+
+
+
+
 // Get regions by user
 export const getRegionsByUser = async (userID: string): Promise<RegionsByUserResponse> => {
     try {
@@ -196,6 +231,16 @@ export const getGovernoratesByUser = async (userID: string): Promise<Governorate
         throw new Error(handleApiError(error, "Unable to fetch governorates by user."));
     }
 };
+
+
+
+
+
+
+
+
+
+
 
 // Google Maps API methods
 export const getGeocode = async (address: string): Promise<GeocodeResponse> => {

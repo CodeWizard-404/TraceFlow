@@ -2,7 +2,6 @@ const multer = require('multer');
 const path = require('path');
 const fs = require('fs');
 const { Timesheet, User } = require('../models');
-const logger = require('../utils/logger');
 
 // Disk storage for timesheet photos
 const diskStorage = multer.diskStorage({
@@ -68,7 +67,6 @@ const fileFilter = (req, file, cb) => {
     if (extname && mimetype) {
         return cb(null, true);
     }
-    logger.error(`File rejected: mimetype=${file.mimetype}, originalname=${file.originalname}`);
     cb(new Error('Only JPEG/JPG/PNG images are allowed'), false);
 };
 
@@ -81,11 +79,9 @@ const uploadPhotos = multer({
 // Add error handling middleware
 const handleMulterError = (err, req, res, next) => {
     if (err instanceof multer.MulterError) {
-        logger.error(`Multer error: ${err.message}, field=${err.field}`);
         return res.status(400).json({ error: `Multer error: ${err.message}` });
     }
     if (err) {
-        logger.error(`File upload error: ${err.message}`);
         return res.status(400).json({ error: err.message });
     }
     next();

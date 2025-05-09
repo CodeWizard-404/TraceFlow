@@ -17,8 +17,14 @@ class AgentController {
         try {
             const { name, lastname, email, phone, supervisorID, delegationID } = req.body;
             if (!name || !lastname || !email || !phone || !supervisorID || !delegationID) {
-                logger.warn(`Create agent failed: Missing fields, user: ${req.user.userID}, IP: ${req.ip}`);
-                return res.status(400).json({ error: 'All fields are required' });
+                const response = { error: 'All fields are required' };
+                logger.error('Create agent failed', {
+                    traceId: req.traceId,
+                    route: 'agents',
+                    service: 'api',
+                    metadata: { response, status: 400 }
+                });
+                return res.status(400).json(response);
             }
             const result = await AgentService.createAgent({
                 name,
@@ -30,13 +36,32 @@ class AgentController {
                 actorID: req.user.userID,
             });
             if (!result.success) {
-                return res.status(400).json({ error: result.message, errors: result.errors });
+                const response = { error: result.message, errors: result.errors };
+                logger.error('Create agent failed', {
+                    traceId: req.traceId,
+                    route: 'agents',
+                    service: 'api',
+                    metadata: { response, status: 400 }
+                });
+                return res.status(400).json(response);
             }
-            logger.info(`Created agent ${result.agent.agentID} by user ${req.user.userID}, IP: ${req.ip}`);
-            return res.status(201).json(result.agent);
+            const response = result.agent;
+            logger.info('Created agent', {
+                traceId: req.traceId,
+                route: 'agents',
+                service: 'api',
+                metadata: { response, status: 201 }
+            });
+            return res.status(201).json(response);
         } catch (error) {
-            logger.error(`Create agent error: ${error.message}, user: ${req.user.userID}, IP: ${req.ip}`);
-            return res.status(500).json({ error: 'Internal server error' });
+            const response = { error: 'Internal server error' };
+            logger.error('Create agent error', {
+                traceId: req.traceId,
+                route: 'agents',
+                service: 'api',
+                metadata: { response, status: 500 }
+            });
+            return res.status(500).json(response);
         }
     }
 
@@ -44,16 +69,28 @@ class AgentController {
      * Get all agents.
      * @param {Object} req - Express request object.
      * @param {Object} res - Express response object.
-     * @returns {Promise<void>} JSON response with agents.
+     * @returns {Promise<void>} JSON response with agents or error.
      */
     static async getAllAgents(req, res) {
         try {
             const agents = await AgentService.getAllAgents();
-            logger.info(`Fetched all agents by user ${req.user.userID}, IP: ${req.ip}`);
-            return res.status(200).json({ agents });
+            const response = { agents };
+            logger.info('Fetched all agents', {
+                traceId: req.traceId,
+                route: 'agents',
+                service: 'api',
+                metadata: { response, status: 200 }
+            });
+            return res.status(200).json(response);
         } catch (error) {
-            logger.error(`Get all agents error: ${error.message}, user: ${req.user.userID}, IP: ${req.ip}`);
-            return res.status(500).json({ error: 'Internal server error' });
+            const response = { error: 'Internal server error' };
+            logger.error('Get all agents error', {
+                traceId: req.traceId,
+                route: 'agents',
+                service: 'api',
+                metadata: { response, status: 500 }
+            });
+            return res.status(500).json(response);
         }
     }
 
@@ -67,15 +104,43 @@ class AgentController {
         try {
             const { id } = req.params;
             if (!id) {
-                logger.warn(`Get agent by ID failed: Missing ID, user: ${req.user.userID}, IP: ${req.ip}`);
-                return res.status(200).json(null);
+                const response = { error: 'Agent ID is required' };
+                logger.error('Get agent by ID failed', {
+                    traceId: req.traceId,
+                    route: 'agents',
+                    service: 'api',
+                    metadata: { response, status: 400 }
+                });
+                return res.status(400).json(response);
             }
             const agent = await AgentService.getAgentById(id);
-            logger.info(`Fetched agent ${id} by user ${req.user.userID}, IP: ${req.ip}`);
-            return res.status(200).json(agent);
+            if (!agent) {
+                const response = { error: 'Agent not found' };
+                logger.error('Get agent by ID failed', {
+                    traceId: req.traceId,
+                    route: 'agents',
+                    service: 'api',
+                    metadata: { response, status: 404 }
+                });
+                return res.status(404).json(response);
+            }
+            const response = agent;
+            logger.info('Fetched agent by ID', {
+                traceId: req.traceId,
+                route: 'agents',
+                service: 'api',
+                metadata: { response, status: 200 }
+            });
+            return res.status(200).json(response);
         } catch (error) {
-            logger.error(`Get agent by ID error: ${error.message}, user: ${req.user.userID}, IP: ${req.ip}`);
-            return res.status(500).json({ error: 'Internal server error' });
+            const response = { error: 'Internal server error' };
+            logger.error('Get agent by ID error', {
+                traceId: req.traceId,
+                route: 'agents',
+                service: 'api',
+                metadata: { response, status: 500 }
+            });
+            return res.status(500).json(response);
         }
     }
 
@@ -90,8 +155,14 @@ class AgentController {
             const { id } = req.params;
             const { name, lastname, email, phone, supervisorID, delegationID } = req.body;
             if (!id) {
-                logger.warn(`Update agent failed: Missing ID, user: ${req.user.userID}, IP: ${req.ip}`);
-                return res.status(400).json({ error: 'Agent ID is required' });
+                const response = { error: 'Agent ID is required' };
+                logger.error('Update agent failed', {
+                    traceId: req.traceId,
+                    route: 'agents',
+                    service: 'api',
+                    metadata: { response, status: 400 }
+                });
+                return res.status(400).json(response);
             }
             const result = await AgentService.updateAgent(id, {
                 name,
@@ -103,13 +174,32 @@ class AgentController {
                 actorID: req.user.userID,
             });
             if (!result.success) {
-                return res.status(400).json({ error: result.message, errors: result.errors });
+                const response = { error: result.message, errors: result.errors };
+                logger.error('Update agent failed', {
+                    traceId: req.traceId,
+                    route: 'agents',
+                    service: 'api',
+                    metadata: { response, status: 400 }
+                });
+                return res.status(400).json(response);
             }
-            logger.info(`Updated agent ${id} by user ${req.user.userID}, IP: ${req.ip}`);
-            return res.status(200).json(result.agent);
+            const response = result.agent;
+            logger.info('Updated agent', {
+                traceId: req.traceId,
+                route: 'agents',
+                service: 'api',
+                metadata: { response, status: 200 }
+            });
+            return res.status(200).json(response);
         } catch (error) {
-            logger.error(`Update agent error: ${error.message}, user: ${req.user.userID}, IP: ${req.ip}`);
-            return res.status(500).json({ error: 'Internal server error' });
+            const response = { error: 'Internal server error' };
+            logger.error('Update agent error', {
+                traceId: req.traceId,
+                route: 'agents',
+                service: 'api',
+                metadata: { response, status: 500 }
+            });
+            return res.status(500).json(response);
         }
     }
 
@@ -123,18 +213,43 @@ class AgentController {
         try {
             const { id } = req.params;
             if (!id) {
-                logger.warn(`Delete agent failed: Missing ID, user: ${req.user.userID}, IP: ${req.ip}`);
-                return res.status(400).json({ error: 'Agent ID is required' });
+                const response = { error: 'Agent ID is required' };
+                logger.error('Delete agent failed', {
+                    traceId: req.traceId,
+                    route: 'agents',
+                    service: 'api',
+                    metadata: { response, status: 400 }
+                });
+                return res.status(400).json(response);
             }
             const result = await AgentService.deleteAgent(id, req.user.userID);
             if (!result.success) {
-                return res.status(400).json({ error: result.message, errors: result.errors });
+                const response = { error: result.message, errors: result.errors };
+                logger.error('Delete agent failed', {
+                    traceId: req.traceId,
+                    route: 'agents',
+                    service: 'api',
+                    metadata: { response, status: 400 }
+                });
+                return res.status(400).json(response);
             }
-            logger.info(`Deleted agent ${id} by user ${req.user.userID}, IP: ${req.ip}`);
-            return res.status(200).json({ message: 'Agent deleted successfully' });
+            const response = { message: 'Agent deleted successfully' };
+            logger.info('Deleted agent', {
+                traceId: req.traceId,
+                route: 'agents',
+                service: 'api',
+                metadata: { response, status: 200 }
+            });
+            return res.status(200).json(response);
         } catch (error) {
-            logger.error(`Delete agent error: ${error.message}, user: ${req.user.userID}, IP: ${req.ip}`);
-            return res.status(500).json({ error: 'Internal server error' });
+            const response = { error: 'Internal server error' };
+            logger.error('Delete agent error', {
+                traceId: req.traceId,
+                route: 'agents',
+                service: 'api',
+                metadata: { response, status: 500 }
+            });
+            return res.status(500).json(response);
         }
     }
 
@@ -148,15 +263,43 @@ class AgentController {
         try {
             const { phone } = req.params;
             if (!phone) {
-                logger.warn(`Get agent by phone failed: Missing phone, user: ${req.user.userID}, IP: ${req.ip}`);
-                return res.status(200).json(null);
+                const response = { error: 'Phone number is required' };
+                logger.error('Get agent by phone failed', {
+                    traceId: req.traceId,
+                    route: 'agents',
+                    service: 'api',
+                    metadata: { response, status: 400 }
+                });
+                return res.status(400).json(response);
             }
             const agent = await AgentService.getAgentByPhone(phone);
-            logger.info(`Fetched agent by phone ${phone} by user ${req.user.userID}, IP: ${req.ip}`);
-            return res.status(200).json(agent);
+            if (!agent) {
+                const response = { error: 'Agent not found' };
+                logger.error('Get agent by phone failed', {
+                    traceId: req.traceId,
+                    route: 'agents',
+                    service: 'api',
+                    metadata: { response, status: 404 }
+                });
+                return res.status(400).json(response);
+            }
+            const response = agent;
+            logger.info('Fetched agent by phone', {
+                traceId: req.traceId,
+                route: 'agents',
+                service: 'api',
+                metadata: { response, status: 200 }
+            });
+            return res.status(200).json(response);
         } catch (error) {
-            logger.error(`Get agent by phone error: ${error.message}, user: ${req.user.userID}, IP: ${req.ip}`);
-            return res.status(500).json({ error: 'Internal server error' });
+            const response = { error: 'Internal server error' };
+            logger.error('Get agent by phone error', {
+                traceId: req.traceId,
+                route: 'agents',
+                service: 'api',
+                metadata: { response, status: 500 }
+            });
+            return res.status(500).json(response);
         }
     }
 
@@ -170,32 +313,62 @@ class AgentController {
         try {
             const { delegationID } = req.query;
             if (!delegationID) {
-                logger.warn(`Get agents by delegation failed: Missing delegation, user: ${req.user.userID}, IP: ${req.ip}`);
-                return res.status(200).json({ agents: [] });
+                const response = { error: 'Delegation ID is required' };
+                logger.error('Get agents by delegation failed', {
+                    traceId: req.traceId,
+                    route: 'agents',
+                    service: 'api',
+                    metadata: { response, status: 400 }
+                });
+                return res.status(400).json(response);
             }
             const agents = await AgentService.getAgentsByDelegation(delegationID);
-            logger.info(`Fetched agents by delegation ${delegationID} by user ${req.user.userID}, IP: ${req.ip}`);
-            return res.status(200).json({ agents });
+            const response = { agents };
+            logger.info('Fetched agents by delegation', {
+                traceId: req.traceId,
+                route: 'agents',
+                service: 'api',
+                metadata: { response, status: 200 }
+            });
+            return res.status(200).json(response);
         } catch (error) {
-            logger.error(`Get agents by delegation error: ${error.message}, user: ${req.user.userID}, IP: ${req.ip}`);
-            return res.status(500).json({ error: 'Internal server error' });
+            const response = { error: 'Internal server error' };
+            logger.error('Get agents by delegation error', {
+                traceId: req.traceId,
+                route: 'agents',
+                service: 'api',
+                metadata: { response, status: 500 }
+            });
+            return res.status(500).json(response);
         }
     }
 
     /**
      * Get all unique agent locations.
      * @param {Object} req - Express request object.
-     * @param {Object} res - Express response object.
+     * @param {Object} Xiu - Express response object.
      * @returns {Promise<void>} JSON response with locations or error.
      */
     static async getAllUniqueLocations(req, res) {
         try {
             const locations = await AgentService.getAllUniqueLocations();
-            logger.info(`Fetched unique locations by user ${req.user.userID}, IP: ${req.ip}`);
-            return res.status(200).json(locations);
+            const response = locations;
+            logger.info('Fetched unique locations', {
+                traceId: req.traceId,
+                route: 'agents',
+                service: 'api',
+                metadata: { response, status: 200 }
+            });
+            return res.status(200).json(response);
         } catch (error) {
-            logger.error(`Get unique locations error: ${error.message}, user: ${req.user.userID}, IP: ${req.ip}`);
-            return res.status(500).json({ error: 'Internal server error' });
+            const response = { error: 'Internal server error' };
+            logger.error('Get unique locations error', {
+                traceId: req.traceId,
+                route: 'agents',
+                service: 'api',
+                metadata: { response, status: 500 }
+            });
+            return res.status(500).json(response);
         }
     }
 
@@ -209,15 +382,43 @@ class AgentController {
         try {
             const { id } = req.params;
             if (!id) {
-                logger.warn(`Get agent supervisor failed: Missing agent ID, user: ${req.user.userID}, IP: ${req.ip}`);
-                return res.status(200).json(null);
+                const response = { error: 'Agent ID is required' };
+                logger.error('Get agent supervisor failed', {
+                    traceId: req.traceId,
+                    route: 'agents',
+                    service: 'api',
+                    metadata: { response, status: 400 }
+                });
+                return res.status(400).json(response);
             }
             const supervisor = await AgentService.getAgentSupervisor(id);
-            logger.info(`Fetched supervisor for agent ${id} by user ${req.user.userID}, IP: ${req.ip}`);
-            return res.status(200).json(supervisor);
+            if (!supervisor) {
+                const response = { error: 'Supervisor not found' };
+                logger.error('Get agent supervisor failed', {
+                    traceId: req.traceId,
+                    route: 'agents',
+                    service: 'api',
+                    metadata: { response, status: 404 }
+                });
+                return res.status(404).json(response);
+            }
+            const response = supervisor;
+            logger.info('Fetched agent supervisor', {
+                traceId: req.traceId,
+                route: 'agents',
+                service: 'api',
+                metadata: { response, status: 200 }
+            });
+            return res.status(200).json(response);
         } catch (error) {
-            logger.error(`Get agent supervisor error: ${error.message}, user: ${req.user.userID}, IP: ${req.ip}`);
-            return res.status(500).json({ error: 'Internal server error' });
+            const response = { error: 'Internal server error' };
+            logger.error('Get agent supervisor error', {
+                traceId: req.traceId,
+                route: 'agents',
+                service: 'api',
+                metadata: { response, status: 500 }
+            });
+            return res.status(500).json(response);
         }
     }
 
@@ -231,20 +432,38 @@ class AgentController {
         try {
             const { id } = req.params;
             if (!id) {
-                logger.warn(`Get agents by supervisor failed: Missing supervisor ID, user: ${req.user.userID}, IP: ${req.ip}`);
-                return res.status(200).json({ agents: [] });
+                const response = { error: 'Supervisor ID is required' };
+                logger.error('Get agents by supervisor failed', {
+                    traceId: req.traceId,
+                    route: 'agents',
+                    service: 'api',
+                    metadata: { response, status: 400 }
+                });
+                return res.status(400).json(response);
             }
             const agents = await AgentService.getAgentsBySupervisor(id);
-            logger.info(`Fetched agents for supervisor ${id} by user ${req.user.userID}, IP: ${req.ip}`);
-            return res.status(200).json({ agents });
+            const response = { agents };
+            logger.info('Fetched agents by supervisor', {
+                traceId: req.traceId,
+                route: 'agents',
+                service: 'api',
+                metadata: { response, status: 200 }
+            });
+            return res.status(200).json(response);
         } catch (error) {
-            logger.error(`Get agents by supervisor error: ${error.message}, user: ${req.user.userID}, IP: ${req.ip}`);
-            return res.status(500).json({ error: 'Internal server error' });
+            const response = { error: 'Internal server error' };
+            logger.error('Get agents by supervisor error', {
+                traceId: req.traceId,
+                route: 'agents',
+                service: 'api',
+                metadata: { response, status: 500 }
+            });
+            return res.status(500).json(response);
         }
     }
 
     /**
-     * Get agents by supervisor.
+     * Get agents by user.
      * @param {Object} req - Express request object with user ID in params.
      * @param {Object} res - Express response object.
      * @returns {Promise<void>} JSON response with agents or error.
@@ -253,15 +472,33 @@ class AgentController {
         try {
             const { id } = req.params;
             if (!id) {
-                logger.warn(`Get agents by user failed: Missing user ID, user: ${req.user.userID}, IP: ${req.ip}`);
-                return res.status(200).json({ agents: [] });
+                const response = { error: 'User ID is required' };
+                logger.error('Get agents by user failed', {
+                    traceId: req.traceId,
+                    route: 'agents',
+                    service: 'api',
+                    metadata: { response, status: 400 }
+                });
+                return res.status(400).json(response);
             }
             const agents = await AgentService.getAgentsByUser(id);
-            logger.info(`Fetched agents for user ${id} by user ${req.user.userID}, IP: ${req.ip}`);
-            return res.status(200).json({ agents });
+            const response = { agents };
+            logger.info('Fetched agents by user', {
+                traceId: req.traceId,
+                route: 'agents',
+                service: 'api',
+                metadata: { response, status: 200 }
+            });
+            return res.status(200).json(response);
         } catch (error) {
-            logger.error(`Get agents by user error: ${error.message}, user: ${req.user.userID}, IP: ${req.ip}`);
-            return res.status(500).json({ error: 'Internal server error' });
+            const response = { error: 'Internal server error' };
+            logger.error('Get agents by user error', {
+                traceId: req.traceId,
+                route: 'agents',
+                service: 'api',
+                metadata: { response, status: 500 }
+            });
+            return res.status(500).json(response);
         }
     }
 
@@ -275,41 +512,82 @@ class AgentController {
         try {
             const { id } = req.params;
             if (!id) {
-                logger.warn(`Get user by agent failed: Missing agent ID, user: ${req.user.userID}, IP: ${req.ip}`);
-                return res.status(200).json(null);
+                const response = { error: 'Agent ID is required' };
+                logger.error('Get user by agent failed', {
+                    traceId: req.traceId,
+                    route: 'agents',
+                    service: 'api',
+                    metadata: { response, status: 400 }
+                });
+                return res.status(400).json(response);
             }
             const supervisor = await AgentService.getUserByAgent(id);
-            logger.info(`Fetched supervisor for agent ${id} by user ${req.user.userID}, IP: ${req.ip}`);
-            return res.status(200).json(supervisor);
+            if (!supervisor) {
+                const response = { error: 'Supervisor not found' };
+                logger.error('Get user by agent failed', {
+                    traceId: req.traceId,
+                    route: 'agents',
+                    service: 'api',
+                    metadata: { response, status: 404 }
+                });
+                return res.status(404).json(response);
+            }
+            const response = supervisor;
+            logger.info('Fetched user by agent', {
+                traceId: req.traceId,
+                route: 'agents',
+                service: 'api',
+                metadata: { response, status: 200 }
+            });
+            return res.status(200).json(response);
         } catch (error) {
-            logger.error(`Get user by agent error: ${error.message}, user: ${req.user.userID}, IP: ${req.ip}`);
-            return res.status(500).json({ error: 'Internal server error' });
+            const response = { error: 'Internal server error' };
+            logger.error('Get user by agent error', {
+                traceId: req.traceId,
+                route: 'agents',
+                service: 'api',
+                metadata: { response, status: 500 }
+            });
+            return res.status(500).json(response);
         }
     }
 
     /**
-         * Upload and process agents via CSV file.
-         * @param {Object} req - Express request object with CSV file in body.
-         * @param {Object} res - Express response object.
-         * @returns {Promise<void>} JSON response with processing results.
-         */
+     * Upload and process agents via CSV file.
+     * @param {Object} req - Express request object with CSV file in body.
+     * @param {Object} res - Express response object.
+     * @returns {Promise<void>} JSON response with processing results or error.
+     */
     static async uploadAgents(req, res) {
         try {
             if (!req.file) {
-                logger.warn(`Upload agents failed: No file uploaded, user: ${req.user.userID}, IP: ${req.ip}`);
-                return res.status(400).json({ error: 'No CSV file uploaded' });
+                const response = { error: 'No CSV file uploaded' };
+                logger.error('Upload agents failed', {
+                    traceId: req.traceId,
+                    route: 'agents',
+                    service: 'api',
+                    metadata: { response, status: 400 }
+                });
+                return res.status(400).json(response);
             }
-
-            // Log raw buffer for debugging
-            const bufferPreview = req.file.buffer.toString('utf8').slice(0, 200);
-            logger.info(`Received CSV buffer (first 200 chars): ${bufferPreview}`);
-
             const results = await AgentService.processAgentCSV(req.file.buffer, req.user.userID);
-            logger.info(`Processed agent CSV by user ${req.user.userID}, IP: ${req.ip}`);
-            return res.status(200).json(results);
+            const response = results;
+            logger.info('Processed agent CSV', {
+                traceId: req.traceId,
+                route: 'agents',
+                service: 'api',
+                metadata: { response, status: 200 }
+            });
+            return res.status(200).json(response);
         } catch (error) {
-            logger.error(`Upload agents error: ${error.message}, user: ${req.user.userID}, IP: ${req.ip}`);
-            return res.status(500).json({ error: 'Internal server error' });
+            const response = { error: 'Internal server error' };
+            logger.error('Upload agents error', {
+                traceId: req.traceId,
+                route: 'agents',
+                service: 'api',
+                metadata: { response, status: 500 }
+            });
+            return res.status(500).json(response);
         }
     }
 }
