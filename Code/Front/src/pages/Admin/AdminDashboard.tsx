@@ -31,6 +31,7 @@ import { getAllUsers } from "../../apis/userAPI";
 import { getAllAgents } from "../../apis/agentAPI";
 import { getNotificationRules } from "../../apis/notificationAPI";
 import { getNotificationTypes } from "../../lib/notifEvents";
+import { initSocket, onNotification, offNotification, joinRoom, disconnectSocket, isSocketConnected } from "../../lib/socket";
 import { Checklist } from "../../models/Checklist";
 import Permission from "../../models/Permission";
 import { Reason } from "../../models/Reason";
@@ -60,15 +61,9 @@ const UserView = lazy(() => import("./User/user_view"));
 const UsersList = lazy(() => import("./User/users_list"));
 const AgentsList = lazy(() => import("./Agents/Agents_List"));
 const AgentBulkUploadModal = lazy(() => import("./Agents/AgentBulkUploadModal"));
-const NotificationRulesList = lazy(
-    () => import("./Notification/NotificationRulesList")
-);
-const NotificationRuleAdd = lazy(
-    () => import("./Notification/NotificationRuleAdd")
-);
-const NotificationRuleView = lazy(
-    () => import("./Notification/NotificationRuleView")
-);
+const NotificationRulesList = lazy(() => import("./Notification/NotificationRulesList"));
+const NotificationRuleAdd = lazy(() => import("./Notification/NotificationRuleAdd"));
+const NotificationRuleView = lazy(() => import("./Notification/NotificationRuleView"));
 
 const CACHE_DURATION = 15 * 60 * 1000;
 const FALLBACK_TIMEOUT = 500;
@@ -100,15 +95,7 @@ const validViews: ViewMode[] = [
 ];
 
 interface CacheData {
-    data:
-    | User[]
-    | Role[]
-    | Permission[]
-    | Checklist[]
-    | Reason[]
-    | Agent[]
-    | NotificationRule[]
-    | string[];
+    data: User[] | Role[] | Permission[] | Checklist[] | Reason[] | Agent[] | NotificationRule[] | string[];
     timestamp: number;
 }
 
@@ -120,8 +107,6 @@ interface ConfirmationState {
 }
 
 const cache = new Map<string, CacheData>();
-
-
 
 const AdminDashboard: React.FC = React.memo(() => {
     const { t } = useTranslation();
@@ -188,10 +173,7 @@ const AdminDashboard: React.FC = React.memo(() => {
         }
     }, [view]);
 
-    const debouncedSetSearchQuery = useCallback(
-        debounce((value: string) => setSearchQuery(value), 300),
-        []
-    );
+    const debouncedSetSearchQuery = useCallback(debounce((value: string) => setSearchQuery(value), 300), []);
 
     useEffect(() => {
         setInputValue(searchQuery);
@@ -200,8 +182,7 @@ const AdminDashboard: React.FC = React.memo(() => {
     const userPermissions = useMemo(
         () => ({
             canCreateChecklists: effectivePermissions?.some(
-                (p) =>
-                    p.name === import.meta.env.VITE_PERMISSIONS_CREATE_CHECKLISTS_ITEMS
+                (p) => p.name === import.meta.env.VITE_PERMISSIONS_CREATE_CHECKLISTS_ITEMS
             ),
             canCreatePermissions: effectivePermissions?.some(
                 (p) => p.name === import.meta.env.VITE_PERMISSIONS_CREATE_PERMISSIONS
@@ -261,6 +242,7 @@ const AdminDashboard: React.FC = React.memo(() => {
         cache.set(key, { data, timestamp: Date.now() });
     }, []);
 
+    // Real-time update handlers
     const handleRefreshUsers = useCallback(async () => {
         if (!userPermissions.canViewUsers) return;
         cache.delete("all_users");
@@ -279,13 +261,7 @@ const AdminDashboard: React.FC = React.memo(() => {
         } finally {
             setUsersLoading(false);
         }
-    }, [
-        userPermissions.canViewUsers,
-        setCachedData,
-        t,
-        setGlobalError,
-        clearError,
-    ]);
+    }, [userPermissions.canViewUsers, setCachedData, t, setGlobalError, clearError]);
 
     const handleRefreshRoles = useCallback(async () => {
         if (!userPermissions.canViewRoles) return;
@@ -305,13 +281,7 @@ const AdminDashboard: React.FC = React.memo(() => {
         } finally {
             setRolesLoading(false);
         }
-    }, [
-        userPermissions.canViewRoles,
-        setCachedData,
-        t,
-        setGlobalError,
-        clearError,
-    ]);
+    }, [userPermissions.canViewRoles, setCachedData, t, setGlobalError, clearError]);
 
     const handleRefreshPermissions = useCallback(async () => {
         if (!userPermissions.canViewPermissions) return;
@@ -331,13 +301,7 @@ const AdminDashboard: React.FC = React.memo(() => {
         } finally {
             setPermissionsLoading(false);
         }
-    }, [
-        userPermissions.canViewPermissions,
-        setCachedData,
-        t,
-        setGlobalError,
-        clearError,
-    ]);
+    }, [userPermissions.canViewPermissions, setCachedData, t, setGlobalError, clearError]);
 
     const handleRefreshChecklists = useCallback(async () => {
         if (!userPermissions.canViewChecklists) return;
@@ -360,14 +324,7 @@ const AdminDashboard: React.FC = React.memo(() => {
         } finally {
             setChecklistsLoading(false);
         }
-    }, [
-        userPermissions.canViewChecklists,
-        checklistsPage,
-        setCachedData,
-        t,
-        setGlobalError,
-        clearError,
-    ]);
+    }, [userPermissions.canViewChecklists, checklistsPage, setCachedData, t, setGlobalError, clearError]);
 
     const handleRefreshReasons = useCallback(async () => {
         if (!userPermissions.canViewReasons) return;
@@ -390,14 +347,7 @@ const AdminDashboard: React.FC = React.memo(() => {
         } finally {
             setReasonsLoading(false);
         }
-    }, [
-        userPermissions.canViewReasons,
-        reasonsPage,
-        setCachedData,
-        t,
-        setGlobalError,
-        clearError,
-    ]);
+    }, [userPermissions.canViewReasons, reasonsPage, setCachedData, t, setGlobalError, clearError]);
 
     const handleRefreshAgents = useCallback(async () => {
         if (!userPermissions.canViewAgents) return;
@@ -417,13 +367,7 @@ const AdminDashboard: React.FC = React.memo(() => {
         } finally {
             setAgentsLoading(false);
         }
-    }, [
-        userPermissions.canViewAgents,
-        setCachedData,
-        t,
-        setGlobalError,
-        clearError,
-    ]);
+    }, [userPermissions.canViewAgents, setCachedData, t, setGlobalError, clearError]);
 
     const handleRefreshNotifications = useCallback(async () => {
         if (!userPermissions.canViewNotificationRules) return;
@@ -447,13 +391,7 @@ const AdminDashboard: React.FC = React.memo(() => {
         } finally {
             setNotificationsLoading(false);
         }
-    }, [
-        userPermissions.canViewNotificationRules,
-        setCachedData,
-        t,
-        setGlobalError,
-        clearError,
-    ]);
+    }, [userPermissions.canViewNotificationRules, setCachedData, t, setGlobalError, clearError]);
 
     const handleResetConfirm = async () => {
         try {
@@ -511,6 +449,101 @@ const AdminDashboard: React.FC = React.memo(() => {
         [handleResetConfirm, t]
     );
 
+    // WebSocket setup for real-time updates
+    const setupWebSocket = useCallback(() => {
+        if (!isSocketConnected()) initSocket();
+
+        const handleEntityEvent = async (event: string, data: unknown) => {
+            console.log(`Received entity event: ${event}`, { data });
+            const entity = event.split(':')[0];
+            const action = event.split(':')[1];
+
+            // Handle user events
+            if (entity === 'user') {
+                if (!userPermissions.canViewUsers) return;
+                if (action === 'created' || action === 'updated' || action === 'deleted') {
+                    await handleRefreshUsers();
+                }
+            }
+            // Handle role events
+            else if (entity === 'role') {
+                if (!userPermissions.canViewRoles) return;
+                if (action === 'created' || action === 'updated' || action === 'deleted') {
+                    await handleRefreshRoles();
+                }
+            }
+            // Handle permission events
+            else if (entity === 'permission') {
+                if (!userPermissions.canViewPermissions) return;
+                if (action === 'updated' || action === 'override_added' || action === 'override_removed') {
+                    await handleRefreshPermissions();
+                }
+            }
+            // Handle checklist events
+            else if (entity === 'checklist') {
+                if (!userPermissions.canViewChecklists) return;
+                if (action === 'created' || action === 'updated' || action === 'deleted') {
+                    await handleRefreshChecklists();
+                }
+            }
+            // Handle reason events
+            else if (entity === 'reason') {
+                if (!userPermissions.canViewReasons) return;
+                if (action === 'created' || action === 'updated' || action === 'deleted') {
+                    await handleRefreshReasons();
+                }
+            }
+            // Handle agent events
+            else if (entity === 'agent') {
+                if (!userPermissions.canViewAgents) return;
+                if (action === 'created' || action === 'updated' || action === 'deleted') {
+                    await handleRefreshAgents();
+                }
+            }
+            // Handle notification rule events
+            else if (entity === 'notification') {
+                if (!userPermissions.canViewNotificationRules) return;
+                if (action === 'created' || action === 'updated' || action === 'read') {
+                    await handleRefreshNotifications();
+                }
+            }
+        };
+
+        onNotification(handleEntityEvent);
+
+        // Join rooms based on view and permissions
+        const joinEntityRooms = () => {
+            if (userPermissions.canViewUsers) joinRoom('user');
+            if (userPermissions.canViewRoles) joinRoom('role');
+            if (userPermissions.canViewPermissions) joinRoom('permission');
+            if (userPermissions.canViewChecklists) joinRoom('checklist');
+            if (userPermissions.canViewReasons) joinRoom('reason');
+            if (userPermissions.canViewAgents) joinRoom('agent');
+            if (userPermissions.canViewNotificationRules) joinRoom('notification');
+        };
+
+        joinEntityRooms();
+
+        return () => {
+            offNotification();
+            disconnectSocket();
+        };
+    }, [
+        userPermissions,
+        handleRefreshUsers,
+        handleRefreshRoles,
+        handleRefreshPermissions,
+        handleRefreshChecklists,
+        handleRefreshReasons,
+        handleRefreshAgents,
+        handleRefreshNotifications,
+    ]);
+
+    useEffect(() => {
+        const cleanup = setupWebSocket();
+        return cleanup;
+    }, [setupWebSocket]);
+
     const defaultSortConfig: Partial<Record<ViewMode, { sortField: SortField; sortOrder: SortOrder }>> = {
         users: { sortField: "role", sortOrder: "asc" },
         agents: { sortField: "date", sortOrder: "desc" },
@@ -531,24 +564,20 @@ const AdminDashboard: React.FC = React.memo(() => {
         setSelectedAgent(null);
         setSelectedNotificationRule(null);
 
-        // Reset pagination based on view
         if (newView === "users") setUsersPage(1);
         else if (newView === "checklists") setChecklistsPage(1);
         else if (newView === "reasons") setReasonsPage(1);
         else if (newView === "agents") setAgentsPage(1);
 
-        // Apply default sorting for the new view
         const sortConfig = defaultSortConfig[newView];
         if (sortConfig) {
             setSortField(sortConfig.sortField);
             setSortOrder(sortConfig.sortOrder);
         } else {
-            // Fallback for views without sorting (e.g., "notifications" or detail views)
             setSortField("name");
             setSortOrder("asc");
         }
 
-        // Handle notifications sorting separately if needed
         if (newView === "notifications") {
             setNotificationSortField("type");
             setNotificationSortOrder("asc");
@@ -615,10 +644,7 @@ const AdminDashboard: React.FC = React.memo(() => {
                         setCachedData("all_roles", rolesData);
                     }
                     setRoles(rolesData as Role[]);
-                } else if (
-                    view === "permissions" &&
-                    userPermissions.canViewPermissions
-                ) {
+                } else if (view === "permissions" && userPermissions.canViewPermissions) {
                     setPermissionsLoading(true);
                     let permissionsData = getCachedData("all_permissions");
                     if (!permissionsData) {
@@ -635,10 +661,7 @@ const AdminDashboard: React.FC = React.memo(() => {
                     }
                     const startIndex = (checklistsPage - 1) * ITEMS_PER_PAGE;
                     const endIndex = startIndex + ITEMS_PER_PAGE;
-                    const paginatedChecklists = (checklistsData as Checklist[]).slice(
-                        startIndex,
-                        endIndex
-                    );
+                    const paginatedChecklists = (checklistsData as Checklist[]).slice(startIndex, endIndex);
                     setChecklists(paginatedChecklists);
                 } else if (view === "reasons" && userPermissions.canViewReasons) {
                     setReasonsLoading(true);
@@ -649,10 +672,7 @@ const AdminDashboard: React.FC = React.memo(() => {
                     }
                     const startIndex = (reasonsPage - 1) * ITEMS_PER_PAGE;
                     const endIndex = startIndex + ITEMS_PER_PAGE;
-                    const paginatedReasons = (reasonsData as Reason[]).slice(
-                        startIndex,
-                        endIndex
-                    );
+                    const paginatedReasons = (reasonsData as Reason[]).slice(startIndex, endIndex);
                     setReasons(paginatedReasons);
                 } else if (view === "agents" && userPermissions.canViewAgents) {
                     setAgentsLoading(true);
@@ -663,10 +683,7 @@ const AdminDashboard: React.FC = React.memo(() => {
                         setCachedData("all_agents", agentsData);
                     }
                     setAgents(agentsData as Agent[]);
-                } else if (
-                    view === "notifications" &&
-                    userPermissions.canViewNotificationRules
-                ) {
+                } else if (view === "notifications" && userPermissions.canViewNotificationRules) {
                     setNotificationsLoading(true);
                     let rulesData = getCachedData("all_notification_rules");
                     if (!rulesData) {
@@ -847,8 +864,7 @@ const AdminDashboard: React.FC = React.memo(() => {
                     {view === "permissions" && t("adminDashboard.header.permissions")}
                     {view === "add-user" && t("adminDashboard.header.addUser")}
                     {view === "add-role" && t("adminDashboard.header.addRole")}
-                    {view === "add-permission" &&
-                        t("adminDashboard.header.addPermission")}
+                    {view === "add-permission" && t("adminDashboard.header.addPermission")}
                     {view === "user-details" &&
                         selectedUser &&
                         t("adminDashboard.header.userDetails", {
@@ -881,7 +897,7 @@ const AdminDashboard: React.FC = React.memo(() => {
                     {view === "notification-rule-details" &&
                         selectedNotificationRule &&
                         t("adminDashboard.header.notificationRuleDetails", {
-                            event: selectedNotificationRule.event
+                            event: selectedNotificationRule.event,
                         })}
                 </h1>
                 {(view === "users" ||
@@ -941,7 +957,8 @@ const AdminDashboard: React.FC = React.memo(() => {
                             whileTap={{ scale: 0.95 }}
                             aria-label={t("adminDashboard.actions.back")}
                         >
-                            <FaArrowLeft aria-hidden="true" />{" "}{t("adminDashboard.actions.back")}
+                            <FaArrowLeft aria-hidden="true" />{" "}
+                            {t("adminDashboard.actions.back")}
                         </motion.button>
                     )}
             </header>
@@ -1059,33 +1076,20 @@ const AdminDashboard: React.FC = React.memo(() => {
                                     onChange={(e) => setSortField(e.target.value as SortField)}
                                     aria-label={t("adminDashboard.sidebar.sortUsersBy")}
                                 >
-                                    <option value="name">
-                                        {t("adminDashboard.sidebar.sortOptions.name")}
-                                    </option>
-                                    <option value="email">
-                                        {t("adminDashboard.sidebar.sortOptions.email")}
-                                    </option>
-                                    <option value="role">
-                                        {t("adminDashboard.sidebar.sortOptions.role")}
-                                    </option>
+                                    <option value="name">{t("adminDashboard.sidebar.sortOptions.name")}</option>
+                                    <option value="email">{t("adminDashboard.sidebar.sortOptions.email")}</option>
+                                    <option value="role">{t("adminDashboard.sidebar.sortOptions.role")}</option>
                                 </select>
                                 <motion.button
-                                    onClick={() =>
-                                        setSortOrder(sortOrder === "asc" ? "desc" : "asc")
-                                    }
+                                    onClick={() => setSortOrder(sortOrder === "asc" ? "desc" : "asc")}
                                     whileHover={{ scale: 1.05 }}
                                     whileTap={{ scale: 0.95 }}
                                     aria-label={t("adminDashboard.sidebar.sortOrder", {
-                                        order:
-                                            sortOrder === "asc"
-                                                ? t("adminDashboard.sidebar.sortOrder.asc")
-                                                : t("adminDashboard.sidebar.sortOrder.desc"),
+                                        order: sortOrder === "asc" ? t("adminDashboard.sidebar.sortOrder.asc") : t("adminDashboard.sidebar.sortOrder.desc"),
                                     })}
                                 >
-                                    <FaSort aria-hidden="true" />{" "}{sortOrder === "asc"
-                                        ?
-                                        t("adminDashboard.sidebar.sortOrder.asc")
-                                        : t("adminDashboard.sidebar.sortOrder.desc")}
+                                    <FaSort aria-hidden="true" />{" "}
+                                    {sortOrder === "asc" ? t("adminDashboard.sidebar.sortOrder.asc") : t("adminDashboard.sidebar.sortOrder.desc")}
                                 </motion.button>
                             </div>
                             <div className="role-filter-card">
@@ -1093,15 +1097,9 @@ const AdminDashboard: React.FC = React.memo(() => {
                                 <Select
                                     isMulti
                                     options={roleOptions}
-                                    value={roleOptions.filter((option) =>
-                                        roleFilter.includes(option.value)
-                                    )}
+                                    value={roleOptions.filter((option) => roleFilter.includes(option.value))}
                                     onChange={(selectedOptions) =>
-                                        setRoleFilter(
-                                            selectedOptions
-                                                ? selectedOptions.map((option) => option.value)
-                                                : []
-                                        )
+                                        setRoleFilter(selectedOptions ? selectedOptions.map((option) => option.value) : [])
                                     }
                                     placeholder={t("adminDashboard.sidebar.allRoles")}
                                     isDisabled={roleLoading || roles.length === 0}
@@ -1187,45 +1185,24 @@ const AdminDashboard: React.FC = React.memo(() => {
                                     onChange={(e) => setSortField(e.target.value as SortField)}
                                     aria-label={t("adminDashboard.sidebar.sortAgentsBy")}
                                 >
-                                    <option value="name">
-                                        {t("adminDashboard.sidebar.sortOptions.name")}
-                                    </option>
-                                    <option value="lastname">
-                                        {t("adminDashboard.sidebar.sortOptions.lastname")}
-                                    </option>
-                                    <option value="email">
-                                        {t("adminDashboard.sidebar.sortOptions.email")}
-                                    </option>
-                                    <option value="phone">
-                                        {t("adminDashboard.sidebar.sortOptions.phone")}
-                                    </option>
-                                    <option value="supervisor">
-                                        {t("adminDashboard.sidebar.sortOptions.supervisor")}
-                                    </option>
-                                    <option value="location">
-                                        {t("adminDashboard.sidebar.sortOptions.location")}
-                                    </option>
-                                    <option value="date">
-                                        {t("adminDashboard.sidebar.sortOptions.date")}
-                                    </option>
+                                    <option value="name">{t("adminDashboard.sidebar.sortOptions.name")}</option>
+                                    <option value="lastname">{t("adminDashboard.sidebar.sortOptions.lastname")}</option>
+                                    <option value="email">{t("adminDashboard.sidebar.sortOptions.email")}</option>
+                                    <option value="phone">{t("adminDashboard.sidebar.sortOptions.phone")}</option>
+                                    <option value="supervisor">{t("adminDashboard.sidebar.sortOptions.supervisor")}</option>
+                                    <option value="location">{t("adminDashboard.sidebar.sortOptions.location")}</option>
+                                    <option value="date">{t("adminDashboard.sidebar.sortOptions.date")}</option>
                                 </select>
                                 <motion.button
-                                    onClick={() =>
-                                        setSortOrder(sortOrder === "asc" ? "desc" : "asc")
-                                    }
+                                    onClick={() => setSortOrder(sortOrder === "asc" ? "desc" : "asc")}
                                     whileHover={{ scale: 1.05 }}
                                     whileTap={{ scale: 0.95 }}
                                     aria-label={t("adminDashboard.sidebar.sortOrder", {
-                                        order:
-                                            sortOrder === "asc"
-                                                ? t("adminDashboard.sidebar.sortOrder.asc")
-                                                : t("adminDashboard.sidebar.sortOrder.desc"),
+                                        order: sortOrder === "asc" ? t("adminDashboard.sidebar.sortOrder.asc") : t("adminDashboard.sidebar.sortOrder.desc"),
                                     })}
                                 >
-                                    <FaSort aria-hidden="true" />{" "}{sortOrder === "asc"
-                                        ?
-                                        t("adminDashboard.sidebar.sortOrder.asc")
-                                        : t("adminDashboard.sidebar.sortOrder.desc")}
+                                    <FaSort aria-hidden="true" />{" "}
+                                    {sortOrder === "asc" ? t("adminDashboard.sidebar.sortOrder.asc") : t("adminDashboard.sidebar.sortOrder.desc")}
                                 </motion.button>
                             </div>
                             <div className="filter-card">
@@ -1277,7 +1254,8 @@ const AdminDashboard: React.FC = React.memo(() => {
                                         whileTap={{ scale: 0.95 }}
                                         aria-label={t("adminDashboard.sidebar.addAgent")}
                                     >
-                                        <FaPlus aria-hidden="true" />{" "}{t("adminDashboard.sidebar.addAgent")}
+                                        <FaPlus aria-hidden="true" />{" "}
+                                        {t("adminDashboard.sidebar.addAgent")}
                                     </motion.button>
                                     <motion.button
                                         className="action-button"
@@ -1286,111 +1264,98 @@ const AdminDashboard: React.FC = React.memo(() => {
                                         whileTap={{ scale: 0.95 }}
                                         aria-label={t("adminDashboard.sidebar.importAgents")}
                                     >
-                                        <FaUpload aria-hidden="true" />{" "}{t("adminDashboard.sidebar.importAgents")}
+                                        <FaUpload aria-hidden="true" />{" "}
+                                        {t("adminDashboard.sidebar.importAgents")}
                                     </motion.button>
                                 </>
                             )}
                         </>
                     )}
-                    {userPermissions.canViewNotificationRules &&
-                        view === "notifications" && (
-                            <>
-                                <div className="sort-card">
-                                    <h3>{t("adminDashboard.sidebar.sortNotificationsBy")}</h3>
-                                    <select
-                                        value={notificationSortField}
-                                        onChange={(e) => setNotificationSortField(e.target.value)}
-                                        aria-label={t("adminDashboard.sidebar.sortNotificationsBy")}
-                                    >
-                                        <option value="event">{t("adminDashboard.sidebar.sortOptions.event")}</option>
-                                        <option value="type">{t("adminDashboard.sidebar.sortOptions.type")}</option>
-                                        <option value="enabled">{t("adminDashboard.sidebar.sortOptions.status")}</option>
-                                    </select>
-                                    <motion.button
-                                        onClick={() =>
-                                            setNotificationSortOrder(
-                                                notificationSortOrder === "asc" ? "desc" : "asc"
-                                            )
-                                        }
-                                        whileHover={{ scale: 1.05 }}
-                                        whileTap={{ scale: 0.95 }}
-                                        aria-label={t("adminDashboard.sidebar.sortOrder", {
-                                            order: notificationSortOrder === "asc"
-                                                ? t("adminDashboard.sidebar.sortOrder.asc")
-                                                : t("adminDashboard.sidebar.sortOrder.desc"),
-                                        })}
-                                    >
-                                        <FaSort aria-hidden="true" />{" "}{notificationSortOrder === "asc"
-                                            ? t("adminDashboard.sidebar.sortOrder.asc")
-                                            : t("adminDashboard.sidebar.sortOrder.desc")}
-                                    </motion.button>
-                                </div>
-                                <div className="filter-card">
-                                    <h3>{t("adminDashboard.sidebar.filterNotifications")}</h3>
-                                    <select
-                                        value={notificationTypeFilter}
-                                        onChange={(e) => setNotificationTypeFilter(e.target.value)}
-                                        aria-label={t("adminDashboard.sidebar.filterByNotificationType")}
-                                    >
-                                        <option value="all">{t("adminDashboard.sidebar.allTypes")}</option>
-                                        {notificationTypes.map((type) => (
-                                            <option key={type} value={type}>
-                                                {type.charAt(0).toUpperCase() + type.slice(1)}
-                                            </option>
-                                        ))}
-                                    </select>
-                                    <select
-                                        style={{ marginTop: "0.5rem" }}
-                                        value={notificationChannelFilter}
-                                        onChange={(e) =>
-                                            setNotificationChannelFilter(e.target.value)
-                                        }
-                                        aria-label={t("adminDashboard.sidebar.filterByNotificationChannel")}
-                                    >
-                                        <option value="all">{t("adminDashboard.sidebar.allChannels")}</option>
-                                        <option value="websocket">{t("adminDashboard.sidebar.websocket")}</option>
-                                        <option value="email">{t("adminDashboard.sidebar.email")}</option>
-                                        <option value="sms">{t("adminDashboard.sidebar.sms")}</option>
-                                        <option value="inApp">{t("adminDashboard.sidebar.inApp")}</option>
-                                    </select>
-                                    <select
-                                        style={{ marginTop: "0.5rem" }}
-                                        value={notificationStatusFilter}
-                                        onChange={(e) =>
-                                            setNotificationStatusFilter(e.target.value)
-                                        }
-                                        aria-label={t("adminDashboard.sidebar.filterByNotificationStatus")}
-                                    >
-                                        <option value="all">{t("adminDashboard.sidebar.allStatuses")}</option>
-                                        <option value="enabled">{t("adminDashboard.sidebar.enabled")}</option>
-                                        <option value="disabled">{t("adminDashboard.sidebar.disabled")}</option>
-                                    </select>
-                                </div>
-                                <motion.button
-                                    className="action-button"
-                                    onClick={handleRefreshNotifications}
-                                    disabled={notificationsLoading}
-                                    whileHover={{ scale: notificationsLoading ? 1 : 1.05 }}
-                                    whileTap={{ scale: notificationsLoading ? 1 : 0.95 }}
-                                    aria-label={notificationsLoading ? t("adminDashboard.actions.loading") : t("adminDashboard.actions.refreshNotifications")}
+                    {userPermissions.canViewNotificationRules && view === "notifications" && (
+                        <>
+                            <div className="sort-card">
+                                <h3>{t("adminDashboard.sidebar.sortNotificationsBy")}</h3>
+                                <select
+                                    value={notificationSortField}
+                                    onChange={(e) => setNotificationSortField(e.target.value)}
+                                    aria-label={t("adminDashboard.sidebar.sortNotificationsBy")}
                                 >
-                                    <FaRedo aria-hidden="true" /> {notificationsLoading ? t("adminDashboard.actions.loading") : t("adminDashboard.actions.refreshNotifications")}
+                                    <option value="event">{t("adminDashboard.sidebar.sortOptions.event")}</option>
+                                    <option value="type">{t("adminDashboard.sidebar.sortOptions.type")}</option>
+                                    <option value="enabled">{t("adminDashboard.sidebar.sortOptions.status")}</option>
+                                </select>
+                                <motion.button
+                                    onClick={() => setNotificationSortOrder(notificationSortOrder === "asc" ? "desc" : "asc")}
+                                    whileHover={{ scale: 1.05 }}
+                                    whileTap={{ scale: 0.95 }}
+                                    aria-label={t("adminDashboard.sidebar.sortOrder", {
+                                        order: notificationSortOrder === "asc" ? t("adminDashboard.sidebar.sortOrder.asc") : t("adminDashboard.sidebar.sortOrder.desc"),
+                                    })}
+                                >
+                                    <FaSort aria-hidden="true" />{" "}
+                                    {notificationSortOrder === "asc" ? t("adminDashboard.sidebar.sortOrder.asc") : t("adminDashboard.sidebar.sortOrder.desc")}
                                 </motion.button>
-                            </>
-                        )}
-                    {userPermissions.canCreateUsers &&
-                        (view === "users" ||
-                            view === "add-user" ||
-                            view === "user-details") && (
+                            </div>
+                            <div className="filter-card">
+                                <h3>{t("adminDashboard.sidebar.filterNotifications")}</h3>
+                                <select
+                                    value={notificationTypeFilter}
+                                    onChange={(e) => setNotificationTypeFilter(e.target.value)}
+                                    aria-label={t("adminDashboard.sidebar.filterByNotificationType")}
+                                >
+                                    <option value="all">{t("adminDashboard.sidebar.allTypes")}</option>
+                                    {notificationTypes.map((type) => (
+                                        <option key={type} value={type}>
+                                            {type.charAt(0).toUpperCase() + type.slice(1)}
+                                        </option>
+                                    ))}
+                                </select>
+                                <select
+                                    style={{ marginTop: "0.5rem" }}
+                                    value={notificationChannelFilter}
+                                    onChange={(e) => setNotificationChannelFilter(e.target.value)}
+                                    aria-label={t("adminDashboard.sidebar.filterByNotificationChannel")}
+                                >
+                                    <option value="all">{t("adminDashboard.sidebar.allChannels")}</option>
+                                    <option value="websocket">{t("adminDashboard.sidebar.websocket")}</option>
+                                    <option value="email">{t("adminDashboard.sidebar.email")}</option>
+                                    <option value="sms">{t("adminDashboard.sidebar.sms")}</option>
+                                    <option value="inApp">{t("adminDashboard.sidebar.inApp")}</option>
+                                </select>
+                                <select
+                                    style={{ marginTop: "0.5rem" }}
+                                    value={notificationStatusFilter}
+                                    onChange={(e) => setNotificationStatusFilter(e.target.value)}
+                                    aria-label={t("adminDashboard.sidebar.filterByNotificationStatus")}
+                                >
+                                    <option value="all">{t("adminDashboard.sidebar.allStatuses")}</option>
+                                    <option value="enabled">{t("adminDashboard.sidebar.enabled")}</option>
+                                    <option value="disabled">{t("adminDashboard.sidebar.disabled")}</option>
+                                </select>
+                            </div>
                             <motion.button
                                 className="action-button"
-                                onClick={() => handleViewChange("add-user")}
-                                whileTap={{ scale: 0.95 }}
-                                aria-label={t("adminDashboard.sidebar.addUser")}
+                                onClick={handleRefreshNotifications}
+                                disabled={notificationsLoading}
+                                whileHover={{ scale: notificationsLoading ? 1 : 1.05 }}
+                                whileTap={{ scale: notificationsLoading ? 1 : 0.95 }}
+                                aria-label={notificationsLoading ? t("adminDashboard.actions.loading") : t("adminDashboard.actions.refreshNotifications")}
                             >
-                                <FaUserPlus aria-hidden="true" />{" "}{t("adminDashboard.sidebar.addUser")}
+                                <FaRedo aria-hidden="true" /> {notificationsLoading ? t("adminDashboard.actions.loading") : t("adminDashboard.actions.refreshNotifications")}
                             </motion.button>
-                        )}
+                        </>
+                    )}
+                    {userPermissions.canCreateUsers && (view === "users" || view === "add-user" || view === "user-details") && (
+                        <motion.button
+                            className="action-button"
+                            onClick={() => handleViewChange("add-user")}
+                            whileTap={{ scale: 0.95 }}
+                            aria-label={t("adminDashboard.sidebar.addUser")}
+                        >
+                            <FaUserPlus aria-hidden="true" />{" "}
+                            {t("adminDashboard.sidebar.addUser")}
+                        </motion.button>
+                    )}
                     {userPermissions.canViewRoles && view === "roles" && (
                         <>
                             {userPermissions.canCreateRoles && (
@@ -1401,7 +1366,8 @@ const AdminDashboard: React.FC = React.memo(() => {
                                     whileTap={{ scale: 0.95 }}
                                     aria-label={t("adminDashboard.sidebar.addRole")}
                                 >
-                                    <FaPlus aria-hidden="true" />{" "}{t("adminDashboard.sidebar.addRole")}
+                                    <FaPlus aria-hidden="true" />{" "}
+                                    {t("adminDashboard.sidebar.addRole")}
                                 </motion.button>
                             )}
                             {userPermissions.canResetRoles && (
@@ -1411,62 +1377,50 @@ const AdminDashboard: React.FC = React.memo(() => {
                                     disabled={resetLoading}
                                     whileHover={{ scale: resetLoading ? 1 : 1.05 }}
                                     whileTap={{ scale: resetLoading ? 1 : 0.95 }}
-                                    aria-label={resetLoading
-                                        ? t("adminDashboard.sidebar.resetting")
-                                        : t("adminDashboard.sidebar.resetRoles")}
+                                    aria-label={resetLoading ? t("adminDashboard.sidebar.resetting") : t("adminDashboard.sidebar.resetRoles")}
                                 >
-                                    {resetLoading
-                                        ? t("adminDashboard.sidebar.resetting")
-                                        : t("adminDashboard.sidebar.resetRoles")}
+                                    {resetLoading ? t("adminDashboard.sidebar.resetting") : t("adminDashboard.sidebar.resetRoles")}
                                 </motion.button>
                             )}
                         </>
                     )}
-                    {userPermissions.canViewChecklists &&
-                        view === "checklists" &&
-                        userPermissions.canCreateChecklists && (
-                            <motion.button
-                                className="action-button"
-                                onClick={() => handleViewChange("add-checklist")}
-                                whileHover={{ scale: 1.05 }}
-                                whileTap={{ scale: 0.95 }}
-                                aria-label={t("adminDashboard.sidebar.addChecklist")}
-                            >
-                                <FaPlus aria-hidden="true" />{" "}{t("adminDashboard.sidebar.addChecklist")}
-                            </motion.button>
-                        )}
-                    {userPermissions.canViewReasons &&
-                        view === "reasons" &&
-                        userPermissions.canCreateReasons && (
-                            <motion.button
-                                className="action-button"
-                                onClick={() => handleViewChange("add-reason")}
-                                whileHover={{ scale: 1.05 }}
-                                whileTap={{ scale: 0.95 }}
-                                aria-label={t("adminDashboard.sidebar.addReason")}
-                            >
-                                <FaPlus aria-hidden="true" />{" "}{t("adminDashboard.sidebar.addReason")}
-                            </motion.button>
-                        )}
-                    {userPermissions.canViewNotificationRules &&
-                        view === "notifications" &&
-                        userPermissions.canManageNotificationRules && (
-                            <motion.button
-                                className="action-button"
-                                onClick={() => handleViewChange("add-notification-rule")}
-                                whileHover={{ scale: 1.05 }}
-                                whileTap={{ scale: 0.95 }}
-                                aria-label={t("adminDashboard.sidebar.addNotificationRule")}
-                            >
-                                <FaPlus aria-hidden="true" /> {t("adminDashboard.sidebar.addNotificationRule")}
-                            </motion.button>
-                        )}
+                    {userPermissions.canViewChecklists && view === "checklists" && userPermissions.canCreateChecklists && (
+                        <motion.button
+                            className="action-button"
+                            onClick={() => handleViewChange("add-checklist")}
+                            whileHover={{ scale: 1.05 }}
+                            whileTap={{ scale: 0.95 }}
+                            aria-label={t("adminDashboard.sidebar.addChecklist")}
+                        >
+                            <FaPlus aria-hidden="true" />{" "}
+                            {t("adminDashboard.sidebar.addChecklist")}
+                        </motion.button>
+                    )}
+                    {userPermissions.canViewReasons && view === "reasons" && userPermissions.canCreateReasons && (
+                        <motion.button
+                            className="action-button"
+                            onClick={() => handleViewChange("add-reason")}
+                            whileHover={{ scale: 1.05 }}
+                            whileTap={{ scale: 0.95 }}
+                            aria-label={t("adminDashboard.sidebar.addReason")}
+                        >
+                            <FaPlus aria-hidden="true" />{" "}
+                            {t("adminDashboard.sidebar.addReason")}
+                        </motion.button>
+                    )}
+                    {userPermissions.canViewNotificationRules && view === "notifications" && userPermissions.canManageNotificationRules && (
+                        <motion.button
+                            className="action-button"
+                            onClick={() => handleViewChange("add-notification-rule")}
+                            whileHover={{ scale: 1.05 }}
+                            whileTap={{ scale: 0.95 }}
+                            aria-label={t("adminDashboard.sidebar.addNotificationRule")}
+                        >
+                            <FaPlus aria-hidden="true" /> {t("adminDashboard.sidebar.addNotificationRule")}
+                        </motion.button>
+                    )}
                 </aside>
-                <main
-                    className="main-content"
-                    role="region"
-                    aria-labelledby="dashboard-title"
-                >
+                <main className="main-content" role="region" aria-labelledby="dashboard-title">
                     {showNotificationPanel && (
                         <motion.div
                             initial={{ opacity: 0, y: -20 }}
@@ -1507,6 +1461,7 @@ const AdminDashboard: React.FC = React.memo(() => {
                                 currentPage={usersPage}
                                 setCurrentPage={setUsersPage}
                                 itemsPerPage={ITEMS_PER_PAGE}
+                                isTransitioning={isTransitioning}
                                 setIsTransitioning={setIsTransitioning}
                             />
                         )}

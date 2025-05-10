@@ -275,6 +275,7 @@ const UserView: React.FC<UserViewProps> = ({
       setSelectedUser={setSelectedUser}
       users={users}
       setUsers={setUsers}
+      setError={setGlobalError}
       view={view}
       setView={setView}
       userPermissions={userPermissions}

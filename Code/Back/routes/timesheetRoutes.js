@@ -10,4 +10,6 @@ router.get('/', requirePermission('access_all_timesheets'), TimesheetController.
 router.get('/:id', requirePermission('access_timesheet_details'), TimesheetController.getTimesheetById);
 router.get('/supervisor/:supervisorID', requirePermission('access_supervisor_timesheets'), TimesheetController.getTimesheetsBySupervisor);
 
+router.post('/:id/sync-calendar', requirePermission('sync_calendar'), TimesheetController.syncTimesheetToCalendar);
+
 module.exports = router;

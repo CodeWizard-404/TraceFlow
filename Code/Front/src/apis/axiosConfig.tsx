@@ -7,6 +7,9 @@ const api: AxiosInstance = axios.create({
     baseURL: import.meta.env.VITE_BASE_URL || '/api',
     timeout: parseInt(import.meta.env.VITE_API_TIMEOUT) || 30000,
     withCredentials: true,
+    headers: {
+        'Cache-Control': 'no-store', // Prevent browser caching to rely on Redis
+    },
 });
 
 let globalNavigate: ReturnType<typeof useNavigate> | null = null;
@@ -29,7 +32,8 @@ export const setupAxiosInterceptors = () => {
             if (!(config.data instanceof FormData)) {
                 config.headers['Content-Type'] = 'application/json';
             }
-            // No need to set Authorization header since accessToken is HTTP-only
+            // Ensure fresh data by respecting backend cache headers
+            config.headers['If-Modified-Since'] = '0';
             return config;
         },
         error => {
@@ -39,9 +43,7 @@ export const setupAxiosInterceptors = () => {
     );
 
     api.interceptors.response.use(
-        response => {
-            return response;
-        },
+        response => response,
         async error => {
             const originalRequest = error.config;
             if (
@@ -60,15 +62,22 @@ export const setupAxiosInterceptors = () => {
                     console.error('Refresh token failed:', refreshError);
                     document.cookie = 'accessToken=; path=/; expires=Thu, 01 Jan 1970 00:00:00 GMT';
                     document.cookie = 'userData=; path=/; expires=Thu, 01 Jan 1970 00:00:00 GMT';
-                    debouncedNavigate('/login', { replace: true, state: { error: 'Session expired. Please log in again.' } });
+                    debouncedNavigate('/login', {
+                        replace: true,
+                        state: {
+                            error: (refreshError as any)?.message?.includes('Session not found')
+                                ? 'Session expired. Please log in again.'
+                                : 'Authentication failed. Please log in again.',
+                        },
+                    });
                     return Promise.reject(refreshError);
                 }
             }
-            if (error.config.url.includes('/notifications')) {
-                console.error('Notification API error:', error.response?.data?.error || error.message);
-            } else {
-                console.error('Response error:', { url: error.config.url, status: error.response?.status, message: error.message });
-            }
+            console.error('Response error:', {
+                url: error.config.url,
+                status: error.response?.status,
+                message: error.message,
+            });
             return Promise.reject(error);
         }
     );

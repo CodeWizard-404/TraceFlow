@@ -1,75 +1,49 @@
 const { Server } = require('socket.io');
-const { authenticateCookie } = require('../config/security');
+const axios = require('axios');
+const { User } = require('../models');
+require('dotenv').config();
 
-// Initialize Socket.IO server
 const io = new Server({
     cors: {
-        origin: [
-            process.env.FRONTEND_URL,
-            process.env.FRONTEND_URL1,
-        ],
+        origin: [process.env.FRONTEND_URL, process.env.FRONTEND_URL1],
         methods: ['GET', 'POST'],
         credentials: true,
     },
-    pingTimeout: 20000,
-    pingInterval: 25000,
 });
 
-// Middleware to authenticate WebSocket connections
 io.use(async (socket, next) => {
-    try {
-        const cookie = socket.handshake.headers.cookie;
-        if (!cookie) {
-            return next(new Error('No cookie provided'));
-        }
+    const accessToken = socket.handshake.headers.cookie?.match(/accessToken=([^;]+)/)?.[1];
+    if (!accessToken) return next(new Error('No token'));
 
-        const cookies = cookie.split(';').map(c => c.trim());
-        const tokenCookie = cookies.find(c => c.startsWith('accessToken='));
-        if (!tokenCookie) {
-            return next(new Error('accessToken cookie not found'));
-        }
+    const response = await axios.post(
+        `${process.env.KEYCLOAK_URL}/realms/${process.env.REALM}/protocol/openid-connect/token/introspect`,
+        new URLSearchParams({
+            token: accessToken,
+            client_id: process.env.KEYCLOAK_CLIENT_ID,
+            client_secret: process.env.KEYCLOAK_CLIENT_SECRET,
+        })
+    );
 
-        const user = await new Promise((resolve, reject) => {
-            const mockReq = { headers: { cookie }, ip: socket.handshake.address };
-            const mockNext = (err) => (err ? reject(err) : resolve(mockReq.user));
-            authenticateCookie(mockReq, {}, mockNext);
-        });
+    if (!response.data.active) return next(new Error('Invalid token'));
+    const user = await User.findOne({ where: { keycloakId: response.data.sub } });
+    if (!user) return next(new Error('User not found'));
 
-        if (!user || !user.userID) {
-            return next(new Error('Invalid user data'));
-        }
-
-        socket.user = user;
-        next();
-    } catch (error) {
-        next(new Error(`Authentication failed: ${error.message}`));
-    }
+    socket.user = {
+        userID: user.userID,
+        email: response.data.email,
+        roles: response.data.realm_access?.roles || [],
+    };
+    next();
 });
 
-// Handle WebSocket connections
 io.on('connection', (socket) => {
+    socket.join(socket.user.userID); // Only join user-specific room
 
-    // Join role-based and user-specific rooms
-    const roles = socket.user.roles || [];
-    roles.forEach((role) => {
-        socket.join(role.toLowerCase());
-
+    socket.on('join', (room) => socket.join(room));
+    socket.on('leave', (room) => socket.leave(room));
+    socket.on('disconnect', () => {
+        socket.rooms.forEach((room) => socket.leave(room));
     });
-    socket.join(socket.user.userID);
-
-
-    // Handle join room
-    socket.on('join', (room) => {
-        socket.join(room);
-
-    });
-
-    // Handle leave room
-    socket.on('leave', (room) => {
-        socket.leave(room);
-
-    });
-
 });
 
 module.exports = io;

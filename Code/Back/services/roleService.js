@@ -1,9 +1,6 @@
 const axios = require('axios');
 const { Role, Permission, User } = require('../models');
 const PermissionService = require('./permissionService');
-const { migratePoliciesToKeycloak } = require('../scripts/migratePo');
-const { migratePermissionsToKeycloak: migrateResourcesToKeycloak } = require('../scripts/migrateRe');
-const { migratePermissionsToKeycloak } = require('../scripts/migratePe');
 require('dotenv').config();
 
 // Keycloak configuration
@@ -124,7 +121,7 @@ class RoleService {
                     {
                         model: Permission,
                         attributes: ['permissionID', 'name', 'description'],
-                        through: { attributes: [] }, // Exclude RolePermissions table attributes
+                        through: { attributes: [] },
                     },
                 ],
             });
@@ -355,15 +352,6 @@ class RoleService {
         try {
             const token = await getAdminToken();
             const clientUUID = await getClientUUID(token);
-
-            // Step 1: Run migration scripts to reset resources, policies, and permissions in Keycloak
-            try {
-                await migrateResourcesToKeycloak();
-                await migratePoliciesToKeycloak();
-                await migratePermissionsToKeycloak();
-            } catch (migrationError) {
-                throw new Error(`Could not complete Keycloak migrations: ${migrationError.message}`);
-            }
 
             // Default roles configuration
             const defaultRoles = [
@@ -870,12 +858,10 @@ class RoleService {
             ];
 
             const results = [];
-
-            // Get all permissions from local DB
             const allPermissions = await Permission.findAll();
             const allPermissionNames = allPermissions.map((p) => p.name);
 
-            // Validate permission names in defaultRoles
+            // Validate permission names
             for (const defaultRole of defaultRoles) {
                 if (defaultRole.name !== 'Super Admin') {
                     const invalidPermissions = defaultRole.permissions.filter(
@@ -887,9 +873,8 @@ class RoleService {
                 }
             }
 
-            // Process roles and assign permissions in local DB
+            // Process roles and assign permissions
             for (const defaultRole of defaultRoles) {
-                // Find or create role in local DB and Keycloak
                 let role = await Role.findOne({ where: { name: defaultRole.name } });
                 let keycloakRoleId;
                 if (!role) {
@@ -918,7 +903,7 @@ class RoleService {
                     keycloakRoleId = keycloakRole.data.id;
                 }
 
-                // Update local DB permissions
+                // Update permissions
                 let permissionIDsToAssign =
                     defaultRole.name === 'Super Admin'
                         ? allPermissions.map((p) => p.permissionID)
@@ -934,42 +919,25 @@ class RoleService {
                         (p) =>
                             defaultRole.name !== 'Super Admin' && !defaultRole.permissions.includes(p.name)
                     )
-                    .map((p) => p.permissionID)
-                    .filter((id) => {
-                        const isValid = allPermissions.some((perm) => perm.permissionID === id);
-                        return isValid;
-                    });
+                    .map((p) => p.permissionID);
 
                 if (permissionsToRevoke.length > 0) {
-                    try {
-                        await PermissionService.revokePermissionsFromRole(role.roleID, permissionsToRevoke, actorID);
-                    } catch (error) {
-                    }
+                    await PermissionService.revokePermissionsFromRole(role.roleID, permissionsToRevoke, actorID);
                 }
 
-                const permissionsToAssign = permissionIDsToAssign
-                    .filter((id) => !currentPermissionIDs.includes(id))
-                    .filter((id) => {
-                        const isValid = allPermissions.some((perm) => perm.permissionID === id);
-                        return isValid;
-                    });
+                const permissionsToAssign = permissionIDsToAssign.filter(
+                    (id) => !currentPermissionIDs.includes(id)
+                );
 
                 if (permissionsToAssign.length > 0) {
-                    try {
-                        // Use a dummy user object since assignPermissionsToRole requires it
-                        const dummyUser = { roles: ['Super Admin'] };
-                        await PermissionService.assignPermissionsToRole(dummyUser, role.roleID, permissionsToAssign, actorID);
-                    } catch (error) {
-                        throw new Error(error.message);
-                    }
+                    const dummyUser = { roles: ['Super Admin'] };
+                    await PermissionService.assignPermissionsToRole(dummyUser, role.roleID, permissionsToAssign, actorID);
                 }
 
                 results.push({
                     roleName: defaultRole.name,
                     permissionsAssigned: permissionsToAssign.length,
                     permissionsRevoked: permissionsToRevoke.length,
-                    keycloakPermissionsSynced: permissionIDsToAssign.length,
-                    keycloakPermissionsRemoved: 0,
                     totalPermissions:
                         defaultRole.name === 'Super Admin'
                             ? allPermissions.length

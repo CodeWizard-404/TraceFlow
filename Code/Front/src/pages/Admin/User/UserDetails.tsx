@@ -1,12 +1,6 @@
-/**
- * UserDetails.tsx
- * Handles the display and editing of user basic information with form validation and phone formatting.
- */
-
 import React, { useState, useCallback, useMemo } from "react";
 import { FaEdit, FaTrash } from "react-icons/fa";
 import User from "../../../models/User";
-import { useError } from "../../../context/ErrorContext";
 import { updateUser, deleteUser } from "../../../apis/userAPI";
 import "../AdminDashboard.css";
 import { ViewMode } from "../adminTypes";
@@ -24,6 +18,7 @@ interface UserDetailsProps {
         canUpdateUsers: boolean;
         canDeleteUsers: boolean;
     };
+    setError: React.Dispatch<React.SetStateAction<string | null>>;
     roleManagement: React.ReactNode;
     permissionOverrides: React.ReactNode;
     assignmentsManagement: React.ReactNode;
@@ -89,12 +84,12 @@ const UserDetails: React.FC<UserDetailsProps> = ({
     view,
     setView,
     userPermissions,
+    setError,
     roleManagement,
     permissionOverrides,
     assignmentsManagement,
     infoPopupWrapper,
 }) => {
-    const { setError: setGlobalError } = useError();
     const [isEditingUser, setIsEditingUser] = useState(false);
     const [editedUser, setEditedUser] = useState<
         Partial<User> & { passwordConfirm?: string }
@@ -118,7 +113,6 @@ const UserDetails: React.FC<UserDetailsProps> = ({
     });
     const [showResetConfirm, setShowResetConfirm] = useState(false);
     const [generatedPassword, setGeneratedPassword] = useState("");
-
 
     // Check if selectedUser has superadmin role
     const isSelectedUserSuperAdmin = useMemo(() => {
@@ -223,8 +217,9 @@ const UserDetails: React.FC<UserDetailsProps> = ({
             setSelectedUser(updatedUser);
             setShowResetConfirm(false);
             setGeneratedPassword("");
+            setError(null);
         } catch (error) {
-            setGlobalError(
+            setError(
                 error instanceof Error ? error.message : "Failed to reset password."
             );
         }
@@ -235,7 +230,7 @@ const UserDetails: React.FC<UserDetailsProps> = ({
         users,
         setUsers,
         setSelectedUser,
-        setGlobalError,
+        setError,
     ]);
 
     const handleCancelReset = useCallback(() => {
@@ -268,7 +263,7 @@ const UserDetails: React.FC<UserDetailsProps> = ({
             passwordConfirm: true,
         });
         if (Object.values(errors).some((error) => error)) {
-            setGlobalError("Please fix the errors below before saving.");
+            setError("Please fix the errors below before saving.");
             return;
         }
         try {
@@ -303,6 +298,7 @@ const UserDetails: React.FC<UserDetailsProps> = ({
                 passwordConfirm: false,
             });
             setRawPhone("");
+            setError(null);
         } catch (error) {
             let errorMessage =
                 error instanceof Error ? error.message : "Failed to update user.";
@@ -315,7 +311,7 @@ const UserDetails: React.FC<UserDetailsProps> = ({
                     "This email is already associated with another Google account.";
                 setFormErrors((prev) => ({ ...prev, email: errorMessage }));
             }
-            setGlobalError(errorMessage);
+            setError(errorMessage);
         }
     }, [
         selectedUser,
@@ -332,7 +328,7 @@ const UserDetails: React.FC<UserDetailsProps> = ({
         validatePasswordConfirm,
         setUsers,
         setSelectedUser,
-        setGlobalError,
+        setError,
     ]);
 
     const handleCancelEdit = useCallback(() => {
@@ -366,8 +362,9 @@ const UserDetails: React.FC<UserDetailsProps> = ({
             setView("users");
             localStorage.removeItem("adminView");
             localStorage.removeItem("selectedUserId");
+            setError(null);
         } catch (error) {
-            setGlobalError(
+            setError(
                 error instanceof Error ? error.message : "Failed to delete user."
             );
         }
@@ -378,7 +375,7 @@ const UserDetails: React.FC<UserDetailsProps> = ({
         setUsers,
         setSelectedUser,
         setView,
-        setGlobalError,
+        setError,
     ]);
 
     const isValidBase64 = (str: string): boolean => {
@@ -463,15 +460,9 @@ const UserDetails: React.FC<UserDetailsProps> = ({
                                             }));
                                             setFormErrors((prev) => ({
                                                 ...prev,
-                                                firstname: validateName(
-                                                    e.target.value,
-                                                    "First name"
-                                                ),
+                                                firstname: validateName(e.target.value, "First name"),
                                             }));
-                                            setTouched((prev) => ({
-                                                ...prev,
-                                                firstname: true,
-                                            }));
+                                            setTouched((prev) => ({ ...prev, firstname: true }));
                                         }}
                                         placeholder="Enter first name"
                                         className={`u-profile-name user-edit-input ${touched.firstname && formErrors.firstname
@@ -481,9 +472,7 @@ const UserDetails: React.FC<UserDetailsProps> = ({
                                         required
                                     />
                                     {formErrors.firstname && touched.firstname && (
-                                        <span className="error-text">
-                                            {formErrors.firstname}
-                                        </span>
+                                        <span className="error-text">{formErrors.firstname}</span>
                                     )}
                                     <input
                                         id="lastname"
@@ -496,15 +485,9 @@ const UserDetails: React.FC<UserDetailsProps> = ({
                                             }));
                                             setFormErrors((prev) => ({
                                                 ...prev,
-                                                lastname: validateName(
-                                                    e.target.value,
-                                                    "Last name"
-                                                ),
+                                                lastname: validateName(e.target.value, "Last name"),
                                             }));
-                                            setTouched((prev) => ({
-                                                ...prev,
-                                                lastname: true,
-                                            }));
+                                            setTouched((prev) => ({ ...prev, lastname: true }));
                                         }}
                                         placeholder="Enter last name"
                                         className={`u-profile-name user-edit-input ${touched.lastname && formErrors.lastname
@@ -514,13 +497,9 @@ const UserDetails: React.FC<UserDetailsProps> = ({
                                         required
                                     />
                                     {formErrors.lastname && touched.lastname && (
-                                        <span className="error-text">
-                                            {formErrors.lastname}
-                                        </span>
+                                        <span className="error-text">{formErrors.lastname}</span>
                                     )}
-                                    <span className="u-profile-id">
-                                        ID: {selectedUser.userID}
-                                    </span>
+                                    <span className="u-profile-id">ID: {selectedUser.userID}</span>
                                 </div>
                             </div>
                             <div className="u-profile-info">
@@ -540,10 +519,7 @@ const UserDetails: React.FC<UserDetailsProps> = ({
                                                     ...prev,
                                                     email: validateEmail(e.target.value),
                                                 }));
-                                                setTouched((prev) => ({
-                                                    ...prev,
-                                                    email: true,
-                                                }));
+                                                setTouched((prev) => ({ ...prev, email: true }));
                                             }}
                                             placeholder="Enter email"
                                             className={`user-edit-input ${touched.email && formErrors.email
@@ -553,9 +529,7 @@ const UserDetails: React.FC<UserDetailsProps> = ({
                                             required
                                         />
                                         {formErrors.email && touched.email && (
-                                            <span className="error-text">
-                                                {formErrors.email}
-                                            </span>
+                                            <span className="error-text">{formErrors.email}</span>
                                         )}
                                     </div>
                                 </div>
@@ -576,9 +550,7 @@ const UserDetails: React.FC<UserDetailsProps> = ({
                                             maxLength={10}
                                         />
                                         {formErrors.phone && touched.phone && (
-                                            <span className="error-text">
-                                                {formErrors.phone}
-                                            </span>
+                                            <span className="error-text">{formErrors.phone}</span>
                                         )}
                                     </div>
                                 </div>
@@ -596,25 +568,20 @@ const UserDetails: React.FC<UserDetailsProps> = ({
                             </div>
                         </div>
                         <div className="user-edit-actions">
-                            <button
-                                className="action-button"
-                                onClick={handleSaveUserEdit}
-                            >
+                            <button className="action-button" onClick={handleSaveUserEdit}>
                                 Save
                             </button>
-                            <button
-                                className="cancel-button"
-                                onClick={handleCancelEdit}
-                            >
+                            <button className="cancel-button" onClick={handleCancelEdit}>
                                 Cancel
                             </button>
                         </div>
                         {showResetConfirm && (
                             <div className="reset-confirm-popup">
                                 <p>
-                                    Are you sure you want to reset the password? The new
-                                    password will be sent to the user's Email
+                                    Are you sure you want to reset the password? The new password
+                                    will be: <strong>{generatedPassword}</strong>
                                 </p>
+                                <p>It will be sent to the user's email.</p>
                                 <div className="reset-confirm-actions">
                                     <button
                                         className="action-button"
@@ -684,17 +651,13 @@ const UserDetails: React.FC<UserDetailsProps> = ({
                                     <span className="u-profile-name">
                                         {selectedUser.firstname} {selectedUser.lastname}
                                     </span>
-                                    <span className="u-profile-id">
-                                        ID: {selectedUser.userID}
-                                    </span>
+                                    <span className="u-profile-id">ID: {selectedUser.userID}</span>
                                 </div>
                             </div>
                             <div className="u-profile-info">
                                 <div className="u-info-row">
                                     <span className="u-info-label">Email</span>
-                                    <span className="u-info-value">
-                                        {selectedUser.email}
-                                    </span>
+                                    <span className="u-info-value">{selectedUser.email}</span>
                                 </div>
                                 <div className="u-info-row">
                                     <span className="u-info-label">Phone</span>

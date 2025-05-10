@@ -2,9 +2,11 @@ const { Visit, Agent, Reason, Checklist, Timesheet, User } = require('../models'
 const { parseTLV } = require('../utils/qrParser');
 const ChecklistService = require('./checklistService');
 const ReasonService = require('./reasonService');
+const GoogleCalendarService = require('./googleCalendarService');
 const path = require('path');
 const fs = require('fs');
 const { sequelize } = require('../config/db');
+const logger = require('../utils/logger');
 
 class VisitService {
     static async createVisit(data, actorID) {
@@ -39,7 +41,18 @@ class VisitService {
                 const createdChecklists = await ChecklistService.getItemsByIds(checklistIds);
                 await visit.setChecklists(createdChecklists);
             }
-            return visit.reload({ include: [Reason, Checklist] });
+            const reloadedVisit = await visit.reload({ include: [Reason, Checklist] });
+            try {
+                const event = await GoogleCalendarService.createCalendarEvent(supervisorID, visit.visitID);
+                await GoogleCalendarService.notifyCalendarUpdate(supervisorID, {
+                    visitId: visit.visitID,
+                    calendarEventId: event.id,
+                    action: 'created',
+                });
+            } catch (error) {
+                logger.warn(`Failed to sync visit ${visit.visitID} to calendar: ${error.message}`);
+            }
+            return reloadedVisit;
         } catch (error) {
             const err = new Error('Failed to create visit: ' + error.message);
             err.status = error.status || 500;
@@ -106,17 +119,14 @@ class VisitService {
                 throw error;
             }
 
-            // Use new date and time if provided, otherwise keep existing
             const newDate = date || visit.date;
             const newTime = time || visit.time;
 
-            // Calculate weekNumber and year for timesheet assignment
             const newDateObj = new Date(newDate);
             const newYear = newDateObj.getFullYear();
             const newWeekNumber = this.getISOWeekNumber(newDateObj);
             const oldTimesheet = visit.Timesheet;
 
-            // Determine target timesheet
             let targetTimesheet = oldTimesheet;
             if (newWeekNumber !== oldTimesheet.weekNumber || newYear !== oldTimesheet.year) {
                 targetTimesheet = await Timesheet.findOne({
@@ -141,7 +151,6 @@ class VisitService {
                 visit.timesheetID = targetTimesheet.timesheetID;
             }
 
-            // Handle photo folder (create new folder based on new date and time)
             const oldDate = visit.date;
             const oldTime = visit.time.replace(/:/g, '-');
             const supervisorName = `${visit.Timesheet.User.firstname.toLowerCase()}_${visit.Timesheet.User.lastname.toLowerCase()}`;
@@ -154,7 +163,6 @@ class VisitService {
 
             let photoPaths = visit.photos ? [...visit.photos] : [];
 
-            // Move existing photos to new folder if date or time changed
             if (newDate !== oldDate || newTime !== visit.time) {
                 if (!fs.existsSync(newFolderPath)) {
                     fs.mkdirSync(newFolderPath, { recursive: true });
@@ -172,13 +180,11 @@ class VisitService {
                     }
                     photoPaths = updatedPhotoPaths;
                 }
-                // Remove old folder if it exists and is empty
                 if (fs.existsSync(oldFolderPath) && fs.readdirSync(oldFolderPath).length === 0) {
                     fs.rmSync(oldFolderPath, { recursive: true, force: true });
                 }
             }
 
-            // Save new photos to the new folder
             if (!fs.existsSync(newFolderPath)) {
                 fs.mkdirSync(newFolderPath, { recursive: true });
             }
@@ -189,7 +195,6 @@ class VisitService {
             });
             photoPaths = [...photoPaths, ...newPhotoPaths];
 
-            // Parse checklistUpdates if it’s a string
             let parsedChecklistUpdates = checklistUpdates;
             if (typeof checklistUpdates === 'string') {
                 try {
@@ -207,7 +212,6 @@ class VisitService {
                 }
             }
 
-            // Update visit fields
             visit.date = newDate;
             visit.time = newTime;
             visit.duration = duration || visit.duration;
@@ -216,11 +220,22 @@ class VisitService {
             visit.status = 'visited';
             await visit.save({ transaction });
 
-            // Reload visit with associations before committing transaction
             const reloadedVisit = await Visit.findByPk(visitID, {
                 include: [Checklist],
                 transaction,
             });
+
+            // Update Google Calendar event
+            try {
+                const event = await GoogleCalendarService.updateCalendarEvent(visit.Timesheet.supervisorID, visitID);
+                await GoogleCalendarService.notifyCalendarUpdate(visit.Timesheet.supervisorID, {
+                    visitId: visitID,
+                    calendarEventId: event.id,
+                    action: 'updated',
+                });
+            } catch (error) {
+                logger.warn(`Failed to update calendar event for visit ${visitID} during logging: ${error.message}`);
+            }
 
             await transaction.commit();
             return reloadedVisit;
@@ -251,7 +266,6 @@ class VisitService {
 
             let photoPaths = visit.photos ? [...visit.photos] : [];
 
-            // Parse photosToRemove if it’s a string
             let photosArray = photosToRemove;
             if (typeof photosToRemove === 'string') {
                 try {
@@ -271,7 +285,6 @@ class VisitService {
                 });
             }
 
-            // Add new photos to the existing folder
             if (files && files.length > 0) {
                 if (!fs.existsSync(folderPath)) {
                     fs.mkdirSync(folderPath, { recursive: true });
@@ -284,14 +297,12 @@ class VisitService {
                 });
             }
 
-            // Calculate weekNumber and year from the visit's date
             const newDate = date || visit.date;
             const newDateObj = new Date(newDate);
             const newYear = newDateObj.getFullYear();
             const newWeekNumber = this.getISOWeekNumber(newDateObj);
             const oldTimesheet = visit.Timesheet;
 
-            // Handle supervisor change
             let targetTimesheet = oldTimesheet;
             if (supervisorID && supervisorID !== oldTimesheet.supervisorID) {
                 targetTimesheet = await Timesheet.findOne({
@@ -329,7 +340,6 @@ class VisitService {
                 visit.timesheetID = targetTimesheet.timesheetID;
             }
 
-            // Update agent if changed
             if (agentID && agentID !== visit.agentID) {
                 const agent = await Agent.findByPk(agentID);
                 if (!agent) {
@@ -341,7 +351,6 @@ class VisitService {
                 visit.location = agent.location;
             }
 
-            // Parse checklists and reasons
             let parsedChecklists = checklists;
             if (typeof checklists === 'string') {
                 try {
@@ -359,7 +368,6 @@ class VisitService {
                 }
             }
 
-            // Update checklists
             if (parsedChecklists && Array.isArray(parsedChecklists)) {
                 const checklistIds = parsedChecklists.map((c) => c.id);
                 const updatedChecklists = await ChecklistService.getItemsByIds(checklistIds);
@@ -371,14 +379,12 @@ class VisitService {
                 }
             }
 
-            // Update reasons
             if (parsedReasons && Array.isArray(parsedReasons)) {
                 const reasonIds = parsedReasons.map((r) => r.id);
                 const updatedReasons = await ReasonService.getItemsByIds(reasonIds);
                 await visit.setReasons(updatedReasons);
             }
 
-            // Update visit fields
             visit.date = newDate;
             visit.time = time || visit.time;
             visit.duration = duration !== undefined ? duration : visit.duration;
@@ -388,6 +394,19 @@ class VisitService {
             visit.comment = comment !== undefined ? comment : visit.comment;
 
             await visit.save();
+
+            // Update Google Calendar event
+            try {
+                const event = await GoogleCalendarService.updateCalendarEvent(visit.Timesheet.supervisorID, visitID);
+                await GoogleCalendarService.notifyCalendarUpdate(visit.Timesheet.supervisorID, {
+                    visitId: visitID,
+                    calendarEventId: event.id,
+                    action: 'updated',
+                });
+            } catch (error) {
+                logger.warn(`Failed to update calendar event for visit ${visitID}: ${error.message}`);
+            }
+
             return visit.reload({ include: [Checklist, Reason] });
         } catch (error) {
             const err = new Error('Failed to update visit: ' + error.message);
@@ -423,6 +442,18 @@ class VisitService {
             if (fs.existsSync(folderPath)) {
                 fs.rmSync(folderPath, { recursive: true, force: true });
             }
+
+            // Delete Google Calendar event
+            try {
+                await GoogleCalendarService.deleteCalendarEvent(visit.Timesheet.supervisorID, visitID);
+                await GoogleCalendarService.notifyCalendarUpdate(visit.Timesheet.supervisorID, {
+                    visitId: visitID,
+                    action: 'deleted',
+                });
+            } catch (error) {
+                logger.warn(`Failed to delete calendar event for visit ${visitID}: ${error.message}`);
+            }
+
             await visit.destroy();
             return { message: 'Visit and associated photos deleted successfully' };
         } catch (error) {

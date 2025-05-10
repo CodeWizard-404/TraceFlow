@@ -2,18 +2,21 @@ import { AxiosError } from "axios";
 import api from "./axiosConfig";
 import { VerifyQrResponse, LogVisitResponse, VisitByIdResponse, UpdateVisitResponse, DeleteVisitResponse } from ".";
 
-// Type for Google Calendar API responses
-export type SyncCalendarResponse = {
+// Types for Google Calendar API responses
+export type CalendarEvent = {
     id: string;
     summary: string;
+    description?: string;
+    location?: string;
     start: { dateTime: string; timeZone: string };
     end: { dateTime: string; timeZone: string };
+    visitId: string;
+    mapsLink: string;
 };
 
-export type BulkSyncCalendarResponse = {
-    syncedEvents: SyncCalendarResponse[];
-    failedEvents: { visitId: string; error: string }[];
-};
+export type ListCalendarEventsResponse = CalendarEvent[];
+
+export type SyncCalendarResponse = CalendarEvent;
 
 export type DeleteCalendarResponse = {
     message: string;
@@ -88,15 +91,9 @@ export const logVisitDetails = async (
         if (data.comment) formData.append("comment", data.comment);
         if (data.date) formData.append("date", data.date);
         if (data.time) formData.append("time", data.time);
-        data.photos.forEach((photo, index) => {
-            console.log(`Appending photo ${index + 1}:`, photo.name, photo.size);
+        data.photos.forEach((photo) => {
             formData.append("photos", photo);
         });
-
-        console.log("FormData entries:");
-        for (const [key, value] of formData.entries()) {
-            console.log(`${key}:`, value instanceof File ? `${value.name} (${value.size} bytes)` : value);
-        }
 
         const response = await api.put<LogVisitResponse>(`/visits/${id}/log`, formData, {
             headers: {
@@ -187,45 +184,21 @@ export const syncVisitToCalendar = async (visitId: string): Promise<SyncCalendar
         if (!visitId) {
             throw new Error("Visit ID is required.");
         }
-        const response = await api.post<SyncCalendarResponse>(`/visits/${visitId}/calendar/sync`);
+        const response = await api.post<SyncCalendarResponse>(`/visits/${visitId}/sync-calendar`);
         return response.data;
     } catch (error) {
         throw new Error(handleApiError(error, "Unable to sync visit to calendar."));
     }
 };
 
-export const syncAllVisitsToCalendar = async (supervisorId: string): Promise<BulkSyncCalendarResponse> => {
+export const listCalendarEvents = async (timesheetId: string): Promise<ListCalendarEventsResponse> => {
     try {
-        if (!supervisorId) {
-            throw new Error("Supervisor ID is required.");
+        if (!timesheetId) {
+            throw new Error("Timesheet ID is required.");
         }
-        const response = await api.post<BulkSyncCalendarResponse>(`/visits/calendar/sync-all`, { supervisorId });
+        const response = await api.get<ListCalendarEventsResponse>(`/visits/timesheet/${timesheetId}/calendar-events`);
         return response.data;
     } catch (error) {
-        throw new Error(handleApiError(error, "Unable to sync all visits to calendar."));
-    }
-};
-
-export const updateCalendarEvent = async (visitId: string): Promise<SyncCalendarResponse> => {
-    try {
-        if (!visitId) {
-            throw new Error("Visit ID is required.");
-        }
-        const response = await api.put<SyncCalendarResponse>(`/visits/${visitId}/calendar`);
-        return response.data;
-    } catch (error) {
-        throw new Error(handleApiError(error, "Unable to update calendar event."));
-    }
-};
-
-export const deleteCalendarEvent = async (visitId: string): Promise<DeleteCalendarResponse> => {
-    try {
-        if (!visitId) {
-            throw new Error("Visit ID is required.");
-        }
-        const response = await api.delete<DeleteCalendarResponse>(`/visits/${visitId}/calendar`);
-        return response.data;
-    } catch (error) {
-        throw new Error(handleApiError(error, "Unable to delete calendar event."));
+        throw new Error(handleApiError(error, "Unable to list calendar events."));
     }
 };

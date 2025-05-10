@@ -1,4 +1,3 @@
-// Importing required dependencies
 const { validationResult } = require('express-validator');
 const logger = require('../utils/logger');
 const AuthService = require('../services/authService');
@@ -6,10 +5,8 @@ const GoogleAuthService = require('../services/googleAuthService');
 const NodeCache = require('node-cache');
 const axios = require('axios');
 
-// Initializing cache for 2FA verification
 const cache = new NodeCache({ stdTTL: 60, checkperiod: 120 });
 
-// Error message constants for consistent responses
 const ERROR_MESSAGES = {
     MISSING_FIELDS: 'Please fill in all required fields.',
     USER_NOT_FOUND: 'Account not found.',
@@ -17,10 +14,10 @@ const ERROR_MESSAGES = {
     SERVER_ERROR: 'Something broke. Try again later.',
     INVALID_CREDENTIALS: 'Wrong email or password.',
     GOOGLE_LOGIN_FAILED: 'Google login failed. Ensure your account is registered.',
+    SESSION_NOT_FOUND: 'Session not found. Please log in again.',
 };
 
 class AuthController {
-    // Formats error responses consistently
     static formatError(error) {
         const response = {
             error: error.message || ERROR_MESSAGES.SERVER_ERROR,
@@ -30,7 +27,6 @@ class AuthController {
         return response;
     }
 
-    // Handles Google OAuth callback
     static async googleCallback(req, res) {
         try {
             res.setHeader('Access-Control-Allow-Origin', process.env.FRONTEND_URL);
@@ -40,9 +36,9 @@ class AuthController {
             if (!code) throw new Error('Missing code parameter');
 
             const result = await GoogleAuthService.googleLogin(code, res);
+            await AuthService.storeSession(result.user.userID, result.accessToken);
             const response = { redirect: `${process.env.FRONTEND_URL}/?login=success` };
 
-            // Log success with structured fields
             logger.info('Google login completed successfully', {
                 traceId: req.traceId,
                 route: 'auth',
@@ -64,7 +60,6 @@ class AuthController {
         } catch (error) {
             const errorMessage = encodeURIComponent(error.message || 'Google login failed');
 
-            // Log error with structured fields
             logger.error('Google login callback failed', {
                 traceId: req.traceId,
                 route: 'auth',
@@ -81,7 +76,6 @@ class AuthController {
         }
     }
 
-    // Handles user login
     static async login(req, res) {
         try {
             const errors = validationResult(req);
@@ -90,16 +84,30 @@ class AuthController {
             const { identifier, password, deviceIdentifier, otpMethod } = req.body;
             if (!identifier || !password || !deviceIdentifier) throw new Error(ERROR_MESSAGES.MISSING_FIELDS);
 
-            // Check for recent duplicate request
             const cacheKey = `login_${req.traceId}_${deviceIdentifier}`;
             if (cache.get(cacheKey)) {
                 throw new Error('Duplicate login request detected');
             }
-            cache.set(cacheKey, true, 10); // Cache for 10 seconds
+            cache.set(cacheKey, true, 10);
+
+            const userId = `usr_${identifier}`;
+            const session = await AuthService.getSession(userId);
+            if (session && session.token) {
+                logger.info('Session found, reusing existing session', {
+                    traceId: req.traceId,
+                    route: 'auth',
+                    service: 'api',
+                    userId
+                });
+                return res.status(200).json({
+                    accessToken: session.token,
+                    user: { userID: userId, email: identifier },
+                    expiresIn: 900000
+                });
+            }
 
             const result = await AuthService.login(identifier, password, deviceIdentifier, otpMethod, res);
 
-            // Log success with structured fields, encrypting email
             logger.info('User login successful', {
                 traceId: req.traceId,
                 route: 'auth',
@@ -121,7 +129,6 @@ class AuthController {
             const status = error.message === ERROR_MESSAGES.INVALID_CREDENTIALS ? 401 : 400;
             const response = AuthController.formatError(error);
 
-            // Log error with structured fields
             logger.error('User login failed', {
                 traceId: req.traceId,
                 route: 'auth',
@@ -138,7 +145,6 @@ class AuthController {
         }
     }
 
-    // Verifies 2FA codes
     static async verify2FA(req, res) {
         try {
             const errors = validationResult(req);
@@ -156,7 +162,6 @@ class AuthController {
             const result = await AuthService.verify2FA(userID, otpCode, deviceIdentifier, trustDevice, tempToken, refreshToken, res);
             cache.set(cacheKey, result, 60);
 
-            // Log success with structured fields
             logger.info('2FA verification successful', {
                 traceId: req.traceId,
                 route: 'auth',
@@ -176,7 +181,6 @@ class AuthController {
         } catch (error) {
             const response = AuthController.formatError(error);
 
-            // Log error with structured fields
             logger.error('2FA verification failed', {
                 traceId: req.traceId,
                 route: 'auth',
@@ -193,7 +197,6 @@ class AuthController {
         }
     }
 
-    // Refreshes authentication tokens
     static async refreshToken(req, res) {
         try {
             const refreshToken = req.cookies.refreshToken;
@@ -201,7 +204,6 @@ class AuthController {
 
             const result = await AuthService.refreshToken(refreshToken, res);
 
-            // Log success with structured fields
             logger.info('Token refresh successful', {
                 traceId: req.traceId,
                 route: 'auth',
@@ -218,7 +220,6 @@ class AuthController {
         } catch (error) {
             const response = AuthController.formatError(error);
 
-            // Log error with structured fields
             logger.error('Token refresh failed', {
                 traceId: req.traceId,
                 route: 'auth',
@@ -235,11 +236,11 @@ class AuthController {
         }
     }
 
-    // Handles user logout
     static async logout(req, res) {
         try {
             const refreshToken = req.cookies?.refreshToken;
-            const result = await AuthService.logout(refreshToken);
+            const userId = req.user?.userID;
+            const result = await AuthService.logout(refreshToken, userId);
 
             const cookieOptions = {
                 path: '/',
@@ -256,7 +257,6 @@ class AuthController {
                 keycloakLogoutUrl: result.keycloakLogoutUrl,
             };
 
-            // Log success with structured fields
             logger.info('User logout successful', {
                 traceId: req.traceId,
                 route: 'auth',
@@ -265,7 +265,7 @@ class AuthController {
                 method: req.method,
                 url: req.originalUrl,
                 ip: req.ip,
-                userId: null, // User ID not available after logout
+                userId: userId || null,
                 metadata: { message: response.message }
             });
 
@@ -273,7 +273,6 @@ class AuthController {
         } catch (error) {
             const response = { error: error.message || 'Logout failed' };
 
-            // Log error with structured fields
             logger.error('User logout failed', {
                 traceId: req.traceId,
                 route: 'auth',
@@ -290,7 +289,6 @@ class AuthController {
         }
     }
 
-    // Resends 2FA codes
     static async resend2FA(req, res) {
         try {
             const errors = validationResult(req);
@@ -301,7 +299,6 @@ class AuthController {
 
             const result = await AuthService.resend2FA(userID, otpMethod);
 
-            // Log success with structured fields
             logger.info('2FA code resent successfully', {
                 traceId: req.traceId,
                 route: 'auth',
@@ -318,7 +315,6 @@ class AuthController {
         } catch (error) {
             const response = AuthController.formatError(error);
 
-            // Log error with structured fields
             logger.error('2FA code resend failed', {
                 traceId: req.traceId,
                 route: 'auth',
@@ -335,7 +331,6 @@ class AuthController {
         }
     }
 
-    // Initiates password reset process
     static async initiatePasswordReset(req, res) {
         try {
             const errors = validationResult(req);
@@ -346,7 +341,6 @@ class AuthController {
 
             const result = await AuthService.initiatePasswordReset(identifier);
 
-            // Log success with structured fields
             logger.info('Password reset initiated successfully', {
                 traceId: req.traceId,
                 route: 'auth',
@@ -363,7 +357,6 @@ class AuthController {
         } catch (error) {
             const response = AuthController.formatError(error);
 
-            // Log error with structured fields
             logger.error('Password reset initiation failed', {
                 traceId: req.traceId,
                 route: 'auth',
@@ -380,7 +373,6 @@ class AuthController {
         }
     }
 
-    // Verifies password reset OTP
     static async verifyPasswordResetOTP(req, res) {
         try {
             const errors = validationResult(req);
@@ -391,7 +383,6 @@ class AuthController {
 
             const result = await AuthService.verifyPasswordResetOTP(userID, otpCode);
 
-            // Log success with structured fields
             logger.info('Password reset OTP verified successfully', {
                 traceId: req.traceId,
                 route: 'auth',
@@ -408,7 +399,6 @@ class AuthController {
         } catch (error) {
             const response = AuthController.formatError(error);
 
-            // Log error with structured fields
             logger.error('Password reset OTP verification failed', {
                 traceId: req.traceId,
                 route: 'auth',
@@ -425,7 +415,6 @@ class AuthController {
         }
     }
 
-    // Completes password reset
     static async resetPassword(req, res) {
         try {
             const errors = validationResult(req);
@@ -436,7 +425,6 @@ class AuthController {
 
             const result = await AuthService.resetPassword(userID, newPassword, tempToken);
 
-            // Log success with structured fields
             logger.info('Password reset completed successfully', {
                 traceId: req.traceId,
                 route: 'auth',
@@ -453,7 +441,6 @@ class AuthController {
         } catch (error) {
             const response = AuthController.formatError(error);
 
-            // Log error with structured fields
             logger.error('Password reset failed', {
                 traceId: req.traceId,
                 route: 'auth',

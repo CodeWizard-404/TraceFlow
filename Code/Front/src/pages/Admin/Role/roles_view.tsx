@@ -1,24 +1,16 @@
+// RoleView.tsx
 import React, { useCallback, useEffect, useMemo, useState, useRef } from "react";
 import { FaEdit, FaInfoCircle, FaTrash, FaChevronDown, FaChevronUp, FaCopy } from "react-icons/fa";
 import { debounce } from "lodash";
 import { motion, AnimatePresence } from "framer-motion";
-
-// Context and APIs
 import { useAuth } from "../../../context/AuthContext";
 import { assignPermissionsToRole, revokePermissionsFromRole, getPermissionsByRole, getAllPermissions } from "../../../apis/permissionAPI";
 import { deleteRole, updateRole, createRole } from "../../../apis/roleAPI";
-
-// Models
 import Permission from "../../../models/Permission";
 import Role from "../../../models/Role";
-
-// Components
 import InfoPopup from "../InfoPopup";
-
-// Styles
 import "../AdminDashboard.css";
 
-// Props interface
 interface RoleViewProps {
   selectedRole: Role | null;
   setSelectedRole: (role: Role | null) => void;
@@ -28,13 +20,9 @@ interface RoleViewProps {
   setError: (error: string | null) => void;
 }
 
-// RoleView component, memoized
 const RoleView: React.FC<RoleViewProps> = React.memo(
   ({ selectedRole, setSelectedRole, roles, setRoles, userRoles, setError }) => {
-    // Auth context
     const { effectivePermissions } = useAuth();
-
-    // State declarations
     const [allPermissions, setAllPermissions] = useState<Permission[]>([]);
     const [activePermissionPopup, setActivePermissionPopup] = useState<string | null>(null);
     const [confirmation, setConfirmation] = useState<{
@@ -53,7 +41,6 @@ const RoleView: React.FC<RoleViewProps> = React.memo(
     const [expandedActions, setExpandedActions] = useState<{ [key: string]: boolean }>({});
     const containerRefs = useRef<{ [key: string]: HTMLDivElement | null }>({});
 
-    // Memoized permissions object
     const userPermissions = useMemo(
       () => ({
         canAssignPermissions: effectivePermissions?.some(
@@ -78,13 +65,11 @@ const RoleView: React.FC<RoleViewProps> = React.memo(
       [effectivePermissions]
     );
 
-    // Memoized super admin check
     const isSuperAdmin = useMemo(
       () => userRoles?.some((r) => r.name === import.meta.env.VITE_ROLES_SUPER_ADMIN),
       [userRoles]
     );
 
-    // Restricted roles
     const restrictedRoles = useMemo(
       () => [
         import.meta.env.VITE_ROLES_SUPER_ADMIN,
@@ -103,13 +88,11 @@ const RoleView: React.FC<RoleViewProps> = React.memo(
       [selectedRole, restrictedRoles]
     );
 
-    // Debounced search handler
     const debouncedSetPermissionSearch = useCallback(
       debounce((value: string) => setPermissionSearch(value), 300),
       []
     );
 
-    // Fetch initial data
     useEffect(() => {
       const fetchInitialData = async () => {
         if (!selectedRole || !userPermissions.canReadPermissionsByRole) {
@@ -136,7 +119,24 @@ const RoleView: React.FC<RoleViewProps> = React.memo(
       fetchInitialData();
     }, [selectedRole, userPermissions.canReadPermissionsByRole, setError]);
 
-    // Categorize permissions by action type based on the first word
+    useEffect(() => {
+      const interval = setInterval(async () => {
+        if (!selectedRole || !userPermissions.canReadPermissionsByRole) return;
+        try {
+          const rolePerms = await getPermissionsByRole(selectedRole.roleID);
+          setTempPermissions((prev) => {
+            if (JSON.stringify(prev) !== JSON.stringify(rolePerms)) {
+              return rolePerms || [];
+            }
+            return prev;
+          });
+        } catch (error) {
+          console.error("Failed to sync permissions:", error);
+        }
+      }, 30000);
+      return () => clearInterval(interval);
+    }, [selectedRole, userPermissions.canReadPermissionsByRole]);
+
     const categorizeByAction = (permissions: Permission[]) => {
       const categories: { [key: string]: Permission[] } = {
         Access: [],
@@ -182,7 +182,6 @@ const RoleView: React.FC<RoleViewProps> = React.memo(
       return categories;
     };
 
-    // Computed permissions
     const categorizedPermissions = useMemo(() => {
       const filteredPerms = allPermissions.filter(
         (perm) => isSuperAdmin || !["Role", "Permission"].includes(perm.class)
@@ -231,7 +230,6 @@ const RoleView: React.FC<RoleViewProps> = React.memo(
       }));
     }, [allPermissions, permissionSearch, selectedCategory, isSuperAdmin]);
 
-    // Validation functions
     const validateRoleName = useCallback((value: string): string => {
       const trimmed = value.trim();
       if (!trimmed) return "Role name is required";
@@ -248,7 +246,6 @@ const RoleView: React.FC<RoleViewProps> = React.memo(
       return "";
     }, []);
 
-    // Generate unique role name for duplication
     const generateUniqueRoleName = useCallback((baseName: string): string => {
       let newName = `${baseName} Copy`;
       let counter = 1;
@@ -259,7 +256,6 @@ const RoleView: React.FC<RoleViewProps> = React.memo(
       return newName;
     }, [roles]);
 
-    // Handle duplicate role
     const handleDuplicateRole = useCallback(() => {
       if (!selectedRole || !userPermissions.canCreateRoles) return;
 
@@ -294,7 +290,6 @@ const RoleView: React.FC<RoleViewProps> = React.memo(
       });
     }, [selectedRole, userPermissions.canCreateRoles, roles, setRoles, setSelectedRole, setError, generateUniqueRoleName]);
 
-    // Handle role edit
     const handleEditRole = useCallback(() => {
       if (!selectedRole || !userPermissions.canUpdateRoles) return;
       if (selectedRole.name === import.meta.env.VITE_ROLES_SUPER_ADMIN) {
@@ -326,7 +321,6 @@ const RoleView: React.FC<RoleViewProps> = React.memo(
       });
     }, [selectedRole, userPermissions.canUpdateRoles, isSuperAdmin, isRestrictedRole, setError]);
 
-    // Handle save role edit
     const handleSaveRoleEdit = useCallback(async () => {
       if (!selectedRole || !userPermissions.canUpdateRoles || !isEditingRole) return;
 
@@ -402,7 +396,6 @@ const RoleView: React.FC<RoleViewProps> = React.memo(
       validateRoleDescription,
     ]);
 
-    // Handle delete role
     const handleDeleteRole = useCallback(() => {
       if (!selectedRole || !userPermissions.canDeleteRoles) return;
       if (isRestrictedRole) {
@@ -428,7 +421,6 @@ const RoleView: React.FC<RoleViewProps> = React.memo(
       });
     }, [selectedRole, userPermissions.canDeleteRoles, isRestrictedRole, roles, setRoles, setSelectedRole, setError]);
 
-    // Handle permission toggle
     const handleTogglePermission = useCallback(
       (permission: Permission) => {
         if (!userPermissions.canAssignPermissions) return;
@@ -444,11 +436,10 @@ const RoleView: React.FC<RoleViewProps> = React.memo(
       [userPermissions.canAssignPermissions]
     );
 
-    // Handle toggle all permissions in action
     const handleToggleAllPermissionsInAction = useCallback(
       (className: string, action: string) => {
         if (!userPermissions.canAssignPermissions) return;
-        const validActions = ['access', 'update coinvolti nella gestione delle autorizzazioni:', 'delete', 'create', 'assign', 'revoke', 'view', 'manage'];
+        const validActions = ['access', 'update', 'delete', 'create', 'assign', 'revoke', 'view', 'manage'];
 
         const actionPermissions = allPermissions.filter((p) => {
           if (p.class !== className) return false;
@@ -480,7 +471,6 @@ const RoleView: React.FC<RoleViewProps> = React.memo(
       [userPermissions.canAssignPermissions, allPermissions, tempPermissions]
     );
 
-    // Handle toggle all permissions in class
     const handleToggleAllPermissionsInClass = useCallback(
       (className: string) => {
         if (!userPermissions.canAssignPermissions) return;
@@ -504,19 +494,14 @@ const RoleView: React.FC<RoleViewProps> = React.memo(
       [userPermissions.canAssignPermissions, allPermissions, tempPermissions]
     );
 
-    // Toggle action expansion
     const toggleActionExpansion = useCallback((className: string, action: string) => {
       const key = `${className}-${action}`.toLowerCase().replace(/\s+/g, '-');
-      setExpandedActions((prev) => {
-        const newState = {
-          ...prev,
-          [key]: !prev[key],
-        };
-        return newState;
-      });
+      setExpandedActions((prev) => ({
+        ...prev,
+        [key]: !prev[key],
+      }));
     }, []);
 
-    // Handle save permissions
     const handleSavePermissions = useCallback(async () => {
       if (!selectedRole || !userPermissions.canAssignPermissions) return;
       setLoading(true);
@@ -555,7 +540,6 @@ const RoleView: React.FC<RoleViewProps> = React.memo(
       setError,
     ]);
 
-    // Confirmation modal component
     const ConfirmationModal: React.FC<{
       message: string;
       onConfirm: () => void;
@@ -574,25 +558,18 @@ const RoleView: React.FC<RoleViewProps> = React.memo(
       };
 
       return (
-        <div
-          className={`confirmation-modal-overlay ${isFadingOut ? "fade-out" : "fade-in"}`}
-        >
+        <div className={`confirmation-modal-overlay ${isFadingOut ? "fade-out" : "fade-in"}`}>
           <div className="confirmation-modal">
             <p>{message}</p>
             <div className="confirmation-actions">
-              <button className="confirm-button" onClick={handleConfirm}>
-                Confirm
-              </button>
-              <button className="cancel-button" onClick={handleCancel}>
-                Cancel
-              </button>
+              <button className="confirm-button" onClick={handleConfirm}>Confirm</button>
+              <button className="cancel-button" onClick={handleCancel}>Cancel</button>
             </div>
           </div>
         </div>
       );
     };
 
-    // Render skeleton loader
     const renderSkeleton = () => (
       <div aria-busy="true">
         <div className="card-header">
@@ -627,18 +604,12 @@ const RoleView: React.FC<RoleViewProps> = React.memo(
       </div>
     );
 
-    // Check rendering conditions
     if (!selectedRole || !userPermissions.canViewRoleDetails) {
       return null;
     }
 
-    // Render UI
     return (
-      <motion.div
-        initial={{ opacity: 0 }}
-        animate={{ opacity: 1 }}
-        transition={{ duration: 0.3 }}
-      >
+      <motion.div initial={{ opacity: 0 }} animate={{ opacity: 1 }} transition={{ duration: 0.3 }}>
         <div className="details-card">
           {loading && renderSkeleton()}
           {!loading && (
@@ -663,13 +634,8 @@ const RoleView: React.FC<RoleViewProps> = React.memo(
                   return permission ? (
                     <>
                       <h4>{permission.name}</h4>
-                      <p>
-                        <strong>Class:</strong> {permission.class}
-                      </p>
-                      <p>
-                        <strong>Description:</strong>{" "}
-                        {permission.description || "No description available"}
-                      </p>
+                      <p><strong>Class:</strong> {permission.class}</p>
+                      <p><strong>Description:</strong> {permission.description || "No description available"}</p>
                     </>
                   ) : (
                     <p>Permission not found</p>
@@ -813,9 +779,7 @@ const RoleView: React.FC<RoleViewProps> = React.memo(
                             >
                               <option value="all">All Classes</option>
                               {categorizedPermissions.map(({ className }) => (
-                                <option key={className} value={className}>
-                                  {className}
-                                </option>
+                                <option key={className} value={className}>{className}</option>
                               ))}
                             </select>
                           </div>

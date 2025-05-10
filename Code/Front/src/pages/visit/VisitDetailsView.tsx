@@ -18,7 +18,6 @@ import {
     FaTimes,
 } from "react-icons/fa";
 import "./VisitDetails.css";
-import { Button } from "../../components/ui/button";
 import { useAuth } from "../../context/AuthContext";
 import VisitStatus from "../../models/Enum/VisitStatus";
 import Visit from "../../models/Visit";
@@ -34,7 +33,6 @@ import {
     getSupervisorsByRegionalManager,
     getRegionalManagerBySupervisor,
     getAllUsers,
-    getRegionsByUser,
 } from "../../apis/userAPI";
 import { getAllChecklists } from "../../apis/checklistAPI";
 import { getAllReasons } from "../../apis/reasonAPI";
@@ -44,23 +42,23 @@ import {
     getAllRegions,
     getAllGovernorates,
     getAllDelegations,
-    getRegionsByGovernorate,
+    getRegionsByUser
 } from "../../apis/locationApi";
 import { useTranslation } from "react-i18next";
 import CalendarSyncButton from "../../components/Google/CalendarSyncButton";
+import { io } from 'socket.io-client';
 
-// Constants for environment variables and permissions
 const BASE_URL = import.meta.env.VITE_BASE_URL;
+const SOCKET_URL = import.meta.env.VITE_SOCKET_URL || 'http://localhost:5000';
+
 const PERMISSIONS = {
     ACCESS_VISIT_DETAILS: import.meta.env.VITE_PERMISSIONS_ACCESS_VISIT_DETAILS,
     LOG_VISITS: import.meta.env.VITE_PERMISSIONS_LOG_VISITS,
     VALIDATE_TIMESHEETS: import.meta.env.VITE_PERMISSIONS_VALIDATE_TIMESHEETS,
     EDIT_TIMESHEETS_FOR_SUPERVISOR: import.meta.env.VITE_PERMISSIONS_EDIT_VISIT,
-    DELETE_TIMESHEETS_FOR_SUPERVISOR: import.meta.env
-        .VITE_PERMISSIONS_DELETE_VISIT,
+    DELETE_TIMESHEETS_FOR_SUPERVISOR: import.meta.env.VITE_PERMISSIONS_DELETE_VISIT,
     READ_SUPERVISORS: import.meta.env.VITE_PERMISSIONS_READ_SUPERVISORS,
-    READ_AGENTS_BY_LOCATION: import.meta.env
-        .VITE_PERMISSIONS_READ_AGENTS_BY_DELEGATION,
+    READ_AGENTS_BY_LOCATION: import.meta.env.VITE_PERMISSIONS_READ_AGENTS_BY_DELEGATION,
     READ_REASON_ITEMS: import.meta.env.VITE_PERMISSIONS_READ_REASON_ITEMS,
     READ_CHECKLISTS_ITEMS: import.meta.env.VITE_PERMISSIONS_READ_CHECKLISTS_ITEMS,
 } as const;
@@ -72,9 +70,6 @@ const ROLES = {
     DIRECTOR: import.meta.env.VITE_ROLES_DIRECTOR,
 };
 
-/**
- * VisitDetailsView component: Displays visit details with navigation and action buttons.
- */
 const VisitDetailsView: React.FC = () => {
     const { t } = useTranslation();
     const { idVisit } = useParams<{ idVisit: string }>();
@@ -83,16 +78,16 @@ const VisitDetailsView: React.FC = () => {
 
     const [visit, setVisit] = useState<Visit | null>(null);
     const [agent, setAgent] = useState<Agent | null>(null);
-    const [regions, setRegions] = useState<Region[]>([]);
-    const [governorates, setGovernorates] = useState<Governorate[]>([]);
-    const [delegations, setDelegations] = useState<Delegation[]>([]);
-    const [reasons, setReasons] = useState<Reason[]>([]);
-    const [checklists, setChecklists] = useState<Checklist[]>([]);
+    const [, setRegions] = useState<Region[]>([]);
+    const [, setGovernorates] = useState<Governorate[]>([]);
+    const [, setDelegations] = useState<Delegation[]>([]);
+    const [, setReasons] = useState<Reason[]>([]);
+    const [, setChecklists] = useState<Checklist[]>([]);
     const [loading, setLoading] = useState<boolean>(true);
     const [error, setError] = useState<string | null>(null);
     const [selectedImage, setSelectedImage] = useState<string | null>(null);
-    const [regionalManagers, setRegionalManagers] = useState<User[]>([]);
-    const [supervisors, setSupervisors] = useState<User[]>([]);
+    const [, setRegionalManagers] = useState<User[]>([]);
+    const [, setSupervisors] = useState<User[]>([]);
 
     const userPermissions = useMemo(
         () => ({
@@ -203,8 +198,7 @@ const VisitDetailsView: React.FC = () => {
                         ? getAllUsers().then((users) =>
                             users.filter((u) =>
                                 u.Roles?.some(
-                                    (role) =>
-                                        role.name.toLowerCase() === ROLES.REGIONAL_MANAGER.toLowerCase()
+                                    (role) => role.name.toLowerCase() === ROLES.REGIONAL_MANAGER.toLowerCase()
                                 )
                             )
                         )
@@ -241,6 +235,27 @@ const VisitDetailsView: React.FC = () => {
     useEffect(() => {
         if (permissionsLoaded) fetchVisitData();
     }, [fetchVisitData, permissionsLoaded]);
+
+    useEffect(() => {
+        if (!user?.userID || !idVisit) return;
+        const socket = io(SOCKET_URL, {
+            auth: { token: localStorage.getItem('accessToken') }
+        });
+
+        socket.on('connect', () => {
+            socket.emit('join', user.userID);
+        });
+
+        socket.on('calendar:update', (data: { visitId: string; calendarEventId?: string; action: 'created' | 'updated' | 'deleted' }) => {
+            if (data.visitId === idVisit) {
+                setVisit((prev) => prev ? { ...prev, calendarEventId: data.action === 'deleted' ? undefined : data.calendarEventId } : prev);
+            }
+        });
+
+        return () => {
+            socket.disconnect();
+        };
+    }, [user, idVisit]);
 
     const handleLogVisit = () => {
         if (visit && userPermissions.canLogVisits) {
@@ -409,6 +424,11 @@ const VisitDetailsView: React.FC = () => {
                                 <FaMapMarkerAlt />{" "}
                                 {visit.location || t("visitDetails.whenWhere.na")}
                             </p>
+                            {visit.calendarEventId && (
+                                <p>
+                                    <FaCalendar /> Synced to Google Calendar
+                                </p>
+                            )}
                         </div>
                     </div>
 
@@ -566,7 +586,7 @@ const VisitDetailsView: React.FC = () => {
                         <CalendarSyncButton
                             visitId={visit.visitID}
                             isSupervisor={!!isSupervisor}
-                            hasCalendarEvent={!!visit.calendarEventId} // Assumes calendarEventId is in Visit model
+                            hasCalendarEvent={!!visit.calendarEventId}
                         />
                     )}
                 </div>

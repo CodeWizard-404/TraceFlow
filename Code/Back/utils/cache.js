@@ -1,58 +1,68 @@
 const { getRedisClient } = require('../config/redis');
-const logger = require('./logger');
 
 class Cache {
     constructor(prefix = 'cache:') {
         this.prefix = prefix;
         this.client = getRedisClient();
+        this.ttlMap = {
+            api: 300,    // 5 minutes for API responses
+            user: 3600,  // 1 hour for user data
+            session: 86400, // 24 hours for sessions
+        };
     }
 
-    async getOrSet(key, fetchFn, ttl = 3600) {
+    async getOrSet(key, fetchFn, ttlOrType = 'user') {
         const cacheKey = `${this.prefix}${key}`;
+        const ttl = typeof ttlOrType === 'number' ? ttlOrType : this.ttlMap[ttlOrType] || 3600;
+        const tag = key.split(':')[0]; // e.g., 'user' from 'user:123'
+
         try {
             const cached = await this.client.get(cacheKey);
-            if (cached) {
-                logger.info(`Cache hit for key: ${cacheKey}`, { service: 'cache' });
-                return JSON.parse(cached);
-            }
+            if (cached) return JSON.parse(cached);
 
-            logger.info(`Cache miss for key: ${cacheKey}`, { service: 'cache' });
             const data = await fetchFn();
             await this.client.setex(cacheKey, ttl, JSON.stringify(data));
+            await this.client.sadd(`tag:${tag}`, cacheKey); // Track keys by tag
             return data;
         } catch (error) {
-            logger.error(`Cache error for key: ${cacheKey}`, { error: error.message, service: 'cache' });
+            console.error(`Cache error for ${key}`, { error: error.message });
+            return await fetchFn(); // Fallback
+        }
+    }
+
+    async hgetOrSet(key, fetchFn, ttlOrType = 'user') {
+        const cacheKey = `${this.prefix}${key}`;
+        const ttl = typeof ttlOrType === 'number' ? ttlOrType : this.ttlMap[ttlOrType] || 3600;
+        const tag = key.split(':')[0];
+
+        try {
+            const cached = await this.client.hgetall(cacheKey);
+            if (cached && Object.keys(cached).length) return cached;
+
+            const data = await fetchFn();
+            await this.client.hmset(cacheKey, data);
+            await this.client.expire(cacheKey, ttl);
+            await this.client.sadd(`tag:${tag}`, cacheKey);
+            return data;
+        } catch (error) {
+            console.error(`Hash cache error for ${key}`, { error: error.message });
             return await fetchFn();
         }
     }
 
     async invalidate(key) {
         const cacheKey = `${this.prefix}${key}`;
-        try {
-            await this.client.del(cacheKey);
-            logger.info(`Cache invalidated for key: ${cacheKey}`, { service: 'cache' });
-        } catch (error) {
-            logger.error(`Cache invalidation error for key: ${cacheKey}`, { error: error.message, service: 'cache' });
-        }
+        await this.client.del(cacheKey);
     }
 
-    async invalidateByPattern(pattern) {
-        try {
-            const keys = await this.client.keys(`${this.prefix}${pattern}`);
-            if (keys.length > 0) {
-                await this.client.del(keys);
-                logger.info(`Invalidated ${keys.length} keys matching pattern: ${pattern}`, { service: 'cache' });
-            }
-        } catch (error) {
-            logger.error(`Error invalidating keys by pattern: ${pattern}`, { error: error.message, service: 'cache' });
-        }
+    async invalidateByTag(tag) {
+        const keys = await this.client.smembers(`tag:${tag}`);
+        if (keys.length) await this.client.del(keys);
+        await this.client.del(`tag:${tag}`);
     }
 }
 
-// Export a factory function instead of an instance
 module.exports = async () => {
-    // Ensure Redis is initialized before creating Cache
-    const { initializeRedis } = require('../config/redis');
-    await initializeRedis();
+    await require('../config/redis').initializeRedis();
     return new Cache();
 };

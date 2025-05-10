@@ -57,6 +57,16 @@ class VisitController {
                 return res.status(400).json({ error: 'At least one photo is required to log a visit' });
             }
             const visit = await VisitService.logVisit(id, { duration, checklistUpdates, comment, date, time }, files, req.user.userID);
+            try {
+                const event = await GoogleCalendarService.updateCalendarEvent(req.user.userID, id);
+                await GoogleCalendarService.notifyCalendarUpdate(req.user.userID, {
+                    visitId: id,
+                    calendarEventId: event.id,
+                    action: 'updated',
+                });
+            } catch (error) {
+                logger.warn(`Failed to update calendar event for visit ${id}: ${error.message}`);
+            }
             await NotificationService.triggerNotification({
                 event: 'visit:logged',
                 data: { visitId: id, duration, comment },
@@ -81,7 +91,12 @@ class VisitController {
             }
             const visit = await VisitService.updateVisit(id, data, files, req.user.userID);
             try {
-                await GoogleCalendarService.updateCalendarEvent(req.user.userID, id);
+                const event = await GoogleCalendarService.updateCalendarEvent(req.user.userID, id);
+                await GoogleCalendarService.notifyCalendarUpdate(req.user.userID, {
+                    visitId: id,
+                    calendarEventId: event.id,
+                    action: 'updated',
+                });
             } catch (error) {
                 logger.warn(`Failed to update calendar event for visit ${id}: ${error.message}`);
             }
@@ -108,6 +123,10 @@ class VisitController {
             const result = await VisitService.deleteVisit(id, req.user.userID);
             try {
                 await GoogleCalendarService.deleteCalendarEvent(req.user.userID, id);
+                await GoogleCalendarService.notifyCalendarUpdate(req.user.userID, {
+                    visitId: id,
+                    action: 'deleted',
+                });
             } catch (error) {
                 logger.warn(`Failed to delete calendar event for visit ${id}: ${error.message}`);
             }
@@ -132,6 +151,11 @@ class VisitController {
                 return res.status(400).json({ error: 'Visit ID is required' });
             }
             const event = await GoogleCalendarService.createCalendarEvent(req.user.userID, id);
+            await GoogleCalendarService.notifyCalendarUpdate(req.user.userID, {
+                visitId: id,
+                calendarEventId: event.id,
+                action: 'created',
+            });
             await NotificationService.triggerNotification({
                 event: 'visit:calendar_synced',
                 data: { visitId: id, calendarEventId: event.id },
@@ -145,64 +169,19 @@ class VisitController {
         }
     }
 
-    // sync all
-    static async syncAllVisitsToCalendar(req, res) {
+    static async listCalendarEvents(req, res) {
         try {
-            const { id } = req.user;
-            const visits = await VisitService.getVisitsByUser(id);
-            const events = await Promise.all(visits.map(visit => GoogleCalendarService.createCalendarEvent(id, visit._id)));
-            await NotificationService.triggerNotification({
-                event: 'visit:calendar_synced',
-                data: { visitIds: visits.map(visit => visit._id), calendarEventIds: events.map(event => event.id) },
-                metadata: { syncedBy: req.user.email },
-            });
-            logger.info(`Synced all visits to Google Calendar by user ${id}, IP: ${req.ip}`);
+            const { timesheetId } = req.params;
+            if (!timesheetId) {
+                logger.warn(`List calendar events failed: Missing timesheet ID, user: ${req.user.userID}, IP: ${req.ip}`);
+                return res.status(400).json({ error: 'Timesheet ID is required' });
+            }
+            const events = await GoogleCalendarService.listCalendarEvents(req.user.userID, timesheetId);
+            logger.info(`Listed calendar events for timesheet ${timesheetId} by user ${req.user.userID}, IP: ${req.ip}`);
             return res.status(200).json(events);
         } catch (error) {
-            logger.error(`Sync all visits to calendar error: ${error.message}, user: ${req.user.userID}, IP: ${req.ip}`);
-            return res.status(error.status || 500).json({ error: error.message || 'Failed to sync all visits to calendar' });
-        }
-    }
-
-    static async updateCalendarEvent(req, res) {
-        try {
-            const { id } = req.params;
-            if (!id) {
-                logger.warn(`Update calendar event failed: Missing visit ID, user: ${req.user.userID}, IP: ${req.ip}`);
-                return res.status(400).json({ error: 'Visit ID is required' });
-            }
-            const event = await GoogleCalendarService.updateCalendarEvent(req.user.userID, id);
-            await NotificationService.triggerNotification({
-                event: 'visit:calendar_updated',
-                data: { visitId: id, calendarEventId: event.id },
-                metadata: { updatedBy: req.user.email },
-            });
-            logger.info(`Updated Google Calendar event for visit ${id} by user ${req.user.userID}, IP: ${req.ip}`);
-            return res.status(200).json(event);
-        } catch (error) {
-            logger.error(`Update calendar event error: ${error.message}, user: ${req.user.userID}, IP: ${req.ip}`);
-            return res.status(error.status || 500).json({ error: error.message || 'Failed to update calendar event' });
-        }
-    }
-
-    static async deleteCalendarEvent(req, res) {
-        try {
-            const { id } = req.params;
-            if (!id) {
-                logger.warn(`Delete calendar event failed: Missing visit ID, user: ${req.user.userID}, IP: ${req.ip}`);
-                return res.status(400).json({ error: 'Visit ID is required' });
-            }
-            const result = await GoogleCalendarService.deleteCalendarEvent(req.user.userID, id);
-            await NotificationService.triggerNotification({
-                event: 'visit:calendar_deleted',
-                data: { visitId: id },
-                metadata: { deletedBy: req.user.email },
-            });
-            logger.info(`Deleted Google Calendar event for visit ${id} by user ${req.user.userID}, IP: ${req.ip}`);
-            return res.status(200).json(result);
-        } catch (error) {
-            logger.error(`Delete calendar event error: ${error.message}, user: ${req.user.userID}, IP: ${req.ip}`);
-            return res.status(error.status || 500).json({ error: error.message || 'Failed to delete calendar event' });
+            logger.error(`List calendar events error: ${error.message}, user: ${req.user.userID}, IP: ${req.ip}`);
+            return res.status(error.status || 500).json({ error: error.message || 'Failed to list calendar events' });
         }
     }
 }

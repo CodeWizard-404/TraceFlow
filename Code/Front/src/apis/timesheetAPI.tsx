@@ -9,7 +9,13 @@ import {
   DeleteTimesheetResponse,
 } from ".";
 
-// Error response type for Axios errors
+// Type for timesheet calendar sync response
+export type SyncTimesheetCalendarResponse = Array<{
+  visitId: string;
+  calendarEventId: string;
+  status: "created" | "updated";
+}>;
+
 interface AxiosErrorResponse {
   response?: {
     data?: { error?: string };
@@ -17,7 +23,6 @@ interface AxiosErrorResponse {
   };
 }
 
-// Generic error handler
 const handleApiError = (error: unknown, defaultMessage: string): string => {
   const axiosError = error as AxiosError<AxiosErrorResponse>;
   if (axiosError.response) {
@@ -39,7 +44,6 @@ const handleApiError = (error: unknown, defaultMessage: string): string => {
   }
 };
 
-// Create a new timesheet
 export const createTimesheet = async (data: {
   weekNumber: number;
   year: number;
@@ -67,7 +71,6 @@ export const createTimesheet = async (data: {
   }
 };
 
-// Update a timesheet
 export const updateTimesheet = async (
   id: string,
   data: {
@@ -107,7 +110,7 @@ export const updateTimesheet = async (
           comment: string;
           photos: File[];
         }> = { ...visit };
-        delete visitObj.photos; // Remove photos from JSON
+        delete visitObj.photos;
         return visitObj;
       });
       formData.append("visits", JSON.stringify(visitsData));
@@ -132,7 +135,6 @@ export const updateTimesheet = async (
   }
 };
 
-// Delete a timesheet
 export const deleteTimesheet = async (id: string): Promise<DeleteTimesheetResponse> => {
   try {
     if (!id) {
@@ -145,7 +147,6 @@ export const deleteTimesheet = async (id: string): Promise<DeleteTimesheetRespon
   }
 };
 
-// Get all timesheets
 export const getAllTimesheets = async (): Promise<ListTimesheetsResponse> => {
   try {
     const response = await api.get<ListTimesheetsResponse>("/timesheets");
@@ -155,7 +156,6 @@ export const getAllTimesheets = async (): Promise<ListTimesheetsResponse> => {
   }
 };
 
-// Get timesheet by ID
 export const getTimesheetById = async (id: string): Promise<TimesheetByIdResponse> => {
   try {
     if (!id) {
@@ -168,7 +168,6 @@ export const getTimesheetById = async (id: string): Promise<TimesheetByIdRespons
   }
 };
 
-// Validate a timesheet
 export const validateTimesheet = async (
   id: string,
   data: { visitIDs: string[]; status: string }
@@ -184,7 +183,6 @@ export const validateTimesheet = async (
   }
 };
 
-// Get timesheets by supervisor
 export const getTimesheetsBySupervisor = async (supervisorID: string): Promise<TimesheetsBySupervisorResponse> => {
   try {
     if (!supervisorID) {
@@ -194,5 +192,17 @@ export const getTimesheetsBySupervisor = async (supervisorID: string): Promise<T
     return response.data;
   } catch (error) {
     throw new Error(handleApiError(error, "Unable to fetch timesheets for supervisor."));
+  }
+};
+
+export const syncTimesheetToCalendar = async (timesheetId: string): Promise<SyncTimesheetCalendarResponse> => {
+  try {
+    if (!timesheetId) {
+      throw new Error("Timesheet ID is required.");
+    }
+    const response = await api.post<SyncTimesheetCalendarResponse>(`/timesheets/${timesheetId}/sync-calendar`);
+    return response.data;
+  } catch (error) {
+    throw new Error(handleApiError(error, "Unable to sync timesheet to calendar."));
   }
 };

@@ -6,6 +6,7 @@ import NotificationItem from './notification';
 import { cn } from '../../lib/utils';
 import './notification.css';
 import { getNotifications } from '../../apis/notificationAPI';
+import { FixedSizeList } from 'react-window';
 
 interface NotificationPanelProps {
     className?: string;
@@ -17,74 +18,32 @@ const NotificationPanel: React.FC<NotificationPanelProps> = ({ className, onClos
     const { user } = useAuth();
     const panelRef = useRef<HTMLDivElement>(null);
     const [isLoading, setIsLoading] = useState(false);
+    const [page, setPage] = useState(1);
+    const itemsPerPage = 20;
 
     useEffect(() => {
-        console.log('[NotificationPanel] Notifications updated:', {
-            count: notifications.length,
-            unread: notifications.filter((n) => n.status !== 'read').length,
-            userID: user?.userID,
-            notifications: notifications.map((n) => ({
-                id: n.notificationID,
-                message: n.message,
-                status: n.status,
-                type: n.type,
-                channel: n.channel,
-                userID: n.userID,
-            })),
-            timestamp: new Date().toISOString(),
-        });
-
         const handleClickOutside = (event: MouseEvent) => {
-            if (panelRef.current && !panelRef.current.contains(event.target as Node)) {
-                if (onClose) onClose();
-            }
+            if (panelRef.current && !panelRef.current.contains(event.target as Node) && onClose) onClose();
         };
         document.addEventListener('mousedown', handleClickOutside);
-        return () => {
-            document.removeEventListener('mousedown', handleClickOutside);
-        };
-    }, [notifications, onClose, user?.userID]);
+        return () => document.removeEventListener('mousedown', handleClickOutside);
+    }, [onClose]);
 
-    // Filter only unread notifications
     const filteredNotifications = notifications
         .filter((n) => n.status !== 'read' && n.channel === 'in-app')
-        .sort((a, b) => {
-            const dateA = new Date(a.createdAt).getTime();
-            const dateB = new Date(b.createdAt).getTime();
-            return dateB - dateA; // Always sort by newest
-        });
+        .sort((a, b) => new Date(b.createdAt).getTime() - new Date(a.createdAt).getTime());
 
+    const paginatedNotifications = filteredNotifications.slice(0, page * itemsPerPage);
     const unreadCount = filteredNotifications.length;
 
     const handleRefresh = async () => {
         setIsLoading(true);
         try {
-            console.log('[NotificationPanel] Refreshing notifications for user:', {
-                userID: user?.userID,
-                timestamp: new Date().toISOString(),
-            });
             const fetchedNotifications = await getNotifications();
-            console.log('[NotificationPanel] Fetched notifications:', {
-                count: fetchedNotifications.length,
-                notificationIDs: fetchedNotifications.map((n) => n.notificationID),
-                userIDs: fetchedNotifications.map((n) => n.userID),
-                notifications: fetchedNotifications.map((n) => ({
-                    id: n.notificationID,
-                    message: n.message,
-                    status: n.status,
-                    type: n.type,
-                    channel: n.channel,
-                    userID: n.userID,
-                })),
-                timestamp: new Date().toISOString(),
-            });
             mergeNotifications(fetchedNotifications);
+            setPage(1); // Reset to first page
         } catch (error) {
-            console.error('[NotificationPanel] Failed to refresh notifications:', {
-                error: error instanceof Error ? error.message : 'Unknown error',
-                userID: user?.userID,
-                timestamp: new Date().toISOString(),
-            });
+            console.error('Failed to refresh notifications:', error);
         } finally {
             setIsLoading(false);
         }
@@ -92,52 +51,38 @@ const NotificationPanel: React.FC<NotificationPanelProps> = ({ className, onClos
 
     const handleMarkAllRead = async () => {
         try {
-            console.log('[NotificationPanel] Marking all notifications as read for user:', {
-                userID: user?.userID,
-                timestamp: new Date().toISOString(),
-            });
             await markAllAsRead();
-            console.log('[NotificationPanel] All notifications marked as read:', {
-                userID: user?.userID,
-                timestamp: new Date().toISOString(),
-            });
         } catch (error) {
-            console.error('[NotificationPanel] Failed to mark all notifications as read:', {
-                error: error instanceof Error ? error.message : 'Unknown error',
-                userID: user?.userID,
-                timestamp: new Date().toISOString(),
-            });
+            console.error('Failed to mark all as read:', error);
         }
     };
 
+    const loadMore = () => {
+        if (paginatedNotifications.length < filteredNotifications.length) {
+            setPage((prev) => prev + 1);
+        }
+    };
+
+    const Row = ({ index, style }: { index: number; style: React.CSSProperties }) => (
+        <div style={style}>
+            <NotificationItem
+                notification={paginatedNotifications[index]}
+                onClose={onClose}
+            />
+        </div>
+    );
+
     return (
-        <div
-            ref={panelRef}
-            className={cn('notification-panel', className)}
-            onClick={(e) => e.stopPropagation()}
-        >
+        <div ref={panelRef} className={cn('notification-panel', className)} onClick={(e) => e.stopPropagation()}>
             <div className="notification-panel-header">
                 <h2>
-                    Notifications
-                    {unreadCount > 0 && (
-                        <span className="unread-count">{unreadCount}</span>
-                    )}
+                    Notifications {unreadCount > 0 && <span className="unread-count">{unreadCount}</span>}
                 </h2>
                 <div className="notification-panel-controls">
-                    <button
-                        onClick={handleRefresh}
-                        className="control-button"
-                        disabled={isLoading}
-                        aria-label="Refresh notifications"
-                    >
+                    <button onClick={handleRefresh} className="control-button" disabled={isLoading}>
                         <FaSync className={cn(isLoading && 'spinning')} />
                     </button>
-                    <button
-                        onClick={handleMarkAllRead}
-                        className="control-button"
-                        disabled={isLoading || unreadCount === 0}
-                        aria-label="Mark all notifications as read"
-                    >
+                    <button onClick={handleMarkAllRead} className="control-button" disabled={isLoading || unreadCount === 0}>
                         Clear
                     </button>
                 </div>
@@ -149,18 +94,20 @@ const NotificationPanel: React.FC<NotificationPanelProps> = ({ className, onClos
                     ))}
                 </div>
             )}
-            {!isLoading && filteredNotifications.length === 0 ? (
+            {!isLoading && paginatedNotifications.length === 0 ? (
                 <p className="no-notifications">No unread notifications</p>
             ) : (
-                <div className="notification-list notification-list-0">
-                    {filteredNotifications.map((notification) => (
-                        <NotificationItem
-                            key={notification.notificationID}
-                            notification={notification}
-                            onClose={onClose}
-                        />
-                    ))}
-                </div>
+                <FixedSizeList
+                    height={400}
+                    width="100%"
+                    itemCount={paginatedNotifications.length}
+                    itemSize={80}
+                    onItemsRendered={({ visibleStopIndex }) => {
+                        if (visibleStopIndex >= paginatedNotifications.length - 1) loadMore();
+                    }}
+                >
+                    {Row}
+                </FixedSizeList>
             )}
         </div>
     );

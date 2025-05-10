@@ -35,6 +35,7 @@ interface UsersListProps {
   currentPage: number;
   setCurrentPage: React.Dispatch<React.SetStateAction<number>>;
   itemsPerPage: number;
+  isTransitioning: boolean;
   setIsTransitioning: React.Dispatch<React.SetStateAction<boolean>>;
 }
 
@@ -47,14 +48,18 @@ const cache = new Map<string, { data: User[]; timestamp: number }>();
 
 const formatDate = (date: string | Date): string => {
   const options: Intl.DateTimeFormatOptions = {
-    year: 'numeric',
-    month: 'numeric',
-    day: 'numeric',
-    hour: '2-digit',
-    minute: '2-digit',
-    hour12: false
+    year: "numeric",
+    month: "numeric",
+    day: "numeric",
+    hour: "2-digit",
+    minute: "2-digit",
+    hour12: false,
   };
   return new Date(date).toLocaleString(undefined, options);
+};
+
+const isValidUser = (data: unknown): data is User => {
+  return !!data && typeof data === "object" && "userID" in data && typeof data.userID === "string";
 };
 
 const UsersList: React.FC<UsersListProps> = React.memo(
@@ -73,6 +78,7 @@ const UsersList: React.FC<UsersListProps> = React.memo(
     currentPage,
     setCurrentPage,
     itemsPerPage,
+    isTransitioning,
     setIsTransitioning,
   }) => {
     const { effectivePermissions } = useAuth();
@@ -105,27 +111,42 @@ const UsersList: React.FC<UsersListProps> = React.memo(
       []
     );
 
+    const debouncedSetUsers = useCallback(
+      debounce((updateFn: (prev: User[]) => User[]) => {
+        setUsers(updateFn);
+      }, 100),
+      []
+    );
+
     useEffect(() => {
       debouncedSetSearchQuery(searchQuery);
       return () => debouncedSetSearchQuery.cancel();
     }, [searchQuery, debouncedSetSearchQuery]);
 
     useEffect(() => {
-      if (users.length > 0) {
+      if (users.length > 0 && !isTransitioning) {
         setLoading(false);
+      } else if (
+        !users.length &&
+        view === "users" &&
+        userPermissions.canViewUsers
+      ) {
+        setLoading(true);
       }
-    }, [users]);
+    }, [users, isTransitioning, view, userPermissions.canViewUsers]);
 
     useEffect(() => {
       setFilterLoading(true);
-      const timer = setTimeout(() => setFilterLoading(false), 300);
+      const timer = setTimeout(
+        () => setFilterLoading(false),
+        Math.min(300 + users.length * 2, 1000)
+      );
       return () => clearTimeout(timer);
-    }, [roleFilter]);
+    }, [roleFilter, users.length]);
 
-    // Clear cache on filter changes
     useEffect(() => {
-      cache.delete("all_users");
-    }, [searchQuery, roleFilter]);
+      cache.delete(`users_${isSuperAdmin ? "all" : "non_super_admin"}`);
+    }, [searchQuery, roleFilter, isSuperAdmin]);
 
     const getCachedData = useCallback((key: string): User[] | null => {
       const cached = cache.get(key);
@@ -181,86 +202,100 @@ const UsersList: React.FC<UsersListProps> = React.memo(
 
       let isMounted = true;
 
+      const handleUserEvent = async (event: NotificationEvent, data: unknown) => {
+        cache.delete(`users_${isSuperAdmin ? "all" : "non_super_admin"}`);
+        try {
+          if (!isValidUser(data)) {
+            console.warn(`Invalid WebSocket data for event ${event}:`, data);
+            return;
+          }
+
+          switch (event) {
+            case "user:created": {
+              const newUser: User = {
+                userID: data.userID,
+                firstname: data.firstname || "Unknown",
+                lastname: data.lastname || "User",
+                email: data.email || "",
+                phone: data.phone || "",
+                Roles: Array.isArray(data.Roles) ? data.Roles : [],
+                password: "",
+              };
+              const matchesSearch =
+                !internalSearchQuery ||
+                `${newUser.firstname} ${newUser.lastname}`
+                  .toLowerCase()
+                  .includes(internalSearchQuery.toLowerCase()) ||
+                newUser.email
+                  .toLowerCase()
+                  .includes(internalSearchQuery.toLowerCase()) ||
+                newUser.phone.includes(internalSearchQuery);
+              const matchesRole =
+                roleFilter.length === 0 ||
+                (roleFilter.includes("No Roles") &&
+                  (!newUser.Roles || newUser.Roles.length === 0)) ||
+                newUser.Roles?.some((r) => roleFilter.includes(r.name));
+              if (matchesSearch && matchesRole) {
+                debouncedSetUsers((prev) => {
+                  if (prev.some((u) => u.userID === newUser.userID))
+                    return prev;
+                  return [...prev, newUser];
+                });
+              }
+              break;
+            }
+            case "user:updated":
+            case "user:profile_updated":
+            case "user:supervisors_assigned":
+            case "user:supervisors_revoked": {
+              debouncedSetUsers((prev) => {
+                const userExists = prev.some((u) => u.userID === data.userID);
+                if (!userExists) {
+                  console.warn(`User ${data.userID} not found for update event ${event}`);
+                  return prev;
+                }
+                return prev.map((u) =>
+                  u.userID === data.userID
+                    ? { ...u, ...data, updatedAt: new Date() }
+                    : u
+                );
+              });
+              break;
+            }
+            case "user:deleted": {
+              debouncedSetUsers((prev) =>
+                prev.filter((u) => u.userID !== data.userID)
+              );
+              break;
+            }
+            default:
+              console.warn(`Unhandled user event: ${event}`);
+              return;
+          }
+        } catch (err) {
+          console.error("Failed to handle user event:", err);
+          setError("Failed to update user list in real-time. Refreshing...");
+          cache.delete(`users_${isSuperAdmin ? "all" : "non_super_admin"}`);
+          getAllUsers()
+            .then((usersData) => {
+              setUsers(usersData);
+              setCachedData(`users_${isSuperAdmin ? "all" : "non_super_admin"}`, usersData);
+              setError(null);
+            })
+            .catch(() => setError("Failed to refresh user list."));
+        }
+      };
+
       const setupNotifications = async () => {
         setLoading(true);
         try {
           const userEvents = await getEntityEvents("user");
           if (!isMounted) return;
 
-          const handleUserEvent = async (
-            event: NotificationEvent,
-            data: User
-          ) => {
-            cache.delete("all_users");
-            try {
-              switch (event) {
-                case "user:created": {
-                  const newUser: User = {
-                    userID: data.userID,
-                    firstname: data.firstname || "Unknown",
-                    lastname: data.lastname || "User",
-                    email: data.email,
-                    phone: data.phone,
-                    Roles: data.Roles || [],
-                    password: "",
-                  };
-                  const matchesSearch =
-                    !internalSearchQuery ||
-                    `${newUser.firstname} ${newUser.lastname}`
-                      .toLowerCase()
-                      .includes(internalSearchQuery.toLowerCase()) ||
-                    newUser.email
-                      .toLowerCase()
-                      .includes(internalSearchQuery.toLowerCase()) ||
-                    (newUser.phone &&
-                      newUser.phone.includes(internalSearchQuery));
-                  const matchesRole =
-                    roleFilter.length === 0 ||
-                    (roleFilter.includes("No Roles") &&
-                      (!newUser.Roles || newUser.Roles.length === 0)) ||
-                    newUser.Roles?.some((r) => roleFilter.includes(r.name));
-                  if (matchesSearch && matchesRole) {
-                    setUsers((prev) => [...prev, newUser]);
-                  }
-                  break;
-                }
-                case "user:updated":
-                case "user:profile_updated":
-                case "user:supervisors_assigned":
-                case "user:supervisors_revoked":
-                case "user:google_account_assigned": {
-                  setUsers((prev) =>
-                    prev.map((u) =>
-                      u.userID === data.userID
-                        ? { ...u, ...data, updatedAt: new Date() }
-                        : u
-                    )
-                  );
-                  break;
-                }
-                case "user:deleted": {
-                  setUsers((prev) =>
-                    prev.filter((u) => u.userID !== data.userID)
-                  );
-                  break;
-                }
-                default:
-                  if (event.startsWith("user:")) {
-                    const usersData = await getAllUsers();
-                    setCachedData("all_users", usersData);
-                    setUsers(usersData);
-                  }
-              }
-            } catch (err) {
-              console.error("Failed to handle user event:", err);
-              setError("Failed to update user list in real-time.");
-            }
-          };
-
           userEvents.forEach((event) => {
             onNotification((ev: NotificationEvent, data: unknown) => {
               if (ev === event && isMounted) {
-                handleUserEvent(ev, data as User);
+                handleUserEvent(ev, data);
               }
             });
           });
@@ -286,10 +321,11 @@ const UsersList: React.FC<UsersListProps> = React.memo(
       setUsers,
       setError,
       setCachedData,
+      isSuperAdmin,
     ]);
 
     const filteredAndSortedUsers = useMemo(() => {
-      let result = [...users];
+      let result = [...users].filter((user) => user && user.userID); // Filter out invalid users
 
       if (!isSuperAdmin) {
         result = result.filter((user) =>
@@ -304,10 +340,10 @@ const UsersList: React.FC<UsersListProps> = React.memo(
       if (internalSearchQuery) {
         result = result.filter(
           (user) =>
-            `${user.firstname} ${user.lastname}`
+            `${user.firstname || ""} ${user.lastname || ""}`
               .toLowerCase()
               .includes(internalSearchQuery.toLowerCase()) ||
-            user.email
+            (user.email || "")
               .toLowerCase()
               .includes(internalSearchQuery.toLowerCase()) ||
             (user.phone && user.phone.includes(internalSearchQuery))
@@ -343,12 +379,12 @@ const UsersList: React.FC<UsersListProps> = React.memo(
         let valueA: string, valueB: string;
         switch (sortField) {
           case "name":
-            valueA = `${a.firstname} ${a.lastname}`.toLowerCase();
-            valueB = `${b.firstname} ${b.lastname}`.toLowerCase();
+            valueA = `${a.firstname || ""} ${a.lastname || ""}`.toLowerCase();
+            valueB = `${b.firstname || ""} ${b.lastname || ""}`.toLowerCase();
             break;
           case "email":
-            valueA = a.email.toLowerCase();
-            valueB = b.email.toLowerCase();
+            valueA = (a.email || "").toLowerCase();
+            valueB = (b.email || "").toLowerCase();
             break;
           case "role":
             valueA = a.Roles?.[0]?.name?.toLowerCase() || "no role";
@@ -451,13 +487,19 @@ const UsersList: React.FC<UsersListProps> = React.memo(
                   {t("usersList.tableHeaders.phone")}
                 </div>
                 <div className="table-cell">
+                  {t("usersList.tableHeaders.createdAt")}
+                </div>
+                <div className="table-cell">
                   {t("usersList.tableHeaders.roles")}
                 </div>
               </div>
             </div>
             <div className="table-body">
               {Array.from({ length: SKELETON_ROWS }).map((_, i) => (
-                <div key={i} className="table-row">
+                <div key={i} className="table-row" aria-hidden="true">
+                  <div className="table-cell">
+                    <div className="custom-skeleton" />
+                  </div>
                   <div className="table-cell">
                     <div className="custom-skeleton" />
                   </div>
@@ -515,40 +557,33 @@ const UsersList: React.FC<UsersListProps> = React.memo(
               </div>
               <div className="table-body">
                 {paginatedUsers.length > 0 ? (
-                  paginatedUsers.map((user) => (
-                    <div
-                      key={user.userID}
-                      className="table-row user-row"
-                      onClick={() => handleUserSelect(user)}
-                    >
-                      <div className="table-cell">{`${user.firstname} ${user.lastname}`}</div>
-                      <div className="table-cell">{user.email}</div>
-                      <div className="table-cell">{`+216 ${formatPhoneDisplay(
-                        user.phone || "-- --- ---"
-                      )}`}</div>
-                      <div className="table-cell">
-                        {user.createdAt
-                          ? formatDate((user.createdAt))
-                          : "--/--/----"}
+                  paginatedUsers
+                    .filter((user) => user && user.userID)
+                    .map((user) => (
+                      <div
+                        key={user.userID}
+                        className="table-row user-row"
+                        onClick={() => handleUserSelect(user)}
+                      >
+                        <div className="table-cell">{`${user.firstname || ""} ${user.lastname || ""}`}</div>
+                        <div className="table-cell">{user.email || "--"}</div>
+                        <div className="table-cell">{`+216 ${formatPhoneDisplay(user.phone || "-- --- ---")}`}</div>
+                        <div className="table-cell">
+                          {user.createdAt ? formatDate(user.createdAt) : "--/--/----"}
+                        </div>
+                        <div className="table-cell">
+                          {user.Roles == null || user.Roles.length === 0 ? (
+                            "No Roles"
+                          ) : user.Roles.map((r) => r.name).join(", ").length > 16 ? (
+                            <span title={user.Roles.map((r) => r.name).join(", ")}>
+                              {`${user.Roles.map((r) => r.name).join(", ").slice(0, 16)}...`}
+                            </span>
+                          ) : (
+                            user.Roles.map((r) => r.name).join(", ")
+                          )}
+                        </div>
                       </div>
-                      <div className="table-cell">
-                        {user.Roles == null || user.Roles.length === 0 ? (
-                          "No Roles"
-                        ) : user.Roles.map((r) => r.name).join(", ").length >
-                          16 ? (
-                          <span
-                            title={user.Roles.map((r) => r.name).join(", ")}
-                          >
-                            {`${user.Roles.map((r) => r.name)
-                              .join(", ")
-                              .slice(0, 16)}...`}
-                          </span>
-                        ) : (
-                          user.Roles.map((r) => r.name).join(", ")
-                        )}
-                      </div>
-                    </div>
-                  ))
+                    ))
                 ) : (
                   <div className="table-row">
                     <div className="table-cell">

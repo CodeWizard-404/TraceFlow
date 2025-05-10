@@ -1,5 +1,6 @@
 const axios = require('axios');
 const { User } = require('../models');
+const AuthService = require('../services/authService');
 require('dotenv').config();
 
 const KEYCLOAK_URL = process.env.KEYCLOAK_URL || 'http://localhost:8080';
@@ -8,60 +9,48 @@ const CLIENT_ID = process.env.KEYCLOAK_CLIENT_ID || 'traceflow-backend';
 const CLIENT_SECRET = process.env.KEYCLOAK_CLIENT_SECRET || '';
 
 const authenticateCookie = async (req, res, next) => {
-    try {
-        const cookieHeader = req.headers?.cookie;
-        if (!cookieHeader) {
-            return res.status(401).json({ error: 'Access token required' });
+    const accessToken = req.headers.cookie?.match(/accessToken=([^;]+)/)?.[1];
+    if (!accessToken) return res.status(401).json({ error: 'Token required' });
+
+    const tokenData = JSON.parse(Buffer.from(accessToken.split('.')[1], 'base64').toString());
+    const userId = tokenData.sub;
+    const cacheKey = `token:${accessToken}`;
+
+    // Check session first
+    const session = await AuthService.getSession(userId);
+    if (session?.token === accessToken) {
+        const user = await User.findOne({ where: { keycloakId: userId } });
+        if (user) {
+            req.user = { userID: user.userID, email: user.email, roles: tokenData.realm_access?.roles || [], token: accessToken };
+            return next();
         }
-
-        const cookies = cookieHeader.split(';').map(c => c.trim());
-        const tokenCookie = cookies.find(c => c.startsWith('accessToken='));
-        const accessToken = tokenCookie ? tokenCookie.split('=')[1] : null;
-
-        if (!accessToken) {
-            return res.status(401).json({ error: 'Access token required' });
-        }
-
-        const cache = global.cache;
-        const cacheKey = `token:${accessToken}`;
-        const cachedUser = await cache.getOrSet(cacheKey, async () => {
-            if (accessToken.startsWith('google_')) {
-                return { userID: 'temp_google_user', email: 'temp@google.com', roles: ['Supervisor'] };
-            }
-
-            const response = await axios.post(
-                `${KEYCLOAK_URL}/realms/${REALM}/protocol/openid-connect/token/introspect`,
-                new URLSearchParams({
-                    token: accessToken,
-                    client_id: CLIENT_ID,
-                    client_secret: CLIENT_SECRET,
-                })
-            );
-
-            if (!response.data.active) {
-                throw new Error('Invalid or expired token');
-            }
-
-            const keycloakId = response.data.sub;
-            const user = await User.findOne({ where: { keycloakId } });
-
-            if (!user) {
-                throw new Error('User not found in local database');
-            }
-
-            return {
-                userID: user.userID,
-                email: response.data.email,
-                roles: response.data.realm_access?.roles || [],
-                token: accessToken,
-            };
-        }, parseInt(process.env.ACCESS_TOKEN_MAX_AGE, 10) || 600);
-
-        req.user = cachedUser;
-        next();
-    } catch (error) {
-        return res.status(error.message.includes('not found') ? 404 : 401).json({ error: error.message });
     }
+
+    const ttl = tokenData.exp - Math.floor(Date.now() / 1000); // Dynamic TTL
+    const cachedUser = await global.cache.getOrSet(cacheKey, async () => {
+        const response = await axios.post(
+            `${process.env.KEYCLOAK_URL}/realms/${process.env.REALM}/protocol/openid-connect/token/introspect`,
+            new URLSearchParams({
+                token: accessToken,
+                client_id: process.env.KEYCLOAK_CLIENT_ID,
+                client_secret: process.env.KEYCLOAK_CLIENT_SECRET,
+            })
+        );
+
+        if (!response.data.active) throw new Error('Invalid token');
+        const user = await User.findOne({ where: { keycloakId: response.data.sub } });
+        if (!user) throw new Error('User not found');
+
+        return {
+            userID: user.userID,
+            email: response.data.email,
+            roles: response.data.realm_access?.roles || [],
+            token: accessToken,
+        };
+    }, ttl);
+
+    req.user = cachedUser;
+    next();
 };
 
 const requirePermission = (permissionName) => {

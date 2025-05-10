@@ -12,12 +12,14 @@ import {
   getTimesheetsBySupervisor,
   getAllTimesheets,
   validateTimesheet,
+  syncTimesheetToCalendar,
 } from "../../apis/timesheetAPI";
 import { getAllUsers, getSupervisorsByUser } from "../../apis/userAPI";
 import { FaClock, FaMapMarkerAlt, FaRegUser, FaFilter } from "react-icons/fa";
 import TimesheetStatus from "../../models/Enum/TimesheetStatus";
 import { useTranslation } from "react-i18next";
 import CalendarSyncButton from "../../components/Google/CalendarSyncButton";
+import { io } from "socket.io-client";
 
 const PERMISSIONS = {
   ACCESS_TIMESHEETS: import.meta.env.VITE_PERMISSIONS_ACCESS_TIMESHEETS,
@@ -35,6 +37,8 @@ const ROLES = {
   SUPERVISOR: import.meta.env.VITE_ROLES_SUPERVISOR,
   REGIONAL_MANAGER: import.meta.env.VITE_ROLES_REGIONAL_MANAGER,
 };
+
+const SOCKET_URL = import.meta.env.VITE_SOCKET_URL || 'http://localhost:5000';
 
 // Types
 type ViewMode = "year" | "month" | "week" | "day";
@@ -250,6 +254,26 @@ const Timesheets: React.FC = React.memo(() => {
       console.error("Failed to fetch users:", error);
     }
   }, [isSuperAdmin, userPermissions.canReadSupervisors, supervisorID]);
+
+  // WebSocket Integration
+  useEffect(() => {
+    if (!user?.userID) return;
+    const socket = io(SOCKET_URL, {
+      auth: { token: localStorage.getItem('accessToken') }
+    });
+
+    socket.on('connect', () => {
+      socket.emit('join', user.userID);
+    });
+
+    socket.on('calendar:update', () => {
+      fetchTimesheets();
+    });
+
+    return () => {
+      socket.disconnect();
+    };
+  }, [user, fetchTimesheets]);
 
   // Utility Functions
   const getWeekNumber = useCallback((date: Date): number => {
@@ -703,7 +727,12 @@ const Timesheets: React.FC = React.memo(() => {
                 view: t(`timesheets.viewModes.${viewMode}`),
               })}
             </button>
-            <CalendarSyncButton supervisorId={supervisorID || ''} isSupervisor={!!isSupervisor} />
+            {isSupervisor && filteredTimesheets[0]?.timesheetID && (
+              <CalendarSyncButton
+                timesheetId={filteredTimesheets[0].timesheetID}
+                isSupervisor={!!isSupervisor}
+              />
+            )}
           </div>
         </header>
 

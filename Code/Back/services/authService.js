@@ -5,6 +5,8 @@ const otpService = require('./otpService');
 const { transporter } = require('../config/smtp');
 const { sendSMS } = require('../config/sms');
 const logger = require('../utils/logger');
+const { getRedisClient } = require('../config/redis');
+const RedisUtils = require('../utils/redisUtils');
 require('dotenv').config();
 
 const ERROR_MESSAGES = {
@@ -27,6 +29,7 @@ const ERROR_MESSAGES = {
     TOO_MANY_ATTEMPTS: 'Too many login attempts. Please wait before trying again.',
     GOOGLE_LOGIN_FAILED: 'Google login failed. Ensure your account is registered.',
     INVALID_GOOGLE_CODE: 'Invalid Google authorization code.',
+    SESSION_NOT_FOUND: 'Session not found. Please log in again.',
 };
 
 const verificationCache = new Map();
@@ -40,6 +43,42 @@ const ACCESS_TOKEN_MAX_AGE = parseInt(process.env.ACCESS_TOKEN_MAX_AGE) || 90000
 const REFRESH_TOKEN_MAX_AGE = parseInt(process.env.REFRESH_TOKEN_MAX_AGE) || 86400000; // 1 day
 
 class AuthService {
+    constructor() {
+        this.redis = getRedisClient();
+    }
+
+    async storeSession(userId, token, ttl = 86400) {
+        const key = `session:${userId}`;
+        try {
+            await this.redis.setex(key, ttl, JSON.stringify({ token }));
+            logger.info(`Session stored for user: ${userId}`, { service: 'auth' });
+        } catch (error) {
+            logger.error(`Failed to store session for user: ${userId}`, { error: error.message, service: 'auth' });
+            throw new Error('Failed to store session');
+        }
+    }
+
+    async getSession(userId) {
+        const key = `session:${userId}`;
+        try {
+            const session = await this.redis.get(key);
+            return session ? JSON.parse(session) : null;
+        } catch (error) {
+            logger.error(`Failed to retrieve session for user: ${userId}`, { error: error.message, service: 'auth' });
+            return null;
+        }
+    }
+
+    async destroySession(userId) {
+        const key = `session:${userId}`;
+        try {
+            await this.redis.del(key);
+            logger.info(`Session destroyed for user: ${userId}`, { service: 'auth' });
+        } catch (error) {
+            logger.error(`Failed to destroy session for user: ${userId}`, { error: error.message, service: 'auth' });
+        }
+    }
+
     static async getKeycloakAdminToken() {
         try {
             const response = await axios.post(
@@ -83,7 +122,52 @@ class AuthService {
         }
     }
 
-    static async login(identifier, password, deviceIdentifier, otpMethod = 'email', res) {
+    async cacheUserDetails(userID) {
+        try {
+            const userWithDetails = await User.findOne({
+                where: { userID },
+                include: [
+                    {
+                        model: Role,
+                        through: { attributes: [] },
+                        include: [
+                            {
+                                model: Permission,
+                                through: { attributes: [] },
+                                attributes: ['name', 'class', 'permissionID', 'description'],
+                            },
+                        ],
+                    },
+                ],
+            });
+            if (userWithDetails) {
+                const roles = userWithDetails.Roles?.map((role) => ({
+                    roleID: role.roleID,
+                    name: role.name,
+                    description: role.description || undefined,
+                    permissions: role.Permissions
+                        ? role.Permissions.map((p) => ({
+                            permissionID: p.permissionID,
+                            name: p.name,
+                            class: p.class,
+                            description: p.description || undefined,
+                        }))
+                        : [],
+                })) || [];
+                const userData = {
+                    userID: userWithDetails.userID,
+                    email: userWithDetails.email,
+                    phone: userWithDetails.phone,
+                    roles,
+                };
+                await RedisUtils.storeUserWithDetails(userID, userData);
+            }
+        } catch (error) {
+            logger.error(`Failed to cache user details for user: ${userID}`, { error: error.message, service: 'auth' });
+        }
+    }
+
+    async login(identifier, password, deviceIdentifier, otpMethod = 'email', res) {
         let loginResponse;
         try {
             loginResponse = await axios.post(
@@ -142,7 +226,7 @@ class AuthService {
 
         let keycloakUserResponse;
         try {
-            const adminToken = await this.getKeycloakAdminToken();
+            const adminToken = await this.constructor.getKeycloakAdminToken();
             keycloakUserResponse = await axios.get(
                 `${KEYCLOAK_URL}/admin/realms/${REALM}/users?username=${identifier}&exact=true`,
                 { headers: { Authorization: `Bearer ${adminToken}` } }
@@ -157,7 +241,7 @@ class AuthService {
         }
 
         const keycloakId = keycloakUserResponse.data[0].id;
-        const user = await this.syncKeycloakUser(identifier, keycloakId);
+        const user = await this.constructor.syncKeycloakUser(identifier, keycloakId);
 
         const userWithDetails = await User.findOne({
             where: { keycloakId },
@@ -185,6 +269,8 @@ class AuthService {
         });
         if (trustedDevice) {
             await trustedDevice.update({ lastUsed: new Date() });
+            await this.storeSession(user.userID, loginResponse.data.access_token);
+            await this.cacheUserDetails(user.userID); // Cache user details
             return this.generateLoginResponse(
                 userWithDetails,
                 loginResponse.data.access_token,
@@ -272,7 +358,7 @@ class AuthService {
         }
     }
 
-    static async verify2FA(userID, otpCode, deviceIdentifier, trustDevice, tempToken, refreshToken, res) {
+    async verify2FA(userID, otpCode, deviceIdentifier, trustDevice, tempToken, refreshToken, res) {
         const missingFields = [];
         if (!userID) missingFields.push('userID');
         if (!otpCode) missingFields.push('otpCode');
@@ -338,6 +424,8 @@ class AuthService {
             }
         }
 
+        await this.storeSession(userID, tempToken);
+        await this.cacheUserDetails(userID); // Cache user details
         const result = this.generateLoginResponse(userWithDetails, tempToken, refreshToken, 900, res);
         verificationCache.set(cacheKey, result);
         setTimeout(() => verificationCache.delete(cacheKey), CACHE_TTL);
@@ -345,7 +433,7 @@ class AuthService {
         return result;
     }
 
-    static async refreshToken(refreshToken, res) {
+    async refreshToken(refreshToken, res) {
         try {
             const response = await axios.post(
                 `${KEYCLOAK_URL}/realms/${REALM}/protocol/openid-connect/token`,
@@ -360,6 +448,10 @@ class AuthService {
             if (!response.data || !response.data.access_token || !response.data.expires_in || !response.data.refresh_token) {
                 throw Object.assign(new Error(ERROR_MESSAGES.INVALID_REFRESH_TOKEN), { status: 400 });
             }
+
+            const tokenData = JSON.parse(Buffer.from(response.data.access_token.split('.')[1], 'base64').toString());
+            const userId = tokenData.sub;
+            await this.storeSession(userId, response.data.access_token);
 
             const cookieOptions = {
                 httpOnly: true,
@@ -378,7 +470,6 @@ class AuthService {
                 maxAge: REFRESH_TOKEN_MAX_AGE,
             });
 
-
             return {
                 user: { message: 'Token refreshed' },
                 accessToken: response.data.access_token,
@@ -390,7 +481,7 @@ class AuthService {
         }
     }
 
-    static generateLoginResponse(user, token, refreshToken, expiresIn, res) {
+    generateLoginResponse(user, token, refreshToken, expiresIn, res) {
         if (!user || !token || !refreshToken || !expiresIn) {
             throw Object.assign(new Error(ERROR_MESSAGES.INVALID_KEYCLOAK_RESPONSE), { status: 400 });
         }
@@ -438,7 +529,7 @@ class AuthService {
         };
     }
 
-    static async resend2FA(userID, otpMethod = 'email') {
+    async resend2FA(userID, otpMethod = 'email') {
         const user = await User.findByPk(userID);
         if (!user) {
             throw Object.assign(new Error(ERROR_MESSAGES.USER_NOT_FOUND), { status: 404 });
@@ -502,10 +593,10 @@ class AuthService {
         }
     }
 
-    static async initiatePasswordReset(identifier) {
+    async initiatePasswordReset(identifier) {
         let keycloakId, user;
         try {
-            const adminToken = await this.getKeycloakAdminToken();
+            const adminToken = await this.constructor.getKeycloakAdminToken();
             const userResponse = await axios.get(
                 `${KEYCLOAK_URL}/admin/realms/${REALM}/users?username=${identifier}&exact=true`,
                 { headers: { Authorization: `Bearer ${adminToken}` } }
@@ -514,7 +605,7 @@ class AuthService {
                 throw Object.assign(new Error(ERROR_MESSAGES.USER_NOT_FOUND), { status: 404 });
             }
             keycloakId = userResponse.data[0].id;
-            user = await this.syncKeycloakUser(identifier, keycloakId);
+            user = await this.constructor.syncKeycloakUser(identifier, keycloakId);
         } catch (error) {
             throw error.message === ERROR_MESSAGES.USER_NOT_FOUND
                 ? error
@@ -555,7 +646,7 @@ class AuthService {
         }
     }
 
-    static async verifyPasswordResetOTP(userID, otpCode) {
+    async verifyPasswordResetOTP(userID, otpCode) {
         const user = await User.findByPk(userID);
         if (!user) {
             throw Object.assign(new Error(ERROR_MESSAGES.USER_NOT_FOUND), { status: 404 });
@@ -573,7 +664,7 @@ class AuthService {
         return { userID, tempToken, message: 'OTP verified. Proceed to reset password.' };
     }
 
-    static async resetPassword(userID, newPassword, tempToken) {
+    async resetPassword(userID, newPassword, tempToken) {
         const user = await User.findByPk(userID);
         if (!user) {
             throw Object.assign(new Error(ERROR_MESSAGES.USER_NOT_FOUND), { status: 404 });
@@ -583,7 +674,7 @@ class AuthService {
         }
 
         try {
-            const adminToken = await this.getKeycloakAdminToken();
+            const adminToken = await this.constructor.getKeycloakAdminToken();
             await axios.put(
                 `${KEYCLOAK_URL}/admin/realms/${REALM}/users/${user.keycloakId}/reset-password`,
                 { type: 'password', value: newPassword, temporary: false },
@@ -597,7 +688,7 @@ class AuthService {
         return { message: 'Password reset successfully' };
     }
 
-    static async logout(refreshToken) {
+    async logout(refreshToken, userId) {
         if (refreshToken) {
             const keycloakBaseUrl = `${process.env.KEYCLOAK_URL}/realms/${process.env.REALM}`;
             await axios.post(
@@ -611,6 +702,10 @@ class AuthService {
             );
         }
 
+        if (userId) {
+            await this.destroySession(userId);
+        }
+
         const keycloakLogoutUrl = `${process.env.KEYCLOAK_URL}/realms/${process.env.REALM}/protocol/openid-connect/logout?client_id=${process.env.KEYCLOAK_CLIENT_ID}&post_logout_redirect_uri=${encodeURIComponent(process.env.FRONTEND_LOGIN_URL)}`;
 
         return {
@@ -621,4 +716,4 @@ class AuthService {
     }
 }
 
-module.exports = AuthService;
+module.exports = new AuthService();
