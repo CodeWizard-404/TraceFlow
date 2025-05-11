@@ -9,6 +9,7 @@ const Delegation = require('../models').Delegation;
 const Governorate = require('../models').Governorate;
 const CsvHeader = require('../models').CsvHeader;
 const UserService = require('./userService');
+const GoogleMapsService = require('./googleMapsService');
 
 class AgentService {
     /**
@@ -16,37 +17,35 @@ class AgentService {
      * @param {Object} data - Agent data to validate.
      * @returns {Object} - Validation result with errors array
      */
-    static validateInput({ name, lastname, email, phone, supervisorID, delegationID, agentID }) {
+    static validateInput({ name, lastname, email, phone, supervisorID, delegationID, agentID, latitude, longitude, locationAddress }) {
         const errors = [];
-
         if (name !== undefined && (!name || !/^[a-zA-Z\s\u00C0-\u017F]{2,50}$/.test(name))) {
             errors.push('First name must be 2–50 characters and contain only letters, spaces, or accented characters.');
         }
-
         if (lastname !== undefined && (!lastname || !/^[a-zA-Z\s\u00C0-\u017F]{2,50}$/.test(lastname))) {
             errors.push('Last name must be 2–50 characters and contain only letters, spaces, or accented characters.');
         }
-
         if (email !== undefined && (!email || !/^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(email))) {
             errors.push('Please enter a valid email address.');
         }
-
         if (phone !== undefined && (!phone || !/^\d{8,12}$/.test(phone))) {
             errors.push('Phone number must be 8–12 digits.');
         }
-
         if (supervisorID !== undefined && !supervisorID) {
             errors.push('Supervisor ID is required.');
         }
-
         if (delegationID !== undefined && !delegationID) {
             errors.push('Delegation ID is required.');
         }
-
         if (agentID !== undefined && !agentID) {
             errors.push('Agent ID is required.');
         }
-
+        if (latitude !== undefined && (isNaN(latitude) || latitude < -90 || latitude > 90)) {
+            errors.push('Latitude must be a number between -90 and 90.');
+        }
+        if (longitude !== undefined && (isNaN(longitude) || longitude < -180 || longitude > 180)) {
+            errors.push('Longitude must be a number between -180 and 180.');
+        }
         return { isValid: errors.length === 0, errors };
     }
 
@@ -56,8 +55,8 @@ class AgentService {
      * @param {string} actorID - ID of the user performing the action.
      * @returns {Promise<Object>} Created agent or error response.
      */
-    static async createAgent({ name, lastname, email, phone, supervisorID, delegationID, actorID }) {
-        const validation = this.validateInput({ name, lastname, email, phone, supervisorID, delegationID });
+    static async createAgent({ name, lastname, email, phone, supervisorID, delegationID, latitude, longitude, locationAddress, actorID }) {
+        const validation = this.validateInput({ name, lastname, email, phone, supervisorID, delegationID, latitude, longitude, locationAddress });
         if (!validation.isValid) {
             return { success: false, message: 'Validation failed', errors: validation.errors };
         }
@@ -74,11 +73,8 @@ class AgentService {
             const supervisor = await User.findByPk(supervisorID, {
                 include: [{ model: Role, through: { attributes: [] }, attributes: ['name'] }],
             });
-            if (!supervisor) {
-                return { success: false, message: 'Supervisor not found' };
-            }
-            if (!supervisor.Roles.some(role => role.name === process.env.ROLE_SUPERVISOR)) {
-                return { success: false, message: 'Assigned user is not a supervisor' };
+            if (!supervisor || !supervisor.Roles.some(role => role.name === process.env.ROLE_SUPERVISOR)) {
+                return { success: false, message: 'Supervisor not found or not a supervisor' };
             }
 
             const delegation = await Delegation.findByPk(delegationID);
@@ -91,6 +87,14 @@ class AgentService {
                 return { success: false, message: 'Delegation not assigned to this supervisor' };
             }
 
+            let finalLat = latitude;
+            let finalLng = longitude;
+            if (locationAddress && !latitude && !longitude) {
+                const geocode = await GoogleMapsService.geocodeAddress(locationAddress);
+                finalLat = geocode.latitude;
+                finalLng = geocode.longitude;
+            }
+
             const agent = await Agent.create({
                 name,
                 lastname,
@@ -98,10 +102,13 @@ class AgentService {
                 phone,
                 supervisorID,
                 delegationID,
+                latitude: finalLat,
+                longitude: finalLng,
+                location: finalLat && finalLng ? `${finalLat},${finalLng}` : null,
             });
             return { success: true, agent };
         } catch (error) {
-            return { success: false, message: 'Unable to create agent' };
+            return { success: false, message: `Unable to create agent: ${error.message}` };
         }
     }
 
@@ -180,8 +187,8 @@ class AgentService {
      * @param {string} actorID - ID of the user performing the action.
      * @returns {Promise<Object>} Updated agent or error response.
      */
-    static async updateAgent(id, { name, lastname, email, phone, supervisorID, delegationID, actorID }) {
-        const validation = this.validateInput({ name, lastname, email, phone, supervisorID, delegationID, agentID: id });
+    static async updateAgent(id, { name, lastname, email, phone, supervisorID, delegationID, latitude, longitude, locationAddress, actorID }) {
+        const validation = this.validateInput({ name, lastname, email, phone, supervisorID, delegationID, agentID: id, latitude, longitude });
         if (!validation.isValid) {
             return { success: false, message: 'Validation failed', errors: validation.errors };
         }
@@ -214,11 +221,8 @@ class AgentService {
                 const supervisor = await User.findByPk(supervisorID, {
                     include: [{ model: Role, through: { attributes: [] }, attributes: ['name'] }],
                 });
-                if (!supervisor) {
-                    return { success: false, message: 'Supervisor not found' };
-                }
-                if (!supervisor.Roles.some(role => role.name === process.env.ROLE_SUPERVISOR)) {
-                    return { success: false, message: 'Assigned user is not a supervisor' };
+                if (!supervisor || !supervisor.Roles.some(role => role.name === process.env.ROLE_SUPERVISOR)) {
+                    return { success: false, message: 'Supervisor not found or not a supervisor' };
                 }
 
                 if (delegationID) {
@@ -234,6 +238,14 @@ class AgentService {
                 }
             }
 
+            let finalLat = latitude !== undefined ? latitude : agent.latitude;
+            let finalLng = longitude !== undefined ? longitude : agent.longitude;
+            if (locationAddress && latitude === undefined && longitude === undefined) {
+                const geocode = await GoogleMapsService.geocodeAddress(locationAddress);
+                finalLat = geocode.latitude;
+                finalLng = geocode.longitude;
+            }
+
             await agent.update({
                 name: name !== undefined ? name : agent.name,
                 lastname: lastname !== undefined ? lastname : agent.lastname,
@@ -241,10 +253,13 @@ class AgentService {
                 phone: phone !== undefined ? phone : agent.phone,
                 supervisorID: supervisorID !== undefined ? supervisorID : agent.supervisorID,
                 delegationID: delegationID !== undefined ? delegationID : agent.delegationID,
+                latitude: finalLat,
+                longitude: finalLng,
+                location: finalLat && finalLng ? `${finalLat},${finalLng}` : agent.location,
             });
             return { success: true, agent };
         } catch (error) {
-            return { success: false, message: 'Unable to update agent' };
+            return { success: false, message: `Unable to update agent: ${error.message}` };
         }
     }
 
@@ -853,6 +868,67 @@ class AgentService {
 
         return results;
     }
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+    static async getAgentsByBounds({ southWestLat, southWestLng, northEastLat, northEastLng }) {
+        try {
+            const agents = await Agent.findAll({
+                where: {
+                    latitude: { [Op.between]: [southWestLat, northEastLat] },
+                    longitude: { [Op.between]: [southWestLng, northEastLng] },
+                },
+                include: [
+                    { model: User, as: 'Supervisor', attributes: ['userID', 'firstname', 'lastname', 'email', 'phone'] },
+                    { model: Delegation, attributes: ['delegationID', 'name'], include: [{ model: Governorate, attributes: ['governorateID', 'name'] }] },
+                ],
+            });
+            return agents || [];
+        } catch (error) {
+            return [];
+        }
+    }
+
+
 }
 
 module.exports = AgentService;

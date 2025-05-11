@@ -20,7 +20,6 @@ interface UserDetailsProps {
     };
     setError: React.Dispatch<React.SetStateAction<string | null>>;
     roleManagement: React.ReactNode;
-    permissionOverrides: React.ReactNode;
     assignmentsManagement: React.ReactNode;
     infoPopupWrapper: React.ReactNode;
 }
@@ -86,7 +85,6 @@ const UserDetails: React.FC<UserDetailsProps> = ({
     userPermissions,
     setError,
     roleManagement,
-    permissionOverrides,
     assignmentsManagement,
     infoPopupWrapper,
 }) => {
@@ -670,7 +668,6 @@ const UserDetails: React.FC<UserDetailsProps> = ({
                     </div>
                     <div className="u-admin-settings">
                         {roleManagement}
-                        {permissionOverrides}
                         {assignmentsManagement}
                     </div>
                     {infoPopupWrapper}

@@ -1,5 +1,5 @@
 const { Client } = require('@googlemaps/google-maps-services-js');
-const { Agent, User } = require('../models');
+const { Agent, User, Region, Delegation, Governorate } = require('../models');
 const { initializeRedis } = require('../config/redis');
 const logger = require('../utils/logger');
 const RedisUtils = require('../utils/redisUtils');
@@ -12,7 +12,6 @@ class GoogleMapsService {
             this.client = null;
             return;
         }
-
         try {
             this.client = new Client({});
             this.redisClient = (await initializeRedis()).redisClient;
@@ -342,21 +341,38 @@ class GoogleMapsService {
 
     static async updateAgentLocation(agentId, lat, lng) {
         try {
-            const agent = await Agent.findByPk(agentId);
+            const agent = await Agent.findByPk(agentId, { include: [Delegation] });
             if (!agent) {
                 throw new Error('Agent not found');
             }
 
+            // Optional: Validate if new location is within delegation bounds (requires delegation coordinates)
+            agent.latitude = lat;
+            agent.longitude = lng;
             agent.location = `${lat},${lng}`;
             await agent.save();
-            const address = await this.reverseGeocode(lat, lng);
-            return { agentId, location: agent.location, address: address.formattedAddress };
+
+            const cacheKey = `reverseGeocode:${lat}:${lng}`;
+            let address = await this.redisClient?.get(cacheKey);
+            if (!address) {
+                address = await this.reverseGeocode(lat, lng);
+                await this.redisClient?.set(cacheKey, JSON.stringify(address), 'EX', 3600);
+            } else {
+                address = JSON.parse(address);
+            }
+
+            return {
+                agentId,
+                latitude: lat,
+                longitude: lng,
+                address: address.formattedAddress,
+                delegation: agent.Delegation ? { id: agent.Delegation.delegationID, name: agent.Delegation.name } : null
+            };
         } catch (error) {
             logger.error(`Failed to update agent location: ${error.message}`);
             throw new Error(`Failed to update agent location: ${error.message}`);
         }
     }
-
     static async deleteAgentLocation(agentId) {
         try {
             const agent = await Agent.findByPk(agentId);
@@ -376,28 +392,125 @@ class GoogleMapsService {
     // Get all agent locations for map display
     static async getAgentLocations() {
         try {
-            const agents = await Agent.findAll({ where: { location: { [Op.ne]: null } } });
+            const agents = await Agent.findAll({
+                include: [{
+                    model: Delegation,
+                    attributes: ['delegationID', 'name'],
+                    include: [{
+                        model: Governorate,
+                        attributes: ['governorateID', 'name'],
+                        include: [{
+                            model: Region,
+                            attributes: ['regionID', 'name']
+                        }]
+                    }]
+                }],
+            });
+
             const locations = await Promise.all(
                 agents.map(async agent => {
-                    const [lat, lng] = agent.location.split(',').map(Number);
-                    const address = await this.reverseGeocode(lat, lng);
+                    let lat, lng, address, source = 'agent';
+
+                    // Since all agent lat/lng are null or incorrect, skip directly to delegation
+                    const delegation = agent.Delegation;
+                    const governorate = delegation?.Governorate;
+                    const region = governorate?.Region;
+
+                    // Fallback logic: Delegation -> Governorate -> Tunisia center
+                    if (delegation?.name) {
+                        const cacheKey = `geocode:${delegation.name}:tn`;
+                        let cachedResult = await this.redisClient?.get(cacheKey);
+                        if (cachedResult) {
+                            const data = JSON.parse(cachedResult);
+                            lat = data.latitude;
+                            lng = data.longitude;
+                            address = { formattedAddress: delegation.name };
+                            source = 'delegation';
+                        } else {
+                            try {
+                                // Improved geocoding query with context
+                                const geocode = await this.geocodeAddress(
+                                    `${delegation.name}, ${governorate?.name || ''}, Tunisia`,
+                                    'tn'
+                                );
+                                lat = geocode.latitude;
+                                lng = geocode.longitude;
+                                address = { formattedAddress: geocode.formattedAddress };
+                                await this.redisClient?.set(cacheKey, JSON.stringify(geocode), 'EX', 3600);
+                                source = 'delegation';
+                            } catch (error) {
+                                logger.warn(`Failed to geocode delegation ${delegation.name}: ${error.message}`);
+                            }
+                        }
+                    }
+
+                    // Fallback to governorate if delegation geocoding fails
+                    if ((!lat || !lng) && governorate?.name) {
+                        const cacheKey = `geocode:${governorate.name}:tn`;
+                        let cachedResult = await this.redisClient?.get(cacheKey);
+                        if (cachedResult) {
+                            const data = JSON.parse(cachedResult);
+                            lat = data.latitude;
+                            lng = data.longitude;
+                            address = { formattedAddress: governorate.name };
+                            source = 'governorate';
+                        } else {
+                            try {
+                                const geocode = await this.geocodeAddress(
+                                    `${governorate.name}, Tunisia`,
+                                    'tn'
+                                );
+                                lat = geocode.latitude;
+                                lng = geocode.longitude;
+                                address = { formattedAddress: geocode.formattedAddress };
+                                await this.redisClient?.set(cacheKey, JSON.stringify(geocode), 'EX', 3600);
+                                source = 'governorate';
+                            } catch (error) {
+                                logger.warn(`Failed to geocode governorate ${governorate.name}: ${error.message}`);
+                            }
+                        }
+                    }
+
+                    // Final fallback: Center of Tunisia
+                    if (!lat || !lng) {
+                        lat = 36.8065; // Center of Tunisia
+                        lng = 10.1815;
+                        address = { formattedAddress: 'Center of Tunisia' };
+                        source = 'default';
+                    }
+
                     return {
                         agentId: agent.agentID,
                         name: agent.name,
+                        lastname: agent.lastname,
+                        email: agent.email,
+                        phone: agent.phone,
                         latitude: lat,
                         longitude: lng,
                         address: address.formattedAddress,
+                        source,
+                        delegation: delegation ? {
+                            id: delegation.delegationID,
+                            name: delegation.name
+                        } : null,
+                        governorate: governorate ? {
+                            id: governorate.governorateID,
+                            name: governorate.name
+                        } : null,
+                        region: region ? {
+                            id: region.regionID,
+                            name: region.name
+                        } : null,
                     };
                 })
             );
 
-            // Calculate center of the map
             const center = locations.length
                 ? {
                     lat: locations.reduce((sum, loc) => sum + loc.latitude, 0) / locations.length,
                     lng: locations.reduce((sum, loc) => sum + loc.longitude, 0) / locations.length,
                 }
-                : { lat: 0, lng: 0 };
+                : { lat: 36.8065, lng: 10.1815 };
 
             return { locations, center };
         } catch (error) {
@@ -457,6 +570,40 @@ class GoogleMapsService {
             throw new Error(`Failed to get specific user location: ${error.message}`);
         }
     }
+
+
+    static async getNearbyPlaces(location, radius = 5000, type = null) {
+        if (!this.client) return { mock: true, location };
+        try {
+            const cacheKey = `nearbyPlaces:${location.lat}:${location.lng}:${radius}:${type || ''}`;
+            let cachedResult = await this.redisClient?.get(cacheKey);
+            if (cachedResult) return JSON.parse(cachedResult);
+
+            const response = await this.client.placesNearby({
+                params: {
+                    location: `${location.lat},${location.lng}`,
+                    radius,
+                    type,
+                    key: process.env.GOOGLE_MAPS_API_KEY,
+                },
+            });
+
+            const results = response.data.results.map(place => ({
+                name: place.name,
+                placeId: place.place_id,
+                latitude: place.geometry.location.lat,
+                longitude: place.geometry.location.lng,
+                types: place.types,
+            }));
+
+            await this.redisClient?.set(cacheKey, JSON.stringify(results), 'EX', 3600);
+            return results;
+        } catch (error) {
+            logger.error(`Failed to get nearby places: ${error.message}`);
+            throw new Error(`Failed to get nearby places: ${error.message}`);
+        }
+    }
+
 }
 
 GoogleMapsService.initialize().catch(error => {

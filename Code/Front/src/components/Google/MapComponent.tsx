@@ -1,196 +1,772 @@
-import React, { useState } from 'react';
-import { GoogleMap, LoadScript, Marker, Polyline } from '@react-google-maps/api';
-import { getGeocode, getDirections, searchPlaces } from '../../apis/locationApi';
+import React, { useState, useEffect, useCallback, useRef, useMemo } from 'react';
+import { GoogleMap, LoadScript, InfoWindow, Polyline, MarkerClusterer, Marker } from '@react-google-maps/api';
 import { toast } from 'react-toastify';
+import polyline from '@mapbox/polyline';
+import {
+  getAgentLocations,
+  getAgentsByDelegation,
+  getAgentSupervisor,
+  getAgentsByUser,
+  createAgent,
+  getAllAgents,
+  getAgentById,
+  updateAgent,
+  getNearbyAgents,
+  correctAgentLocation,
+  uploadAgents,
+} from '../../apis/agentAPI';
+import {
+  getAllRegions,
+  getAllGovernorates,
+  getAllDelegations,
+  getDelegationsByGovernorate,
+  getGovernoratesByRegion,
+  getGeocode,
+  getDirections,
+  getGovernoratesByDelegation,
+} from '../../apis/locationApi';
+import { AgentLocationsResponse, GeocodeResponse, DirectionsResponse } from '../../apis/index';
 
-interface DirectionStep {
-    polyline: {
-        points: google.maps.LatLngLiteral[] | any;
-    };
+interface AgentMarker {
+  id: string;
+  lat: number;
+  lng: number;
+  name: string;
+  lastname: string;
+  email: string;
+  phone: string;
+  address: string;
+  source: string;
+  delegation?: { delegationID: string; name: string; Governorate?: { governorateID: string; name: string } };
+  governorate?: { governorateID: string; name: string };
+  region?: { regionID: string; name: string };
+  supervisor?: { userID: string; firstname: string; lastname: string };
 }
 
-const MapComponent: React.FC = () => {
-    const [markers, setMarkers] = useState<Array<{ id: string; lat: number; lng: number; name?: string }>>([]);
-    const [directions, setDirections] = useState<any>(null);
-    const [places, setPlaces] = useState<Array<{ place_id: string; lat: number; lng: number; name: string }>>([]);
-    const [address, setAddress] = useState('');
-    const [origin, setOrigin] = useState('');
-    const [destination, setDestination] = useState('');
-    const [placeQuery, setPlaceQuery] = useState('');
-    const [loading, setLoading] = useState(false);
+interface ExtendedDirectionsResponse extends DirectionsResponse {
+  routes: Array<{
+    legs: Array<{
+      distance: { text: string; value: number };
+      duration: { text: string; value: number };
+      start_address: string;
+      end_address: string;
+      steps: Array<{
+        polyline: { points: string };
+        instructions: string;
+        distance: { text: string; value: number };
+      }>;
+    }>;
+  }>;
+}
 
-    const addMarker = async () => {
-        if (!address) {
-            toast.error('Please enter an address');
-            return;
-        }
-        setLoading(true);
-        try {
-            const res = await getGeocode(address);
-            const newMarker = {
-                id: `marker-${Date.now()}`,
-                lat: res.geometry.location.lat,
-                lng: res.geometry.location.lng,
-                name: address,
-            };
-            setMarkers([...markers, newMarker]);
-            setAddress('');
-            toast.success('Location added to map');
-        } catch (err) {
-            toast.error(
-                err && typeof err === 'object' && 'message' in err
-                    ? (err as { message: string }).message
-                    : 'Failed to add location');
-        } finally {
-            setLoading(false);
-        }
-    };
+const containerStyle = { width: '100%', height: '600px' };
+const defaultCenter = { lat: 36.8065, lng: 10.1815 }; // Tunisia
+const libraries: ('places' | 'geometry')[] = ['places', 'geometry'];
 
-    const handleDirections = async () => {
-        if (!origin || !destination) {
-            toast.error('Please enter both origin and destination');
-            return;
-        }
-        setLoading(true);
-        try {
-            const res = await getDirections(origin, destination);
-            if (res.mock) {
-                toast.warn('Using mock directions data due to missing API key');
-            }
-            setDirections(res);
-        } catch (err) {
-            toast.error(
-                err && typeof err === 'object' && 'message' in err
-                    ? (err as { message: string }).message
-                    : 'Failed to fetch directions');
-        } finally {
-            setLoading(false);
-        }
-    };
+const calculateDistance = (lat1: number, lon1: number, lat2: number, lon2: number) => {
+  const R = 6371; // Radius of the earth in km
+  const dLat = deg2rad(lat2 - lat1);
+  const dLon = deg2rad(lon2 - lon1);
+  const a = Math.sin(dLat / 2) * Math.sin(dLat / 2) + Math.cos(deg2rad(lat1)) * Math.cos(deg2rad(lat2)) * Math.sin(dLon / 2) * Math.sin(dLon / 2);
+  const c = 2 * Math.atan2(Math.sqrt(a), Math.sqrt(1 - a));
+  return R * c; // Distance in km
+};
 
-    const handlePlaceSearch = async () => {
-        if (!placeQuery) {
-            toast.error('Please enter a search query');
-            return;
-        }
-        setLoading(true);
-        try {
-            const res = await searchPlaces(placeQuery, markers[0] ? { lat: markers[0].lat, lng: markers[0].lng } : undefined);
-            setPlaces(res.map(place => ({
-                place_id: place.place_id,
-                lat: place.geometry.location.lat,
-                lng: place.geometry.location.lng,
-                name: place.name,
-            })));
-        } catch (err) {
-            toast.error(
-                err && typeof err === 'object' && 'message' in err
-                    ? (err as { message: string }).message
-                    : 'Failed to search places');
-        } finally {
-            setLoading(false);
-        }
-    };
+const deg2rad = (deg: number) => deg * (Math.PI / 180);
 
-    if (loading) return <div className="text-center py-4">Loading map...</div>;
-    if (!import.meta.env.VITE_GOOGLE_MAPS_API_KEY) return <div className="text-center py-4 text-red-500">Map feature is not available</div>;
-
-    const mapContainerStyle = {
-        width: '100%',
-        height: '500px',
-    };
-
-    // Default center to Tunisia
-    const defaultCenter = { lat: 36.8065, lng: 10.1815 };
-    const center = markers.length > 0 ? { lat: markers[0].lat, lng: markers[0].lng } : defaultCenter;
-
-    return (
-        <div className="space-y-4">
-            <div className="flex gap-4">
-                <input
-                    type="text"
-                    placeholder="Enter address to add to map"
-                    value={address}
-                    onChange={(e) => setAddress(e.target.value)}
-                    className="border rounded px-3 py-2 flex-1"
-                />
-                <button
-                    onClick={addMarker}
-                    disabled={loading}
-                    className="bg-blue-500 text-white px-4 py-2 rounded hover:bg-blue-600 disabled:bg-gray-400"
-                >
-                    Add to Map
-                </button>
-            </div>
-            <div className="flex gap-4">
-                <input
-                    type="text"
-                    placeholder="Enter origin"
-                    value={origin}
-                    onChange={(e) => setOrigin(e.target.value)}
-                    className="border rounded px-3 py-2 flex-1"
-                />
-                <input
-                    type="text"
-                    placeholder="Enter destination"
-                    value={destination}
-                    onChange={(e) => setDestination(e.target.value)}
-                    className="border rounded px-3 py-2 flex-1"
-                />
-                <button
-                    onClick={handleDirections}
-                    disabled={loading}
-                    className="bg-blue-500 text-white px-4 py-2 rounded hover:bg-blue-600 disabled:bg-gray-400"
-                >
-                    Get Directions
-                </button>
-            </div>
-            <div className="flex gap-4">
-                <input
-                    type="text"
-                    placeholder="Search places (e.g., coffee shop)"
-                    value={placeQuery}
-                    onChange={(e) => setPlaceQuery(e.target.value)}
-                    className="border rounded px-3 py-2 flex-1"
-                />
-                <button
-                    onClick={handlePlaceSearch}
-                    disabled={loading}
-                    className="bg-blue-500 text-white px-4 py-2 rounded hover:bg-blue-600 disabled:bg-gray-400"
-                >
-                    Search Places
-                </button>
-            </div>
-            <LoadScript googleMapsApiKey={import.meta.env.VITE_GOOGLE_MAPS_API_KEY}>
-                <GoogleMap
-                    mapContainerStyle={mapContainerStyle}
-                    center={center}
-                    zoom={markers.length > 0 ? 10 : 7} // Zoom to 10 if markers exist, 7 for full Tunisia view
-                >
-                    {markers.map(marker => (
-                        <Marker key={marker.id} position={{ lat: marker.lat, lng: marker.lng }} title={marker.name} />
-                    ))}
-                    {places.map(place => (
-                        <Marker
-                            key={place.place_id}
-                            position={{ lat: place.lat, lng: place.lng }}
-                            title={place.name}
-                            icon="http://maps.google.com/mapfiles/ms/icons/green-dot.png"
-                        />
-                    ))}
-                    {directions && directions.routes[0]?.legs[0]?.steps && (
-                        <Polyline
-                            path={directions.routes[0].legs[0].steps
-                                .map((step: DirectionStep) => step.polyline.points)
-                                .flat()
-                            }
-                            options={{ strokeColor: '#FF0000', strokeOpacity: 0.8, strokeWeight: 2 }}
-                        />
-                    )}
-                </GoogleMap>
-            </LoadScript>
+const MapDisplay = React.memo(({ center, zoom, markers, selectedMarker, route, onMapLoad, onMapClick, onMarkerDragEnd, setSelectedMarker, setEditAgent }: {
+  center: { lat: number; lng: number };
+  zoom: number;
+  markers: AgentMarker[];
+  selectedMarker: AgentMarker | null;
+  route: ExtendedDirectionsResponse | null;
+  onMapLoad: (map: google.maps.Map) => void;
+  onMapClick: (event: google.maps.MapMouseEvent) => void;
+  onMarkerDragEnd: (event: google.maps.MapMouseEvent, markerId: string) => void;
+  setSelectedMarker: (marker: AgentMarker | null) => void;
+  setEditAgent: (agent: Partial<any> | null) => void;
+}) => (
+  <GoogleMap
+    mapContainerStyle={containerStyle}
+    center={center}
+    zoom={zoom}
+    onLoad={onMapLoad}
+    onClick={onMapClick}
+  >
+    <MarkerClusterer>
+      {(clusterer: any) => (
+        <>
+          {markers.map(marker => (
+            <Marker
+              key={marker.id}
+              position={{ lat: marker.lat, lng: marker.lng }}
+              title={`${marker.name} ${marker.lastname}`}
+              icon={{
+                url: marker.source !== 'agent' ? 'http://maps.google.com/mapfiles/ms/icons/yellow-dot.png' : 'http://maps.google.com/mapfiles/ms/icons/red-dot.png',
+                scaledSize: window.google ? new window.google.maps.Size(32, 32) : undefined,
+              }}
+              draggable={true}
+              onDragEnd={(e: google.maps.MapMouseEvent) => onMarkerDragEnd(e, marker.id)}
+              onClick={async () => {
+                try {
+                  const agent = await getAgentById(marker.id);
+                  let supervisor;
+                  try {
+                    supervisor = await getAgentSupervisor(marker.id);
+                  } catch (error) {
+                    const errorMessage = error instanceof Error ? error.message : String(error);
+                    toast.error(`Failed to fetch supervisor: ${errorMessage}`);
+                    supervisor = null;
+                  }
+                  setSelectedMarker({
+                    ...marker,
+                    supervisor: supervisor ? { userID: supervisor.userID, firstname: supervisor.firstname, lastname: supervisor.lastname } : undefined,
+                  });
+                  setEditAgent({
+                    agentID: agent?.agentID,
+                    name: agent?.name,
+                    lastname: agent?.lastname,
+                    email: agent?.email,
+                    phone: agent?.phone,
+                    location: agent?.location,
+                    delegationID: agent?.delegationID,
+                    supervisorID: agent?.supervisorID,
+                  });
+                } catch (error) {
+                  const errorMessage = error instanceof Error ? error.message : String(error);
+                  toast.error(`Failed to fetch agent details: ${errorMessage}`);
+                }
+              }}
+              clusterer={clusterer}
+            />
+          ))}
+        </>
+      )}
+    </MarkerClusterer>
+    {selectedMarker && (
+      <InfoWindow position={{ lat: selectedMarker.lat, lng: selectedMarker.lng }} onCloseClick={() => setSelectedMarker(null)}>
+        <div style={styles.infoWindow}>
+          <h3>{`${selectedMarker.name} ${selectedMarker.lastname}`}</h3>
+          <p><strong>Email:</strong> {selectedMarker.email || 'N/A'}</p>
+          <p><strong>Phone:</strong> {selectedMarker.phone || 'N/A'}</p>
+          <p><strong>Address:</strong> {selectedMarker.address || 'N/A'}</p>
+          <p><strong>Coordinates:</strong> Lat: {selectedMarker.lat}, Lng: {selectedMarker.lng}</p>
+          {selectedMarker.delegation && <p><strong>Delegation:</strong> {selectedMarker.delegation.name || 'N/A'}</p>}
+          {selectedMarker.governorate && <p><strong>Governorate:</strong> {selectedMarker.governorate.name || 'N/A'}</p>}
+          {selectedMarker.supervisor && (
+            <p><strong>Supervisor:</strong> {`${selectedMarker.supervisor.firstname} ${selectedMarker.supervisor.lastname}`}</p>
+          )}
         </div>
-    );
+      </InfoWindow>
+    )}
+    {route && (
+      <Polyline
+        path={route.routes[0].legs.flatMap(leg => leg.steps.flatMap(step => decodePolyline(step.polyline.points)))}
+        options={{ strokeColor: '#FF0000', strokeOpacity: 0.8, strokeWeight: 2 }}
+      />
+    )}
+  </GoogleMap>
+));
+
+const MapComponent: React.FC = () => {
+  const [markers, setMarkers] = useState<AgentMarker[]>([]);
+  const [selectedMarker, setSelectedMarker] = useState<AgentMarker | null>(null);
+  const [mapCenter, setMapCenter] = useState(defaultCenter);
+  const [zoom, setZoom] = useState(7);
+  const [loading, setLoading] = useState(false);
+  const [searchQuery, setSearchQuery] = useState('');
+  const [filterRegion, setFilterRegion] = useState('');
+  const [filterGovernorate, setFilterGovernorate] = useState('');
+  const [filterDelegation, setFilterDelegation] = useState('');
+  const [filterSupervisor, setFilterSupervisor] = useState('');
+  const [regions, setRegions] = useState<{ regionID: string; name: string }[]>([]);
+  const [governorates, setGovernorates] = useState<{ governorateID: string; name: string }[]>([]);
+  const [delegations, setDelegations] = useState<{ delegationID: string; name: string }[]>([]);
+  const [newAgent, setNewAgent] = useState({ name: '', lastname: '', email: '', phone: '', supervisorID: '', delegationID: '', address: '' });
+  const [editAgent, setEditAgent] = useState<Partial<any> | null>(null);
+  const [showAddModal, setShowAddModal] = useState(false);
+  const [showEditModal, setShowEditModal] = useState(false);
+  const [route, setRoute] = useState<ExtendedDirectionsResponse | null>(null);
+  const [routeMode, setRouteMode] = useState<'driving' | 'walking'>('driving');
+  const [origin, setOrigin] = useState('');
+  const [destination, setDestination] = useState('');
+  const [waypoints, setWaypoints] = useState<string[]>([]);
+  const [userLocation, setUserLocation] = useState<{ lat: number; lng: number } | null>(null);
+  const [apiError, setApiError] = useState<string | null>(null);
+  const mapRef = useRef<google.maps.Map | null>(null);
+  const searchTimeoutRef = useRef<NodeJS.Timeout | null>(null);
+  const hasShownDeprecationWarning = useRef(false);
+
+  // Memoized markers to prevent unnecessary re-renders
+  const memoizedMarkers = useMemo(() => markers, [markers]);
+
+  // Sorted markers by proximity
+  const sortedMarkers = useMemo(() => {
+    if (!userLocation) return memoizedMarkers;
+    return [...memoizedMarkers].sort((a, b) => {
+      const distA = calculateDistance(userLocation.lat, userLocation.lng, a.lat, a.lng);
+      const distB = calculateDistance(userLocation.lat, userLocation.lng, b.lat, b.lng);
+      return distA - distB;
+    });
+  }, [memoizedMarkers, userLocation]);
+
+  // Fetch user's location on mount
+  useEffect(() => {
+    if (navigator.geolocation) {
+      navigator.geolocation.getCurrentPosition(
+        (position) => {
+          const { latitude, longitude } = position.coords;
+          setUserLocation({ lat: latitude, lng: longitude });
+          setMapCenter({ lat: latitude, lng: longitude });
+          setZoom(15);
+        },
+        (error) => {
+          console.error('Error getting user location:', error);
+          toast.error('Unable to get your location');
+        }
+      );
+    }
+  }, []);
+
+  // Load initial data
+  useEffect(() => {
+    const loadInitialData = async () => {
+      setLoading(true);
+      try {
+        const [regionData, governorateData, delegationData, allAgents] = await Promise.all([
+          getAllRegions(),
+          getAllGovernorates(),
+          getAllDelegations(),
+          getAllAgents(),
+        ]);
+        setRegions(regionData);
+        setGovernorates(governorateData);
+        setDelegations(delegationData);
+        const initialMarkers = allAgents.agents.map(agent => ({
+          id: agent.agentID,
+          lat: agent.latitude || defaultCenter.lat,
+          lng: agent.longitude || defaultCenter.lng,
+          name: agent.name,
+          lastname: agent.lastname,
+          email: agent.email,
+          phone: agent.phone,
+          address: agent.location || 'Unknown',
+          source: 'agent',
+          delegation: agent.Delegation ? { delegationID: agent.Delegation.delegationID, name: agent.Delegation.name, Governorate: agent.Delegation.Governorate ? { governorateID: agent.Delegation.Governorate.governorateID, name: agent.Delegation.Governorate.name } : undefined } : undefined,
+          governorate: agent.Delegation?.Governorate ? { governorateID: agent.Delegation.Governorate.governorateID, name: agent.Delegation.Governorate.name } : undefined,
+        }));
+        setMarkers(initialMarkers);
+        await loadAgentLocations();
+      } catch (err) {
+        const errorMessage = err instanceof Error ? err.message : String(err);
+        toast.error(`Failed to load initial data: ${errorMessage}`);
+      } finally {
+        setLoading(false);
+      }
+    };
+    loadInitialData();
+  }, []);
+
+  const loadAgentLocations = useCallback(async () => {
+    setLoading(true);
+    try {
+      const locations: AgentLocationsResponse = await getAgentLocations();
+      const newMarkers = locations.locations.map(loc => ({
+        id: loc.agentId,
+        lat: loc.latitude,
+        lng: loc.longitude,
+        name: loc.name,
+        lastname: loc.lastname,
+        email: loc.email,
+        phone: loc.phone,
+        address: loc.address,
+        source: loc.source,
+        delegation: loc.delegation ? { delegationID: loc.delegation.id, name: loc.delegation.name, Governorate: loc.governorate ? { governorateID: loc.governorate.id, name: loc.governorate.name } : undefined } : undefined,
+        governorate: loc.governorate ? { governorateID: loc.governorate.id, name: loc.governorate.name } : undefined,
+      }));
+      setMarkers(prev => JSON.stringify(prev) === JSON.stringify(newMarkers) ? prev : newMarkers);
+    } catch (err) {
+      const errorMessage = err instanceof Error ? err.message : String(err);
+      toast.error(`Failed to load agent locations: ${errorMessage}`);
+    } finally {
+      setLoading(false);
+    }
+  }, []);
+
+  const handleSearch = useCallback(async () => {
+    if (!searchQuery) {
+      await loadAgentLocations();
+      return;
+    }
+    setLoading(true);
+    try {
+      const lowerQuery = searchQuery.toLowerCase();
+      const filteredMarkers = memoizedMarkers.filter(marker =>
+        marker.name.toLowerCase().includes(lowerQuery) ||
+        marker.lastname.toLowerCase().includes(lowerQuery) ||
+        marker.phone.includes(searchQuery)
+      );
+      if (filteredMarkers.length > 0) {
+        setMarkers(filteredMarkers);
+        if (filteredMarkers.length === 1) {
+          const marker = filteredMarkers[0];
+          setMapCenter({ lat: marker.lat, lng: marker.lng });
+          setZoom(15);
+        } else if (mapRef.current) {
+          const bounds = new window.google.maps.LatLngBounds();
+          filteredMarkers.forEach(marker => bounds.extend({ lat: marker.lat, lng: marker.lng }));
+          mapRef.current.fitBounds(bounds);
+        }
+      } else {
+        const geocode: GeocodeResponse = await getGeocode(searchQuery + ', Tunisia');
+        const nearbyAgents = await getNearbyAgents(geocode.latitude, geocode.longitude, 5000);
+        const nearbyMarkers = nearbyAgents.map(agent => ({
+          id: agent.agentID,
+          lat: agent.latitude || geocode.latitude,
+          lng: agent.longitude || geocode.longitude,
+          name: agent.name,
+          lastname: agent.lastname,
+          email: agent.email,
+          phone: agent.phone,
+          address: agent.location || geocode.formatted_address,
+          source: 'agent',
+          delegation: agent.Delegation ? { delegationID: agent.Delegation.delegationID, name: agent.Delegation.name, Governorate: agent.Delegation.Governorate ? { governorateID: agent.Delegation.Governorate.governorateID, name: agent.Delegation.Governorate.name } : undefined } : undefined,
+        }));
+        setMarkers(nearbyMarkers);
+        setMapCenter({ lat: geocode.latitude, lng: geocode.longitude });
+        setZoom(12);
+      }
+    } catch (err) {
+      const errorMessage = err instanceof Error ? err.message : String(err);
+      toast.error(`Search failed: ${errorMessage}`);
+      await loadAgentLocations();
+    } finally {
+      setLoading(false);
+    }
+  }, [searchQuery, memoizedMarkers, loadAgentLocations]);
+
+  useEffect(() => {
+    if (searchTimeoutRef.current) clearTimeout(searchTimeoutRef.current);
+    searchTimeoutRef.current = setTimeout(handleSearch, 500);
+    return () => { if (searchTimeoutRef.current) clearTimeout(searchTimeoutRef.current); };
+  }, [searchQuery, handleSearch]);
+
+  const handleFilter = async () => {
+    setLoading(true);
+    try {
+      let filteredAgents: AgentMarker[] = [];
+      if (filterSupervisor) {
+        const agents = await getAgentsByUser(filterSupervisor);
+        filteredAgents = agents.agents.map(agent => ({
+          id: agent.agentID,
+          lat: agent.latitude || defaultCenter.lat,
+          lng: agent.longitude || defaultCenter.lng,
+          name: agent.name,
+          lastname: agent.lastname,
+          email: agent.email,
+          phone: agent.phone,
+          address: agent.location || 'Unknown',
+          source: 'agent',
+          delegation: agent.Delegation ? { delegationID: agent.Delegation.delegationID, name: agent.Delegation.name, Governorate: agent.Delegation.Governorate ? { governorateID: agent.Delegation.Governorate.governorateID, name: agent.Delegation.Governorate.name } : undefined } : undefined,
+        }));
+      } else if (filterDelegation) {
+        const agents = await getAgentsByDelegation(filterDelegation);
+        filteredAgents = agents.agents.map(agent => ({
+          id: agent.agentID,
+          lat: agent.latitude || defaultCenter.lat,
+          lng: agent.longitude || defaultCenter.lng,
+          name: agent.name,
+          lastname: agent.lastname,
+          email: agent.email,
+          phone: agent.phone,
+          address: agent.location || 'Unknown',
+          source: 'agent',
+          delegation: agent.Delegation ? { delegationID: agent.Delegation.delegationID, name: agent.Delegation.name, Governorate: agent.Delegation.Governorate ? { governorateID: agent.Delegation.Governorate.governorateID, name: agent.Delegation.Governorate.name } : undefined } : undefined,
+        }));
+      } else if (filterGovernorate) {
+        const delegations = await getDelegationsByGovernorate(filterGovernorate);
+        const agentsPromises = delegations.map(d => getAgentsByDelegation(d.delegationID));
+        const agentsArrays = await Promise.all(agentsPromises);
+        filteredAgents = agentsArrays.flatMap(a => a.agents).map(agent => ({
+          id: agent.agentID,
+          lat: agent.latitude || defaultCenter.lat,
+          lng: agent.longitude || defaultCenter.lng,
+          name: agent.name,
+          lastname: agent.lastname,
+          email: agent.email,
+          phone: agent.phone,
+          address: agent.location || 'Unknown',
+          source: 'agent',
+          delegation: agent.Delegation ? { delegationID: agent.Delegation.delegationID, name: agent.Delegation.name, Governorate: agent.Delegation.Governorate ? { governorateID: agent.Delegation.Governorate.governorateID, name: agent.Delegation.Governorate.name } : undefined } : undefined,
+        }));
+      } else if (filterRegion) {
+        const governorates = await getGovernoratesByRegion(filterRegion);
+        const delegationsPromises = governorates.map(g => getDelegationsByGovernorate(g.governorateID));
+        const delegationsArrays = await Promise.all(delegationsPromises);
+        const agentsPromises = delegationsArrays.flat().map(d => getAgentsByDelegation(d.delegationID));
+        const agentsArrays = await Promise.all(agentsPromises);
+        filteredAgents = agentsArrays.flatMap(a => a.agents).map(agent => ({
+          id: agent.agentID,
+          lat: agent.latitude || defaultCenter.lat,
+          lng: agent.longitude || defaultCenter.lng,
+          name: agent.name,
+          lastname: agent.lastname,
+          email: agent.email,
+          phone: agent.phone,
+          address: agent.location || 'Unknown',
+          source: 'agent',
+          delegation: agent.Delegation ? { delegationID: agent.Delegation.delegationID, name: agent.Delegation.name, Governorate: agent.Delegation.Governorate ? { governorateID: agent.Delegation.Governorate.governorateID, name: agent.Delegation.Governorate.name } : undefined } : undefined,
+        }));
+      } else {
+        await loadAgentLocations();
+        return;
+      }
+      setMarkers(filteredAgents);
+      if (filteredAgents.length > 0) {
+        setMapCenter({ lat: filteredAgents[0].lat, lng: filteredAgents[0].lng });
+        setZoom(10);
+      }
+    } catch (err) {
+      const errorMessage = err instanceof Error ? err.message : String(err);
+      toast.error(`Filtering failed: ${errorMessage}`);
+    } finally {
+      setLoading(false);
+    }
+  };
+
+  useEffect(() => {
+    if (filterRegion) {
+      getGovernoratesByRegion(filterRegion).then(setGovernorates).catch((err) => toast.error(`Failed to load governorates: ${err.message}`));
+      setFilterGovernorate('');
+      setFilterDelegation('');
+    } else {
+      getAllGovernorates().then(setGovernorates).catch((err) => toast.error(`Failed to load governorates: ${err.message}`));
+    }
+  }, [filterRegion]);
+
+  useEffect(() => {
+    if (filterGovernorate) {
+      getDelegationsByGovernorate(filterGovernorate).then(setDelegations).catch((err) => toast.error(`Failed to load delegations: ${err.message}`));
+      setFilterDelegation('');
+    } else {
+      getAllDelegations().then(setDelegations).catch((err) => toast.error(`Failed to load delegations: ${err.message}`));
+    }
+  }, [filterGovernorate]);
+
+  const handleMapClick = async (event: google.maps.MapMouseEvent) => {
+    const lat = event.latLng?.lat();
+    const lng = event.latLng?.lng();
+    if (lat && lng) {
+      try {
+        const geocode: GeocodeResponse = await getGeocode(`${lat},${lng}`);
+        setNewAgent({ ...newAgent, address: geocode.formatted_address });
+        setShowAddModal(true);
+      } catch (err) {
+        const errorMessage = err instanceof Error ? err.message : String(err);
+        toast.error(`Failed to get address: ${errorMessage}`);
+      }
+    }
+  };
+
+  const handleCreateAgent = async () => {
+    if (!newAgent.name || !newAgent.lastname || !newAgent.email || !newAgent.phone || !newAgent.delegationID) {
+      toast.error('All fields are required');
+      return;
+    }
+    setLoading(true);
+    try {
+      const geocode: GeocodeResponse = await getGeocode(newAgent.address + ', Tunisia');
+      const agent = await createAgent({ ...newAgent, latitude: geocode.latitude, longitude: geocode.longitude });
+      const newMarker: AgentMarker = {
+        id: agent.agentID,
+        lat: geocode.latitude,
+        lng: geocode.longitude,
+        name: agent.name,
+        lastname: agent.lastname,
+        email: agent.email,
+        phone: agent.phone,
+        address: geocode.formatted_address,
+        source: 'agent',
+        delegation: agent.Delegation ? { delegationID: agent.Delegation.delegationID, name: agent.Delegation.name, Governorate: agent.Delegation.Governorate ? { governorateID: agent.Delegation.Governorate.governorateID, name: agent.Delegation.Governorate.name } : undefined } : undefined,
+      };
+      setMarkers([...markers, newMarker]);
+      setShowAddModal(false);
+      setNewAgent({ name: '', lastname: '', email: '', phone: '', supervisorID: '', delegationID: '', address: '' });
+      toast.success('Agent created');
+    } catch (err) {
+      const errorMessage = err instanceof Error ? err.message : String(err);
+      toast.error(`Failed to create agent: ${errorMessage}`);
+    } finally {
+      setLoading(false);
+    }
+  };
+
+  const handleEditAgent = async () => {
+    if (!editAgent || !editAgent.agentID) return;
+    setLoading(true);
+    try {
+      const updated = await updateAgent(editAgent.agentID, editAgent);
+      const geocode: GeocodeResponse | null = editAgent.location ? await getGeocode(editAgent.location + ', Tunisia') : null;
+      setMarkers(markers.map(marker =>
+        marker.id === editAgent.agentID
+          ? {
+            ...marker,
+            name: updated.name,
+            lastname: updated.lastname,
+            email: updated.email,
+            phone: updated.phone,
+            address: geocode?.formatted_address || marker.address,
+            lat: geocode?.latitude || marker.lat,
+            lng: geocode?.longitude || marker.lng,
+            delegation: updated.Delegation ? { delegationID: updated.Delegation.delegationID, name: updated.Delegation.name, Governorate: updated.Delegation.Governorate ? { governorateID: updated.Delegation.Governorate.governorateID, name: updated.Delegation.Governorate.name } : undefined } : marker.delegation,
+          }
+          : marker
+      ));
+      setShowEditModal(false);
+      setEditAgent(null);
+      toast.success('Agent updated');
+    } catch (err) {
+      const errorMessage = err instanceof Error ? err.message : String(err);
+      toast.error(`Failed to update agent: ${errorMessage}`);
+    } finally {
+      setLoading(false);
+    }
+  };
+
+  const handleMarkerDragEnd = async (event: google.maps.MapMouseEvent, markerId: string) => {
+    const lat = event.latLng?.lat();
+    const lng = event.latLng?.lng();
+    if (lat && lng) {
+      try {
+        const geocode: GeocodeResponse = await getGeocode(`${lat},${lng}`);
+        if (window.confirm(`Update agent location to ${geocode.formatted_address}?`)) {
+          const updated = await correctAgentLocation(markerId, geocode.formatted_address);
+          const governorate = updated.delegation ? await getGovernoratesByDelegation(updated.delegation.id) : undefined;
+          setMarkers(markers.map(marker =>
+            marker.id === markerId
+              ? {
+                ...marker,
+                lat: updated.latitude,
+                lng: updated.longitude,
+                address: updated.address,
+                delegation: updated.delegation ? { delegationID: updated.delegation.id, name: updated.delegation.name, Governorate: governorate?.[0] ? { governorateID: governorate[0].governorateID, name: governorate[0].name } : undefined } : marker.delegation,
+              }
+              : marker
+          ));
+          toast.success('Agent location updated');
+        }
+      } catch (err) {
+        const errorMessage = err instanceof Error ? err.message : String(err);
+        toast.error(`Failed to update agent location: ${errorMessage}`);
+      }
+    }
+  };
+
+  const handleBulkUpload = async (event: React.ChangeEvent<HTMLInputElement>) => {
+    const file = event.target.files?.[0];
+    if (!file) return;
+    setLoading(true);
+    try {
+      const result = await uploadAgents(file);
+      toast.success(`Bulk upload completed: ${result.summary.agentsCreated} created, ${result.summary.agentsUpdated} updated`);
+      await loadAgentLocations();
+    } catch (err) {
+      const errorMessage = err instanceof Error ? err.message : String(err);
+      toast.error(`Failed to upload agents: ${errorMessage}`);
+    } finally {
+      setLoading(false);
+    }
+  };
+
+  const handleCalculateRoute = async () => {
+    if (!origin || !destination) {
+      toast.error('Origin and destination are required');
+      return;
+    }
+    setLoading(true);
+    try {
+      const directions = await getDirections(origin, destination, routeMode);
+      setRoute(directions as ExtendedDirectionsResponse);
+    } catch (err) {
+      const errorMessage = err instanceof Error ? err.message : String(err);
+      toast.error(`Failed to calculate route: ${errorMessage}`);
+    } finally {
+      setLoading(false);
+    }
+  };
+
+  const clearRoute = () => {
+    setRoute(null);
+    setOrigin('');
+    setDestination('');
+    setWaypoints([]);
+  };
+
+  const onMapLoad = useCallback((map: google.maps.Map) => {
+    mapRef.current = map;
+    if (!hasShownDeprecationWarning.current) {
+      toast.warn('The google.maps.Marker API is deprecated. Please consider migrating to AdvancedMarkerElement in the future.', { autoClose: 10000 });
+      hasShownDeprecationWarning.current = true;
+    }
+  }, []);
+
+  const handleApiError = (error: Error) => {
+    setApiError(error.message);
+    toast.error(`Google Maps API Error: ${error.message}`);
+  };
+
+  if (loading) return <div style={styles.loading}>Loading...</div>;
+  if (apiError) return <div style={styles.error}>Error: {apiError}</div>;
+
+  return (
+    <div style={styles.container}>
+      <LoadScript
+        googleMapsApiKey={import.meta.env.VITE_GOOGLE_MAPS_API_KEY}
+        libraries={libraries}
+        onError={handleApiError}
+        onLoad={() => setApiError(null)}
+      >
+        <MapDisplay
+          center={mapCenter}
+          zoom={zoom}
+          markers={memoizedMarkers}
+          selectedMarker={selectedMarker}
+          route={route}
+          onMapLoad={onMapLoad}
+          onMapClick={handleMapClick}
+          onMarkerDragEnd={handleMarkerDragEnd}
+          setSelectedMarker={setSelectedMarker}
+          setEditAgent={setEditAgent}
+        />
+        {userLocation && (
+          <Marker
+            position={userLocation}
+            title="Your Location"
+            icon={{
+              url: 'http://maps.google.com/mapfiles/ms/icons/blue-dot.png',
+              scaledSize: window.google ? new window.google.maps.Size(32, 32) : undefined,
+            }}
+          />
+        )}
+      </LoadScript>
+      <div style={styles.controlPanel}>
+        <div style={styles.searchSection}>
+          <input
+            type="text"
+            placeholder="Search by name or phone"
+            value={searchQuery}
+            onChange={(e) => setSearchQuery(e.target.value)}
+            style={styles.input}
+          />
+        </div>
+        <div style={styles.filterSection}>
+          <select value={filterRegion} onChange={(e) => setFilterRegion(e.target.value)} style={styles.select}>
+            <option value="">All Regions</option>
+            {regions.map(r => <option key={r.regionID} value={r.regionID}>{r.name}</option>)}
+          </select>
+          <select value={filterGovernorate} onChange={(e) => setFilterGovernorate(e.target.value)} style={styles.select}>
+            <option value="">All Governorates</option>
+            {governorates.map(g => <option key={g.governorateID} value={g.governorateID}>{g.name}</option>)}
+          </select>
+          <select value={filterDelegation} onChange={(e) => setFilterDelegation(e.target.value)} style={styles.select}>
+            <option value="">All Delegations</option>
+            {delegations.map(d => <option key={d.delegationID} value={d.delegationID}>{d.name}</option>)}
+          </select>
+          <input
+            type="text"
+            placeholder="Supervisor ID"
+            value={filterSupervisor}
+            onChange={(e) => setFilterSupervisor(e.target.value)}
+            style={styles.input}
+          />
+          <button onClick={handleFilter} style={styles.button}>Apply Filters</button>
+        </div>
+        <div style={styles.routeSection}>
+          <input type="text" placeholder="Origin" value={origin} onChange={(e) => setOrigin(e.target.value)} style={styles.input} />
+          <button onClick={() => userLocation && setOrigin(`${userLocation.lat},${userLocation.lng}`)} style={styles.button}>Set My Location</button>
+          <input type="text" placeholder="Destination" value={destination} onChange={(e) => setDestination(e.target.value)} style={styles.input} />
+          <input type="text" placeholder="Add Waypoint" onKeyPress={(e) => e.key === 'Enter' && setWaypoints([...waypoints, e.currentTarget.value])} style={styles.input} />
+          <select value={routeMode} onChange={(e) => setRouteMode(e.target.value as 'driving' | 'walking')} style={styles.select}>
+            <option value="driving">Driving</option>
+            <option value="walking">Walking</option>
+          </select>
+          <button onClick={handleCalculateRoute} style={styles.button}>Get Directions</button>
+          <button onClick={clearRoute} style={styles.buttonSecondary}>Clear Route</button>
+        </div>
+        <div style={styles.uploadSection}>
+          <label htmlFor="bulkUpload" style={styles.label}>Upload Agents (CSV):</label>
+          <input id="bulkUpload" type="file" accept=".csv" onChange={handleBulkUpload} style={styles.input} />
+        </div>
+      </div>
+      <div style={styles.agentList}>
+        <h3>Nearby Agents</h3>
+        <ul>
+          {sortedMarkers.map(marker => (
+            <li key={marker.id} onClick={() => { setSelectedMarker(marker); setMapCenter({ lat: marker.lat, lng: marker.lng }); setZoom(15); }} style={{ cursor: 'pointer' }}>
+              {marker.name} {marker.lastname} - {marker.address}
+            </li>
+          ))}
+        </ul>
+      </div>
+      {showAddModal && (
+        <div style={styles.modal}>
+          <div style={styles.modalContent}>
+            <h2>Add New Agent</h2>
+            <input type="text" placeholder="Name" value={newAgent.name} onChange={(e) => setNewAgent({ ...newAgent, name: e.target.value })} style={styles.input} />
+            <input type="text" placeholder="Last Name" value={newAgent.lastname} onChange={(e) => setNewAgent({ ...newAgent, lastname: e.target.value })} style={styles.input} />
+            <input type="email" placeholder="Email" value={newAgent.email} onChange={(e) => setNewAgent({ ...newAgent, email: e.target.value })} style={styles.input} />
+            <input type="tel" placeholder="Phone" value={newAgent.phone} onChange={(e) => setNewAgent({ ...newAgent, phone: e.target.value })} style={styles.input} />
+            <input type="text" placeholder="Supervisor ID" value={newAgent.supervisorID} onChange={(e) => setNewAgent({ ...newAgent, supervisorID: e.target.value })} style={styles.input} />
+            <select value={newAgent.delegationID} onChange={(e) => setNewAgent({ ...newAgent, delegationID: e.target.value })} style={styles.select}>
+              <option value="">Select Delegation</option>
+              {delegations.map(d => <option key={d.delegationID} value={d.delegationID}>{d.name}</option>)}
+            </select>
+            <input type="text" placeholder="Address" value={newAgent.address} onChange={(e) => setNewAgent({ ...newAgent, address: e.target.value })} style={styles.input} />
+            <button onClick={handleCreateAgent} style={styles.button}>Create Agent</button>
+            <button onClick={() => setShowAddModal(false)} style={styles.buttonSecondary}>Cancel</button>
+          </div>
+        </div>
+      )}
+      {showEditModal && editAgent && (
+        <div style={styles.modal}>
+          <div style={styles.modalContent}>
+            <h2>Edit Agent</h2>
+            <input type="text" placeholder="Name" value={editAgent.name || ''} onChange={(e) => setEditAgent({ ...editAgent, name: e.target.value })} style={styles.input} />
+            <input type="text" placeholder="Last Name" value={editAgent.lastname || ''} onChange={(e) => setEditAgent({ ...editAgent, lastname: e.target.value })} style={styles.input} />
+            <input type="email" placeholder="Email" value={editAgent.email || ''} onChange={(e) => setEditAgent({ ...editAgent, email: e.target.value })} style={styles.input} />
+            <input type="tel" placeholder="Phone" value={editAgent.phone || ''} onChange={(e) => setEditAgent({ ...editAgent, phone: e.target.value })} style={styles.input} />
+            <input type="text" placeholder="Address" value={editAgent.location || ''} onChange={(e) => setEditAgent({ ...editAgent, location: e.target.value })} style={styles.input} />
+            <button onClick={handleEditAgent} style={styles.button}>Update Agent</button>
+            <button onClick={() => setShowEditModal(false)} style={styles.buttonSecondary}>Cancel</button>
+          </div>
+        </div>
+      )}
+    </div>
+  );
+};
+
+function decodePolyline(encoded: string): google.maps.LatLngLiteral[] {
+  return polyline.decode(encoded).map(([lat, lng]: [number, number]) => ({ lat, lng }));
+}
+
+const styles: { [key: string]: React.CSSProperties } = {
+  container: { position: 'relative', padding: '10px' },
+  controlPanel: { background: '#fff', padding: '15px', marginBottom: '10px', borderRadius: '8px', boxShadow: '0 2px 4px rgba(0,0,0,0.1)' },
+  searchSection: { marginBottom: '10px' },
+  filterSection: { display: 'flex', gap: '10px', marginBottom: '10px' },
+  routeSection: { display: 'flex', gap: '10px', marginBottom: '10px' },
+  uploadSection: { marginTop: '10px' },
+  input: { padding: '8px', border: '1px solid #ccc', borderRadius: '4px', width: '100%', marginBottom: '5px' },
+  select: { padding: '8px', border: '1px solid #ccc', borderRadius: '4px', width: '100%' },
+  label: { display: 'block', marginBottom: '5px' },
+  button: { padding: '8px 16px', background: '#28a745', color: '#fff', border: 'none', borderRadius: '4px', cursor: 'pointer' },
+  buttonSecondary: { padding: '8px 16px', background: '#6c757d', color: '#fff', border: 'none', borderRadius: '4px', cursor: 'pointer' },
+  loading: { textAlign: 'center', padding: '20px', fontSize: '18px' },
+  error: { textAlign: 'center', padding: '20px', fontSize: '18px', color: 'red' },
+  infoWindow: { maxWidth: '300px', padding: '10px' },
+  modal: { position: 'fixed', top: 0, left: 0, right: 0, bottom: 0, background: 'rgba(0,0,0,0.5)', display: 'flex', justifyContent: 'center', alignItems: 'center' },
+  modalContent: { background: '#fff', padding: '20px', borderRadius: '8px', width: '400px' },
+  agentList: { position: 'absolute', bottom: 0, left: 0, right: 0, height: '200px', overflowY: 'scroll', background: 'white', zIndex: 1000, padding: '10px' },
 };
 
 export default MapComponent;

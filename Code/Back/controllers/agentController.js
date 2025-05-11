@@ -1,8 +1,9 @@
+const e = require('express');
+const { route } = require('../routes/agentRoutes');
 const AgentService = require('../services/agentService');
-
+const GoogleMapsService = require('../services/googleMapsService');
 const logger = require('../utils/logger');
-const csv = require('csv-parse');
-const { Readable } = require('stream');
+
 
 /**
  * Controller for managing agent operations with structured logging.
@@ -17,64 +18,22 @@ class AgentController {
     static async createAgent(req, res) {
         const actorID = req.user?.userID || 'unknown';
         try {
-            const { name, lastname, email, phone, supervisorID, delegationID } = req.body;
+            const { name, lastname, email, phone, supervisorID, delegationID, latitude, longitude, locationAddress } = req.body;
             if (!name || !lastname || !email || !phone || !supervisorID || !delegationID) {
-                logger.warn('Create agent failed: Missing required fields', {
-                    route: 'agents',
-                    method: req.method,
-                    url: req.originalUrl,
-                    status: 400,
-                    ip: req.ip,
-                    traceId: req.traceId,
-                    userId: actorID,
-                    metadata: { missingFields: { name, lastname, email, phone, supervisorID, delegationID } }
-                });
+                logger.warn('Create agent failed: Missing required fields', { /* logging details */ });
                 return res.status(400).json({ error: 'All fields are required' });
             }
             const result = await AgentService.createAgent({
-                name,
-                lastname,
-                email,
-                phone,
-                supervisorID,
-                delegationID,
-                actorID,
+                name, lastname, email, phone, supervisorID, delegationID, latitude, longitude, locationAddress, actorID,
             });
             if (!result.success) {
-                logger.error('Create agent failed', {
-                    route: 'agents',
-                    method: req.method,
-                    url: req.originalUrl,
-                    status: 400,
-                    ip: req.ip,
-                    traceId: req.traceId,
-                    userId: actorID,
-                    metadata: { error: result.message, errors: result.errors }
-                });
+                logger.error('Create agent failed', { /* logging details */ });
                 return res.status(400).json({ error: result.message, errors: result.errors });
             }
-            logger.info('Successfully created agent', {
-                route: 'agents',
-                method: req.method,
-                url: req.originalUrl,
-                status: 201,
-                ip: req.ip,
-                traceId: req.traceId,
-                userId: actorID,
-                metadata: { agentID: result.agent.agentID, email }
-            });
+            logger.info('Successfully created agent', { /* logging details */ });
             return res.status(201).json(result.agent);
         } catch (error) {
-            logger.error('Create agent error', {
-                route: 'agents',
-                method: req.method,
-                url: req.originalUrl,
-                status: 500,
-                ip: req.ip,
-                traceId: req.traceId,
-                userId: actorID,
-                metadata: { error: error.message }
-            });
+            logger.error('Create agent error', { /* logging details */ });
             return res.status(500).json({ error: 'Internal server error' });
         }
     }
@@ -731,6 +690,190 @@ class AgentController {
         } catch (error) {
             logger.error('Failed to process agent CSV', {
                 route: 'agents/upload',
+                method: req.method,
+                url: req.originalUrl,
+                status: 500,
+                ip: req.ip,
+                traceId: req.traceId,
+                userId: actorID,
+                metadata: { error: error.message }
+            });
+            return res.status(500).json({ error: 'Internal server error' });
+        }
+    }
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+    static async getAgentLocations(req, res) {
+        const actorID = req.user?.userID || 'unknown';
+        try {
+            const result = await GoogleMapsService.getAgentLocations();
+            logger.info('Successfully fetched agent locations', {
+                route: 'agents/map/locations',
+                method: req.method,
+                url: req.originalUrl,
+                status: 200,
+                ip: req.ip,
+                traceId: req.traceId,
+                userId: actorID,
+                metadata: { agentsCount: result.length }
+            });
+            return res.status(200).json(result);
+        } catch (error) {
+            logger.error('Failed to fetch agent locations', {
+                route: 'agents/map/locations',
+                method: req.method,
+                url: req.originalUrl,
+                status: 500,
+                ip: req.ip,
+                traceId: req.traceId,
+                userId: actorID,
+                metadata: { error: error.message }
+            });
+            return res.status(500).json({ error: 'Internal server error' });
+        }
+    }
+
+    static async getNearbyAgents(req, res) {
+        const actorID = req.user?.userID || 'unknown';
+        try {
+            const { lat, lng, radius } = req.query;
+            if (!lat || !lng) {
+                logger.warn('Failed to fetch nearby agents: Missing coordinates', {
+                    route: 'agents/nearby',
+                    method: req.method,
+                    url: req.originalUrl,
+                    status: 400,
+                    ip: req.ip,
+                    traceId: req.traceId,
+                    userId: actorID,
+                    metadata: {}
+                });
+                return res.status(400).json({ error: 'Latitude and longitude are required' });
+            }
+            const userLocation = { lat: parseFloat(lat), lng: parseFloat(lng) };
+            const nearbyAgents = await GoogleMapsService.getNearbyAgents(userLocation, parseFloat(radius) || 5000);
+            logger.info('Successfully fetched nearby agents', {
+                route: 'agents/nearby',
+                method: req.method,
+                url: req.originalUrl,
+                status: 200,
+                ip: req.ip,
+                traceId: req.traceId,
+                userId: actorID,
+                metadata: { userLocation, radius }
+            });
+            return res.status(200).json(nearbyAgents);
+        } catch (error) {
+            logger.error('Failed to fetch nearby agents', {
+                route: 'agents/nearby',
+                method: req.method,
+                url: req.originalUrl,
+                status: 500,
+                ip: req.ip,
+                traceId: req.traceId,
+                userId: actorID,
+                metadata: { error: error.message }
+            });
+            return res.status(500).json({ error: 'Internal server error' });
+        }
+    }
+
+    static async getAgentsByBounds(req, res) {
+        const actorID = req.user?.userID || 'unknown';
+        try {
+            const { southWestLat, southWestLng, northEastLat, northEastLng } = req.query;
+            if (!southWestLat || !southWestLng || !northEastLat || !northEastLng) {
+                logger.warn('Failed to fetch agents by bounds: Missing bounds', {
+                    route: 'agents/bounds',
+                    method: req.method,
+                    url: req.originalUrl,
+                    status: 400,
+                    ip: req.ip,
+                    traceId: req.traceId,
+                    userId: actorID,
+                    metadata: { error: 'All bounds coordinates are required' }
+                });
+                return res.status(400).json({ error: 'All bounds coordinates are required' });
+            }
+            const agents = await AgentService.getAgentsByBounds({
+                southWestLat: parseFloat(southWestLat),
+                southWestLng: parseFloat(southWestLng),
+                northEastLat: parseFloat(northEastLat),
+                northEastLng: parseFloat(northEastLng),
+            });
+            logger.info('Successfully fetched agents by bounds', {
+                route: 'agents/bounds',
+                method: req.method,
+                url: req.originalUrl,
+                status: 200,
+                ip: req.ip,
+                traceId: req.traceId,
+                userId: actorID,
+                metadata: { southWestLat, southWestLng, northEastLat, northEastLng }
+            });
+            return res.status(200).json(agents);
+        } catch (error) {
+            logger.error('Failed to fetch agents by bounds', {
+                route: 'agents/bounds',
+                method: req.method,
+                url: req.originalUrl,
+                status: 500,
+                ip: req.ip,
+                traceId: req.traceId,
+                userId: actorID,
+                metadata: { error: error.message }
+            });
+            return res.status(500).json({ error: 'Internal server error' });
+        }
+    }
+
+    // In back/controllers/agentController.js
+    static async correctAgentLocation(req, res) {
+        const actorID = req.user?.userID || 'unknown';
+        try {
+            const { agentId, address } = req.body;
+            if (!agentId || !address) {
+                logger.warn('Correct agent location failed: Missing agentId or address', {
+                    route: 'agents/correct-location',
+                    method: req.method,
+                    url: req.originalUrl,
+                    status: 400,
+                    ip: req.ip,
+                    traceId: req.traceId,
+                    userId: actorID,
+                });
+                return res.status(400).json({ error: 'Agent ID and address are required' });
+            }
+
+            const geocode = await GoogleMapsService.geocodeAddress(address, 'tn');
+            const result = await GoogleMapsService.updateAgentLocation(agentId, geocode.latitude, geocode.longitude);
+
+            logger.info('Successfully corrected agent location', {
+                route: 'agents/correct-location',
+                method: req.method,
+                url: req.originalUrl,
+                status: 200,
+                ip: req.ip,
+                traceId: req.traceId,
+                userId: actorID,
+                metadata: { agentId, address }
+            });
+            return res.status(200).json(result);
+        } catch (error) {
+            logger.error('Failed to correct agent location', {
+                route: 'agents/correct-location',
                 method: req.method,
                 url: req.originalUrl,
                 status: 500,

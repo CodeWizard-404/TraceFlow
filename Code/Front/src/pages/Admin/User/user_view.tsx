@@ -10,14 +10,12 @@ import { getUserById } from "../../../apis/userAPI";
 import User from "../../../models/User";
 import Role from "../../../models/Role";
 import Permission from "../../../models/Permission";
-import UserPermissionOverride from "../../../models/UserPermissionOverride";
 import Region from "../../../models/Region";
 import Governorate from "../../../models/Governorate";
 import "../AdminDashboard.css";
 import { ViewMode } from "../adminTypes";
 import UserDetails from "./UserDetails";
 import RoleManagement from "./RoleManagement";
-import PermissionOverrides from "./PermissionOverrides";
 import AssignmentsManagement from "./AssignmentsManagement";
 import InfoPopupWrapper from "./InfoPopupWrapper";
 import Delegation from "../../../models/Delegation";
@@ -100,7 +98,6 @@ const UserView: React.FC<UserViewProps> = ({
   roles,
   setRoles,
   permissionsList,
-  setPermissionsList,
   view,
   userRoles,
   setView,
@@ -116,20 +113,9 @@ const UserView: React.FC<UserViewProps> = ({
   const [tempGovernorates, setTempGovernorates] = useState<Governorate[]>([]);
   const [tempAgents, setTempAgents] = useState<Agent[]>([]);
   const [tempDirectors, setTempDirectors] = useState<User[]>([]);
-  const [tempOverrides, setTempOverrides] = useState<UserPermissionOverride[]>(
-    []
-  );
-  const [userOverrides, setUserOverrides] = useState<UserPermissionOverride[]>(
-    []
-  );
-  const [effectiveUserPermissions, setEffectiveUserPermissions] = useState<
-    Permission[]
-  >([]);
   const [expandedSection, setExpandedSection] = useState<string | null>(null);
   const [activeRolePopup, setActiveRolePopup] = useState<string | null>(null);
-  const [activeOverridePopup, setActiveOverridePopup] = useState<string | null>(
-    null
-  );
+  const [activeOverridePopup, setActiveOverridePopup] = useState<string | null>(null);
 
   // Permission Checks
   const userPermissions = useMemo(
@@ -181,14 +167,6 @@ const UserView: React.FC<UserViewProps> = ({
       ),
       canReadPermissionsByRole: effectivePermissions.some(
         (p) => p.name === import.meta.env.VITE_PERMISSIONS_READ_PERMISSIONS_BY_ROLE
-      ),
-      canCreatePermissionOverrides: effectivePermissions.some(
-        (p) =>
-          p.name === import.meta.env.VITE_PERMISSIONS_CREATE_PERMISSION_OVERRIDES
-      ),
-      canRemovePermissionOverrides: effectivePermissions.some(
-        (p) =>
-          p.name === import.meta.env.VITE_PERMISSIONS_REMOVE_PERMISSION_OVERRIDES
       ),
       canAssignDelegations: effectivePermissions.some(
         (p) => p.name === import.meta.env.VITE_PERMISSIONS_ASSIGN_DELEGATIONS
@@ -295,23 +273,6 @@ const UserView: React.FC<UserViewProps> = ({
           setSelectedUser={setSelectedUser}
           userPermissions={userPermissions}
           isSuperAdmin={isSuperAdmin}
-        />
-      }
-      permissionOverrides={
-        <PermissionOverrides
-          selectedUser={selectedUser}
-          permissionsList={permissionsList}
-          setPermissionsList={setPermissionsList}
-          expandedSection={expandedSection}
-          toggleSection={toggleSection}
-          userPermissions={userPermissions}
-          isSuperAdmin={isSuperAdmin}
-          tempOverrides={tempOverrides}
-          setTempOverrides={setTempOverrides}
-          userOverrides={userOverrides}
-          setUserOverrides={setUserOverrides}
-          effectiveUserPermissions={effectiveUserPermissions}
-          setEffectiveUserPermissions={setEffectiveUserPermissions}
         />
       }
       assignmentsManagement={

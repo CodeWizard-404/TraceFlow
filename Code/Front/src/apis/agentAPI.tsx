@@ -1,12 +1,26 @@
+// In front/src/apis/agentAPI.tsx
 import { AxiosError } from "axios";
 import api from "./axiosConfig";
-import { AgentsByDelegationResponse, AgentLocationsResponse, AgentByPhoneResponse, SupervisorResponse, CreateAgentResponse, AllAgentsResponse, AgentByIdResponse, UpdateAgentResponse, DeleteAgentResponse } from "./index";
+import {
+  AgentsByDelegationResponse,
+  AgentLocationsResponse,
+  AgentByPhoneResponse,
+  SupervisorResponse,
+  CreateAgentResponse,
+  AllAgentsResponse,
+  AgentByIdResponse,
+  UpdateAgentResponse,
+  DeleteAgentResponse,
+  NearbyAgentsResponse,
+  AgentsByBoundsResponse,
+  AgentBulkUploadResponse,
+} from "./index";
 
 // Generic error handler
 const handleApiError = (error: unknown, defaultMessage: string): string => {
   const axiosError = error as AxiosError;
   if (axiosError.response) {
-    return axiosError.message || defaultMessage;
+    return axiosError.message;
   }
   switch (axiosError.status) {
     case 400:
@@ -24,53 +38,26 @@ const handleApiError = (error: unknown, defaultMessage: string): string => {
   }
 };
 
-// Interfaces for other API responses (unchanged)
-
-// Updated interface for bulk upload response
-export interface AgentBulkUploadError {
-  agentPhone: string;
-  agentName: string;
-  timestamp: string;
-  operation?: string;
-  reason: string;
-}
-
-export interface AgentBulkUploadResponse {
-  status: string;
-  summary: {
-    totalRecords: number;
-    agentsCreated: number;
-    agentsUpdated: number;
-    recordsSkipped: number;
-    errorsEncountered: number;
-  };
-  detailedLog: {
-    created: Array<{ agentPhone: string; agentName: string; timestamp: string; details: string }>;
-    updated: Array<{ agentPhone: string; agentName: string; timestamp: string; details: string }>;
-    skipped: Array<{ agentPhone: string; agentName: string; timestamp: string; reason: string }>;
-    errors: AgentBulkUploadError[];
-  };
-}
-
 // Get agents by delegation
-export const getAgentsByDelegation = async (delegationID: string): Promise<AgentsByDelegationResponse> => {
+export const getAgentsByDelegation = async (
+  delegationID: string
+): Promise<AgentsByDelegationResponse> => {
   try {
-    if (!delegationID) {
-      throw new Error("Delegation ID is required.");
-    }
-    const response = await api.get<AgentsByDelegationResponse>("/agents/delegation", {
-      params: { delegationID },
-    });
+    if (!delegationID) throw new Error("Delegation ID is required.");
+    const response = await api.get<AgentsByDelegationResponse>(
+      "/agents/delegation",
+      { params: { delegationID } }
+    );
     return response.data;
   } catch (error) {
     throw new Error(handleApiError(error, "Unable to fetch agents by delegation."));
   }
 };
 
-// Get all unique agent locations
+// Get all unique agent locations for map display
 export const getAgentLocations = async (): Promise<AgentLocationsResponse> => {
   try {
-    const response = await api.get<AgentLocationsResponse>("/agents/locations");
+    const response = await api.get<AgentLocationsResponse>("/agents/map/locations");
     return response.data;
   } catch (error) {
     throw new Error(handleApiError(error, "Unable to fetch agent locations."));
@@ -80,9 +67,7 @@ export const getAgentLocations = async (): Promise<AgentLocationsResponse> => {
 // Get agent by phone number
 export const getAgentByPhone = async (phone: string): Promise<AgentByPhoneResponse> => {
   try {
-    if (!phone) {
-      throw new Error("Phone number is required.");
-    }
+    if (!phone) throw new Error("Phone number is required.");
     const response = await api.get<AgentByPhoneResponse>(`/agents/phone/${phone}`);
     return response.data;
   } catch (error) {
@@ -93,9 +78,7 @@ export const getAgentByPhone = async (phone: string): Promise<AgentByPhoneRespon
 // Get agent's supervisor
 export const getAgentSupervisor = async (id: string): Promise<SupervisorResponse> => {
   try {
-    if (!id) {
-      throw new Error("Agent ID is required.");
-    }
+    if (!id) throw new Error("Agent ID is required.");
     const response = await api.get<SupervisorResponse>(`/agents/${id}/supervisor`);
     return response.data;
   } catch (error) {
@@ -104,19 +87,21 @@ export const getAgentSupervisor = async (id: string): Promise<SupervisorResponse
 };
 
 // Get agents by user (supervisor)
-export const getAgentsByUser = async (userID: string): Promise<AgentsByDelegationResponse> => {
+export const getAgentsByUser = async (
+  userID: string
+): Promise<AgentsByDelegationResponse> => {
   try {
-    if (!userID) {
-      throw new Error("User ID is required.");
-    }
-    const response = await api.get<AgentsByDelegationResponse>(`/agents/user/${userID}`);
+    if (!userID) throw new Error("User ID is required.");
+    const response = await api.get<AgentsByDelegationResponse>(
+      `/agents/user/${userID}`
+    );
     return response.data;
   } catch (error) {
     throw new Error(handleApiError(error, "Unable to fetch agents by user."));
   }
 };
 
-// Create an agent
+// Create an agent with optional location coordinates
 export const createAgent = async (agentData: {
   name: string;
   lastname: string;
@@ -124,10 +109,19 @@ export const createAgent = async (agentData: {
   phone: string;
   supervisorID: string;
   delegationID: string;
+  latitude?: number;
+  longitude?: number;
 }): Promise<CreateAgentResponse> => {
   try {
-    if (!agentData.name || !agentData.lastname || !agentData.email || !agentData.phone || !agentData.supervisorID || !agentData.delegationID) {
-      throw new Error("All fields are required.");
+    if (
+      !agentData.name ||
+      !agentData.lastname ||
+      !agentData.email ||
+      !agentData.phone ||
+      !agentData.supervisorID ||
+      !agentData.delegationID
+    ) {
+      throw new Error("All required fields must be provided.");
     }
     const response = await api.post<CreateAgentResponse>("/agents", agentData);
     return response.data;
@@ -149,9 +143,7 @@ export const getAllAgents = async (): Promise<AllAgentsResponse> => {
 // Get agent by ID
 export const getAgentById = async (id: string): Promise<AgentByIdResponse> => {
   try {
-    if (!id) {
-      throw new Error("Agent ID is required.");
-    }
+    if (!id) throw new Error("Agent ID is required.");
     const response = await api.get<AgentByIdResponse>(`/agents/${id}`);
     return response.data;
   } catch (error) {
@@ -159,7 +151,7 @@ export const getAgentById = async (id: string): Promise<AgentByIdResponse> => {
   }
 };
 
-// Update an agent
+// Update an agent with optional location coordinates
 export const updateAgent = async (
   id: string,
   agentData: Partial<{
@@ -169,12 +161,12 @@ export const updateAgent = async (
     phone: string;
     supervisorID: string;
     delegationID: string;
+    latitude?: number;
+    longitude?: number;
   }>
 ): Promise<UpdateAgentResponse> => {
   try {
-    if (!id) {
-      throw new Error("Agent ID is required.");
-    }
+    if (!id) throw new Error("Agent ID is required.");
     const response = await api.put<UpdateAgentResponse>(`/agents/${id}`, agentData);
     return response.data;
   } catch (error) {
@@ -185,9 +177,7 @@ export const updateAgent = async (
 // Delete an agent
 export const deleteAgent = async (id: string): Promise<DeleteAgentResponse> => {
   try {
-    if (!id) {
-      throw new Error("Agent ID is required.");
-    }
+    if (!id) throw new Error("Agent ID is required.");
     const response = await api.delete<DeleteAgentResponse>(`/agents/${id}`);
     return response.data;
   } catch (error) {
@@ -200,11 +190,94 @@ export const uploadAgents = async (file: File): Promise<AgentBulkUploadResponse>
   try {
     const formData = new FormData();
     formData.append("file", file);
-    const response = await api.post<AgentBulkUploadResponse>("/agents/upload", formData, {
-      headers: { "Content-Type": "multipart/form-data" },
-    });
+    const response = await api.post<AgentBulkUploadResponse>(
+      "/agents/upload",
+      formData,
+      {
+        headers: { "Content-Type": "multipart/form-data" },
+      }
+    );
     return response.data;
   } catch (error) {
     throw new Error(handleApiError(error, "Unable to upload agents."));
   }
+};
+
+// Get nearby agents
+export const getNearbyAgents = async (
+  lat: number,
+  lng: number,
+  radius: number
+): Promise<NearbyAgentsResponse> => {
+  try {
+    const response = await api.get<NearbyAgentsResponse>("/agents/nearby", {
+      params: { lat, lng, radius },
+    });
+    return response.data;
+  } catch (error) {
+    throw new Error(handleApiError(error, "Unable to fetch nearby agents."));
+  }
+};
+
+// Get agents within map bounds
+export const getAgentsByBounds = async (
+  southWestLat: number,
+  southWestLng: number,
+  northEastLat: number,
+  northEastLng: number
+): Promise<AgentsByBoundsResponse> => {
+  try {
+    const response = await api.get<AgentsByBoundsResponse>("/agents/bounds", {
+      params: { southWestLat, southWestLng, northEastLat, northEastLng },
+    });
+    return response.data;
+  } catch (error) {
+    throw new Error(
+      handleApiError(error, "Unable to fetch agents by bounds.")
+    );
+  }
+};
+
+// Correct agent location
+export const correctAgentLocation = async (
+  agentId: string,
+  address: string
+): Promise<{
+  agentId: string;
+  latitude: number;
+  longitude: number;
+  address: string;
+  delegation?: { id: string; name: string };
+}> => {
+  try {
+    if (!agentId || !address) throw new Error("Agent ID and address are required.");
+    const response = await api.post<{
+      agentId: string;
+      latitude: number;
+      longitude: number;
+      address: string;
+      delegation?: { id: string; name: string };
+    }>("/agents/correct-location", { agentId, address });
+    return response.data;
+  } catch (error) {
+    throw new Error(handleApiError(error, "Unable to correct agent location."));
+  }
+};
+
+// Export all functions
+export default {
+  getAgentsByDelegation,
+  getAgentLocations,
+  getAgentByPhone,
+  getAgentSupervisor,
+  getAgentsByUser,
+  createAgent,
+  getAllAgents,
+  getAgentById,
+  updateAgent,
+  deleteAgent,
+  uploadAgents,
+  getNearbyAgents,
+  getAgentsByBounds,
+  correctAgentLocation,
 };

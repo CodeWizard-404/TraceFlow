@@ -19,8 +19,8 @@ const handleApiError = (error: unknown, defaultMessage: string): string => {
     const axiosError = error as AxiosError<AxiosErrorResponse>;
     if (axiosError.response) {
         return axiosError.message;
-      }
-      switch (axiosError.status) {
+    }
+    switch (axiosError.status) {
         case 400:
             return "Invalid request. Please check your input and try again.";
         case 401:
@@ -129,41 +129,6 @@ export const getPermissionsByRole = async (roleID: string): Promise<PermissionsB
     }
 };
 
-// Add permission override for a user
-export const addPermissionOverride = async (
-    userID: string,
-    data: { roleID: string; permissionID: string; action: "grant" | "revoke" }
-): Promise<AddPermissionOverrideResponse> => {
-    try {
-        if (!userID || !data.roleID || !data.permissionID || !["grant", "revoke"].includes(data.action)) {
-            throw new Error("User ID, role ID, permission ID, and action are required.");
-        }
-        const response = await api.post<AddPermissionOverrideResponse>(
-            `/permissions/override/${userID}`,
-            data
-        );
-        return response.data;
-    } catch (error: unknown) {
-        throw new Error(handleApiError(error, "Unable to add permission override."));
-    }
-};
-
-// Remove permission override
-export const removePermissionOverride = async (
-    overrideID: string
-): Promise<RemovePermissionOverrideResponse> => {
-    try {
-        if (!overrideID) {
-            throw new Error("Override ID is required.");
-        }
-        const response = await api.delete<RemovePermissionOverrideResponse>(
-            `/permissions/override/${overrideID}`
-        );
-        return response.data;
-    } catch (error: unknown) {
-        throw new Error(handleApiError(error, "Unable to remove permission override."));
-    }
-};
 
 // Get effective permissions for a user
 export const getEffectivePermissions = async (
@@ -182,19 +147,3 @@ export const getEffectivePermissions = async (
     }
 };
 
-// Get permission overrides for a user
-export const getPermissionOverridesByUser = async (
-    userID: string
-): Promise<UserPermissionOverrideResponse[]> => {
-    try {
-        if (!userID) {
-            throw new Error("User ID is required.");
-        }
-        const response = await api.get<UserPermissionOverrideResponse[]>(
-            `/permissions/override/${userID}`
-        );
-        return response.data;
-    } catch (error: unknown) {
-        throw new Error(handleApiError(error, "Unable to fetch permission overrides."));
-    }
-};

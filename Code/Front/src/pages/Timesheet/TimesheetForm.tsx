@@ -16,19 +16,19 @@ import {
   getAgentsByDelegation,
 } from "../../apis/agentAPI";
 import {
-  getGovernoratesByUser,
-  getDelegationsByUser,
   getUserByPhone,
   getSupervisorsByRegionalManager,
   getRegionalManagerBySupervisor,
   getAllUsers,
-  getRegionsByUser,
   getUsersByRegion,
   getUsersByGovernorate,
   getUsersByDelegation,
   getUserById,
 } from "../../apis/userAPI";
 import {
+  getGovernoratesByUser,
+  getDelegationsByUser,
+  getRegionsByUser,
   getAllRegions,
   getGovernoratesByRegion,
   getDelegationsByGovernorate,

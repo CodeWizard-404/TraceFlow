@@ -1,3 +1,5 @@
+const { error } = require('winston');
+const { route } = require('../routes/agentRoutes');
 const GoogleMapsService = require('../services/googleMapsService');
 const LocationService = require('../services/locationsService');
 const logger = require('../utils/logger');
@@ -661,6 +663,208 @@ class LocationController {
                 metadata: { error: error.message }
             });
             return res.status(error.status || 500).json({ error: error.message || 'Failed to get distance matrix' });
+        }
+    }
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+    static async getPlaceDetails(req, res) {
+        const actorID = req.user?.userID || 'unknown';
+        try {
+            const { placeId } = req.body;
+            if (!placeId) {
+                logger.warn('Failed to fetch place details: Missing placeId', {
+                    route: 'locations/place-details',
+                    method: req.method,
+                    url: req.originalUrl,
+                    status: 400,
+                    ip: req.ip,
+                    traceId: req.traceId,
+                    userId: actorID,
+                    metadata: { error: 'Place ID is required' }
+                });
+                return res.status(400).json({ error: 'Place ID is required' });
+            }
+            const result = await GoogleMapsService.getPlaceDetails(placeId);
+            logger.info('Successfully fetched place details', {
+                route: 'locations/place-details',
+                method: req.method,
+                url: req.originalUrl,
+                status: 200,
+                ip: req.ip,
+                traceId: req.traceId,
+                userId: actorID,
+                metadata: { placeId }
+            });
+            return res.status(200).json(result);
+        } catch (error) {
+            logger.error('Failed to fetch place details', {
+                route: 'locations/place-details',
+                method: req.method,
+                url: req.originalUrl,
+                status: error.status || 500,
+                ip: req.ip,
+                traceId: req.traceId,
+                userId: actorID,
+                metadata: { error: error.message }
+            });
+            return res.status(error.status || 500).json({ error: error.message || 'Failed to get place details' });
+        }
+    }
+
+    static async getNearbyPlaces(req, res) {
+        const actorID = req.user?.userID || 'unknown';
+        try {
+            const { lat, lng, radius, type } = req.body;
+            if (!lat || !lng) {
+                logger.warn('Failed to fetch nearby places: Missing coordinates', {
+                    route: 'locations/nearby-places',
+                    method: req.method,
+                    url: req.originalUrl,
+                    status: 400,
+                    ip: req.ip,
+                    traceId: req.traceId,
+                    userId: actorID,
+                    metadata: { error: 'Latitude and longitude are required' }
+                });
+                return res.status(400).json({ error: 'Latitude and longitude are required' });
+            }
+            const location = { lat: parseFloat(lat), lng: parseFloat(lng) };
+            const result = await GoogleMapsService.getNearbyPlaces(location, parseFloat(radius) || 5000, type);
+            logger.info('Successfully fetched nearby places', {
+                route: 'locations/nearby-places',
+                method: req.method,
+                url: req.originalUrl,
+                status: 200,
+                ip: req.ip,
+                traceId: req.traceId,
+                userId: actorID,
+                metadata: { location, radius, type }
+            });
+            return res.status(200).json(result);
+        } catch (error) {
+            logger.error('Failed to fetch nearby places', {
+                route: 'locations/nearby-places',
+                method: req.method,
+                url: req.originalUrl,
+                status: error.status || 500,
+                ip: req.ip,
+                traceId: req.traceId,
+                userId: actorID,
+                metadata: { error: error.message }
+            });
+            return res.status(error.status || 500).json({ error: error.message || 'Failed to get nearby places' });
+        }
+    }
+
+    static async getCurrentUserLocation(req, res) {
+        const actorID = req.user?.userID || 'unknown';
+        try {
+            const { lat, lng } = req.body;
+            if (!lat || !lng) {
+                logger.warn('Failed to get current user location: Missing coordinates', {
+                    route: 'locations/current-location',
+                    method: req.method,
+                    url: req.originalUrl,
+                    status: 400,
+                    ip: req.ip,
+                    traceId: req.traceId,
+                    userId: actorID,
+                    metadata: { error: 'Latitude and longitude are required' }
+                });
+                return res.status(400).json({ error: 'Latitude and longitude are required' });
+            }
+            const result = await GoogleMapsService.getCurrentUserLocation(actorID, { lat: parseFloat(lat), lng: parseFloat(lng) });
+            logger.info('Successfully fetched current user location', {
+                route: 'locations/current-location',
+                method: req.method,
+                url: req.originalUrl,
+                status: 200,
+                ip: req.ip,
+                traceId: req.traceId,
+                userId: actorID,
+                metadata: { lat, lng }
+            });
+            return res.status(200).json(result);
+        } catch (error) {
+            logger.error('Failed to get current user location', {
+                route: 'locations/current-location',
+                method: req.method,
+                url: req.originalUrl,
+                status: error.status || 500,
+                ip: req.ip,
+                traceId: req.traceId,
+                userId: actorID,
+                metadata: { error: error.message }
+            });
+            return res.status(error.status || 500).json({ error: error.message || 'Failed to get current user location' });
+        }
+    }
+
+    static async getSpecificUserLocation(req, res) {
+        const actorID = req.user?.userID || 'unknown';
+        try {
+            const { userId } = req.params;
+            if (!userId) {
+                logger.warn('Failed to get specific user location: Missing userId', {
+                    route: 'locations/user-location',
+                    method: req.method,
+                    url: req.originalUrl,
+                    status: 400,
+                    ip: req.ip,
+                    traceId: req.traceId,
+                    userId: actorID,
+                    metadata: { error: 'User ID is required' }
+                });
+                return res.status(400).json({ error: 'User ID is required' });
+            }
+            const result = await GoogleMapsService.getSpecificUserLocation(userId);
+            logger.info('Successfully fetched specific user location', {
+                route: 'locations/user-location',
+                method: req.method,
+                url: req.originalUrl,
+                status: 200,
+                ip: req.ip,
+                traceId: req.traceId,
+                userId: actorID,
+                metadata: { result }
+            });
+            return res.status(200).json(result);
+        } catch (error) {
+            logger.error('Failed to get specific user location', {
+                route: 'locations/user-location',
+                method: req.method,
+                url: req.originalUrl,
+                status: error.status || 500,
+                ip: req.ip,
+                traceId: req.traceId,
+                userId: actorID,
+                metadata: { error: error.message }
+            });
+            return res.status(error.status || 500).json({ error: error.message || 'Failed to get specific user location' });
         }
     }
 }

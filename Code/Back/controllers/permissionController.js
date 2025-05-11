@@ -145,11 +145,11 @@ class PermissionController {
     }
 
     /**
-     * Get effective permissions for a user.
-     * @param {Object} req - Express request object with userID in params.
-     * @param {Object} res - Express response object.
-     * @returns {Promise<void>} JSON response with permissions or error.
-     */
+         * Get effective role-based permissions for a user.
+         * @param {Object} req - Express request object with userID in params.
+         * @param {Object} res - Express response object.
+         * @returns {Promise<void>} JSON response with permissions or error.
+         */
     static async getEffectivePermissions(req, res) {
         const actorID = req.user?.userID || 'unknown';
         try {
@@ -168,7 +168,7 @@ class PermissionController {
                 return res.status(400).json({ error: 'User ID is required' });
             }
             const permissions = await PermissionService.getEffectivePermissions(userID);
-            logger.info('Successfully fetched effective permissions for user', {
+            logger.info('Successfully fetched role-based permissions for user', {
                 route: 'permissions/effective',
                 method: req.method,
                 url: req.originalUrl,
@@ -180,7 +180,7 @@ class PermissionController {
             });
             return res.status(200).json(permissions);
         } catch (error) {
-            logger.error('Failed to fetch effective permissions', {
+            logger.error('Failed to fetch role-based permissions', {
                 route: 'permissions/effective',
                 method: req.method,
                 url: req.originalUrl,
@@ -190,59 +190,10 @@ class PermissionController {
                 userId: actorID,
                 metadata: { error: error.message }
             });
-            return res.status(404).json({ error: 'Effective permissions not found' });
+            return res.status(404).json({ error: 'Role-based permissions not found' });
         }
     }
 
-    /**
-     * Get permission overrides for a user.
-     * @param {Object} req - Express request object with userID in params.
-     * @param {Object} res - Express response object.
-     * @returns {Promise<void>} JSON response with overrides or error.
-     */
-    static async getPermissionOverrides(req, res) {
-        const actorID = req.user?.userID || 'unknown';
-        try {
-            const { userID } = req.params;
-            if (!userID) {
-                logger.warn('Get permission overrides failed: Missing userID', {
-                    route: 'permissions/overrides',
-                    method: req.method,
-                    url: req.originalUrl,
-                    status: 400,
-                    ip: req.ip,
-                    traceId: req.traceId,
-                    userId: actorID,
-                    metadata: {}
-                });
-                return res.status(400).json({ error: 'User ID is required' });
-            }
-            const overrides = await PermissionService.getPermissionOverrides(userID);
-            logger.info('Successfully fetched permission overrides for user', {
-                route: 'permissions/overrides',
-                method: req.method,
-                url: req.originalUrl,
-                status: 200,
-                ip: req.ip,
-                traceId: req.traceId,
-                userId: actorID,
-                metadata: { userID, overrideCount: overrides.length }
-            });
-            return res.status(200).json(overrides);
-        } catch (error) {
-            logger.error('Failed to fetch permission overrides', {
-                route: 'permissions/overrides',
-                method: req.method,
-                url: req.originalUrl,
-                status: 404,
-                ip: req.ip,
-                traceId: req.traceId,
-                userId: actorID,
-                metadata: { error: error.message }
-            });
-            return res.status(404).json({ error: 'Permission overrides not found' });
-        }
-    }
 
     // --- Permission Modification Methods ---
 
@@ -421,116 +372,7 @@ class PermissionController {
         }
     }
 
-    /**
-     * Add a permission override for a user.
-     * @param {Object} req - Express request object with userID in params and override data in body.
-     * @param {Object} res - Express response object.
-     * @returns {Promise<void>} JSON response with override or error.
-     */
-    static async addPermissionOverride(req, res) {
-        const actorID = req.user?.userID || 'unknown';
-        try {
-            const { userID } = req.params;
-            const { roleID, permissionID, action } = req.body;
-            if (!userID || !roleID || !permissionID || !['grant', 'revoke'].includes(action)) {
-                logger.warn('Add permission override failed: Invalid input', {
-                    route: 'permissions/override',
-                    method: req.method,
-                    url: req.originalUrl,
-                    status: 400,
-                    ip: req.ip,
-                    traceId: req.traceId,
-                    userId: actorID,
-                    metadata: { userID, roleID, permissionID, action }
-                });
-                return res.status(400).json({ error: 'User ID, role ID, permission ID, and action are required' });
-            }
-            const override = await PermissionService.addPermissionOverride(req.user, userID, roleID, permissionID, action, req.user.userID);
-            await NotificationService.triggerNotification({
-                event: 'permission:override_added',
-                data: { userID, roleID, permissionID, action },
-                metadata: { addedBy: req.user.email }
-            });
-            logger.info('Successfully added permission override', {
-                route: 'permissions/override',
-                method: req.method,
-                url: req.originalUrl,
-                status: 201,
-                ip: req.ip,
-                traceId: req.traceId,
-                userId: actorID,
-                metadata: { userID, roleID, permissionID, action }
-            });
-            return res.status(201).json(override);
-        } catch (error) {
-            logger.error('Failed to add permission override', {
-                route: 'permissions/override',
-                method: req.method,
-                url: req.originalUrl,
-                status: 400,
-                ip: req.ip,
-                traceId: req.traceId,
-                userId: actorID,
-                metadata: { error: error.message }
-            });
-            return res.status(400).json({ error: error.message });
-        }
-    }
 
-    /**
-     * Remove a permission override.
-     * @param {Object} req - Express request object with overrideID in params.
-     * @param {Object} res - Express response object.
-     * @returns {Promise<void>} JSON response with result or error.
-     */
-    static async removePermissionOverride(req, res) {
-        const actorID = req.user?.userID || 'unknown';
-        try {
-            const { overrideID } = req.params;
-            if (!overrideID) {
-                logger.warn('Remove permission override failed: Missing overrideID', {
-                    route: 'permissions/override',
-                    method: req.method,
-                    url: req.originalUrl,
-                    status: 400,
-                    ip: req.ip,
-                    traceId: req.traceId,
-                    userId: actorID,
-                    metadata: {}
-                });
-                return res.status(400).json({ error: 'Override ID is required' });
-            }
-            const result = await PermissionService.removePermissionOverride(overrideID, req.user.userID);
-            await NotificationService.triggerNotification({
-                event: 'permission:override_removed',
-                data: { overrideID },
-                metadata: { removedBy: req.user.email }
-            });
-            logger.info('Successfully removed permission override', {
-                route: 'permissions/override',
-                method: req.method,
-                url: req.originalUrl,
-                status: 200,
-                ip: req.ip,
-                traceId: req.traceId,
-                userId: actorID,
-                metadata: { overrideID }
-            });
-            return res.status(200).json(result);
-        } catch (error) {
-            logger.error('Failed to remove permission override', {
-                route: 'permissions/override',
-                method: req.method,
-                url: req.originalUrl,
-                status: 400,
-                ip: req.ip,
-                traceId: req.traceId,
-                userId: actorID,
-                metadata: { error: error.message }
-            });
-            return res.status(400).json({ error: error.message });
-        }
-    }
 }
 
 module.exports = PermissionController;

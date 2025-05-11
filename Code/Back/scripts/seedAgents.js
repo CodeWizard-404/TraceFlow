@@ -1,6 +1,11 @@
 const { Agent, Delegation } = require('../models');
 const { nanoid } = require('nanoid');
 
+// Configuration variables for agent generation
+const MIN_AGENTS_PER_DELEGATION = 1; // Minimum number of agents per delegation
+const MAX_AGENTS_PER_DELEGATION = 2; // Maximum number of agents per delegation
+const TARGET_AVERAGE_AGENTS = 1; // Target average number of agents per delegation
+
 async function seedAgents() {
     try {
         console.log('Starting agent seeding...');
@@ -94,10 +99,10 @@ async function seedAgents() {
             existingPhones.add(agent.phone);
         });
 
-        // Ensure each delegation has at least 3 agents
+        // Ensure each delegation has at least MIN_AGENTS_PER_DELEGATION agents
         for (const delegation of delegations) {
             const currentCount = delegationAgentCount.get(delegation.delegationID);
-            const agentsNeeded = 3 - currentCount; // Minimum 3 agents
+            const agentsNeeded = MIN_AGENTS_PER_DELEGATION - currentCount;
 
             for (let i = 0; i < agentsNeeded; i++) {
                 const firstName = firstNames[Math.floor(Math.random() * firstNames.length)];
@@ -142,19 +147,19 @@ async function seedAgents() {
             }
         }
 
-        // Calculate target total agents for average of ~4 per delegation
-        const targetTotalAgents = Math.round(delegations.length * 4); // Aim for average of 4
+        // Calculate target total agents for average of ~TARGET_AVERAGE_AGENTS per delegation
+        const targetTotalAgents = Math.round(delegations.length * TARGET_AVERAGE_AGENTS);
         let remainingCount = targetTotalAgents - filteredAgents.length;
 
-        // Add additional agents to reach target, respecting max 6 per delegation
+        // Add additional agents to reach target, respecting MAX_AGENTS_PER_DELEGATION
         while (remainingCount > 0) {
-            // Find delegations with less than 6 agents
+            // Find delegations with less than MAX_AGENTS_PER_DELEGATION agents
             const availableDelegations = delegations.filter(
-                d => delegationAgentCount.get(d.delegationID) < 6
+                d => delegationAgentCount.get(d.delegationID) < MAX_AGENTS_PER_DELEGATION
             );
 
             if (availableDelegations.length === 0) {
-                console.log('No delegations available with less than 6 agents.');
+                console.log(`No delegations available with less than ${MAX_AGENTS_PER_DELEGATION} agents.`);
                 break;
             }
 

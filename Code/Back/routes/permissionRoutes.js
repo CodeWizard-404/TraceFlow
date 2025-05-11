@@ -16,9 +16,6 @@ router.post('/role/:roleID/revoke', requirePermission('revoke_permissions'), Per
 
 router.get('/role/:roleID', requirePermission('access_permissions_by_role'), PermissionController.getPermissionsByRole);
 
-router.post('/override/:userID', requirePermission('create_permission_overrides'), PermissionController.addPermissionOverride);
-router.delete('/override/:overrideID', requirePermission('delete_permission_overrides'), PermissionController.removePermissionOverride);
-router.get('/override/:userID', PermissionController.getPermissionOverrides);
 router.get('/effective/:userID', PermissionController.getEffectivePermissions);
 
 

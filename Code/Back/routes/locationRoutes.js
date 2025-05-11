@@ -23,5 +23,9 @@ router.post('/geocode', requirePermission('access_google_maps'), LocationControl
 router.post('/directions', requirePermission('access_google_maps'), LocationController.getDirections);
 router.post('/places', requirePermission('access_google_maps'), LocationController.searchPlaces);
 router.post('/distance-matrix', requirePermission('access_google_maps'), LocationController.getDistanceMatrix);
+router.post('/place-details', requirePermission('access_google_maps'), LocationController.getPlaceDetails);
+router.post('/nearby-places', requirePermission('access_google_maps'), LocationController.getNearbyPlaces);
+router.post('/current-location', requirePermission('access_user_location'), LocationController.getCurrentUserLocation);
+router.get('/user-location/:userId', requirePermission('access_user_location'), LocationController.getSpecificUserLocation);
 
 module.exports = router;

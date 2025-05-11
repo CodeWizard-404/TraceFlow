@@ -26,4 +26,10 @@ router.delete('/:id', requirePermission('delete_agents'), AgentController.delete
 // CSV upload route
 router.post('/upload', requirePermission('create_agents'), upload.single('file'), AgentController.uploadAgents);
 
+// Google Maps API routes
+router.get('/map/locations', requirePermission('access_agent_map_locations'), AgentController.getAgentLocations);
+router.get('/nearby', requirePermission('access_nearby_agents'), AgentController.getNearbyAgents);
+router.get('/bounds', requirePermission('access_agents_by_bounds'), AgentController.getAgentsByBounds);
+router.post('/correct-location', requirePermission('update_agents'), AgentController.correctAgentLocation);
+
 module.exports = router;

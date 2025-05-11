@@ -7,6 +7,8 @@ interface Agent {
   email: string;
   phone: string;
   location: string | null;
+  latitude?: number;
+  longitude?: number;
   supervisorID?: string;
   delegationID: string;
   createdAt: string;

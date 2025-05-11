@@ -38,19 +38,20 @@ import {
   getSupervisorsByRegionalManager,
   getRegionalManagerBySupervisor,
   getAllUsers,
-  getRegionsByUser,
   getUsersByRegion,
   getUsersByGovernorate,
   getUsersByDelegation,
   getUserById,
-  getDelegationsByUser,
-  getGovernoratesByUser,
+
   getUserByPhone,
 } from "../../apis/userAPI";
 import { getAllChecklists } from "../../apis/checklistAPI";
 import { getAllReasons } from "../../apis/reasonAPI";
 import { getVisitById, updateVisit } from "../../apis/visitAPI";
 import {
+  getRegionsByUser,
+  getDelegationsByUser,
+  getGovernoratesByUser,
   getAllRegions,
   getAllGovernorates,
   getAllDelegations,

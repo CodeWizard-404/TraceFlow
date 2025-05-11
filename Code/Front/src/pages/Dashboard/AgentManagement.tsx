@@ -6,7 +6,7 @@ const AgentManagement: React.FC = () => {
         <div className="container mx-auto p-4">
             <h1 className="text-2xl font-bold mb-4">Agent Management</h1>
             <div className="mb-6">
-                <h2 className="text-xl font-semibold mb-2">Add Agent Locations</h2>
+                <h2 className="text-xl font-semibold mb-2">Agent Locations</h2>
                 <MapComponent />
             </div>
         </div>

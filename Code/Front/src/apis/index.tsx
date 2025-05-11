@@ -9,7 +9,6 @@ import Permission from '../models/Permission';
 import ReceiptBook from '../models/ReceiptBook';
 import ReceiptStub from '../models/ReceiptStub';
 import ReceiptBookTransfer from '../models/ReceiptBookTransfer';
-import UserPermissionOverride from '../models/UserPermissionOverride';
 import Delegation from '../models/Delegation';
 import Governorate from '../models/Governorate';
 import Region from '../models/Region';
@@ -28,13 +27,44 @@ export type GoogleCallbackResponse = { requires2FA: boolean; user: User; userID:
 // Agent Routes
 export type AgentByIdResponse = Agent | null;
 export type AgentByPhoneResponse = Agent | null;
-export type AgentLocationsResponse = string[];
 export type AgentsByDelegationResponse = { agents: Agent[] };
 export type AllAgentsResponse = { agents: Agent[] };
 export type CreateAgentResponse = Agent;
 export type UpdateAgentResponse = Agent;
 export type DeleteAgentResponse = { message: string };
 export type SupervisorResponse = User | null;
+
+export type AgentBulkUploadResponse = {
+    status: string;
+    summary: { totalRecords: number; agentsCreated: number; agentsUpdated: number; recordsSkipped: number; errorsEncountered: number };
+    detailedLog: {
+        created: Array<{ agentPhone: string; agentName: string; timestamp: string; details: string }>;
+        updated: Array<{ agentPhone: string; agentName: string; timestamp: string; details: string }>;
+        skipped: Array<{ agentPhone: string; agentName: string; timestamp: string; reason: string }>;
+        errors: Array<{ agentPhone: string; agentName: string; timestamp: string; operation?: string; reason: string }>;
+    };
+};
+
+// In front/src/apis/index.tsx
+export type AgentLocationsResponse = {
+    locations: Array<{
+        agentId: string;
+        name: string;
+        lastname: string;
+        email: string;
+        phone: string;
+        latitude: number;
+        longitude: number;
+        address: string;
+        source: string;
+        delegation?: { id: string; name: string };
+        governorate?: { id: string; name: string };
+        region?: { id: string; name: string };
+    }>;
+    center: { lat: number; lng: number };
+};
+export type NearbyAgentsResponse = Array<Agent & { distance: number }>;
+export type AgentsByBoundsResponse = Agent[];
 
 
 // Checklist Routes
@@ -46,14 +76,12 @@ export type ListChecklistsResponse = Checklist[];
 export type UpdateChecklistResponse = Checklist;
 
 // Permission Routes
-export type AddPermissionOverrideResponse = UserPermissionOverride;
 export type EffectivePermissionsResponse = Permission[];
 export type ListPermissionsResponse = Permission[];
 export type PermissionByIdResponse = Permission;
 export type PermissionsByRoleResponse = Permission[];
 export type RemovePermissionOverrideResponse = { message: string };
 export type UpdatePermissionResponse = Permission;
-export type UserPermissionOverrideResponse = UserPermissionOverride;
 export type AssignPermissionsResponse = { roleID: string; assignedPermissions: string[]; totalAssigned: number };
 export type RevokePermissionsResponse = { roleID: string; revokedPermission: string; totalAssigned: number };
 
@@ -143,3 +171,46 @@ export type LogVisitResponse = Visit;
 export type UpdateVisitResponse = Visit;
 export type VerifyQrResponse = { valid: boolean; message: string };
 export type VisitByIdResponse = Visit;
+
+
+
+
+
+
+
+
+// Google Maps API response types
+
+
+export type GeocodeResponse = {
+    geometry: { location: { lat: number; lng: number } };
+    formatted_address: string;
+    latitude: number; // Added for convenience
+    longitude: number; // Added for convenience
+    mock?: boolean;
+};
+export type DirectionsResponse = {
+    routes: Array<{
+        legs: Array<{
+            distance: { text: string; value: number };
+            duration: { text: string; value: number };
+            start_address: string;
+            end_address: string;
+            steps: Array<{ polyline: { points: string } }>;
+        }>;
+    }>;
+    mock?: boolean;
+};
+export type PlacesResponse = Array<{
+    place_id: string;
+    name: string;
+    formatted_address: string;
+    geometry: { location: { lat: number; lng: number } };
+}>;
+export type DistanceMatrixResponse = Array<{
+    elements: Array<{
+        distance: { text: string; value: number };
+        duration: { text: string; value: number };
+        status: string;
+    }>;
+}>;

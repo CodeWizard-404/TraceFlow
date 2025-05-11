@@ -12,7 +12,6 @@ const OTP = require("./user/otp")(sequelize, DataTypes);
 const Permission = require("./user/permission")(sequelize, DataTypes);
 const Role = require("./user/role")(sequelize, DataTypes);
 const User = require("./user/user")(sequelize, DataTypes);
-const UserPermissionOverride = require("./user/userPermissionOverride")(sequelize, DataTypes);
 const Visit = require("./visit/visit")(sequelize, DataTypes);
 const Checklist = require("./visit/checklist")(sequelize, DataTypes);
 const VisitChecklist = require("./visit/VisitChecklists")(sequelize, DataTypes);
@@ -91,14 +90,6 @@ const setupAssociations = () => {
     Role.belongsToMany(Permission, { through: "RolePermissions", foreignKey: "roleID", otherKey: "permissionID" });
     Permission.belongsToMany(Role, { through: "RolePermissions", foreignKey: "permissionID", otherKey: "roleID" });
 
-    // User - UserPermissionOverride
-    User.hasMany(UserPermissionOverride, { foreignKey: 'userID' });
-    UserPermissionOverride.belongsTo(User, { foreignKey: 'userID' });
-    Permission.hasMany(UserPermissionOverride, { foreignKey: 'permissionID' });
-    UserPermissionOverride.belongsTo(Permission, { foreignKey: 'permissionID' });
-    Role.hasMany(UserPermissionOverride, { foreignKey: 'roleID' });
-    UserPermissionOverride.belongsTo(Role, { foreignKey: 'roleID' });
-
     // User - ReceiptBook
     User.belongsToMany(ReceiptBook, { through: "UserReceiptBooks", foreignKey: "userID", otherKey: "bookID" });
     ReceiptBook.belongsToMany(User, { through: "UserReceiptBooks", foreignKey: "bookID", otherKey: "userID" });
@@ -171,7 +162,6 @@ module.exports = {
     ReceiptStub,
     ReceiptBookTransfer,
     ReceiptBookType,
-    UserPermissionOverride,
     TrustedDevice,
     Log,
     Notification,
