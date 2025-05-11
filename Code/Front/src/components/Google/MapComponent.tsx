@@ -49,7 +49,7 @@ interface User {
   lastname: string;
 }
 
-const containerStyle = { width: '100%', height: '100vh' };
+const containerStyle = { width: '100%', height: '50vh' };
 const defaultCenter = { lat: 36.8065, lng: 10.1815 };
 const libraries: ('places' | 'geometry')[] = ['places', 'geometry'];
 
