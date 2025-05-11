@@ -1,9 +1,6 @@
 import { AxiosError } from "axios";
 import api from "./axiosConfig";
 import User from "../models/User";
-import Region from "../models/Region";
-import Governorate from "../models/Governorate";
-import Delegation from "../models/Delegation";
 import {
   AssignRegionalManagerResponse,
   RevokeRegionalManagerResponse,
@@ -17,7 +14,6 @@ import {
   RevokeDelegationsResponse,
   AssignSupervisorToAgentResponse,
   RevokeSupervisorFromAgentResponse,
-  AssignGoogleAccountResponse,
   DeleteUserResponse,
   GetUsersByRegionResponse,
   GetUsersByGovernorateResponse,
