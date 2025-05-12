@@ -428,8 +428,6 @@ class RoleService {
                         'assign_permissions',
                         'revoke_permissions',
                         'access_permissions_by_role',
-                        'create_permission_overrides',
-                        'delete_permission_overrides',
                         // Class: Notification
                         'manage_notification_rules',
                         'view_notification_rules',
@@ -558,8 +556,6 @@ class RoleService {
                         'assign_permissions',
                         'revoke_permissions',
                         'access_permissions_by_role',
-                        'create_permission_overrides',
-                        'delete_permission_overrides',
                         // Class: Notification
                         'manage_notification_rules',
                         'view_notification_rules',
