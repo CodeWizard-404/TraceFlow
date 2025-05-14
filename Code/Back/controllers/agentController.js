@@ -1,5 +1,3 @@
-const e = require('express');
-const { route } = require('../routes/agentRoutes');
 const AgentService = require('../services/agentService');
 const GoogleMapsService = require('../services/googleMapsService');
 const logger = require('../utils/logger');

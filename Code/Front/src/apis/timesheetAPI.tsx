@@ -7,6 +7,7 @@ import {
   ValidateTimesheetResponse,
   TimesheetsBySupervisorResponse,
   DeleteTimesheetResponse,
+  AxiosErrorResponse
 } from ".";
 
 // Type for timesheet calendar sync response
@@ -16,12 +17,26 @@ export type SyncTimesheetCalendarResponse = Array<{
   status: "created" | "updated";
 }>;
 
-interface AxiosErrorResponse {
-  response?: {
-    data?: { error?: string };
-    status?: number;
-  };
-}
+// Type for timesheet suggestions response
+export type SuggestTimesheetResponse = Array<{
+  agentID: string;
+  schedule: Array<{
+    date: string;
+    visits: Array<{
+      startTime: string;
+      location: string;
+      latitude: number;
+      longitude: number;
+      reasons: Array<{ id: string; item: string }>;
+      checklists: Array<{ id: string; item: string }>;
+    }>;
+  }>;
+}>;
+
+// Temporary type to handle wrapped backend response
+type ApiResponse = SuggestTimesheetResponse | { suggestions: SuggestTimesheetResponse };
+
+
 
 const handleApiError = (error: unknown, defaultMessage: string): string => {
   const axiosError = error as AxiosError<AxiosErrorResponse>;
@@ -67,7 +82,13 @@ export const createTimesheet = async (data: {
     const response = await api.post<CreateTimesheetResponse>("/timesheets/supervisor", data);
     return response.data;
   } catch (error) {
-    throw new Error(handleApiError(error, "Unable to create timesheet."));
+    const axiosError = error as AxiosErrorResponse;
+    let errorMessage = handleApiError(error, "Unable to create timesheet.");
+    if (axiosError.response?.data?.error?.includes("Failed to sync")) {
+      console.warn("Timesheet created but Google Calendar sync failed:", axiosError.response);
+      errorMessage = "Timesheet created, but Google Calendar sync failed. Please try syncing again later.";
+    }
+    throw new Error(errorMessage);
   }
 };
 
@@ -204,5 +225,55 @@ export const syncTimesheetToCalendar = async (timesheetId: string): Promise<Sync
     return response.data;
   } catch (error) {
     throw new Error(handleApiError(error, "Unable to sync timesheet to calendar."));
+  }
+};
+
+export const suggestTimesheet = async (data: {
+  supervisorId: string;
+  weekNumber: number;
+  year: number;
+  criteria: {
+    delegationIds?: string[];
+    agentIds?: string[];
+    supervisorLocation?: { latitude: number; longitude: number };
+    preferredDays?: string[];
+    timeInterval?: { startHour: number; endHour: number };
+    maxVisitsPerAgentPerWeek?: number;
+    filters?: Record<string, any>;
+  };
+}): Promise<SuggestTimesheetResponse> => {
+  try {
+    if (!data.supervisorId || !data.weekNumber || !data.year) {
+      throw new Error("Supervisor ID, week number, and year are required.");
+    }
+    if (data.criteria?.timeInterval) {
+      const { startHour, endHour } = data.criteria.timeInterval;
+      if (
+        !Number.isInteger(startHour) ||
+        !Number.isInteger(endHour) ||
+        startHour < 0 ||
+        endHour > 24 ||
+        startHour >= endHour
+      ) {
+        throw new Error("Invalid time interval: startHour must be less than endHour and both must be integers between 0 and 24.");
+      }
+    }
+    const response = await api.post<ApiResponse>("/timesheets/suggest", data);
+    console.log("Raw API response:", JSON.stringify(response.data, null, 2)); // Debug log
+    // Temporary fix: Unwrap { suggestions: [...] } response
+    const suggestions = Array.isArray(response.data)
+      ? response.data
+      : response.data.suggestions && Array.isArray(response.data.suggestions)
+        ? response.data.suggestions
+        : [];
+    if (!Array.isArray(suggestions)) {
+      console.error("Invalid suggestions response: Expected an array", suggestions);
+      throw new Error("Invalid suggestions response: Expected an array");
+    }
+    console.log("Processed suggestions:", JSON.stringify(suggestions, null, 2)); // Debug log
+    return suggestions;
+  } catch (error) {
+    console.error("Error in suggestTimesheet:", error);
+    throw new Error(handleApiError(error, "Unable to generate timesheet suggestions."));
   }
 };

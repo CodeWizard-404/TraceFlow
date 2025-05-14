@@ -28,7 +28,7 @@ async function resetAll(actorID) {
 }
 
 if (require.main === module) {
-    const actorID = process.argv[2] || 'system'; // Pass actorID as argument or default to 'system'
+    const actorID = process.argv[2] || 'system';
     resetAll(actorID).catch(err => {
         console.error('Reset failed:', err.message);
         process.exit(1);

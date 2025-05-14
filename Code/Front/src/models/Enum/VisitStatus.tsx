@@ -3,5 +3,6 @@ enum VisitStatus {
     VISITED = "visited",
     VALIDATED = "validated",
     REJECTED = "rejected",
+    GENERATED = "generated",
 }
 export default VisitStatus;

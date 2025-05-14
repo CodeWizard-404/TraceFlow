@@ -45,14 +45,17 @@ import {
   getSupervisorsByRegionalManager,
   getRegionalManagerBySupervisor,
   getAllUsers,
-  getRegionsByUser,
   getUsersByRegion,
   getUsersByGovernorate,
   getUsersByDelegation,
   getUserById,
+
+} from "../../apis/userAPI";
+import {
+  getRegionsByUser,
   getDelegationsByUser,
   getGovernoratesByUser,
-} from "../../apis/userAPI";
+} from "../../apis/locationApi"
 import { getAllChecklists } from "../../apis/checklistAPI";
 import { getAllReasons } from "../../apis/reasonAPI";
 import { validateTimesheet } from "../../apis/timesheetAPI";

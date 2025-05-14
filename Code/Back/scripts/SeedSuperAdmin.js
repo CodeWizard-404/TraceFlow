@@ -1,5 +1,8 @@
 const axios = require('axios');
 const { sequelize, User, Role, Permission } = require('../models');
+const { migratePermissionsToKeycloak: migrateRecourcesToKeycloak } = require('./migrateRe');
+const { migratePermissionsToKeycloak } = require('./migratePe');
+const { migratePoliciesToKeycloak } = require('./migratePo');
 
 require('dotenv').config();
 
@@ -186,6 +189,10 @@ async function seedSuperAdmin() {
                 { headers: { Authorization: `Bearer ${token}` } }
             );
         }
+
+        await migratePoliciesToKeycloak();
+        await migrateRecourcesToKeycloak();
+        await migratePermissionsToKeycloak();
 
 
     } catch (error) {

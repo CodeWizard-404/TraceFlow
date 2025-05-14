@@ -9,39 +9,72 @@ const { sequelize } = require('../config/db');
 const logger = require('../utils/logger');
 
 class VisitService {
-    static async createVisit(data, actorID) {
+    static async createVisit(data, actorID, options = {}) {
         const { date, time, agentID, supervisorID, timesheetID, reasons, checklists, status = 'pending' } = data;
         if (!date || !time || !agentID || !supervisorID || !timesheetID) {
             const error = new Error('Missing required fields');
             error.status = 400;
             throw error;
         }
+        const transaction = options.transaction || await sequelize.transaction(); // Use provided transaction or create new
+        let isLocalTransaction = !options.transaction; // Track if we created the transaction
         try {
-            const agent = await Agent.findByPk(agentID);
+            const agent = await Agent.findByPk(agentID, { transaction });
             if (!agent) {
                 const error = new Error('Agent not found');
                 error.status = 404;
                 throw error;
             }
-            const visit = await Visit.create({
-                date,
-                time,
-                location: agent.location,
-                agentID,
-                timesheetID,
-                status,
-            });
-            if (reasons && reasons.length > 0) {
-                const reasonIds = reasons.map((r) => r.id);
-                const createdReasons = await ReasonService.getItemsByIds(reasonIds);
-                await visit.setReasons(createdReasons);
+            const visit = await Visit.create(
+                {
+                    date,
+                    time,
+                    location: agent.location,
+                    agentID,
+                    timesheetID,
+                    status,
+                },
+                { transaction }
+            );
+
+            // Attempt to attach reasons, but don't fail visit creation
+            if (reasons && Array.isArray(reasons) && reasons.length > 0) {
+                try {
+                    const reasonIds = reasons.map((r) => r.id).filter(id => id);
+                    if (reasonIds.length > 0) {
+                        const createdReasons = await ReasonService.getItemsByIds(reasonIds, { transaction });
+                        if (createdReasons.length > 0) {
+                            await visit.setReasons(createdReasons, { transaction });
+                        } else {
+                            logger.warn(`No valid reasons found for visit ${visit.visitID}`);
+                        }
+                    }
+                } catch (error) {
+                    logger.warn(`Failed to attach reasons to visit ${visit.visitID}: ${error.message}`);
+                }
             }
-            if (checklists && checklists.length > 0) {
-                const checklistIds = checklists.map((c) => c.id);
-                const createdChecklists = await ChecklistService.getItemsByIds(checklistIds);
-                await visit.setChecklists(createdChecklists);
+
+            // Attempt to attach checklists, but don't fail visit creation
+            if (checklists && Array.isArray(checklists) && checklists.length > 0) {
+                try {
+                    const checklistIds = checklists.map((c) => c.id).filter(id => id);
+                    if (checklistIds.length > 0) {
+                        const createdChecklists = await ChecklistService.getItemsByIds(checklistIds, { transaction });
+                        if (createdChecklists.length > 0) {
+                            await visit.setChecklists(createdChecklists, { transaction });
+                        } else {
+                            logger.warn(`No valid checklists found for visit ${visit.visitID}`);
+                        }
+                    }
+                } catch (error) {
+                    logger.warn(`Failed to attach checklists to visit ${visit.visitID}: ${error.message}`);
+                }
             }
-            const reloadedVisit = await visit.reload({ include: [Reason, Checklist] });
+
+            // Reload visit with associations
+            const reloadedVisit = await visit.reload({ include: [Reason, Checklist], transaction });
+
+            // Attempt Google Calendar sync, but don't fail visit creation
             try {
                 const event = await GoogleCalendarService.createCalendarEvent(supervisorID, visit.visitID);
                 await GoogleCalendarService.notifyCalendarUpdate(supervisorID, {
@@ -52,8 +85,11 @@ class VisitService {
             } catch (error) {
                 logger.warn(`Failed to sync visit ${visit.visitID} to calendar: ${error.message}`);
             }
+
+            if (isLocalTransaction) await transaction.commit(); // Commit only if we created the transaction
             return reloadedVisit;
         } catch (error) {
+            if (isLocalTransaction) await transaction.rollback(); // Rollback only if we created the transaction
             const err = new Error('Failed to create visit: ' + error.message);
             err.status = error.status || 500;
             throw err;

@@ -871,45 +871,6 @@ class AgentService {
 
 
 
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
     static async getAgentsByBounds({ southWestLat, southWestLng, northEastLat, northEastLng }) {
         try {
             const agents = await Agent.findAll({

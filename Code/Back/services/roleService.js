@@ -1,7 +1,9 @@
 const axios = require('axios');
 const { Role, Permission, User } = require('../models');
 const PermissionService = require('./permissionService');
-const { resetAll } = require('../scripts/MigratePRP');
+const { migratePermissionsToKeycloak: migrateRecourcesToKeycloak } = require('../scripts/migrateRe');
+const { migratePermissionsToKeycloak } = require('../scripts/migratePe');
+const { migratePoliciesToKeycloak } = require('../scripts/migratePo');
 require('dotenv').config();
 
 // Keycloak configuration
@@ -939,7 +941,11 @@ class RoleService {
                             : permissionIDsToAssign.length,
                 });
             }
-            await resetAll();
+            //await resetAll();
+            await migratePoliciesToKeycloak();
+            await migrateRecourcesToKeycloak();
+            await migratePermissionsToKeycloak();
+
             return results;
         } catch (error) {
             throw new Error(error.message || 'Could not reset roles.');

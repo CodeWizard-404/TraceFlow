@@ -131,22 +131,21 @@ class TimesheetController {
                 throw new Error(ERROR_MESSAGES.MISSING_FIELDS);
             }
             const { weekNumber, year, supervisorID, visits, status = 'pending' } = req.body;
-            const timesheet = await TimesheetService.createTimesheet({ weekNumber, year, supervisorID, visits, status }, actorID);
-            try {
-                const syncResults = await GoogleCalendarService.syncTimesheetToCalendar(req.user.userID, timesheet.timesheetID);
-                await GoogleCalendarService.notifyCalendarUpdate(req.user.userID, {
-                    timesheetId: timesheet.timesheetID,
-                    syncedVisits: syncResults,
-                    action: 'synced',
-                });
-            } catch (error) {
-                logger.warn(`Failed to sync timesheet ${timesheet.timesheetID} to calendar: ${error.message}`);
+            const result = await TimesheetService.createTimesheet({ weekNumber, year, supervisorID, visits, status }, actorID);
+
+            const response = {
+                timesheet: result.timesheet,
+            };
+            if (result.warning) {
+                response.warning = result.warning;
             }
+
             await NotificationService.triggerNotification({
                 event: 'timesheet:created',
-                data: { timesheetId: timesheet.timesheetID, supervisorID, weekNumber, year },
+                data: { timesheetId: result.timesheet.timesheetID, supervisorID, weekNumber, year },
                 metadata: { createdBy: req.user.email },
             });
+
             logger.info('Successfully created timesheet', {
                 route: 'timesheets',
                 method: req.method,
@@ -155,9 +154,10 @@ class TimesheetController {
                 ip: req.ip,
                 traceId: req.traceId,
                 userId: actorID,
-                metadata: { timesheetID: timesheet.timesheetID, supervisorID, visitCount: visits.length },
+                metadata: { timesheetID: result.timesheet.timesheetID, supervisorID, visitCount: visits.length },
             });
-            return res.status(201).json(timesheet);
+
+            return res.status(201).json(response);
         } catch (error) {
             const response = TimesheetController.formatError(error);
             const status = error.message === ERROR_MESSAGES.MISSING_FIELDS ? 400 : error.status || 500;
@@ -282,11 +282,11 @@ class TimesheetController {
             if (!errors.isEmpty()) {
                 throw new Error(ERROR_MESSAGES.MISSING_FIELDS);
             }
-            const { supervisorId, weekStart, criteria } = req.body;
-            const suggestions = await TimesheetService.suggestTimesheet(supervisorId, weekStart, criteria);
+            const { supervisorId, weekNumber, year, criteria } = req.body;
+            const suggestions = await TimesheetService.suggestTimesheet(supervisorId, weekNumber, year, criteria || {});
             await NotificationService.triggerNotification({
                 event: 'timesheet:suggested',
-                data: { supervisorId, weekStart, suggestionCount: suggestions.length },
+                data: { supervisorId, weekNumber, year, suggestionCount: suggestions.length },
                 metadata: { requestedBy: req.user.email },
             });
             logger.info('Successfully generated timesheet suggestions', {
@@ -297,7 +297,7 @@ class TimesheetController {
                 ip: req.ip,
                 traceId: req.traceId,
                 userId: actorID,
-                metadata: { supervisorId, weekStart, suggestionCount: suggestions.length },
+                metadata: { supervisorId, weekNumber, year, suggestionCount: suggestions.length },
             });
             return res.status(200).json({ suggestions });
         } catch (error) {

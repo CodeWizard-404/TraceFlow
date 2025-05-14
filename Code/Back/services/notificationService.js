@@ -4,7 +4,6 @@ const { transporter } = require('../config/smtp');
 const { Notification, NotificationPreference, NotificationRule, User, Role } = require('../models');
 const { Op } = require('sequelize');
 const { getRedisClient, getRedisSubClient } = require('../config/redis');
-const logger = require('../utils/logger');
 const RedisUtils = require('../utils/redisUtils');
 
 class NotificationService {
@@ -14,9 +13,9 @@ class NotificationService {
 
         this.redisSub.subscribe('notifications', (err) => {
             if (err) {
-                logger.error('Failed to subscribe to notifications', { error: err.message, service: 'redis' });
+                console.error('Failed to subscribe to notifications:', err.message);
             } else {
-                logger.info('Subscribed to notifications channel', { service: 'redis' });
+                console.log('Subscribed to notifications channel');
             }
         });
 
@@ -25,9 +24,8 @@ class NotificationService {
                 try {
                     const { room, data } = JSON.parse(message);
                     io.to(room).emit('notification', data);
-                    logger.info(`Published notification to room: ${room}`, { service: 'notification' });
                 } catch (error) {
-                    logger.error('Failed to process notification message', { error: error.message, service: 'notification' });
+                    console.error('Failed to process notification message:', error.message);
                 }
             }
         });
@@ -49,7 +47,7 @@ class NotificationService {
             io.to('default-roles-traceflow').emit(event, payload);
             return { success: true, method: 'WebSocket' };
         } catch (error) {
-            logger.error('WebSocket notification failed', { error: error.message, service: 'notification' });
+            console.error('WebSocket notification failed:', error.message);
             return { success: false, method: 'WebSocket', reason: error.message };
         }
     }
@@ -64,7 +62,7 @@ class NotificationService {
             });
             return { success: true, method: 'Email' };
         } catch (error) {
-            logger.error('Email notification failed', { error: error.message, service: 'notification' });
+            console.error('Email notification failed:', error.message);
             return { success: false, method: 'Email', reason: error.message };
         }
     }
@@ -74,7 +72,7 @@ class NotificationService {
             const result = await sendSMS(to, message, 'notification');
             return result;
         } catch (error) {
-            logger.error('SMS notification failed', { error: error.message, service: 'notification' });
+            console.error('SMS notification failed:', error.message);
             return { success: false, method: 'SMS', reason: error.message };
         }
     }
@@ -163,7 +161,7 @@ class NotificationService {
             await RedisUtils.storeUserPreferences(userID, prefs);
             return event ? prefs[event] || { email: true, sms: true, inApp: true } : prefs;
         } catch (error) {
-            logger.error('Failed to get user preferences', { error: error.message, service: 'notification' });
+            console.error('Failed to get user preferences:', error.message);
             return event ? { email: true, sms: true, inApp: true } : { emailEnabled: true, smsEnabled: true, inAppEnabled: true };
         }
     }
@@ -201,7 +199,7 @@ class NotificationService {
             }
             return notification;
         } catch (error) {
-            logger.error('Failed to store notification', { error: error.message, service: 'notification' });
+            console.error('Failed to store notification:', error.message);
             return null;
         }
     }
@@ -221,7 +219,7 @@ class NotificationService {
                 await this.sendWebSocketNotification(event, data, [], [notification.userID]);
             }
         } catch (error) {
-            logger.error('Failed to update notification status', { error: error.message, service: 'notification' });
+            console.error('Failed to update notification status:', error.message);
         }
     }
 
@@ -255,7 +253,7 @@ class NotificationService {
             const rule = await NotificationRule.create(defaultRule);
             return rule;
         } catch (error) {
-            logger.error('Failed to create default notification rule', { error: error.message, service: 'notification' });
+            console.error('Failed to create default notification rule:', error.message);
             return null;
         }
     }
@@ -294,7 +292,7 @@ class NotificationService {
             }
             return results;
         } catch (error) {
-            logger.error('Failed to trigger notification', { error: error.message, service: 'notification' });
+            console.error('Failed to trigger notification:', error.message);
             return [{ success: false, reason: error.message }];
         }
     }
@@ -320,7 +318,7 @@ class NotificationService {
             }
             return Array.from(users);
         } catch (error) {
-            logger.error('Failed to resolve recipients', { error: error.message, service: 'notification' });
+            console.error('Failed to resolve recipients:', error.message);
             return [];
         }
     }

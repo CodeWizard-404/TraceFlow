@@ -1,11 +1,14 @@
-const { Timesheet, Visit, Agent, User } = require('../models');
+const { Timesheet, Visit, Agent, User, Delegation } = require('../models');
 const AIService = require('./aiService');
 const logger = require('../utils/logger');
 const { sequelize } = require('../config/db');
+const VisitService = require('./visitService');
+const GoogleCalendarService = require('./googleCalendarService');
+const { Op } = require('sequelize');
 
 const ERROR_MESSAGES = {
     INVALID_SUPERVISOR: 'Invalid supervisor ID.',
-    INVALID_WEEK_START: 'Invalid week start date.',
+    INVALID_WEEK_NUMBER: 'Invalid week number or year.',
     DATABASE_ERROR: 'Database issue. Try again.',
     AI_API_UNAVAILABLE: 'AI service is unavailable. Try again later.',
 };
@@ -71,28 +74,58 @@ class TimesheetService {
                 },
                 { transaction }
             );
-            if (visits && visits.length > 0) {
-                const visitPromises = visits.map(async (visit) => {
-                    return await Visit.create(
-                        {
-                            ...visit,
-                            timesheetID: timesheet.timesheetID,
-                            status: visit.status || 'pending',
-                        },
-                        { transaction }
-                    );
+
+            logger.info('Created timesheet', {
+                service: 'timesheet',
+                metadata: { timesheetID: timesheet.timesheetID, actorID, visitCount: visits?.length || 0 },
+            });
+
+            if (visits && Array.isArray(visits) && visits.length > 0) {
+                const visitPromises = visits.map(async (visit, index) => {
+                    try {
+                        return await VisitService.createVisit(
+                            {
+                                ...visit,
+                                timesheetID: timesheet.timesheetID,
+                                supervisorID,
+                                status: visit.status || 'pending',
+                            },
+                            actorID,
+                            { transaction }
+                        );
+                    } catch (error) {
+                        logger.warn(`Failed to create visit at index ${index}: ${error.message}`, {
+                            service: 'timesheet',
+                            metadata: { timesheetID: timesheet.timesheetID, visit },
+                        });
+                        throw error;
+                    }
                 });
                 await Promise.all(visitPromises);
             }
+
             await transaction.commit();
-            return await Timesheet.findByPk(timesheet.timesheetID, { include: [Visit, User] });
+            const reloadedTimesheet = await Timesheet.findByPk(timesheet.timesheetID, { include: [Visit, User] });
+
+            let warning = null;
+            try {
+                const syncResults = await GoogleCalendarService.syncTimesheetToCalendar(actorID, timesheet.timesheetID);
+                await GoogleCalendarService.notifyCalendarUpdate(actorID, {
+                    timesheetId: timesheet.timesheetID,
+                    syncedVisits: syncResults,
+                    action: 'synced',
+                });
+            } catch (error) {
+                logger.warn(`Failed to sync timesheet ${timesheet.timesheetID} to calendar: ${error.message}`);
+                warning = 'Timesheet created successfully, but Google Calendar sync failed.';
+            }
+
+            return {
+                timesheet: reloadedTimesheet,
+                warning,
+            };
         } catch (error) {
             await transaction.rollback();
-            logger.error('Failed to create timesheet', {
-                error: error.message,
-                service: 'timesheet',
-                metadata: { actorID },
-            });
             throw error.status ? error : Object.assign(new Error(ERROR_MESSAGES.DATABASE_ERROR), { status: 500 });
         }
     }
@@ -141,7 +174,7 @@ class TimesheetService {
         }
     }
 
-    static async suggestTimesheet(supervisorId, weekStart, criteria) {
+    static async suggestTimesheet(supervisorId, weekNumber, year, criteria) {
         try {
             const supervisor = await User.findByPk(supervisorId);
             if (!supervisor) {
@@ -149,34 +182,92 @@ class TimesheetService {
                 error.status = 404;
                 throw error;
             }
-            if (!weekStart || isNaN(Date.parse(weekStart))) {
-                const error = new Error(ERROR_MESSAGES.INVALID_WEEK_START);
+
+            // Validate weekNumber and year
+            if (!weekNumber || weekNumber < 1 || weekNumber > 53 || !year || year < 2000 || year > 2100) {
+                const error = new Error(ERROR_MESSAGES.INVALID_WEEK_NUMBER);
                 error.status = 400;
                 throw error;
             }
-            const agents = await Agent.findAll({ where: { supervisorID: supervisorId } });
-            const agentData = agents.map(agent => ({
-                agentID: agent.agentID,
-                location: agent.location,
-                weeklyTarget: agent.weeklyTarget || 0,
-            }));
-            const timesheetData = {
-                supervisorId,
-                weekStart,
-                agentData,
-                criteria: criteria || {},
+
+            // Extract and validate criteria
+            const {
+                delegationIds = [],
+                agentIds = [],
+                preferredDays = [],
+                supervisorLocation = { latitude: 36.8065, longitude: 10.1815 },
+                timeInterval = { startHour: 8, endHour: 20 },
+                maxVisitsPerAgentPerWeek = 1,
+                filters = {},
+            } = criteria;
+
+            // Validate time interval
+            if (
+                !Number.isInteger(timeInterval.startHour) ||
+                !Number.isInteger(timeInterval.endHour) ||
+                timeInterval.startHour < 0 ||
+                timeInterval.endHour > 24 ||
+                timeInterval.startHour >= timeInterval.endHour
+            ) {
+                const error = new Error('Invalid time interval provided.');
+                error.status = 400;
+                throw error;
+            }
+
+            // Validate delegationIds if provided
+            if (delegationIds.length > 0) {
+                const delegations = await Delegation.findAll({
+                    where: { delegationID: { [Op.in]: delegationIds } },
+                });
+                if (delegations.length !== delegationIds.length) {
+                    const error = new Error('Invalid delegation IDs provided.');
+                    error.status = 400;
+                    throw error;
+                }
+            }
+
+            // Fetch agents based on supervisorId, agentIds, or delegationIds
+            const agentQuery = {
+                where: { supervisorID: supervisorId },
+                include: [{ model: Delegation }],
             };
-            const suggestions = await AIService.generateTimesheetSuggestions(supervisorId, weekStart, timesheetData);
+            if (agentIds.length > 0) {
+                agentQuery.where.agentID = { [Op.in]: agentIds };
+            }
+            if (delegationIds.length > 0) {
+                agentQuery.where.delegationID = { [Op.in]: delegationIds };
+            }
+            const agents = await Agent.findAll(agentQuery);
+            if (agents.length === 0) {
+                logger.warn('No agents found for timesheet suggestions', {
+                    service: 'timesheet',
+                    metadata: { supervisorId, weekNumber, year },
+                });
+                return [];
+            }
+
+            // Construct timesheetData for AI service
+            const timesheetData = {
+                delegationIds,
+                agentIds,
+                criteria: { ...criteria.filters },
+                preferredDays,
+                timeInterval,
+                maxVisitsPerAgentPerWeek,
+                supervisorLocation,
+            };
+
+            const suggestions = await AIService.generateTimesheetSuggestions(supervisorId, weekNumber, year, timesheetData);
             logger.info('Timesheet suggestions generated', {
                 service: 'timesheet',
-                metadata: { supervisorId, weekStart, suggestionCount: suggestions.length },
+                metadata: { supervisorId, weekNumber, year, suggestionCount: suggestions.length },
             });
             return suggestions;
         } catch (error) {
             logger.error('Failed to generate timesheet suggestions', {
                 error: error.message,
                 service: 'timesheet',
-                metadata: { supervisorId, weekStart },
+                metadata: { supervisorId, weekNumber, year },
             });
             throw error.status ? error : Object.assign(new Error(ERROR_MESSAGES.AI_API_UNAVAILABLE), { status: 503 });
         }

@@ -3,6 +3,7 @@
 import React, { useState, useEffect, useCallback, useMemo } from "react";
 import { useNavigate } from "react-router-dom";
 import { debounce } from "lodash";
+import { toast } from "react-toastify"; // Add react-toastify for notifications
 import "./TimesheetForm.css";
 import Agent from "../../models/Agent";
 import User from "../../models/User";
@@ -101,7 +102,8 @@ const TimesheetForm: React.FC = () => {
   const [disableLocationInputs, setDisableLocationInputs] = useState<boolean>(false);
   const [disableSupervisorInput, setDisableSupervisorInput] = useState<boolean>(false);
   const [disableRegionalManagerInput, setDisableRegionalManagerInput] = useState<boolean>(false);
-  const [fetchMode, setFetchMode] = useState<"none" | "supervisor" | "agent">("none"); // Tracks fetch context
+  const [fetchMode, setFetchMode] = useState<"none" | "supervisor" | "agent">("none");
+  const [isSubmitting, setIsSubmitting] = useState<boolean>(false); // Prevent refetch during submission
 
   const currentDate = new Date().toISOString().split("T")[0];
 
@@ -128,9 +130,35 @@ const TimesheetForm: React.FC = () => {
   // Determine Supervisor ID
   const supervisorID = isSupervisor ? user.userID : userPermissions.canReadSupervisors && selectedSupervisor ? selectedSupervisor : "";
 
-  // Fetch Initial Data (Supervisors, Regional Managers, Regions, Reasons, Checklists)
+  // Reset Form State
+  const resetForm = useCallback(() => {
+    setDate("");
+    setTime("");
+    setSelectedRegion("");
+    setSelectedGovernorate("");
+    setSelectedDelegation("");
+    setSelectedAgent("");
+    setAgentSearch("");
+    setAgentPhone("");
+    setSelectedReasons([]);
+    setReasonSearch("");
+    setSelectedChecklists([]);
+    setChecklistSearch("");
+    setSelectedSupervisor("");
+    setSupervisorPhone("");
+    setSupervisorSearch("");
+    setSelectedRegionalManager("");
+    setRegionalManagerSearch("");
+    setDisableLocationInputs(false);
+    setDisableSupervisorInput(false);
+    setDisableRegionalManagerInput(false);
+    setFetchMode("none");
+  }, []);
+
+  // Fetch Initial Data
   useEffect(() => {
     const fetchInitialData = async () => {
+      if (isSubmitting) return; // Prevent refetch during submission
       setLoading(true);
       try {
         const promises = [
@@ -166,12 +194,12 @@ const TimesheetForm: React.FC = () => {
       }
     };
     fetchInitialData();
-  }, [userPermissions, user.userID, setError, t, isSuperAdmin, isRegionalManager, isSupervisor, isDirector]);
+  }, [userPermissions, user.userID, isSuperAdmin, isRegionalManager, isSupervisor, isDirector, isSubmitting]);
 
   // Handle Regional Manager Selection
   useEffect(() => {
     const handleRegionalManagerSelection = async () => {
-      if (!userPermissions.canReadAgentsByLocation || !selectedRegionalManager) {
+      if (isSubmitting || !userPermissions.canReadAgentsByLocation || !selectedRegionalManager) {
         setSupervisors([]);
         setRegions([]);
         setSelectedRegion("");
@@ -207,12 +235,12 @@ const TimesheetForm: React.FC = () => {
       }
     };
     handleRegionalManagerSelection();
-  }, [selectedRegionalManager, userPermissions.canReadAgentsByLocation, setError, t]);
+  }, [selectedRegionalManager, userPermissions.canReadAgentsByLocation, isSubmitting]);
 
   // Handle Supervisor Selection
   useEffect(() => {
     const handleSupervisorSelection = async () => {
-      if (!supervisorID || fetchMode === "agent") {
+      if (isSubmitting || !supervisorID || fetchMode === "agent") {
         if (fetchMode !== "agent") {
           setSelectedRegionalManager("");
           setRegions([]);
@@ -249,12 +277,12 @@ const TimesheetForm: React.FC = () => {
       }
     };
     handleSupervisorSelection();
-  }, [supervisorID, fetchMode, setError, t]);
+  }, [supervisorID, fetchMode, isSubmitting]);
 
   // Fetch Governorates when Region is Selected
   useEffect(() => {
     const fetchGovernorates = async () => {
-      if (!userPermissions.canReadAgentsByLocation || !selectedRegion || disableLocationInputs) {
+      if (isSubmitting || !userPermissions.canReadAgentsByLocation || !selectedRegion || disableLocationInputs) {
         setGovernorates([]);
         setSelectedGovernorate("");
         setDelegations([]);
@@ -266,17 +294,14 @@ const TimesheetForm: React.FC = () => {
       try {
         let governoratesData: Governorate[] = [];
         if (fetchMode === "supervisor" && supervisorID) {
-          // With supervisor: filter by region and supervisor permissions
           governoratesData = await getGovernoratesByRegion(selectedRegion);
           const supervisorGovernorates = await getGovernoratesByUser(supervisorID);
           governoratesData = governoratesData.filter((gov) =>
             supervisorGovernorates.some((sg) => sg.governorateID === gov.governorateID)
           );
         } else if (fetchMode === "none") {
-          // No supervisor or agent: fetch all governorates for region
           governoratesData = await getGovernoratesByRegion(selectedRegion);
         } else {
-          // Agent mode: skip fetch as governorates are set by fetchAgentByPhone
           return;
         }
         setGovernorates(governoratesData);
@@ -291,12 +316,12 @@ const TimesheetForm: React.FC = () => {
       }
     };
     fetchGovernorates();
-  }, [selectedRegion, supervisorID, userPermissions.canReadAgentsByLocation, disableLocationInputs, fetchMode, setError, t]);
+  }, [selectedRegion, supervisorID, userPermissions.canReadAgentsByLocation, disableLocationInputs, fetchMode, isSubmitting]);
 
   // Fetch Delegations when Governorate is Selected
   useEffect(() => {
     const fetchDelegations = async () => {
-      if (!userPermissions.canReadAgentsByLocation || !selectedGovernorate || disableLocationInputs) {
+      if (isSubmitting || !userPermissions.canReadAgentsByLocation || !selectedGovernorate || disableLocationInputs) {
         setDelegations([]);
         setSelectedDelegation("");
         setAgents([]);
@@ -306,17 +331,14 @@ const TimesheetForm: React.FC = () => {
       try {
         let delegationsData: Delegation[] = [];
         if (fetchMode === "supervisor" && supervisorID) {
-          // With supervisor: filter by governorate and supervisor permissions
           delegationsData = await getDelegationsByGovernorate(selectedGovernorate);
           const supervisorDelegations = await getDelegationsByUser(supervisorID);
           delegationsData = delegationsData.filter((del) =>
             supervisorDelegations.some((sd) => sd.delegationID === del.delegationID)
           );
         } else if (fetchMode === "none") {
-          // No supervisor or agent: fetch all delegations for governorate
           delegationsData = await getDelegationsByGovernorate(selectedGovernorate);
         } else {
-          // Agent mode: skip fetch as delegations are set by fetchAgentByPhone
           return;
         }
         setDelegations(delegationsData);
@@ -329,12 +351,12 @@ const TimesheetForm: React.FC = () => {
       }
     };
     fetchDelegations();
-  }, [selectedGovernorate, supervisorID, userPermissions.canReadAgentsByLocation, disableLocationInputs, fetchMode, setError, t]);
+  }, [selectedGovernorate, supervisorID, userPermissions.canReadAgentsByLocation, disableLocationInputs, fetchMode, isSubmitting]);
 
   // Fetch Agents when Delegation is Selected
   useEffect(() => {
     const fetchAgents = async () => {
-      if (!userPermissions.canReadAgentsByLocation || !selectedDelegation || fetchMode === "agent") {
+      if (isSubmitting || !userPermissions.canReadAgentsByLocation || !selectedDelegation || fetchMode === "agent") {
         if (fetchMode !== "agent") {
           setAgents([]);
           setSelectedAgent("");
@@ -360,12 +382,12 @@ const TimesheetForm: React.FC = () => {
       }
     };
     fetchAgents();
-  }, [selectedDelegation, supervisorID, userPermissions.canReadAgentsByLocation, fetchMode, setError, t]);
+  }, [selectedDelegation, supervisorID, userPermissions.canReadAgentsByLocation, fetchMode, isSubmitting]);
 
-  // Filter Regional Managers when Region is Selected (without Regional Manager or Supervisor)
+  // Filter Regional Managers when Region is Selected
   useEffect(() => {
     const fetchRegionalManagersByRegion = async () => {
-      if (!(isSuperAdmin || isDirector) || selectedRegionalManager || supervisorID || !selectedRegion || fetchMode === "agent") {
+      if (isSubmitting || !(isSuperAdmin || isDirector) || selectedRegionalManager || supervisorID || !selectedRegion || fetchMode === "agent") {
         return;
       }
       try {
@@ -382,12 +404,12 @@ const TimesheetForm: React.FC = () => {
       }
     };
     fetchRegionalManagersByRegion();
-  }, [isSuperAdmin, isDirector, selectedRegion, selectedRegionalManager, supervisorID, fetchMode, setError, t]);
+  }, [isSuperAdmin, isDirector, selectedRegion, selectedRegionalManager, supervisorID, fetchMode, isSubmitting]);
 
-  // Filter Supervisors when Governorate, Delegation, or Agent is Selected (without Supervisor)
+  // Filter Supervisors when Governorate, Delegation, or Agent is Selected
   useEffect(() => {
     const filterSupervisorsByLocationOrAgent = async () => {
-      if (!userPermissions.canReadSupervisors || supervisorID || !(selectedAgent || selectedDelegation || selectedGovernorate) || fetchMode === "agent") {
+      if (isSubmitting || !userPermissions.canReadSupervisors || supervisorID || !(selectedAgent || selectedDelegation || selectedGovernorate) || fetchMode === "agent") {
         return;
       }
       setSupervisorLoading(true);
@@ -428,22 +450,19 @@ const TimesheetForm: React.FC = () => {
     supervisorID,
     userPermissions.canReadSupervisors,
     fetchMode,
-    setError,
-    t,
+    isSubmitting,
   ]);
 
   // Debounced Fetch Agent by Phone
   const fetchAgentByPhone = useCallback(
     debounce(async (phone: string) => {
-      if (phone.length !== 8 || !userPermissions.canReadAgentsByPhone) return;
+      if (isSubmitting || phone.length !== 8 || !userPermissions.canReadAgentsByPhone) return;
       setAgentLoading(true);
       try {
-        // Fetch agent by phone
         const agentData = await getAgentByPhone(phone);
         if (!agentData) throw new Error("Agent not found");
         if (!agentData.delegationID) throw new Error("Agent has no delegation assigned");
 
-        // Fetch supervisor
         let supervisor: User | null = null;
         if (agentData.supervisorID) {
           supervisor = await getUserById(agentData.supervisorID);
@@ -451,7 +470,6 @@ const TimesheetForm: React.FC = () => {
           throw new Error("Agent has no supervisor assigned");
         }
 
-        // Fetch delegation and verify it's assigned to the supervisor
         const allDelegations = await getAllDelegations();
         const agentDelegation = allDelegations.find((del) => del.delegationID === agentData.delegationID);
         if (!agentDelegation) throw new Error("Delegation not found");
@@ -460,7 +478,6 @@ const TimesheetForm: React.FC = () => {
           throw new Error("Agent's delegation is not assigned to the supervisor");
         }
 
-        // Fetch governorate and verify it's assigned to the supervisor
         const governoratesData = await getGovernoratesByDelegation(agentData.delegationID);
         if (governoratesData.length === 0) throw new Error("No governorate found for delegation");
         if (governoratesData.length > 1) throw new Error("Multiple governorates found for delegation");
@@ -469,12 +486,10 @@ const TimesheetForm: React.FC = () => {
           throw new Error("Delegation's governorate is not assigned to the supervisor");
         }
 
-        // Fetch region
         const regionsData = await getRegionsByGovernorate(governoratesData[0].governorateID);
         if (regionsData.length === 0) throw new Error("No region found for governorate");
         if (regionsData.length > 1) throw new Error("Multiple regions found for governorate");
 
-        // Set all fields
         setSelectedAgent(agentData.agentID);
         setAgents([agentData]);
         setAgentSearch(`${agentData.name || ""} ${agentData.lastname || ""}`);
@@ -488,7 +503,6 @@ const TimesheetForm: React.FC = () => {
         setSupervisors([supervisor]);
         setDisableSupervisorInput(true);
 
-        // Fetch and set regional managers
         const regionalManagersData = await getUsersByRegion(regionsData[0].regionID);
         const filteredRegionalManagers = regionalManagersData.filter((u) =>
           u.Roles?.some((role) => role.name.toLowerCase() === ROLES.REGIONAL_MANAGER.toLowerCase())
@@ -502,12 +516,10 @@ const TimesheetForm: React.FC = () => {
           setDisableRegionalManagerInput(false);
         }
 
-        // Lock inputs and set fetch mode
         setDisableLocationInputs(true);
         setFetchMode("agent");
       } catch (err: any) {
         setError(t("timesheetForm.errors.agentNotFound") + `: ${err.message}`);
-        // Reset all fields on error
         setSelectedAgent("");
         setAgents([]);
         setAgentSearch("");
@@ -530,34 +542,16 @@ const TimesheetForm: React.FC = () => {
         setAgentLoading(false);
       }
     }, 500),
-    [userPermissions.canReadAgentsByPhone, setError, t]
+    [userPermissions.canReadAgentsByPhone, isSubmitting]
   );
 
   // Handle Agent Phone Input and Reset
   useEffect(() => {
+    if (isSubmitting) return;
     if (agentPhone) {
       fetchAgentByPhone(agentPhone);
     } else {
-      // Reset all fields
-      setSelectedAgent("");
-      setAgents([]);
-      setAgentSearch("");
-      setSelectedDelegation("");
-      setDelegations([]);
-      setSelectedGovernorate("");
-      setGovernorates([]);
-      setSelectedRegion("");
-      setRegions([]);
-      setSelectedSupervisor("");
-      setSupervisors([]);
-      setSelectedRegionalManager("");
-      setRegionalManagers([]);
-      setDisableLocationInputs(false);
-      setDisableSupervisorInput(false);
-      setDisableRegionalManagerInput(false);
-      setFetchMode("none");
-
-      // Refetch initial data to repopulate dropdowns
+      resetForm();
       const refetchInitialData = async () => {
         try {
           const promises = [
@@ -589,12 +583,12 @@ const TimesheetForm: React.FC = () => {
       refetchInitialData();
     }
     return () => fetchAgentByPhone.cancel();
-  }, [agentPhone, fetchAgentByPhone, userPermissions, user.userID, setError, t, isSuperAdmin, isRegionalManager, isSupervisor, isDirector]);
+  }, [agentPhone, fetchAgentByPhone, userPermissions, user.userID, isSuperAdmin, isRegionalManager, isSupervisor, isDirector, isSubmitting, resetForm]);
 
   // Debounced Fetch Supervisor by Phone
   const fetchSupervisorByPhone = useCallback(
     debounce(async (phone: string) => {
-      if (phone.length < 8 || !userPermissions.canReadSupervisors || !userPermissions.canCreateTimesheetsForSupervisors) return;
+      if (isSubmitting || phone.length < 8 || !userPermissions.canReadSupervisors || !userPermissions.canCreateTimesheetsForSupervisors) return;
       setSupervisorLoading(true);
       try {
         const supervisor = await getUserByPhone(phone);
@@ -619,10 +613,11 @@ const TimesheetForm: React.FC = () => {
         setSupervisorLoading(false);
       }
     }, 500),
-    [userPermissions.canReadSupervisors, userPermissions.canCreateTimesheetsForSupervisors, isSuperAdmin, isDirector, isRegionalManager, setError, t]
+    [userPermissions.canReadSupervisors, userPermissions.canCreateTimesheetsForSupervisors, isSuperAdmin, isDirector, isRegionalManager, isSubmitting]
   );
 
   useEffect(() => {
+    if (isSubmitting) return;
     if (supervisorPhone && userPermissions.canCreateTimesheetsForSupervisors && userPermissions.canReadSupervisors && !isSupervisor) {
       fetchSupervisorByPhone(supervisorPhone);
     } else if (userPermissions.canCreateTimesheetsForSupervisors) {
@@ -630,7 +625,7 @@ const TimesheetForm: React.FC = () => {
       if (!isSupervisor) setFetchMode("none");
     }
     return () => fetchSupervisorByPhone.cancel();
-  }, [supervisorPhone, userPermissions.canCreateTimesheetsForSupervisors, userPermissions.canReadSupervisors, isSupervisor, fetchSupervisorByPhone]);
+  }, [supervisorPhone, userPermissions.canCreateTimesheetsForSupervisors, userPermissions.canReadSupervisors, isSupervisor, fetchSupervisorByPhone, isSubmitting]);
 
   // Utility Functions
   const getWeekNumber = (dateStr: string): number => {
@@ -674,6 +669,7 @@ const TimesheetForm: React.FC = () => {
       return;
     }
     setLoading(true);
+    setIsSubmitting(true);
     setError(null);
 
     const year = new Date(date).getFullYear();
@@ -697,12 +693,21 @@ const TimesheetForm: React.FC = () => {
 
     try {
       await createTimesheet(timesheetData);
+      toast.success(t("timesheetForm.success.created"));
+      resetForm();
       navigate("/timesheet");
-    } catch (err) {
-      setError(t("timesheetForm.errors.createFailed"));
+    } catch (err: any) {
       console.error("Submit error:", err);
+      if (err.message.includes("Google Calendar sync failed")) {
+        toast.success(t("timesheetForm.success.partialSuccess"));
+        resetForm();
+        navigate("/timesheet");
+      } else {
+        setError(t("timesheetForm.errors.createFailed"));
+      }
     } finally {
       setLoading(false);
+      setIsSubmitting(false);
     }
   };
 
