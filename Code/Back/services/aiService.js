@@ -3,6 +3,11 @@ const logger = require('../utils/logger');
 const { initializeAI } = require('../config/ai');
 const { AIConfig, User, Agent, Reason, Checklist, Delegation } = require('../models');
 const { Op } = require('sequelize');
+const NodeCache = require('node-cache');
+const JSONStream = require('JSONStream');
+
+// Initialize cache with 1-hour TTL
+const cache = new NodeCache({ stdTTL: 3600 });
 
 const ERROR_MESSAGES = {
     INVALID_SUPERVISOR: 'Invalid supervisor ID.',
@@ -23,228 +28,355 @@ const ERROR_MESSAGES = {
  */
 class AIService {
     /**
-         * Normalize time string to 12-hour AM/PM format.
-         * @param {string} time - Time string (e.g., "14:00", "14:00 PM", "2:00 PM").
-         * @returns {string} Normalized time in "HH:MM AM/PM" format (e.g., "2:00 PM").
-         * @throws {Error} If the time format is invalid.
-         */
-    static normalizeTimeFormat(time) {
-        if (!time || typeof time !== 'string') {
-            throw new Error('Invalid time format: Time must be a non-empty string');
+     * Calculate the start date of a given ISO week number and year.
+     * @param {number} weekNumber - ISO week number (1-53).
+     * @param {number} year - Year (e.g., 2025).
+     * @returns {Date} Start date of the week (Monday).
+     */
+    static getWeekStartDate(weekNumber, year) {
+        if (!weekNumber || weekNumber < 1 || weekNumber > 53 || !year || year < 2000 || year > 2100) {
+            const error = new Error(ERROR_MESSAGES.INVALID_WEEK_NUMBER);
+            error.status = 400;
+            throw error;
         }
-
-        const time24Hour = /^([01]?[0-9]|2[0-3]):([0-5][0-9])$/;
-        const time12Hour = /^([0]?[1-9]|1[0-2]):([0-5][0-9]) (AM|PM)$/i;
-        const invalidMix = /^([0-9]{1,2}):([0-5][0-9]) (AM|PM)$/i;
-
-        if (time12Hour.test(time)) {
-            return time.toUpperCase();
-        }
-
-        if (invalidMix.test(time)) {
-            const [, hours, minutes, period] = time.match(invalidMix);
-            const hourNum = parseInt(hours, 10);
-            if (hourNum < 1 || hourNum > 23) {
-                throw new Error(`Invalid time format: ${time}. Hours must be between 1 and 23 for 24-hour conversion`);
-            }
-            const normalized = this.convert24HourTo12Hour(hourNum, parseInt(minutes, 10));
-            logger.warn(`Corrected invalid time format: ${time} -> ${normalized}`, { service: 'ai' });
-            return normalized;
-        }
-
-        if (time24Hour.test(time)) {
-            const [hours, minutes] = time.split(':').map(Number);
-            return this.convert24HourTo12Hour(hours, minutes);
-        }
-
-        throw new Error(`Invalid time format: ${time}`);
+        const jan4 = new Date(Date.UTC(year, 0, 4));
+        const dayOfWeek = jan4.getUTCDay() || 7;
+        const firstMonday = new Date(Date.UTC(year, 0, 4 - (dayOfWeek - 1)));
+        const weekStart = new Date(firstMonday);
+        weekStart.setUTCDate(firstMonday.getUTCDate() + (weekNumber - 1) * 7);
+        return weekStart;
     }
 
     /**
-     * Convert 24-hour time to 12-hour AM/PM format.
-     * @param {number} hours - Hours in 24-hour format (0-23).
-     * @param {number} minutes - Minutes (0-59).
-     * @returns {string} Time in 12-hour AM/PM format (e.g., "2:00 PM").
+     * Convert a day offset to a date string (DD/MM/YYYY).
+     * @param {Date} weekStart - Week start date (Monday).
+     * @param {number} dayOffset - Day offset (0 for Monday, 1 for Tuesday, etc.).
+     * @returns {string} Date string in DD/MM/YYYY format.
      */
-    static convert24HourTo12Hour(hours, minutes) {
-        const period = hours >= 12 ? 'PM' : 'AM';
-        const adjustedHours = hours % 12 || 12;
-        return `${adjustedHours}:${minutes.toString().padStart(2, '0')} ${period}`;
+    static getDateString(weekStart, dayOffset) {
+        const date = new Date(weekStart);
+        date.setDate(weekStart.getDate() + dayOffset);
+        return `${date.getDate().toString().padStart(2, '0')}/${(date.getMonth() + 1).toString().padStart(2, '0')}/${date.getFullYear()}`;
     }
 
-    static async generateTimesheetSuggestions({ supervisorId, weekNumber, year, criteria }) {
-        const weekStartString = new Date(year, 0, 1 + (weekNumber - 1) * 7).toLocaleDateString('en-GB');
-        const daysOfWeek = Array.from({ length: 7 }, (_, i) => {
-            const date = new Date(year, 0, 1 + (weekNumber - 1) * 7 + i);
-            return date.toLocaleDateString('en-GB', { day: '2-digit', month: '2-digit', year: 'numeric' });
-        });
+    /**
+     * Calculate Haversine distance between two points in kilometers.
+     * @param {number} lat1 - Latitude of first point.
+     * @param {number} lon1 - Longitude of first point.
+     * @param {number} lat2 - Latitude of second point.
+     * @param {number} lon2 - Longitude of second point.
+     * @returns {number} Distance in kilometers.
+     */
+    static calculateDistance(lat1, lon1, lat2, lon2) {
+        const R = 6371;
+        const dLat = ((lat2 - lat1) * Math.PI) / 180;
+        const dLon = ((lon2 - lon1) * Math.PI) / 180;
+        const a =
+            Math.sin(dLat / 2) * Math.sin(dLat / 2) +
+            Math.cos((lat1 * Math.PI) / 180) * Math.cos((lat2 * Math.PI) / 180) * Math.sin(dLon / 2) * Math.sin(dLon / 2);
+        const c = 2 * Math.atan2(Math.sqrt(a), Math.sqrt(1 - a));
+        return R * c;
+    }
 
-        const agents = await Agent.findAll({
-            where: { supervisorID: supervisorId },
-            attributes: ['agentID', 'name', 'latitude', 'longitude'],
-        });
-        const agentData = agents.map(agent => ({
-            id: agent.agentID,
-            name: agent.name,
-            latitude: agent.latitude,
-            longitude: agent.longitude,
-        }));
-
-        const reasons = await Reason.findAll({
-            attributes: ['reasonID', 'item'],
-        });
-        const checklists = await Checklist.findAll({
-            attributes: ['checklistID', 'item'],
-        });
-
-        const supervisor = await User.findByPk(supervisorId, {
-            attributes: ['latitude', 'longitude'],
-        });
-        const supervisorLocation = {
-            latitude: supervisor?.latitude || 0,
-            longitude: supervisor?.longitude || 0,
-        };
-
-        const timeInterval = {
-            startHour: 8,
-            endHour: 18,
-        };
-        const maxVisitsPerAgentPerWeek = config.maxVisitsPerAgentPerWeek || 10;
-
-        const prompt = `Generate up to ${config.timesheetMaxSuggestions} timesheet suggestions for supervisor ${supervisorId} for the week ${weekNumber} of ${year} starting on ${weekStartString}. Each suggestion assigns visits to agents, respecting the criteria: ${JSON.stringify(criteria)}. Optimize based on agent locations, delegation assignments, and weekly targets. Use the following data:
-- Agents: ${JSON.stringify(agentData)}
-- Reasons: ${JSON.stringify(reasons.map(r => ({ id: r.reasonID, item: r.item })))}
-- Checklists: ${JSON.stringify(checklists.map(c => ({ id: c.checklistID, item: c.item })))}
-- Dates: ${JSON.stringify(daysOfWeek)}
-- Supervisor Location: ${JSON.stringify(supervisorLocation)}
-- Time Interval: ${JSON.stringify(timeInterval)}
-- Max Visits Per Agent Per Week: ${maxVisitsPerAgentPerWeek}
-
-Return the response as a JSON array of objects, where each object has the following structure:
-{
-  "agentID": "string",
-  "schedule": [
-    {
-      "date": "string (DD/MM/YYYY, e.g., 20/05/2025)",
-      "visits": [
-        {
-          "startTime": "string (HH:MM AM/PM, e.g., 2:00 PM, using 12-hour clock where hours are 1-12)",
-          "location": "string",
-          "latitude": "number",
-          "longitude": "number",
-          "reasons": [{"id": "string", "item": "string"}],
-          "checklists": [{"id": "string", "item": "string"}]
+    /**
+     * Get cached reasons.
+     * @returns {Promise<Array>} Cached or fetched reasons.
+     */
+    static async getCachedReasons() {
+        let reasons = cache.get('reasons');
+        if (!reasons) {
+            reasons = await Reason.findAll({ attributes: ['reasonID', 'item'] });
+            cache.set('reasons', reasons);
         }
-      ]
+        return reasons;
     }
-  ]
-}
 
-For each date, sort visits by distance from the supervisor's location (${supervisorLocation.latitude}, ${supervisorLocation.longitude}), then by proximity to the previous visit. Use the Haversine formula for distance calculations. Ensure reasons and checklists are selected from the provided lists. Assign checklists based on the reasons selected, using the following mapping:
-${JSON.stringify(reasonChecklistMapping)}
-If a reason has no specific checklist mapping, select relevant checklists from the provided list. Allow multiple reasons and checklists per visit. Ensure visit start times are within the specified time interval (${timeInterval.startHour}:00 to ${timeInterval.endHour}:00) and formatted strictly as 12-hour clock times (e.g., "2:00 PM", not "14:00" or "14:00 PM"). Limit each agent to a maximum of ${maxVisitsPerAgentPerWeek} visits per week. If insufficient data (e.g., no agents, reasons, or checklists) is provided, return an empty JSON array []. Do not include any explanatory text or examples; return only the JSON array of suggestions.`;
+    /**
+     * Get cached checklists.
+     * @returns {Promise<Array>} Cached or fetched checklists.
+     */
+    static async getCachedChecklists() {
+        let checklists = cache.get('checklists');
+        if (!checklists) {
+            checklists = await Checklist.findAll({ attributes: ['checklistID', 'item'] });
+            cache.set('checklists', checklists);
+        }
+        return checklists;
+    }
 
-        let suggestions;
+    /**
+     * Generate timesheet suggestions using the AI model.
+     * @param {string} supervisorId - The supervisor's user ID.
+     * @param {number} weekNumber - The ISO week number (1-53).
+     * @param {number} year - The year (e.g., 2025).
+     * @param {Object} timesheetData - Data including delegation IDs, agent IDs, criteria, preferred days, time interval, and max visits.
+     * @returns {Promise<Array>} List of timesheet suggestions.
+     */
+    static async generateTimesheetSuggestions(supervisorId, weekNumber, year, timesheetData) {
         try {
-            const response = await OllamaClient.generate({
-                model: config.ollamaModel,
-                prompt,
-                format: 'json',
-            });
-            suggestions = JSON.parse(response);
-        } catch (error) {
-            logger.error('Failed to generate timesheet suggestions', {
-                error: error.message,
-                service: 'ai',
-                metadata: { supervisorId, weekNumber, year },
-            });
-            return [];
-        }
-
-        if (!Array.isArray(suggestions)) {
-            logger.warn('Invalid suggestions format, expected array', {
-                service: 'ai',
-                metadata: { supervisorId, weekNumber, year, suggestions },
-            });
-            return [];
-        }
-
-        const transformedSuggestions = suggestions.map(suggestion => {
-            if (!suggestion.agentID || !Array.isArray(suggestion.schedule)) {
-                logger.warn('Invalid suggestion structure, skipping', {
-                    service: 'ai',
-                    metadata: { supervisorId, weekNumber, year, suggestion },
-                });
-                return null;
+            // Validate supervisor
+            const supervisor = await User.findByPk(supervisorId, { attributes: ['userID'] });
+            if (!supervisor) {
+                const error = new Error(ERROR_MESSAGES.INVALID_SUPERVISOR);
+                error.status = 404;
+                throw error;
             }
-            return {
-                agentID: suggestion.agentID,
-                schedule: suggestion.schedule.map(day => {
-                    if (!day.date || !Array.isArray(day.visits)) {
-                        logger.warn('Invalid schedule structure, skipping day', {
-                            service: 'ai',
-                            metadata: { supervisorId, weekNumber, year, day },
-                        });
-                        return null;
-                    }
-                    return {
-                        date: day.date,
-                        visits: day.visits
-                            .map(visit => {
-                                let normalizedStartTime;
-                                try {
-                                    normalizedStartTime = this.normalizeTimeFormat(visit.startTime);
-                                } catch (error) {
-                                    logger.warn(`Skipping visit with invalid time format: ${visit.startTime}`, {
-                                        service: 'ai',
-                                        metadata: { supervisorId, weekNumber, year, visit },
-                                    });
-                                    return null;
-                                }
 
-                                const transformedReasons = Array.isArray(visit.reasons)
-                                    ? visit.reasons.map(reason => {
-                                        if (typeof reason === 'string' && reasonMap[reason]) {
-                                            return reasonMap[reason];
-                                        }
-                                        return reason;
-                                    }).filter(r => r && r.id && r.item)
-                                    : [];
+            // Validate weekNumber and year
+            const weekStart = this.getWeekStartDate(weekNumber, year);
+            const weekStartString = weekStart.toISOString().split('T')[0];
 
-                                const transformedChecklists = Array.isArray(visit.checklists)
-                                    ? visit.checklists.map(checklist => {
-                                        if (typeof checklist === 'string' && checklistMap[checklist]) {
-                                            return checklistMap[checklist];
-                                        }
-                                        return checklist;
-                                    }).filter(c => c && c.id && c.item)
-                                    : [];
+            // Extract timesheet data
+            const {
+                delegationIds = [],
+                agentIds = [],
+                criteria = {},
+                preferredDays = [],
+                timeInterval = { startHour: 8, endHour: 20 },
+                maxVisitsPerAgentPerWeek = 1,
+                supervisorLocation = { latitude: 36.8065, longitude: 10.1815 }
+            } = timesheetData;
 
-                                return {
-                                    startTime: normalizedStartTime,
+            // Validate time interval
+            if (
+                !Number.isInteger(timeInterval.startHour) ||
+                !Number.isInteger(timeInterval.endHour) ||
+                timeInterval.startHour < 0 ||
+                timeInterval.endHour > 24 ||
+                timeInterval.startHour >= timeInterval.endHour
+            ) {
+                const error = new Error(ERROR_MESSAGES.INVALID_TIME_INTERVAL);
+                error.status = 400;
+                throw error;
+            }
+
+            // Validate delegation IDs
+            if (delegationIds.length > 0) {
+                const delegations = await Delegation.findAll({
+                    where: { delegationID: { [Op.in]: delegationIds } },
+                    attributes: ['delegationID']
+                });
+                if (delegations.length !== delegationIds.length) {
+                    const error = new Error(ERROR_MESSAGES.INVALID_DELEGATIONS);
+                    error.status = 400;
+                    throw error;
+                }
+            }
+
+            // Fetch data in parallel
+            const [agents, reasons, checklists] = await Promise.all([
+                Agent.findAll({
+                    where: {
+                        supervisorID: supervisorId,
+                        ...(agentIds.length > 0 && { agentID: { [Op.in]: agentIds } }),
+                        ...(delegationIds.length > 0 && { delegationID: { [Op.in]: delegationIds } })
+                    },
+                    attributes: ['agentID', 'name', 'lastname', 'location', 'latitude', 'longitude', 'delegationID', 'weeklyTarget'],
+                    include: [{ model: Delegation, attributes: ['name'] }]
+                }),
+                this.getCachedReasons(),
+                this.getCachedChecklists()
+            ]);
+
+            // Pre-filter agents by distance (rule-based filtering, max 50km)
+            const filteredAgents = agents.filter(agent =>
+                this.calculateDistance(
+                    supervisorLocation.latitude,
+                    supervisorLocation.longitude,
+                    agent.latitude,
+                    agent.longitude
+                ) < 50
+            );
+
+            const agentData = filteredAgents.map(agent => ({
+                agentID: agent.agentID,
+                name: agent.name,
+                lastname: agent.lastname,
+                location: agent.location,
+                latitude: agent.latitude,
+                longitude: agent.longitude,
+                delegation: agent.Delegation?.name || 'Unknown',
+                weeklyTarget: agent.weeklyTarget || 0
+            }));
+
+            if (agentData.length === 0) {
+                logger.warn('No agents found for timesheet suggestions', {
+                    service: 'ai',
+                    metadata: { supervisorId, weekNumber, year }
+                });
+                return [];
+            }
+
+            // Validate agent IDs
+            if (agentIds.length > 0 && agentData.length !== agentIds.length) {
+                const error = new Error(ERROR_MESSAGES.INVALID_AGENTS);
+                error.status = 400;
+                throw error;
+            }
+
+            // Create lookup maps
+            const reasonMap = {};
+            reasons.forEach(r => { reasonMap[r.reasonID] = { id: r.reasonID, item: r.item }; });
+            const checklistMap = {};
+            checklists.forEach(c => { checklistMap[c.checklistID] = { id: c.checklistID, item: c.item }; });
+
+            // Reason-to-checklist mapping
+            const reasonChecklistMapping = {
+                'Routine Inspection': ['Safety Checklist', 'Equipment Checklist'],
+                'Maintenance': ['Maintenance Checklist', 'Inventory Checklist'],
+                'Training': ['Training Checklist'],
+                'Audit': ['Audit Checklist', 'Compliance Checklist'],
+                'Customer complaint': ['Test security cameras', 'Review employee attendance']
+            };
+
+            // Determine days for visits
+            const daysOfWeek = preferredDays.length > 0
+                ? preferredDays.map((day, index) => this.getDateString(weekStart, index))
+                : Array.from({ length: 7 }, (_, i) => this.getDateString(weekStart, i));
+
+            // Precompute distances
+            const distanceMap = {};
+            agentData.forEach(agent => {
+                distanceMap[agent.agentID] = this.calculateDistance(
+                    supervisorLocation.latitude,
+                    supervisorLocation.longitude,
+                    agent.latitude,
+                    agent.longitude
+                );
+            });
+
+            // Check cache for AI response
+            const cacheKey = `${supervisorId}-${weekNumber}-${year}-${JSON.stringify(timesheetData)}`;
+            let suggestions = cache.get(cacheKey);
+            if (suggestions) {
+                logger.info('Returning cached timesheet suggestions', {
+                    service: 'ai',
+                    metadata: { supervisorId, weekNumber, year }
+                });
+                return suggestions;
+            }
+
+            const aiConfig = await initializeAI();
+            const config = (await AIConfig.findOne({ where: { supervisorId }, attributes: ['modelName', 'timesheetMaxSuggestions'] })) || aiConfig;
+
+            // Simplified prompt
+            const prompt = `Generate up to ${config.timesheetMaxSuggestions} timesheet suggestions for supervisor ${supervisorId} for week ${weekNumber} of ${year} starting ${weekStartString}.
+- Agents: ${agentData.map(a => `${a.agentID}:${a.latitude},${a.longitude},${a.weeklyTarget}`).join(';')}
+- Reasons: ${reasons.map(r => `${r.reasonID}:${r.item}`).join(';')}
+- Checklists: ${checklists.map(c => `${c.checklistID}:${c.item}`).join(';')}
+- Dates: ${daysOfWeek.join(',')}
+- Supervisor Location: ${supervisorLocation.latitude},${supervisorLocation.longitude}
+- Time Interval: ${timeInterval.startHour}:00-${timeInterval.endHour}:00
+- Max Visits Per Agent: ${maxVisitsPerAgentPerWeek}
+- Criteria: ${JSON.stringify(criteria)}
+Return a JSON array of objects: [{"agentID":"string","schedule":[{"date":"DD/MM/YYYY","visits":[{"startTime":"HH:MM AM/PM","location":"string","latitude":number,"longitude":number,"reasons":[{"id":"string","item":"string"}],"checklists":[{"id":"string","item":"string"}]}]}]}]
+Sort visits by distance from supervisor using Haversine formula. Assign checklists per reason: ${JSON.stringify(reasonChecklistMapping)}. Ensure times within interval. Return empty array if insufficient data.`;
+
+            const payload = {
+                model: config.modelName,
+                prompt,
+                stream: false
+            };
+
+            logger.info('Sending request to Ollama API', {
+                service: 'ai',
+                metadata: { supervisorId, weekNumber, year }
+            });
+
+            const response = await makeOllamaApiCall('post', '/generate', payload);
+
+            logger.debug('Ollama API response', {
+                service: 'ai',
+                metadata: { supervisorId, weekNumber, year }
+            });
+
+            if (!response || !response.response) {
+                throw new Error(ERROR_MESSAGES.INVALID_AI_RESPONSE);
+            }
+
+            // Stream parse response
+            suggestions = [];
+            const stream = JSONStream.parse('*');
+            response.response.pipe(stream).on('data', data => suggestions.push(data));
+
+            await new Promise(resolve => stream.on('end', resolve));
+
+            if (!Array.isArray(suggestions)) {
+                if (suggestions.suggestions && Array.isArray(suggestions.suggestions)) {
+                    suggestions = suggestions.suggestions;
+                } else {
+                    logger.error('AI response is not an array', {
+                        service: 'ai',
+                        metadata: { supervisorId, weekNumber, year, suggestions }
+                    });
+                    return [];
+                }
+            }
+
+            // Cache AI response
+            cache.set(cacheKey, suggestions);
+
+            // Transform suggestions
+            const transformedSuggestions = suggestions.map(suggestion => {
+                if (!suggestion.agentID || !Array.isArray(suggestion.schedule)) {
+                    logger.warn('Invalid suggestion structure, skipping', {
+                        service: 'ai',
+                        metadata: { supervisorId, weekNumber, year, suggestion }
+                    });
+                    return null;
+                }
+                return {
+                    agentID: suggestion.agentID,
+                    schedule: suggestion.schedule.map(day => {
+                        if (!day.date || !Array.isArray(day.visits)) {
+                            logger.warn('Invalid schedule structure, skipping day', {
+                                service: 'ai',
+                                metadata: { supervisorId, weekNumber, year, day }
+                            });
+                            return null;
+                        }
+                        return {
+                            date: day.date,
+                            visits: day.visits
+                                .map(visit => ({
+                                    startTime: visit.startTime,
                                     location: visit.location,
                                     latitude: visit.latitude,
                                     longitude: visit.longitude,
-                                    reasons: transformedReasons,
-                                    checklists: transformedChecklists,
-                                };
-                            })
-                            .filter(visit => visit && visit.reasons.length > 0 && visit.checklists.length > 0),
-                    };
-                }).filter(day => day && day.visits.length > 0),
-            };
-        }).filter(suggestion => suggestion && suggestion.schedule.length > 0);
+                                    reasons: Array.isArray(visit.reasons)
+                                        ? visit.reasons.map(reason => typeof reason === 'string' && reasonMap[reason] ? reasonMap[reason] : reason)
+                                            .filter(r => r && r.id && r.item)
+                                        : [],
+                                    checklists: Array.isArray(visit.checklists)
+                                        ? visit.checklists.map(checklist => typeof checklist === 'string' && checklistMap[checklist] ? checklistMap[checklist] : checklist)
+                                            .filter(c => c && c.id && c.item)
+                                        : []
+                                }))
+                                .sort((a, b) => distanceMap[suggestion.agentID] - distanceMap[suggestion.agentID] || // Use precomputed distance
+                                    this.calculateDistance(a.latitude, a.longitude, b.latitude, b.longitude))
+                                .filter(visit => visit.reasons.length > 0 && visit.checklists.length > 0)
+                        };
+                    }).filter(day => day && day.visits.length > 0)
+                };
+            }).filter(suggestion => suggestion && suggestion.schedule.length > 0);
 
-        logger.info('Timesheet suggestions generated', {
-            service: 'ai',
-            metadata: { supervisorId, weekNumber, year, suggestionCount: transformedSuggestions.length },
-        });
-        logger.debug('Final transformed suggestions', {
-            service: 'ai',
-            metadata: { supervisorId, weekNumber, year, suggestions: transformedSuggestions },
-        });
+            logger.info('Timesheet suggestions generated', {
+                service: 'ai',
+                metadata: { supervisorId, weekNumber, year, suggestionCount: transformedSuggestions.length }
+            });
 
-        return transformedSuggestions;
+            return transformedSuggestions;
+        } catch (error) {
+            logger.error('Failed to generate timesheet suggestions', {
+                error: error.message,
+                stack: error.stack,
+                service: 'ai',
+                metadata: { supervisorId, weekNumber, year }
+            });
+            throw error.message in ERROR_MESSAGES
+                ? error
+                : Object.assign(new Error(ERROR_MESSAGES.AI_API_UNAVAILABLE), { status: 503 });
+        }
     }
 
     /**

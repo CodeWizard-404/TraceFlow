@@ -5,7 +5,7 @@ import { debounce } from 'lodash';
 
 const api: AxiosInstance = axios.create({
     baseURL: import.meta.env.VITE_BASE_URL || '/api',
-    timeout: parseInt(import.meta.env.VITE_API_TIMEOUT) || 30000,
+    timeout: parseInt(import.meta.env.VITE_API_TIMEOUT) || 30000, // Default timeout
     withCredentials: true,
     headers: {
         'Cache-Control': 'no-store', // Prevent browser caching to rely on Redis
@@ -34,6 +34,11 @@ export const setupAxiosInterceptors = () => {
             }
             // Ensure fresh data by respecting backend cache headers
             config.headers['If-Modified-Since'] = '0';
+            // Disable timeout for specific endpoints
+            const noTimeoutEndpoints = ['/timesheets/suggest', '/ai']; // Add your specific endpoints here
+            if (config.url && noTimeoutEndpoints.some(endpoint => config.url!.includes(endpoint))) {
+                config.timeout = 0; // No timeout for these endpoints
+            }
             return config;
         },
         error => {

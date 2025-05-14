@@ -1,3 +1,4 @@
+
 /* eslint-disable react-hooks/exhaustive-deps */
 import React, { useEffect, useState, useMemo, useCallback } from "react";
 import { useNavigate } from "react-router-dom";
@@ -17,7 +18,6 @@ import {
     SuggestTimesheetResponse,
 } from "../../apis/timesheetAPI";
 import { getAllUsers, getSupervisorsByUser } from "../../apis/userAPI";
-import { getReasonsByVisitId } from "../../apis/reasonAPI"; // Added import
 import { FaClock, FaMapMarkerAlt, FaRegUser, FaFilter } from "react-icons/fa";
 import TimesheetStatus from "../../models/Enum/TimesheetStatus";
 import VisitStatus from "../../models/Enum/VisitStatus";
@@ -25,6 +25,7 @@ import { useTranslation } from "react-i18next";
 import CalendarSyncButton from "../../components/Google/CalendarSyncButton";
 import TimesheetSuggestionsModal from "../Timesheet/TimesheetSuggestionsModal";
 import { io } from "socket.io-client";
+
 
 const PERMISSIONS = {
     ACCESS_TIMESHEETS: import.meta.env.VITE_PERMISSIONS_ACCESS_TIMESHEETS,
@@ -143,7 +144,6 @@ const Timesheets: React.FC = React.memo(() => {
     const [filteredTimesheets, setFilteredTimesheets] = useState<Timesheet[]>([]);
     const [users, setUsers] = useState<User[]>([]);
     const [generatedVisits, setGeneratedVisits] = useState<GeneratedVisit[]>([]);
-    const [visitReasons, setVisitReasons] = useState<Record<string, VisitReason[]>>({}); // Added state for visit reasons
     const [currentYear, setCurrentYear] = useState(new Date().getFullYear());
     const [currentMonth, setCurrentMonth] = useState(new Date().getMonth());
     const [currentWeek, setCurrentWeek] = useState<number>(0);
@@ -260,24 +260,6 @@ const Timesheets: React.FC = React.memo(() => {
         t,
     ]);
 
-    // Fetch Visit Reasons
-    const fetchVisitReasons = useCallback(async () => {
-        try {
-            const allVisits = timesheets.flatMap(ts => ts.Visits || []);
-            const uniqueVisitIds = [...new Set(allVisits.map(visit => visit.visitID))];
-            const reasonsPromises = uniqueVisitIds.map(visitId => getReasonsByVisitId(visitId));
-            const reasonsResults = await Promise.all(reasonsPromises);
-            const reasonsMap = uniqueVisitIds.reduce((acc, visitId, index) => {
-                acc[visitId] = reasonsResults[index];
-                return acc;
-            }, {} as Record<string, VisitReason[]>);
-            setVisitReasons(reasonsMap);
-        } catch (error) {
-            console.error("Failed to fetch visit reasons:", error);
-            setError(t("timesheets.errors.fetchVisitReasons"));
-        }
-    }, [timesheets, t]);
-
     // Fetch Users (Supervisors)
     const fetchUsers = useCallback(async () => {
         try {
@@ -317,13 +299,6 @@ const Timesheets: React.FC = React.memo(() => {
             socket.disconnect();
         };
     }, [user, fetchTimesheets]);
-
-    // Fetch reasons after timesheets are loaded
-    useEffect(() => {
-        if (timesheets.length > 0) {
-            fetchVisitReasons();
-        }
-    }, [timesheets, fetchVisitReasons]);
 
     // Utility Functions
     const getWeekNumber = useCallback((date: Date): number => {
@@ -400,6 +375,7 @@ const Timesheets: React.FC = React.memo(() => {
     const handleSuggestionsGenerated = useCallback((suggestions: SuggestTimesheetResponse) => {
         const visits: GeneratedVisit[] = suggestions.flatMap(agent =>
             agent.schedule.flatMap(day => {
+                // Normalize date format to DD/MM/YYYY
                 let normalizedDate = day.date;
                 if (day.date.includes("-")) {
                     const [y, m, d] = day.date.split("-").map(Number);
@@ -1234,6 +1210,8 @@ const Timesheets: React.FC = React.memo(() => {
                                                                     )?.lastname || ""}
                                                                 </p>
                                                             )}
+
+
                                                             <hr className="hr" />
                                                             <div className="visit-header">
                                                                 <span className="visit-time">
@@ -1250,15 +1228,15 @@ const Timesheets: React.FC = React.memo(() => {
                                                                 {('location' in visit ? visit.location : visit.location) || t("timesheets.locationTBD")}
                                                             </p>
                                                             {'time' in visit ? (
-                                                                visitReasons[visit.visitID] && visitReasons[visit.visitID].length > 0 && (
+                                                                visit.Reasons && visit.Reasons.length > 0 && (
                                                                     <p className="visit-reasons">
-                                                                        {visitReasons[visit.visitID].map((r) => r.item).join(", ")}
+                                                                        {visit.Reasons.map((r: VisitReason) => r.item).join(", ")}
                                                                     </p>
                                                                 )
                                                             ) : (
                                                                 visit.reasons.length > 0 && (
                                                                     <p className="visit-reasons">
-                                                                        {visit.reasons.map((r) => r.item).join(", ")}
+                                                                        {visit.reasons.map((r: { id: string; item: string }) => r.item).join(", ")}
                                                                     </p>
                                                                 )
                                                             )}
@@ -1370,18 +1348,19 @@ const Timesheets: React.FC = React.memo(() => {
                                             {('location' in visit ? visit.location : visit.location) || t("timesheets.locationTBD")}
                                         </p>
                                         {'time' in visit ? (
-                                            visitReasons[visit.visitID] && visitReasons[visit.visitID].length > 0 && (
+                                            visit.Reasons && visit.Reasons.length > 0 && (
                                                 <p className="visit-reasons">
-                                                    {visitReasons[visit.visitID].map((r) => r.item).join(", ")}
+                                                    {visit.Reasons.map((r: VisitReason) => r.item).join(", ")}
                                                 </p>
                                             )
                                         ) : (
                                             visit.reasons.length > 0 && (
                                                 <p className="visit-reasons">
-                                                    {visit.reasons.map((r) => r.item).join(", ")}
+                                                    {visit.reasons.map((r: { id: string; item: string }) => r.item).join(", ")}
                                                 </p>
                                             )
                                         )}
+
                                     </div>
                                 ))
                             ) : (
