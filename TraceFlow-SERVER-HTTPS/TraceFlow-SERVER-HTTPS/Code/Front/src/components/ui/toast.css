@@ -1,0 +1,36 @@
+.toast {
+    z-index: 1000;
+}
+
+.toast.otp {
+    background-color: #fef3c7;
+    /* Amber background for OTPs */
+    border-color: #f59e0b;
+}
+
+.toast.general {
+    background-color: #e0f2fe;
+    /* Sky background for general notifications */
+    border-color: #0ea5e9;
+}
+
+.toast.anomaly {
+    background-color: #fee2e2;
+    /* Red background for anomalies */
+    border-color: #ef4444;
+}
+
+.dark .toast.otp {
+    background-color: #78350f;
+    border-color: #d97706;
+}
+
+.dark .toast.general {
+    background-color: #164e63;
+    border-color: #0891b2;
+}
+
+.dark .toast.anomaly {
+    background-color: #7f1d1d;
+    border-color: #dc2626;
+}

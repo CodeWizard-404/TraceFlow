@@ -1,0 +1,345 @@
+{
+    "user": {
+        "userID": "usr_lLqHAwO7lKJhLTfs2rVlb",
+        "email": "sofienlaghouanem@gmail.com",
+        "phone": "20031474",
+        "firstname": "Sofien",
+        "lastname": "Laghouanem",
+        "keycloakId": "184b42a1-3e20-482d-92e6-3233f653d5b3",
+        "Roles": [
+            {
+                "roleID": "rol_qNsZue6WPK8Fu_HcWcLaC",
+                "name": "Supervisor",
+                "description": null,
+                "permissions": [
+                    {
+                        "permissionID": "perm_eKJCEb9fVcPMJLSKTSCOY",
+                        "name": "access_checklist_item_details",
+                        "class": "Checklist",
+                        "description": "Auto-generated permission for access_checklist_item_details (Class: Checklist)"
+                    },
+                    {
+                        "permissionID": "perm_Gzh-aFiscBRy-dE7O6sf_",
+                        "name": "access_checklists_items",
+                        "class": "Checklist",
+                        "description": "Auto-generated permission for access_checklists_items (Class: Checklist)"
+                    },
+                    {
+                        "permissionID": "perm_jUwjb_ocKCXD5xB447FGT",
+                        "name": "access_visit_checklist",
+                        "class": "Checklist",
+                        "description": "Auto-generated permission for access_visit_checklist (Class: Checklist)"
+                    },
+                    {
+                        "permissionID": "perm_v4JY3MzT-VHPWPJ3mBQUF",
+                        "name": "access_agents_by_delegation",
+                        "class": "Agent",
+                        "description": "Auto-generated permission for access_agents_by_delegation (Class: Agent)"
+                    },
+                    {
+                        "permissionID": "perm_Sl0pRS_yJp5IDE-ILEfsa",
+                        "name": "access_agents_locations",
+                        "class": "Agent",
+                        "description": "Auto-generated permission for access_agents_locations (Class: Agent)"
+                    },
+                    {
+                        "permissionID": "perm_YdJhLGpJFybPxnGndmG8M",
+                        "name": "access_agents_by_phone",
+                        "class": "Agent",
+                        "description": "Auto-generated permission for access_agents_by_phone (Class: Agent)"
+                    },
+                    {
+                        "permissionID": "perm_tBh-fMC_JdhYd9RaBWxA_",
+                        "name": "access_agent_supervisor",
+                        "class": "Agent",
+                        "description": "Auto-generated permission for access_agent_supervisor (Class: Agent)"
+                    },
+                    {
+                        "permissionID": "perm_R61Etaww-0u6XJ2VyOlT7",
+                        "name": "access_agents_by_user",
+                        "class": "Agent",
+                        "description": "Auto-generated permission for access_agents_by_user (Class: Agent)"
+                    },
+                    {
+                        "permissionID": "perm_1eJpRIhCfLF9D71vaMSxh",
+                        "name": "create_agents",
+                        "class": "Agent",
+                        "description": "Auto-generated permission for create_agents (Class: Agent)"
+                    },
+                    {
+                        "permissionID": "perm_V8Vs2K0cll1nMH-f2PNKC",
+                        "name": "access_all_agents",
+                        "class": "Agent",
+                        "description": "Auto-generated permission for access_all_agents (Class: Agent)"
+                    },
+                    {
+                        "permissionID": "perm_4nuofn81wYlEjybH5QAg7",
+                        "name": "access_agents_by_id",
+                        "class": "Agent",
+                        "description": "Auto-generated permission for access_agents_by_id (Class: Agent)"
+                    },
+                    {
+                        "permissionID": "perm_I_YxbcEkMkDJ3EtadYtXm",
+                        "name": "update_agents",
+                        "class": "Agent",
+                        "description": "Auto-generated permission for update_agents (Class: Agent)"
+                    },
+                    {
+                        "permissionID": "perm_3fYbYG-S1Io0P23LgNU8e",
+                        "name": "delete_agents",
+                        "class": "Agent",
+                        "description": "Auto-generated permission for delete_agents (Class: Agent)"
+                    },
+                    {
+                        "permissionID": "perm_jaXfrConrx1f8CclWVocu",
+                        "name": "access_regions",
+                        "class": "Location",
+                        "description": "Auto-generated permission for access_regions (Class: Location)"
+                    },
+                    {
+                        "permissionID": "perm_ZXIxuY52ziSn2M8vNLSuX",
+                        "name": "access_governorates",
+                        "class": "Location",
+                        "description": "Auto-generated permission for access_governorates (Class: Location)"
+                    },
+                    {
+                        "permissionID": "perm_1GgVe5s8PgL3W0gmBFeJc",
+                        "name": "access_delegations",
+                        "class": "Location",
+                        "description": "Auto-generated permission for access_delegations (Class: Location)"
+                    },
+                    {
+                        "permissionID": "perm_ISuP8sq9tV5gIpD4qnTPj",
+                        "name": "access_delegations_by_governorate",
+                        "class": "Location",
+                        "description": "Auto-generated permission for access_delegations_by_governorate (Class: Location)"
+                    },
+                    {
+                        "permissionID": "perm_SUHENEX6ByZCla5H9b_1A",
+                        "name": "access_governorates_by_region",
+                        "class": "Location",
+                        "description": "Auto-generated permission for access_governorates_by_region (Class: Location)"
+                    },
+                    {
+                        "permissionID": "perm_AXtx15LBFSegAs43ugJG0",
+                        "name": "access_regions_by_governorate",
+                        "class": "Location",
+                        "description": "Auto-generated permission for access_regions_by_governorate (Class: Location)"
+                    },
+                    {
+                        "permissionID": "perm_NfrOYcdxfHKDoVe9syVJi",
+                        "name": "access_governorates_by_delegation",
+                        "class": "Location",
+                        "description": "Auto-generated permission for access_governorates_by_delegation (Class: Location)"
+                    },
+                    {
+                        "permissionID": "perm_3GoCU-gwx8PFI0iSpiL-o",
+                        "name": "access_regions_by_user",
+                        "class": "User",
+                        "description": "Auto-generated permission for access_regions_by_user (Class: User)"
+                    },
+                    {
+                        "permissionID": "perm_NkUKu7fKc-VU2taUtGaZp",
+                        "name": "access_governorates_by_user",
+                        "class": "User",
+                        "description": "Auto-generated permission for access_governorates_by_user (Class: User)"
+                    },
+                    {
+                        "permissionID": "perm_huKCjYSfZj6ZNZ5MnXL4t",
+                        "name": "access_delegations_by_user",
+                        "class": "User",
+                        "description": "Auto-generated permission for access_delegations_by_user (Class: User)"
+                    },
+                    {
+                        "permissionID": "perm_PQ7cHoY-TVMkkkylNfpsJ",
+                        "name": "access_reason_item_details",
+                        "class": "Reason",
+                        "description": "Auto-generated permission for access_reason_item_details (Class: Reason)"
+                    },
+                    {
+                        "permissionID": "perm_v6f-Uw6tPcOabVQBr-k0u",
+                        "name": "access_reason_items",
+                        "class": "Reason",
+                        "description": "Auto-generated permission for access_reason_items (Class: Reason)"
+                    },
+                    {
+                        "permissionID": "perm_iT1yV5dFNChHLyYq4DzY-",
+                        "name": "access_visit_reasons",
+                        "class": "Reason",
+                        "description": "Auto-generated permission for access_visit_reasons (Class: Reason)"
+                    },
+                    {
+                        "permissionID": "perm_LwIpU3DhlnTn2YgWN7lRJ",
+                        "name": "collect_receipt_stubs",
+                        "class": "ReceiptStub",
+                        "description": "Auto-generated permission for collect_receipt_stubs (Class: ReceiptStub)"
+                    },
+                    {
+                        "permissionID": "perm_tLJgEv-lysVK4KlWgzYeL",
+                        "name": "validate_receipt_stubs",
+                        "class": "ReceiptStub",
+                        "description": "Auto-generated permission for validate_receipt_stubs (Class: ReceiptStub)"
+                    },
+                    {
+                        "permissionID": "perm_BQhXdZCMii_aMQadZtd-Y",
+                        "name": "access_receipt_books_by_holder",
+                        "class": "ReceiptBook",
+                        "description": "Auto-generated permission for access_receipt_books_by_holder (Class: ReceiptBook)"
+                    },
+                    {
+                        "permissionID": "perm_ePrs94ZDwzC83J1glULoz",
+                        "name": "access_user_by_phone",
+                        "class": "User",
+                        "description": "Auto-generated permission for access_user_by_phone (Class: User)"
+                    },
+                    {
+                        "permissionID": "perm_buosBeQ2nruUGcqC2lDA0",
+                        "name": "access_timesheet_details",
+                        "class": "Other",
+                        "description": "Auto-generated permission for access_timesheet_details (Class: Other)"
+                    },
+                    {
+                        "permissionID": "perm_EVdcxEXSaqQ8kNz8n7nsK",
+                        "name": "access_receipt_book_types",
+                        "class": "ReceiptBook",
+                        "description": "Auto-generated permission for access_receipt_book_types (Class: ReceiptBook)"
+                    },
+                    {
+                        "permissionID": "perm_2FvOWKcSPxdlEH2_x9Pka",
+                        "name": "access_receipt_books_by_number",
+                        "class": "ReceiptBook",
+                        "description": "Auto-generated permission for access_receipt_books_by_number (Class: ReceiptBook)"
+                    },
+                    {
+                        "permissionID": "perm_y3afudMtq0eAo50eXESzy",
+                        "name": "transfer_receipt_books",
+                        "class": "ReceiptBook",
+                        "description": "Auto-generated permission for transfer_receipt_books (Class: ReceiptBook)"
+                    },
+                    {
+                        "permissionID": "perm_NIqvtAdJvLQZXJuufYSkD",
+                        "name": "access_users_by_delegation",
+                        "class": "User",
+                        "description": "Auto-generated permission for access_users_by_delegation (Class: User)"
+                    },
+                    {
+                        "permissionID": "perm_F2-s3Hm2-r9bq0jv9BxQn",
+                        "name": "access_visit_details",
+                        "class": "Visit",
+                        "description": "Auto-generated permission for access_visit_details (Class: Visit)"
+                    },
+                    {
+                        "permissionID": "perm_bxD1aspCOToBHh-2Ut_DX",
+                        "name": "create_self_timesheets",
+                        "class": "Other",
+                        "description": "Auto-generated permission for create_self_timesheets (Class: Other)"
+                    },
+                    {
+                        "permissionID": "perm_YkgPuqjzZ2JVRtJ_YZkaR",
+                        "name": "validate_receipt_books_transfer",
+                        "class": "ReceiptBook",
+                        "description": "Auto-generated permission for validate_receipt_books_transfer (Class: ReceiptBook)"
+                    },
+                    {
+                        "permissionID": "perm__ollhe1eFphFAvifoK2t-",
+                        "name": "access_supervisors_by_regional_manager",
+                        "class": "User",
+                        "description": "Auto-generated permission for access_supervisors_by_regional_manager (Class: User)"
+                    },
+                    {
+                        "permissionID": "perm_IW07-2PMn9scN_P2SmSUE",
+                        "name": "access_all_users",
+                        "class": "User",
+                        "description": "Auto-generated permission for access_all_users (Class: User)"
+                    },
+                    {
+                        "permissionID": "perm_yvoynk86yVSSipCJ0f7KM",
+                        "name": "delete_visit",
+                        "class": "Visit",
+                        "description": "Auto-generated permission for delete_visit (Class: Visit)"
+                    },
+                    {
+                        "permissionID": "perm_bocL66AqaFYx-cf2u_7VO",
+                        "name": "access_supervisors",
+                        "class": "User",
+                        "description": "Auto-generated permission for access_supervisors (Class: User)"
+                    },
+                    {
+                        "permissionID": "perm_cWDu4Yxw8GmEmrd_fgWFo",
+                        "name": "access_users_by_region",
+                        "class": "User",
+                        "description": "Auto-generated permission for access_users_by_region (Class: User)"
+                    },
+                    {
+                        "permissionID": "perm_23mp2-94t5RYXLotoh_3K",
+                        "name": "access_director_by_regional_manager",
+                        "class": "User",
+                        "description": "Auto-generated permission for access_director_by_regional_manager (Class: User)"
+                    },
+                    {
+                        "permissionID": "perm_C2BvZbAR4ZYy-C4GV-ctI",
+                        "name": "access_user_details",
+                        "class": "User",
+                        "description": "Auto-generated permission for access_user_details (Class: User)"
+                    },
+                    {
+                        "permissionID": "perm_Q31C4mlysyGoSQh8pVHBv",
+                        "name": "scan_visits",
+                        "class": "Visit",
+                        "description": "Auto-generated permission for scan_visits (Class: Visit)"
+                    },
+                    {
+                        "permissionID": "perm_HuhXOXeZ_Iy6S8iTNUeKM",
+                        "name": "edit_visit_details",
+                        "class": "Visit",
+                        "description": "Auto-generated permission for edit_visit_details (Class: Visit)"
+                    },
+                    {
+                        "permissionID": "perm_e7DCD2v8YL6yyvJeVhxdc",
+                        "name": "access_receipt_book_details",
+                        "class": "ReceiptBook",
+                        "description": "Auto-generated permission for access_receipt_book_details (Class: ReceiptBook)"
+                    },
+                    {
+                        "permissionID": "perm_lEppnJV7sAQAoWiJ3FVF8",
+                        "name": "access_regional_managers",
+                        "class": "User",
+                        "description": "Auto-generated permission for access_regional_managers (Class: User)"
+                    },
+                    {
+                        "permissionID": "perm_4pFbTen955PRgV90R9TkD",
+                        "name": "access_users_by_governorate",
+                        "class": "User",
+                        "description": "Auto-generated permission for access_users_by_governorate (Class: User)"
+                    },
+                    {
+                        "permissionID": "perm_JWaFCzVyszg8tnGQJRoSd",
+                        "name": "access_regional_manager_by_supervisor",
+                        "class": "User",
+                        "description": "Auto-generated permission for access_regional_manager_by_supervisor (Class: User)"
+                    },
+                    {
+                        "permissionID": "perm_hi6Nd44X6Y5wcqv14S1cX",
+                        "name": "access_users_by_role",
+                        "class": "User",
+                        "description": "Auto-generated permission for access_users_by_role (Class: User)"
+                    },
+                    {
+                        "permissionID": "perm_asGf-8WXpRoX6p-idopdd",
+                        "name": "log_visits",
+                        "class": "Visit",
+                        "description": "Auto-generated permission for log_visits (Class: Visit)"
+                    },
+                    {
+                        "permissionID": "perm_B2aUcZNahWWjczsowRdMA",
+                        "name": "access_supervisor_timesheets",
+                        "class": "Other",
+                        "description": "Auto-generated permission for access_supervisor_timesheets (Class: Other)"
+                    }
+                ]
+            }
+        ]
+    },
+    "accessToken": "eyJhbGciOiJSUzI1NiIsInR5cCIgOiAiSldUIiwia2lkIiA6ICJlcTRlODBqY2NkZ0lTSmxMTzAyeW92a3BJcF9DQnlGMVYtUnBvdDdRb2dnIn0.eyJleHAiOjE3NDY3MTg1NTgsImlhdCI6MTc0NjcxNzY1OCwiYXV0aF90aW1lIjoxNzQ2NzE3MjQ5LCJqdGkiOiJjNTNjZGVhYS03YjU0LTQ1MjEtOWQzNi03ZjdhZWIyMGQ2OGEiLCJpc3MiOiJodHRwOi8vbG9jYWxob3N0OjgwODAvcmVhbG1zL1RyYWNlRmxvdyIsImF1ZCI6ImFjY291bnQiLCJzdWIiOiIxODRiNDJhMS0zZTIwLTQ4MmQtOTJlNi0zMjMzZjY1M2Q1YjMiLCJ0eXAiOiJCZWFyZXIiLCJhenAiOiJ0cmFjZWZsb3ctYmFja2VuZCIsInNpZCI6IjgyMWYwMTYzLWI2ZWUtNDBlMS04MTE4LTBlNDg3NzM1YzlhMiIsImFjciI6IjAiLCJhbGxvd2VkLW9yaWdpbnMiOlsiaHR0cDovL2xvY2FsaG9zdDo1MDAwIiwiaHR0cDovL2xvY2FsaG9zdDo1MTczIl0sInJlYWxtX2FjY2VzcyI6eyJyb2xlcyI6WyJTdXBlcnZpc29yIiwiZGVmYXVsdC1yb2xlcy10cmFjZWZsb3ciLCJ1bWFfYXV0aG9yaXphdGlvbiJdfSwicmVzb3VyY2VfYWNjZXNzIjp7ImFjY291bnQiOnsicm9sZXMiOlsibWFuYWdlLWFjY291bnQiLCJtYW5hZ2UtYWNjb3VudC1saW5rcyIsInZpZXctcHJvZmlsZSJdfX0sInNjb3BlIjoib3BlbmlkIHByb2ZpbGUgZW1haWwiLCJlbWFpbF92ZXJpZmllZCI6dHJ1ZSwibmFtZSI6IlNvZnllbiBMYWdob3VhbmVtIiwicHJlZmVycmVkX3VzZXJuYW1lIjoic29maWVubGFnaG91YW5lbUBnbWFpbC5jb20iLCJnaXZlbl9uYW1lIjoiU29meWVuIiwiZmFtaWx5X25hbWUiOiJMYWdob3VhbmVtIiwiZW1haWwiOiJzb2ZpZW5sYWdob3VhbmVtQGdtYWlsLmNvbSJ9.AIKZbk58CsKdPsJV3GoLr2cT3QtEQtzD5r3uo5WAcVf2Hu4szgJFULoTE0lbMKjqAcPyrMSkqi1cRjm_Ao9IJKP37bIKueicn2fQ3usXzrAC7MYe-mlRQQm6ITdAeUmHTiKlwsjQPChWJc5uaHkJm2rfOipZapSEiMsXLuwSzR6xjLuvSVkzng1uwP-6BKJhELmBwvjPb_IHTsaO_xpBTqWHWotteKPHvvxPtNzFAIhr2jUZwHkuE-nhzEG4wNlO5XpgGC1nPmzJkbZgQZi3I6cygiU1n0xbve3IafpeXoJW01Fx2ee29NKORfz8dq8ypOlDtW1u6jeJZp-SaFGG0g",
+    "expiresIn": 900000
+}
