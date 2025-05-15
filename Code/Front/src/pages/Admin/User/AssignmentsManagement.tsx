@@ -367,19 +367,7 @@ const AssignmentsManagement: React.FC<AssignmentsManagementProps> = ({
         message: string;
         onConfirm: (cascade: boolean) => Promise<void>;
     } | null>(null);
-    const [revokedItems, setRevokedItems] = useState<{
-        regionalManagers: Set<string>;
-        regions: Set<string>;
-        governorates: Set<string>;
-        delegations: Set<string>;
-        cascade: boolean;
-    }>({
-        regionalManagers: new Set(),
-        regions: new Set(),
-        governorates: new Set(),
-        delegations: new Set(),
-        cascade: false,
-    });
+
 
     const [state, setState] = useState({
         allDirectors: [] as User[],
@@ -1230,6 +1218,7 @@ const AssignmentsManagement: React.FC<AssignmentsManagementProps> = ({
                     await revokeDirectorFromRegionalManager(userID);
                 }
 
+                const currentRMs = (await getRegionalManagersByDirector(userID)).map((rm) => rm.userID);
                 const currentRegions = (await getRegionsByUser(userID)).map((r) => r.regionID);
                 const newRegions = tempRegions.map((r) => r.regionID);
                 const regionsToAssign = newRegions.filter((id) => !currentRegions.includes(id));
@@ -1454,9 +1443,7 @@ const AssignmentsManagement: React.FC<AssignmentsManagementProps> = ({
                                         setTempRegionalManagers,
                                         item,
                                         "userID",
-                                        true,
-                                        `Revoking regional manager ${item.firstname} ${item.lastname} will remove all their assignments. Apply cascade?`,
-                                        "regionalManager"
+                                        true
                                     )
                                 }
                                 renderLabel={(user) => `${user.firstname} ${user.lastname} (${user.phone})`}
@@ -1482,9 +1469,7 @@ const AssignmentsManagement: React.FC<AssignmentsManagementProps> = ({
                                             setTempDirectors,
                                             item,
                                             "userID",
-                                            false,
-                                            `Revoking director ${item.firstname} ${item.lastname} will affect regional manager assignments. Apply cascade?`,
-                                            "director"
+                                            false
                                         )
                                     }
                                     renderLabel={(user) => `${user.firstname} ${user.lastname} (${user.phone})`}
@@ -1523,9 +1508,7 @@ const AssignmentsManagement: React.FC<AssignmentsManagementProps> = ({
                                             setTempSupervisors,
                                             item,
                                             "userID",
-                                            true,
-                                            `Revoking supervisor ${item.firstname} ${item.lastname} will remove all their assignments (governorates, delegations, agents). Apply cascade?`,
-                                            "supervisor"
+                                            true
                                         )
                                     }
                                     renderLabel={(user) => `${user.firstname} ${user.lastname} (${user.phone})`}
@@ -1552,9 +1535,7 @@ const AssignmentsManagement: React.FC<AssignmentsManagementProps> = ({
                                             setTempRegionalManagers,
                                             item,
                                             "userID",
-                                            false,
-                                            `Revoking regional manager ${item.firstname} ${item.lastname} will remove all supervisor assignments (governorates, delegations, agents). Apply cascade?`,
-                                            "regionalManager"
+                                            false
                                         )
                                     }
                                     renderLabel={(user) => `${user.firstname} ${user.lastname} (${user.phone})`}
@@ -1578,9 +1559,7 @@ const AssignmentsManagement: React.FC<AssignmentsManagementProps> = ({
                                             setTempGovernorates,
                                             item,
                                             "governorateID",
-                                            true,
-                                            `Revoking governorate ${item.name} will remove all assigned delegations and agents. Apply cascade?`,
-                                            "governorate"
+                                            true
                                         )
                                     }
                                     renderLabel={(gov) => gov.name || ""}
@@ -1600,9 +1579,7 @@ const AssignmentsManagement: React.FC<AssignmentsManagementProps> = ({
                                             setTempDelegations,
                                             item,
                                             "delegationID",
-                                            true,
-                                            `Revoking delegation ${item.name} will remove all assigned agents. Apply cascade?`,
-                                            "delegation"
+                                            true
                                         )
                                     }
                                     renderLabel={(del) => del.name || ""}
@@ -1622,9 +1599,7 @@ const AssignmentsManagement: React.FC<AssignmentsManagementProps> = ({
                                             setTempAgents,
                                             item,
                                             "agentID",
-                                            true,
-                                            `Revoking agent ${item.name} ${item.lastname} will remove their assignment.`,
-                                            "agent"
+                                            true
                                         )
                                     }
                                     renderLabel={(agent) => `${agent.name} ${agent.lastname} (${agent.phone})`}

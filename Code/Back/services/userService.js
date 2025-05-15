@@ -1003,7 +1003,7 @@ class UserService {
             const agents = await Agent.findAll({ where: { delegationID: { [Op.in]: delegationIDs }, supervisorID } });
 
             if ((governorates.length > 0 || delegations.length > 0 || agents.length > 0) && !confirmations.revokeAll) {
-                throw new Error('Confirmation required for revoking associated governorates, delegations, and agents.');
+                confirmations.revokeAll = false;
             }
 
             if (confirmations.revokeAll) {
@@ -1014,7 +1014,7 @@ class UserService {
                     await supervisor.removeDelegation(delegation);
                 }
                 for (const agent of agents) {
-                    await agent.update({ supervisorID: null, delegationID: null });
+                    await agent.update({ supervisorID: null });
                 }
             }
 
@@ -1203,7 +1203,7 @@ class UserService {
 
             const supervisorID = agent.supervisorID;
             const delegationID = agent.delegationID;
-            await agent.update({ supervisorID: null, delegationID: null });
+            await agent.update({ supervisorID: null });
             return {
                 agentID,
                 supervisorID,
@@ -1290,7 +1290,7 @@ class UserService {
             });
 
             if (supervisors.length > 0 && !confirmations.revokeSupervisors) {
-                throw new Error('Confirmation required for revoking associated supervisors.');
+                confirmations.revokeSupervisors = false;
             }
 
             if (confirmations.revokeSupervisors) {
@@ -1380,7 +1380,7 @@ class UserService {
             const agents = await Agent.findAll({ where: { delegationID: { [Op.in]: delegationIDs }, supervisorID } });
 
             if ((delegations.length > 0 || agents.length > 0) && !confirmations.revokeAll) {
-                throw new Error('Confirmation required for revoking associated delegations and agents.');
+                confirmations.revokeAll = false;
             }
 
             if (confirmations.revokeAll) {
@@ -1388,7 +1388,7 @@ class UserService {
                     await supervisor.removeDelegation(delegation);
                 }
                 for (const agent of agents) {
-                    await agent.update({ supervisorID: null, delegationID: null });
+                    await agent.update({ supervisorID: null });
                 }
             }
 
@@ -1482,12 +1482,12 @@ class UserService {
             const agents = await Agent.findAll({ where: { delegationID: { [Op.in]: delegationIDs }, supervisorID } });
 
             if (agents.length > 0 && !confirmations.revokeAgents) {
-                throw new Error('Confirmation required for revoking associated agents.');
+                confirmations.revokeAgents = false;
             }
 
             if (confirmations.revokeAgents) {
                 for (const agent of agents) {
-                    await agent.update({ supervisorID: null, delegationID: null });
+                    await agent.update({ supervisorID: null });
                 }
             }
 
