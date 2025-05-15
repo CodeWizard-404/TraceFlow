@@ -1,0 +1,22 @@
+INSERT INTO "Checklists" ("checklistID", "item", "createdAt", "updatedAt")
+VALUES
+('chk_001', 'Verify store inventory', NOW(), NOW()),
+('chk_002', 'Check product expiration dates', NOW(), NOW()),
+('chk_003', 'Inspect cleanliness of premises', NOW(), NOW()),
+('chk_004', 'Confirm cash register balance', NOW(), NOW()),
+('chk_005', 'Review employee attendance', NOW(), NOW()),
+('chk_006', 'Test security cameras', NOW(), NOW()),
+('chk_007', 'Transfer a receipt book', NOW(), NOW()),
+('chk_008', 'Collect receipt stub', NOW(), NOW());
+
+
+
+
+INSERT INTO "Reasons" ("reasonID", "item", "createdAt", "updatedAt")
+VALUES
+('rea_001', 'Routine inspection', NOW(), NOW()),
+('rea_002', 'Customer complaint', NOW(), NOW()),
+('rea_003', 'Inventory discrepancy', NOW(), NOW()),
+('rea_004', 'Equipment malfunction', NOW(), NOW()),
+('rea_005', 'Health and safety concern', NOW(), NOW()),
+('rea_006', 'Supplier delay', NOW(), NOW());
