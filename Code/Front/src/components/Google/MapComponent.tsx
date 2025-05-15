@@ -132,7 +132,7 @@ const MapComponent: React.FC = () => {
       setLoading(true);
       try {
         const [regionData, governorateData, delegationData, agentLocationsData, supervisorsData] = await Promise.all([
-          getAllRegions(), getAllGovernorates(), getAllDelegations(), getAgentLocations(), getUsersByRole('supervisor'),
+          getAllRegions(), getAllGovernorates(), getAllDelegations(), getAgentLocations(), getUsersByRole(import.meta.env.VITE_ROLES_SUPERVISOR),
         ]);
         setRegions(regionData);
         setGovernorates(governorateData);

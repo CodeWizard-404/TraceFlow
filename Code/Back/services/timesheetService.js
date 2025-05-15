@@ -1,7 +1,6 @@
 // timesheetService.js
 const { Timesheet, Visit, Agent, User, Delegation } = require('../models');
 const AIService = require('./aiService');
-const logger = require('../utils/logger');
 const { sequelize } = require('../config/db');
 const VisitService = require('./visitService');
 const GoogleCalendarService = require('./googleCalendarService');
@@ -23,7 +22,6 @@ class TimesheetService {
         try {
             return await Timesheet.findAll({ include: [Visit, User] });
         } catch (error) {
-            logger.error('Failed to list timesheets', { error: error.message, service: 'timesheet' });
             throw Object.assign(new Error(ERROR_MESSAGES.DATABASE_ERROR), { status: 500 });
         }
     }
@@ -38,7 +36,6 @@ class TimesheetService {
             }
             return timesheet;
         } catch (error) {
-            logger.error('Failed to fetch timesheet', { error: error.message, service: 'timesheet', metadata: { id } });
             throw error.status ? error : Object.assign(new Error(ERROR_MESSAGES.DATABASE_ERROR), { status: 500 });
         }
     }
@@ -51,11 +48,6 @@ class TimesheetService {
             });
             return timesheets;
         } catch (error) {
-            logger.error('Failed to fetch timesheets by supervisor', {
-                error: error.message,
-                service: 'timesheet',
-                metadata: { supervisorID },
-            });
             throw error.status ? error : Object.assign(new Error(ERROR_MESSAGES.DATABASE_ERROR), { status: 500 });
         }
     }
@@ -80,10 +72,6 @@ class TimesheetService {
                 { transaction }
             );
 
-            logger.info('Created timesheet', {
-                service: 'timesheet',
-                metadata: { timesheetID: timesheet.timesheetID, actorID, visitCount: visits?.length || 0 },
-            });
 
             if (visits && Array.isArray(visits) && visits.length > 0) {
                 const visitPromises = visits.map(async (visit, index) => {
@@ -99,10 +87,6 @@ class TimesheetService {
                             { transaction }
                         );
                     } catch (error) {
-                        logger.warn(`Failed to create visit at index ${index}: ${error.message}`, {
-                            service: 'timesheet',
-                            metadata: { timesheetID: timesheet.timesheetID, visit },
-                        });
                         throw error;
                     }
                 });
@@ -121,7 +105,6 @@ class TimesheetService {
                     action: 'synced',
                 });
             } catch (error) {
-                logger.warn(`Failed to sync timesheet ${timesheet.timesheetID} to calendar: ${error.message}`);
                 warning = 'Timesheet created successfully, but Google Calendar sync failed.';
             }
 
@@ -170,11 +153,6 @@ class TimesheetService {
             return await Timesheet.findByPk(id, { include: [Visit, User] });
         } catch (error) {
             await transaction.rollback();
-            logger.error('Failed to validate timesheet', {
-                error: error.message,
-                service: 'timesheet',
-                metadata: { id, actorID },
-            });
             throw error.status ? error : Object.assign(new Error(ERROR_MESSAGES.DATABASE_ERROR), { status: 500 });
         }
     }
@@ -211,7 +189,6 @@ class TimesheetService {
                 supervisorLocation = { latitude: 36.8065, longitude: 10.1815 },
                 timeInterval = { startHour: 8, endHour: 20 },
                 maxVisitsPerAgentPerWeek = 1,
-                filters = {},
             } = criteria;
 
             // Validate time interval
@@ -252,10 +229,6 @@ class TimesheetService {
             }
             const agents = await Agent.findAll(agentQuery);
             if (agents.length === 0) {
-                logger.warn('No agents found for timesheet suggestions', {
-                    service: 'timesheet',
-                    metadata: { supervisorId, weekNumber, year },
-                });
                 return { suggestions: [], requestId: null };
             }
 
@@ -283,10 +256,6 @@ class TimesheetService {
                     timesheetData,
                     controller
                 );
-                logger.info('Timesheet suggestions generated', {
-                    service: 'timesheet',
-                    metadata: { supervisorId, weekNumber, year, suggestionCount: suggestions.length },
-                });
                 return { suggestions, requestId };
             } finally {
                 // Clean up controller after completion
@@ -296,11 +265,6 @@ class TimesheetService {
             if (error.message === ERROR_MESSAGES.REQUEST_CANCELED) {
                 throw error;
             }
-            logger.error('Failed to generate timesheet suggestions', {
-                error: error.message,
-                service: 'timesheet',
-                metadata: { supervisorId, weekNumber, year },
-            });
             throw error.status ? error : Object.assign(new Error(ERROR_MESSAGES.AI_API_UNAVAILABLE), { status: 503 });
         }
     }
@@ -315,16 +279,8 @@ class TimesheetService {
         if (controller) {
             controller.abort();
             activeControllers.delete(requestId);
-            logger.info('Timesheet suggestion request canceled', {
-                service: 'timesheet',
-                metadata: { requestId },
-            });
             return true;
         }
-        logger.warn('No active request found to cancel', {
-            service: 'timesheet',
-            metadata: { requestId },
-        });
         return false;
     }
 }

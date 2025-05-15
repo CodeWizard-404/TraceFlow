@@ -12,7 +12,7 @@ const SUPER_ADMIN_CONFIG = {
     firstname: 'Super',
     lastname: 'Admin',
     phone: '00000000',
-    roleName: 'Super Admin',
+    roleName: process.env.ROLE_SUPER_ADMIN || 'Super Admin',
 };
 
 const KEYCLOAK_URL = process.env.KEYCLOAK_URL || 'http://localhost:8080';

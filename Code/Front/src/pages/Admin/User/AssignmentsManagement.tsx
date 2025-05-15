@@ -199,10 +199,10 @@ const AssignmentList: React.FC<{
 
         const getItemKey = (item: AssignmentListItem, index: number) => {
             if (item.governorateID) {
-                return `gov_${item.governorateID}`;
+                return `gov_${item.governorateID}_${item.regionID || 'no-region'}`;
             } else if (item.delegationID) {
                 const cleanDelegationID = item.delegationID.replace(/^del_/, "");
-                return `del_${cleanDelegationID}_${index}`;
+                return `del_${cleanDelegationID}_${item.governorateID || 'no-gov'}`;
             } else if (item.agentID) {
                 const delegationID = item.delegationID || "no-delegation";
                 return `agent_${item.agentID}_${delegationID}`;
@@ -367,6 +367,20 @@ const AssignmentsManagement: React.FC<AssignmentsManagementProps> = ({
         message: string;
         onConfirm: (cascade: boolean) => Promise<void>;
     } | null>(null);
+    const [revokedItems, setRevokedItems] = useState<{
+        regionalManagers: Set<string>;
+        regions: Set<string>;
+        governorates: Set<string>;
+        delegations: Set<string>;
+        cascade: boolean;
+    }>({
+        regionalManagers: new Set(),
+        regions: new Set(),
+        governorates: new Set(),
+        delegations: new Set(),
+        cascade: false,
+    });
+
     const [state, setState] = useState({
         allDirectors: [] as User[],
         allRegionalManagers: [] as User[],
@@ -420,7 +434,12 @@ const AssignmentsManagement: React.FC<AssignmentsManagementProps> = ({
     );
 
     const handleToggle = useCallback(
-        (setter: React.Dispatch<React.SetStateAction<any[]>>, item: any, key: string, multiple: boolean, revokeMessage: string) => {
+        (
+            setter: React.Dispatch<React.SetStateAction<any[]>>,
+            item: any,
+            key: string,
+            multiple: boolean
+        ) => {
             console.debug(`Toggling item with key ${key}:`, item);
             setter((prev: any[]) => {
                 const itemKey = key === "agentID" ? `${item[key]}_${item.delegationID}` : item[key];
@@ -432,23 +451,19 @@ const AssignmentsManagement: React.FC<AssignmentsManagementProps> = ({
                     const iKey = key === "agentID" ? `${i[key]}_${i.delegationID}` : i[key];
                     return iKey === itemKey;
                 });
+
                 if (exists) {
-                    setShowConfirm({
-                        message: revokeMessage,
-                        onConfirm: async (): Promise<void> => {
-                            setShowConfirm(null);
-                            const newSelected = prev.filter((i) => {
-                                const iKey = key === "agentID" ? `${i[key]}_${i.delegationID}` : i[key];
-                                return iKey !== itemKey;
-                            });
-                            console.debug(`Revoking item: ${itemKey}`, newSelected);
-                            setHasUnsavedChanges(true);
-                            setter(newSelected);
-                            return;
-                        },
+                    // Remove the item (revoke)
+                    const newSelected = prev.filter((i) => {
+                        const iKey = key === "agentID" ? `${i[key]}_${i.delegationID}` : i[key];
+                        return iKey !== itemKey;
                     });
-                    return prev;
+                    console.debug(`Revoking item: ${itemKey}`, newSelected);
+                    setHasUnsavedChanges(true);
+                    return newSelected;
                 }
+
+                // Add the item (assign)
                 const updated = multiple ? [...prev, item] : [item];
                 console.debug(`Adding item: ${itemKey}`, updated);
                 setHasUnsavedChanges(true);
@@ -771,7 +786,20 @@ const AssignmentsManagement: React.FC<AssignmentsManagementProps> = ({
                         }))
                     : [];
 
-                const normalizedGovernorates = validGovernorates.map((gov) => {
+                // Deduplicate governorates using governorateID and regionID
+                const govKeySet = new Set<string>();
+                const deduplicatedGovernorates: Governorate[] = [];
+                for (const gov of validGovernorates) {
+                    const govKey = `${gov.governorateID}_${gov.regionID}`;
+                    if (!govKeySet.has(govKey)) {
+                        govKeySet.add(govKey);
+                        deduplicatedGovernorates.push(gov);
+                    } else {
+                        console.warn(`Duplicate governorate detected: ${govKey}`, gov);
+                    }
+                }
+
+                const normalizedGovernorates = deduplicatedGovernorates.map((gov) => {
                     const assignedGov = validAssignedGovs.find((ag) => ag.governorateID === gov.governorateID);
                     return {
                         ...gov,
@@ -779,27 +807,16 @@ const AssignmentsManagement: React.FC<AssignmentsManagementProps> = ({
                     };
                 });
 
-                const govIdSet = new Set<string>();
-                const deduplicatedGovernorates: Governorate[] = [];
-                for (const gov of normalizedGovernorates) {
-                    if (!govIdSet.has(gov.governorateID)) {
-                        govIdSet.add(gov.governorateID);
-                        deduplicatedGovernorates.push(gov);
-                    } else {
-                        console.warn(`Duplicate governorateID detected: ${gov.governorateID}`, gov);
-                    }
-                }
-
                 const filteredAssignedGovs = validAssignedGovs.filter((ag) =>
-                    deduplicatedGovernorates.some((g) => g.governorateID === ag.governorateID)
+                    normalizedGovernorates.some((g) => g.governorateID === ag.governorateID)
                 );
 
-                if (govIdSet.size !== normalizedGovernorates.length) {
-                    console.warn("Duplicate governorateIDs detected, clearing cache");
+                if (govKeySet.size !== deduplicatedGovernorates.length) {
+                    console.warn("Duplicate governorate keys detected, clearing cache");
                     cache.clear();
                 }
 
-                updateState({ availableGovernorates: deduplicatedGovernorates });
+                updateState({ availableGovernorates: normalizedGovernorates });
                 setTempGovernorates(filteredAssignedGovs.length > 0 ? filteredAssignedGovs : []);
             } catch (error) {
                 console.error("Error fetching governorates:", error);
@@ -860,17 +877,16 @@ const AssignmentsManagement: React.FC<AssignmentsManagementProps> = ({
                         governorateID: del.governorateID || "",
                     }));
 
-                const delegationIdSet = new Set<string>();
+                // Deduplicate delegations using delegationID and governorateID
+                const delegationKeySet = new Set<string>();
                 const validDelegations: Delegation[] = [];
                 for (const del of validDelegationsRaw) {
-                    if (!delegationIdSet.has(del.delegationID)) {
-                        delegationIdSet.add(del.delegationID);
+                    const delKey = `${del.delegationID}_${del.governorateID}`;
+                    if (!delegationKeySet.has(delKey)) {
+                        delegationKeySet.add(delKey);
                         validDelegations.push(del);
                     } else {
-                        console.warn(
-                            `Duplicate delegationID detected: ${del.delegationID} for governorate ${del.governorateID}`,
-                            del
-                        );
+                        console.warn(`Duplicate delegation detected: ${delKey}`, del);
                     }
                 }
 
@@ -896,8 +912,8 @@ const AssignmentsManagement: React.FC<AssignmentsManagementProps> = ({
                     normalizedDelegations.some((d) => d.delegationID === ad.delegationID)
                 );
 
-                if (delegationIdSet.size !== validDelegations.length) {
-                    console.warn("Duplicate delegationIDs detected, clearing cache");
+                if (delegationKeySet.size !== validDelegations.length) {
+                    console.warn("Duplicate delegation keys detected, clearing cache");
                     cache.clear();
                 }
 
@@ -1091,7 +1107,7 @@ const AssignmentsManagement: React.FC<AssignmentsManagementProps> = ({
                             const agentKey = `${agent.agentID}_${agent.delegationID}`;
                             const exists = prev.some((a) => `${a.agentID}_${a.delegationID}` === agentKey);
                             if (exists) {
-                                console.debug(`Agent already exists: capelli`);
+                                console.debug(`Agent already exists: ${agentKey}`);
                                 return prev;
                             }
                             console.debug(`Adding agent: ${agentKey}`);
@@ -1201,18 +1217,7 @@ const AssignmentsManagement: React.FC<AssignmentsManagementProps> = ({
 
                 await Promise.all([
                     ...toAssign.map((id) => assignDirectorToRegionalManager(id, userID)),
-                    ...toRevoke.map((id) =>
-                        new Promise<void>((resolve) => {
-                            setShowConfirm({
-                                message: `Revoking regional manager ${id} will remove all their assignments. Apply cascade?`,
-                                onConfirm: async () => {
-                                    await revokeDirectorFromRegionalManager(id);
-                                    setShowConfirm(null);
-                                    resolve();
-                                },
-                            });
-                        })
-                    ),
+                    ...toRevoke.map((id) => revokeDirectorFromRegionalManager(id)),
                 ]);
             } else if (role === ROLES.REGIONAL_MANAGER) {
                 const currentDirectors = await getDirectorByRegionalManager(userID);
@@ -1222,22 +1227,13 @@ const AssignmentsManagement: React.FC<AssignmentsManagementProps> = ({
                 if (newDirectorID && newDirectorID !== currentDirectorID) {
                     await assignDirectorToRegionalManager(userID, newDirectorID);
                 } else if (currentDirectorID && !newDirectorID) {
-                    await new Promise<void>((resolve) => {
-                        setShowConfirm({
-                            message: `Revoking director will affect regional manager assignments. Apply cascade?`,
-                            onConfirm: async () => {
-                                await revokeDirectorFromRegionalManager(userID);
-                                setShowConfirm(null);
-                                resolve();
-                            },
-                        });
-                    });
+                    await revokeDirectorFromRegionalManager(userID);
                 }
 
                 const currentRegions = (await getRegionsByUser(userID)).map((r) => r.regionID);
                 const newRegions = tempRegions.map((r) => r.regionID);
                 const regionsToAssign = newRegions.filter((id) => !currentRegions.includes(id));
-                const regionsToRevoke = currentRegions.filter((id) => !newRegions.includes(id));
+                const regionsToRevoke = currentRMs.filter((id) => !newRegions.includes(id));
 
                 if (regionsToAssign.length) {
                     await assignRegionsToRegionalManager(userID, regionsToAssign);
@@ -1245,10 +1241,10 @@ const AssignmentsManagement: React.FC<AssignmentsManagementProps> = ({
                 if (regionsToRevoke.length) {
                     await new Promise<void>((resolve) => {
                         setShowConfirm({
-                            message: `Revoking regions will remove all assigned governorates and delegations. Apply cascade?`,
+                            message: `Revoking regions will remove all assigned supervisors. Apply cascade?`,
                             onConfirm: async (cascade) => {
                                 await revokeRegionsFromRegionalManager(userID, regionsToRevoke, {
-                                    cascadeConfirmed: cascade,
+                                    revokeSupervisors: cascade,
                                 });
                                 setShowConfirm(null);
                                 resolve();
@@ -1257,31 +1253,31 @@ const AssignmentsManagement: React.FC<AssignmentsManagementProps> = ({
                     });
                 }
 
-                const currentSupervisors = (await getSupervisorsByRegionalManager(userID)).map(
-                    (s) => s.userID
-                );
+                const currentSupervisors = (await getSupervisorsByRegionalManager(userID)).map((s) => s.userID);
                 const newSupervisors = tempSupervisors.map((s) => s.userID);
                 const supervisorsToAssign = newSupervisors.filter((id) => !currentSupervisors.includes(id));
                 const supervisorsToRevoke = currentSupervisors.filter((id) => !newSupervisors.includes(id));
 
                 await Promise.all([
                     ...supervisorsToAssign.map((id) => assignRegionalManagerToSupervisor(id, userID)),
-                    ...supervisorsToRevoke.map((id) =>
-                        new Promise<void>((resolve) => {
-                            setShowConfirm({
-                                message: `Revoking supervisor ${id} will remove all their assignments. Apply cascade?`,
-                                onConfirm: async (cascade) => {
-                                    await revokeRegionalManagerFromSupervisor(id, {
-                                        revokeGovernorates: cascade,
-                                        revokeDelegations: cascade,
-                                        revokeAgents: cascade,
-                                    });
-                                    setShowConfirm(null);
-                                    resolve();
-                                },
-                            });
-                        })
-                    ),
+                    ...(supervisorsToRevoke.length
+                        ? [
+                            new Promise<void>((resolve) => {
+                                setShowConfirm({
+                                    message: `Revoking supervisors will remove all their assignments. Apply cascade?`,
+                                    onConfirm: async (cascade) => {
+                                        await Promise.all(
+                                            supervisorsToRevoke.map((id) =>
+                                                revokeRegionalManagerFromSupervisor(id, { revokeAll: cascade })
+                                            )
+                                        );
+                                        setShowConfirm(null);
+                                        resolve();
+                                    },
+                                });
+                            }),
+                        ]
+                        : []),
                 ]);
             } else if (role === ROLES.SUPERVISOR) {
                 const currentRMs = (await getRegionalManagerBySupervisor(userID)).map((rm) => rm.userID);
@@ -1292,13 +1288,9 @@ const AssignmentsManagement: React.FC<AssignmentsManagementProps> = ({
                 } else if (currentRMs.length > 0 && !newRM) {
                     await new Promise<void>((resolve) => {
                         setShowConfirm({
-                            message: `Revoking regional manager will affect supervisor assignments. Apply cascade?`,
+                            message: `Revoking regional manager will remove all assignments. Apply cascade?`,
                             onConfirm: async (cascade) => {
-                                await revokeRegionalManagerFromSupervisor(userID, {
-                                    revokeGovernorates: cascade,
-                                    revokeDelegations: cascade,
-                                    revokeAgents: cascade,
-                                });
+                                await revokeRegionalManagerFromSupervisor(userID, { revokeAll: cascade });
                                 setShowConfirm(null);
                                 resolve();
                             },
@@ -1320,8 +1312,7 @@ const AssignmentsManagement: React.FC<AssignmentsManagementProps> = ({
                             message: `Revoking governorates will remove all assigned delegations and agents. Apply cascade?`,
                             onConfirm: async (cascade) => {
                                 await revokeGovernoratesFromSupervisor(userID, govsToRevoke, {
-                                    revokeDelegations: cascade,
-                                    revokeAgents: cascade,
+                                    revokeAll: cascade,
                                 });
                                 setShowConfirm(null);
                                 resolve();
@@ -1343,7 +1334,9 @@ const AssignmentsManagement: React.FC<AssignmentsManagementProps> = ({
                         setShowConfirm({
                             message: `Revoking delegations will remove all assigned agents. Apply cascade?`,
                             onConfirm: async (cascade) => {
-                                await revokeDelegationsFromSupervisor(userID, delsToRevoke, cascade);
+                                await revokeDelegationsFromSupervisor(userID, delsToRevoke, {
+                                    revokeAgents: cascade,
+                                });
                                 setShowConfirm(null);
                                 resolve();
                             },
@@ -1359,29 +1352,16 @@ const AssignmentsManagement: React.FC<AssignmentsManagementProps> = ({
                     agentID: a.agentID,
                     delegationID: a.delegationID,
                 }));
-                const agentsToAssign = tempAgents.filter((a) =>
-                    !currentAgents.some((ca) => ca.agentID === a.agentID && ca.delegationID === a.delegationID)
+                const agentsToAssign = tempAgents.filter(
+                    (a) => !currentAgents.some((ca) => ca.agentID === a.agentID && ca.delegationID === a.delegationID)
                 );
                 const agentsToRevoke = currentAgents
                     .filter((ca) => !newAgents.some((na) => na.agentID === ca.agentID && na.delegationID === ca.delegationID))
                     .map((ca) => ca.agentID);
 
                 await Promise.all([
-                    ...agentsToAssign.map((a) =>
-                        assignSupervisorToAgent(a.agentID, userID, a.delegationID!)
-                    ),
-                    ...agentsToRevoke.map((id) =>
-                        new Promise<void>((resolve) => {
-                            setShowConfirm({
-                                message: `Revoking agent ${id} will remove their assignment. Apply cascade?`,
-                                onConfirm: async () => {
-                                    await revokeSupervisorFromAgent(id);
-                                    setShowConfirm(null);
-                                    resolve();
-                                },
-                            });
-                        })
-                    ),
+                    ...agentsToAssign.map((a) => assignSupervisorToAgent(a.agentID, userID, a.delegationID!)),
+                    ...agentsToRevoke.map((id) => revokeSupervisorFromAgent(id)),
                 ]);
             }
 
@@ -1407,6 +1387,7 @@ const AssignmentsManagement: React.FC<AssignmentsManagementProps> = ({
             setUsers((prev) => prev.map((u) => (u.userID === userID ? validNewUser : u)));
             onUserUpdate(validNewUser);
             cache.clear();
+            setHasUnsavedChanges(false);
         } catch (error) {
             console.error("Error saving assignments:", error);
             setGlobalError("Failed to save assignments.");
@@ -1474,7 +1455,8 @@ const AssignmentsManagement: React.FC<AssignmentsManagementProps> = ({
                                         item,
                                         "userID",
                                         true,
-                                        `Revoking regional manager ${item.firstname} ${item.lastname} will remove all their assignments. Apply cascade?`
+                                        `Revoking regional manager ${item.firstname} ${item.lastname} will remove all their assignments. Apply cascade?`,
+                                        "regionalManager"
                                     )
                                 }
                                 renderLabel={(user) => `${user.firstname} ${user.lastname} (${user.phone})`}
@@ -1501,7 +1483,8 @@ const AssignmentsManagement: React.FC<AssignmentsManagementProps> = ({
                                             item,
                                             "userID",
                                             false,
-                                            `Revoking director ${item.firstname} ${item.lastname} will affect regional manager assignments. Apply cascade?`
+                                            `Revoking director ${item.firstname} ${item.lastname} will affect regional manager assignments. Apply cascade?`,
+                                            "director"
                                         )
                                     }
                                     renderLabel={(user) => `${user.firstname} ${user.lastname} (${user.phone})`}
@@ -1521,13 +1504,7 @@ const AssignmentsManagement: React.FC<AssignmentsManagementProps> = ({
                                     items={state.allRegions}
                                     selectedItems={tempRegions}
                                     onToggle={(item) =>
-                                        handleToggle(
-                                            setTempRegions,
-                                            item,
-                                            "regionID",
-                                            true,
-                                            `Revoking region ${item.name} will remove all assigned governorates and delegations. Apply cascade?`
-                                        )
+                                        handleToggle(setTempRegions, item, "regionID", true)
                                     }
                                     renderLabel={(region) => region.name || ""}
                                     search={state.regionSearch}
@@ -1547,7 +1524,8 @@ const AssignmentsManagement: React.FC<AssignmentsManagementProps> = ({
                                             item,
                                             "userID",
                                             true,
-                                            `Revoking supervisor ${item.firstname} ${item.lastname} will remove all their assignments. Apply cascade?`
+                                            `Revoking supervisor ${item.firstname} ${item.lastname} will remove all their assignments (governorates, delegations, agents). Apply cascade?`,
+                                            "supervisor"
                                         )
                                     }
                                     renderLabel={(user) => `${user.firstname} ${user.lastname} (${user.phone})`}
@@ -1575,7 +1553,8 @@ const AssignmentsManagement: React.FC<AssignmentsManagementProps> = ({
                                             item,
                                             "userID",
                                             false,
-                                            `Revoking regional manager ${item.firstname} ${item.lastname} will affect supervisor assignments. Apply cascade?`
+                                            `Revoking regional manager ${item.firstname} ${item.lastname} will remove all supervisor assignments (governorates, delegations, agents). Apply cascade?`,
+                                            "regionalManager"
                                         )
                                     }
                                     renderLabel={(user) => `${user.firstname} ${user.lastname} (${user.phone})`}
@@ -1600,7 +1579,8 @@ const AssignmentsManagement: React.FC<AssignmentsManagementProps> = ({
                                             item,
                                             "governorateID",
                                             true,
-                                            `Revoking governorate ${item.name} will remove all assigned delegations and agents. Apply cascade?`
+                                            `Revoking governorate ${item.name} will remove all assigned delegations and agents. Apply cascade?`,
+                                            "governorate"
                                         )
                                     }
                                     renderLabel={(gov) => gov.name || ""}
@@ -1621,7 +1601,8 @@ const AssignmentsManagement: React.FC<AssignmentsManagementProps> = ({
                                             item,
                                             "delegationID",
                                             true,
-                                            `Revoking delegation ${item.name} will remove all assigned agents. Apply cascade?`
+                                            `Revoking delegation ${item.name} will remove all assigned agents. Apply cascade?`,
+                                            "delegation"
                                         )
                                     }
                                     renderLabel={(del) => del.name || ""}
@@ -1642,7 +1623,8 @@ const AssignmentsManagement: React.FC<AssignmentsManagementProps> = ({
                                             item,
                                             "agentID",
                                             true,
-                                            `Revoking agent ${item.name} ${item.lastname} will remove their assignment. Apply cascade?`
+                                            `Revoking agent ${item.name} ${item.lastname} will remove their assignment.`,
+                                            "agent"
                                         )
                                     }
                                     renderLabel={(agent) => `${agent.name} ${agent.lastname} (${agent.phone})`}

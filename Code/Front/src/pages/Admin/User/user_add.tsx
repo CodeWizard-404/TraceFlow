@@ -23,6 +23,7 @@ import RoleManagement from "./RoleManagement";
 import AssignmentsManagement from "./AssignmentsManagement";
 import InfoPopupWrapper from "./InfoPopupWrapper";
 import "../AdminDashboard.css";
+import { is } from "date-fns/locale";
 
 // Props Interface
 interface UserAddProps {
@@ -209,6 +210,13 @@ const UserAdd: React.FC<UserAddProps> = ({
     )
   };
 
+  const RoleName = {
+    SUPERVISOR: import.meta.env.VITE_ROLES_SUPERVISOR,
+    REGIONAL_MANAGER: import.meta.env.VITE_ROLES_REGIONAL_MANAGER,
+    DIRECTOR: import.meta.env.VITE_ROLES_DIRECTOR,
+    SUPER_ADMIN: import.meta.env.VITE_ROLES_SUPER_ADMIN
+  }
+
   const isSuperAdmin = userRoles?.some(
     (r) => r.name === import.meta.env.VITE_ROLES_SUPER_ADMIN
   );
@@ -272,19 +280,10 @@ const UserAdd: React.FC<UserAddProps> = ({
         phone: stripPhoneForDatabase(rawPhone),
       });
 
-      console.log("Temp Roles:", tempRoles);
-      console.log("Temp Regions:", tempRegions);
-      console.log("Temp Governorates:", tempGovernorates);
-      console.log("Temp Delegations:", tempDelegations);
-      console.log("Temp Agents:", tempAgents);
-      console.log("Temp Directors:", tempDirectors);
-      console.log("Temp Regional Managers:", tempRegionalManagers);
-      console.log("User Permissions:", userPermissions);
-
       // Assign Roles
       if (tempRoles.length > 0 && userPermissions.canAssignRoles) {
         const filteredRoles = tempRoles
-          .filter((role) => role.name !== import.meta.env.VITE_ROLES_SUPER_ADMIN)
+          .filter((role) => role.name !== RoleName.SUPER_ADMIN)
           .map((role) => role.roleID);
         if (filteredRoles.length > 0) {
           try {
@@ -302,7 +301,7 @@ const UserAdd: React.FC<UserAddProps> = ({
 
       // Assign Regional Managers to Director
       if (
-        tempRoles.some((role) => role.name === "Director") &&
+        tempRoles.some((role) => role.name === RoleName.DIRECTOR) &&
         tempRegionalManagers.length > 0 &&
         userPermissions.canAssignRegionalManagers
       ) {
@@ -319,7 +318,7 @@ const UserAdd: React.FC<UserAddProps> = ({
 
       // Assign Regions for Regional Manager
       if (
-        tempRoles.some((role) => role.name === "RegionalManager") &&
+        tempRoles.some((role) => role.name === RoleName.REGIONAL_MANAGER) &&
         tempRegions.length > 0 &&
         userPermissions.canAssignRegions
       ) {
@@ -335,7 +334,7 @@ const UserAdd: React.FC<UserAddProps> = ({
 
       // Assign Director for Regional Manager
       if (
-        tempRoles.some((role) => role.name === "RegionalManager") &&
+        tempRoles.some((role) => role.name === RoleName.REGIONAL_MANAGER) &&
         tempDirectors[0]?.userID &&
         userPermissions.canAssignDirectors
       ) {
@@ -351,7 +350,7 @@ const UserAdd: React.FC<UserAddProps> = ({
 
       // Assign Regional Manager and Governorates for Supervisor
       if (
-        tempRoles.some((role) => role.name === "Supervisor") &&
+        tempRoles.some((role) => role.name === RoleName.SUPERVISOR) &&
         tempRegionalManagers[0]?.userID &&
         tempGovernorates.length > 0 &&
         userPermissions.canAssignSupervisors &&
@@ -374,7 +373,7 @@ const UserAdd: React.FC<UserAddProps> = ({
 
       // Assign Delegations for Supervisor
       if (
-        tempRoles.some((role) => role.name === "Supervisor") &&
+        tempRoles.some((role) => role.name === RoleName.SUPERVISOR) &&
         tempDelegations.length > 0 &&
         userPermissions.canAssignDelegations
       ) {
@@ -390,7 +389,7 @@ const UserAdd: React.FC<UserAddProps> = ({
 
       // Assign Agents for Supervisor
       if (
-        tempRoles.some((role) => role.name === "Supervisor") &&
+        tempRoles.some((role) => role.name === RoleName.SUPERVISOR) &&
         tempAgents.length > 0 &&
         userPermissions.canAssignAgents &&
         tempDelegations.length > 0

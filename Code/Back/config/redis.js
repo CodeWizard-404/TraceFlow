@@ -51,7 +51,6 @@ async function initializeRedis() {
     // Monitor Redis (every 5 minutes)
     setInterval(async () => {
         const info = await redisClient.info();
-        logger.info('Redis metrics', { service: 'redis' });
     }, 300000);
 
     return { redisClient, redisSubClient };

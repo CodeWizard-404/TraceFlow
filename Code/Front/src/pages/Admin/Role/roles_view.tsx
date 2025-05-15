@@ -74,7 +74,7 @@ const RoleView: React.FC<RoleViewProps> = React.memo(
       () => [
         import.meta.env.VITE_ROLES_SUPER_ADMIN,
         import.meta.env.VITE_ROLES_ADMIN,
-        import.meta.env.VITE_ROLES_MANAGER,
+        import.meta.env.VITE_ROLES_DIRECTOR,
         import.meta.env.VITE_ROLES_SUPERVISOR,
         import.meta.env.VITE_ROLES_PURCHASE_TEAM,
         import.meta.env.VITE_ROLES_REGIONAL_MANAGER,

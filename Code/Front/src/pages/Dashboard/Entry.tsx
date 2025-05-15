@@ -5,12 +5,12 @@ import { useAuth } from '../../context/AuthContext';
 import { toast } from 'react-toastify';
 
 interface Visit {
-  visitID: string;
-  location?: string;
-  date: string;
-  time: string;
-  status: string;
-  agentID: string;
+    visitID: string;
+    location?: string;
+    date: string;
+    time: string;
+    status: string;
+    agentID: string;
 }
 
 const Dashboard: React.FC = () => {
@@ -18,8 +18,8 @@ const Dashboard: React.FC = () => {
     const [visits, setVisits] = useState<Visit[]>([]);
     const [loading, setLoading] = useState(true);
 
-    const isSupervisor = userRoles?.some(role => role.name === 'SUPERVISOR');
-    const canAccessAllTimesheets = effectivePermissions?.some(p => p.name === 'ACCESS_TIMESHEETS');
+    const isSupervisor = userRoles?.some(role => role.name === import.meta.env.VITE_SUPERVISOR_ROLE);
+    const canAccessAllTimesheets = effectivePermissions?.some(p => p.name === import.meta.env.VITE_PERMISSIONS_ACCESS_TIMESHEETS);
     const supervisorID = user?.userID;
 
     useEffect(() => {
@@ -54,9 +54,9 @@ const Dashboard: React.FC = () => {
                 setVisits(allVisits);
             } catch (err) {
                 toast.error(
-                  err && typeof err === 'object' && 'message' in err
-                      ? (err as { message: string }).message
-                      : 'Failed to load visits');
+                    err && typeof err === 'object' && 'message' in err
+                        ? (err as { message: string }).message
+                        : 'Failed to load visits');
             } finally {
                 setLoading(false);
             }

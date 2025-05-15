@@ -1,24 +1,7 @@
 import { AxiosError } from "axios";
 import api from "./axiosConfig";
 import User from "../models/User";
-import {
-  AssignRegionalManagerResponse,
-  RevokeRegionalManagerResponse,
-  AssignDirectorResponse,
-  RevokeDirectorResponse,
-  AssignRegionsResponse,
-  RevokeRegionsResponse,
-  AssignGovernoratesResponse,
-  RevokeGovernoratesResponse,
-  AssignDelegationsResponse,
-  RevokeDelegationsResponse,
-  AssignSupervisorToAgentResponse,
-  RevokeSupervisorFromAgentResponse,
-  DeleteUserResponse,
-  GetUsersByRegionResponse,
-  GetUsersByGovernorateResponse,
-  GetUsersByDelegationResponse,
-} from "./index";
+import { DeleteUserResponse, AssignRegionalManagerResponse, RevokeRegionalManagerResponse, AssignDirectorResponse, RevokeDirectorResponse, AssignRegionsResponse, RevokeRegionsResponse, AssignGovernoratesResponse, RevokeGovernoratesResponse, AssignDelegationsResponse, RevokeDelegationsResponse, AssignSupervisorToAgentResponse, RevokeSupervisorFromAgentResponse, GetUsersByRegionResponse, GetUsersByGovernorateResponse, GetUsersByDelegationResponse } from "./index";
 
 // Generic error handler
 const handleApiError = (error: unknown, defaultMessage: string): string => {
@@ -83,13 +66,6 @@ export const getDirectorByUser = async (userID: string): Promise<User[]> => {
 
 
 
-
-
-
-
-
-
-
 export const getUsersByRegion = async (regionID: string): Promise<GetUsersByRegionResponse> => {
   try {
     if (!regionID) {
@@ -125,10 +101,6 @@ export const getUsersByDelegation = async (delegationID: string): Promise<GetUse
     throw new Error(handleApiError(error, "Users not found"));
   }
 };
-
-
-
-
 
 
 
@@ -215,11 +187,7 @@ export const assignRegionalManagerToSupervisor = async (
 
 export const revokeRegionalManagerFromSupervisor = async (
   supervisorID: string,
-  confirmations: {
-    revokeGovernorates: boolean;
-    revokeDelegations: boolean;
-    revokeAgents: boolean;
-  }
+  confirmations: { revokeAll: boolean }
 ): Promise<RevokeRegionalManagerResponse> => {
   try {
     if (!supervisorID) {
@@ -269,7 +237,6 @@ export const revokeDirectorFromRegionalManager = async (
   }
 };
 
-// Supervisor Assignment to Agents
 export const assignSupervisorToAgent = async (
   agentID: string,
   supervisorID: string,
@@ -312,7 +279,6 @@ export const revokeSupervisorFromAgent = async (
 
 
 
-
 // Assignment and Revocation Functions for Regions, Governorates, and Delegations
 export const assignRegionsToRegionalManager = async (
   regionalManagerID: string,
@@ -335,7 +301,7 @@ export const assignRegionsToRegionalManager = async (
 export const revokeRegionsFromRegionalManager = async (
   regionalManagerID: string,
   regionIDs: string[],
-  confirmations: { cascadeConfirmed: boolean }
+  confirmations: { revokeSupervisors: boolean }
 ): Promise<RevokeRegionsResponse> => {
   try {
     if (!regionalManagerID || !Array.isArray(regionIDs) || regionIDs.length === 0) {
@@ -373,7 +339,7 @@ export const assignGovernoratesToSupervisor = async (
 export const revokeGovernoratesFromSupervisor = async (
   supervisorID: string,
   governorateIDs: string[],
-  confirmations: { revokeDelegations: boolean; revokeAgents: boolean }
+  confirmations: { revokeAll: boolean }
 ): Promise<RevokeGovernoratesResponse> => {
   try {
     if (!supervisorID || !Array.isArray(governorateIDs) || governorateIDs.length === 0) {
@@ -411,7 +377,7 @@ export const assignDelegationsToSupervisor = async (
 export const revokeDelegationsFromSupervisor = async (
   supervisorID: string,
   delegationIDs: string[],
-  cascadeConfirmed: boolean
+  confirmations: { revokeAgents: boolean }
 ): Promise<RevokeDelegationsResponse> => {
   try {
     if (!supervisorID || !Array.isArray(delegationIDs) || delegationIDs.length === 0) {
@@ -420,32 +386,13 @@ export const revokeDelegationsFromSupervisor = async (
     const response = await api.post<RevokeDelegationsResponse>("/users/revoke-delegations", {
       supervisorID,
       delegationIDs,
-      cascadeConfirmed,
+      confirmations,
     });
     return response.data;
   } catch (error) {
     throw new Error(handleApiError(error, "Unable to revoke delegations"));
   }
 };
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
 
 
 
@@ -495,6 +442,16 @@ export const updateProfile = async (data: Partial<User> & UpdateProfileInput): P
     throw new Error(handleApiError(error, "Failed to update profile"));
   }
 };
+
+
+
+
+
+
+
+
+
+
 
 // User CRUD Functions
 export const getAllUsers = async (): Promise<User[]> => {

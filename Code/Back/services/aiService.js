@@ -1,6 +1,5 @@
 // aiService.js
 const { makeOllamaApiCall } = require('../utils/apiClient');
-const logger = require('../utils/logger');
 const { initializeAI } = require('../config/ai');
 const { AIConfig, User, Agent, Reason, Checklist, Delegation } = require('../models');
 const { Op } = require('sequelize');
@@ -199,10 +198,6 @@ class AIService {
             }));
 
             if (agentData.length === 0) {
-                logger.warn('No agents found for timesheet suggestions', {
-                    service: 'ai',
-                    metadata: { supervisorId, weekNumber, year }
-                });
                 return [];
             }
 
@@ -248,10 +243,6 @@ class AIService {
             const cacheKey = `${supervisorId}-${weekNumber}-${year}-${JSON.stringify(timesheetData)}`;
             let suggestions = cache.get(cacheKey);
             if (suggestions) {
-                logger.info('Returning cached timesheet suggestions', {
-                    service: 'ai',
-                    metadata: { supervisorId, weekNumber, year }
-                });
                 return suggestions;
             }
 
@@ -277,19 +268,9 @@ Sort visits by distance from supervisor using Haversine formula. Assign checklis
                 stream: false
             };
 
-            logger.info('Sending request to Ollama API', {
-                service: 'ai',
-                metadata: { supervisorId, weekNumber, year }
-            });
 
             // Pass the AbortSignal to the API call
             const response = await makeOllamaApiCall('post', '/generate', payload, { signal: controller.signal });
-
-            logger.debug('Ollama API response', {
-                service: 'ai',
-                metadata: { supervisorId, weekNumber, year }
-            });
-
             if (!response || !response.response) {
                 throw new Error(ERROR_MESSAGES.INVALID_AI_RESPONSE);
             }
@@ -299,10 +280,6 @@ Sort visits by distance from supervisor using Haversine formula. Assign checklis
             try {
                 suggestions = JSON.parse(response.response); // Directly parse the response
             } catch (parseError) {
-                logger.error('Failed to parse AI response', {
-                    service: 'ai',
-                    metadata: { supervisorId, weekNumber, year, error: parseError.message }
-                });
                 throw new Error(ERROR_MESSAGES.INVALID_AI_RESPONSE);
             }
 
@@ -311,10 +288,6 @@ Sort visits by distance from supervisor using Haversine formula. Assign checklis
                 if (suggestions.suggestions && Array.isArray(suggestions.suggestions)) {
                     suggestions = suggestions.suggestions;
                 } else {
-                    logger.error('AI response is not an array', {
-                        service: 'ai',
-                        metadata: { supervisorId, weekNumber, year, suggestions }
-                    });
                     return [];
                 }
             }
@@ -325,20 +298,12 @@ Sort visits by distance from supervisor using Haversine formula. Assign checklis
             // Transform suggestions
             const transformedSuggestions = suggestions.map(suggestion => {
                 if (!suggestion.agentID || !Array.isArray(suggestion.schedule)) {
-                    logger.warn('Invalid suggestion structure, skipping', {
-                        service: 'ai',
-                        metadata: { supervisorId, weekNumber, year, suggestion }
-                    });
                     return null;
                 }
                 return {
                     agentID: suggestion.agentID,
                     schedule: suggestion.schedule.map(day => {
                         if (!day.date || !Array.isArray(day.visits)) {
-                            logger.warn('Invalid schedule structure, skipping day', {
-                                service: 'ai',
-                                metadata: { supervisorId, weekNumber, year, day }
-                            });
                             return null;
                         }
                         return {
@@ -366,28 +331,13 @@ Sort visits by distance from supervisor using Haversine formula. Assign checklis
                 };
             }).filter(suggestion => suggestion && suggestion.schedule.length > 0);
 
-            logger.info('Timesheet suggestions generated', {
-                service: 'ai',
-                metadata: { supervisorId, weekNumber, year, suggestionCount: transformedSuggestions.length }
-            });
-
             return transformedSuggestions;
         } catch (error) {
             if (error.name === 'AbortError') {
-                logger.info('AI request canceled', {
-                    service: 'ai',
-                    metadata: { supervisorId, weekNumber, year }
-                });
                 const abortError = new Error(ERROR_MESSAGES.REQUEST_CANCELED);
                 abortError.status = 499; // Client Closed Request
                 throw abortError;
             }
-            logger.error('Failed to generate timesheet suggestions', {
-                error: error.message,
-                stack: error.stack,
-                service: 'ai',
-                metadata: { supervisorId, weekNumber, year }
-            });
             throw error.message in ERROR_MESSAGES
                 ? error
                 : Object.assign(new Error(ERROR_MESSAGES.AI_API_UNAVAILABLE), { status: 503 });
@@ -436,44 +386,25 @@ Sort visits by distance from supervisor using Haversine formula. Assign checklis
             try {
                 anomalies = JSON.parse(response.response);
             } catch (parseError) {
-                logger.error('Failed to parse anomaly response', {
-                    error: parseError.message,
-                    service: 'ai',
-                    metadata: { dataType, response: response.response },
-                });
                 throw new Error(ERROR_MESSAGES.INVALID_AI_RESPONSE);
             }
 
             if (!Array.isArray(anomalies)) {
-                logger.error('Anomaly response is not an array', {
-                    service: 'ai',
-                    metadata: { dataType, anomalies },
-                });
+
                 throw new Error(ERROR_MESSAGES.INVALID_AI_RESPONSE);
             }
 
-            logger.info('Anomalies detected', {
-                service: 'ai',
-                metadata: { dataType, anomalyCount: anomalies.length },
-            });
+
 
             return anomalies;
         } catch (error) {
             if (error.name === 'AbortError') {
-                logger.info('Anomaly detection request canceled', {
-                    service: 'ai',
-                    metadata: { dataType }
-                });
+
                 const abortError = new Error(ERROR_MESSAGES.REQUEST_CANCELED);
                 abortError.status = 499;
                 throw abortError;
             }
-            logger.error('Failed to detect anomalies', {
-                error: error.message,
-                stack: error.stack,
-                service: 'ai',
-                metadata: { dataType },
-            });
+
             throw error.message in ERROR_MESSAGES
                 ? error
                 : Object.assign(new Error(ERROR_MESSAGES.AI_API_UNAVAILABLE), { status: 503 });
@@ -521,36 +452,20 @@ Sort visits by distance from supervisor using Haversine formula. Assign checklis
             try {
                 report = JSON.parse(response.response);
             } catch (parseError) {
-                logger.error('Failed to parse report response', {
-                    error: parseError.message,
-                    service: 'ai',
-                    metadata: { format, response: response.response },
-                });
+
                 throw new Error(ERROR_MESSAGES.INVALID_AI_RESPONSE);
             }
 
-            logger.info('Report generated', {
-                service: 'ai',
-                metadata: { format },
-            });
+
 
             return report;
         } catch (error) {
             if (error.name === 'AbortError') {
-                logger.info('Report generation request canceled', {
-                    service: 'ai',
-                    metadata: { format }
-                });
+
                 const abortError = new Error(ERROR_MESSAGES.REQUEST_CANCELED);
                 abortError.status = 499;
                 throw abortError;
             }
-            logger.error('Failed to generate report', {
-                error: error.message,
-                stack: error.stack,
-                service: 'ai',
-                metadata: { format },
-            });
             throw error.message in ERROR_MESSAGES
                 ? error
                 : Object.assign(new Error(ERROR_MESSAGES.AI_API_UNAVAILABLE), { status: 503 });

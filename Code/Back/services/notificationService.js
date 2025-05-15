@@ -233,7 +233,7 @@ class NotificationService {
                 event,
                 type: notificationType,
                 recipients: {
-                    roles: ['Admin', 'Super Admin'],
+                    roles: [process.env.ROLE_ADMIN, process.env.ROLE_SUPER_ADMIN],
                     userIDs: [],
                 },
                 channels: {

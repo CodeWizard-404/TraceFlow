@@ -162,7 +162,7 @@ class PermissionService {
             }
 
             // Check if user is Super Admin
-            const isSuperAdmin = user.roles.includes('Super Admin');
+            const isSuperAdmin = user.roles.includes(process.env.ROLE_SUPER_ADMIN);
             if (!isSuperAdmin) {
                 const restrictedPermissions = permissions.filter((p) => ['Role', 'Permission'].includes(p.class));
                 if (restrictedPermissions.length > 0) {

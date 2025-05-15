@@ -21,7 +21,6 @@ module.exports = (sequelize, DataTypes) => {
             type: DataTypes.JSON,
             allowNull: false,
             defaultValue: {},
-            comment: 'JSON object mapping notification events to channel preferences (e.g., { "timesheet:updated": { "email": true, "sms": true, "inApp": true } })',
         },
         createdAt: {
             type: DataTypes.DATE,

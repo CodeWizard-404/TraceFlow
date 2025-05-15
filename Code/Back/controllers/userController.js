@@ -1058,6 +1058,47 @@ class UserController {
         }
     }
 
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
     /**
      * Assign a regional manager to a supervisor.
      * @param {Object} req - Express request object with supervisorID and regionalManagerID in body.
@@ -1126,17 +1167,11 @@ class UserController {
         }
     }
 
-    /**
-     * Revoke a regional manager from a supervisor.
-     * @param {Object} req - Express request object with supervisorID in body.
-     * @param {Object} res - Express response object.
-     * @returns {Promise<void>} JSON response with revocation details or error.
-     */
     static async revokeRegionalManagerFromSupervisor(req, res) {
         const { supervisorID, confirmations } = req.body;
         const actorID = req.user?.userID || 'unknown';
         if (!supervisorID) {
-            logger.error('Missing supervisorID parameter', {
+            logger.error('Missing supervisorID parameter or authentication issue', {
                 route: 'users',
                 method: req.method,
                 url: req.originalUrl,
@@ -1162,7 +1197,7 @@ class UserController {
             return res.status(401).json({ error: 'Please log in to revoke a regional manager' });
         }
         try {
-            const result = await UserService.revokeRegionalManagerFromSupervisor(supervisorID, req.user.userID, confirmations);
+            const result = await UserService.revokeRegionalManagerFromSupervisor(supervisorID, confirmations);
             await NotificationService.triggerNotification({
                 event: 'user:regional_manager_revoked',
                 data: { supervisorID, regionalManagerID: result.regionalManagerID },
@@ -1176,7 +1211,7 @@ class UserController {
                 ip: req.ip,
                 traceId: req.traceId,
                 userId: actorID,
-                metadata: { supervisorID: supervisorID, regionalManagerID: result.regionalManagerID }
+                metadata: { supervisorID, regionalManagerID: result.regionalManagerID }
             });
             return res.status(200).json(result);
         } catch (error) {
@@ -1184,13 +1219,13 @@ class UserController {
                 route: 'users',
                 method: req.method,
                 url: req.originalUrl,
-                status: 400,
+                status: error.message.includes('Confirmation required') ? 400 : 500,
                 ip: req.ip,
                 traceId: req.traceId,
                 userId: actorID,
-                metadata: { error: error.message, supervisorID: supervisorID }
+                metadata: { error: error.message, supervisorID }
             });
-            return res.status(400).json({ error: error.message || 'Failed to revoke regional manager' });
+            return res.status(error.message.includes('Confirmation required') ? 400 : 500).json({ error: error.message || 'Failed to revoke regional manager' });
         }
     }
 
@@ -1262,17 +1297,11 @@ class UserController {
         }
     }
 
-    /**
-     * Revoke a director from a regional manager.
-     * @param {Object} req - Express request object with regionalManagerID in body.
-     * @param {Object} res - Express response object.
-     * @returns {Promise<void>} JSON response with revocation details or error.
-     */
     static async revokeDirectorFromRegionalManager(req, res) {
         const { regionalManagerID } = req.body;
         const actorID = req.user?.userID || 'unknown';
         if (!regionalManagerID) {
-            logger.error('Missing regionalManagerID parameter', {
+            logger.error('Missing regionalManagerID parameter or authentication issue', {
                 route: 'users',
                 method: req.method,
                 url: req.originalUrl,
@@ -1298,7 +1327,7 @@ class UserController {
             return res.status(401).json({ error: 'Please log in to revoke a director' });
         }
         try {
-            const result = await UserService.revokeDirectorFromRegionalManager(regionalManagerID, req.user.userID);
+            const result = await UserService.revokeDirectorFromRegionalManager(regionalManagerID);
             await NotificationService.triggerNotification({
                 event: 'user:director_revoked',
                 data: { regionalManagerID, directorID: result.directorID },
@@ -1312,7 +1341,7 @@ class UserController {
                 ip: req.ip,
                 traceId: req.traceId,
                 userId: actorID,
-                metadata: { regionalManagerID: regionalManagerID, directorID: result.directorID }
+                metadata: { regionalManagerID, directorID: result.directorID }
             });
             return res.status(200).json(result);
         } catch (error) {
@@ -1320,13 +1349,13 @@ class UserController {
                 route: 'users',
                 method: req.method,
                 url: req.originalUrl,
-                status: 400,
+                status: 500,
                 ip: req.ip,
                 traceId: req.traceId,
                 userId: actorID,
-                metadata: { error: error.message, regionalManagerID: regionalManagerID }
+                metadata: { error: error.message, regionalManagerID }
             });
-            return res.status(400).json({ error: error.message || 'Failed to revoke director' });
+            return res.status(500).json({ error: error.message || 'Failed to revoke director' });
         }
     }
 
@@ -1398,17 +1427,11 @@ class UserController {
         }
     }
 
-    /**
-     * Revoke a supervisor from an agent.
-     * @param {Object} req - Express request object with agentID in body.
-     * @param {Object} res - Express response object.
-     * @returns {Promise<void>} JSON response with revocation details or error.
-     */
     static async revokeSupervisorFromAgent(req, res) {
         const { agentID } = req.body;
         const actorID = req.user?.userID || 'unknown';
         if (!agentID) {
-            logger.error('Missing agentID parameter', {
+            logger.error('Missing agentID parameter or authentication issue', {
                 route: 'users',
                 method: req.method,
                 url: req.originalUrl,
@@ -1434,7 +1457,7 @@ class UserController {
             return res.status(401).json({ error: 'Please log in to revoke a supervisor' });
         }
         try {
-            const result = await UserService.revokeSupervisorFromAgent(agentID, req.user.userID);
+            const result = await UserService.revokeSupervisorFromAgent(agentID);
             await NotificationService.triggerNotification({
                 event: 'user:supervisor_revoked_from_agent',
                 data: { agentID, supervisorID: result.supervisorID, delegationID: result.delegationID },
@@ -1448,7 +1471,7 @@ class UserController {
                 ip: req.ip,
                 traceId: req.traceId,
                 userId: actorID,
-                metadata: { agentID: agentID, supervisorID: result.supervisorID, delegationID: result.delegationID }
+                metadata: { agentID, supervisorID: result.supervisorID, delegationID: result.delegationID }
             });
             return res.status(200).json(result);
         } catch (error) {
@@ -1456,13 +1479,13 @@ class UserController {
                 route: 'users',
                 method: req.method,
                 url: req.originalUrl,
-                status: 400,
+                status: 500,
                 ip: req.ip,
                 traceId: req.traceId,
                 userId: actorID,
-                metadata: { error: error.message, agentID: agentID }
+                metadata: { error: error.message, agentID }
             });
-            return res.status(400).json({ error: error.message || 'Failed to revoke supervisor from agent' });
+            return res.status(500).json({ error: error.message || 'Failed to revoke supervisor from agent' });
         }
     }
 
@@ -1538,12 +1561,6 @@ class UserController {
         }
     }
 
-    /**
-     * Revoke multiple regions from a regional manager.
-     * @param {Object} req - Express request object with regionalManagerID, regionIDs, and confirmations in body.
-     * @param {Object} res - Express response object.
-     * @returns {Promise<void>} JSON response with revocation details or error.
-     */
     static async revokeRegionsFromRegionalManager(req, res) {
         const { regionalManagerID, regionIDs, confirmations = {} } = req.body;
         const actorID = req.user?.userID || 'unknown';
@@ -1574,27 +1591,10 @@ class UserController {
             return res.status(401).json({ error: 'Please log in to revoke regions' });
         }
         try {
-            const results = [];
-            for (const regionID of regionIDs) {
-                const result = await UserService.revokeRegionFromUser(regionalManagerID, regionID, req.user.userID, confirmations);
-                results.push(result);
-            }
+            const result = await UserService.revokeRegionsFromRegionalManager(regionalManagerID, regionIDs, confirmations);
             await NotificationService.triggerNotification({
                 event: 'user:regions_revoked',
-                data: {
-                    regionalManagerID,
-                    regionIDs,
-                    cascadeApplied: {
-                        governorates: results.some(r => r.cascadeApplied?.governorates),
-                        delegations: results.some(r => r.cascadeApplied?.delegations),
-                        agents: results.some(r => r.cascadeApplied?.agents)
-                    },
-                    affectedCounts: {
-                        governorates: results.reduce((sum, r) => sum + (r.affectedCounts?.governorates || 0), 0),
-                        delegations: results.reduce((sum, r) => sum + (r.affectedCounts?.delegations || 0), 0),
-                        agents: results.reduce((sum, r) => sum + (r.affectedCounts?.agents || 0), 0)
-                    }
-                },
+                data: { regionalManagerID, regionIDs, cascadeApplied: result.cascadeApplied, affectedCounts: result.affectedCounts },
                 metadata: { revokedBy: req.user.email || 'unknown' }
             });
             logger.info('Successfully revoked regions from regional manager', {
@@ -1605,21 +1605,21 @@ class UserController {
                 ip: req.ip,
                 traceId: req.traceId,
                 userId: actorID,
-                metadata: { regionalManagerID: regionalManagerID, regionCount: regionIDs.length }
+                metadata: { regionalManagerID, regionCount: regionIDs.length }
             });
-            return res.status(200).json(results);
+            return res.status(200).json(result);
         } catch (error) {
             logger.error('Failed to revoke regions from regional manager', {
                 route: 'users',
                 method: req.method,
                 url: req.originalUrl,
-                status: 400,
+                status: error.message.includes('Confirmation required') ? 400 : 500,
                 ip: req.ip,
                 traceId: req.traceId,
                 userId: actorID,
-                metadata: { error: error.message, regionalManagerID: regionalManagerID, regionIDs: regionIDs }
+                metadata: { error: error.message, regionalManagerID, regionIDs }
             });
-            return res.status(400).json({ error: error.message || 'Failed to revoke regions' });
+            return res.status(error.message.includes('Confirmation required') ? 400 : 500).json({ error: error.message || 'Failed to revoke regions' });
         }
     }
 
@@ -1695,12 +1695,6 @@ class UserController {
         }
     }
 
-    /**
-     * Revoke multiple governorates from a supervisor.
-     * @param {Object} req - Express request object with supervisorID, governorateIDs, and confirmations in body.
-     * @param {Object} res - Express response object.
-     * @returns {Promise<void>} JSON response with revocation details or error.
-     */
     static async revokeGovernoratesFromSupervisor(req, res) {
         const { supervisorID, governorateIDs, confirmations = {} } = req.body;
         const actorID = req.user?.userID || 'unknown';
@@ -1731,25 +1725,10 @@ class UserController {
             return res.status(401).json({ error: 'Please log in to revoke governorates' });
         }
         try {
-            const results = [];
-            for (const governorateID of governorateIDs) {
-                const result = await UserService.revokeGovernorateFromUser(supervisorID, governorateID, req.user.userID, confirmations);
-                results.push(result);
-            }
+            const result = await UserService.revokeGovernoratesFromSupervisor(supervisorID, governorateIDs, confirmations);
             await NotificationService.triggerNotification({
                 event: 'user:governorates_revoked',
-                data: {
-                    supervisorID,
-                    governorateIDs,
-                    cascadeApplied: {
-                        delegations: results.some(r => r.cascadeApplied?.delegations),
-                        agents: results.some(r => r.cascadeApplied?.agents)
-                    },
-                    affectedCounts: {
-                        delegations: results.reduce((sum, r) => sum + (r.affectedCounts?.delegations || 0), 0),
-                        agents: results.reduce((sum, r) => sum + (r.affectedCounts?.agents || 0), 0)
-                    }
-                },
+                data: { supervisorID, governorateIDs, cascadeApplied: result.cascadeApplied, affectedCounts: result.affectedCounts },
                 metadata: { revokedBy: req.user.email || 'unknown' }
             });
             logger.info('Successfully revoked governorates from supervisor', {
@@ -1760,21 +1739,21 @@ class UserController {
                 ip: req.ip,
                 traceId: req.traceId,
                 userId: actorID,
-                metadata: { supervisorID: supervisorID, governorateCount: governorateIDs.length }
+                metadata: { supervisorID, governorateCount: governorateIDs.length }
             });
-            return res.status(200).json(results);
+            return res.status(200).json(result);
         } catch (error) {
             logger.error('Failed to revoke governorates from supervisor', {
                 route: 'users',
                 method: req.method,
                 url: req.originalUrl,
-                status: 400,
+                status: error.message.includes('Confirmation required') ? 400 : 500,
                 ip: req.ip,
                 traceId: req.traceId,
                 userId: actorID,
-                metadata: { error: error.message, supervisorID: supervisorID, governorateIDs: governorateIDs }
+                metadata: { error: error.message, supervisorID, governorateIDs }
             });
-            return res.status(400).json({ error: error.message || 'Failed to revoke governorates' });
+            return res.status(error.message.includes('Confirmation required') ? 400 : 500).json({ error: error.message || 'Failed to revoke governorates' });
         }
     }
 
@@ -1850,14 +1829,8 @@ class UserController {
         }
     }
 
-    /**
-     * Revoke multiple delegations from a supervisor.
-     * @param {Object} req - Express request object with supervisorID, delegationIDs, and cascadeConfirmed in body.
-     * @param {Object} res - Express response object.
-     * @returns {Promise<void>} JSON response with revocation details or error.
-     */
     static async revokeDelegationsFromSupervisor(req, res) {
-        const { supervisorID, delegationIDs, cascadeConfirmed = false } = req.body;
+        const { supervisorID, delegationIDs, confirmations = {} } = req.body;
         const actorID = req.user?.userID || 'unknown';
         if (!supervisorID || !Array.isArray(delegationIDs) || delegationIDs.length === 0) {
             logger.error('Missing or invalid fields for delegation revocation', {
@@ -1886,14 +1859,10 @@ class UserController {
             return res.status(401).json({ error: 'Please log in to revoke delegations' });
         }
         try {
-            const results = [];
-            for (const delegationID of delegationIDs) {
-                const result = await UserService.revokeDelegationFromUser(supervisorID, delegationID, req.user.userID, cascadeConfirmed);
-                results.push(result);
-            }
+            const result = await UserService.revokeDelegationsFromSupervisor(supervisorID, delegationIDs, confirmations);
             await NotificationService.triggerNotification({
                 event: 'user:delegations_revoked',
-                data: { supervisorID, delegationIDs, cascadeApplied: results.some(r => r.cascadeApplied), affectedAgents: results.reduce((sum, r) => sum + (r.affectedAgents || 0), 0) },
+                data: { supervisorID, delegationIDs, cascadeApplied: result.cascadeApplied, affectedCounts: result.affectedCounts },
                 metadata: { revokedBy: req.user.email || 'unknown' }
             });
             logger.info('Successfully revoked delegations from supervisor', {
@@ -1904,21 +1873,21 @@ class UserController {
                 ip: req.ip,
                 traceId: req.traceId,
                 userId: actorID,
-                metadata: { supervisorID: supervisorID, delegationCount: delegationIDs.length }
+                metadata: { supervisorID, delegationCount: delegationIDs.length }
             });
-            return res.status(200).json(results);
+            return res.status(200).json(result);
         } catch (error) {
             logger.error('Failed to revoke delegations from supervisor', {
                 route: 'users',
                 method: req.method,
                 url: req.originalUrl,
-                status: 400,
+                status: error.message.includes('Confirmation required') ? 400 : 500,
                 ip: req.ip,
                 traceId: req.traceId,
                 userId: actorID,
-                metadata: { error: error.message, supervisorID: supervisorID, delegationIDs: delegationIDs }
+                metadata: { error: error.message, supervisorID, delegationIDs }
             });
-            return res.status(400).json({ error: error.message || 'Failed to revoke delegations' });
+            return res.status(error.message.includes('Confirmation required') ? 400 : 500).json({ error: error.message || 'Failed to revoke delegations' });
         }
     }
 }

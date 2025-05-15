@@ -39,6 +39,16 @@ interface RolesListProps {
 // Constants
 const SKELETON_ROLES_PER_CATEGORY = [2, 5, 0]; // Fixed, Pre-made, Custom role counts
 
+const ROLES = {
+  SUPERVISOR: import.meta.env.VITE_ROLES_SUPERVISOR,
+  REGIONAL_MANAGER: import.meta.env.VITE_ROLES_REGIONAL_MANAGER,
+  DIRECTOR: import.meta.env.VITE_ROLES_DIRECTOR,
+  PURCHASE_TEAM: import.meta.env.VITE_ROLES_PURCHASE_TEAM,
+  STOCK_MANAGER: import.meta.env.VITE_ROLES_STOCK_MANAGER,
+  ADMIN: import.meta.env.VITE_ROLES_ADMIN,
+  SUPER_ADMIN: import.meta.env.VITE_ROLES_SUPER_ADMIN,
+}
+
 
 
 // Animation variants
@@ -114,7 +124,7 @@ const RolesList: React.FC<RolesListProps> = React.memo(
         if (!userPermissions.canUpdateRoles) {
           return;
         }
-        if (!isSuperAdmin && role.name === "Admin") {
+        if (!isSuperAdmin && role.name === ROLES.ADMIN) {
           setError("Only Super Admins can modify the Admin role.");
           return;
         }
@@ -123,11 +133,11 @@ const RolesList: React.FC<RolesListProps> = React.memo(
           return;
         }
         const fixedRoles = [
-          "Manager",
-          "Supervisor",
-          "Purchase Team",
-          "Regional Manager",
-          "Stock Manager",
+          ROLES.DIRECTOR,
+          ROLES.REGIONAL_MANAGER,
+          ROLES.SUPERVISOR,
+          ROLES.PURCHASE_TEAM,
+          ROLES.STOCK_MANAGER
         ];
         if (fixedRoles.includes(role.name)) {
           setConfirmation({
@@ -272,7 +282,7 @@ const RolesList: React.FC<RolesListProps> = React.memo(
             />
             {(() => {
               const fixedRoles = filteredRoles.filter((role) =>
-                ["Admin", import.meta.env.VITE_ROLES_SUPER_ADMIN].includes(role.name)
+                [ROLES.ADMIN, ROLES.SUPER_ADMIN].includes(role.name)
               );
               return (
                 fixedRoles.length > 0 && (
@@ -337,7 +347,7 @@ const RolesList: React.FC<RolesListProps> = React.memo(
             })()}
             {(() => {
               const premadeRoles = filteredRoles.filter((role) =>
-                ["Manager", "Supervisor", "Purchase Team", "Regional Manager", "Stock Manager"].includes(
+                [ROLES.DIRECTOR, ROLES.SUPERVISOR, ROLES.REGIONAL_MANAGER, ROLES.STOCK_MANAGER, ROLES.PURCHASE_TEAM].includes(
                   role.name
                 )
               );
@@ -406,13 +416,13 @@ const RolesList: React.FC<RolesListProps> = React.memo(
               const customRoles = filteredRoles.filter(
                 (role) =>
                   ![
-                    "Admin",
-                    import.meta.env.VITE_ROLES_SUPER_ADMIN,
-                    "Manager",
-                    "Supervisor",
-                    "Purchase Team",
-                    "Regional Manager",
-                    "Stock Manager",
+                    ROLES.ADMIN,
+                    ROLES.DIRECTOR,
+                    ROLES.SUPER_ADMIN,
+                    ROLES.SUPERVISOR,
+                    ROLES.REGIONAL_MANAGER,
+                    ROLES.STOCK_MANAGER,
+                    ROLES.PURCHASE_TEAM
                   ].includes(role.name)
               );
               return (

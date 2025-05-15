@@ -4,6 +4,7 @@ const { ReceiptBook, User, Agent, OTP, ReceiptBookTransfer, ReceiptStub, Role, R
 const OTPService = require('../services/otpService');
 const QRGenerator = require('../utils/qrGenerator');
 
+
 class ReceiptBookService {
     // --- Type Management Methods ---
     static async createReceiptBookType(name) {
@@ -386,7 +387,7 @@ class ReceiptBookService {
             }
 
             const user = await User.findByPk(userID, { include: [Role] });
-            if (!user || !user.Roles.some(r => r.name === 'Purchase Team' || r.name === 'Super Admin')) {
+            if (!user || !user.Roles.some(r => r.name === process.env.PURCHASE_TEAM || r.name === process.env.SUPER_ADMIN)) {
                 const error = new Error('Only Purchase Team or Super Admin can collect from supplier');
                 error.status = 403;
                 throw error;
@@ -550,7 +551,7 @@ class ReceiptBookService {
     static async canTransfer(books, senderID) {
         try {
             const sender = await User.findByPk(senderID, { include: [Role] });
-            const isSuperAdmin = sender?.Roles?.some(r => r.name === 'Super Admin');
+            const isSuperAdmin = sender?.Roles?.some(r => r.name === process.env.ROLE_SUPER_ADMIN);
 
             if (isSuperAdmin) {
                 return true;

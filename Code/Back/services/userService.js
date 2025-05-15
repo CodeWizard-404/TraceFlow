@@ -150,10 +150,9 @@ class UserService {
      * @param {string} firstname - User's first name.
      * @param {string} lastname - User's last name.
      * @param {string} phone - User's phone number.
-     * @param {string} actorID - ID of the user performing the action.
      * @returns {Promise<Object>} Created user.
      */
-    static async createUser(email, password, firstname, lastname, phone, actorID) {
+    static async createUser(email, password, firstname, lastname, phone) {
         if (!email || !password || !firstname || !lastname || !phone) {
             throw new Error(ERROR_MESSAGES.MISSING_FIELDS);
         }
@@ -239,10 +238,9 @@ class UserService {
      * Update an existing user.
      * @param {string} userID - User ID.
      * @param {Object} userData - User data to update.
-     * @param {string} actorID - ID of the user performing the action.
      * @returns {Promise<Object>} Updated user.
      */
-    static async updateUser(userID, userData, actorID) {
+    static async updateUser(userID, userData) {
         if (!userID) {
             throw new Error(ERROR_MESSAGES.MISSING_FIELDS);
         }
@@ -359,10 +357,9 @@ class UserService {
     /**
      * Delete a user.
      * @param {string} userID - User ID.
-     * @param {string} actorID - ID of the user performing the action.
      * @returns {Promise<Object>} Success message.
      */
-    static async deleteUser(userID, actorID) {
+    static async deleteUser(userID) {
         if (!userID) {
             throw new Error(ERROR_MESSAGES.MISSING_FIELDS);
         }
@@ -537,6 +534,16 @@ class UserService {
             throw new Error(error.message || ERROR_MESSAGES.DB_UPDATE_FAILED);
         }
     }
+
+
+
+
+
+
+
+
+
+
 
 
 
@@ -911,10 +918,9 @@ class UserService {
      * Assign a regional manager to a supervisor.
      * @param {string} supervisorID - Supervisor ID.
      * @param {string} regionalManagerID - Regional Manager ID.
-     * @param {string} actorID - ID of the user performing the action.
      * @returns {Promise<Object>} Assignment details.
      */
-    static async assignRegionalManagerToSupervisor(supervisorID, regionalManagerID, actorID) {
+    static async assignRegionalManagerToSupervisor(supervisorID, regionalManagerID) {
         if (!supervisorID || !regionalManagerID) {
             throw new Error(ERROR_MESSAGES.MISSING_FIELDS);
         }
@@ -953,19 +959,9 @@ class UserService {
         }
     }
 
-    /**
-     * Revoke a regional manager from a supervisor with cascading confirmations.
-     * @param {string} supervisorID - Supervisor ID.
-     * @param {string} actorID - ID of the user performing the action.
-     * @param {Object} confirmations - Object containing confirmation flags.
-     * @param {boolean} confirmations.revokeGovernorates - Confirm revocation of governorates.
-     * @param {boolean} confirmations.revokeDelegations - Confirm revocation of delegations.
-     * @param {boolean} confirmations.revokeAgents - Confirm revocation of agents.
-     * @returns {Promise<Object>} Revocation details.
-     */
-    static async revokeRegionalManagerFromSupervisor(supervisorID, actorID, confirmations = {}) {
+    static async revokeRegionalManagerFromSupervisor(supervisorID, confirmations = {}) {
         if (!supervisorID) {
-            throw new Error(ERROR_MESSAGES.MISSING_FIELDS);
+            throw new Error('Missing required fields.');
         }
 
         this.validateInput({ userID: supervisorID });
@@ -979,7 +975,7 @@ class UserService {
                 ],
             });
             if (!supervisor) {
-                throw new Error(ERROR_MESSAGES.USER_NOT_FOUND);
+                throw new Error('User not found.');
             }
             if (!supervisor.regionalManagerID) {
                 return {
@@ -995,53 +991,42 @@ class UserService {
                 include: [{ model: Region, through: { attributes: [] } }],
             });
             if (!regionalManager) {
-                throw new Error(ERROR_MESSAGES.USER_NOT_FOUND);
+                throw new Error('User not found.');
             }
 
-            const governorates = supervisor.Governorates || [];
-            const delegations = supervisor.Delegations || [];
-            const agents = supervisor.Agents || [];
+            const regions = regionalManager.Regions || [];
+            const regionIDs = regions.map(r => r.regionID);
+            const governorates = await Governorate.findAll({ where: { regionID: { [Op.in]: regionIDs } } });
+            const governorateIDs = governorates.map(g => g.governorateID);
+            const delegations = await Delegation.findAll({ where: { governorateID: { [Op.in]: governorateIDs } } });
+            const delegationIDs = delegations.map(d => d.delegationID);
+            const agents = await Agent.findAll({ where: { delegationID: { [Op.in]: delegationIDs }, supervisorID } });
 
-            // Check for required confirmations
-            if (governorates.length > 0 && !confirmations.revokeGovernorates) {
-                throw new Error(ERROR_MESSAGES.CASCADE_CONFIRMATION_GOVERNORATES);
-            }
-            if (delegations.length > 0 && !confirmations.revokeDelegations) {
-                throw new Error(ERROR_MESSAGES.CASCADE_CONFIRMATION_DELEGATIONS);
-            }
-            if (agents.length > 0 && !confirmations.revokeAgents) {
-                throw new Error(ERROR_MESSAGES.CASCADE_CONFIRMATION_AGENTS);
+            if ((governorates.length > 0 || delegations.length > 0 || agents.length > 0) && !confirmations.revokeAll) {
+                throw new Error('Confirmation required for revoking associated governorates, delegations, and agents.');
             }
 
-            // Perform cascading revocations if confirmed
-            if (confirmations.revokeGovernorates) {
+            if (confirmations.revokeAll) {
                 for (const governorate of governorates) {
                     await supervisor.removeGovernorate(governorate);
                 }
-            }
-
-            if (confirmations.revokeDelegations) {
                 for (const delegation of delegations) {
                     await supervisor.removeDelegation(delegation);
                 }
-            }
-
-            if (confirmations.revokeAgents) {
                 for (const agent of agents) {
                     await agent.update({ supervisorID: null, delegationID: null });
                 }
             }
 
-            // Revoke the regional manager
             await supervisor.update({ regionalManagerID: null });
             return {
                 supervisorID,
                 regionalManagerID,
                 message: 'Regional Manager revoked successfully.',
                 cascadeApplied: {
-                    governorates: confirmations.revokeGovernorates || false,
-                    delegations: confirmations.revokeDelegations || false,
-                    agents: confirmations.revokeAgents || false,
+                    governorates: confirmations.revokeAll || false,
+                    delegations: confirmations.revokeAll || false,
+                    agents: confirmations.revokeAll || false,
                 },
                 affectedCounts: {
                     governorates: governorates.length,
@@ -1050,7 +1035,7 @@ class UserService {
                 },
             };
         } catch (error) {
-            throw new Error(error.message || ERROR_MESSAGES.DB_UPDATE_FAILED);
+            throw new Error(error.message || 'Database update failed.');
         }
     }
 
@@ -1060,10 +1045,9 @@ class UserService {
      * Assign a director to a regional manager.
      * @param {string} regionalManagerID - Regional Manager ID.
      * @param {string} directorID - Director ID.
-     * @param {string} actorID - ID of the user performing the action.
      * @returns {Promise<Object>} Assignment details.
      */
-    static async assignDirectorToRegionalManager(regionalManagerID, directorID, actorID) {
+    static async assignDirectorToRegionalManager(regionalManagerID, directorID) {
         if (!regionalManagerID || !directorID) {
             throw new Error(ERROR_MESSAGES.MISSING_FIELDS);
         }
@@ -1102,15 +1086,10 @@ class UserService {
         }
     }
 
-    /**
-     * Revoke a director from a regional manager.
-     * @param {string} regionalManagerID - Regional Manager ID.
-     * @param {string} actorID - ID of the user performing the action.
-     * @returns {Promise<Object>} Revocation details.
-     */
-    static async revokeDirectorFromRegionalManager(regionalManagerID, actorID) {
+
+    static async revokeDirectorFromRegionalManager(regionalManagerID) {
         if (!regionalManagerID) {
-            throw new Error(ERROR_MESSAGES.MISSING_FIELDS);
+            throw new Error('Missing required fields.');
         }
 
         this.validateInput({ userID: regionalManagerID });
@@ -1118,7 +1097,7 @@ class UserService {
         try {
             const regionalManager = await User.findByPk(regionalManagerID);
             if (!regionalManager) {
-                throw new Error(ERROR_MESSAGES.USER_NOT_FOUND);
+                throw new Error('User not found.');
             }
             if (!regionalManager.directorID) {
                 return {
@@ -1136,7 +1115,7 @@ class UserService {
                 message: 'Director revoked successfully.',
             };
         } catch (error) {
-            throw new Error(error.message || ERROR_MESSAGES.DB_UPDATE_FAILED);
+            throw new Error(error.message || 'Database update failed.');
         }
     }
 
@@ -1147,10 +1126,9 @@ class UserService {
      * @param {string} agentID - Agent ID.
      * @param {string} supervisorID - Supervisor ID.
      * @param {string} delegationID - Delegation ID.
-     * @param {string} actorID - ID of the user performing the action.
      * @returns {Promise<Object>} Assignment details.
      */
-    static async assignSupervisorToAgent(agentID, supervisorID, delegationID, actorID) {
+    static async assignSupervisorToAgent(agentID, supervisorID, delegationID) {
         if (!agentID || !supervisorID || !delegationID) {
             throw new Error(ERROR_MESSAGES.MISSING_FIELDS);
         }
@@ -1202,15 +1180,9 @@ class UserService {
         }
     }
 
-    /**
-     * Revoke a supervisor from an agent.
-     * @param {string} agentID - Agent ID.
-     * @param {string} actorID - ID of the user performing the action.
-     * @returns {Promise<Object>} Revocation details.
-     */
-    static async revokeSupervisorFromAgent(agentID, actorID) {
+    static async revokeSupervisorFromAgent(agentID) {
         if (!agentID) {
-            throw new Error(ERROR_MESSAGES.MISSING_FIELDS);
+            throw new Error('Missing required fields.');
         }
 
         this.validateInput({ agentID });
@@ -1218,7 +1190,7 @@ class UserService {
         try {
             const agent = await Agent.findByPk(agentID);
             if (!agent) {
-                throw new Error(ERROR_MESSAGES.AGENT_NOT_FOUND);
+                throw new Error('Agent not found.');
             }
             if (!agent.supervisorID) {
                 return {
@@ -1239,7 +1211,7 @@ class UserService {
                 message: 'Supervisor and Delegation revoked successfully.',
             };
         } catch (error) {
-            throw new Error(error.message || ERROR_MESSAGES.DB_UPDATE_FAILED);
+            throw new Error(error.message || 'Database update failed.');
         }
     }
 
@@ -1254,10 +1226,9 @@ class UserService {
      * Assign a region to a user.
      * @param {string} userID - User ID.
      * @param {string} regionID - Region ID.
-     * @param {string} actorID - ID of the user performing the action.
      * @returns {Promise<Object>} Assignment details.
      */
-    static async assignRegionToUser(userID, regionID, actorID) {
+    static async assignRegionToUser(userID, regionID) {
         if (!userID || !regionID) {
             throw new Error(ERROR_MESSAGES.MISSING_FIELDS);
         }
@@ -1291,77 +1262,56 @@ class UserService {
         }
     }
 
-    /**
-     * Revoke a region from a user with optional cascading revocation.
-     * @param {string} userID - User ID.
-     * @param {string} regionID - Region ID.
-     * @param {string} actorID - ID of the user performing the action.
-     * @param {boolean} cascadeConfirmed - Whether to cascade revocation to governorates and delegations.
-     * @returns {Promise<Object>} Revocation details.
-     */
-    static async revokeRegionFromUser(userID, regionID, actorID, cascadeConfirmed = false) {
-        if (!userID || !regionID) {
-            throw new Error(ERROR_MESSAGES.MISSING_FIELDS);
+    static async revokeRegionsFromRegionalManager(regionalManagerID, regionIDs, confirmations = {}) {
+        if (!regionalManagerID || !Array.isArray(regionIDs) || regionIDs.length === 0) {
+            throw new Error('Missing required fields.');
         }
 
-        this.validateInput({ userID, regionID });
+        this.validateInput({ userID: regionalManagerID, ids: regionIDs });
 
         try {
-            const user = await User.findByPk(userID, {
-                include: [
-                    { model: Region, through: { attributes: [] } },
-                    { model: Governorate, through: { attributes: [] } },
-                    { model: Delegation, through: { attributes: [] } },
-                ],
+            const regionalManager = await User.findByPk(regionalManagerID, {
+                include: [{ model: Region, through: { attributes: [] } }],
             });
-            if (!user) {
-                throw new Error(ERROR_MESSAGES.USER_NOT_FOUND);
+            if (!regionalManager) {
+                throw new Error('User not found.');
             }
 
-            const region = await Region.findByPk(regionID);
-            if (!region) {
-                throw new Error(ERROR_MESSAGES.REGION_NOT_FOUND);
+            const regionsToRevoke = await Region.findAll({ where: { regionID: { [Op.in]: regionIDs } } });
+            if (regionsToRevoke.length !== regionIDs.length) {
+                throw new Error('One or more regions not found.');
             }
 
-            if (!user.Regions.some(r => r.regionID === regionID)) {
-                return {
-                    userID,
-                    regionID,
-                    message: 'Region not assigned.',
-                    cascadeApplied: false,
-                };
-            }
-
-            const governorates = await Governorate.findAll({ where: { regionID } });
+            const governorates = await Governorate.findAll({ where: { regionID: { [Op.in]: regionIDs } } });
             const governorateIDs = governorates.map(g => g.governorateID);
-            const delegations = await Delegation.findAll({
-                where: { governorateID: { [Op.in]: governorateIDs } },
+            const supervisors = await User.findAll({
+                where: { regionalManagerID },
+                include: [{ model: Governorate, through: { attributes: [] }, where: { governorateID: { [Op.in]: governorateIDs } } }],
             });
 
-            if (cascadeConfirmed) {
-                // Revoke associated governorates
-                for (const governorate of governorates) {
-                    await user.removeGovernorate(governorate);
-                }
-
-                // Revoke associated delegations
-                for (const delegation of delegations) {
-                    await user.removeDelegation(delegation);
-                }
-            } else if (governorates.length > 0 || delegations.length > 0) {
-                throw new Error(ERROR_MESSAGES.CASCADE_CONFIRMATION_REQUIRED);
+            if (supervisors.length > 0 && !confirmations.revokeSupervisors) {
+                throw new Error('Confirmation required for revoking associated supervisors.');
             }
 
-            // Revoke the region
-            await user.removeRegion(region);
+            if (confirmations.revokeSupervisors) {
+                for (const supervisor of supervisors) {
+                    await supervisor.update({ regionalManagerID: null });
+                }
+            }
+
+            for (const region of regionsToRevoke) {
+                await regionalManager.removeRegion(region);
+            }
+
             return {
-                userID,
-                regionID,
-                message: 'Region revoked successfully.',
-                cascadeApplied: cascadeConfirmed,
+                regionalManagerID,
+                regionIDs,
+                message: 'Regions revoked successfully.',
+                cascadeApplied: { supervisors: confirmations.revokeSupervisors || false },
+                affectedCounts: { supervisors: supervisors.length },
             };
         } catch (error) {
-            throw new Error(error.message || ERROR_MESSAGES.DB_UPDATE_FAILED);
+            throw new Error(error.message || 'Database update failed.');
         }
     }
 
@@ -1371,10 +1321,9 @@ class UserService {
      * Assign a governorate to a user.
      * @param {string} userID - User ID.
      * @param {string} governorateID - Governorate ID.
-     * @param {string} actorID - ID of the user performing the action.
      * @returns {Promise<Object>} Assignment details.
      */
-    static async assignGovernorateToUser(userID, governorateID, actorID) {
+    static async assignGovernorateToUser(userID, governorateID) {
         if (!userID || !governorateID) {
             return { success: false, message: ERROR_MESSAGES.MISSING_FIELDS };
         }
@@ -1402,89 +1351,58 @@ class UserService {
             return { success: false, message: ERROR_MESSAGES.DB_UPDATE_FAILED };
         }
     }
-    /**
-     * Revoke a governorate from a user with cascading confirmations.
-     * @param {string} userID - User ID.
-     * @param {string} governorateID - Governorate ID.
-     * @param {string} actorID - ID of the user performing the action.
-     * @param {Object} confirmations - Object containing confirmation flags.
-     * @param {boolean} confirmations.revokeDelegations - Confirm revocation of delegations.
-     * @param {boolean} confirmations.revokeAgents - Confirm revocation of agents.
-     * @returns {Promise<Object>} Revocation details.
-     */
-    static async revokeGovernorateFromUser(userID, governorateID, actorID, confirmations = {}) {
-        if (!userID || !governorateID) {
-            throw new Error(ERROR_MESSAGES.MISSING_FIELDS);
+    static async revokeGovernoratesFromSupervisor(supervisorID, governorateIDs, confirmations = {}) {
+        if (!supervisorID || !Array.isArray(governorateIDs) || governorateIDs.length === 0) {
+            throw new Error('Missing required fields.');
         }
 
-        this.validateInput({ userID, governorateID });
+        this.validateInput({ userID: supervisorID, ids: governorateIDs });
 
         try {
-            const user = await User.findByPk(userID, {
+            const supervisor = await User.findByPk(supervisorID, {
                 include: [
                     { model: Governorate, through: { attributes: [] } },
                     { model: Delegation, through: { attributes: [] } },
                     { model: Agent, as: 'Agents' },
                 ],
             });
-            if (!user) {
-                throw new Error(ERROR_MESSAGES.USER_NOT_FOUND);
+            if (!supervisor) {
+                throw new Error('User not found.');
             }
 
-            const governorate = await Governorate.findByPk(governorateID);
-            if (!governorate) {
-                throw new Error(ERROR_MESSAGES.GOVERNORATE_NOT_FOUND);
+            const governoratesToRevoke = await Governorate.findAll({ where: { governorateID: { [Op.in]: governorateIDs } } });
+            if (governoratesToRevoke.length !== governorateIDs.length) {
+                throw new Error('One or more governorates not found.');
             }
 
-            if (!user.Governorates.some(g => g.governorateID === governorateID)) {
-                return {
-                    userID,
-                    governorateID,
-                    message: 'Governorate not assigned.',
-                    cascadeApplied: { delegations: false, agents: false },
-                    affectedCounts: { delegations: 0, agents: 0 },
-                };
-            }
-
-            const delegations = await Delegation.findAll({ where: { governorateID } });
+            const delegations = await Delegation.findAll({ where: { governorateID: { [Op.in]: governorateIDs } } });
             const delegationIDs = delegations.map(d => d.delegationID);
-            const agents = await Agent.findAll({
-                where: {
-                    supervisorID: userID,
-                    delegationID: { [Op.in]: delegationIDs },
-                },
-            });
+            const agents = await Agent.findAll({ where: { delegationID: { [Op.in]: delegationIDs }, supervisorID } });
 
-            // Check for required confirmations
-            if (delegations.length > 0 && !confirmations.revokeDelegations) {
-                throw new Error(ERROR_MESSAGES.CASCADE_CONFIRMATION_DELEGATIONS);
-            }
-            if (agents.length > 0 && !confirmations.revokeAgents) {
-                throw new Error(ERROR_MESSAGES.CASCADE_CONFIRMATION_AGENTS);
+            if ((delegations.length > 0 || agents.length > 0) && !confirmations.revokeAll) {
+                throw new Error('Confirmation required for revoking associated delegations and agents.');
             }
 
-            // Perform cascading revocations if confirmed
-            if (confirmations.revokeDelegations) {
+            if (confirmations.revokeAll) {
                 for (const delegation of delegations) {
-                    await user.removeDelegation(delegation);
+                    await supervisor.removeDelegation(delegation);
                 }
-            }
-
-            if (confirmations.revokeAgents) {
                 for (const agent of agents) {
                     await agent.update({ supervisorID: null, delegationID: null });
                 }
             }
 
-            // Revoke the governorate
-            await user.removeGovernorate(governorate);
+            for (const governorate of governoratesToRevoke) {
+                await supervisor.removeGovernorate(governorate);
+            }
+
             return {
-                userID,
-                governorateID,
-                message: 'Governorate revoked successfully.',
+                supervisorID,
+                governorateIDs,
+                message: 'Governorates revoked successfully.',
                 cascadeApplied: {
-                    delegations: confirmations.revokeDelegations || false,
-                    agents: confirmations.revokeAgents || false,
+                    delegations: confirmations.revokeAll || false,
+                    agents: confirmations.revokeAll || false,
                 },
                 affectedCounts: {
                     delegations: delegations.length,
@@ -1492,7 +1410,7 @@ class UserService {
                 },
             };
         } catch (error) {
-            throw new Error(error.message || ERROR_MESSAGES.DB_UPDATE_FAILED);
+            throw new Error(error.message || 'Database update failed.');
         }
     }
 
@@ -1502,10 +1420,9 @@ class UserService {
      * Assign a delegation to a user.
      * @param {string} userID - User ID.
      * @param {string} delegationID - Delegation ID.
-     * @param {string} actorID - ID of the user performing the action.
      * @returns {Promise<Object>} Assignment details.
      */
-    static async assignDelegationToUser(userID, delegationID, actorID) {
+    static async assignDelegationToUser(userID, delegationID) {
         if (!userID || !delegationID) {
             return { success: false, message: 'Missing required fields.' };
         }
@@ -1539,78 +1456,54 @@ class UserService {
         }
     }
 
-    /**
-     * Revoke a delegation from a user with cascading confirmation for agents.
-     * @param {string} userID - User ID.
-     * @param {string} delegationID - Delegation ID.
-     * @param {string} actorID - ID of the user performing the action.
-     * @param {Object} confirmations - Object containing confirmation flags.
-     * @param {boolean} confirmations.revokeAgents - Confirm revocation of agents.
-     * @returns {Promise<Object>} Revocation details.
-     */
-    static async revokeDelegationFromUser(userID, delegationID, actorID, confirmations = {}) {
-        if (!userID || !delegationID) {
-            throw new Error(ERROR_MESSAGES.MISSING_FIELDS);
+    static async revokeDelegationsFromSupervisor(supervisorID, delegationIDs, confirmations = {}) {
+        if (!supervisorID || !Array.isArray(delegationIDs) || delegationIDs.length === 0) {
+            throw new Error('Missing required fields.');
         }
 
-        this.validateInput({ userID, delegationID });
+        this.validateInput({ userID: supervisorID, ids: delegationIDs });
 
         try {
-            const user = await User.findByPk(userID, {
+            const supervisor = await User.findByPk(supervisorID, {
                 include: [
                     { model: Delegation, through: { attributes: [] } },
                     { model: Agent, as: 'Agents' },
                 ],
             });
-            if (!user) {
-                throw new Error(ERROR_MESSAGES.USER_NOT_FOUND);
+            if (!supervisor) {
+                throw new Error('User not found.');
             }
 
-            const delegation = await Delegation.findByPk(delegationID);
-            if (!delegation) {
-                throw new Error(ERROR_MESSAGES.DELEGATION_NOT_FOUND);
+            const delegationsToRevoke = await Delegation.findAll({ where: { delegationID: { [Op.in]: delegationIDs } } });
+            if (delegationsToRevoke.length !== delegationIDs.length) {
+                throw new Error('One or more delegations not found.');
             }
 
-            if (!user.Delegations.some(d => d.delegationID === delegationID)) {
-                return {
-                    userID,
-                    delegationID,
-                    message: 'Delegation not assigned.',
-                    cascadeApplied: { agents: false },
-                    affectedAgents: 0,
-                };
+            const agents = await Agent.findAll({ where: { delegationID: { [Op.in]: delegationIDs }, supervisorID } });
+
+            if (agents.length > 0 && !confirmations.revokeAgents) {
+                throw new Error('Confirmation required for revoking associated agents.');
             }
 
-            const affectedAgents = await Agent.findAll({
-                where: {
-                    supervisorID: userID,
-                    delegationID,
-                },
-            });
-
-            // Check for required confirmation
-            if (affectedAgents.length > 0 && !confirmations.revokeAgents) {
-                throw new Error(ERROR_MESSAGES.CASCADE_CONFIRMATION_AGENTS);
-            }
-
-            // Perform cascading revocation of agents if confirmed
             if (confirmations.revokeAgents) {
-                for (const agent of affectedAgents) {
+                for (const agent of agents) {
                     await agent.update({ supervisorID: null, delegationID: null });
                 }
             }
 
-            // Revoke the delegation
-            await user.removeDelegation(delegation);
+            for (const delegation of delegationsToRevoke) {
+                await supervisor.removeDelegation(delegation);
+            }
+
             return {
-                userID,
-                delegationID,
-                message: 'Delegation revoked successfully.',
+                supervisorID,
+                delegationIDs,
+                message: 'Delegations revoked successfully.',
                 cascadeApplied: { agents: confirmations.revokeAgents || false },
-                affectedAgents: affectedAgents.length,
+                affectedCounts: { agents: agents.length },
             };
         } catch (error) {
-            throw new Error(error.message || ERROR_MESSAGES.DB_UPDATE_FAILED);
+            throw new Error(error.message || 'Database update failed.');
         }
     }
 

@@ -28,7 +28,6 @@ const logger = require('./utils/logger');
 async function ensureRedisInitialized() {
     try {
         await initializeRedis();
-        logger.info('Redis initialization completed', { service: 'redis' });
     } catch (error) {
         console.error(colors.red(`Redis initialization failed: ${error.message}`));
         logger.error('Failed to initialize Redis', {
@@ -212,7 +211,6 @@ ensureRedisInitialized().then(() => {
                     throw new Error('Redis clients not ready for Socket.IO adapter');
                 }
                 io.adapter(createAdapter(pubClient, subClient));
-                logger.info('Socket.IO Redis adapter initialized', { service: 'socket.io' });
             },
         },
         {

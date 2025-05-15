@@ -11,9 +11,9 @@ module.exports = (sequelize, DataTypes) => {
         lastname: { type: DataTypes.STRING },
         email: { type: DataTypes.STRING, unique: true },
         phone: { type: DataTypes.STRING },
-        location: { type: DataTypes.STRING }, // Kept for compatibility
-        latitude: { type: DataTypes.FLOAT },  // New field for latitude
-        longitude: { type: DataTypes.FLOAT }, // New field for longitude
+        location: { type: DataTypes.STRING },
+        latitude: { type: DataTypes.FLOAT },
+        longitude: { type: DataTypes.FLOAT },
         supervisorID: {
             type: DataTypes.STRING,
             allowNull: true,

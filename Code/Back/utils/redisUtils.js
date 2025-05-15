@@ -11,7 +11,6 @@ class RedisUtils {
         const key = `user:${userId}`;
         await this.redis.hset(key, { ...userData, roles: JSON.stringify(userData.roles || []) });
         await this.redis.expire(key, 86400);
-        logger.info(`Stored user: ${userId}`, { service: 'redis' });
     }
 
     async getUser(userId) {
@@ -28,7 +27,6 @@ class RedisUtils {
     async storeUserWithDetails(userId, userData) {
         const key = `user:details:${userId}`;
         await this.redis.setex(key, 3600, JSON.stringify(userData));
-        logger.info(`Stored user details: ${userId}`, { service: 'redis' });
     }
 
     async getUserWithDetails(userId) {
@@ -40,7 +38,6 @@ class RedisUtils {
     async storeUserPreferences(userId, preferences) {
         const key = `preferences:${userId}`;
         await this.redis.setex(key, 3600, JSON.stringify(preferences));
-        logger.info(`Stored user preferences: ${userId}`, { service: 'redis' });
     }
 
     async getUserPreferences(userId) {
@@ -52,7 +49,6 @@ class RedisUtils {
     async invalidateUserPreferences(userId) {
         const key = `preferences:${userId}`;
         await this.redis.del(key);
-        logger.info(`Invalidated user preferences: ${userId}`, { service: 'redis' });
     }
 
     async publishEvent(channel, data, retries = 3) {

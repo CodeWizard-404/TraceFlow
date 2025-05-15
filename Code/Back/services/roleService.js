@@ -13,13 +13,14 @@ const CLIENT_ID = process.env.KEYCLOAK_CLIENT_ID || 'traceflow-backend';
 
 // Roles that cannot be modified or deleted
 const RESTRICTED_ROLES = [
-    'Super Admin',
-    'Admin',
-    'Manager',
-    'Supervisor',
-    'Purchase Team',
-    'Regional Manager',
-    'Stock Manager',
+    process.env.ROLE_SUPER_ADMIN || 'Super Admin',
+    process.env.ROLE_ADMIN || 'Admin',
+    process.env.ROLE_DIRECTOR || 'Director',
+    process.env.ROLE_SUPERVISOR || 'Supervisor',
+    process.env.ROLE_PURCHASE_TEAM || 'Purchase Team',
+    process.env.ROLE_REGIONAL_MANAGER || 'Regional Manager',
+    process.env.ROLE_STOCK_MANAGER || 'Stock Manager',
+    process.env.ROLE_HR || 'HR',
 ];
 
 // Get admin token for Keycloak
@@ -359,7 +360,7 @@ class RoleService {
             // Default roles configuration
             const defaultRoles = [
                 {
-                    name: 'Super Admin',
+                    name: process.env.ROLE_SUPER_ADMIN,
                     description: 'Role with full administrative privileges',
                     permissions: [
                         // Class: Agent
@@ -487,7 +488,7 @@ class RoleService {
                     ],
                 },
                 {
-                    name: 'Admin',
+                    name: process.env.ROLE_ADMIN,
                     description: null,
                     permissions: [
                         // Class: Agent
@@ -581,7 +582,7 @@ class RoleService {
                     ],
                 },
                 {
-                    name: 'Supervisor',
+                    name: process.env.ROLE_SUPERVISOR,
                     description: null,
                     permissions: [
                         // Class: Agent
@@ -650,7 +651,7 @@ class RoleService {
                     ],
                 },
                 {
-                    name: 'Regional Manager',
+                    name: process.env.ROLE_REGIONAL_MANAGER,
                     description: null,
                     permissions: [
                         // Class: Agent
@@ -719,7 +720,7 @@ class RoleService {
                     ],
                 },
                 {
-                    name: 'Manager',
+                    name: process.env.ROLE_DIRECTOR,
                     description: null,
                     permissions: [
                         // Class: Agent
@@ -772,7 +773,7 @@ class RoleService {
                     ],
                 },
                 {
-                    name: 'Purchase Team',
+                    name: process.env.ROLE_PURCHASE_TEAM,
                     description: null,
                     permissions: [
                         // Class: User
@@ -810,7 +811,7 @@ class RoleService {
                     ],
                 },
                 {
-                    name: 'Stock Manager',
+                    name: process.env.ROLE_STOCK_MANAGER,
                     description: null,
                     permissions: [
                         // Class: Location
@@ -860,7 +861,7 @@ class RoleService {
 
             // Validate permission names
             for (const defaultRole of defaultRoles) {
-                if (defaultRole.name !== 'Super Admin') {
+                if (defaultRole.name !== process.env.ROLE_SUPER_ADMIN) {
                     const invalidPermissions = defaultRole.permissions.filter(
                         (p) => !allPermissionNames.includes(p)
                     );
@@ -902,7 +903,7 @@ class RoleService {
 
                 // Update permissions
                 let permissionIDsToAssign =
-                    defaultRole.name === 'Super Admin'
+                    defaultRole.name === process.env.ROLE_SUPER_ADMIN
                         ? allPermissions.map((p) => p.permissionID)
                         : allPermissions
                             .filter((p) => defaultRole.permissions.includes(p.name))
@@ -914,7 +915,7 @@ class RoleService {
                 const permissionsToRevoke = currentPermissions
                     .filter(
                         (p) =>
-                            defaultRole.name !== 'Super Admin' && !defaultRole.permissions.includes(p.name)
+                            defaultRole.name !== process.env.ROLE_SUPER_ADMIN && !defaultRole.permissions.includes(p.name)
                     )
                     .map((p) => p.permissionID);
 
@@ -927,7 +928,7 @@ class RoleService {
                 );
 
                 if (permissionsToAssign.length > 0) {
-                    const dummyUser = { roles: ['Super Admin'] };
+                    const dummyUser = { roles: [process.env.ROLE_SUPER_ADMIN] };
                     await PermissionService.assignPermissionsToRole(dummyUser, role.roleID, permissionsToAssign, actorID);
                 }
 
@@ -936,7 +937,7 @@ class RoleService {
                     permissionsAssigned: permissionsToAssign.length,
                     permissionsRevoked: permissionsToRevoke.length,
                     totalPermissions:
-                        defaultRole.name === 'Super Admin'
+                        defaultRole.name === process.env.ROLE_SUPER_ADMIN
                             ? allPermissions.length
                             : permissionIDsToAssign.length,
                 });

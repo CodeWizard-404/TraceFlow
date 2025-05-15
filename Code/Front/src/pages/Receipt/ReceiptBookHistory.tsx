@@ -131,8 +131,7 @@ const ReceiptBookHistory: React.FC = () => {
   const getRoleFromTransfer = (entry: ReceiptBookTransfer): string => {
     if (entry.toAgentID) return "Agent";
     if (entry.transferType.includes("Supplier")) return "Supplier";
-    if (entry.transferType.includes("RegionalManager"))
-      return "Regional Manager";
+    if (entry.transferType.includes("RegionalManager")) return "Regional Manager";
     if (entry.transferType.includes("Supervisor")) return "Supervisor";
     if (entry.transferType.includes("StockManager")) return "Stock Manager";
     if (entry.transferType.includes("Archive")) return "Archive";
@@ -153,16 +152,11 @@ const ReceiptBookHistory: React.FC = () => {
       currentRole === prevRole &&
       currentRole !== "Agent" &&
       currentRole !== "Supplier";
-    const isReturn =
-      prevRole === "Supervisor" && currentRole === "Regional Manager";
-    const hasStub = history.some(
-      (e, i) => i < (index || 0) && e.transferType === "StubToSupervisor"
-    );
-    const isDirect =
-      prevRole === "Supervisor" && currentRole === "Stock Manager" && hasStub;
+    const isReturn = prevRole === "Supervisor" && currentRole === "Regional Manager";
+    const hasStub = history.some((e, i) => i < (index || 0) && e.transferType === "StubToSupervisor");
+    const isDirect = prevRole === "Supervisor" && currentRole === "Stock Manager" && hasStub;
 
-    return `${isSameRole ? "same-role" : ""} ${isReturn ? "return" : ""} ${isDirect ? "direct" : ""
-      }`.trim();
+    return `${isSameRole ? "same-role" : ""} ${isReturn ? "return" : ""} ${isDirect ? "direct" : ""}`.trim();
   };
 
   // Get color for a given status or transfer type

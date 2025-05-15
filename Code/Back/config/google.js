@@ -11,6 +11,11 @@ async function initializeGoogleServices() {
             'GOOGLE_CLIENT_SECRET',
             'GOOGLE_REDIRECT_URI',
         ];
+        requiredEnvVars.forEach((envVar) => {
+            if (!process.env[envVar]) {
+                throw new Error(`Missing required environment variable: ${envVar}`);
+            }
+        });
     } catch (error) {
         throw error;
     }
