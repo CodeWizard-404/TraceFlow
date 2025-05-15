@@ -1,6 +1,4 @@
-
-
-
+// timesheetAPI.ts
 import { AxiosError } from "axios";
 import api from "./axiosConfig";
 import {
@@ -36,10 +34,16 @@ export type SuggestTimesheetResponse = Array<{
   }>;
 }>;
 
-// Temporary type to handle wrapped backend response
-type ApiResponse = SuggestTimesheetResponse | { suggestions: SuggestTimesheetResponse };
+// Type for the full suggest timesheet API response
+type SuggestTimesheetApiResponse = {
+  suggestions: SuggestTimesheetResponse;
+  requestId: string;
+};
 
-
+// Type for cancel timesheet suggestion response
+type CancelTimesheetSuggestionResponse = {
+  message: string;
+};
 
 const handleApiError = (error: unknown, defaultMessage: string): string => {
   const axiosError = error as AxiosError<AxiosErrorResponse>;
@@ -54,7 +58,9 @@ const handleApiError = (error: unknown, defaultMessage: string): string => {
     case 403:
       return "You don’t have permission to perform this action.";
     case 404:
-      return "Timesheet not found.";
+      return "Timesheet or request not found.";
+    case 499:
+      return "Request was canceled.";
     case 500:
       return "Something went wrong on our end. Please try again later.";
     default:
@@ -244,7 +250,7 @@ export const suggestTimesheet = async (data: {
     maxVisitsPerAgentPerWeek?: number;
     filters?: Record<string, any>;
   };
-}): Promise<SuggestTimesheetResponse> => {
+}): Promise<{ suggestions: SuggestTimesheetResponse; requestId: string }> => {
   try {
     if (!data.supervisorId || !data.weekNumber || !data.year) {
       throw new Error("Supervisor ID, week number, and year are required.");
@@ -261,22 +267,31 @@ export const suggestTimesheet = async (data: {
         throw new Error("Invalid time interval: startHour must be less than endHour and both must be integers between 0 and 24.");
       }
     }
-    const response = await api.post<ApiResponse>("/timesheets/suggest", data);
+    const response = await api.post<SuggestTimesheetApiResponse>("/timesheets/suggest", data);
     console.log("Raw API response:", JSON.stringify(response.data, null, 2)); // Debug log
-    // Temporary fix: Unwrap { suggestions: [...] } response
-    const suggestions = Array.isArray(response.data)
-      ? response.data
-      : response.data.suggestions && Array.isArray(response.data.suggestions)
-        ? response.data.suggestions
-        : [];
-    if (!Array.isArray(suggestions)) {
-      console.error("Invalid suggestions response: Expected an array", suggestions);
+    if (!response.data.suggestions || !Array.isArray(response.data.suggestions)) {
+      console.error("Invalid suggestions response: Expected an array", response.data);
       throw new Error("Invalid suggestions response: Expected an array");
     }
-    console.log("Processed suggestions:", JSON.stringify(suggestions, null, 2)); // Debug log
-    return suggestions;
+    console.log("Processed suggestions:", JSON.stringify(response.data.suggestions, null, 2)); // Debug log
+    return {
+      suggestions: response.data.suggestions,
+      requestId: response.data.requestId,
+    };
   } catch (error) {
     console.error("Error in suggestTimesheet:", error);
     throw new Error(handleApiError(error, "Unable to generate timesheet suggestions."));
+  }
+};
+
+export const cancelTimesheetSuggestion = async (requestId: string): Promise<CancelTimesheetSuggestionResponse> => {
+  try {
+    if (!requestId) {
+      throw new Error("Request ID is required.");
+    }
+    const response = await api.post<CancelTimesheetSuggestionResponse>(`/timesheets/suggest/cancel/${requestId}`);
+    return response.data;
+  } catch (error) {
+    throw new Error(handleApiError(error, "Unable to cancel timesheet suggestion."));
   }
 };

@@ -1,4 +1,3 @@
-
 /* eslint-disable react-hooks/exhaustive-deps */
 import React, { useEffect, useState, useMemo, useCallback } from "react";
 import { useNavigate } from "react-router-dom";
@@ -18,6 +17,7 @@ import {
     SuggestTimesheetResponse,
 } from "../../apis/timesheetAPI";
 import { getAllUsers, getSupervisorsByUser } from "../../apis/userAPI";
+import { getReasonsByVisitId } from "../../apis/reasonAPI"; // Added import
 import { FaClock, FaMapMarkerAlt, FaRegUser, FaFilter } from "react-icons/fa";
 import TimesheetStatus from "../../models/Enum/TimesheetStatus";
 import VisitStatus from "../../models/Enum/VisitStatus";
@@ -25,7 +25,6 @@ import { useTranslation } from "react-i18next";
 import CalendarSyncButton from "../../components/Google/CalendarSyncButton";
 import TimesheetSuggestionsModal from "../Timesheet/TimesheetSuggestionsModal";
 import { io } from "socket.io-client";
-
 
 const PERMISSIONS = {
     ACCESS_TIMESHEETS: import.meta.env.VITE_PERMISSIONS_ACCESS_TIMESHEETS,
@@ -144,6 +143,7 @@ const Timesheets: React.FC = React.memo(() => {
     const [filteredTimesheets, setFilteredTimesheets] = useState<Timesheet[]>([]);
     const [users, setUsers] = useState<User[]>([]);
     const [generatedVisits, setGeneratedVisits] = useState<GeneratedVisit[]>([]);
+    const [visitReasons, setVisitReasons] = useState<Record<string, VisitReason[]>>({}); // Added state for visit reasons
     const [currentYear, setCurrentYear] = useState(new Date().getFullYear());
     const [currentMonth, setCurrentMonth] = useState(new Date().getMonth());
     const [currentWeek, setCurrentWeek] = useState<number>(0);
@@ -260,6 +260,24 @@ const Timesheets: React.FC = React.memo(() => {
         t,
     ]);
 
+    // Fetch Visit Reasons
+    const fetchVisitReasons = useCallback(async () => {
+        try {
+            const allVisits = timesheets.flatMap(ts => ts.Visits || []);
+            const uniqueVisitIds = [...new Set(allVisits.map(visit => visit.visitID))];
+            const reasonsPromises = uniqueVisitIds.map(visitId => getReasonsByVisitId(visitId));
+            const reasonsResults = await Promise.all(reasonsPromises);
+            const reasonsMap = uniqueVisitIds.reduce((acc, visitId, index) => {
+                acc[visitId] = reasonsResults[index];
+                return acc;
+            }, {} as Record<string, VisitReason[]>);
+            setVisitReasons(reasonsMap);
+        } catch (error) {
+            console.error("Failed to fetch visit reasons:", error);
+            setError(t("timesheets.errors.fetchVisitReasons"));
+        }
+    }, [timesheets, t]);
+
     // Fetch Users (Supervisors)
     const fetchUsers = useCallback(async () => {
         try {
@@ -299,6 +317,13 @@ const Timesheets: React.FC = React.memo(() => {
             socket.disconnect();
         };
     }, [user, fetchTimesheets]);
+
+    // Fetch reasons after timesheets are loaded
+    useEffect(() => {
+        if (timesheets.length > 0) {
+            fetchVisitReasons();
+        }
+    }, [timesheets, fetchVisitReasons]);
 
     // Utility Functions
     const getWeekNumber = useCallback((date: Date): number => {
@@ -375,7 +400,6 @@ const Timesheets: React.FC = React.memo(() => {
     const handleSuggestionsGenerated = useCallback((suggestions: SuggestTimesheetResponse) => {
         const visits: GeneratedVisit[] = suggestions.flatMap(agent =>
             agent.schedule.flatMap(day => {
-                // Normalize date format to DD/MM/YYYY
                 let normalizedDate = day.date;
                 if (day.date.includes("-")) {
                     const [y, m, d] = day.date.split("-").map(Number);
@@ -848,12 +872,6 @@ const Timesheets: React.FC = React.memo(() => {
                                 view: t(`timesheets.viewModes.${viewMode}`),
                             })}
                         </button>
-                        {isSupervisor && filteredTimesheets[0]?.timesheetID && (
-                            <CalendarSyncButton
-                                timesheetId={filteredTimesheets[0].timesheetID}
-                                isSupervisor={!!isSupervisor}
-                            />
-                        )}
                     </div>
                 </header>
 
@@ -1053,25 +1071,33 @@ const Timesheets: React.FC = React.memo(() => {
                 {viewMode === "week" && (
                     <section className="week-view">
                         <div className="week-header">
-                            <button
-                                className="nav-btn"
-                                onClick={() => setCurrentWeek((prev) => prev - 1)}
-                                disabled={currentWeek === 1}
-                                aria-label={t("timesheets.navigation.previousWeek")}
-                            >
-                                <span>←</span>
-                            </button>
-                            <h2>
-                                {t("timesheets.weekView.week")} {weekData.weekNumber}
-                            </h2>
-                            <button
-                                className="nav-btn"
-                                onClick={() => setCurrentWeek((prev) => prev + 1)}
-                                disabled={currentWeek === getWeeksInYear(currentYear)}
-                                aria-label={t("timesheets.navigation.nextWeek")}
-                            >
-                                <span>→</span>
-                            </button>
+                            {isSupervisor && filteredTimesheets[0]?.timesheetID && (
+                                <CalendarSyncButton
+                                    timesheetId={filteredTimesheets[0].timesheetID}
+                                    isSupervisor={!!isSupervisor}
+                                />
+                            )}
+                            <div className="week-header-middle">
+                                <button
+                                    className="nav-btn"
+                                    onClick={() => setCurrentWeek((prev) => prev - 1)}
+                                    disabled={currentWeek === 1}
+                                    aria-label={t("timesheets.navigation.previousWeek")}
+                                >
+                                    <span>←</span>
+                                </button>
+                                <h2>
+                                    {t("timesheets.weekView.week")} {weekData.weekNumber}
+                                </h2>
+                                <button
+                                    className="nav-btn"
+                                    onClick={() => setCurrentWeek((prev) => prev + 1)}
+                                    disabled={currentWeek === getWeeksInYear(currentYear)}
+                                    aria-label={t("timesheets.navigation.nextWeek")}
+                                >
+                                    <span>→</span>
+                                </button>
+                            </div>
                             {isSupervisor && (
                                 <button
                                     className="create-btn"
@@ -1080,28 +1106,6 @@ const Timesheets: React.FC = React.memo(() => {
                                 >
                                     {t("timesheets.actions.generateSuggestions")}
                                 </button>
-                            )}
-                            {isSupervisor && generatedVisits.length > 0 && (
-                                <>
-                                    <button
-                                        className="cancel-btn"
-                                        onClick={handleCancelSuggestions}
-                                        aria-label={t("timesheets.actions.cancelSuggestions")}
-                                    >
-                                        {t("timesheets.actions.cancelSuggestions")}
-                                    </button>
-                                    {(userPermissions.canCreateTimesheets ||
-                                        userPermissions.canCreateSupervisorTimesheets) && (
-                                            <button
-                                                className="create-btn"
-                                                onClick={handleSaveSuggestions}
-                                                disabled={loading}
-                                                aria-label={t("timesheets.actions.saveSuggestions")}
-                                            >
-                                                {loading ? t("timesheets.actions.saving") : t("timesheets.actions.saveSuggestions")}
-                                            </button>
-                                        )}
-                                </>
                             )}
                         </div>
                         <div className="week-details">
@@ -1135,6 +1139,30 @@ const Timesheets: React.FC = React.memo(() => {
                                             {t("timesheets.actions.validate")}
                                         </button>
                                     )}
+
+
+                                {isSupervisor && generatedVisits.length > 0 && (
+                                    <>
+                                        <button
+                                            className="cancel-btn"
+                                            onClick={handleCancelSuggestions}
+                                            aria-label={t("timesheets.actions.cancelSuggestions")}
+                                        >
+                                            {t("timesheets.actions.cancelSuggestions")}
+                                        </button>
+                                        {(userPermissions.canCreateTimesheets ||
+                                            userPermissions.canCreateSupervisorTimesheets) && (
+                                                <button
+                                                    className="create-btn"
+                                                    onClick={handleSaveSuggestions}
+                                                    disabled={loading}
+                                                    aria-label={t("timesheets.actions.saveSuggestions")}
+                                                >
+                                                    {loading ? t("timesheets.actions.saving") : t("timesheets.actions.saveSuggestions")}
+                                                </button>
+                                            )}
+                                    </>
+                                )}
                             </div>
                             <div className="days-grid">
                                 {weekData.days.map((day) => {
@@ -1210,8 +1238,6 @@ const Timesheets: React.FC = React.memo(() => {
                                                                     )?.lastname || ""}
                                                                 </p>
                                                             )}
-
-
                                                             <hr className="hr" />
                                                             <div className="visit-header">
                                                                 <span className="visit-time">
@@ -1228,15 +1254,15 @@ const Timesheets: React.FC = React.memo(() => {
                                                                 {('location' in visit ? visit.location : visit.location) || t("timesheets.locationTBD")}
                                                             </p>
                                                             {'time' in visit ? (
-                                                                visit.Reasons && visit.Reasons.length > 0 && (
+                                                                visitReasons[visit.visitID] && visitReasons[visit.visitID].length > 0 && (
                                                                     <p className="visit-reasons">
-                                                                        {visit.Reasons.map((r: VisitReason) => r.item).join(", ")}
+                                                                        {visitReasons[visit.visitID].map((r) => r.item).join(", ")}
                                                                     </p>
                                                                 )
                                                             ) : (
                                                                 visit.reasons.length > 0 && (
                                                                     <p className="visit-reasons">
-                                                                        {visit.reasons.map((r: { id: string; item: string }) => r.item).join(", ")}
+                                                                        {visit.reasons.map((r) => r.item).join(", ")}
                                                                     </p>
                                                                 )
                                                             )}
@@ -1348,19 +1374,18 @@ const Timesheets: React.FC = React.memo(() => {
                                             {('location' in visit ? visit.location : visit.location) || t("timesheets.locationTBD")}
                                         </p>
                                         {'time' in visit ? (
-                                            visit.Reasons && visit.Reasons.length > 0 && (
+                                            visitReasons[visit.visitID] && visitReasons[visit.visitID].length > 0 && (
                                                 <p className="visit-reasons">
-                                                    {visit.Reasons.map((r: VisitReason) => r.item).join(", ")}
+                                                    {visitReasons[visit.visitID].map((r) => r.item).join(", ")}
                                                 </p>
                                             )
                                         ) : (
                                             visit.reasons.length > 0 && (
                                                 <p className="visit-reasons">
-                                                    {visit.reasons.map((r: { id: string; item: string }) => r.item).join(", ")}
+                                                    {visit.reasons.map((r) => r.item).join(", ")}
                                                 </p>
                                             )
                                         )}
-
                                     </div>
                                 ))
                             ) : (

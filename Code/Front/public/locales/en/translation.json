@@ -325,7 +325,9 @@
       "current": "Current {{view}}",
       "viewReceiptBooks": "View Receipt Books",
       "filterSupervisors": "Filter Supervisors",
-      "validateTimesheet": "Validate Entire Timesheet"
+      "validateTimesheet": "Validate Entire Timesheet",
+      "generateSuggestions": "Generate Suggestions",
+      "validate": "Validate"
     },
     "filter": {
       "searchPlaceholder": "Search by name or phone...",
@@ -396,6 +398,31 @@
       "weekCard": "View week {{weekNumber}} details",
       "dayTile": "View visits for {{weekday}} {{day}}",
       "visitCard": "View visit details for {{time}} at {{location}}"
+    },
+    "suggestions": {
+      "title": "Suggestions",
+      "governorateIds": "Governorates",
+      "selectGovernorates": "Select governorates",
+      "delegationIds": "Delegations",
+      "selectDelegations": "Select delegations",
+      "agentIds": "Agents",
+      "selectAgents": "Select agents",
+      "supervisorLocation": "Supervisor Location",
+      "preferredDays": "Preferred Days",
+      "selectDays": "Select preferred days",
+      "timeInterval": "Time Interval",
+      "maxVisitsPerAgentPerWeek": "Max Visits Per Agent Per Week",
+      "generate": "Generate",
+      "cancel": "Cancel"
+    },
+    "days": {
+      "Monday": "Monday",
+      "Tuesday": "Tuesday",
+      "Wednesday": "Wednesday",
+      "Thursday": "Thursday",
+      "Friday": "Friday",
+      "Saturday": "Saturday",
+      "Sunday": "Sunday"
     }
   },
   "timesheetForm": {

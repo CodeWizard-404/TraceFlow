@@ -2,18 +2,18 @@ import React, { useState } from 'react';
 import { syncVisitToCalendar, SyncCalendarResponse } from '../../apis/visitAPI';
 import { syncTimesheetToCalendar, SyncTimesheetCalendarResponse } from '../../apis/timesheetAPI';
 import { toast } from 'react-toastify';
+import './Calendar.css';
 
 interface CalendarSyncButtonProps {
-    visitId?: string; // For single visit sync
-    timesheetId?: string; // For timesheet sync
+    visitId?: string;
+    timesheetId?: string;
     isSupervisor: boolean;
-    hasCalendarEvent?: boolean; // Indicates if the visit is already synced
+    hasCalendarEvent?: boolean;
 }
 
 const CalendarSyncButton: React.FC<CalendarSyncButtonProps> = ({ visitId, timesheetId, isSupervisor, hasCalendarEvent }) => {
     const [loading, setLoading] = useState(false);
 
-    // Handle timesheet sync
     const handleTimesheetSync = async () => {
         if (!isSupervisor || !timesheetId) return;
         setLoading(true);
@@ -31,7 +31,6 @@ const CalendarSyncButton: React.FC<CalendarSyncButtonProps> = ({ visitId, timesh
         }
     };
 
-    // Handle single visit sync
     const handleVisitSync = async () => {
         if (!visitId || !isSupervisor) return;
         setLoading(true);
@@ -47,26 +46,24 @@ const CalendarSyncButton: React.FC<CalendarSyncButtonProps> = ({ visitId, timesh
         }
     };
 
-    // Render timesheet sync button
     if (timesheetId && isSupervisor && !visitId) {
         return (
             <button
                 onClick={handleTimesheetSync}
                 disabled={loading}
-                className="bg-green-500 text-white px-4 py-2 rounded hover:bg-green-600 disabled:bg-gray-400"
+                className="sync-btn"
             >
                 {loading ? 'Syncing...' : 'Sync Timesheet to Calendar'}
             </button>
         );
     }
 
-    // Render single visit sync button
     if (visitId && isSupervisor) {
         return (
             <button
                 onClick={handleVisitSync}
                 disabled={loading || hasCalendarEvent}
-                className="bg-green-500 text-white px-4 py-2 rounded hover:bg-green-600 disabled:bg-gray-400"
+                className="sync-btn"
             >
                 {loading ? 'Syncing...' : hasCalendarEvent ? 'Synced' : 'Sync to Calendar'}
             </button>

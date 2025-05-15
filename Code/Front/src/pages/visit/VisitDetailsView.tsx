@@ -16,7 +16,11 @@ import {
     FaCamera,
     FaComment,
     FaTimes,
+    FaCalendarCheck,
 } from "react-icons/fa";
+import { TbCalendarTime } from "react-icons/tb";
+import { BsPersonLinesFill } from "react-icons/bs";
+
 import "./VisitDetails.css";
 import { useAuth } from "../../context/AuthContext";
 import VisitStatus from "../../models/Enum/VisitStatus";
@@ -410,7 +414,7 @@ const VisitDetailsView: React.FC = () => {
                 <div className="visit-details-grid">
                     <div className="visit-details-card">
                         <h2>
-                            <FaCalendar /> {t("visitDetails.whenWhere.title")}
+                            <TbCalendarTime /> {t("visitDetails.whenWhere.title")}
                         </h2>
                         <div className="card-content">
                             <p>
@@ -424,10 +428,16 @@ const VisitDetailsView: React.FC = () => {
                                 <FaMapMarkerAlt />{" "}
                                 {visit.location || t("visitDetails.whenWhere.na")}
                             </p>
-                            {visit.calendarEventId && (
+                            {visit.calendarEventId ? (
                                 <p>
-                                    <FaCalendar /> Synced to Google Calendar
+                                    <FaCalendarCheck /> Synced to Google Calendar
                                 </p>
+                            ) : (
+                                <CalendarSyncButton
+                                    visitId={visit.visitID}
+                                    isSupervisor={!!isSupervisor}
+                                    hasCalendarEvent={!!visit.calendarEventId}
+                                />
                             )}
                         </div>
                     </div>
@@ -440,7 +450,7 @@ const VisitDetailsView: React.FC = () => {
                             {agent ? (
                                 <>
                                     <p>
-                                        <FaUser /> {agent.name} {agent.lastname}
+                                        <BsPersonLinesFill />  {agent.name} {agent.lastname}
                                     </p>
                                     <p>
                                         <FaPhone /> {agent.phone || t("visitDetails.agent.na")}
@@ -581,13 +591,6 @@ const VisitDetailsView: React.FC = () => {
                                 {t("visitDetails.actions.reject")}
                             </button>
                         </div>
-                    )}
-                    {userPermissions.canEditTimesheets && (
-                        <CalendarSyncButton
-                            visitId={visit.visitID}
-                            isSupervisor={!!isSupervisor}
-                            hasCalendarEvent={!!visit.calendarEventId}
-                        />
                     )}
                 </div>
 

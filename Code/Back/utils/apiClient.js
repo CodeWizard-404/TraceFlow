@@ -1,3 +1,4 @@
+// apiClient.js
 const axios = require('axios');
 const cache = require('./cache');
 
@@ -33,12 +34,24 @@ async function makeOllamaApiCall(method, endpoint, data = {}, config = {}) {
 
     if (method.toLowerCase() === 'get') {
         return await cacheInstance.getOrSet(cacheKey, async () => {
-            const response = await ollamaApiClient({ method, url, data, ...config, retry: parseInt(process.env.OLLAMA_MAX_RETRIES) || 3 });
+            const response = await ollamaApiClient({
+                method,
+                url,
+                data,
+                ...config,
+                retry: parseInt(process.env.OLLAMA_MAX_RETRIES) || 3,
+            });
             return response.data;
         }, 'ollama');
     }
 
-    const response = await ollamaApiClient({ method, url, data, ...config, retry: parseInt(process.env.OLLAMA_MAX_RETRIES) || 3 });
+    const response = await ollamaApiClient({
+        method,
+        url,
+        data,
+        ...config,
+        retry: parseInt(process.env.OLLAMA_MAX_RETRIES) || 3,
+    });
     return response.data;
 }
 

@@ -1,0 +1,55 @@
+@import url('https://fonts.googleapis.com/css2?family=Inter:wght@400;600;700&display=swap');
+
+.sync-btn {
+  padding: 0.625rem 1.25rem;
+  font-size: 0.875rem;
+  font-weight: 600;
+  text-transform: uppercase;
+  letter-spacing: 0.03125rem;
+  background: #4cb1c7;
+  color: #fff;
+  border: none;
+  border-radius: 3.125rem;
+  cursor: pointer;
+  transition: all 0.3s ease;
+  font-family: 'Inter', sans-serif;
+  box-shadow: 0 0.25rem 0.75rem rgba(76, 177, 199, 0.3);
+}
+
+.sync-btn:hover {
+  background: #3a8fa2;
+}
+
+.sync-btn:disabled {
+  background: #d1d5db;
+  cursor: not-allowed;
+}
+
+body.dark .sync-btn {
+  background: #63b3ed;
+  color: #1f2937;
+}
+
+body.dark .sync-btn:hover {
+  background: #4b9cd3;
+}
+
+body.dark .sync-btn:disabled {
+  background: #4b5563;
+  color: #6b7280;
+}
+
+/* Responsive Design */
+@media (max-width: 768px) {
+  .sync-btn {
+    padding: 0.625rem 1.125rem;
+    font-size: 0.8125rem;
+  }
+}
+
+@media (max-width: 480px) {
+  .sync-btn {
+    padding: 0.5rem 1rem;
+    font-size: 0.75rem;
+  }
+}

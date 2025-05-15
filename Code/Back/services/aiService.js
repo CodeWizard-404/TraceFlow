@@ -1,8 +1,14 @@
+// aiService.js
 const { makeOllamaApiCall } = require('../utils/apiClient');
 const logger = require('../utils/logger');
 const { initializeAI } = require('../config/ai');
 const { AIConfig, User, Agent, Reason, Checklist, Delegation } = require('../models');
 const { Op } = require('sequelize');
+const NodeCache = require('node-cache');
+const JSONStream = require('JSONStream');
+
+// Initialize cache with 1-hour TTL
+const cache = new NodeCache({ stdTTL: 3600 });
 
 const ERROR_MESSAGES = {
     INVALID_SUPERVISOR: 'Invalid supervisor ID.',
@@ -16,11 +22,9 @@ const ERROR_MESSAGES = {
     INVALID_AI_RESPONSE: 'Invalid response from AI service.',
     NO_AGENTS_PROVIDED: 'No agents available for timesheet suggestions.',
     INVALID_TIME_INTERVAL: 'Invalid time interval provided.',
+    REQUEST_CANCELED: 'AI request was canceled.',
 };
 
-/**
- * Service for handling AI-related operations.
- */
 class AIService {
     /**
      * Calculate the start date of a given ISO week number and year.
@@ -29,23 +33,16 @@ class AIService {
      * @returns {Date} Start date of the week (Monday).
      */
     static getWeekStartDate(weekNumber, year) {
-        // Validate inputs
         if (!weekNumber || weekNumber < 1 || weekNumber > 53 || !year || year < 2000 || year > 2100) {
             const error = new Error(ERROR_MESSAGES.INVALID_WEEK_NUMBER);
             error.status = 400;
             throw error;
         }
-
-        // Create a date for January 4th of the given year (a reliable date in week 1)
         const jan4 = new Date(Date.UTC(year, 0, 4));
-        // Adjust to the first Monday of the year
-        const dayOfWeek = jan4.getUTCDay() || 7; // Convert Sunday (0) to 7
+        const dayOfWeek = jan4.getUTCDay() || 7;
         const firstMonday = new Date(Date.UTC(year, 0, 4 - (dayOfWeek - 1)));
-
-        // Calculate the start of the desired week
         const weekStart = new Date(firstMonday);
         weekStart.setUTCDate(firstMonday.getUTCDate() + (weekNumber - 1) * 7);
-
         return weekStart;
     }
 
@@ -70,7 +67,7 @@ class AIService {
      * @returns {number} Distance in kilometers.
      */
     static calculateDistance(lat1, lon1, lat2, lon2) {
-        const R = 6371; // Earth's radius in km
+        const R = 6371;
         const dLat = ((lat2 - lat1) * Math.PI) / 180;
         const dLon = ((lon2 - lon1) * Math.PI) / 180;
         const a =
@@ -81,24 +78,51 @@ class AIService {
     }
 
     /**
+     * Get cached reasons.
+     * @returns {Promise<Array>} Cached or fetched reasons.
+     */
+    static async getCachedReasons() {
+        let reasons = cache.get('reasons');
+        if (!reasons) {
+            reasons = await Reason.findAll({ attributes: ['reasonID', 'item'] });
+            cache.set('reasons', reasons);
+        }
+        return reasons;
+    }
+
+    /**
+     * Get cached checklists.
+     * @returns {Promise<Array>} Cached or fetched checklists.
+     */
+    static async getCachedChecklists() {
+        let checklists = cache.get('checklists');
+        if (!checklists) {
+            checklists = await Checklist.findAll({ attributes: ['checklistID', 'item'] });
+            cache.set('checklists', checklists);
+        }
+        return checklists;
+    }
+
+    /**
      * Generate timesheet suggestions using the AI model.
      * @param {string} supervisorId - The supervisor's user ID.
      * @param {number} weekNumber - The ISO week number (1-53).
      * @param {number} year - The year (e.g., 2025).
      * @param {Object} timesheetData - Data including delegation IDs, agent IDs, criteria, preferred days, time interval, and max visits.
+     * @param {AbortController} [controller] - Optional AbortController to cancel the request.
      * @returns {Promise<Array>} List of timesheet suggestions.
      */
-    static async generateTimesheetSuggestions(supervisorId, weekNumber, year, timesheetData) {
+    static async generateTimesheetSuggestions(supervisorId, weekNumber, year, timesheetData, controller = new AbortController()) {
         try {
             // Validate supervisor
-            const supervisor = await User.findByPk(supervisorId);
+            const supervisor = await User.findByPk(supervisorId, { attributes: ['userID'] });
             if (!supervisor) {
                 const error = new Error(ERROR_MESSAGES.INVALID_SUPERVISOR);
                 error.status = 404;
                 throw error;
             }
 
-            // Validate weekNumber and year (already validated in getWeekStartDate)
+            // Validate weekNumber and year
             const weekStart = this.getWeekStartDate(weekNumber, year);
             const weekStartString = weekStart.toISOString().split('T')[0];
 
@@ -110,6 +134,7 @@ class AIService {
                 preferredDays = [],
                 timeInterval = { startHour: 8, endHour: 20 },
                 maxVisitsPerAgentPerWeek = 1,
+                supervisorLocation = { latitude: 36.8065, longitude: 10.1815 }
             } = timesheetData;
 
             // Validate time interval
@@ -129,6 +154,7 @@ class AIService {
             if (delegationIds.length > 0) {
                 const delegations = await Delegation.findAll({
                     where: { delegationID: { [Op.in]: delegationIds } },
+                    attributes: ['delegationID']
                 });
                 if (delegations.length !== delegationIds.length) {
                     const error = new Error(ERROR_MESSAGES.INVALID_DELEGATIONS);
@@ -137,19 +163,32 @@ class AIService {
                 }
             }
 
-            // Fetch agents based on agent IDs, delegation IDs, or all agents under supervisor
-            const agentQuery = {
-                where: { supervisorID: supervisorId },
-                include: [{ model: Delegation }],
-            };
-            if (agentIds.length > 0) {
-                agentQuery.where.agentID = { [Op.in]: agentIds };
-            }
-            if (delegationIds.length > 0) {
-                agentQuery.where.delegationID = { [Op.in]: delegationIds };
-            }
-            const agents = await Agent.findAll(agentQuery);
-            const agentData = agents.map(agent => ({
+            // Fetch data in parallel
+            const [agents, reasons, checklists] = await Promise.all([
+                Agent.findAll({
+                    where: {
+                        supervisorID: supervisorId,
+                        ...(agentIds.length > 0 && { agentID: { [Op.in]: agentIds } }),
+                        ...(delegationIds.length > 0 && { delegationID: { [Op.in]: delegationIds } })
+                    },
+                    attributes: ['agentID', 'name', 'lastname', 'location', 'latitude', 'longitude', 'delegationID'],
+                    include: [{ model: Delegation, attributes: ['name'] }]
+                }),
+                this.getCachedReasons(),
+                this.getCachedChecklists()
+            ]);
+
+            // Pre-filter agents by distance (rule-based filtering, max 50km)
+            const filteredAgents = agents.filter(agent =>
+                this.calculateDistance(
+                    supervisorLocation.latitude,
+                    supervisorLocation.longitude,
+                    agent.latitude,
+                    agent.longitude
+                ) < 50
+            );
+
+            const agentData = filteredAgents.map(agent => ({
                 agentID: agent.agentID,
                 name: agent.name,
                 lastname: agent.lastname,
@@ -157,14 +196,12 @@ class AIService {
                 latitude: agent.latitude,
                 longitude: agent.longitude,
                 delegation: agent.Delegation?.name || 'Unknown',
-                weeklyTarget: agent.weeklyTarget || 0,
             }));
 
-            // Validate that agents exist
             if (agentData.length === 0) {
                 logger.warn('No agents found for timesheet suggestions', {
                     service: 'ai',
-                    metadata: { supervisorId, weekNumber, year },
+                    metadata: { supervisorId, weekNumber, year }
                 });
                 return [];
             }
@@ -176,128 +213,121 @@ class AIService {
                 throw error;
             }
 
-            // Fetch reasons and checklists from database
-            const reasons = await Reason.findAll();
-            const checklists = await Checklist.findAll();
-
-            // Create lookup maps for reasons and checklists
+            // Create lookup maps
             const reasonMap = {};
-            reasons.forEach(r => {
-                reasonMap[r.reasonID] = { id: r.reasonID, item: r.item };
-            });
+            reasons.forEach(r => { reasonMap[r.reasonID] = { id: r.reasonID, item: r.item }; });
             const checklistMap = {};
-            checklists.forEach(c => {
-                checklistMap[c.checklistID] = { id: c.checklistID, item: c.item };
-            });
+            checklists.forEach(c => { checklistMap[c.checklistID] = { id: c.checklistID, item: c.item }; });
 
-            // Define reason-to-checklist mapping
+            // Reason-to-checklist mapping
             const reasonChecklistMapping = {
                 'Routine Inspection': ['Safety Checklist', 'Equipment Checklist'],
                 'Maintenance': ['Maintenance Checklist', 'Inventory Checklist'],
                 'Training': ['Training Checklist'],
                 'Audit': ['Audit Checklist', 'Compliance Checklist'],
-                'Customer complaint': ['Test security cameras', 'Review employee attendance'],
+                'Customer complaint': ['Test security cameras', 'Review employee attendance']
             };
 
-            // Determine days for visits (use preferredDays or all 7 days)
+            // Determine days for visits
             const daysOfWeek = preferredDays.length > 0
                 ? preferredDays.map((day, index) => this.getDateString(weekStart, index))
                 : Array.from({ length: 7 }, (_, i) => this.getDateString(weekStart, i));
 
-            // Get supervisor's location
-            const supervisorLocation = timesheetData.supervisorLocation || { latitude: 36.8065, longitude: 10.1815 };
+            // Precompute distances
+            const distanceMap = {};
+            agentData.forEach(agent => {
+                distanceMap[agent.agentID] = this.calculateDistance(
+                    supervisorLocation.latitude,
+                    supervisorLocation.longitude,
+                    agent.latitude,
+                    agent.longitude
+                );
+            });
+
+            // Check cache for AI response
+            const cacheKey = `${supervisorId}-${weekNumber}-${year}-${JSON.stringify(timesheetData)}`;
+            let suggestions = cache.get(cacheKey);
+            if (suggestions) {
+                logger.info('Returning cached timesheet suggestions', {
+                    service: 'ai',
+                    metadata: { supervisorId, weekNumber, year }
+                });
+                return suggestions;
+            }
 
             const aiConfig = await initializeAI();
-            const config = (await AIConfig.findOne({ where: { supervisorId } })) || aiConfig;
-            const prompt = `Generate up to ${config.timesheetMaxSuggestions} timesheet suggestions for supervisor ${supervisorId} for the week ${weekNumber} of ${year} starting on ${weekStartString}. Each suggestion assigns visits to agents, respecting the criteria: ${JSON.stringify(criteria)}. Optimize based on agent locations, delegation assignments, and weekly targets. Use the following data:
-- Agents: ${JSON.stringify(agentData)}
-- Reasons: ${JSON.stringify(reasons.map(r => ({ id: r.reasonID, item: r.item })))}
-- Checklists: ${JSON.stringify(checklists.map(c => ({ id: c.checklistID, item: c.item })))}
-- Dates: ${JSON.stringify(daysOfWeek)}
-- Supervisor Location: ${JSON.stringify(supervisorLocation)}
-- Time Interval: ${JSON.stringify(timeInterval)}
-- Max Visits Per Agent Per Week: ${maxVisitsPerAgentPerWeek}
+            const config = (await AIConfig.findOne({ where: { supervisorId }, attributes: ['modelName', 'timesheetMaxSuggestions'] })) || aiConfig;
 
-Return the response as a JSON array of objects, where each object has the following structure:
-{
-  "agentID": "string",
-  "schedule": [
-    {
-      "date": "string (DD/MM/YYYY, e.g., 20/05/2025)",
-      "visits": [
-        {
-          "startTime": "string (HH:MM AM/PM)",
-          "location": "string",
-          "latitude": "number",
-          "longitude": "number",
-          "reasons": [{"id": "string", "item": "string"}],
-          "checklists": [{"id": "string", "item": "string"}]
-        }
-      ]
-    }
-  ]
-}
-
-For each date, sort visits by distance from the supervisor's location (${supervisorLocation.latitude}, ${supervisorLocation.longitude}), then by proximity to the previous visit. Use the Haversine formula for distance calculations. Ensure reasons and checklists are selected from the provided lists. Assign checklists based on the reasons selected, using the following mapping:
-${JSON.stringify(reasonChecklistMapping)}
-If a reason has no specific checklist mapping, select relevant checklists from the provided list. Allow multiple reasons and checklists per visit. Ensure visit start times are within the specified time interval (${timeInterval.startHour}:00 to ${timeInterval.endHour}:00). Limit each agent to a maximum of ${maxVisitsPerAgentPerWeek} visits per week. If insufficient data (e.g., no agents, reasons, or checklists) is provided, return an empty JSON array []. Do not include any explanatory text or examples; return only the JSON array of suggestions.`;
+            // Simplified prompt
+            const prompt = `Generate up to ${config.timesheetMaxSuggestions} timesheet suggestions for supervisor ${supervisorId} for week ${weekNumber} of ${year} starting ${weekStartString}.
+- Agents: ${agentData.map(a => `${a.agentID}:${a.latitude},${a.longitude}`).join(';')}
+- Reasons: ${reasons.map(r => `${r.reasonID}:${r.item}`).join(';')}
+- Checklists: ${checklists.map(c => `${c.checklistID}:${c.item}`).join(';')}
+- Dates: ${daysOfWeek.join(',')}
+- Supervisor Location: ${supervisorLocation.latitude},${supervisorLocation.longitude}
+- Time Interval: ${timeInterval.startHour}:00-${timeInterval.endHour}:00
+- Max Visits Per Agent: ${maxVisitsPerAgentPerWeek}
+- Criteria: ${JSON.stringify(criteria)}
+Return a JSON array of objects: [{"agentID":"string","schedule":[{"date":"DD/MM/YYYY","visits":[{"startTime":"HH:MM AM/PM","location":"string","latitude":number,"longitude":number,"reasons":[{"id":"string","item":"string"}],"checklists":[{"id":"string","item":"string"}]}]}]}]
+Sort visits by distance from supervisor using Haversine formula. Assign checklists per reason: ${JSON.stringify(reasonChecklistMapping)}. Ensure times within interval. Return empty array if insufficient data.`;
 
             const payload = {
                 model: config.modelName,
                 prompt,
-                stream: false,
+                stream: false
             };
 
             logger.info('Sending request to Ollama API', {
                 service: 'ai',
-                metadata: { supervisorId, weekNumber, year, payload },
+                metadata: { supervisorId, weekNumber, year }
             });
 
-            const response = await makeOllamaApiCall('post', '/generate', payload);
+            // Pass the AbortSignal to the API call
+            const response = await makeOllamaApiCall('post', '/generate', payload, { signal: controller.signal });
 
             logger.debug('Ollama API response', {
                 service: 'ai',
-                metadata: { supervisorId, weekNumber, year, response },
+                metadata: { supervisorId, weekNumber, year }
             });
 
-            // Validate response
             if (!response || !response.response) {
                 throw new Error(ERROR_MESSAGES.INVALID_AI_RESPONSE);
             }
 
-            // Parse the response
-            let suggestions;
+            // Stream parse response
+            suggestions = [];
             try {
-                suggestions = JSON.parse(response.response);
+                suggestions = JSON.parse(response.response); // Directly parse the response
             } catch (parseError) {
-                logger.error('Failed to parse AI response as JSON', {
-                    error: parseError.message,
+                logger.error('Failed to parse AI response', {
                     service: 'ai',
-                    metadata: { supervisorId, weekNumber, year, response: response.response },
+                    metadata: { supervisorId, weekNumber, year, error: parseError.message }
                 });
-                return [];
+                throw new Error(ERROR_MESSAGES.INVALID_AI_RESPONSE);
             }
 
-            // Handle case where response is wrapped in { suggestions: [...] }
-            if (!Array.isArray(suggestions) && suggestions.suggestions && Array.isArray(suggestions.suggestions)) {
-                suggestions = suggestions.suggestions;
-            }
-
-            // Validate suggestions
+            // Validate suggestions format
             if (!Array.isArray(suggestions)) {
-                logger.error('AI response is not an array', {
-                    service: 'ai',
-                    metadata: { supervisorId, weekNumber, year, suggestions },
-                });
-                return [];
+                if (suggestions.suggestions && Array.isArray(suggestions.suggestions)) {
+                    suggestions = suggestions.suggestions;
+                } else {
+                    logger.error('AI response is not an array', {
+                        service: 'ai',
+                        metadata: { supervisorId, weekNumber, year, suggestions }
+                    });
+                    return [];
+                }
             }
 
-            // Transform suggestions to ensure reasons and checklists are objects
+            // Cache AI response
+            cache.set(cacheKey, suggestions);
+
+            // Transform suggestions
             const transformedSuggestions = suggestions.map(suggestion => {
                 if (!suggestion.agentID || !Array.isArray(suggestion.schedule)) {
                     logger.warn('Invalid suggestion structure, skipping', {
                         service: 'ai',
-                        metadata: { supervisorId, weekNumber, year, suggestion },
+                        metadata: { supervisorId, weekNumber, year, suggestion }
                     });
                     return null;
                 }
@@ -307,80 +337,56 @@ If a reason has no specific checklist mapping, select relevant checklists from t
                         if (!day.date || !Array.isArray(day.visits)) {
                             logger.warn('Invalid schedule structure, skipping day', {
                                 service: 'ai',
-                                metadata: { supervisorId, weekNumber, year, day },
+                                metadata: { supervisorId, weekNumber, year, day }
                             });
                             return null;
                         }
                         return {
                             date: day.date,
                             visits: day.visits
-                                .map(visit => {
-                                    // Transform reasons (strings to objects)
-                                    const transformedReasons = Array.isArray(visit.reasons)
-                                        ? visit.reasons.map(reason => {
-                                            if (typeof reason === 'string' && reasonMap[reason]) {
-                                                return reasonMap[reason];
-                                            }
-                                            return reason; // Already an object or invalid
-                                        }).filter(r => r && r.id && r.item)
-                                        : [];
-
-                                    // Transform checklists (strings to objects)
-                                    const transformedChecklists = Array.isArray(visit.checklists)
-                                        ? visit.checklists.map(checklist => {
-                                            if (typeof checklist === 'string' && checklistMap[checklist]) {
-                                                return checklistMap[checklist];
-                                            }
-                                            return checklist; // Already an object or invalid
-                                        }).filter(c => c && c.id && c.item)
-                                        : [];
-
-                                    return {
-                                        startTime: visit.startTime,
-                                        location: visit.location,
-                                        latitude: visit.latitude,
-                                        longitude: visit.longitude,
-                                        reasons: transformedReasons,
-                                        checklists: transformedChecklists,
-                                    };
-                                })
-                                .sort((a, b) => {
-                                    const distA = this.calculateDistance(
-                                        supervisorLocation.latitude,
-                                        supervisorLocation.longitude,
-                                        a.latitude || supervisorLocation.latitude,
-                                        a.longitude || supervisorLocation.longitude
-                                    );
-                                    const distB = this.calculateDistance(
-                                        supervisorLocation.latitude,
-                                        supervisorLocation.longitude,
-                                        b.latitude || supervisorLocation.latitude,
-                                        b.longitude || supervisorLocation.longitude
-                                    );
-                                    return distA - distB;
-                                })
-                                .filter(visit => visit.reasons.length > 0 && visit.checklists.length > 0),
+                                .map(visit => ({
+                                    startTime: visit.startTime,
+                                    location: visit.location,
+                                    latitude: visit.latitude,
+                                    longitude: visit.longitude,
+                                    reasons: Array.isArray(visit.reasons)
+                                        ? visit.reasons.map(reason => typeof reason === 'string' && reasonMap[reason] ? reasonMap[reason] : reason)
+                                            .filter(r => r && r.id && r.item)
+                                        : [],
+                                    checklists: Array.isArray(visit.checklists)
+                                        ? visit.checklists.map(checklist => typeof checklist === 'string' && checklistMap[checklist] ? checklistMap[checklist] : checklist)
+                                            .filter(c => c && c.id && c.item)
+                                        : []
+                                }))
+                                .sort((a, b) => distanceMap[suggestion.agentID] - distanceMap[suggestion.agentID] || // Use precomputed distance
+                                    this.calculateDistance(a.latitude, a.longitude, b.latitude, b.longitude))
+                                .filter(visit => visit.reasons.length > 0 && visit.checklists.length > 0)
                         };
-                    }).filter(day => day && day.visits.length > 0),
+                    }).filter(day => day && day.visits.length > 0)
                 };
             }).filter(suggestion => suggestion && suggestion.schedule.length > 0);
 
             logger.info('Timesheet suggestions generated', {
                 service: 'ai',
-                metadata: { supervisorId, weekNumber, year, suggestionCount: transformedSuggestions.length },
-            });
-            logger.debug('Final transformed suggestions', {
-                service: 'ai',
-                metadata: { supervisorId, weekNumber, year, suggestions: transformedSuggestions },
+                metadata: { supervisorId, weekNumber, year, suggestionCount: transformedSuggestions.length }
             });
 
             return transformedSuggestions;
         } catch (error) {
+            if (error.name === 'AbortError') {
+                logger.info('AI request canceled', {
+                    service: 'ai',
+                    metadata: { supervisorId, weekNumber, year }
+                });
+                const abortError = new Error(ERROR_MESSAGES.REQUEST_CANCELED);
+                abortError.status = 499; // Client Closed Request
+                throw abortError;
+            }
             logger.error('Failed to generate timesheet suggestions', {
                 error: error.message,
                 stack: error.stack,
                 service: 'ai',
-                metadata: { supervisorId, weekNumber, year },
+                metadata: { supervisorId, weekNumber, year }
             });
             throw error.message in ERROR_MESSAGES
                 ? error
@@ -392,9 +398,10 @@ If a reason has no specific checklist mapping, select relevant checklists from t
      * Detect anomalies in the provided data using the AI model.
      * @param {string} dataType - Type of data (e.g., timesheet, visit).
      * @param {Array} data - Data to analyze.
+     * @param {AbortController} [controller] - Optional AbortController to cancel the request.
      * @returns {Promise<Array>} List of detected anomalies.
      */
-    static async detectAnomalies(dataType, data) {
+    static async detectAnomalies(dataType, data, controller = new AbortController()) {
         try {
             const validDataTypes = ['timesheet', 'visit', 'receipt'];
             if (!dataType || !validDataTypes.includes(dataType)) {
@@ -419,7 +426,7 @@ If a reason has no specific checklist mapping, select relevant checklists from t
                 stream: false,
             };
 
-            const response = await makeOllamaApiCall('post', '/generate', payload);
+            const response = await makeOllamaApiCall('post', '/generate', payload, { signal: controller.signal });
 
             if (!response || !response.response) {
                 throw new Error(ERROR_MESSAGES.INVALID_AI_RESPONSE);
@@ -452,6 +459,15 @@ If a reason has no specific checklist mapping, select relevant checklists from t
 
             return anomalies;
         } catch (error) {
+            if (error.name === 'AbortError') {
+                logger.info('Anomaly detection request canceled', {
+                    service: 'ai',
+                    metadata: { dataType }
+                });
+                const abortError = new Error(ERROR_MESSAGES.REQUEST_CANCELED);
+                abortError.status = 499;
+                throw abortError;
+            }
             logger.error('Failed to detect anomalies', {
                 error: error.message,
                 stack: error.stack,
@@ -468,9 +484,10 @@ If a reason has no specific checklist mapping, select relevant checklists from t
      * Generate a report using the AI model.
      * @param {Object} filters - Filters for the report (e.g., date range, regions).
      * @param {string} format - Report format (pdf or excel).
+     * @param {AbortController} [controller] - Optional AbortController to cancel the request.
      * @returns {Promise<Object>} Generated report data.
      */
-    static async generateReport(filters, format) {
+    static async generateReport(filters, format, controller = new AbortController()) {
         try {
             if (!filters || typeof filters !== 'object') {
                 const error = new Error(ERROR_MESSAGES.INVALID_FILTERS);
@@ -494,7 +511,7 @@ If a reason has no specific checklist mapping, select relevant checklists from t
                 stream: false,
             };
 
-            const response = await makeOllamaApiCall('post', '/generate', payload);
+            const response = await makeOllamaApiCall('post', '/generate', payload, { signal: controller.signal });
 
             if (!response || !response.response) {
                 throw new Error(ERROR_MESSAGES.INVALID_AI_RESPONSE);
@@ -519,6 +536,15 @@ If a reason has no specific checklist mapping, select relevant checklists from t
 
             return report;
         } catch (error) {
+            if (error.name === 'AbortError') {
+                logger.info('Report generation request canceled', {
+                    service: 'ai',
+                    metadata: { format }
+                });
+                const abortError = new Error(ERROR_MESSAGES.REQUEST_CANCELED);
+                abortError.status = 499;
+                throw abortError;
+            }
             logger.error('Failed to generate report', {
                 error: error.message,
                 stack: error.stack,

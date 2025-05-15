@@ -1079,3 +1079,33 @@ body.dark .filter-select:focus {
     background-size: 0.875rem;
   }
 }
+
+
+.week-header {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  gap: 10px;
+}
+
+.week-header-middle {
+  display: flex;
+  justify-content: center;
+  align-items: center;
+  gap: 10px;
+}
+
+.week-header> :first-child {
+  align-self: flex-start;
+}
+
+.week-header> :last-child {
+  align-self: flex-end;
+}
+
+@media (max-width: 768px) {
+  .week-header {
+    flex-direction: column;
+    align-items: stretch;
+  }
+}

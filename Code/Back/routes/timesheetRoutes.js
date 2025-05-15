@@ -1,3 +1,4 @@
+// routes/timesheets.js
 const express = require('express');
 const router = express.Router();
 const { requirePermission } = require('../config/security');
@@ -11,7 +12,7 @@ router.get('/:id', requirePermission('access_timesheet_details'), TimesheetContr
 router.get('/supervisor/:supervisorID', requirePermission('access_supervisor_timesheets'), TimesheetController.getTimesheetsBySupervisor);
 
 router.post('/suggest', requirePermission('suggest_timesheets'), TimesheetController.suggestTimesheet);
-
 router.post('/:id/sync-calendar', requirePermission('sync_calendar'), TimesheetController.syncTimesheetToCalendar);
+router.post('/suggest/cancel/:requestId', requirePermission('suggest_timesheets'), TimesheetController.cancelTimesheetSuggestion);
 
 module.exports = router;

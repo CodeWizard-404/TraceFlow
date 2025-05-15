@@ -1,3 +1,4 @@
+// timesheetService.js
 const { Timesheet, Visit, Agent, User, Delegation } = require('../models');
 const AIService = require('./aiService');
 const logger = require('../utils/logger');
@@ -11,7 +12,11 @@ const ERROR_MESSAGES = {
     INVALID_WEEK_NUMBER: 'Invalid week number or year.',
     DATABASE_ERROR: 'Database issue. Try again.',
     AI_API_UNAVAILABLE: 'AI service is unavailable. Try again later.',
+    REQUEST_CANCELED: 'AI request was canceled.',
 };
+
+// Store active controllers for cancellation
+const activeControllers = new Map();
 
 class TimesheetService {
     static async listTimesheets() {
@@ -174,6 +179,14 @@ class TimesheetService {
         }
     }
 
+    /**
+     * Generate timesheet suggestions and store the AbortController.
+     * @param {string} supervisorId - Supervisor ID.
+     * @param {number} weekNumber - Week number.
+     * @param {number} year - Year.
+     * @param {Object} criteria - Criteria for suggestions.
+     * @returns {Object} Object containing suggestions and requestId.
+     */
     static async suggestTimesheet(supervisorId, weekNumber, year, criteria) {
         try {
             const supervisor = await User.findByPk(supervisorId);
@@ -243,7 +256,7 @@ class TimesheetService {
                     service: 'timesheet',
                     metadata: { supervisorId, weekNumber, year },
                 });
-                return [];
+                return { suggestions: [], requestId: null };
             }
 
             // Construct timesheetData for AI service
@@ -257,13 +270,32 @@ class TimesheetService {
                 supervisorLocation,
             };
 
-            const suggestions = await AIService.generateTimesheetSuggestions(supervisorId, weekNumber, year, timesheetData);
-            logger.info('Timesheet suggestions generated', {
-                service: 'timesheet',
-                metadata: { supervisorId, weekNumber, year, suggestionCount: suggestions.length },
-            });
-            return suggestions;
+            // Create AbortController and store it
+            const controller = new AbortController();
+            const requestId = `${supervisorId}-${weekNumber}-${year}-${Date.now()}`;
+            activeControllers.set(requestId, controller);
+
+            try {
+                const suggestions = await AIService.generateTimesheetSuggestions(
+                    supervisorId,
+                    weekNumber,
+                    year,
+                    timesheetData,
+                    controller
+                );
+                logger.info('Timesheet suggestions generated', {
+                    service: 'timesheet',
+                    metadata: { supervisorId, weekNumber, year, suggestionCount: suggestions.length },
+                });
+                return { suggestions, requestId };
+            } finally {
+                // Clean up controller after completion
+                activeControllers.delete(requestId);
+            }
         } catch (error) {
+            if (error.message === ERROR_MESSAGES.REQUEST_CANCELED) {
+                throw error;
+            }
             logger.error('Failed to generate timesheet suggestions', {
                 error: error.message,
                 service: 'timesheet',
@@ -271,6 +303,29 @@ class TimesheetService {
             });
             throw error.status ? error : Object.assign(new Error(ERROR_MESSAGES.AI_API_UNAVAILABLE), { status: 503 });
         }
+    }
+
+    /**
+     * Cancel a timesheet suggestion request.
+     * @param {string} requestId - The ID of the request to cancel.
+     * @returns {Promise<boolean>} True if canceled, false if request not found.
+     */
+    static async cancelTimesheetSuggestion(requestId) {
+        const controller = activeControllers.get(requestId);
+        if (controller) {
+            controller.abort();
+            activeControllers.delete(requestId);
+            logger.info('Timesheet suggestion request canceled', {
+                service: 'timesheet',
+                metadata: { requestId },
+            });
+            return true;
+        }
+        logger.warn('No active request found to cancel', {
+            service: 'timesheet',
+            metadata: { requestId },
+        });
+        return false;
     }
 }
 

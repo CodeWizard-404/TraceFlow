@@ -3,15 +3,13 @@ import { useTranslation } from "react-i18next";
 import { FaTimes } from "react-icons/fa";
 import { motion } from "framer-motion";
 import Select from "react-select";
-import { suggestTimesheet, SuggestTimesheetResponse } from "../../apis/timesheetAPI";
+import { suggestTimesheet, SuggestTimesheetResponse, cancelTimesheetSuggestion } from "../../apis/timesheetAPI";
 import { useAuth } from "../../context/AuthContext";
 import { getAgentsByUser } from "../../apis/agentAPI";
 import { getGovernoratesByUser, getDelegationsByUser } from "../../apis/locationApi";
 import Agent from "../../models/Agent";
 import Delegation from "../../models/Delegation";
 import Governorate from "../../models/Governorate";
-
-import "../Timesheet/Timesheets.css";
 import "./TimesheetSuggestionsModal.css";
 
 interface TimesheetSuggestionsModalProps {
@@ -33,7 +31,6 @@ const TimesheetSuggestionsModal: React.FC<TimesheetSuggestionsModalProps> = ({
     const { user } = useAuth();
     const supervisorID = user?.userID;
 
-    // State
     const [agents, setAgents] = useState<Agent[]>([]);
     const [governorates, setGovernorates] = useState<Governorate[]>([]);
     const [delegations, setDelegations] = useState<Delegation[]>([]);
@@ -49,8 +46,8 @@ const TimesheetSuggestionsModal: React.FC<TimesheetSuggestionsModalProps> = ({
     });
     const [loading, setLoading] = useState(false);
     const [error, setError] = useState<string | null>(null);
+    const [requestId, setRequestId] = useState<string | null>(null);
 
-    // Fetch agents, governorates, and delegations
     const fetchData = useCallback(async () => {
         if (!supervisorID) return;
         try {
@@ -71,13 +68,11 @@ const TimesheetSuggestionsModal: React.FC<TimesheetSuggestionsModalProps> = ({
     React.useEffect(() => {
         if (isOpen) {
             fetchData();
+            setRequestId(null);
         }
     }, [isOpen, fetchData]);
 
-    // Form handlers
-    const handleInputChange = (
-        e: React.ChangeEvent<HTMLInputElement>
-    ) => {
+    const handleInputChange = (e: React.ChangeEvent<HTMLInputElement>) => {
         const { name, value } = e.target;
         if (name === "latitude" || name === "longitude") {
             setFormData(prev => ({
@@ -113,7 +108,19 @@ const TimesheetSuggestionsModal: React.FC<TimesheetSuggestionsModalProps> = ({
         }));
     };
 
-    // Generate suggestions
+    const cancelSuggestion = useCallback(async () => {
+        if (!requestId) return;
+        setLoading(false);
+        try {
+            await cancelTimesheetSuggestion(requestId);
+            setError(t("timesheets.suggestions.canceled"));
+            setRequestId(null);
+        } catch (err: any) {
+            console.error("Error canceling suggestion:", err);
+            setError(err.message || t("timesheets.suggestions.cancelError"));
+        }
+    }, [requestId, t]);
+
     const generateSuggestions = useCallback(async () => {
         if (!supervisorID) {
             setError(t("timesheets.suggestions.noSupervisor"));
@@ -122,14 +129,14 @@ const TimesheetSuggestionsModal: React.FC<TimesheetSuggestionsModalProps> = ({
         setLoading(true);
         setError(null);
         try {
-            const response = await suggestTimesheet({
+            const { suggestions, requestId: newRequestId } = await suggestTimesheet({
                 supervisorId: supervisorID,
                 weekNumber,
                 year,
                 criteria: formData,
             });
-            console.log("Suggestions Response:", JSON.stringify(response, null, 2));
-            onSuggestionsGenerated(response);
+            setRequestId(newRequestId);
+            onSuggestionsGenerated(suggestions);
             onClose();
         } catch (err: any) {
             console.error("Error generating suggestions:", err);
@@ -139,7 +146,6 @@ const TimesheetSuggestionsModal: React.FC<TimesheetSuggestionsModalProps> = ({
         }
     }, [supervisorID, weekNumber, year, formData, t, onSuggestionsGenerated, onClose]);
 
-    // Options for react-select
     const governorateOptions = useMemo(() =>
         governorates.map(gov => ({
             value: gov.governorateID,
@@ -172,14 +178,20 @@ const TimesheetSuggestionsModal: React.FC<TimesheetSuggestionsModalProps> = ({
             initial={{ opacity: 0 }}
             animate={{ opacity: 1 }}
             exit={{ opacity: 0 }}
+            transition={{ duration: 0.3 }}
         >
             <motion.div
                 className="modal-content"
                 initial={{ y: "-50%", opacity: 0 }}
                 animate={{ y: "0%", opacity: 1 }}
                 exit={{ y: "-50%", opacity: 0 }}
+                transition={{ duration: 0.3 }}
             >
-                <button className="modal-close" onClick={onClose} aria-label={t("timesheets.suggestions.close")}>
+                <button
+                    className="modal-close"
+                    onClick={onClose}
+                    aria-label={t("timesheets.suggestions.close")}
+                >
                     <FaTimes />
                 </button>
                 <div className="modal-form">
@@ -194,6 +206,7 @@ const TimesheetSuggestionsModal: React.FC<TimesheetSuggestionsModalProps> = ({
                                 onChange={(selected) => handleSelectChange(selected, "governorateIds")}
                                 placeholder={t("timesheets.suggestions.selectGovernorates")}
                                 classNamePrefix="react-select"
+                                isDisabled={loading}
                             />
                         </div>
                         <div className="form-group">
@@ -205,6 +218,7 @@ const TimesheetSuggestionsModal: React.FC<TimesheetSuggestionsModalProps> = ({
                                 onChange={(selected) => handleSelectChange(selected, "delegationIds")}
                                 placeholder={t("timesheets.suggestions.selectDelegations")}
                                 classNamePrefix="react-select"
+                                isDisabled={loading}
                             />
                         </div>
                         <div className="form-group">
@@ -216,26 +230,33 @@ const TimesheetSuggestionsModal: React.FC<TimesheetSuggestionsModalProps> = ({
                                 onChange={(selected) => handleSelectChange(selected, "agentIds")}
                                 placeholder={t("timesheets.suggestions.selectAgents")}
                                 classNamePrefix="react-select"
+                                isDisabled={loading}
                             />
                         </div>
-                        <div className="form-group">
+                        <div className="form-group location-group">
                             <label>{t("timesheets.suggestions.supervisorLocation")}</label>
-                            <input
-                                type="number"
-                                name="latitude"
-                                value={formData.supervisorLocation.latitude}
-                                onChange={handleInputChange}
-                                placeholder="Latitude"
-                                step="any"
-                            />
-                            <input
-                                type="number"
-                                name="longitude"
-                                value={formData.supervisorLocation.longitude}
-                                onChange={handleInputChange}
-                                placeholder="Longitude"
-                                step="any"
-                            />
+                            <div className="input-pair">
+                                <input
+                                    type="number"
+                                    name="latitude"
+                                    value={formData.supervisorLocation.latitude}
+                                    onChange={handleInputChange}
+                                    placeholder="Latitude"
+                                    step="any"
+                                    disabled={loading}
+                                    className="filter-input"
+                                />
+                                <input
+                                    type="number"
+                                    name="longitude"
+                                    value={formData.supervisorLocation.longitude}
+                                    onChange={handleInputChange}
+                                    placeholder="Longitude"
+                                    step="any"
+                                    disabled={loading}
+                                    className="filter-input"
+                                />
+                            </div>
                         </div>
                         <div className="form-group">
                             <label>{t("timesheets.suggestions.preferredDays")}</label>
@@ -246,28 +267,35 @@ const TimesheetSuggestionsModal: React.FC<TimesheetSuggestionsModalProps> = ({
                                 onChange={(selected) => handleSelectChange(selected, "preferredDays")}
                                 placeholder={t("timesheets.suggestions.selectDays")}
                                 classNamePrefix="react-select"
+                                isDisabled={loading}
                             />
                         </div>
-                        <div className="form-group">
+                        <div className="form-group time-interval-group">
                             <label>{t("timesheets.suggestions.timeInterval")}</label>
-                            <input
-                                type="number"
-                                name="startHour"
-                                value={formData.timeInterval.startHour}
-                                onChange={handleInputChange}
-                                placeholder="Start Hour (0-23)"
-                                min="0"
-                                max="23"
-                            />
-                            <input
-                                type="number"
-                                name="endHour"
-                                value={formData.timeInterval.endHour}
-                                onChange={handleInputChange}
-                                placeholder="End Hour (1-24)"
-                                min="1"
-                                max="24"
-                            />
+                            <div className="input-pair">
+                                <input
+                                    type="number"
+                                    name="startHour"
+                                    value={formData.timeInterval.startHour}
+                                    onChange={handleInputChange}
+                                    placeholder="Start Hour (0-23)"
+                                    min="0"
+                                    max="23"
+                                    disabled={loading}
+                                    className="filter-input"
+                                />
+                                <input
+                                    type="number"
+                                    name="endHour"
+                                    value={formData.timeInterval.endHour}
+                                    onChange={handleInputChange}
+                                    placeholder="End Hour (1-24)"
+                                    min="1"
+                                    max="24"
+                                    disabled={loading}
+                                    className="filter-input"
+                                />
+                            </div>
                         </div>
                         <div className="form-group">
                             <label>{t("timesheets.suggestions.maxVisitsPerAgentPerWeek")}</label>
@@ -278,12 +306,30 @@ const TimesheetSuggestionsModal: React.FC<TimesheetSuggestionsModalProps> = ({
                                 onChange={handleInputChange}
                                 placeholder="Max Visits"
                                 min="1"
+                                disabled={loading}
+                                className="filter-input"
                             />
                         </div>
                         {error && <p className="error">{error}</p>}
-                        <button type="submit" disabled={loading}>
-                            {loading ? t("timesheets.suggestions.generating") : t("timesheets.suggestions.generate")}
-                        </button>
+                        <div className="form-buttons">
+                            <button
+                                type="submit"
+                                disabled={loading}
+                                className="create-btn"
+                            >
+                                {loading ? t("timesheets.suggestions.generating") : t("timesheets.suggestions.generate")}
+                            </button>
+                            {loading && requestId && (
+                                <button
+                                    type="button"
+                                    onClick={cancelSuggestion}
+                                    disabled={!loading}
+                                    className="cancel-btn"
+                                >
+                                    {t("timesheets.suggestions.cancel")}
+                                </button>
+                            )}
+                        </div>
                     </form>
                 </div>
             </motion.div>
