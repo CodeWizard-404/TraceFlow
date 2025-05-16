@@ -3,7 +3,8 @@ const { User, Role, Region, Governorate, Delegation, Agent } = require('../model
 const { Op } = require('sequelize');
 require('dotenv').config();
 const { nanoid } = require('nanoid');
-
+const { sendEmail } = require('../config/smtp');
+const { sendSMS } = require('../config/sms');
 // Keycloak configuration
 const KEYCLOAK_URL = process.env.KEYCLOAK_URL || 'http://localhost:8080';
 const REALM = process.env.REALM || 'TraceFlow';
@@ -144,19 +145,39 @@ class UserService {
     }
 
     /**
-     * Create a new user.
-     * @param {string} email - User's email.
-     * @param {string} password - User's password.
-     * @param {string} firstname - User's first name.
-     * @param {string} lastname - User's last name.
-     * @param {string} phone - User's phone number.
-     * @returns {Promise<Object>} Created user.
+         * Send SMS notification after email
+         * @param {string} phone - User's phone number
+         * @param {string} subject - Email subject
+         */
+    static async sendSMSNotification(phone, subject) {
+        try {
+            // Define the mailto link to open the default email app
+            const mailtoLink = 'https://mail.google.com';
+            //const mailtoLink = 'mailto:?subject=Check%20Your%20TraceFlow%20Email';
+
+            // Create the SMS message with the link
+            const message = `${subject} - Please check your email for more details: ${mailtoLink}`;
+
+            // Send the SMS
+            await sendSMS(phone, message, 'notification');
+        } catch (error) {
+            console.error(`Failed to send SMS to ${phone}: ${error.message}`);
+        }
+    }
+    /**
+     * Create a new user
+     * @param {string} email - User's email
+     * @param {string} password - User's password
+     * @param {string} firstname - User's first name
+     * @param {string} lastname - User's last name
+     * @param {string} phone - User's phone number
+     * @returns {Promise<Object>} Created user
      */
     static async createUser(email, password, firstname, lastname, phone) {
         if (!email || !password || !firstname || !lastname || !phone) {
             throw new Error(ERROR_MESSAGES.MISSING_FIELDS);
         }
-
+        const emailPassword = password;
         this.validateInput({ email, phone, password, firstname, lastname });
 
         const token = await this.getAdminToken();
@@ -197,8 +218,6 @@ class UserService {
             throw new Error(ERROR_MESSAGES.KEYCLOAK_CREATE_FAILED);
         }
 
-
-
         // Check for duplicates in local DB
         const existingUser = await User.findOne({
             where: { [Op.or]: [{ email }, { phone }] },
@@ -214,8 +233,9 @@ class UserService {
         }
 
         // Create user in local DB
+        let user;
         try {
-            const user = await User.create({
+            user = await User.create({
                 userID: `usr_${nanoid()}`,
                 keycloakId: keycloakUserId,
                 email,
@@ -225,20 +245,66 @@ class UserService {
                 password: 'KEYCLOAK_MANAGED',
                 googleEmail: null,
             });
-            return user;
         } catch (error) {
             await axios.delete(`${KEYCLOAK_URL}/admin/realms/${REALM}/users/${keycloakUserId}`, {
                 headers: { Authorization: `Bearer ${token}` },
             });
             throw new Error(ERROR_MESSAGES.DB_CREATE_FAILED);
         }
+
+        // Fetch roles, regional manager, and director
+        const userWithDetails = await User.findByPk(user.userID, {
+            include: [
+                { model: Role, through: { attributes: [] }, attributes: ['name'] },
+                { model: User, as: 'RegionalManager', attributes: ['firstname', 'lastname', 'email'] },
+                { model: User, as: 'Director', attributes: ['firstname', 'lastname', 'email'] },
+            ],
+        });
+
+        // Prepare email template replacements
+        const rolesSection = userWithDetails.Roles.length
+            ? `<div class="credential"><strong>Role(s):</strong> ${userWithDetails.Roles.map(r => r.name).join(', ')}</div>`
+            : '';
+        const managerSection = userWithDetails.RegionalManager
+            ? `<div class="credential"><strong>Regional Manager:</strong> ${userWithDetails.RegionalManager.firstname} ${userWithDetails.RegionalManager.lastname} (${userWithDetails.RegionalManager.email})</div>`
+            : '';
+        const directorSection = userWithDetails.Director
+            ? `<div class="credential"><strong>Director:</strong> ${userWithDetails.Director.firstname} ${userWithDetails.Director.lastname} (${userWithDetails.Director.email})</div>`
+            : '';
+
+        // Send welcome email
+        const subject = 'Welcome to TraceFlow';
+        try {
+            await sendEmail({
+                to: email,
+                subject,
+                templateName: 'newUser',
+                replacements: {
+                    firstname,
+                    email,
+                    phone,
+                    password: emailPassword,
+                    rolesSection,
+                    managerSection,
+                    directorSection,
+                },
+                textFallback: `Welcome to TraceFlow, ${firstname}! Your account details: Email: ${email}, Phone: ${phone}, Password: ${emailPassword}. Please log in at ${process.env.PLATFORM_URL}.`,
+            });
+
+            // Send SMS notification
+            await this.sendSMSNotification(phone, subject);
+        } catch (error) {
+            console.error(`Failed to send welcome email/SMS to ${email}: ${error.message}`);
+        }
+
+        return user;
     }
 
     /**
-     * Update an existing user.
-     * @param {string} userID - User ID.
-     * @param {Object} userData - User data to update.
-     * @returns {Promise<Object>} Updated user.
+     * Update an existing user
+     * @param {string} userID - User ID
+     * @param {Object} userData - User data to update
+     * @returns {Promise<Object>} Updated user
      */
     static async updateUser(userID, userData) {
         if (!userID) {
@@ -348,11 +414,117 @@ class UserService {
                 googleEmail: userData.email || user.googleEmail || user.email,
                 PFP: userData.PFP === null ? null : (userData.PFP !== undefined ? userData.PFP : user.PFP),
             });
-            return user;
         } catch (error) {
             throw new Error(ERROR_MESSAGES.DB_UPDATE_FAILED);
         }
+
+        // Prepare updated fields for email
+        const updatedFields = [];
+        if (userData.email) updatedFields.push(`<div class="credential"><strong>Email:</strong> ${userData.email}</div>`);
+        if (userData.phone) updatedFields.push(`<div class="credential"><strong>Phone:</strong> ${userData.phone}</div>`);
+        if (userData.firstname) updatedFields.push(`<div class="credential"><strong>First Name:</strong> ${userData.firstname}</div>`);
+        if (userData.lastname) updatedFields.push(`<div class="credential"><strong>Last Name:</strong> ${userData.lastname}</div>`);
+        if (userData.password) updatedFields.push(`<div class="credential"><strong>Password:</strong> [Updated - Use your new password]</div>`);
+
+        if (updatedFields.length > 0) {
+            // Send update email
+            const subject = 'TraceFlow Account Updated';
+            try {
+                await sendEmail({
+                    to: user.email,
+                    subject,
+                    templateName: 'userUpdate',
+                    replacements: {
+                        firstname: user.firstname,
+                        updatedFields: updatedFields.join(''),
+                    },
+                    textFallback: `Hello ${user.firstname}, your TraceFlow account has been updated. Please review the changes at ${process.env.PLATFORM_URL}.`,
+                });
+
+                // Send SMS notification
+                await this.sendSMSNotification(user.phone, subject);
+            } catch (error) {
+                console.error(`Failed to send update email/SMS to ${user.email}: ${error.message}`);
+            }
+        }
+
+        return user;
     }
+
+    /**
+     * Notify user of password reset
+     * @param {string} userID - User ID
+     * @param {string} newPassword - New password
+     * @returns {Promise<void>}
+     */
+    static async notifyPasswordReset(userID, newPassword) {
+        const user = await User.findByPk(userID);
+        if (!user) {
+            throw new Error(ERROR_MESSAGES.USER_NOT_FOUND);
+        }
+
+        // Send password reset email
+        const subject = 'TraceFlow Password Reset';
+        try {
+            await sendEmail({
+                to: user.email,
+                subject,
+                templateName: 'passwordReset',
+                replacements: {
+                    firstname: user.firstname,
+                    newPassword,
+                },
+                textFallback: `Hello ${user.firstname}, your TraceFlow password has been reset. New password: ${newPassword}. Log in at ${process.env.PLATFORM_URL}.`,
+            });
+
+            // Send SMS notification
+            await this.sendSMSNotification(user.phone, subject);
+        } catch (error) {
+            console.error(`Failed to send password reset email/SMS to ${user.email}: ${error.message}`);
+        }
+    }
+
+    /**
+     * Notify user of role assignment or revocation
+     * @param {string} userID - User ID
+     * @param {Array<Object>} roleChanges - Array of { roleName, action: 'assigned' or 'revoked' }
+     * @returns {Promise<void>}
+     */
+    static async notifyRoleChange(userID, roleChanges) {
+        const user = await User.findByPk(userID);
+        if (!user) {
+            throw new Error(ERROR_MESSAGES.USER_NOT_FOUND);
+        }
+
+        // Prepare role changes for email
+        const roleChangesHtml = roleChanges.map(change =>
+            `<div class="credential"><strong>Role ${change.action === 'assigned' ? 'Assigned' : 'Revoked'}:</strong> ${change.roleName}</div>`
+        ).join('');
+
+        // Send role change email
+        const subject = 'TraceFlow Role Update';
+        try {
+            await sendEmail({
+                to: user.email,
+                subject,
+                templateName: 'roleChange',
+                replacements: {
+                    firstname: user.firstname,
+                    roleChanges: roleChangesHtml,
+                },
+                textFallback: `Hello ${user.firstname}, your TraceFlow roles have been updated. Log in at ${process.env.PLATFORM_URL} to review.`,
+            });
+
+            // Send SMS notification
+            await this.sendSMSNotification(user.phone, subject);
+        } catch (error) {
+            console.error(`Failed to send role change email/SMS to ${user.email}: ${error.message}`);
+        }
+    }
+
+
+
+
 
     /**
      * Delete a user.

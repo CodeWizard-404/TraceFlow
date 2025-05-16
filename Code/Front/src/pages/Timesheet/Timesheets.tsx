@@ -1127,8 +1127,7 @@ const Timesheets: React.FC = React.memo(() => {
                                     </p>
                                 </div>
                                 {weekData.supervisorID &&
-                                    userPermissions.canValidateTimesheets &&
-                                    weekData.status !== TimesheetStatus.VALIDATED && (
+                                    userPermissions.canValidateTimesheets && (
                                         <button
                                             className="create-btn"
                                             onClick={() =>

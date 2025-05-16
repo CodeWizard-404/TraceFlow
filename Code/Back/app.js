@@ -95,6 +95,8 @@ ensureRedisInitialized().then(() => {
         },
     });
 
+    app.use('/logo', express.static(path.join(__dirname, 'emailTemplates/logo')));
+
     setupRoutes(app);
 
     app.get('/openapi.json', (req, res) => {

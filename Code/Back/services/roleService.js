@@ -5,6 +5,7 @@ const { migratePermissionsToKeycloak: migrateRecourcesToKeycloak } = require('..
 const { migratePermissionsToKeycloak } = require('../scripts/migratePe');
 const { migratePoliciesToKeycloak } = require('../scripts/migratePo');
 require('dotenv').config();
+const UserService = require('./userService');
 
 // Keycloak configuration
 const KEYCLOAK_URL = process.env.KEYCLOAK_URL || 'http://localhost:8080';
@@ -234,7 +235,13 @@ class RoleService {
         }
     }
 
-    // Assign roles to a user
+    /**
+     * Assign roles to a user
+     * @param {string} userID - User ID
+     * @param {Array<string>} roleIDs - Role IDs to assign
+     * @param {string} actorID - Actor ID
+     * @returns {Promise<Object>} Assignment details
+     */
     static async assignRolesToUser(userID, roleIDs, actorID) {
         try {
             const token = await getAdminToken();
@@ -268,6 +275,10 @@ class RoleService {
                     roleMappings,
                     { headers: { Authorization: `Bearer ${token}` } }
                 );
+
+                // Notify user of role assignment
+                const roleChanges = newRoles.map(role => ({ roleName: role.name, action: 'assigned' }));
+                await UserService.notifyRoleChange(userID, roleChanges);
             }
 
             return {
@@ -280,7 +291,13 @@ class RoleService {
         }
     }
 
-    // Revoke roles from a user
+    /**
+     * Revoke roles from a user
+     * @param {string} userID - User ID
+     * @param {Array<string>} roleIDs - Role IDs to revoke
+     * @param {string} actorID - Actor ID
+     * @returns {Promise<Object|Array>} Revocation details
+     */
     static async revokeRolesFromUser(userID, roleIDs, actorID) {
         try {
             const token = await getAdminToken();
@@ -288,6 +305,7 @@ class RoleService {
             if (!user) throw new Error('User not found.');
 
             const results = [];
+            const roleChanges = [];
             for (const roleID of roleIDs) {
                 const role = await Role.findByPk(roleID);
                 if (!role) throw new Error('Role not found.');
@@ -317,6 +335,12 @@ class RoleService {
                     revokedRole: role.name,
                     totalAssigned: (await user.getRoles()).length,
                 });
+                roleChanges.push({ roleName: role.name, action: 'revoked' });
+            }
+
+            // Notify user of role revocation
+            if (roleChanges.length > 0) {
+                await UserService.notifyRoleChange(userID, roleChanges);
             }
 
             return results.length === 1 ? results[0] : results;

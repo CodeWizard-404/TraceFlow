@@ -1109,3 +1109,49 @@ body.dark .filter-select:focus {
     align-items: stretch;
   }
 }
+
+
+
+
+.days-grid {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 16px;
+  justify-content: stretch;
+  /* Changed from space-between to stretch */
+}
+
+.day-column {
+  flex: 1;
+  /* Ensure columns grow equally to fill space */
+  min-width: 150px;
+  max-width: none;
+  /* Remove max-width to allow full stretching */
+}
+
+@media (max-width: 1200px) {
+  .days-grid {
+    display: grid;
+    grid-template-columns: repeat(4, 1fr);
+    /* Equal column widths */
+    gap: 12px;
+  }
+
+
+  .day-column {
+    min-width: 0;
+    /* Allow columns to shrink if needed */
+  }
+}
+
+@media (max-width: 768px) {
+  .days-grid {
+    grid-template-columns: repeat(3, 1fr);
+    /* Equal column widths for first 6 days */
+  }
+
+  .day-column {
+    min-width: 0;
+    /* Allow columns to shrink if needed */
+  }
+}

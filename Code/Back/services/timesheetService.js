@@ -72,7 +72,6 @@ class TimesheetService {
                 { transaction }
             );
 
-
             if (visits && Array.isArray(visits) && visits.length > 0) {
                 const visitPromises = visits.map(async (visit, index) => {
                     try {
@@ -174,14 +173,12 @@ class TimesheetService {
                 throw error;
             }
 
-            // Validate weekNumber and year
             if (!weekNumber || weekNumber < 1 || weekNumber > 53 || !year || year < 2000 || year > 2100) {
                 const error = new Error(ERROR_MESSAGES.INVALID_WEEK_NUMBER);
                 error.status = 400;
                 throw error;
             }
 
-            // Extract and validate criteria
             const {
                 delegationIds = [],
                 agentIds = [],
@@ -189,9 +186,10 @@ class TimesheetService {
                 supervisorLocation = { latitude: 36.8065, longitude: 10.1815 },
                 timeInterval = { startHour: 8, endHour: 20 },
                 maxVisitsPerAgentPerWeek = 1,
+                includeRecruitmentVisits = false,
+                recruitmentVisitLocations = [],
             } = criteria;
 
-            // Validate time interval
             if (
                 !Number.isInteger(timeInterval.startHour) ||
                 !Number.isInteger(timeInterval.endHour) ||
@@ -204,7 +202,6 @@ class TimesheetService {
                 throw error;
             }
 
-            // Validate delegationIds if provided
             if (delegationIds.length > 0) {
                 const delegations = await Delegation.findAll({
                     where: { delegationID: { [Op.in]: delegationIds } },
@@ -216,7 +213,6 @@ class TimesheetService {
                 }
             }
 
-            // Fetch agents based on supervisorId, agentIds, or delegationIds
             const agentQuery = {
                 where: { supervisorID: supervisorId },
                 include: [{ model: Delegation }],
@@ -228,11 +224,7 @@ class TimesheetService {
                 agentQuery.where.delegationID = { [Op.in]: delegationIds };
             }
             const agents = await Agent.findAll(agentQuery);
-            if (agents.length === 0) {
-                return { suggestions: [], requestId: null };
-            }
 
-            // Construct timesheetData for AI service
             const timesheetData = {
                 delegationIds,
                 agentIds,
@@ -241,9 +233,10 @@ class TimesheetService {
                 timeInterval,
                 maxVisitsPerAgentPerWeek,
                 supervisorLocation,
+                includeRecruitmentVisits,
+                recruitmentVisitLocations,
             };
 
-            // Create AbortController and store it
             const controller = new AbortController();
             const requestId = `${supervisorId}-${weekNumber}-${year}-${Date.now()}`;
             activeControllers.set(requestId, controller);
@@ -256,9 +249,19 @@ class TimesheetService {
                     timesheetData,
                     controller
                 );
+                // Optionally, add logic to include recruitment visits
+                if (includeRecruitmentVisits) {
+                    const recruitmentSuggestions = recruitmentVisitLocations.map((location, index) => ({
+                        date: preferredDays[index % preferredDays.length] || '2025-05-19', // Example date
+                        time: `${timeInterval.startHour + index}:00`,
+                        location,
+                        agentID: null,
+                        reasons: [{ id: 'recruitment' }], // Assuming a specific reason for recruitment
+                    }));
+                    suggestions.push(...recruitmentSuggestions);
+                }
                 return { suggestions, requestId };
             } finally {
-                // Clean up controller after completion
                 activeControllers.delete(requestId);
             }
         } catch (error) {

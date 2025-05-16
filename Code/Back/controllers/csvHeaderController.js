@@ -43,7 +43,7 @@ class CsvHeaderController {
     }
 
     /**
-     * Update CSV header mappings.
+     * Update or create CSV header mappings.
      * @param {Object} req - Express request object with csvType and headers in body.
      * @param {Object} res - Express response object.
      * @returns {Promise<void>} JSON response with success message or error.
@@ -65,9 +65,9 @@ class CsvHeaderController {
                 });
                 return res.status(400).json({ error: 'Headers array is required' });
             }
-            const result = await CsvHeaderService.updateHeaders(csvType, headers, req.user.userID);
+            const result = await CsvHeaderService.updateHeaders(csvType, headers, actorID);
             if (!result.success) {
-                logger.warn('Failed to update CSV headers', {
+                logger.warn('Failed to update or create CSV headers', {
                     route: 'csv-headers',
                     method: req.method,
                     url: req.originalUrl,
@@ -75,11 +75,11 @@ class CsvHeaderController {
                     ip: req.ip,
                     traceId: req.traceId,
                     userId: actorID,
-                    metadata: { csvType, error: result.message }
+                    metadata: { csvType, requestBody: req.body, error: result.message }
                 });
                 return res.status(400).json({ error: result.message });
             }
-            logger.info('Successfully updated CSV headers', {
+            logger.info('Successfully updated or created CSV headers', {
                 route: 'csv-headers',
                 method: req.method,
                 url: req.originalUrl,
@@ -87,11 +87,11 @@ class CsvHeaderController {
                 ip: req.ip,
                 traceId: req.traceId,
                 userId: actorID,
-                metadata: { csvType, headerCount: headers.length }
+                metadata: { requestBody: req.body, csvType, headerCount: headers.length }
             });
             return res.status(200).json({ message: result.message });
         } catch (error) {
-            logger.error('Failed to update CSV headers', {
+            logger.error('Failed to update or create CSV headers', {
                 route: 'csv-headers',
                 method: req.method,
                 url: req.originalUrl,

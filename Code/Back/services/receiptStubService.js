@@ -1,7 +1,6 @@
 const { ReceiptBook, Agent, User, ReceiptStub, ReceiptBookTransfer } = require('../models');
 const OTPService = require('./otpService');
 const { sendSMS } = require('../config/sms');
-const { transporter } = require('../config/smtp');
 
 class ReceiptStubService {
     static async collectStub(bookIDs, userID) {
@@ -93,14 +92,6 @@ class ReceiptStubService {
                 )
             );
 
-            const agent = await Agent.findByPk(agentID);
-            const supervisor = await User.findByPk(supervisorID);
-            await transporter.sendMail({
-                from: process.env.SMTP_USER,
-                to: agent.email || supervisor.email,
-                subject: `Stub Collection Validated for ${bookIDs.length} Books`,
-                text: `Stubs for ${bookIDs.length} receipt books have been collected by Supervisor ${supervisorID}.`,
-            });
 
             return { message: `${bookIDs.length} stubs collected` };
         } catch (error) {
@@ -143,13 +134,6 @@ class ReceiptStubService {
                     transferType: 'Archived',
                 }),
             ]);
-
-            await transporter.sendMail({
-                from: process.env.SMTP_USER,
-                to: (await User.findByPk(stockManagerID))?.email,
-                subject: `Stub Archived for Book #${book.number}`,
-                text: `Stub for Book #${book.number} has been archived by Stock Manager ${stockManagerID}.`,
-            });
 
             return { message: 'Stub archived' };
         } catch (error) {

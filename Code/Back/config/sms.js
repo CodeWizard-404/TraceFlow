@@ -1,6 +1,6 @@
 const axios = require('axios');
 const { User, Agent } = require('../models');
-const { transporter } = require('./smtp');
+const { sendEmail } = require('../config/smtp');
 const logger = require('../utils/logger');
 require('dotenv').config();
 
@@ -61,14 +61,18 @@ async function sendSMS(to, message, context = 'general') {
             const email = await findEmailByPhone(to);
             if (email) {
                 const subject = context === 'otp' ? 'TraceFlow OTP (SMS Failed)' : 'TraceFlow Notification (SMS Failed)';
-                const text = context === 'otp'
+                const content = context === 'otp'
                     ? `We couldn’t send your OTP via SMS. Your OTP is: ${message.match(/\d{6}/)[0]}. It expires in 10 minutes.`
                     : `We couldn’t send you an SMS. Here’s your message:\n\n${message}\n\nPlease update your phone number if necessary.`;
-                await transporter.sendMail({
-                    from: process.env.SMTP_USER,
+                await sendEmail({
                     to: email,
                     subject,
-                    text,
+                    templateName: 'default',
+                    replacements: {
+                        firstname: 'User',
+                        content,
+                    },
+                    textFallback: content,
                 });
                 logger.info('Fallback email sent', {
                     route: 'email',

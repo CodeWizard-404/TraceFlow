@@ -1,5 +1,5 @@
 const { sendSMS } = require('../config/sms');
-const { transporter } = require('../config/smtp');
+const { sendEmail } = require('../config/smtp');
 const { ReceiptBook, User, Agent, OTP, ReceiptBookTransfer, ReceiptStub, Role, ReceiptBookType } = require('../models');
 const OTPService = require('../services/otpService');
 const QRGenerator = require('../utils/qrGenerator');
@@ -359,11 +359,15 @@ class ReceiptBookService {
             );
 
             const table = books.map(b => `${b.number} | ${b.ReceiptBookType.name}`).join('\n');
-            await transporter.sendMail({
-                from: process.env.SMTP_USER,
+            await sendEmail({
                 to: supplierEmail,
                 subject: 'Receipt Books Sent',
-                text: `The following receipt books have been sent:\n${table}`,
+                templateName: 'default',
+                replacements: {
+                    firstname: 'Supplier',
+                    content: `The following receipt books have been sent:\n${table}`,
+                },
+                textFallback: `The following receipt books have been sent:\n${table}`,
                 attachments: books.map(b => ({
                     filename: `${b.number}.png`,
                     content: b.qrCode,
@@ -502,14 +506,6 @@ class ReceiptBookService {
                     ]);
                 })
             );
-
-            const recipientEmail = recipient.email || (await User.findByPk(transfers[0].fromUserID))?.email;
-            await transporter.sendMail({
-                from: process.env.SMTP_USER,
-                to: recipientEmail,
-                subject: `Transfer of ${bookIDs.length} Receipt Books Validated`,
-                text: `${bookIDs.length} receipt books transferred to ${recipientType} ${recipientID}.`,
-            });
 
             return { message: `${bookIDs.length} receipt books transferred and validated` };
         } catch (error) {

@@ -1605,7 +1605,7 @@ class UserController {
                 ip: req.ip,
                 traceId: req.traceId,
                 userId: actorID,
-                metadata: { regionalManagerID, regionCount: regionIDs.length }
+                metadata: { result, regionalManagerID, regionCount: regionIDs.length }
             });
             return res.status(200).json(result);
         } catch (error) {

@@ -124,10 +124,10 @@ export const updateVisit = async (
         date?: string;
         time?: string;
         duration?: number;
-        location?: string;
+        location?: string | null;
         status?: string;
         comment?: string;
-        agentID?: string;
+        agentID?: string | null;
         checklists?: Array<{ id: string; checked?: boolean }>;
         reasons?: Array<{ id: string }>;
         photos?: File[];
@@ -143,10 +143,10 @@ export const updateVisit = async (
         if (data.date) formData.append("date", data.date);
         if (data.time) formData.append("time", data.time);
         if (data.duration !== undefined) formData.append("duration", data.duration.toString());
-        if (data.location) formData.append("location", data.location);
+        if (data.location !== undefined) formData.append("location", data.location ?? "");
         if (data.status) formData.append("status", data.status);
         if (data.comment !== undefined) formData.append("comment", data.comment);
-        if (data.agentID) formData.append("agentID", data.agentID);
+        if (data.agentID !== undefined) formData.append("agentID", data.agentID ?? "");
         if (data.checklists) formData.append("checklists", JSON.stringify(data.checklists));
         if (data.reasons) formData.append("reasons", JSON.stringify(data.reasons));
         if (data.photosToRemove) formData.append("photosToRemove", JSON.stringify(data.photosToRemove));

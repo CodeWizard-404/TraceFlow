@@ -3,17 +3,9 @@ import React, { useState, useEffect, useMemo, useCallback, useRef } from "react"
 import { useNavigate, useParams } from "react-router-dom";
 import { debounce } from "lodash";
 import {
-  FaCalendar,
-  FaClock,
-  FaMapMarkerAlt,
-  FaUser,
-  FaPhone,
   FaListUl,
-  FaCheckCircle,
   FaArrowLeft,
-  FaCircle,
   FaCamera,
-  FaComment,
   FaTimes,
 } from "react-icons/fa";
 import "./VisitDetails.css";
@@ -137,7 +129,7 @@ const VisitDetailsEdit: React.FC = () => {
   const { user, effectivePermissions, permissionsLoaded } = useAuth();
 
   const [visit, setVisit] = useState<Visit | null>(null);
-  const [agent, setAgent] = useState<Agent | null>(null);
+  const [, setAgent] = useState<Agent | null>(null);
   const [regions, setRegions] = useState<Region[]>([]);
   const [governorates, setGovernorates] = useState<Governorate[]>([]);
   const [delegations, setDelegations] = useState<Delegation[]>([]);

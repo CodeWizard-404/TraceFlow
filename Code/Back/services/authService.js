@@ -2,12 +2,13 @@ const axios = require('axios');
 const { nanoid } = require('nanoid');
 const { User, Role, Permission, TrustedDevice } = require('../models');
 const otpService = require('./otpService');
-const { transporter } = require('../config/smtp');
+const { sendEmail } = require('../config/smtp');
 const { sendSMS } = require('../config/sms');
 const logger = require('../utils/logger');
 const { getRedisClient } = require('../config/redis');
 const RedisUtils = require('../utils/redisUtils');
 require('dotenv').config();
+const UserService = require('./userService');
 
 const ERROR_MESSAGES = {
     INVALID_CREDENTIALS: 'Wrong email or password.',
@@ -297,11 +298,14 @@ class AuthService {
             if (selectedMethod === 'email' && hasValidEmail) {
                 try {
                     otp = await otpService.generateOTP(user.userID, 'user');
-                    await transporter.sendMail({
-                        from: process.env.SMTP_USER,
+                    await sendEmail({
                         to: user.email,
                         subject: 'TraceFlow 2FA OTP',
-                        text: `Your OTP is ${otp.code}. It expires in 10 minutes.`,
+                        replacements: {
+                            firstname: user.firstname || 'User',
+                            content: `Your OTP is ${otp.code}. It expires in 10 minutes.`,
+                        },
+                        textFallback: `Your TraceFlow OTP is ${otp.code}. It expires in 10 minutes.`,
                     });
                 } catch (error) {
                     if (hasValidPhone) {
@@ -320,11 +324,14 @@ class AuthService {
                             selectedMethod = 'email';
                             fallbackReason = smsResult.fallbackReason || 'SMS delivery failed';
                             otp = await otpService.generateOTP(user.userID, 'user');
-                            await transporter.sendMail({
-                                from: process.env.SMTP_USER,
+                            await sendEmail({
                                 to: user.email,
                                 subject: 'TraceFlow 2FA OTP',
-                                text: `Your OTP is ${otp.code}. It expires in 10 minutes.`,
+                                replacements: {
+                                    firstname: user.firstname || 'User',
+                                    content: `Your OTP is ${otp.code}. It expires in 10 minutes.`,
+                                },
+                                textFallback: `Your TraceFlow OTP is ${otp.code}. It expires in 10 minutes.`,
                             });
                         } else {
                             throw Object.assign(new Error(ERROR_MESSAGES.OTP_SEND_FAILED), { status: 500 });
@@ -551,11 +558,14 @@ class AuthService {
 
             if (selectedMethod === 'email' && hasValidEmail) {
                 otp = await otpService.generateOTP(userID, 'user');
-                await transporter.sendMail({
-                    from: process.env.SMTP_USER,
+                await sendEmail({
                     to: user.email,
                     subject: 'TraceFlow OTP',
-                    text: `Your OTP is ${otp.code}. It expires in 10 minutes.`,
+                    replacements: {
+                        firstname: user.firstname || 'User',
+                        content: `Your OTP is ${otp.code}. It expires in 10 minutes.`,
+                    },
+                    textFallback: `Your TraceFlow OTP is ${otp.code}. It expires in 10 minutes.`,
                 });
             } else if (selectedMethod === 'phone' && hasValidPhone) {
                 otp = await otpService.generateOTP(userID, 'user');
@@ -565,11 +575,14 @@ class AuthService {
                         selectedMethod = 'email';
                         fallbackReason = smsResult.fallbackReason || 'SMS delivery failed';
                         otp = await otpService.generateOTP(userID, 'user');
-                        await transporter.sendMail({
-                            from: process.env.SMTP_USER,
+                        await sendEmail({
                             to: user.email,
                             subject: 'TraceFlow OTP',
-                            text: `Your OTP is ${otp.code}. It expires in 10 minutes.`,
+                            replacements: {
+                                firstname: user.firstname || 'User',
+                                content: `Your OTP is ${otp.code}. It expires in 10 minutes.`,
+                            },
+                            textFallback: `Your TraceFlow OTP is ${otp.code}. It expires in 10 minutes.`,
                         });
                     } else {
                         throw Object.assign(new Error(ERROR_MESSAGES.OTP_SEND_FAILED), { status: 500 });
@@ -622,11 +635,14 @@ class AuthService {
             let selectedMethod = 'email';
 
             if (hasValidEmail) {
-                await transporter.sendMail({
-                    from: process.env.SMTP_USER,
+                await sendEmail({
                     to: user.email,
                     subject: 'TraceFlow Password Reset OTP',
-                    text: `Your OTP for password reset is ${otp.code}. It expires in 10 minutes.`,
+                    replacements: {
+                        firstname: user.firstname || 'User',
+                        content: `Your OTP for password reset is ${otp.code}. It expires in 10 minutes.`,
+                    },
+                    textFallback: `Your TraceFlow password reset OTP is ${otp.code}. It expires in 10 minutes.`,
                 });
             } else if (hasValidPhone) {
                 const smsResult = await sendSMS(user.phone, `Your TraceFlow password reset OTP is ${otp.code}`, 'otp');
@@ -664,6 +680,13 @@ class AuthService {
         return { userID, tempToken, message: 'OTP verified. Proceed to reset password.' };
     }
 
+    /**
+     * Reset user password
+     * @param {string} userID - User ID
+     * @param {string} newPassword - New password
+     * @param {string} tempToken - Temporary reset token
+     * @returns {Promise<Object>} Success message
+     */
     async resetPassword(userID, newPassword, tempToken) {
         const user = await User.findByPk(userID);
         if (!user) {
@@ -681,6 +704,9 @@ class AuthService {
                 { headers: { Authorization: `Bearer ${adminToken}` } }
             );
             await User.update({ tempResetToken: null }, { where: { userID } });
+
+            // Notify user of password reset
+            await UserService.notifyPasswordReset(userID, newPassword);
         } catch (error) {
             throw Object.assign(new Error(ERROR_MESSAGES.PASSWORD_UPDATE_FAILED), { status: 500 });
         }

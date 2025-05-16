@@ -4,10 +4,7 @@ const UserController = require('../controllers/userController');
 const { requirePermission } = require('../config/security');
 const { uploadPFP } = require('../config/multer');
 
-// User hierarchy retrieval routes
-router.get('/:userID/supervisors', requirePermission('access_supervisors'), UserController.getSupervisorsByUser);
-router.get('/:userID/regional-managers', requirePermission('access_regional_managers'), UserController.getRegionalManagersByUser);
-router.get('/:userID/director', requirePermission('access_director'), UserController.getDirectorByUser);
+
 
 
 
@@ -58,6 +55,8 @@ router.get('/supervisor/:supervisorID/regional-manager', requirePermission('acce
 router.get('/profile', UserController.getProfile);
 router.put('/profile', uploadPFP.single('PFP'), UserController.updateProfile);
 
+
+
 // CRUD routes for users
 router.get('/', requirePermission('access_all_users'), UserController.getAllUsers);
 router.get('/phone/:phone', requirePermission('access_user_by_phone'), UserController.getUserByPhoneNumber);
@@ -66,5 +65,11 @@ router.get('/role/:role', requirePermission('access_users_by_role'), UserControl
 router.post('/', requirePermission('create_users'), UserController.createUser);
 router.put('/:userID', requirePermission('update_users'), uploadPFP.single('PFP'), UserController.updateUser);
 router.delete('/:userID', requirePermission('delete_users'), UserController.deleteUser);
+
+
+// User hierarchy retrieval routes
+router.get('/:userID/supervisors', requirePermission('access_supervisors'), UserController.getSupervisorsByUser);
+router.get('/:userID/regional-managers', requirePermission('access_regional_managers'), UserController.getRegionalManagersByUser);
+router.get('/:userID/director', requirePermission('access_director'), UserController.getDirectorByUser);
 
 module.exports = router;

@@ -75,7 +75,8 @@ export const createTimesheet = async (data: {
   visits: Array<{
     date: string;
     time: string;
-    agentID: string;
+    agentID?: string | null;
+    location?: string | null;
     reasons: Array<{ text?: string; id?: string }>;
     checklists: Array<{ text?: string; id?: string }>;
   }>;
@@ -112,10 +113,11 @@ export const updateTimesheet = async (
       date?: string;
       time?: string;
       duration?: number;
-      location?: string;
+      location?: string | null;
       status?: string;
       comment?: string;
       photos?: File[];
+      agentID?: string | null;
     }>;
   }
 ): Promise<TimesheetByIdResponse> => {
@@ -135,10 +137,11 @@ export const updateTimesheet = async (
           date: string;
           time: string;
           duration: number;
-          location: string;
+          location: string | null;
           status: string;
           comment: string;
           photos: File[];
+          agentID: string | null;
         }> = { ...visit };
         delete visitObj.photos;
         return visitObj;

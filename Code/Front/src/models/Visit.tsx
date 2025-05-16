@@ -7,15 +7,15 @@ interface Visit {
   date: string;
   time: string;
   duration?: number | null;
-  location?: string;
+  location?: string | null;
   status: VisitStatus;
   photos?: string[];
   comment?: string | null;
-  agentID: string;
+  agentID?: string | null;
   timesheetID: string;
   Checklists?: VisitChecklist[];
   Reasons?: VisitReason[];
-  calendarEventId?: string;
+  calendarEventId?: string | null;
 }
 
 export default Visit;

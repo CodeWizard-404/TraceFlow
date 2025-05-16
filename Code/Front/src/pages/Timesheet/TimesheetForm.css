@@ -221,14 +221,18 @@
 }
 
 
-/* Style for date input */
-input[type="date"]::-webkit-datetime-edit-day-field {
-    /* Base styling */
+.form-group-row {
+    display: flex;
+    gap: 1rem;
+    flex-wrap: wrap;
 }
 
-/* Unfortunately, we can't directly style individual dates in the calendar popup */
-/* The min attribute will prevent selection of past dates */
-/* Weekend disabling is handled programmatically in the handler */
+.form-group {
+    flex: 1;
+    min-width: 150px;
+}
+
+
 input[type="date"]:disabled {
     opacity: 0.5;
     cursor: not-allowed;

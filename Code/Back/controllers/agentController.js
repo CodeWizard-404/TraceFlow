@@ -646,30 +646,47 @@ class AgentController {
     }
 
     /**
-     * Upload and process agents via CSV file.
-     * @param {Object} req - Express request object with CSV file in body.
-     * @param {Object} res - Express response object.
-     * @returns {Promise<void>} JSON response with processing results or error.
-     */
+       * Upload and process agents via CSV file.
+       * @param {Object} req - Express request object with CSV file in body.
+       * @param {Object} res - Express response object.
+       * @returns {Promise<void>} JSON response with processing results or error.
+       */
     static async uploadAgents(req, res) {
-        const actorID = req.user?.userID || 'unknown';
+        const actorID = req.user?.userID || "unknown";
         try {
             if (!req.file) {
-                logger.warn('Upload agents failed: No CSV file uploaded', {
-                    route: 'agents/upload',
+                logger.warn("Upload agents failed: No CSV file uploaded", {
+                    route: "agents/upload",
                     method: req.method,
                     url: req.originalUrl,
                     status: 400,
                     ip: req.ip,
                     traceId: req.traceId,
                     userId: actorID,
-                    metadata: {}
                 });
-                return res.status(400).json({ error: 'No CSV file uploaded' });
+                return res.status(400).json({ error: "No CSV file uploaded" });
             }
+
             const results = await AgentService.processAgentCSV(req.file.buffer, actorID);
-            logger.info('Successfully processed agent CSV', {
-                route: 'agents/upload',
+            if (results.detailedLog.errors.length > 0 && results.summary.totalRecords === 0) {
+                logger.warn("Upload agents failed due to validation errors", {
+                    route: "agents/upload",
+                    method: req.method,
+                    url: req.originalUrl,
+                    status: 400,
+                    ip: req.ip,
+                    traceId: req.traceId,
+                    userId: actorID,
+                    metadata: { requestBody: req, errors: results.detailedLog.errors.map((e) => e.reason) },
+                });
+                return res.status(400).json({
+                    error: "CSV processing failed",
+                    details: results.detailedLog.errors,
+                });
+            }
+
+            logger.info("Successfully processed agent CSV", {
+                route: "agents/upload",
                 method: req.method,
                 url: req.originalUrl,
                 status: 200,
@@ -681,25 +698,24 @@ class AgentController {
                     agentsCreated: results.summary.agentsCreated,
                     agentsUpdated: results.summary.agentsUpdated,
                     recordsSkipped: results.summary.recordsSkipped,
-                    errorsEncountered: results.summary.errorsEncountered
-                }
+                    errorsEncountered: results.summary.errorsEncountered,
+                },
             });
             return res.status(200).json(results);
         } catch (error) {
-            logger.error('Failed to process agent CSV', {
-                route: 'agents/upload',
+            logger.error("Failed to process agent CSV", {
+                route: "agents/upload",
                 method: req.method,
                 url: req.originalUrl,
                 status: 500,
                 ip: req.ip,
                 traceId: req.traceId,
                 userId: actorID,
-                metadata: { error: error.message }
+                metadata: { req, error: error.message },
             });
-            return res.status(500).json({ error: 'Internal server error' });
+            return res.status(500).json({ error: "Internal server error" });
         }
     }
-
 
 
 

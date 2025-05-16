@@ -10,37 +10,86 @@ const logger = require('../utils/logger');
 
 class VisitService {
     static async createVisit(data, actorID, options = {}) {
-        const { date, time, agentID, supervisorID, timesheetID, reasons, checklists, status = 'pending' } = data;
-        if (!date || !time || !agentID || !supervisorID || !timesheetID) {
+        const { date, time, agentID, supervisorID, timesheetID, reasons, checklists, location, status = 'pending' } = data;
+
+        // Validate required fields
+        if (!date || !time || !supervisorID) {
             const error = new Error('Missing required fields');
             error.status = 400;
             throw error;
         }
-        const transaction = options.transaction || await sequelize.transaction(); // Use provided transaction or create new
-        let isLocalTransaction = !options.transaction; // Track if we created the transaction
+
+        const transaction = options.transaction || await sequelize.transaction();
+        let isLocalTransaction = !options.transaction;
+
         try {
-            const agent = await Agent.findByPk(agentID, { transaction });
-            if (!agent) {
-                const error = new Error('Agent not found');
+            // Calculate week number and year from date
+            const dateObj = new Date(date);
+            const year = dateObj.getFullYear();
+            const weekNumber = this.getISOWeekNumber(dateObj);
+
+            // Check for existing timesheet
+            let targetTimesheet = timesheetID
+                ? await Timesheet.findByPk(timesheetID, { transaction })
+                : await Timesheet.findOne({
+                    where: {
+                        weekNumber,
+                        year,
+                        supervisorID,
+                    },
+                    include: [{ model: Visit }],
+                    transaction,
+                });
+
+            // If no timesheet exists, create a new one
+            if (!targetTimesheet) {
+                targetTimesheet = await Timesheet.create(
+                    {
+                        weekNumber,
+                        year,
+                        supervisorID,
+                        status: status, // Initially set to the visit's status
+                    },
+                    { transaction }
+                );
+            }
+
+            // If timesheetID was provided but not found, throw an error
+            if (timesheetID && !targetTimesheet) {
+                const error = new Error('Specified timesheet not found');
                 error.status = 404;
                 throw error;
             }
+
+            // Fetch agent if agentID is provided
+            let visitLocation = location;
+            if (agentID) {
+                const agent = await Agent.findByPk(agentID, { transaction });
+                if (!agent) {
+                    const error = new Error('Agent not found');
+                    error.status = 404;
+                    throw error;
+                }
+                visitLocation = visitLocation || agent.location;
+            }
+
+            // Create the visit
             const visit = await Visit.create(
                 {
                     date,
                     time,
-                    location: agent.location,
+                    location: visitLocation,
                     agentID,
-                    timesheetID,
+                    timesheetID: targetTimesheet.timesheetID,
                     status,
                 },
                 { transaction }
             );
 
-            // Attempt to attach reasons, but don't fail visit creation
+            // Attach reasons
             if (reasons && Array.isArray(reasons) && reasons.length > 0) {
                 try {
-                    const reasonIds = reasons.map((r) => r.id).filter(id => id);
+                    const reasonIds = reasons.map((r) => r.id).filter((id) => id);
                     if (reasonIds.length > 0) {
                         const createdReasons = await ReasonService.getItemsByIds(reasonIds, { transaction });
                         if (createdReasons.length > 0) {
@@ -54,10 +103,10 @@ class VisitService {
                 }
             }
 
-            // Attempt to attach checklists, but don't fail visit creation
+            // Attach checklists
             if (checklists && Array.isArray(checklists) && checklists.length > 0) {
                 try {
-                    const checklistIds = checklists.map((c) => c.id).filter(id => id);
+                    const checklistIds = checklists.map((c) => c.id).filter((id) => id);
                     if (checklistIds.length > 0) {
                         const createdChecklists = await ChecklistService.getItemsByIds(checklistIds, { transaction });
                         if (createdChecklists.length > 0) {
@@ -71,10 +120,28 @@ class VisitService {
                 }
             }
 
+            // Update timesheet status based on all visits
+            const timesheetWithVisits = await Timesheet.findByPk(targetTimesheet.timesheetID, {
+                include: [{ model: Visit }],
+                transaction,
+            });
+
+            const visitStatuses = timesheetWithVisits.Visits.map((v) => v.status);
+            const uniqueStatuses = [...new Set(visitStatuses)];
+
+            if (uniqueStatuses.length > 1) {
+                // If visits have different statuses, set timesheet to 'pending'
+                timesheetWithVisits.status = 'pending';
+            } else {
+                // If all visits have the same status, set timesheet to that status
+                timesheetWithVisits.status = uniqueStatuses[0];
+            }
+            await timesheetWithVisits.save({ transaction });
+
             // Reload visit with associations
             const reloadedVisit = await visit.reload({ include: [Reason, Checklist], transaction });
 
-            // Attempt Google Calendar sync, but don't fail visit creation
+            // Google Calendar sync
             try {
                 const event = await GoogleCalendarService.createCalendarEvent(supervisorID, visit.visitID);
                 await GoogleCalendarService.notifyCalendarUpdate(supervisorID, {
@@ -86,10 +153,10 @@ class VisitService {
                 logger.warn(`Failed to sync visit ${visit.visitID} to calendar: ${error.message}`);
             }
 
-            if (isLocalTransaction) await transaction.commit(); // Commit only if we created the transaction
+            if (isLocalTransaction) await transaction.commit();
             return reloadedVisit;
         } catch (error) {
-            if (isLocalTransaction) await transaction.rollback(); // Rollback only if we created the transaction
+            if (isLocalTransaction) await transaction.rollback();
             const err = new Error('Failed to create visit: ' + error.message);
             err.status = error.status || 500;
             throw err;
@@ -103,6 +170,16 @@ class VisitService {
             throw error;
         }
         try {
+            const visit = await Visit.findByPk(visitId);
+            if (!visit) {
+                const error = new Error('Visit not found');
+                error.status = 404;
+                throw error;
+            }
+            // Skip QR verification for visits without an agent (e.g., recruitment visits)
+            if (!visit.agentID) {
+                return { valid: true, message: 'Verification skipped for recruitment visit' };
+            }
             const parsedQR = parseTLV(qrData);
             let agentPhoneFromQR = parsedQR['29']?.['03'] || parsedQR['02'];
             if (typeof agentPhoneFromQR === 'object' && agentPhoneFromQR !== null) {
@@ -113,12 +190,6 @@ class VisitService {
             if (!agentPhoneFromQR) {
                 const error = new Error('Invalid QR code - missing agent phone number');
                 error.status = 400;
-                throw error;
-            }
-            const visit = await Visit.findByPk(visitId);
-            if (!visit) {
-                const error = new Error('Visit not found');
-                error.status = 404;
                 throw error;
             }
             const agent = await Agent.findByPk(visit.agentID);
@@ -376,15 +447,22 @@ class VisitService {
                 visit.timesheetID = targetTimesheet.timesheetID;
             }
 
-            if (agentID && agentID !== visit.agentID) {
-                const agent = await Agent.findByPk(agentID);
-                if (!agent) {
-                    const error = new Error('Agent not found');
-                    error.status = 404;
-                    throw error;
+            if (agentID !== undefined) { // Allow agentID to be set to null
+                if (agentID) {
+                    const agent = await Agent.findByPk(agentID);
+                    if (!agent) {
+                        const error = new Error('Agent not found');
+                        error.status = 404;
+                        throw error;
+                    }
+                    visit.agentID = agentID;
+                    visit.location = location || agent.location; // Use provided location or agent location
+                } else {
+                    visit.agentID = null;
+                    visit.location = location; // Use provided location or null
                 }
-                visit.agentID = agentID;
-                visit.location = agent.location;
+            } else {
+                visit.location = location !== undefined ? location : visit.location;
             }
 
             let parsedChecklists = checklists;
@@ -424,7 +502,6 @@ class VisitService {
             visit.date = newDate;
             visit.time = time || visit.time;
             visit.duration = duration !== undefined ? duration : visit.duration;
-            visit.location = location || visit.location;
             visit.status = status || visit.status;
             visit.photos = photoPaths;
             visit.comment = comment !== undefined ? comment : visit.comment;

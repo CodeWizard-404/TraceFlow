@@ -1,6 +1,6 @@
 const io = require('../utils/socket');
 const { sendSMS } = require('../config/sms');
-const { transporter } = require('../config/smtp');
+const { sendEmail } = require('../config/smtp');
 const { Notification, NotificationPreference, NotificationRule, User, Role } = require('../models');
 const { Op } = require('sequelize');
 const { getRedisClient, getRedisSubClient } = require('../config/redis');
@@ -52,13 +52,34 @@ class NotificationService {
         }
     }
 
-    async sendEmailNotification(to, subject, text) {
+    async sendEmailNotification(to, subject, message, data = {}, metadata = {}) {
         try {
-            await transporter.sendMail({
-                from: process.env.SMTP_USER,
+            console.log('sendEmailNotification: message parameter:', message);
+            const resolvedMessage = await Promise.resolve(message);
+            // Create a detailed email message
+            let detailedMessage = `Event: ${resolvedMessage}\n`;
+            if (data && Object.keys(data).length) {
+                detailedMessage += `Details:\n${Object.entries(data)
+                    .map(([key, value]) => `- ${key}: ${value}`)
+                    .join('\n')}\n`;
+            }
+            if (metadata.triggeredBy) {
+                detailedMessage += `Triggered by: ${metadata.triggeredBy}\n`;
+            }
+            detailedMessage += `Timestamp: ${new Date().toLocaleString()}\n`;
+
+            await sendEmail({
                 to,
                 subject,
-                text,
+                templateName: 'default',
+                replacements: {
+                    firstname: 'User',
+                    content: detailedMessage.replace(/\n/g, '<br>'), // Convert newlines to HTML breaks for email
+                    event: resolvedMessage,
+                    timestamp: new Date().toLocaleString(),
+                    platformUrl: process.env.PLATFORM_URL || 'https://traceflow.example.com',
+                },
+                textFallback: detailedMessage,
             });
             return { success: true, method: 'Email' };
         } catch (error) {
@@ -67,9 +88,17 @@ class NotificationService {
         }
     }
 
-    async sendSMSNotification(to, message) {
+    async sendSMSNotification(to, message, data = {}, metadata = {}) {
         try {
-            const result = await sendSMS(to, message, 'notification');
+            const resolvedMessage = await Promise.resolve(message);
+            // Create a concise SMS message
+            let smsMessage = `${resolvedMessage}`;
+            if (data && Object.keys(data).length) {
+                const keyDetail = Object.entries(data)[0]; // Include one key detail due to SMS length limits
+                smsMessage += ` (${keyDetail[0]}: ${keyDetail[1]})`;
+            }
+            smsMessage += `. Check traceflow.app`;
+            const result = await sendSMS(to, smsMessage, 'notification');
             return result;
         } catch (error) {
             console.error('SMS notification failed:', error.message);
@@ -77,15 +106,19 @@ class NotificationService {
         }
     }
 
-    async sendNotification({ event, data, roles, userIDs, type, message, email, sms }) {
+    async sendNotification({ event, data, roles, userIDs, type, message, email, sms, metadata = {} }) {
         const results = [];
         let notification;
         const preferences = userIDs.length ? await this.getUserPreferences(userIDs[0], event) : { inApp: true };
+
+        // Ensure message is resolved
+        const resolvedMessage = await Promise.resolve(message);
+
         if (preferences.inApp && userIDs.length) {
             notification = await this.storeNotification({
                 userID: userIDs[0],
                 type,
-                message,
+                message: resolvedMessage,
                 channel: 'in-app',
                 event,
             });
@@ -100,14 +133,14 @@ class NotificationService {
             }
             results.push({ success: true, method: 'Redis Pub/Sub' });
         }
-        if (email && preferences.email && message) {
+        if (email && preferences.email && resolvedMessage) {
             const subject = `TraceFlow Notification: ${type.charAt(0).toUpperCase() + type.slice(1)}`;
-            const emailResult = await this.sendEmailNotification(email, subject, message);
+            const emailResult = await this.sendEmailNotification(email, subject, resolvedMessage, data, metadata);
             if (emailResult.success && userIDs.length) {
                 await this.storeNotification({
                     userID: userIDs[0],
                     type,
-                    message,
+                    message: resolvedMessage, // Store only event name for email channel
                     channel: 'email',
                     status: 'sent',
                     event,
@@ -116,7 +149,7 @@ class NotificationService {
                 await this.storeNotification({
                     userID: userIDs[0],
                     type,
-                    message,
+                    message: resolvedMessage,
                     channel: 'email',
                     status: 'failed',
                     event,
@@ -124,13 +157,13 @@ class NotificationService {
             }
             results.push(emailResult);
         }
-        if (sms && preferences.sms && message) {
-            const smsResult = await this.sendSMSNotification(sms, message);
+        if (sms && preferences.sms && resolvedMessage) {
+            const smsResult = await this.sendSMSNotification(sms, resolvedMessage, data, metadata);
             if (smsResult.success && userIDs.length) {
                 await this.storeNotification({
                     userID: userIDs[0],
                     type,
-                    message,
+                    message: resolvedMessage, // Store only event name for SMS channel
                     channel: 'sms',
                     status: 'sent',
                     event,
@@ -139,7 +172,7 @@ class NotificationService {
                 await this.storeNotification({
                     userID: userIDs[0],
                     type,
-                    message,
+                    message: resolvedMessage,
                     channel: 'sms',
                     status: 'failed',
                     event,
@@ -172,7 +205,13 @@ class NotificationService {
             if (channel === 'in-app' && !preferences.inApp) return null;
             if (channel === 'email' && !preferences.email) return null;
             if (channel === 'sms' && !preferences.sms) return null;
-            const notificationMessage = String(message);
+
+            const notificationMessage = await Promise.resolve(message).then(String);
+            if (!notificationMessage) {
+                console.error(`Invalid notification message for event: ${event}`);
+                return null;
+            }
+
             const notification = await Notification.create({
                 userID,
                 type,
@@ -180,6 +219,7 @@ class NotificationService {
                 channel,
                 status: 'pending',
             });
+
             if (channel === 'in-app' && preferences.inApp) {
                 const eventName = 'notification:created';
                 const data = {
@@ -247,7 +287,7 @@ class NotificationService {
                     ? 'AI detected {anomalyCount} anomalies in {dataType} data.'
                     : event === 'ai:report_generated'
                         ? 'AI generated a {format} report with filters: {filters}.'
-                        : `Notification for {event}`,
+                        : '{event}', // Use only the event name
                 enabled: true,
             };
             const rule = await NotificationRule.create(defaultRule);
@@ -273,7 +313,11 @@ class NotificationService {
             for (const rule of rules) {
                 const recipients = await this.resolveRecipients(rule.recipients);
                 for (const user of recipients) {
-                    const message = this.formatMessage(rule.messageTemplate, { ...data, ...metadata });
+                    const messageData = { event, ...data, ...metadata };
+                    const message = await this.formatMessage(rule.messageTemplate, messageData);
+                    if (!message) {
+                        throw new Error(`Invalid notification message for event: ${event}`);
+                    }
                     const preferences = await this.getUserPreferences(user.userID, rule.event);
                     const result = await this.sendNotification({
                         event: rule.event,
@@ -284,6 +328,7 @@ class NotificationService {
                         message,
                         email: rule.channels.email && preferences.email ? user.email : null,
                         sms: rule.channels.sms && preferences.sms ? user.phone : null,
+                        metadata, // Pass metadata for email/SMS
                     });
                     results.push({ userID: user.userID, ruleID: rule.ruleID, result });
                 }
@@ -324,7 +369,11 @@ class NotificationService {
     }
 
     async formatMessage(template, data) {
-        return template.replace(/{(\w+)}/g, (_, key) => data[key] || '');
+        const resolvedData = {};
+        for (const [key, value] of Object.entries(data)) {
+            resolvedData[key] = await Promise.resolve(value);
+        }
+        return template.replace(/{(\w+)}/g, (_, key) => resolvedData[key] || '');
     }
 }
 

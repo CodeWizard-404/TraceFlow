@@ -11,6 +11,23 @@ const CsvHeader = require('../models').CsvHeader;
 const UserService = require('./userService');
 const GoogleMapsService = require('./googleMapsService');
 
+// Define mandatory and optional headers
+const MANDATORY_HEADERS = [
+    { csvHeader: 'firstname', backend: 'name' },
+    { csvHeader: 'lastname', backend: 'lastname' },
+    { csvHeader: 'phone', backend: 'phone' },
+    { csvHeader: 'email', backend: 'email' },
+    { csvHeader: 'delegation', backend: 'delegationID' },
+    { csvHeader: 'supervisor_phone', backend: 'supervisorID' },
+];
+
+const OPTIONAL_HEADERS = [
+    { csvHeader: 'governorate', backend: 'governorate' },
+    { csvHeader: 'adress', backend: 'lat,lng' },
+    { csvHeader: 'latitude', backend: 'lat' },
+    { csvHeader: 'longtitude', backend: 'lng' },
+];
+
 class AgentService {
     /**
      * Validate agent input data.
@@ -181,12 +198,12 @@ class AgentService {
     }
 
     /**
-     * Update an agent.
-     * @param {string} id - Agent ID.
-     * @param {Object} data - Agent data to update.
-     * @param {string} actorID - ID of the user performing the action.
-     * @returns {Promise<Object>} Updated agent or error response.
-     */
+ * Update an agent.
+ * @param {string} id - Agent ID.
+ * @param {Object} data - Agent data to update.
+ * @param {string} actorID - ID of the user performing the action.
+ * @returns {Promise<Object>} Updated agent or error response.
+ */
     static async updateAgent(id, { name, lastname, email, phone, supervisorID, delegationID, latitude, longitude, locationAddress, actorID }) {
         const validation = this.validateInput({ name, lastname, email, phone, supervisorID, delegationID, agentID: id, latitude, longitude });
         if (!validation.isValid) {
@@ -261,6 +278,520 @@ class AgentService {
         } catch (error) {
             return { success: false, message: `Unable to update agent: ${error.message}` };
         }
+    }
+
+    /**
+       * Process agent CSV file.
+       * @param {Buffer} fileBuffer - Uploaded CSV file buffer.
+       * @param {string} actorID - ID of the user performing the action.
+       * @returns {Promise<Object>} Detailed processing results.
+       */
+    static async processAgentCSV(fileBuffer, actorID) {
+        const results = {
+            status: "pending",
+            summary: {
+                totalRecords: 0,
+                agentsCreated: 0,
+                agentsUpdated: 0,
+                recordsSkipped: 0,
+                errorsEncountered: 0,
+            },
+            detailedLog: {
+                created: [],
+                updated: [],
+                skipped: [],
+                errors: [],
+            },
+        };
+
+        // Decode buffer with fallback encoding
+        let bufferString;
+        try {
+            bufferString = fileBuffer.toString(process.env.CSV_ENCODING || "utf8");
+            if (bufferString.includes("\uFFFD")) {
+                bufferString = iconv.decode(fileBuffer, process.env.CSV_FALLBACK_ENCODING || "win1252");
+            }
+        } catch (fallbackError) {
+            results.detailedLog.errors.push({
+                agentPhone: "N/A",
+                agentName: "N/A",
+                timestamp: new Date().toISOString(),
+                operation: "CSV parsing",
+                reason: `Failed to decode buffer: ${fallbackError.message}`,
+            });
+            results.summary.errorsEncountered++;
+            return results;
+        }
+
+        // Fetch header mappings
+        const headerMappings = await CsvHeader.findAll({ where: { csvType: "agent" } });
+        const headerMap = headerMappings.reduce((map, header) => {
+            map[header.mappedHeader] = header.expectedHeader;
+            return map;
+        }, {});
+
+        // Extract and validate CSV headers
+        const firstLine = bufferString.split("\n")[0].trim();
+        if (!firstLine) {
+            results.detailedLog.errors.push({
+                agentPhone: "N/A",
+                agentName: "N/A",
+                timestamp: new Date().toISOString(),
+                operation: "CSV parsing",
+                reason: "CSV file is empty or has no headers",
+            });
+            results.summary.errorsEncountered++;
+            return results;
+        }
+        const csvHeaders = firstLine.split(",").map((h) => h.trim()).filter(Boolean);
+
+        // Validate mandatory headers
+        // Validate mandatory headers
+        const mandatoryCsvHeaders = MANDATORY_HEADERS.map((h) => h.csvHeader);
+        const mappedHeaders = headerMappings.map((h) => h.mappedHeader);
+        const missingMandatory = mandatoryCsvHeaders.filter((mandatoryHeader) => {
+            // Find the mapped header for this mandatory header
+            const mapping = headerMappings.find((h) => h.expectedHeader === mandatoryHeader);
+            // Check if the mapped header (or the mandatory header itself) exists in the CSV
+            return !mapping || !csvHeaders.includes(mapping.mappedHeader);
+        });
+        if (missingMandatory.length > 0) {
+            results.detailedLog.errors.push({
+                agentPhone: "N/A",
+                agentName: "N/A",
+                timestamp: new Date().toISOString(),
+                operation: "Header validation",
+                reason: `Missing required headers: ${missingMandatory.join(", ")}`,
+            });
+            results.summary.errorsEncountered++;
+            return results;
+        }
+
+        // Validate header mappings
+        const unmappedMandatory = mandatoryCsvHeaders.filter((h) => !mappedHeaders.includes(h));
+        if (unmappedMandatory.length > 0) {
+            results.detailedLog.errors.push({
+                agentPhone: "N/A",
+                agentName: "N/A",
+                timestamp: new Date().toISOString(),
+                operation: "Header mapping",
+                reason: `Required headers not mapped: ${unmappedMandatory.join(", ")}`,
+            });
+            results.summary.errorsEncountered++;
+            return results;
+        }
+
+        // Parse CSV with dynamic column mapping
+        const parser = Readable.from(bufferString).pipe(
+            csv.parse({
+                columns: (header) => header.map((h) => headerMap[h] || h),
+                skip_empty_lines: true,
+                trim: true,
+                bom: true,
+                delimiter: process.env.CSV_DELIMITER || ",",
+                quote: process.env.CSV_QUOTE || '"',
+            })
+        );
+
+        for await (const record of parser) {
+            results.summary.totalRecords++;
+            const {
+                name,
+                lastname,
+                email,
+                phone,
+                delegation,
+                supervisor_phone,
+                governorate,
+                adress: address,
+                lat: latitude,
+                lng: longitude,
+            } = record;
+
+            // Validate required fields with specific skip reasons
+            const missingFields = [];
+            if (!name) missingFields.push("firstname");
+            if (!lastname) missingFields.push("lastname");
+            if (!email) missingFields.push("email");
+            if (!phone) missingFields.push("phone");
+            if (!delegation) missingFields.push("delegation");
+            if (!supervisor_phone) missingFields.push("supervisor_phone");
+
+            if (missingFields.length > 0) {
+                results.detailedLog.skipped.push({
+                    agentPhone: phone || "N/A",
+                    agentName: `${name || "Unknown"} ${lastname || "Unknown"}`.trim(),
+                    timestamp: new Date().toISOString(),
+                    reason: `Missing required fields: ${missingFields.join(", ")}`,
+                });
+                results.summary.recordsSkipped++;
+                continue;
+            }
+
+            const transaction = await Agent.sequelize.transaction();
+            try {
+                // Validate input data using validateInput method
+                const validation = this.validateInput({
+                    name,
+                    lastname,
+                    email,
+                    phone,
+                    supervisorID: supervisor_phone, // Temporary, will be resolved later
+                    delegationID: delegation, // Temporary, will be resolved later
+                    latitude: latitude ? parseFloat(latitude) : undefined,
+                    longitude: longitude ? parseFloat(longitude) : undefined,
+                });
+
+                if (!validation.isValid) {
+                    results.detailedLog.skipped.push({
+                        agentPhone: phone,
+                        agentName: `${name} ${lastname}`,
+                        timestamp: new Date().toISOString(),
+                        reason: `Input validation failed: ${validation.errors.join("; ")}`,
+                    });
+                    results.summary.recordsSkipped++;
+                    await transaction.rollback();
+                    continue;
+                }
+
+                // Resolve supervisor by phone
+                const supervisor = await User.findOne({
+                    where: { phone: supervisor_phone },
+                    include: [
+                        { model: Role, through: { attributes: [] }, attributes: ["name"] },
+                        { model: Delegation, through: { attributes: [] } },
+                    ],
+                    transaction,
+                });
+
+                if (!supervisor) {
+                    results.detailedLog.skipped.push({
+                        agentPhone: phone,
+                        agentName: `${name} ${lastname}`,
+                        timestamp: new Date().toISOString(),
+                        reason: `No user found with supervisor phone number '${supervisor_phone}'`,
+                    });
+                    results.summary.recordsSkipped++;
+                    await transaction.rollback();
+                    continue;
+                }
+
+                if (!supervisor.Roles.some((role) => role.name === process.env.ROLE_SUPERVISOR)) {
+                    results.detailedLog.skipped.push({
+                        agentPhone: phone,
+                        agentName: `${name} ${lastname}`,
+                        timestamp: new Date().toISOString(),
+                        reason: `User with phone '${supervisor_phone}' is not assigned the supervisor role`,
+                    });
+                    results.summary.recordsSkipped++;
+                    await transaction.rollback();
+                    continue;
+                }
+
+                // Prevent self-supervision
+                if (phone === supervisor_phone) {
+                    results.detailedLog.skipped.push({
+                        agentPhone: phone,
+                        agentName: `${name} ${lastname}`,
+                        timestamp: new Date().toISOString(),
+                        reason: "Self-supervision is not allowed: agent phone matches supervisor phone",
+                    });
+                    results.summary.recordsSkipped++;
+                    await transaction.rollback();
+                    continue;
+                }
+
+                // Resolve delegation by name
+                const delegationRecord = await Delegation.findOne({
+                    where: { name: { [Op.iLike]: delegation } },
+                    transaction,
+                });
+                if (!delegationRecord) {
+                    results.detailedLog.errors.push({
+                        agentPhone: phone,
+                        agentName: `${name} ${lastname}`,
+                        timestamp: new Date().toISOString(),
+                        operation: "Delegation lookup",
+                        reason: `Delegation '${delegation}' not found in the system`,
+                    });
+                    results.summary.errorsEncountered++;
+                    await transaction.rollback();
+                    continue;
+                }
+
+                // Validate supervisor's delegation assignment
+                const supervisorDelegations = supervisor.Delegations.map(d => d.delegationID);
+                if (!supervisorDelegations.includes(delegationRecord.delegationID)) {
+                    results.detailedLog.skipped.push({
+                        agentPhone: phone,
+                        agentName: `${name} ${lastname}`,
+                        timestamp: new Date().toISOString(),
+                        reason: `Supervisor with phone '${supervisor_phone}' is not assigned to delegation '${delegation}'`,
+                    });
+                    results.summary.recordsSkipped++;
+                    await transaction.rollback();
+                    continue;
+                }
+
+                // Validate governorate if provided
+                if (governorate) {
+                    const governorateRecord = await Governorate.findOne({
+                        where: { name: { [Op.iLike]: governorate } },
+                        transaction,
+                    });
+                    if (!governorateRecord) {
+                        results.detailedLog.errors.push({
+                            agentPhone: phone,
+                            agentName: `${name} ${lastname}`,
+                            timestamp: new Date().toISOString(),
+                            operation: "Governorate lookup",
+                            reason: `Governorate '${governorate}' not found in the system`,
+                        });
+                        results.summary.errorsEncountered++;
+                        await transaction.rollback();
+                        continue;
+                    }
+
+                    if (delegationRecord.governorateID !== governorateRecord.governorateID) {
+                        results.detailedLog.errors.push({
+                            agentPhone: phone,
+                            agentName: `${name} ${lastname}`,
+                            timestamp: new Date().toISOString(),
+                            operation: "Governorate validation",
+                            reason: `Delegation '${delegation}' does not belong to governorate '${governorate}'`,
+                        });
+                        results.summary.errorsEncountered++;
+                        await transaction.rollback();
+                        continue;
+                    }
+                }
+
+                // Assign governorate to supervisor if provided
+                if (governorate) {
+                    const governorateRecord = await Governorate.findOne({
+                        where: { name: { [Op.iLike]: governorate } },
+                        transaction,
+                    });
+                    if (governorateRecord) {
+                        const governorateAssignment = await UserService.assignGovernorateToUser(
+                            supervisor.userID,
+                            governorateRecord.governorateID,
+                            actorID,
+                            { transaction }
+                        );
+                        if (!governorateAssignment.success) {
+                            results.detailedLog.errors.push({
+                                agentPhone: phone,
+                                agentName: `${name} ${lastname}`,
+                                timestamp: new Date().toISOString(),
+                                operation: "Governorate assignment",
+                                reason: `Failed to assign governorate '${governorate}' to supervisor ${supervisor_phone}: ${governorateAssignment.message}`,
+                            });
+                            results.summary.errorsEncountered++;
+                            await transaction.rollback();
+                            continue;
+                        }
+                    }
+                }
+
+                // Assign delegation to supervisor
+                const delegationAssignment = await UserService.assignDelegationToUser(
+                    supervisor.userID,
+                    delegationRecord.delegationID,
+                    actorID,
+                    { transaction }
+                );
+                if (!delegationAssignment.success) {
+                    results.detailedLog.errors.push({
+                        agentPhone: phone,
+                        agentName: `${name} ${lastname}`,
+                        timestamp: new Date().toISOString(),
+                        operation: "Delegation assignment",
+                        reason: `Failed to assign delegation '${delegation}' to supervisor ${supervisor_phone}: ${delegationAssignment.message}`,
+                    });
+                    results.summary.errorsEncountered++;
+                    await transaction.rollback();
+                    continue;
+                }
+
+                // Handle location data
+                let finalLat = latitude ? parseFloat(latitude) : null;
+                let finalLng = longitude ? parseFloat(longitude) : null;
+                if (address && !latitude && !longitude) {
+                    try {
+                        const geocode = await GoogleMapsService.geocodeAddress(address);
+                        finalLat = geocode.latitude;
+                        finalLng = geocode.longitude;
+                    } catch (error) {
+                        results.detailedLog.errors.push({
+                            agentPhone: phone,
+                            agentName: `${name} ${lastname}`,
+                            timestamp: new Date().toISOString(),
+                            operation: "Geocoding",
+                            reason: `Failed to geocode address '${address}': ${error.message}`,
+                        });
+                        results.summary.errorsEncountered++;
+                        await transaction.rollback();
+                        continue;
+                    }
+                }
+
+                // Validate location data
+                if (finalLat !== null && (isNaN(finalLat) || finalLat < -90 || finalLat > 90)) {
+                    results.detailedLog.errors.push({
+                        agentPhone: phone,
+                        agentName: `${name} ${lastname}`,
+                        timestamp: new Date().toISOString(),
+                        operation: "Location validation",
+                        reason: "Latitude must be a number between -90 and 90",
+                    });
+                    results.summary.errorsEncountered++;
+                    await transaction.rollback();
+                    continue;
+                }
+                if (finalLng !== null && (isNaN(finalLng) || finalLng < -180 || finalLng > 180)) {
+                    results.detailedLog.errors.push({
+                        agentPhone: phone,
+                        agentName: `${name} ${lastname}`,
+                        timestamp: new Date().toISOString(),
+                        operation: "Location validation",
+                        reason: "Longitude must be a number between -180 and 180",
+                    });
+                    results.summary.errorsEncountered++;
+                    await transaction.rollback();
+                    continue;
+                }
+
+                // Check for existing agent
+                let existingAgent = await Agent.findOne({ where: { phone }, transaction });
+                if (!existingAgent && email) {
+                    existingAgent = await Agent.findOne({ where: { email }, transaction });
+                }
+
+                let agentResult;
+                if (existingAgent) {
+                    // Update existing agent
+                    agentResult = await this.updateAgent(
+                        existingAgent.agentID,
+                        {
+                            name,
+                            lastname,
+                            email,
+                            phone,
+                            supervisorID: supervisor.userID,
+                            delegationID: delegationRecord.delegationID,
+                            latitude: finalLat,
+                            longitude: finalLng,
+                            locationAddress: address,
+                            actorID,
+                        },
+                        { transaction }
+                    );
+
+                    if (agentResult.success) {
+                        results.detailedLog.updated.push({
+                            agentPhone: phone,
+                            agentName: `${name} ${lastname}`,
+                            timestamp: new Date().toISOString(),
+                            details: `Agent updated with email '${email}', assigned to delegation '${delegation}' and supervisor ${supervisor_phone}`,
+                        });
+                        results.summary.agentsUpdated++;
+                    } else {
+                        results.detailedLog.errors.push({
+                            agentPhone: phone,
+                            agentName: `${name} ${lastname}`,
+                            timestamp: new Date().toISOString(),
+                            operation: "Agent update",
+                            reason: `Failed to update agent: ${agentResult.message}`,
+                        });
+                        results.summary.errorsEncountered++;
+                        await transaction.rollback();
+                        continue;
+                    }
+                } else {
+                    // Create new agent
+                    agentResult = await this.createAgent(
+                        {
+                            name,
+                            lastname,
+                            email,
+                            phone,
+                            supervisorID: supervisor.userID,
+                            delegationID: delegationRecord.delegationID,
+                            latitude: finalLat,
+                            longitude: finalLng,
+                            locationAddress: address,
+                            actorID,
+                        },
+                        { transaction }
+                    );
+
+                    if (agentResult.success) {
+                        results.detailedLog.created.push({
+                            agentPhone: phone,
+                            agentName: `${name} ${lastname}`,
+                            timestamp: new Date().toISOString(),
+                            details: `Agent created with email '${email}', assigned to delegation '${delegation}' and supervisor ${supervisor_phone}`,
+                        });
+                        results.summary.agentsCreated++;
+                    } else {
+                        results.detailedLog.errors.push({
+                            agentPhone: phone,
+                            agentName: `${name} ${lastname}`,
+                            timestamp: new Date().toISOString(),
+                            operation: "Agent creation",
+                            reason: `Failed to create agent: ${agentResult.message}`,
+                        });
+                        results.summary.errorsEncountered++;
+                        await transaction.rollback();
+                        continue;
+                    }
+                }
+
+                // Assign supervisor to agent
+                const supervisorAssignment = await UserService.assignSupervisorToAgent(
+                    agentResult.agent.agentID,
+                    supervisor.userID,
+                    delegationRecord.delegationID,
+                    actorID,
+                    { transaction }
+                );
+                if (!supervisorAssignment.success) {
+                    results.detailedLog.errors.push({
+                        agentPhone: phone,
+                        agentName: `${name} ${lastname}`,
+                        timestamp: new Date().toISOString(),
+                        operation: "Supervisor assignment",
+                        reason: `Failed to assign supervisor: ${supervisorAssignment.message}`,
+                    });
+                    results.summary.errorsEncountered++;
+                    await transaction.rollback();
+                    continue;
+                }
+
+                await transaction.commit();
+            } catch (error) {
+                await transaction.rollback();
+                results.detailedLog.errors.push({
+                    agentPhone: phone || "N/A",
+                    agentName: `${name || ""} ${lastname || ""}`.trim() || "Unnamed",
+                    timestamp: new Date().toISOString(),
+                    operation: "Record processing",
+                    reason: `Unexpected error occurred: ${error.message}`,
+                });
+                results.summary.errorsEncountered++;
+            }
+        }
+
+        // Determine overall status
+        results.status =
+            results.summary.errorsEncountered === 0 && results.summary.recordsSkipped === 0
+                ? "completed_successfully"
+                : results.summary.agentsCreated > 0 || results.summary.agentsUpdated > 0
+                    ? "completed_with_issues"
+                    : "failed";
+
+        return results;
     }
 
     /**
@@ -536,9 +1067,10 @@ class AgentService {
         }
     }
 
+
     /**
      * Process agent CSV file.
-     * @param {Object} file - Uploaded CSV file object.
+     * @param {Buffer} fileBuffer - Uploaded CSV file buffer.
      * @param {string} actorID - ID of the user performing the action.
      * @returns {Promise<Object>} Detailed processing results.
      */
@@ -559,7 +1091,6 @@ class AgentService {
                 errors: [],
             },
         };
-
 
         // Attempt to decode buffer
         let bufferString;
@@ -591,10 +1122,55 @@ class AgentService {
             return map;
         }, {});
 
+        // Extract CSV headers
+        const firstLine = bufferString.split('\n')[0].trim();
+        if (!firstLine) {
+            results.detailedLog.errors.push({
+                agentPhone: 'N/A',
+                agentName: 'N/A',
+                timestamp: new Date().toISOString(),
+                operation: 'CSV parsing',
+                reason: 'CSV file is empty or has no headers',
+            });
+            results.summary.errorsEncountered++;
+            return results;
+        }
+        const csvHeaders = firstLine.split(',').map(h => h.trim()).filter(h => h);
+
+        // Validate mandatory headers
+        const mandatoryCsvHeaders = MANDATORY_HEADERS.map(h => h.csvHeader);
+        const missingMandatory = mandatoryCsvHeaders.filter(h => !csvHeaders.includes(h));
+        if (missingMandatory.length > 0) {
+            results.detailedLog.errors.push({
+                agentPhone: 'N/A',
+                agentName: 'N/A',
+                timestamp: new Date().toISOString(),
+                operation: 'Header validation',
+                reason: `Missing required headers: ${missingMandatory.join(', ')}`,
+            });
+            results.summary.errorsEncountered++;
+            return results;
+        }
+
+        // Validate header mappings
+        const mappedHeaders = headerMappings.map(h => h.mappedHeader);
+        const unmappedMandatory = mandatoryCsvHeaders.filter(h => !mappedHeaders.includes(h));
+        if (unmappedMandatory.length > 0) {
+            results.detailedLog.errors.push({
+                agentPhone: 'N/A',
+                agentName: 'N/A',
+                timestamp: new Date().toISOString(),
+                operation: 'Header mapping',
+                reason: `Required headers not mapped: ${unmappedMandatory.join(', ')}`,
+            });
+            results.summary.errorsEncountered++;
+            return results;
+        }
+
         // Parse CSV with dynamic column mapping
         const parser = Readable.from(bufferString).pipe(
             csv.parse({
-                columns: header => header.map(h => headerMap[h] || h), // Map CSV headers to expected headers
+                columns: header => header.map(h => headerMap[h] || h),
                 skip_empty_lines: true,
                 trim: true,
                 bom: true,
@@ -606,20 +1182,23 @@ class AgentService {
         for await (const record of parser) {
             results.summary.totalRecords++;
             const {
-                firstname,
+                name,
                 lastname,
                 email,
                 phone,
-                delegation,
+                delegation: delegationName,
+                supervisor_phone: supervisorPhone,
                 governorate,
-                supervisor_phone,
+                adress: address,
+                lat: latitude,
+                lng: longitude,
             } = record;
 
             // Validate required fields
-            if (!firstname || !lastname || !email || !phone || !delegation || !governorate || !supervisor_phone) {
+            if (!name || !lastname || !email || !phone || !delegationName || !supervisorPhone) {
                 results.detailedLog.skipped.push({
                     agentPhone: phone || 'N/A',
-                    agentName: `${firstname || ''} ${lastname || ''}`.trim() || 'Unnamed',
+                    agentName: `${name || ''} ${lastname || ''}`.trim() || 'Unnamed',
                     timestamp: new Date().toISOString(),
                     reason: 'One or more required fields are missing',
                 });
@@ -631,7 +1210,7 @@ class AgentService {
             try {
                 // Fetch supervisor
                 const supervisor = await User.findOne({
-                    where: { phone: supervisor_phone },
+                    where: { phone: supervisorPhone },
                     include: [
                         { model: Role, through: { attributes: [] }, attributes: ['name'] },
                         { model: Delegation, through: { attributes: [] } },
@@ -642,9 +1221,9 @@ class AgentService {
                 if (!supervisor || !supervisor.Roles.some(role => role.name === process.env.ROLE_SUPERVISOR)) {
                     results.detailedLog.skipped.push({
                         agentPhone: phone,
-                        agentName: `${firstname} ${lastname}`,
+                        agentName: `${name} ${lastname}`,
                         timestamp: new Date().toISOString(),
-                        reason: `No valid supervisor found with phone number ${supervisor_phone}`,
+                        reason: `No valid supervisor found with phone number ${supervisorPhone}`,
                     });
                     results.summary.recordsSkipped++;
                     await transaction.rollback();
@@ -652,10 +1231,10 @@ class AgentService {
                 }
 
                 // Prevent self-supervision
-                if (phone === supervisor_phone) {
+                if (phone === supervisorPhone) {
                     results.detailedLog.skipped.push({
                         agentPhone: phone,
-                        agentName: `${firstname} ${lastname}`,
+                        agentName: `${name} ${lastname}`,
                         timestamp: new Date().toISOString(),
                         reason: 'Agent phone number matches supervisor phone number; self-supervision is not allowed',
                     });
@@ -668,7 +1247,7 @@ class AgentService {
                 const delegationRecord = await Delegation.findOne({
                     where: {
                         name: {
-                            [Op.iLike]: delegation,
+                            [Op.iLike]: delegationName,
                         },
                     },
                     transaction,
@@ -676,56 +1255,80 @@ class AgentService {
                 if (!delegationRecord) {
                     results.detailedLog.errors.push({
                         agentPhone: phone,
-                        agentName: `${firstname} ${lastname}`,
+                        agentName: `${name} ${lastname}`,
                         timestamp: new Date().toISOString(),
                         operation: 'Delegation lookup',
-                        reason: `Delegation '${delegation}' not found in the system`,
+                        reason: `Delegation '${delegationName}' not found in the system`,
                     });
                     results.summary.errorsEncountered++;
                     await transaction.rollback();
                     continue;
                 }
 
-                // Perform case-insensitive search for governorate
-                const governorateRecord = await Governorate.findOne({
-                    where: {
-                        name: {
-                            [Op.iLike]: governorate,
+                // Validate governorate if provided
+                if (governorate) {
+                    const governorateRecord = await Governorate.findOne({
+                        where: {
+                            name: {
+                                [Op.iLike]: governorate,
+                            },
                         },
-                    },
-                    transaction,
-                });
-                if (!governorateRecord) {
-                    results.detailedLog.errors.push({
-                        agentPhone: phone,
-                        agentName: `${firstname} ${lastname}`,
-                        timestamp: new Date().toISOString(),
-                        operation: 'Governorate lookup',
-                        reason: `Governorate '${governorate}' not found in the system`,
+                        transaction,
                     });
-                    results.summary.errorsEncountered++;
-                    await transaction.rollback();
-                    continue;
+                    if (!governorateRecord) {
+                        results.detailedLog.errors.push({
+                            agentPhone: phone,
+                            agentName: `${name} ${lastname}`,
+                            timestamp: new Date().toISOString(),
+                            operation: 'Governorate lookup',
+                            reason: `Governorate '${governorate}' not found in the system`,
+                        });
+                        results.summary.errorsEncountered++;
+                        await transaction.rollback();
+                        continue;
+                    }
+
+                    // Check if delegation belongs to governorate
+                    if (delegationRecord.governorateID !== governorateRecord.governorateID) {
+                        results.detailedLog.errors.push({
+                            agentPhone: phone,
+                            agentName: `${name} ${lastname}`,
+                            timestamp: new Date().toISOString(),
+                            operation: 'Governorate validation',
+                            reason: `Delegation '${delegationName}' does not belong to governorate '${governorate}'`,
+                        });
+                        results.summary.errorsEncountered++;
+                        await transaction.rollback();
+                        continue;
+                    }
                 }
 
-                // Assign governorate to supervisor
-                const governorateAssignment = await UserService.assignGovernorateToUser(
-                    supervisor.userID,
-                    governorateRecord.governorateID,
-                    actorID,
-                    { transaction }
-                );
-                if (!governorateAssignment.success) {
-                    results.detailedLog.errors.push({
-                        agentPhone: phone,
-                        agentName: `${firstname} ${lastname}`,
-                        timestamp: new Date().toISOString(),
-                        operation: 'Governorate assignment',
-                        reason: `Failed to assign governorate '${governorate}' to supervisor ${supervisor_phone}: ${governorateAssignment.message}`,
+                // Assign governorate to supervisor if provided
+                if (governorate) {
+                    const governorateRecord = await Governorate.findOne({
+                        where: { name: { [Op.iLike]: governorate } },
+                        transaction,
                     });
-                    results.summary.errorsEncountered++;
-                    await transaction.rollback();
-                    continue;
+                    if (governorateRecord) {
+                        const governorateAssignment = await UserService.assignGovernorateToUser(
+                            supervisor.userID,
+                            governorateRecord.governorateID,
+                            actorID,
+                            { transaction }
+                        );
+                        if (!governorateAssignment.success) {
+                            results.detailedLog.errors.push({
+                                agentPhone: phone,
+                                agentName: `${name} ${lastname}`,
+                                timestamp: new Date().toISOString(),
+                                operation: 'Governorate assignment',
+                                reason: `Failed to assign governorate '${governorate}' to supervisor ${supervisorPhone}: ${governorateAssignment.message}`,
+                            });
+                            results.summary.errorsEncountered++;
+                            await transaction.rollback();
+                            continue;
+                        }
+                    }
                 }
 
                 // Assign delegation to supervisor
@@ -738,10 +1341,58 @@ class AgentService {
                 if (!delegationAssignment.success) {
                     results.detailedLog.errors.push({
                         agentPhone: phone,
-                        agentName: `${firstname} ${lastname}`,
+                        agentName: `${name} ${lastname}`,
                         timestamp: new Date().toISOString(),
                         operation: 'Delegation assignment',
-                        reason: `Failed to assign delegation '${delegation}' to supervisor ${supervisor_phone}: ${delegationAssignment.message}`,
+                        reason: `Failed to assign delegation '${delegationName}' to supervisor ${supervisorPhone}: ${delegationAssignment.message}`,
+                    });
+                    results.summary.errorsEncountered++;
+                    await transaction.rollback();
+                    continue;
+                }
+
+                // Handle location data
+                let finalLat = latitude ? parseFloat(latitude) : null;
+                let finalLng = longitude ? parseFloat(longitude) : null;
+                if (address && !latitude && !longitude) {
+                    try {
+                        const geocode = await GoogleMapsService.geocodeAddress(address);
+                        finalLat = geocode.latitude;
+                        finalLng = geocode.longitude;
+                    } catch (error) {
+                        results.detailedLog.errors.push({
+                            agentPhone: phone,
+                            agentName: `${name} ${lastname}`,
+                            timestamp: new Date().toISOString(),
+                            operation: 'Geocoding',
+                            reason: `Failed to geocode address '${address}': ${error.message}`,
+                        });
+                        results.summary.errorsEncountered++;
+                        await transaction.rollback();
+                        continue;
+                    }
+                }
+
+                // Validate location data
+                if (finalLat !== null && (isNaN(finalLat) || finalLat < -90 || finalLat > 90)) {
+                    results.detailedLog.errors.push({
+                        agentPhone: phone,
+                        agentName: `${name} ${lastname}`,
+                        timestamp: new Date().toISOString(),
+                        operation: 'Location validation',
+                        reason: 'Latitude must be a number between -90 and 90',
+                    });
+                    results.summary.errorsEncountered++;
+                    await transaction.rollback();
+                    continue;
+                }
+                if (finalLng !== null && (isNaN(finalLng) || finalLng < -180 || finalLng > 180)) {
+                    results.detailedLog.errors.push({
+                        agentPhone: phone,
+                        agentName: `${name} ${lastname}`,
+                        timestamp: new Date().toISOString(),
+                        operation: 'Location validation',
+                        reason: 'Longitude must be a number between -180 and 180',
                     });
                     results.summary.errorsEncountered++;
                     await transaction.rollback();
@@ -760,27 +1411,30 @@ class AgentService {
                 if (existingAgent) {
                     // Update existing agent
                     agentResult = await this.updateAgent(existingAgent.agentID, {
-                        name: firstname,
+                        name,
                         lastname,
                         email,
                         phone,
                         supervisorID: supervisor.userID,
                         delegationID: delegationRecord.delegationID,
+                        latitude: finalLat,
+                        longitude: finalLng,
+                        locationAddress: address,
                         actorID,
                     }, { transaction });
 
                     if (agentResult.success) {
                         results.detailedLog.updated.push({
                             agentPhone: phone,
-                            agentName: `${firstname} ${lastname}`,
+                            agentName: `${name} ${lastname}`,
                             timestamp: new Date().toISOString(),
-                            details: `Agent updated with email '${email}', assigned to delegation '${delegation}' and supervisor ${supervisor_phone}`,
+                            details: `Agent updated with email '${email}', assigned to delegation '${delegationName}' and supervisor ${supervisorPhone}`,
                         });
                         results.summary.agentsUpdated++;
                     } else {
                         results.detailedLog.errors.push({
                             agentPhone: phone,
-                            agentName: `${firstname} ${lastname}`,
+                            agentName: `${name} ${lastname}`,
                             timestamp: new Date().toISOString(),
                             operation: 'Agent update',
                             reason: `Failed to update agent: ${agentResult.message}`,
@@ -792,27 +1446,30 @@ class AgentService {
                 } else {
                     // Create new agent
                     agentResult = await this.createAgent({
-                        name: firstname,
+                        name,
                         lastname,
                         email,
                         phone,
                         supervisorID: supervisor.userID,
                         delegationID: delegationRecord.delegationID,
+                        latitude: finalLat,
+                        longitude: finalLng,
+                        locationAddress: address,
                         actorID,
                     }, { transaction });
 
                     if (agentResult.success) {
                         results.detailedLog.created.push({
                             agentPhone: phone,
-                            agentName: `${firstname} ${lastname}`,
+                            agentName: `${name} ${lastname}`,
                             timestamp: new Date().toISOString(),
-                            details: `Agent created with email '${email}', assigned to delegation '${delegation}' and supervisor ${supervisor_phone}`,
+                            details: `Agent created with email '${email}', assigned to delegation '${delegationName}' and supervisor ${supervisorPhone}`,
                         });
                         results.summary.agentsCreated++;
                     } else {
                         results.detailedLog.errors.push({
                             agentPhone: phone,
-                            agentName: `${firstname} ${lastname}`,
+                            agentName: `${name} ${lastname}`,
                             timestamp: new Date().toISOString(),
                             operation: 'Agent creation',
                             reason: `Failed to create agent: ${agentResult.message}`,
@@ -834,7 +1491,7 @@ class AgentService {
                 if (!supervisorAssignment.success) {
                     results.detailedLog.errors.push({
                         agentPhone: phone,
-                        agentName: `${firstname} ${lastname}`,
+                        agentName: `${name} ${lastname}`,
                         timestamp: new Date().toISOString(),
                         operation: 'Supervisor assignment',
                         reason: `Failed to assign supervisor: ${supervisorAssignment.message}`,
@@ -849,7 +1506,7 @@ class AgentService {
                 await transaction.rollback();
                 results.detailedLog.errors.push({
                     agentPhone: phone || 'N/A',
-                    agentName: `${firstname || ''} ${lastname || ''}`.trim() || 'Unnamed',
+                    agentName: `${name || ''} ${lastname || ''}`.trim() || 'Unnamed',
                     timestamp: new Date().toISOString(),
                     operation: 'Record processing',
                     reason: `Unexpected error occurred: ${error.message}`,
@@ -865,9 +1522,9 @@ class AgentService {
                 ? 'completed_with_issues'
                 : 'failed');
 
-
         return results;
     }
+
 
 
 

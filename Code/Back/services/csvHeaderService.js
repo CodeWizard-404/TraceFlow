@@ -19,7 +19,7 @@ class CsvHeaderService {
     }
 
     /**
-     * Update CSV header mappings for a given CSV type.
+     * Update or create CSV header mappings for a given CSV type.
      * @param {string} csvType - Type of CSV (e.g., 'agent').
      * @param {Array} headers - Array of { expectedHeader, mappedHeader } objects.
      * @param {string} actorID - ID of the user performing the action.
@@ -33,20 +33,6 @@ class CsvHeaderService {
                 return { success: false, message: 'Headers array is required and must not be empty' };
             }
 
-            const existingHeaders = await CsvHeader.findAll({
-                where: { csvType },
-                transaction,
-            });
-
-            // Validate that all expected headers are provided
-            const expectedHeadersSet = new Set(existingHeaders.map(h => h.expectedHeader));
-            const providedHeadersSet = new Set(headers.map(h => h.expectedHeader));
-            if (expectedHeadersSet.size !== providedHeadersSet.size ||
-                [...expectedHeadersSet].some(h => !providedHeadersSet.has(h))) {
-                return { success: false, message: 'All expected headers must be provided' };
-            }
-
-            // Validate mapped headers for uniqueness and non-emptiness
             const mappedHeaders = headers.map(h => h.mappedHeader);
             if (new Set(mappedHeaders).size !== mappedHeaders.length) {
                 return { success: false, message: 'Mapped headers must be unique' };
@@ -54,26 +40,48 @@ class CsvHeaderService {
             if (mappedHeaders.some(h => !h || typeof h !== 'string')) {
                 return { success: false, message: 'Mapped headers must be non-empty strings' };
             }
+            if (headers.some(h => !h.expectedHeader || typeof h.expectedHeader !== 'string')) {
+                return { success: false, message: 'Expected headers must be non-empty strings' };
+            }
 
-            // Update headers
+            // Validate expected headers
+            const validExpectedHeaders = ['name', 'lastname', 'phone', 'email', 'delegation', 'supervisor_phone', 'governorate', 'lat', 'lng'];
+            if (headers.some(h => !validExpectedHeaders.includes(h.expectedHeader))) {
+                return { success: false, message: `Invalid expected headers: ${headers.filter(h => !validExpectedHeaders.includes(h.expectedHeader)).map(h => h.expectedHeader).join(', ')}` };
+            }
+
+            const existingHeaders = await CsvHeader.findAll({
+                where: { csvType },
+                transaction,
+            });
+
+            const existingHeaderMap = new Map(existingHeaders.map(h => [h.expectedHeader, h]));
+
             for (const header of headers) {
-                await CsvHeader.update(
-                    { mappedHeader: header.mappedHeader },
-                    {
-                        where: {
-                            csvType,
-                            expectedHeader: header.expectedHeader,
-                        },
-                        transaction,
-                    }
-                );
+                const { expectedHeader, mappedHeader } = header;
+
+                if (existingHeaderMap.has(expectedHeader)) {
+                    await CsvHeader.update(
+                        { mappedHeader },
+                        {
+                            where: { csvType, expectedHeader },
+                            transaction,
+                        }
+                    );
+                } else {
+                    await CsvHeader.create(
+                        { csvType, expectedHeader, mappedHeader, createdBy: actorID },
+                        { transaction }
+                    );
+                }
             }
 
             await transaction.commit();
             return { success: true, message: 'Headers updated successfully' };
         } catch (error) {
             await transaction.rollback();
-            return { success: false, message: 'Unable to update headers' };
+            console.error('Failed to update headers:', error);
+            return { success: false, message: `Unable to update headers: ${error.message}` };
         }
     }
 }

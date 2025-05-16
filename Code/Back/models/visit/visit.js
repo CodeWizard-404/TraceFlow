@@ -10,11 +10,11 @@ module.exports = (sequelize, DataTypes) => {
         date: { type: DataTypes.DATEONLY, allowNull: false },
         time: { type: DataTypes.TIME, allowNull: false },
         duration: { type: DataTypes.INTEGER },
-        location: { type: DataTypes.STRING },
+        location: { type: DataTypes.STRING, allowNull: true },
         status: { type: DataTypes.STRING, allowNull: false },
         photos: { type: DataTypes.ARRAY(DataTypes.STRING), defaultValue: [] },
         comment: { type: DataTypes.TEXT },
-        agentID: { type: DataTypes.STRING, allowNull: false },
+        agentID: { type: DataTypes.STRING, allowNull: true },
         timesheetID: { type: DataTypes.STRING, allowNull: false },
         calendarEventId: { type: DataTypes.STRING, allowNull: true },
     });
