@@ -2,16 +2,9 @@
 import React, { useState, useEffect, useMemo, useCallback, useRef } from "react";
 import { useNavigate, useParams } from "react-router-dom";
 import { debounce } from "lodash";
-import {
-  FaListUl,
-  FaArrowLeft,
-  FaCamera,
-  FaTimes,
-} from "react-icons/fa";
+import { FaListUl, FaArrowLeft } from "react-icons/fa";
 import "./VisitDetails.css";
-import { Button } from "../../components/ui/button";
 import { useAuth } from "../../context/AuthContext";
-import VisitStatus from "../../models/Enum/VisitStatus";
 import Visit from "../../models/Visit";
 import Agent from "../../models/Agent";
 import User from "../../models/User";
@@ -34,12 +27,11 @@ import {
   getUsersByGovernorate,
   getUsersByDelegation,
   getUserById,
-
   getUserByPhone,
 } from "../../apis/userAPI";
 import { getAllChecklists } from "../../apis/checklistAPI";
 import { getAllReasons } from "../../apis/reasonAPI";
-import { getVisitById, updateVisit } from "../../apis/visitAPI";
+import { getVisitById } from "../../apis/visitAPI";
 import {
   getRegionsByUser,
   getDelegationsByUser,
@@ -53,20 +45,18 @@ import {
   getGovernoratesByDelegation,
 } from "../../apis/locationApi";
 import { useTranslation } from "react-i18next";
+import VisitEditForm from "./VisitEditForm";
 
 // Constants for environment variables and permissions
-const BASE_URL = import.meta.env.VITE_BASE_URL;
 const PERMISSIONS = {
   ACCESS_VISIT_DETAILS: import.meta.env.VITE_PERMISSIONS_ACCESS_VISIT_DETAILS,
   EDIT_TIMESHEETS_FOR_SUPERVISOR: import.meta.env.VITE_PERMISSIONS_EDIT_VISIT,
   READ_SUPERVISORS: import.meta.env.VITE_PERMISSIONS_READ_SUPERVISORS,
-  READ_AGENTS_BY_LOCATION: import.meta.env
-    .VITE_PERMISSIONS_READ_AGENTS_BY_DELEGATION,
+  READ_AGENTS_BY_LOCATION: import.meta.env.VITE_PERMISSIONS_READ_AGENTS_BY_DELEGATION,
   READ_AGENTS_BY_PHONE: import.meta.env.VITE_PERMISSIONS_READ_AGENTS_BY_PHONE,
   READ_REASON_ITEMS: import.meta.env.VITE_PERMISSIONS_READ_REASON_ITEMS,
   READ_CHECKLISTS_ITEMS: import.meta.env.VITE_PERMISSIONS_READ_CHECKLISTS_ITEMS,
-  CREATE_TIMESHEETS_FOR_SUPERVISORS: import.meta.env
-    .VITE_PERMISSIONS_CREATE_TIMESHEETS_FOR_SUPERVISOR,
+  CREATE_TIMESHEETS_FOR_SUPERVISORS: import.meta.env.VITE_PERMISSIONS_CREATE_TIMESHEETS_FOR_SUPERVISOR,
   LOG_VISITS: import.meta.env.VITE_PERMISSIONS_LOG_VISITS,
 } as const;
 
@@ -120,14 +110,15 @@ interface EditFormState {
 }
 
 /**
- * VisitDetailsEdit component: Manages editing of visit details with form and camera capabilities.
+ * VisitEdit component: Manages editing of visit details with form and camera capabilities.
  */
-const VisitDetailsEdit: React.FC = () => {
+const VisitEdit: React.FC = () => {
   const { t } = useTranslation();
   const { idVisit } = useParams<{ idVisit: string }>();
   const navigate = useNavigate();
   const { user, effectivePermissions, permissionsLoaded } = useAuth();
 
+  // State management
   const [visit, setVisit] = useState<Visit | null>(null);
   const [, setAgent] = useState<Agent | null>(null);
   const [regions, setRegions] = useState<Region[]>([]);
@@ -144,8 +135,6 @@ const VisitDetailsEdit: React.FC = () => {
   const [supervisors, setSupervisors] = useState<User[]>([]);
   const [selectedSupervisor, setSelectedSupervisor] = useState<string>("");
   const [supervisorPhone, setSupervisorPhone] = useState<string>("");
-  const [agentLoading, setAgentLoading] = useState<boolean>(false);
-  const [supervisorLoading, setSupervisorLoading] = useState<boolean>(false);
   const [disableLocationInputs, setDisableLocationInputs] = useState<boolean>(false);
   const [disableSupervisorInput, setDisableSupervisorInput] = useState<boolean>(false);
   const [disableRegionalManagerInput, setDisableRegionalManagerInput] = useState<boolean>(false);
@@ -153,6 +142,8 @@ const VisitDetailsEdit: React.FC = () => {
   const [isCameraActive, setIsCameraActive] = useState<boolean>(false);
   const [newPhotos, setNewPhotos] = useState<File[]>([]);
   const [flashEffect, setFlashEffect] = useState<boolean>(false);
+  const [agentLoading, setAgentLoading] = useState<boolean>(false);
+  const [supervisorLoading, setSupervisorLoading] = useState<boolean>(false);
   const videoRef = useRef<HTMLVideoElement>(null);
   const canvasRef = useRef<HTMLCanvasElement>(null);
 
@@ -196,80 +187,60 @@ const VisitDetailsEdit: React.FC = () => {
     },
   });
 
+  // Permission checks
   const userPermissions = useMemo(
     () => ({
       canAccessVisitDetails: effectivePermissions?.some(
         (p) => p.name === PERMISSIONS.ACCESS_VISIT_DETAILS
-      ),
+      ) ?? false,
       canLogVisits: effectivePermissions?.some(
         (p) => p.name === PERMISSIONS.LOG_VISITS
-      ),
+      ) ?? false,
       canEditTimesheets: effectivePermissions?.some(
         (p) => p.name === PERMISSIONS.EDIT_TIMESHEETS_FOR_SUPERVISOR
-      ),
+      ) ?? false,
       canReadSupervisors: effectivePermissions?.some(
         (p) => p.name === PERMISSIONS.READ_SUPERVISORS
-      ),
+      ) ?? false,
       canReadAgentsByLocation: effectivePermissions?.some(
         (p) => p.name === PERMISSIONS.READ_AGENTS_BY_LOCATION
-      ),
+      ) ?? false,
       canReadAgentsByPhone: effectivePermissions?.some(
         (p) => p.name === PERMISSIONS.READ_AGENTS_BY_PHONE
-      ),
+      ) ?? false,
       canReadReasons: effectivePermissions?.some(
         (p) => p.name === PERMISSIONS.READ_REASON_ITEMS
-      ),
+      ) ?? false,
       canReadChecklists: effectivePermissions?.some(
         (p) => p.name === PERMISSIONS.READ_CHECKLISTS_ITEMS
-      ),
+      ) ?? false,
       canCreateTimesheetsForSupervisors: effectivePermissions?.some(
         (p) => p.name === PERMISSIONS.CREATE_TIMESHEETS_FOR_SUPERVISORS
-      ),
+      ) ?? false,
     }),
     [effectivePermissions]
   );
 
+  // Role checks
   const isSuperAdmin = useMemo(
-    () => user?.Roles?.some((role) => role.name === ROLES.SUPER_ADMIN),
+    () => user?.Roles?.some((role) => role.name === ROLES.SUPER_ADMIN) ?? false,
     [user]
   );
   const isRegionalManager = useMemo(
-    () => user?.Roles?.some((role) => role.name === ROLES.REGIONAL_MANAGER),
+    () => user?.Roles?.some((role) => role.name === ROLES.REGIONAL_MANAGER) ?? false,
     [user]
   );
   const isSupervisor = useMemo(
-    () => user?.Roles?.some((role) => role.name === ROLES.SUPERVISOR),
+    () => user?.Roles?.some((role) => role.name === ROLES.SUPERVISOR) ?? false,
     [user]
   );
   const isDirector = useMemo(
-    () => user?.Roles?.some((role) => role.name === ROLES.DIRECTOR),
+    () => user?.Roles?.some((role) => role.name === ROLES.DIRECTOR) ?? false,
     [user]
   );
 
-  const getCurrentDateTime = () => {
-    const now = new Date();
-    return {
-      date: now.toISOString().split("T")[0],
-      time: `${now.getHours().toString().padStart(2, "0")}:${now
-        .getMinutes()
-        .toString()
-        .padStart(2, "0")}`,
-    };
-  };
 
-  const isWeekend = (date: string) => new Date(date).getDay() % 6 === 0;
-
-  const isValidTime = (date: string, time: string) => {
-    const [hours, minutes] = time.split(":").map(Number);
-    if (hours < 8 || hours > 17 || (hours === 17 && minutes > 0)) return false;
-    const { date: currentDate, time: currentTime } = getCurrentDateTime();
-    if (date === currentDate) {
-      const [currentH, currentM] = currentTime.split(":").map(Number);
-      return !(hours < currentH || (hours === currentH && minutes < currentM));
-    }
-    return true;
-  };
-
+  // Data fetching
   const fetchVisitData = useCallback(async () => {
     if (!idVisit || !userPermissions.canAccessVisitDetails) {
       navigate("/access-denied");
@@ -364,7 +335,7 @@ const VisitDetailsEdit: React.FC = () => {
         delegationID: visitData.location || agentData?.delegationID || "",
         status: visitData.status,
         comment: visitData.comment || "",
-        agentID: visitData.agentID,
+        agentID: visitData.agentID || "",
         agentSearch: agentData ? `${agentData.name} ${agentData.lastname}` : "",
         agentPhone: "",
         regionSearch: "",
@@ -389,7 +360,7 @@ const VisitDetailsEdit: React.FC = () => {
           delegationID: visitData.location || agentData?.delegationID || "",
           status: visitData.status,
           comment: visitData.comment || "",
-          agentID: visitData.agentID,
+          agentID: visitData.agentID || "",
           checklists:
             visitData.Checklists?.map((c) => ({
               id: c.checklistID,
@@ -409,10 +380,12 @@ const VisitDetailsEdit: React.FC = () => {
     }
   }, [idVisit, userPermissions, permissionsLoaded, navigate, user, t]);
 
+  // Effect to fetch visit data
   useEffect(() => {
     if (permissionsLoaded) fetchVisitData();
   }, [fetchVisitData, permissionsLoaded]);
 
+  // Camera handling
   const startCamera = async () => {
     try {
       const stream = await navigator.mediaDevices.getUserMedia({
@@ -475,6 +448,7 @@ const VisitDetailsEdit: React.FC = () => {
     setNewPhotos((prev) => prev.filter((_, i) => i !== index));
   };
 
+  // Data fetching by phone
   const fetchAgentByPhone = useCallback(
     debounce(async (phone: string) => {
       if (phone.length !== 8 || !userPermissions.canReadAgentsByPhone) return;
@@ -653,6 +627,7 @@ const VisitDetailsEdit: React.FC = () => {
     ]
   );
 
+  // Effect for phone-based fetching
   useEffect(() => {
     if (editForm.agentPhone) fetchAgentByPhone(editForm.agentPhone);
     if (supervisorPhone) fetchSupervisorByPhone(supervisorPhone);
@@ -673,6 +648,7 @@ const VisitDetailsEdit: React.FC = () => {
       ? selectedSupervisor
       : "";
 
+  // Effect for regional manager selection
   useEffect(() => {
     const handleRegionalManagerSelection = async () => {
       if (
@@ -721,6 +697,7 @@ const VisitDetailsEdit: React.FC = () => {
     handleRegionalManagerSelection();
   }, [selectedRegionalManager, userPermissions.canReadAgentsByLocation, t]);
 
+  // Effect for supervisor selection
   useEffect(() => {
     const handleSupervisorSelection = async () => {
       if (!supervisorID || fetchMode === "agent") {
@@ -772,6 +749,7 @@ const VisitDetailsEdit: React.FC = () => {
     handleSupervisorSelection();
   }, [supervisorID, fetchMode, t]);
 
+  // Effect for governorates fetching
   useEffect(() => {
     const fetchGovernorates = async () => {
       if (
@@ -835,6 +813,7 @@ const VisitDetailsEdit: React.FC = () => {
     t,
   ]);
 
+  // Effect for delegations fetching
   useEffect(() => {
     const fetchDelegations = async () => {
       if (
@@ -894,6 +873,7 @@ const VisitDetailsEdit: React.FC = () => {
     t,
   ]);
 
+  // Effect for agents fetching
   useEffect(() => {
     const fetchAgents = async () => {
       if (
@@ -938,6 +918,7 @@ const VisitDetailsEdit: React.FC = () => {
     fetchAgents();
   }, [editForm.delegationID, supervisorID, userPermissions.canReadAgentsByLocation, fetchMode, t]);
 
+  // Effect for regional managers by region
   useEffect(() => {
     const fetchRegionalManagersByRegion = async () => {
       if (
@@ -978,6 +959,7 @@ const VisitDetailsEdit: React.FC = () => {
     t,
   ]);
 
+  // Effect for supervisors by location or agent
   useEffect(() => {
     const filterSupervisorsByLocationOrAgent = async () => {
       if (
@@ -1034,6 +1016,7 @@ const VisitDetailsEdit: React.FC = () => {
     t,
   ]);
 
+  // Effect for clearing agent phone
   useEffect(() => {
     if (!editForm.agentPhone) {
       setEditForm((prev) => ({
@@ -1115,152 +1098,7 @@ const VisitDetailsEdit: React.FC = () => {
     t,
   ]);
 
-  const handleEditSubmit = async (e: React.FormEvent) => {
-    e.preventDefault();
-    if (
-      !visit ||
-      !userPermissions.canEditTimesheets ||
-      !editForm.date ||
-      !editForm.time ||
-      !editForm.delegationID
-    )
-      return;
-
-    let newStatus = editForm.status;
-    let updatedDuration: number | undefined = visit.duration || undefined;
-
-    if (visit.status === VisitStatus.VISITED && userPermissions.canLogVisits) {
-      newStatus = VisitStatus.VISITED;
-      if (editTracking.startTime) {
-        const editDurationMinutes = Math.round(
-          (Date.now() - editTracking.startTime) / 60000
-        );
-        updatedDuration =
-          editTracking.durationAccumulator + editDurationMinutes;
-      }
-    } else if (
-      userPermissions.canCreateTimesheetsForSupervisors &&
-      selectedSupervisor
-    ) {
-      newStatus = VisitStatus.VALIDATED;
-    } else if (
-      [VisitStatus.VALIDATED, VisitStatus.REJECTED].includes(
-        visit.status as VisitStatus
-      )
-    ) {
-      newStatus = VisitStatus.PENDING;
-    }
-
-    try {
-      const updatedVisit = await updateVisit(visit.visitID, {
-        date: editForm.date,
-        time: `${editForm.time}:00`,
-        location: editForm.delegationID,
-        status: newStatus,
-        comment: editForm.comment,
-        agentID: editForm.agentID,
-        checklists: editForm.checklists,
-        reasons: editForm.reasons,
-        photos: newPhotos,
-        photosToRemove: editForm.photosToRemove,
-        supervisorID:
-          selectedSupervisor &&
-            userPermissions.canCreateTimesheetsForSupervisors
-            ? selectedSupervisor
-            : undefined,
-        duration: updatedDuration,
-      });
-
-      setVisit(updatedVisit);
-      setNewPhotos([]);
-      stopCamera();
-      setEditTracking({ startTime: null, durationAccumulator: 0 });
-      navigate(`/visit/${idVisit}`);
-    } catch (err: unknown) {
-      const errorMessage =
-        err instanceof Error ? err.message : t("visitDetails.error.updateFailed");
-      setError(errorMessage);
-      console.error(err);
-    }
-  };
-
-  const handleCancel = () => {
-    setEditForm((prev) => ({
-      ...prev,
-      date: prev.original.date,
-      time: prev.original.time,
-      regionID: prev.original.regionID,
-      governorateID: prev.original.governorateID,
-      delegationID: prev.original.delegationID,
-      status: prev.original.status,
-      comment: prev.original.comment,
-      agentID: prev.original.agentID,
-      checklists: [...prev.original.checklists],
-      reasons: [...prev.original.reasons],
-      photosToRemove: [],
-    }));
-    setEditTracking({ startTime: null, durationAccumulator: 0 });
-    navigate(`/visit/${idVisit}`);
-  };
-
-  const handleRemovePhoto = (photoUrl: string) => {
-    setEditForm((prev) => ({
-      ...prev,
-      photosToRemove: [...prev.photosToRemove, photoUrl],
-    }));
-  };
-
-  const handleChecklistChange = (id: string, checked: boolean) => {
-    if (visit?.status !== "visited") return;
-    setEditForm((prev) => ({
-      ...prev,
-      checklists: prev.checklists.map((c) =>
-        c.id === id ? { ...c, checked } : c
-      ),
-    }));
-  };
-
-  const handleReasonSelect = (reason: Reason) => {
-    if (!editForm.reasons.some((r) => r.id === reason.reasonID)) {
-      setEditForm((prev) => ({
-        ...prev,
-        reasons: [...prev.reasons, { id: reason.reasonID }],
-        reasonSearch: "",
-      }));
-    }
-  };
-
-  const handleChecklistSelect = (checklist: Checklist) => {
-    if (!editForm.checklists.some((c) => c.id === checklist.checklistID)) {
-      setEditForm((prev) => ({
-        ...prev,
-        checklists: [
-          ...prev.checklists,
-          { id: checklist.checklistID, checked: false },
-        ],
-        checklistSearch: "",
-      }));
-    }
-  };
-
-  const handleRemoveReason = (index: number) => {
-    setEditForm((prev) => ({
-      ...prev,
-      reasons: prev.reasons.filter((_, i) => i !== index),
-    }));
-  };
-
-  const handleRemoveChecklist = (index: number) => {
-    setEditForm((prev) => ({
-      ...prev,
-      checklists: prev.checklists.filter((_, i) => i !== index),
-    }));
-  };
-
-  const handleImageClick = (photo: string) =>
-    setSelectedImage(`${BASE_URL}${photo}`);
-  const handleCloseFullscreen = () => setSelectedImage(null);
-
+  // Handlers
   const canEditField = (field: string) => {
     if (!visit) return false;
     switch (visit.status) {
@@ -1284,16 +1122,7 @@ const VisitDetailsEdit: React.FC = () => {
     }
   };
 
-  const formPhotosCount =
-    t("visitDetails.form.photos.count", {
-      count:
-        (visit?.photos?.filter((p) => !editForm.photosToRemove.includes(p))
-          .length || 0) + newPhotos.length,
-    }) ||
-    `(${(visit?.photos?.filter((p) => !editForm.photosToRemove.includes(p))
-      .length || 0) + newPhotos.length
-    } photos)`;
-
+  // Render
   if (loading) {
     return (
       <div className="page-loading">
@@ -1352,736 +1181,67 @@ const VisitDetailsEdit: React.FC = () => {
       </header>
 
       <section className="visit-details-section">
-        <form onSubmit={handleEditSubmit} className="visit-edit-form">
-          {(isSuperAdmin || isDirector) &&
-            !isRegionalManager &&
-            !isSupervisor &&
-            canEditField("supervisor") && (
-              <div className="form-group">
-                <label htmlFor="regionalManager">
-                  {t("visitDetails.form.regionalManager")}
-                </label>
-                <input
-                  type="text"
-                  id="regional-manager-search"
-                  placeholder={t(
-                    "visitDetails.form.placeholders.regionalManagerSearch"
-                  )}
-                  value={editForm.regionalManagerSearch}
-                  onChange={(e) =>
-                    setEditForm((prev) => ({
-                      ...prev,
-                      regionalManagerSearch: e.target.value,
-                    }))
-                  }
-                  className="search-input"
-                  aria-label={t(
-                    "visitDetails.form.placeholders.regionalManagerSearch"
-                  )}
-                  disabled={disableRegionalManagerInput}
-                />
-                <select
-                  id="regionalManager"
-                  value={selectedRegionalManager}
-                  onChange={(e) => {
-                    setSelectedRegionalManager(e.target.value);
-                    setSelectedSupervisor("");
-                    setEditForm((prev) => ({
-                      ...prev,
-                      regionID: "",
-                      governorateID: "",
-                      delegationID: "",
-                      agentID: "",
-                      agentSearch: "",
-                    }));
-                    setDisableLocationInputs(false);
-                    setDisableSupervisorInput(false);
-                    setDisableRegionalManagerInput(false);
-                    setFetchMode("none");
-                  }}
-                  aria-label={t(
-                    "visitDetails.form.placeholders.regionalManagerSelect"
-                  )}
-                  disabled={disableRegionalManagerInput}
-                >
-                  <option value="">
-                    {t("visitDetails.form.placeholders.regionalManagerSelect")}
-                  </option>
-                  {regionalManagers
-                    .filter((rm) =>
-                      `${rm.firstname || ""} ${rm.lastname || ""} ${rm.phone || ""}`
-                        .toLowerCase()
-                        .includes(editForm.regionalManagerSearch.toLowerCase())
-                    )
-                    .map((rm) => (
-                      <option key={rm.userID} value={rm.userID}>
-                        {rm.firstname} {rm.lastname} ({rm.phone})
-                      </option>
-                    ))}
-                </select>
-              </div>
-            )}
-          {(isSuperAdmin || isDirector || isRegionalManager) &&
-            !isSupervisor &&
-            userPermissions.canCreateTimesheetsForSupervisors &&
-            userPermissions.canReadSupervisors &&
-            canEditField("supervisor") && (
-              <div className="form-group">
-                <label htmlFor="supervisor">{t("visitDetails.form.supervisor")}</label>
-                <input
-                  type="text"
-                  id="supervisor-search"
-                  placeholder={t("visitDetails.form.placeholders.supervisorSearch")}
-                  value={editForm.supervisorSearch}
-                  onChange={(e) =>
-                    setEditForm((prev) => ({
-                      ...prev,
-                      supervisorSearch: e.target.value,
-                    }))
-                  }
-                  className="search-input"
-                  aria-label={t("visitDetails.form.placeholders.supervisorSearch")}
-                  disabled={supervisorLoading || disableSupervisorInput}
-                />
-                <input
-                  type="tel"
-                  id="supervisor-phone"
-                  placeholder={t("visitDetails.form.placeholders.supervisorPhone")}
-                  value={supervisorPhone}
-                  onChange={(e) => setSupervisorPhone(e.target.value)}
-                  className="search-input"
-                  aria-label={t("visitDetails.form.placeholders.supervisorPhone")}
-                  disabled={supervisorLoading || disableSupervisorInput}
-                />
-                {supervisorLoading && (
-                  <span className="loading-spinner" aria-hidden="true"></span>
-                )}
-                <select
-                  id="supervisor"
-                  value={selectedSupervisor}
-                  onChange={(e) => {
-                    setSelectedSupervisor(e.target.value);
-                    setEditForm((prev) => ({
-                      ...prev,
-                      regionID: "",
-                      governorateID: "",
-                      delegationID: "",
-                      agentID: "",
-                      agentSearch: "",
-                    }));
-                    setDisableLocationInputs(false);
-                    setDisableSupervisorInput(false);
-                    setFetchMode("supervisor");
-                  }}
-                  required
-                  aria-label={t("visitDetails.form.placeholders.supervisorSelect")}
-                  disabled={supervisorLoading || disableSupervisorInput}
-                >
-                  <option value="">
-                    {t("visitDetails.form.placeholders.supervisorSelect")}
-                  </option>
-                  {supervisors
-                    .filter((s) =>
-                      `${s.firstname || ""} ${s.lastname || ""} ${s.phone || ""}`
-                        .toLowerCase()
-                        .includes(editForm.supervisorSearch.toLowerCase())
-                    )
-                    .map((s) => (
-                      <option key={s.userID} value={s.userID}>
-                        {s.firstname} {s.lastname} ({s.phone})
-                      </option>
-                    ))}
-                </select>
-              </div>
-            )}
-
-          {canEditField("dateTime") && (
-            <div className="form-group datetime-group">
-              <label>{t("visitDetails.form.date.label")}</label>
-              <input
-                type="date"
-                value={editForm.date}
-                onChange={(e) =>
-                  !isWeekend(e.target.value) &&
-                  setEditForm((prev) => ({ ...prev, date: e.target.value }))
-                }
-                min={getCurrentDateTime().date}
-                className="search-input"
-                required
-                aria-label={t("visitDetails.form.date.ariaLabel")}
-              />
-              <label>{t("visitDetails.form.time.label")}</label>
-              <input
-                type="time"
-                value={editForm.time}
-                onChange={(e) =>
-                  isValidTime(editForm.date, e.target.value) &&
-                  setEditForm((prev) => ({ ...prev, time: e.target.value }))
-                }
-                min={
-                  editForm.date === getCurrentDateTime().date
-                    ? getCurrentDateTime().time
-                    : "08:00"
-                }
-                max="17:00"
-                step="60"
-                className="search-input"
-                required
-                aria-label={t("visitDetails.form.time.ariaLabel")}
-              />
-            </div>
-          )}
-
-          {canEditField("regionID") && (
-            <div className="form-group">
-              <label htmlFor="region">
-                {t("visitDetails.form.region.label")}
-              </label>
-              <select
-                id="region"
-                value={editForm.regionID}
-                onChange={(e) =>
-                  setEditForm((prev) => ({
-                    ...prev,
-                    regionID: e.target.value,
-                  }))
-                }
-                required
-                disabled={
-                  !userPermissions.canReadAgentsByLocation ||
-                  disableLocationInputs
-                }
-                aria-label={t("visitDetails.form.region.ariaLabel")}
-              >
-                <option value="">
-                  {t("visitDetails.form.region.selectPlaceholder")}
-                </option>
-                {regions.map((reg) => (
-                  <option key={reg.regionID} value={reg.regionID}>
-                    {reg.name}
-                  </option>
-                ))}
-              </select>
-            </div>
-          )}
-
-          {canEditField("governorateID") && (
-            <div className="form-group">
-              <label htmlFor="governorate">
-                {t("visitDetails.form.governorate.label")}
-              </label>
-              <select
-                id="governorate"
-                value={editForm.governorateID}
-                onChange={(e) =>
-                  setEditForm((prev) => ({
-                    ...prev,
-                    governorateID: e.target.value,
-                  }))
-                }
-                required
-                disabled={
-                  !userPermissions.canReadAgentsByLocation ||
-                  disableLocationInputs ||
-                  !editForm.regionID
-                }
-                aria-label={t("visitDetails.form.governorate.ariaLabel")}
-              >
-                <option value="">
-                  {t("visitDetails.form.governorate.selectPlaceholder")}
-                </option>
-                {governorates.map((gov) => (
-                  <option key={gov.governorateID} value={gov.governorateID}>
-                    {gov.name}
-                  </option>
-                ))}
-              </select>
-            </div>
-          )}
-
-          {canEditField("delegationID") && (
-            <div className="form-group">
-              <label htmlFor="delegation">
-                {t("visitDetails.form.delegation.label")}
-              </label>
-              <select
-                id="delegation"
-                value={editForm.delegationID}
-                onChange={(e) =>
-                  setEditForm((prev) => ({
-                    ...prev,
-                    delegationID: e.target.value,
-                  }))
-                }
-                required
-                disabled={
-                  !userPermissions.canReadAgentsByLocation ||
-                  disableLocationInputs ||
-                  !editForm.governorateID
-                }
-                aria-label={t("visitDetails.form.delegation.ariaLabel")}
-              >
-                <option value="">
-                  {t("visitDetails.form.delegation.selectPlaceholder")}
-                </option>
-                {delegations.map((del) => (
-                  <option key={del.delegationID} value={del.delegationID}>
-                    {del.name}
-                  </option>
-                ))}
-              </select>
-            </div>
-          )}
-
-          {canEditField("agentID") && (
-            <>
-              <div className="form-group">
-                <label htmlFor="agentPhone">
-                  {t("visitDetails.form.agentPhone.label")}
-                </label>
-                <input
-                  type="tel"
-                  id="agentPhone"
-                  placeholder={
-                    userPermissions.canReadAgentsByPhone
-                      ? t("visitDetails.form.agentPhone.placeholder")
-                      : t("visitDetails.form.permissionDenied")
-                  }
-                  value={editForm.agentPhone}
-                  onChange={(e) =>
-                    setEditForm((prev) => ({
-                      ...prev,
-                      agentPhone: e.target.value,
-                    }))
-                  }
-                  className="search-input"
-                  disabled={!userPermissions.canReadAgentsByPhone}
-                  aria-label={t("visitDetails.form.agentPhone.ariaLabel")}
-                />
-                {agentLoading && (
-                  <span className="loading-spinner" aria-hidden="true"></span>
-                )}
-              </div>
-              <div className="form-group">
-                <label htmlFor="agent">
-                  {t("visitDetails.form.agent.label")}
-                </label>
-                <input
-                  type="text"
-                  placeholder={
-                    userPermissions.canReadAgentsByLocation
-                      ? t("visitDetails.form.agent.searchPlaceholder")
-                      : t("visitDetails.form.permissionDenied")
-                  }
-                  value={editForm.agentSearch}
-                  onChange={(e) =>
-                    setEditForm((prev) => ({
-                      ...prev,
-                      agentSearch: e.target.value,
-                    }))
-                  }
-                  className="search-input"
-                  disabled={
-                    !userPermissions.canReadAgentsByLocation ||
-                    !!editForm.agentPhone ||
-                    !editForm.delegationID
-                  }
-                  aria-label={t("visitDetails.form.agent.searchPlaceholder")}
-                />
-                {agentLoading && (
-                  <span className="loading-spinner" aria-hidden="true"></span>
-                )}
-                <select
-                  id="agent"
-                  value={editForm.agentID}
-                  onChange={(e) =>
-                    setEditForm((prev) => ({
-                      ...prev,
-                      agentID: e.target.value,
-                    }))
-                  }
-                  required
-                  disabled={
-                    !userPermissions.canReadAgentsByLocation ||
-                    !!editForm.agentPhone ||
-                    !editForm.delegationID ||
-                    agentLoading
-                  }
-                  aria-label={t("visitDetails.form.agent.ariaLabel")}
-                >
-                  <option value="">
-                    {t("visitDetails.form.agent.selectPlaceholder")}
-                  </option>
-                  {agents
-                    .filter((a) =>
-                      `${a.name || ""} ${a.lastname || ""} ${a.phone || ""}`
-                        .toLowerCase()
-                        .includes(editForm.agentSearch.toLowerCase())
-                    )
-                    .map((a) => (
-                      <option key={a.agentID} value={a.agentID}>
-                        {a.name} {a.lastname} ({a.phone})
-                      </option>
-                    ))}
-                </select>
-              </div>
-            </>
-          )}
-
-          {canEditField("reasons") && (
-            <div className="form-group">
-              <label>{t("visitDetails.form.reasons.label")}</label>
-              <input
-                type="text"
-                placeholder={
-                  userPermissions.canReadReasons
-                    ? t("visitDetails.form.reasons.searchPlaceholder")
-                    : t("visitDetails.form.permissionDenied")
-                }
-                value={editForm.reasonSearch}
-                onChange={(e) =>
-                  setEditForm((prev) => ({
-                    ...prev,
-                    reasonSearch: e.target.value,
-                  }))
-                }
-                className="search-input"
-                disabled={!userPermissions.canReadReasons}
-                aria-label={t("visitDetails.form.reasons.searchPlaceholder")}
-              />
-              <select
-                value=""
-                onChange={(e) => {
-                  const reason = reasons.find(
-                    (r) => r.reasonID === e.target.value
-                  );
-                  if (reason) handleReasonSelect(reason);
-                }}
-                disabled={!userPermissions.canReadReasons}
-                aria-label={t("visitDetails.form.reasons.ariaLabel")}
-              >
-                <option value="">
-                  {t("visitDetails.form.reasons.selectPlaceholder")}
-                </option>
-                {reasons
-                  .filter((r) =>
-                    r.item
-                      .toLowerCase()
-                      .includes(editForm.reasonSearch.toLowerCase())
-                  )
-                  .map((r) => (
-                    <option key={r.reasonID} value={r.reasonID}>
-                      {r.item}
-                    </option>
-                  ))}
-              </select>
-              <div className="selected-items">
-                {editForm.reasons.map((r, index) => {
-                  const reasonItem =
-                    reasons.find((re) => re.reasonID === r.id)?.item || r.id;
-                  return (
-                    <span
-                      key={index}
-                      className="selected-item"
-                      onClick={() => handleRemoveReason(index)}
-                      aria-label={
-                        t("visitDetails.aria.removeReason", {
-                          item: reasonItem,
-                        }) || `Remove reason ${reasonItem}`
-                      }
-                    >
-                      {reasonItem} ×
-                    </span>
-                  );
-                })}
-              </div>
-            </div>
-          )}
-
-          {canEditField("checklists") && (
-            <div className="form-group">
-              <label>{t("visitDetails.form.checklists.label")}</label>
-              <input
-                type="text"
-                placeholder={
-                  userPermissions.canReadChecklists
-                    ? t("visitDetails.form.checklists.searchPlaceholder")
-                    : t("visitDetails.form.permissionDenied")
-                }
-                value={editForm.checklistSearch}
-                onChange={(e) =>
-                  setEditForm((prev) => ({
-                    ...prev,
-                    checklistSearch: e.target.value,
-                  }))
-                }
-                className="search-input"
-                disabled={!userPermissions.canReadChecklists}
-                aria-label={t("visitDetails.form.checklists.searchPlaceholder")}
-              />
-              <select
-                value=""
-                onChange={(e) => {
-                  const checklist = checklists.find(
-                    (c) => c.checklistID === e.target.value
-                  );
-                  if (checklist) handleChecklistSelect(checklist);
-                }}
-                disabled={!userPermissions.canReadChecklists}
-                aria-label={t("visitDetails.form.checklists.ariaLabel")}
-              >
-                <option value="">
-                  {t("visitDetails.form.checklists.selectPlaceholder")}
-                </option>
-                {checklists
-                  .filter((c) =>
-                    c.item
-                      .toLowerCase()
-                      .includes(editForm.checklistSearch.toLowerCase())
-                  )
-                  .map((c) => (
-                    <option key={c.checklistID} value={c.checklistID}>
-                      {c.item}
-                    </option>
-                  ))}
-              </select>
-              <div className="selected-items">
-                {editForm.checklists.map((c, index) => {
-                  const checklistItem =
-                    checklists.find((cl) => cl.checklistID === c.id)?.item ||
-                    c.id;
-                  return (
-                    <div key={index} className="checklist-item">
-                      <input
-                        type="checkbox"
-                        checked={c.checked}
-                        onChange={(e) =>
-                          handleChecklistChange(c.id, e.target.checked)
-                        }
-                        disabled={visit.status !== "visited"}
-                        aria-label={
-                          t("visitDetails.aria.checklistItem", {
-                            item: checklistItem,
-                          }) || `Toggle checklist ${checklistItem}`
-                        }
-                      />
-                      <span>{checklistItem}</span>
-                      <span
-                        className="remove-item"
-                        onClick={() => handleRemoveChecklist(index)}
-                        aria-label={
-                          t("visitDetails.aria.removeChecklist", {
-                            item: checklistItem,
-                          }) || `Remove checklist ${checklistItem}`
-                        }
-                      >
-                        ×
-                      </span>
-                    </div>
-                  );
-                })}
-              </div>
-            </div>
-          )}
-
-          {canEditField("photos") &&
-            (visit.photos?.length || newPhotos.length) ? (
-            <div className="form-group photos-section">
-              <h2>
-                <FaCamera /> {t("visitDetails.form.photos.title")}{" "}
-                {formPhotosCount}
-              </h2>
-              {visit.status === VisitStatus.VISITED && (
-                <div className="camera-controls">
-                  <button
-                    type="button"
-                    className="camera-btn"
-                    onClick={startCamera}
-                    disabled={isCameraActive}
-                    aria-label={t("visitDetails.aria.startCamera")}
-                  >
-                    <FaCamera /> {t("visitDetails.form.photos.startCamera")}
-                  </button>
-                  <div
-                    className={`camera-container ${isCameraActive ? "active" : ""}`}
-                  >
-                    <div className="camera-frame">
-                      <video
-                        ref={videoRef}
-                        className="camera-preview"
-                        muted
-                        playsInline
-                      />
-                      <div
-                        className={`flash-overlay ${flashEffect ? "active" : ""}`}
-                      ></div>
-                      <div className="photo-counter">
-                        <FaCamera /> {newPhotos.length}
-                      </div>
-                      {newPhotos.length > 0 && (
-                        <div className="thumbnail-preview">
-                          <img
-                            src={URL.createObjectURL(
-                              newPhotos[newPhotos.length - 1]
-                            )}
-                            alt={t(
-                              "visitDetails.form.photos.lastCapturedAlt"
-                            )}
-                          />
-                        </div>
-                      )}
-                    </div>
-                    {isCameraActive && (
-                      <>
-                        <button
-                          type="button"
-                          className="stop-camera-btn"
-                          onClick={stopCamera}
-                          aria-label={t("visitDetails.aria.stopCamera")}
-                        >
-                          <FaTimes /> {t("visitDetails.actions.stopCamera")}
-                        </button>
-                        <button
-                          type="button"
-                          className="capture-btn"
-                          onClick={capturePhoto}
-                          aria-label={t("visitDetails.aria.capturePhoto")}
-                        >
-                          <FaCamera />{" "}
-                          {t("visitDetails.actions.capturePhoto")}
-                        </button>
-                      </>
-                    )}
-                  </div>
-                </div>
-              )}
-              {(visit.photos?.length || newPhotos.length) && (
-                <div className="photo-previews">
-                  {visit
-                    .photos!.filter(
-                      (p) => !editForm.photosToRemove.includes(p)
-                    )
-                    .map((photo, index) => (
-                      <div
-                        key={`existing-${index}`}
-                        className="photo-container"
-                      >
-                        <img
-                          src={`${BASE_URL}${photo}`}
-                          alt={
-                            t("visitDetails.form.photos.existingAlt", {
-                              index: index + 1,
-                            }) || `Existing photo ${index + 1}`
-                          }
-                          className="photo-preview"
-                          onClick={() => handleImageClick(photo)}
-                        />
-                        <button
-                          type="button"
-                          className="remove-photo-btn"
-                          onClick={() => handleRemovePhoto(photo)}
-                          aria-label={
-                            t("visitDetails.aria.removePhoto", {
-                              index: index + 1,
-                            }) || `Remove photo ${index + 1}`
-                          }
-                        >
-                          <FaTimes /> {t("visitDetails.actions.removePhoto")}
-                        </button>
-                      </div>
-                    ))}
-                  {newPhotos.map((photo, index) => (
-                    <div key={`new-${index}`} className="photo-container">
-                      <img
-                        src={URL.createObjectURL(photo)}
-                        alt={
-                          t("visitDetails.form.photos.newAlt", {
-                            index: index + 1,
-                          }) || `New photo ${index + 1}`
-                        }
-                        className="photo-preview"
-                        onClick={() =>
-                          setSelectedImage(URL.createObjectURL(photo))
-                        }
-                      />
-                      <button
-                        type="button"
-                        className="remove-photo-btn"
-                        onClick={() => removeNewPhoto(index)}
-                        aria-label={
-                          t("visitDetails.aria.removePhoto", {
-                            index: index + 1,
-                          }) || `Remove photo ${index + 1}`
-                        }
-                      >
-                        <FaTimes /> {t("visitDetails.actions.removePhoto")}
-                      </button>
-                    </div>
-                  ))}
-                </div>
-              )}
-            </div>
-          ) : null}
-
-          {canEditField("comment") && (
-            <div className="form-group">
-              <label>{t("visitDetails.form.comment.label")}</label>
-              <textarea
-                value={editForm.comment}
-                onChange={(e) =>
-                  setEditForm((prev) => ({
-                    ...prev,
-                    comment: e.target.value,
-                  }))
-                }
-                placeholder={t("visitDetails.form.comment.placeholder")}
-                aria-label={t("visitDetails.form.comment.ariaLabel")}
-              />
-            </div>
-          )}
-
-          <div className="form-actions">
-            <Button
-              type="submit"
-              className="visit-details-submit-btn"
-              aria-label={t("visitDetails.form.actions.save")}
-            >
-              {t("visitDetails.form.actions.save")}
-            </Button>
-            <Button
-              type="button"
-              className="visit-details-cancel-btn"
-              onClick={handleCancel}
-              aria-label={t("visitDetails.form.actions.cancel")}
-            >
-              {t("visitDetails.form.actions.cancel")}
-            </Button>
-          </div>
-        </form>
-
-        {selectedImage && (
-          <div
-            className="fullscreen-image-overlay"
-            onClick={handleCloseFullscreen}
-          >
-            <img
-              src={selectedImage}
-              alt={t("visitDetails.fullscreenAlt")}
-              className="fullscreen-image"
-            />
-            <button
-              className="fullscreen-close-btn"
-              onClick={handleCloseFullscreen}
-              aria-label={t("visitDetails.aria.closeFullscreen")}
-            >
-              <FaTimes />
-            </button>
-          </div>
-        )}
-        <canvas ref={canvasRef} style={{ display: "none" }} />
+        <VisitEditForm
+          visit={visit}
+          editForm={editForm}
+          setEditForm={setEditForm}
+          userPermissions={userPermissions}
+          isSuperAdmin={isSuperAdmin}
+          isDirector={isDirector}
+          isRegionalManager={isRegionalManager}
+          isSupervisor={isSupervisor}
+          regionalManagers={regionalManagers}
+          selectedRegionalManager={selectedRegionalManager}
+          setSelectedRegionalManager={setSelectedRegionalManager}
+          supervisors={supervisors}
+          selectedSupervisor={selectedSupervisor}
+          setSelectedSupervisor={setSelectedSupervisor}
+          supervisorPhone={supervisorPhone}
+          setSupervisorPhone={setSupervisorPhone}
+          regions={regions}
+          governorates={governorates}
+          delegations={delegations}
+          agents={agents}
+          reasons={reasons}
+          checklists={checklists}
+          disableLocationInputs={disableLocationInputs}
+          setDisableLocationInputs={setDisableLocationInputs}
+          disableSupervisorInput={disableSupervisorInput}
+          setDisableSupervisorInput={setDisableSupervisorInput}
+          disableRegionalManagerInput={disableRegionalManagerInput}
+          setDisableRegionalManagerInput={setDisableRegionalManagerInput}
+          agentLoading={agentLoading}
+          supervisorLoading={supervisorLoading}
+          fetchMode={fetchMode}
+          setFetchMode={setFetchMode}
+          isCameraActive={isCameraActive}
+          setIsCameraActive={setIsCameraActive}
+          newPhotos={newPhotos}
+          setNewPhotos={setNewPhotos}
+          flashEffect={flashEffect}
+          setFlashEffect={setFlashEffect}
+          videoRef={videoRef as React.RefObject<HTMLVideoElement>}
+          canvasRef={canvasRef as React.RefObject<HTMLCanvasElement>}
+          editTracking={editTracking}
+          setEditTracking={setEditTracking}
+          selectedImage={selectedImage}
+          setSelectedImage={setSelectedImage}
+          startCamera={startCamera}
+          stopCamera={stopCamera}
+          capturePhoto={capturePhoto}
+          removeNewPhoto={removeNewPhoto}
+          canEditField={canEditField}
+          supervisorID={supervisorID}
+          idVisit={idVisit}
+          user={user}
+          setVisit={setVisit}
+          setError={setError}
+          t={t}
+          navigate={navigate}
+        />
       </section>
     </div>
   );
 };
 
-export default VisitDetailsEdit;
+export default VisitEdit;

@@ -29,9 +29,17 @@ class VisitService {
             const weekNumber = this.getISOWeekNumber(dateObj);
 
             // Check for existing timesheet
-            let targetTimesheet = timesheetID
-                ? await Timesheet.findByPk(timesheetID, { transaction })
-                : await Timesheet.findOne({
+            let targetTimesheet;
+            if (timesheetID) {
+                targetTimesheet = await Timesheet.findByPk(timesheetID, { transaction });
+                if (!targetTimesheet) {
+                    const error = new Error('Specified timesheet not found');
+                    error.status = 404;
+                    throw error;
+                }
+                logger.info(`Using provided timesheet ${targetTimesheet.timesheetID} for visit creation`);
+            } else {
+                targetTimesheet = await Timesheet.findOne({
                     where: {
                         weekNumber,
                         year,
@@ -41,24 +49,37 @@ class VisitService {
                     transaction,
                 });
 
-            // If no timesheet exists, create a new one
-            if (!targetTimesheet) {
-                targetTimesheet = await Timesheet.create(
-                    {
-                        weekNumber,
-                        year,
-                        supervisorID,
-                        status: status, // Initially set to the visit's status
-                    },
-                    { transaction }
-                );
-            }
-
-            // If timesheetID was provided but not found, throw an error
-            if (timesheetID && !targetTimesheet) {
-                const error = new Error('Specified timesheet not found');
-                error.status = 404;
-                throw error;
+                if (!targetTimesheet) {
+                    try {
+                        targetTimesheet = await Timesheet.create(
+                            {
+                                weekNumber,
+                                year,
+                                supervisorID,
+                                status: status,
+                            },
+                            { transaction }
+                        );
+                        logger.info(`Created new timesheet ${targetTimesheet.timesheetID} for week ${weekNumber}, year ${year}, supervisor ${supervisorID}`);
+                    } catch (error) {
+                        if (error.name === 'SequelizeUniqueConstraintError') {
+                            // Retry to find the timesheet
+                            targetTimesheet = await Timesheet.findOne({
+                                where: { weekNumber, year, supervisorID },
+                                include: [{ model: Visit }],
+                                transaction,
+                            });
+                            if (!targetTimesheet) {
+                                throw new Error('Failed to find or create timesheet after unique constraint error');
+                            }
+                            logger.info(`Reused timesheet ${targetTimesheet.timesheetID} after unique constraint retry for week ${weekNumber}, year ${year}, supervisor ${supervisorID}`);
+                        } else {
+                            throw error;
+                        }
+                    }
+                } else {
+                    logger.info(`Reused existing timesheet ${targetTimesheet.timesheetID} for week ${weekNumber}, year ${year}, supervisor ${supervisorID}`);
+                }
             }
 
             // Fetch agent if agentID is provided
@@ -126,7 +147,11 @@ class VisitService {
                 transaction,
             });
 
-            const visitStatuses = timesheetWithVisits.Visits.map((v) => v.status);
+            // Include the new visit's status in the status check
+            const visitStatuses = [
+                ...timesheetWithVisits.Visits.map((v) => v.status),
+                status, // Include the newly created visit's status
+            ];
             const uniqueStatuses = [...new Set(visitStatuses)];
 
             if (uniqueStatuses.length > 1) {
@@ -262,11 +287,11 @@ class VisitService {
             const oldTime = visit.time.replace(/:/g, '-');
             const supervisorName = `${visit.Timesheet.User.firstname.toLowerCase()}_${visit.Timesheet.User.lastname.toLowerCase()}`;
             const oldFolderName = `${oldDate}_${oldTime}_${supervisorName}`;
-            const oldFolderPath = path.join(__dirname, '../Uploads/photos', oldFolderName);
+            const oldFolderPath = path.join(__dirname, '../uploads/photos', oldFolderName);
 
             const newTimeForFolder = newTime.replace(/:/g, '-');
             const newFolderName = `${newDate}_${newTimeForFolder}_${supervisorName}`;
-            const newFolderPath = path.join(__dirname, '../Uploads/photos', newFolderName);
+            const newFolderPath = path.join(__dirname, '../uploads/photos', newFolderName);
 
             let photoPaths = visit.photos ? [...visit.photos] : [];
 
@@ -369,7 +394,7 @@ class VisitService {
             const oldTime = visit.time.replace(/:/g, '-');
             const supervisorName = `${visit.Timesheet.User.firstname.toLowerCase()}_${visit.Timesheet.User.lastname.toLowerCase()}`;
             const folderName = `${oldDate}_${oldTime}_${supervisorName}`;
-            const folderPath = path.join(__dirname, '../Uploads/photos', folderName);
+            const folderPath = path.join(__dirname, '../uploads/photos', folderName);
 
             let photoPaths = visit.photos ? [...visit.photos] : [];
 
@@ -550,7 +575,7 @@ class VisitService {
             const time = visit.time.replace(/:/g, '-');
             const supervisorName = `${visit.Timesheet.User.firstname.toLowerCase()}_${visit.Timesheet.User.lastname.toLowerCase()}`;
             const folderName = `${date}_${time}_${supervisorName}`;
-            const folderPath = path.join(__dirname, '../Uploads/photos', folderName);
+            const folderPath = path.join(__dirname, '../uploads/photos', folderName);
 
             if (fs.existsSync(folderPath)) {
                 fs.rmSync(folderPath, { recursive: true, force: true });

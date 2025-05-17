@@ -17,7 +17,7 @@ import AgentManagement from "./pages/Dashboard/AgentManagement";
 const Timesheets = React.lazy(() => import("./pages/Timesheet/Timesheets"));
 const TimesheetForm = React.lazy(() => import("./pages/Timesheet/TimesheetForm"));
 const QRScan = React.lazy(() => import("./pages/visit/QRScan"));
-const VisitDetailsView = React.lazy(() => import("./pages/visit/VisitDetailsView"));
+const VisitDetailsView = React.lazy(() => import("./pages/visit/VisitView"));
 const VisitValidation = React.lazy(() => import("./pages/visit/VisitValidation"));
 const VisitEdit = React.lazy(() => import("./pages/visit/VisitEdit"));
 const PageNotFound = React.lazy(() => import("./pages/Error/PageNotFound"));

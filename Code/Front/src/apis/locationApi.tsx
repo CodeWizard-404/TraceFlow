@@ -15,6 +15,7 @@ import {
     DirectionsResponse,
     PlacesResponse,
     DistanceMatrixResponse,
+    LocationDetailsResponse,
 } from "./index";
 
 // Generic error handler
@@ -35,7 +36,15 @@ const handleApiError = (error: unknown, defaultMessage: string): string => {
     return defaultMessage;
 };
 
-// General retrieval routes
+export const getLocationDetailsById = async (id: String): Promise<LocationDetailsResponse> => {
+    try {
+        const response = await api.get<LocationDetailsResponse>(`/locations/location-details?id=${id}`);
+        return response.data;
+    } catch (error) {
+        throw new Error(handleApiError(error, "Unable to fetch location details."));
+    }
+};
+
 export const getAllRegions = async (): Promise<AllRegionsResponse> => {
     try {
         const response = await api.get<AllRegionsResponse>("/locations/regions");

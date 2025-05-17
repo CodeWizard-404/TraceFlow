@@ -19,7 +19,7 @@ const diskStorage = multer.diskStorage({
             const time = visit.time.replace(/:/g, '-'); // e.g., "10-00"
             const supervisorName = `${visit.Timesheet.User.firstname.toLowerCase()}_${visit.Timesheet.User.lastname.toLowerCase()}`; // e.g., "supervisor_user"
             const folderName = `${date}_${time}_${supervisorName}`; // e.g., "2025-03-27_10-00_supervisor_user"
-            const uploadPath = path.join(__dirname, '../Uploads/photos', folderName);
+            const uploadPath = path.join(__dirname, '../uploads/photos', folderName);
 
             if (!fs.existsSync(uploadPath)) {
                 fs.mkdirSync(uploadPath, { recursive: true });

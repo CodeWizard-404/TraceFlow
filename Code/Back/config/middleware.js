@@ -5,6 +5,7 @@ const helmet = require('helmet');
 const compression = require('compression');
 const { corsOptions } = require('./cors');
 const logger = require('../utils/logger');
+const path = require('path');
 
 function setupMiddleware(app) {
     app.use(logger.addRequestTracing);
@@ -13,7 +14,7 @@ function setupMiddleware(app) {
     app.use(express.json());
     app.use(helmet());
     app.use(compression());
-    app.use('/api/uploads', express.static('../uploads'));
+    app.use('/api/uploads', express.static(path.join(__dirname, '../uploads')));
 }
 
 module.exports = { setupMiddleware };

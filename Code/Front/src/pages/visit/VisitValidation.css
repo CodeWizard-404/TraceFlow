@@ -292,7 +292,8 @@
   top: 0;
   width: 99vw;
   z-index: 1000;
-  background: #000; /* Added to ensure full-screen black background */
+  background: #000;
+  /* Added to ensure full-screen black background */
 }
 
 
@@ -317,6 +318,7 @@
 body.dark .camera-frame {
   border-color: #63b3ed;
 }
+
 body.dark .camera-preview {
   background: rgb(0, 0, 0);
 }
@@ -339,8 +341,13 @@ body.dark .camera-preview {
 }
 
 @keyframes flash {
-  0% { background: rgba(255, 255, 255, 0.8); }
-  100% { background: transparent; }
+  0% {
+    background: rgba(255, 255, 255, 0.8);
+  }
+
+  100% {
+    background: transparent;
+  }
 }
 
 /* Added photo counter styling */
@@ -386,8 +393,10 @@ body.dark .camera-preview {
   color: #fff;
   cursor: pointer;
   display: flex;
-  font-size: 20px; /* Slightly larger for visibility */
-  height: 40px; /* Circular and larger */
+  font-size: 20px;
+  /* Slightly larger for visibility */
+  height: 40px;
+  /* Circular and larger */
   justify-content: center;
   position: absolute;
   right: 20px;
@@ -405,20 +414,25 @@ body.dark .camera-preview {
   align-items: center;
   background: #4cb1c7;
   border: none;
-  border-radius: 50%; /* Made circular */
-  bottom: 30px; /* Slightly higher from bottom */
+  border-radius: 50%;
+  /* Made circular */
+  bottom: 30px;
+  /* Slightly higher from bottom */
   color: #fff;
   cursor: pointer;
   display: flex;
-  font-size: 24px; /* Larger icon */
-  height: 60px; /* Larger button */
+  font-size: 24px;
+  /* Larger icon */
+  height: 60px;
+  /* Larger button */
   justify-content: center;
   left: 50%;
   position: absolute;
   transform: translateX(-50%);
   transition: background 0.3s ease;
   width: 60px;
-  box-shadow: 0 4px 12px rgba(0, 0, 0, 0.3); /* Added shadow for depth */
+  box-shadow: 0 4px 12px rgba(0, 0, 0, 0.3);
+  /* Added shadow for depth */
 }
 
 .capture-btn:hover {
@@ -439,11 +453,15 @@ body.dark .camera-preview {
 
 .photo-preview {
   border: 1px solid #e5e7eb;
-  border-radius: 0.5rem;
+  border-radius: 5rem !important;
   cursor: pointer;
   height: 100px;
   object-fit: cover;
   width: 100px;
+}
+
+img {
+  border: 2px solide red;
 }
 
 .photo-note {
@@ -617,9 +635,11 @@ body.dark .camera-preview {
   0% {
     transform: scale(1);
   }
+
   50% {
     transform: scale(1.05);
   }
+
   100% {
     transform: scale(1);
   }
@@ -746,19 +766,24 @@ body.dark .status-visited {
   .visit-validation-container {
     padding: 1rem;
   }
+
   .visit-header-0 {
     padding: 1rem;
   }
+
   .visit-header-0 h1 {
     font-size: 1.5rem;
   }
+
   .visit-card {
     padding: 1rem;
   }
+
   .photo-preview {
     height: 80px;
     width: 80px;
   }
+
   .validate-btn,
   .back-btn {
     font-size: 0.75rem;

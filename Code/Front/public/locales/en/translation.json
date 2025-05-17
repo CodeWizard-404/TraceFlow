@@ -176,7 +176,7 @@
       "title": "Photos",
       "count": "({{count}})",
       "startCamera": "Start Camera",
-      "alt": "Visit photo {index}"
+      "alt": "Visit photo {{index}}"
     },
     "comment": {
       "title": "Comment",
@@ -313,6 +313,7 @@
   },
   "timesheets": {
     "loading": "Loading Timesheet...",
+    "locationTBD": "Location",
     "viewModes": {
       "year": "Year",
       "month": "Month",
@@ -437,7 +438,9 @@
       "agent": "Agent",
       "reasons": "Reasons",
       "checklists": "Checklists",
+      "recruitmentVisit": "Recruitment Visit",
       "placeholders": {
+        "location": "Enter visit location (optional)",
         "supervisorSearch": "Search supervisors by name...",
         "supervisorPhone": "Or enter supervisor phone number...",
         "supervisorSelect": "Select a supervisor",

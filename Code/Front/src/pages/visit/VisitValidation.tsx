@@ -66,7 +66,6 @@ const VisitValidation: React.FC = () => {
     }
   }, [location.state, permissionsLoaded, navigate, idVisit, t]);
 
-  // Capture date and time when QR code is scanned (on component mount)
   useEffect(() => {
     const now = new Date();
     setQrScanDate(format(now, "yyyy-MM-dd"));
@@ -89,6 +88,8 @@ const VisitValidation: React.FC = () => {
         if (visitData.agentID) {
           const agentData = await getAgentById(visitData.agentID);
           setAgent(agentData);
+        } else {
+          setAgent(null); // Explicitly set null for recruitment visits
         }
         const initialChecklist =
           visitData.Checklists?.map((cl) => ({
@@ -245,6 +246,7 @@ const VisitValidation: React.FC = () => {
         comment,
         date: qrScanDate ?? undefined,
         time: qrScanTime ?? undefined,
+        status: "visited", // Set status to visited
       };
 
       await logVisitDetails(idVisit, updatedVisitData);
@@ -258,7 +260,6 @@ const VisitValidation: React.FC = () => {
     }
   };
 
-  // Handle cancellation
   const handleCancel = () => {
     stopCamera();
     navigate("/timesheet");
@@ -332,14 +333,16 @@ const VisitValidation: React.FC = () => {
             <p>
               {agent
                 ? `${agent.name} ${agent.lastname}`
-                : t("visitValidation.visitDetails.na")}
+                : t("visitValidation.visitDetails.recruitmentVisit")}
             </p>
           </div>
           <div className="detail-item">
             <span>
               <FaPhone /> {t("visitValidation.visitDetails.phone")}
             </span>
-            <p>{agent?.phone || t("visitValidation.visitDetails.na")}</p>
+            <p>
+              {agent?.phone || t("visitValidation.visitDetails.recruitmentVisit")}
+            </p>
           </div>
         </div>
 

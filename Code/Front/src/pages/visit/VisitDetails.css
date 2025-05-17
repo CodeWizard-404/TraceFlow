@@ -958,3 +958,39 @@ input[type="date"], input[type="time"] {
   height: auto;
   display: block;
 }
+
+
+
+.photo-previews {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 0.5rem;
+  margin-top: 0.75rem;
+}
+
+.photo-container {
+  display: inline-block;
+  position: relative;
+}
+
+.photo-preview {
+  border: 1px solid #4cb1c7;
+  border-radius: 0.5rem;
+  cursor: pointer;
+  height: 100px;
+  object-fit: cover;
+  width: 100px;
+}
+
+body.dark .photo-preview {
+  border-color: #63b3ed;
+}
+
+.fullscreen-image {
+  border: 1px solid #4cb1c7;
+  border-radius: 0.75rem;
+}
+
+body.dark .fullscreen-image {
+  border-color: #63b3ed;
+}

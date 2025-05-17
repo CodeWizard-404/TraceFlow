@@ -73,6 +73,7 @@ const TimesheetForm: React.FC = () => {
   // State Declarations
   const [date, setDate] = useState<string>("");
   const [time, setTime] = useState<string>("");
+  const [isRecruitmentVisit, setIsRecruitmentVisit] = useState<boolean>(false);
   const [regionalManagers, setRegionalManagers] = useState<User[]>([]);
   const [selectedRegionalManager, setSelectedRegionalManager] = useState<string>("");
   const [regionalManagerSearch, setRegionalManagerSearch] = useState<string>("");
@@ -119,21 +120,64 @@ const TimesheetForm: React.FC = () => {
     canValidateTimesheets: effectivePermissions?.some((p) => p.name === PERMISSIONS.VALIDATE_TIMESHEETS),
   }), [effectivePermissions]);
 
+  // Construct location string
+  const location = useMemo(() => {
+    const parts: string[] = [];
+    if (selectedRegion) {
+      const region = regions.find(r => r.regionID === selectedRegion);
+      if (region) parts.push(region.name);
+    }
+    if (selectedGovernorate) {
+      const governorate = governorates.find(g => g.governorateID === selectedGovernorate);
+      if (governorate) parts.push(governorate.name);
+    }
+    if (selectedDelegation) {
+      const delegation = delegations.find(d => d.delegationID === selectedDelegation);
+      if (delegation) parts.push(delegation.name);
+    }
+    return parts.length > 0 ? parts.join(", ") : null;
+  }, [selectedRegion, selectedGovernorate, selectedDelegation, regions, governorates, delegations]);
+
   // Form Completion Check
   const isFormComplete = useMemo(() =>
-    date && time && selectedAgent && selectedReasons.length > 0 && selectedChecklists.length > 0 && (isSupervisor || selectedSupervisor),
-    [date, time, selectedAgent, selectedReasons, selectedChecklists, isSupervisor, selectedSupervisor]
+    date &&
+    time &&
+    (isRecruitmentVisit || selectedAgent) &&
+    selectedReasons.length > 0 &&
+    selectedChecklists.length > 0 &&
+    (isSupervisor || selectedSupervisor),
+    [date, time, isRecruitmentVisit, selectedAgent, selectedReasons, selectedChecklists, isSupervisor, selectedSupervisor]
   );
 
   // Handlers for form input changes
   const handleDateChange = (e: React.ChangeEvent<HTMLInputElement>) => setDate(e.target.value);
   const handleTimeChange = (e: React.ChangeEvent<HTMLInputElement>) => setTime(e.target.value);
+  const handleRecruitmentVisitToggle = (e: React.ChangeEvent<HTMLInputElement>) => {
+    setIsRecruitmentVisit(e.target.checked);
+    if (e.target.checked) {
+      setSelectedAgent("");
+      setAgentPhone("");
+      setAgents([]);
+      // Pre-select "Recruitment" reason if available
+      const recruitmentReason = reasons.find(r => r.item.toLowerCase() === "recruitment");
+      if (recruitmentReason && !selectedReasons.some(r => r.id === recruitmentReason.reasonID)) {
+        setSelectedReasons([{ id: recruitmentReason.reasonID }]);
+      }
+    }
+  };
   const handleRegionalManagerChange = (e: React.ChangeEvent<HTMLSelectElement>) => setSelectedRegionalManager(e.target.value);
   const handleSupervisorChange = (e: React.ChangeEvent<HTMLSelectElement>) => setSelectedSupervisor(e.target.value);
   const handleSupervisorPhoneChange = (e: React.ChangeEvent<HTMLInputElement>) => setSupervisorPhone(e.target.value);
   const handleAgentPhoneChange = (e: React.ChangeEvent<HTMLInputElement>) => setAgentPhone(e.target.value);
-  const handleRegionChange = (e: React.ChangeEvent<HTMLSelectElement>) => setSelectedRegion(e.target.value);
-  const handleGovernorateChange = (e: React.ChangeEvent<HTMLSelectElement>) => setSelectedGovernorate(e.target.value);
+  const handleRegionChange = (e: React.ChangeEvent<HTMLSelectElement>) => {
+    setSelectedRegion(e.target.value);
+    setSelectedGovernorate("");
+    setSelectedDelegation("");
+  };
+  const handleGovernorateChange = (e: React.ChangeEvent<HTMLSelectElement>) => {
+    setSelectedGovernorate(e.target.value);
+    setSelectedDelegation("");
+  };
   const handleDelegationChange = (e: React.ChangeEvent<HTMLSelectElement>) => setSelectedDelegation(e.target.value);
   const handleAgentChange = (e: React.ChangeEvent<HTMLSelectElement>) => setSelectedAgent(e.target.value);
   const handleReasonSelect = (reason: Reason) => {
@@ -159,7 +203,7 @@ const TimesheetForm: React.FC = () => {
   // Debounced fetch for agent by phone
   const fetchAgentByPhone = useCallback(
     debounce(async (phone: string) => {
-      if (phone.length !== 8) return;
+      if (phone.length !== 8 || isRecruitmentVisit) return;
       setAgentLoading(true);
       try {
         const agent = await getAgentByPhone(phone);
@@ -173,7 +217,7 @@ const TimesheetForm: React.FC = () => {
         setAgentLoading(false);
       }
     }, 500),
-    [setError, t]
+    [setError, t, isRecruitmentVisit]
   );
 
   // Handle form submission
@@ -193,7 +237,8 @@ const TimesheetForm: React.FC = () => {
       visits: [{
         date,
         time: `${time}:00`,
-        agentID: selectedAgent,
+        agentID: isRecruitmentVisit ? null : selectedAgent,
+        location: location, // Use constructed location string
         reasons: selectedReasons,
         checklists: selectedChecklists,
         status: userPermissions.canValidateTimesheets ? "validated" : (userPermissions.canCreateTimesheetsForSupervisors ? "validated" : "pending"),
@@ -223,11 +268,9 @@ const TimesheetForm: React.FC = () => {
         setRegions(regionsData);
         setReasons(reasonsData);
         setChecklists(checklistsData);
-        // Automatically select if only one reason is available
-        if (reasonsData.length === 1) {
+        if (reasonsData.length === 1 && !isRecruitmentVisit) {
           setSelectedReasons([{ id: reasonsData[0].reasonID }]);
         }
-        // Automatically select if only one checklist is available
         if (checklistsData.length === 1) {
           setSelectedChecklists([{ id: checklistsData[0].checklistID }]);
         }
@@ -238,7 +281,7 @@ const TimesheetForm: React.FC = () => {
       }
     };
     fetchInitialData();
-  }, [setError, t]);
+  }, [setError, t, isRecruitmentVisit]);
 
   // Fetch regional managers based on role and filters
   useEffect(() => {
@@ -263,7 +306,6 @@ const TimesheetForm: React.FC = () => {
           rmList = rmList.filter(rm => `${rm.firstname} ${rm.lastname} ${rm.phone}`.toLowerCase().includes(regionalManagerSearch.toLowerCase()));
         }
         setRegionalManagers(rmList);
-        // Automatically select if only one regional manager is available
         if (rmList.length === 1) {
           setSelectedRegionalManager(rmList[0].userID);
         }
@@ -298,7 +340,6 @@ const TimesheetForm: React.FC = () => {
           supList = supList.filter(s => s.phone === supervisorPhone);
         }
         setSupervisors(supList);
-        // Automatically select if only one supervisor is available
         if (supList.length === 1) {
           setSelectedSupervisor(supList[0].userID);
         }
@@ -313,9 +354,10 @@ const TimesheetForm: React.FC = () => {
   useEffect(() => {
     const fetchRegions = async () => {
       try {
-        const regionsData = selectedRegionalManager ? await getRegionsByUser(selectedRegionalManager) : await getAllRegions();
+        const regionsData = (isRecruitmentVisit && selectedRegionalManager)
+          ? await getRegionsByUser(selectedRegionalManager)
+          : await getAllRegions();
         setRegions(regionsData);
-        // Automatically select if only one region is available
         if (regionsData.length === 1) {
           setSelectedRegion(regionsData[0].regionID);
         }
@@ -324,69 +366,65 @@ const TimesheetForm: React.FC = () => {
       }
     };
     fetchRegions();
-  }, [selectedRegionalManager, setError, t]);
+  }, [selectedRegionalManager, isRecruitmentVisit, setError, t]);
 
-  // Fetch governorates based on selected region or supervisor
+  // Fetch governorates based on selected region
   useEffect(() => {
     const fetchGovernorates = async () => {
-      if (!(selectedRegion || selectedSupervisor)) {
+      if (!selectedRegion) {
         setGovernorates([]);
+        setSelectedGovernorate("");
+        setDelegations([]);
+        setSelectedDelegation("");
         return;
       }
       try {
-        let govList: Governorate[] = [];
-        if (selectedRegion && selectedSupervisor) {
-          const [regionGovs, userGovs] = await Promise.all([
-            getGovernoratesByRegion(selectedRegion),
-            getGovernoratesByUser(selectedSupervisor),
-          ]);
-          govList = regionGovs.filter(g => userGovs.some(ug => ug.governorateID === g.governorateID));
-        } else if (selectedRegion) {
-          govList = await getGovernoratesByRegion(selectedRegion);
-        } else if (selectedSupervisor) {
-          govList = await getGovernoratesByUser(selectedSupervisor);
+        let govList: Governorate[] = await getGovernoratesByRegion(selectedRegion);
+        if (!isRecruitmentVisit && selectedSupervisor) {
+          const userGovs = await getGovernoratesByUser(selectedSupervisor);
+          govList = govList.filter(g => userGovs.some(ug => ug.governorateID === g.governorateID));
         }
         setGovernorates(govList);
-        // Automatically select if only one governorate is available
         if (govList.length === 1) {
           setSelectedGovernorate(govList[0].governorateID);
+        } else {
+          setSelectedGovernorate("");
         }
+        setDelegations([]);
+        setSelectedDelegation("");
       } catch (err) {
         setError(t("timesheetForm.errors.loadGovernorates"));
       }
     };
     fetchGovernorates();
-  }, [selectedRegion, selectedSupervisor, setError, t]);
+  }, [selectedRegion, selectedSupervisor, isRecruitmentVisit, setError, t]);
 
   // Fetch delegations based on selected governorate
   useEffect(() => {
     const fetchDelegations = async () => {
       if (!selectedGovernorate) {
         setDelegations([]);
+        setSelectedDelegation("");
         return;
       }
       try {
-        let delList: Delegation[] = [];
-        if (selectedSupervisor) {
-          const [govDels, userDels] = await Promise.all([
-            getDelegationsByGovernorate(selectedGovernorate),
-            getDelegationsByUser(selectedSupervisor),
-          ]);
-          delList = govDels.filter(d => userDels.some(ud => ud.delegationID === d.delegationID));
-        } else {
-          delList = await getDelegationsByGovernorate(selectedGovernorate);
+        let delList: Delegation[] = await getDelegationsByGovernorate(selectedGovernorate);
+        if (!isRecruitmentVisit && selectedSupervisor) {
+          const userDels = await getDelegationsByUser(selectedSupervisor);
+          delList = delList.filter(d => userDels.some(ud => ud.delegationID === d.delegationID));
         }
         setDelegations(delList);
-        // Automatically select if only one delegation is available
         if (delList.length === 1) {
           setSelectedDelegation(delList[0].delegationID);
+        } else {
+          setSelectedDelegation("");
         }
       } catch (err) {
         setError(t("timesheetForm.errors.loadDelegations"));
       }
     };
     fetchDelegations();
-  }, [selectedGovernorate, selectedSupervisor, setError, t]);
+  }, [selectedGovernorate, selectedSupervisor, isRecruitmentVisit, setError, t]);
 
   // Fetch agents based on selected delegation or supervisor
   useEffect(() => {
@@ -407,7 +445,6 @@ const TimesheetForm: React.FC = () => {
           agentList = (await getAgentsByDelegation(selectedDelegation)).agents;
         }
         setAgents(agentList);
-        // Automatically select if only one agent is available
         if (agentList.length === 1) {
           setSelectedAgent(agentList[0].agentID);
         }
@@ -488,7 +525,6 @@ const TimesheetForm: React.FC = () => {
               </div>
             )}
             <hr />
-            {/* Date and Time Inputs */}
             <div className="form-group-row">
               <div className="form-group">
                 <label htmlFor="date">{t("timesheetForm.form.date")}</label>
@@ -500,10 +536,22 @@ const TimesheetForm: React.FC = () => {
               </div>
             </div>
             <hr />
-            <div className="form-group">
-              <label htmlFor="agentPhone">{t("timesheetForm.form.agentPhone")}</label>
-              <input type="tel" id="agentPhone" value={agentPhone} onChange={handleAgentPhoneChange} placeholder={t("timesheetForm.form.placeholders.agentPhone")} />
+            <div className="form-group" style={{ margin: 0 }}>
+              <label className="custom-checkbox-label" htmlFor="recruitmentVisit">
+                <input
+                  type="checkbox"
+                  id="recruitmentVisit"
+                  checked={isRecruitmentVisit}
+                  onChange={handleRecruitmentVisitToggle}
+                  className="custom-checkbox-input"
+                />
+                <span className="custom-checkbox">
+                  <i className="fas fa-check check-icon"></i>
+                </span>
+                <span className="checklist-text">{t("timesheetForm.form.recruitmentVisit")}</span>
+              </label>
             </div>
+            <hr />
             <div className="form-group-row">
               <div className="form-group">
                 <label htmlFor="region">{t("timesheetForm.form.region")}</label>
@@ -516,7 +564,12 @@ const TimesheetForm: React.FC = () => {
               </div>
               <div className="form-group">
                 <label htmlFor="governorate">{t("timesheetForm.form.governorate")}</label>
-                <select id="governorate" value={selectedGovernorate} onChange={handleGovernorateChange} disabled={!(selectedRegion || selectedSupervisor)}>
+                <select
+                  id="governorate"
+                  value={selectedGovernorate}
+                  onChange={handleGovernorateChange}
+                  disabled={!selectedRegion}
+                >
                   <option value="">{t("timesheetForm.form.placeholders.governorateSelect")}</option>
                   {governorates.map(g => (
                     <option key={g.governorateID} value={g.governorateID}>{g.name}</option>
@@ -525,7 +578,12 @@ const TimesheetForm: React.FC = () => {
               </div>
               <div className="form-group">
                 <label htmlFor="delegation">{t("timesheetForm.form.delegation")}</label>
-                <select id="delegation" value={selectedDelegation} onChange={handleDelegationChange} disabled={!selectedGovernorate}>
+                <select
+                  id="delegation"
+                  value={selectedDelegation}
+                  onChange={handleDelegationChange}
+                  disabled={!selectedGovernorate}
+                >
                   <option value="">{t("timesheetForm.form.placeholders.delegationSelect")}</option>
                   {delegations.map(d => (
                     <option key={d.delegationID} value={d.delegationID}>{d.name}</option>
@@ -533,20 +591,43 @@ const TimesheetForm: React.FC = () => {
                 </select>
               </div>
             </div>
-            <div className="form-group">
-              <label htmlFor="agent">{t("timesheetForm.form.agent")}</label>
-              {agentLoading && <span className="loading-spinner"></span>}
-              <select id="agent" value={selectedAgent} onChange={handleAgentChange} disabled={!(agentPhone || selectedDelegation)}>
-                <option value="">{t("timesheetForm.form.placeholders.agentSelect")}</option>
-                {agents.map(a => (
-                  <option key={a.agentID} value={a.agentID}>{`${a.name} ${a.lastname} (${a.phone})`}</option>
-                ))}
-              </select>
-            </div>
+            {!isRecruitmentVisit && (
+              <>
+                <div className="form-group">
+                  <label htmlFor="agentPhone">{t("timesheetForm.form.agentPhone")}</label>
+                  <input
+                    type="tel"
+                    id="agentPhone"
+                    value={agentPhone}
+                    onChange={handleAgentPhoneChange}
+                    placeholder={t("timesheetForm.form.placeholders.agentPhone")}
+                  />
+                </div>
+                <div className="form-group">
+                  <label htmlFor="agent">{t("timesheetForm.form.agent")}</label>
+                  {agentLoading && <span className="loading-spinner"></span>}
+                  <select
+                    id="agent"
+                    value={selectedAgent}
+                    onChange={handleAgentChange}
+                    disabled={!(agentPhone || selectedDelegation)}
+                  >
+                    <option value="">{t("timesheetForm.form.placeholders.agentSelect")}</option>
+                    {agents.map(a => (
+                      <option key={a.agentID} value={a.agentID}>{`${a.name} ${a.lastname} (${a.phone})`}</option>
+                    ))}
+                  </select>
+                </div>
+              </>
+            )}
             <hr />
             <div className="form-group" style={{ marginBottom: "0 !important" }}>
               <label>{t("timesheetForm.form.reasons")}</label>
-              <select value="" onChange={(e) => handleReasonSelect(reasons.find(r => r.reasonID === e.target.value)!)}>
+              <select
+                value=""
+                onChange={(e) => handleReasonSelect(reasons.find(r => r.reasonID === e.target.value)!)}
+                disabled={isRecruitmentVisit && selectedReasons.some(r => r.id === reasons.find(r => r.item.toLowerCase() === "recruitment")?.reasonID)}
+              >
                 <option value="">{t("timesheetForm.form.placeholders.reasonSelect")}</option>
                 {reasons.map(r => (
                   <option key={r.reasonID} value={r.reasonID}>{r.item}</option>
@@ -554,15 +635,22 @@ const TimesheetForm: React.FC = () => {
               </select>
               <div className="selected-items">
                 {selectedReasons.map((r, i) => (
-                  <span key={i} className="selected-item" onClick={() => setSelectedReasons(selectedReasons.filter((_, idx) => idx !== i))}>
+                  <span
+                    key={i}
+                    className="selected-item"
+                    onClick={() => setSelectedReasons(selectedReasons.filter((_, idx) => idx !== i))}
+                  >
                     {reasons.find(re => re.reasonID === r.id)?.item} ×
                   </span>
                 ))}
               </div>
             </div>
-            <div className="form-group" >
+            <div className="form-group">
               <label>{t("timesheetForm.form.checklists")}</label>
-              <select value="" onChange={(e) => handleChecklistSelect(checklists.find(c => c.checklistID === e.target.value)!)}>
+              <select
+                value=""
+                onChange={(e) => handleChecklistSelect(checklists.find(c => c.checklistID === e.target.value)!)}
+              >
                 <option value="">{t("timesheetForm.form.placeholders.checklistSelect")}</option>
                 {checklists.map(c => (
                   <option key={c.checklistID} value={c.checklistID}>{c.item}</option>
@@ -570,7 +658,11 @@ const TimesheetForm: React.FC = () => {
               </select>
               <div className="selected-items">
                 {selectedChecklists.map((c, i) => (
-                  <span key={i} className="selected-item" onClick={() => setSelectedChecklists(selectedChecklists.filter((_, idx) => idx !== i))}>
+                  <span
+                    key={i}
+                    className="selected-item"
+                    onClick={() => setSelectedChecklists(selectedChecklists.filter((_, idx) => idx !== i))}
+                  >
                     {checklists.find(ch => ch.checklistID === c.id)?.item} ×
                   </span>
                 ))}

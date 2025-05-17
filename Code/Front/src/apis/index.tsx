@@ -166,6 +166,8 @@ export type GovernoratesByDelegationResponse = Governorate[];
 export type RegionsByUserResponse = Region[];
 export type GovernoratesByUserResponse = Governorate[];
 export type DelegationsByUserResponse = Delegation[];
+export interface LocationDetailsResponse { success: boolean; address?: string; idInfo?: string; message?: string; }
+
 
 // Visit Routes
 export type DeleteVisitResponse = { message: string };

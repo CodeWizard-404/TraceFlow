@@ -17,7 +17,7 @@ import {
     SuggestTimesheetResponse,
 } from "../../apis/timesheetAPI";
 import { getAllUsers, getSupervisorsByUser } from "../../apis/userAPI";
-import { getReasonsByVisitId } from "../../apis/reasonAPI"; // Added import
+import { getReasonsByVisitId } from "../../apis/reasonAPI";
 import { FaClock, FaMapMarkerAlt, FaRegUser, FaFilter } from "react-icons/fa";
 import TimesheetStatus from "../../models/Enum/TimesheetStatus";
 import VisitStatus from "../../models/Enum/VisitStatus";
@@ -25,6 +25,7 @@ import { useTranslation } from "react-i18next";
 import CalendarSyncButton from "../../components/Google/CalendarSyncButton";
 import TimesheetSuggestionsModal from "../Timesheet/TimesheetSuggestionsModal";
 import { io } from "socket.io-client";
+import { getLocationDetailsById } from '../../apis/locationApi';
 
 const PERMISSIONS = {
     ACCESS_TIMESHEETS: import.meta.env.VITE_PERMISSIONS_ACCESS_TIMESHEETS,
@@ -143,7 +144,7 @@ const Timesheets: React.FC = React.memo(() => {
     const [filteredTimesheets, setFilteredTimesheets] = useState<Timesheet[]>([]);
     const [users, setUsers] = useState<User[]>([]);
     const [generatedVisits, setGeneratedVisits] = useState<GeneratedVisit[]>([]);
-    const [visitReasons, setVisitReasons] = useState<Record<string, VisitReason[]>>({}); // Added state for visit reasons
+    const [visitReasons, setVisitReasons] = useState<Record<string, VisitReason[]>>({});
     const [currentYear, setCurrentYear] = useState(new Date().getFullYear());
     const [currentMonth, setCurrentMonth] = useState(new Date().getMonth());
     const [currentWeek, setCurrentWeek] = useState<number>(0);
@@ -161,6 +162,7 @@ const Timesheets: React.FC = React.memo(() => {
     const [isFilterVisible, setIsFilterVisible] = useState<boolean>(false);
     const [isSuggestionsModalOpen, setIsSuggestionsModalOpen] = useState<boolean>(false);
     const [error, setError] = useState<string | null>(null);
+    const [agentLocations, setAgentLocations] = useState<Record<string, string>>({});
 
     // Permission Checks
     const userPermissions = useMemo(
@@ -395,6 +397,48 @@ const Timesheets: React.FC = React.memo(() => {
             }),
         []
     );
+
+    const isCoordinates = (str: string): boolean => /^\s*-?\d+\.\d+\s*,\s*-?\d+\.\d+\s*$/.test(str);
+
+    const formatTime = (timeStr: string): string => {
+        const [hours, minutes] = timeStr.split(':').map(Number);
+        const period = hours >= 12 ? 'PM' : 'AM';
+        const formattedHours = hours % 12 || 12;
+        return `${formattedHours.toString().padStart(2, '0')}:${minutes.toString().padStart(2, '0')} ${period}`;
+    };
+
+    useEffect(() => {
+        const fetchAgentLocations = async () => {
+            const allVisits = [...timesheets.flatMap(ts => ts.Visits || []), ...generatedVisits];
+            const agentIdsToFetch = new Set<string>();
+
+            allVisits.forEach(visit => {
+                const location = 'location' in visit ? visit.location : visit.location;
+                if (!location || isCoordinates(location)) {
+                    if (visit.agentID) {
+                        agentIdsToFetch.add(visit.agentID);
+                    }
+                }
+            });
+
+            const fetchPromises = Array.from(agentIdsToFetch).map(async agentId => {
+                if (!agentLocations[agentId]) {
+                    try {
+                        const response = await getLocationDetailsById(agentId);
+                        if (response.success && response.address) {
+                            setAgentLocations(prev => ({ ...prev, [agentId]: response.address || '' }));
+                        }
+                    } catch (error) {
+                        console.error(`Failed to fetch location for agent ${agentId}:`, error);
+                    }
+                }
+            });
+
+            await Promise.all(fetchPromises);
+        };
+
+        fetchAgentLocations();
+    }, [timesheets, generatedVisits]);
 
     // Handle Suggestions
     const handleSuggestionsGenerated = useCallback((suggestions: SuggestTimesheetResponse) => {
@@ -1165,7 +1209,7 @@ const Timesheets: React.FC = React.memo(() => {
                             </div>
                             <div className="days-grid">
                                 {weekData.days.map((day) => {
-                                    const dayStr = day.toISOString().split("T")[0];
+                                    const dayStr = `${day.getFullYear()}-${String(day.getMonth() + 1).padStart(2, '0')}-${String(day.getDate()).padStart(2, '0')}`;
                                     const dayVisits = sortVisitsByTime(
                                         weekData.visits.filter(
                                             (v) => {
@@ -1240,7 +1284,7 @@ const Timesheets: React.FC = React.memo(() => {
                                                             <hr className="hr" />
                                                             <div className="visit-header">
                                                                 <span className="visit-time">
-                                                                    <FaClock /> {'time' in visit ? visit.time : visit.startTime}
+                                                                    <FaClock /> {formatTime('time' in visit ? visit.time : visit.startTime)}
                                                                 </span>
                                                                 <span
                                                                     className={`visit-status status-${visit.status.toLowerCase()}`}
@@ -1250,7 +1294,7 @@ const Timesheets: React.FC = React.memo(() => {
                                                             </div>
                                                             <p className="visit-location">
                                                                 <FaMapMarkerAlt />{" "}
-                                                                {('location' in visit ? visit.location : visit.location) || t("timesheets.locationTBD")}
+                                                                {('location' in visit ? visit.location : visit.location) && !isCoordinates(('location' in visit ? visit.location : visit.location) || '') ? ('location' in visit ? visit.location : visit.location) : (visit.agentID && agentLocations[visit.agentID] ? agentLocations[visit.agentID] : t("timesheets.locationTBD"))}
                                                             </p>
                                                             {'time' in visit ? (
                                                                 visitReasons[visit.visitID] && visitReasons[visit.visitID].length > 0 && (
@@ -1360,7 +1404,7 @@ const Timesheets: React.FC = React.memo(() => {
                                         <hr className="hr" />
                                         <div className="visit-header">
                                             <span className="visit-time">
-                                                <FaClock /> {'time' in visit ? visit.time : visit.startTime}
+                                                <FaClock /> {formatTime('time' in visit ? visit.time : visit.startTime)}
                                             </span>
                                             <span
                                                 className={`visit-status status-${visit.status.toLowerCase()}`}
@@ -1370,7 +1414,7 @@ const Timesheets: React.FC = React.memo(() => {
                                         </div>
                                         <p className="visit-location">
                                             <FaMapMarkerAlt />{" "}
-                                            {('location' in visit ? visit.location : visit.location) || t("timesheets.locationTBD")}
+                                            {('location' in visit ? visit.location : visit.location) && !isCoordinates(('location' in visit ? visit.location : visit.location) || '') ? ('location' in visit ? visit.location : visit.location) : (visit.agentID && agentLocations[visit.agentID] ? agentLocations[visit.agentID] : t("timesheets.locationTBD"))}
                                         </p>
                                         {'time' in visit ? (
                                             visitReasons[visit.visitID] && visitReasons[visit.visitID].length > 0 && (
