@@ -20,7 +20,7 @@ import {
 } from "react-icons/fa";
 import { TbCalendarTime } from "react-icons/tb";
 import { BsPersonLinesFill } from "react-icons/bs";
-
+import { FaUserTimes } from "react-icons/fa";
 import "./VisitDetails.css";
 import { useAuth } from "../../context/AuthContext";
 import VisitStatus from "../../models/Enum/VisitStatus";
@@ -450,14 +450,17 @@ const VisitDetailsView: React.FC = () => {
                             {agent ? (
                                 <>
                                     <p>
-                                        <BsPersonLinesFill />  {agent.name} {agent.lastname}
+                                        <BsPersonLinesFill /> {agent.name} {agent.lastname}
                                     </p>
                                     <p>
                                         <FaPhone /> {agent.phone || t("visitDetails.agent.na")}
                                     </p>
                                 </>
                             ) : (
-                                <p className="no-data">{t("visitDetails.agent.noData")}</p>
+                                <p className="no-data">
+                                    <FaUserTimes />
+                                    {t("visitDetails.agent.recruitmentVisit")}
+                                </p>
                             )}
                         </div>
                     </div>
@@ -555,11 +558,7 @@ const VisitDetailsView: React.FC = () => {
                         <button
                             className="visit-details-log-btn"
                             onClick={handleLogVisit}
-                            disabled={[
-                                VisitStatus.PENDING,
-                                VisitStatus.VISITED,
-                                VisitStatus.REJECTED,
-                            ].includes(visit.status as VisitStatus)}
+                            disabled={visit.status !== VisitStatus.VALIDATED}
                             aria-label={t("visitDetails.aria.logVisitButton")}
                         >
                             {t("visitDetails.actions.logVisit")}
@@ -570,10 +569,7 @@ const VisitDetailsView: React.FC = () => {
                             <button
                                 className="validate-visit-btn"
                                 onClick={handleValidate}
-                                disabled={[
-                                    VisitStatus.VALIDATED,
-                                    VisitStatus.VISITED,
-                                ].includes(visit.status as VisitStatus)}
+                                disabled={visit.status !== VisitStatus.PENDING}
                                 aria-label={t("visitDetails.aria.validateButton")}
                             >
                                 {t("visitDetails.actions.validate")}
@@ -581,11 +577,7 @@ const VisitDetailsView: React.FC = () => {
                             <button
                                 className="reject-visit-btn"
                                 onClick={handleReject}
-                                disabled={[
-                                    VisitStatus.REJECTED,
-                                    VisitStatus.VISITED,
-                                    VisitStatus.VALIDATED,
-                                ].includes(visit.status as VisitStatus)}
+                                disabled={visit.status !== VisitStatus.PENDING}
                                 aria-label={t("visitDetails.aria.rejectButton")}
                             >
                                 {t("visitDetails.actions.reject")}

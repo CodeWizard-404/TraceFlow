@@ -100,7 +100,8 @@
       "title": "Visit Details",
       "agent": "Agent",
       "phone": "Phone",
-      "na": "N/A"
+      "na": "N/A",
+      "recruitmentVisit": "Recruitment Visit (No Agent)"
     },
     "reasons": {
       "title": "Reasons",
@@ -109,13 +110,15 @@
     "checklist": {
       "title": "Checklist",
       "noData": "No checklist items available.",
-      "itemLabel": "{{item}}"
+      "itemLabel": "{{item}}",
+      "count": "{{completed}} of {{total}} completed"
     },
     "photos": {
       "title": "Photos",
       "startCamera": "Start Camera",
       "note": "At least one photo is required.",
-      "alt": "Visit photo {{index}}"
+      "alt": "Visit photo {{index}}",
+      "count": "{{count}} photos"
     },
     "comment": {
       "title": "Comment (Optional)",
@@ -162,7 +165,8 @@
     "agent": {
       "title": "Agent",
       "noData": "No agent assigned",
-      "phone": "Phone"
+      "phone": "Phone",
+      "recruitmentVisit": "Recruitment Visit (No Agent)"
     },
     "reasons": {
       "title": "Reasons",

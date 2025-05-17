@@ -35,7 +35,6 @@ const VisitValidation: React.FC = () => {
   const [checklist, setChecklist] = useState<
     Array<{ id: string; item: string; checked: boolean }>
   >([]);
-  const [entryTime, setEntryTime] = useState<number | null>(null);
   const [qrScanDate, setQrScanDate] = useState<string | null>(null);
   const [qrScanTime, setQrScanTime] = useState<string | null>(null);
   const [photos, setPhotos] = useState<File[]>([]);
@@ -58,6 +57,24 @@ const VisitValidation: React.FC = () => {
     }),
     [effectivePermissions]
   );
+
+  // Helper function to manage visit start time in localStorage
+  const getVisitStartTime = (visitId: string): number => {
+    const key = `visit_start_time_${visitId}`;
+    const storedTime = localStorage.getItem(key);
+    if (storedTime) {
+      return parseInt(storedTime, 10);
+    }
+    const newStartTime = Date.now();
+    localStorage.setItem(key, newStartTime.toString());
+    return newStartTime;
+  };
+
+  // Helper function to clear visit start time from localStorage
+  const clearVisitStartTime = (visitId: string) => {
+    const key = `visit_start_time_${visitId}`;
+    localStorage.removeItem(key);
+  };
 
   useEffect(() => {
     if (permissionsLoaded && !location.state?.fromValidQRScan) {
@@ -98,7 +115,8 @@ const VisitValidation: React.FC = () => {
             checked: cl.VisitChecklist?.checked || false,
           })) || [];
         setChecklist(initialChecklist);
-        setEntryTime(Date.now());
+        // Initialize start time in localStorage when visit data is loaded
+        getVisitStartTime(idVisit);
       } catch (err) {
         setError(t("visitValidation.error.fetchFailed"));
         console.error("Fetch visit data error:", err);
@@ -151,7 +169,7 @@ const VisitValidation: React.FC = () => {
   useEffect(() => {
     if (isCameraActive && videoRef.current && videoRef.current.srcObject) {
       videoRef.current.play().catch((err) => {
-        console.error("Video play failed:", err);
+        console.error("Video mamplay failed:", err);
         setError(t("visitValidation.error.cameraPlayFailed"));
       });
     }
@@ -209,7 +227,6 @@ const VisitValidation: React.FC = () => {
     if (
       !visit ||
       !idVisit ||
-      !entryTime ||
       !userPermissions.canLogVisits ||
       photos.length === 0
     ) {
@@ -230,8 +247,10 @@ const VisitValidation: React.FC = () => {
     setError(null);
 
     try {
+      // Retrieve start time from localStorage
+      const startTime = getVisitStartTime(idVisit);
       const currentTime = Date.now();
-      const durationMs = currentTime - entryTime;
+      const durationMs = currentTime - startTime;
       const durationMinutes = Math.floor(durationMs / (1000 * 60));
 
       const checklistUpdates = checklist.map((item) => ({
@@ -250,6 +269,8 @@ const VisitValidation: React.FC = () => {
       };
 
       await logVisitDetails(idVisit, updatedVisitData);
+      // Clear start time from localStorage after successful submission
+      clearVisitStartTime(idVisit);
       stopCamera();
       navigate("/timesheet");
     } catch (err) {

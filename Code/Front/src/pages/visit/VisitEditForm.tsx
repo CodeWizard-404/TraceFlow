@@ -919,8 +919,7 @@ const VisitEditForm: React.FC<VisitEditFormProps> = ({
                 )}
 
                 {/* Photos Section */}
-                {canEditField("photos") &&
-                    (visit.photos?.length || newPhotos.length) ? (
+                {canEditField("photos") && (visit.photos?.length || newPhotos.length) ? (
                     <div className="form-group photos-section">
                         <h2>
                             <FaCamera /> {t("visitDetails.form.photos.title")}{" "}

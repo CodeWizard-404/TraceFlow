@@ -452,16 +452,12 @@ body.dark .camera-preview {
 }
 
 .photo-preview {
-  border: 1px solid #e5e7eb;
-  border-radius: 5rem !important;
+  border: 1px solid #3a8fa2;
+  border-radius: 0.5rem;
   cursor: pointer;
   height: 100px;
   object-fit: cover;
   width: 100px;
-}
-
-img {
-  border: 2px solide red;
 }
 
 .photo-note {
@@ -726,7 +722,7 @@ body.dark .back-btn:hover:not(:disabled) {
 }
 
 body.dark .photo-preview {
-  border-color: #4a5568;
+  border-color: #4299e1;
 }
 
 body.dark .remove-photo-btn,
