@@ -348,11 +348,9 @@ html {
   padding: 0.625rem;
   box-shadow: 0 0.25rem 0.75rem rgba(0, 0, 0, 0.05);
   cursor: pointer;
-  /* transition: all 0.3s ease; */
 }
 
 .visit-card:hover {
-  /* transform: translateY(-0.1875rem); */
   box-shadow: 0 0.375rem 1rem rgba(76, 177, 199, 0.2);
 }
 
@@ -1154,4 +1152,167 @@ body.dark .filter-select:focus {
     min-width: 0;
     /* Allow columns to shrink if needed */
   }
+}
+
+
+/* Timesheets.css */
+
+/* Day column styles */
+.day-column {
+  border-radius: 0.8rem;
+
+  transition: background-color 0.2s ease;
+}
+
+.day-column:hover {
+  border-radius: 0.8rem;
+  background-color: #f5f5f5;
+}
+
+body.dark .day-column:hover {
+  background-color: #333;
+}
+
+.day-column.drag-over {
+  border-radius: 0.8rem;
+
+  background-color: #4cb1c7;
+}
+
+body.dark .day-column.drag-over {
+  background-color: #63b3ed;
+}
+
+.day-column.past-date {
+  opacity: 0.6;
+  /* Faded for past dates */
+  cursor: not-allowed;
+  /* Indicate not droppable */
+}
+
+.day-column.past-date.drag-over {
+  background-color: transparent !important;
+  /* Prevent hover effect */
+}
+
+/* Visit card styles */
+.visit-card {
+  cursor: pointer;
+  border: 1px solid #ffffff00;
+}
+
+.visit-card:hover {
+  opacity: 0.8;
+  border: 1px solid #4cb1c7;
+  transition: opacity 0.2s ease, box-shadow 0.2s ease, border 0.2s ease;
+}
+
+.visit-card:active,
+.visit-card.dragging {
+  cursor: move;
+  /* Professional dragging cursor */
+  opacity: 0.8;
+  box-shadow: 0 4px 8px rgba(0, 0, 0, 0.2);
+  /* Subtle shadow for dragging */
+  border: 1px solid #4cb1c7;
+  /* Optional: Highlight border */
+}
+
+body.dark .visit-card:active,
+body.dark .visit-card.dragging {
+  border: 1px solid #63b3ed;
+}
+
+.visit-card.dragging:hover {
+  background-color: #fff;
+  cursor: move;
+  opacity: 0.8;
+}
+
+body.dark .visit-card.dragging:hover {
+  background-color: #333;
+}
+
+
+/* Timesheets.css */
+
+/* Day column styles */
+.day-column {
+  transition: background-color 0.2s ease;
+}
+
+.day-column:hover {
+  background-color: #f5f5f5;
+}
+
+body.dark .day-column:hover {
+  background-color: #333;
+}
+
+.day-column.drag-over {
+  background-color: #4cb0c78a;
+}
+
+body.dark .day-column.drag-over {
+  background-color: #63b3ed86;
+}
+
+.day-column.past-date {
+  opacity: 0.6;
+  /* Faded for past dates */
+  cursor: not-allowed;
+  /* Indicate not droppable */
+}
+
+.day-column.past-date.drag-over {
+  background-color: transparent !important;
+  /* Prevent hover effect */
+}
+
+/* Visit card styles */
+.visit-card {
+  cursor: pointer;
+  transition: opacity 0.2s ease;
+}
+
+.visit-card:active,
+.visit-card.dragging {
+  cursor: move;
+  opacity: 0.8;
+  box-shadow: 0 4px 8px rgba(0, 0, 0, 0.2);
+  border: 1px solid #63b3ed;
+}
+
+.visit-card.dragging:hover {
+  background-color: #fff;
+  cursor: move;
+  opacity: 0.8;
+}
+
+body.dark .visit-card.dragging:hover {
+  background-color: #333;
+}
+
+/* Visited visit card styles */
+.visit-card.visited {
+  cursor: default;
+  opacity: 0.85;
+  border: 1px solid #ccc;
+}
+
+.visit-card.visited:hover {
+  opacity: 1;
+  border: 1px solid #4cb1c7;
+}
+
+body.dark .visit-card:hover {
+  border: 1px solid #63b3ed;
+}
+
+body.dark .visit-card.visited {
+  border: 1px solid #555;
+}
+
+body.dark .visit-card.visited:hover {
+  border: 1px solid #63b3ed;
 }

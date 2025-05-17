@@ -6,7 +6,6 @@
   max-width: 1200px;
   margin: 0 auto;
   font-family: 'Inter', sans-serif;
-  background: #f0f4f8;
   min-height: 100vh;
   display: flex;
   flex-direction: column;
@@ -55,24 +54,24 @@
   margin-left: 0.5rem;
 }
 
-.status-pending {
-  background: #f59e0b;
+.status-visited {
+  background: #4cb1c7;
 }
 
-.status-completed {
-  background: #10b981;
+body.dark .status-visited {
+  background: #63b3ed;
+}
+
+.status-pending {
+  background: #f5a800;
 }
 
 .status-validated {
-  background: #10b981;
+  background: #036318;
 }
 
 .status-rejected {
-  background: #ef4444;
-}
-
-.status-visited {
-  background: #3b82f6;
+  background: #930744;
 }
 
 .visit-details-section {
@@ -279,7 +278,6 @@ button:disabled {
   padding: 1.5rem;
   text-align: center;
   box-shadow: 0 4px 15px rgba(0, 0, 0, 0.05);
-  border: 1px dashed #e81f76;
 }
 
 .visit-details-error-card h2 {
@@ -778,7 +776,7 @@ body.dark .visit-details-delete-btn:hover {
 }
 
 body.dark .visit-details-error-card {
-  background: #2d3748;
+  background: #2b2b2b !important;
   border-color: #f687b3;
   box-shadow: 0 4px 15px rgba(0, 0, 0, 0.2);
 }

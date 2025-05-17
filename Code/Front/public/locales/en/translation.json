@@ -236,7 +236,8 @@
         "startCamera": "Start Camera",
         "lastCapturedAlt": "Last captured photo",
         "existingAlt": "Photo {{index}}",
-        "newAlt": "New photo {{index}}"
+        "newAlt": "New photo {{index}}",
+        "count": "{{count}} photos"
       },
       "comment": {
         "label": "Comment",

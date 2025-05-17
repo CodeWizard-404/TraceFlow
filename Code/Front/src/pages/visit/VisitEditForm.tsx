@@ -1,6 +1,5 @@
-import React, { Dispatch, RefObject, SetStateAction } from "react";
+import React, { Dispatch, RefObject, SetStateAction, useEffect, useState } from "react";
 import { FaCamera, FaTimes } from "react-icons/fa";
-import { Button } from "../../components/ui/button";
 import VisitStatus from "../../models/Enum/VisitStatus";
 import Visit from "../../models/Visit";
 import Agent from "../../models/Agent";
@@ -11,20 +10,17 @@ import Region from "../../models/Region";
 import Governorate from "../../models/Governorate";
 import Delegation from "../../models/Delegation";
 import { updateVisit } from "../../apis/visitAPI";
-//import { useTranslation } from "react-i18next";
 import "./VisitDetails.css";
-
-
-// Constants
+import "./VisitValidation.css"
+import "../Timesheet/TimesheetForm.css";
 const BASE_URL = import.meta.env.VITE_BASE_URL;
 
-// Interfaces
-interface EditTracking {
+export interface EditTracking {
     startTime: number | null;
     durationAccumulator: number;
 }
 
-interface EditFormState {
+export interface EditFormState {
     date: string;
     time: string;
     regionID: string;
@@ -45,6 +41,7 @@ interface EditFormState {
     photosToRemove: string[];
     regionalManagerSearch: string;
     supervisorSearch: string;
+    duration: number | null;
     original: {
         date: string;
         time: string;
@@ -130,9 +127,6 @@ interface VisitEditFormProps {
     navigate: (path: string) => void;
 }
 
-/**
- * VisitEditForm component: Handles the form for editing visit details.
- */
 const VisitEditForm: React.FC<VisitEditFormProps> = ({
     visit,
     editForm,
@@ -159,18 +153,15 @@ const VisitEditForm: React.FC<VisitEditFormProps> = ({
     disableLocationInputs,
     setDisableLocationInputs,
     disableSupervisorInput,
-    setDisableSupervisorInput,
     disableRegionalManagerInput,
-    setDisableRegionalManagerInput,
     agentLoading,
     supervisorLoading,
     setFetchMode,
     isCameraActive,
-    newPhotos,
     setNewPhotos,
+    newPhotos,
     flashEffect,
     videoRef,
-    canvasRef,
     editTracking,
     setEditTracking,
     selectedImage,
@@ -179,785 +170,449 @@ const VisitEditForm: React.FC<VisitEditFormProps> = ({
     stopCamera,
     capturePhoto,
     removeNewPhoto,
-    canEditField,
     idVisit,
     setVisit,
     setError,
     t,
     navigate,
 }) => {
-    // Utility function to get current date and time
-    const getCurrentDateTime = () => {
-        const now = new Date();
-        return {
-            date: now.toISOString().split("T")[0],
-            time: `${now.getHours().toString().padStart(2, "0")}:${now
-                .getMinutes()
-                .toString()
-                .padStart(2, "0")}`,
-        };
-    };
+    const currentDate = new Date().toISOString().split("T")[0];
+    const currentTime = new Date().toTimeString().slice(0, 5);
+    const minTime = editForm.date === currentDate ? currentTime : undefined;
+    const isVisited = visit.status === VisitStatus.VISITED;
+    const [isRecruitmentVisit, setIsRecruitmentVisit] = useState<boolean>(!visit.agentID);
 
-    // Utility function to check if date is weekend
-    const isWeekend = (date: string) => new Date(date).getDay() % 6 === 0;
-
-    // Utility function to validate time
-    const isValidTime = (date: string, time: string) => {
-        const [hours, minutes] = time.split(":").map(Number);
-        if (hours < 8 || hours > 17 || (hours === 17 && minutes > 0)) return false;
-        const { date: currentDate, time: currentTime } = getCurrentDateTime();
-        if (date === currentDate) {
-            const [currentH, currentM] = currentTime.split(":").map(Number);
-            return !(hours < currentH || (hours === currentH && minutes < currentM));
+    // Initialize edit tracking for supervisors when editing a visited visit
+    useEffect(() => {
+        if (isSupervisor && isVisited && !editTracking.startTime) {
+            const startTime = Date.now();
+            localStorage.setItem(`editStartTime_${visit.visitID}`, startTime.toString());
+            setEditTracking({ startTime, durationAccumulator: visit.duration || 0 });
         }
-        return true;
-    };
+    }, [isSupervisor, isVisited, visit.visitID, visit.duration, editTracking.startTime, setEditTracking]);
 
-    // Form submission handler
-    const handleEditSubmit = async (e: React.FormEvent) => {
+    // Reset agent fields when toggling recruitment visit
+    useEffect(() => {
+        if (isRecruitmentVisit) {
+            setEditForm(prev => ({ ...prev, agentID: "", agentPhone: "", agentSearch: "" }));
+            setFetchMode("none");
+            setDisableLocationInputs(false);
+        }
+    }, [isRecruitmentVisit, setEditForm, setFetchMode, setDisableLocationInputs]);
+
+    const handleSubmit = async (e: React.FormEvent) => {
         e.preventDefault();
-        if (
-            !visit ||
-            !userPermissions.canEditTimesheets ||
-            !editForm.date ||
-            !editForm.time ||
-            !editForm.delegationID
-        )
-            return;
+        if (!visit || !userPermissions.canEditTimesheets) return;
 
-        let newStatus = editForm.status;
-        let updatedDuration: number | undefined = visit.duration || undefined;
+        let newStatus = visit.status;
+        let updatedDuration: number | undefined = isSuperAdmin && isVisited ? editForm.duration || undefined : visit.duration || undefined;
 
-        if (visit.status === VisitStatus.VISITED && userPermissions.canLogVisits) {
+        if (isVisited) {
+            // Case 1: Visited status (editable: comment, checklists, photos, duration)
             newStatus = VisitStatus.VISITED;
-            if (editTracking.startTime) {
-                const editDurationMinutes = Math.round(
-                    (Date.now() - editTracking.startTime) / 60000
-                );
-                updatedDuration =
-                    editTracking.durationAccumulator + editDurationMinutes;
+            if (isSupervisor && editTracking.startTime) {
+                const editDurationMinutes = Math.round((Date.now() - editTracking.startTime) / 60000);
+                updatedDuration = (visit.duration || 0) + editDurationMinutes;
+                localStorage.removeItem(`editStartTime_${visit.visitID}`);
             }
-        } else if (
-            userPermissions.canCreateTimesheetsForSupervisors &&
-            selectedSupervisor
-        ) {
-            newStatus = VisitStatus.VALIDATED;
-        } else if (
-            [VisitStatus.VALIDATED, VisitStatus.REJECTED].includes(
-                visit.status as VisitStatus
-            )
-        ) {
-            newStatus = VisitStatus.PENDING;
+        } else {
+            // Case 2: Non-visited status (pending, validated, rejected)
+            if (isSupervisor) {
+                newStatus = VisitStatus.PENDING;
+            } else if (isDirector || isRegionalManager || isSuperAdmin) {
+                newStatus = VisitStatus.VALIDATED;
+            }
+        }
+
+        const location = [regions.find(r => r.regionID === editForm.regionID)?.name, governorates.find(g => g.governorateID === editForm.governorateID)?.name, delegations.find(d => d.delegationID === editForm.delegationID)?.name].filter(Boolean).join(", ") || null;
+
+        const updateData: any = {
+            status: newStatus,
+            duration: updatedDuration,
+            checklists: editForm.checklists.map(c => ({ id: c.id, checked: c.checked })),
+        };
+
+        if (!isVisited) {
+            updateData.date = editForm.date;
+            updateData.time = `${editForm.time}:00`;
+            updateData.location = location;
+            updateData.agentID = isRecruitmentVisit ? null : editForm.agentID;
+            updateData.reasons = editForm.reasons;
+            if (selectedSupervisor) {
+                updateData.supervisorID = selectedSupervisor;
+            }
+        } else {
+            updateData.comment = editForm.comment;
+            updateData.photos = newPhotos;
+            updateData.photosToRemove = editForm.photosToRemove;
         }
 
         try {
-            const updatedVisit = await updateVisit(visit.visitID, {
-                date: editForm.date,
-                time: `${editForm.time}:00`,
-                location: editForm.delegationID,
-                status: newStatus,
-                comment: editForm.comment,
-                agentID: editForm.agentID,
-                checklists: editForm.checklists,
-                reasons: editForm.reasons,
-                photos: newPhotos,
-                photosToRemove: editForm.photosToRemove,
-                supervisorID:
-                    selectedSupervisor &&
-                        userPermissions.canCreateTimesheetsForSupervisors
-                        ? selectedSupervisor
-                        : undefined,
-                duration: updatedDuration,
-            });
-
+            const updatedVisit = await updateVisit(visit.visitID, updateData);
             setVisit(updatedVisit);
             setNewPhotos([]);
             stopCamera();
             setEditTracking({ startTime: null, durationAccumulator: 0 });
             navigate(`/visit/${idVisit}`);
         } catch (err: unknown) {
-            const errorMessage =
-                err instanceof Error ? err.message : t("visitDetails.error.updateFailed");
+            const errorMessage = err instanceof Error ? err.message : t("visitDetails.error.updateFailed");
             setError(errorMessage);
             console.error(err);
         }
     };
 
-    // Cancel handler
-    const handleCancel = () => {
-        setEditForm((prev) => ({
-            ...prev,
-            date: prev.original.date,
-            time: prev.original.time,
-            regionID: prev.original.regionID,
-            governorateID: prev.original.governorateID,
-            delegationID: prev.original.delegationID,
-            status: prev.original.status,
-            comment: prev.original.comment,
-            agentID: prev.original.agentID,
-            checklists: [...prev.original.checklists],
-            reasons: [...prev.original.reasons],
-            photosToRemove: [],
-        }));
-        setEditTracking({ startTime: null, durationAccumulator: 0 });
-        navigate(`/visit/${idVisit}`);
-    };
-
-    // Photo handling
-    const handleRemovePhoto = (photoUrl: string) => {
-        setEditForm((prev) => ({
-            ...prev,
-            photosToRemove: [...prev.photosToRemove, photoUrl],
-        }));
-    };
-
-    const handleImageClick = (photo: string) =>
-        setSelectedImage(`${BASE_URL}${photo}`);
-    const handleCloseFullscreen = () => setSelectedImage(null);
-
-    // Checklist and reason handling
-    const handleChecklistChange = (id: string, checked: boolean) => {
-        if (visit?.status !== "visited") return;
-        setEditForm((prev) => ({
-            ...prev,
-            checklists: prev.checklists.map((c) =>
-                c.id === id ? { ...c, checked } : c
-            ),
-        }));
-    };
+    const handleCancel = () => navigate(`/visit/${idVisit}`);
 
     const handleReasonSelect = (reason: Reason) => {
-        if (!editForm.reasons.some((r) => r.id === reason.reasonID)) {
-            setEditForm((prev) => ({
-                ...prev,
-                reasons: [...prev.reasons, { id: reason.reasonID }],
-                reasonSearch: "",
-            }));
+        if (!editForm.reasons.some(r => r.id === reason.reasonID) && !isVisited) {
+            setEditForm(prev => ({ ...prev, reasons: [...prev.reasons, { id: reason.reasonID }], reasonSearch: "" }));
         }
     };
 
     const handleChecklistSelect = (checklist: Checklist) => {
-        if (!editForm.checklists.some((c) => c.id === checklist.checklistID)) {
-            setEditForm((prev) => ({
-                ...prev,
-                checklists: [
-                    ...prev.checklists,
-                    { id: checklist.checklistID, checked: false },
-                ],
-                checklistSearch: "",
-            }));
+        if (!editForm.checklists.some(c => c.id === checklist.checklistID)) {
+            setEditForm(prev => ({ ...prev, checklists: [...prev.checklists, { id: checklist.checklistID, checked: false }], checklistSearch: "" }));
         }
     };
 
     const handleRemoveReason = (index: number) => {
-        setEditForm((prev) => ({
-            ...prev,
-            reasons: prev.reasons.filter((_, i) => i !== index),
-        }));
+        if (!isVisited) {
+            setEditForm(prev => ({ ...prev, reasons: prev.reasons.filter((_, i) => i !== index) }));
+        }
     };
 
     const handleRemoveChecklist = (index: number) => {
-        setEditForm((prev) => ({
-            ...prev,
-            checklists: prev.checklists.filter((_, i) => i !== index),
-        }));
+        if (!isVisited) {
+            setEditForm(prev => ({ ...prev, checklists: prev.checklists.filter((_, i) => i !== index) }));
+        }
     };
 
-    // Photo count display
-    const formPhotosCount =
-        t("visitDetails.form.photos.count", {
-            count:
-                (visit?.photos?.filter((p) => !editForm.photosToRemove.includes(p))
-                    .length || 0) + newPhotos.length,
-        }) ||
-        `(${(visit?.photos?.filter((p) => !editForm.photosToRemove.includes(p))
-            .length || 0) + newPhotos.length
-        } photos)`;
+    const handleChecklistChange = (id: string, checked: boolean) => {
+        if (isVisited) {
+            setEditForm(prev => ({
+                ...prev,
+                checklists: prev.checklists.map(c => c.id === id ? { ...c, checked } : c),
+            }));
+        }
+    };
+
+    const handleRemovePhoto = (photoUrl: string) => {
+        if (isVisited) {
+            setEditForm(prev => ({ ...prev, photosToRemove: [...prev.photosToRemove, photoUrl] }));
+        }
+    };
+
+    const handleDurationChange = (e: React.ChangeEvent<HTMLInputElement>) => {
+        if (isSuperAdmin && isVisited) {
+            const value = e.target.value;
+            // Allow empty input to clear the field
+            if (value === "") {
+                setEditForm(prev => ({ ...prev, duration: null }));
+            } else {
+                const numValue = parseInt(value);
+                // Only update if the value is a non-negative integer
+                if (!isNaN(numValue) && numValue >= 0) {
+                    setEditForm(prev => ({ ...prev, duration: numValue }));
+                }
+            }
+        }
+    };
+
+    const formPhotosCount = t("visitDetails.form.photos.count", {
+        count: (visit.photos?.filter(p => !editForm.photosToRemove.includes(p)).length || 0) + newPhotos.length,
+    }) || `(${(visit.photos?.filter(p => !editForm.photosToRemove.includes(p)).length || 0) + newPhotos.length} photos)`;
+
+    const isFormComplete = isVisited
+        ? editForm.checklists.length > 0
+        : editForm.date && editForm.time && editForm.regionID && editForm.governorateID && editForm.delegationID && (isRecruitmentVisit || editForm.agentID) && editForm.reasons.length > 0 && editForm.checklists.length > 0 && (isSupervisor || selectedSupervisor);
 
     return (
-        <>
-            <form onSubmit={handleEditSubmit} className="visit-edit-form">
-                {/* Regional Manager Selection */}
-                {(isSuperAdmin || isDirector) &&
-                    !isRegionalManager &&
-                    !isSupervisor &&
-                    canEditField("supervisor") && (
+        <div className="timesheet-form-container">
+            <form onSubmit={handleSubmit} className="form-card" role="form">
+                {(isSuperAdmin || isDirector) && !isVisited && (
+                    <div className="form-group">
+                        <label htmlFor="regionalManager">{t("timesheetForm.form.regionalManager")}</label>
+                        <input
+                            type="text"
+                            value={editForm.regionalManagerSearch}
+                            onChange={(e) => setEditForm(prev => ({ ...prev, regionalManagerSearch: e.target.value }))}
+                            placeholder={t("timesheetForm.form.placeholders.regionalManagerSearch")}
+                        />
+                        <select
+                            id="regionalManager"
+                            value={selectedRegionalManager}
+                            onChange={(e) => setSelectedRegionalManager(e.target.value)}
+                            disabled={disableRegionalManagerInput}
+                        >
+                            <option value="">{t("timesheetForm.form.placeholders.regionalManagerSelect")}</option>
+                            {regionalManagers.map(rm => (
+                                <option key={rm.userID} value={rm.userID}>{`${rm.firstname} ${rm.lastname} (${rm.phone})`}</option>
+                            ))}
+                        </select>
+                    </div>
+                )}
+                {(isSuperAdmin || isDirector || isRegionalManager) && !isVisited && (
+                    <div className="form-group">
+                        <label htmlFor="supervisor">{t("timesheetForm.form.supervisor")}</label>
+                        <input
+                            type="text"
+                            value={editForm.supervisorSearch}
+                            onChange={(e) => setEditForm(prev => ({ ...prev, supervisorSearch: e.target.value }))}
+                            placeholder={t("timesheetForm.form.placeholders.supervisorSearch")}
+                            disabled={supervisorLoading}
+                        />
+                        <input
+                            type="tel"
+                            value={supervisorPhone}
+                            onChange={(e) => setSupervisorPhone(e.target.value)}
+                            placeholder={t("timesheetForm.form.placeholders.supervisorPhone")}
+                            disabled={supervisorLoading}
+                        />
+                        <select
+                            id="supervisor"
+                            value={selectedSupervisor}
+                            onChange={(e) => setSelectedSupervisor(e.target.value)}
+                            disabled={supervisorLoading || disableSupervisorInput}
+                        >
+                            <option value="">{t("timesheetForm.form.placeholders.supervisorSelect")}</option>
+                            {supervisors.map(s => (
+                                <option key={s.userID} value={s.userID}>{`${s.firstname} ${s.lastname} (${s.phone})`}</option>
+                            ))}
+                        </select>
+                    </div>
+                )}
+                {!isVisited && <hr />}
+                {!isVisited && (
+                    <div className="form-group-row">
                         <div className="form-group">
-                            <label htmlFor="regionalManager">
-                                {t("visitDetails.form.regionalManager")}
-                            </label>
+                            <label htmlFor="date">{t("timesheetForm.form.date")}</label>
                             <input
-                                type="text"
-                                id="regional-manager-search"
-                                placeholder={t(
-                                    "visitDetails.form.placeholders.regionalManagerSearch"
-                                )}
-                                value={editForm.regionalManagerSearch}
-                                onChange={(e) =>
-                                    setEditForm((prev) => ({
-                                        ...prev,
-                                        regionalManagerSearch: e.target.value,
-                                    }))
-                                }
-                                className="search-input"
-                                aria-label={t(
-                                    "visitDetails.form.placeholders.regionalManagerSearch"
-                                )}
-                                disabled={disableRegionalManagerInput}
-                            />
-                            <select
-                                id="regionalManager"
-                                value={selectedRegionalManager}
-                                onChange={(e) => {
-                                    setSelectedRegionalManager(e.target.value);
-                                    setSelectedSupervisor("");
-                                    setEditForm((prev) => ({
-                                        ...prev,
-                                        regionID: "",
-                                        governorateID: "",
-                                        delegationID: "",
-                                        agentID: "",
-                                        agentSearch: "",
-                                    }));
-                                    setDisableLocationInputs(false);
-                                    setDisableSupervisorInput(false);
-                                    setDisableRegionalManagerInput(false);
-                                    setFetchMode("none");
-                                }}
-                                aria-label={t(
-                                    "visitDetails.form.placeholders.regionalManagerSelect"
-                                )}
-                                disabled={disableRegionalManagerInput}
-                            >
-                                <option value="">
-                                    {t("visitDetails.form.placeholders.regionalManagerSelect")}
-                                </option>
-                                {regionalManagers
-                                    .filter((rm) =>
-                                        `${rm.firstname || ""} ${rm.lastname || ""} ${rm.phone || ""}`
-                                            .toLowerCase()
-                                            .includes(editForm.regionalManagerSearch.toLowerCase())
-                                    )
-                                    .map((rm) => (
-                                        <option key={rm.userID} value={rm.userID}>
-                                            {rm.firstname} {rm.lastname} ({rm.phone})
-                                        </option>
-                                    ))}
-                            </select>
-                        </div>
-                    )}
-
-                {/* Supervisor Selection */}
-                {(isSuperAdmin || isDirector || isRegionalManager) &&
-                    !isSupervisor &&
-                    userPermissions.canCreateTimesheetsForSupervisors &&
-                    userPermissions.canReadSupervisors &&
-                    canEditField("supervisor") && (
-                        <div className="form-group">
-                            <label htmlFor="supervisor">{t("visitDetails.form.supervisor")}</label>
-                            <input
-                                type="text"
-                                id="supervisor-search"
-                                placeholder={t("visitDetails.form.placeholders.supervisorSearch")}
-                                value={editForm.supervisorSearch}
-                                onChange={(e) =>
-                                    setEditForm((prev) => ({
-                                        ...prev,
-                                        supervisorSearch: e.target.value,
-                                    }))
-                                }
-                                className="search-input"
-                                aria-label={t("visitDetails.form.placeholders.supervisorSearch")}
-                                disabled={supervisorLoading || disableSupervisorInput}
-                            />
-                            <input
-                                type="tel"
-                                id="supervisor-phone"
-                                placeholder={t("visitDetails.form.placeholders.supervisorPhone")}
-                                value={supervisorPhone}
-                                onChange={(e) => setSupervisorPhone(e.target.value)}
-                                className="search-input"
-                                aria-label={t("visitDetails.form.placeholders.supervisorPhone")}
-                                disabled={supervisorLoading || disableSupervisorInput}
-                            />
-                            {supervisorLoading && (
-                                <span className="loading-spinner" aria-hidden="true"></span>
-                            )}
-                            <select
-                                id="supervisor"
-                                value={selectedSupervisor}
-                                onChange={(e) => {
-                                    setSelectedSupervisor(e.target.value);
-                                    setEditForm((prev) => ({
-                                        ...prev,
-                                        regionID: "",
-                                        governorateID: "",
-                                        delegationID: "",
-                                        agentID: "",
-                                        agentSearch: "",
-                                    }));
-                                    setDisableLocationInputs(false);
-                                    setDisableSupervisorInput(false);
-                                    setFetchMode("supervisor");
-                                }}
+                                type="date"
+                                id="date"
+                                value={editForm.date}
+                                onChange={(e) => setEditForm(prev => ({ ...prev, date: e.target.value }))}
+                                min={currentDate}
                                 required
-                                aria-label={t("visitDetails.form.placeholders.supervisorSelect")}
-                                disabled={supervisorLoading || disableSupervisorInput}
+                            />
+                        </div>
+                        <div className="form-group">
+                            <label htmlFor="time">{t("timesheetForm.form.time")}</label>
+                            <input
+                                type="time"
+                                id="time"
+                                value={editForm.time}
+                                onChange={(e) => setEditForm(prev => ({ ...prev, time: e.target.value }))}
+                                disabled={!editForm.date}
+                                min={minTime}
+                                required
+                            />
+                        </div>
+                    </div>
+                )}
+                {!isVisited && <hr />}
+                {!isVisited && (
+                    <div className="form-group" >
+                        <label className="custom-checkbox-label" htmlFor="recruitmentVisit">
+                            <input
+                                type="checkbox"
+                                id="recruitmentVisit"
+                                checked={isRecruitmentVisit}
+                                onChange={(e) => setIsRecruitmentVisit(e.target.checked)}
+                                className="custom-checkbox-input"
+                            />
+                            <span className="custom-checkbox">
+                                <i className="fas fa-check check-icon"></i>
+                            </span>
+                            <span className="checklist-text">{t("timesheetForm.form.recruitmentVisit")}</span>
+                        </label>
+                    </div>
+                )}
+                {!isVisited && <hr />}
+                {!isVisited && (
+                    <div className="form-group-row">
+                        <div className="form-group">
+                            <label htmlFor="region">{t("timesheetForm.form.region")}</label>
+                            <select
+                                id="region"
+                                value={editForm.regionID}
+                                onChange={(e) => setEditForm(prev => ({ ...prev, regionID: e.target.value, governorateID: "", delegationID: "" }))}
+                                required
                             >
-                                <option value="">
-                                    {t("visitDetails.form.placeholders.supervisorSelect")}
-                                </option>
-                                {supervisors
-                                    .filter((s) =>
-                                        `${s.firstname || ""} ${s.lastname || ""} ${s.phone || ""}`
-                                            .toLowerCase()
-                                            .includes(editForm.supervisorSearch.toLowerCase())
-                                    )
-                                    .map((s) => (
-                                        <option key={s.userID} value={s.userID}>
-                                            {s.firstname} {s.lastname} ({s.phone})
-                                        </option>
-                                    ))}
+                                <option value="">{t("timesheetForm.form.placeholders.regionSelect")}</option>
+                                {regions.map(r => (
+                                    <option key={r.regionID} value={r.regionID}>{r.name}</option>
+                                ))}
                             </select>
                         </div>
-                    )}
-
-                {/* Date and Time Inputs */}
-                {canEditField("dateTime") && (
-                    <div className="form-group datetime-group">
-                        <label>{t("visitDetails.form.date.label")}</label>
-                        <input
-                            type="date"
-                            value={editForm.date}
-                            onChange={(e) =>
-                                !isWeekend(e.target.value) &&
-                                setEditForm((prev) => ({ ...prev, date: e.target.value }))
-                            }
-                            min={getCurrentDateTime().date}
-                            className="search-input"
-                            required
-                            aria-label={t("visitDetails.form.date.ariaLabel")}
-                        />
-                        <label>{t("visitDetails.form.time.label")}</label>
-                        <input
-                            type="time"
-                            value={editForm.time}
-                            onChange={(e) =>
-                                isValidTime(editForm.date, e.target.value) &&
-                                setEditForm((prev) => ({ ...prev, time: e.target.value }))
-                            }
-                            min={
-                                editForm.date === getCurrentDateTime().date
-                                    ? getCurrentDateTime().time
-                                    : "08:00"
-                            }
-                            max="17:00"
-                            step="60"
-                            className="search-input"
-                            required
-                            aria-label={t("visitDetails.form.time.ariaLabel")}
-                        />
+                        <div className="form-group">
+                            <label htmlFor="governorate">{t("timesheetForm.form.governorate")}</label>
+                            <select
+                                id="governorate"
+                                value={editForm.governorateID}
+                                onChange={(e) => setEditForm(prev => ({ ...prev, governorateID: e.target.value, delegationID: "" }))}
+                                disabled={!editForm.regionID}
+                                required
+                            >
+                                <option value="">{t("timesheetForm.form.placeholders.governorateSelect")}</option>
+                                {governorates.map(g => (
+                                    <option key={g.governorateID} value={g.governorateID}>{g.name}</option>
+                                ))}
+                            </select>
+                        </div>
+                        <div className="form-group">
+                            <label htmlFor="delegation">{t("timesheetForm.form.delegation")}</label>
+                            <select
+                                id="delegation"
+                                value={editForm.delegationID}
+                                onChange={(e) => setEditForm(prev => ({ ...prev, delegationID: e.target.value }))}
+                                disabled={!editForm.governorateID}
+                                required
+                            >
+                                <option value="">{t("timesheetForm.form.placeholders.delegationSelect")}</option>
+                                {delegations.map(d => (
+                                    <option key={d.delegationID} value={d.delegationID}>{d.name}</option>
+                                ))}
+                            </select>
+                        </div>
                     </div>
                 )}
-
-                {/* Region Selection */}
-                {canEditField("regionID") && (
-                    <div className="form-group">
-                        <label htmlFor="region">
-                            {t("visitDetails.form.region.label")}
-                        </label>
-                        <select
-                            id="region"
-                            value={editForm.regionID}
-                            onChange={(e) =>
-                                setEditForm((prev) => ({
-                                    ...prev,
-                                    regionID: e.target.value,
-                                }))
-                            }
-                            required
-                            disabled={
-                                !userPermissions.canReadAgentsByLocation ||
-                                disableLocationInputs
-                            }
-                            aria-label={t("visitDetails.form.region.ariaLabel")}
-                        >
-                            <option value="">
-                                {t("visitDetails.form.region.selectPlaceholder")}
-                            </option>
-                            {regions.map((reg) => (
-                                <option key={reg.regionID} value={reg.regionID}>
-                                    {reg.name}
-                                </option>
-                            ))}
-                        </select>
-                    </div>
-                )}
-
-                {/* Governorate Selection */}
-                {canEditField("governorateID") && (
-                    <div className="form-group">
-                        <label htmlFor="governorate">
-                            {t("visitDetails.form.governorate.label")}
-                        </label>
-                        <select
-                            id="governorate"
-                            value={editForm.governorateID}
-                            onChange={(e) =>
-                                setEditForm((prev) => ({
-                                    ...prev,
-                                    governorateID: e.target.value,
-                                }))
-                            }
-                            required
-                            disabled={
-                                !userPermissions.canReadAgentsByLocation ||
-                                disableLocationInputs ||
-                                !editForm.regionID
-                            }
-                            aria-label={t("visitDetails.form.governorate.ariaLabel")}
-                        >
-                            <option value="">
-                                {t("visitDetails.form.governorate.selectPlaceholder")}
-                            </option>
-                            {governorates.map((gov) => (
-                                <option key={gov.governorateID} value={gov.governorateID}>
-                                    {gov.name}
-                                </option>
-                            ))}
-                        </select>
-                    </div>
-                )}
-
-                {/* Delegation Selection */}
-                {canEditField("delegationID") && (
-                    <div className="form-group">
-                        <label htmlFor="delegation">
-                            {t("visitDetails.form.delegation.label")}
-                        </label>
-                        <select
-                            id="delegation"
-                            value={editForm.delegationID}
-                            onChange={(e) =>
-                                setEditForm((prev) => ({
-                                    ...prev,
-                                    delegationID: e.target.value,
-                                }))
-                            }
-                            required
-                            disabled={
-                                !userPermissions.canReadAgentsByLocation ||
-                                disableLocationInputs ||
-                                !editForm.governorateID
-                            }
-                            aria-label={t("visitDetails.form.delegation.ariaLabel")}
-                        >
-                            <option value="">
-                                {t("visitDetails.form.delegation.selectPlaceholder")}
-                            </option>
-                            {delegations.map((del) => (
-                                <option key={del.delegationID} value={del.delegationID}>
-                                    {del.name}
-                                </option>
-                            ))}
-                        </select>
-                    </div>
-                )}
-
-                {/* Agent Selection */}
-                {canEditField("agentID") && (
+                {!isRecruitmentVisit && !isVisited && (
                     <>
                         <div className="form-group">
-                            <label htmlFor="agentPhone">
-                                {t("visitDetails.form.agentPhone.label")}
-                            </label>
+                            <label htmlFor="agentPhone">{t("timesheetForm.form.agentPhone")}</label>
                             <input
                                 type="tel"
                                 id="agentPhone"
-                                placeholder={
-                                    userPermissions.canReadAgentsByPhone
-                                        ? t("visitDetails.form.agentPhone.placeholder")
-                                        : t("visitDetails.form.permissionDenied")
-                                }
                                 value={editForm.agentPhone}
-                                onChange={(e) =>
-                                    setEditForm((prev) => ({
-                                        ...prev,
-                                        agentPhone: e.target.value,
-                                    }))
-                                }
-                                className="search-input"
-                                disabled={!userPermissions.canReadAgentsByPhone}
-                                aria-label={t("visitDetails.form.agentPhone.ariaLabel")}
+                                onChange={(e) => setEditForm(prev => ({ ...prev, agentPhone: e.target.value }))}
+                                placeholder={t("timesheetForm.form.placeholders.agentPhone")}
                             />
-                            {agentLoading && (
-                                <span className="loading-spinner" aria-hidden="true"></span>
-                            )}
                         </div>
                         <div className="form-group">
-                            <label htmlFor="agent">
-                                {t("visitDetails.form.agent.label")}
-                            </label>
-                            <input
-                                type="text"
-                                placeholder={
-                                    userPermissions.canReadAgentsByLocation
-                                        ? t("visitDetails.form.agent.searchPlaceholder")
-                                        : t("visitDetails.form.permissionDenied")
-                                }
-                                value={editForm.agentSearch}
-                                onChange={(e) =>
-                                    setEditForm((prev) => ({
-                                        ...prev,
-                                        agentSearch: e.target.value,
-                                    }))
-                                }
-                                className="search-input"
-                                disabled={
-                                    !userPermissions.canReadAgentsByLocation ||
-                                    !!editForm.agentPhone ||
-                                    !editForm.delegationID
-                                }
-                                aria-label={t("visitDetails.form.agent.searchPlaceholder")}
-                            />
-                            {agentLoading && (
-                                <span className="loading-spinner" aria-hidden="true"></span>
-                            )}
+                            <label htmlFor="agent">{t("timesheetForm.form.agent")}</label>
+                            {agentLoading && <span className="loading-spinner"></span>}
                             <select
                                 id="agent"
                                 value={editForm.agentID}
-                                onChange={(e) =>
-                                    setEditForm((prev) => ({
-                                        ...prev,
-                                        agentID: e.target.value,
-                                    }))
-                                }
+                                onChange={(e) => setEditForm(prev => ({ ...prev, agentID: e.target.value }))}
+                                disabled={!(editForm.agentPhone || editForm.delegationID)}
                                 required
-                                disabled={
-                                    !userPermissions.canReadAgentsByLocation ||
-                                    !!editForm.agentPhone ||
-                                    !editForm.delegationID ||
-                                    agentLoading
-                                }
-                                aria-label={t("visitDetails.form.agent.ariaLabel")}
                             >
-                                <option value="">
-                                    {t("visitDetails.form.agent.selectPlaceholder")}
-                                </option>
-                                {agents
-                                    .filter((a) =>
-                                        `${a.name || ""} ${a.lastname || ""} ${a.phone || ""}`
-                                            .toLowerCase()
-                                            .includes(editForm.agentSearch.toLowerCase())
-                                    )
-                                    .map((a) => (
-                                        <option key={a.agentID} value={a.agentID}>
-                                            {a.name} {a.lastname} ({a.phone})
-                                        </option>
-                                    ))}
+                                <option value="">{t("timesheetForm.form.placeholders.agentSelect")}</option>
+                                {agents.map(a => (
+                                    <option key={a.agentID} value={a.agentID}>{`${a.name} ${a.lastname} (${a.phone})`}</option>
+                                ))}
                             </select>
                         </div>
                     </>
                 )}
-
-                {/* Reasons Selection */}
-                {canEditField("reasons") && (
-                    <div className="form-group">
-                        <label>{t("visitDetails.form.reasons.label")}</label>
-                        <input
-                            type="text"
-                            placeholder={
-                                userPermissions.canReadReasons
-                                    ? t("visitDetails.form.reasons.searchPlaceholder")
-                                    : t("visitDetails.form.permissionDenied")
-                            }
-                            value={editForm.reasonSearch}
-                            onChange={(e) =>
-                                setEditForm((prev) => ({
-                                    ...prev,
-                                    reasonSearch: e.target.value,
-                                }))
-                            }
-                            className="search-input"
-                            disabled={!userPermissions.canReadReasons}
-                            aria-label={t("visitDetails.form.reasons.searchPlaceholder")}
-                        />
+                {!isVisited && <hr />}
+                <div className="form-group" style={{ marginBottom: "0 !important" }}>
+                    <label>{t("timesheetForm.form.reasons")}</label>
+                    {!isVisited && (
                         <select
                             value=""
-                            onChange={(e) => {
-                                const reason = reasons.find(
-                                    (r) => r.reasonID === e.target.value
-                                );
-                                if (reason) handleReasonSelect(reason);
-                            }}
-                            disabled={!userPermissions.canReadReasons}
-                            aria-label={t("visitDetails.form.reasons.ariaLabel")}
+                            onChange={(e) => handleReasonSelect(reasons.find(r => r.reasonID === e.target.value)!)}
+                            disabled={isRecruitmentVisit && editForm.reasons.some(r => r.id === reasons.find(r => r.item.toLowerCase() === "recruitment")?.reasonID)}
                         >
-                            <option value="">
-                                {t("visitDetails.form.reasons.selectPlaceholder")}
-                            </option>
-                            {reasons
-                                .filter((r) =>
-                                    r.item
-                                        .toLowerCase()
-                                        .includes(editForm.reasonSearch.toLowerCase())
-                                )
-                                .map((r) => (
-                                    <option key={r.reasonID} value={r.reasonID}>
-                                        {r.item}
-                                    </option>
-                                ))}
+                            <option value="">{t("timesheetForm.form.placeholders.reasonSelect")}</option>
+                            {reasons.map(r => (
+                                <option key={r.reasonID} value={r.reasonID}>{r.item}</option>
+                            ))}
                         </select>
-                        <div className="selected-items">
-                            {editForm.reasons.map((r, index) => {
-                                const reasonItem =
-                                    reasons.find((re) => re.reasonID === r.id)?.item || r.id;
-                                return (
+                    )}
+                    <div className="selected-items">
+                        {editForm.reasons.map((r, i) => (
+                            <span
+                                key={i}
+                                className="selected-item"
+                                onClick={() => handleRemoveReason(i)}
+                            >
+                                {reasons.find(re => re.reasonID === r.id)?.item} {!isVisited && "×"}
+                            </span>
+                        ))}
+                    </div>
+                </div>
+                <div className="form-group">
+                    <label>{t("timesheetForm.form.checklists")}</label>
+                    {!isVisited && (
+                        <select
+                            value=""
+                            onChange={(e) => handleChecklistSelect(checklists.find(c => c.checklistID === e.target.value)!)}
+                        >
+                            <option value="">{t("timesheetForm.form.placeholders.checklistSelect")}</option>
+                            {checklists.map(c => (
+                                <option key={c.checklistID} value={c.checklistID}>{c.item}</option>
+                            ))}
+                        </select>
+                    )}
+                    <div className="selected-items">
+                        {editForm.checklists.map((c, i) => (
+                            <div key={i} className="checklist-item">
+                                {isVisited && (
+                                    <input
+                                        type="checkbox"
+                                        checked={c.checked}
+                                        onChange={(e) => handleChecklistChange(c.id, e.target.checked)}
+                                    />
+                                )}
+                                <span>{checklists.find(ch => ch.checklistID === c.id)?.item}</span>
+                                {!isVisited && (
                                     <span
-                                        key={index}
-                                        className="selected-item"
-                                        onClick={() => handleRemoveReason(index)}
-                                        aria-label={
-                                            t("visitDetails.aria.removeReason", {
-                                                item: reasonItem,
-                                            }) || `Remove reason ${reasonItem}`
-                                        }
+                                        className="remove-item"
+                                        onClick={() => handleRemoveChecklist(i)}
                                     >
-                                        {reasonItem} ×
+                                        ×
                                     </span>
-                                );
-                            })}
+                                )}
+                            </div>
+                        ))}
+                    </div>
+                </div>
+                {isSuperAdmin && isVisited && (
+                    <div className="form-group duration-group">
+                        <label htmlFor="duration">{t("visitDetails.form.duration")}</label>
+                        <div className="duration-input-container">
+                            <input
+                                type="number"
+                                id="duration"
+                                value={editForm.duration ?? ""}
+                                onChange={handleDurationChange}
+                                placeholder={t("visitDetails.form.durationPlaceholder")}
+                                min="0"
+                                step="1"
+                                required
+                            />
+                            <span className="duration-unit">{t("visitDetails.form.minutes")}</span>
                         </div>
                     </div>
                 )}
-
-                {/* Checklists Selection */}
-                {canEditField("checklists") && (
-                    <div className="form-group">
-                        <label>{t("visitDetails.form.checklists.label")}</label>
-                        <input
-                            type="text"
-                            placeholder={
-                                userPermissions.canReadChecklists
-                                    ? t("visitDetails.form.checklists.searchPlaceholder")
-                                    : t("visitDetails.form.permissionDenied")
-                            }
-                            value={editForm.checklistSearch}
-                            onChange={(e) =>
-                                setEditForm((prev) => ({
-                                    ...prev,
-                                    checklistSearch: e.target.value,
-                                }))
-                            }
-                            className="search-input"
-                            disabled={!userPermissions.canReadChecklists}
-                            aria-label={t("visitDetails.form.checklists.searchPlaceholder")}
-                        />
-                        <select
-                            value=""
-                            onChange={(e) => {
-                                const checklist = checklists.find(
-                                    (c) => c.checklistID === e.target.value
-                                );
-                                if (checklist) handleChecklistSelect(checklist);
-                            }}
-                            disabled={!userPermissions.canReadChecklists}
-                            aria-label={t("visitDetails.form.checklists.ariaLabel")}
-                        >
-                            <option value="">
-                                {t("visitDetails.form.checklists.selectPlaceholder")}
-                            </option>
-                            {checklists
-                                .filter((c) =>
-                                    c.item
-                                        .toLowerCase()
-                                        .includes(editForm.checklistSearch.toLowerCase())
-                                )
-                                .map((c) => (
-                                    <option key={c.checklistID} value={c.checklistID}>
-                                        {c.item}
-                                    </option>
-                                ))}
-                        </select>
-                        <div className="selected-items">
-                            {editForm.checklists.map((c, index) => {
-                                const checklistItem =
-                                    checklists.find((cl) => cl.checklistID === c.id)?.item ||
-                                    c.id;
-                                return (
-                                    <div key={index} className="checklist-item">
-                                        <input
-                                            type="checkbox"
-                                            checked={c.checked}
-                                            onChange={(e) =>
-                                                handleChecklistChange(c.id, e.target.checked)
-                                            }
-                                            disabled={visit.status !== "visited"}
-                                            aria-label={
-                                                t("visitDetails.aria.checklistItem", {
-                                                    item: checklistItem,
-                                                }) || `Toggle checklist ${checklistItem}`
-                                            }
-                                        />
-                                        <span>{checklistItem}</span>
-                                        <span
-                                            className="remove-item"
-                                            onClick={() => handleRemoveChecklist(index)}
-                                            aria-label={
-                                                t("visitDetails.aria.removeChecklist", {
-                                                    item: checklistItem,
-                                                }) || `Remove checklist ${checklistItem}`
-                                            }
-                                        >
-                                            ×
-                                        </span>
-                                    </div>
-                                );
-                            })}
-                        </div>
-                    </div>
-                )}
-
-                {/* Photos Section */}
-                {canEditField("photos") && (visit.photos?.length || newPhotos.length) ? (
-                    <div className="form-group photos-section">
-                        <h2>
-                            <FaCamera /> {t("visitDetails.form.photos.title")}{" "}
-                            {formPhotosCount}
-                        </h2>
-                        {visit.status === VisitStatus.VISITED && (
+                {isVisited && (
+                    <>
+                        <div className="form-group photos-section">
+                            <h2>
+                                <FaCamera /> {t("visitDetails.form.photos.title")} {formPhotosCount}
+                            </h2>
                             <div className="camera-controls">
                                 <button
                                     type="button"
                                     className="camera-btn"
                                     onClick={startCamera}
                                     disabled={isCameraActive}
-                                    aria-label={t("visitDetails.aria.startCamera")}
                                 >
                                     <FaCamera /> {t("visitDetails.form.photos.startCamera")}
                                 </button>
-                                <div
-                                    className={`camera-container ${isCameraActive ? "active" : ""}`}
-                                >
+                                <div className={`camera-container ${isCameraActive ? "active" : ""}`}>
                                     <div className="camera-frame">
-                                        <video
-                                            ref={videoRef}
-                                            className="camera-preview"
-                                            muted
-                                            playsInline
-                                        />
-                                        <div
-                                            className={`flash-overlay ${flashEffect ? "active" : ""}`}
-                                        ></div>
+                                        <video ref={videoRef} className="camera-preview" muted playsInline />
+                                        <div className={`flash-overlay ${flashEffect ? "active" : ""}`}></div>
                                         <div className="photo-counter">
                                             <FaCamera /> {newPhotos.length}
                                         </div>
                                         {newPhotos.length > 0 && (
                                             <div className="thumbnail-preview">
                                                 <img
-                                                    src={URL.createObjectURL(
-                                                        newPhotos[newPhotos.length - 1]
-                                                    )}
+                                                    src={URL.createObjectURL(newPhotos[newPhotos.length - 1])}
                                                     alt={t("visitDetails.form.photos.lastCapturedAlt")}
                                                 />
                                             </div>
@@ -969,7 +624,6 @@ const VisitEditForm: React.FC<VisitEditFormProps> = ({
                                                 type="button"
                                                 className="stop-camera-btn"
                                                 onClick={stopCamera}
-                                                aria-label={t("visitDetails.aria.stopCamera")}
                                             >
                                                 <FaTimes /> {t("visitDetails.actions.stopCamera")}
                                             </button>
@@ -977,7 +631,6 @@ const VisitEditForm: React.FC<VisitEditFormProps> = ({
                                                 type="button"
                                                 className="capture-btn"
                                                 onClick={capturePhoto}
-                                                aria-label={t("visitDetails.aria.capturePhoto")}
                                             >
                                                 <FaCamera /> {t("visitDetails.actions.capturePhoto")}
                                             </button>
@@ -985,199 +638,72 @@ const VisitEditForm: React.FC<VisitEditFormProps> = ({
                                     )}
                                 </div>
                             </div>
-                        )}
-                        {(visit.photos?.length || newPhotos.length) && (
-                            <div className="photo-previews">
-                                {visit
-                                    .photos!.filter(
-                                        (p) => !editForm.photosToRemove.includes(p)
-                                    )
-                                    .map((photo, index) => (
-                                        <div
-                                            key={`existing-${index}`}
-                                            className="photo-container"
-                                        >
+                            {(visit.photos?.length || newPhotos.length) && (
+                                <div className="photo-previews">
+                                    {visit.photos?.filter(p => !editForm.photosToRemove.includes(p)).map((photo, index) => (
+                                        <div key={`existing-${index}`} className="photo-container">
                                             <img
                                                 src={`${BASE_URL}${photo}`}
-                                                alt={
-                                                    t("visitDetails.form.photos.existingAlt", {
-                                                        index: index + 1,
-                                                    }) || `Existing photo ${index + 1}`
-                                                }
+                                                alt={t("visitDetails.form.photos.existingAlt", { index: index + 1 })}
                                                 className="photo-preview"
-                                                onClick={() => handleImageClick(photo)}
+                                                onClick={() => setSelectedImage(`${BASE_URL}${photo}`)}
                                             />
                                             <button
                                                 type="button"
                                                 className="remove-photo-btn"
                                                 onClick={() => handleRemovePhoto(photo)}
-                                                aria-label={
-                                                    t("visitDetails.aria.removePhoto", {
-                                                        index: index + 1,
-                                                    }) || `Remove photo ${index + 1}`
-                                                }
                                             >
-                                                <FaTimes /> {t("visitDetails.actions.removePhoto")}
+                                                <FaTimes />
                                             </button>
                                         </div>
                                     ))}
-                                {newPhotos.map((photo, index) => (
-                                    <div key={`new-${index}`} className="photo-container">
-                                        <img
-                                            src={URL.createObjectURL(photo)}
-                                            alt={
-                                                t("visitDetails.form.photos.newAlt", {
-                                                    index: index + 1,
-                                                }) || `New photo ${index + 1}`
-                                            }
-                                            className="photo-preview"
-                                            onClick={() =>
-                                                setSelectedImage(URL.createObjectURL(photo))
-                                            }
-                                        />
-                                        <button
-                                            type="button"
-                                            className="remove-photo-btn"
-                                            onClick={() => removeNewPhoto(index)}
-                                            aria-label={
-                                                t("visitDetails.aria.removePhoto", {
-                                                    index: index + 1,
-                                                }) || `Remove new photo ${index + 1}`
-                                            }
-                                        >
-                                            <FaTimes /> {t("visitDetails.actions.removePhoto")}
-                                        </button>
-                                    </div>
-                                ))}
-                            </div>
-                        )}
-                    </div>
-                ) : (
-                    <div className="form-group photos-section">
-                        <h2>
-                            <FaCamera /> {t("visitDetails.form.photos.title")} (0 photos)
-                        </h2>
-                        {visit.status === VisitStatus.VISITED && (
-                            <div className="camera-controls">
-                                <button
-                                    type="button"
-                                    className="camera-btn"
-                                    onClick={startCamera}
-                                    disabled={isCameraActive}
-                                    aria-label={t("visitDetails.aria.startCamera")}
-                                >
-                                    <FaCamera /> {t("visitDetails.form.photos.startCamera")}
-                                </button>
-                                <div
-                                    className={`camera-container ${isCameraActive ? "active" : ""}`}
-                                >
-                                    <div className="camera-frame">
-                                        <video
-                                            ref={videoRef}
-                                            className="camera-preview"
-                                            muted
-                                            playsInline
-                                        />
-                                        <div
-                                            className={`flash-overlay ${flashEffect ? "active" : ""}`}
-                                        ></div>
-                                        <div className="photo-counter">
-                                            <FaCamera /> {newPhotos.length}
+                                    {newPhotos.map((photo, index) => (
+                                        <div key={`new-${index}`} className="photo-container">
+                                            <img
+                                                src={URL.createObjectURL(photo)}
+                                                alt={t("visitDetails.form.photos.newAlt", { index: index + 1 })}
+                                                className="photo-preview"
+                                                onClick={() => setSelectedImage(URL.createObjectURL(photo))}
+                                            />
+                                            <button
+                                                type="button"
+                                                className="remove-photo-btn"
+                                                onClick={() => removeNewPhoto(index)}
+                                            >
+                                                <FaTimes />
+                                            </button>
                                         </div>
-                                        {newPhotos.length > 0 && (
-                                            <div className="thumbnail-preview">
-                                                <img
-                                                    src={URL.createObjectURL(
-                                                        newPhotos[newPhotos.length - 1]
-                                                    )}
-                                                    alt={t("visitDetails.form.photos.lastCapturedAlt")}
-                                                />
-                                            </div>
-                                        )}
-                                    </div>
-                                    {isCameraActive && (
-                                        <>
-                                            <button
-                                                type="button"
-                                                className="stop-camera-btn"
-                                                onClick={stopCamera}
-                                                aria-label={t("visitDetails.aria.stopCamera")}
-                                            >
-                                                <FaTimes /> {t("visitDetails.actions.stopCamera")}
-                                            </button>
-                                            <button
-                                                type="button"
-                                                className="capture-btn"
-                                                onClick={capturePhoto}
-                                                aria-label={t("visitDetails.aria.capturePhoto")}
-                                            >
-                                                <FaCamera /> {t("visitDetails.actions.capturePhoto")}
-                                            </button>
-                                        </>
-                                    )}
+                                    ))}
                                 </div>
-                            </div>
-                        )}
-                    </div>
+                            )}
+                        </div>
+                        <div className="form-group">
+                            <label htmlFor="comment">{t("visitDetails.form.comment.label")}</label>
+                            <textarea
+                                id="comment"
+                                value={editForm.comment}
+                                onChange={(e) => setEditForm(prev => ({ ...prev, comment: e.target.value }))}
+                                placeholder={t("visitDetails.form.comment.placeholder")}
+                            />
+                        </div>
+                    </>
                 )}
-
-                {/* Comment Section */}
-                {canEditField("comment") && (
-                    <div className="form-group">
-                        <label htmlFor="comment">
-                            {t("visitDetails.form.comment.label")}
-                        </label>
-                        <textarea
-                            id="comment"
-                            value={editForm.comment}
-                            onChange={(e) =>
-                                setEditForm((prev) => ({
-                                    ...prev,
-                                    comment: e.target.value,
-                                }))
-                            }
-                            placeholder={t("visitDetails.form.comment.placeholder")}
-                            className="search-input"
-                            aria-label={t("visitDetails.form.comment.ariaLabel")}
-                        />
-                    </div>
-                )}
-
-                {/* Form Actions */}
                 <div className="form-actions">
-                    <Button
-                        type="submit"
-                        disabled={
-                            !userPermissions.canEditTimesheets ||
-                            !editForm.date ||
-                            !editForm.time ||
-                            !editForm.delegationID ||
-                            (userPermissions.canCreateTimesheetsForSupervisors &&
-                                !selectedSupervisor)
-                        }
-                        aria-label={t("visitDetails.aria.saveChanges")}
-                    >
+                    <button type="button" className="submit-btn secondary" onClick={handleCancel}>
+                        {t("timesheetForm.actions.back")}
+                    </button>
+                    <button type="submit" className="submit-btn primary" disabled={!isFormComplete}>
                         {t("visitDetails.actions.save")}
-                    </Button>
-                    <Button
-                        type="button"
-                        variant="outline"
-                        onClick={handleCancel}
-                        aria-label={t("visitDetails.aria.cancelEdit")}
-                    >
-                        {t("visitDetails.actions.cancel")}
-                    </Button>
+                    </button>
                 </div>
             </form>
-
-            {/* Fullscreen Image Modal */}
             {selectedImage && (
                 <div className="fullscreen-image-modal">
                     <div className="fullscreen-image-content">
                         <button
                             className="close-fullscreen-btn"
-                            onClick={handleCloseFullscreen}
-                            aria-label={t("visitDetails.aria.closeFullscreen")}
+                            onClick={() => setSelectedImage(null)}
+                            aria-label={t("visitDetails.actions.closeImage")}
                         >
                             <FaTimes />
                         </button>
@@ -1189,10 +715,7 @@ const VisitEditForm: React.FC<VisitEditFormProps> = ({
                     </div>
                 </div>
             )}
-
-            {/* Hidden Canvas for Photo Capture */}
-            <canvas ref={canvasRef} style={{ display: "none" }} />
-        </>
+        </div>
     );
 };
 

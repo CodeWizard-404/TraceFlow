@@ -1,8 +1,10 @@
 /* eslint-disable react-hooks/exhaustive-deps */
-import React, { useEffect, useState, useMemo, useCallback } from "react";
+import React, { useEffect, useState, useMemo, useCallback, useRef } from "react";
 import { useNavigate } from "react-router-dom";
 import { motion } from "framer-motion";
 import { debounce } from "lodash";
+import { DndProvider, useDrag, useDrop } from 'react-dnd';
+import { HTML5Backend } from 'react-dnd-html5-backend';
 import "./Timesheets.css";
 import Timesheet from "../../models/Timesheet";
 import Visit from "../../models/Visit";
@@ -18,6 +20,7 @@ import {
 } from "../../apis/timesheetAPI";
 import { getAllUsers, getSupervisorsByUser } from "../../apis/userAPI";
 import { getReasonsByVisitId } from "../../apis/reasonAPI";
+import { updateVisit } from '../../apis/visitAPI';
 import { FaClock, FaMapMarkerAlt, FaRegUser, FaFilter } from "react-icons/fa";
 import TimesheetStatus from "../../models/Enum/TimesheetStatus";
 import VisitStatus from "../../models/Enum/VisitStatus";
@@ -45,6 +48,11 @@ const ROLES = {
 };
 
 const SOCKET_URL = import.meta.env.VITE_SOCKET_URL || 'http://localhost:5000';
+
+// Drag-and-Drop Item Types
+const ItemTypes = {
+    VISIT: 'visit',
+};
 
 // Types
 type ViewMode = "year" | "month" | "week" | "day";
@@ -131,6 +139,246 @@ const TimesheetsSkeleton: React.FC = () => (
     </div>
 );
 
+// New DayColumn Component
+interface DayColumnProps {
+    day: Date;
+    visits: (VisitWithSupervisor | GeneratedVisit)[];
+    handleDropVisit: (item: { visitId: string; originalDate: string; time: string; isGenerated: boolean }, targetDate: string) => void;
+    sortVisitsByTime: (visits: (VisitWithSupervisor | GeneratedVisit)[]) => (VisitWithSupervisor | GeneratedVisit)[];
+    t: (key: string, options?: any) => string;
+    users: User[];
+    isSupervisor: boolean;
+    weekData: { supervisorID?: string };
+    userPermissions: {
+        canAccessTimesheetDetails: boolean;
+        canCreateTimesheets: boolean;
+        canCreateSupervisorTimesheets: boolean;
+    };
+    visitReasons: Record<string, VisitReason[]>;
+    agentLocations: Record<string, string>;
+    navigate: (path: string) => void;
+}
+
+const DayColumn: React.FC<DayColumnProps> = ({
+    day,
+    visits,
+    handleDropVisit,
+    sortVisitsByTime,
+    t,
+    users,
+    isSupervisor,
+    weekData,
+    userPermissions,
+    visitReasons,
+    agentLocations,
+    navigate,
+}) => {
+    const dayStr = `${day.getFullYear()}-${String(day.getMonth() + 1).padStart(2, "0")}-${String(day.getDate()).padStart(2, "0")}`;
+    const today = new Date();
+    const todayStr = `${today.getFullYear()}-${String(today.getMonth() + 1).padStart(2, "0")}-${String(today.getDate()).padStart(2, "0")}`;
+    const isPastDate = new Date(dayStr) < new Date(todayStr);
+
+    const dayVisits = sortVisitsByTime(visits.filter((v) => {
+        const visitDate = "time" in v ? v.date : v.date;
+        const normalizedVisitDate = visitDate.includes("/") ? visitDate.split("/").reverse().join("-") : visitDate;
+        return normalizedVisitDate.split("T")[0] === dayStr;
+    }));
+
+    const dayRef = useRef<HTMLDivElement>(null);
+    const [{ isOver }, drop] = useDrop(() => ({
+        accept: ItemTypes.VISIT,
+        canDrop: () => !isPastDate, // Prevent dropping on past dates
+        drop: (item: { visitId: string; originalDate: string; time: string; isGenerated: boolean }) => {
+            handleDropVisit(item, dayStr);
+        },
+        collect: (monitor) => ({
+            isOver: !!monitor.isOver(),
+        }),
+    }), [dayStr, handleDropVisit, isPastDate]);
+
+    useEffect(() => {
+        drop(dayRef);
+    }, [drop]);
+
+    const formatTime = (timeStr: string): string => {
+        const [hours, minutes] = timeStr.split(':').map(Number);
+        const period = hours >= 12 ? 'PM' : 'AM';
+        const formattedHours = hours % 12 || 12;
+        return `${formattedHours.toString().padStart(2, '0')}:${minutes.toString().padStart(2, '0')} ${period}`;
+    };
+
+    const isCoordinates = (str: string): boolean => /^\s*-?\d+\.\d+\s*,\s*-?\d+\.\d+\s*$/.test(str);
+
+    return (
+        <div
+            ref={dayRef}
+            className={`day-column ${isOver ? 'drag-over' : ''} ${isPastDate ? 'past-date' : ''}`}
+            key={dayStr}
+        >
+            <div className="day-tile">
+                <span className="day-name">
+                    {day.toLocaleDateString("en-GB", { weekday: "short" })}
+                </span>
+                <span className="day-date">{day.getDate()}</span>
+                <span className="visit-count">
+                    {dayVisits.length > 0 ? `/ ${dayVisits.length} ${t("timesheets.weekView.visits")}` : ""}
+                </span>
+            </div>
+            <div className="visits-list">
+                {dayVisits.length > 0 ? (
+                    dayVisits.map((visit) => (
+                        <VisitCard
+                            key={"visitID" in visit ? visit.visitID : `${visit.agentID}-${visit.date}-${visit.startTime}`}
+                            visit={visit}
+                            t={t}
+                            users={users}
+                            isSupervisor={isSupervisor}
+                            weekData={weekData}
+                            userPermissions={userPermissions}
+                            visitReasons={visitReasons}
+                            agentLocations={agentLocations}
+                            navigate={navigate}
+                            formatTime={formatTime}
+                            isCoordinates={isCoordinates}
+                        />
+                    ))
+                ) : (
+                    <div className="no-visits">
+                        {t("timesheets.dayView.noVisits")}
+                    </div>
+                )}
+            </div>
+        </div>
+    );
+};
+
+// New VisitCard Component
+interface VisitCardProps {
+    visit: VisitWithSupervisor | GeneratedVisit;
+    t: (key: string, options?: any) => string;
+    users: User[];
+    isSupervisor: boolean;
+    weekData: { supervisorID?: string };
+    userPermissions: {
+        canAccessTimesheetDetails: boolean;
+        canCreateTimesheets: boolean;
+        canCreateSupervisorTimesheets: boolean;
+    };
+    visitReasons: Record<string, VisitReason[]>;
+    agentLocations: Record<string, string>;
+    navigate: (path: string) => void;
+    formatTime: (timeStr: string) => string;
+    isCoordinates: (str: string) => boolean;
+}
+
+const VisitCard: React.FC<VisitCardProps> = ({
+    visit,
+    t,
+    users,
+    isSupervisor,
+    weekData,
+    userPermissions,
+    visitReasons,
+    agentLocations,
+    navigate,
+    formatTime,
+    isCoordinates,
+}) => {
+    const visitId = "visitID" in visit ? visit.visitID : `${visit.agentID}-${visit.date}-${visit.startTime}`;
+    const isVisited = visit.status === VisitStatus.VISITED; // Check if status is VISITED
+    const visitRef = useRef<HTMLDivElement>(null);
+    const [{ isDragging }, drag] = useDrag(() => ({
+        type: ItemTypes.VISIT,
+        item: {
+            visitId,
+            originalDate: "time" in visit ? visit.date : visit.date,
+            time: "time" in visit ? visit.time : visit.startTime,
+            isGenerated: !("visitID" in visit),
+        },
+        collect: (monitor) => ({
+            isDragging: !!monitor.isDragging(),
+        }),
+        canDrag: () => (userPermissions.canCreateTimesheets || userPermissions.canCreateSupervisorTimesheets) && !isVisited, // Prevent dragging if VISITED
+    }), [visit, userPermissions, isVisited]);
+
+    useEffect(() => {
+        if ((userPermissions.canCreateTimesheets || userPermissions.canCreateSupervisorTimesheets) && !isVisited) {
+            drag(visitRef);
+        }
+    }, [drag, userPermissions, isVisited]);
+
+    return (
+        <div
+            ref={visitRef}
+            className={`visit-card ${isVisited ? 'visited' : ''}`}
+            style={{ opacity: isDragging ? 0.5 : 1 }}
+            onClick={
+                userPermissions.canAccessTimesheetDetails && "visitID" in visit
+                    ? () => navigate(`/visit/${visit.visitID}`)
+                    : undefined
+            }
+            role="button"
+            tabIndex={userPermissions.canAccessTimesheetDetails && "visitID" in visit ? 0 : -1}
+            onKeyDown={(e) =>
+                userPermissions.canAccessTimesheetDetails &&
+                "visitID" in visit &&
+                e.key === "Enter" &&
+                navigate(`/visit/${visit.visitID}`)
+            }
+            aria-label={t("timesheets.weekView.visitCard", {
+                time: "time" in visit ? visit.time : visit.startTime,
+            })}
+        >
+            {!isSupervisor && (
+                <p className="visit-supervisor">
+                    <FaRegUser />{" "}
+                    {users.find(
+                        (u) =>
+                            u.userID ===
+                            ("supervisorID" in visit ? visit.supervisorID : weekData.supervisorID)
+                    )?.firstname || "Unknown"}{" "}
+                    {users.find(
+                        (u) =>
+                            u.userID ===
+                            ("supervisorID" in visit ? visit.supervisorID : weekData.supervisorID)
+                    )?.lastname || ""}
+                </p>
+            )}
+            <hr className="hr" />
+            <div className="visit-header">
+                <span className="visit-time">
+                    <FaClock /> {formatTime("time" in visit ? visit.time : visit.startTime)}
+                </span>
+                <span className={`visit-status status-${visit.status.toLowerCase()}`}>
+                    {visit.status}
+                </span>
+            </div>
+            <p className="visit-location">
+                <FaMapMarkerAlt />{" "}
+                {("location" in visit ? visit.location : visit.location) &&
+                    !isCoordinates(("location" in visit ? visit.location : visit.location) || "")
+                    ? "location" in visit ? visit.location : visit.location
+                    : visit.agentID && agentLocations[visit.agentID]
+                        ? agentLocations[visit.agentID]
+                        : t("timesheets.locationTBD")}
+            </p>
+            {"time" in visit ? (
+                visitReasons[visit.visitID] && visitReasons[visit.visitID].length > 0 && (
+                    <p className="visit-reasons">
+                        {visitReasons[visit.visitID].map((r) => r.item).join(", ")}
+                    </p>
+                )
+            ) : (
+                visit.reasons.length > 0 && (
+                    <p className="visit-reasons">
+                        {visit.reasons.map((r) => r.item).join(", ")}
+                    </p>
+                )
+            )}
+        </div>
+    );
+};
+
 // Main Component
 const Timesheets: React.FC = React.memo(() => {
     // Hooks
@@ -169,28 +417,28 @@ const Timesheets: React.FC = React.memo(() => {
         () => ({
             canAccessTimesheets: effectivePermissions?.some(
                 (p) => p.name === PERMISSIONS.ACCESS_TIMESHEETS
-            ),
+            ) ?? false,
             canAccessSupervisorTimesheets: effectivePermissions?.some(
                 (p) => p.name === PERMISSIONS.ACCESS_SUPERVISOR_TIMESHEETS
-            ),
+            ) ?? false,
             canAccessTimesheetDetails: effectivePermissions?.some(
                 (p) => p.name === PERMISSIONS.ACCESS_TIMESHEET_DETAILS
-            ),
+            ) ?? false,
             canCreateTimesheets: effectivePermissions?.some(
                 (p) => p.name === PERMISSIONS.CREATE_TIMESHEETS
-            ),
+            ) ?? false,
             canCreateSupervisorTimesheets: effectivePermissions?.some(
                 (p) => p.name === PERMISSIONS.CREATE_SUPERVISOR_TIMESHEETS
-            ),
+            ) ?? false,
             canValidateTimesheets: effectivePermissions?.some(
                 (p) => p.name === PERMISSIONS.VALIDATE_TIMESHEETS
-            ),
+            ) ?? false,
             canReadUsers: effectivePermissions?.some(
                 (p) => p.name === PERMISSIONS.READ_USERS
-            ),
+            ) ?? false,
             canReadSupervisors: effectivePermissions?.some(
                 (p) => p.name === PERMISSIONS.READ_SUPERVISORS
-            ),
+            ) ?? false,
         }),
         [effectivePermissions]
     );
@@ -706,6 +954,39 @@ const Timesheets: React.FC = React.memo(() => {
         setIsSuggestionsModalOpen(false);
     }, []);
 
+    const handleDropVisit = useCallback(
+        async (
+            item: { visitId: string; originalDate: string; time: string; isGenerated: boolean },
+            targetDate: string
+        ) => {
+            if (item.originalDate === targetDate) return; // No change needed if dropped on the same date
+
+            try {
+                if (item.isGenerated) {
+                    // Update generated visit in state
+                    setGeneratedVisits((prev) =>
+                        prev.map((visit) =>
+                            `${visit.agentID}-${visit.date}-${visit.startTime}` === item.visitId
+                                ? { ...visit, date: targetDate.split('-').reverse().join('/') } // Convert to DD/MM/YYYY
+                                : visit
+                        )
+                    );
+                } else {
+                    // Update saved visit via API
+                    await updateVisit(item.visitId, {
+                        date: targetDate, // Format: YYYY-MM-DD
+                        time: item.time,
+                    });
+                    await fetchTimesheets(); // Refresh timesheets to reflect the change
+                }
+            } catch (error) {
+                console.error('Failed to update visit date:', error);
+                setError(t('timesheets.errors.updateVisit'));
+            }
+        },
+        [fetchTimesheets, t]
+    );
+
     // Memoized Filtered Supervisors
     const filteredSupervisors = useMemo(
         () =>
@@ -1182,8 +1463,6 @@ const Timesheets: React.FC = React.memo(() => {
                                             {t("timesheets.actions.validate")}
                                         </button>
                                     )}
-
-
                                 {isSupervisor && generatedVisits.length > 0 && (
                                     <>
                                         <button
@@ -1201,125 +1480,32 @@ const Timesheets: React.FC = React.memo(() => {
                                                     disabled={loading}
                                                     aria-label={t("timesheets.actions.saveSuggestions")}
                                                 >
-                                                    {loading ? t("timesheets.actions.saving") : t("timesheets.actions.saveSuggestions")}
+                                                    {loading
+                                                        ? t("timesheets.actions.saving")
+                                                        : t("timesheets.actions.saveSuggestions")}
                                                 </button>
                                             )}
                                     </>
                                 )}
                             </div>
                             <div className="days-grid">
-                                {weekData.days.map((day) => {
-                                    const dayStr = `${day.getFullYear()}-${String(day.getMonth() + 1).padStart(2, '0')}-${String(day.getDate()).padStart(2, '0')}`;
-                                    const dayVisits = sortVisitsByTime(
-                                        weekData.visits.filter(
-                                            (v) => {
-                                                const visitDate = 'time' in v ? v.date : v.date;
-                                                const normalizedVisitDate = visitDate.includes("/")
-                                                    ? visitDate.split("/").reverse().join("-")
-                                                    : visitDate;
-                                                return normalizedVisitDate.split("T")[0] === dayStr;
-                                            }
-                                        )
-                                    );
-                                    return (
-                                        <div className="day-column" key={dayStr}>
-                                            <div className="day-tile">
-                                                <span className="day-name">
-                                                    {day.toLocaleDateString("en-GB", {
-                                                        weekday: "short",
-                                                    })}
-                                                </span>
-                                                <span className="day-date">{day.getDate()}</span>
-                                                <span className="visit-count">
-                                                    {dayVisits.length > 0
-                                                        ? `/ ${dayVisits.length} ${t(
-                                                            "timesheets.weekView.visits"
-                                                        )}`
-                                                        : ""}
-                                                </span>
-                                            </div>
-                                            <div className="visits-list">
-                                                {dayVisits.length > 0 ? (
-                                                    dayVisits.map((visit) => (
-                                                        <div
-                                                            key={'visitID' in visit ? visit.visitID : `${visit.agentID}-${visit.date}-${visit.startTime}`}
-                                                            className="visit-card"
-                                                            onClick={
-                                                                userPermissions.canAccessTimesheetDetails && 'visitID' in visit
-                                                                    ? () =>
-                                                                        navigate(
-                                                                            `/visit/${visit.visitID}`
-                                                                        )
-                                                                    : undefined
-                                                            }
-                                                            role="button"
-                                                            tabIndex={
-                                                                userPermissions.canAccessTimesheetDetails && 'visitID' in visit
-                                                                    ? 0
-                                                                    : -1
-                                                            }
-                                                            onKeyDown={(e) =>
-                                                                userPermissions.canAccessTimesheetDetails &&
-                                                                'visitID' in visit &&
-                                                                e.key === "Enter" &&
-                                                                navigate(
-                                                                    `/visit/${visit.visitID}`
-                                                                )
-                                                            }
-                                                            aria-label={t("timesheets.weekView.visitCard", {
-                                                                time: 'time' in visit ? visit.time : visit.startTime,
-                                                            })}
-                                                        >
-                                                            {!isSupervisor && (
-                                                                <p className="visit-supervisor">
-                                                                    <FaRegUser />{" "}
-                                                                    {users.find(
-                                                                        (u) => u.userID === ('supervisorID' in visit ? visit.supervisorID : weekData.supervisorID)
-                                                                    )?.firstname || "Unknown"}{" "}
-                                                                    {users.find(
-                                                                        (u) => u.userID === ('supervisorID' in visit ? visit.supervisorID : weekData.supervisorID)
-                                                                    )?.lastname || ""}
-                                                                </p>
-                                                            )}
-                                                            <hr className="hr" />
-                                                            <div className="visit-header">
-                                                                <span className="visit-time">
-                                                                    <FaClock /> {formatTime('time' in visit ? visit.time : visit.startTime)}
-                                                                </span>
-                                                                <span
-                                                                    className={`visit-status status-${visit.status.toLowerCase()}`}
-                                                                >
-                                                                    {visit.status}
-                                                                </span>
-                                                            </div>
-                                                            <p className="visit-location">
-                                                                <FaMapMarkerAlt />{" "}
-                                                                {('location' in visit ? visit.location : visit.location) && !isCoordinates(('location' in visit ? visit.location : visit.location) || '') ? ('location' in visit ? visit.location : visit.location) : (visit.agentID && agentLocations[visit.agentID] ? agentLocations[visit.agentID] : t("timesheets.locationTBD"))}
-                                                            </p>
-                                                            {'time' in visit ? (
-                                                                visitReasons[visit.visitID] && visitReasons[visit.visitID].length > 0 && (
-                                                                    <p className="visit-reasons">
-                                                                        {visitReasons[visit.visitID].map((r) => r.item).join(", ")}
-                                                                    </p>
-                                                                )
-                                                            ) : (
-                                                                visit.reasons.length > 0 && (
-                                                                    <p className="visit-reasons">
-                                                                        {visit.reasons.map((r) => r.item).join(", ")}
-                                                                    </p>
-                                                                )
-                                                            )}
-                                                        </div>
-                                                    ))
-                                                ) : (
-                                                    <div className="no-visits">
-                                                        {t("timesheets.dayView.noVisits")}
-                                                    </div>
-                                                )}
-                                            </div>
-                                        </div>
-                                    );
-                                })}
+                                {weekData.days.map((day) => (
+                                    <DayColumn
+                                        key={day.toISOString()}
+                                        day={day}
+                                        visits={weekData.visits}
+                                        handleDropVisit={handleDropVisit}
+                                        sortVisitsByTime={sortVisitsByTime}
+                                        t={t}
+                                        users={users}
+                                        isSupervisor={!!isSupervisor}
+                                        weekData={weekData}
+                                        userPermissions={userPermissions}
+                                        visitReasons={visitReasons}
+                                        agentLocations={agentLocations}
+                                        navigate={navigate}
+                                    />
+                                ))}
                             </div>
                         </div>
                     </section>
@@ -1451,4 +1637,11 @@ const Timesheets: React.FC = React.memo(() => {
     );
 });
 
-export default Timesheets;
+// Wrap Timesheets with DndProvider
+const WrappedTimesheets = () => (
+    <DndProvider backend={HTML5Backend}>
+        <Timesheets />
+    </DndProvider>
+);
+
+export default WrappedTimesheets;

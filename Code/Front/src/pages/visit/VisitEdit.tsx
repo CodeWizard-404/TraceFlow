@@ -4,6 +4,7 @@ import { useNavigate, useParams } from "react-router-dom";
 import { debounce } from "lodash";
 import { FaListUl, FaArrowLeft } from "react-icons/fa";
 import "./VisitDetails.css";
+import "../Timesheet/TimesheetForm.css";
 import { useAuth } from "../../context/AuthContext";
 import Visit from "../../models/Visit";
 import Agent from "../../models/Agent";
@@ -32,6 +33,7 @@ import {
 import { getAllChecklists } from "../../apis/checklistAPI";
 import { getAllReasons } from "../../apis/reasonAPI";
 import { getVisitById } from "../../apis/visitAPI";
+import { getTimesheetById } from "../../apis/timesheetAPI";
 import {
   getRegionsByUser,
   getDelegationsByUser,
@@ -45,7 +47,7 @@ import {
   getGovernoratesByDelegation,
 } from "../../apis/locationApi";
 import { useTranslation } from "react-i18next";
-import VisitEditForm from "./VisitEditForm";
+import VisitEditForm, { EditFormState } from "./VisitEditForm";
 
 // Constants for environment variables and permissions
 const PERMISSIONS = {
@@ -71,42 +73,6 @@ const ROLES = {
 interface EditTracking {
   startTime: number | null;
   durationAccumulator: number; // in minutes
-}
-
-// Interface for edit form state with original values
-interface EditFormState {
-  date: string;
-  time: string;
-  regionID: string;
-  governorateID: string;
-  delegationID: string;
-  status: string;
-  comment: string;
-  agentID: string;
-  agentSearch: string;
-  agentPhone: string;
-  regionSearch: string;
-  governorateSearch: string;
-  delegationSearch: string;
-  reasonSearch: string;
-  checklistSearch: string;
-  checklists: Array<{ id: string; checked: boolean }>;
-  reasons: Array<{ id: string }>;
-  photosToRemove: string[];
-  regionalManagerSearch: string;
-  supervisorSearch: string;
-  original: {
-    date: string;
-    time: string;
-    regionID: string;
-    governorateID: string;
-    delegationID: string;
-    status: string;
-    comment: string;
-    agentID: string;
-    checklists: Array<{ id: string; checked: boolean }>;
-    reasons: Array<{ id: string }>;
-  };
 }
 
 /**
@@ -170,6 +136,7 @@ const VisitEdit: React.FC = () => {
     checklistSearch: "",
     regionalManagerSearch: "",
     supervisorSearch: "",
+    duration: null,
     checklists: [],
     reasons: [],
     photosToRemove: [],
@@ -239,7 +206,6 @@ const VisitEdit: React.FC = () => {
     [user]
   );
 
-
   // Data fetching
   const fetchVisitData = useCallback(async () => {
     if (!idVisit || !userPermissions.canAccessVisitDetails) {
@@ -252,6 +218,9 @@ const VisitEdit: React.FC = () => {
       setLoading(true);
       const visitData = await getVisitById(idVisit);
       setVisit(visitData);
+
+      // Fetch timesheet to get supervisorID
+      const timesheetData = await getTimesheetById(visitData.timesheetID);
 
       const agentData = visitData.agentID
         ? await getAgentById(visitData.agentID)
@@ -326,13 +295,48 @@ const VisitEdit: React.FC = () => {
       setSupervisors(supervisorsData);
       setRegionalManagers(regionalManagersData);
 
-      const regions = await getRegionsByGovernorate(agentData!.Delegation?.Governorate?.governorateID || "");
+      // Handle location data for all visits
+      let regionID = "";
+      let governorateID = "";
+      let delegationID = visitData.location || "";
+
+      if (agentData && agentData.Delegation?.Governorate?.governorateID) {
+        const regions = await getRegionsByGovernorate(agentData.Delegation.Governorate.governorateID);
+        regionID = regions?.[0]?.regionID || "";
+        governorateID = agentData.Delegation.Governorate.governorateID;
+        delegationID = agentData.delegationID || visitData.location || "";
+      } else if (visitData.location) {
+        // Parse location string (assumed format: "Region, Governorate, Delegation")
+        const locationParts = visitData.location.split(",").map(part => part.trim());
+        if (locationParts.length >= 3) {
+          const [regionName, governorateName, delegationName] = locationParts;
+          const region = regionsData.find(r => r.name.toLowerCase() === regionName.toLowerCase());
+          const governorate = governoratesData.find(g => g.name.toLowerCase() === governorateName.toLowerCase());
+          const delegation = delegationsData.find(d => d.name.toLowerCase() === delegationName.toLowerCase());
+          regionID = region?.regionID || "";
+          governorateID = governorate?.governorateID || "";
+          delegationID = delegation?.delegationID || "";
+        } else if (locationParts.length === 1) {
+          // Only delegation provided
+          const delegation = delegationsData.find(d => d.name.toLowerCase() === locationParts[0].toLowerCase());
+          if (delegation) {
+            delegationID = delegation.delegationID;
+            const govs = await getGovernoratesByDelegation(delegationID);
+            if (govs.length === 1) {
+              governorateID = govs[0].governorateID;
+              const regs = await getRegionsByGovernorate(governorateID);
+              regionID = regs.length === 1 ? regs[0].regionID : "";
+            }
+          }
+        }
+      }
+
       setEditForm({
         date: visitData.date,
         time: visitData.time.slice(0, 5),
-        regionID: regions?.[0]?.regionID || "",
-        governorateID: agentData?.Delegation?.Governorate?.governorateID || "",
-        delegationID: visitData.location || agentData?.delegationID || "",
+        regionID,
+        governorateID,
+        delegationID,
         status: visitData.status,
         comment: visitData.comment || "",
         agentID: visitData.agentID || "",
@@ -345,6 +349,7 @@ const VisitEdit: React.FC = () => {
         checklistSearch: "",
         regionalManagerSearch: "",
         supervisorSearch: "",
+        duration: visitData.duration || null,
         checklists:
           visitData.Checklists?.map((c) => ({
             id: c.checklistID,
@@ -355,9 +360,9 @@ const VisitEdit: React.FC = () => {
         original: {
           date: visitData.date,
           time: visitData.time.slice(0, 5),
-          regionID: regions?.[0]?.regionID || "",
-          governorateID: agentData?.Delegation?.Governorate?.governorateID || "",
-          delegationID: visitData.location || agentData?.delegationID || "",
+          regionID,
+          governorateID,
+          delegationID,
           status: visitData.status,
           comment: visitData.comment || "",
           agentID: visitData.agentID || "",
@@ -369,7 +374,7 @@ const VisitEdit: React.FC = () => {
           reasons: visitData.Reasons?.map((r) => ({ id: r.reasonID })) || [],
         },
       });
-      setSelectedSupervisor("");
+      setSelectedSupervisor(timesheetData.supervisorID || "");
     } catch (err: unknown) {
       const errorMessage =
         err instanceof Error ? err.message : t("visitDetails.error.fetchFailed");
@@ -980,7 +985,7 @@ const VisitEdit: React.FC = () => {
             supervisorsData = [supervisor];
           }
         } else if (editForm.delegationID) {
-          supervisorsData = await getUsersByDelegation(editForm.delegationSearch);
+          supervisorsData = await getUsersByDelegation(editForm.delegationID);
           supervisorsData = supervisorsData.filter((u) =>
             u.Roles?.some(
               (role) => role.name.toLowerCase() === ROLES.SUPERVISOR.toLowerCase()
@@ -1180,7 +1185,7 @@ const VisitEdit: React.FC = () => {
         </h1>
       </header>
 
-      <section className="visit-details-section">
+      <section>
         <VisitEditForm
           visit={visit}
           editForm={editForm}
